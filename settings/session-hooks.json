@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git fetch origin 2>&1 || true",
+            "statusMessage": "git fetch origin"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$(git rev-parse --abbrev-ref HEAD)\" != \"main\" ] && git push origin HEAD 2>&1 || true",
+            "statusMessage": "git push origin HEAD"
+          }
+        ]
+      }
+    ]
+  },
+  "attribution": {
+    "commit": ""
+  }
+}
