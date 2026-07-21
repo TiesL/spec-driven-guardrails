@@ -38,6 +38,12 @@ cd /pad/naar/project
 
 Dit zet `CLAUDE.md` en `.claude/settings.json` als lokale symlinks, en voegt ze toe aan `.gitignore` van dat project (het zijn machine-specifieke verwijzingen, geen project-artefacten). Bestaande bestanden op die paden worden — als het geen symlinks zijn — hernoemd naar `*.bak` in plaats van overschreven.
 
+### Bekende valkuil: branches die ouder zijn dan de adoptie
+
+Git overschrijft een lokale (ongetrackte) symlink zonder waarschuwing zodra je overschakelt naar een branch die `CLAUDE.md`/`.claude/settings.json` nog als gewoon, getrackt bestand bevat (bijv. een feature-branch die vóór de adoptie van dit project is aangemaakt). Na het terugschakelen naar zo'n branch zijn de symlinks dus weg. Oplossingen:
+- **Voorkeur:** merge/rebase `main` in die branch zodra dit project geadopteerd is — daarna verdwijnt het conflict permanent voor die branch.
+- **Alternatief:** draai `adopt.sh` opnieuw na elke keer dat dit gebeurt (idempotent, geen risico).
+
 ## Nieuw project opzetten
 
 ```bash
