@@ -34,6 +34,25 @@ backup_if_real_file() {
   fi
 }
 
+scaffold_if_missing() {
+  local template="$1" target="$2"
+  if [ ! -e "$target" ] && [ -f "$template" ]; then
+    cp "$template" "$target"
+    echo "Aangemaakt vanuit template: $target"
+  fi
+}
+
+copy_issue_templates() {
+  local project_dir="$1"
+  local template_src="$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE"
+  if [ -d "$template_src" ]; then
+    mkdir -p "$project_dir/.github/ISSUE_TEMPLATE"
+    cp -f "$template_src"/*.md "$project_dir/.github/ISSUE_TEMPLATE/"
+    [ -f "$template_src/config.yml" ] && cp -f "$template_src/config.yml" "$project_dir/.github/ISSUE_TEMPLATE/"
+    echo "Issue-templates gekopieerd naar $project_dir/.github/ISSUE_TEMPLATE/"
+  fi
+}
+
 add_gitignore_entry() {
   local project_dir="$1" entry="$2"
   local gitignore="$project_dir/.gitignore"
@@ -77,6 +96,10 @@ adopt_project() {
 
   add_gitignore_entry "$project_dir" "CLAUDE.md"
   add_gitignore_entry "$project_dir" ".claude/settings.json"
+
+  scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
+  scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
+  copy_issue_templates "$project_dir"
 
   echo "Klaar: $project_dir gebruikt nu de gedeelde workflow uit $CLAUDE_WORKFLOW_DIR"
 }

@@ -29,6 +29,22 @@ Dit project wordt vanaf meerdere computers ontwikkeld. Volg deze workflow in elk
 2. **Wacht op expliciete bevestiging van Ties** dat de test geslaagd is en er geen regressie is, vóór je merget. Merg nooit automatisch zonder die bevestiging.
 3. Merge daarna met `gh pr merge --squash --delete-branch` — dit houdt de historie op `main` overzichtelijk en ruimt de branch (lokaal en remote) direct op.
 
+## Specificeren van werk (PRD, testscenario's, issues)
+
+1. Elk project houdt een `PRD.md` (as-built of ontwerp) en
+   `TEST-SCENARIOS.md` (Given/When/Then) bij — zie `templates/` in dit
+   repo voor de vorm. Bij adoptie van een nieuw project scaffold `adopt.sh`
+   beide automatisch als ze nog niet bestaan.
+2. Werk wordt vanuit de PRD opgesplitst in GitHub issues: één `Epic`-issue
+   voor het geheel, `Work item`-issues per te bouwen onderdeel (zie
+   `templates/ISSUE_TEMPLATE/`).
+3. Elk work-item-issue heeft eigen Given/When/Then-acceptatiecriteria en
+   verwijst naar de bijbehorende scenario's in `TEST-SCENARIOS.md` — zo is
+   elk issue direct bruikbaar om de gebouwde software tegen te testen.
+4. `PRD.md`/`TEST-SCENARIOS.md` zijn levende documenten: bijwerken zodra de
+   implementatie ervan afwijkt (zoals nu al gebeurt in tennis-registration
+   en tennis-invoicing).
+
 ## Nieuw (gerelateerd) project opzetten
 
 1. `gh repo create <naam> --private --source=. --remote=origin` — maakt in één stap een lege GitHub-repo aan, initialiseert git lokaal (`git init`) en koppelt de remote (`git remote add origin <URL>`). Gebruik `git init` + `git remote add origin <URL>` los van elkaar alleen als de GitHub-repo al bestaat of buiten `gh` om is aangemaakt.
