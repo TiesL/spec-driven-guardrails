@@ -6,10 +6,12 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 
 | Bestand | Doel |
 |---|---|
-| `WORKFLOW.md` | De workflow-tekst zelf (GitHub Flow, branch+PR, sessie-stappen). Wordt in geadopteerde projecten gesymlinkt als `CLAUDE.md`. |
+| `WORKFLOW.md` | De workflow-tekst zelf (GitHub Flow, branch+PR, sessie-stappen, specificatieproces). Wordt in geadopteerde projecten gesymlinkt als `CLAUDE.md`. |
 | `settings/session-hooks.json` | `SessionStart`/`SessionEnd`-hooks + `attribution.commit`-instelling. Wordt gesymlinkt als `.claude/settings.json`. |
 | `USER-CLAUDE.md` | Korte trigger-instructie voor de automatische adoptievraag bij nieuwe projecten. Wordt gesymlinkt als `~/.claude/CLAUDE.md`. |
-| `adopt.sh` | Script dat de symlinks hierboven lokaal aanmaakt. |
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md` | Generieke sjablonen voor het specificeren van een project (zie "Specificeren van werk" in `WORKFLOW.md`). Worden bij adoptie **gekopieerd** naar het project, maar alleen als het bestand daar nog niet bestaat — een al ingevuld `PRD.md`/`TEST-SCENARIOS.md` wordt nooit overschreven. |
+| `templates/ISSUE_TEMPLATE/` | GitHub issue-templates (`epic.md`, `work-item.md`, `config.yml`), qua notatie afgestemd op `PRD.md`/`TEST-SCENARIOS.md`. Worden bij elke adoptie **gekopieerd** (ververst) naar `.github/ISSUE_TEMPLATE/` van het project. |
+| `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst. |
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
 
@@ -43,6 +45,25 @@ Dit zet `CLAUDE.md` en `.claude/settings.json` als lokale symlinks, en voegt ze 
 Git overschrijft een lokale (ongetrackte) symlink zonder waarschuwing zodra je overschakelt naar een branch die `CLAUDE.md`/`.claude/settings.json` nog als gewoon, getrackt bestand bevat (bijv. een feature-branch die vóór de adoptie van dit project is aangemaakt). Na het terugschakelen naar zo'n branch zijn de symlinks dus weg. Oplossingen:
 - **Voorkeur:** merge/rebase `main` in die branch zodra dit project geadopteerd is — daarna verdwijnt het conflict permanent voor die branch.
 - **Alternatief:** draai `adopt.sh` opnieuw na elke keer dat dit gebeurt (idempotent, geen risico).
+
+## Sjablonen: kopie i.p.v. symlink
+
+In tegenstelling tot `CLAUDE.md`/`.claude/settings.json` (lokale symlinks,
+nooit gecommit) worden de bestanden onder `templates/` **gekopieerd** naar
+elk geadopteerd project, met twee verschillende gedragingen:
+
+- **`PRD.md`/`TEST-SCENARIOS.md`** — scaffold: alleen aangemaakt als het
+  bestand in het project nog niet bestaat. Dit zijn project-eigen, in te
+  vullen documenten; een al ingevuld exemplaar wordt nooit overschreven.
+- **`ISSUE_TEMPLATE/*`** — altijd ververst bij elke `adopt.sh`-run. Dit is
+  meta-configuratie (GitHub-issueformulieren), geen invulbare inhoud.
+
+Een symlink werkt hier sowieso niet voor de issue-templates: GitHub rendert
+die server-side vanuit de repo-inhoud zelf, niet via lokale
+bestandssysteem-symlinks. Gevolg van "kopie": na een wijziging aan een
+canoniek sjabloon in dit repo moet `adopt.sh` opnieuw gedraaid worden in elk
+project om de issue-template-kopie daar te verversen (idempotent, geen
+risico — zelfde soort afspraak als bij de bekende valkuil hierboven).
 
 ## Nieuw project opzetten
 
