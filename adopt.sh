@@ -101,6 +101,11 @@ adopt_project() {
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
   copy_issue_templates "$project_dir"
 
+  if [ -f "$project_dir/package.json" ]; then
+    mkdir -p "$project_dir/.github/workflows"
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" "$project_dir/.github/workflows/ci.yml"
+  fi
+
   echo "Klaar: $project_dir gebruikt nu de gedeelde workflow uit $CLAUDE_WORKFLOW_DIR"
 }
 

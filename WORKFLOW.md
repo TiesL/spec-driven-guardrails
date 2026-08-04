@@ -45,6 +45,30 @@ Dit project wordt vanaf meerdere computers ontwikkeld. Volg deze workflow in elk
    implementatie ervan afwijkt (zoals nu al gebeurt in tennis-registration
    en tennis-invoicing).
 
+## Testen en deployen automatiseren
+
+Voor projecten met buildbare/testbare code gelden twee vaste, platform-
+neutrale commandonamen:
+
+1. **`check`** — alles wat bepaalt of een wijziging goed is (typecheck,
+   lint, tests, build). De GitHub Actions-workflow (zie `templates/ci.yml`,
+   automatisch gescaffold door `adopt.sh` als het project een
+   `package.json` heeft) roept dit commando aan en verzint zelf geen
+   losse checks — één bron van waarheid, geen drift tussen lokaal en CI.
+2. **`deploy`** — rolt daadwerkelijk uit naar het doelplatform. Dit blijft
+   een bewuste, aparte, lokale stap ná de merge, geen automatische CD bij
+   merge — dezelfde soort regie als bij de bestaande afspraak dat een merge
+   pas gebeurt na expliciete bevestiging (zie "Afronden" hierboven).
+
+Projectspecifieke checks (een eigen lintregel, een domeinspecifieke
+validatie) horen thuis in het `check`-script van het project zelf, niet in
+`claude-workflow`.
+
+Dit sjabloon veronderstelt npm. Voor een project op een andere stack geldt
+hetzelfde principe (vaste `check`/`deploy`-namen, CI roept alleen `check`
+aan), toegepast met de eigen tooling van die stack — `adopt.sh` scaffoldt
+`ci.yml` alleen wanneer een `package.json` aanwezig is.
+
 ## Nieuw (gerelateerd) project opzetten
 
 1. `gh repo create <naam> --private --source=. --remote=origin` — maakt in één stap een lege GitHub-repo aan, initialiseert git lokaal (`git init`) en koppelt de remote (`git remote add origin <URL>`). Gebruik `git init` + `git remote add origin <URL>` los van elkaar alleen als de GitHub-repo al bestaat of buiten `gh` om is aangemaakt.
