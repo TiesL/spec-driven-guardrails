@@ -11,6 +11,7 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 | `USER-CLAUDE.md` | Korte trigger-instructie voor de automatische adoptievraag bij nieuwe projecten. Wordt gesymlinkt als `~/.claude/CLAUDE.md`. |
 | `templates/PRD.md`, `templates/TEST-SCENARIOS.md` | Generieke sjablonen voor het specificeren van een project (zie "Specificeren van werk" in `WORKFLOW.md`). Worden bij adoptie **gekopieerd** naar het project, maar alleen als het bestand daar nog niet bestaat — een al ingevuld `PRD.md`/`TEST-SCENARIOS.md` wordt nooit overschreven. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue-templates (`epic.md`, `work-item.md`, `config.yml`), qua notatie afgestemd op `PRD.md`/`TEST-SCENARIOS.md`. Worden bij elke adoptie **gekopieerd** (ververst) naar `.github/ISSUE_TEMPLATE/` van het project. |
+| `templates/ci.yml` | Generieke GitHub Actions-CI die alleen `npm run check` aanroept (zie "Testen en deployen automatiseren" in `WORKFLOW.md`). Wordt bij adoptie gescaffold, maar alleen als het project een `package.json` heeft. |
 | `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst. |
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
@@ -72,6 +73,9 @@ gh repo create <naam> --private --source=. --remote=origin
 "$CLAUDE_WORKFLOW_DIR/adopt.sh"
 ```
 
-## Toekomstig: test/deploy-automatisering
+## Testen en deployen automatiseren
 
-Dit repo is de aangewezen plek voor gedeelde automatiseringsscripts zodra dat aan de orde is — bijvoorbeeld een `clasp`-gebaseerd deploy-script voor de Google Apps Script-projecten (`tennis-registration`, `tennis-invoicing`), ter vervanging van de huidige handmatige copy-paste-naar-de-editor-stap. Nog niet gebouwd; dit repo bestaat zodat het straks een logische plek heeft.
+Zie "Testen en deployen automatiseren" in `WORKFLOW.md` voor de conventie
+(vaste `check`/`deploy`-commandonamen, CI die alleen `check` aanroept,
+deploy als bewuste losse stap) en hierboven in deze tabel voor
+`templates/ci.yml`, het bijbehorende sjabloon.
