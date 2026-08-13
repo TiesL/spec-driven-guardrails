@@ -26,8 +26,40 @@ Dit project wordt vanaf meerdere computers ontwikkeld. Volg deze workflow in elk
 ## Afronden
 
 1. Zodra de wijziging klaar en getest is (en, waar van toepassing, handmatig geverifieerd): open een PR met `gh pr create`.
-2. **Wacht op expliciete bevestiging van Ties** dat de test geslaagd is en er geen regressie is, vóór je merget. Merg nooit automatisch zonder die bevestiging.
-3. Merge daarna met `gh pr merge --squash --delete-branch` — dit houdt de historie op `main` overzichtelijk en ruimt de branch (lokaal en remote) direct op.
+2. **Draai een kwaliteitsreview** vóór de merge — zie hieronder.
+3. **Wacht op expliciete bevestiging van Ties** dat de test geslaagd is en er geen regressie is, vóór je merget. Merg nooit automatisch zonder die bevestiging.
+4. Merge daarna met `gh pr merge --squash --delete-branch` — dit houdt de historie op `main` overzichtelijk en ruimt de branch (lokaal en remote) direct op.
+
+### Kwaliteitsreview vóór de merge
+
+Ties kan de technische output niet zelf volledig beoordelen. De review moet dus
+*leesbaar bewijs* opleveren in plaats van een geruststelling.
+
+**Hoe hij draait.** Met verse context en op een ander model dan dat de code
+schreef, bij voorkeur een zwaarder model. Verse context is de grootste winst: een
+reviewronde zonder het verhaal "ik heb dit net gebouwd en het werkt" in zijn
+context ziet meer. Andere modelgewichten helpen daarbovenop, want blinde vlekken
+zitten deels in het model zelf — wie bij het schrijven niet aan een race
+condition dacht, ziet hem bij het teruglezen vaak ook niet.
+
+**Waarop.** Proportioneel aan wat de PR raakt; een documentatiewijziging vraagt
+geen securityreview.
+
+- Security — toegang, invoervalidatie, secrets, rechten die ruimer zijn dan nodig
+- Foutafhandeling en edge cases — onverwachte invoer, falende afhankelijkheden
+- Dataconsistentie — invarianten, idempotentie, gelijktijdig schrijven
+- Complexiteit — is dit de eenvoudigste vorm die werkt?
+- Dependencies — is een nieuwe afhankelijkheid nodig, onderhouden, veilig?
+- Observability — merk je het als dit stuk gaat, vooral bij achtergrondjobs?
+
+**Wat ermee gebeurt.** De bevindingen komen in de PR te staan, niet alleen in de
+chat: leesbaar, blijvend, achteraf terug te vinden. Elke bevinding wordt daarna
+óf opgelost, óf vastgelegd onder *Technical debt* in de PRD met een reden. Niets
+verdwijnt stilzwijgend.
+
+**De grens ervan.** Modellen delen veel trainingsdata, dus ook een ander model
+heeft deels overlappende blinde vlekken. Dit verhoogt de bodem; het vervangt geen
+ervaren engineer die met andere ogen kijkt.
 
 ## Specificeren van werk (PRD, testscenario's, issues)
 
@@ -121,6 +153,39 @@ UI beschermt alleen de handmatige route, niet de automatische. Dit is in
 `tennis-admin` één keer misgegaan, en de enige beveiliging tot dat moment was dat
 degene die deployde eraan dacht. Dat is geen beveiliging. Uitgewerkt voorbeeld:
 `scripts/deploy.mjs` in `tennis-admin`.
+
+## Complexiteit, technical debt en refactoring
+
+Deze drie zijn geen losse aandachtspunten maar één lus: bouwen voegt
+complexiteit toe → wat daarvan blijft zitten wordt technical debt → refactoring
+is hoe je die afbetaalt. Zonder expliciete triggers gebeurt dat laatste nooit, en
+groeit er alleen maar code bovenop code.
+
+**Niet alle complexiteit is gelijk.** Essentiële complexiteit komt uit het domein
+zelf en is niet weg te refactoren — die beheers je met structuur. Toevallige
+complexiteit komt voort uit hoe iets nu eenmaal gebouwd is, en is wél
+reduceerbaar. Alleen de tweede soort is af te betalen; jagen op de eerste is
+verspilde moeite.
+
+**Technical debt is breder dan complexiteit alleen** — ook bewuste shortcuts,
+verouderde dependencies en ontbrekende tests horen erbij. Het register staat in
+de PRD, met per regel waarom het nu acceptabel is en wat de trigger is om het aan
+te pakken.
+
+**Refactoring is de aflossing.** Drie triggers, van hard naar zacht:
+
+1. **Het vastgelegde ontwerp wordt tegengesproken.** Merk je bij een work item
+   dat het alleen gebouwd kan worden door een architectuureis uit
+   `ARCHITECTUUR.md` te schenden, bouw het dan niet alsnog via een omweg. Dat is
+   het signaal dat óf het ontwerp herzien moet worden, óf de functionaliteit
+   anders ontworpen moet worden — als eigen work item, zodat het zichtbaar
+   gebeurt in plaats van als uitzondering weg te zakken in de code. Zo begint
+   architectuurerosie: één uitzondering per keer, tot niemand de structuur meer
+   herkent.
+2. **Je raakt code aan waar al een debt-regel op staat.** Dat is het goedkoopste
+   moment om hem af te betalen — je zit er toch al in.
+3. **Het register groeit terwijl er niets uit verdwijnt.** Een signaal om te
+   kijken wat er structureel misgaat, geen harde regel.
 
 ## Adoptieregistratie: per wijziging een keuze per project
 
