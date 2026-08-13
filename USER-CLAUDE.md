@@ -15,3 +15,21 @@ Check bij het starten van een sessie in een directory die een git-repository is:
    - Leg de keuze (ja/nee, en voor welk project) vast als geheugen, zodat niet elke sessie opnieuw gevraagd wordt.
 
 Deze vraag is bewust *niet* stilzwijgend/automatisch afgedwongen — team- of werkprojecten die niet van Ties alleen zijn, horen deze workflow niet ongevraagd te krijgen.
+
+## Openstaande workflow-wijzigingen
+
+Meldt de `SessionStart`-hook dat er openstaande wijzigingen zijn (zie
+`CHANGES.md` in `claude-workflow`), doe dan het volgende — niet ongevraagd
+toepassen:
+
+1. Leg ze aan Ties voor als **gesloten ja/nee-vragen**, meerdere tegelijk in één
+   keuzeprompt; bij meer dan vier in rondes.
+2. Schrijf elk antwoord als rij in `WORKFLOW-ADOPTIE.md` van dat project:
+   `| <wijziging-id> | ja/nee | <datum> | <toelichting> |`. Noteer bij "nee"
+   altijd waaróm — dat is precies de waarde van die registratie.
+3. Voer bij "ja" uit wat de entry onder "Ja betekent" beschrijft. Is dat meer dan
+   een handeling van niets (bijvoorbeeld projectcode aanpassen), maak er dan een
+   GitHub-issue voor in plaats van het meteen in deze sessie te doen.
+
+Het antwoordbestand wordt gecommit: of een project een afspraak toepast is een
+eigenschap van het project, niet van de machine waarop je toevallig werkt.
