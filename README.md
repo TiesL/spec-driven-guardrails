@@ -12,7 +12,9 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 | `templates/PRD.md`, `templates/TEST-SCENARIOS.md` | Generieke sjablonen voor het specificeren van een project (zie "Specificeren van werk" in `WORKFLOW.md`). Worden bij adoptie **gekopieerd** naar het project, maar alleen als het bestand daar nog niet bestaat — een al ingevuld `PRD.md`/`TEST-SCENARIOS.md` wordt nooit overschreven. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue-templates (`epic.md`, `work-item.md`, `config.yml`), qua notatie afgestemd op `PRD.md`/`TEST-SCENARIOS.md`. Worden bij elke adoptie **gekopieerd** (ververst) naar `.github/ISSUE_TEMPLATE/` van het project. |
 | `templates/ci.yml` | Generieke GitHub Actions-CI die alleen `npm run check` aanroept (zie "Testen en deployen automatiseren" in `WORKFLOW.md`). Wordt bij adoptie gescaffold, maar alleen als het project een `package.json` heeft. |
-| `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst. |
+| `CHANGES.md` | Lijst van adopteerbare wijzigingen: per PR-grote wijziging een gesloten vraag, een "van toepassing als"-conditie en wat "ja" betekent. Projecten leggen hun antwoord vast in hun eigen `WORKFLOW-ADOPTIE.md`. |
+| `pending-changes.sh` | Bepaalt welke wijzigingen uit `CHANGES.md` voor een project van toepassing zijn en nog geen antwoord hebben. Wordt aangeroepen door de `SessionStart`-hook. |
+| `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst, en de adoptietabel van een nieuw project seedt. |
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
 
@@ -65,6 +67,24 @@ bestandssysteem-symlinks. Gevolg van "kopie": na een wijziging aan een
 canoniek sjabloon in dit repo moet `adopt.sh` opnieuw gedraaid worden in elk
 project om de issue-template-kopie daar te verversen (idempotent, geen
 risico — zelfde soort afspraak als bij de bekende valkuil hierboven).
+
+## Adoptieregistratie
+
+Elk geadopteerd project houdt in `WORKFLOW-ADOPTIE.md` bij welke wijzigingen uit
+`CHANGES.md` het toepast. Een `SessionStart`-hook meldt wat er nog openstaat;
+Claude stelt die vragen als gesloten ja/nee-keuzes en legt het antwoord vast.
+Zie "Adoptieregistratie" in `WORKFLOW.md` voor het volledige verhaal.
+
+Handmatig nakijken kan ook:
+
+```bash
+"$CLAUDE_WORKFLOW_DIR/pending-changes.sh" /pad/naar/project
+```
+
+De hook lokaliseert dit repo overigens via de symlink
+(`readlink .claude/settings.json`) en niet via `CLAUDE_WORKFLOW_DIR` — een
+niet-interactieve shell laadt je `~/.zshrc` niet, dus op die variabele kan een
+hook niet rekenen.
 
 ## Nieuw project opzetten
 

@@ -53,6 +53,53 @@ copy_issue_templates() {
   fi
 }
 
+# Legt bij adoptie vast dat dit project akkoord is met de huidige staat van de
+# workflow: elke nú van toepassing zijnde wijziging krijgt "ja". Wat niet van
+# toepassing is krijgt geen rij en wordt later alsnog gevraagd zodra de conditie
+# waar wordt (zie pending-changes.sh).
+seed_adoptietabel() {
+  local project_dir="$1"
+  local doel="$project_dir/WORKFLOW-ADOPTIE.md"
+  local changes="$CLAUDE_WORKFLOW_DIR/CHANGES.md"
+
+  [ -e "$doel" ] && return 0
+  [ -f "$changes" ] || return 0
+
+  {
+    echo "# Adoptie van gedeelde workflow-wijzigingen"
+    echo
+    echo "Per wijziging uit \`CHANGES.md\` in [claude-workflow](https://github.com/TiesL/claude-workflow)"
+    echo "of dit project hem toepast. Geen rij betekent: (nog) niet van toepassing —"
+    echo "de vraag verschijnt vanzelf zodra dat verandert."
+    echo
+    echo "| Wijziging | Antwoord | Datum | Toelichting |"
+    echo "|---|---|---|---|"
+  } > "$doel"
+
+  local huidig_id="" predicaat vandaag
+  vandaag="$(date +%Y-%m-%d)"
+  while IFS= read -r regel; do
+    case "$regel" in
+      '## '*)
+        huidig_id="${regel#\#\# }" ;;
+      *'**Van toepassing als:**'*)
+        predicaat="${regel##*\*\* }"
+        predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
+        case "$predicaat" in
+          altijd) ;;
+          heeft-package-json) [ -f "$project_dir/package.json" ] || continue ;;
+          heeft-deploy-script)
+            { [ -f "$project_dir/package.json" ] &&
+              grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json"; } || continue ;;
+          *) continue ;;
+        esac
+        echo "| $huidig_id | ja | $vandaag | bij adoptie |" >> "$doel" ;;
+    esac
+  done < "$changes"
+
+  echo "Adoptietabel aangemaakt: $doel"
+}
+
 add_gitignore_entry() {
   local project_dir="$1" entry="$2"
   local gitignore="$project_dir/.gitignore"
@@ -105,6 +152,8 @@ adopt_project() {
     mkdir -p "$project_dir/.github/workflows"
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" "$project_dir/.github/workflows/ci.yml"
   fi
+
+  seed_adoptietabel "$project_dir"
 
   echo "Klaar: $project_dir gebruikt nu de gedeelde workflow uit $CLAUDE_WORKFLOW_DIR"
 }

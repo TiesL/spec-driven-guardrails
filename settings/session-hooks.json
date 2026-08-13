@@ -7,6 +7,11 @@
             "type": "command",
             "command": "git fetch origin 2>&1 || true",
             "statusMessage": "git fetch origin"
+          },
+          {
+            "type": "command",
+            "command": "wf=$(dirname \"$(dirname \"$(readlink .claude/settings.json 2>/dev/null)\")\") && [ -x \"$wf/pending-changes.sh\" ] && \"$wf/pending-changes.sh\" . 2>/dev/null || true",
+            "statusMessage": "openstaande workflow-wijzigingen"
           }
         ]
       }

@@ -122,6 +122,35 @@ UI beschermt alleen de handmatige route, niet de automatische. Dit is in
 degene die deployde eraan dacht. Dat is geen beveiliging. Uitgewerkt voorbeeld:
 `scripts/deploy.mjs` in `tennis-admin`.
 
+## Adoptieregistratie: per wijziging een keuze per project
+
+Niet elke afspraak uit `claude-workflow` past bij elk project. Daarom legt elk
+geadopteerd project in `WORKFLOW-ADOPTIE.md` vast wélke wijzigingen het
+toepast — zodat afwijken een geregistreerde, onderbouwde uitzondering is in
+plaats van stille drift.
+
+Hoe het loopt:
+
+1. Elke PR op `claude-workflow` die iets toevoegt waarover een project een eigen
+   keuze moet maken, **voegt een entry toe aan `CHANGES.md`** — met een gesloten
+   vraag, een "van toepassing als"-conditie en wat "ja" concreet betekent. Geen
+   entry betekent geen vraag, en dus een vals gevoel van dekking; let hier bij
+   review op.
+2. Bij sessiestart meldt een hook welke van die wijzigingen voor dít project van
+   toepassing zijn en nog geen antwoord hebben.
+3. Claude legt die dan als gesloten ja/nee-vragen voor, schrijft het antwoord in
+   `WORKFLOW-ADOPTIE.md`, en voert bij "ja" de actie uit of maakt er een work
+   item voor.
+
+Een ontbrekende rij betekent "(nog) niet van toepassing": wordt de conditie later
+alsnog waar — een project krijgt bijvoorbeeld een deploycommando — dan verschijnt
+de vraag vanzelf. Een `nee`-rij is een bewuste uitzondering en blijft staan tot
+je hem handmatig weghaalt.
+
+Bij adoptie van een nieuw project zet `adopt.sh` alle op dat moment toepasselijke
+wijzigingen op "ja": adopteren is akkoord met de huidige staat, en alleen wat
+daarna verandert levert vragen op.
+
 ## Nieuw (gerelateerd) project opzetten
 
 1. `gh repo create <naam> --private --source=. --remote=origin` — maakt in één stap een lege GitHub-repo aan, initialiseert git lokaal (`git init`) en koppelt de remote (`git remote add origin <URL>`). Gebruik `git init` + `git remote add origin <URL>` los van elkaar alleen als de GitHub-repo al bestaat of buiten `gh` om is aangemaakt.
