@@ -33,17 +33,21 @@
 
 ## Niet-functionele kenmerken
 
-Beantwoord elk van deze vijf. **"N.v.t. omdat …" is een geldig antwoord** — het
-punt is dat de vraag gesteld is, niet dat elk project overal iets op moet doen.
+Vijftien subsecties, één per NFR uit `CHANGES.md`. **Beantwoord elke subsectie
+met een objectieve redenering voor dít project — niet met de generieke
+aanname vanuit `Standaard`.** "N.v.t. omdat …" is een geldig antwoord, mits
+onderbouwd: het punt is dat de vraag serieus gesteld en beargumenteerd is,
+niet dat elk project overal evenveel op moet doen.
 
-### Toegang en autorisatie
+### Security
 <Wie mag wat? Welke rechten zijn minimaal nodig? Waar staan secrets, en hoe komen
 ze niet in git terecht?>
 
-### Dataconsistentie
+### Data-integriteit
 <Welke invarianten moeten altijd gelden? Welke schrijfacties moeten idempotent
 zijn (twee keer uitvoeren = één keer effect)? Wat gebeurt er als twee dingen
-tegelijk schrijven?>
+tegelijk schrijven? Blijft de data ook over tijd correct — geen geleidelijke
+drift, geen stille corruptie?>
 
 ### Failure modes
 <Wat kan er misgaan — onverwachte invoer, een afhankelijkheid die wegvalt, een
@@ -53,9 +57,51 @@ verlopen autorisatie? Wat is het gedrag dan, en hoe herstel je?>
 <Hoe merk je dát het stuk is? Expliciet voor achtergrondjobs en triggers: een job
 die stil faalt, faalt onzichtbaar.>
 
-### Grenzen en schaal
+### Performance en schaal
 <Verwachte omvang van data en gebruik. Welke platformlimieten of quota komen in
 zicht, en wat gebeurt er als je eroverheen gaat?>
+
+### Deployability
+<Welke omgevingen zijn er (bijv. pre-productie/productie)? Hoe wordt uitgerold?
+Hoe rol je terug? Zie ook `ci-conventie`/`deploy-guards` in `CHANGES.md` voor de
+procesmatige kant hiervan.>
+
+### Privacy
+<Welke persoonsgegevens worden verwerkt? Hoe lang worden ze bewaard, en wie kan
+ze zien?>
+
+### Compliance en auditeerbaarheid
+<Welke wettelijke of zelfopgelegde verplichtingen gelden (bijv. fiscale
+bewaarplicht)? Hoe toon je achteraf aan dat eraan voldaan is?>
+
+### Backup en herstel
+<Wat gebeurt er bij dataverlies binnen een werkende omgeving? Wat gebeurt er als
+de omgeving zelf wegvalt (disaster recovery) — een account, een script-project?>
+
+### Portability
+<Wat gebeurt er als het gekozen platform verandert of stopt? Hoe groot is de
+afhankelijkheid van platformspecifieke eigenaardigheden?>
+
+### Maintainability
+<Hoe is het systeem ingedeeld in modules/componenten? Wie moet dit later kunnen
+begrijpen en wijzigen, en wat maakt dat mogelijk of juist moeilijk?>
+
+### Testability
+<Hoe is de code zo gebouwd dat hij te testen is — bijv. een domeinlaag zonder
+externe afhankelijkheden (zie een architectuureis in `ARCHITECTUUR.md` als die
+er is)?>
+
+### Usability
+<Voor wie is dit bruikbaar, en onder welke omstandigheden (bijv. mobiel, direct
+na de les, zonder handleiding)?>
+
+### Kostenbeheersing
+<Welke quota of kosten komen in zicht (API-aanroepen, opslag, compute)? Wat
+gebeurt er als je eroverheen gaat?>
+
+### Documentatie
+<Hoe blijven `PRD.md`/`ARCHITECTUUR.md` actueel bij implementatiewijzigingen?
+Is een formele API-specificatie nodig, en zo ja, waar staat die?>
 
 ---
 

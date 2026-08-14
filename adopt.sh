@@ -76,13 +76,18 @@ seed_adoptietabel() {
     echo "|---|---|---|---|"
   } > "$doel"
 
-  local huidig_id="" predicaat vandaag
+  local huidig_id="" standaard="ja" predicaat vandaag
   vandaag="$(date +%Y-%m-%d)"
   while IFS= read -r regel; do
     case "$regel" in
       '## '*)
-        huidig_id="${regel#\#\# }" ;;
+        huidig_id="${regel#\#\# }"
+        standaard="ja" ;;
+      *'**Standaard:**'*)
+        standaard="${regel##*\*\* }"
+        standaard="$(echo "$standaard" | tr -d '[:space:]')" ;;
       *'**Van toepassing als:**'*)
+        [ "$standaard" = "vraag" ] && continue
         predicaat="${regel##*\*\* }"
         predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
         case "$predicaat" in
@@ -91,9 +96,11 @@ seed_adoptietabel() {
           heeft-deploy-script)
             { [ -f "$project_dir/package.json" ] &&
               grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json"; } || continue ;;
+          heeft-architectuurdocument-bestand)
+            [ -f "$project_dir/ARCHITECTUUR.md" ] || continue ;;
           *) continue ;;
         esac
-        echo "| $huidig_id | ja | $vandaag | bij adoptie |" >> "$doel" ;;
+        echo "| $huidig_id | ja | $vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$doel" ;;
     esac
   done < "$changes"
 

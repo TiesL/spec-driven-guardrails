@@ -35,6 +35,8 @@ van_toepassing() {
     heeft-deploy-script)
       [ -f "$project_dir/package.json" ] &&
         grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json" ;;
+    heeft-architectuurdocument-bestand)
+      [ -f "$project_dir/ARCHITECTUUR.md" ] ;;
     *)
       return 1 ;;
   esac
