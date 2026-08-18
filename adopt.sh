@@ -96,8 +96,6 @@ seed_adoptietabel() {
           heeft-deploy-script)
             { [ -f "$project_dir/package.json" ] &&
               grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json"; } || continue ;;
-          heeft-architectuurdocument-bestand)
-            [ -f "$project_dir/ARCHITECTUUR.md" ] || continue ;;
           *) continue ;;
         esac
         echo "| $huidig_id | ja | $vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$doel" ;;

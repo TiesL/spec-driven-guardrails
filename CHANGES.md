@@ -20,10 +20,9 @@ Per entry:
   onderbouwd worden (of omgezet naar `nee`), `vraag`-rijen krijgen een
   beargumenteerd voorstel in plaats van een blanco vraag.
 - **Van toepassing als** — één van de predicaten die `pending-changes.sh`
-  kent: `altijd`, `heeft-package-json`, `heeft-deploy-script`,
-  `heeft-architectuurdocument-bestand`. De conditie wordt elke sessie
-  opnieuw geëvalueerd, zodat een wijziging alsnog opduikt zodra hij relevant
-  wordt voor een project.
+  kent: `altijd`, `heeft-package-json`, `heeft-deploy-script`. De conditie
+  wordt elke sessie opnieuw geëvalueerd, zodat een wijziging alsnog opduikt
+  zodra hij relevant wordt voor een project.
 - **Ja betekent** — wat er concreet gebeurt bij een `ja`.
 
 Het ID is de kop (`##`). Verander een bestaand ID nooit **als het al door
@@ -33,6 +32,18 @@ Een entry die nog nergens beantwoord is, mag wél herzien of vervangen worden;
 controleer dat met `grep` over alle `WORKFLOW-ADOPTIE.md`'s voordat je dat
 doet.
 
+**Naamgeving.** Het prefix `spec-` is gereserveerd voor de vijftien NFR's —
+één per subsectie onder *Niet-functionele kenmerken* in `templates/PRD.md`,
+en niets anders. De reviewreikwijdte in `WORKFLOW.md` keyt op dat prefix, dus
+een niet-NFR die `spec-` heet zou daar ten onrechte in meegesleept worden.
+Procesafspraken krijgen `proces-`, testniveaus `test-`.
+
+**Een entry retireren.** Laat de velden `Standaard` en `Van toepassing als`
+weg. Beide scripts hangen hun logica op aan `Van toepassing als`, dus zonder
+dat veld wordt de entry nergens meer geseed of gevraagd — terwijl de tekst
+blijft staan als verklaring voor projecten die hem in het verleden al
+beantwoord hebben. Hernoem `Ja betekent` dan naar `Ja betekende`.
+
 ---
 
 ## prd-testscenarios-issue-templates
@@ -41,13 +52,11 @@ doet.
 voorziening drie dingen die achteraf apart moeten kunnen (PRD, testscenario's,
 issue-templates). Al beantwoord in drie projecten, dus het ID blijft staan
 zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
-`spec-prd`, `architectuurdocument`, `spec-issue-tracking`, `test-unit`,
+`proces-prd`, `architectuurdocument`, `proces-issue-tracking`, `test-unit`,
 `test-feature-gwt`, `test-integratie`.
 
 - **Vraag:** Moet dit project `PRD.md`, `TEST-SCENARIOS.md` en de GitHub-issue-templates gebruiken?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `adopt.sh` opnieuw draaien — die scaffoldt `PRD.md` en
+- **Ja betekende:** `adopt.sh` opnieuw draaien — die scaffoldt `PRD.md` en
   `TEST-SCENARIOS.md` als ze ontbreken en ververst `.github/ISSUE_TEMPLATE/`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
@@ -77,7 +86,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 
 ## Proces en ontwerpdiepte
 
-## spec-prd
+## proces-prd
 
 - **Vraag:** Houdt dit project een `PRD.md` bij als normatieve specificatie?
 - **Standaard:** ja
@@ -91,7 +100,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 - **Van toepassing als:** altijd
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 
-## spec-issue-tracking
+## proces-issue-tracking
 
 - **Vraag:** Splitst dit project werk op in GitHub-issues (epics/work items)?
 - **Standaard:** vraag
@@ -110,7 +119,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 - **Vraag:** Beschrijft dit project functionaliteit als Given/When/Then-scenario's?
 - **Standaard:** ja
 - **Van toepassing als:** altijd
-- **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één scenario voor het verwachte gedrag én minstens één voor wat er misgaat — zie `templates/TEST-SCENARIOS.md`.
+- **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
 
 ## test-integratie
 
@@ -126,7 +135,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 - **Van toepassing als:** altijd
 - **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "ja" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
 
-## spec-technical-debt-register
+## proces-technical-debt-register
 
 - **Vraag:** Houdt dit project een apart Technical debt-register bij naast Bekende beperkingen?
 - **Standaard:** ja
@@ -137,8 +146,8 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 
 - **Vraag:** Gelden de refactoring-triggers uit `WORKFLOW.md` voor dit project?
 - **Standaard:** ja
-- **Van toepassing als:** heeft-architectuurdocument-bestand
-- **Ja betekent:** een work item dat het vastgelegde ontwerp in `ARCHITECTUUR.md` zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`.
+- **Van toepassing als:** altijd
+- **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 
 ---
 

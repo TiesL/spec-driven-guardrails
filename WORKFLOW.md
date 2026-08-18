@@ -48,10 +48,11 @@ geen securityreview.
 - **Altijd**, ongeacht welke NFR's dit project heeft gekozen: complexiteit (is
   dit de eenvoudigste vorm die werkt?) en dependencies (is een nieuwe
   afhankelijkheid nodig, onderhouden, veilig?) — basishygiëne, niet optioneel.
-- **Daarbovenop**: precies de NFR's uit "Niet-functionele kenmerken" in
-  `templates/PRD.md` waarvoor de bijbehorende `spec-*`-vraag in dit project met
-  "ja" is beantwoord (zie `WORKFLOW-ADOPTIE.md`) — er wordt niet gereviewd op
-  iets wat niet eens gespecificeerd is.
+- **Daarbovenop**: precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in
+  dit project met "ja" is beantwoord (zie `WORKFLOW-ADOPTIE.md`) — er wordt niet
+  gereviewd op iets wat niet eens gespecificeerd is. Het prefix `spec-` staat
+  één-op-één voor de vijftien subsecties onder "Niet-functionele kenmerken" in
+  `templates/PRD.md`; `proces-`- en `test-`-entries vallen hier dus niet onder.
 
 **Wat ermee gebeurt.** De bevindingen komen in de PR te staan, niet alleen in de
 chat: leesbaar, blijvend, achteraf terug te vinden. Elke bevinding wordt daarna
@@ -88,7 +89,7 @@ ervaren engineer die met andere ogen kijkt.
      een beargumenteerd voorstel, gegrond in de daadwerkelijke inhoud van dit
      project, en leg dat ter bevestiging voor.
    - Dit geldt voor élke rij die hierbij hoort, niet alleen de NFR's uit
-     "Niet-functionele kenmerken" — ook `spec-prd` of `architectuurdocument`
+     "Niet-functionele kenmerken" — ook `proces-prd` of `architectuurdocument`
      zelf verdient een echte reden, geen automatisme. Een auto-geseede `ja`
      die nooit onderbouwd wordt, is in de praktijk niet anders dan de stille
      drift die deze hele voorziening moest voorkomen.
