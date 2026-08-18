@@ -45,12 +45,14 @@ condition dacht, ziet hem bij het teruglezen vaak ook niet.
 **Waarop.** Proportioneel aan wat de PR raakt; een documentatiewijziging vraagt
 geen securityreview.
 
-- Security — toegang, invoervalidatie, secrets, rechten die ruimer zijn dan nodig
-- Foutafhandeling en edge cases — onverwachte invoer, falende afhankelijkheden
-- Dataconsistentie — invarianten, idempotentie, gelijktijdig schrijven
-- Complexiteit — is dit de eenvoudigste vorm die werkt?
-- Dependencies — is een nieuwe afhankelijkheid nodig, onderhouden, veilig?
-- Observability — merk je het als dit stuk gaat, vooral bij achtergrondjobs?
+- **Altijd**, ongeacht welke NFR's dit project heeft gekozen: complexiteit (is
+  dit de eenvoudigste vorm die werkt?) en dependencies (is een nieuwe
+  afhankelijkheid nodig, onderhouden, veilig?) — basishygiëne, niet optioneel.
+- **Daarbovenop**: precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in
+  dit project met "ja" is beantwoord (zie `WORKFLOW-ADOPTIE.md`) — er wordt niet
+  gereviewd op iets wat niet eens gespecificeerd is. Het prefix `spec-` staat
+  één-op-één voor de vijftien subsecties onder "Niet-functionele kenmerken" in
+  `templates/PRD.md`; `proces-`- en `test-`-entries vallen hier dus niet onder.
 
 **Wat ermee gebeurt.** De bevindingen komen in de PR te staan, niet alleen in de
 chat: leesbaar, blijvend, achteraf terug te vinden. Elke bevinding wordt daarna
@@ -76,6 +78,21 @@ ervaren engineer die met andere ogen kijkt.
 4. `PRD.md`/`TEST-SCENARIOS.md` zijn levende documenten: bijwerken zodra de
    implementatie ervan afwijkt (zoals nu al gebeurt in tennis-registration
    en tennis-invoicing).
+5. **Onderbouwingsplicht.** Bij het opstellen of herzien van
+   `PRD.md`/`ARCHITECTUUR.md`: loop de relevante rijen in
+   `WORKFLOW-ADOPTIE.md` langs.
+   - **Rijen met de tekst "vereist onderbouwing"** (auto-geseed vanuit
+     `Standaard: ja` in `CHANGES.md`): vervang die door een objectieve, op
+     dít project gegronde redenering waarom `ja` geldt — of, als die
+     redenering niet standhoudt, zet de rij om naar `nee` met de reden.
+   - **Nog onbeantwoorde `Standaard: vraag`-rijen**: geen blanco vraag. Doe
+     een beargumenteerd voorstel, gegrond in de daadwerkelijke inhoud van dit
+     project, en leg dat ter bevestiging voor.
+   - Dit geldt voor élke rij die hierbij hoort, niet alleen de NFR's uit
+     "Niet-functionele kenmerken" — ook `proces-prd` of `architectuurdocument`
+     zelf verdient een echte reden, geen automatisme. Een auto-geseede `ja`
+     die nooit onderbouwd wordt, is in de praktijk niet anders dan de stille
+     drift die deze hele voorziening moest voorkomen.
 
 ## Testen en deployen automatiseren
 
@@ -198,23 +215,30 @@ Hoe het loopt:
 
 1. Elke PR op `claude-workflow` die iets toevoegt waarover een project een eigen
    keuze moet maken, **voegt een entry toe aan `CHANGES.md`** — met een gesloten
-   vraag, een "van toepassing als"-conditie en wat "ja" concreet betekent. Geen
-   entry betekent geen vraag, en dus een vals gevoel van dekking; let hier bij
-   review op.
+   vraag, een `Standaard` (`ja`/`vraag`, zie hieronder), een "van toepassing
+   als"-conditie en wat "ja" concreet betekent. Geen entry betekent geen vraag,
+   en dus een vals gevoel van dekking; let hier bij review op.
 2. Bij sessiestart meldt een hook welke van die wijzigingen voor dít project van
    toepassing zijn en nog geen antwoord hebben.
-3. Claude legt die dan als gesloten ja/nee-vragen voor, schrijft het antwoord in
-   `WORKFLOW-ADOPTIE.md`, en voert bij "ja" de actie uit of maakt er een work
-   item voor.
+3. Hoe Claude die vraag afhandelt, hangt af van het soort entry:
+   - **Raakt de entry `PRD.md`/`ARCHITECTUUR.md`** (de meeste `spec-*`-entries
+     en de NFR's): volg de onderbouwingsplicht uit "Specificeren van werk"
+     hierboven — geen blanco vraag en geen stilzwijgend geaccepteerde `ja`,
+     altijd een op dit project gegronde redenering.
+   - **Puur procesmatig, raakt geen specificatie** (bijv. `ci-conventie`,
+     `deploy-guards`): een gewone gesloten ja/nee-vraag volstaat.
+   In beide gevallen: schrijf het antwoord in `WORKFLOW-ADOPTIE.md`, en voer bij
+   "ja" de actie uit of maak er een work item voor.
 
-Een ontbrekende rij betekent "(nog) niet van toepassing": wordt de conditie later
-alsnog waar — een project krijgt bijvoorbeeld een deploycommando — dan verschijnt
-de vraag vanzelf. Een `nee`-rij is een bewuste uitzondering en blijft staan tot
-je hem handmatig weghaalt.
-
-Bij adoptie van een nieuw project zet `adopt.sh` alle op dat moment toepasselijke
-wijzigingen op "ja": adopteren is akkoord met de huidige staat, en alleen wat
-daarna verandert levert vragen op.
+**`Standaard: ja` vs. `Standaard: vraag`** bepaalt alleen het startpunt, niet of
+onderbouwing nodig is. Bij adoptie van een nieuw project zet `adopt.sh` elke op
+dat moment toepasselijke `Standaard: ja`-wijziging op "ja — vereist
+onderbouwing" (een voorlopige stempel, geen besluit); `Standaard: vraag`-
+wijzigingen worden nooit automatisch beantwoord. Een ontbrekende rij betekent
+"(nog) niet van toepassing": wordt de conditie later alsnog waar — een project
+krijgt bijvoorbeeld een deploycommando — dan verschijnt de vraag vanzelf. Een
+`nee`-rij is een bewuste, onderbouwde uitzondering en blijft staan tot je hem
+handmatig weghaalt.
 
 ## Nieuw (gerelateerd) project opzetten
 
