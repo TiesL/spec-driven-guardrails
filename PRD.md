@@ -409,7 +409,11 @@ De oorspronkelijke opzet ging uit van `F<n>`/`S<n>` overal. De werkelijkheid:
 | tennis-registration | F1–F7 | S1–S16 | nooit |
 | tennis-invoicing | **geen `F<n>`** | S1–S29, **S26/S27/S28 dubbel** | nooit |
 
-Vier ontwerpbesluiten die het ontwerp redden van deze werkelijkheid:
+Vier ontwerpbesluiten die het ontwerp redden van deze werkelijkheid. De letters
+**a** tot en met **d** hieronder zijn prozalabels, geen ID's: alleen `F13` is een
+functionaliteitsitem. De collector uit besluit c verzamelt daarom uitsluitend
+ID-tokens uit **koppen** — schrijfwijzen als "F13a" in lopende tekst, en ID's van
+andere projecten zoals de `F1–F26` in de tabel hierboven, tellen niet mee.
 
 **a. `AC<n>` in `work-item.md`.** Dat sjabloon nummert zijn eigen
 acceptatiecriteria `### S1:` — dezelfde namespace als `TEST-SCENARIOS.md`, dus elke
@@ -675,10 +679,10 @@ projecten een nieuwe vraag stellen. Dicht bij elkaar landen, zodat die vragen in
 | # | Werkitem | Hangt af van |
 |---|---|---|
 | **W17** | **Ontwerpreview mét Ties — geen code** | W16 |
-| W18 | `Dekt:` + `AC<n>` in de sjablonen (F13a/b) | W17 |
-| W19 | `templates/check-traceability.sh` offline + entry (F13c/d) | W18, W4 |
-| W19b | CI-check "PR verwijst naar issue" in de PR-workflow (F13d) | W18 |
-| W20 | PR-poort in `pre-merge-review` (F13d) | W13, W19 |
+| W18 | `Dekt:` + `AC<n>` in de sjablonen (F13, besluit a en b) | W17 |
+| W19 | `templates/check-traceability.sh` offline + entry (F13, besluit c en d) | W18, W4 |
+| W19b | CI-check "PR verwijst naar issue" in de PR-workflow (F13, besluit d) | W18 |
+| W20 | PR-poort in `pre-merge-review` (F13, besluit d) | W13, W19 |
 
 W17 is de afgesproken mitigatie voor het overrulen van de blokkade en moet een
 zichtbaar item zijn met eigen afronding. Te bespreken: de `AC<n>`-hernoeming, één

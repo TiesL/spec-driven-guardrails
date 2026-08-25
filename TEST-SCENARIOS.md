@@ -7,11 +7,11 @@ waarneembaar gedrag.
 Notatie: **Given / When / Then**.
 
 Elk scenario draagt een `**Dekt:**`-veld met de functionaliteit uit `PRD.md` die
-het toetst — de conventie uit F13b, hier op dit repo zelf toegepast. De prefixen
-zijn bewust gemengd: `R<n>` zijn de regressiescenario's uit het oorspronkelijke
+het toetst — de conventie uit F13, besluit b, hier op dit repo zelf
+toegepast. De prefixen zijn bewust gemengd: `R<n>` zijn de regressiescenario's uit het oorspronkelijke
 issue #7, `T<n>` de traceabilityscenario's uit #8, `S<n>` de nieuwe. Dat is geen
-slordigheid maar de proef op de som van F13c: de integriteitscontrole mag geen
-prefix hardcoderen.
+slordigheid maar de proef op de som van F13, besluit c: de
+integriteitscontrole mag geen prefix hardcoderen.
 
 **Rood vóór groen.** Elk scenario wordt toegevoegd en aantoonbaar rood gezien
 vóórdat de bijbehorende implementatie landt. De uitzondering is R1–R9: die horen
