@@ -1,0 +1,20 @@
+# CI voor claude-workflow zelf.
+#
+# Roept uitsluitend ./check aan en verzint geen losse stappen — dezelfde
+# conventie die dit repo aan geadopteerde projecten voorschrijft, hier op
+# zichzelf toegepast.
+#
+# Dit is bewust niet templates/ci.yml: dat sjabloon veronderstelt npm, en dit
+# repo heeft geen package.json (zie de toelichting in ./check). Precies het
+# "andere stack"-geval dat WORKFLOW.md beschrijft.
+name: CI
+on:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./check

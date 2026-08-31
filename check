@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# check — Alles wat bepaalt of een wijziging in dit repo goed is.
+#
+# Dit is het `check`-commando dat WORKFLOW.md voorschrijft, hier op dit repo
+# zelf toegepast. CI roept uitsluitend dit script aan en verzint geen losse
+# stappen — een bron van waarheid, geen drift tussen lokaal en CI.
+#
+# Gebruik:
+#   ./check                    # statische controles + testsuite
+#   ./check --no-tests [map]   # alleen de statische controles, evt. op een
+#                              # andere map (gebruikt door de testsuite zelf,
+#                              # die anders zichzelf zou aanroepen)
+#
+# Dit repo heeft bewust geen package.json: dat zou het eigen
+# `heeft-package-json`-predicaat omzetten en veranderen wat adopt.sh en
+# pending-changes.sh over dit repo zeggen.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+draai_tests=1
+if [ "${1:-}" = "--no-tests" ]; then
+  draai_tests=0
+  shift
+fi
+
+eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+doel="${1:-$eigen_map}"
+doel="$(cd "$doel" 2>/dev/null && pwd)" || {
+  echo "check: map bestaat niet: ${1:-}" >&2
+  exit 1
+}
+
+fouten=0
+
+melden_fout() {
+  echo "  FOUT: $*" >&2
+  fouten=$((fouten + 1))
+}
+
+# --- 1. Bash-syntaxis ------------------------------------------------------
+# Alle *.sh plus het check-script zelf. .git blijft buiten beschouwing.
+echo "check: bash -n"
+# NUL-gescheiden, zodat een pad met spaties niet stilzwijgend wordt gesplitst.
+scriptlijst="$(mktemp)"
+trap 'rm -f "$scriptlijst"' EXIT
+find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0 \
+  | sort -z > "$scriptlijst"
+
+while IFS= read -r -d '' script; do
+  if ! foutmelding="$(bash -n "$script" 2>&1)"; then
+    melden_fout "syntaxfout in ${script#$doel/}: $foutmelding"
+  fi
+done < "$scriptlijst"
+
+# --- 2. JSON-validatie -----------------------------------------------------
+# session-hooks.json is gesymlinkt als .claude/settings.json in elk geadopteerd
+# project. Eén typefout is daar per direct kapot, en `bash -n` ziet dat niet.
+# Deze stap staat bewust los van shellcheck: hij is niet optioneel.
+echo "check: JSON-validatie"
+json_bestand="$doel/settings/session-hooks.json"
+if [ -f "$json_bestand" ]; then
+  if command -v jq >/dev/null 2>&1; then
+    if ! foutmelding="$(jq empty "$json_bestand" 2>&1)"; then
+      melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
+    fi
+  elif command -v python3 >/dev/null 2>&1; then
+    if ! foutmelding="$(python3 -m json.tool "$json_bestand" 2>&1 >/dev/null)"; then
+      melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
+    fi
+  else
+    echo "  waarschuwing: geen jq en geen python3 — settings/session-hooks.json niet gevalideerd" >&2
+  fi
+else
+  melden_fout "settings/session-hooks.json ontbreekt"
+fi
+
+# --- 3. shellcheck ---------------------------------------------------------
+# Waarschuwen, niet eisen: niet elke machine heeft hem, en een ontbrekende
+# linter mag geen groene build rood maken.
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "check: shellcheck"
+  while IFS= read -r -d '' script; do
+    if ! foutmelding="$(shellcheck -s bash "$script" 2>&1)"; then
+      echo "  waarschuwing: shellcheck op ${script#$doel/}:" >&2
+      echo "$foutmelding" >&2
+    fi
+  done < "$scriptlijst"
+else
+  echo "check: shellcheck niet geinstalleerd — overgeslagen (geen fout)"
+fi
+
+if [ "$fouten" -gt 0 ]; then
+  echo >&2
+  echo "check: $fouten fout(en) gevonden." >&2
+  exit 1
+fi
+
+# --- 4. Testsuite ----------------------------------------------------------
+if [ "$draai_tests" -eq 1 ]; then
+  echo "check: testsuite"
+  if [ -x "$doel/test/run.sh" ]; then
+    if ! "$doel/test/run.sh"; then
+      exit 1
+    fi
+  else
+    echo "check: test/run.sh ontbreekt of is niet uitvoerbaar" >&2
+    exit 1
+  fi
+fi
+
+echo "check: in orde."

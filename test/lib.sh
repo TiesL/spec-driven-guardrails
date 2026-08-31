@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# test/lib.sh — Gedeelde hulpfuncties voor de testsuite.
+#
+# Sourcen, niet uitvoeren. Elke test draait in een eigen sandbox met een
+# geinjecteerde HOME en CLAUDE_WORKFLOW_DIR, zodat een test nooit de echte
+# omgeving van de gebruiker kan raken.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+# De echte home, vastgelegd voordat een test hem kan overschrijven. Dit is de
+# waarde waartegen sandbox_guard vergelijkt.
+TEST_REAL_HOME="${TEST_REAL_HOME:-$HOME}"
+export TEST_REAL_HOME
+
+# Wortel van dit repo, onafhankelijk van waarvandaan de test wordt aangeroepen.
+TEST_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export TEST_REPO_ROOT
+
+_test_failures=0
+
+fail() {
+  echo "    FAIL: $*" >&2
+  _test_failures=$((_test_failures + 1))
+}
+
+# De harde weigering uit S3. Draait na elke sandboxopzet: staat HOME dan nog op
+# de echte home, dan is de sandbox niet actief en zou de test in de echte
+# omgeving van de gebruiker schrijven. Dat is geen waarschuwing waard maar een
+# onmiddellijke stop.
+sandbox_guard() {
+  if [ "$HOME" = "$TEST_REAL_HOME" ]; then
+    echo "AFGEBROKEN: sandboxopzet heeft HOME niet omgezet (HOME is nog '$HOME')." >&2
+    echo "Een test mag nooit in de echte home schrijven." >&2
+    return 1
+  fi
+  if [ -z "${HOME:-}" ]; then
+    echo "AFGEBROKEN: HOME is leeg na sandboxopzet." >&2
+    return 1
+  fi
+  return 0
+}
+
+# Maakt een sandbox en zet HOME en CLAUDE_WORKFLOW_DIR erheen. Zet SANDBOX.
+sandbox_create() {
+  SANDBOX="$(mktemp -d)"
+  export SANDBOX
+  export HOME="$SANDBOX/home"
+  mkdir -p "$HOME"
+  export CLAUDE_WORKFLOW_DIR="$SANDBOX/workflow"
+  if ! sandbox_guard; then
+    rm -rf "$SANDBOX"
+    exit 1
+  fi
+}
+
+sandbox_destroy() {
+  if [ -n "${SANDBOX:-}" ] && [ -d "$SANDBOX" ]; then
+    rm -rf "$SANDBOX"
+  fi
+}
+
+# Kopieert dit repo naar de sandbox, zodat een test bestanden mag stukmaken
+# zonder de werkkopie te raken. Laat .git buiten beschouwing: niet nodig voor
+# de statische controles en het scheelt tijd.
+sandbox_copy_repo() {
+  local doel="$SANDBOX/repo"
+  mkdir -p "$doel"
+  (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$doel" && tar -xf -)
+  echo "$doel"
+}
+
+assert_fails() {
+  local omschrijving="$1"; shift
+  if "$@" >/dev/null 2>&1; then
+    fail "$omschrijving — commando slaagde terwijl het had moeten falen"
+    return 1
+  fi
+  return 0
+}
+
+assert_succeeds() {
+  local omschrijving="$1"; shift
+  local uitvoer
+  if ! uitvoer="$("$@" 2>&1)"; then
+    fail "$omschrijving — commando faalde: $uitvoer"
+    return 1
+  fi
+  return 0
+}
+
+assert_contains() {
+  local omschrijving="$1" naald="$2" hooiberg="$3"
+  case "$hooiberg" in
+    *"$naald"*) return 0 ;;
+    *) fail "$omschrijving — '$naald' ontbreekt in de uitvoer"; return 1 ;;
+  esac
+}
+
+test_klaar() {
+  if [ "$_test_failures" -gt 0 ]; then
+    exit 1
+  fi
+  exit 0
+}
