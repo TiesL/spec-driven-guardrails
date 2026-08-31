@@ -52,6 +52,28 @@ bewerkte werkelijkheid. Het aanvullen zelf is apart belegd in W12b (#28), met de
 uitdrukkelijke eis dat het geen verse seed met de datum van vandaag wordt — dat
 zou vervalsen wanneer een keuze daadwerkelijk gemaakt is.
 
+## Wat deze nulmeting **niet** dekt
+
+De vier bevroren projecten raken samen niet elke tak van de predicaatlogica. Eén
+gat is bekend en gemeten:
+
+**`heeft-deploy-script` is nergens tegelijk waar én onbeantwoord.** Alleen
+`tennis-admin` heeft een `package.json` mét `"deploy"`-script, en juist dat
+project heeft `deploy-guards` al beantwoord. Daardoor landt dat predicaat in geen
+enkele gouden set, en zou een te streng geworden versie ervan — bijvoorbeeld door
+een fout tijdens de verhuizing naar `lib/changes.sh` (F3) — hier ongemerkt
+doorglippen. Aangetoond met een mutatie: `heeft-deploy-script` altijd onwaar maken
+laat S4 gewoon slagen. De omgekeerde fout (predicaat te ruim) wordt wél gevangen,
+net als beide fouten in `heeft-package-json`.
+
+Dat gat wordt gesloten door **R6** in W3 (#14), waarvan de scenariotekst hierop is
+aangescherpt: die eist per predicaat minstens één geval dat waar én onbeantwoord
+is, en expliciet vastgelegde uitkomsten in plaats van alleen onderlinge
+vergelijking — twee identiek kapotte predicaten zijn het namelijk met elkaar eens.
+
+Vertrouw deze nulmeting dus voor wat hij is: een vangnet voor de
+**antwoordregistratie**, niet voor de volledige predicaatwaarheidstabel.
+
 ## Controleren
 
 ```bash
@@ -67,7 +89,10 @@ Een afwijking betekent één van twee dingen:
 2. **De vraagset is legitiem gewijzigd** — bijvoorbeeld doordat een werkitem een
    nieuwe entry aan `CHANGES.md` toevoegt (W14, W15 en W16b doen dat). Dan hoort
    de gouden set bijgewerkt te worden, mét toelichting in de PR wélke ID's erbij
-   komen of verdwijnen en waarom.
+   komen of verdwijnen en waarom. **Ververs in dat geval ook
+   `CHANGES.md.momentopname`**: laat je die achter, dan verwijst de nulmeting naar
+   een bron die de nieuwe gouden set niet meer verklaart — precies de
+   interpreteerbaarheid die de momentopname moest garanderen.
 
 Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 "opschoning".
