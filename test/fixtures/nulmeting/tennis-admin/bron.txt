@@ -1,0 +1,11 @@
+Herkomst van deze nulmeting
+
+Project:            tennis-admin
+Pad op vastlegdag:  /Users/ties/Projects/tennis-admin
+Project-HEAD:       ecdc0178b570563dad1d1d6c1e17930717997b3b
+claude-workflow:    7ab8806a69f4805a4ac35b1b1ab204cbb1ce0872
+Vastgelegd op:      2026-08-31
+
+Overgenomen bestanden (verbatim, ongewijzigd):
+  - WORKFLOW-ADOPTIE.md
+  - package.json

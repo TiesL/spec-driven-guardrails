@@ -1,0 +1,11 @@
+Herkomst van deze nulmeting
+
+Project:            a2t-emails
+Pad op vastlegdag:  /Users/ties/Projects/a2t-emails
+Project-HEAD:       da137fd261fea6c61cba7fc0ef7f3e4a856577d4
+claude-workflow:    7ab8806a69f4805a4ac35b1b1ab204cbb1ce0872
+Vastgelegd op:      2026-08-31
+
+Overgenomen bestanden (verbatim, ongewijzigd):
+  - (geen WORKFLOW-ADOPTIE.md — zo aangetroffen)
+  - package.json

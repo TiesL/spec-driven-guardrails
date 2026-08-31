@@ -1,0 +1,10 @@
+{
+  "name": "a2t-emails",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dagelijkse verwerking van a2t-mail tot een digest met actiepunten (Google Apps Script)",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/test.mjs"
+  }
+}
