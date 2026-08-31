@@ -22,6 +22,7 @@ status_leeg=$?
 if [ "$status_leeg" -eq 0 ]; then
   fail "S3 — sandbox_guard liet een lege HOME passeren"
 fi
+assert_contains "S3 (lege HOME)" "AFGEBROKEN" "$uitvoer_leeg"
 
 # And: er is niets geschreven buiten de tijdelijke map. De guard draait vóór
 # elke schrijfactie, dus een geweigerde opzet laat geen sporen na.

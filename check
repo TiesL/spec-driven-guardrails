@@ -50,7 +50,7 @@ find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -
 
 while IFS= read -r -d '' script; do
   if ! foutmelding="$(bash -n "$script" 2>&1)"; then
-    melden_fout "syntaxfout in ${script#$doel/}: $foutmelding"
+    melden_fout "syntaxfout in ${script#"$doel"/}: $foutmelding"
   fi
 done < "$scriptlijst"
 
@@ -82,8 +82,8 @@ fi
 if command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do
-    if ! foutmelding="$(shellcheck -s bash "$script" 2>&1)"; then
-      echo "  waarschuwing: shellcheck op ${script#$doel/}:" >&2
+    if ! foutmelding="$(shellcheck -s bash -x "$script" 2>&1)"; then
+      echo "  waarschuwing: shellcheck op ${script#"$doel"/}:" >&2
       echo "$foutmelding" >&2
     fi
   done < "$scriptlijst"
