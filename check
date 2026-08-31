@@ -42,11 +42,28 @@ melden_fout() {
 # --- 1. Bash-syntaxis ------------------------------------------------------
 # Alle *.sh plus het check-script zelf. .git blijft buiten beschouwing.
 echo "check: bash -n"
-# NUL-gescheiden, zodat een pad met spaties niet stilzwijgend wordt gesplitst.
+# Alle shellscripts, NUL-gescheiden zodat een pad met spaties niet
+# stilzwijgend wordt gesplitst. Naast *.sh en `check` tellen ook bestanden
+# zonder extensie mee die een bash/sh-shebang dragen: de hook-guards heten
+# `hooks/git-guardrails` en zijn juist de code waar een stille syntaxfout het
+# duurst is.
 scriptlijst="$(mktemp)"
 trap 'rm -f "$scriptlijst"' EXIT
-find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0 \
-  | sort -z > "$scriptlijst"
+{
+  find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0
+  find "$doel" -type f -not -name '*.sh' -not -name 'check' -not -path '*/.git/*' -print0 \
+    | while IFS= read -r -d '' kandidaat; do
+        case "$(head -c 2 "$kandidaat" 2>/dev/null)" in
+          '#!')
+            case "$(head -n 1 "$kandidaat" 2>/dev/null)" in
+              # Alleen shells die `bash -n` zinnig kan parsen. Patronen
+              # bewust niet-overlappend: "/sh" dekt #!/bin/sh (ook met
+              # argumenten), "env sh" dekt #!/usr/bin/env sh.
+              *bash*|*'/sh'*|*'env sh'*) printf '%s\0' "$kandidaat" ;;
+            esac ;;
+        esac
+      done
+} | sort -z -u > "$scriptlijst"
 
 while IFS= read -r -d '' script; do
   if ! foutmelding="$(bash -n "$script" 2>&1)"; then

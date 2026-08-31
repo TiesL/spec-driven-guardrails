@@ -69,25 +69,6 @@ sandbox_copy_repo() {
   echo "$doel"
 }
 
-assert_fails() {
-  local omschrijving="$1"; shift
-  if "$@" >/dev/null 2>&1; then
-    fail "$omschrijving — commando slaagde terwijl het had moeten falen"
-    return 1
-  fi
-  return 0
-}
-
-assert_succeeds() {
-  local omschrijving="$1"; shift
-  local uitvoer
-  if ! uitvoer="$("$@" 2>&1)"; then
-    fail "$omschrijving — commando faalde: $uitvoer"
-    return 1
-  fi
-  return 0
-}
-
 assert_contains() {
   local omschrijving="$1" naald="$2" hooiberg="$3"
   case "$hooiberg" in
