@@ -111,6 +111,8 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: exit ≠ 0 met een melding die het bestand noemt
 - And: dit gebeurt ook wanneer `shellcheck` niet geïnstalleerd is — de
   JSON-validatie is geen optionele stap
+- And: ontbreken `jq` én `python3`, dan faalt `check` alsnog — hij kan het
+  bestand dan niet verifiëren en mag dus niet "in orde" melden
 
 ### S3 — De testsandbox weigert te draaien met de echte `HOME`
 **Dekt:** F1
@@ -398,6 +400,19 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Given: de eerste `CHANGELOG.md`-entry van deze release
 - When: hij gelezen wordt
 - Then: hij noemt zowel `adopt.sh` per project als `adopt.sh --user` per machine
+
+### S35 — `check` meldt wat hij niet heeft kunnen controleren
+**Dekt:** F1
+- Given: een bestand dat `check` zou moeten onderzoeken maar niet kan lezen
+  (bijvoorbeeld een script zonder leesrechten)
+- When: `./check` draait
+- Then: er verschijnt een waarschuwing die het bestand noemt
+- And: het bestand verdwijnt niet stilzwijgend uit de controle — stille
+  degradatie is de faalmodus die dit repo het duurst betaalt
+
+---
+
+## Issue-templates en release (vervolg)
 
 ### S34 — De README beschrijft de nieuwe structuur
 **Dekt:** F16

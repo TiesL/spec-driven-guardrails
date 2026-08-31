@@ -764,7 +764,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
    de vraagset is nooit acceptabel, ook niet als "opschoning" (R9).
 2. **Rood vóór groen per werkitem.** Het dekkende scenario wordt eerst toegevoegd
    en rood gezien; de PR toont beide toestanden.
-3. **R1–R9, T1–T5 en S1–S34** draaien in `check`, tegen fixtures, nooit tegen de
+3. **R1–R9, T1–T5 en S1–S35** draaien in `check`, tegen fixtures, nooit tegen de
    echte projecten.
 4. **R7 mechanisch én met de hand.** De test grept `WORKFLOW.md` op vijf termen en
    controleert dat elke genoemde skill een `SKILL.md` heeft. Dat ziet geen
