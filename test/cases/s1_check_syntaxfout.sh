@@ -3,6 +3,8 @@
 # Dekt: F1
 
 set -uo pipefail
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 sandbox_create
