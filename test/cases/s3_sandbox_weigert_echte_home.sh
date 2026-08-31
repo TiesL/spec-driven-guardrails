@@ -38,4 +38,18 @@ case "$HOME" in
   *) fail "S3 — HOME wijst niet in de sandbox: $HOME" ;;
 esac
 
+# De And-clausule werd tot nu toe afgeleid uit de controlestroom in plaats van
+# aangetoond. Een canary bewijst het: schrijf naar $HOME en stel vast dat het
+# bestand in de sandbox belandt en niet in de echte home. De controle op de
+# echte home is puur lezend - we schrijven daar per definitie niet.
+canary="canary-$$-$(date +%s)"
+echo "sandbox" > "$HOME/$canary"
+
+if [ ! -e "$SANDBOX/home/$canary" ]; then
+  fail "S3 — schrijfactie naar \$HOME belandde niet in de sandbox"
+fi
+if [ -e "$TEST_REAL_HOME/$canary" ]; then
+  fail "S3 — er is geschreven in de echte home ($TEST_REAL_HOME/$canary)"
+fi
+
 test_klaar

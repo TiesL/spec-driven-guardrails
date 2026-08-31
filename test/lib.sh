@@ -69,6 +69,19 @@ sandbox_copy_repo() {
   echo "$doel"
 }
 
+# Bouwt een bin-map met alleen de basisgereedschappen die `check` nodig heeft,
+# bewust zonder jq en python3. Echoot het pad, te gebruiken als PATH. Zo is de
+# "geen enkele validator beschikbaar"-tak te toetsen zonder iets te deinstalleren.
+minimale_path_zonder_validators() {
+  local bin="$SANDBOX/minbin"
+  mkdir -p "$bin"
+  local t pad
+  for t in bash sh find sort head mktemp rm cat dirname basename tr grep sed chmod mkdir cp tar env; do
+    pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bin/$t"
+  done
+  echo "$bin"
+}
+
 assert_contains() {
   local omschrijving="$1" naald="$2" hooiberg="$3"
   case "$hooiberg" in

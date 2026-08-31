@@ -47,12 +47,21 @@ echo "check: bash -n"
 # zonder extensie mee die een bash/sh-shebang dragen: de hook-guards heten
 # `hooks/git-guardrails` en zijn juist de code waar een stille syntaxfout het
 # duurst is.
-scriptlijst="$(mktemp)"
+scriptlijst="$(mktemp)" || {
+  echo "check: kon geen tijdelijk bestand aanmaken — controle afgebroken" >&2
+  exit 1
+}
 trap 'rm -f "$scriptlijst"' EXIT
 {
   find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0
   find "$doel" -type f -not -name '*.sh' -not -name 'check' -not -path '*/.git/*' -print0 \
     | while IFS= read -r -d '' kandidaat; do
+        if [ ! -r "$kandidaat" ]; then
+          # Niet stil overslaan: een bestand dat we niet kunnen lezen is een
+          # bestand waarvan we niet weten of het een script is.
+          echo "  waarschuwing: ${kandidaat} kon niet gelezen worden — niet gecontroleerd" >&2
+          continue
+        fi
         case "$(head -c 2 "$kandidaat" 2>/dev/null)" in
           '#!')
             case "$(head -n 1 "$kandidaat" 2>/dev/null)" in
@@ -87,7 +96,11 @@ if [ -f "$json_bestand" ]; then
       melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
     fi
   else
-    echo "  waarschuwing: geen jq en geen python3 — settings/session-hooks.json niet gevalideerd" >&2
+    # Bewust een harde fout, geen waarschuwing. Dit is een puur lokale controle
+    # op een bestand dat in vier projecten gesymlinkt staat; "in orde" melden
+    # zonder het geverifieerd te hebben is de stille degradatie die dit repo
+    # het duurst betaalt. Installeer jq of python3.
+    melden_fout "geen jq en geen python3 — settings/session-hooks.json kon niet gevalideerd worden"
   fi
 else
   melden_fout "settings/session-hooks.json ontbreekt"
