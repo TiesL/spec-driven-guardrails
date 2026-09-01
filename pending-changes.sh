@@ -19,45 +19,32 @@ set -uo pipefail
 workflow_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_dir="$(cd "${1:-.}" 2>/dev/null && pwd)" || exit 0
 changes="$workflow_dir/CHANGES.md"
+
+# shellcheck source=lib/changes.sh
+. "$workflow_dir/lib/changes.sh"
 antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
 
 [ -f "$changes" ] || exit 0
 
-# Predicaten. Uitgedrukt als case-statement in plaats van eval van vrije tekst
-# uit CHANGES.md: voorspelbaar, en een typefout levert "onbekend" op in plaats
-# van een onbedoeld commando.
-van_toepassing() {
-  case "$1" in
-    altijd)
-      return 0 ;;
-    heeft-package-json)
-      [ -f "$project_dir/package.json" ] ;;
-    heeft-deploy-script)
-      [ -f "$project_dir/package.json" ] &&
-        grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json" ;;
-    *)
-      return 1 ;;
-  esac
-}
-
+# shellcheck disable=SC2329  # aangeroepen vanuit verzamel_openstaand
 beantwoord() {
   [ -f "$antwoorden" ] && grep -q "^| *$1 *|" "$antwoorden"
 }
 
 openstaand=()
-huidig_id=""
-while IFS= read -r regel; do
-  case "$regel" in
-    '## '*)
-      huidig_id="${regel#\#\# }" ;;
-    *'**Van toepassing als:**'*)
-      predicaat="${regel##*\*\* }"
-      predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
-      if [ -n "$huidig_id" ] && van_toepassing "$predicaat" && ! beantwoord "$huidig_id"; then
-        openstaand+=("$huidig_id")
-      fi ;;
-  esac
-done < "$changes"
+
+# Callback voor itereer_entries. `standaard` blijft hier bewust ongebruikt: een
+# onbeantwoorde vraag staat open ongeacht of hij `ja` of `vraag` als startpunt
+# had. adopt.sh doet met datzelfde veld juist wél iets — zie de callback daar.
+# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+verzamel_openstaand() {
+  local id="$1" predicaat="$3"
+  if predicaat_waar "$predicaat" "$project_dir" && ! beantwoord "$id"; then
+    openstaand+=("$id")
+  fi
+}
+
+itereer_entries "$changes" verzamel_openstaand
 
 if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Openstaande workflow-wijzigingen voor dit project (zie CHANGES.md in claude-workflow):"

@@ -19,10 +19,11 @@ Per entry:
   moeten bij het opstellen van `PRD.md`/`ARCHITECTUUR.md` alsnog objectief
   onderbouwd worden (of omgezet naar `nee`), `vraag`-rijen krijgen een
   beargumenteerd voorstel in plaats van een blanco vraag.
-- **Van toepassing als** — één van de predicaten die `pending-changes.sh`
-  kent: `altijd`, `heeft-package-json`, `heeft-deploy-script`. De conditie
-  wordt elke sessie opnieuw geëvalueerd, zodat een wijziging alsnog opduikt
-  zodra hij relevant wordt voor een project.
+- **Van toepassing als** — één van de predicaten uit `lib/changes.sh`, de
+  bibliotheek die `adopt.sh` en `pending-changes.sh` allebei sourcen. Die lijst
+  staat daar en niet hier: een derde kopie in proza loopt vroeg of laat uit de
+  pas met de code. De conditie wordt elke sessie opnieuw geëvalueerd, zodat een
+  wijziging alsnog opduikt zodra hij relevant wordt voor een project.
 - **Ja betekent** — wat er concreet gebeurt bij een `ja`.
 
 Het ID is de kop (`##`). Verander een bestaand ID nooit **als het al door

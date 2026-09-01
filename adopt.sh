@@ -24,6 +24,13 @@ if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
   exit 1
 fi
 
+# De bibliotheek komt uit de checkout waar dít script in staat, niet uit
+# CLAUDE_WORKFLOW_DIR: code hoort bij het script dat hem aanroept. De data
+# (CHANGES.md, templates) komt wél uit CLAUDE_WORKFLOW_DIR, zoals altijd.
+eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/changes.sh
+. "$eigen_map/lib/changes.sh"
+
 backup_if_real_file() {
   local path="$1"
   if [ -e "$path" ] && [ ! -L "$path" ]; then
@@ -53,6 +60,24 @@ copy_issue_templates() {
   fi
 }
 
+# Callback voor itereer_entries. De invoer komt via _seed_*-globals in plaats
+# van via dynamische scope, zodat zichtbaar is waar hij vandaan komt.
+#
+# `standaard: vraag` wordt hier overgeslagen: die entries worden nooit
+# automatisch beantwoord. pending-changes.sh negeert datzelfde veld juist — zie
+# de callback daar. Die asymmetrie is bewust en staat daarom bij beide
+# aanroepers, niet verstopt in lib/changes.sh.
+seed_entry() {
+  local id="$1" standaard="$2" predicaat="$3"
+  if [ "$standaard" = "vraag" ]; then
+    return 0
+  fi
+  if ! predicaat_waar "$predicaat" "$_seed_project_dir"; then
+    return 0
+  fi
+  echo "| $id | ja | $_seed_vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$_seed_doel"
+}
+
 # Legt bij adoptie vast dat dit project akkoord is met de huidige staat van de
 # workflow: elke nú van toepassing zijnde wijziging krijgt "ja". Wat niet van
 # toepassing is krijgt geen rij en wordt later alsnog gevraagd zodra de conditie
@@ -76,31 +101,10 @@ seed_adoptietabel() {
     echo "|---|---|---|---|"
   } > "$doel"
 
-  local huidig_id="" standaard="ja" predicaat vandaag
-  vandaag="$(date +%Y-%m-%d)"
-  while IFS= read -r regel; do
-    case "$regel" in
-      '## '*)
-        huidig_id="${regel#\#\# }"
-        standaard="ja" ;;
-      *'**Standaard:**'*)
-        standaard="${regel##*\*\* }"
-        standaard="$(echo "$standaard" | tr -d '[:space:]')" ;;
-      *'**Van toepassing als:**'*)
-        [ "$standaard" = "vraag" ] && continue
-        predicaat="${regel##*\*\* }"
-        predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
-        case "$predicaat" in
-          altijd) ;;
-          heeft-package-json) [ -f "$project_dir/package.json" ] || continue ;;
-          heeft-deploy-script)
-            { [ -f "$project_dir/package.json" ] &&
-              grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json"; } || continue ;;
-          *) continue ;;
-        esac
-        echo "| $huidig_id | ja | $vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$doel" ;;
-    esac
-  done < "$changes"
+  _seed_project_dir="$project_dir"
+  _seed_doel="$doel"
+  _seed_vandaag="$(date +%Y-%m-%d)"
+  itereer_entries "$changes" seed_entry
 
   echo "Adoptietabel aangemaakt: $doel"
 }

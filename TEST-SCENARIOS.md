@@ -143,6 +143,24 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ## NFR-register en archief
 
+### S38 — Een veld zonder voorafgaande kop levert geen entry
+**Dekt:** F3
+- Given: een misvormde bron waarin een `Van toepassing als`-veld staat vóór de
+  eerste `## `-kop
+- When: `itereer_entries` die bron leest
+- Then: er wordt geen callback aangeroepen voor dat veld — een entry zonder ID
+  zou anders als lege rij in een adoptietabel belanden
+- And: de entries ná de eerste kop worden gewoon verwerkt
+
+### S37 — Predicaat- en parserlogica staat op precies één plek
+**Dekt:** F3
+- Given: `lib/changes.sh` bevat de predicaten en het parserskelet
+- When: `adopt.sh` en `pending-changes.sh` worden doorzocht
+- Then: geen van beide bevat nog een eigen `heeft-*`-tak of een eigen
+  `## `-koploper — ze sourcen de bibliotheek
+- And: de bibliotheek bevat ze wél, zodat de test faalt als hij leeggehaald wordt
+  in plaats van alleen bij terugkerende duplicatie
+
 ### S36 — Een ID in de toelichting telt niet als antwoord
 **Dekt:** F3
 - Given: een `WORKFLOW-ADOPTIE.md` waarin het ID van een nog onbeantwoorde
