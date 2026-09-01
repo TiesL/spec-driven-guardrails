@@ -29,8 +29,15 @@ predicaat_waar() {
 # <id> <standaard> <predicaat>.
 #
 # Alleen entries mét een "Van toepassing als"-veld leiden tot een aanroep: dat
-# veld is wat een entry actief maakt. Een geretireerde entry laat het weg en
-# wordt daarmee nergens meer geseed of gevraagd.
+# veld is wat een entry actief maakt.
+#
+# Een `## `-kop zonder dat veld levert een waarschuwing op. Sinds de
+# sectiescheidingen in CHANGES.md `###` zijn, betekent `## ` onvoorwaardelijk
+# "entry", en is zo'n kop dus een vergeten predicaat in plaats van een kopje.
+# Retirement gebeurt door te verhuizen naar CHANGES-ARCHIEF.md, niet door velden
+# weg te laten. De waarschuwing gaat naar stderr: zichtbaar bij `check` en bij
+# handmatig draaien, en onderdrukt in de SessionStart-hook, waar een project er
+# toch niets aan kan doen.
 #
 # `standaard` is "ja" wanneer de entry geen `**Standaard:**`-veld draagt.
 #
@@ -51,13 +58,17 @@ predicaat_waar() {
 itereer_entries() {
   local bron="$1" callback="$2"
   local regel huidig_id="" standaard="ja" predicaat
-  local fouten=0
+  local fouten=0 gezien_predicaat=0
 
   while IFS= read -r regel; do
     case "$regel" in
       '## '*)
+        if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then
+          echo "waarschuwing: entry '$huidig_id' in $bron heeft geen 'Van toepassing als'-veld" >&2
+        fi
         huidig_id="${regel#\#\# }"
-        standaard="ja" ;;
+        standaard="ja"
+        gezien_predicaat=0 ;;
       *'**Standaard:**'*)
         standaard="${regel##*\*\* }"
         standaard="$(echo "$standaard" | tr -d '[:space:]')" ;;
@@ -65,12 +76,18 @@ itereer_entries() {
         predicaat="${regel##*\*\* }"
         predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
         [ -n "$huidig_id" ] || continue
+        gezien_predicaat=1
         if ! "$callback" "$huidig_id" "$standaard" "$predicaat"; then
           echo "waarschuwing: verwerking van entry '$huidig_id' gaf een fout" >&2
           fouten=$((fouten + 1))
         fi ;;
     esac
   done < "$bron"
+
+  # Ook de laatste entry in het bestand telt mee.
+  if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then
+    echo "waarschuwing: entry '$huidig_id' in $bron heeft geen 'Van toepassing als'-veld" >&2
+  fi
 
   [ "$fouten" -eq 0 ]
 }

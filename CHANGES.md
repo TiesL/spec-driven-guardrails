@@ -33,33 +33,28 @@ Een entry die nog nergens beantwoord is, mag wél herzien of vervangen worden;
 controleer dat met `grep` over alle `WORKFLOW-ADOPTIE.md`'s voordat je dat
 doet.
 
+**Sectiescheidingen** zijn `###`, entries `##`. Dat onderscheid is niet
+cosmetisch: de parser leest elke `## `-kop als entry, dus een kopje op dat
+niveau zou een naamloze entry worden.
+
 **Naamgeving.** Het prefix `spec-` is gereserveerd voor de vijftien NFR's —
 één per subsectie onder *Niet-functionele kenmerken* in `templates/PRD.md`,
 en niets anders. De reviewreikwijdte in `WORKFLOW.md` keyt op dat prefix, dus
 een niet-NFR die `spec-` heet zou daar ten onrechte in meegesleept worden.
 Procesafspraken krijgen `proces-`, testniveaus `test-`.
 
-**Een entry retireren.** Laat de velden `Standaard` en `Van toepassing als`
-weg. Beide scripts hangen hun logica op aan `Van toepassing als`, dus zonder
-dat veld wordt de entry nergens meer geseed of gevraagd — terwijl de tekst
-blijft staan als verklaring voor projecten die hem in het verleden al
-beantwoord hebben. Hernoem `Ja betekent` dan naar `Ja betekende`.
+**Een entry retireren.** Haal hem uit dit bestand. Nooit ergens beantwoord?
+Dan gewoon verwijderen — controleer dat met een `grep` over alle
+`WORKFLOW-ADOPTIE.md`-bestanden. Wél ergens beantwoord? Dan verhuizen naar
+`CHANGES-ARCHIEF.md`, met het ID ongewijzigd en een expliciete reden, zodat een
+project kan nazoeken waar zijn rij vandaan komt. Zie dat bestand voor de
+volledige procedure.
+
+Laat de entry níét inert achter door alleen de velden weg te laten: sinds de
+sectiescheidingen `###` zijn, is een `## `-kop hier onvoorwaardelijk een entry,
+en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ---
-
-## prd-testscenarios-issue-templates
-
-**Legacy — bevroren.** Deze entry bundelde bij het ontstaan van deze
-voorziening drie dingen die achteraf apart moeten kunnen (PRD, testscenario's,
-issue-templates). Al beantwoord in drie projecten, dus het ID blijft staan
-zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
-`proces-prd`, `architectuurdocument`, `proces-issue-tracking`, `test-unit`,
-`test-feature-gwt`, `test-integratie`.
-
-- **Vraag:** Moet dit project `PRD.md`, `TEST-SCENARIOS.md` en de GitHub-issue-templates gebruiken?
-- **Ja betekende:** `adopt.sh` opnieuw draaien — die scaffoldt `PRD.md` en
-  `TEST-SCENARIOS.md` als ze ontbreken en ververst `.github/ISSUE_TEMPLATE/`.
-- **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## ci-conventie
 
@@ -85,7 +80,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 
 ---
 
-## Proces en ontwerpdiepte
+### Proces en ontwerpdiepte
 
 ## proces-prd
 
@@ -152,7 +147,7 @@ zoals het is — maar nieuwe logica gebruikt de fijnmazigere entries hieronder:
 
 ---
 
-## Niet-functionele kenmerken (NFR's)
+### Niet-functionele kenmerken (NFR's)
 
 Vijftien dimensies, elk als losse subsectie in `templates/PRD.md` onder
 *Niet-functionele kenmerken*. Zie de introzin daar voor de
