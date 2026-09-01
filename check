@@ -116,6 +116,14 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
     # shellcheck source=lib/nfr.sh
     . "$doel/lib/nfr.sh"
 
+    # Eerst het register zelf. Een kapot bestand valt anders uit álle
+    # consumenten tegelijk weg, en dan ziet de driftcontrole niets: beide
+    # kanten missen hem immers.
+    if ! problemen="$(nfr_valideer "$doel/nfr")"; then
+      melden_fout "het NFR-register is niet volledig:"
+      printf '%s\n' "$problemen" | sed 's/^/    /' >&2
+    fi
+
     if afwijkend="$(nfr_drift "$doel/nfr" "$doel/templates/PRD.md")"; then
       :
     else

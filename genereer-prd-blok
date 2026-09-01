@@ -22,6 +22,16 @@ if ! grep -qF "$begin" "$sjabloon" || ! grep -qF "$eind" "$sjabloon"; then
   exit 1
 fi
 
+# De vervanger gaat ervan uit dat de beginmarkering vóór de eindmarkering staat.
+# Andersom zou hij alles ertussen weggooien - inclusief secties die niets met
+# het NFR-blok te maken hebben - en dat vervolgens als succes melden.
+regel_begin="$(grep -nF "$begin" "$sjabloon" | head -1 | cut -d: -f1)"
+regel_eind="$(grep -nF "$eind" "$sjabloon" | head -1 | cut -d: -f1)"
+if [ "$regel_begin" -ge "$regel_eind" ]; then
+  echo "genereer-prd-blok: beginmarkering staat niet vóór de eindmarkering (regel $regel_begin versus $regel_eind)" >&2
+  exit 1
+fi
+
 nieuw="$(mktemp)"
 blok="$(mktemp)"
 trap 'rm -f "$nieuw" "$blok"' EXIT

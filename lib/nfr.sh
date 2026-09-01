@@ -12,10 +12,11 @@
 nfr_veld() {
   local bestand="$1" naam="$2"
   awk -v n="$naam" '
+    { sub(/\r$/, "") }
     NR == 1 && $0 == "---" { in_fm = 1; next }
     in_fm && $0 == "---"    { exit }
-    in_fm && index($0, n ":") == 1 {
-      sub(/^[^:]*: */, ""); print; exit
+    in_fm && $0 ~ "^" n "[[:space:]]*:" {
+      sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+$/, ""); print; exit
     }
   ' "$bestand"
 }
@@ -24,10 +25,65 @@ nfr_veld() {
 nfr_sectie() {
   local bestand="$1" kop="$2"
   awk -v k="## $kop" '
+    { sub(/\r$/, "") }
     $0 == k { in_sec = 1; next }
     in_sec && /^## / { exit }
     in_sec { print }
   ' "$bestand" | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//'
+}
+
+# De registerbestanden op volgorde, één pad per regel.
+#
+# Een ontbrekend of niet-numeriek `volgorde`-veld wordt luid gemeld en het
+# bestand gaat achteraan — nooit stilzwijgend overslaan. Een NFR die ongemerkt
+# uit het register valt, verdwijnt namelijk uit álle consumenten tegelijk: hij
+# wordt niet meer gevraagd, niet meer geseed en staat niet meer in het
+# sjabloonblok — en omdat beide kanten hem missen, ziet de driftcontrole niets.
+nfr_bestanden() {
+  local nfr_map="$1" bestand vol
+  [ -d "$nfr_map" ] || return 0
+  for bestand in "$nfr_map"/*.md; do
+    [ -e "$bestand" ] || continue
+    vol="$(nfr_veld "$bestand" volgorde)"
+    case "$vol" in
+      ''|*[!0-9]*)
+        echo "waarschuwing: $bestand heeft geen geldig 'volgorde'-veld — achteraan gezet" >&2
+        vol=99999 ;;
+    esac
+    printf '%s\t%s\n' "$vol" "$bestand"
+  done | sort -n | cut -f2-
+}
+
+# Controleert de registerbestanden op volledigheid. Print elk probleem en geeft
+# 1 terug als er iets mis is. `check` gebruikt dit: een kapot registerbestand
+# hoort de bouw te laten falen, niet stil te verdwijnen.
+nfr_valideer() {
+  local nfr_map="$1" bestand vol id kop pred status fouten=0
+
+  [ -d "$nfr_map" ] || return 0
+
+  for bestand in "$nfr_map"/*.md; do
+    [ -e "$bestand" ] || continue
+    id="$(nfr_veld "$bestand" id)"
+    kop="$(nfr_veld "$bestand" kop)"
+    vol="$(nfr_veld "$bestand" volgorde)"
+    pred="$(nfr_veld "$bestand" van-toepassing-als)"
+    status="$(nfr_veld "$bestand" status)"
+
+    [ -n "$id" ]     || { echo "$bestand: veld 'id' ontbreekt"; fouten=$((fouten + 1)); }
+    [ -n "$kop" ]    || { echo "$bestand: veld 'kop' ontbreekt"; fouten=$((fouten + 1)); }
+    [ -n "$pred" ]   || { echo "$bestand: veld 'van-toepassing-als' ontbreekt"; fouten=$((fouten + 1)); }
+    [ -n "$status" ] || { echo "$bestand: veld 'status' ontbreekt"; fouten=$((fouten + 1)); }
+    case "$vol" in
+      ''|*[!0-9]*) echo "$bestand: veld 'volgorde' ontbreekt of is niet numeriek"; fouten=$((fouten + 1)) ;;
+    esac
+    if [ -n "$id" ] && [ "$(basename "$bestand" .md)" != "$id" ]; then
+      echo "$bestand: bestandsnaam en id ('$id') komen niet overeen"
+      fouten=$((fouten + 1))
+    fi
+  done
+
+  [ "$fouten" -eq 0 ]
 }
 
 # Loopt de actieve registerbestanden langs, op `volgorde`, en roept <callback>
@@ -45,14 +101,9 @@ itereer_nfr() {
   # Sorteren op het volgorde-veld, niet op bestandsnaam: de volgorde hoort bij
   # de inhoud (hij bepaalt het PRD-blok) en niet bij hoe het bestand heet.
   local lijst
-  lijst="$(
-    for bestand in "$nfr_map"/*.md; do
-      [ -e "$bestand" ] || continue
-      printf '%s\t%s\n' "$(nfr_veld "$bestand" volgorde)" "$bestand"
-    done | sort -n
-  )"
+  lijst="$(nfr_bestanden "$nfr_map")"
 
-  while IFS="$(printf '\t')" read -r _ bestand; do
+  while IFS= read -r bestand; do
     [ -n "$bestand" ] || continue
     status="$(nfr_veld "$bestand" status)"
     [ "$status" = "geretireerd" ] && continue
@@ -94,14 +145,9 @@ nfr_blok() {
   local nfr_map="$1"
   local bestand kop id status lijst
 
-  lijst="$(
-    for bestand in "$nfr_map"/*.md; do
-      [ -e "$bestand" ] || continue
-      printf '%s\t%s\n' "$(nfr_veld "$bestand" volgorde)" "$bestand"
-    done | sort -n
-  )"
+  lijst="$(nfr_bestanden "$nfr_map")"
 
-  while IFS="$(printf '\t')" read -r _ bestand; do
+  while IFS= read -r bestand; do
     [ -n "$bestand" ] || continue
     status="$(nfr_veld "$bestand" status)"
     [ "$status" = "geretireerd" ] && continue
