@@ -59,12 +59,18 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: na F4 gebeurt dat via het `id`/`kop`-paar uit `nfr/*.md`, zonder
   normalisatieheuristiek
 
-### R6 — Predicaatgedrag identiek tussen beide scripts
+### R6 — Predicaatgedrag identiek én aantoonbaar juist
 **Dekt:** F3
 - Given: vier testprojecten (met/zonder `package.json` × met/zonder `"deploy"`-script)
 - When: de seed-logica en `van_toepassing()` beide `heeft-package-json` en
   `heeft-deploy-script` evalueren tegen elk van de vier
 - Then: beide komen voor elke combinatie tot exact hetzelfde antwoord
+- And: voor **elk** predicaat bestaat minstens één geval waarin het waar is én de
+  bijbehorende entry onbeantwoord — anders is een té streng geworden predicaat
+  onzichtbaar, omdat het verschil dan nergens in een openstaand-set landt
+- And: de uitkomst per combinatie is expliciet vastgelegd, niet alleen onderling
+  vergeleken; twee identiek kapotte predicaten zijn het met elkaar eens en zouden
+  een zuivere gelijkheidstest passeren
 
 ### R7 — Geadopteerd project blijft de volledige operationele instructie zien
 **Dekt:** F12
