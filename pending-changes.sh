@@ -67,6 +67,47 @@ if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Leg per wijziging een ja/nee-antwoord vast in WORKFLOW-ADOPTIE.md."
 fi
 
+# Een geseede rij is nog geen besluit. adopt.sh zet elke van toepassing zijnde
+# `Standaard: ja`-wijziging op "ja — vereist onderbouwing": een voorlopige
+# stempel. beantwoord() ziet alleen dát er een rij staat, nooit wat erin staat,
+# dus zonder dit signaal meldt een vers geadopteerd project niets openstaand
+# terwijl er zeventien voorlopige stempels liggen.
+#
+# beantwoord() wordt daarvoor bewust niet aangepast: dat zou de openstaand-set
+# veranderen en daarmee R9 breken, de regressietest die bewaakt dat geen enkel
+# project ooit een vraag opnieuw krijgt. Dit staat er dus náást.
+#
+# Gefaseerd onderbouwen is het uitgangspunt (zie F6): niet alles ineens, maar
+# bij eerste aanraking van het onderwerp. Dit is poort 3 — het signaal blijft
+# zichtbaar tot een rij echt beantwoord is.
+if [ -f "$antwoorden" ]; then
+  wachtend="$(grep -c 'vereist onderbouwing' "$antwoorden" 2>/dev/null || echo 0)"
+  if [ "${wachtend:-0}" -gt 0 ]; then
+    echo "$wachtend rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing."
+    echo "Vervang de voorlopige stempel door een op dit project gegronde redenering,"
+    echo "of zet de rij om naar 'nee' met reden — bij het onderwerp waar je toch al zit."
+  fi
+fi
+
+# Mist het project skills die dit repo wél heeft, dan is de adoptie verouderd.
+# Wat gesymlinkt is (WORKFLOW.md, de hookconfiguratie) is na een `git pull`
+# direct actief; wat adopt.sh installeert loopt achter tot iemand hem opnieuw
+# draait. Zonder deze melding houdt een project stilzwijgend de oude wereld.
+if [ -d "$workflow_dir/skills" ]; then
+  ontbrekend=""
+  for skill_pad in "$workflow_dir"/skills/*/; do
+    [ -d "$skill_pad" ] || continue
+    skill="$(basename "$skill_pad")"
+    if [ ! -e "$project_dir/.claude/skills/$skill" ]; then
+      ontbrekend="$ontbrekend $skill"
+    fi
+  done
+  if [ -n "$ontbrekend" ]; then
+    echo "Verouderde adoptie: dit project mist de skill(s)$ontbrekend."
+    echo "Draai adopt.sh opnieuw vanuit claude-workflow om ze te installeren."
+  fi
+fi
+
 # Loopt de lokale checkout achter, dan is bovenstaande lijst mogelijk
 # onvolledig. Alleen melden, niet zelf pullen — een hook hoort niets te muteren.
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
