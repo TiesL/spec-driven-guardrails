@@ -1,0 +1,16 @@
+# Predicaatwaarheidstabel — expliciet vastgelegd, niet afgeleid
+#
+# R6 eist dat de uitkomst per combinatie hier staat in plaats van alleen
+# onderling vergeleken te worden: twee identiek kapotte predicaten zijn het met
+# elkaar eens en zouden een zuivere gelijkheidstest passeren.
+#
+# Elk project is vers en heeft geen WORKFLOW-ADOPTIE.md, dus elke van toepassing
+# zijnde entry staat ook open. Daarmee is per predicaat minstens één geval
+# aanwezig waarin het waar is én onbeantwoord — precies de tak die de nulmeting
+# van de echte adopters mist (zie test/fixtures/nulmeting/LEESMIJ.md).
+#
+# naam | package.json | inhoud scripts | ci-conventie | deploy-guards
+geen-package-json|nee||nee|nee
+package-json-zonder-deploy|ja|{"name":"t"}|ja|nee
+package-json-met-deploy|ja|{"name":"t","scripts":{"deploy":"node deploy.mjs"}}|ja|ja
+package-json-met-predeploy|ja|{"name":"t","scripts":{"predeploy":"node x.mjs"}}|ja|nee

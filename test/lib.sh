@@ -69,6 +69,46 @@ sandbox_copy_repo() {
   echo "$doel"
 }
 
+# Maakt een vers, leeg git-project in de sandbox en echoot het pad. adopt.sh
+# weigert zonder .git, dus dat init'en hoort bij de opzet.
+vers_project() {
+  local naam="$1"
+  local pad="$SANDBOX/$naam"
+  mkdir -p "$pad"
+  git -C "$pad" init -q
+  echo "$pad"
+}
+
+# Adopteert de workflow in een project, met dit repo als bron. adopt.sh leest
+# alleen uit CLAUDE_WORKFLOW_DIR en schrijft uitsluitend in het project.
+adopteer() {
+  CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
+}
+
+# De openstaande ID's voor een project, alfabetisch, één per regel.
+openstaande_ids() {
+  "$TEST_REPO_ROOT/pending-changes.sh" "$1" 2>/dev/null \
+    | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort
+}
+
+# De ID's die adopt.sh in de adoptietabel heeft geseed, alfabetisch.
+geseede_ids() {
+  local tabel="$1/WORKFLOW-ADOPTIE.md"
+  [ -f "$tabel" ] || return 0
+  grep '^| [a-z]' "$tabel" | sed 's/^| *//; s/ *|.*//' | sort
+}
+
+# Vergelijkt twee ID-lijsten en meldt het verschil per ID.
+assert_ids_gelijk() {
+  local omschrijving="$1" verwacht="$2" gekregen="$3"
+  if ! diff -u "$verwacht" "$gekregen" >/dev/null 2>&1; then
+    fail "$omschrijving — ID-set wijkt af:"
+    diff -u "$verwacht" "$gekregen" >&2
+    return 1
+  fi
+  return 0
+}
+
 # Bouwt een bin-map met alleen de basisgereedschappen die `check` nodig heeft,
 # bewust zonder jq en python3. Echoot het pad, te gebruiken als PATH. Zo is de
 # "geen enkele validator beschikbaar"-tak te toetsen zonder iets te deinstalleren.

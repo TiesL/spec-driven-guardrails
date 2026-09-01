@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# S4 — Nulmeting-fixture legt `a2t-emails` vast zoals gevonden, en elke fixture
-# reproduceert zijn eigen gouden set.
+# S4 — Nulmeting-fixture legt `a2t-emails` vast zoals gevonden.
 # Dekt: F2
 
 set -uo pipefail
@@ -10,33 +9,9 @@ set -uo pipefail
 
 nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 
-# Elke fixture moet zijn eigen gouden set reproduceren. Wijkt dat af, dan is óf
-# de nulmeting fout vastgelegd, óf het gedrag veranderd - allebei precies wat
-# deze fixtures moeten opvangen.
-for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
-  fixture="$nulmeting/$project"
-
-  if [ ! -d "$fixture" ]; then
-    fail "S4 — fixture ontbreekt: $project"
-    continue
-  fi
-
-  gouden="$fixture/verwacht-openstaand.txt"
-  if [ ! -f "$gouden" ]; then
-    fail "S4 — gouden set ontbreekt: $project/verwacht-openstaand.txt"
-    continue
-  fi
-
-  huidig="$(mktemp)"
-  "$TEST_REPO_ROOT/pending-changes.sh" "$fixture" 2>/dev/null \
-    | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$huidig"
-
-  if ! diff -u "$gouden" "$huidig" >/dev/null 2>&1; then
-    fail "S4 — $project wijkt af van de vastgelegde nulmeting:"
-    diff -u "$gouden" "$huidig" >&2
-  fi
-  rm -f "$huidig"
-done
+# De viervoudige vergelijking van gouden sets zit in R9
+# (r9_nulmeting_onveranderd.sh). Dit scenario gaat specifiek over de vraag of
+# a2t-emails is vastgelegd zoals gevonden, zonder reparatie.
 
 # a2t-emails is het bijzondere geval: geen WORKFLOW-ADOPTIE.md, dus alles staat
 # open. Vastleggen zoals gevonden - niet eerst repareren, anders legt de fixture
