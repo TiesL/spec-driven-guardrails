@@ -187,6 +187,39 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: `./check` draait
 - Then: exit ≠ 0, met de betreffende NFR in de melding
 
+### S39 — Een geretireerd kenmerk verdwijnt uit beide consumenten
+**Dekt:** F4
+- Given: een `nfr/*.md` met `status: geretireerd`
+- When: `pending-changes.sh` draait en het sjabloonblok wordt gegenereerd
+- Then: het kenmerk wordt niet meer gevraagd en staat niet meer in het blok
+- And: na regenereren klaagt `check` niet — retirement is hier een veld, geen
+  verhuizing, en dat moet aan beide kanten doorwerken
+
+### S40 — De volgorde van het sjabloonblok ligt vast
+**Dekt:** F4
+- Given: het `volgorde`-veld bepaalt waar een kenmerk in het blok staat
+- When: het blok in een andere volgorde wordt gegenereerd dan wat is ingecheckt
+- Then: `check` faalt — een vergelijking die op ID sorteert ziet dat verschil
+  niet, dus de volgorde wordt apart getoetst
+
+### S41 — Een kapot registerbestand valt niet stil weg
+**Dekt:** F4
+- Given: een `nfr/*.md` waarin een verplicht veld ontbreekt of onbruikbaar is
+  (geen `volgorde`, CRLF-regeleinden, een naam die niet bij het `id` past)
+- When: `./check` draait
+- Then: exit ≠ 0, met het bestand en het ontbrekende veld in de melding
+- And: dat is niet af te vangen met de driftcontrole alleen — een kenmerk dat uit
+  het register valt, verdwijnt uit álle consumenten tegelijk, en dan zijn beide
+  kanten van die vergelijking het gewoon met elkaar eens
+
+### S42 — Elke gemelde wijziging toont de vraag uit zijn eigen bron
+**Dekt:** F4
+- Given: de openstaande wijzigingen van een project, uit `CHANGES.md` én `nfr/`
+- When: `pending-changes.sh` draait
+- Then: elke regel toont de vraagtekst die bij dat ID in zijn bron staat
+- And: een verminkte of lege tekst wordt gevangen — een vergelijking op alleen
+  ID's ziet dat niet, terwijl het wél is wat de gebruiker leest
+
 ### S6 — Een entry zonder `Van toepassing als` levert een waarschuwing
 **Dekt:** F5
 - Given: `CHANGES.md` met een `## `-kop zonder `Van toepassing als`-veld, terwijl

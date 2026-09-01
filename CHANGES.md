@@ -149,112 +149,11 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ### Niet-functionele kenmerken (NFR's)
 
-Vijftien dimensies, elk als losse subsectie in `templates/PRD.md` onder
-*Niet-functionele kenmerken*. Zie de introzin daar voor de
-onderbouwingsplicht — deze entries zijn geen los te vinken checklist, elke
-`ja` én elke `vraag` vereist een op het project gegronde redenering.
+De vijftien niet-functionele kenmerken staan niet hier maar in `nfr/` — één
+bestand per kenmerk, met de vraag, wat "ja" betekent en de invulhulp bij elkaar.
+Ze stonden eerder zowel hier als in `templates/PRD.md` en moesten met de hand
+synchroon blijven; nu zijn beide consument van datzelfde register.
 
-## spec-security
-
-- **Vraag:** Is Security relevant genoeg voor dit project om te specificeren (toegang, autorisatie, secrets)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Security" — wie mag wat, welke rechten zijn minimaal nodig, waar staan secrets.
-
-## spec-data-integriteit
-
-- **Vraag:** Is Data-integriteit relevant genoeg voor dit project om te specificeren (invarianten, idempotentie, gelijktijdig schrijven, correctheid over tijd)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Data-integriteit".
-
-## spec-failure-modes
-
-- **Vraag:** Is Resilience relevant genoeg voor dit project om te specificeren (failure modes en herstelgedrag)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Failure modes", en `TEST-SCENARIOS.md` krijgt per functionaliteitsitem minstens één scenario voor wat er misgaat.
-
-## spec-observability
-
-- **Vraag:** Is Observability relevant genoeg voor dit project om te specificeren?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Observability" — vooral van belang bij achtergrondjobs en triggers die stil kunnen falen.
-
-## spec-performance-schaal
-
-- **Vraag:** Zijn Performance en schaal relevant genoeg voor dit project om te specificeren?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Performance en schaal" — verwachte omvang, platformlimieten, quota.
-
-## spec-deployability
-
-- **Vraag:** Is Deployability relevant genoeg voor dit project om te specificeren (omgevingen, rollout, terugdraaien)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Deployability" — welke omgevingen er zijn (bijv. pre-productie/productie), hoe wordt uitgerold, hoe rol je terug. Het procesmatige tegenhanger hiervan zijn `ci-conventie` en `deploy-guards`.
-
-## spec-privacy
-
-- **Vraag:** Is Privacy relevant genoeg voor dit project om te specificeren (persoonsgegevens, bewaartermijn, inzage)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Privacy" — welke persoonsgegevens worden verwerkt, hoe lang bewaard, wie kan ze zien.
-
-## spec-compliance
-
-- **Vraag:** Is Compliance/auditeerbaarheid relevant genoeg voor dit project om te specificeren (bewaarplicht, controleerbaarheid)?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Compliance en auditeerbaarheid" — welke wettelijke of zelfopgelegde verplichtingen gelden, en hoe je achteraf kunt aantonen dat eraan voldaan is.
-
-## spec-backup-herstel
-
-- **Vraag:** Is Backup en herstel relevant genoeg voor dit project om te specificeren (inclusief disaster recovery)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Backup en herstel" — wat er gebeurt bij dataverlies én bij het wegvallen van de hele omgeving.
-
-## spec-portability
-
-- **Vraag:** Is Portability/vendor lock-in relevant genoeg voor dit project om te specificeren?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Portability" — wat er gebeurt als het gekozen platform verandert of stopt.
-
-## spec-maintainability
-
-- **Vraag:** Is Maintainability relevant genoeg voor dit project om expliciet te specificeren?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Maintainability" — module-indeling, wie moet dit later kunnen begrijpen en wijzigen.
-
-## spec-testability
-
-- **Vraag:** Is Testability relevant genoeg voor dit project om te specificeren?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Testability" — hoe is de code zo gebouwd dat hij te testen is (bijv. een domeinlaag zonder externe afhankelijkheden).
-
-## spec-usability
-
-- **Vraag:** Is Usability/toegankelijkheid relevant genoeg voor dit project om te specificeren?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Usability" — voor wie is dit bruikbaar, en onder welke omstandigheden (bijv. mobiel, direct na de les).
-
-## spec-kostenbeheersing
-
-- **Vraag:** Is Kostenbeheersing relevant genoeg voor dit project om te specificeren?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Kostenbeheersing" — welke quota of kosten in zicht komen, en wat er gebeurt als je eroverheen gaat.
-
-## spec-documentatie
-
-- **Vraag:** Is Documentatie relevant genoeg voor dit project om expliciet te specificeren (levend houden, evt. API-specificatie)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
-- **Ja betekent:** `PRD.md` beantwoordt de subsectie "Documentatie" — hoe blijven `PRD.md`/`ARCHITECTUUR.md` actueel bij implementatiewijzigingen, en of een formele API-specificatie nodig is.
+De scripts lezen `CHANGES.md` én `nfr/`, dus voor een project verandert er
+niets: dezelfde vragen, op dezelfde momenten. Retirement gaat daar via het veld
+`status: geretireerd` in plaats van een verhuizing naar het archief.

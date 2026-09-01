@@ -30,6 +30,8 @@ fi
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/changes.sh
 . "$eigen_map/lib/changes.sh"
+# shellcheck source=lib/nfr.sh
+. "$eigen_map/lib/nfr.sh"
 
 backup_if_real_file() {
   local path="$1"
@@ -104,7 +106,7 @@ seed_adoptietabel() {
   _seed_project_dir="$project_dir"
   _seed_doel="$doel"
   _seed_vandaag="$(date +%Y-%m-%d)"
-  itereer_entries "$changes" seed_entry
+  itereer_alle_entries "$CLAUDE_WORKFLOW_DIR" seed_entry
 
   echo "Adoptietabel aangemaakt: $doel"
 }
