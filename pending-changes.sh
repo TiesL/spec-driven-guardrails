@@ -22,6 +22,8 @@ changes="$workflow_dir/CHANGES.md"
 
 # shellcheck source=lib/changes.sh
 . "$workflow_dir/lib/changes.sh"
+# shellcheck source=lib/nfr.sh
+. "$workflow_dir/lib/nfr.sh"
 antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
 
 [ -f "$changes" ] || exit 0
@@ -44,7 +46,7 @@ verzamel_openstaand() {
   fi
 }
 
-itereer_entries "$changes" verzamel_openstaand
+itereer_alle_entries "$workflow_dir" verzamel_openstaand
 
 if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Openstaande workflow-wijzigingen voor dit project (zie CHANGES.md in claude-workflow):"
@@ -56,6 +58,10 @@ if [ ${#openstaand[@]} -gt 0 ]; then
       }
       in_entry && /^## / { exit }
     ' "$changes")"
+    # Staat het ID niet in CHANGES.md, dan komt hij uit het NFR-register.
+    if [ -z "$vraag" ]; then
+      vraag="$(nfr_vraag "$workflow_dir/nfr" "$id")"
+    fi
     echo "  - $id — $vraag"
   done
   echo "Leg per wijziging een ja/nee-antwoord vast in WORKFLOW-ADOPTIE.md."

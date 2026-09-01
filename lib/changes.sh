@@ -95,3 +95,21 @@ itereer_entries() {
 
   [ "$fouten" -eq 0 ]
 }
+
+# Loopt béide bronnen langs: de entries in CHANGES.md en het NFR-register in
+# nfr/. Sinds W5 staan de vijftien niet-functionele kenmerken niet meer als
+# spec-*-entries in CHANGES.md, maar in een eigen register — deze functie houdt
+# dat voor de aanroepers één ding.
+#
+# <workflow_dir> is de map met CHANGES.md en nfr/.
+itereer_alle_entries() {
+  local workflow_dir="$1" callback="$2"
+  local fouten=0
+
+  if [ -f "$workflow_dir/CHANGES.md" ]; then
+    itereer_entries "$workflow_dir/CHANGES.md" "$callback" || fouten=$((fouten + 1))
+  fi
+  itereer_nfr "$workflow_dir/nfr" "$callback" || fouten=$((fouten + 1))
+
+  [ "$fouten" -eq 0 ]
+}

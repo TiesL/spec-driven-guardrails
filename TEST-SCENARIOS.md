@@ -187,6 +187,21 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: `./check` draait
 - Then: exit ≠ 0, met de betreffende NFR in de melding
 
+### S39 — Een geretireerd kenmerk verdwijnt uit beide consumenten
+**Dekt:** F4
+- Given: een `nfr/*.md` met `status: geretireerd`
+- When: `pending-changes.sh` draait en het sjabloonblok wordt gegenereerd
+- Then: het kenmerk wordt niet meer gevraagd en staat niet meer in het blok
+- And: na regenereren klaagt `check` niet — retirement is hier een veld, geen
+  verhuizing, en dat moet aan beide kanten doorwerken
+
+### S40 — De volgorde van het sjabloonblok ligt vast
+**Dekt:** F4
+- Given: het `volgorde`-veld bepaalt waar een kenmerk in het blok staat
+- When: het blok in een andere volgorde wordt gegenereerd dan wat is ingecheckt
+- Then: `check` faalt — een vergelijking die op ID sorteert ziet dat verschil
+  niet, dus de volgorde wordt apart getoetst
+
 ### S6 — Een entry zonder `Van toepassing als` levert een waarschuwing
 **Dekt:** F5
 - Given: `CHANGES.md` met een `## `-kop zonder `Van toepassing als`-veld, terwijl

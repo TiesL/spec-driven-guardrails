@@ -106,7 +106,28 @@ else
   melden_fout "settings/session-hooks.json ontbreekt"
 fi
 
-# --- 3. shellcheck ---------------------------------------------------------
+# --- 3. NFR-register versus het gegenereerde sjabloonblok -------------------
+# templates/PRD.md is voor dat blok een build-artefact. Zonder deze controle
+# kunnen register en sjabloon stil uit elkaar lopen — precies de drift die het
+# register moest weghalen.
+if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
+  echo "check: NFR-register"
+  if [ -r "$doel/lib/nfr.sh" ]; then
+    # shellcheck source=lib/nfr.sh
+    . "$doel/lib/nfr.sh"
+
+    if afwijkend="$(nfr_drift "$doel/nfr" "$doel/templates/PRD.md")"; then
+      :
+    else
+      melden_fout "templates/PRD.md loopt uit de pas met nfr/ — draai ./genereer-prd-blok"
+      printf '%s\n' "$afwijkend" | sed 's/^/    betreft: /' >&2
+    fi
+  else
+    melden_fout "lib/nfr.sh ontbreekt of is onleesbaar — NFR-register niet gecontroleerd"
+  fi
+fi
+
+# --- 4. shellcheck ---------------------------------------------------------
 # Waarschuwen, niet eisen: niet elke machine heeft hem, en een ontbrekende
 # linter mag geen groene build rood maken.
 if command -v shellcheck >/dev/null 2>&1; then
@@ -127,7 +148,7 @@ if [ "$fouten" -gt 0 ]; then
   exit 1
 fi
 
-# --- 4. Testsuite ----------------------------------------------------------
+# --- 5. Testsuite ----------------------------------------------------------
 if [ "$draai_tests" -eq 1 ]; then
   echo "check: testsuite"
   if [ -x "$doel/test/run.sh" ]; then

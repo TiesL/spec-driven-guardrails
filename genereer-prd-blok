@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# genereer-prd-blok — Herschrijft het NFR-blok in templates/PRD.md vanuit nfr/.
+#
+# Het sjabloon is voor dat blok een build-artefact: ingecheckt en diffbaar, maar
+# gegenereerd. `check` faalt als het ingecheckte blok afwijkt van wat deze
+# generator produceert, zodat de twee niet stil uit elkaar kunnen lopen.
+#
+# Gebruik: ./genereer-prd-blok
+
+set -uo pipefail
+
+eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/nfr.sh
+. "$eigen_map/lib/nfr.sh"
+
+sjabloon="$eigen_map/templates/PRD.md"
+begin='<!-- nfr-blok:begin — gegenereerd door ./genereer-prd-blok, niet met de hand bewerken -->'
+eind='<!-- nfr-blok:eind -->'
+
+if ! grep -qF "$begin" "$sjabloon" || ! grep -qF "$eind" "$sjabloon"; then
+  echo "genereer-prd-blok: markeringen ontbreken in $sjabloon" >&2
+  exit 1
+fi
+
+nieuw="$(mktemp)"
+blok="$(mktemp)"
+trap 'rm -f "$nieuw" "$blok"' EXIT
+
+# Via een bestand, niet via -v: awk accepteert geen meerregelige variabele.
+nfr_blok "$eigen_map/nfr" > "$blok"
+
+awk -v begin="$begin" -v eind="$eind" -v blokbestand="$blok" '
+  index($0, begin) == 1 {
+    print
+    while ((getline regel < blokbestand) > 0) print regel
+    close(blokbestand)
+    overslaan = 1
+    next
+  }
+  index($0, eind) == 1 { overslaan = 0 }
+  !overslaan { print }
+' "$sjabloon" > "$nieuw"
+
+cp "$nieuw" "$sjabloon"
+echo "NFR-blok bijgewerkt in templates/PRD.md"
