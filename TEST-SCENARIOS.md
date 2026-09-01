@@ -194,6 +194,11 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: de gedeelde parser die bron leest
 - Then: er verschijnt een waarschuwing die het ID noemt
 - And: de entry wordt niet geseed of gevraagd — een waarschuwing blokkeert niets
+- And: dat geldt ook wanneer de kapotte entry ná een goede komt, en wanneer hij
+  de laatste in het bestand is — de parserstand mag niet van de vorige entry
+  blijven hangen
+- And: een bron zonder afsluitende newline verliest zijn laatste regel niet;
+  anders wordt een entry stilzwijgend overgeslagen mét een misleidende melding
 
 ---
 

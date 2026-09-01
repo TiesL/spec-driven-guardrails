@@ -60,7 +60,11 @@ itereer_entries() {
   local regel huidig_id="" standaard="ja" predicaat
   local fouten=0 gezien_predicaat=0
 
-  while IFS= read -r regel; do
+  # `|| [ -n "$regel" ]` vangt een bron zonder afsluitende newline op: read geeft
+  # dan een niet-nul status terwijl de laatste regel wél gelezen is. Zonder dat
+  # valt die regel weg — en sinds de waarschuwing hieronder zou een entry dan
+  # stilzwijgend overgeslagen worden mét een misleidende melding erbij.
+  while IFS= read -r regel || [ -n "$regel" ]; do
     case "$regel" in
       '## '*)
         if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then

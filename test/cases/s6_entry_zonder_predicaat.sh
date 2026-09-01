@@ -26,6 +26,18 @@ cat > "$bron" <<'MD'
 
 - **Standaard:** ja
 - **Van toepassing als:** altijd
+
+## vergeten-na-goede
+
+- **Vraag:** Vergeten predicaat, maar dan ná een entry die er wél een heeft?
+
+## nog-een-goede
+
+- **Van toepassing als:** altijd
+
+## vergeten-als-laatste
+
+- **Vraag:** Vergeten predicaat, als laatste in het bestand?
 MD
 
 gezien="$SANDBOX/gezien.txt"
@@ -51,8 +63,33 @@ if grep -qx 'vergeten-entry' "$gezien"; then
 fi
 grep -qx 'echte-entry' "$gezien" || fail "S6 — de entry mét predicaat is niet verwerkt"
 
+# And: ook een kapotte entry ná een goede wordt gemeld. De parserstand mag niet
+# van de vorige entry blijven hangen.
+grep -q 'vergeten-na-goede' "$melding" || fail "S6 — geen waarschuwing voor een kapotte entry ná een goede"
+
+# And: ook wanneer hij de laatste in het bestand is — dan is er geen volgende
+# kop meer die de controle triggert.
+grep -q 'vergeten-als-laatste' "$melding" || fail "S6 — geen waarschuwing voor een kapotte entry als laatste in het bestand"
+
+# En de goede entries zijn allemaal verwerkt.
+grep -qx 'nog-een-goede' "$gezien" || fail "S6 — nog-een-goede is niet verwerkt"
+
 # And: de waarschuwing blokkeert niets.
 [ "$status" -eq 0 ] || fail "S6 — itereer_entries gaf status $status; een waarschuwing mag niet blokkeren"
+
+# And: een bron zonder afsluitende newline verliest zijn laatste regel niet.
+zonder_nl="$SANDBOX/zonder-newline.md"
+printf '# K\n\n## laatste-entry\n\n- **Van toepassing als:** altijd' > "$zonder_nl"
+gezien2="$SANDBOX/gezien2.txt"
+: > "$gezien2"
+# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+noteer2() { printf '%s\n' "$1" >> "$gezien2"; }
+melding2="$SANDBOX/melding2.txt"
+itereer_entries "$zonder_nl" noteer2 2>"$melding2"
+grep -qx 'laatste-entry' "$gezien2" || fail "S6 — laatste entry verdween door een ontbrekende slot-newline"
+if grep -q 'laatste-entry' "$melding2"; then
+  fail "S6 — misleidende waarschuwing voor een entry die wél een predicaat heeft"
+fi
 
 # En de echte CHANGES.md is schoon: geen enkele kop zonder predicaat.
 echte_melding="$SANDBOX/echt.txt"
