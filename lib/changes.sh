@@ -34,6 +34,14 @@ predicaat_waar() {
 #
 # `standaard` is "ja" wanneer de entry geen `**Standaard:**`-veld draagt.
 #
+# **Contract voor de callback:** zijn exitstatus draagt geen betekenis voor deze
+# lus, maar een niet-nul status wordt wel gemeld en telt mee in de eindstatus.
+# Dat is bewust: zonder die afhandeling zou een callback die per ongeluk 1
+# teruggeeft — bijvoorbeeld door een afsluitende `a && b` waarvan `a` onwaar is —
+# een aanroeper met `set -e` stilzwijgend laten stoppen, halverwege de lus en
+# zonder enige melding. adopt.sh draait met `set -e`, pending-changes.sh niet;
+# die asymmetrie maakt zo'n fout makkelijk te maken en moeilijk te zien.
+#
 # De aanroeper beslist wat hij met `standaard` doet — dat is bewust niet hier
 # geregeld. adopt.sh slaat `vraag` over (die entries worden nooit automatisch
 # beantwoord); pending-changes.sh negeert het veld juist, want een onbeantwoorde
@@ -43,6 +51,7 @@ predicaat_waar() {
 itereer_entries() {
   local bron="$1" callback="$2"
   local regel huidig_id="" standaard="ja" predicaat
+  local fouten=0
 
   while IFS= read -r regel; do
     case "$regel" in
@@ -56,7 +65,12 @@ itereer_entries() {
         predicaat="${regel##*\*\* }"
         predicaat="$(echo "$predicaat" | tr -d '[:space:]')"
         [ -n "$huidig_id" ] || continue
-        "$callback" "$huidig_id" "$standaard" "$predicaat" ;;
+        if ! "$callback" "$huidig_id" "$standaard" "$predicaat"; then
+          echo "waarschuwing: verwerking van entry '$huidig_id' gaf een fout" >&2
+          fouten=$((fouten + 1))
+        fi ;;
     esac
   done < "$bron"
+
+  [ "$fouten" -eq 0 ]
 }

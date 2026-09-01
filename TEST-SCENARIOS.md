@@ -151,6 +151,8 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: er wordt geen callback aangeroepen voor dat veld — een entry zonder ID
   zou anders als lege rij in een adoptietabel belanden
 - And: de entries ná de eerste kop worden gewoon verwerkt
+- And: hetzelfde geldt via `adopt.sh` zelf, niet alleen via de bibliotheek
+  rechtstreeks: de adoptietabel bevat geen rij met een leeg ID
 
 ### S37 — Predicaat- en parserlogica staat op precies één plek
 **Dekt:** F3
@@ -160,6 +162,10 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   `## `-koploper — ze sourcen de bibliotheek
 - And: de bibliotheek bevat ze wél, zodat de test faalt als hij leeggehaald wordt
   in plaats van alleen bij terugkerende duplicatie
+- And: beide scripts roepen `predicaat_waar` uit de bibliotheek **daadwerkelijk
+  aan** — vastgesteld door de functie te instrumenteren en te draaien, niet door
+  op tekst te zoeken. Een tekstmatch ziet alleen letterlijke kopieën; logica die
+  in een andere vorm is herschreven glipt er ongemerkt doorheen
 
 ### S36 — Een ID in de toelichting telt niet als antwoord
 **Dekt:** F3

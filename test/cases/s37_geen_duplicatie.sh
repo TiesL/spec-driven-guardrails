@@ -11,7 +11,47 @@ bibliotheek="$TEST_REPO_ROOT/lib/changes.sh"
 
 if [ ! -f "$bibliotheek" ]; then
   fail "S37 — lib/changes.sh ontbreekt"
-  test_klaar
+  # And: beide scripts roepen de bibliotheekfunctie ook daadwerkelijk aan. De
+# controles hierboven zoeken op tekst en zien dus alleen letterlijke kopieen;
+# logica die in een andere vorm is herschreven — een if-keten in plaats van een
+# case — zou er ongemerkt doorheen glippen. Deze controle is gedragsmatig: de
+# functie wordt geinstrumenteerd en er wordt vastgesteld dat hij is aangeroepen.
+sandbox_create
+trap sandbox_destroy EXIT
+
+repo="$(sandbox_copy_repo)"
+log="$SANDBOX/aanroepen.txt"
+
+cat >> "$repo/lib/changes.sh" <<INSTR
+
+# --- alleen voor S37: legt vast dat deze functie is aangeroepen ---
+predicaat_waar() {
+  printf '%s\n' "\$1" >> "$log"
+  case "\$1" in
+    altijd) return 0 ;;
+    heeft-package-json) [ -f "\$2/package.json" ] ;;
+    heeft-deploy-script)
+      [ -f "\$2/package.json" ] && grep -q '"deploy"[[:space:]]*:' "\$2/package.json" ;;
+    *) return 1 ;;
+  esac
+}
+INSTR
+
+project="$(vers_project doelproject)"
+
+: > "$log"
+CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+if [ ! -s "$log" ]; then
+  fail "S37 — adopt.sh riep predicaat_waar uit de bibliotheek niet aan"
+fi
+
+: > "$log"
+"$repo/pending-changes.sh" "$project" >/dev/null 2>&1
+if [ ! -s "$log" ]; then
+  fail "S37 — pending-changes.sh riep predicaat_waar uit de bibliotheek niet aan"
+fi
+
+test_klaar
 fi
 
 # Then: de aanroepers bevatten geen eigen predicaattak of koploper meer.
@@ -38,5 +78,45 @@ done
 for patroon in 'heeft-package-json)' 'heeft-deploy-script)' "'## '\*)"; do
   grep -q -- "$patroon" "$bibliotheek" || fail "S37 — lib/changes.sh mist: $patroon"
 done
+
+# And: beide scripts roepen de bibliotheekfunctie ook daadwerkelijk aan. De
+# controles hierboven zoeken op tekst en zien dus alleen letterlijke kopieen;
+# logica die in een andere vorm is herschreven — een if-keten in plaats van een
+# case — zou er ongemerkt doorheen glippen. Deze controle is gedragsmatig: de
+# functie wordt geinstrumenteerd en er wordt vastgesteld dat hij is aangeroepen.
+sandbox_create
+trap sandbox_destroy EXIT
+
+repo="$(sandbox_copy_repo)"
+log="$SANDBOX/aanroepen.txt"
+
+cat >> "$repo/lib/changes.sh" <<INSTR
+
+# --- alleen voor S37: legt vast dat deze functie is aangeroepen ---
+predicaat_waar() {
+  printf '%s\n' "\$1" >> "$log"
+  case "\$1" in
+    altijd) return 0 ;;
+    heeft-package-json) [ -f "\$2/package.json" ] ;;
+    heeft-deploy-script)
+      [ -f "\$2/package.json" ] && grep -q '"deploy"[[:space:]]*:' "\$2/package.json" ;;
+    *) return 1 ;;
+  esac
+}
+INSTR
+
+project="$(vers_project doelproject)"
+
+: > "$log"
+CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+if [ ! -s "$log" ]; then
+  fail "S37 — adopt.sh riep predicaat_waar uit de bibliotheek niet aan"
+fi
+
+: > "$log"
+"$repo/pending-changes.sh" "$project" >/dev/null 2>&1
+if [ ! -s "$log" ]; then
+  fail "S37 — pending-changes.sh riep predicaat_waar uit de bibliotheek niet aan"
+fi
 
 test_klaar

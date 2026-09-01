@@ -46,4 +46,25 @@ if grep -qx '' "$gezien"; then
   fail "S38 — callback aangeroepen met een leeg ID"
 fi
 
+# And: hetzelfde geldt via adopt.sh zelf. De guard zat vóór W4 alleen in
+# pending-changes.sh; adopt.sh produceerde bij zo'n misvormde bron een rij met
+# een leeg ID. Deze controle loopt via het echte script in plaats van via de
+# bibliotheek, want geseede_ids() filtert op '^| [a-z]' en zou een lege-ID-rij
+# nooit zien.
+nep="$SANDBOX/nepworkflow"
+mkdir -p "$nep/lib" "$nep/templates"
+cp "$TEST_REPO_ROOT/lib/changes.sh" "$nep/lib/"
+cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
+echo "# Werkwijze" > "$nep/WORKFLOW.md"
+cp "$bron" "$nep/CHANGES.md"
+
+project="$(vers_project doelproject)"
+CLAUDE_WORKFLOW_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
+
+tabel="$project/WORKFLOW-ADOPTIE.md"
+if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then
+  fail "S38 — adopt.sh schreef een rij met een leeg ID"
+  grep -nE '^\| *\|' "$tabel" >&2
+fi
+
 test_klaar
