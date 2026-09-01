@@ -71,6 +71,10 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: de uitkomst per combinatie is expliciet vastgelegd, niet alleen onderling
   vergeleken; twee identiek kapotte predicaten zijn het met elkaar eens en zouden
   een zuivere gelijkheidstest passeren
+- And: wat `adopt.sh` daadwerkelijk seedt wordt **rechtstreeks** tegen de
+  vastgelegde uitkomst gehouden, niet alleen via een vereniging met de
+  openstaand-set. Een vereniging kan alleen zien dat er te véél geseed is: wat
+  `adopt.sh` mist, blijft gewoon openstaan en valt daardoor weg tegen elkaar
 
 ### R7 — Geadopteerd project blijft de volledige operationele instructie zien
 **Dekt:** F12
@@ -138,6 +142,19 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 ---
 
 ## NFR-register en archief
+
+### S36 — Een ID in de toelichting telt niet als antwoord
+**Dekt:** F3
+- Given: een `WORKFLOW-ADOPTIE.md` waarin het ID van een nog onbeantwoorde
+  wijziging voorkomt in de vrije toelichtingstekst van een ándere rij
+- When: `pending-changes.sh` draait
+- Then: die wijziging staat nog steeds open — alleen de ID-kolom telt als antwoord
+- And: toelichtingen zijn vrije tekst en ID's als `test-integratie` zijn gewone
+  woorden, dus een onverankerde match zou stilzwijgend vragen laten verdwijnen
+
+---
+
+## NFR-register en archief (vervolg)
 
 ### S5 — Generator en ingecheckt sjabloon lopen niet uit de pas
 **Dekt:** F4

@@ -40,16 +40,40 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   [ "$verwacht_ci" = "ja" ] && gezien_ci_waar=1
   [ "$verwacht_deploy" = "ja" ] && gezien_deploy_waar=1
 
-  # And: beide scripts komen tot exact hetzelfde antwoord. adopt.sh seedt de van
-  # toepassing zijnde `Standaard: ja`-entries; wat daarna nog openstaat zijn de
-  # van toepassing zijnde `Standaard: vraag`-entries. Samen moeten die precies de
-  # set zijn die pending-changes.sh vóór de adoptie meldde.
   adopteer "$project"
   na="$SANDBOX/$naam-na.txt"
   samen="$SANDBOX/$naam-samen.txt"
+  geseed="$SANDBOX/$naam-geseed.txt"
   openstaande_ids "$project" > "$na"
-  { geseede_ids "$project"; cat "$na"; } | sort -u > "$samen"
+  geseede_ids "$project" > "$geseed"
+  { cat "$geseed" "$na"; } | sort -u > "$samen"
 
+  # And: wat adopt.sh seedt wordt rechtstreeks tegen de tabel gehouden. Dit is
+  # de enige controle die ziet dat adopt.sh iets MIST. De vereniging hieronder
+  # kan dat per constructie niet: wat adopt.sh niet seedt blijft gewoon
+  # openstaan, waardoor de vereniging ongewijzigd blijft. Beide predicaat-
+  # entries hebben `Standaard: ja`, dus van toepassing betekent hier geseed.
+  for paar in "ci-conventie:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
+    id="${paar%%:*}"; verwacht="${paar#*:}"
+    if grep -qx "$id" "$geseed"; then feitelijk=ja; else feitelijk=nee; fi
+    if [ "$feitelijk" != "$verwacht" ]; then
+      fail "R6 — $naam: adopt.sh seedde $id=$feitelijk, tabel zegt $verwacht"
+    fi
+  done
+
+  # En het totaal: 17 entries gelden altijd, plus elke van toepassing zijnde
+  # predicaat-entry. Vangt een seed-logica die er in bulk naast zit.
+  verwacht_aantal=17
+  [ "$verwacht_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
+  [ "$verwacht_deploy" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
+  aantal_geseed="$(grep -c . "$geseed")"
+  if [ "$aantal_geseed" -ne "$verwacht_aantal" ]; then
+    fail "R6 — $naam: $aantal_geseed rijen geseed, $verwacht_aantal verwacht"
+  fi
+
+  # And: beide scripts komen tot hetzelfde antwoord. adopt.sh seedt de van
+  # toepassing zijnde `Standaard: ja`-entries; wat daarna nog openstaat zijn de
+  # `Standaard: vraag`-entries. Samen precies wat vóór de adoptie openstond.
   assert_ids_gelijk "R6 — $naam: seed-logica versus van_toepassing()" "$voor" "$samen"
 done < "$tabel"
 

@@ -24,14 +24,19 @@ fi
 
 # Niet-circulaire controle dat er niets vooraf beantwoord is: ci-conventie is in
 # tennis-admin wél beantwoord. Staat hij hier open, dan is de fixture ongerepareerd.
-if [ -f "$a2t/verwacht-openstaand.txt" ]; then
-  if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
-    fail "S4 — ci-conventie ontbreekt in de a2t-nulmeting; lijkt vooraf beantwoord"
-  fi
-  aantal="$(grep -c . "$a2t/verwacht-openstaand.txt")"
-  if [ "$aantal" -lt 20 ]; then
-    fail "S4 — a2t-nulmeting telt maar $aantal ID's; 'alles openstaand' verwacht"
-  fi
+# Geen `if [ -f ... ]`-guard: ontbreekt de gouden set, dan is dat een fout en
+# geen reden om stilzwijgend niets te controleren.
+if [ ! -f "$a2t/verwacht-openstaand.txt" ]; then
+  fail "S4 — gouden set van a2t-emails ontbreekt"
+  test_klaar
+fi
+
+if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
+  fail "S4 — ci-conventie ontbreekt in de a2t-nulmeting; lijkt vooraf beantwoord"
+fi
+aantal="$(grep -c . "$a2t/verwacht-openstaand.txt")"
+if [ "$aantal" -lt 20 ]; then
+  fail "S4 — a2t-nulmeting telt maar $aantal ID's; 'alles openstaand' verwacht"
 fi
 
 test_klaar
