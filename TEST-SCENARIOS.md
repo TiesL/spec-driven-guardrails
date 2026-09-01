@@ -237,6 +237,17 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ## Onderbouwingsplicht en poorten
 
+### S43 — Een gezonde bron levert niets op stderr
+**Dekt:** F6
+- Given: een geadopteerd project met een goed gevormde `WORKFLOW-ADOPTIE.md` —
+  met wachtende onderbouwingen, zonder, of zonder tabel
+- When: `pending-changes.sh` draait
+- Then: er komt niets op stderr
+- And: dit is geen cosmetische eis. De SessionStart-hook stuurt stderr naar
+  `/dev/null` en elke testaanroep deed dat ook, waardoor een shellfout in het
+  script structureel onzichtbaar bleef — inclusief één die in drie van de vier
+  echte projecten dagelijks afging
+
 ### S7 — Het signaal telt rijen die nog op onderbouwing wachten
 **Dekt:** F6
 - Given: een vers geadopteerd project met 17 geseede rijen die "vereist

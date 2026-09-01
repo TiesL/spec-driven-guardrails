@@ -67,6 +67,68 @@ if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Leg per wijziging een ja/nee-antwoord vast in WORKFLOW-ADOPTIE.md."
 fi
 
+# Een geseede rij is nog geen besluit. adopt.sh zet elke van toepassing zijnde
+# `Standaard: ja`-wijziging op "ja — vereist onderbouwing": een voorlopige
+# stempel. beantwoord() ziet alleen dát er een rij staat, nooit wat erin staat,
+# dus zonder dit signaal meldt een vers geadopteerd project niets openstaand
+# terwijl er zeventien voorlopige stempels liggen.
+#
+# beantwoord() wordt daarvoor bewust niet aangepast: dat zou de openstaand-set
+# veranderen en daarmee R9 breken, de regressietest die bewaakt dat geen enkel
+# project ooit een vraag opnieuw krijgt. Dit staat er dus náást.
+#
+# Gefaseerd onderbouwen is het uitgangspunt (zie F6): niet alles ineens, maar
+# bij eerste aanraking van het onderwerp. Dit is poort 3 — het signaal blijft
+# zichtbaar tot een rij echt beantwoord is.
+if [ -f "$antwoorden" ]; then
+  # Geen `|| echo 0`: grep -c print zélf al "0" bij nul treffers, en geeft
+  # daarnaast exitstatus 1. Die twee samen leveren de string "0\n0" op, waar de
+  # vergelijking hieronder op stukloopt. De ${wachtend:-0}-fallback dekt het
+  # geval dat grep helemaal niets naar stdout schrijft, bijvoorbeeld bij
+  # ontbrekende leesrechten.
+  #
+  # Alleen tabelrijen tellen mee, net als beantwoord() dat op de ID-kolom
+  # ankert: een losse notitie boven of onder de tabel die toevallig dezelfde
+  # woorden bevat, is geen wachtende onderbouwing.
+  wachtend="$(grep -c '^|.*vereist onderbouwing' "$antwoorden" 2>/dev/null)"
+  if [ "${wachtend:-0}" -gt 0 ]; then
+    echo "$wachtend rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing."
+    echo "Vervang de voorlopige stempel door een op dit project gegronde redenering,"
+    echo "of zet de rij om naar 'nee' met reden — bij het onderwerp waar je toch al zit."
+  fi
+fi
+
+# Mist het project skills die dit repo wél heeft, dan is de adoptie verouderd.
+#
+# LET OP: deze melding adviseert `adopt.sh` opnieuw te draaien. Dat helpt pas
+# zodra adopt.sh skills daadwerkelijk installeert — dat landt in W8 (#20). Tot
+# die tijd is de hele controle een no-op, want `skills/` bestaat nog niet. Voeg
+# die map dus niet toe vóór W8, anders adviseert dit een reparatie die niets
+# doet.
+# Wat gesymlinkt is (WORKFLOW.md, de hookconfiguratie) is na een `git pull`
+# direct actief; wat adopt.sh installeert loopt achter tot iemand hem opnieuw
+# draait. Zonder deze melding houdt een project stilzwijgend de oude wereld.
+if [ -d "$workflow_dir/skills" ]; then
+  ontbrekend=""
+  for skill_pad in "$workflow_dir"/skills/*/; do
+    [ -d "$skill_pad" ] || continue
+    skill="$(basename "$skill_pad")"
+    if [ ! -e "$project_dir/.claude/skills/$skill" ]; then
+      # Komma-gescheiden: een skillnaam met een spatie erin zou anders niet te
+      # onderscheiden zijn van meerdere losse namen.
+      if [ -n "$ontbrekend" ]; then
+        ontbrekend="$ontbrekend, $skill"
+      else
+        ontbrekend="$skill"
+      fi
+    fi
+  done
+  if [ -n "$ontbrekend" ]; then
+    echo "Dit project mist de skill(s): $ontbrekend."
+    echo "Draai adopt.sh opnieuw vanuit claude-workflow om ze te installeren."
+  fi
+fi
+
 # Loopt de lokale checkout achter, dan is bovenstaande lijst mogelijk
 # onvolledig. Alleen melden, niet zelf pullen — een hook hoort niets te muteren.
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
