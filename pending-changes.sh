@@ -81,7 +81,16 @@ fi
 # bij eerste aanraking van het onderwerp. Dit is poort 3 — het signaal blijft
 # zichtbaar tot een rij echt beantwoord is.
 if [ -f "$antwoorden" ]; then
-  wachtend="$(grep -c 'vereist onderbouwing' "$antwoorden" 2>/dev/null || echo 0)"
+  # Geen `|| echo 0`: grep -c print zélf al "0" bij nul treffers, en geeft
+  # daarnaast exitstatus 1. Die twee samen leveren de string "0\n0" op, waar de
+  # vergelijking hieronder op stukloopt. De ${wachtend:-0}-fallback dekt het
+  # geval dat grep helemaal niets naar stdout schrijft, bijvoorbeeld bij
+  # ontbrekende leesrechten.
+  #
+  # Alleen tabelrijen tellen mee, net als beantwoord() dat op de ID-kolom
+  # ankert: een losse notitie boven of onder de tabel die toevallig dezelfde
+  # woorden bevat, is geen wachtende onderbouwing.
+  wachtend="$(grep -c '^|.*vereist onderbouwing' "$antwoorden" 2>/dev/null)"
   if [ "${wachtend:-0}" -gt 0 ]; then
     echo "$wachtend rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing."
     echo "Vervang de voorlopige stempel door een op dit project gegronde redenering,"
@@ -90,6 +99,12 @@ if [ -f "$antwoorden" ]; then
 fi
 
 # Mist het project skills die dit repo wél heeft, dan is de adoptie verouderd.
+#
+# LET OP: deze melding adviseert `adopt.sh` opnieuw te draaien. Dat helpt pas
+# zodra adopt.sh skills daadwerkelijk installeert — dat landt in W8 (#20). Tot
+# die tijd is de hele controle een no-op, want `skills/` bestaat nog niet. Voeg
+# die map dus niet toe vóór W8, anders adviseert dit een reparatie die niets
+# doet.
 # Wat gesymlinkt is (WORKFLOW.md, de hookconfiguratie) is na een `git pull`
 # direct actief; wat adopt.sh installeert loopt achter tot iemand hem opnieuw
 # draait. Zonder deze melding houdt een project stilzwijgend de oude wereld.
@@ -99,11 +114,17 @@ if [ -d "$workflow_dir/skills" ]; then
     [ -d "$skill_pad" ] || continue
     skill="$(basename "$skill_pad")"
     if [ ! -e "$project_dir/.claude/skills/$skill" ]; then
-      ontbrekend="$ontbrekend $skill"
+      # Komma-gescheiden: een skillnaam met een spatie erin zou anders niet te
+      # onderscheiden zijn van meerdere losse namen.
+      if [ -n "$ontbrekend" ]; then
+        ontbrekend="$ontbrekend, $skill"
+      else
+        ontbrekend="$skill"
+      fi
     fi
   done
   if [ -n "$ontbrekend" ]; then
-    echo "Verouderde adoptie: dit project mist de skill(s)$ontbrekend."
+    echo "Dit project mist de skill(s): $ontbrekend."
     echo "Draai adopt.sh opnieuw vanuit claude-workflow om ze te installeren."
   fi
 fi

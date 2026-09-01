@@ -17,7 +17,7 @@ CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 # Vooraf: zonder skills-map in het repo hoort er niets gemeld te worden.
 schoon="$SANDBOX/schoon.txt"
 "$repo/pending-changes.sh" "$project" > "$schoon" 2>/dev/null
-if grep -qi 'adopt.sh opnieuw' "$schoon"; then
+if grep -qi 'mist de skill' "$schoon"; then
   fail "S9 — melding verscheen terwijl dit repo helemaal geen skills heeft"
 fi
 
@@ -32,11 +32,22 @@ uitvoer="$SANDBOX/uitvoer.txt"
 status=$?
 
 # Then: de hook meldt dat adopt.sh opnieuw moet draaien.
-grep -qi 'verouderde adoptie' "$uitvoer" || {
-  fail "S9 — geen melding over een verouderde adoptie"
+grep -qi 'mist de skill' "$uitvoer" || {
+  fail "S9 — geen melding over ontbrekende skills"
   cat "$uitvoer" >&2
 }
 grep -qi 'adopt.sh opnieuw' "$uitvoer" || fail "S9 — de melding zegt niet wat je moet doen"
+
+# And: meerdere namen zijn van elkaar te onderscheiden. Zonder scheidingsteken
+# is "deploy-guards pre merge review" niet te lezen als twee skills waarvan er
+# één een spatie in zijn naam heeft.
+# Alleen op de skills-regel kijken: de vraagteksten hierboven bevatten zelf
+# komma's, dus een grep over de hele uitvoer zou altijd raak zijn.
+skillregel="$(grep 'mist de skill' "$uitvoer")"
+case "$skillregel" in
+  *', '*) ;;
+  *) fail "S9 — meerdere ontbrekende skills worden niet gescheiden: $skillregel" ;;
+esac
 
 # And: de ontbrekende skills staan er bij naam bij. Zonder die namen is de
 # melding niet bruikbaar - je weet dan niet wát er mist of waarom.
@@ -54,7 +65,7 @@ ln -s "$repo/skills/deploy-guards" "$project/.claude/skills/deploy-guards"
 
 na="$SANDBOX/na.txt"
 "$repo/pending-changes.sh" "$project" > "$na" 2>/dev/null
-if grep -qi 'adopt.sh opnieuw' "$na"; then
+if grep -qi 'mist de skill' "$na"; then
   fail "S9 — de melding blijft staan terwijl alle skills geïnstalleerd zijn"
 fi
 

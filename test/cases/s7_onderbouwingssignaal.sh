@@ -57,4 +57,17 @@ if grep -qi 'wachten nog op onderbouwing' "$leeg"; then
   fail "S7 — de melding blijft staan terwijl alles onderbouwd is"
 fi
 
+# En de telling kijkt alleen naar tabelrijen. Een losse notitie buiten de tabel
+# die toevallig dezelfde woorden bevat, is geen wachtende onderbouwing —
+# beantwoord() ankert om dezelfde reden op de ID-kolom.
+printf '\nLosse notitie: dit vereist onderbouwing bij gelegenheid.\n' \
+  >> "$project/WORKFLOW-ADOPTIE.md"
+
+met_notitie="$SANDBOX/met-notitie.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$met_notitie" 2>/dev/null
+if grep -qi 'wachten nog op onderbouwing' "$met_notitie"; then
+  fail "S7 — een notitie buiten de tabel telt mee als wachtende onderbouwing"
+  grep -i 'rij(en)' "$met_notitie" >&2
+fi
+
 test_klaar
