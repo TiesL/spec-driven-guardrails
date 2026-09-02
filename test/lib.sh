@@ -47,6 +47,15 @@ sandbox_create() {
   export HOME="$SANDBOX/home"
   mkdir -p "$HOME"
   export CLAUDE_WORKFLOW_DIR="$SANDBOX/workflow"
+
+  # Een identiteit voor git, net zoals HOME: een test mag niet afhangen van de
+  # configuratie van de machine waarop hij toevallig draait. Zonder dit slaagt
+  # `git commit` lokaal (waar een globale identiteit staat) en faalt hij op een
+  # verse CI-runner - precies het soort verschil dat je pas laat ontdekt.
+  export GIT_AUTHOR_NAME="claude-workflow test"
+  export GIT_AUTHOR_EMAIL="test@example.invalid"
+  export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+  export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
   if ! sandbox_guard; then
     rm -rf "$SANDBOX"
     exit 1
