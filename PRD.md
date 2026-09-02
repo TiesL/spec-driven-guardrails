@@ -275,8 +275,21 @@ de eerste productie-uitrol; de rest → zichtbaar tot je eraan toekomt.
 
 ### F7 — Git-guardrails als `PreToolUse`-hook
 
-Blokkeert `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .` en
-`push` **naar `main`**.
+Blokkeert `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
+`commit` **op `main`** en `push` **naar `main`**.
+
+**`commit` op `main` blokkeren is een bewuste uitbreiding**, op verzoek van Ties
+toegevoegd nadat bleek dat alleen de push blokkeren een slecht moment oplevert:
+je werkt een hele sessie door, commit alles op `main`, en loopt pas aan het eind
+tegen de muur. Erger nog — de `SessionEnd`-hook slaat zijn push over op `main`,
+dus dat werk bereikt de remote helemaal niet meer, terwijl je vóór deze guard
+nog handmatig had kunnen pushen. De blokkade zet dat moment naar voren.
+
+De melding moet daarom de uitweg noemen (`git checkout -b`) én dat de
+wijzigingen meegaan. Zonder dat blijft het werk *ongecommit*, en dat is
+onveiliger dan de lokale commit die je net tegenhield. Uitzondering: een repo
+zonder commits — de allereerste commit van een nieuw project staat per definitie
+op `main`.
 
 Dat laatste is **tweeledig**: expliciete refspecs die `main` raken
 (`git push origin main`, `git push origin HEAD:main` — vanaf welke branch dan

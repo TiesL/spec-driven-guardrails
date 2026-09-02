@@ -76,11 +76,21 @@ esac
 #
 # Als argv-array, nooit als samengestelde string: die opnieuw door een shell
 # laten lezen brengt precies de woordsplitsing terug die deze guard wegneemt.
+# `symbolic-ref` en niet `rev-parse --abbrev-ref`: die laatste geeft op een repo
+# zonder commits de letterlijke tekst "HEAD" terug in plaats van de branchnaam.
+# Dat werkt hier toevallig goed — "HEAD" is nu eenmaal niet "main" — maar het is
+# een toevalstreffer, en wie die aanroep ooit corrigeert zou daarmee stil de
+# eerste commit van elk nieuw project blokkeren. symbolic-ref noemt de branch
+# ook vóór de eerste commit; de uitzondering daarvoor staat expliciet bij
+# `commit` en leunt niet op een toevalligheid.
+#
+# Losse HEAD (detached) levert een lege naam op, en dat valt via `is_main` in
+# de veilige richting: niet blokkeren.
 huidige_branch() {
   if [ "${#padopties[@]}" -gt 0 ]; then
-    git -C "$werkmap" "${padopties[@]}" rev-parse --abbrev-ref HEAD 2>/dev/null
+    git -C "$werkmap" "${padopties[@]}" symbolic-ref --short HEAD 2>/dev/null
   else
-    git -C "$werkmap" rev-parse --abbrev-ref HEAD 2>/dev/null
+    git -C "$werkmap" symbolic-ref --short HEAD 2>/dev/null
   fi
 }
 
@@ -189,6 +199,25 @@ beoordeel_segment() {
 
   local arg
   case "$sub" in
+    commit)
+      # Werk hoort op een feature-branch te ontstaan, niet op main. De guard
+      # blokkeerde eerder alleen de push; dan liep je een hele sessie door en
+      # ontdekte je het pas aan het eind, met alle commits op main.
+      #
+      # Uitzondering: een repo zonder commits. De allereerste commit van een
+      # nieuw project staat per definitie op main, en die stap staat zo in
+      # WORKFLOW.md onder "Nieuw project opzetten".
+      if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
+        if is_main "$(huidige_branch)"; then
+          blokkeer "git commit op main" \
+"main krijgt zijn wijzigingen via een PR. Maak eerst een branch — je
+       wijzigingen gaan gewoon mee, er raakt niets kwijt:
+
+         git checkout -b feature/<naam>
+
+       Daarna committen en pushen zoals gewoonlijk."
+        fi
+      fi ;;
     reset)
       for arg in "$@"; do
         [ "$arg" = "--hard" ] && blokkeer "git reset --hard" \
