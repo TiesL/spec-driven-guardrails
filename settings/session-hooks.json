@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "wf=$(dirname \"$(dirname \"$(readlink .claude/settings.json 2>/dev/null)\")\"); if [ -x \"$wf/hooks/git-guardrails\" ]; then exec \"$wf/hooks/git-guardrails\"; fi; exit 0",
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; wf=$(dirname \"$(dirname \"$(readlink \"$p/.claude/settings.json\" 2>/dev/null)\")\"); if [ -x \"$wf/hooks/git-guardrails\" ]; then exec \"$wf/hooks/git-guardrails\"; fi; exit 0",
             "statusMessage": "git-guardrails"
           }
         ]

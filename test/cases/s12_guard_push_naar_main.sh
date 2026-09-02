@@ -55,6 +55,11 @@ geblokkeerd "push met --force"        "git push --force origin main" "$op_featur
 geblokkeerd "push met +main"          "git push origin +main"       "$op_feature"
 geblokkeerd "push die main verwijdert" "git push origin :main"      "$op_feature"
 
+# --all en --mirror pushen alle branches, dus ook main - ongeacht waar je staat.
+geblokkeerd "push --all"              "git push --all origin"       "$op_feature"
+geblokkeerd "push --mirror"           "git push --mirror origin"    "$op_feature"
+geblokkeerd "push met env-prefix"     "FOO=1 git push origin main"  "$op_feature"
+
 # De toestandsafhankelijke kale push: alleen op de huidige branch keyen mist de
 # categorie hierboven, en alleen op refspecs keyen mist deze.
 geblokkeerd "kale push op main"       "git push"                    "$op_main"

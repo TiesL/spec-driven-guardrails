@@ -287,7 +287,14 @@ huidige branch keyen mist de eerste categorie. `mattpocock`'s versie blokkeert
 bestaande `SessionEnd`-hook breken.
 
 JSON-parsing: `jq` als aanwezig (staat in `/usr/bin` op macOS 26), anders
-`python3`, anders `sed`; ontbreken alle drie, dan luid waarschuwen en toestaan.
+`python3`; ontbreken beide, dan luid waarschuwen en toestaan.
+
+**Geen `sed`-vangnet.** Een eerdere versie noemde die als derde laag. Bij nader
+inzien is dat schadelijker dan nuttig: een `sed`-benadering van JSON leest
+strings met escapes verkeerd, en een guard die het commando verkeerd leest kan
+zowel iets onschuldigs blokkeren als iets destructiefs doorlaten — precies de
+twee uitkomsten die hij moet voorkomen. Niets kunnen lezen en dat luid melden
+is eerlijker dan een gok.
 
 De hookregel moet `if [ -x … ]; then exec …; fi; exit 0` zijn, **niet**
 `[ -x … ] && … || exit 0` — die tweede vorm slikt exit 2 in en zet de guard stil

@@ -54,9 +54,17 @@ if isinstance(waarde, str):
   fi
 }
 
-if ! tool="$(lees_veld .tool_name)"; then
-  echo "waarschuwing: git-guardrails kan de invoer niet lezen (geen jq en geen python3)." >&2
-  echo "De guard laat dit commando door. Installeer jq of python3 om hem te laten werken." >&2
+if ! command -v jq >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
+  echo "waarschuwing: git-guardrails heeft geen jq en geen python3 en kan de invoer" >&2
+  echo "dus niet lezen. Het commando wordt doorgelaten. Installeer een van beide." >&2
+  exit 0
+fi
+
+tool="$(lees_veld .tool_name)"
+if [ -z "$tool" ]; then
+  # Wel een parser, maar niets bruikbaars eruit: dan is de invoer geen geldige
+  # JSON of mist het veld. Niets om over te oordelen; geen waarschuwing, want
+  # dit is geen storing aan onze kant.
   exit 0
 fi
 
@@ -103,10 +111,59 @@ is_main() {
 # --- per commando in de keten ----------------------------------------------
 # Alleen segmenten die zelf met `git` beginnen worden beoordeeld. Zo blokkeert
 # `echo "gebruik nooit git reset --hard"` niets: daar staat `git` niet vooraan.
+# Is dit een korte-vlagcluster (`-fd`, `-D`) die <letter> bevat? Lange opties
+# tellen niet mee: `--exclude=foo` bevat een `f`, maar is geen `-f`. Dat
+# onderscheid is niet cosmetisch — zonder dat blokkeert de guard `git clean -n
+# --exclude=foo`, een dry run die niets weggooit.
+korte_vlag_met() {
+  local token="$1" letter="$2"
+  case "$token" in
+    --*) return 1 ;;
+    -*)  ;;
+    *)   return 1 ;;
+  esac
+  # Alleen het deel vóór een eventuele `=` telt als cluster.
+  local cluster="${token%%=*}"
+  case "$cluster" in
+    *"$letter"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Wijst dit argument de hele werkmap aan? `.`, `./` en `./.` zijn dezelfde plek.
+is_hele_werkmap() {
+  case "$1" in
+    .|./|./.) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 beoordeel_segment() {
   local segment="$1"
+
+  # Globbing uit vóór het tokeniseren: `set -- $segment` zou anders ook
+  # pathname-expansion doen en het commando anders lezen dan het er staat.
+  set -f
   # shellcheck disable=SC2086  # bewuste woordsplitsing om te tokeniseren
   set -- $segment
+  set +f
+
+  # Omgevingsvariabelen vóór het commando horen bij de aanroep, niet bij een
+  # ander programma: `GIT_TRACE=1 git reset --hard` is nog steeds een git-
+  # commando. Zonder deze stap omzeilt elke var-prefix de hele guard.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      CLAUDE_WORKFLOW_GUARDRAILS_UIT=*)
+        # De uitweg zoals de blokkade-melding hem voorschrijft. Hij moet in de
+        # commandotekst kunnen staan: een nog niet gestart commando kan de
+        # omgeving van deze guard per definitie niet beinvloeden.
+        echo "waarschuwing: git-guardrails is voor dit commando expliciet uitgezet." >&2
+        return 0 ;;
+      [A-Za-z_]*=*) shift ;;
+      *) break ;;
+    esac
+  done
+
   [ "${1:-}" = "git" ] || return 0
   shift
 
@@ -123,6 +180,7 @@ beoordeel_segment() {
   [ -n "$sub" ] || return 0
   shift
 
+  local arg
   case "$sub" in
     reset)
       for arg in "$@"; do
@@ -131,35 +189,44 @@ beoordeel_segment() {
       done ;;
     clean)
       for arg in "$@"; do
-        case "$arg" in
-          --force) blokkeer "git clean --force" "dit verwijdert ongetrackte bestanden onherroepelijk." ;;
-          -*f*)    blokkeer "git clean $arg" "dit verwijdert ongetrackte bestanden onherroepelijk." ;;
-        esac
+        if [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; then
+          blokkeer "git clean $arg" "dit verwijdert ongetrackte bestanden onherroepelijk."
+        fi
       done ;;
     branch)
+      local heeft_delete=0 heeft_force=0
       for arg in "$@"; do
-        case "$arg" in
-          -D|-*D*) blokkeer "git branch $arg" \
-            "dit verwijdert een branch ook als die niet gemerged is; gebruik -d." ;;
-        esac
-      done ;;
+        korte_vlag_met "$arg" D && blokkeer "git branch $arg" \
+          "dit verwijdert een branch ook als die niet gemerged is; gebruik -d."
+        [ "$arg" = "--delete" ] && heeft_delete=1
+        { [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; } && heeft_force=1
+      done
+      if [ "$heeft_delete" -eq 1 ] && [ "$heeft_force" -eq 1 ]; then
+        blokkeer "git branch --delete --force" \
+          "dit verwijdert een branch ook als die niet gemerged is; gebruik alleen --delete."
+      fi ;;
     checkout|restore)
       for arg in "$@"; do
-        [ "$arg" = "." ] && blokkeer "git $sub ." \
+        is_hele_werkmap "$arg" && blokkeer "git $sub $arg" \
           "dit gooit alle niet-gecommitte wijzigingen in de werkmap weg."
       done ;;
     push)
-      local doelen="" arg
+      local doelen=""
       for arg in "$@"; do
         case "$arg" in
+          --all|--mirror)
+            blokkeer "git push $arg" \
+              "dit pusht alle branches, dus ook main — ongeacht waar je nu staat." ;;
           -*) continue ;;
         esac
         doelen="$doelen $arg"
       done
 
       # Eerste niet-vlag is de remote; wat daarna komt zijn refspecs.
+      set -f
       # shellcheck disable=SC2086  # bewuste woordsplitsing
       set -- $doelen
+      set +f
       [ $# -gt 0 ] && shift
 
       if [ $# -eq 0 ]; then

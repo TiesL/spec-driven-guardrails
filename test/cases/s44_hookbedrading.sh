@@ -57,6 +57,15 @@ case "$opdracht" in
   *) fail "S44 — de hookopdracht gebruikt geen exec; de exitstatus komt dan niet door" ;;
 esac
 
+# And: de bedrading mag niet afhangen van de toevallige werkdirectory van het
+# hook-proces. Draait die in een submap, dan zou een relatief `readlink` niets
+# vinden en de guard stil uitvallen - zonder enige melding, in tegenstelling
+# tot het luide falen bij ontbrekende jq/python3.
+mkdir -p "$project/src/diep"
+printf '%s' "$invoer" | (cd "$project/src/diep" && CLAUDE_PROJECT_DIR="$project" bash -c "$opdracht") >/dev/null 2>&1
+status_diep=$?
+[ "$status_diep" -eq 2 ] || fail "S44 — de bedrading valt uit vanuit een submap (exit $status_diep)"
+
 # Legitiem werk moet er ook via de bedrading doorheen komen.
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
