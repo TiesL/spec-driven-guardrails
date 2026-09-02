@@ -282,6 +282,15 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ## Git-guardrails
 
+### S44 — De hookbedrading laat de blokkade door
+**Dekt:** F7
+- Given: een project waarvan `.claude/settings.json` naar dit repo symlinkt
+- When: de geconfigureerde `PreToolUse`-opdracht een te blokkeren commando krijgt
+- Then: exitstatus 2 komt eruit — de guard blokkeert daadwerkelijk
+- And: de vorm `[ -x … ] && … || exit 0` doet dat níét: de `||` vangt exit 2 op
+  en meldt succes, waarmee de guard stil uit staat terwijl hij geïnstalleerd
+  lijkt. Daarom `if … then exec … fi; exit 0`
+
 ### S11 — Destructieve commando's worden geblokkeerd
 **Dekt:** F7
 - Given: de guardrails-hook is actief

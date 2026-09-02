@@ -1,5 +1,17 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "wf=$(dirname \"$(dirname \"$(readlink .claude/settings.json 2>/dev/null)\")\"); if [ -x \"$wf/hooks/git-guardrails\" ]; then exec \"$wf/hooks/git-guardrails\"; fi; exit 0",
+            "statusMessage": "git-guardrails"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

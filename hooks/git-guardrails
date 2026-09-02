@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+# hooks/git-guardrails — PreToolUse-guard tegen destructieve git-commando's.
+#
+# "Nooit rechtstreeks naar main" was een afspraak zonder slot: branch protection
+# vereist een betaald plan op private repo's. Dit is dat slot.
+#
+# Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
+# `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
+# Claude. Elke andere status laat het commando doorgaan.
+#
+# Grondregel: bij twijfel toestaan. Een gemist geval is vervelend; een vals
+# positief blokkeert werk in vier projecten tegelijk en bereikt ze zónder
+# her-adoptie, omdat de hookconfiguratie gesymlinkt is.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+# Bewuste uitweg. Een guard zonder uitweg wordt op den duur omzeild door het
+# script aan te passen, en dat is erger dan een guard die je expliciet uitzet.
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
+  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  exit 0
+fi
+
+# Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
+# kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
+# een ontbrekend hulpprogramma struikelt.
+invoer="$(</dev/stdin)"
+[ -n "$invoer" ] || exit 0
+
+# --- invoer lezen ----------------------------------------------------------
+lees_veld() {
+  local pad="$1"
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$invoer" | jq -r "$pad // empty" 2>/dev/null
+  elif command -v python3 >/dev/null 2>&1; then
+    printf '%s' "$invoer" | python3 -c '
+import json, sys
+pad = sys.argv[1].lstrip(".").split(".")
+try:
+    waarde = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for stap in pad:
+    if not isinstance(waarde, dict) or stap not in waarde:
+        sys.exit(0)
+    waarde = waarde[stap]
+if isinstance(waarde, str):
+    sys.stdout.write(waarde)
+' "$pad" 2>/dev/null
+  else
+    return 1
+  fi
+}
+
+if ! tool="$(lees_veld .tool_name)"; then
+  echo "waarschuwing: git-guardrails kan de invoer niet lezen (geen jq en geen python3)." >&2
+  echo "De guard laat dit commando door. Installeer jq of python3 om hem te laten werken." >&2
+  exit 0
+fi
+
+# Geen Bash-aanroep, of onleesbare JSON: niets om over te oordelen.
+[ "$tool" = "Bash" ] || exit 0
+commando="$(lees_veld .tool_input.command)"
+[ -n "$commando" ] || exit 0
+
+werkmap="$(lees_veld .cwd)"
+[ -n "$werkmap" ] || werkmap="$PWD"
+
+# --- hulpfuncties ----------------------------------------------------------
+huidige_branch() {
+  git -C "$werkmap" rev-parse --abbrev-ref HEAD 2>/dev/null
+}
+
+blokkeer() {
+  echo "Geblokkeerd door git-guardrails: $1" >&2
+  echo "" >&2
+  echo "Reden: $2" >&2
+  echo "" >&2
+  echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+  exit 2
+}
+
+# Bepaalt de bestemming van één refspec. `feature:main` levert `main`,
+# `+main` levert `main`, `:main` (verwijderen) ook.
+refspec_doel() {
+  local spec="${1#+}"
+  case "$spec" in
+    *:*) echo "${spec##*:}" ;;
+    *)   echo "$spec" ;;
+  esac
+}
+
+is_main() {
+  case "$1" in
+    main|refs/heads/main) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- per commando in de keten ----------------------------------------------
+# Alleen segmenten die zelf met `git` beginnen worden beoordeeld. Zo blokkeert
+# `echo "gebruik nooit git reset --hard"` niets: daar staat `git` niet vooraan.
+beoordeel_segment() {
+  local segment="$1"
+  # shellcheck disable=SC2086  # bewuste woordsplitsing om te tokeniseren
+  set -- $segment
+  [ "${1:-}" = "git" ] || return 0
+  shift
+
+  # Globale git-opties overslaan (-C pad, -c sleutel=waarde, --no-pager, ...).
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -C|-c) shift 2 || return 0 ;;
+      -*)    shift ;;
+      *)     break ;;
+    esac
+  done
+
+  local sub="${1:-}"
+  [ -n "$sub" ] || return 0
+  shift
+
+  case "$sub" in
+    reset)
+      for arg in "$@"; do
+        [ "$arg" = "--hard" ] && blokkeer "git reset --hard" \
+          "dit gooit je werk in de werkmap onherroepelijk weg."
+      done ;;
+    clean)
+      for arg in "$@"; do
+        case "$arg" in
+          --force) blokkeer "git clean --force" "dit verwijdert ongetrackte bestanden onherroepelijk." ;;
+          -*f*)    blokkeer "git clean $arg" "dit verwijdert ongetrackte bestanden onherroepelijk." ;;
+        esac
+      done ;;
+    branch)
+      for arg in "$@"; do
+        case "$arg" in
+          -D|-*D*) blokkeer "git branch $arg" \
+            "dit verwijdert een branch ook als die niet gemerged is; gebruik -d." ;;
+        esac
+      done ;;
+    checkout|restore)
+      for arg in "$@"; do
+        [ "$arg" = "." ] && blokkeer "git $sub ." \
+          "dit gooit alle niet-gecommitte wijzigingen in de werkmap weg."
+      done ;;
+    push)
+      local doelen="" arg
+      for arg in "$@"; do
+        case "$arg" in
+          -*) continue ;;
+        esac
+        doelen="$doelen $arg"
+      done
+
+      # Eerste niet-vlag is de remote; wat daarna komt zijn refspecs.
+      # shellcheck disable=SC2086  # bewuste woordsplitsing
+      set -- $doelen
+      [ $# -gt 0 ] && shift
+
+      if [ $# -eq 0 ]; then
+        # Geen refspec: waar dit heen gaat hangt af van de huidige branch.
+        is_main "$(huidige_branch)" && blokkeer "git push vanaf main" \
+          "main is uitgecheckt, dus deze push gaat naar main. Werk op een feature-branch."
+        return 0
+      fi
+
+      for arg in "$@"; do
+        local doel; doel="$(refspec_doel "$arg")"
+        if [ "$doel" = "HEAD" ]; then
+          is_main "$(huidige_branch)" && blokkeer "git push origin HEAD vanaf main" \
+            "HEAD wijst hier naar main, dus deze push gaat naar main."
+        elif is_main "$doel"; then
+          blokkeer "git push naar main" \
+            "main krijgt zijn wijzigingen via een PR, niet via een directe push."
+        fi
+      done ;;
+  esac
+}
+
+# De keten opsplitsen op shell-scheidingstekens. Newlines en de gangbare
+# operatoren; genoeg om `git add . && git reset --hard` te zien.
+# shellcheck disable=SC2020  # drie tekens naar newline is precies de bedoeling
+rest="$(printf '%s' "$commando" | tr ';|&' '\n\n\n')"
+while IFS= read -r segment || [ -n "$segment" ]; do
+  [ -n "$segment" ] || continue
+  beoordeel_segment "$segment"
+done <<EOF
+$rest
+EOF
+
+exit 0
