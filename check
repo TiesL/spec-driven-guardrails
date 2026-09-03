@@ -135,6 +135,24 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
   fi
 fi
 
+# --- 3b. Python-syntaxis -----------------------------------------------------
+# Pariteit met `bash -n`: sinds de guard zijn invoer door een python-script laat
+# lezen, hoort ook die kant op syntaxis gecontroleerd te worden.
+pyscripts="$(find "$doel" -type f -name '*.py' -not -path '*/.git/*' | sort)"
+if [ -n "$pyscripts" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    echo "check: python-syntaxis"
+    for script in $pyscripts; do
+      if ! foutmelding="$(python3 -m py_compile "$script" 2>&1)"; then
+        melden_fout "syntaxfout in ${script#"$doel"/}: $foutmelding"
+      fi
+    done
+    find "$doel" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null
+  else
+    echo "check: python3 niet geinstalleerd — python-syntaxis overgeslagen"
+  fi
+fi
+
 # --- 4. shellcheck ---------------------------------------------------------
 # Waarschuwen, niet eisen: niet elke machine heeft hem, en een ontbrekende
 # linter mag geen groene build rood maken.

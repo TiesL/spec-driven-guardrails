@@ -1,0 +1,310 @@
+#!/usr/bin/env bash
+# hooks/git-guardrails — PreToolUse-guard tegen destructieve git-commando's.
+#
+# "Nooit rechtstreeks naar main" was een afspraak zonder slot: branch protection
+# vereist een betaald plan op private repo's. Dit is dat slot.
+#
+# Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
+# `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
+# Claude. Elke andere status laat het commando doorgaan.
+#
+# Grondregel: bij twijfel toestaan. Een gemist geval is vervelend; een vals
+# positief blokkeert werk in vier projecten tegelijk en bereikt ze zónder
+# her-adoptie, omdat de hookconfiguratie gesymlinkt is.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+# Bewuste uitweg. Een guard zonder uitweg wordt op den duur omzeild door het
+# script aan te passen, en dat is erger dan een guard die je expliciet uitzet.
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
+  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  exit 0
+fi
+
+# Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
+# kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
+# een ontbrekend hulpprogramma struikelt.
+# Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
+# kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
+# een ontbrekend hulpprogramma struikelt.
+invoer="$(</dev/stdin)"
+[ -n "$invoer" ] || exit 0
+
+eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+lezer="$eigen_map/lees-commando.py"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "waarschuwing: git-guardrails heeft python3 nodig om het commando te lezen" >&2
+  echo "en laat dit commando dus door. Installeer python3 om de guard te laten werken." >&2
+  exit 0
+fi
+if [ ! -r "$lezer" ]; then
+  echo "waarschuwing: git-guardrails mist $lezer en laat dit commando door." >&2
+  exit 0
+fi
+
+# De lezer bepaalt als enige hoe het commando gelezen wordt: JSON, heredocs,
+# quoting en tokenisatie. Deze guard vergelijkt alleen nog tokens. Zonder die
+# scheiding moest bash quoting nabootsen, en dat blokkeerde onschuldige
+# commando's — een `;` in een commitboodschap brak het commando in stukken.
+#
+# Via een bestand, niet via $(...): een tokenstroom is NUL-gescheiden en
+# commandosubstitutie gooit NUL-bytes weg.
+stroom="$(mktemp)" || exit 0
+trap 'rm -f "$stroom"' EXIT
+
+printf '%s' "$invoer" | python3 "$lezer" > "$stroom"
+case $? in
+  0) ;;
+  4) exit 0 ;;   # geen Bash-aanroep of geen commando
+  *) exit 0 ;;   # niet te lezen: niet gokken naar een lezing
+esac
+
+# --- hulpfuncties ----------------------------------------------------------
+# De padbepalende opties van het beoordeelde commando gaan mee, zodat git zelf
+# uitrekent welke repo bedoeld is. `git -C ../ander push origin HEAD` gaat over
+# die andere repo, niet over de map waar de sessie toevallig staat.
+#
+# Bewust alleen `-C`, `--git-dir` en `--work-tree`: die bepalen het pad. Andere
+# globale opties komen uit dezelfde niet-vertrouwde tekst als het commando zelf
+# en worden niet doorgegeven. Daarmee mist de guard `-c core.worktree=<pad>` —
+# dezelfde uitwerking via de config-route. Bewust geaccepteerd: dat geval
+# openzetten vraagt een witte lijst van veilige configsleutels, en een gemist
+# geval weegt hier lichter dan die vraag heropenen.
+#
+# Als argv-array, nooit als samengestelde string: die opnieuw door een shell
+# laten lezen brengt precies de woordsplitsing terug die deze guard wegneemt.
+# `symbolic-ref` en niet `rev-parse --abbrev-ref`: die laatste geeft op een repo
+# zonder commits de letterlijke tekst "HEAD" terug in plaats van de branchnaam.
+# Dat werkt hier toevallig goed — "HEAD" is nu eenmaal niet "main" — maar het is
+# een toevalstreffer, en wie die aanroep ooit corrigeert zou daarmee stil de
+# eerste commit van elk nieuw project blokkeren. symbolic-ref noemt de branch
+# ook vóór de eerste commit; de uitzondering daarvoor staat expliciet bij
+# `commit` en leunt niet op een toevalligheid.
+#
+# Losse HEAD (detached) levert een lege naam op, en dat valt via `is_main` in
+# de veilige richting: niet blokkeren.
+huidige_branch() {
+  if [ "${#padopties[@]}" -gt 0 ]; then
+    git -C "$werkmap" "${padopties[@]}" symbolic-ref --short HEAD 2>/dev/null
+  else
+    git -C "$werkmap" symbolic-ref --short HEAD 2>/dev/null
+  fi
+}
+
+blokkeer() {
+  echo "Geblokkeerd door git-guardrails: $1" >&2
+  echo "" >&2
+  echo "Reden: $2" >&2
+  echo "" >&2
+  echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+  exit 2
+}
+
+# Bepaalt de bestemming van één refspec. `feature:main` levert `main`,
+# `+main` levert `main`, `:main` (verwijderen) ook.
+refspec_doel() {
+  local spec="${1#+}"
+  case "$spec" in
+    *:*) echo "${spec##*:}" ;;
+    *)   echo "$spec" ;;
+  esac
+}
+
+is_main() {
+  case "$1" in
+    main|refs/heads/main) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- per commando in de keten ----------------------------------------------
+# Alleen segmenten die zelf met `git` beginnen worden beoordeeld. Zo blokkeert
+# `echo "gebruik nooit git reset --hard"` niets: daar staat `git` niet vooraan.
+# Is dit een korte-vlagcluster (`-fd`, `-D`) die <letter> bevat? Lange opties
+# tellen niet mee: `--exclude=foo` bevat een `f`, maar is geen `-f`. Dat
+# onderscheid is niet cosmetisch — zonder dat blokkeert de guard `git clean -n
+# --exclude=foo`, een dry run die niets weggooit.
+korte_vlag_met() {
+  local token="$1" letter="$2"
+  case "$token" in
+    --*) return 1 ;;
+    -*)  ;;
+    *)   return 1 ;;
+  esac
+  local cluster="${token%%=*}"
+  case "$cluster" in
+    *"$letter"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Wijst dit argument de hele werkmap aan? `.`, `./` en `./.` zijn dezelfde plek.
+is_hele_werkmap() {
+  case "$1" in
+    .|./|./.) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Krijgt de tokens van één segment als argumenten — al ontdaan van quotes.
+beoordeel_segment() {
+  [ $# -gt 0 ] || return 0
+
+  # Omgevingsvariabelen vóór het commando horen bij de aanroep, niet bij een
+  # ander programma: `GIT_TRACE=1 git reset --hard` is nog steeds een
+  # git-commando. Zonder deze stap omzeilt elke var-prefix de hele guard.
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      CLAUDE_WORKFLOW_GUARDRAILS_UIT=*)
+        # De uitweg zoals de blokkade-melding hem voorschrijft. Hij moet in de
+        # commandotekst kunnen staan: een nog niet gestart commando kan de
+        # omgeving van deze guard per definitie niet beinvloeden.
+        echo "waarschuwing: git-guardrails is voor dit commando expliciet uitgezet." >&2
+        return 0 ;;
+      [A-Za-z_]*=*) shift ;;
+      *) break ;;
+    esac
+  done
+
+  [ "${1:-}" = "git" ] || return 0
+  shift
+
+  # Globale git-opties overslaan. De padbepalende worden onthouden; die gaan
+  # mee naar de branch-controle zodat git zelf de repo bepaalt.
+  padopties=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -C|--git-dir|--work-tree)
+        [ $# -ge 2 ] || return 0
+        padopties+=("$1" "$2")
+        shift 2 ;;
+      --git-dir=*|--work-tree=*)
+        padopties+=("$1")
+        shift ;;
+      -c)
+        [ $# -ge 2 ] || return 0
+        shift 2 ;;
+      -*) shift ;;
+      *)  break ;;
+    esac
+  done
+
+  local sub="${1:-}"
+  [ -n "$sub" ] || return 0
+  shift
+
+  local arg
+  case "$sub" in
+    commit)
+      # Werk hoort op een feature-branch te ontstaan, niet op main. De guard
+      # blokkeerde eerder alleen de push; dan liep je een hele sessie door en
+      # ontdekte je het pas aan het eind, met alle commits op main.
+      #
+      # Uitzondering: een repo zonder commits. De allereerste commit van een
+      # nieuw project staat per definitie op main, en die stap staat zo in
+      # WORKFLOW.md onder "Nieuw project opzetten".
+      if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
+        if is_main "$(huidige_branch)"; then
+          blokkeer "git commit op main" \
+"main krijgt zijn wijzigingen via een PR. Maak eerst een branch — je
+       wijzigingen gaan gewoon mee, er raakt niets kwijt:
+
+         git checkout -b feature/<naam>
+
+       Daarna committen en pushen zoals gewoonlijk."
+        fi
+      fi ;;
+    reset)
+      for arg in "$@"; do
+        [ "$arg" = "--hard" ] && blokkeer "git reset --hard" \
+          "dit gooit je werk in de werkmap onherroepelijk weg."
+      done ;;
+    clean)
+      for arg in "$@"; do
+        if [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; then
+          blokkeer "git clean $arg" "dit verwijdert ongetrackte bestanden onherroepelijk."
+        fi
+      done ;;
+    branch)
+      local heeft_delete=0 heeft_force=0
+      for arg in "$@"; do
+        korte_vlag_met "$arg" D && blokkeer "git branch $arg" \
+          "dit verwijdert een branch ook als die niet gemerged is; gebruik -d."
+        [ "$arg" = "--delete" ] && heeft_delete=1
+        { [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; } && heeft_force=1
+      done
+      if [ "$heeft_delete" -eq 1 ] && [ "$heeft_force" -eq 1 ]; then
+        blokkeer "git branch --delete --force" \
+          "dit verwijdert een branch ook als die niet gemerged is; gebruik alleen --delete."
+      fi ;;
+    checkout|restore)
+      for arg in "$@"; do
+        is_hele_werkmap "$arg" && blokkeer "git $sub $arg" \
+          "dit gooit alle niet-gecommitte wijzigingen in de werkmap weg."
+      done ;;
+    push)
+      local refspecs=() remote_gezien=0
+      for arg in "$@"; do
+        case "$arg" in
+          --all|--mirror)
+            blokkeer "git push $arg" \
+              "dit pusht alle branches, dus ook main — ongeacht waar je nu staat." ;;
+          -*) continue ;;
+        esac
+        if [ "$remote_gezien" -eq 0 ]; then
+          remote_gezien=1
+        else
+          refspecs+=("$arg")
+        fi
+      done
+
+      if [ "${#refspecs[@]}" -eq 0 ]; then
+        # Geen refspec: waar dit heen gaat hangt af van de huidige branch.
+        is_main "$(huidige_branch)" && blokkeer "git push vanaf main" \
+          "main is uitgecheckt, dus deze push gaat naar main. Werk op een feature-branch."
+        return 0
+      fi
+
+      for arg in "${refspecs[@]}"; do
+        local doel; doel="$(refspec_doel "$arg")"
+        if [ "$doel" = "HEAD" ]; then
+          is_main "$(huidige_branch)" && blokkeer "git push origin HEAD vanaf main" \
+            "HEAD wijst hier naar main, dus deze push gaat naar main."
+        elif is_main "$doel"; then
+          blokkeer "git push naar main" \
+            "main krijgt zijn wijzigingen via een PR, niet via een directe push."
+        fi
+      done ;;
+  esac
+}
+
+# De tokenstroom lezen. Records zijn NUL-gescheiden en dragen een typeteken:
+# `c` de werkmap, `t` een token, `e` het einde van een segment.
+# Standaard de eigen werkdirectory; de stroom overschrijft hem als eerste
+# record. Die volgorde is gegarandeerd, maar de fallback hoort ervóór te staan:
+# een segment wordt al beoordeeld tijdens de lus.
+werkmap="$PWD"
+tokens=()
+padopties=()
+
+while IFS= read -r -d '' record; do
+  # Substring-expansie, geen patroonvergelijking: een waarde kan glob-tekens
+  # bevatten en die zouden een `%%`-constructie laten misgrijpen.
+  soort="${record:0:1}"
+  waarde="${record:1}"
+  case "$soort" in
+    c) [ -n "$waarde" ] && werkmap="$waarde" ;;
+    t) tokens+=("$waarde") ;;
+    e)
+      if [ "${#tokens[@]}" -gt 0 ]; then
+        beoordeel_segment "${tokens[@]}"
+      fi
+      tokens=() ;;
+  esac
+done < "$stroom"
+
+exit 0

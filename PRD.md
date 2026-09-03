@@ -275,8 +275,21 @@ de eerste productie-uitrol; de rest → zichtbaar tot je eraan toekomt.
 
 ### F7 — Git-guardrails als `PreToolUse`-hook
 
-Blokkeert `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .` en
-`push` **naar `main`**.
+Blokkeert `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
+`commit` **op `main`** en `push` **naar `main`**.
+
+**`commit` op `main` blokkeren is een bewuste uitbreiding**, op verzoek van Ties
+toegevoegd nadat bleek dat alleen de push blokkeren een slecht moment oplevert:
+je werkt een hele sessie door, commit alles op `main`, en loopt pas aan het eind
+tegen de muur. Erger nog — de `SessionEnd`-hook slaat zijn push over op `main`,
+dus dat werk bereikt de remote helemaal niet meer, terwijl je vóór deze guard
+nog handmatig had kunnen pushen. De blokkade zet dat moment naar voren.
+
+De melding moet daarom de uitweg noemen (`git checkout -b`) én dat de
+wijzigingen meegaan. Zonder dat blijft het werk *ongecommit*, en dat is
+onveiliger dan de lokale commit die je net tegenhield. Uitzondering: een repo
+zonder commits — de allereerste commit van een nieuw project staat per definitie
+op `main`.
 
 Dat laatste is **tweeledig**: expliciete refspecs die `main` raken
 (`git push origin main`, `git push origin HEAD:main` — vanaf welke branch dan
@@ -287,7 +300,14 @@ huidige branch keyen mist de eerste categorie. `mattpocock`'s versie blokkeert
 bestaande `SessionEnd`-hook breken.
 
 JSON-parsing: `jq` als aanwezig (staat in `/usr/bin` op macOS 26), anders
-`python3`, anders `sed`; ontbreken alle drie, dan luid waarschuwen en toestaan.
+`python3`; ontbreken beide, dan luid waarschuwen en toestaan.
+
+**Geen `sed`-vangnet.** Een eerdere versie noemde die als derde laag. Bij nader
+inzien is dat schadelijker dan nuttig: een `sed`-benadering van JSON leest
+strings met escapes verkeerd, en een guard die het commando verkeerd leest kan
+zowel iets onschuldigs blokkeren als iets destructiefs doorlaten — precies de
+twee uitkomsten die hij moet voorkomen. Niets kunnen lezen en dat luid melden
+is eerlijker dan een gok.
 
 De hookregel moet `if [ -x … ]; then exec …; fi; exit 0` zijn, **niet**
 `[ -x … ] && … || exit 0` — die tweede vorm slikt exit 2 in en zet de guard stil

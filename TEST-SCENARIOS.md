@@ -282,6 +282,51 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ## Git-guardrails
 
+### S44 — De hookbedrading laat de blokkade door
+**Dekt:** F7
+- Given: een project waarvan `.claude/settings.json` naar dit repo symlinkt
+- When: de geconfigureerde `PreToolUse`-opdracht een te blokkeren commando krijgt
+- Then: exitstatus 2 komt eruit — de guard blokkeert daadwerkelijk
+- And: de vorm `[ -x … ] && … || exit 0` doet dat níét: de `||` vangt exit 2 op
+  en meldt succes, waarmee de guard stil uit staat terwijl hij geïnstalleerd
+  lijkt. Daarom `if … then exec … fi; exit 0`
+
+### S47 — Committen op `main` wordt geblokkeerd, met een begaanbare uitweg
+**Dekt:** F7
+- Given: `main` is uitgecheckt in een repo die al commits heeft
+- When: `git commit` wordt aangeroepen
+- Then: het wordt geblokkeerd, en de melding noemt `git checkout -b` én dat de
+  wijzigingen gewoon meegaan
+- And: dat laatste is geen beleefdheid maar noodzaak — zonder die uitweg blijft
+  het werk ongecommit, en dat is onveiliger dan de lokale commit die je net
+  tegenhield
+- And: op een feature-branch gaat committen gewoon door
+- And: een repo zonder commits is de uitzondering: de allereerste commit van een
+  nieuw project staat per definitie op `main`, en die stap staat zo in
+  `WORKFLOW.md`
+
+### S45 — Tekst binnen quotes is data, geen commando
+**Dekt:** F7
+- Given: een commando met een `;`, `|` of `&` binnen een gequote string, of met
+  een heredoc waarvan de body met `git` begint
+- When: de guard het beoordeelt
+- Then: het gaat door — de inhoud van een string of heredoc is data
+- And: een gequote vlag telt juist wél mee: `git reset "--hard"` is hetzelfde
+  commando als zonder quotes. Beide eisen tegelijk kunnen alleen met echte
+  quote-bewuste tokenisatie; quoted spans maskeren lost het eerste op en maakt
+  het tweede permanent onmogelijk
+
+### S46 — De branch wordt bepaald in de repo waar het commando over gaat
+**Dekt:** F7
+- Given: `git -C <pad> push origin HEAD`, waarbij `<pad>` een andere repo is dan
+  de map waar de sessie staat
+- When: de guard de huidige branch bepaalt
+- Then: hij kijkt naar de repo uit `-C`, niet naar de sessiemap
+- And: `--git-dir` en `--work-tree` tellen net zo mee, en git rekent zelf uit hoe
+  ze zich verhouden — de guard herimplementeert die regels niet
+- And: bestaat dat pad niet of is het geen repo, dan komt er geen branch uit en
+  wordt er niet geblokkeerd
+
 ### S11 — Destructieve commando's worden geblokkeerd
 **Dekt:** F7
 - Given: de guardrails-hook is actief
