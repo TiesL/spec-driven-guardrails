@@ -8,9 +8,15 @@
 # repo heeft geen package.json (zie de toelichting in ./check). Precies het
 # "andere stack"-geval dat WORKFLOW.md beschrijft.
 name: CI
+
+# Draait op pull requests én op pushes naar main, om dezelfde reden als het
+# sjabloon: `pull_request` beoordeelt het samengevoegde resultaat en is de vorm
+# die als vereiste controle op een pull request ingesteld kan worden, en de
+# push-trigger vangt op wat main langs een andere weg bereikt.
 on:
+  pull_request:
   push:
-    branches-ignore: [main]
+    branches: [main]
 
 jobs:
   check:

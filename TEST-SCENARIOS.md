@@ -581,8 +581,10 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: `adopt.sh` opnieuw draait
 - Then: dat bestand blijft ongemoeid — `scaffold_if_missing` schrijft alleen wat
   ontbreekt
-- And: er verschijnt een melding dat het sjabloon nieuwer is, zodat de afwijking
-  niet stil blijft
+- And: de afwijking blijft niet onzichtbaar. De adoptieregistratie stelt de vraag
+  `ci-op-pr-en-main`, en blijft die stellen tot het project hem beantwoordt. Dat
+  is het mechanisme, niet een melding in `adopt.sh` die één keer voorbijkomt en
+  daarna weg is
 
 ### S50 — De guard geldt ook buiten Claude om
 **Dekt:** F17

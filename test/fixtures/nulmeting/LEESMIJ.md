@@ -25,13 +25,13 @@ openstaand-set is een functie van **twee** invoeren — de projecttoestand én
 
 | Project | `WORKFLOW-ADOPTIE.md` | `package.json` | `deploy`-script | Openstaand |
 |---|---|---|---|---|
-| `a2t-emails` | **geen** | ja | nee | 25 |
-| `tennis-admin` | ja (3 antwoorden) | ja | ja | 24 |
+| `a2t-emails` | **geen** | ja | nee | 26 |
+| `tennis-admin` | ja (3 antwoorden) | ja | ja | 25 |
 | `tennis-registration` | ja (1 antwoord) | nee | n.v.t. | 24 |
 | `tennis-invoicing` | ja (1 antwoord) | nee | n.v.t. | 24 |
 
-De drie projecten met een tabel melden **exact dezelfde** 24 ID's, ondanks een
-verschillend aantal antwoorden. Dat is geen toeval en geen fout:
+De twee projecten zonder `package.json` melden **exact dezelfde** 24 ID's als
+`tennis-admin` vóór W24, ondanks een verschillend aantal antwoorden. Dat is geen toeval en geen fout:
 
 - `prd-testscenarios-issue-templates` is geretireerd en wordt sowieso nooit
   gevraagd — dat antwoord telt dus nergens mee.
@@ -41,10 +41,39 @@ verschillend aantal antwoorden. Dat is geen toeval en geen fout:
 
 Netto vallen aan beide kanten dezelfde twee vragen weg, om verschillende redenen.
 
+## Bijgewerkt in W24 (#45)
+
+De aantallen hierboven waren bij het invriezen 25 / 24 / 24 / 24. W24 voegde de
+entry `ci-op-pr-en-main` toe met predicaat `heeft-package-json`, en dat raakt
+precies de twee projecten die er een hebben: `a2t-emails` (25 naar 26) en
+`tennis-admin` (24 naar 25). De twee geneste projecten hebben geen
+`package.json` en blijven op 24.
+
+Dat is de tweede soort afwijking uit "Bijwerken — alleen bewust" hieronder: een
+legitiem gewijzigde vraagset, niet een gedragswijziging.
+
+`CHANGES.md.momentopname` is in dezelfde PR ververst. Die verversing haalt meer
+op dan alleen deze entry: de momentopname stond stil sinds W2, terwijl W4, W5 en
+W6 `CHANGES.md` intussen hadden verbouwd. Nagerekend welke ID's dat verschil
+maakt: de vijftien `spec-*`-entries zijn naar `nfr/` verhuisd (W5),
+`prd-testscenarios-issue-templates` is naar `CHANGES-ARCHIEF.md` gegaan (W6), en
+de sectiekoppen werden `###` (W4/W6). Geen van die drie voegde een vraag toe of
+haalde er een weg, dus de gouden sets bleven al die tijd kloppen — maar het is
+wel stilzwijgend meegelift en hoort hier vermeld.
+
+**Let op wat de momentopname sinds W5 niet meer dekt.** De vraagset komt sindsdien
+uit twee bronnen: `CHANGES.md` én `nfr/`. De momentopname bevat alleen de eerste,
+terwijl de gouden sets vol `spec-*`-ID's staan die uit de tweede komen. Wie deze
+nulmeting wil interpreteren heeft dus ook het `nfr/`-register nodig zoals dat op
+dat moment was. Dat register is versiebeheerd en `check` bewaakt zijn
+consistentie (`nfr_drift`), dus het is terug te vinden — maar het is niet
+ingevroren zoals `CHANGES.md` dat wel is, en dat is een gat in het vangnet.
+
 ## `a2t-emails` is bewust niet gerepareerd
 
 Dit project heeft **helemaal geen** `WORKFLOW-ADOPTIE.md`, dus staat alles open —
-25, want zijn `package.json` maakt `ci-conventie` van toepassing.
+26, want zijn `package.json` maakt zowel `ci-conventie` als `ci-op-pr-en-main`
+van toepassing.
 
 Dat bestand is hier bewust niet aangemaakt. Een fixture hoort de toestand vast te
 leggen zoals die was, niet de reparatie ervan; anders meet R9 straks tegen een
