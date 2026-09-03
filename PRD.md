@@ -283,7 +283,8 @@ toegevoegd nadat bleek dat alleen de push blokkeren een slecht moment oplevert:
 je werkt een hele sessie door, commit alles op `main`, en loopt pas aan het eind
 tegen de muur. Erger nog — de `SessionEnd`-hook slaat zijn push over op `main`,
 dus dat werk bereikt de remote helemaal niet meer, terwijl je vóór deze guard
-nog handmatig had kunnen pushen. De blokkade zet dat moment naar voren.
+nog handmatig had kunnen pushen. De blokkade zet dat moment naar voren; F18
+sluit de keerzijde ervan.
 
 De melding moet daarom de uitweg noemen (`git checkout -b`) én dat de
 wijzigingen meegaan. Zonder dat blijft het werk *ongecommit*, en dat is
@@ -298,6 +299,11 @@ is uitgecheckt, dus `git rev-parse --abbrev-ref HEAD` raadplegen). Alleen op de
 huidige branch keyen mist de eerste categorie. `mattpocock`'s versie blokkeert
 *alle* `git push` — hier overnemen zou de verplichte feature-branch-pushes én de
 bestaande `SessionEnd`-hook breken.
+
+Wat deze hook per definitie *niet* ziet, is alles buiten de agentic loop: een
+commando dat Ties zelf in zijn terminal typt komt er nooit langs. Dat gat is
+geen detail van de implementatie maar een eigenschap van `PreToolUse`, en het
+wordt apart geadresseerd in F17.
 
 JSON-parsing: `jq` als aanwezig (staat in `/usr/bin` op macOS 26), anders
 `python3`; ontbreken beide, dan luid waarschuwen en toestaan.
@@ -507,6 +513,70 @@ is (dezelfde asymmetrie als onder F10 beschreven).
 - Alle vier: ankers in de project-PRD's bijwerken (companion, geen blocker —
   `pre-merge-review` valt terug op kopnamen en méldt dat de ankers ontbreken).
 
+### F17 — Dekking buiten de agentic loop
+
+De guard uit F7 is een `PreToolUse`-hook, en die ziet uitsluitend wat Claude zelf
+uitvoert. De documentatie is daar expliciet over: `PreToolUse` reageert op
+tool-aanroepen binnen de agentic loop en heeft geen zicht op commando's die
+Ties zelf in zijn terminal typt. Diezelfde `git reset --hard` in een eigen
+terminalvenster, in een IDE, of op een tweede machine zonder `adopt.sh` gaat
+onverkort door.
+
+Serverzijdige branch protection zou de juiste plek zijn, maar die deur is dicht:
+GitHub antwoordt op een private repo letterlijk *"Upgrade to GitHub Pro or make
+this repository public"*. Zolang dat zo is, moet de dekking uit drie
+lokaal-en-CI-gebaseerde lagen komen:
+
+- **`templates/ci.yml` valideert pull requests en `main`** (W24). Het sjabloon
+  gebruikt nu `on: push: branches-ignore: [main]` en valideert dus *noch* PR's
+  *noch* `main`. Elk nieuw project start daarmee zwakker dan `tennis-admin`, dat
+  een met de hand geschreven `ci.yml` heeft met `on: pull_request` én
+  `push: branches: [main]`. Het `pull_request`-event is bovendien nodig om een
+  controle als *required check* te kunnen instellen — de vorm die een merge
+  daadwerkelijk kan tegenhouden.
+- **Git-hooks in het project** (W26). Een `pre-commit`- en `pre-push`-hook dekt
+  élk gereedschap op die machine. Ze hergebruiken de beslislogica uit
+  `hooks/git-guardrails`, zodat de regels niet een tweede keer opgeschreven
+  worden — precies de duplicatie die deze release elders wegneemt. Beperking:
+  git-hooks zijn machine-lokaal en reizen niet mee met een clone, dus een nieuwe
+  machine heeft ze pas na `adopt.sh`. Dat is dezelfde beperking als bij de
+  bestaande hooks, en de verouderde-adoptie-melding uit F6 maakt hem zichtbaar.
+- **CI detecteert commits op `main` die niet uit een PR komen** (W27). Dit is
+  detectie in plaats van preventie — het commando is dan al uitgevoerd — maar
+  het is het enige mechanisme dat op elke machine en met elk gereedschap werkt.
+  De controle beoordeelt alleen de binnenkomende push, niet de historie: een
+  retrofit die op dag één rood staat leert je de melding te negeren.
+
+De drie lagen zijn bewust niet uitwisselbaar. W24 en W26 voorkomen, W27 vangt op
+wat er doorheen glipt.
+
+### F18 — Werk veiligstellen zonder op het sessie-einde te leunen
+
+De `SessionEnd`-hook is op dit moment de enige automatische push. Al het werk
+sinds de vorige sessie hangt daarvan af, en de documentatie van Claude Code geeft
+**geen garantie** dat `SessionEnd` afgaat bij een crash, een gesloten
+terminalvenster of stroomuitval — met bovendien een tijdsbudget van 1,5 seconde.
+Erop leunen voor iets kritisch wordt expliciet afgeraden.
+
+De commit-blokkade uit F7 verscherpt dat zelfs: blokkeer je de commit op `main`
+en wordt die melding genegeerd, dan blijft het werk *ongecommit* en heeft
+`SessionEnd` niets te pushen. Twee aanvullingen sluiten dat gat aan beide
+kanten:
+
+- **Sessiestart meldt dat `main` is uitgecheckt** (W23). De commit-blokkade
+  grijpt pas wanneer er al werk is; een melding bij sessiestart grijpt ervóór, op
+  het moment dat vertakken nog gratis is. De guard blokkeert namelijk de commit,
+  maar niet het bewerken van bestanden — Edit, Write, `git add` en `git stash`
+  gaan gewoon door. Puur informatief: de hook muteert niets en blokkeert niets,
+  en houdt zich aan dezelfde eis als het onderbouwingssignaal (exit 0, niets op
+  stderr).
+- **Pushen zodra er gecommit is** (W25). Een `PostToolUse`-hook pusht de huidige
+  branch na een geslaagde `git commit`. Het is dezelfde handeling die
+  `SessionEnd` al doet, alleen eerder en vaker — geen nieuwe branchnamen, geen
+  mutatie die niemand vroeg. `WORKFLOW.md` schrijft "push regelmatig" al voor;
+  dit maakt dat mechanisch in plaats van iets dat onthouden moet worden. Zonder
+  netwerk of `origin` meldt hij het en houdt hij niets op.
+
 ---
 
 ## Niet-functionele kenmerken
@@ -657,6 +727,8 @@ ingevroren worden.
 | W6 | `CHANGES-ARCHIEF.md` + sectiescheidingen ontdubbelzinnigen (F5) | W3, W4 |
 | W7 | Onderbouwingssignaal + verouderde-adoptie-melding (F6) | W4 |
 | W10 | Git-guardrails hook (F7) | W1 |
+| W23 | Sessiestart meldt dat `main` is uitgecheckt (F18) | W1 |
+| W24 | `templates/ci.yml` valideert PR's en `main` (F17) | — |
 
 W4 vóór alles wat een derde script toevoegt, anders verdrievoudig je de duplicatie
 in plaats van hem op te lossen. W5 haalt de duplicatie echt weg in plaats van hem
@@ -689,6 +761,8 @@ W7 vóór W9 zodat projecten zichzelf melden als verouderd.
 | W14 | `tdd-seams` + `CHANGES.md`-entry (F10) | W9 |
 | W15 | `diagnose-bug` + `CHANGES.md`-entry (F10) | W9 |
 | W16b | `templates/CONTEXT.md` + entry (F10) | W9 |
+| W25 | Pushen zodra er gecommit is (F18) | W10 |
+| W26 | Git-hooks in het project, ook buiten Claude om (F17) | W8, W10 |
 
 W14–W16b voegen elk een `CHANGES.md`-entry toe, dus elk laat alle vier de
 projecten een nieuwe vraag stellen. Dicht bij elkaar landen, zodat die vragen in
@@ -703,6 +777,7 @@ projecten een nieuwe vraag stellen. Dicht bij elkaar landen, zodat die vragen in
 | W19 | `templates/check-traceability.sh` offline + entry (F13, besluit c en d) | W18, W4 |
 | W19b | CI-check "PR verwijst naar issue" in de PR-workflow (F13, besluit d) | W18 |
 | W20 | PR-poort in `pre-merge-review` (F13, besluit d) | W13, W19 |
+| W27 | CI detecteert commits op `main` buiten een PR om (F17) | W24 |
 
 W17 is de afgesproken mitigatie voor het overrulen van de blokkade en moet een
 zichtbaar item zijn met eigen afronding. Te bespreken: de `AC<n>`-hernoeming, één
@@ -721,7 +796,24 @@ van schakel 2 en 3 naar `pre-merge-review` plus CI.
 wordt vastgelegd), W8 (schrijft in andermans repo's, migreert een *getrackte*
 `.gitignore`), W9 (betekenisverlies dat geen `grep` ziet), W10 en W10b (een vals
 positief blokkeert werk in elk project, en bereikt ze zónder her-adoptie omdat de
-hookconfiguratie gesymlinkt is).
+hookconfiguratie gesymlinkt is), en W26 (schrijft git-hooks in andermans repo's,
+en een hook die te streng is blokkeert daar élk commando, niet alleen dat van
+Claude).
+
+### Uitbreiding na het doorlichten van de dekking
+
+W23–W27 stonden niet in de oorspronkelijke opzet. Ze komen voort uit de vraag wat
+de guard uit W10 nu precies dekt, gesteld nadat die af was. Het antwoord bleek
+smaller dan de stelling die eromheen was gegroeid: de guard dekt wat Claude
+uitvoert, niet wat er in een eigen terminal, een IDE of op een tweede machine
+gebeurt (F17), en het veiligstellen van werk hangt aan een `SessionEnd`-hook
+waarvoor geen garantie bestaat (F18).
+
+Ze zijn ingevoegd op de plek waar hun afhankelijkheden ze toelaten, niet
+achteraan: W24 hangt nergens van af en W23 alleen van het testharnas, dus die
+horen in Fase 1. W25 en W26 hangen aan de guard zelf (en W26 daarnaast aan
+`adopt.sh`), dus die volgen in Fase 3. W27 heeft het bijgewerkte CI-sjabloon
+nodig en landt in Fase 4.
 
 ### Waarom deze volgorde afwijkt van de oorspronkelijk afgesproken
 
@@ -756,7 +848,11 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 
 - Skills geven geen handhaving; een hook kan er alleen naar verwijzen.
 - De guardrails-hook is machine-lokaal: een nieuwe machine zonder `adopt.sh`-run
-  heeft hem niet.
+  heeft hem niet. Dat geldt ook voor de git-hooks uit F17 — die reizen niet mee
+  met een clone.
+- Serverzijdige branch protection is niet beschikbaar: GitHub vraagt daarvoor op
+  een private repo om een betaald plan. W27 is daarom detectie achteraf, geen
+  preventie; het commando is dan al uitgevoerd.
 - Modellen delen trainingsdata, dus ook `pre-merge-review` verhoogt de bodem zonder
   blinde vlekken uit te sluiten — die kanttekening staat al in `WORKFLOW.md`.
 - Bash 3.2 beperkt het scriptidioom.
@@ -784,7 +880,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
    de vraagset is nooit acceptabel, ook niet als "opschoning" (R9).
 2. **Rood vóór groen per werkitem.** Het dekkende scenario wordt eerst toegevoegd
    en rood gezien; de PR toont beide toestanden.
-3. **R1–R9, T1–T5 en S1–S35** draaien in `check`, tegen fixtures, nooit tegen de
+3. **R1–R9, T1–T5 en S1–S57** draaien in `check`, tegen fixtures, nooit tegen de
    echte projecten.
 4. **R7 mechanisch én met de hand.** De test grept `WORKFLOW.md` op vijf termen en
    controleert dat elke genoemde skill een `SKILL.md` heeft. Dat ziet geen
@@ -808,7 +904,12 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 2. **`kwaliteitsreview-voor-merge` is door geen enkel project beantwoord** en geen
    enkele PR had ooit een review. Moet W13 die entry meteen in alle vier de
    projecten voorleggen?
-3. **Genereren of samenstellen?** F4 genereert het NFR-blok ín `templates/PRD.md`
+3. **Verdient het bijwerken van `templates/ci.yml` een `CHANGES.md`-entry?**
+   Projecten die met het oude sjabloon scaffoldden houden hun zwakkere CI, en dat
+   is precies het soort stille afwijking waar de adoptieregistratie voor bestaat.
+   Daar staat tegenover dat de *conventie* niet verandert, alleen het sjabloon —
+   en `ci-conventie` is al beantwoord. Bewust open gelaten bij W24.
+4. **Genereren of samenstellen?** F4 genereert het NFR-blok ín `templates/PRD.md`
    (ingecheckt, diffbaar, `check` bewaakt het). Alternatief: `adopt.sh` stelt het
    blok samen bij het scaffolden, dan is er geen build-artefact maar is het sjabloon
    niet meer standalone leesbaar. Voorstel: genereren.

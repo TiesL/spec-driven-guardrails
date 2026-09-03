@@ -562,3 +562,93 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: er staan rijen voor `skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check`
   en `CHANGES-ARCHIEF.md`
 - And: het aantal niet-functionele vragen staat op vijftien, niet vijf
+
+---
+
+## Dekking buiten de agentic loop
+
+### S48 — Het CI-sjabloon valideert pull requests en `main`
+**Dekt:** F17
+- Given: een project dat met `templates/ci.yml` scaffoldt
+- When: er een pull request wordt geopend en er naar `main` wordt gepusht
+- Then: de workflow draait in beide gevallen
+- And: hij roept nog steeds uitsluitend `check` aan — de CI-conventie zelf
+  verandert niet, alleen wanneer hij afgaat
+
+### S49 — Een eigen `ci.yml` wordt niet overschreven
+**Dekt:** F17
+- Given: een project met een handgeschreven `ci.yml` die afwijkt van het sjabloon
+- When: `adopt.sh` opnieuw draait
+- Then: dat bestand blijft ongemoeid — `scaffold_if_missing` schrijft alleen wat
+  ontbreekt
+- And: er verschijnt een melding dat het sjabloon nieuwer is, zodat de afwijking
+  niet stil blijft
+
+### S50 — De guard geldt ook buiten Claude om
+**Dekt:** F17
+- Given: een geadopteerd project met `main` uitgecheckt en de git-hooks
+  geïnstalleerd
+- When: `git commit` of `git push origin main` rechtstreeks in een shell wordt
+  aangeroepen, dus zonder tussenkomst van Claude
+- Then: het wordt geweigerd, met dezelfde melding als de `PreToolUse`-guard
+- And: de regel staat maar op één plek — de git-hook hergebruikt de beslislogica
+  uit `hooks/git-guardrails` en herhaalt hem niet
+
+### S51 — Een bestaande git-hook wordt niet stilzwijgend vervangen
+**Dekt:** F17
+- Given: een project met een eigen `pre-commit`-hook die niet van dit repo komt
+- When: `adopt.sh` draait
+- Then: die hook wordt niet overschreven zonder melding
+- And: twee keer draaien geeft een identieke boom — hooks stapelen niet
+
+### S52 — Een commit op `main` buiten een PR om wordt gemeld
+**Dekt:** F17
+- Given: een commit die rechtstreeks naar `main` is gepusht
+- When: de CI-workflow draait
+- Then: hij faalt, met de betreffende commit in de melding
+- And: een merge-commit die wél uit een pull request komt laat hij door
+
+### S53 — De controle beoordeelt de push, niet de historie
+**Dekt:** F17
+- Given: eerdere commits op `main` die niet aan de eis voldoen
+- When: de workflow op een nieuwe push draait
+- Then: alleen die push wordt beoordeeld
+- And: de controle staat dus niet op dag één rood — een retrofit die altijd
+  faalt leert je precies één ding, en dat is de melding negeren
+
+---
+
+## Werk veiligstellen zonder sessie-einde
+
+### S54 — Sessiestart meldt dat `main` is uitgecheckt
+**Dekt:** F18
+- Given: een geadopteerd project met `main` uitgecheckt
+- When: een sessie start
+- Then: er verschijnt een melding die `main` noemt en `git checkout -b` voorstelt
+- And: dat is vóór er werk is — de commit-blokkade uit F7 grijpt pas erna, als
+  vertakken niet meer gratis voelt
+
+### S55 — Op een feature-branch meldt de sessiestart niets
+**Dekt:** F18
+- Given: hetzelfde project op `feature/<naam>`
+- When: `pending-changes.sh` draait
+- Then: er verschijnt geen melding over de branch
+- And: exit 0 en niets op stderr, conform S43 — een hook die ruis produceert
+  wordt weggeklikt en daarmee waardeloos
+
+### S56 — Een geslaagde commit is meteen gepusht
+**Dekt:** F18
+- Given: een feature-branch met een nieuwe commit
+- When: de commit slaagt
+- Then: de huidige branch staat op `origin`
+- And: het werk is daarmee veilig zodra het is vastgelegd, in plaats van pas bij
+  een nette afsluiting — waarvoor `SessionEnd` geen garantie geeft
+
+### S57 — Een mislukte commit of ontbrekend netwerk pusht niets
+**Dekt:** F18
+- Given: een `git commit` die faalt (niets te committen, afgebroken editor), of
+  een omgeving zonder verbinding of zonder `origin`
+- When: de hook draait
+- Then: er wordt niet gepusht, en op `main` gebeurt sowieso niets
+- And: de hook meldt het en houdt het werk niet op — een push die niet lukt mag
+  nooit een commando blokkeren
