@@ -531,12 +531,16 @@ this repository public"*. Zolang dat zo is, moet de dekking uit drie
 lokaal-en-CI-gebaseerde lagen komen:
 
 - **`templates/ci.yml` valideert pull requests en `main`** (W24). Het sjabloon
-  gebruikt nu `on: push: branches-ignore: [main]` en valideert dus *noch* PR's
-  *noch* `main`. Elk nieuw project start daarmee zwakker dan `tennis-admin`, dat
+  gebruikte `on: push: branches-ignore: [main]` en valideerde dus *noch* PR's
+  *noch* `main` — net als de workflow van dit repo zelf, die dezelfde vorm had. Elk nieuw project start daarmee zwakker dan `tennis-admin`, dat
   een met de hand geschreven `ci.yml` heeft met `on: pull_request` én
   `push: branches: [main]`. Het `pull_request`-event is bovendien nodig om een
   controle als *required check* te kunnen instellen — de vorm die een merge
-  daadwerkelijk kan tegenhouden.
+  daadwerkelijk kan tegenhouden. Het sjabloon repareren helpt alleen nieuwe
+  projecten, dus hoort er een `CHANGES.md`-entry bij (`ci-op-pr-en-main`,
+  `heeft-package-json`): bestaande projecten houden anders hun zwakkere CI
+  zonder dat iemand ernaar vraagt. Die entry staat los van `ci-conventie` —
+  dát antwoord gaat over wát de workflow doet, dit over wannéér hij draait.
 - **Git-hooks in het project** (W26). Een `pre-commit`- en `pre-push`-hook dekt
   élk gereedschap op die machine. Ze hergebruiken de beslislogica uit
   `hooks/git-guardrails`. Let op wát er te hergebruiken valt: een native
@@ -882,7 +886,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 | Skills binden dit repo aan Claude Code | Bewuste keuze, vastgelegd onder *Portability* | Bij overstap naar een andere agent |
 | `templates/ci.yml` is npm-only ondanks "platformneutraal" | Bestond al; alle adopters zijn npm of hebben geen CI | Eerste adopter op een andere stack |
 | Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
-| Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | Het sjabloon repareren helpt alleen nieuwe projecten; bestaande merken er niets van | Open vraag 3 — zodra besloten is of dit een `CHANGES.md`-entry verdient |
+| Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | De entry `ci-op-pr-en-main` stelt de vraag, maar beantwoordt hem niet; tot dan blijft de zwakkere workflow staan | Zodra een project de vraag beantwoordt — de melding bij sessiestart houdt hem zichtbaar |
 | Dit repo heeft zelf geen `WORKFLOW-ADOPTIE.md` | `adopt.sh` slaat zichzelf over; de conventies gelden hier per definitie | Als een conventie hier ooit *niet* zou moeten gelden |
 
 ---
@@ -918,12 +922,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 2. **`kwaliteitsreview-voor-merge` is door geen enkel project beantwoord** en geen
    enkele PR had ooit een review. Moet W13 die entry meteen in alle vier de
    projecten voorleggen?
-3. **Verdient het bijwerken van `templates/ci.yml` een `CHANGES.md`-entry?**
-   Projecten die met het oude sjabloon scaffoldden houden hun zwakkere CI, en dat
-   is precies het soort stille afwijking waar de adoptieregistratie voor bestaat.
-   Daar staat tegenover dat de *conventie* niet verandert, alleen het sjabloon —
-   en `ci-conventie` is al beantwoord. Bewust open gelaten bij W24.
-4. **Genereren of samenstellen?** F4 genereert het NFR-blok ín `templates/PRD.md`
+3. **Genereren of samenstellen?** F4 genereert het NFR-blok ín `templates/PRD.md`
    (ingecheckt, diffbaar, `check` bewaakt het). Alternatief: `adopt.sh` stelt het
    blok samen bij het scaffolden, dan is er geen build-artefact maar is het sjabloon
    niet meer standalone leesbaar. Voorstel: genereren.

@@ -29,7 +29,7 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   openstaande_ids "$project" > "$voor"
 
   # Then: de uitkomst per combinatie is precies wat de tabel vastlegt.
-  for paar in "ci-conventie:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
+  for paar in "ci-conventie:$verwacht_ci" "ci-op-pr-en-main:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
     if grep -qx "$id" "$voor"; then feitelijk=ja; else feitelijk=nee; fi
     if [ "$feitelijk" != "$verwacht" ]; then
@@ -53,7 +53,7 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   # kan dat per constructie niet: wat adopt.sh niet seedt blijft gewoon
   # openstaan, waardoor de vereniging ongewijzigd blijft. Beide predicaat-
   # entries hebben `Standaard: ja`, dus van toepassing betekent hier geseed.
-  for paar in "ci-conventie:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
+  for paar in "ci-conventie:$verwacht_ci" "ci-op-pr-en-main:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
     if grep -qx "$id" "$geseed"; then feitelijk=ja; else feitelijk=nee; fi
     if [ "$feitelijk" != "$verwacht" ]; then
@@ -62,9 +62,11 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   done
 
   # En het totaal: 17 entries gelden altijd, plus elke van toepassing zijnde
-  # predicaat-entry. Vangt een seed-logica die er in bulk naast zit.
+  # predicaat-entry. `heeft-package-json` draagt er sinds W24 twee -
+  # `ci-conventie` (wat de workflow doet) en `ci-op-pr-en-main` (wanneer hij
+  # draait). Vangt een seed-logica die er in bulk naast zit.
   verwacht_aantal=17
-  [ "$verwacht_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
+  [ "$verwacht_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 2))
   [ "$verwacht_deploy" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
   aantal_geseed="$(grep -c . "$geseed")"
   if [ "$aantal_geseed" -ne "$verwacht_aantal" ]; then

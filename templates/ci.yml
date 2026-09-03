@@ -1,7 +1,19 @@
 name: CI
+
+# Draait op pull requests én op pushes naar main.
+#
+# `pull_request` beoordeelt het samengevoegde resultaat — head gemerged in base —
+# en niet alleen de branch op zichzelf. Dat is precies het geval dat twee los
+# groene branches samen kan breken. Het is bovendien de vorm die je als vereiste
+# controle op een pull request kunt instellen, dus de vorm die een merge
+# daadwerkelijk kan tegenhouden.
+#
+# `push: branches: [main]` is de achtervang: komt er ooit een commit op main die
+# niet uit een pull request komt, dan wordt die alsnog gecontroleerd.
 on:
+  pull_request:
   push:
-    branches-ignore: [main]
+    branches: [main]
 
 jobs:
   check:

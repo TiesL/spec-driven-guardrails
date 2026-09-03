@@ -145,6 +145,22 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Van toepassing als:** altijd
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 
+## ci-op-pr-en-main
+
+- **Vraag:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
+- **Standaard:** ja
+- **Van toepassing als:** heeft-package-json
+- **Ja betekent:** de workflow heeft zowel een `pull_request`-trigger als
+  `push: branches: [main]`. Het verschil met alleen een push op de branch is
+  wezenlijk: `pull_request` beoordeelt het samengevoegde resultaat, dus het geval
+  waarin twee los groene branches samen breken, en het is de vorm die als
+  vereiste controle op een pull request ingesteld kan worden. De push-trigger is
+  de achtervang voor wat `main` langs een andere weg bereikt. Dit staat los van
+  `ci-conventie`: dát antwoord gaat over wát de workflow doet (alleen `check`
+  aanroepen), dit over wannéér hij draait. Een project dat het eerste al
+  beantwoordde, is over het tweede nooit iets gevraagd.
+- **PR:** <wordt ingevuld bij de merge>
+
 ---
 
 ### Niet-functionele kenmerken (NFR's)
