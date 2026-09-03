@@ -50,8 +50,24 @@ precies de twee projecten die er een hebben: `a2t-emails` (25 naar 26) en
 `package.json` en blijven op 24.
 
 Dat is de tweede soort afwijking uit "Bijwerken — alleen bewust" hieronder: een
-legitiem gewijzigde vraagset, niet een gedragswijziging. `CHANGES.md.momentopname`
-is in dezelfde PR ververst, zodat hij de nieuwe gouden set blijft verklaren.
+legitiem gewijzigde vraagset, niet een gedragswijziging.
+
+`CHANGES.md.momentopname` is in dezelfde PR ververst. Die verversing haalt meer
+op dan alleen deze entry: de momentopname stond stil sinds W2, terwijl W4, W5 en
+W6 `CHANGES.md` intussen hadden verbouwd. Nagerekend welke ID's dat verschil
+maakt: de vijftien `spec-*`-entries zijn naar `nfr/` verhuisd (W5),
+`prd-testscenarios-issue-templates` is naar `CHANGES-ARCHIEF.md` gegaan (W6), en
+de sectiekoppen werden `###` (W4/W6). Geen van die drie voegde een vraag toe of
+haalde er een weg, dus de gouden sets bleven al die tijd kloppen — maar het is
+wel stilzwijgend meegelift en hoort hier vermeld.
+
+**Let op wat de momentopname sinds W5 niet meer dekt.** De vraagset komt sindsdien
+uit twee bronnen: `CHANGES.md` én `nfr/`. De momentopname bevat alleen de eerste,
+terwijl de gouden sets vol `spec-*`-ID's staan die uit de tweede komen. Wie deze
+nulmeting wil interpreteren heeft dus ook het `nfr/`-register nodig zoals dat op
+dat moment was. Dat register is versiebeheerd en `check` bewaakt zijn
+consistentie (`nfr_drift`), dus het is terug te vinden — maar het is niet
+ingevroren zoals `CHANGES.md` dat wel is, en dat is een gat in het vangnet.
 
 ## `a2t-emails` is bewust niet gerepareerd
 
