@@ -516,9 +516,12 @@ is (dezelfde asymmetrie als onder F10 beschreven).
 ### F17 — Dekking buiten de agentic loop
 
 De guard uit F7 is een `PreToolUse`-hook, en die ziet uitsluitend wat Claude zelf
-uitvoert. De documentatie is daar expliciet over: `PreToolUse` reageert op
-tool-aanroepen binnen de agentic loop en heeft geen zicht op commando's die
-Ties zelf in zijn terminal typt. Diezelfde `git reset --hard` in een eigen
+uitvoert. De documentatie beschrijft het event als "before a tool call executes"
+en kent geen ander aangrijpingspunt; commando's die Ties zelf in zijn terminal
+typt zijn geen tool-aanroep en komen er dus nooit langs. Dat is een gevolgtrekking
+uit de beschreven scope, niet een waarschuwing die de documentatie zelf geeft —
+maar hij is dwingend: er ís geen mechanisme waarlangs die commando's de hook
+zouden bereiken. Diezelfde `git reset --hard` in een eigen
 terminalvenster, in een IDE, of op een tweede machine zonder `adopt.sh` gaat
 onverkort door.
 
@@ -536,8 +539,13 @@ lokaal-en-CI-gebaseerde lagen komen:
   daadwerkelijk kan tegenhouden.
 - **Git-hooks in het project** (W26). Een `pre-commit`- en `pre-push`-hook dekt
   élk gereedschap op die machine. Ze hergebruiken de beslislogica uit
-  `hooks/git-guardrails`, zodat de regels niet een tweede keer opgeschreven
-  worden — precies de duplicatie die deze release elders wegneemt. Beperking:
+  `hooks/git-guardrails`. Let op wát er te hergebruiken valt: een native
+  `pre-commit` krijgt geen commandostring, dus de quote-bewuste tokenisatie uit
+  `lees-commando.py` is per definitie `PreToolUse`-specifiek. Wat gedeeld kan
+  worden zijn de *regels* — welke branch beschermd is, wat de melding zegt, welke
+  uitweg hij noemt. Dat is smaller dan "hergebruik het script", en W26 moet dat
+  onderscheid expliciet maken in plaats van een simpele hergebruikoefening aan te
+  nemen. Beperking:
   git-hooks zijn machine-lokaal en reizen niet mee met een clone, dus een nieuwe
   machine heeft ze pas na `adopt.sh`. Dat is dezelfde beperking als bij de
   bestaande hooks, en de verouderde-adoptie-melding uit F6 maakt hem zichtbaar.
@@ -553,10 +561,14 @@ wat er doorheen glipt.
 ### F18 — Werk veiligstellen zonder op het sessie-einde te leunen
 
 De `SessionEnd`-hook is op dit moment de enige automatische push. Al het werk
-sinds de vorige sessie hangt daarvan af, en de documentatie van Claude Code geeft
-**geen garantie** dat `SessionEnd` afgaat bij een crash, een gesloten
-terminalvenster of stroomuitval — met bovendien een tijdsbudget van 1,5 seconde.
-Erop leunen voor iets kritisch wordt expliciet afgeraden.
+sinds de vorige sessie hangt daarvan af. De documentatie van Claude Code zegt
+alleen dat `SessionEnd` afgaat "when a session terminates", met een gedeeld
+tijdsbudget van 1,5 seconde, en noemt als redenen `clear`, `resume`, `logout`,
+`prompt_input_exit` en `other`. Over een crash, een gesloten terminalvenster of
+stroomuitval staat er **niets** — er is dus geen toezegging dat de hook dan
+draait, en het budget maakt bovendien niet uit hoeveel er nog te pushen valt.
+Die stilte is geen bewijs dat het misgaat, maar wel reden om er niet het enige
+vangnet van te maken.
 
 De commit-blokkade uit F7 verscherpt dat zelfs: blokkeer je de commit op `main`
 en wordt die melding genegeerd, dan blijft het werk *ongecommit* en heeft
@@ -728,7 +740,7 @@ ingevroren worden.
 | W7 | Onderbouwingssignaal + verouderde-adoptie-melding (F6) | W4 |
 | W10 | Git-guardrails hook (F7) | W1 |
 | W23 | Sessiestart meldt dat `main` is uitgecheckt (F18) | W1 |
-| W24 | `templates/ci.yml` valideert PR's en `main` (F17) | — |
+| W24 | `templates/ci.yml` valideert PR's en `main` (F17) | W1 |
 
 W4 vóór alles wat een derde script toevoegt, anders verdrievoudig je de duplicatie
 in plaats van hem op te lossen. W5 haalt de duplicatie echt weg in plaats van hem
@@ -810,8 +822,9 @@ gebeurt (F17), en het veiligstellen van werk hangt aan een `SessionEnd`-hook
 waarvoor geen garantie bestaat (F18).
 
 Ze zijn ingevoegd op de plek waar hun afhankelijkheden ze toelaten, niet
-achteraan: W24 hangt nergens van af en W23 alleen van het testharnas, dus die
-horen in Fase 1. W25 en W26 hangen aan de guard zelf (en W26 daarnaast aan
+achteraan: W23 en W24 hangen alleen van het testharnas af — W24 inhoudelijk van
+niets, maar rood vóór groen geldt ook voor hem, dus W1 blijft de voorwaarde. Beide
+horen daarmee in Fase 1. W25 en W26 hangen aan de guard zelf (en W26 daarnaast aan
 `adopt.sh`), dus die volgen in Fase 3. W27 heeft het bijgewerkte CI-sjabloon
 nodig en landt in Fase 4.
 
@@ -869,6 +882,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 | Skills binden dit repo aan Claude Code | Bewuste keuze, vastgelegd onder *Portability* | Bij overstap naar een andere agent |
 | `templates/ci.yml` is npm-only ondanks "platformneutraal" | Bestond al; alle adopters zijn npm of hebben geen CI | Eerste adopter op een andere stack |
 | Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
+| Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | Het sjabloon repareren helpt alleen nieuwe projecten; bestaande merken er niets van | Open vraag 3 — zodra besloten is of dit een `CHANGES.md`-entry verdient |
 | Dit repo heeft zelf geen `WORKFLOW-ADOPTIE.md` | `adopt.sh` slaat zichzelf over; de conventies gelden hier per definitie | Als een conventie hier ooit *niet* zou moeten gelden |
 
 ---
@@ -880,7 +894,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
    de vraagset is nooit acceptabel, ook niet als "opschoning" (R9).
 2. **Rood vóór groen per werkitem.** Het dekkende scenario wordt eerst toegevoegd
    en rood gezien; de PR toont beide toestanden.
-3. **R1–R9, T1–T5 en S1–S57** draaien in `check`, tegen fixtures, nooit tegen de
+3. **R1–R9, T1–T5 en S1–S59** draaien in `check`, tegen fixtures, nooit tegen de
    echte projecten.
 4. **R7 mechanisch én met de hand.** De test grept `WORKFLOW.md` op vijf termen en
    controleert dat elke genoemde skill een `SKILL.md` heeft. Dat ziet geen

@@ -591,8 +591,10 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: `git commit` of `git push origin main` rechtstreeks in een shell wordt
   aangeroepen, dus zonder tussenkomst van Claude
 - Then: het wordt geweigerd, met dezelfde melding als de `PreToolUse`-guard
-- And: de regel staat maar op één plek — de git-hook hergebruikt de beslislogica
-  uit `hooks/git-guardrails` en herhaalt hem niet
+- And: de *regel* staat maar op één plek — welke branch beschermd is en wat de
+  melding zegt, komt uit dezelfde bron als de `PreToolUse`-guard. De inleeslaag
+  verschilt noodzakelijk: een native `pre-commit` krijgt geen commandostring om
+  te tokeniseren
 
 ### S51 — Een bestaande git-hook wordt niet stilzwijgend vervangen
 **Dekt:** F17
@@ -607,6 +609,9 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: de CI-workflow draait
 - Then: hij faalt, met de betreffende commit in de melding
 - And: een merge-commit die wél uit een pull request komt laat hij door
+- And: de controle geldt zowel in `claude-workflow` zelf als in elk project dat
+  met `templates/ci.yml` scaffoldt — een regel die dit repo aan anderen oplegt
+  maar zelf ontloopt, is geen regel
 
 ### S53 — De controle beoordeelt de push, niet de historie
 **Dekt:** F17
@@ -615,6 +620,28 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: alleen die push wordt beoordeeld
 - And: de controle staat dus niet op dag één rood — een retrofit die altijd
   faalt leert je precies één ding, en dat is de melding negeren
+
+### S58 — Een git-hook die zijn oordeel niet kan vellen, laat door
+**Dekt:** F17
+- Given: een geadopteerd project waarin de git-hook zijn beslislogica niet kan
+  uitvoeren — het bronscript ontbreekt, of de vereiste interpreter is er niet
+- When: `git commit` of `git push` wordt aangeroepen
+- Then: er verschijnt een luide waarschuwing die zegt dat de controle níét is
+  uitgevoerd
+- And: het commando gaat door, net als bij S14 — een kapotte guard mag nooit het
+  werk blokkeren, en zeker niet buiten Claude om, waar geen agent meekijkt die
+  de melding kan duiden
+
+### S59 — Een CI-controle die zijn oordeel niet kan vellen, faalt
+**Dekt:** F17
+- Given: de workflow uit S52 kan de herkomst van een push naar `main` niet
+  vaststellen (geen API-antwoord, ontbrekende rechten)
+- When: de controle draait
+- Then: hij faalt, met de reden erbij
+- And: dat is bewust het omgekeerde van S58. Een lokale hook die faalt houdt
+  werk tegen dat allang legitiem kan zijn; een CI-controle die stil groen wordt
+  meldt dat er niets aan de hand is terwijl hij niets weet — en dat is precies
+  de stille degradatie die dit repo het duurst betaalt
 
 ---
 
