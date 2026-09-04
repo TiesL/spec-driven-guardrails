@@ -192,4 +192,59 @@ uitvoer="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "andere richting — onbekend S9 in PRD.md werd niet gemeld"
 assert_contains "andere richting — S9 staat in de melding" "S9" "$uitvoer"
 
+# Exacte match, geen substring. Zonder `grep -qx` zou een hangende verwijzing
+# naar F1 stilzwijgend oplossen tegen een bestaande F123 — en dan meldt de
+# controle "in orde" terwijl er nergens een F1 bestaat.
+p="$(bouw substring \
+'### F123 — het enige item' \
+'### S1 — dekt F123
+**Dekt:** F123
+
+### S2 — hangende verwijzing die substring is van F123
+**Dekt:** F1')"
+uitvoer="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "substring — F1 loste op tegen F123"
+assert_contains "substring — F1 staat in de melding" "F1" "$uitvoer"
+
+# Een duplicaat dat niet naast zijn tweeling staat. Zonder sorteren vóór het
+# zoeken naar dubbelen ziet `uniq -d` alleen aangrenzende regels, en dan glipt
+# precies het realistische geval erdoor: een kopieerfout verderop in een groot
+# bestand.
+p="$(bouw duplicaat-uiteen \
+'### F1 — iets' \
+'### S1 — eerste
+**Dekt:** F1
+
+### S2 — er tussenin
+**Dekt:** F1
+
+### S1 — dezelfde ID, ver van de eerste
+**Dekt:** F1')"
+uitvoer="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "duplicaat-uiteen — niet-aangrenzend dubbel S1 werd gemist"
+assert_contains "duplicaat-uiteen — S1 staat in de melding" "S1" "$uitvoer"
+
+# Een kapot token wordt gemeld, niet stil weggefilterd. Anders belooft de
+# controle dat elk token oplost terwijl hij juist de tikfouten niet ziet.
+p="$(bouw kapot-token \
+'### F1 — iets
+
+### F2 — iets' \
+'### S1 — met een tikfout ertussen
+**Dekt:** F1, F-2, F2')"
+uitvoer="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "kapot token — 'F-2' werd stil weggefilterd"
+assert_contains "kapot token — F-2 staat in de melding" "F-2" "$uitvoer"
+
+# Spaties in plaats van komma's leveren één onbruikbaar token op. Ook dat moet
+# gemeld worden, want anders lijkt het veld ingevuld en dekt het niets.
+p="$(bouw spatie-gescheiden \
+'### F1 — iets
+
+### F2 — iets' \
+'### S1 — spaties in plaats van komma is
+**Dekt:** F1 F2')"
+uitvoer="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "spatie-gescheiden — 'F1 F2' werd stil weggefilterd"
+
 test_klaar "T1/T2/T5/S30/S62"

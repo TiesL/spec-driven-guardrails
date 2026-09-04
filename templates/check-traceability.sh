@@ -42,20 +42,35 @@ ids_uit_koppen() {
     | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# De Dekt:-tokens uit een bestand, één per regel.
+# De ruwe inhoud van de Dekt:-velden, één komma-gescheiden stuk per regel.
 #
 # Alleen het veld telt, aan regelbegin. Dat voorkomt vals-positieven per
 # constructie: een zin die toevallig "S1" bevat is geen verwijzing.
-#
-# Tokens tussen punthaken worden overgeslagen. Een vers gescaffold project draagt
-# `**Dekt:** <F1>` uit het sjabloon, en een controle die daarop meteen faalt,
-# staat morgen uit.
-dekt_tokens() {
+dekt_ruw() {
   grep '^\*\*Dekt:\*\*' "$1" \
     | sed 's/^\*\*Dekt:\*\*[[:space:]]*//' \
     | tr ',' '\n' \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
-    | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
+    | grep -v '^$'
+}
+
+# De geldige ID's uit de Dekt:-velden.
+#
+# Een placeholder tussen punthaken wordt overgeslagen: een vers gescaffold
+# project draagt `**Dekt:** <F1>` uit het sjabloon, en een controle die daarop
+# meteen faalt, staat morgen uit.
+dekt_tokens() {
+  dekt_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
+}
+
+# Alles in een Dekt:-veld dat geen ID en geen placeholder is.
+#
+# Dit apart melden in plaats van stil wegfilteren. Een tikfout als `F-2`, een
+# lijst met spaties in plaats van komma's, of een veld dat over twee regels
+# doorloopt, verdween anders geruisloos - en dan belooft de controle dat elk
+# token oplost terwijl hij precies de kapotte tokens niet ziet.
+dekt_ongeldig() {
+  dekt_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
 }
 
 prd_ids="$(ids_uit_koppen "$prd")"
@@ -90,6 +105,17 @@ controleer_verwijzingen() {
       || melding "$naam verwijst naar $token, maar dat ID bestaat niet in $doelnaam"
   done
 }
+# Kapotte tokens melden, in beide bestanden.
+for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
+  naam="${paar%%:*}"
+  while IFS= read -r stuk; do
+    [ -n "$stuk" ] || continue
+    melding "$naam: '$stuk' in een Dekt:-veld is geen geldig ID — verwacht komma-gescheiden tokens van de vorm F1, S2 of S2b"
+  done <<EOF
+$(dekt_ongeldig "${paar#*:}")
+EOF
+done
+
 controleer_verwijzingen "$scenarios" "TEST-SCENARIOS.md" "$prd_ids" "PRD.md"
 controleer_verwijzingen "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 
