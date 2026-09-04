@@ -24,3 +24,4 @@ spec-usability
 test-feature-gwt
 test-integratie
 test-unit
+traceability-schakel-1

@@ -158,6 +158,15 @@ adopt_project() {
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTUUR.md" "$project_dir/ARCHITECTUUR.md"
+  scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-traceability.sh" "$project_dir/check-traceability.sh"
+  # Expliciet uitvoerbaar maken. `cp` neemt de rechten van de bron over, maar
+  # dat is geen garantie waar dit script op mag leunen: een niet-uitvoerbaar
+  # script faalt pas bij de eerste aanroep, en dan lijkt de controle kapot in
+  # plaats van verkeerd geïnstalleerd. Als `if`, niet als `&&`: onder `set -e`
+  # zou een falende test de hele adoptie afbreken.
+  if [ -f "$project_dir/check-traceability.sh" ]; then
+    chmod +x "$project_dir/check-traceability.sh"
+  fi
   copy_issue_templates "$project_dir"
 
   if [ -f "$project_dir/package.json" ]; then

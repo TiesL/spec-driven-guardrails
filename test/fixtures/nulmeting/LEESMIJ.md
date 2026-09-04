@@ -109,6 +109,17 @@ Vertrouw deze nulmeting dus voor wat hij is: een vangnet voor de
 ./check          # scenario S4 draait deze fixtures
 ```
 
+## Bijgewerkt in W19 (#31)
+
+`traceability-schakel-1` is toegevoegd aan `CHANGES.md`, met
+`Van toepassing als: altijd`. Elk van de vier projecten krijgt die vraag erbij,
+dus elke gouden set groeit met exact dat ene ID: a2t-emails 27, tennis-admin 26,
+tennis-registration en tennis-invoicing elk 25. `CHANGES.md.momentopname` is in
+dezelfde PR ververst.
+
+Wat níét verandert: geen bestaande ID is hernoemd of verdwenen, en geen predicaat
+is aangepast. De toename is overal precies één.
+
 ## Bijwerken — alleen bewust
 
 Een afwijking betekent één van twee dingen:

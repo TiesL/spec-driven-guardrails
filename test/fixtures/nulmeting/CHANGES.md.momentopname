@@ -102,6 +102,30 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   `package.json` krijgt hem niet, net als bij `ci-conventie`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
+## traceability-schakel-1
+
+- **Vraag:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** het project heeft `check-traceability.sh` (gescaffold door
+  `adopt.sh`) en roept dat aan vanuit zijn eigen `check`. Scenario's dragen een
+  `**Dekt:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
+
+  Drie dingen om te weten voor je "ja" antwoordt. Ten eerste is er geen
+  retrofit: zolang geen enkel scenario een `Dekt:`-veld draagt, waarschuwt het
+  script en faalt het niet. De handhaving begint zodra de eerste verwijzing er
+  staat, dus de conventie geldt vanaf het eerstvolgende werk. Ten tweede is een
+  `PRD.md` zonder ID-koppen ook een waarschuwing, geen fout — schakel 1 valt
+  daar simpelweg niet te controleren. Ten derde zijn **dubbele ID's wél een
+  harde fout**, ook zonder `Dekt:`-velden: een verwijzing naar een ID dat twee
+  keer voorkomt is niet eenduidig op te lossen. Een project met dubbele ID's
+  moet die eerst herstellen; `tennis-invoicing` is dat geval vandaag.
+
+  Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
+  scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. Alleen het veld telt —
+  een ID in lopende tekst is geen verwijzing.
+- **PR:** <wordt ingevuld bij de merge>
+
 ---
 
 ### Proces en ontwerpdiepte
