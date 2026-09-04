@@ -102,6 +102,40 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   `package.json` krijgt hem niet, net als bij `ci-conventie`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
+## traceability-schakel-1
+
+- **Vraag:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** het project heeft `check-traceability.sh` (gescaffold door
+  `adopt.sh`) en roept dat aan vanuit zijn eigen `check`. Scenario's dragen een
+  `**Dekt:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
+
+  **"Ja" betekent met terugwerkende kracht.** Dat is een bewuste keuze, geen
+  bijwerking. Het script handhaaft op bestandsniveau: zolang géén enkel scenario
+  een `Dekt:`-veld draagt, waarschuwt hij alleen — maar zodra het eerste veld er
+  staat, geldt de eis voor **alle** functionaliteit in de PRD, ook voor items
+  die niets met dat werk te maken hebben. Er is dus geen geleidelijke ingroei:
+  wie het veld voor het eerst invult zonder de rest mee te nemen, zet de hele
+  achterstand van het project in één commit rood.
+
+  Antwoord daarom pas "ja" als de bestaande scenario's hun `Dekt:`-velden
+  hebben. Voor een project met een reële achterstand is dat een eigen stuk werk,
+  geen bijzaak van de eerstvolgende PR — reken op één regel per scenario plus de
+  afweging welk scenario welke functionaliteit werkelijk dekt.
+
+  Twee dingen die daarnaast gelden. Een `PRD.md` zonder ID-koppen is een
+  waarschuwing, geen fout: schakel 1 valt daar niet te controleren. En
+  **dubbele ID's zijn wél een harde fout**, ook zonder enig `Dekt:`-veld — een
+  verwijzing naar een ID dat twee keer voorkomt is niet eenduidig op te lossen.
+  Een project met dubbele ID's herstelt die eerst; `tennis-invoicing` is dat
+  geval vandaag.
+
+  Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
+  scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. Alleen het veld telt —
+  een ID in lopende tekst is geen verwijzing.
+- **PR:** <wordt ingevuld bij de merge>
+
 ---
 
 ### Proces en ontwerpdiepte
