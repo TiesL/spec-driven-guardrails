@@ -519,6 +519,27 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: beide problemen worden apart gemeld, met ID
 - And: een `PRD.md` zonder enig `F<n>` levert een **waarschuwing** op, geen harde fout
 
+### S62 — Zonder dekkingsvelden waarschuwt de controle, en handhaaft niet
+**Dekt:** F13
+- Given: een project waarvan geen enkel scenario een `**Dekt:**`-veld draagt —
+  alle vier de bestaande projecten zijn dit geval op de dag van invoering
+- When: de offline controle draait
+- Then: er verschijnt een waarschuwing en exit 0
+- And: er wordt geen enkel ongedekt item gemeld. Zonder die uitzondering klaagt
+  de controle bij invoering in één klap over álles, en dat is de retrofit die
+  het ontwerp juist vermijdt
+- And: zodra het eerste `**Dekt:**`-veld er staat, handhaaft hij wél — anders kan
+  één verwijzing de rest ongestraft laten liggen
+
+### S63 — De controle wordt gescaffold en draait in een vers project
+**Dekt:** F13
+- Given: een project dat `adopt.sh` voor het eerst draait
+- When: de adoptie klaar is
+- Then: `check-traceability.sh` staat er, uitvoerbaar
+- And: hij draait daar zonder te falen — een scaffold die meteen rood staat,
+  wordt bij de eerste aanraking uitgezet
+- And: een eigen versie van dat bestand wordt niet overschreven
+
 ---
 
 ## Issue-templates en release
