@@ -30,6 +30,10 @@ labels: ""
 **Epic:** #
 **Blocked by:** #
 **Blocks:** #
+<!--
+  W18 voegt hier `**Dekt:**` toe, tussen Epic en Blocked by — dat is de volgorde
+  die de bestaande issues gebruiken. De twee regels hieronder vervallen dan.
+-->
 
 PRD-sectie (indien van toepassing):
 TEST-SCENARIOS.md-scenario('s):

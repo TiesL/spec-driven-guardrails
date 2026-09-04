@@ -12,25 +12,34 @@ set -uo pipefail
 
 repo="$TEST_REPO_ROOT"
 
+# Het sjabloon zonder zijn HTML-commentaar. Een veld dat per ongeluk binnen
+# `<!-- ... -->` belandt staat er voor een grep gewoon, maar bereikt het issue
+# nooit — dan verstopt het sjabloon precies wat het moet voorschrijven.
+zonder_commentaar() {
+  awk '/<!--/ { in_c = 1 } !in_c; /-->/ { in_c = 0 }' "$1"
+}
+
 for sjabloon in work-item epic; do
   pad="$repo/templates/ISSUE_TEMPLATE/$sjabloon.md"
   [ -f "$pad" ] || fail "S31 — $sjabloon.md ontbreekt"
 
-  for veld in "Blocked by" "Blocks"; do
-    grep -q "^\*\*$veld:\*\*" "$pad" \
-      || fail "S31 — $sjabloon.md heeft geen '**$veld:**' aan regelbegin"
-  done
-done
+  zichtbaar="$(zonder_commentaar "$pad")"
 
-# AC2: het veld moet een `#<nummer>`-token kunnen dragen. Het sjabloon toont dat
-# met een kaal `#`; de controle hieronder eist de vorm, niet een verzonnen nummer.
-for sjabloon in work-item epic; do
-  pad="$repo/templates/ISSUE_TEMPLATE/$sjabloon.md"
-  regel="$(grep '^\*\*Blocked by:\*\*' "$pad")"
-  case "$regel" in
-    *"#"*) ;;
-    *) fail "S31 — $sjabloon.md: '$regel' laat niet zien dat er een #-nummer in hoort" ;;
-  esac
+  for veld in "Blocked by" "Blocks"; do
+    regel="$(printf '%s\n' "$zichtbaar" | grep "^\*\*$veld:\*\*" || true)"
+
+    [ -n "$regel" ] \
+      || fail "S31 — $sjabloon.md heeft geen '**$veld:**' aan regelbegin, buiten commentaar"
+
+    # AC2: het veld moet een `#<nummer>`-token kunnen dragen. Het sjabloon toont
+    # dat met een kaal `#`; de controle eist de vorm, niet een verzonnen nummer.
+    # Beide velden, niet alleen het eerste — een controle die maar één van twee
+    # velden ziet, dekt de helft van wat hij beweert.
+    case "$regel" in
+      *"#"*) ;;
+      *) fail "S31 — $sjabloon.md: '$regel' laat niet zien dat er een #-nummer in hoort" ;;
+    esac
+  done
 done
 
 # AC3: adopt.sh ververst de sjablonen in een project, ook als er al een oudere

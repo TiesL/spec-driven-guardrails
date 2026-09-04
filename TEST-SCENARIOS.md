@@ -536,7 +536,7 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   eerstvolgende adoptie
 
 ### S60 — Acceptatiecriteria in het sjabloon heten `AC<n>`
-**Dekt:** F14
+**Dekt:** F13
 - Given: `templates/ISSUE_TEMPLATE/work-item.md`
 - When: een issue vanuit het sjabloon wordt aangemaakt
 - Then: de acceptatiecriteria zijn `AC<n>` genummerd, niet `S<n>`
@@ -544,6 +544,9 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   scenarioverwijzingen het issue zelf — dan is schakel 2 niet controleerbaar
 - And: dit scenario hoort bij W18 en wacht op de uitkomst van W17; valt die
   hernoeming anders uit, dan verandert dit scenario mee
+- And: dit dekt **F13**, niet F14. De ongesplitste S31 droeg `Dekt: F14` voor
+  beide claims, maar F13 punt a is de plek waar de `AC<n>`-hernoeming besloten
+  wordt; F14 gaat uitsluitend over de blocking-edges
 
 ### S32 — Elke actieve entry heeft een PR-linkback
 **Dekt:** F15
