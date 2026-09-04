@@ -547,6 +547,20 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: dit dekt **F13**, niet F14. De ongesplitste S31 droeg `Dekt: F14` voor
   beide claims, maar F13 punt a is de plek waar de `AC<n>`-hernoeming besloten
   wordt; F14 gaat uitsluitend over de blocking-edges
+- And: `S<n>` mag in het sjabloon alleen nog voorkomen als verwijzing naar
+  `TEST-SCENARIOS.md`, niet als eigen nummering
+
+### S61 — Het scenariosjabloon draagt het dekkingsveld en de grammatica
+**Dekt:** F13
+- Given: `templates/TEST-SCENARIOS.md`
+- When: een project ermee scaffoldt
+- Then: elk voorbeeldscenario toont een `**Dekt:**`-veld direct onder de kop
+- And: de tokengrammatica `^[A-Z]{1,2}[0-9]+[a-z]?$` staat er expliciet bij, met
+  `S2b` als voorbeeld — een sjabloon dat de vorm voordoet zonder hem te benoemen
+  leert de uitzondering niet aan, en dan strandt de eerste `S2b` op een
+  handhaving die niemand had zien aankomen
+- And: het sjabloon toont het veld met een placeholder, niet met een verzonnen
+  ID dat nergens op slaat
 
 ### S32 — Elke actieve entry heeft een PR-linkback
 **Dekt:** F15
