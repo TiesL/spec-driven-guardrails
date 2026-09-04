@@ -9,9 +9,19 @@ labels: ""
 <!-- Wat moet er gebouwd/gewijzigd worden, en waarom -->
 
 ## Acceptatiecriteria
-<!-- Given/When/Then — zelfde notatie als TEST-SCENARIOS.md -->
+<!--
+  Given/When/Then, dezelfde notatie als TEST-SCENARIOS.md.
 
-### S1: <naam scenario>
+  Nummer ze `AC<n>`, niet `S<n>`. Die laatste is de nummering van
+  TEST-SCENARIOS.md, en als een issue zijn eigen criteria zo noemt, raakt elke
+  zoekactie naar scenarioverwijzingen het issue zelf — dan valt niet meer vast
+  te stellen welk scenario werkelijk een issue heeft.
+
+  `S<n>` hoort hier dus alleen thuis als verwijzing naar een scenario, in het
+  veld **Dekt:** hieronder.
+-->
+
+### AC1: <naam van het criterium>
 - Given ...
 - When ...
 - Then ...
@@ -28,12 +38,21 @@ labels: ""
   Projects.
 -->
 **Epic:** #
+**Dekt:** <F1, S2>
 **Blocked by:** #
 **Blocks:** #
 <!--
-  W18 voegt hier `**Dekt:**` toe, tussen Epic en Blocked by — dat is de volgorde
-  die de bestaande issues gebruiken. De twee regels hieronder vervallen dan.
--->
+  **Dekt:** noemt wat dit werkitem realiseert: functionaliteit uit PRD.md en
+  scenario's uit TEST-SCENARIOS.md, komma-gescheiden, bijvoorbeeld `F3, S7, S8`.
+  Eén veldnaam voor beide richtingen — het prefix van het token zegt al welke
+  kant het op wijst.
 
-PRD-sectie (indien van toepassing):
-TEST-SCENARIOS.md-scenario('s):
+  Elk token matcht `^[A-Z]{1,2}[0-9]+[a-z]?$`. Die letter aan het eind is geen
+  slordigheid maar bestaand gebruik (`S2b`); twee beginletters ook (`OP4`).
+  Alleen dit veld telt — een ID dat in lopende tekst voorkomt is geen
+  verwijzing.
+
+  Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
+  scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. De controle toetst dat
+  het token oplost naar een bestaande kop, niet welke letter ervoor staat.
+-->
