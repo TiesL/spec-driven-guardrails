@@ -78,6 +78,30 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   voor.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/3
 
+## ci-op-pr-en-main
+
+- **Vraag:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
+- **Standaard:** ja
+- **Van toepassing als:** heeft-package-json
+- **Ja betekent:** de workflow heeft zowel een `pull_request`-trigger als
+  `push: branches: [main]`. Het verschil met alleen een push op de branch is
+  wezenlijk: `pull_request` beoordeelt het samengevoegde resultaat, dus het geval
+  waarin twee los groene branches samen breken, en het is de vorm die als
+  vereiste controle op een pull request ingesteld kan worden. De push-trigger is
+  de achtervang voor wat `main` langs een andere weg bereikt. Dit staat los van
+  `ci-conventie`: dát antwoord gaat over wát de workflow doet (alleen `check`
+  aanroepen), dit over wannéér hij draait. Een project dat het eerste al
+  beantwoordde, is over het tweede nooit iets gevraagd.
+
+  Twee dingen om te weten voor je "ja" antwoordt. Ten eerste vervalt de
+  validatie van een push naar een feature-branch waar nog geen pull request bij
+  hoort: het eerste CI-signaal komt dan pas bij het openen van de PR. Dat is de
+  prijs voor het beoordelen van het samengevoegde resultaat, en in een workflow
+  waarin de PR vroeg opengaat is die klein. Ten tweede erft deze vraag het
+  bereik van `heeft-package-json`: een project met een CI-workflow maar zonder
+  `package.json` krijgt hem niet, net als bij `ci-conventie`.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/50
+
 ---
 
 ### Proces en ontwerpdiepte
@@ -144,22 +168,6 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
-
-## ci-op-pr-en-main
-
-- **Vraag:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-package-json
-- **Ja betekent:** de workflow heeft zowel een `pull_request`-trigger als
-  `push: branches: [main]`. Het verschil met alleen een push op de branch is
-  wezenlijk: `pull_request` beoordeelt het samengevoegde resultaat, dus het geval
-  waarin twee los groene branches samen breken, en het is de vorm die als
-  vereiste controle op een pull request ingesteld kan worden. De push-trigger is
-  de achtervang voor wat `main` langs een andere weg bereikt. Dit staat los van
-  `ci-conventie`: dát antwoord gaat over wát de workflow doet (alleen `check`
-  aanroepen), dit over wannéér hij draait. Een project dat het eerste al
-  beantwoordde, is over het tweede nooit iets gevraagd.
-- **PR:** <wordt ingevuld bij de merge>
 
 ---
 

@@ -22,3 +22,11 @@ labels: epic
 
 ## Open vragen
 -
+
+## Gerelateerd
+<!--
+  Ook een epic hangt af van ander werk. Vul beide kanten in — de volgorde wordt
+  gelezen vanuit het issue dat wacht, niet vanuit het issue dat blokkeert.
+-->
+**Blocked by:** #
+**Blocks:** #

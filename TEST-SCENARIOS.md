@@ -527,8 +527,26 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 **Dekt:** F14
 - Given: `templates/ISSUE_TEMPLATE/work-item.md` en `epic.md`
 - When: een issue vanuit het sjabloon wordt aangemaakt
-- Then: beide bevatten een `**Blocked by:**`- en een `**Blocks:**`-veld
-- And: de acceptatiecriteria zijn `AC<n>` genummerd, niet `S<n>`
+- Then: beide bevatten een `**Blocked by:**`- en een `**Blocks:**`-veld, aan
+  regelbegin en in de `**Veld:**`-vorm die de bestaande issues gebruiken
+- And: een variant als `- Blocked by:` telt niet — die leest voor een mens
+  hetzelfde en is voor een grep iets anders, en dan levert de conventie geen
+  graaf op maar een gevoel
+- And: een project met een verouderd sjabloon krijgt het nieuwe bij de
+  eerstvolgende adoptie
+
+### S60 — Acceptatiecriteria in het sjabloon heten `AC<n>`
+**Dekt:** F13
+- Given: `templates/ISSUE_TEMPLATE/work-item.md`
+- When: een issue vanuit het sjabloon wordt aangemaakt
+- Then: de acceptatiecriteria zijn `AC<n>` genummerd, niet `S<n>`
+- And: zolang een issue zijn eigen criteria `S1` noemt, raakt elke `grep` naar
+  scenarioverwijzingen het issue zelf — dan is schakel 2 niet controleerbaar
+- And: dit scenario hoort bij W18 en wacht op de uitkomst van W17; valt die
+  hernoeming anders uit, dan verandert dit scenario mee
+- And: dit dekt **F13**, niet F14. De ongesplitste S31 droeg `Dekt: F14` voor
+  beide claims, maar F13 punt a is de plek waar de `AC<n>`-hernoeming besloten
+  wordt; F14 gaat uitsluitend over de blocking-edges
 
 ### S32 — Elke actieve entry heeft een PR-linkback
 **Dekt:** F15
