@@ -475,17 +475,38 @@ oorspronkelijke ontwerp niet zag), en levert een PRD zonder `F<n>` een
 **waarschuwing** op, geen harde fout. Een check die op dag één faalt in een van de
 vier projecten, staat op dag twee uit.
 
-*Wat deze keuze kost.* Prefix-agnostisch betekent dat élke ID-kop een geldig doel
-is. In tennis-admin zijn `O1`–`O5` afgewogen architectuuropties waarvan er vier
-zijn verworpen, en is `OP<n>` een open punt. `Dekt: O2` — een verwijzing naar een
-verworpen alternatief — lost dus netjes op en wordt niet gemeld. De controle toetst
-dát een verwijzing oplost, niet of het doel zinnig is om te dekken.
+*Wat deze keuze kost.* Prefix-agnostisch betekent dat élke ID-kop in de gescande
+bestanden een geldig doel is. Tennis-admin heeft `### OP5` als kop in zijn
+`PRD.md`, onder de sectie `## Open punten`. `Dekt: OP5` lost dus op en wordt niet
+gemeld, terwijl een open punt geen functionaliteit is die je kunt dekken. De
+controle toetst dát een verwijzing oplost, niet of het doel zinnig is.
+
+De reikwijdte is wel begrensd door besluit c zelf: de collector leest alleen
+koppen uit `PRD.md` en `TEST-SCENARIOS.md`. Tennis-admins `O1`–`O5` — afgewogen
+architectuuropties waarvan er vier verworpen zijn — staan uitsluitend in
+`ARCHITECTUUR.md` en worden dus niet verzameld. `Dekt: O2` lost daarom júist niet
+op en wórdt gemeld. Alleen wat in de twee gescande bestanden staat, kan dit
+probleem geven.
 
 Dat is bewust geaccepteerd in W17. Een verwijzing naar een verkeerd maar bestaand
 doel is een documentatiefout die een mens in de review ziet; een hardcoded
-`F`/`S`-lijst maakt de controle onbruikbaar in twee van de vier projecten, en een
-uitsluitlijst per project introduceert configuratie die stilzwijgend veroudert
-zodra een project een nieuw prefix gaat gebruiken. Zie *Bekende beperkingen*.
+`F`/`S`-lijst maakt de controle onbruikbaar in twee van de vier projecten. Drie
+alternatieven zijn afgewogen en afgevallen, elk op dezelfde grond — ze vragen
+per-projectconfiguratie die stilzwijgend veroudert:
+
+- **Uitsluitlijst per prefix.** Veroudert zodra een project een nieuw prefix gaat
+  gebruiken.
+- **Filteren op bestand.** Sluit `ARCHITECTUUR.md` uit, maar dat doet besluit c al;
+  het `OP<n>`-geval zit in de PRD zelf en blijft staan.
+- **Filteren op sectie binnen de PRD**, bijvoorbeeld alleen koppen onder
+  `## Functionaliteit`. Aantrekkelijk, en daarom nagerekend: van de vier projecten
+  gebruikt alleen tennis-admin een sectie `## Open punten`; de andere drie hebben
+  helemaal geen open-puntensectie, en `templates/PRD.md` evenmin — dit repo zelf
+  gebruikt `## Open vragen`. De sectienamen lopen dus al uiteen vóór er iets op
+  gebouwd is, en filteren daarop verplaatst de veroudering van prefixen naar
+  kopteksten in plaats van hem weg te nemen.
+
+Zie *Bekende beperkingen*.
 
 **d. Splitsen op netwerkafhankelijkheid.** Schakel 1 (functionaliteit → scenario)
 is offline en gaat in `templates/check-traceability.sh`, gescaffold zoals `ci.yml`,
@@ -898,10 +919,15 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
   blinde vlekken uit te sluiten — die kanttekening staat al in `WORKFLOW.md`.
 - Bash 3.2 beperkt het scriptidioom.
 - De link-integriteitscontrole uit F13 toetst dát een `Dekt:`-verwijzing oplost,
-  niet of het doel zinnig is. Een verwijzing naar een verworpen architectuuroptie
-  of een open punt slaagt. Bewust geaccepteerd in W17 (#29): het alternatief
-  breekt de controle in twee van de vier projecten of vraagt configuratie per
-  project die veroudert.
+  niet of het doel zinnig is. Een verwijzing naar een open punt dat als kop in de
+  PRD staat — tennis-admins `OP5` — slaagt. Bewust geaccepteerd in W17 (#29): elk
+  alternatief breekt de controle in twee van de vier projecten of vraagt
+  configuratie per project die veroudert.
+- Dezelfde controle gaat ervan uit dat een ID-token in hoogstens één van de twee
+  gescande bestanden als kop voorkomt. Staat hetzelfde token als kop in zowel
+  `PRD.md` als `TEST-SCENARIOS.md`, dan is niet meer te bepalen welke kant een
+  `Dekt:`-verwijzing op wijst. Geen van de vier projecten heeft die overlap nu;
+  het ontwerp beschermt er niet tegen.
 
 ---
 
