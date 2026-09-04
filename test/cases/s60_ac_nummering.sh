@@ -31,6 +31,15 @@ eigen_nummering="$(grep -nE '^#+ +S[0-9]+' "$sjabloon" || true)"
 grep -q '^\*\*Dekt:\*\*' "$sjabloon" \
   || fail "S60 — work-item.md heeft geen '**Dekt:**' aan regelbegin"
 
+# And: **Dekt:** staat tussen Epic en Blocked by. Dat is geen smaak: elk bestaand
+# issue in dit repo schrijft die volgorde, en een sjabloon dat een andere volgorde
+# voordoet levert twee schrijfwijzen op waarvan er straks één per ongeluk de norm
+# wordt.
+volgorde="$(grep -nE '^\*\*(Epic|Dekt|Blocked by|Blocks):\*\*' "$sjabloon" | sed 's/^[0-9]*://; s/:\*\*.*/:**/' | tr '\n' ' ')"
+verwacht="**Epic:** **Dekt:** **Blocked by:** **Blocks:** "
+[ "$volgorde" = "$verwacht" ] \
+  || fail "S60 — veldvolgorde is '$volgorde', verwacht '$verwacht'"
+
 # And: de losse regels die Dekt vervangt zijn weg. Blijven ze staan, dan zijn er
 # twee manieren om hetzelfde op te schrijven en raadt niemand welke telt.
 for oud in "PRD-sectie" "TEST-SCENARIOS.md-scenario"; do

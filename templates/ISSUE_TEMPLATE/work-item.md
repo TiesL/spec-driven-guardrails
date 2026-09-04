@@ -38,7 +38,7 @@ labels: ""
   Projects.
 -->
 **Epic:** #
-**Dekt:**
+**Dekt:** <F1, S2>
 **Blocked by:** #
 **Blocks:** #
 <!--
