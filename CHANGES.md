@@ -100,7 +100,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   waarin de PR vroeg opengaat is die klein. Ten tweede erft deze vraag het
   bereik van `heeft-package-json`: een project met een CI-workflow maar zonder
   `package.json` krijgt hem niet, net als bij `ci-conventie`.
-- **PR:** <wordt ingevuld bij de merge>
+- **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
 ---
 
