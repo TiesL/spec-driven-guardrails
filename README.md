@@ -15,6 +15,7 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 | `CHANGES.md` | Lijst van adopteerbare wijzigingen: per PR-grote wijziging een gesloten vraag, een "van toepassing als"-conditie en wat "ja" betekent. Projecten leggen hun antwoord vast in hun eigen `WORKFLOW-ADOPTIE.md`. |
 | `pending-changes.sh` | Bepaalt welke wijzigingen uit `CHANGES.md` voor een project van toepassing zijn en nog geen antwoord hebben. Wordt aangeroepen door de `SessionStart`-hook. |
 | `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst, en de adoptietabel van een nieuw project seedt. |
+| `PRD-MULTI-AGENT-WIP.md` | **WIP** — verkennend PRD voor multi-agent softwareontwikkeling in een latere release, gekoppeld aan epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Geen onderdeel van de gedeelde workflow-machinerie hierboven en niet goedgekeurd: richtinggevend, met open ontwerpvragen bewust als **TBD**. |
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
 
