@@ -435,6 +435,12 @@ De oorspronkelijke opzet ging uit van `F<n>`/`S<n>` overal. De werkelijkheid:
 | tennis-registration | F1–F7 | S1–S16 | nooit |
 | tennis-invoicing | **geen `F<n>`** | S1–S29, **S26/S27/S28 dubbel** | nooit |
 
+**Besloten in W17 (#29)**, de ontwerpreview met Ties die de blokkade "eerst één
+work item end-to-end" vervangt. Alle vier de besluiten hieronder zijn bevestigd,
+met één toevoeging: besluit c krijgt een expliciete beperking, zie daar. De
+onderbouwing is vóór het besluit opnieuw tegen de vier projecten geverifieerd —
+twee claims bleken onvolledig en staan hieronder gecorrigeerd.
+
 Vier ontwerpbesluiten die het ontwerp redden van deze werkelijkheid. De letters
 **a** tot en met **d** hieronder zijn prozalabels, geen ID's: alleen `F13` is een
 functionaliteitsitem. De collector uit besluit c verzamelt daarom uitsluitend
@@ -443,15 +449,21 @@ andere projecten zoals de `F1–F26` in de tabel hierboven, tellen niet mee.
 
 **a. `AC<n>` in `work-item.md`.** Dat sjabloon nummert zijn eigen
 acceptatiecriteria `### S1:` — dezelfde namespace als `TEST-SCENARIOS.md`, dus elke
-`grep` op `S<n>` raakt gegarandeerd het issue zelf. Niet `A<n>`:
-`ARCHITECTUUR.md` gebruikt `A1` voor architectuureisen en tennis-admin gebruikt
-`A1–A24` voor scenario's. `AC` is nergens in gebruik.
+`grep` op `S<n>` raakt gegarandeerd het issue zelf. Niet `A<n>`, en die botsing is
+scherper dan hij op het eerste gezicht lijkt: `templates/ARCHITECTUUR.md` gebruikt
+`A1` voor architectuureisen, en tennis-admin heeft 24 `A<n>`-scenario's. Zou
+tennis-admin dat sjabloon scaffolden, dan betekent `A1` twee dingen binnen één
+project — geen botsing tussen projecten, maar binnen één. Geverifieerd: `AC` komt
+in geen van de vier projecten voor.
 
 **b. Eén veldnaam, `**Dekt:**`**, in beide richtingen; het prefix van het token
 zegt welke schakel het is. Strikt: regelbegin, komma-gescheiden tokens die matchen
-op `^[A-Z]{1,2}[0-9]+[a-z]?$`. Die `[a-z]?` is niet cosmetisch — `a2t-emails` heeft
-een `S2b`, en een grammatica die dat afwijst is op dag één onbruikbaar in een van de
-vier projecten. Alleen het veld telt; dat voorkomt vals-positieven per constructie.
+op `^[A-Z]{1,2}[0-9]+[a-z]?$`. Beide kwantoren komen uit de werkelijkheid, niet uit
+smaak. De `[a-z]?` is er om `a2t-emails`' `S2b`; de `{1,2}` om tennis-admins
+`OP<n>` — dat project gebruikt `OP` voor open punten in zowel `PRD.md` als
+`ARCHITECTUUR.md`, en `O<n>` voor afgewogen architectuuropties. Een grammatica die
+één van beide afwijst is op dag één onbruikbaar in een van de vier projecten.
+Alleen het veld telt; dat voorkomt vals-positieven per constructie.
 
 **c. Geen `F`/`S` hardcoderen — link-integriteit controleren.** Verzamel de
 ID-tokens uit de koppen van `PRD.md` en `TEST-SCENARIOS.md`, en controleer dat elk
@@ -462,6 +474,18 @@ tennis-invoicings dubbele ID's een **gemelde fout** (een echte latente bug die h
 oorspronkelijke ontwerp niet zag), en levert een PRD zonder `F<n>` een
 **waarschuwing** op, geen harde fout. Een check die op dag één faalt in een van de
 vier projecten, staat op dag twee uit.
+
+*Wat deze keuze kost.* Prefix-agnostisch betekent dat élke ID-kop een geldig doel
+is. In tennis-admin zijn `O1`–`O5` afgewogen architectuuropties waarvan er vier
+zijn verworpen, en is `OP<n>` een open punt. `Dekt: O2` — een verwijzing naar een
+verworpen alternatief — lost dus netjes op en wordt niet gemeld. De controle toetst
+dát een verwijzing oplost, niet of het doel zinnig is om te dekken.
+
+Dat is bewust geaccepteerd in W17. Een verwijzing naar een verkeerd maar bestaand
+doel is een documentatiefout die een mens in de review ziet; een hardcoded
+`F`/`S`-lijst maakt de controle onbruikbaar in twee van de vier projecten, en een
+uitsluitlijst per project introduceert configuratie die stilzwijgend veroudert
+zodra een project een nieuw prefix gaat gebruiken. Zie *Bekende beperkingen*.
 
 **d. Splitsen op netwerkafhankelijkheid.** Schakel 1 (functionaliteit → scenario)
 is offline en gaat in `templates/check-traceability.sh`, gescaffold zoals `ci.yml`,
@@ -873,6 +897,11 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 - Modellen delen trainingsdata, dus ook `pre-merge-review` verhoogt de bodem zonder
   blinde vlekken uit te sluiten — die kanttekening staat al in `WORKFLOW.md`.
 - Bash 3.2 beperkt het scriptidioom.
+- De link-integriteitscontrole uit F13 toetst dát een `Dekt:`-verwijzing oplost,
+  niet of het doel zinnig is. Een verwijzing naar een verworpen architectuuroptie
+  of een open punt slaagt. Bewust geaccepteerd in W17 (#29): het alternatief
+  breekt de controle in twee van de vier projecten of vraagt configuratie per
+  project die veroudert.
 
 ---
 
@@ -916,9 +945,12 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 
 ## Open vragen
 
-1. **Wordt de end-to-end doorloop een echt issue?** Zo ja, dan is de sterkste
-   plek ná Fase 3 en vóór Fase 4 — dan vervangt praktijkbewijs W17's menselijke
-   review op precies het punt waar de oorspronkelijke blokkade om draaide.
+1. **Wordt de end-to-end doorloop een echt issue?** De oorspronkelijke gedachte
+   was hem ná Fase 3 en vóór Fase 4 te plannen, zodat praktijkbewijs W17's
+   menselijke review zou vervangen. Die volgorde is achterhaald: W17 (#29) is
+   afgerond en de vijf veldformaatbesluiten liggen vast. De doorloop blijft
+   waardevol, maar nu als toets óf die besluiten in de praktijk houden — niet
+   als vervanging van een review die al gedaan is.
 2. **`kwaliteitsreview-voor-merge` is door geen enkel project beantwoord** en geen
    enkele PR had ooit een review. Moet W13 die entry meteen in alle vier de
    projecten voorleggen?
