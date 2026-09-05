@@ -111,14 +111,121 @@ seed_adoptietabel() {
   echo "Adoptietabel aangemaakt: $doel"
 }
 
-add_gitignore_entry() {
-  local project_dir="$1" entry="$2"
+GITIGNORE_BEGIN="# claude-workflow: begin — beheerd blok, niet met de hand bewerken"
+GITIGNORE_EIND="# claude-workflow: eind"
+
+# Zet het beheerde blok in .gitignore, met precies de meegegeven regels.
+#
+# Waarom een blok en geen losse regels: zonder markering is niet te zien welke
+# regels van deze workflow zijn, en dus ook niet welke weg mogen als een
+# conventie verdwijnt. Losse regels stapelen zich op en blijven eeuwig staan.
+#
+# De migratie haalt dezelfde regels weg als ze los buiten het blok staan - dat
+# is de bestaande situatie in alle vier de projecten. Alles wat niet letterlijk
+# een beheerde regel of onderdeel van het blok is, blijft ongemoeid, op zijn
+# plek en in zijn volgorde. Dat is geen nettigheid: `tennis-admin/.gitignore`
+# sluit met `tennis-registration/` en `tennis-invoicing/` twee geneste
+# git-repo's uit, en die per ongeluk opeten maakt van twee hele repo's
+# ongetrackte inhoud.
+schrijf_gitignore_blok() {
+  local project_dir="$1"; shift
   local gitignore="$project_dir/.gitignore"
+  local tijdelijk="$gitignore.claude-workflow-tmp"
+
   touch "$gitignore"
-  if ! grep -qxF "$entry" "$gitignore"; then
-    echo "$entry" >> "$gitignore"
-    echo "Toegevoegd aan .gitignore: $entry"
+
+  # Bestaande inhoud, zonder het oude blok en zonder de losse varianten van de
+  # beheerde regels.
+  awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
+    $0 == begin { in_blok = 1; next }
+    in_blok { if ($0 == eind) in_blok = 0; next }
+    { print }
+  ' "$gitignore" > "$tijdelijk"
+
+  local regel
+  for regel in "$@"; do
+    grep -vxF "$regel" "$tijdelijk" > "$tijdelijk.f" || true
+    mv "$tijdelijk.f" "$tijdelijk"
+  done
+
+  # Alleen de witregels aan het éínd weghalen, anders groeit het bestand met een
+  # witregel per run en is de adoptie niet meer idempotent. Witregels midden in
+  # het bestand blijven: die scheiden groepen, en ze weggooien is precies het
+  # ongevraagd herschrijven van andermans .gitignore dat hier niet hoort.
+  awk '
+    NF { for (i = 1; i <= wacht; i++) print ""; wacht = 0; print; next }
+    { wacht++ }
+  ' "$tijdelijk" > "$tijdelijk.f"
+  mv "$tijdelijk.f" "$tijdelijk"
+
+  {
+    if [ -s "$tijdelijk" ]; then
+      cat "$tijdelijk"
+      echo
+    fi
+    echo "$GITIGNORE_BEGIN"
+    for regel in "$@"; do
+      echo "$regel"
+    done
+    echo "$GITIGNORE_EIND"
+  } > "$gitignore"
+
+  rm -f "$tijdelijk"
+  echo "Beheerd .gitignore-blok bijgewerkt: $*"
+}
+
+# Installeert de skills van dit repo als losse symlinks in het project.
+#
+# Per skill een symlink in een echte map, niet één map-symlink. Dat laatste
+# maakt de hele skills-namespace eigendom van claude-workflow, waarmee een
+# project nooit een eigen skill kan hebben zonder te de-adopteren.
+#
+# Zonder skills/-map: niets doen, en géén lege map achterlaten. De installer
+# landt vóór de inhoud, dus dit is de normale toestand tot die map gevuld is.
+installeer_skills() {
+  local project_dir="$1"
+  local bron="$CLAUDE_WORKFLOW_DIR/skills"
+  local doel="$project_dir/.claude/skills"
+
+  if [ ! -d "$bron" ]; then
+    return 0
   fi
+
+  if [ -L "$doel" ]; then
+    rm "$doel"
+  fi
+  mkdir -p "$doel"
+
+  local pad naam
+  for pad in "$bron"/*/; do
+    [ -d "$pad" ] || continue
+    naam="$(basename "$pad")"
+    if [ -L "$doel/$naam" ] || [ ! -e "$doel/$naam" ]; then
+      rm -f "$doel/$naam"
+      ln -s "$bron/$naam" "$doel/$naam"
+    fi
+  done
+
+  # Verweesde symlinks opruimen. Een verweesde skill is niet inert: Claude Code
+  # meldt er elke sessie een laadfout op, in elk geadopteerd project tegelijk.
+  #
+  # Strikt: alleen symlinks die naar dít repo wijzen én waarvan het doel niet
+  # meer bestaat. Een echte map van het project blijft, en een symlink die het
+  # project zelf ergens anders heen legde ook - die is niet van ons om op te
+  # ruimen.
+  local link bestemming
+  for link in "$doel"/*; do
+    [ -L "$link" ] || continue
+    bestemming="$(readlink "$link")"
+    case "$bestemming" in
+      "$bron"/*) ;;
+      *) continue ;;
+    esac
+    if [ ! -e "$bestemming" ]; then
+      rm "$link"
+      echo "Verweesde skill-symlink opgeruimd: $(basename "$link")"
+    fi
+  done
 }
 
 adopt_user_trigger() {
@@ -152,8 +259,8 @@ adopt_project() {
   backup_if_real_file "$project_dir/.claude/settings.json"
   ln -s "$CLAUDE_WORKFLOW_DIR/settings/session-hooks.json" "$project_dir/.claude/settings.json"
 
-  add_gitignore_entry "$project_dir" "CLAUDE.md"
-  add_gitignore_entry "$project_dir" ".claude/settings.json"
+  schrijf_gitignore_blok "$project_dir" "CLAUDE.md" ".claude/settings.json"
+  installeer_skills "$project_dir"
 
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
