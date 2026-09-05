@@ -72,7 +72,7 @@ sandbox_destroy() {
 # zonder de werkkopie te raken. Laat .git buiten beschouwing: niet nodig voor
 # de statische controles en het scheelt tijd.
 sandbox_copy_repo() {
-  local doel="$SANDBOX/repo"
+  local doel="$SANDBOX/${1:-repo}"
   mkdir -p "$doel"
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$doel" && tar -xf -)
   echo "$doel"
