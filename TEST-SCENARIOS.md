@@ -470,9 +470,13 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Given: de vijf termen uit R7 (branching, kwaliteitsreview, onderbouwingsplicht,
   deploy-guards, adoptieregistratie)
 - When: `WORKFLOW.md` op elk van die termen wordt gegrept
-- Then: elke term levert een Wegwijzer-rij op die naar precies één bestaande skill
-  verwijst
+- Then: voor kwaliteitsreview, onderbouwingsplicht, deploy-guards en
+  adoptieregistratie — die zíjn verplaatst — levert elke term een Wegwijzer-rij
+  op die naar precies één bestaande skill verwijst
 - And: twee termen die in dezelfde skill landen krijgen twee eigen rijen
+- And: branching is niet verplaatst (F12 houdt branchstrategie in de kern) en
+  lost dus op zoals R7 dat toestaat: direct in het bestand, zonder
+  Wegwijzer-rij
 
 ---
 

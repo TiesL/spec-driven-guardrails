@@ -11,6 +11,11 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
+# Dit scenario simuleert zelf de opeenvolging "geen skills -> wel skills, nog
+# niet geïnstalleerd". Sinds W9 heeft de echte checkout een gevulde skills/,
+# dus die eerst weghalen - anders start dit scenario al met de tweede
+# toestand en test het zijn eigen eerste regel niet meer.
+rm -rf "$repo/skills"
 project="$(vers_project doelproject)"
 CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 

@@ -212,6 +212,56 @@ schrijf_gitignore_blok() {
   echo "Beheerd .gitignore-blok bijgewerkt: $*"
 }
 
+# Ververst of legt één skill-symlink aan in doel_map: <doel_map>/<naam> ->
+# <bron_map>/<naam>. Alleen vervangen als het bestaande pad zelf een symlink is
+# of nog niet bestaat - een echte map (van het project of de gebruiker zelf)
+# wordt nooit overschreven.
+skill_symlink_bijwerken() {
+  local doel_map="$1" naam="$2" bron_map="$3"
+  if [ -L "$doel_map/$naam" ] || [ ! -e "$doel_map/$naam" ]; then
+    rm -f "$doel_map/$naam"
+    ln -s "$bron_map/$naam" "$doel_map/$naam"
+  fi
+}
+
+# Ruimt één symlink op als hij verweesd is: hij wijst (opgelost) naar iets
+# onder bron_echt dat niet meer bestaat. Een verweesde skill is niet inert:
+# Claude Code meldt er elke sessie een laadfout op.
+#
+# Strikt: alleen symlinks die naar bron_echt wijzen én waarvan het doel niet
+# meer bestaat. Een symlink die ergens anders heen wijst is niet van ons om op
+# te ruimen. Vergelijken gebeurt op opgeloste paden, niet op de tekst van de
+# symlink - een relatieve link naar dezelfde plek is dezelfde link, en een
+# tekstuele prefixvergelijking ziet dat niet.
+#
+# Lukt het oplossen niet, dan blijft de link staan. Bij twijfel niets
+# weggooien: dit is andermans map.
+skill_symlink_opruimen_indien_verweesd() {
+  local link="$1" bron_echt="$2"
+  [ -L "$link" ] || return 0
+
+  local bestemming map map_echt
+  bestemming="$(readlink "$link")"
+  case "$bestemming" in
+    /*) ;;
+    *) bestemming="$(dirname "$link")/$bestemming" ;;
+  esac
+
+  map="$(dirname "$bestemming")"
+  map_echt="$(cd "$map" 2>/dev/null && pwd -P)" || return 0
+  [ -n "$map_echt" ] || return 0
+
+  case "$map_echt/$(basename "$bestemming")" in
+    "$bron_echt"/*) ;;
+    *) return 0 ;;
+  esac
+
+  if [ ! -e "$bestemming" ]; then
+    rm "$link"
+    echo "Verweesde skill-symlink opgeruimd: $(basename "$link")"
+  fi
+}
+
 # Installeert de skills van dit repo als losse symlinks in het project.
 #
 # Per skill een symlink in een echte map, niet één map-symlink. Dat laatste
@@ -238,52 +288,47 @@ installeer_skills() {
   for pad in "$bron"/*/; do
     [ -d "$pad" ] || continue
     naam="$(basename "$pad")"
-    if [ -L "$doel/$naam" ] || [ ! -e "$doel/$naam" ]; then
-      rm -f "$doel/$naam"
-      ln -s "$bron/$naam" "$doel/$naam"
-    fi
+    skill_symlink_bijwerken "$doel" "$naam" "$bron"
   done
 
-  # Verweesde symlinks opruimen. Een verweesde skill is niet inert: Claude Code
-  # meldt er elke sessie een laadfout op, in elk geadopteerd project tegelijk.
-  #
-  # Strikt: alleen symlinks die naar dít repo wijzen én waarvan het doel niet
-  # meer bestaat. Een echte map van het project blijft, en een symlink die het
-  # project zelf ergens anders heen legde ook - die is niet van ons om op te
-  # ruimen.
-  # Vergelijken gebeurt op opgeloste paden, niet op de tekst van de symlink.
-  # Een relatieve link naar dezelfde plek is dezelfde link; een tekstuele
-  # prefixvergelijking ziet dat niet en laat zo'n wees eeuwig staan - waarna
-  # Claude Code er elke sessie een laadfout op meldt.
-  #
-  # Lukt het oplossen niet, dan blijft de link staan. Bij twijfel niets
-  # weggooien: dit is andermans map.
   local bron_echt
   bron_echt="$(cd "$bron" && pwd -P)"
 
-  local link bestemming map map_echt
+  local link
   for link in "$doel"/*; do
-    [ -L "$link" ] || continue
-    bestemming="$(readlink "$link")"
-    case "$bestemming" in
-      /*) ;;
-      *) bestemming="$doel/$bestemming" ;;
-    esac
-
-    map="$(dirname "$bestemming")"
-    map_echt="$(cd "$map" 2>/dev/null && pwd -P)" || continue
-    [ -n "$map_echt" ] || continue
-
-    case "$map_echt/$(basename "$bestemming")" in
-      "$bron_echt"/*) ;;
-      *) continue ;;
-    esac
-
-    if [ ! -e "$bestemming" ]; then
-      rm "$link"
-      echo "Verweesde skill-symlink opgeruimd: $(basename "$link")"
-    fi
+    skill_symlink_opruimen_indien_verweesd "$link" "$bron_echt"
   done
+}
+
+# Installeert precies de user-level skill (adopt-workflow) in
+# ~/.claude/skills/. F10: dit is de enige skill die op userniveau hoort, want
+# USER-CLAUDE.md laadt juist in niet-geadopteerde projecten, waar
+# .claude/skills/ niet bestaat.
+installeer_user_skill() {
+  local naam="adopt-workflow"
+  local bron="$CLAUDE_WORKFLOW_DIR/skills"
+  local doel="$HOME/.claude/skills"
+
+  # Anders dan $project_dir/.claude/skills is dit niet een map die dit repo
+  # volledig bezit: het is de hele persoonlijke skill-namespace van de
+  # gebruiker op déze machine, die zelf al symlinks naar elders kan bevatten.
+  # Die blind vervangen als hij toevallig een symlink is, hoort hier niet -
+  # "bij twijfel niets weggooien" geldt op userniveau nog sterker dan in een
+  # project. mkdir -p is hier een veilige no-op als het pad al bestaat.
+  if [ ! -d "$bron" ]; then
+    return 0
+  fi
+  mkdir -p "$doel"
+
+  # De installatiestap alleen als de skill er nu is; de opruimstap altijd,
+  # ook als de skill inmiddels weg is - juist dan kan de link verweesd zijn.
+  if [ -d "$bron/$naam" ]; then
+    skill_symlink_bijwerken "$doel" "$naam" "$bron"
+  fi
+
+  local bron_echt
+  bron_echt="$(cd "$bron" && pwd -P)"
+  skill_symlink_opruimen_indien_verweesd "$doel/$naam" "$bron_echt"
 }
 
 adopt_user_trigger() {
@@ -291,6 +336,8 @@ adopt_user_trigger() {
   backup_if_real_file "$HOME/.claude/CLAUDE.md"
   ln -s "$CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md" "$HOME/.claude/CLAUDE.md"
   echo "Klaar: ~/.claude/CLAUDE.md -> $CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md"
+
+  installeer_user_skill
 }
 
 adopt_project() {
