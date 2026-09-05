@@ -21,21 +21,10 @@ adopteer "$project"
 claude_md="$project/CLAUDE.md"
 [ -f "$claude_md" ] || { fail "R7 — CLAUDE.md ontbreekt na adoptie"; test_klaar "R7"; }
 
-# Regels binnen de Wegwijzer-tabel, elk beginnend met '|'.
-wegwijzer_rijen() {
-  awk '/^## Wegwijzer/{f=1;next} /^## /{f=0} f' "$claude_md" | grep '^|'
-}
-
-# De laatste kolom van een tabelrij, ontdaan van backticks/witruimte/suffix.
-skill_van_rij() {
-  printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
-    | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'
-}
-
 controleer_term() {
   local term="$1"
   local rijen aantal skill doel
-  rijen="$(wegwijzer_rijen | grep -i "$term" || true)"
+  rijen="$(wegwijzer_rijen "$claude_md" | grep -i "$term" || true)"
   aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
   [ "$aantal" -ge 1 ] || { fail "R7 — '$term' levert geen Wegwijzer-rij op"; return; }
   while IFS= read -r rij; do

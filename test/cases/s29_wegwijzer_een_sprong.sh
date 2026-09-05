@@ -10,21 +10,12 @@ set -uo pipefail
 workflow="$TEST_REPO_ROOT/WORKFLOW.md"
 [ -f "$workflow" ] || { fail "S29 — WORKFLOW.md ontbreekt"; test_klaar "S29"; }
 
-wegwijzer_rijen() {
-  awk '/^## Wegwijzer/{f=1;next} /^## /{f=0} f' "$workflow" | grep '^|'
-}
-
-skill_van_rij() {
-  printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
-    | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'
-}
-
 alle_skills="$(cd "$TEST_REPO_ROOT/skills" 2>/dev/null && ls -d */ 2>/dev/null | sed 's#/$##')"
 
 controleer_precies_een_rij() {
   local term="$1" verwachte_skill="$2"
   local rijen aantal skill
-  rijen="$(wegwijzer_rijen | grep -i "$term" || true)"
+  rijen="$(wegwijzer_rijen "$workflow" | grep -i "$term" || true)"
   aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
   if [ "$aantal" -ne 1 ]; then
     fail "S29 — '$term' levert $aantal Wegwijzer-rijen op, 1 verwacht"
@@ -44,8 +35,8 @@ controleer_precies_een_rij "deploy-guards" "deploy-guards"
 
 # Onderbouwingsplicht en adoptieregistratie landen in dezelfde skill, maar
 # horen twee eigen rijen te zijn, niet stilzwijgend één samengevoegde rij.
-rij_onderbouwing="$(wegwijzer_rijen | grep -i "onderbouwingsplicht" || true)"
-rij_adoptie="$(wegwijzer_rijen | grep -i "adoptieregistratie" || true)"
+rij_onderbouwing="$(wegwijzer_rijen "$workflow" | grep -i "onderbouwingsplicht" || true)"
+rij_adoptie="$(wegwijzer_rijen "$workflow" | grep -i "adoptieregistratie" || true)"
 [ -z "$rij_onderbouwing" ] || [ -z "$rij_adoptie" ] || [ "$rij_onderbouwing" != "$rij_adoptie" ] \
   || fail "S29 — onderbouwingsplicht en adoptieregistratie delen dezelfde Wegwijzer-rij"
 

@@ -309,16 +309,22 @@ installeer_user_skill() {
   local bron="$CLAUDE_WORKFLOW_DIR/skills"
   local doel="$HOME/.claude/skills"
 
-  if [ ! -d "$bron/$naam" ]; then
+  # Anders dan $project_dir/.claude/skills is dit niet een map die dit repo
+  # volledig bezit: het is de hele persoonlijke skill-namespace van de
+  # gebruiker op déze machine, die zelf al symlinks naar elders kan bevatten.
+  # Die blind vervangen als hij toevallig een symlink is, hoort hier niet -
+  # "bij twijfel niets weggooien" geldt op userniveau nog sterker dan in een
+  # project. mkdir -p is hier een veilige no-op als het pad al bestaat.
+  if [ ! -d "$bron" ]; then
     return 0
-  fi
-
-  if [ -L "$doel" ]; then
-    rm "$doel"
   fi
   mkdir -p "$doel"
 
-  skill_symlink_bijwerken "$doel" "$naam" "$bron"
+  # De installatiestap alleen als de skill er nu is; de opruimstap altijd,
+  # ook als de skill inmiddels weg is - juist dan kan de link verweesd zijn.
+  if [ -d "$bron/$naam" ]; then
+    skill_symlink_bijwerken "$doel" "$naam" "$bron"
+  fi
 
   local bron_echt
   bron_echt="$(cd "$bron" && pwd -P)"
