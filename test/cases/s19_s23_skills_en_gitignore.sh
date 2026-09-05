@@ -25,6 +25,18 @@ adopteer_uit() {
   CLAUDE_WORKFLOW_DIR="$1" "$1/adopt.sh" "$2" >/dev/null 2>&1
 }
 
+# Zelfde, maar met de uitvoer zichtbaar en de exitstatus bruikbaar.
+adopteer_uit_luid() {
+  CLAUDE_WORKFLOW_DIR="$1" "$1/adopt.sh" "$2"
+}
+
+# De markers zoals adopt.sh ze schrijft, uit het script zelf gelezen in plaats
+# van hier overgeschreven - anders toetst deze test zijn eigen kopie.
+GITIGNORE_BEGIN="$(sed -n 's/^GITIGNORE_BEGIN="\(.*\)"$/\1/p' "$bron/adopt.sh")"
+GITIGNORE_EIND="$(sed -n 's/^GITIGNORE_EIND="\(.*\)"$/\1/p' "$bron/adopt.sh")"
+[ -n "$GITIGNORE_BEGIN" ] && [ -n "$GITIGNORE_EIND" ] \
+  || fail "S21 — de markers zijn niet uit adopt.sh te lezen"
+
 # --- S19 -------------------------------------------------------------------
 project="$(vers_project s19)"
 adopteer_uit "$bron" "$project"
@@ -69,6 +81,15 @@ fi
 [ -f "$skills/eigen-skill/SKILL.md" ] || fail "S20 — de inhoud van 'eigen-skill' is weg"
 [ -L "$skills/vreemde-skill" ] || fail "S20 — een symlink buiten dit repo is opgeruimd; alleen onze eigen verweesde links mogen weg"
 [ -L "$skills/vreemde-dode-skill" ] || fail "S20 — een dóde symlink buiten dit repo is opgeruimd; het criterium is de bestemming, niet of de link werkt"
+
+# Een dode wees met een relatief pad. Zonder het pad eerst betekenisvol te maken
+# valt hij buiten de prefixcontrole en blijft hij eeuwig staan - en dan meldt
+# Claude Code er elke sessie een laadfout op.
+ln -s "$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$bron/skills/ook-verdwenen" "$skills")" "$skills/relatieve-wees"
+adopteer_uit "$bron" "$project"
+if [ -e "$skills/relatieve-wees" ] || [ -L "$skills/relatieve-wees" ]; then
+  fail "S20 — een verweesde symlink met een relatief pad is blijven staan"
+fi
 
 # --- S21 -------------------------------------------------------------------
 # Het gevaarlijkste geval, naar het echte tennis-admin gemodelleerd: regels die
@@ -117,10 +138,56 @@ done
 
 # En ze staan binnen het beheerde blok, niet als losse restanten erbuiten.
 binnen="$(awk '/^# claude-workflow: begin/{i=1;next} /^# claude-workflow: eind/{i=0} i' "$na")"
-for regel in "CLAUDE.md" ".claude/settings.json"; do
+for regel in "CLAUDE.md" ".claude/settings.json" ".claude/skills/"; do
   printf '%s\n' "$binnen" | grep -qxF "$regel" \
     || fail "S21 — '$regel' staat niet binnen het beheerde blok"
 done
+
+# --- S21b: randgevallen in de bestáánde .gitignore ------------------------
+# De acht mutaties hierboven toetsen wat er misgaat als het script fout gebouwd
+# wordt. Dit blok toetst de andere kant: wat er misgaat als de invoer een
+# randgeval heeft. Daar zat de zwaarste bug.
+
+# Een blok met alleen een beginmarker liet een eerdere versie alles daarna
+# stilzwijgend wissen. Het bestand is getrackt; stil doorploegen is de duurste
+# fout die dit script kan maken.
+project="$(vers_project s21b-kapot)"
+printf 'belangrijke-regel.txt\n%s\nCLAUDE.md\nregel-na-kapot-blok\n' "$GITIGNORE_BEGIN" > "$project/.gitignore"
+voor="$(cat "$project/.gitignore")"
+uitvoer="$(adopteer_uit_luid "$bron" "$project" 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "S21b — een kapot blok werd niet geweigerd"
+[ "$(cat "$project/.gitignore")" = "$voor" ] \
+  || fail "S21b — het bestand is aangeraakt terwijl het blok beschadigd was"
+assert_contains "S21b — de melding legt uit wat er mis is" "beschadigd beheerd blok" "$uitvoer"
+
+# Genest: twee beginmarkers vóór de eerste eindmarker. Tellen alleen is niet
+# genoeg, want de aantallen kloppen dan.
+project="$(vers_project s21b-genest)"
+printf 'x\n%s\n%s\nCLAUDE.md\n%s\n%s\n' "$GITIGNORE_BEGIN" "$GITIGNORE_BEGIN" "$GITIGNORE_EIND" "$GITIGNORE_EIND" > "$project/.gitignore"
+voor="$(cat "$project/.gitignore")"
+adopteer_uit_luid "$bron" "$project" >/dev/null 2>&1
+[ "$?" -ne 0 ] || fail "S21b — een genest blok werd niet geweigerd"
+[ "$(cat "$project/.gitignore")" = "$voor" ] || fail "S21b — het geneste geval raakte het bestand toch aan"
+
+# CRLF en trailing spaces: voor git dezelfde regel, voor een exacte vergelijking
+# niet. Zonder normaliseren blijft de oude regel naast de nieuwe staan.
+project="$(vers_project s21b-varianten)"
+printf 'CLAUDE.md\r\nCLAUDE.md   \nnode_modules/\n   \n*.log\n' > "$project/.gitignore"
+adopteer_uit "$bron" "$project"
+aantal="$(grep -c 'CLAUDE.md' "$project/.gitignore")"
+[ "$aantal" -eq 1 ] || fail "S21b — CLAUDE.md staat $aantal keer; CRLF- en spatie-varianten zijn niet gemigreerd"
+
+# Een regel met alleen spaties houdt zijn spaties. awk splitst op witruimte, dus
+# NF is daar nul - die als lege regel terugschrijven is een wijziging van
+# inhoud buiten het blok.
+grep -q '^   $' "$project/.gitignore" \
+  || fail "S21b — een witregel met spaties is herschreven naar een lege regel"
+
+# .claude/skills/ hoort in het blok: het zijn symlinks naar een absoluut pad op
+# deze machine. Zonder deze regel verschijnt er na W9 in elk project een stapel
+# ongetrackte bestanden.
+grep -qxF '.claude/skills/' "$project/.gitignore" \
+  || fail "S21b — .claude/skills/ staat niet in het beheerde blok"
 
 # --- S22 -------------------------------------------------------------------
 project="$(vers_project s22)"
