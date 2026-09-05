@@ -17,8 +17,13 @@ Ties kan de technische output niet zelf volledig beoordelen. De review moet dus
 
 **Hoe hij draait.** `context: fork` geeft de verse, geïsoleerde context — geen
 "ik heb dit net gebouwd en het werkt" in de context — en `model: opus` pint een
-ander, zwaarder model dan waarschijnlijk de code schreef. `allowed-tools` houdt
-deze skill read-only: geen `Edit`/`Write`, hij levert bevindingen, geen fixes.
+ander, zwaarder model dan waarschijnlijk de code schreef. `allowed-tools` sluit
+`Edit`/`Write`/`NotebookEdit` uit: deze skill kan de werkkopie niet met een
+editortool wijzigen. `Bash` staat wél toe (nodig voor `scope.sh`, `gh pr diff`,
+het bevindingen-comment plaatsen) en is dus geen technisch afgedwongen
+schrijfverbod — gebruik het uitsluitend om te lezen en om het comment te
+plaatsen, nooit om bestanden te wijzigen. Deze skill levert bevindingen, geen
+fixes.
 
 ## De scope
 

@@ -14,10 +14,10 @@ repo="$(sandbox_copy_repo)"
 project="$SANDBOX/project"
 mkdir -p "$project"
 
-# spec-security staat op "ja", spec-data-integriteit staat nog op de
-# voorlopige stempel "ja — vereist onderbouwing" (F6): beide horen in scope,
-# want de scope moet precies zien wat pending-changes.sh ook als "beantwoord
-# met ja" behandelt. spec-privacy staat op "nee" en spec-testability is
+# spec-security staat op een echt "ja", spec-data-integriteit draagt nog de
+# voorlopige stempel die adopt.sh's seed_entry() zet: Antwoord blijft
+# letterlijk "ja", de tekst "vereist onderbouwing" zit in Toelichting. Beide
+# horen in scope — spec-privacy staat op "nee" en spec-testability is
 # onbeantwoord (geen rij) — geen van beide hoort in scope.
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoptie van gedeelde workflow-wijzigingen
@@ -25,7 +25,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | Wijziging | Antwoord | Datum | Toelichting |
 |---|---|---|---|
 | spec-security | ja | 2026-01-01 | van toepassing |
-| spec-data-integriteit | ja — vereist onderbouwing | 2026-01-01 | seed |
+| spec-data-integriteit | ja | 2026-01-01 | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |
 | spec-privacy | nee | 2026-01-01 | niet van toepassing |
 EOF
 

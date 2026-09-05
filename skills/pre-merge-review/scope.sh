@@ -12,11 +12,14 @@
 #
 # complexiteit en dependencies horen altijd bij de scope (basishygiëne, F11),
 # ongeacht welke NFR's dit project koos. Daarnaast: elke spec-*-rij in
-# <project_dir>/WORKFLOW-ADOPTIE.md die met "ja" begint — dat is zowel een
-# definitief "ja" als de voorlopige stempel "ja — vereist onderbouwing" die
-# adopt.sh zet (F6). Die laatste vorm blijft zichtbaar gemarkeerd in de
-# uitvoer: de skill behandelt zo'n rij als reviewbevinding (de eerste poort
-# van F6), en dat kan alleen als de scope het onderscheid niet wegveegt.
+# <project_dir>/WORKFLOW-ADOPTIE.md met Antwoord "ja" (adoption-registry's
+# format: de Antwoord-kolom is altijd letterlijk "ja" of "nee", nooit meer
+# tekst). adopt.sh zet de voorlopige stempel uit F6 niet in die kolom, maar in
+# de Toelichting: "bij adoptie — vereist onderbouwing tijdens ..." (zie
+# seed_entry() in adopt.sh). Een ja-rij wiens hele regel de tekst "vereist
+# onderbouwing" bevat, blijft daarom zichtbaar gemarkeerd in de uitvoer — zelfde
+# grep-vorm als pending-changes.sh al gebruikt om dat signaal te herkennen — en
+# de skill behandelt zo'n rij als reviewbevinding (de eerste poort van F6).
 #
 # Per zo'n rij wordt het anker `<!-- nfr: <id> -->` in <project_dir>/PRD.md
 # opgezocht; de ###-kop direct erboven levert de leesbare naam. Ontbreekt het
@@ -51,21 +54,18 @@ echo "dependencies"
 
 [ -f "$antwoorden" ] || exit 0
 
-# ID + volledig antwoord (getrimd) van elke spec-*-rij die met "ja" begint,
-# tab-gescheiden zodat het antwoord zelf spaties mag bevatten.
-ja_rijen="$(awk -F'|' '
+# ID's van elke spec-*-rij met Antwoord exact "ja".
+ja_ids="$(awk -F'|' '
   /^\| *spec-[a-z-]+ *\|/ {
     id = $2; gsub(/^[ \t]+|[ \t]+$/, "", id)
     antwoord = $3; gsub(/^[ \t]+|[ \t]+$/, "", antwoord)
-    if (antwoord == "ja" || antwoord ~ /^ja[^a-zA-Z]/) {
-      print id "\t" antwoord
-    }
+    if (antwoord == "ja") print id
   }
 ' "$antwoorden")"
 
-[ -n "$ja_rijen" ] || exit 0
+[ -n "$ja_ids" ] || exit 0
 
-while IFS=$'\t' read -r id antwoord; do
+while IFS= read -r id; do
   [ -n "$id" ] || continue
 
   kop=""
@@ -82,11 +82,13 @@ while IFS=$'\t' read -r id antwoord; do
     [ -n "$kop" ] || kop="$id"
   fi
 
-  if [ "$antwoord" = "ja" ]; then
-    echo "$id: $kop"
-  else
-    echo "$id: $kop [vereist onderbouwing]"
-  fi
+  # Zelfde grep-vorm als pending-changes.sh: de hele rij telt, want de
+  # voorlopige stempel staat in Toelichting, niet in Antwoord.
+  regel="$(grep -m1 "^| *$id *|" "$antwoorden")"
+  case "$regel" in
+    *"vereist onderbouwing"*) echo "$id: $kop [vereist onderbouwing]" ;;
+    *) echo "$id: $kop" ;;
+  esac
 done <<EOF
-$ja_rijen
+$ja_ids
 EOF
