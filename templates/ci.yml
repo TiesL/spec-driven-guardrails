@@ -31,3 +31,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./check-pr-issue-link.sh "${{ github.event.pull_request.number }}"
+      - name: Commit op main komt uit een PR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./check-main-via-pr.sh "${{ github.sha }}"

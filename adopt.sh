@@ -432,6 +432,10 @@ adopt_project() {
     if [ -f "$project_dir/check-pr-issue-link.sh" ]; then
       chmod +x "$project_dir/check-pr-issue-link.sh"
     fi
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-main-via-pr.sh" "$project_dir/check-main-via-pr.sh"
+    if [ -f "$project_dir/check-main-via-pr.sh" ]; then
+      chmod +x "$project_dir/check-main-via-pr.sh"
+    fi
   fi
 
   seed_adoptietabel "$project_dir"

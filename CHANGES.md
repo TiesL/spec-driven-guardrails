@@ -131,6 +131,26 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   plaats van stil te laten liggen.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
+## ci-detecteert-main-buiten-pr
+
+- **Vraag:** Faalt de CI van dit project een push naar `main` die niet uit een pull request komt?
+- **Standaard:** ja
+- **Van toepassing als:** heeft-package-json
+- **Ja betekent:** `check-main-via-pr.sh` is gescaffold (`adopt.sh`, zie
+  `templates/check-main-via-pr.sh`) en de workflow roept het aan op het
+  `push`-event naar `main`, met de commit-SHA als argument — zie
+  `templates/ci.yml`. Detectie, geen preventie: het commando is dan al
+  uitgevoerd, maar het is het enige mechanisme dat werkt zonder GitHub
+  Pro/publieke repo (W27, F17). Beoordeelt alleen de binnenkomende push, geen
+  audit over de geschiedenis. Kan de herkomst niet worden vastgesteld, dan
+  faalt de controle — bewust het omgekeerde van de native git-hooks (W26,
+  `adopt.sh` installeert die altijd, zonder eigen adoptievraag), die bij
+  twijfel juist doorlaten. `scaffold_if_missing` overschrijft een bestaande
+  `ci.yml` nooit, dus een
+  project dat die al had vóór W27 krijgt de stap niet vanzelf — deze vraag
+  maakt dat zichtbaar.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/76
+
 ## traceability-schakel-1
 
 - **Vraag:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?

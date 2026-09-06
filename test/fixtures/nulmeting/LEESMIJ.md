@@ -198,6 +198,16 @@ a2t-emails 30→31, tennis-admin 29→30. `CHANGES.md.momentopname` ververst.
 W12b-sectie hierboven, restschade van een eerdere review-fix-edit — geen
 inhoudelijke wijziging aan wat daar staat.)
 
+## Bijgewerkt in W27 (#48)
+
+Zelfde patroon, ditmaal proactief in plaats van achteraf gerepareerd:
+`check-main-via-pr.sh` (schakel tegen commits op `main` buiten een PR om)
+krijgt meteen een eigen `CHANGES.md`-entry, `ci-detecteert-main-buiten-pr`
+(`heeft-package-json`), zodat `a2t-emails` en `tennis-admin` — die al een
+eigen `ci.yml` hadden vóór dit werkitem — de vraag alsnog voorgelegd krijgen.
+Elk +1: a2t-emails 31→32, tennis-admin 30→31. `CHANGES.md.momentopname`
+ververst.
+
 ## Bijwerken — alleen bewust
 
 Een afwijking betekent één van twee dingen:
