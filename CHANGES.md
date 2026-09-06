@@ -134,7 +134,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
   scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. Alleen het veld telt —
   een ID in lopende tekst is geen verwijzing.
-- **PR:** <wordt ingevuld bij de merge>
+- **PR:** https://github.com/TiesL/claude-workflow/pull/63
 
 ---
 
@@ -146,6 +146,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** `PRD.md` bestaat en wordt actueel gehouden (as-built of ontwerp) — zie `templates/PRD.md`.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## architectuurdocument
 
@@ -153,6 +154,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-issue-tracking
 
@@ -160,6 +162,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** vraag
 - **Van toepassing als:** altijd
 - **Ja betekent:** `adopt.sh` ververst `.github/ISSUE_TEMPLATE/`, en werk wordt vanuit de PRD opgesplitst in een `Epic`-issue met `Work item`-issues — zie `templates/ISSUE_TEMPLATE/`.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit
 
@@ -167,6 +170,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** de kernlogica (idealiter een domeinlaag zonder externe afhankelijkheden — zie `spec-testability`) heeft unittests, en `check` draait ze.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## test-feature-gwt
 
@@ -174,6 +178,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-integratie
 
@@ -181,6 +186,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** vraag
 - **Van toepassing als:** altijd
 - **Ja betekent:** naast unittests bestaan er tests die de samenwerking tussen componenten (of met een extern platform) verifiëren, en `check` draait ze — of een expliciete reden waarom dat voor dit project niet proportioneel is.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## kwaliteitsreview-voor-merge
 
@@ -188,6 +194,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "ja" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-technical-debt-register
 
@@ -195,6 +202,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** `PRD.md` scheidt *Bekende beperkingen* (blijft zo) van *Technical debt* (per regel: waarom nu acceptabel, en de trigger om het aan te pakken) — beide subsecties staan al in het sjabloon.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-refactoring-triggers
 
@@ -202,6 +210,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** altijd
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ---
 
