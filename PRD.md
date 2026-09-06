@@ -135,6 +135,11 @@ maakt R9 een permanente regressietest. De bronnen staan alle vier lokaal —
 nulmeting is dus "alles openstaand" — vastleggen zoals gevonden, niet eerst
 repareren, anders legt de fixture de reparatie vast in plaats van de toestand.
 
+**W28:** de vraagset komt sinds W5 uit twee bronnen, `CHANGES.md` én `nfr/`, en
+tot W28 was alleen de eerste ingevroren (`CHANGES.md.momentopname`).
+`nfr.momentopname/` (verbatim kopie van `nfr/`, één `cp -r`) sluit dat gat —
+zie `test/fixtures/nulmeting/LEESMIJ.md`.
+
 ### F3 — Gedeelde parser én predicaten (`lib/changes.sh`)
 
 Niet alleen de predicaten zijn gedupliceerd — de hele `CHANGES.md`-parser is dat

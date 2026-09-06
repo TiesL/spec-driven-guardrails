@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 
-for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
+for project in $NULMETING_PROJECTEN; do
   fixture="$nulmeting/$project"
   gouden="$fixture/verwacht-openstaand.txt"
 
