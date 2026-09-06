@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
-# hooks/git-guardrails — PreToolUse-guard tegen destructieve git-commando's.
+# hooks/git-guardrails — PreToolUse-guard tegen destructieve git-commando's, én
+# (W10b, F8) de merge-guard op `gh pr merge`.
 #
 # "Nooit rechtstreeks naar main" was een afspraak zonder slot: branch protection
 # vereist een betaald plan op private repo's. Dit is dat slot.
+#
+# Tweede case, zelfde mechaniek: `gh pr merge` wordt geblokkeerd als de PR geen
+# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11).
+# Faal-open zonder `gh` of netwerk — de reviewcontrole is nooit het commando dat
+# een sessie vastzet. Een onderbouwde `nee` op de `kwaliteitsreview-voor-merge`-
+# rij in `WORKFLOW-ADOPTIE.md` schakelt de guard voor dat project uit, lokaal
+# gelezen, zonder netwerkaanroep.
 #
 # Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
 # `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
@@ -121,6 +129,96 @@ is_main() {
   esac
 }
 
+# --- de merge-guard (W10b, F8) ---------------------------------------------
+# De marker die `pre-merge-review` (F11) letterlijk voorschrijft. Bewust hier
+# gedupliceerd als string, niet ingelezen uit SKILL.md: deze guard mag niet
+# afhangen van de aanwezigheid of vorm van een skill-bestand in het project.
+MERGE_REVIEW_MARKER='<!-- pre-merge-review:done -->'
+
+# Beoordeelt `gh ...`-segmenten. Alleen `pr merge` is relevant; al het overige
+# gaat ongemoeid door.
+beoordeel_gh_segment() {
+  local arg
+
+  # -R/--repo wijst een andere repository aan dan de werkmap. Bij twijfel
+  # toestaan: dat vergt kennis over een repo die deze guard niet heeft, en een
+  # gemist geval weegt hier lichter dan een vals-positieve blokkade.
+  for arg in "$@"; do
+    case "$arg" in
+      -R|--repo|-R*|--repo=*) return 0 ;;
+    esac
+  done
+
+  local posities=()
+  for arg in "$@"; do
+    case "$arg" in
+      -*) continue ;;
+      *) posities+=("$arg") ;;
+    esac
+  done
+
+  [ "${posities[0]:-}" = "pr" ] && [ "${posities[1]:-}" = "merge" ] || return 0
+
+  controleer_merge_guard "${posities[2]:-}"
+}
+
+# AC2–AC6 (F8/S15–S18): het daadwerkelijke oordeel over één `gh pr merge`.
+# $1 is het optionele doel (nummer/url/branch) dat na "merge" stond.
+controleer_merge_guard() {
+  local doel="$1"
+
+  # AC5: een onderbouwde `nee` op kwaliteitsreview-voor-merge schakelt uit —
+  # lokale grep, vóór enige gh-aanroep, dus zonder netwerk.
+  local projectroot antwoorden regel antwoord
+  projectroot="$(git -C "$werkmap" rev-parse --show-toplevel 2>/dev/null)"
+  [ -n "$projectroot" ] || projectroot="$werkmap"
+  antwoorden="$projectroot/WORKFLOW-ADOPTIE.md"
+  if [ -f "$antwoorden" ]; then
+    regel="$(grep -m1 '^| *kwaliteitsreview-voor-merge *|' "$antwoorden")"
+    if [ -n "$regel" ]; then
+      antwoord="$(printf '%s\n' "$regel" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
+      [ "$antwoord" = "nee" ] && return 0
+    fi
+  fi
+
+  # AC4: faal-open zonder gh.
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "waarschuwing: merge-guard vindt gh niet en slaat de reviewcontrole over." >&2
+    return 0
+  fi
+
+  local aanroep uitvoer status
+  if [ -n "$doel" ]; then
+    aanroep=(gh pr view "$doel" --json comments)
+  else
+    aanroep=(gh pr view --json comments)
+  fi
+  uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>&1)"
+  status=$?
+
+  # AC4: faal-open zonder netwerk (of elke andere reden waarom gh de PR niet
+  # kan raadplegen — bij twijfel toestaan, dezelfde grondregel als overal in
+  # dit script).
+  if [ "$status" -ne 0 ]; then
+    echo "waarschuwing: merge-guard kon de PR niet raadplegen (geen netwerk of geen toegang) en slaat de reviewcontrole over." >&2
+    echo "$uitvoer" >&2
+    return 0
+  fi
+
+  case "$uitvoer" in
+    *"$MERGE_REVIEW_MARKER"*) return 0 ;;
+  esac
+
+  blokkeer "gh pr merge zonder review-marker" \
+"deze PR draagt de marker van pre-merge-review niet. Draai die skill eerst en
+       laat de bevindingen (met marker) op de PR staan.
+
+       Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
+       controle wordt overgeslagen:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>"
+}
+
 # --- per commando in de keten ----------------------------------------------
 # Alleen segmenten die zelf met `git` beginnen worden beoordeeld. Zo blokkeert
 # `echo "gebruik nooit git reset --hard"` niets: daar staat `git` niet vooraan.
@@ -165,13 +263,28 @@ beoordeel_segment() {
         # omgeving van deze guard per definitie niet beinvloeden.
         echo "waarschuwing: git-guardrails is voor dit commando expliciet uitgezet." >&2
         return 0 ;;
+      CLAUDE_WORKFLOW_MERGE_GUARD_UIT=*)
+        # AC6 (F8): een bewuste, luide uitweg specifiek voor de merge-guard —
+        # los van de destructieve-git-uitweg hierboven, want dit schakelt een
+        # heel andere controle over.
+        echo "waarschuwing: de merge-guard (pre-merge-review) is voor dit commando expliciet overgeslagen." >&2
+        return 0 ;;
       [A-Za-z_]*=*) shift ;;
       *) break ;;
     esac
   done
 
-  [ "${1:-}" = "git" ] || return 0
+  case "${1:-}" in
+    git|gh) ;;
+    *) return 0 ;;
+  esac
+  local programma="$1"
   shift
+
+  if [ "$programma" = "gh" ]; then
+    beoordeel_gh_segment "$@"
+    return
+  fi
 
   # Globale git-opties overslaan. De padbepalende worden onthouden; die gaan
   # mee naar de branch-controle zodat git zelf de repo bepaalt.
