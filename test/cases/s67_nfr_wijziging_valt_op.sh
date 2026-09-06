@@ -45,23 +45,26 @@ EOF
 # TEST_REPO_ROOT overschrijven zou andere tests raken; deze test roept
 # pending-changes.sh rechtstreeks in de gemuteerde kopie aan, in plaats van
 # via de openstaande_ids()-helper die op TEST_REPO_ROOT leunt.
-minst_een_verschil=0
-for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
+#
+# Alle vier moeten afwijken, niet "minstens één": elk nfr-bestand draagt
+# van-toepassing-als: altijd (LEESMIJ.md), dus een mutatie die niet bij alle
+# vier opvalt, wijst op een project dat de nfr-bron toch niet meeneemt.
+for project in $NULMETING_PROJECTEN; do
   gouden="$nulmeting/$project/verwacht-openstaand.txt"
-  [ -f "$gouden" ] || continue
+  if [ ! -f "$gouden" ]; then
+    fail "S67 — gouden set ontbreekt: $project"
+    continue
+  fi
 
   huidig="$SANDBOX/$project-gemuteerd.txt"
   "$repo/pending-changes.sh" "$nulmeting/$project" 2>/dev/null \
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$huidig"
 
-  if ! diff -q "$gouden" "$huidig" >/dev/null 2>&1; then
-    minst_een_verschil=1
-    if ! grep -qx 'spec-mutatietest' "$huidig"; then
-      fail "S67 — $project week af, maar noemde spec-mutatietest niet als nieuw ID"
-    fi
+  if diff -q "$gouden" "$huidig" >/dev/null 2>&1; then
+    fail "S67 — $project week niet af van een nieuw altijd-van-toepassing nfr-bestand; de mutatie viel daar nergens op"
+  elif ! grep -qx 'spec-mutatietest' "$huidig"; then
+    fail "S67 — $project week af, maar noemde spec-mutatietest niet als nieuw ID"
   fi
 done
-
-[ "$minst_een_verschil" -eq 1 ] || fail "S67 — een nieuw altijd-van-toepassing nfr-bestand veranderde geen enkele fixture-uitkomst; de mutatie viel nergens op"
 
 test_klaar

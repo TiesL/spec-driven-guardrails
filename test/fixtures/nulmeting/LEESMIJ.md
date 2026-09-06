@@ -128,10 +128,13 @@ Het gat hierboven ("wat de momentopname sinds W5 niet meer dekt") is gedicht:
 `nfr.momentopname/` bevat nu een verbatim kopie van `nfr/` op het moment van
 invriezen (`cp -r nfr test/fixtures/nulmeting/nfr.momentopname`). Geen
 aparte generator: een directe kopie is proportioneel voor vijftien bestanden,
-en S66 controleert dat elk `spec-*`-ID uit elke gouden set een ingevroren
-bestand daar terugvindt, plus dat de kopie zelf nog een geldig register is
-(`nfr_valideer`) — een corrupte freeze mag het vangnet niet stil laten
-leeglopen.
+en S66 controleert drie dingen: elk `spec-*`-ID uit elke gouden set vindt een
+ingevroren bestand terug, de kopie zelf is nog een geldig register
+(`nfr_valideer` — een corrupte freeze mag het vangnet niet stil laten
+leeglopen), én de kopie is nog exact gelijk aan het huidige `nfr/`. Die derde
+controle is de bewuste rookmelder: hij hoort **op een dag te gaan afgaan**,
+namelijk zodra `nfr/` legitiem wijzigt zonder dat de freeze meeverst — precies
+het moment waarop deze procedure hierboven van toepassing wordt.
 
 Geen enkele gouden set veranderde door dit werkitem: het bevriest alleen de
 tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
@@ -152,8 +155,17 @@ Een afwijking betekent één van twee dingen:
    nieuw `nfr/`-bestand toevoegt/weghaalt/retireert. Dan hoort de gouden set
    bijgewerkt te worden, mét toelichting in de PR wélke ID's erbij komen of
    verdwijnen en waarom. **Ververs in dat geval ook `CHANGES.md.momentopname`
-   én `nfr.momentopname/`** (`cp -r nfr test/fixtures/nulmeting/nfr.momentopname`,
-   verbatim, geen selectie): laat je die achter, dan verwijst de nulmeting naar
+   én `nfr.momentopname/`**:
+
+   ```
+   rm -rf test/fixtures/nulmeting/nfr.momentopname
+   cp -r nfr test/fixtures/nulmeting/nfr.momentopname
+   ```
+
+   De `rm -rf` eerst is geen voorzichtigheid maar noodzaak: `nfr.momentopname/`
+   bestaat al na deze PR, en `cp -r nfr <bestaande-map>` nest de bron dan
+   ín de map (`nfr.momentopname/nfr/*.md` naast de oude bestanden) in plaats
+   van hem te vervangen. Verbatim, geen selectie: laat je die achter, dan verwijst de nulmeting naar
    een bron die de nieuwe gouden set niet meer verklaart — precies de
    interpreteerbaarheid die de momentopname moest garanderen. Alle vijftien
    `nfr/`-bestanden dragen `van-toepassing-als: altijd`, dus raakt elke

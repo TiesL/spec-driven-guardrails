@@ -16,6 +16,11 @@ export TEST_REAL_HOME
 TEST_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export TEST_REPO_ROOT
 
+# De vier bevroren nulmeting-projecten, in de vaste volgorde waarin ze overal
+# doorheen deze testsuite genoemd worden (R9, S4, S66, S67) — één plek in
+# plaats van de lijst per test opnieuw uittypen.
+NULMETING_PROJECTEN="a2t-emails tennis-admin tennis-registration tennis-invoicing"
+
 _test_failures=0
 
 fail() {
