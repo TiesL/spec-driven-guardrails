@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# hooks/pre-push — Native git-hook (W26, F17): dekt pushes naar main die
+# buiten Claude Code om gebeuren. Zie hooks/pre-commit voor de volledige
+# toelichting op dit mechanisme; dit bestand herhaalt alleen wat voor push
+# anders is.
+#
+# Geïnstalleerd door adopt.sh als symlink naar dit bestand in
+# <project>/.git/hooks/pre-push.
+#
+# Contract (git pre-push): aangeroepen als `pre-push <remote-naam> <remote-url>`,
+# met op stdin per te pushen ref een regel
+# "<lokale ref> <lokale sha> <remote ref> <remote sha>". Exitstatus != 0
+# weigert de hele push.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+doel="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
+if [ -z "$doel" ]; then
+  echo "waarschuwing: pre-push-hook is geen symlink (meer) naar claude-workflow — push-controle overgeslagen." >&2
+  exit 0
+fi
+eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
+regels="$eigen_map/regels.sh"
+if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
+  echo "waarschuwing: git-hooks kon regels.sh niet vinden — push-controle overgeslagen." >&2
+  exit 0
+fi
+# shellcheck source=regels.sh
+. "$regels"
+HOOFDBRANCH="${HOOFDBRANCH:-main}"
+
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
+  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  exit 0
+fi
+
+geblokkeerd=0
+while read -r _lokale_ref _lokale_sha remote_ref _remote_sha; do
+  [ -n "${remote_ref:-}" ] || continue
+  if [ "$remote_ref" = "refs/heads/$HOOFDBRANCH" ]; then
+    geblokkeerd=1
+  fi
+done
+
+if [ "$geblokkeerd" -eq 1 ]; then
+  echo "Geblokkeerd door de git-hook: push naar $HOOFDBRANCH." >&2
+  echo >&2
+  echo "Reden: $REDEN_PUSH_NAAR_MAIN" >&2
+  echo >&2
+  echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+  exit 1
+fi
+
+exit 0

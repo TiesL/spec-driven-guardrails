@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# hooks/pre-commit — Native git-hook (W26, F17): dekt commits die buiten
+# Claude Code om gebeuren — de eigen terminal, een IDE, een ander
+# agent-harnas. hooks/git-guardrails (PreToolUse) ziet uitsluitend wat Claude
+# zelf uitvoert; deze hook dekt letterlijk elk gereedschap op deze machine.
+#
+# Geïnstalleerd door adopt.sh als symlink naar dit bestand in
+# <project>/.git/hooks/pre-commit — dus geen kopie die uit de pas kan lopen.
+#
+# Contract (git pre-commit): geen argumenten, draait ná het opstellen van de
+# commit maar vóór hij definitief is. Exitstatus != 0 weigert de commit.
+#
+# Dezelfde regel als de PreToolUse-guard (HOOFDBRANCH, de meldingstekst) komt
+# uit regels.sh — die staat op één plek. Wat hier wél anders is: geen
+# quote-bewuste tokenisatie nodig, git heeft de commit al opgesteld tegen de
+# tijd dat deze hook draait, dus er is geen commandostring om te lezen.
+#
+# Bekende beperking: als de bash-interpreter zelf ontbreekt, kan dit script
+# zijn eigen faal-open-logica niet eens uitvoeren — dat is inherent aan een
+# shellscript-hook en niet op te lossen van bínnen het script. Ontbreekt
+# alleen regels.sh (bronbestand weg), dan laat dit script wél door, luid.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+doel="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
+if [ -z "$doel" ]; then
+  echo "waarschuwing: pre-commit-hook is geen symlink (meer) naar claude-workflow — commit-controle overgeslagen." >&2
+  exit 0
+fi
+eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
+regels="$eigen_map/regels.sh"
+if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
+  echo "waarschuwing: git-hooks kon regels.sh niet vinden — commit-controle overgeslagen." >&2
+  exit 0
+fi
+# shellcheck source=regels.sh
+. "$regels"
+HOOFDBRANCH="${HOOFDBRANCH:-main}"
+
+# Zelfde uitweg als git-guardrails: een guard zonder uitweg wordt op den duur
+# omzeild door het script aan te passen, en dat is erger dan een guard die je
+# expliciet uitzet.
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
+  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  exit 0
+fi
+
+# Uitzondering: een repo zonder commits. De allereerste commit staat per
+# definitie op main — zelfde uitzondering als in git-guardrails.
+if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+  branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+  if [ "$branch" = "$HOOFDBRANCH" ]; then
+    echo "Geblokkeerd door de git-hook: commit op $HOOFDBRANCH." >&2
+    echo >&2
+    echo "Reden: $REDEN_COMMIT_OP_MAIN" >&2
+    echo >&2
+    echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
+    echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+    exit 1
+  fi
+fi
+
+exit 0
