@@ -82,5 +82,16 @@ if git -C "$cwd" rev-parse --verify --quiet "origin/$branch" >/dev/null 2>&1; th
 else
   uitvoer="$(git -C "$cwd" push -u origin "$branch" 2>&1)" && exit 0
 fi
-echo "waarschuwing: push-na-commit kon niet pushen (geen netwerk of geen toegang?): $uitvoer" >&2
+
+# Twee heel verschillende oorzaken, twee verschillende meldingen. Een
+# non-fast-forward (bijvoorbeeld na `git commit --amend` of een rebase) is
+# geen netwerk- of toegangsprobleem — het is lokale geschiedenis die van
+# origin afwijkt, en dat repareert deze hook nooit automatisch met een
+# force-push: dat is een bewuste keuze, geen mutatie die niemand vroeg.
+case "$uitvoer" in
+  *"(non-fast-forward)"*|*"(fetch first)"*|*"(stale info)"*)
+    echo "waarschuwing: push-na-commit kon niet pushen — de lokale geschiedenis wijkt af van origin (bijvoorbeeld na een amend of rebase). Gebruik zelf 'git push --force-with-lease' als dat de bedoeling was." >&2 ;;
+  *)
+    echo "waarschuwing: push-na-commit kon niet pushen (geen netwerk of geen toegang?): $uitvoer" >&2 ;;
+esac
 exit 0

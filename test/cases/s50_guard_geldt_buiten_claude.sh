@@ -52,4 +52,30 @@ push_status=$?
 [ "$push_status" -ne 0 ] || fail "S50 — git push origin main werd niet geweigerd"
 assert_contains "S50 — de push-melding komt overeen met de PreToolUse-guard" "main krijgt zijn wijzigingen via een PR" "$push_uitvoer"
 
+# En: een relatieve CLAUDE_WORKFLOW_DIR mag de symlink niet dangling maken.
+# Gevonden in de review op PR #76: een relatief pad resolvt vanuit de map van
+# de symlink zelf (.git/hooks/), niet vanuit de map waar adopt.sh vandaan
+# draaide — en git slaat een dangling git-hook stilzwijgend over, zonder
+# enige melding. Precies aangetoond met een echt relatief pad, niet
+# geredeneerd: adopt.sh vanuit een submap van $TEST_REPO_ROOT aanroepen met
+# een relatieve CLAUDE_WORKFLOW_DIR.
+project_relatief="$(vers_project relatieve-workflow-dir)"
+(
+  cd "$TEST_REPO_ROOT/hooks" || exit 1
+  CLAUDE_WORKFLOW_DIR=".." "$TEST_REPO_ROOT/adopt.sh" "$project_relatief" >/dev/null 2>&1
+)
+doel="$(readlink "$project_relatief/.git/hooks/pre-commit" 2>/dev/null)"
+case "$doel" in
+  /*) ;;
+  *) fail "S50 — een relatieve CLAUDE_WORKFLOW_DIR gaf een niet-absolute symlink-target: $doel" ;;
+esac
+[ -e "$project_relatief/.git/hooks/pre-commit" ] \
+  || fail "S50 — de pre-commit-symlink is dangling na een relatieve CLAUDE_WORKFLOW_DIR"
+
+git -C "$project_relatief" commit -q --allow-empty -m "eerste commit"
+relatief_uitvoer="$(cd "$project_relatief" && git commit -q --allow-empty -m "tweede, op main" 2>&1)"
+relatief_status=$?
+[ "$relatief_status" -ne 0 ] \
+  || fail "S50 — met een relatieve CLAUDE_WORKFLOW_DIR blokkeerde de git-hook niet (dangling symlink, stil overgeslagen door git)"
+
 test_klaar

@@ -24,6 +24,15 @@ if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
   exit 1
 fi
 
+# Genormaliseerd naar een absoluut pad, hier eenmalig en globaal — niet pas
+# lokaal in adopt_project(). Elke symlink die dit script zet (skills,
+# git-hooks, CLAUDE.md/settings.json) wijst naar CLAUDE_WORKFLOW_DIR; een
+# relatief pad zou zo'n symlink dangling maken (relatieve targets resolven
+# vanuit de map van de symlink zelf, niet vanuit de map waar adopt.sh vandaan
+# draaide) — en git slaat een dangling git-hook stilzwijgend over, zonder
+# enige melding. Precies de faalmodus die F17 wil uitroeien.
+CLAUDE_WORKFLOW_DIR="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
+
 # De bibliotheek komt uit de checkout waar dít script in staat, niet uit
 # CLAUDE_WORKFLOW_DIR: code hoort bij het script dat hem aanroept. De data
 # (CHANGES.md, templates) komt wél uit CLAUDE_WORKFLOW_DIR, zoals altijd.
@@ -312,9 +321,13 @@ installeer_skills() {
 # backup_if_real_file zou zo'n hook stilzwijgend buiten werking stellen achter
 # een .bak; dat is meer dan "melden", dat is functionaliteit verliezen zonder
 # terugweg. Een écht bestand (geen symlink) wordt dus met rust gelaten, luid
-# gemeld, en niet geïnstalleerd. Een symlink (van een eerdere adopt.sh-run,
-# ongeacht waarheen) wordt wél vervangen — dat is wat "twee keer draaien geeft
-# een identieke boom" vraagt.
+# gemeld, en niet geïnstalleerd.
+#
+# Een symlink telt alleen als "van ons" als hij al naar precies dít doelbestand
+# wijst — dan vervangen (idempotent: "twee keer draaien geeft een identieke
+# boom"). Een symlink naar iets anders (de eigen dotfiles van het project,
+# bijvoorbeeld) is net zo goed een eigen keuze als een echt bestand, en krijgt
+# dezelfde behandeling: met rust laten, luid melden.
 installeer_git_hooks() {
   local project_dir="$1"
   local git_dir="$project_dir/.git"
@@ -325,17 +338,26 @@ installeer_git_hooks() {
   [ -d "$git_dir" ] || return 0
   mkdir -p "$hooks_dir"
 
-  local naam pad
+  local naam pad bron huidig_doel
   for naam in pre-commit pre-push; do
-    [ -f "$CLAUDE_WORKFLOW_DIR/hooks/$naam" ] || continue
+    bron="$CLAUDE_WORKFLOW_DIR/hooks/$naam"
+    [ -f "$bron" ] || continue
     pad="$hooks_dir/$naam"
-    if [ -e "$pad" ] && [ ! -L "$pad" ]; then
-      echo "Eigen git-hook gevonden op $pad — niet aangeraakt. De branchbescherming van git-guardrails geldt hier dus niet buiten Claude om, tenzij je die regel zelf in je eigen hook opneemt."
-      continue
+    if [ -e "$pad" ] || [ -L "$pad" ]; then
+      if [ -L "$pad" ]; then
+        huidig_doel="$(readlink "$pad" 2>/dev/null)"
+      else
+        huidig_doel=""
+      fi
+      if [ "$huidig_doel" = "$bron" ]; then
+        rm "$pad"
+      else
+        echo "Eigen git-hook gevonden op $pad — niet aangeraakt. De branchbescherming van git-guardrails geldt hier dus niet buiten Claude om, tenzij je die regel zelf in je eigen hook opneemt."
+        continue
+      fi
     fi
-    [ -L "$pad" ] && rm "$pad"
-    ln -s "$CLAUDE_WORKFLOW_DIR/hooks/$naam" "$pad"
-    chmod +x "$CLAUDE_WORKFLOW_DIR/hooks/$naam" 2>/dev/null || true
+    ln -s "$bron" "$pad"
+    chmod +x "$bron" 2>/dev/null || true
   done
 }
 

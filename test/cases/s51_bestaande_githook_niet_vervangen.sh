@@ -54,4 +54,28 @@ fi
 [ "$(readlink "$project/.git/hooks/pre-push")" = "$TEST_REPO_ROOT/hooks/pre-push" ] \
   || fail "S51 — pre-push wijst na een tweede run niet meer naar dezelfde bron"
 
+# And: een eigen hook die zélf ook een symlink is (naar iets anders dan
+# claude-workflow, bijvoorbeeld de eigen dotfiles van het project) is net zo
+# goed een eigen keuze als een echt bestand — en wordt dus ook niet
+# stilzwijgend vervangen. Gevonden in de review op PR #76: de oorspronkelijke
+# check testte alleen "is dit geen symlink", niet "wijst deze symlink al naar
+# onze eigen bron".
+project2="$(vers_project eigen-symlink-hook)"
+mkdir -p "$project2/.git/hooks"
+elders="$SANDBOX/ergens-anders-pre-push"
+cat > "$elders" <<'EOF'
+#!/usr/bin/env bash
+echo "eigen symlink-hook, wijst niet naar claude-workflow"
+exit 0
+EOF
+chmod +x "$elders"
+ln -s "$elders" "$project2/.git/hooks/pre-push"
+
+melding2="$(CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project2" 2>&1)"
+
+if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elders" ]; then
+  fail "S51 — een eigen symlink-hook (naar iets anders dan claude-workflow) werd toch vervangen"
+fi
+assert_contains "S51 — er kwam een melding over de eigen symlink-hook" "niet aangeraakt" "$melding2"
+
 test_klaar

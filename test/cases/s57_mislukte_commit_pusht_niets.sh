@@ -55,4 +55,34 @@ if git -C "$remote" rev-parse --verify --quiet feature/iets >/dev/null 2>&1; the
   fail "S57/geval3 — een niet-commit-commando triggerde toch een push"
 fi
 
+# Geval 4: het routinematige amend/rebase-geval, uit de review op PR #76.
+# `git commit --amend` slaagt lokaal maar de daaropvolgende push wordt door
+# origin geweigerd (non-fast-forward) — dat is geen netwerk- of
+# toegangsprobleem, en de hook moet dat niet zo bestempelen, en zeker niet
+# stilzwijgend forceren.
+project_amend="$(vers_project amend)"
+git -C "$project_amend" remote add origin "$remote"
+git -C "$project_amend" commit -q --allow-empty -m start
+git -C "$project_amend" checkout -q -b feature/amend
+git -C "$project_amend" commit -q --allow-empty -m "eerste versie"
+git -C "$project_amend" push -q -u origin feature/amend
+git -C "$project_amend" commit -q --amend --allow-empty -m "herschreven versie"
+sha_voor_amend_op_remote="$(git -C "$remote" rev-parse feature/amend)"
+
+invoer4='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_amend"'","tool_input":{"command":"git commit --amend -m x"}}'
+uitvoer4="$(printf '%s' "$invoer4" | "$hook" 2>&1)"
+status4=$?
+
+[ "$status4" -eq 0 ] || fail "S57/geval4 — een geweigerde push (non-fast-forward) blokkeerde het commando (exit $status4)"
+[ "$(git -C "$remote" rev-parse feature/amend)" = "$sha_voor_amend_op_remote" ] \
+  || fail "S57/geval4 — de hook forceerde de push stilzwijgend, de remote-SHA veranderde"
+case "$uitvoer4" in
+  *"geschiedenis wijkt af"*) ;;
+  *) fail "S57/geval4 — de melding noemt niet dat de lokale geschiedenis afwijkt (amend/rebase), maar: $uitvoer4" ;;
+esac
+case "$uitvoer4" in
+  *"geen netwerk of geen toegang"*)
+    fail "S57/geval4 — de melding wijt het amend-geval ten onrechte aan netwerk/toegang: $uitvoer4" ;;
+esac
+
 test_klaar
