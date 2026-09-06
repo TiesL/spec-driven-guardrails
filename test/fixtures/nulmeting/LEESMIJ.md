@@ -79,9 +79,11 @@ van toepassing.
 
 Dat bestand is hier bewust niet aangemaakt. Een fixture hoort de toestand vast te
 leggen zoals die was, niet de reparatie ervan; anders meet R9 straks tegen een
-bewerkte werkelijkheid. Het aanvullen zelf is apart belegd in W12b (#28), met de
-uitdrukkelijke eis dat het geen verse seed met de datum van vandaag wordt — dat
-zou vervalsen wanneer een keuze daadwerkelijk gemaakt is.
+bewerkte werkelijkheid. Het aanvullen zelf is niet in W12b (#28) gebeurd maar
+apart, op 5 september 2026 in TiesL/a2t-emails#11 tijdens de uitrol van W8 — de
+echte checkout heeft inmiddels dus wél een `WORKFLOW-ADOPTIE.md`, met de
+adoptiedatum van dat moment, niet een verzonnen historisch besluit. Deze
+fixture blijft bewust op de oudere, "alles openstaand"-toestand staan.
 
 ## Wat deze nulmeting **niet** dekt
 
@@ -135,6 +137,29 @@ leeglopen), én de kopie is nog exact gelijk aan het huidige `nfr/`. Die derde
 controle is de bewuste rookmelder: hij hoort **op een dag te gaan afgaan**,
 namelijk zodra `nfr/` legitiem wijzigt zonder dat de freeze meeverst — precies
 het moment waarop deze procedure hierboven van toepassing wordt.
+
+## Bijgewerkt in W12b (#28)
+
+De echte checkouts die deze fixtures spiegelen, zijn opgeschoond (6 september
+2026) — de fixtures zelf blijven ongewijzigd, dit is puur voor wie de
+werkelijke projecten naast deze momentopname legt:
+
+- `tennis-admin/AGENTS.md` en `a2t-emails/AGENTS.md` zijn lokaal verwijderd:
+  beide waren ongetrackt, letterlijk identiek aan elkaar, en een 249-regelige
+  kopie van de vóór-W9 `WORKFLOW.md` — inmiddels vervangen door de slanke kern
+  plus skills. Geverifieerd dat ze geen unieke inhoud droegen (`diff` tegen de
+  huidige `WORKFLOW.md` toont uitsluitend verwachte verschillen: de
+  `CLAUDE.md`-naam en de latere Wegwijzer-herstructurering).
+- `tennis-admin/.codex/` en `a2t-emails/.codex/` zijn **bewust laten staan** —
+  expliciet besluit van Ties: `.codex/hooks.json` is een bewuste, werkende
+  Codex-CLI-variant van dezelfde `SessionStart`/`SessionEnd`-hooks als
+  `settings/session-hooks.json`, geen stray bestand.
+- De achtergebleven branch `chore/sessionend-push-hook` in
+  `tennis-registration` is opgeruimd (lokaal en op de remote): zijn enige
+  commit deed handmatig precies wat de gedeelde `SessionEnd`-hook nu al
+  automatisch doet, en was ver ingehaald (juli vs. september). Niet gemerged,
+  dus verwijderd met `-D`, na verificatie dat de inhoud volledig was
+  ingehaald en met expliciete bevestiging van Ties.
 
 Geen enkele gouden set veranderde door dit werkitem: het bevriest alleen de
 tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
