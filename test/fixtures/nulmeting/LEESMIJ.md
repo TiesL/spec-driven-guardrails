@@ -17,9 +17,10 @@ Vastgelegd voor werkitem W2 (#13). Regressiescenario R9 leunt hierop.
 | `package.json` | Verbatim overgenomen — de predicaten kijken hiernaar |
 | `verwacht-openstaand.txt` | De gouden set: openstaande ID's, alfabetisch |
 
-`CHANGES.md.momentopname` staat één niveau hoger. Die hoort erbij: de
-openstaand-set is een functie van **twee** invoeren — de projecttoestand én
-`CHANGES.md`. Zonder die tweede is een gouden set niet te interpreteren.
+`CHANGES.md.momentopname` en `nfr.momentopname/` staan één niveau hoger. Die
+horen erbij: de openstaand-set is een functie van **drie** invoeren — de
+projecttoestand, `CHANGES.md` én het `nfr/`-register (zie "Bijgewerkt in W28"
+hieronder). Zonder die laatste twee is een gouden set niet te interpreteren.
 
 ## De uitgangstoestand zelf
 
@@ -61,13 +62,14 @@ de sectiekoppen werden `###` (W4/W6). Geen van die drie voegde een vraag toe of
 haalde er een weg, dus de gouden sets bleven al die tijd kloppen — maar het is
 wel stilzwijgend meegelift en hoort hier vermeld.
 
-**Let op wat de momentopname sinds W5 niet meer dekt.** De vraagset komt sindsdien
-uit twee bronnen: `CHANGES.md` én `nfr/`. De momentopname bevat alleen de eerste,
-terwijl de gouden sets vol `spec-*`-ID's staan die uit de tweede komen. Wie deze
-nulmeting wil interpreteren heeft dus ook het `nfr/`-register nodig zoals dat op
-dat moment was. Dat register is versiebeheerd en `check` bewaakt zijn
-consistentie (`nfr_drift`), dus het is terug te vinden — maar het is niet
-ingevroren zoals `CHANGES.md` dat wel is, en dat is een gat in het vangnet.
+**Dit gat is gedicht in W28** — zie hieronder. Ter geschiedenis, hoe het gat
+ontstond: de vraagset komt sinds W5 uit twee bronnen, `CHANGES.md` én `nfr/`,
+terwijl de gouden sets vol `spec-*`-ID's staan die uit de tweede komen. Tussen
+W5 en W28 was alleen de eerste bron ingevroren; wie de nulmeting in die periode
+wilde interpreteren, had het `nfr/`-register nodig zoals dat op dat moment was
+— versiebeheerd en door `check` bewaakt op interne consistentie
+(`nfr_drift`), dus terug te vinden, maar niet ingevroren zoals `CHANGES.md`
+dat wel was.
 
 ## `a2t-emails` is bewust niet gerepareerd
 
@@ -120,6 +122,25 @@ dezelfde PR ververst.
 Wat níét verandert: geen bestaande ID is hernoemd of verdwenen, en geen predicaat
 is aangepast. De toename is overal precies één.
 
+## Bijgewerkt in W28 (#51)
+
+Het gat hierboven ("wat de momentopname sinds W5 niet meer dekt") is gedicht:
+`nfr.momentopname/` bevat nu een verbatim kopie van `nfr/` op het moment van
+invriezen (`cp -r nfr test/fixtures/nulmeting/nfr.momentopname`). Geen
+aparte generator: een directe kopie is proportioneel voor vijftien bestanden,
+en S66 controleert dat elk `spec-*`-ID uit elke gouden set een ingevroren
+bestand daar terugvindt, plus dat de kopie zelf nog een geldig register is
+(`nfr_valideer`) — een corrupte freeze mag het vangnet niet stil laten
+leeglopen.
+
+Geen enkele gouden set veranderde door dit werkitem: het bevriest alleen de
+tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
+S67 toont met een mutatie aan dat een latere, wél vraagset-rakende wijziging
+in `nfr/` (elk bestand daar draagt `van-toepassing-als: altijd`, dus raakt
+alles alle vier de fixtures) door R9 wordt opgevangen — en herinnert er via
+`LEESMIJ.md`'s "Bijwerken — alleen bewust" aan dat `nfr.momentopname/` in dat
+geval bewust mee moet verversen, net als `CHANGES.md.momentopname`.
+
 ## Bijwerken — alleen bewust
 
 Een afwijking betekent één van twee dingen:
@@ -127,12 +148,18 @@ Een afwijking betekent één van twee dingen:
 1. **Het gedrag is veranderd.** Dat is wat R9 moet vangen. Onderzoeken, niet
    wegpoetsen.
 2. **De vraagset is legitiem gewijzigd** — bijvoorbeeld doordat een werkitem een
-   nieuwe entry aan `CHANGES.md` toevoegt (W14, W15 en W16b doen dat). Dan hoort
-   de gouden set bijgewerkt te worden, mét toelichting in de PR wélke ID's erbij
-   komen of verdwijnen en waarom. **Ververs in dat geval ook
-   `CHANGES.md.momentopname`**: laat je die achter, dan verwijst de nulmeting naar
+   nieuwe entry aan `CHANGES.md` toevoegt (W14, W15 en W16b doen dat), of een
+   nieuw `nfr/`-bestand toevoegt/weghaalt/retireert. Dan hoort de gouden set
+   bijgewerkt te worden, mét toelichting in de PR wélke ID's erbij komen of
+   verdwijnen en waarom. **Ververs in dat geval ook `CHANGES.md.momentopname`
+   én `nfr.momentopname/`** (`cp -r nfr test/fixtures/nulmeting/nfr.momentopname`,
+   verbatim, geen selectie): laat je die achter, dan verwijst de nulmeting naar
    een bron die de nieuwe gouden set niet meer verklaart — precies de
-   interpreteerbaarheid die de momentopname moest garanderen.
+   interpreteerbaarheid die de momentopname moest garanderen. Alle vijftien
+   `nfr/`-bestanden dragen `van-toepassing-als: altijd`, dus raakt elke
+   toevoeging, verwijdering of retirement per definitie alle vier de fixtures
+   (S67) — een vergeten `nfr.momentopname`-ververs is dus nooit een geval waarin
+   toevallig niets verandert.
 
 Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 "opschoning".

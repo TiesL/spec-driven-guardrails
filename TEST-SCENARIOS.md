@@ -104,6 +104,28 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: wijkt dit af, dan faalt de test met het verschil per ID benoemd — een
   stille wijziging in de vraagset is nooit acceptabel, ook niet als "opschoning"
 
+### S66 — De bron van de vraagset is volledig ingevroren, ook het nfr-deel
+**Dekt:** F2
+- Given: de nulmeting-fixtures, ná W28
+- When: een gouden set wordt nagerekend
+- Then: elk `spec-*`-ID erin is te herleiden tot een ingevroren bestand in
+  `test/fixtures/nulmeting/nfr.momentopname/`, verbatim gelijk aan
+  `CHANGES.md.momentopname`'s vorm
+- And: geen enkel ID hangt alleen af van de actuele, niet-ingevroren vorm van
+  `nfr/`
+
+### S67 — Een wijziging in het nfr-register die de vraagset raakt, valt op
+**Dekt:** F2
+- Given: een `nfr/`-bestand met `van-toepassing-als: altijd` wordt toegevoegd
+  (alle vijftien bestaande dragen dat predicaat, dus raakt elke toevoeging,
+  verwijdering of retirement per definitie alle vier de fixtures)
+- When: `pending-changes.sh` na die wijziging tegen een fixture draait
+- Then: de uitkomst wijkt af van de ingevroren gouden set, met het nieuwe ID
+  benoemd — R9 vangt dit al, aangetoond met een mutatie
+- And: dat verschil is niet op te lossen door alleen de gouden set aan te
+  passen: `nfr.momentopname` moet dan bewust meeveranderen, met toelichting in
+  de PR (zie `LEESMIJ.md`)
+
 ---
 
 ## Testharnas en `check`
