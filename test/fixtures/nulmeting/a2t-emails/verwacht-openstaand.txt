@@ -1,6 +1,7 @@
 architectuurdocument
 ci-conventie
 ci-op-pr-en-main
+ci-schakel-3-hard-slot
 kwaliteitsreview-voor-merge
 proces-context-document
 proces-diagnose-bug

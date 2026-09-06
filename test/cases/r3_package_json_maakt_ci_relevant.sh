@@ -29,12 +29,13 @@ openstaande_ids "$project" > "$met"
 
 grep -qx 'ci-conventie' "$met" || fail "R3 — ci-conventie verscheen niet na toevoegen van package.json"
 
-# En verder verandert er niets: het verschil zijn precies de twee ID's die aan
+# En verder verandert er niets: het verschil zijn precies de drie ID's die aan
 # `heeft-package-json` hangen. `ci-conventie` gaat over wát de CI doet,
-# `ci-op-pr-en-main` over wannéér hij draait; los van elkaar te beantwoorden,
-# maar afhankelijk van hetzelfde predicaat.
+# `ci-op-pr-en-main` over wannéér hij draait, `ci-schakel-3-hard-slot` over een
+# extra stap die hij daarnaast uitvoert; los van elkaar te beantwoorden, maar
+# afhankelijk van hetzelfde predicaat.
 verschil="$(comm -13 "$zonder" "$met" | tr '\n' ' ')"
-[ "$verschil" = "ci-conventie ci-op-pr-en-main " ] \
-  || fail "R3 — verschil is '$verschil', 'ci-conventie ci-op-pr-en-main' verwacht"
+[ "$verschil" = "ci-conventie ci-op-pr-en-main ci-schakel-3-hard-slot " ] \
+  || fail "R3 — verschil is '$verschil', 'ci-conventie ci-op-pr-en-main ci-schakel-3-hard-slot' verwacht"
 
 test_klaar
