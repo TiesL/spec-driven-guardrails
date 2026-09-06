@@ -23,5 +23,6 @@ spec-testability
 spec-usability
 test-feature-gwt
 test-integratie
+test-tdd-seams
 test-unit
 traceability-schakel-1

@@ -22,12 +22,12 @@ if [ ! -f "$tabel" ]; then
   test_klaar
 fi
 
-# Then: exact 17 rijen, allemaal met "vereist onderbouwing".
+# Then: exact 19 rijen, allemaal met "vereist onderbouwing".
 rijen="$(grep -c '^| [a-z]' "$tabel")"
-[ "$rijen" -eq 18 ] || fail "R1 — $rijen rijen geseed, 18 verwacht"
+[ "$rijen" -eq 19 ] || fail "R1 — $rijen rijen geseed, 19 verwacht"
 
 onderbouwing="$(grep -c 'vereist onderbouwing' "$tabel")"
-[ "$onderbouwing" -eq 18 ] || fail "R1 — $onderbouwing rijen met 'vereist onderbouwing', 18 verwacht"
+[ "$onderbouwing" -eq 19 ] || fail "R1 — $onderbouwing rijen met 'vereist onderbouwing', 19 verwacht"
 
 # And: de geretireerde legacy-entry staat er niet in.
 if grep -q 'prd-testscenarios-issue-templates' "$tabel"; then

@@ -44,6 +44,7 @@ lost elk verplaatst onderwerp op in één sprong.
 | `check`/`deploy`-naamconventie, CI | `check-convention` |
 | Deploy-voorwaarden per omgeving | `deploy-guards` |
 | Complexiteit, technical debt, refactoring | `refactoring-triggers` |
+| Test-first werken: seams, rood-vóór-groen, anti-patronen | `tdd-seams` |
 | Nieuw (gerelateerd) project opzetten | `adopt-workflow` (user-level) |
 
 ## Waarom

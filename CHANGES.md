@@ -192,6 +192,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
+## test-tdd-seams
+
+- **Vraag:** Werkt dit project test-first op vooraf afgesproken seams, met rood-vóór-groen-discipline?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** tests raken alleen het publieke grensvlak aan (nooit interne
+  implementatiedetails), staan aantoonbaar rood vóór de implementatie, en
+  vermijden de drie met naam benoemde anti-patronen (implementatie-gekoppeld,
+  tautologisch, horizontaal slicen) — zie de skill `tdd-seams`. Aanvullend op
+  `test-unit`/`test-feature-gwt`, die alleen vragen óf er tests zijn, niet hoe.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
+
 ## test-integratie
 
 - **Vraag:** Heeft dit project geautomatiseerde integratietests (over componentgrenzen heen, tegen een echte of gesimuleerde externe afhankelijkheid)?
