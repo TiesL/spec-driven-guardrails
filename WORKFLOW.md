@@ -45,6 +45,7 @@ lost elk verplaatst onderwerp op in één sprong.
 | Deploy-voorwaarden per omgeving | `deploy-guards` |
 | Complexiteit, technical debt, refactoring | `refactoring-triggers` |
 | Test-first werken: seams, rood-vóór-groen, anti-patronen | `tdd-seams` |
+| Een bug diagnosticeren: reproductie → hypotheses → regressietest → fix | `diagnose-bug` |
 | Nieuw (gerelateerd) project opzetten | `adopt-workflow` (user-level) |
 
 ## Waarom

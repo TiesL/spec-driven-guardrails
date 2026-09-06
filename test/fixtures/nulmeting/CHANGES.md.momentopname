@@ -236,6 +236,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
+## proces-diagnose-bug
+
+- **Vraag:** Volgt dit project bij het diagnosticeren van een bug de dwingende volgorde reproductie → hypotheses → regressietest → fix?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** eerst een deterministische, zelf uitvoerbare reproductie;
+  dan falsifieerbare hypotheses, getoond vóórdat ze getest worden; dan een
+  regressietest die rood staat op de reproductie; pas dan de fix — zie de
+  skill `diagnose-bug`. Een fix zonder voorafgaande falende test bewijst
+  niets.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
+
 ---
 
 ### Niet-functionele kenmerken (NFR's)

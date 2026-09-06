@@ -2,6 +2,7 @@ architectuurdocument
 ci-conventie
 ci-op-pr-en-main
 kwaliteitsreview-voor-merge
+proces-diagnose-bug
 proces-issue-tracking
 proces-prd
 proces-refactoring-triggers

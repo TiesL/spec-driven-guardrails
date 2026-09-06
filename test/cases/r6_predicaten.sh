@@ -61,11 +61,11 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
     fi
   done
 
-  # En het totaal: 19 entries gelden altijd, plus elke van toepassing zijnde
+  # En het totaal: 20 entries gelden altijd, plus elke van toepassing zijnde
   # predicaat-entry. `heeft-package-json` draagt er sinds W24 twee -
   # `ci-conventie` (wat de workflow doet) en `ci-op-pr-en-main` (wanneer hij
   # draait). Vangt een seed-logica die er in bulk naast zit.
-  verwacht_aantal=19
+  verwacht_aantal=20
   [ "$verwacht_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 2))
   [ "$verwacht_deploy" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
   aantal_geseed="$(grep -c . "$geseed")"

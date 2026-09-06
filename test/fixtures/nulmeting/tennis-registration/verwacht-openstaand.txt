@@ -1,5 +1,6 @@
 architectuurdocument
 kwaliteitsreview-voor-merge
+proces-diagnose-bug
 proces-issue-tracking
 proces-prd
 proces-refactoring-triggers
