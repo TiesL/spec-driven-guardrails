@@ -129,6 +129,17 @@ if [ -d "$workflow_dir/skills" ]; then
   fi
 fi
 
+# Staat main uitgecheckt, dan is dat het moment waarop vertakken nog gratis is
+# (W23, F18/S54/S55). De commit-blokkade in hooks/git-guardrails grijpt pas
+# wanneer er al werk is — Edit, Write, git add en git stash gaan allemaal door
+# op main. Puur informatief: geen mutatie, geen blokkade, exit 0 en niets op
+# stderr, dezelfde eis als het onderbouwingssignaal hierboven (S43).
+if branch="$(git -C "$project_dir" symbolic-ref --short HEAD 2>/dev/null)" \
+  && [ "$branch" = "main" ]; then
+  echo "Je zit op main. Nieuw werk hoort op een eigen branch:"
+  echo "  git checkout -b feature/<naam>"
+fi
+
 # Loopt de lokale checkout achter, dan is bovenstaande lijst mogelijk
 # onvolledig. Alleen melden, niet zelf pullen — een hook hoort niets te muteren.
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
