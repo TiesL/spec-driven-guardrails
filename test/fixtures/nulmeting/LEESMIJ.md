@@ -138,6 +138,28 @@ controle is de bewuste rookmelder: hij hoort **op een dag te gaan afgaan**,
 namelijk zodra `nfr/` legitiem wijzigt zonder dat de freeze meeverst — precies
 het moment waarop deze procedure hierboven van toepassing wordt.
 
+Geen enkele gouden set veranderde door dit werkitem: het bevriest alleen de
+tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
+S67 toont met een mutatie aan dat een latere, wél vraagset-rakende wijziging
+in `nfr/` (elk bestand daar draagt `van-toepassing-als: altijd`, dus raakt
+alles alle vier de fixtures) door R9 wordt opgevangen — en herinnert er via
+`LEESMIJ.md`'s "Bijwerken — alleen bewust" aan dat `nfr.momentopname/` in dat
+geval bewust mee moet verversen, net als `CHANGES.md.momentopname`.
+
+## Bijgewerkt in W14 (#24), W15 (#25) en W16b (#26)
+
+Dit keer wél: drie nieuwe `CHANGES.md`-entries in één bundel-PR, alle drie
+`Van toepassing als: altijd`. `test-tdd-seams` en `proces-diagnose-bug` zijn
+`Standaard: ja` en worden dus bij adoptie geseed (niet als openstaand
+getoond); `proces-context-document` is `Standaard: vraag` en verschijnt wél
+als openstaand. Netto effect op de vier gouden sets: elk +3 (twee geseede
+entries tellen niet mee in de openstaand-set, maar de derde — als open
+vraag — wel; alle drie tellen mee waar het gaat om wélke ID's een gouden set
+bevat, want een geseede `ja`-rij hoort net zo goed in de set van "ID's die nu
+bestaan" als een openstaande). Concreet: a2t-emails 27→30, tennis-admin
+26→29, tennis-registration en tennis-invoicing elk 25→28.
+`CHANGES.md.momentopname` is in dezelfde PR (drie keer, per commit) ververst.
+
 ## Bijgewerkt in W12b (#28)
 
 De echte checkouts die deze fixtures spiegelen, zijn opgeschoond (6 september
