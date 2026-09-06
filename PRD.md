@@ -544,7 +544,10 @@ voegt `CHANGELOG.md` toe, tagt het mergepunt, en herstelt de stilgevallen
 direct na invoering stil. Plus een test die dat permanent afdwingt.
 
 Geadopteerde projecten volgen `main` live via symlink, dus een tag is een menselijk
-referentiepunt, geen pinbare versie. De eerste CHANGELOG-entry documenteert de
+referentiepunt, geen pinbare versie. *(Herzien voor consumenten buiten Ties'
+eigen gebruik: W37 (#79) bouwt op dit tagmechanisme een pinbaar
+consumentenpad, zie "Besloten in W29 (#53)", besluit 5. Dit — main live via
+symlink volgen — blijft Ties' eigen model.)* De eerste CHANGELOG-entry documenteert de
 vereiste actie: **`adopt.sh` opnieuw draaien in elk project op elke machine, én
 `adopt.sh --user` één keer per machine** — zonder dat laatste ontbreekt de
 user-level skill en verwijst de bijgewerkte `USER-CLAUDE.md` naar iets dat er niet
@@ -907,7 +910,9 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
   dus geen duplicatieprobleem.
 - **`mattpocock/skills`' grilling/to-spec-sjabloon overnemen.** De grilling-*techniek*
   als methode om NFR-secties in te vullen blijft een aparte verkenning.
-- **Een pinbare versie voor consumenten.**
+- **Een pinbare versie voor consumenten.** *(Herzien: alsnog opgepakt in W37
+  (#79), zie "Besloten in W29 (#53)", besluit 5 — deze uitsluiting gold voor
+  epic #11, niet meer voor epic #52.)*
 
 ---
 
@@ -1122,14 +1127,18 @@ ontwikkelaar die het repo nooit zag, installeert het uitsluitend vanuit de
 beantwoordde wat "installeren" betekent voor iemand die niet Ties is. Het
 huidige model — los checkout, een omgevingsvariabele, `adopt.sh` — is een model
 voor één persoon op meerdere machines, niet voor een consument die niet main
-wil volgen. `PRD.md` sloot "een pinbare versie voor consumenten" voorheen
-expliciet uit (zie "Niet in scope" bij epic #52), wat de belofte van deze
-release (deelbaarheid) tegensprak.
+wil volgen. Dit document sloot "een pinbare versie voor consumenten" voorheen
+expliciet uit (zie "Niet in scope" hierboven, en F15's "een tag is een
+menselijk referentiepunt, geen pinbare versie" — beide bijgewerkt met een
+verwijzing hierheen), wat de belofte van deze release (deelbaarheid)
+tegensprak.
 
 Besloten: consumenten pinnen een **getagde release** (bouwend op W22/#35's
-bestaande tag-/CHANGELOG-mechanisme uit epic #11); het losse-checkout-plus-
-env-var-model blijft daarnaast bestaan voor Ties' eigen multi-machine-gebruik.
-Uitgewerkt als nieuw werkitem: **W37 (#79)**.
+bestaande tag-/CHANGELOG-mechanisme uit epic #11 — F15 beschreef dat mechanisme
+correct voor Ties' eigen live-via-symlink-gebruik; W37 bouwt er een tweede,
+pinbaar pad bovenop, geen vervanging); het losse-checkout-plus-env-var-model
+blijft daarnaast bestaan voor Ties' eigen multi-machine-gebruik. Uitgewerkt als
+nieuw werkitem: **W37 (#79)**.
 
 Aanvullend besloten: `CHANGES.md` wordt gelezen als **productdefaults**, niet
 als Ties' persoonlijke voorkeurenregister. Elke entry krijgt daarmee impliciet
