@@ -992,6 +992,70 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 
 ---
 
+## Besloten in W29 (#53)
+
+Ontwerpsessie met Ties, geen code (AC3 van dat werkitem) — vier beslissingen die
+epic #52 sturen, elk met redenering. Vervolgitems die hierop anticipeerden staan
+hierop bijgewerkt (W31/#55, W32/#56, W33/#57, W35/#59).
+
+### 1. De naam: `agentic-SDD-workflow`
+
+Werktitel bevestigd als vertrekpunt voor W32 (#56). Draagt drie dingen tegelijk:
+spec-gedreven ontwikkeling (`SDD`), veronderstelt agent-gereedschap (`agentic`),
+en suggereert geen agent-framework (`workflow`, niet `framework` of `agent`).
+Overwogen alternatieven — `spec-driven-guardrails` (legt de nadruk op de
+afdwinging) en `spec-first-agent-conventions` (sluit aan bij epic #11's eigen
+"conventies met een slot") — vielen af: beide zijn scherper op één eigenschap,
+maar dekken de drie vereisten samen minder goed dan de werktitel.
+
+### 2. Provider-agnostisch: niveau a — alleen benoemen
+
+Van de drie niveaus (a: benoemen, b: adapterlaag met één invulling, c: een
+tweede invulling erbij bouwen) is gekozen voor **a**. De grens tussen
+agent-onafhankelijk en Claude Code-specifiek (zie W31/#55) wordt gedocumenteerd,
+niet gebouwd als contract.
+
+Reden: niveau b (contract, één invulling) blijft een aanname zolang er geen
+tweede invulling tegenaan getest is; niveau c (een tweede invulling bouwen) is
+een aparte release waard — epic #52 zelf sluit dat al expliciet uit onder "Wat
+hier bewust niet in zit". Documenteren is het niveau dat past bij epic #52's
+eigen grens ("geen nieuwe functionaliteit") én dat de bestaande technical-debt-
+rij eerlijk sluit: niet "opgelost", maar "bewust begrensd, met een concrete
+trigger om verder te gaan". Consequentie: W31 (#55) is hierop bijgesteld, van
+een adapterlaag-implementatie naar het formaliseren van de bestaande
+grenstabel.
+
+### 3. Taalscope: A + B
+
+Onderdelen die vanuit `claude-workflow` komen worden Engels. Dat omvat twee
+lagen:
+
+- **A — fysiek gedeelde bestanden (symlinks).** `CLAUDE.md`, `WORKFLOW.md`,
+  `skills/*/SKILL.md`, `session-hooks.json`.
+- **B — gedeelde vocabulaire die als los token in andermans bestand staat.** De
+  entry-ID's uit `CHANGES.md` (bijv. `kwaliteitsreview-voor-merge`) die als rij
+  in de `WORKFLOW-ADOPTIE.md` van de vier geadopteerde projecten staan, en de
+  `**Dekt:**`/`AC<n>`-veldlabels.
+
+De vier projecten zelf — hun `PRD.md`, `TEST-SCENARIOS.md`, de vrije tekst in
+hun `WORKFLOW-ADOPTIE.md` — blijven Nederlands. Expliciet buiten scope: een
+derde laag, **C — gescaffolde documentkoppen en scriptoutput** (bijv.
+`check-traceability.sh`'s meldingen) die na het scaffolden lokaal eigendom zijn
+geworden van de vier bestaande projecten. Die migreert niet mee. Nieuw
+gescaffolde kopieën, voor toekomstige projecten, zijn wél Engels — de
+bronsjablonen in `templates/` maken deel uit van dit repo en gaan dus mee.
+
+### 4. Voorpagina: de functionele lezer is primair
+
+Business analisten, product owners en product managers lezen de voorpagina als
+eerste, vóór de ontwikkelaar. Reden: voor deze release ligt de meeste onbekende
+waarde juist bij deze doelgroep (specificeren, aantoonbaar opleveren,
+traceerbaarheid) — dat is precies het deel van het repo dat nu onvindbaar is
+onder de mechaniek. De ontwikkelaar kent de rest van het repo al, of vindt zijn
+weg via `WORKFLOW.md`.
+
+---
+
 ## Projectbestanden
 
 | Bestand | Doel |
