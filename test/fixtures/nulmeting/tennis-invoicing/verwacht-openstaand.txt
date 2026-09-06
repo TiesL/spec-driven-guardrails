@@ -1,5 +1,7 @@
 architectuurdocument
 kwaliteitsreview-voor-merge
+proces-context-document
+proces-diagnose-bug
 proces-issue-tracking
 proces-prd
 proces-refactoring-triggers
@@ -21,5 +23,6 @@ spec-testability
 spec-usability
 test-feature-gwt
 test-integratie
+test-tdd-seams
 test-unit
 traceability-schakel-1

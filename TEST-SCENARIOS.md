@@ -488,6 +488,33 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: `adopt-workflow` is beschikbaar zonder dat `.claude/skills/` in dat
   project bestaat
 
+### S68 — `tdd-seams` benoemt de discipline concreet, niet aansporend
+**Dekt:** F10
+- Given: `skills/tdd-seams/SKILL.md`
+- When: hij gelezen wordt
+- Then: hij noemt "seam", "rood" én "groen" (rood-vóór-groen), en de drie
+  anti-patronen met naam: implementatie-gekoppeld, tautologisch, en
+  horizontaal slicen tegenover verticale slices
+
+### S69 — `diagnose-bug` beschrijft de dwingende volgorde
+**Dekt:** F10
+- Given: `skills/diagnose-bug/SKILL.md`
+- When: hij gelezen wordt
+- Then: reproductie, hypotheses en regressietest staan er alle drie in, in die
+  volgorde vóór de fix
+- And: het staat er expliciet bij dat hypotheses getoond worden vóórdat ze
+  getest worden
+
+### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `ja` staat
+**Dekt:** F10
+- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `proces-context-document`
+  op `ja` heeft staan
+- When: `adopt.sh` draait
+- Then: `CONTEXT.md` wordt aangemaakt vanuit `templates/CONTEXT.md`, als het
+  nog niet bestaat
+- And: een al bestaand `CONTEXT.md` wordt nooit overschreven
+- And: staat de rij op `nee` of ontbreekt ze, dan scaffoldt `adopt.sh` niets
+
 ### S26 — De reviewscope volgt de beantwoorde `spec-*`-rijen
 **Dekt:** F11
 - Given: een project waarvan `WORKFLOW-ADOPTIE.md` alleen `spec-security` en

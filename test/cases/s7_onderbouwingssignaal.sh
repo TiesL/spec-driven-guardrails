@@ -10,26 +10,26 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een vers geadopteerd project met 17 geseede rijen die "vereist
+# Given: een vers geadopteerd project met 20 geseede rijen die "vereist
 # onderbouwing" dragen.
 project="$(vers_project doelproject)"
 adopteer "$project"
 
 rijen="$(grep -c 'vereist onderbouwing' "$project/WORKFLOW-ADOPTIE.md")"
-[ "$rijen" -eq 18 ] || fail "S7 — $rijen rijen met 'vereist onderbouwing', 18 verwacht"
+[ "$rijen" -eq 20 ] || fail "S7 — $rijen rijen met 'vereist onderbouwing', 20 verwacht"
 
 # When: pending-changes.sh draait.
 uitvoer="$SANDBOX/uitvoer.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
 
 # Then: er verschijnt een melding met het aantal.
-grep -q '18 rij(en)' "$uitvoer" || {
+grep -q '20 rij(en)' "$uitvoer" || {
   fail "S7 — geen melding met het aantal wachtende onderbouwingen"
   cat "$uitvoer" >&2
 }
 grep -qi 'onderbouwing' "$uitvoer" || fail "S7 — de melding noemt 'onderbouwing' niet"
 
-# En het aantal beweegt mee: één rij onderbouwen maakt er zeventien van.
+# En het aantal beweegt mee: één rij onderbouwen maakt er negentien van.
 # Eén rij onderbouwen. Niet met `sed '0,/re/'`: dat adresbereik is een
 # GNU-uitbreiding die BSD-sed op macOS niet kent, en de vervanging grijpt dan
 # stilzwijgend niet.
@@ -41,7 +41,7 @@ mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTIE.md"
 
 na="$SANDBOX/na.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
-grep -q '17 rij(en)' "$na" || {
+grep -q '19 rij(en)' "$na" || {
   fail "S7 — het aantal beweegt niet mee na het onderbouwen van één rij"
   grep -i 'rij(en)' "$na" >&2
 }

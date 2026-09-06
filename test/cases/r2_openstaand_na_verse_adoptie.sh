@@ -18,9 +18,10 @@ adopteer "$project"
 gekregen="$SANDBOX/gekregen.txt"
 openstaande_ids "$project" > "$gekregen"
 
-# Then: exact deze 7 ID's, in willekeurige volgorde.
+# Then: exact deze 8 ID's, in willekeurige volgorde.
 verwacht="$SANDBOX/verwacht.txt"
 cat > "$verwacht" <<'IDS'
+proces-context-document
 proces-issue-tracking
 spec-compliance
 spec-kostenbeheersing

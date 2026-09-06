@@ -26,6 +26,11 @@ description: >
 Voor de onderbouwingsplicht bij het opstellen of herzien van
 `PRD.md`/`ARCHITECTUUR.md` — de skill `adoption-registry`.
 
+Heeft dit project een `CONTEXT.md` (projectjargon → betekenis, los van de
+structurele besluiten in `ARCHITECTUUR.md`)? Werk hem dan bij zodra een nieuwe
+term ontstaat of een bestaande van betekenis verandert — niet in één keer
+proberen compleet te maken.
+
 ## Dekking vastleggen met `Dekt:`
 
 Elk testscenario draagt een `**Dekt:**`-veld onder zijn kop, met de

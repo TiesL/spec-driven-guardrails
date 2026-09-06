@@ -396,6 +396,16 @@ adopt_project() {
 
   seed_adoptietabel "$project_dir"
 
+  # CONTEXT.md is optioneel (W16b): scaffold alleen zodra het project
+  # proces-context-document met "ja" heeft beantwoord. Geen predicaat zoals
+  # heeft-package-json — de conditie leeft in de eigen adoptietabel van het
+  # project, dus die wordt hier rechtstreeks gelezen. Dit werkt zowel bij een
+  # verse adoptie (als Standaard:ja het net geseed heeft) als bij een
+  # her-adoptie nadat iemand de rij later alsnog op "ja" heeft gezet.
+  if grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
+  fi
+
   echo "Klaar: $project_dir gebruikt nu de gedeelde workflow uit $CLAUDE_WORKFLOW_DIR"
 }
 

@@ -168,6 +168,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
+## proces-context-document
+
+- **Vraag:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
+- **Standaard:** vraag
+- **Van toepassing als:** altijd
+- **Ja betekent:** `CONTEXT.md` bestaat en wordt levend gehouden — bijgewerkt
+  zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
+  proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
+  besluiten gaat, niet over taal. `adopt.sh` scaffoldt het sjabloon zodra deze
+  rij op `ja` staat.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
+
 ## proces-issue-tracking
 
 - **Vraag:** Splitst dit project werk op in GitHub-issues (epics/work items)?
@@ -191,6 +203,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Van toepassing als:** altijd
 - **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
+
+## test-tdd-seams
+
+- **Vraag:** Werkt dit project test-first op vooraf afgesproken seams, met rood-vóór-groen-discipline?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** tests raken alleen het publieke grensvlak aan (nooit interne
+  implementatiedetails), staan aantoonbaar rood vóór de implementatie, en
+  vermijden de drie met naam benoemde anti-patronen (implementatie-gekoppeld,
+  tautologisch, horizontaal slicen) — zie de skill `tdd-seams`. Aanvullend op
+  `test-unit`/`test-feature-gwt`, die alleen vragen óf er tests zijn, niet hoe.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## test-integratie
 
@@ -223,6 +247,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Van toepassing als:** altijd
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
+
+## proces-diagnose-bug
+
+- **Vraag:** Volgt dit project bij het diagnosticeren van een bug de dwingende volgorde reproductie → hypotheses → regressietest → fix?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** eerst een deterministische, zelf uitvoerbare reproductie;
+  dan falsifieerbare hypotheses, getoond vóórdat ze getest worden; dan een
+  regressietest die rood staat op de reproductie; pas dan de fix — zie de
+  skill `diagnose-bug`. Een fix zonder voorafgaande falende test bewijst
+  niets.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ---
 
