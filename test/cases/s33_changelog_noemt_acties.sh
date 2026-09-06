@@ -13,7 +13,13 @@ changelog="$TEST_REPO_ROOT/CHANGELOG.md"
 
 inhoud="$(cat "$changelog")"
 
-assert_contains "S33 — noemt adopt.sh per project" "adopt.sh" "$inhoud"
+# Twee losse asserties, niet één op "adopt.sh" plus één op "adopt.sh --user":
+# "adopt.sh" alleen matcht altijd mee zodra de --user-vorm ergens voorkomt,
+# en dan kan de eerste assertie nooit apart falen. Een regel zonder "--user"
+# die toch "adopt.sh" noemt, bewijst dat de per-project-instructie er los van
+# de per-machine-instructie staat.
+zonder_user="$(printf '%s\n' "$inhoud" | grep -v -- '--user')"
+assert_contains "S33 — noemt adopt.sh per project (los van --user)" "adopt.sh" "$zonder_user"
 assert_contains "S33 — noemt adopt.sh --user per machine" "adopt.sh --user" "$inhoud"
 
 test_klaar

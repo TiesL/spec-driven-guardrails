@@ -19,8 +19,11 @@ naar een issue, had **nul** een kwaliteitsreview, en was
 **Vereiste actie na deze release, per project en per machine:**
 
 - Draai `adopt.sh` opnieuw in elk geadopteerd project (`a2t-emails`,
-  `tennis-admin`, `tennis-registration`, `tennis-invoicing`) — dat ververst de
-  skill-symlinks, de sjablonen en de nieuwe `CHANGES.md`-vragen.
+  `tennis-admin`, `tennis-registration`, `tennis-invoicing`), op elke machine
+  waarmee je eraan werkt — dat ververst de skill-symlinks en de nieuwe
+  `CHANGES.md`-vragen verschijnen als openstaand. Sjablonen die al bestaan
+  (`ci.yml`, `PRD.md`, …) worden **niet** overschreven; alleen wat nog
+  ontbreekt wordt gescaffold, en de issue-templates worden altijd ververst.
 - Draai `adopt.sh --user` één keer op elke machine waarmee je aan deze
   projecten werkt. Zonder die stap ontbreekt de user-level skill
   `adopt-workflow`, en verwijst de bijgewerkte `USER-CLAUDE.md` naar iets dat
