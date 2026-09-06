@@ -96,6 +96,38 @@ itereer_entries() {
   [ "$fouten" -eq 0 ]
 }
 
+# De ID's van entries zonder een https-**PR:**-veld, één per regel (W21, F15,
+# S32). Zelfde entryvorm als itereer_entries hierboven ("## " opent een entry),
+# maar zonder het predicaatcontract — dit werkt ook op CHANGES-ARCHIEF.md, waar
+# Standaard en Van toepassing als bewust ontbreken.
+#
+# Geen strengere URL-validatie dan "begint met https://": de linkback moet
+# terugvindbaar zijn, niet per se naar GitHub wijzen — een project zou zijn
+# eigen forge kunnen gebruiken.
+pr_links_ontbrekend() {
+  local bron="$1"
+  [ -f "$bron" ] || return 0
+
+  local regel huidig_id="" heeft_pr=0
+
+  while IFS= read -r regel || [ -n "$regel" ]; do
+    case "$regel" in
+      '## '*)
+        if [ -n "$huidig_id" ] && [ "$heeft_pr" -eq 0 ]; then
+          echo "$huidig_id"
+        fi
+        huidig_id="${regel#\#\# }"
+        heeft_pr=0 ;;
+      '- **PR:** https://'*)
+        heeft_pr=1 ;;
+    esac
+  done < "$bron"
+
+  if [ -n "$huidig_id" ] && [ "$heeft_pr" -eq 0 ]; then
+    echo "$huidig_id"
+  fi
+}
+
 # Loopt béide bronnen langs: de entries in CHANGES.md en het NFR-register in
 # nfr/. Sinds W5 staan de vijftien niet-functionele kenmerken niet meer als
 # spec-*-entries in CHANGES.md, maar in een eigen register — deze functie houdt

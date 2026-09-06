@@ -56,6 +56,36 @@ scoperegel om op te reviewen.
 Het lezen van de diff zelf wordt gedelegeerd aan de bestaande
 `code-review`-skill, met deze scope als invoer.
 
+## De PR-poort (schakel 2 en 3, W20)
+
+Naast de NFR-scope hierboven controleert deze skill ook de traceabilityketen
+richting issues, met `gh` en netwerk die hij toch al gebruikt:
+
+**Schakel 2 — wordt elk scenario door een issue genoemd?** Draai:
+
+```
+.claude/skills/pre-merge-review/scenario-poort.sh .
+```
+
+Dat print, één per regel, elk scenario-ID uit `TEST-SCENARIOS.md` dat door
+geen enkel issue in zijn `**Dekt:**`-veld genoemd wordt. Alleen dat veld telt
+— een ID dat toevallig in een zin voorkomt (bijvoorbeeld "we hebben inmiddels
+s1 varianten getest") is geen verwijzing. Elke gemelde regel is een bevinding.
+
+**Schakel 3 — verwijst déze PR naar een issue?** Eén aanroep:
+
+```
+gh pr view --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+```
+
+Is dat `0`, dan is dat een bevinding: de PR mist `Closes #<issue>` of een
+gelinkt issue. Dezelfde controle staat als hard slot in CI (W19b,
+`check-pr-issue-link.sh`) — deze skill draait hem daarnaast al vóór de merge,
+met de bevinding in de PR zelf.
+
+Beide controles falen open zonder `gh` of netwerk: een waarschuwing, geen
+blokkade — dezelfde grondregel als de deploy-guards en de merge-guard (W10b).
+
 ## Onderbouwingsgat als bevinding
 
 Raakt de PR een onderwerp waarvan de scope-regel `[vereist onderbouwing]`

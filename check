@@ -135,6 +135,24 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
   fi
 fi
 
+# --- 3a. PR-linkbacks in CHANGES.md / CHANGES-ARCHIEF.md (W21, F15) ---------
+# Zonder deze linkback kan een geadopteerd project niet terugvinden waaróm een
+# rij in zijn eigen WORKFLOW-ADOPTIE.md staat (S32). CHANGES-ARCHIEF.md deelt
+# dezelfde entryvorm en telt mee: retirement mag de linkback niet laten vallen.
+if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
+  echo "check: PR-linkbacks"
+  # shellcheck source=lib/changes.sh
+  . "$doel/lib/changes.sh"
+  for bron in "$doel/CHANGES.md" "$doel/CHANGES-ARCHIEF.md"; do
+    [ -f "$bron" ] || continue
+    ontbrekend="$(pr_links_ontbrekend "$bron")"
+    if [ -n "$ontbrekend" ]; then
+      melden_fout "${bron#"$doel"/} mist een **PR:**-veld bij:"
+      printf '%s\n' "$ontbrekend" | sed 's/^/    - /' >&2
+    fi
+  done
+fi
+
 # --- 3b. Python-syntaxis -----------------------------------------------------
 # Pariteit met `bash -n`: sinds de guard zijn invoer door een python-script laat
 # lezen, hoort ook die kant op syntaxis gecontroleerd te worden.

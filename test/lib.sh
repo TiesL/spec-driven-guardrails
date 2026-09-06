@@ -131,6 +131,34 @@ minimale_path_zonder_validators() {
   echo "$bin"
 }
 
+# Bouwt een bin-map met een nep-`gh`, voor tests die gh's netwerk-/PR-gedrag
+# moeten simuleren zonder een echte aanroep. $1 is het scriptlichaam van de
+# nep-gh (ziet zijn argumenten via "$@"/"$*"). Echoot het pad; zet dit vóór de
+# rest van PATH.
+fake_gh_bin() {
+  local bin="$SANDBOX/fakegh"
+  mkdir -p "$bin"
+  {
+    echo '#!/usr/bin/env bash'
+    echo "$1"
+  } > "$bin/gh"
+  chmod +x "$bin/gh"
+  echo "$bin"
+}
+
+# Bouwt een PATH zonder `gh`, voor het faal-open-scenario waarin gh ontbreekt.
+# Andere gereedschappen die de guard nodig heeft (git, python3) blijven erin,
+# in tegenstelling tot minimale_path_zonder_validators hierboven.
+pad_zonder_gh() {
+  local bin="$SANDBOX/nogh"
+  mkdir -p "$bin"
+  local t pad
+  for t in bash sh git python3 find sort head mktemp rm cat dirname basename tr grep sed awk chmod mkdir cp tar env printf; do
+    pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bin/$t"
+  done
+  echo "$bin"
+}
+
 assert_contains() {
   local omschrijving="$1" naald="$2" hooiberg="$3"
   case "$hooiberg" in

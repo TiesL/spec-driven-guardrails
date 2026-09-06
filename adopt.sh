@@ -388,6 +388,10 @@ adopt_project() {
   if [ -f "$project_dir/package.json" ]; then
     mkdir -p "$project_dir/.github/workflows"
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" "$project_dir/.github/workflows/ci.yml"
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-pr-issue-link.sh" "$project_dir/check-pr-issue-link.sh"
+    if [ -f "$project_dir/check-pr-issue-link.sh" ]; then
+      chmod +x "$project_dir/check-pr-issue-link.sh"
+    fi
   fi
 
   seed_adoptietabel "$project_dir"
