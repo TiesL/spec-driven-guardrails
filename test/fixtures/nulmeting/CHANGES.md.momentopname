@@ -168,6 +168,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
+## proces-context-document
+
+- **Vraag:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
+- **Standaard:** vraag
+- **Van toepassing als:** altijd
+- **Ja betekent:** `CONTEXT.md` bestaat en wordt levend gehouden — bijgewerkt
+  zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
+  proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
+  besluiten gaat, niet over taal. `adopt.sh` scaffoldt het sjabloon zodra deze
+  rij op `ja` staat.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/72
+
 ## proces-issue-tracking
 
 - **Vraag:** Splitst dit project werk op in GitHub-issues (epics/work items)?

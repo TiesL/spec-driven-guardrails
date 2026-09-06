@@ -505,6 +505,16 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: het staat er expliciet bij dat hypotheses getoond worden vóórdat ze
   getest worden
 
+### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `ja` staat
+**Dekt:** F10
+- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `proces-context-document`
+  op `ja` heeft staan
+- When: `adopt.sh` draait
+- Then: `CONTEXT.md` wordt aangemaakt vanuit `templates/CONTEXT.md`, als het
+  nog niet bestaat
+- And: een al bestaand `CONTEXT.md` wordt nooit overschreven
+- And: staat de rij op `nee` of ontbreekt ze, dan scaffoldt `adopt.sh` niets
+
 ### S26 — De reviewscope volgt de beantwoorde `spec-*`-rijen
 **Dekt:** F11
 - Given: een project waarvan `WORKFLOW-ADOPTIE.md` alleen `spec-security` en
