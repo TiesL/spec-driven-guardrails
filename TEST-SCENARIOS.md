@@ -615,6 +615,16 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   wordt bij de eerste aanraking uitgezet
 - And: een eigen versie van dat bestand wordt niet overschreven
 
+### S71 — Bestaande projecten krijgen de schakel-3-vraag alsnog voorgelegd
+**Dekt:** F13
+- Given: een project met een `package.json` en een al bestaande `ci.yml` die
+  `check-pr-issue-link.sh` niet aanroept (W19b's `scaffold_if_missing` laat
+  zo'n bestand ongemoeid — het sjabloon repareren helpt alleen nieuwe
+  projecten, zelfde patroon als `ci-op-pr-en-main` bij W24)
+- When: `pending-changes.sh` draait
+- Then: een nieuwe entry verschijnt als openstaand
+- And: een project zonder `package.json` krijgt die vraag niet
+
 ---
 
 ## Issue-templates en release

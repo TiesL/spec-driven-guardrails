@@ -183,13 +183,20 @@ werkelijke projecten naast deze momentopname legt:
   dus verwijderd met `-D`, na verificatie dat de inhoud volledig was
   ingehaald en met expliciete bevestiging van Ties.
 
-Geen enkele gouden set veranderde door dit werkitem: het bevriest alleen de
-tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
-S67 toont met een mutatie aan dat een latere, wél vraagset-rakende wijziging
-in `nfr/` (elk bestand daar draagt `van-toepassing-als: altijd`, dus raakt
-alles alle vier de fixtures) door R9 wordt opgevangen — en herinnert er via
-`LEESMIJ.md`'s "Bijwerken — alleen bewust" aan dat `nfr.momentopname/` in dat
-geval bewust mee moet verversen, net als `CHANGES.md.momentopname`.
+## Bijgewerkt voor issue #74 (ci-schakel-3-hard-slot)
+
+W19b (#32) voegde `check-pr-issue-link.sh` toe, gescaffold via `adopt.sh` en
+verwerkt in `templates/ci.yml` — maar `scaffold_if_missing` laat een al
+bestaande `ci.yml` ongemoeid, dus bestaande `package.json`-projecten kregen
+de stap nooit vanzelf. Nieuwe entry `ci-schakel-3-hard-slot`
+(`heeft-package-json`, zelfde predicaat als `ci-conventie`/`ci-op-pr-en-main`)
+maakt dat zichtbaar. Raakt `a2t-emails` en `tennis-admin` (beide hebben een
+`package.json`); `tennis-registration` en `tennis-invoicing` niet. Elk +1:
+a2t-emails 30→31, tennis-admin 29→30. `CHANGES.md.momentopname` ververst.
+
+(Deze update repareert en passant ook een dubbel geplakte alinea uit de
+W12b-sectie hierboven, restschade van een eerdere review-fix-edit — geen
+inhoudelijke wijziging aan wat daar staat.)
 
 ## Bijwerken — alleen bewust
 

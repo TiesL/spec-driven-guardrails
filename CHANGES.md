@@ -114,6 +114,23 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   `package.json` krijgt hem niet, net als bij `ci-conventie`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
+## ci-schakel-3-hard-slot
+
+- **Vraag:** Faalt de CI van dit project een pull request die naar geen enkel issue verwijst (schakel 3, hard slot)?
+- **Standaard:** ja
+- **Van toepassing als:** heeft-package-json
+- **Ja betekent:** `check-pr-issue-link.sh` is gescaffold (`adopt.sh`, zie
+  `templates/check-pr-issue-link.sh`) en de workflow roept het aan op het
+  `pull_request`-event, met het PR-nummer als argument — zie
+  `templates/ci.yml`. Alleen de triggerende PR wordt beoordeeld, geen audit
+  over de geschiedenis (F13 besluit d, W19b). Dit staat los van
+  `ci-op-pr-en-main`: dát antwoord gaat over wannéér de workflow draait, dit
+  over een extra stap die hij daarnaast uitvoert. `scaffold_if_missing`
+  overschrijft een bestaande `ci.yml` nooit, dus een project dat die al had
+  vóór W19b krijgt de stap niet vanzelf — deze vraag maakt dat zichtbaar in
+  plaats van stil te laten liggen.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/75
+
 ## traceability-schakel-1
 
 - **Vraag:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
