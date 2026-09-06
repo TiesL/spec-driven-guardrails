@@ -783,6 +783,15 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   meldt dat er niets aan de hand is terwijl hij niets weet — en dat is precies
   de stille degradatie die dit repo het duurst betaalt
 
+### S72 — Bestaande projecten krijgen de main-via-PR-vraag alsnog voorgelegd
+**Dekt:** F17
+- Given: een project met een `package.json` en een al bestaande `ci.yml` die
+  `check-main-via-pr.sh` niet aanroept (`scaffold_if_missing` laat zo'n
+  bestand ongemoeid — zelfde patroon als `ci-schakel-3-hard-slot` bij W19b)
+- When: `pending-changes.sh` draait
+- Then: een nieuwe entry verschijnt als openstaand
+- And: een project zonder `package.json` krijgt die vraag niet
+
 ---
 
 ## Werk veiligstellen zonder sessie-einde

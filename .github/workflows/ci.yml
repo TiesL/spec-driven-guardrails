@@ -1,8 +1,11 @@
 # CI voor claude-workflow zelf.
 #
-# Roept uitsluitend ./check aan en verzint geen losse stappen — dezelfde
-# conventie die dit repo aan geadopteerde projecten voorschrijft, hier op
-# zichzelf toegepast.
+# Roept ./check aan zonder losse checks te verzinnen — dezelfde conventie die
+# dit repo aan geadopteerde projecten voorschrijft, hier op zichzelf
+# toegepast. Eén uitzondering: de main-via-PR-controle (W27, F17) heeft
+# netwerk nodig en hoort dus niet in het lokale, offline ./check — zelfde
+# reden waarom check-pr-issue-link.sh voor andere projecten ook een losse
+# CI-stap is in plaats van onderdeel van hun check.
 #
 # Dit is bewust niet templates/ci.yml: dat sjabloon veronderstelt npm, en dit
 # repo heeft geen package.json (zie de toelichting in ./check). Precies het
@@ -24,3 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./check
+      - name: Commit op main komt uit een PR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./templates/check-main-via-pr.sh "${{ github.sha }}"

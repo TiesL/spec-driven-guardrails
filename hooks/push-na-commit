@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# hooks/push-na-commit — PostToolUse-hook (W25, F18): pusht de huidige branch
+# zodra een Bash-aanroep "git commit" bevat. Dezelfde handeling als de
+# bestaande SessionEnd-hook, alleen eerder en vaker — werk is zo veilig zodra
+# het is vastgelegd, in plaats van pas bij een nette sessie-afsluiting
+# waarvoor Claude Code geen garantie geeft (geen toezegging over een crash,
+# een gesloten terminalvenster of stroomuitval).
+#
+# Contract (Claude Code PostToolUse): JSON op stdin met tool_name,
+# tool_input.command en cwd. De tool draaide al — deze hook kan niets meer
+# tegenhouden, en exitstatus doet er dus niet toe voor het commando zelf.
+#
+# Geen poging om "is de commit gelukt" uit tool_response af te leiden: die
+# structuur is niet gedocumenteerd als betrouwbare bron voor de exitstatus
+# van het onderliggende commando, en varieert per tool. In plaats daarvan
+# leunt dit script op iets dat wél gegarandeerd waar is: `git push` is zelf
+# idempotent. Is er niets nieuws (de commit mislukte, of alles was al
+# gepusht), dan meldt git "Everything up-to-date" en verandert er niets —
+# functioneel hetzelfde resultaat als AC3 vraagt, zonder op een
+# ongedocumenteerd veld te leunen.
+#
+# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+
+set -uo pipefail
+
+invoer="$(</dev/stdin)"
+[ -n "$invoer" ] || exit 0
+
+if ! command -v python3 >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Twee velden uit dezelfde JSON, één python3-aanroep. Geen eval, geen losse
+# regex op ruwe JSON-tekst — quotes en ontsnappingstekens horen bij een
+# parser, niet bij grep.
+gegevens="$(printf '%s' "$invoer" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if not isinstance(data, dict) or data.get("tool_name") != "Bash":
+    sys.exit(0)
+ti = data.get("tool_input")
+cmd = ti.get("command") if isinstance(ti, dict) else None
+if not isinstance(cmd, str):
+    sys.exit(0)
+cwd = data.get("cwd")
+if not isinstance(cwd, str):
+    cwd = ""
+print(cmd.replace("\n", " "))
+print(cwd)
+')"
+[ -n "$gegevens" ] || exit 0
+
+commando="$(printf '%s\n' "$gegevens" | sed -n '1p')"
+cwd="$(printf '%s\n' "$gegevens" | sed -n '2p')"
+[ -n "$cwd" ] || cwd="$PWD"
+
+# Alleen een grove trefwoordcheck: dit is geen guard tegen misbruik zoals
+# git-guardrails, dus geen quote-bewuste tokenisatie nodig. Een gemiste
+# treffer kost hooguit een iets latere push; een valse treffer kost een
+# no-op git push — geen van beide is schadelijk.
+case "$commando" in
+  *git\ commit*) ;;
+  *) exit 0 ;;
+esac
+
+branch="$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null)" || exit 0
+[ -n "$branch" ] || exit 0
+
+# AC4: op main gebeurt er niets — dezelfde grens als de SessionEnd-hook.
+[ "$branch" = "main" ] && exit 0
+
+if ! git -C "$cwd" remote get-url origin >/dev/null 2>&1; then
+  exit 0
+fi
+
+# AC5: geen netwerk, geen probleem — melden, niet ophouden.
+if git -C "$cwd" rev-parse --verify --quiet "origin/$branch" >/dev/null 2>&1; then
+  uitvoer="$(git -C "$cwd" push origin "$branch" 2>&1)" && exit 0
+else
+  uitvoer="$(git -C "$cwd" push -u origin "$branch" 2>&1)" && exit 0
+fi
+
+# Twee heel verschillende oorzaken, twee verschillende meldingen. Een
+# non-fast-forward (bijvoorbeeld na `git commit --amend` of een rebase) is
+# geen netwerk- of toegangsprobleem — het is lokale geschiedenis die van
+# origin afwijkt, en dat repareert deze hook nooit automatisch met een
+# force-push: dat is een bewuste keuze, geen mutatie die niemand vroeg.
+case "$uitvoer" in
+  *"(non-fast-forward)"*|*"(fetch first)"*|*"(stale info)"*)
+    echo "waarschuwing: push-na-commit kon niet pushen — de lokale geschiedenis wijkt af van origin (bijvoorbeeld na een amend of rebase). Gebruik zelf 'git push --force-with-lease' als dat de bedoeling was." >&2 ;;
+  *)
+    echo "waarschuwing: push-na-commit kon niet pushen (geen netwerk of geen toegang?): $uitvoer" >&2 ;;
+esac
+exit 0

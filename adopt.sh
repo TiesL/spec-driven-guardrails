@@ -24,6 +24,15 @@ if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
   exit 1
 fi
 
+# Genormaliseerd naar een absoluut pad, hier eenmalig en globaal — niet pas
+# lokaal in adopt_project(). Elke symlink die dit script zet (skills,
+# git-hooks, CLAUDE.md/settings.json) wijst naar CLAUDE_WORKFLOW_DIR; een
+# relatief pad zou zo'n symlink dangling maken (relatieve targets resolven
+# vanuit de map van de symlink zelf, niet vanuit de map waar adopt.sh vandaan
+# draaide) — en git slaat een dangling git-hook stilzwijgend over, zonder
+# enige melding. Precies de faalmodus die F17 wil uitroeien.
+CLAUDE_WORKFLOW_DIR="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
+
 # De bibliotheek komt uit de checkout waar dít script in staat, niet uit
 # CLAUDE_WORKFLOW_DIR: code hoort bij het script dat hem aanroept. De data
 # (CHANGES.md, templates) komt wél uit CLAUDE_WORKFLOW_DIR, zoals altijd.
@@ -300,6 +309,58 @@ installeer_skills() {
   done
 }
 
+# Installeert de native git-hooks (W26, F17) als symlinks in
+# <project>/.git/hooks/, zodat de guard-regel ook geldt buiten Claude Code om
+# (eigen terminal, IDE, ander agent-harnas). Symlink, geen kopie: dezelfde
+# reden als bij CLAUDE.md/settings.json — de regel moet altijd de actuele
+# versie uit claude-workflow zijn, niet een momentopname.
+#
+# AC5/S51: anders dan CLAUDE.md/settings.json (bewust ééndoelige bestanden)
+# is een eigen pre-commit/pre-push van een project een reëel scenario — een
+# lint-hook bijvoorbeeld — met een heel ander doel dan branchbescherming.
+# backup_if_real_file zou zo'n hook stilzwijgend buiten werking stellen achter
+# een .bak; dat is meer dan "melden", dat is functionaliteit verliezen zonder
+# terugweg. Een écht bestand (geen symlink) wordt dus met rust gelaten, luid
+# gemeld, en niet geïnstalleerd.
+#
+# Een symlink telt alleen als "van ons" als hij al naar precies dít doelbestand
+# wijst — dan vervangen (idempotent: "twee keer draaien geeft een identieke
+# boom"). Een symlink naar iets anders (de eigen dotfiles van het project,
+# bijvoorbeeld) is net zo goed een eigen keuze als een echt bestand, en krijgt
+# dezelfde behandeling: met rust laten, luid melden.
+installeer_git_hooks() {
+  local project_dir="$1"
+  local git_dir="$project_dir/.git"
+  local hooks_dir="$git_dir/hooks"
+
+  # Geen .git-map: niets te doen. adopt_project heeft dit al gecontroleerd,
+  # maar deze functie moet ook op zichzelf correct zijn.
+  [ -d "$git_dir" ] || return 0
+  mkdir -p "$hooks_dir"
+
+  local naam pad bron huidig_doel
+  for naam in pre-commit pre-push; do
+    bron="$CLAUDE_WORKFLOW_DIR/hooks/$naam"
+    [ -f "$bron" ] || continue
+    pad="$hooks_dir/$naam"
+    if [ -e "$pad" ] || [ -L "$pad" ]; then
+      if [ -L "$pad" ]; then
+        huidig_doel="$(readlink "$pad" 2>/dev/null)"
+      else
+        huidig_doel=""
+      fi
+      if [ "$huidig_doel" = "$bron" ]; then
+        rm "$pad"
+      else
+        echo "Eigen git-hook gevonden op $pad — niet aangeraakt. De branchbescherming van git-guardrails geldt hier dus niet buiten Claude om, tenzij je die regel zelf in je eigen hook opneemt."
+        continue
+      fi
+    fi
+    ln -s "$bron" "$pad"
+    chmod +x "$bron" 2>/dev/null || true
+  done
+}
+
 # Installeert precies de user-level skill (adopt-workflow) in
 # ~/.claude/skills/. F10: dit is de enige skill die op userniveau hoort, want
 # USER-CLAUDE.md laadt juist in niet-geadopteerde projecten, waar
@@ -370,6 +431,7 @@ adopt_project() {
   # vier de projecten een stapel ongetrackte bestanden.
   schrijf_gitignore_blok "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
   installeer_skills "$project_dir"
+  installeer_git_hooks "$project_dir"
 
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
@@ -391,6 +453,10 @@ adopt_project() {
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-pr-issue-link.sh" "$project_dir/check-pr-issue-link.sh"
     if [ -f "$project_dir/check-pr-issue-link.sh" ]; then
       chmod +x "$project_dir/check-pr-issue-link.sh"
+    fi
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-main-via-pr.sh" "$project_dir/check-main-via-pr.sh"
+    if [ -f "$project_dir/check-main-via-pr.sh" ]; then
+      chmod +x "$project_dir/check-main-via-pr.sh"
     fi
   fi
 

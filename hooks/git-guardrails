@@ -43,6 +43,17 @@ invoer="$(</dev/stdin)"
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lezer="$eigen_map/lees-commando.py"
 
+# HOOFDBRANCH en de REDEN_*-teksten komen uit regels.sh, gedeeld met de
+# native git-hooks (W26) — welke branch beschermd is en wat de melding zegt
+# staat zo op één plek. Ontbreekt het bestand (kapotte checkout), dan valt
+# terug op het hardgecodeerde "main": bij twijfel toestaan geldt hier ook voor
+# de eigen infrastructuur van de guard.
+if [ -r "$eigen_map/regels.sh" ]; then
+  # shellcheck source=regels.sh
+  . "$eigen_map/regels.sh"
+fi
+HOOFDBRANCH="${HOOFDBRANCH:-main}"
+
 if ! command -v python3 >/dev/null 2>&1; then
   echo "waarschuwing: git-guardrails heeft python3 nodig om het commando te lezen" >&2
   echo "en laat dit commando dus door. Installeer python3 om de guard te laten werken." >&2
@@ -124,7 +135,7 @@ refspec_doel() {
 
 is_main() {
   case "$1" in
-    main|refs/heads/main) return 0 ;;
+    "$HOOFDBRANCH"|"refs/heads/$HOOFDBRANCH") return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -349,13 +360,7 @@ beoordeel_segment() {
       # WORKFLOW.md onder "Nieuw project opzetten".
       if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
         if is_main "$(huidige_branch)"; then
-          blokkeer "git commit op main" \
-"main krijgt zijn wijzigingen via een PR. Maak eerst een branch — je
-       wijzigingen gaan gewoon mee, er raakt niets kwijt:
-
-         git checkout -b feature/<naam>
-
-       Daarna committen en pushen zoals gewoonlijk."
+          blokkeer "git commit op main" "${REDEN_COMMIT_OP_MAIN:-main krijgt zijn wijzigingen via een PR. Maak eerst een branch.}"
         fi
       fi ;;
     reset)
@@ -415,8 +420,7 @@ beoordeel_segment() {
           is_main "$(huidige_branch)" && blokkeer "git push origin HEAD vanaf main" \
             "HEAD wijst hier naar main, dus deze push gaat naar main."
         elif is_main "$doel"; then
-          blokkeer "git push naar main" \
-            "main krijgt zijn wijzigingen via een PR, niet via een directe push."
+          blokkeer "git push naar main" "${REDEN_PUSH_NAAR_MAIN:-main krijgt zijn wijzigingen via een PR, niet via een directe push.}"
         fi
       done ;;
   esac

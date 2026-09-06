@@ -1,4 +1,5 @@
 architectuurdocument
+ci-detecteert-main-buiten-pr
 ci-op-pr-en-main
 ci-schakel-3-hard-slot
 kwaliteitsreview-voor-merge
