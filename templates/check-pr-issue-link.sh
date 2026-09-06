@@ -34,10 +34,17 @@ fi
 aantal="$(gh pr view "$pr_nummer" --json closingIssuesReferences \
   --jq '.closingIssuesReferences | length' 2>/dev/null)"
 
-if [ -z "$aantal" ]; then
-  echo "check-pr-issue-link: kon PR #$pr_nummer niet raadplegen." >&2
-  exit 1
-fi
+# Alles behalve een schoon niet-negatief getal telt als "kon niet raadplegen"
+# — ook lege uitvoer en een onverwachte waarde als "null". Zonder deze
+# validatie faalt de vergelijking hieronder stil (bash meldt een
+# geheeltallige-expressie-fout maar `set -e` staat uit), en dan loopt het
+# script door naar de laatste regel: precies het faal-openpad dat de kop van
+# dit bestand uitsluit voor het enige harde slot.
+case "$aantal" in
+  ''|*[!0-9]*)
+    echo "check-pr-issue-link: kon PR #$pr_nummer niet raadplegen." >&2
+    exit 1 ;;
+esac
 
 if [ "$aantal" -eq 0 ]; then
   echo "check-pr-issue-link: PR #$pr_nummer verwijst naar geen enkel issue (schakel 3) — voeg 'Closes #<issue>' toe of link het issue in de PR-sidebar." >&2

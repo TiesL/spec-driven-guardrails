@@ -385,6 +385,28 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: het commando gaat door, zonder blokkade
 - And: dat gebeurt zonder netwerkaanroep — de rij wordt lokaal gelezen
 
+### S64 — De merge-guard-uitweg schakelt alleen de merge-guard uit
+**Dekt:** F8
+- Given: hetzelfde commandosegment bevat zowel
+  `CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1` als een destructief git-commando
+  (bijvoorbeeld `git reset --hard`)
+- When: dat segment beoordeeld wordt
+- Then: het destructieve git-commando wordt nog steeds geblokkeerd
+- And: de uitweg schakelt uitsluitend de merge-guard uit, niet de rest van
+  git-guardrails — anders is de luide, gerichte uitweg uit AC6 in de praktijk
+  een blanco vrijbrief voor het hele segment
+
+### S65 — Waardevlaggen van `gh pr merge` schuiven het doel niet op
+**Dekt:** F8
+- Given: `gh pr merge --body "een tekst met woorden" --subject "titel"` zonder
+  expliciet PR-nummer/url/branch
+- When: de merge-guard het doel bepaalt
+- Then: hij vraagt de PR van de huidige branch op (`gh pr view` zonder
+  argument), niet `gh pr view "een tekst met woorden"`
+- And: een marker-loze PR wordt dus nog steeds geblokkeerd, in plaats van via
+  het faal-openpad (een mislukte opvraging van een niet-bestaande "PR" met die
+  naam) alsnog toegelaten te worden
+
 ---
 
 ## Skills-infrastructuur

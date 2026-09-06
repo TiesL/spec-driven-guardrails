@@ -25,6 +25,18 @@ Per entry:
   pas met de code. De conditie wordt elke sessie opnieuw geëvalueerd, zodat een
   wijziging alsnog opduikt zodra hij relevant wordt voor een project.
 - **Ja betekent** — wat er concreet gebeurt bij een `ja`.
+- **PR** — de linkback (W21, F15): de PR die dit stelt. Dat is de PR die de
+  onderliggende capability daadwerkelijk levert, niet per se de PR die deze
+  regel voor het laatst heeft aangeraakt. Bij een latere herschrijving,
+  hernoeming of splitsing (zoals `technical-debt-en-refactoring` dat in W6
+  uiteenviel in `proces-technical-debt-register` en
+  `proces-refactoring-triggers`) blijft de linkback naar de PR wijzen die het
+  ding zelf bouwde, niet naar de herstructurering van dit bestand — anders
+  wijst de helft van de entries in één klap naar dezelfde
+  "fijnmaziger maken"-PR, en dat vertelt een project niets over waaróm de vraag
+  bestaat. `./check` controleert alleen dat het veld een URL is, niet of hij
+  naar de juiste PR wijst — dat blijft mensenwerk bij het schrijven van de
+  entry.
 
 Het ID is de kop (`##`). Verander een bestaand ID nooit **als het al door
 een project beantwoord is** — projecten verwijzen ernaar in hun

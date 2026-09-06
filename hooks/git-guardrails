@@ -137,23 +137,38 @@ MERGE_REVIEW_MARKER='<!-- pre-merge-review:done -->'
 
 # Beoordeelt `gh ...`-segmenten. Alleen `pr merge` is relevant; al het overige
 # gaat ongemoeid door.
+#
+# Waardevlaggen van "gh pr merge" die het vólgende token opeisen (bron: `gh pr
+# merge --help`). Zonder deze lijst schuift bijvoorbeeld `--body "tekst"` op
+# de doelpositie (nummer/url/branch), en beoordeelt de guard de verkeerde PR
+# in plaats van de PR van de huidige branch — precies het geval waarin
+# `gh pr view <lichaamstekst>` faalt en de guard via het faal-openpad een PR
+# zonder marker alsnog doorlaat.
 beoordeel_gh_segment() {
   local arg
 
-  # -R/--repo wijst een andere repository aan dan de werkmap. Bij twijfel
-  # toestaan: dat vergt kennis over een repo die deze guard niet heeft, en een
-  # gemist geval weegt hier lichter dan een vals-positieve blokkade.
-  for arg in "$@"; do
-    case "$arg" in
-      -R|--repo|-R*|--repo=*) return 0 ;;
-    esac
-  done
-
   local posities=()
-  for arg in "$@"; do
+  while [ $# -gt 0 ]; do
+    arg="$1"
     case "$arg" in
-      -*) continue ;;
-      *) posities+=("$arg") ;;
+      -R|--repo|-R*|--repo=*)
+        # Een andere repository dan de werkmap. Bij twijfel toestaan: dat
+        # vergt kennis over een repo die deze guard niet heeft, en een gemist
+        # geval weegt hier lichter dan een vals-positieve blokkade.
+        return 0 ;;
+      -A|--author-email|-b|--body|-F|--body-file|--match-head-commit|-t|--subject)
+        [ $# -ge 2 ] || return 0
+        shift 2
+        continue ;;
+      --author-email=*|--body=*|--body-file=*|--match-head-commit=*|--subject=*)
+        shift
+        continue ;;
+      -*)
+        shift
+        continue ;;
+      *)
+        posities+=("$arg")
+        shift ;;
     esac
   done
 
@@ -166,6 +181,9 @@ beoordeel_gh_segment() {
 # $1 is het optionele doel (nummer/url/branch) dat na "merge" stond.
 controleer_merge_guard() {
   local doel="$1"
+
+  # AC6: de expliciete uitweg, gezet in beoordeel_segment (al luid gemeld).
+  [ "${merge_guard_uit:-0}" -eq 1 ] && return 0
 
   # AC5: een onderbouwde `nee` op kwaliteitsreview-voor-merge schakelt uit —
   # lokale grep, vóór enige gh-aanroep, dus zonder netwerk.
@@ -252,6 +270,12 @@ is_hele_werkmap() {
 beoordeel_segment() {
   [ $# -gt 0 ] || return 0
 
+  # Alleen relevant voor het gh-pad hieronder; hier gereset zodat elk segment
+  # met een schone lei begint. Bewust géén `return 0` bij het zetten ervan
+  # (zie hieronder): dat zou dit hele segment overslaan, dus ook een
+  # destructief git-commando dat toevallig met dezelfde var-prefix begint.
+  merge_guard_uit=0
+
   # Omgevingsvariabelen vóór het commando horen bij de aanroep, niet bij een
   # ander programma: `GIT_TRACE=1 git reset --hard` is nog steeds een
   # git-commando. Zonder deze stap omzeilt elke var-prefix de hele guard.
@@ -265,10 +289,13 @@ beoordeel_segment() {
         return 0 ;;
       CLAUDE_WORKFLOW_MERGE_GUARD_UIT=*)
         # AC6 (F8): een bewuste, luide uitweg specifiek voor de merge-guard —
-        # los van de destructieve-git-uitweg hierboven, want dit schakelt een
-        # heel andere controle over.
+        # los van de destructieve-git-uitweg hierboven. Alleen een vlag
+        # zetten, niet meteen terugkeren: dit commando kan ook (nog steeds)
+        # een destructief git-commando zijn, en dát moet gewoon beoordeeld
+        # blijven worden. controleer_merge_guard leest de vlag verderop.
         echo "waarschuwing: de merge-guard (pre-merge-review) is voor dit commando expliciet overgeslagen." >&2
-        return 0 ;;
+        merge_guard_uit=1
+        shift ;;
       [A-Za-z_]*=*) shift ;;
       *) break ;;
     esac

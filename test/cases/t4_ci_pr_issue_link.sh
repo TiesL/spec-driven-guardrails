@@ -47,4 +47,11 @@ uitvoer="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
 uitvoer="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "T4/AC4 — de eerdere PR 42 beïnvloedde de beoordeling van PR 43"
 
+# Geen faal-open bij onverwachte gh-uitvoer (gevonden in pre-merge-review op
+# PR #70): "null" of andere rommel in plaats van een getal mag dit harde slot
+# niet stilzwijgend laten slagen.
+echo null > "$fixtures/44"
+uitvoer="$(PATH="$fakebin:$PATH" "$script" 44 2>&1)"; status=$?
+[ "$status" -ne 0 ] || fail "T4 — niet-numerieke gh-uitvoer ('null') gaf exit 0 in plaats van een harde fout"
+
 test_klaar
