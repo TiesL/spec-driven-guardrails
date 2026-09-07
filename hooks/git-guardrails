@@ -34,9 +34,6 @@ fi
 # Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
 # kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
 # een ontbrekend hulpprogramma struikelt.
-# Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
-# kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
-# een ontbrekend hulpprogramma struikelt.
 invoer="$(</dev/stdin)"
 [ -n "$invoer" ] || exit 0
 

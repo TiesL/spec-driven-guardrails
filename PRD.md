@@ -1,6 +1,7 @@
 # PRD — claude-workflow, release "Van proza naar mechanisme" (ontwerp)
 
-**Status:** Voorstel/ontwerp voor nog te bouwen functionaliteit.
+**Status:** As-built voor epic #11 (gesloten, uitgeleverd 2026-09-06 — zie
+`CHANGELOG.md`); "Besloten in W29 (#53)" hieronder stuurt het lopende epic #52.
 
 Vervangt en integreert de drie afzonderlijk aangemaakte epics
 [#7](https://github.com/TiesL/claude-workflow/issues/7),
@@ -480,11 +481,7 @@ oorspronkelijke ontwerp niet zag), en levert een PRD zonder `F<n>` een
 **waarschuwing** op, geen harde fout. Een check die op dag één faalt in een van de
 vier projecten, staat op dag twee uit.
 
-*Wat deze keuze kost.* Prefix-agnostisch betekent dat élke ID-kop in de gescande
-bestanden een geldig doel is. Tennis-admin heeft `### OP5` als kop in zijn
-`PRD.md`, onder de sectie `## Open punten`. `Dekt: OP5` lost dus op en wordt niet
-gemeld, terwijl een open punt geen functionaliteit is die je kunt dekken. De
-controle toetst dát een verwijzing oplost, niet of het doel zinnig is.
+*Wat deze keuze kost*: zie "Bekende beperkingen" hieronder (het OP5-geval).
 
 De reikwijdte is wel begrensd door besluit c zelf: de collector leest alleen
 koppen uit `PRD.md` en `TEST-SCENARIOS.md`. Tennis-admins `O1`–`O5` — afgewogen
@@ -926,7 +923,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
   een private repo om een betaald plan. W27 is daarom detectie achteraf, geen
   preventie; het commando is dan al uitgevoerd.
 - Modellen delen trainingsdata, dus ook `pre-merge-review` verhoogt de bodem zonder
-  blinde vlekken uit te sluiten — die kanttekening staat al in `WORKFLOW.md`.
+  blinde vlekken uit te sluiten — die kanttekening staat al in de skill `pre-merge-review`.
 - Bash 3.2 beperkt het scriptidioom.
 - De link-integriteitscontrole uit F13 toetst dát een `Dekt:`-verwijzing oplost,
   niet of het doel zinnig is. Een verwijzing naar een open punt dat als kop in de
@@ -990,10 +987,8 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 2. **`kwaliteitsreview-voor-merge` is door geen enkel project beantwoord** en geen
    enkele PR had ooit een review. Moet W13 die entry meteen in alle vier de
    projecten voorleggen?
-3. **Genereren of samenstellen?** F4 genereert het NFR-blok ín `templates/PRD.md`
-   (ingecheckt, diffbaar, `check` bewaakt het). Alternatief: `adopt.sh` stelt het
-   blok samen bij het scaffolden, dan is er geen build-artefact maar is het sjabloon
-   niet meer standalone leesbaar. Voorstel: genereren.
+3. ~~Genereren of samenstellen?~~ Beantwoord: genereren — zie `genereer-prd-blok`
+   en F4.
 
 ---
 

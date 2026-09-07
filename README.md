@@ -11,10 +11,10 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 | `hooks/` | `git-guardrails` — de `PreToolUse`-guard tegen destructieve git-commando's én (W10b) de merge-guard op `gh pr merge` zonder review-marker. Faalt altijd open (geen `gh`/netwerk, ontbrekend hulpprogramma) — een kapotte guard mag nooit het werk blokkeren. Aangeroepen vanuit `settings/session-hooks.json`. |
 | `skills/` | De negen Claude Code skills (`pre-merge-review`, `deploy-guards`, `check-convention`, `adoption-registry`, `write-spec`, `refactoring-triggers`, `tdd-seams`, `diagnose-bug`, `adopt-workflow`) — zie de Wegwijzer in `WORKFLOW.md`. `adopt.sh` symlinkt ze per skill naar `.claude/skills/` van elk geadopteerd project. |
 | `USER-CLAUDE.md` | Korte trigger-instructie voor de automatische adoptievraag bij nieuwe projecten. Wordt gesymlinkt als `~/.claude/CLAUDE.md`. |
-| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generieke sjablonen voor het specificeren van een project (zie "Specificeren van werk" in `WORKFLOW.md`). De PRD dwingt vijftien niet-functionele vragen af en scheidt *Bekende beperkingen* van *Technical debt*; de testscenario's vragen naast happy paths ook failure paths; `ARCHITECTUUR.md` legt structurele besluiten en hun herzieningstrigger vast. Worden bij adoptie **gekopieerd**, maar alleen als het bestand daar nog niet bestaat — een al ingevuld exemplaar wordt nooit overschreven. |
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generieke sjablonen voor het specificeren van een project (zie de skill `write-spec`). De PRD dwingt vijftien niet-functionele vragen af en scheidt *Bekende beperkingen* van *Technical debt*; de testscenario's vragen naast happy paths ook failure paths; `ARCHITECTUUR.md` legt structurele besluiten en hun herzieningstrigger vast. Worden bij adoptie **gekopieerd**, maar alleen als het bestand daar nog niet bestaat — een al ingevuld exemplaar wordt nooit overschreven. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue-templates (`epic.md`, `work-item.md`, `config.yml`), qua notatie afgestemd op `PRD.md`/`TEST-SCENARIOS.md`. Worden bij elke adoptie **gekopieerd** (ververst) naar `.github/ISSUE_TEMPLATE/` van het project. |
 | `templates/CONTEXT.md` | Optioneel begrippenkader (projectjargon → betekenis), los van `ARCHITECTUUR.md` dat over structurele besluiten gaat. Wordt alleen gescaffold als het project `proces-context-document` in `CHANGES.md` met `ja` beantwoordde. |
-| `templates/ci.yml` | Generieke GitHub Actions-CI die alleen `npm run check` aanroept (zie "Testen en deployen automatiseren" in `WORKFLOW.md`). Wordt bij adoptie gescaffold, maar alleen als het project een `package.json` heeft. |
+| `templates/ci.yml` | Generieke GitHub Actions-CI die alleen `npm run check` aanroept (zie de skill `check-convention`). Wordt bij adoptie gescaffold, maar alleen als het project een `package.json` heeft. |
 | `CHANGES.md` | Lijst van adopteerbare wijzigingen: per PR-grote wijziging een gesloten vraag, een "van toepassing als"-conditie en wat "ja" betekent. Projecten leggen hun antwoord vast in hun eigen `WORKFLOW-ADOPTIE.md`. |
 | `CHANGES-ARCHIEF.md` | Geretireerde `CHANGES.md`-entries, met hun ID ongewijzigd zodat een project dat ooit antwoordde nog kan terugvinden waar die rij vandaan komt. |
 | `nfr/` | Het NFR-register: vijftien bestanden, één per niet-functioneel kenmerk (security, data-integriteit, failure modes, …). Enige bron voor zowel de `spec-*`-vragen in `CHANGES.md` als de ingevulde subsecties in `templates/PRD.md` — geen van beide meer los bijgehouden. |
@@ -43,12 +43,18 @@ De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects
    ```
    Vanaf nu vraagt Claude Code automatisch, bij het starten van een sessie in een nog niet-geadopteerd git-project, of dat project deze workflow moet gebruiken.
 
-## Een project handmatig adopteren
+## Een project adopteren
+
+Bestaand project:
 
 ```bash
 cd /pad/naar/project
 "$CLAUDE_WORKFLOW_DIR/adopt.sh"
 ```
+
+Nieuw project: eerst `gh repo create <naam> --private --source=. --remote=origin`
+(zie de skill `adopt-workflow` voor de `git init`-variant), dan dezelfde
+`adopt.sh`-stap.
 
 Dit zet `CLAUDE.md` en `.claude/settings.json` als lokale symlinks, en voegt ze toe aan `.gitignore` van dat project (het zijn machine-specifieke verwijzingen, geen project-artefacten). Bestaande bestanden op die paden worden — als het geen symlinks zijn — hernoemd naar `*.bak` in plaats van overschreven.
 
@@ -82,7 +88,7 @@ risico — zelfde soort afspraak als bij de bekende valkuil hierboven).
 Elk geadopteerd project houdt in `WORKFLOW-ADOPTIE.md` bij welke wijzigingen uit
 `CHANGES.md` het toepast. Een `SessionStart`-hook meldt wat er nog openstaat;
 Claude stelt die vragen als gesloten ja/nee-keuzes en legt het antwoord vast.
-Zie "Adoptieregistratie" in `WORKFLOW.md` voor het volledige verhaal.
+Zie de skill `adoption-registry` (bereikbaar via de Wegwijzer in `WORKFLOW.md`) voor het volledige verhaal.
 
 Handmatig nakijken kan ook:
 
@@ -95,16 +101,3 @@ De hook lokaliseert dit repo overigens via de symlink
 niet-interactieve shell laadt je `~/.zshrc` niet, dus op die variabele kan een
 hook niet rekenen.
 
-## Nieuw project opzetten
-
-```bash
-gh repo create <naam> --private --source=. --remote=origin
-"$CLAUDE_WORKFLOW_DIR/adopt.sh"
-```
-
-## Testen en deployen automatiseren
-
-Zie "Testen en deployen automatiseren" in `WORKFLOW.md` voor de conventie
-(vaste `check`/`deploy`-commandonamen, CI die alleen `check` aanroept,
-deploy als bewuste losse stap) en hierboven in deze tabel voor
-`templates/ci.yml`, het bijbehorende sjabloon.
