@@ -269,6 +269,14 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "ja" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
+## ci-poort-op-merge
+
+- **Vraag:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `kwaliteitsreview-voor-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `kwaliteitsreview-voor-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/82
+
 ## proces-technical-debt-register
 
 - **Vraag:** Houdt dit project een apart Technical debt-register bij naast Bekende beperkingen?

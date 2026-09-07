@@ -2,9 +2,15 @@
 # S75 — De merge-guard blokkeert niet als er geen checks gerapporteerd zijn.
 # Dekt: F8
 #
-# Een project zonder CI-workflow (CI is optioneel bij adoptie, zie F6/S48) mag
-# niet vastlopen op een controle die voor dat project niets te controleren
-# heeft. Geen checks is geen rode vlag.
+# Een project zonder CI-workflow (CI is optioneel bij adoptie, zie ci-conventie
+# in CHANGES.md) mag niet vastlopen op een controle die voor dat project niets
+# te controleren heeft. Geen checks is geen rode vlag.
+#
+# Gevonden bij het reviewen van PR #82: gh geeft dit geval niet terug als een
+# lege JSON-lijst, ook niet met --json. Zelfs dan blijft het zijn platte
+# tekstmelding op stderr geven, met exitstatus 1 (geverifieerd tegen een
+# echte PR zonder checks). De fake hieronder bootst dat exact na — een fake
+# die "[]" teruggaf zou een pad testen dat in het echt niet bestaat.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -24,8 +30,8 @@ case "$*" in
     printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- pre-merge-review:done -->\"}]}"
     exit 0 ;;
   "pr checks --json bucket,name")
-    printf "%s" "[]"
-    exit 0 ;;
+    echo "no checks reported on the feature/werk branch" >&2
+    exit 1 ;;
 esac
 exit 1
 ')"
