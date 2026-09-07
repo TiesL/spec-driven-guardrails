@@ -9,22 +9,16 @@
 #
 # Vereist: omgevingsvariabele SPEC_DRIVEN_GUARDRAILS_DIR, wijzend naar de
 # lokale checkout van dit repo op déze machine (zie README.md).
-# CLAUDE_WORKFLOW_DIR (de oude naam, uit vóór W32/#56) wordt als die ontbreekt
-# nog gelezen als overgangsvorm, met een waarschuwing — zie de
-# technical-debt-rij voor wanneer die val weg mag.
 
 set -euo pipefail
 
-if [ -n "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
-  CLAUDE_WORKFLOW_DIR="$SPEC_DRIVEN_GUARDRAILS_DIR"
-elif [ -n "${CLAUDE_WORKFLOW_DIR:-}" ]; then
-  echo "Waarschuwing: CLAUDE_WORKFLOW_DIR is verouderd (W32/#56) — zet SPEC_DRIVEN_GUARDRAILS_DIR." >&2
-else
+if [ -z "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
   echo "Fout: SPEC_DRIVEN_GUARDRAILS_DIR is niet ingesteld." >&2
   echo "Zet dit eenmalig in je shell-profiel, bijv.:" >&2
   echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)\"" >&2
   exit 1
 fi
+CLAUDE_WORKFLOW_DIR="$SPEC_DRIVEN_GUARDRAILS_DIR"
 
 if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
   echo "Fout: het opgegeven pad ('$CLAUDE_WORKFLOW_DIR') bevat geen WORKFLOW.md — klopt het pad?" >&2
