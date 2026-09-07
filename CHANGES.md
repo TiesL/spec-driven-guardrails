@@ -3,7 +3,7 @@
 Elke PR op dit repo die iets toevoegt waarover een project een eigen keuze moet
 maken, voegt hier één entry toe. Zonder entry stelt de voorziening in de
 projecten geen vraag en denk je ten onrechte dat je gedekt bent — zie
-"Adoptieregistratie" in `WORKFLOW.md`.
+de skill `adoption-registry`.
 
 Per entry:
 
@@ -15,7 +15,7 @@ Per entry:
   afgeleide categorie. Bepaalt alleen het startpunt: `adopt.sh` seedt
   `ja`-entries bij adoptie met een voorlopige stempel; `vraag`-entries seeden
   nooit. **Geen van beide betekent stilzwijgend accepteren** — zie de
-  onderbouwingsstap in "Specificeren van werk" in `WORKFLOW.md`: `ja`-rijen
+  onderbouwingsstap in de skill `adoption-registry`: `ja`-rijen
   moeten bij het opstellen van `PRD.md`/`ARCHITECTUUR.md` alsnog objectief
   onderbouwd worden (of omgezet naar `nee`), `vraag`-rijen krijgen een
   beargumenteerd voorstel in plaats van een blanco vraag.
@@ -51,7 +51,7 @@ niveau zou een naamloze entry worden.
 
 **Naamgeving.** Het prefix `spec-` is gereserveerd voor de vijftien NFR's —
 één per subsectie onder *Niet-functionele kenmerken* in `templates/PRD.md`,
-en niets anders. De reviewreikwijdte in `WORKFLOW.md` keyt op dat prefix, dus
+en niets anders. De reviewreikwijdte in de skill `pre-merge-review` keyt op dat prefix, dus
 een niet-NFR die `spec-` heet zou daar ten onrechte in meegesleept worden.
 Procesafspraken krijgen `proces-`, testniveaus `test-`.
 
@@ -85,9 +85,8 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Standaard:** ja
 - **Van toepassing als:** heeft-deploy-script
 - **Ja betekent:** het deployscript weigert te draaien vanuit een ongeverifieerde
-  toestand, met de voorwaarden per doelomgeving uit "Testen en deployen
-  automatiseren" in `WORKFLOW.md`. Is dat nog niet zo, maak er dan een work item
-  voor.
+  toestand, met de voorwaarden per doelomgeving uit de skill `deploy-guards`.
+  Is dat nog niet zo, maak er dan een work item voor.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/3
 
 ## ci-op-pr-en-main
@@ -287,10 +286,10 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## proces-refactoring-triggers
 
-- **Vraag:** Gelden de refactoring-triggers uit `WORKFLOW.md` voor dit project?
+- **Vraag:** Gelden de refactoring-triggers uit de skill `refactoring-triggers` voor dit project?
 - **Standaard:** ja
 - **Van toepassing als:** altijd
-- **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie "Complexiteit, technical debt en refactoring" in `WORKFLOW.md`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
+- **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie de skill `refactoring-triggers`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-diagnose-bug

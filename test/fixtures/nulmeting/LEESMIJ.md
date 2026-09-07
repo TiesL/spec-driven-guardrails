@@ -160,29 +160,6 @@ bestaan" als een openstaande). Concreet: a2t-emails 27→30, tennis-admin
 26→29, tennis-registration en tennis-invoicing elk 25→28.
 `CHANGES.md.momentopname` is in dezelfde PR (drie keer, per commit) ververst.
 
-## Bijgewerkt in W12b (#28)
-
-De echte checkouts die deze fixtures spiegelen, zijn opgeschoond (6 september
-2026) — de fixtures zelf blijven ongewijzigd, dit is puur voor wie de
-werkelijke projecten naast deze momentopname legt:
-
-- `tennis-admin/AGENTS.md` en `a2t-emails/AGENTS.md` zijn lokaal verwijderd:
-  beide waren ongetrackt, letterlijk identiek aan elkaar, en een 249-regelige
-  kopie van de vóór-W9 `WORKFLOW.md` — inmiddels vervangen door de slanke kern
-  plus skills. Geverifieerd dat ze geen unieke inhoud droegen (`diff` tegen de
-  huidige `WORKFLOW.md` toont uitsluitend verwachte verschillen: de
-  `CLAUDE.md`-naam en de latere Wegwijzer-herstructurering).
-- `tennis-admin/.codex/` en `a2t-emails/.codex/` zijn **bewust laten staan** —
-  expliciet besluit van Ties: `.codex/hooks.json` is een bewuste, werkende
-  Codex-CLI-variant van dezelfde `SessionStart`/`SessionEnd`-hooks als
-  `settings/session-hooks.json`, geen stray bestand.
-- De achtergebleven branch `chore/sessionend-push-hook` in
-  `tennis-registration` is opgeruimd (lokaal en op de remote): zijn enige
-  commit deed handmatig precies wat de gedeelde `SessionEnd`-hook nu al
-  automatisch doet, en was ver ingehaald (juli vs. september). Niet gemerged,
-  dus verwijderd met `-D`, na verificatie dat de inhoud volledig was
-  ingehaald en met expliciete bevestiging van Ties.
-
 ## Bijgewerkt voor issue #74 (ci-schakel-3-hard-slot)
 
 W19b (#32) voegde `check-pr-issue-link.sh` toe, gescaffold via `adopt.sh` en
@@ -193,10 +170,6 @@ de stap nooit vanzelf. Nieuwe entry `ci-schakel-3-hard-slot`
 maakt dat zichtbaar. Raakt `a2t-emails` en `tennis-admin` (beide hebben een
 `package.json`); `tennis-registration` en `tennis-invoicing` niet. Elk +1:
 a2t-emails 30→31, tennis-admin 29→30. `CHANGES.md.momentopname` ververst.
-
-(Deze update repareert en passant ook een dubbel geplakte alinea uit de
-W12b-sectie hierboven, restschade van een eerdere review-fix-edit — geen
-inhoudelijke wijziging aan wat daar staat.)
 
 ## Bijgewerkt in W27 (#48)
 
@@ -236,6 +209,15 @@ Een afwijking betekent één van twee dingen:
    toevoeging, verwijdering of retirement per definitie alle vier de fixtures
    (S67) — een vergeten `nfr.momentopname`-ververs is dus nooit een geval waarin
    toevallig niets verandert.
+
+**Ook een zuivere prozawijziging in `CHANGES.md`** (geen ID, predicaat of
+`Van toepassing als` geraakt — bijvoorbeeld een verwijzing die naar een skill in
+plaats van naar `WORKFLOW.md` gaat wijzen, zoals in W30) verandert de vraagset
+niet en dwingt dus geen gouden-set-update af. `CHANGES.md.momentopname` was tot
+dan toe byte-identiek aan `CHANGES.md`; ververs hem in zo'n geval toch, puur om
+die identiteit te behouden en te voorkomen dat een latere `diff` tussen de twee
+bestanden eruitziet als onopgemerkte drift in plaats van een bewuste, inhoudsloze
+verversing.
 
 Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 "opschoning".
