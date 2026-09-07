@@ -6,11 +6,13 @@
 # vereist een betaald plan op private repo's. Dit is dat slot.
 #
 # Tweede case, zelfde mechaniek: `gh pr merge` wordt geblokkeerd als de PR geen
-# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11).
-# Faal-open zonder `gh` of netwerk — de reviewcontrole is nooit het commando dat
+# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11),
+# of als de PR checks heeft die niet zijn geslaagd (issue #81 — CI faalde zes
+# runs op rij, onopgemerkt, want niets in de merge-flow keek ernaar). Faal-open
+# zonder `gh` of netwerk — geen van beide controles is ooit het commando dat
 # een sessie vastzet. Een onderbouwde `nee` op de `kwaliteitsreview-voor-merge`-
-# rij in `WORKFLOW-ADOPTIE.md` schakelt de guard voor dat project uit, lokaal
-# gelezen, zonder netwerkaanroep.
+# rij in `WORKFLOW-ADOPTIE.md` schakelt beide controles voor dat project uit,
+# lokaal gelezen, zonder netwerkaanroep.
 #
 # Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
 # `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
@@ -232,12 +234,116 @@ controleer_merge_guard() {
   fi
 
   case "$uitvoer" in
-    *"$MERGE_REVIEW_MARKER"*) return 0 ;;
-  esac
-
-  blokkeer "gh pr merge zonder review-marker" \
+    *"$MERGE_REVIEW_MARKER"*) ;;
+    *)
+      blokkeer "gh pr merge zonder review-marker" \
 "deze PR draagt de marker van pre-merge-review niet. Draai die skill eerst en
        laat de bevindingen (met marker) op de PR staan.
+
+       Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
+       controle wordt overgeslagen:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>" ;;
+  esac
+
+  controleer_ci_guard "$doel"
+}
+
+# Gevonden bij het reviewen van PR #80 (issue #81): CI faalde stelselmatig
+# sinds PR #76, zes runs op rij, en niets in de merge-flow zag het — geen
+# branch protection (private repo, geen betaald plan), en `gh pr merge`
+# waarschuwt niet bij falende checks. Zelfde mechaniek en faal-open-filosofie
+# als de review-marker-check hierboven, tweede controle in dezelfde poort.
+#
+# $1 is hetzelfde optionele doel (nummer/url/branch) als bij de marker-check.
+controleer_ci_guard() {
+  local doel="$1"
+
+  local aanroep uitvoer status
+  if [ -n "$doel" ]; then
+    aanroep=(gh pr checks "$doel" --json "bucket,name")
+  else
+    aanroep=(gh pr checks --json "bucket,name")
+  fi
+
+  # stdout en stderr apart, niet met 2>&1 samengevoegd: een routineuze
+  # stderr-regel van gh (een update-melding, een deprecatiewaarschuwing) zou
+  # anders de JSON op stdout verontreinigen. json.load faalt dan, ving eerder
+  # een brede except Exception op en liet zo een rode PR zwijgend door — geen
+  # waarschuwing, gewoon een lege bevindingenlijst. Precies dezelfde faalklasse
+  # als de bug die deze PR repareert, nu voorkomen door de streams te
+  # scheiden i.p.v. te vertrouwen op nette output.
+  #
+  # gh's eigen --json normaliseert de exitstatus van "checks falen/lopen nog"
+  # (normaal 1 resp. 8, zie `gh help exit-codes`) terug naar 0: de aanroep
+  # zelf slaagde immers, alleen de inhoud van de checks is niet groen. Een
+  # niet-nul status hier betekent dus altijd dat de opvraging zelf mislukte
+  # (geen netwerk, geen PR gevonden, geen toegang) — behalve het geval
+  # hieronder, waarin gh zelfs met --json zijn platte foutmelding teruggeeft.
+  local foutbestand fouttekst
+  foutbestand="$(mktemp)" 2>/dev/null || foutbestand=""
+  if [ -n "$foutbestand" ]; then
+    uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>"$foutbestand")"
+    status=$?
+    fouttekst="$(cat "$foutbestand" 2>/dev/null)"
+    rm -f "$foutbestand"
+  else
+    uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>/dev/null)"
+    status=$?
+    fouttekst=""
+  fi
+
+  # Geen checks gerapporteerd is geen fout en geen rode vlag: CI is optioneel
+  # (zie F6). gh geeft dat geval niet als lege JSON-lijst terug — ook met
+  # --json blijft het zijn platte tekstmelding op stderr, met exitstatus 1
+  # (geverifieerd tegen echte PR's, niet aangenomen). Dat apart vangen vóórdat
+  # het als een echte fout telt: anders krijgt elk geadopteerd project zonder
+  # CI een misleidende "geen netwerk of geen toegang"-waarschuwing op elke
+  # merge. De tekst is Engelse gh-uitvoer en dus in principe breekbaar over
+  # gh-versies heen; verandert hij, dan valt dit terug op de generieke
+  # faal-openmelding hieronder — nog steeds toestaan, alleen een minder
+  # precieze reden.
+  case "$fouttekst" in
+    "no checks reported on"*) return 0 ;;
+  esac
+
+  if [ "$status" -ne 0 ]; then
+    echo "waarschuwing: merge-guard kon de CI-status niet raadplegen (geen netwerk of geen toegang) en slaat de CI-controle over." >&2
+    [ -n "$fouttekst" ] && echo "$fouttekst" >&2
+    return 0
+  fi
+
+  # Alleen python3 filtert hier, niet gh's eigen -q: die syntax is niet
+  # gegarandeerd stabiel over gh-versies, en python3 is al een vereiste
+  # dependency van deze guard (lees-commando.py). Een parseerfout is nu een
+  # aparte, luide uitkomst — niet meer verward met "geen problemen gevonden".
+  local problemen parse_status
+  problemen="$(printf '%s' "$uitvoer" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+if not isinstance(data, list):
+    sys.exit(1)
+for item in data:
+    bucket = item.get("bucket")
+    if bucket not in ("pass", "skipping"):
+        print(str(item.get("name")) + ": " + str(bucket))
+')"
+  parse_status=$?
+
+  if [ "$parse_status" -ne 0 ]; then
+    echo "waarschuwing: merge-guard kon de CI-status niet interpreteren (onverwachte uitvoer van gh pr checks) en slaat de CI-controle over." >&2
+    return 0
+  fi
+
+  [ -n "$problemen" ] || return 0
+
+  blokkeer "gh pr merge terwijl CI niet groen is" \
+"deze PR heeft één of meer checks die niet zijn geslaagd of nog lopen:
+
+       $problemen
 
        Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
        controle wordt overgeslagen:
@@ -301,7 +407,7 @@ beoordeel_segment() {
         # zetten, niet meteen terugkeren: dit commando kan ook (nog steeds)
         # een destructief git-commando zijn, en dát moet gewoon beoordeeld
         # blijven worden. controleer_merge_guard leest de vlag verderop.
-        echo "waarschuwing: de merge-guard (pre-merge-review) is voor dit commando expliciet overgeslagen." >&2
+        echo "waarschuwing: de merge-guard (review-marker én CI-status) is voor dit commando expliciet overgeslagen." >&2
         merge_guard_uit=1
         shift ;;
       [A-Za-z_]*=*) shift ;;

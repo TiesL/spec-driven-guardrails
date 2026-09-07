@@ -325,7 +325,7 @@ De hookregel moet `if [ -x … ]; then exec …; fi; exit 0` zijn, **niet**
 `[ -x … ] && … || exit 0` — die tweede vorm slikt exit 2 in en zet de guard stil
 uit terwijl hij geïnstalleerd lijkt.
 
-### F8 — Merge-guard: geen merge zonder review-bewijs
+### F8 — Merge-guard: geen merge zonder review-bewijs én groene CI
 
 Dezelfde `PreToolUse`-mechaniek, tweede case: `gh pr merge` wordt geblokkeerd als
 de PR geen machineherkenbare review-marker draagt (zie F11). De merge is hét
@@ -333,11 +333,22 @@ choke point van de workflow, en de nulmeting (0 reviews op 27 PR's) bewijst dat
 een verplichting zonder slot daar niet werkt — waarschuwen in plaats van
 blokkeren zou dat faalpatroon herhalen.
 
-Randvoorwaarden: **faal-open** zonder `gh` of netwerk (luid melden, toestaan);
-een onderbouwde `nee`-rij voor `kwaliteitsreview-voor-merge` in
-`WORKFLOW-ADOPTIE.md` schakelt de guard voor dat project uit (lokale grep, geen
-netwerk); en er is een expliciete overrule die luid meldt wat wordt overgeslagen —
-dezelfde filosofie als bij de deploy-guards.
+**Uitgebreid met een CI-controle (issue #81).** Zes CI-runs op rij faalden
+onopgemerkt na PR #76 — PR #76, #78 en (initieel) #80 zijn allemaal rood
+gemerged, omdat niets in de merge-flow ernaar keek: dit repo heeft geen branch
+protection (privé, geen betaald plan) en `gh pr merge` waarschuwt zelf niet bij
+falende checks. Dezelfde poort die de review-marker controleert, controleert nu
+ook `gh pr checks` op de PR: elke check die niet `pass` of `skipping` is
+(faalt, of loopt nog) blokkeert de merge, met de naam van die check in de
+melding.
+
+Randvoorwaarden, voor beide controles: **faal-open** zonder `gh` of netwerk
+(luid melden, toestaan) — inclusief wanneer een project geen CI heeft
+geadopteerd (geen checks gerapporteerd is geen rode vlag, CI is optioneel, zie
+F6); een onderbouwde `nee`-rij voor `kwaliteitsreview-voor-merge` in
+`WORKFLOW-ADOPTIE.md` schakelt beide controles voor dat project uit (lokale
+grep, geen netwerk); en er is een expliciete overrule die luid meldt wat wordt
+overgeslagen — dezelfde filosofie als bij de deploy-guards.
 
 ### F9 — Skills-infrastructuur in `adopt.sh`
 
