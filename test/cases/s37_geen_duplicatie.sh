@@ -40,7 +40,7 @@ INSTR
 project="$(vers_project doelproject)"
 
 : > "$log"
-CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
   fail "S37 — adopt.sh riep predicaat_waar uit de bibliotheek niet aan"
 fi
@@ -108,7 +108,7 @@ INSTR
 project="$(vers_project doelproject)"
 
 : > "$log"
-CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
   fail "S37 — adopt.sh riep predicaat_waar uit de bibliotheek niet aan"
 fi

@@ -59,7 +59,7 @@ echo "# Werkwijze" > "$nep/WORKFLOW.md"
 cp "$bron" "$nep/CHANGES.md"
 
 project="$(vers_project doelproject)"
-CLAUDE_WORKFLOW_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
 
 tabel="$project/WORKFLOW-ADOPTIE.md"
 if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then

@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 project="$(vers_project s25)"
-CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 
 doel="$HOME/.claude/skills/adopt-workflow/SKILL.md"
 [ -f "$doel" ] || fail "S25 — $doel bestaat niet na 'adopt.sh --user'"
@@ -26,7 +26,7 @@ aantal="$(find "$HOME/.claude/skills" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' 
   || fail "S25 — het (niet-geadopteerde) project kreeg een .claude-map, terwijl adopt-workflow userbreed hoort te landen"
 
 # Tweede run: idempotent, geen kapotte link.
-CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 [ -f "$doel" ] || fail "S25 — een tweede '--user'-run liet de skill niet bestaan"
 
 # --- Regressie: een verweesde link blijft opruimbaar, ook als de skill zelf
@@ -34,12 +34,12 @@ CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/nu
 # een laadfout, want de vorige installatie liet een dode link achter.
 kaal="$(sandbox_copy_repo kaal)"
 rm -rf "$HOME/.claude"
-CLAUDE_WORKFLOW_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
 [ -L "$HOME/.claude/skills/adopt-workflow" ] \
   || fail "S25 — voorbereidende installatie (kale kopie) legde geen symlink aan"
 
 rm -rf "$kaal/skills/adopt-workflow"
-CLAUDE_WORKFLOW_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
 if [ -e "$HOME/.claude/skills/adopt-workflow" ] || [ -L "$HOME/.claude/skills/adopt-workflow" ]; then
   fail "S25 — een verweesde adopt-workflow-link op userniveau is niet opgeruimd nadat de bron verdween"
 fi
@@ -54,7 +54,7 @@ echo "# van de gebruiker zelf" > "$SANDBOX/elders-skills/eigen-skill/SKILL.md"
 mkdir -p "$HOME/.claude"
 ln -s "$SANDBOX/elders-skills" "$HOME/.claude/skills"
 
-CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 
 [ -L "$HOME/.claude/skills" ] \
   || fail "S25 — een eigen ~/.claude/skills-symlink van de gebruiker is vervangen door een echte map"

@@ -49,7 +49,7 @@ verzamel_openstaand() {
 itereer_alle_entries "$workflow_dir" verzamel_openstaand
 
 if [ ${#openstaand[@]} -gt 0 ]; then
-  echo "Openstaande workflow-wijzigingen voor dit project (zie CHANGES.md in claude-workflow):"
+  echo "Openstaande workflow-wijzigingen voor dit project (zie CHANGES.md in spec-driven-guardrails):"
   for id in "${openstaand[@]}"; do
     vraag="$(awk -v id="## $id" '
       $0 == id { in_entry = 1; next }
@@ -125,7 +125,7 @@ if [ -d "$workflow_dir/skills" ]; then
   done
   if [ -n "$ontbrekend" ]; then
     echo "Dit project mist de skill(s): $ontbrekend."
-    echo "Draai adopt.sh opnieuw vanuit claude-workflow om ze te installeren."
+    echo "Draai adopt.sh opnieuw vanuit spec-driven-guardrails om ze te installeren."
   fi
 fi
 
@@ -145,7 +145,7 @@ fi
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
   achter="$(git -C "$workflow_dir" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
   if [ "${achter:-0}" -gt 0 ]; then
-    echo "Let op: claude-workflow loopt $achter commit(s) achter op origin/main — draai daar 'git pull'."
+    echo "Let op: spec-driven-guardrails loopt $achter commit(s) achter op origin/main — draai daar 'git pull'."
   fi
 fi
 

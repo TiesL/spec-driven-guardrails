@@ -2,7 +2,7 @@
 # test/lib.sh — Gedeelde hulpfuncties voor de testsuite.
 #
 # Sourcen, niet uitvoeren. Elke test draait in een eigen sandbox met een
-# geinjecteerde HOME en CLAUDE_WORKFLOW_DIR, zodat een test nooit de echte
+# geinjecteerde HOME en SPEC_DRIVEN_GUARDRAILS_DIR, zodat een test nooit de echte
 # omgeving van de gebruiker kan raken.
 #
 # Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
@@ -45,13 +45,13 @@ sandbox_guard() {
   return 0
 }
 
-# Maakt een sandbox en zet HOME en CLAUDE_WORKFLOW_DIR erheen. Zet SANDBOX.
+# Maakt een sandbox en zet HOME en SPEC_DRIVEN_GUARDRAILS_DIR erheen. Zet SANDBOX.
 sandbox_create() {
   SANDBOX="$(mktemp -d)"
   export SANDBOX
   export HOME="$SANDBOX/home"
   mkdir -p "$HOME"
-  export CLAUDE_WORKFLOW_DIR="$SANDBOX/workflow"
+  export SPEC_DRIVEN_GUARDRAILS_DIR="$SANDBOX/workflow"
 
   # Een identiteit voor git, net zoals HOME: een test mag niet afhangen van de
   # configuratie van de machine waarop hij toevallig draait. Zonder dit slaagt
@@ -102,9 +102,9 @@ vers_project() {
 }
 
 # Adopteert de workflow in een project, met dit repo als bron. adopt.sh leest
-# alleen uit CLAUDE_WORKFLOW_DIR en schrijft uitsluitend in het project.
+# alleen uit SPEC_DRIVEN_GUARDRAILS_DIR en schrijft uitsluitend in het project.
 adopteer() {
-  CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
+  SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
 }
 
 # De openstaande ID's voor een project, alfabetisch, één per regel.

@@ -25,7 +25,7 @@ neutrale commandonamen:
 
 Projectspecifieke checks (een eigen lintregel, een domeinspecifieke
 validatie) horen thuis in het `check`-script van het project zelf, niet in
-`claude-workflow`.
+`spec-driven-guardrails`.
 
 Dit sjabloon veronderstelt npm. Voor een project op een andere stack geldt
 hetzelfde principe (vaste `check`/`deploy`-namen, CI roept alleen `check`

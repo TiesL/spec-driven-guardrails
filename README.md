@@ -1,4 +1,6 @@
-# claude-workflow
+# spec-driven-guardrails
+
+(Voorheen `claude-workflow` — hernoemd in W32/#56, zie PRD.md "Besloten in W29 (#53)", besluit 1.)
 
 Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow die Ties met Claude Code gebruikt in al zijn solo-projecten (niet in team-/werkprojecten). Voorheen stond deze workflow gedupliceerd in elk project (`CLAUDE.md` + `.claude/settings.json`), wat tot drift leidde — dit repo lost dat op.
 
@@ -27,19 +29,19 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
 
-De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `CLAUDE_WORKFLOW_DIR` per machine correct is.
+De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `SPEC_DRIVEN_GUARDRAILS_DIR` per machine correct is. (De oude naam `CLAUDE_WORKFLOW_DIR` werkt nog als overgangsvorm — zie Technical debt in `PRD.md`.)
 
 ## Eenmalige setup per machine
 
 1. Clone dit repo ergens naar keuze op de machine.
 2. Zet in je shell-profiel (`~/.zshrc` of `~/.bashrc`) één keer:
    ```bash
-   export CLAUDE_WORKFLOW_DIR="/volledig/pad/naar/claude-workflow"
+   export SPEC_DRIVEN_GUARDRAILS_DIR="/volledig/pad/naar/spec-driven-guardrails"
    ```
    Herstart je shell (of `source ~/.zshrc`) zodat de variabele actief is.
 3. Zet de userbrede adoptievraag-trigger op:
    ```bash
-   "$CLAUDE_WORKFLOW_DIR/adopt.sh" --user
+   "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --user
    ```
    Vanaf nu vraagt Claude Code automatisch, bij het starten van een sessie in een nog niet-geadopteerd git-project, of dat project deze workflow moet gebruiken.
 
@@ -49,7 +51,7 @@ Bestaand project:
 
 ```bash
 cd /pad/naar/project
-"$CLAUDE_WORKFLOW_DIR/adopt.sh"
+"$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh"
 ```
 
 Nieuw project: eerst `gh repo create <naam> --private --source=. --remote=origin`
@@ -93,10 +95,12 @@ Zie de skill `adoption-registry` (bereikbaar via de Wegwijzer in `WORKFLOW.md`) 
 Handmatig nakijken kan ook:
 
 ```bash
-"$CLAUDE_WORKFLOW_DIR/pending-changes.sh" /pad/naar/project
+"$SPEC_DRIVEN_GUARDRAILS_DIR/pending-changes.sh" /pad/naar/project
 ```
 
 De hook lokaliseert dit repo overigens via de symlink
-(`readlink .claude/settings.json`) en niet via `CLAUDE_WORKFLOW_DIR` — een
-niet-interactieve shell laadt je `~/.zshrc` niet, dus op die variabele kan een
-hook niet rekenen.
+(`readlink .claude/settings.json`) en niet via een omgevingsvariabele — een
+niet-interactieve shell laadt je `~/.zshrc` niet, dus daarop kan een hook niet
+rekenen. Wijst die symlink naar een map die niet meer bestaat (bijv. na een
+hernoeming vóór her-adoptie), dan meldt de `SessionStart`-hook dat expliciet
+in plaats van stilzwijgend geen hooks te draaien.

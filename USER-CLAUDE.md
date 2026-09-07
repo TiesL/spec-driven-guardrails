@@ -1,6 +1,6 @@
 # Gedeelde workflow — adoptievraag
 
-Dit bestand wordt gesymlinkt als `~/.claude/CLAUDE.md` (userbreed, laadt in elke sessie/project). Het bevat alleen de trigger-instructie voor het aanbieden van de gedeelde workflow uit `claude-workflow` — de workflow-inhoud zelf staat in `WORKFLOW.md`.
+Dit bestand wordt gesymlinkt als `~/.claude/CLAUDE.md` (userbreed, laadt in elke sessie/project). Het bevat alleen de trigger-instructie voor het aanbieden van de gedeelde workflow uit `spec-driven-guardrails` — de workflow-inhoud zelf staat in `WORKFLOW.md`.
 
 ## Instructie
 
@@ -18,5 +18,5 @@ toevallig relevant lijkt.
 ## Openstaande workflow-wijzigingen
 
 Meldt de `SessionStart`-hook dat er openstaande wijzigingen zijn (zie
-`CHANGES.md` in `claude-workflow`), volg dan de skill `adoption-registry` — niet
+`CHANGES.md` in `spec-driven-guardrails`), volg dan de skill `adoption-registry` — niet
 ongevraagd toepassen.

@@ -17,7 +17,7 @@ repo="$(sandbox_copy_repo)"
 # toestand en test het zijn eigen eerste regel niet meer.
 rm -rf "$repo/skills"
 project="$(vers_project doelproject)"
-CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 
 # Vooraf: zonder skills-map in het repo hoort er niets gemeld te worden.
 schoon="$SANDBOX/schoon.txt"

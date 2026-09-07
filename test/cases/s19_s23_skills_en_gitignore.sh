@@ -22,12 +22,12 @@ echo "# review" > "$bron/skills/pre-merge-review/SKILL.md"
 echo "# seams"  > "$bron/skills/tdd-seams/SKILL.md"
 
 adopteer_uit() {
-  CLAUDE_WORKFLOW_DIR="$1" "$1/adopt.sh" "$2" >/dev/null 2>&1
+  SPEC_DRIVEN_GUARDRAILS_DIR="$1" "$1/adopt.sh" "$2" >/dev/null 2>&1
 }
 
 # Zelfde, maar met de uitvoer zichtbaar en de exitstatus bruikbaar.
 adopteer_uit_luid() {
-  CLAUDE_WORKFLOW_DIR="$1" "$1/adopt.sh" "$2"
+  SPEC_DRIVEN_GUARDRAILS_DIR="$1" "$1/adopt.sh" "$2"
 }
 
 # De markers zoals adopt.sh ze schrijft, uit het script zelf gelezen in plaats
@@ -208,7 +208,7 @@ ignore_twee="$(cat "$project/.gitignore")"
 kaal="$(sandbox_copy_repo kaal)"
 rm -rf "$kaal/skills"
 project="$(vers_project s23)"
-uitvoer="$(CLAUDE_WORKFLOW_DIR="$kaal" "$kaal/adopt.sh" "$project" 2>&1)"; status=$?
+uitvoer="$(SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" "$project" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "S23 — adoptie zonder skills/ faalde met exit $status: $uitvoer"
 if [ -e "$project/.claude/skills" ]; then
   fail "S23 — er is een lege .claude/skills achtergelaten"

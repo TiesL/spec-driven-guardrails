@@ -34,7 +34,7 @@
           },
           {
             "type": "command",
-            "command": "wf=$(dirname \"$(dirname \"$(readlink .claude/settings.json 2>/dev/null)\")\") && [ -x \"$wf/pending-changes.sh\" ] && \"$wf/pending-changes.sh\" . 2>/dev/null || true",
+            "command": "doel=$(readlink .claude/settings.json 2>/dev/null); if [ -z \"$doel\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$doel\")\"); if [ ! -d \"$wf\" ]; then echo \"Waarschuwing: .claude/settings.json wijst naar een map die niet bestaat ($wf) — draai adopt.sh opnieuw vanaf de huidige checkout. Tot dan draaien er geen hooks/guardrails.\"; exit 0; fi; if [ -x \"$wf/pending-changes.sh\" ]; then \"$wf/pending-changes.sh\" . 2>/dev/null; fi; exit 0",
             "statusMessage": "openstaande workflow-wijzigingen"
           }
         ]
