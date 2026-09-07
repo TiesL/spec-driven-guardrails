@@ -1,4 +1,4 @@
-# PRD — claude-workflow, release "Van proza naar mechanisme" (ontwerp)
+# PRD — claude-workflow, release "Van proza naar mechanisme"
 
 **Status:** As-built voor epic #11 (gesloten, uitgeleverd 2026-09-06 — zie
 `CHANGELOG.md`); "Besloten in W29 (#53)" hieronder stuurt het lopende epic #52.
@@ -120,7 +120,7 @@ Levert tevens het `check`-commando dat dit repo zelf voorschrijft maar niet heef
 **Geen `package.json` toevoegen** om `templates/ci.yml` te kunnen hergebruiken:
 dat zou het eigen `heeft-package-json`-predicaat omzetten en veranderen wat de
 scripts over dit repo zeggen. CI roept `./check` rechtstreeks aan — precies het
-"andere stack"-geval dat `WORKFLOW.md` al beschrijft.
+"andere stack"-geval dat de skill `check-convention` al beschrijft.
 
 ### F2 — Vastgelegde nulmeting als fixtures
 

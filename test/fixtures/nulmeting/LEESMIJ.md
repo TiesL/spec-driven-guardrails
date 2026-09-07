@@ -210,5 +210,14 @@ Een afwijking betekent één van twee dingen:
    (S67) — een vergeten `nfr.momentopname`-ververs is dus nooit een geval waarin
    toevallig niets verandert.
 
+**Ook een zuivere prozawijziging in `CHANGES.md`** (geen ID, predicaat of
+`Van toepassing als` geraakt — bijvoorbeeld een verwijzing die naar een skill in
+plaats van naar `WORKFLOW.md` gaat wijzen, zoals in W30) verandert de vraagset
+niet en dwingt dus geen gouden-set-update af. `CHANGES.md.momentopname` was tot
+dan toe byte-identiek aan `CHANGES.md`; ververs hem in zo'n geval toch, puur om
+die identiteit te behouden en te voorkomen dat een latere `diff` tussen de twee
+bestanden eruitziet als onopgemerkte drift in plaats van een bewuste, inhoudsloze
+verversing.
+
 Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 "opschoning".

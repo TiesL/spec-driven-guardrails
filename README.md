@@ -100,4 +100,3 @@ De hook lokaliseert dit repo overigens via de symlink
 (`readlink .claude/settings.json`) en niet via `CLAUDE_WORKFLOW_DIR` — een
 niet-interactieve shell laadt je `~/.zshrc` niet, dus op die variabele kan een
 hook niet rekenen.
-
