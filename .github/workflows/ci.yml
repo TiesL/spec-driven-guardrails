@@ -24,6 +24,17 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Zonder dit blok krijgt de job het default, minimale tokenscope van dit
+    # repo — geen pull-requests:read. De main-via-PR-controle (W27, F17)
+    # roept `gh api .../commits/$sha/pulls` aan en heeft die scope nodig; zonder
+    # expliciete permissions faalt die stap altijd, niet incidenteel (issue
+    # #83 — ontdekt toen de eerste echte push-naar-main-run na PR #80 hierop
+    # struikelde, en `gh run rerun` het niet oploste). contents:read staat
+    # hier ook expliciet: zodra één permission genoemd wordt, vervalt de
+    # impliciete default voor de rest.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       - run: ./check
