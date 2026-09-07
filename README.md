@@ -29,7 +29,7 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 
 ## Waarom lokale symlinks i.p.v. gecommitte symlinks
 
-De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `SPEC_DRIVEN_GUARDRAILS_DIR` per machine correct is. (De oude naam `CLAUDE_WORKFLOW_DIR` werkt nog als overgangsvorm — zie Technical debt in `PRD.md`.)
+De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `SPEC_DRIVEN_GUARDRAILS_DIR` per machine correct is.
 
 ## Eenmalige setup per machine
 
