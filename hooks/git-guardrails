@@ -6,11 +6,13 @@
 # vereist een betaald plan op private repo's. Dit is dat slot.
 #
 # Tweede case, zelfde mechaniek: `gh pr merge` wordt geblokkeerd als de PR geen
-# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11).
-# Faal-open zonder `gh` of netwerk — de reviewcontrole is nooit het commando dat
+# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11),
+# of als de PR checks heeft die niet zijn geslaagd (issue #81 — CI faalde zes
+# runs op rij, onopgemerkt, want niets in de merge-flow keek ernaar). Faal-open
+# zonder `gh` of netwerk — geen van beide controles is ooit het commando dat
 # een sessie vastzet. Een onderbouwde `nee` op de `kwaliteitsreview-voor-merge`-
-# rij in `WORKFLOW-ADOPTIE.md` schakelt de guard voor dat project uit, lokaal
-# gelezen, zonder netwerkaanroep.
+# rij in `WORKFLOW-ADOPTIE.md` schakelt beide controles voor dat project uit,
+# lokaal gelezen, zonder netwerkaanroep.
 #
 # Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
 # `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
@@ -235,12 +237,76 @@ controleer_merge_guard() {
   fi
 
   case "$uitvoer" in
-    *"$MERGE_REVIEW_MARKER"*) return 0 ;;
-  esac
-
-  blokkeer "gh pr merge zonder review-marker" \
+    *"$MERGE_REVIEW_MARKER"*) ;;
+    *)
+      blokkeer "gh pr merge zonder review-marker" \
 "deze PR draagt de marker van pre-merge-review niet. Draai die skill eerst en
        laat de bevindingen (met marker) op de PR staan.
+
+       Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
+       controle wordt overgeslagen:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>" ;;
+  esac
+
+  controleer_ci_guard "$doel"
+}
+
+# Gevonden bij het reviewen van PR #80 (issue #81): CI faalde stelselmatig
+# sinds PR #76, zes runs op rij, en niets in de merge-flow zag het — geen
+# branch protection (private repo, geen betaald plan), en `gh pr merge`
+# waarschuwt niet bij falende checks. Zelfde mechaniek en faal-open-filosofie
+# als de review-marker-check hierboven, tweede controle in dezelfde poort.
+#
+# $1 is hetzelfde optionele doel (nummer/url/branch) als bij de marker-check.
+controleer_ci_guard() {
+  local doel="$1"
+
+  local aanroep uitvoer status
+  if [ -n "$doel" ]; then
+    aanroep=(gh pr checks "$doel" --json "bucket,name")
+  else
+    aanroep=(gh pr checks --json "bucket,name")
+  fi
+  uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>&1)"
+  status=$?
+
+  # Faal-open: geen gh (al gedekt door de controle vóór de marker-check, maar
+  # deze aanroep staat los en kan om andere redenen ook mislukken), geen
+  # netwerk, geen toegang. Bij twijfel toestaan — dezelfde grondregel als
+  # overal in dit script.
+  if [ "$status" -ne 0 ]; then
+    echo "waarschuwing: merge-guard kon de CI-status niet raadplegen (geen netwerk of geen toegang) en slaat de CI-controle over." >&2
+    echo "$uitvoer" >&2
+    return 0
+  fi
+
+  # Alleen python3 filtert hier, niet gh's eigen -q: die syntax is niet
+  # gegarandeerd stabiel over gh-versies, en python3 is al een vereiste
+  # dependency van deze guard (lees-commando.py). Geen checks gerapporteerd
+  # (leeg project, geen CI geadopteerd — CI is optioneel, zie F6) is geen rode
+  # vlag: de lijst is dan leeg en er wordt niets gevonden.
+  local problemen
+  problemen="$(printf '%s' "$uitvoer" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if not isinstance(data, list):
+    sys.exit(0)
+for item in data:
+    bucket = item.get("bucket")
+    if bucket not in ("pass", "skipping"):
+        print(str(item.get("name")) + ": " + str(bucket))
+' 2>/dev/null)"
+
+  [ -n "$problemen" ] || return 0
+
+  blokkeer "gh pr merge terwijl CI niet groen is" \
+"deze PR heeft één of meer checks die niet zijn geslaagd of nog lopen:
+
+       $problemen
 
        Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
        controle wordt overgeslagen:
