@@ -733,6 +733,33 @@ Daarbinnen nog een grens: die frontmatter is recent, en de twee machines kunnen
 verschillende Claude Code-versies draaien — controleren vóór W13 erop leunt. Bash
 3.2 is de tweede portabiliteitsgrens en beperkt het scriptidioom.
 
+**Grens tussen kern en agent-gereedschap (W31, #55).** Niveau **a — alleen
+benoemen**: deze tabel documenteert de grens die al impliciet bestaat, zonder
+een adapterlaag of contract te bouwen (zie "Besloten in W29 (#53)", besluit 2).
+
+| Agent-onafhankelijk | Claude Code-specifiek |
+|---|---|
+| Sjablonen (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTUUR.md`) | `settings/session-hooks.json` |
+| Adoptieregistratie (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
+| Het `nfr/`-register | `skills/` |
+| Traceability (`Dekt:`, `AC<n>`) | `CLAUDE.md` als symlinknaam |
+| Git-conventies, `check`, de testharnas | `.claude/`-mappenstructuur |
+
+Twee dingen die geen nette laag zijn en dat ook niet kunnen worden: de
+afdwinging zelf is agent-specifiek (een `PreToolUse`-hook bestaat bij de gratie
+van Claude Code; een andere agent heeft een ander mechanisme of geen), en de
+kern is niet gratis draagbaar (`check`, de testharnas en de scripts zijn bash
+— platformafhankelijk, niet agent-afhankelijk).
+
+`#55` specificeerde ook AC4 (een doorlopende `check`-test die de linkerkolom
+tegen `.claude/`-, `SKILL.md`- en hooknaam-verwijzingen bewaakt) en AC5 (een
+eenmalige meting van wat zonder `.claude/` nog werkt). Beide zijn **bewust
+uitgesteld**: ze verdedigen tegen een claim die nog nergens gemaakt wordt — de
+voorpagina die die claim zou kunnen maken (W35, #59) is er nog niet. Bouwen
+tegen een belofte die niet bestaat is dezelfde speculatie die niveau b/c al
+afwees (rule-of-three, zie hierboven). Trigger om alsnog te bouwen: zodra W35
+een agent-neutraliteitsclaim naar buiten toe maakt.
+
 ### Maintainability
 
 Sterk relevant — grotendeels waar de release over gaat. F3 haalt de parser- en
@@ -956,7 +983,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 | Fase 4 ontworpen zonder praktijkbewijs | Bewust overruled; W17 vervangt bewijs door menselijke review | Zodra het eerste echte work item de keten doorloopt |
 | `templates/PRD.md` wordt een build-artefact | Prijs voor het weghalen van de NFR-duplicatie; `check` bewaakt het | Als de generator meer kost dan hij bespaart |
 | Schakel 2 (scenario → issue) blijft zonder hard slot | Poort in `pre-merge-review` dekt hem; alleen schakel 3 gaat ook in CI | Als scenario's structureel zonder issue blijven |
-| Skills binden dit repo aan Claude Code | Bewuste keuze, vastgelegd onder *Portability* | Bij overstap naar een andere agent |
+| Skills binden dit repo aan Claude Code | Bewust begrensd, niveau a — zie "Grens tussen kern en agent-gereedschap (W31, #55)" onder *Portability*; AC4/AC5 uit #55 zijn bewust uitgesteld tot W35 een neutraliteitsclaim maakt | Bij overstap naar een andere agent, of zodra W35 (#59) een claim maakt die AC4/AC5 dan wél nodig heeft |
 | `templates/ci.yml` is npm-only ondanks "platformneutraal" | Bestond al; alle adopters zijn npm of hebben geen CI | Eerste adopter op een andere stack |
 | Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
 | Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | De entry `ci-op-pr-en-main` stelt de vraag, maar beantwoordt hem niet; tot dan blijft de zwakkere workflow staan | Zodra een project de vraag beantwoordt — de melding bij sessiestart houdt hem zichtbaar |
