@@ -1,4 +1,4 @@
-# Testscenario's — claude-workflow
+# Testscenario's — spec-driven-guardrails
 
 Doel: deze scenario's beschrijven het beoogde/waargenomen gedrag (zie `PRD.md`).
 Ze zijn onafhankelijk van de gekozen technische oplossing en beschrijven alleen
@@ -778,7 +778,7 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - When: de CI-workflow draait
 - Then: hij faalt, met de betreffende commit in de melding
 - And: een merge-commit die wél uit een pull request komt laat hij door
-- And: de controle geldt zowel in `claude-workflow` zelf als in elk project dat
+- And: de controle geldt zowel in `spec-driven-guardrails` zelf als in elk project dat
   met `templates/ci.yml` scaffoldt — een regel die dit repo aan anderen oplegt
   maar zelf ontloopt, is geen regel
 

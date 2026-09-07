@@ -45,7 +45,7 @@ Dat print, één per regel: `complexiteit`, `dependencies`, en daarna per
 beantwoorde NFR `<id>: <kopnaam>` — waarbij `<kopnaam>` de `###`-sectie in
 `PRD.md` is die bij het gegenereerde anker (`<!-- nfr: <id> -->`, uit F4)
 hoort. Ontbreekt dat anker, dan valt het script terug op de kopnaam uit het
-`nfr/`-register van `claude-workflow` en meldt dat op stderr — een project
+`nfr/`-register van `spec-driven-guardrails` en meldt dat op stderr — een project
 zonder ankers blokkeert de review dus niet, hij degradeert.
 
 Een NFR-regel die eindigt op `[vereist onderbouwing]` betekent: die

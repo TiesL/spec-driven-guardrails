@@ -1,36 +1,44 @@
 #!/usr/bin/env bash
-# adopt.sh — Adopteer de gedeelde claude-workflow in een project, of zet de
-# userbrede adoptievraag-trigger op (--user).
+# adopt.sh — Adopteer de gedeelde spec-driven-guardrails-workflow in een
+# project, of zet de userbrede adoptievraag-trigger op (--user).
 #
 # Gebruik:
 #   ./adopt.sh                 # adopteert de workflow in de huidige directory
 #   ./adopt.sh /pad/naar/proj   # adopteert de workflow in de opgegeven directory
 #   ./adopt.sh --user           # zet ~/.claude/CLAUDE.md symlink (eenmalig per machine)
 #
-# Vereist: omgevingsvariabele CLAUDE_WORKFLOW_DIR, wijzend naar de lokale
-# checkout van dit repo op déze machine (zie README.md).
+# Vereist: omgevingsvariabele SPEC_DRIVEN_GUARDRAILS_DIR, wijzend naar de
+# lokale checkout van dit repo op déze machine (zie README.md).
+# CLAUDE_WORKFLOW_DIR (de oude naam, uit vóór W32/#56) wordt als die ontbreekt
+# nog gelezen als overgangsvorm, met een waarschuwing — zie de
+# technical-debt-rij voor wanneer die val weg mag.
 
 set -euo pipefail
 
-if [ -z "${CLAUDE_WORKFLOW_DIR:-}" ]; then
-  echo "Fout: CLAUDE_WORKFLOW_DIR is niet ingesteld." >&2
+if [ -n "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
+  CLAUDE_WORKFLOW_DIR="$SPEC_DRIVEN_GUARDRAILS_DIR"
+elif [ -n "${CLAUDE_WORKFLOW_DIR:-}" ]; then
+  echo "Waarschuwing: CLAUDE_WORKFLOW_DIR is verouderd (W32/#56) — zet SPEC_DRIVEN_GUARDRAILS_DIR." >&2
+else
+  echo "Fout: SPEC_DRIVEN_GUARDRAILS_DIR is niet ingesteld." >&2
   echo "Zet dit eenmalig in je shell-profiel, bijv.:" >&2
-  echo "  export CLAUDE_WORKFLOW_DIR=\"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)\"" >&2
+  echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)\"" >&2
   exit 1
 fi
 
 if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
-  echo "Fout: CLAUDE_WORKFLOW_DIR ('$CLAUDE_WORKFLOW_DIR') bevat geen WORKFLOW.md — klopt het pad?" >&2
+  echo "Fout: het opgegeven pad ('$CLAUDE_WORKFLOW_DIR') bevat geen WORKFLOW.md — klopt het pad?" >&2
   exit 1
 fi
 
 # Genormaliseerd naar een absoluut pad, hier eenmalig en globaal — niet pas
 # lokaal in adopt_project(). Elke symlink die dit script zet (skills,
-# git-hooks, CLAUDE.md/settings.json) wijst naar CLAUDE_WORKFLOW_DIR; een
-# relatief pad zou zo'n symlink dangling maken (relatieve targets resolven
-# vanuit de map van de symlink zelf, niet vanuit de map waar adopt.sh vandaan
-# draaide) — en git slaat een dangling git-hook stilzwijgend over, zonder
-# enige melding. Precies de faalmodus die F17 wil uitroeien.
+# git-hooks, CLAUDE.md/settings.json) wijst naar CLAUDE_WORKFLOW_DIR (intern:
+# de geresolveerde locatie, ongeacht via welke omgevingsvariabele die
+# binnenkwam); een relatief pad zou zo'n symlink dangling maken (relatieve
+# targets resolven vanuit de map van de symlink zelf, niet vanuit de map waar
+# adopt.sh vandaan draaide) — en git slaat een dangling git-hook stilzwijgend
+# over, zonder enige melding. Precies de faalmodus die F17 wil uitroeien.
 CLAUDE_WORKFLOW_DIR="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
 
 # De bibliotheek komt uit de checkout waar dít script in staat, niet uit
@@ -274,7 +282,7 @@ skill_symlink_opruimen_indien_verweesd() {
 # Installeert de skills van dit repo als losse symlinks in het project.
 #
 # Per skill een symlink in een echte map, niet één map-symlink. Dat laatste
-# maakt de hele skills-namespace eigendom van claude-workflow, waarmee een
+# maakt de hele skills-namespace eigendom van spec-driven-guardrails, waarmee een
 # project nooit een eigen skill kan hebben zonder te de-adopteren.
 #
 # Zonder skills/-map: niets doen, en géén lege map achterlaten. De installer
@@ -313,7 +321,7 @@ installeer_skills() {
 # <project>/.git/hooks/, zodat de guard-regel ook geldt buiten Claude Code om
 # (eigen terminal, IDE, ander agent-harnas). Symlink, geen kopie: dezelfde
 # reden als bij CLAUDE.md/settings.json — de regel moet altijd de actuele
-# versie uit claude-workflow zijn, niet een momentopname.
+# versie uit spec-driven-guardrails zijn, niet een momentopname.
 #
 # AC5/S51: anders dan CLAUDE.md/settings.json (bewust ééndoelige bestanden)
 # is een eigen pre-commit/pre-push van een project een reëel scenario — een
@@ -413,7 +421,7 @@ adopt_project() {
   resolved_project="$(cd "$project_dir" && pwd)"
   resolved_workflow="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
   if [ "$resolved_project" = "$resolved_workflow" ]; then
-    echo "Dit is claude-workflow zelf — geen adoptie nodig."
+    echo "Dit is spec-driven-guardrails zelf — geen adoptie nodig."
     exit 0
   fi
 

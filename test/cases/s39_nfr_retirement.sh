@@ -15,7 +15,7 @@ project="$(vers_project doelproject)"
 
 # spec-portability heeft `Standaard: vraag`, dus hij staat na een verse adoptie
 # open. Dat is de controlewaarde.
-CLAUDE_WORKFLOW_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 # Uitvoer eerst vastleggen: `... | grep -q` sluit de pijp bij de eerste treffer,
 # waarna de producent SIGPIPE krijgt en de pijplijn onder `pipefail` non-nul
 # geeft terwijl de treffer er wél was.

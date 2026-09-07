@@ -21,7 +21,7 @@ chmod +x "$project/.git/hooks/pre-commit"
 
 # Niet via de adopteer()-helper: die gooit alle uitvoer naar /dev/null, en
 # deze test moet juist de melding zien.
-melding="$(CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project" 2>&1)"
+melding="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project" 2>&1)"
 
 # Then: die hook wordt niet overschreven zonder melding.
 if [ -L "$project/.git/hooks/pre-commit" ]; then
@@ -71,7 +71,7 @@ EOF
 chmod +x "$elders"
 ln -s "$elders" "$project2/.git/hooks/pre-push"
 
-melding2="$(CLAUDE_WORKFLOW_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project2" 2>&1)"
+melding2="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project2" 2>&1)"
 
 if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elders" ]; then
   fail "S51 — een eigen symlink-hook (naar iets anders dan claude-workflow) werd toch vervangen"

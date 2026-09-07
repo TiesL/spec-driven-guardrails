@@ -10,14 +10,14 @@ description: >
 
 ## Waarom: per wijziging een keuze per project
 
-Niet elke afspraak uit `claude-workflow` past bij elk project. Daarom legt elk
+Niet elke afspraak uit `spec-driven-guardrails` past bij elk project. Daarom legt elk
 geadopteerd project in `WORKFLOW-ADOPTIE.md` vast wélke wijzigingen het
 toepast — zodat afwijken een geregistreerde, onderbouwde uitzondering is in
 plaats van stille drift.
 
 ## Hoe een wijziging ontstaat
 
-Elke PR op `claude-workflow` die iets toevoegt waarover een project een eigen
+Elke PR op `spec-driven-guardrails` die iets toevoegt waarover een project een eigen
 keuze moet maken, **voegt een entry toe aan `CHANGES.md`** — met een gesloten
 vraag, een `Standaard` (`ja`/`vraag`), een "van toepassing als"-conditie en wat
 "ja" concreet betekent. Geen entry betekent geen vraag, en dus een vals gevoel

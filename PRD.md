@@ -14,8 +14,9 @@ geïntegreerde plan, met nieuwe inzichten uit de validatie erin verwerkt.
 
 ## Context
 
-`claude-workflow` is de gedeelde bron van waarheid voor Ties' persoonlijke
-Git/GitHub-workflow, geadopteerd door vier projecten via lokale symlinks.
+`spec-driven-guardrails` (voorheen `claude-workflow`, hernoemd in W32/#56) is de
+gedeelde bron van waarheid voor Ties' persoonlijke Git/GitHub-workflow,
+geadopteerd door vier projecten via lokale symlinks.
 
 Aanleiding is de kwaliteitsreview op PR #6 — de eerste PR waarop de eigen
 reviewregel is toegepast. Die vond vier structurele problemen (→ #7) plus een
@@ -988,6 +989,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 | Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
 | Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | De entry `ci-op-pr-en-main` stelt de vraag, maar beantwoordt hem niet; tot dan blijft de zwakkere workflow staan | Zodra een project de vraag beantwoordt — de melding bij sessiestart houdt hem zichtbaar |
 | Dit repo heeft zelf geen `WORKFLOW-ADOPTIE.md` | `adopt.sh` slaat zichzelf over; de conventies gelden hier per definitie | Als een conventie hier ooit *niet* zou moeten gelden |
+| `CLAUDE_WORKFLOW_DIR` blijft werken als overgangsvorm naast `SPEC_DRIVEN_GUARDRAILS_DIR` (W32, #56, AC5) | Beide machines (Mac Mini, MacBook Air) migreren niet gelijktijdig; zonder fallback breekt de niet-gemigreerde machine stil | Zodra beide machines bevestigd zijn gemigreerd: fallback-code in `adopt.sh` weghalen, deze rij sluiten |
 
 ---
 
