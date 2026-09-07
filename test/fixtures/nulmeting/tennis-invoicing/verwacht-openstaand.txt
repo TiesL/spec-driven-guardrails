@@ -1,4 +1,5 @@
 architectuurdocument
+ci-poort-op-merge
 kwaliteitsreview-voor-merge
 proces-context-document
 proces-diagnose-bug

@@ -429,6 +429,35 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   het faal-openpad (een mislukte opvraging van een niet-bestaande "PR" met die
   naam) alsnog toegelaten te worden
 
+### S73 — Merge wordt geblokkeerd als CI niet groen is
+**Dekt:** F8
+- Given: een PR met de review-marker, maar met een check die faalt
+- When: `gh pr merge` wordt aangeroepen
+- Then: het commando wordt geblokkeerd, met de naam van de falende check in de
+  melding
+
+### S74 — Merge gaat door als alle checks slagen
+**Dekt:** F8
+- Given: een PR met de review-marker en alle checks `pass`
+- When: `gh pr merge` wordt aangeroepen
+- Then: het commando gaat door
+
+### S75 — Geen gerapporteerde checks blokkeert niet
+**Dekt:** F8
+- Given: een PR met de review-marker, maar zonder gerapporteerde checks (geen
+  CI geadopteerd voor dat project, zie F6)
+- When: `gh pr merge` wordt aangeroepen
+- Then: het commando gaat door — geen checks is geen rode vlag
+
+### S76 — De CI-controle faalt open als de opvraging zelf mislukt
+**Dekt:** F8
+- Given: een PR met de review-marker, maar de CI-opvraging zelf mislukt (geen
+  netwerk, geen toegang)
+- When: `gh pr merge` wordt aangeroepen
+- Then: er verschijnt een luide waarschuwing dat de CI-controle is
+  overgeslagen
+- And: het commando wordt toegestaan
+
 ---
 
 ## Skills-infrastructuur

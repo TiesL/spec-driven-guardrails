@@ -85,11 +85,19 @@ sandbox_copy_repo() {
 
 # Maakt een vers, leeg git-project in de sandbox en echoot het pad. adopt.sh
 # weigert zonder .git, dus dat init'en hoort bij de opzet.
+#
+# Expliciet -b main: git's eigen default-branchnaam is niet overal gelijk.
+# Deze Mac heeft init.defaultBranch=main (Apple's Command Line Tools zetten
+# dat systeembreed); de GitHub Actions-runner heeft die override niet en valt
+# terug op "master". Scenario's die specifiek gedrag op een branch genaamd
+# `main` toetsen (S50, S54) faalden daardoor stelselmatig in CI terwijl ze
+# lokaal altijd groen waren — gevonden via issue #81, nadat CI zes runs op rij
+# rood bleek zonder dat iemand het merkte.
 vers_project() {
   local naam="$1"
   local pad="$SANDBOX/$naam"
   mkdir -p "$pad"
-  git -C "$pad" init -q
+  git -C "$pad" init -q -b main
   echo "$pad"
 }
 
