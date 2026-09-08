@@ -14,17 +14,7 @@ project="$(vers_project ci-groen)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
-fakebin="$(fake_gh_bin '
-case "$*" in
-  "pr view --json comments")
-    printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- pre-merge-review:done -->\"}]}"
-    exit 0 ;;
-  "pr checks --json bucket,name")
-    printf "%s" "[{\"name\":\"check\",\"bucket\":\"pass\"}]"
-    exit 0 ;;
-esac
-exit 1
-')"
+fakebin="$(fake_gh_merge_bin "pre-merge-review:done" "[{\"name\":\"check\",\"bucket\":\"pass\"}]")"
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"

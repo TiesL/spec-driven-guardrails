@@ -22,14 +22,7 @@ git -C "$project" checkout -q -b feature/werk
 
 # De nep-gh accepteert alleen "pr view --json comments" (geen doelargument) —
 # elk ander doel (zoals de tekst uit --body) faalt.
-fakebin="$(fake_gh_bin '
-case "$*" in
-  "pr view --json comments")
-    echo "{\"comments\":[{\"body\":\"geen marker hier\"}]}"
-    exit 0 ;;
-esac
-exit 1
-')"
+fakebin="$(fake_gh_merge_bin "" "")"
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"een tekst met woorden\" --subject titel"}}'
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"

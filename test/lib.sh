@@ -159,6 +159,65 @@ fake_gh_bin() {
   echo "$bin"
 }
 
+# Bouwt een gedeelde nep-`gh` voor merge-guard-tests. Construeert twee case-takken:
+# - "pr view --json comments" — retourneert een marker (of geen, als $1 leeg is)
+# - "pr checks --json bucket,name" — retourneert CI-checks, alleen als $2 gegeven
+#
+# $1 — marker-tekst (tekst van de <!-- pre-merge-review:MARKER --> -opmerking).
+#      Leeg = geen marker ("geen marker hier").
+#      "pre-merge-review:done" = marker aanwezig.
+# $2 — checks-JSON-antwoord (of leeg voor geen checks-case).
+#      "[...]" = checks-JSON (bijv. "[{\"name\":\"check\",\"bucket\":\"pass\"}]")
+#      "NO_CHECKS_STDERR" = checks-query geeft 1 met stderr-melding (s75)
+#      "QUERY_FAILS" = checks-query geeft 1 zonder melding (s76)
+#      "" = geen pr-checks-case maken (s15, s16, s65)
+fake_gh_merge_bin() {
+  local marker="${1:-}" checks_json="${2:-}"
+
+  # Escape the checks JSON for use in the shell script
+  local escaped_checks=""
+  if [ -n "$checks_json" ] && [ "$checks_json" != "NO_CHECKS_STDERR" ] && [ "$checks_json" != "QUERY_FAILS" ]; then
+    escaped_checks=$(printf '%s\n' "$checks_json" | sed 's/"/\\"/g')
+  fi
+
+  # Build the script content
+  local script=""
+
+  # Start with the case statement
+  script='case "$*" in'$'\n'
+  script+='  "pr view --json comments")'$'\n'
+
+  # Add the printf line for pr view comments
+  if [ -z "$marker" ]; then
+    script+='    printf "%s" "{\"comments\":[{\"body\":\"geen marker hier\"}]}"'$'\n'
+  else
+    script+='    printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- '"$marker"' -->\"}]}"'$'\n'
+  fi
+
+  script+='    exit 0 ;;'$'\n'
+
+  # Add checks case if needed
+  if [ -n "$checks_json" ]; then
+    script+='  "pr checks --json bucket,name")'$'\n'
+
+    if [ "$checks_json" = "NO_CHECKS_STDERR" ]; then
+      script+='    echo "no checks reported on the feature/werk branch" >&2'$'\n'
+      script+='    exit 1 ;;'$'\n'
+    elif [ "$checks_json" = "QUERY_FAILS" ]; then
+      script+='    exit 1 ;;'$'\n'
+    else
+      script+='    printf "%s" "'"$escaped_checks"'"'$'\n'
+      script+='    exit 0 ;;'$'\n'
+    fi
+  fi
+
+  # End the case statement
+  script+='esac'$'\n'
+  script+='exit 1'
+
+  fake_gh_bin "$script"
+}
+
 # Bouwt een PATH zonder `gh`, voor het faal-open-scenario waarin gh ontbreekt.
 # Andere gereedschappen die de guard nodig heeft (git, python3) blijven erin,
 # in tegenstelling tot minimale_path_zonder_validators hierboven.

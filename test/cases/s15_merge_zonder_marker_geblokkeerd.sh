@@ -14,14 +14,7 @@ project="$(vers_project zonder-marker)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
-fakebin="$(fake_gh_bin '
-case "$*" in
-  "pr view --json comments")
-    echo "{\"comments\":[{\"body\":\"geen marker hier\"}]}"
-    exit 0 ;;
-esac
-exit 1
-')"
+fakebin="$(fake_gh_merge_bin "" "")"
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
