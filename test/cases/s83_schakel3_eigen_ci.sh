@@ -35,4 +35,14 @@ esac
 grep -qE '^\s*pull-requests:\s*read\s*$' "$pad" \
   || fail "S83 — de check-job mist pull-requests: read"
 
+# And: issues: read. closingIssuesReferences — waar check-pr-issue-link.sh op
+# leest — is een veld over het gekoppelde issue zelf, niet over de PR.
+# Zonder issues:read levert de opvraging onder het CI-token stilzwijgend een
+# lege lijst op, ook als de koppeling echt bestaat: precies wat er op PR #105
+# gebeurde (run 34234378780) vóórdat deze regel er stond. pull-requests:read
+# alleen bleek dus niet genoeg voor schakel 3, in weerwil van wat #85/#91
+# aannam.
+grep -qE '^\s*issues:\s*read\s*$' "$pad" \
+  || fail "S83 — de check-job mist issues: read"
+
 test_klaar

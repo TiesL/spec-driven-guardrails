@@ -835,8 +835,10 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 **Dekt:** F17
 - Given: `.github/workflows/ci.yml`
 - When: een pull request tegen dit repo wordt geopend
-- Then: `check-pr-issue-link.sh` draait, op hetzelfde `pull-requests: read`-
-  tokenscope-patroon als S80
+- Then: `check-pr-issue-link.sh` draait, met zowel `pull-requests: read`
+  (S80) als `issues: read` — dat laatste is een apart gat: zonder is levert
+  `closingIssuesReferences` stilzwijgend een lege lijst op, ook als de
+  koppeling echt bestaat (ontdekt op PR #105, run 34234378780)
 - And: een PR zonder `Closes #N` (of een gelijkwaardige koppeling) in de
   PR-body faalt zichtbaar in CI, terwijl de PR nog open staat — niet pas
   achteraf zichtbaar via `pending-changes.sh` of een handmatige
