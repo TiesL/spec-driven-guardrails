@@ -988,7 +988,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 | `templates/ci.yml` is npm-only ondanks "platformneutraal" | Bestond al; alle adopters zijn npm of hebben geen CI | Eerste adopter op een andere stack |
 | Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
 | Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | De entry `ci-op-pr-en-main` stelt de vraag, maar beantwoordt hem niet; tot dan blijft de zwakkere workflow staan | Zodra een project de vraag beantwoordt — de melding bij sessiestart houdt hem zichtbaar |
-| Dit repo heeft zelf geen `WORKFLOW-ADOPTIE.md` | `adopt.sh` slaat zichzelf over; de conventies gelden hier per definitie | Als een conventie hier ooit *niet* zou moeten gelden |
+| `ARCHITECTUUR.md` en `check-traceability.sh` zijn ongebruikte root-kopieën van hun `templates/`-bron | Zelf-adoptie (#98) scaffoldt ze zoals bij elk project; dit repo regelt architectuur en traceability al anders (respectievelijk `PRD.md` zelf, en T1/T2 die `templates/check-traceability.sh` direct tegen dit repo draaien) — een uitzondering hiervoor in `adopt.sh` zou het "geen speciaal geval"-principe van #98 doorbreken | Zodra `templates/check-traceability.sh` wijzigt zonder dat iemand opmerkt dat de root-kopie meeloopt (geen test bewaakt drift tussen de twee), of als een lezer de root-kopie per ongeluk voor de bron aanziet |
 
 ---
 
