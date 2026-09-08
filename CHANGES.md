@@ -129,10 +129,16 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   vóór W19b krijgt de stap niet vanzelf — deze vraag maakt dat zichtbaar in
   plaats van stil te laten liggen. Sinds issue #85 heeft `templates/ci.yml`
   ook het `permissions: pull-requests: read`-blok dat deze stap nodig heeft —
-  zonder dat blokkeert hij elke PR. Een project dat vóór die fix scaffoldde
-  mist het blok — controleer of `pull-requests: read` ergens geldt voor de
-  `check`-job (job- of workflow-niveau) — en moet het anders handmatig
-  toevoegen of opnieuw scaffolden.
+  zonder dat blokkeert hij elke PR. Sinds issue #106 bevat dat blok ook
+  `issues: read`: `closingIssuesReferences` (waar deze stap op leest) gaat
+  over het gekoppelde issue zelf, niet over de PR, en levert zonder die
+  scope stilzwijgend een lege lijst op, ook als de koppeling echt bestaat —
+  `pull-requests: read` alleen bleek dus niet genoeg (empirisch aangetoond op
+  PR #105, hetzelfde gat maar dan in dit repo's eigen workflow, issue #99).
+  Een project dat vóór #106 scaffoldde mist `issues: read` — controleer of
+  `pull-requests: read` én `issues: read` allebei gelden voor de `check`-job
+  (job- of workflow-niveau) — en moet het anders handmatig toevoegen of
+  opnieuw scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detecteert-main-buiten-pr

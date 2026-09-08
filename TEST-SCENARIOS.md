@@ -821,7 +821,7 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: een nieuwe entry verschijnt als openstaand
 - And: een project zonder `package.json` krijgt die vraag niet
 
-### S80 — De check-job heeft leestoegang tot pull requests
+### S80 — De check-job heeft leestoegang tot pull requests en issues
 **Dekt:** F17
 - Given: `templates/ci.yml` en dit repo's eigen `.github/workflows/ci.yml`
 - When: op beide bestanden gecontroleerd wordt welke tokenscope de `check`-job
@@ -830,6 +830,13 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: zonder die scope draait `check-pr-issue-link.sh` (schakel 3) en
   `check-main-via-pr.sh` onder het default, minimale tokenscope, en falen
   beide — niet incidenteel, zoals issue #83 en #85 allebei lieten zien
+- And: `issues: read` geldt óók — een apart gat: `closingIssuesReferences`
+  (waar `check-pr-issue-link.sh` op leest) gaat over het gekoppelde issue
+  zelf, niet over de PR, en `pull-requests: read` alleen bleek daar niet
+  genoeg voor. Zonder `issues: read` levert de opvraging stilzwijgend een
+  lege lijst op, ook als de koppeling echt bestaat (ontdekt op PR #105 voor
+  dit repo's eigen workflow, issue #99; hetzelfde gat gold voor
+  `templates/ci.yml`, issue #106)
 
 ### S83 — Schakel 3 draait ook in dit repo's eigen CI
 **Dekt:** F17

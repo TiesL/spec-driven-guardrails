@@ -26,9 +26,16 @@ jobs:
     # #83/PR #84 in dit repo's eigen CI, hier meegefixt in het sjabloon).
     # contents:read staat hier ook expliciet: zodra één permission genoemd
     # wordt, vervalt de impliciete default voor de rest.
+    #
+    # issues:read is een apart gat, ontdekt ná pull-requests:read (issue
+    # #106, na dezelfde bug op PR #105 voor dit repo's eigen workflow, issue
+    # #99): closingIssuesReferences gaat over het gekoppelde issue zelf, niet
+    # over de PR. Zonder issues:read levert de opvraging stilzwijgend een
+    # lege lijst op, ook als de koppeling echt bestaat.
     permissions:
       contents: read
       pull-requests: read
+      issues: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
