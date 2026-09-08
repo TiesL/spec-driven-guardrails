@@ -38,19 +38,18 @@ case "$uitvoer" in
 esac
 [ "$status" -eq 0 ] || fail "S81 — adopt.sh tegen zichzelf gaf exitstatus $status: $uitvoer"
 
+# Exacte vergelijking, niet een */WORKFLOW.md-patroon: dat laatste zou ook
+# slagen als de symlink per ongeluk naar WORKFLOW.md in het échte repo buiten
+# de sandbox wijst in plaats van naar de sandboxkopie zelf.
 [ -L "$repo/CLAUDE.md" ] || fail "S81 — CLAUDE.md is geen symlink na zelf-adoptie"
 doel_claude="$(readlink "$repo/CLAUDE.md" 2>/dev/null)"
-case "$doel_claude" in
-  */WORKFLOW.md) ;;
-  *) fail "S81 — CLAUDE.md wijst niet naar WORKFLOW.md: $doel_claude" ;;
-esac
+[ "$doel_claude" = "$repo/WORKFLOW.md" ] \
+  || fail "S81 — CLAUDE.md wijst niet naar de sandboxkopie van WORKFLOW.md: $doel_claude"
 
 [ -L "$repo/.claude/settings.json" ] || fail "S81 — .claude/settings.json is geen symlink na zelf-adoptie"
 doel_settings="$(readlink "$repo/.claude/settings.json" 2>/dev/null)"
-case "$doel_settings" in
-  */settings/session-hooks.json) ;;
-  *) fail "S81 — .claude/settings.json wijst niet naar settings/session-hooks.json: $doel_settings" ;;
-esac
+[ "$doel_settings" = "$repo/settings/session-hooks.json" ] \
+  || fail "S81 — .claude/settings.json wijst niet naar de sandboxkopie van settings/session-hooks.json: $doel_settings"
 
 # And: geen enkel bestaand, gecommit bestand verandert.
 [ "$(cat "$repo/PRD.md")" = "$before_prd" ] \
