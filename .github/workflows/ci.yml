@@ -35,6 +35,15 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      # closingIssuesReferences (waar check-pr-issue-link.sh op leest) is een
+      # veld over het gekoppelde issue zelf, niet over de PR — zonder
+      # issues:read levert de GraphQL-opvraging een lege lijst op, ook als de
+      # koppeling écht bestaat (ontdekt op PR #105: gh pr view gaf lokaal,
+      # met een volledig geautoriseerd token, wél "99" terug, maar dezelfde
+      # aanroep faalde in CI onder het toen nog niet-uitgebreide
+      # GITHUB_TOKEN). pull-requests:read alleen is dus niet genoeg voor
+      # schakel 3, in weerwil van wat issue #85/#91 aannam.
+      issues: read
     steps:
       - uses: actions/checkout@v4
       - run: ./check
