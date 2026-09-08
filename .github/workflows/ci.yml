@@ -38,6 +38,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./check
+      - name: PR verwijst naar issue (schakel 3)
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./templates/check-pr-issue-link.sh "${{ github.event.pull_request.number }}"
       - name: Commit op main komt uit een PR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:

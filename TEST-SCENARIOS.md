@@ -831,6 +831,17 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   `check-main-via-pr.sh` onder het default, minimale tokenscope, en falen
   beide — niet incidenteel, zoals issue #83 en #85 allebei lieten zien
 
+### S83 — Schakel 3 draait ook in dit repo's eigen CI
+**Dekt:** F17
+- Given: `.github/workflows/ci.yml`
+- When: een pull request tegen dit repo wordt geopend
+- Then: `check-pr-issue-link.sh` draait, op hetzelfde `pull-requests: read`-
+  tokenscope-patroon als S80
+- And: een PR zonder `Closes #N` (of een gelijkwaardige koppeling) in de
+  PR-body faalt zichtbaar in CI, terwijl de PR nog open staat — niet pas
+  achteraf zichtbaar via `pending-changes.sh` of een handmatige
+  `pre-merge-review`, zoals bij PR's #96/#97 (2026-09-08) gebeurde
+
 ---
 
 ## Zelf-adoptie
