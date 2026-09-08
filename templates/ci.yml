@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     # Zonder dit blok krijgt de job het default, minimale tokenscope van het
     # geadopteerde project — geen pull-requests:read. "PR verwijst naar issue"
-    # (schakel 3, hard slot) roept `gh api .../issues/$nr/timeline` aan en
-    # heeft die scope nodig; zonder expliciete permissions blokkeert die stap
-    # elke PR, niet incidenteel (issue #85 — hetzelfde gat als issue #83/PR #84
-    # in dit repo's eigen CI, hier meegefixt in het sjabloon). contents:read
-    # staat hier ook expliciet: zodra één permission genoemd wordt, vervalt de
-    # impliciete default voor de rest.
+    # (schakel 3, hard slot) roept `gh pr view --json closingIssuesReferences`
+    # aan en heeft die scope nodig; zonder expliciete permissions blokkeert die
+    # stap elke PR, niet incidenteel (issue #85 — hetzelfde gat als issue
+    # #83/PR #84 in dit repo's eigen CI, hier meegefixt in het sjabloon).
+    # contents:read staat hier ook expliciet: zodra één permission genoemd
+    # wordt, vervalt de impliciete default voor de rest.
     permissions:
       contents: read
       pull-requests: read

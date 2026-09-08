@@ -130,8 +130,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   plaats van stil te laten liggen. Sinds issue #85 heeft `templates/ci.yml`
   ook het `permissions: pull-requests: read`-blok dat deze stap nodig heeft —
   zonder dat blokkeert hij elke PR. Een project dat vóór die fix scaffoldde
-  (herkenbaar: `ci.yml` heeft geen `permissions:`-sleutel op job-niveau) mist
-  dat blok en moet het handmatig toevoegen of opnieuw scaffolden.
+  mist het blok — controleer of `pull-requests: read` ergens geldt voor de
+  `check`-job (job- of workflow-niveau) — en moet het anders handmatig
+  toevoegen of opnieuw scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detecteert-main-buiten-pr
@@ -152,9 +153,13 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   `ci.yml` nooit, dus een
   project dat die al had vóór W27 krijgt de stap niet vanzelf — deze vraag
   maakt dat zichtbaar. Sinds issue #85 heeft `templates/ci.yml` ook het
-  `permissions: pull-requests: read`-blok dat schakel 3 hierboven nodig heeft;
-  `check-main-via-pr.sh` had het al via `contents: read`. Een project dat vóór
-  die fix scaffoldde mist het blok en moet het handmatig toevoegen of opnieuw
+  `permissions: pull-requests: read`-blok dat `check-main-via-pr.sh` nodig
+  heeft — het ontbreken ervan is precies wat issue #83 blootlegde: die
+  controle riep `gh api .../commits/$sha/pulls` aan en faalde onder het
+  default, minimale tokenscope (dat al wél `contents: read` bevat). Een
+  project dat vóór die fix scaffoldde mist het blok — controleer of
+  `pull-requests: read` ergens geldt voor de `check`-job (job- of
+  workflow-niveau) — en moet het anders handmatig toevoegen of opnieuw
   scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
