@@ -106,7 +106,7 @@ seed_adoptietabel() {
   {
     echo "# Adoptie van gedeelde workflow-wijzigingen"
     echo
-    echo "Per wijziging uit \`CHANGES.md\` in [claude-workflow](https://github.com/TiesL/claude-workflow)"
+    echo "Per wijziging uit \`CHANGES.md\` in [spec-driven-guardrails](https://github.com/TiesL/spec-driven-guardrails)"
     echo "of dit project hem toepast. Geen rij betekent: (nog) niet van toepassing —"
     echo "de vraag verschijnt vanzelf zodra dat verandert."
     echo

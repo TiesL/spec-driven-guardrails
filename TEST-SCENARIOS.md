@@ -854,6 +854,13 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: een tweede `adopt.sh`-aanroep is idempotent — geen fouten, geen
   dubbele `.gitignore`-regels
 
+### S82 — Een verse WORKFLOW-ADOPTIE.md noemt de juiste repo-naam
+**Dekt:** F3
+- Given: een vers geadopteerd project
+- When: `adopt.sh` `WORKFLOW-ADOPTIE.md` aanmaakt
+- Then: de header verwijst naar `spec-driven-guardrails`
+- And: niet naar `claude-workflow` — de naam van vóór de W32-hernoeming (#56)
+
 ---
 
 ## Werk veiligstellen zonder sessie-einde
