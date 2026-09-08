@@ -127,7 +127,11 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   over een extra stap die hij daarnaast uitvoert. `scaffold_if_missing`
   overschrijft een bestaande `ci.yml` nooit, dus een project dat die al had
   vóór W19b krijgt de stap niet vanzelf — deze vraag maakt dat zichtbaar in
-  plaats van stil te laten liggen.
+  plaats van stil te laten liggen. Sinds issue #85 heeft `templates/ci.yml`
+  ook het `permissions: pull-requests: read`-blok dat deze stap nodig heeft —
+  zonder dat blokkeert hij elke PR. Een project dat vóór die fix scaffoldde
+  (herkenbaar: `ci.yml` heeft geen `permissions:`-sleutel op job-niveau) mist
+  dat blok en moet het handmatig toevoegen of opnieuw scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detecteert-main-buiten-pr
@@ -147,7 +151,11 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   twijfel juist doorlaten. `scaffold_if_missing` overschrijft een bestaande
   `ci.yml` nooit, dus een
   project dat die al had vóór W27 krijgt de stap niet vanzelf — deze vraag
-  maakt dat zichtbaar.
+  maakt dat zichtbaar. Sinds issue #85 heeft `templates/ci.yml` ook het
+  `permissions: pull-requests: read`-blok dat schakel 3 hierboven nodig heeft;
+  `check-main-via-pr.sh` had het al via `contents: read`. Een project dat vóór
+  die fix scaffoldde mist het blok en moet het handmatig toevoegen of opnieuw
+  scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
 ## traceability-schakel-1
