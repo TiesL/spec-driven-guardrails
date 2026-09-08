@@ -159,6 +159,50 @@ fake_gh_bin() {
   echo "$bin"
 }
 
+# Bouwt een gedeelde nep-`gh` voor de merge-guard-tests die een letterlijke
+# marker en een letterlijk checks-antwoord teruggeven — de twee uniforme
+# gevallen. Bewust smal: geen sentinel-waarden, geen afwijkende foutvormen.
+# Een test met een eigen foutvorm (S75, S76 — een niet-nul exit van
+# `pr checks`, met of zonder stderr-melding) bouwt die zelf met `fake_gh_bin`,
+# net als vóór deze helper (W95, na review: een sentinel-gestuurde variant
+# hiervan werd afgewezen als precies de generieke templating-oplossing die
+# W95 zelf uitsloot).
+#
+# $1 — marker-tekst. Leeg = geen marker ("geen marker hier"); anders komt de
+#      tekst letterlijk in de `<!-- ... -->`-opmerking terecht.
+# $2 — checks-JSON-antwoord, of leeg om geen "pr checks"-tak te bouwen
+#      (S15, S16, S65 vragen daar niet naar).
+fake_gh_merge_bin() {
+  local marker="${1:-}" checks_json="${2:-}"
+  local comments_body
+  if [ -z "$marker" ]; then
+    comments_body='geen marker hier'
+  else
+    comments_body="bevindingen\\n<!-- $marker -->"
+  fi
+
+  local script
+  script='case "$*" in
+  "pr view --json comments")
+    printf "%s" "{\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
+    exit 0 ;;'
+
+  if [ -n "$checks_json" ]; then
+    local escaped_checks
+    escaped_checks="$(printf '%s' "$checks_json" | sed 's/"/\\"/g')"
+    script+='
+  "pr checks --json bucket,name")
+    printf "%s" "'"$escaped_checks"'"
+    exit 0 ;;'
+  fi
+
+  script+='
+esac
+exit 1'
+
+  fake_gh_bin "$script"
+}
+
 # Bouwt een PATH zonder `gh`, voor het faal-open-scenario waarin gh ontbreekt.
 # Andere gereedschappen die de guard nodig heeft (git, python3) blijven erin,
 # in tegenstelling tot minimale_path_zonder_validators hierboven.
