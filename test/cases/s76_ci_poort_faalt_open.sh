@@ -18,7 +18,16 @@ project="$(vers_project ci-query-faalt)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
-fakebin="$(fake_gh_merge_bin "pre-merge-review:done" "QUERY_FAILS")"
+fakebin="$(fake_gh_bin '
+case "$*" in
+  "pr view --json comments")
+    printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- pre-merge-review:done -->\"}]}"
+    exit 0 ;;
+  "pr checks --json bucket,name")
+    exit 1 ;;
+esac
+exit 1
+')"
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"

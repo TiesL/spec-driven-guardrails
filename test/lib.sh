@@ -159,61 +159,46 @@ fake_gh_bin() {
   echo "$bin"
 }
 
-# Bouwt een gedeelde nep-`gh` voor merge-guard-tests. Construeert twee case-takken:
-# - "pr view --json comments" — retourneert een marker (of geen, als $1 leeg is)
-# - "pr checks --json bucket,name" — retourneert CI-checks, alleen als $2 gegeven
+# Bouwt een gedeelde nep-`gh` voor de merge-guard-tests die een letterlijke
+# marker en een letterlijk checks-antwoord teruggeven — de twee uniforme
+# gevallen. Bewust smal: geen sentinel-waarden, geen afwijkende foutvormen.
+# Een test met een eigen foutvorm (S75, S76 — een niet-nul exit van
+# `pr checks`, met of zonder stderr-melding) bouwt die zelf met `fake_gh_bin`,
+# net als vóór deze helper (W95, na review: een sentinel-gestuurde variant
+# hiervan werd afgewezen als precies de generieke templating-oplossing die
+# W95 zelf uitsloot).
 #
-# $1 — marker-tekst (tekst van de <!-- pre-merge-review:MARKER --> -opmerking).
-#      Leeg = geen marker ("geen marker hier").
-#      "pre-merge-review:done" = marker aanwezig.
-# $2 — checks-JSON-antwoord (of leeg voor geen checks-case).
-#      "[...]" = checks-JSON (bijv. "[{\"name\":\"check\",\"bucket\":\"pass\"}]")
-#      "NO_CHECKS_STDERR" = checks-query geeft 1 met stderr-melding (s75)
-#      "QUERY_FAILS" = checks-query geeft 1 zonder melding (s76)
-#      "" = geen pr-checks-case maken (s15, s16, s65)
+# $1 — marker-tekst. Leeg = geen marker ("geen marker hier"); anders komt de
+#      tekst letterlijk in de `<!-- ... -->`-opmerking terecht.
+# $2 — checks-JSON-antwoord, of leeg om geen "pr checks"-tak te bouwen
+#      (S15, S16, S65 vragen daar niet naar).
 fake_gh_merge_bin() {
   local marker="${1:-}" checks_json="${2:-}"
-
-  # Escape the checks JSON for use in the shell script
-  local escaped_checks=""
-  if [ -n "$checks_json" ] && [ "$checks_json" != "NO_CHECKS_STDERR" ] && [ "$checks_json" != "QUERY_FAILS" ]; then
-    escaped_checks=$(printf '%s\n' "$checks_json" | sed 's/"/\\"/g')
-  fi
-
-  # Build the script content
-  local script=""
-
-  # Start with the case statement
-  script='case "$*" in'$'\n'
-  script+='  "pr view --json comments")'$'\n'
-
-  # Add the printf line for pr view comments
+  local comments_body
   if [ -z "$marker" ]; then
-    script+='    printf "%s" "{\"comments\":[{\"body\":\"geen marker hier\"}]}"'$'\n'
+    comments_body='geen marker hier'
   else
-    script+='    printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- '"$marker"' -->\"}]}"'$'\n'
+    comments_body="bevindingen\\n<!-- $marker -->"
   fi
 
-  script+='    exit 0 ;;'$'\n'
+  local script
+  script='case "$*" in
+  "pr view --json comments")
+    printf "%s" "{\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
+    exit 0 ;;'
 
-  # Add checks case if needed
   if [ -n "$checks_json" ]; then
-    script+='  "pr checks --json bucket,name")'$'\n'
-
-    if [ "$checks_json" = "NO_CHECKS_STDERR" ]; then
-      script+='    echo "no checks reported on the feature/werk branch" >&2'$'\n'
-      script+='    exit 1 ;;'$'\n'
-    elif [ "$checks_json" = "QUERY_FAILS" ]; then
-      script+='    exit 1 ;;'$'\n'
-    else
-      script+='    printf "%s" "'"$escaped_checks"'"'$'\n'
-      script+='    exit 0 ;;'$'\n'
-    fi
+    local escaped_checks
+    escaped_checks="$(printf '%s' "$checks_json" | sed 's/"/\\"/g')"
+    script+='
+  "pr checks --json bucket,name")
+    printf "%s" "'"$escaped_checks"'"
+    exit 0 ;;'
   fi
 
-  # End the case statement
-  script+='esac'$'\n'
-  script+='exit 1'
+  script+='
+esac
+exit 1'
 
   fake_gh_bin "$script"
 }
