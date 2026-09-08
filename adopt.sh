@@ -411,14 +411,10 @@ adopt_project() {
     exit 1
   fi
 
-  local resolved_project resolved_workflow
-  resolved_project="$(cd "$project_dir" && pwd)"
-  resolved_workflow="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
-  if [ "$resolved_project" = "$resolved_workflow" ]; then
-    echo "Dit is spec-driven-guardrails zelf — geen adoptie nodig."
-    exit 0
-  fi
-
+  # spec-driven-guardrails adopteert bewust ook zichzelf (issue #98): geen
+  # uitzondering hier, één mechanisme voor elk doel. Zonder dit stond dit
+  # repo's eigen checkout zonder de git-guardrails-hook en de merge-guard —
+  # F7/F8 golden dus nooit voor de bron die ze zelf specificeert.
   mkdir -p "$project_dir/.claude"
 
   backup_if_real_file "$project_dir/CLAUDE.md"

@@ -833,6 +833,29 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ---
 
+## Zelf-adoptie
+
+### S81 — spec-driven-guardrails kan zichzelf adopteren
+**Dekt:** F7, F8
+- Given: een sandboxkopie van dit repo, gebruikt als zowel
+  `SPEC_DRIVEN_GUARDRAILS_DIR` als adoptiedoel
+- When: `adopt.sh` daartegen draait
+- Then: hij adopteert daadwerkelijk — `CLAUDE.md` en `.claude/settings.json`
+  zijn symlinks naar zijn eigen `WORKFLOW.md` en
+  `settings/session-hooks.json` — in plaats van de weigering "geen adoptie
+  nodig" te tonen
+- And: geen enkel bestaand, gecommit bestand (`PRD.md`, `TEST-SCENARIOS.md`,
+  `check`, ...) verandert
+- And: de git-guardrails-hook is daarna functioneel: een gefabriceerde
+  `PreToolUse`-aanroep die een directe `git push origin main` voorstelt,
+  wordt geweigerd — dezelfde controle die geadopteerde projecten krijgen
+- And: de native git-hooks zijn ook geïnstalleerd en weigeren een directe
+  `git push origin main` buiten Claude Code om (zelfde patroon als S50)
+- And: een tweede `adopt.sh`-aanroep is idempotent — geen fouten, geen
+  dubbele `.gitignore`-regels
+
+---
+
 ## Werk veiligstellen zonder sessie-einde
 
 ### S54 — Sessiestart meldt dat `main` is uitgecheckt

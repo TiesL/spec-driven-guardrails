@@ -79,7 +79,18 @@ sandbox_destroy() {
 sandbox_copy_repo() {
   local doel="$SANDBOX/${1:-repo}"
   mkdir -p "$doel"
-  (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$doel" && tar -xf -)
+  # Sinds spec-driven-guardrails zichzelf adopteert (issue #98) heeft de echte
+  # checkout CLAUDE.md/.claude/settings.json/.claude/skills als absolute
+  # symlinks terug naar zichzelf. tar kopieert een symlink als symlink, dus
+  # zonder deze uitsluiting zou elke sandboxkopie een symlink bevatten die
+  # naar de échte werkkopie buiten de sandbox wijst — precies de
+  # isolatiegarantie doorbreken die sandbox_guard() elders afdwingt. Dezelfde
+  # drie paden als het .gitignore-beheerde blok (schrijf_gitignore_blok):
+  # gitignored omdat ze machine-specifiek zijn, dus ook hier geen onderdeel
+  # van een "schone" repo-snapshot.
+  (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./CLAUDE.md' \
+    --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) \
+    | (cd "$doel" && tar -xf -)
   echo "$doel"
 }
 

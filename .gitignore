@@ -1,0 +1,5 @@
+# claude-workflow: begin — beheerd blok, niet met de hand bewerken
+CLAUDE.md
+.claude/settings.json
+.claude/skills/
+# claude-workflow: eind
