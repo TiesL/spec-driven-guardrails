@@ -821,6 +821,16 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: een nieuwe entry verschijnt als openstaand
 - And: een project zonder `package.json` krijgt die vraag niet
 
+### S80 — De check-job heeft leestoegang tot pull requests
+**Dekt:** F17
+- Given: `templates/ci.yml` en dit repo's eigen `.github/workflows/ci.yml`
+- When: op beide bestanden gecontroleerd wordt welke tokenscope de `check`-job
+  krijgt
+- Then: `pull-requests: read` geldt voor die job, op job- of workflow-niveau
+- And: zonder die scope draait `check-pr-issue-link.sh` (schakel 3) en
+  `check-main-via-pr.sh` onder het default, minimale tokenscope, en falen
+  beide — niet incidenteel, zoals issue #83 en #85 allebei lieten zien
+
 ---
 
 ## Werk veiligstellen zonder sessie-einde
