@@ -25,7 +25,7 @@ Dit project wordt vanaf meerdere computers ontwikkeld. Volg deze workflow in elk
 
 ## Afronden
 
-1. Zodra de wijziging klaar en getest is (en, waar van toepassing, handmatig geverifieerd): open een PR met `gh pr create`.
+1. Zodra de wijziging klaar en getest is (en, waar van toepassing, handmatig geverifieerd): open een PR met `gh pr create`. Verwijst de PR naar een issue (`Closes #N`), zet die koppeling dan in de **PR-beschrijving zelf**, niet alleen in een commitboodschap: GitHub vult `closingIssuesReferences` — het veld waarop issue-koppeling-controles daadwerkelijk toetsen — uitsluitend uit de PR-titel/-body. Een commit met `Closes #N` sluit het issue weliswaar bij een merge naar `main`, maar zo'n controle ziet de koppeling dan niet terwijl de PR nog open staat.
 2. **Draai een kwaliteitsreview** vóór de merge — zie de skill `pre-merge-review`.
 3. **Wacht op expliciete bevestiging van Ties** dat de test geslaagd is en er geen regressie is, vóór je merget. Merg nooit automatisch zonder die bevestiging.
 4. Merge daarna met `gh pr merge --squash --delete-branch` — dit houdt de historie op `main` overzichtelijk en ruimt de branch (lokaal en remote) direct op.
