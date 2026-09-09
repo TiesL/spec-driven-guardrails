@@ -65,7 +65,7 @@ if [ ${#openstaand[@]} -gt 0 ]; then
     fi
     echo "  - $id — $vraag"
   done
-  echo "Record a yes/no answer per change in WORKFLOW-ADOPTIE.md."
+  echo "Record a ja/nee answer per change in WORKFLOW-ADOPTIE.md."
 fi
 
 # A seeded row is not yet a decision. adopt.sh sets every applicable

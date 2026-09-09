@@ -76,7 +76,7 @@ trap 'rm -f "$scriptlijst"' EXIT
 
 while IFS= read -r -d '' script; do
   if ! foutmelding="$(bash -n "$script" 2>&1)"; then
-    melden_fout "syntaxfout in ${script#"$doel"/}: $foutmelding"
+    melden_fout "syntax error in ${script#"$doel"/}: $foutmelding"
   fi
 done < "$scriptlijst"
 
@@ -90,21 +90,21 @@ json_bestand="$doel/settings/session-hooks.json"
 if [ -f "$json_bestand" ]; then
   if command -v jq >/dev/null 2>&1; then
     if ! foutmelding="$(jq empty "$json_bestand" 2>&1)"; then
-      melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
+      melden_fout "invalid JSON in settings/session-hooks.json: $foutmelding"
     fi
   elif command -v python3 >/dev/null 2>&1; then
     if ! foutmelding="$(python3 -m json.tool "$json_bestand" 2>&1 >/dev/null)"; then
-      melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
+      melden_fout "invalid JSON in settings/session-hooks.json: $foutmelding"
     fi
   else
     # Deliberately a hard error, not a warning. This is a purely local check
     # on a file that's symlinked into four projects; reporting "fine"
     # without having verified it is the silent degradation this repo pays
     # for most dearly. Install jq or python3.
-    melden_fout "geen jq en geen python3 — settings/session-hooks.json kon niet gevalideerd worden"
+    melden_fout "no jq and no python3 — settings/session-hooks.json couldn't be validated"
   fi
 else
-  melden_fout "settings/session-hooks.json ontbreekt"
+  melden_fout "settings/session-hooks.json is missing"
 fi
 
 # --- 3. NFR register versus the generated template block --------------------
@@ -121,18 +121,18 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
     # from *all* consumers at once, and then the drift check sees nothing:
     # both sides miss it after all.
     if ! problemen="$(nfr_valideer "$doel/nfr")"; then
-      melden_fout "het NFR-register is niet volledig:"
+      melden_fout "the NFR register is incomplete:"
       printf '%s\n' "$problemen" | sed 's/^/    /' >&2
     fi
 
     if afwijkend="$(nfr_drift "$doel/nfr" "$doel/templates/PRD.md")"; then
       :
     else
-      melden_fout "templates/PRD.md loopt uit de pas met nfr/ — draai ./genereer-prd-blok"
+      melden_fout "templates/PRD.md is out of sync with nfr/ — run ./genereer-prd-blok"
       printf '%s\n' "$afwijkend" | sed 's/^/    betreft: /' >&2
     fi
   else
-    melden_fout "lib/nfr.sh ontbreekt of is onleesbaar — NFR-register niet gecontroleerd"
+    melden_fout "lib/nfr.sh is missing or unreadable — NFR register not checked"
   fi
 fi
 
@@ -148,7 +148,7 @@ if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
     [ -f "$bron" ] || continue
     ontbrekend="$(pr_links_ontbrekend "$bron")"
     if [ -n "$ontbrekend" ]; then
-      melden_fout "${bron#"$doel"/} mist een **PR:**-veld bij:"
+      melden_fout "${bron#"$doel"/} is missing a **PR:** field at:"
       printf '%s\n' "$ontbrekend" | sed 's/^/    - /' >&2
     fi
   done
@@ -163,7 +163,7 @@ if [ -n "$pyscripts" ]; then
     echo "check: python syntax"
     for script in $pyscripts; do
       if ! foutmelding="$(python3 -m py_compile "$script" 2>&1)"; then
-        melden_fout "syntaxfout in ${script#"$doel"/}: $foutmelding"
+        melden_fout "syntax error in ${script#"$doel"/}: $foutmelding"
       fi
     done
     find "$doel" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null

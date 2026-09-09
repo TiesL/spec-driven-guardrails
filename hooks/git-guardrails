@@ -348,7 +348,7 @@ for item in data:
   [ -n "$problemen" ] || return 0
 
   blokkeer "gh pr merge while CI isn't green" \
-"this PR has one or more checks that failed or are still running:
+"this PR has one or more checks that haven't succeeded or are still running:
 
        $problemen
 

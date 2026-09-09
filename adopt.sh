@@ -158,14 +158,14 @@ schrijf_gitignore_blok() {
   # can make.
   if ! marker_probleem="$(awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
     $0 == begin {
-      if (diepte > 0) { print "een tweede beginmarker op regel " NR " terwijl het vorige blok nog niet gesloten is"; exit 1 }
+      if (diepte > 0) { print "a second begin marker on line " NR " while the previous block is not closed yet"; exit 1 }
       diepte++; next
     }
     $0 == eind {
-      if (diepte == 0) { print "een eindmarker op regel " NR " zonder bijbehorende beginmarker"; exit 1 }
+      if (diepte == 0) { print "an end marker on line " NR " with no matching begin marker"; exit 1 }
       diepte--; next
     }
-    END { if (diepte > 0) { print "een beginmarker zonder eindmarker"; exit 1 } }
+    END { if (diepte > 0) { print "a begin marker with no end marker"; exit 1 } }
   ' "$gitignore")"; then
     echo "adopt.sh: $gitignore has a corrupted managed block — $marker_probleem." >&2
     echo "adopt.sh: the file was not touched. Fix the markers by hand and run again." >&2
