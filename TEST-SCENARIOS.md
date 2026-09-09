@@ -883,6 +883,23 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ---
 
+## Installatie
+
+### S84 — install.sh installeert een gepinde versie, niet de actuele main
+**Dekt:** F17
+- Given: een kloon van dit repo met een tag op een oudere staat, gevolgd door
+  een nieuwere commit
+- When: `install.sh <tag>` daartegen draait
+- Then: de checkout staat na afloop op de gepinde commit, niet op de nieuwere
+  inhoud
+- And: een vieze werkmap (niet-gecommitte wijzigingen) wordt geweigerd, zonder
+  iets uit te checken — anders zou `git checkout` ze stilzwijgend weggooien
+- And: een onbekende tag faalt met een duidelijke melding
+- And: zonder argument wordt de laatste tag gebruikt, expliciet gemeld op
+  stdout — nooit stilzwijgend
+
+---
+
 ## Werk veiligstellen zonder sessie-einde
 
 ### S54 — Sessiestart meldt dat `main` is uitgecheckt

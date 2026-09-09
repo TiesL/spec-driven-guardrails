@@ -31,7 +31,7 @@ Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow 
 
 De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `SPEC_DRIVEN_GUARDRAILS_DIR` per machine correct is.
 
-## Eenmalige setup per machine
+## Eenmalige setup per machine (Ties' eigen gebruik: altijd `main` volgen)
 
 1. Clone dit repo ergens naar keuze op de machine.
 2. Zet in je shell-profiel (`~/.zshrc` of `~/.bashrc`) één keer:
@@ -44,6 +44,34 @@ De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects
    "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --user
    ```
    Vanaf nu vraagt Claude Code automatisch, bij het starten van een sessie in een nog niet-geadopteerd git-project, of dat project deze workflow moet gebruiken.
+
+Deze checkout blijft `main` volgen — dit is Ties' eigen, doorlopende
+multi-machine-gebruik. Wil je in plaats daarvan een specifieke, gepinde
+versie (zie hieronder), dan geldt die setup in plaats van stap 1-2 hierboven.
+
+## Een gepinde versie installeren (voor een andere gebruiker dan Ties)
+
+Wil je niet elke wijziging op `main` live meekrijgen, maar op een specifieke,
+getagde release blijven staan tot je zelf besluit te upgraden:
+
+1. Clone dit repo (zoals hierboven, stap 1).
+2. Draai vanuit die kloon:
+   ```bash
+   ./install.sh          # pint op de laatste tag
+   ./install.sh <tag>     # pint op een specifieke tag
+   ```
+   `install.sh` weigert te draaien op een vieze werkmap (niet-gecommitte
+   wijzigingen), en meldt duidelijk welke tag hij koos of waarom een
+   opgegeven tag niet bestaat.
+3. Volg de instructie die `install.sh` aan het eind print: zet
+   `SPEC_DRIVEN_GUARDRAILS_DIR` naar deze kloon in je shell-profiel (stap 2
+   hierboven, ongewijzigd) en zet desgewenst de user-brede trigger op (stap 3
+   hierboven).
+
+Upgraden naar een nieuwere release: draai `install.sh <nieuwe-tag>` opnieuw
+in dezelfde kloon. Dit is functioneel gelijk aan Ties' eigen setup — beide
+resulteren in een checkout waar `adopt.sh` op dezelfde manier tegen draait —
+alleen volgt deze kloon nooit automatisch `main`.
 
 ## Een project adopteren
 
