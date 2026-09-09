@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# hooks/pre-push — Native git-hook (W26, F17): dekt pushes naar main die
-# buiten Claude Code om gebeuren. Zie hooks/pre-commit voor de volledige
-# toelichting op dit mechanisme; dit bestand herhaalt alleen wat voor push
-# anders is.
+# hooks/pre-push — Native git hook (W26, F17): covers pushes to main that
+# happen outside Claude Code. See hooks/pre-commit for the full explanation
+# of this mechanism; this file only repeats what's different for push.
 #
-# Geïnstalleerd door adopt.sh als symlink naar dit bestand in
+# Installed by adopt.sh as a symlink to this file at
 # <project>/.git/hooks/pre-push.
 #
-# Contract (git pre-push): aangeroepen als `pre-push <remote-naam> <remote-url>`,
-# met op stdin per te pushen ref een regel
-# "<lokale ref> <lokale sha> <remote ref> <remote sha>". Exitstatus != 0
-# weigert de hele push.
+# Contract (git pre-push): called as `pre-push <remote-name> <remote-url>`,
+# with one line per ref to be pushed on stdin,
+# "<local ref> <local sha> <remote ref> <remote sha>". Exit status != 0
+# refuses the entire push.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 

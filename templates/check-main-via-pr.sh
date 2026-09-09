@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
-# templates/check-main-via-pr.sh — CI detecteert commits op main die niet uit
-# een PR komen (W27, F17). Detectie, geen preventie: het commando is dan al
-# uitgevoerd. De lokale hooks (W10, W26) voorkomen; dit vangt op wat er op een
-# andere machine of met een ander gereedschap doorheen glipt — het enige
-# mechanisme dat werkt zonder GitHub Pro/publieke repo (serverzijdige branch
-# protection is dan dicht).
+# templates/check-main-via-pr.sh — CI detects commits on main that didn't
+# come from a PR (W27, F17). Detection, not prevention: the command has
+# already run by then. The local hooks (W10, W26) prevent; this catches
+# what slips through on a different machine or with a different tool — the
+# only mechanism that works without GitHub Pro/a public repo (server-side
+# branch protection is then unavailable).
 #
-# Aanroepen vanuit CI, op het push-naar-main-event, met de SHA als argument:
+# Called from CI, on the push-to-main event, with the SHA as argument:
 #
 #   ./check-main-via-pr.sh "$GITHUB_SHA"
 #
-# Beoordeelt alleen déze push, geen audit over de geschiedenis — zelfde reden
-# als bij check-pr-issue-link.sh (W19b): een retrofit die op dag één rood
-# staat leert je de melding te negeren.
+# Judges only *this* push, no audit over history — same reason as
+# check-pr-issue-link.sh (W19b): a retrofit that's red on day one teaches
+# you to ignore the message.
 #
-# Geen faal-open: kan de herkomst niet worden vastgesteld (geen API-antwoord,
-# ontbrekende rechten), dan faalt de controle met de reden erbij. Dat is
-# bewust het omgekeerde van de lokale git-hooks (S58): een lokale hook die
-# faalt houdt werk tegen dat allang legitiem kan zijn, een CI-controle die
-# stil groen wordt meldt "niets aan de hand" terwijl hij niets weet.
+# No fail-open: if the origin can't be established (no API answer, missing
+# permissions), the check fails with the reason attached. That's
+# deliberately the opposite of the local git hooks (S58): a local hook that
+# fails blocks work that could already be entirely legitimate, a CI check
+# that silently turns green reports "nothing wrong" while it knows nothing.
 #
-# Vereist gh + een token met leestoegang; op GitHub Actions is GITHUB_TOKEN
-# gratis beschikbaar.
+# Requires gh + a token with read access; on GitHub Actions, GITHUB_TOKEN is
+# available for free.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
@@ -36,10 +36,11 @@ fi
 
 aantal="$(gh api "repos/{owner}/{repo}/commits/$sha/pulls" --jq 'length' 2>/dev/null)"
 
-# Alles behalve een schoon niet-negatief getal is "kon niet vaststellen" — ook
-# lege uitvoer. Zonder deze check faalt de vergelijking hieronder stil (bash
-# meldt een geheeltallige-expressie-fout, maar set -e staat uit) en loopt het
-# script door naar exit 0 — precies het faal-openpad dat dit script uitsluit.
+# Anything other than a clean non-negative number is "couldn't establish"
+# — including empty output. Without this check, the comparison below fails
+# silently (bash reports an integer-expression error, but set -e is off)
+# and the script runs through to exit 0 — exactly the fail-open path this
+# script rules out.
 case "$aantal" in
   ''|*[!0-9]*)
     echo "check-main-via-pr: kon de herkomst van commit $sha niet vaststellen." >&2
