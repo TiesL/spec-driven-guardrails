@@ -1,50 +1,54 @@
 ---
 name: tdd-seams
 description: >
-  Test-first werken op vooraf afgesproken seams: rood-vóór-groen-discipline en
-  de drie met naam benoemde anti-patronen om te vermijden (implementatie-
-  gekoppeld, tautologisch, horizontaal slicen). Gebruik dit bij het schrijven
-  van tests, of wanneer je twijfelt of een test het juiste toetst.
+  Test-first work on pre-agreed seams: red-before-green discipline and the
+  three named anti-patterns to avoid (implementation-coupled,
+  tautological, horizontal slicing). Use this when writing tests, or when
+  unsure whether a test checks the right thing.
 ---
 
-## Seams, niet interne details
+## Seams, not internal details
 
-Een seam is het publieke grensvlak waarop een test mag aangrijpen — een
-functiesignatuur, een CLI-aanroep, een API-response. Nooit een interne
-implementatiestap. Spreek de seam vooraf af, niet achteraf tijdens het
-schrijven van de test: wie eerst de implementatie schrijft en dan een seam kiest
-die daar toevallig bij past, test de implementatie na in plaats van het gedrag.
+A seam is the public boundary a test may act on — a function signature, a
+CLI call, an API response. Never an internal implementation step. Agree on
+the seam beforehand, not afterward while writing the test: whoever writes
+the implementation first and then picks a seam that happens to fit it is
+testing the implementation after the fact, not the behavior.
 
-## Rood-vóór-groen
+## Red-before-green
 
-De test staat eerst, en staat aantoonbaar rood vóór er ook maar één regel
-implementatie bijkomt. Dat is niet een volgorde-voorkeur maar het enige bewijs
-dat de test iets echt toetst: een test die je nooit hebt zien falen, kan ook
-niet falen wanneer het gedrag breekt. Dit repo past dat op zichzelf toe (zie
-"Rood vóór groen" in `TEST-SCENARIOS.md`) — elk nieuw scenario staat eerst rood,
-op de regressiescenario's R1–R9 na, die juist groen horen te zijn.
+The test comes first, and is demonstrably red before a single line of
+implementation is added. That's not an ordering preference but the only
+proof that the test actually checks something: a test you've never seen
+fail also can't fail when the behavior breaks. This repo applies that to
+itself (see "Rood vóór groen" in `TEST-SCENARIOS.md`) — every new scenario
+starts red, except the regression scenarios R1-R9, which are supposed to
+be green.
 
-## Drie anti-patronen, met naam
+## Three anti-patterns, named
 
-**Implementatie-gekoppeld.** De test kent interne details (een privé-functie,
-een tussenliggende datastructuur, de volgorde van interne aanroepen) in plaats
-van alleen de seam. Zo'n test breekt bij elke refactor die het gedrag intact
-laat — en beloont dus code die nooit meer aangeraakt wordt, niet code die
-correct is.
+**Implementation-coupled.** The test knows internal details (a private
+function, an intermediate data structure, the order of internal calls)
+instead of only the seam. Such a test breaks on every refactor that leaves
+behavior intact — and so rewards code that's never touched again, not code
+that's correct.
 
-**Tautologisch.** De test herhaalt de implementatie in plaats van het gedrag te
-toetsen — bijvoorbeeld een mock die precies teruggeeft wat de test verwacht, of
-een assertie die letterlijk dezelfde berekening uitvoert als de code zelf. Zo'n
-test kan per constructie niet rood staan, en bewijst dus niets.
+**Tautological.** The test repeats the implementation instead of checking
+the behavior — for example, a mock that returns exactly what the test
+expects, or an assertion that performs literally the same calculation as
+the code itself. Such a test can't be red by construction, and so proves
+nothing.
 
-**Horizontaal slicen in plaats van verticale slices.** Tests per laag (alle
-repository-tests, dan alle service-tests, dan alle controller-tests) in plaats
-van per gedrag, van seam tot seam. Horizontaal slicen laat een half werkend
-scenario groen ogen omdat elke laag apart getest is, terwijl de lagen samen het
-gedrag nog niet leveren — verticaal, één scenario tegelijk, voorkomt dat.
+**Horizontal slicing instead of vertical slices.** Tests per layer (all
+repository tests, then all service tests, then all controller tests)
+instead of per behavior, seam to seam. Horizontal slicing makes a half-
+working scenario look green because each layer was tested separately,
+while the layers together don't yet deliver the behavior — vertical, one
+scenario at a time, prevents that.
 
-## Verhouding tot `test-unit`/`test-feature-gwt`
+## Relationship to `test-unit`/`test-feature-gwt`
 
-Die twee `CHANGES.md`-entries vragen alleen óf een project tests heeft. Deze
-skill schrijft *hoe* — een aparte, aanvullende adoptievraag (`test-tdd-seams`),
-zodat een project er een eigen onderbouwde keuze over maakt.
+Those two `CHANGES.md` entries only ask *whether* a project has tests.
+This skill writes *how* — a separate, additional adoption question
+(`test-tdd-seams`), so a project makes its own substantiated choice about
+it.

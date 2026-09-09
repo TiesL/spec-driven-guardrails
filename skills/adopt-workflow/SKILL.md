@@ -1,46 +1,46 @@
 ---
 name: adopt-workflow
 description: >
-  De adoptievraag: of een project de gedeelde workflow uit
-  spec-driven-guardrails moet gebruiken, en hoe je een nieuw (gerelateerd)
-  project opzet. User-level
-  skill, geïnstalleerd door `adopt.sh --user`. Gebruik dit bij sessiestart in
-  een git-project dat nog niet geadopteerd is, of bij het opzetten van een
-  nieuw project.
+  The adoption question: whether a project should use the shared workflow
+  from spec-driven-guardrails, and how to set up a new (related) project.
+  User-level
+  skill, installed by `adopt.sh --user`. Use this at session start in a
+  git project that isn't adopted yet, or when setting up a new project.
 ---
 
-## De adoptievraag
+## The adoption question
 
-Check bij het starten van een sessie in een directory die een git-repository is:
+Check at the start of a session in a directory that is a git repository:
 
-1. Is dit repo zelf `spec-driven-guardrails`? Zo ja: sla deze check over.
-2. Heeft dit project al een `CLAUDE.md` die een symlink is naar
-   `spec-driven-guardrails/WORKFLOW.md`? Zo ja: al geadopteerd, sla deze check
-   over.
-3. Is er al een bekende keuze voor dit project vastgelegd in het
-   geheugensysteem (eerder "ja" of "nee" beantwoord)? Zo ja: volg die keuze
-   zonder opnieuw te vragen.
-4. Anders: vraag Ties eenmalig of dit project de gedeelde persoonlijke
-   workflow (`spec-driven-guardrails`) moet gebruiken.
-   - **Ja** → voer `spec-driven-guardrails/adopt.sh` uit vanuit de root van
-     dit project (vereist dat `SPEC_DRIVEN_GUARDRAILS_DIR` als
-     omgevingsvariabele is ingesteld — zie `spec-driven-guardrails/README.md`
-     als dat nog niet zo is).
-   - **Nee** → laat het project ongemoeid: eigen conventies van het project
-     blijven leidend, of geen specifieke workflow-afspraak.
-   - Leg de keuze (ja/nee, en voor welk project) vast als geheugen, zodat niet
-     elke sessie opnieuw gevraagd wordt.
+1. Is this repo itself `spec-driven-guardrails`? If so: skip this check.
+2. Does this project already have a `CLAUDE.md` that is a symlink to
+   `spec-driven-guardrails/WORKFLOW.md`? If so: already adopted, skip this
+   check.
+3. Is there already a known choice for this project recorded in the memory
+   system (previously answered "yes" or "no")? If so: follow that choice
+   without asking again.
+4. Otherwise: ask Ties once whether this project should use the shared
+   personal workflow (`spec-driven-guardrails`).
+   - **Yes** → run `spec-driven-guardrails/adopt.sh` from the root of this
+     project (requires `SPEC_DRIVEN_GUARDRAILS_DIR` to be set as an
+     environment variable — see `spec-driven-guardrails/README.md` if it
+     isn't yet).
+   - **No** → leave the project alone: the project's own conventions
+     remain leading, or there's no specific workflow agreement.
+   - Record the choice (yes/no, and for which project) as memory, so the
+     question isn't asked again every session.
 
-Deze vraag is bewust *niet* stilzwijgend/automatisch afgedwongen —
-team- of werkprojecten die niet van Ties alleen zijn, horen deze workflow niet
-ongevraagd te krijgen.
+This question is deliberately *not* silent/automatically enforced — team
+or work projects that don't belong to Ties alone shouldn't receive this
+workflow unsolicited.
 
-## Nieuw (gerelateerd) project opzetten
+## Setting up a new (related) project
 
-1. `gh repo create <naam> --private --source=. --remote=origin` — maakt in één
-   stap een lege GitHub-repo aan, initialiseert git lokaal (`git init`) en
-   koppelt de remote (`git remote add origin <URL>`). Gebruik `git init` +
-   `git remote add origin <URL>` los van elkaar alleen als de GitHub-repo al
-   bestaat of buiten `gh` om is aangemaakt.
-2. Deze gedeelde workflow adopteren via `adopt.sh` in dit repo
-   (`spec-driven-guardrails`) — zie de adoptievraag hierboven en `README.md`.
+1. `gh repo create <name> --private --source=. --remote=origin` — creates
+   an empty GitHub repo, initializes git locally (`git init`), and adds
+   the remote (`git remote add origin <URL>`) in one step. Use `git init`
+   + `git remote add origin <URL>` separately only if the GitHub repo
+   already exists or was created outside `gh`.
+2. Adopt this shared workflow via `adopt.sh` in this repo
+   (`spec-driven-guardrails`) — see the adoption question above and
+   `README.md`.

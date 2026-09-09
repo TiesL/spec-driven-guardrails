@@ -44,6 +44,6 @@ fi
 # AC2 — write-spec verwijst naar CONTEXT.md en wanneer je het bijwerkt.
 writespec="$TEST_REPO_ROOT/skills/write-spec/SKILL.md"
 assert_contains "S70/AC2 — write-spec noemt CONTEXT.md" "CONTEXT.md" "$(cat "$writespec")"
-assert_contains "S70/AC2 — write-spec zegt wanneer je hem bijwerkt" "bijwerk" "$(cat "$writespec")"
+assert_contains "S70/AC2 — write-spec zegt wanneer je hem bijwerkt" "Update it" "$(cat "$writespec")"
 
 test_klaar

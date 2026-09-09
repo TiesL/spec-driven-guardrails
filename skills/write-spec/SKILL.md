@@ -1,55 +1,56 @@
 ---
 name: write-spec
 description: >
-  Hoe werk gespecificeerd wordt: PRD.md en TEST-SCENARIOS.md bijhouden, werk
-  opsplitsen in GitHub issues, en de Dekt:-conventie (tokengrammatica,
-  traceability) die scenario's aan functionaliteit koppelt. Gebruik dit bij het
-  opstellen van issues, PRD-secties of testscenario's.
+  How work gets specified: keeping PRD.md and TEST-SCENARIOS.md up to
+  date, splitting work into GitHub issues, and the Dekt:-convention
+  (token grammar, traceability) that links scenarios to functionality.
+  Use this when drafting issues, PRD sections, or test scenarios.
 ---
 
-## Specificeren van werk (PRD, testscenario's, issues)
+## Specifying work (PRD, test scenarios, issues)
 
-1. Elk project houdt een `PRD.md` (as-built of ontwerp) en
-   `TEST-SCENARIOS.md` (Given/When/Then) bij — zie `templates/` in dit
-   repo voor de vorm. Bij adoptie van een nieuw project scaffold `adopt.sh`
-   beide automatisch als ze nog niet bestaan.
-2. Werk wordt vanuit de PRD opgesplitst in GitHub issues: één `Epic`-issue
-   voor het geheel, `Work item`-issues per te bouwen onderdeel (zie
+1. Every project keeps a `PRD.md` (as-built or design) and
+   `TEST-SCENARIOS.md` (Given/When/Then) — see `templates/` in this repo
+   for the format. When a new project is adopted, `adopt.sh` scaffolds
+   both automatically if they don't exist yet.
+2. Work is split from the PRD into GitHub issues: one `Epic` issue for the
+   whole, `Work item` issues per part to be built (see
    `templates/ISSUE_TEMPLATE/`).
-3. Elk work-item-issue heeft eigen Given/When/Then-acceptatiecriteria en
-   verwijst naar de bijbehorende scenario's in `TEST-SCENARIOS.md` — zo is
-   elk issue direct bruikbaar om de gebouwde software tegen te testen.
-4. `PRD.md`/`TEST-SCENARIOS.md` zijn levende documenten: bijwerken zodra de
-   implementatie ervan afwijkt (zoals nu al gebeurt in tennis-registration
-   en tennis-invoicing).
+3. Every work-item issue has its own Given/When/Then acceptance criteria
+   and refers to the matching scenarios in `TEST-SCENARIOS.md` — so every
+   issue is directly usable to test the built software against.
+4. `PRD.md`/`TEST-SCENARIOS.md` are living documents: update them as soon
+   as the implementation diverges from them (as already happens in
+   tennis-registration and tennis-invoicing).
 
-Voor de onderbouwingsplicht bij het opstellen of herzien van
-`PRD.md`/`ARCHITECTUUR.md` — de skill `adoption-registry`.
+For the substantiation requirement when drafting or revising
+`PRD.md`/`ARCHITECTUUR.md` — see the `adoption-registry` skill.
 
-Heeft dit project een `CONTEXT.md` (projectjargon → betekenis, los van de
-structurele besluiten in `ARCHITECTUUR.md`)? Werk hem dan bij zodra een nieuwe
-term ontstaat of een bestaande van betekenis verandert — niet in één keer
-proberen compleet te maken.
+Does this project have a `CONTEXT.md` (project jargon → meaning, separate
+from the structural decisions in `ARCHITECTUUR.md`)? Update it as soon as a
+new term arises or an existing one changes meaning — don't try to make it
+complete in one pass.
 
-## Dekking vastleggen met `Dekt:`
+## Recording coverage with `Dekt:`
 
-Elk testscenario draagt een `**Dekt:**`-veld onder zijn kop, met de
-functionaliteit uit `PRD.md` die het beschrijft. Komma-gescheiden bij meer dan
-één. De tokenvorm is een vaste grammatica: `^[A-Z]{1,2}[0-9]+[a-z]?$` —
-bijvoorbeeld `F1`, `S2` of `S2b`. Twee beginletters mag ook (`OP4`), en die
-staart-letter (`S2b`) is bestaand gebruik, geen slordigheid.
+Every test scenario carries a `**Dekt:**` field under its heading, with
+the functionality from `PRD.md` it describes. Comma-separated when there's
+more than one. The token form is a fixed grammar: `^[A-Z]{1,2}[0-9]+[a-z]?$`
+— for example `F1`, `S2`, or `S2b`. Two leading letters is also allowed
+(`OP4`), and that trailing letter (`S2b`) is existing usage, not sloppiness.
 
-Twee regels die je niet moet omzeilen. **Het prefix ligt niet vast**: `F`/`S` is
-gebruikelijk, maar een project dat zijn scenario's `R`/`A`/`B`/`P` nummert werkt
-ongewijzigd — de controle toetst dat een token oplost naar een bestaande kop,
-niet welke letter ervoor staat. En **alleen het veld telt**: een ID dat in
-lopende tekst voorkomt is geen verwijzing, anders zou elke zin die toevallig
-"S1" noemt een dekking opleveren die er niet is.
+Two rules you shouldn't work around. **The prefix isn't fixed**: `F`/`S` is
+customary, but a project that numbers its scenarios `R`/`A`/`B`/`P` works
+unchanged — the check verifies that a token resolves to an existing
+heading, not which letter comes before it. And **only the field counts**:
+an ID that appears in running text isn't a reference, otherwise any
+sentence that happens to mention "S1" would produce coverage that isn't
+really there.
 
-`check-traceability.sh` controleert dit offline, aangeroepen vanuit het `check`
-van het project. Hij is niet retroactief: zolang geen enkel scenario het veld
-draagt, waarschuwt hij alleen. Maar let op wat dat betekent — zodra het eerste
-veld er staat, geldt de eis voor **alle** functionaliteit in de PRD, ook voor
-items die niets met dat werk te maken hebben. Vul je het veld voor het eerst in
-een project met een bestaande achterstand in, doe dat dan in een PR waarin je
-die achterstand ook aanpakt of bewust als schuld vastlegt.
+`check-traceability.sh` checks this offline, invoked from the project's
+`check`. It isn't retroactive: as long as no scenario carries the field, it
+only warns. But note what that means — once the first field appears, the
+requirement applies to **all** functionality in the PRD, even items
+unrelated to that piece of work. If you fill in the field for the first
+time in a project with an existing backlog, do so in a PR that also
+addresses that backlog or deliberately records it as debt.

@@ -1,76 +1,79 @@
 ---
 name: adoption-registry
 description: >
-  Adoptieregistratie en de onderbouwingsplicht: hoe een project per wijziging
-  in WORKFLOW-ADOPTIE.md vastlegt wat het toepast, en hoe je een openstaande
-  of nog te onderbouwen rij afhandelt (spec-rakend vs. puur procesmatig).
-  Gebruik dit wanneer een sessie openstaande workflow-wijzigingen meldt, of
-  bij het opstellen/herzien van PRD.md of ARCHITECTUUR.md.
+  Adoption registry and the substantiation requirement: how a project
+  records per change in WORKFLOW-ADOPTIE.md what it applies, and how to
+  handle a pending or still-to-be-substantiated row (spec-touching vs.
+  purely procedural). Use this when a session reports pending workflow
+  changes, or when drafting/revising PRD.md or ARCHITECTUUR.md.
 ---
 
-## Waarom: per wijziging een keuze per project
+## Why: a choice per change, per project
 
-Niet elke afspraak uit `spec-driven-guardrails` past bij elk project. Daarom legt elk
-geadopteerd project in `WORKFLOW-ADOPTIE.md` vast wélke wijzigingen het
-toepast — zodat afwijken een geregistreerde, onderbouwde uitzondering is in
-plaats van stille drift.
+Not every agreement from `spec-driven-guardrails` fits every project. That's
+why every adopted project records in `WORKFLOW-ADOPTIE.md` which changes it
+applies — so deviating is a registered, substantiated exception instead of
+silent drift.
 
-## Hoe een wijziging ontstaat
+## How a change comes into being
 
-Elke PR op `spec-driven-guardrails` die iets toevoegt waarover een project een eigen
-keuze moet maken, **voegt een entry toe aan `CHANGES.md`** — met een gesloten
-vraag, een `Standaard` (`ja`/`vraag`), een "van toepassing als"-conditie en wat
-"ja" concreet betekent. Geen entry betekent geen vraag, en dus een vals gevoel
-van dekking; let hier bij review op.
+Every PR on `spec-driven-guardrails` that adds something a project must make
+its own choice about **adds an entry to `CHANGES.md`** — with a closed
+question, a `Standaard` (`ja`/`vraag`), an "applies when" condition, and what
+`ja` concretely means. No entry means no question, and thus a false sense of
+coverage; watch for this during review.
 
-`Standaard: ja` vs. `Standaard: vraag` bepaalt alleen het startpunt, niet of
-onderbouwing nodig is. Bij adoptie van een nieuw project zet `adopt.sh` elke op
-dat moment toepasselijke `Standaard: ja`-wijziging op "ja — vereist
-onderbouwing" (een voorlopige stempel, geen besluit); `Standaard: vraag`-
-wijzigingen worden nooit automatisch beantwoord. Een ontbrekende rij betekent
-"(nog) niet van toepassing": wordt de conditie later alsnog waar — een project
-krijgt bijvoorbeeld een deploycommando — dan verschijnt de vraag vanzelf. Een
-`nee`-rij is een bewuste, onderbouwde uitzondering en blijft staan tot je hem
-handmatig weghaalt.
+`Standaard: ja` vs. `Standaard: vraag` only determines the starting point,
+not whether substantiation is needed. When a new project is adopted,
+`adopt.sh` sets every currently applicable `Standaard: ja` change to
+"`ja` — requires substantiation" (a provisional stamp, not a decision);
+`Standaard: vraag` changes are never answered automatically. A missing row
+means "not (yet) applicable": if the condition later becomes true — for
+example, a project gets a deploy command — the question appears on its own.
+A `nee` row is a deliberate, substantiated exception and stays in place
+until you remove it manually.
 
-## Wanneer de vraag verschijnt
+## When the question appears
 
-Bij sessiestart meldt een hook welke wijzigingen voor dít project van
-toepassing zijn en nog geen antwoord hebben (of nog "vereist onderbouwing"
-zeggen).
+At session start, a hook reports which changes apply to *this* project and
+still have no answer (or still say "requires substantiation").
 
-## Hoe je hem afhandelt
+## How to handle it
 
-Hoe je een openstaande of nog te onderbouwen rij afhandelt, hangt af van het
-soort entry:
+How you handle a pending or still-to-be-substantiated row depends on the
+kind of entry:
 
-- **Raakt de entry `PRD.md`/`ARCHITECTUUR.md`** (de meeste `spec-*`-entries en
-  de NFR's): dit is de **onderbouwingsplicht**, en geldt voor élke rij die
-  hierbij hoort, niet alleen de NFR's uit "Niet-functionele kenmerken" — ook
-  `proces-prd` of `architectuurdocument` zelf verdient een echte reden, geen
-  automatisme.
-  - Een rij die nog **"vereist onderbouwing"** zegt: vervang die door een
-    objectieve, op dít project gegronde redenering waarom `ja` geldt — of, als
-    die redenering niet standhoudt, zet de rij om naar `nee` met de reden.
-  - Een nog onbeantwoorde **`Standaard: vraag`**-rij: geen blanco vraag. Doe
-    een beargumenteerd voorstel, gegrond in de daadwerkelijke inhoud van dit
-    project, en leg dat ter bevestiging voor aan Ties.
-  - Een auto-geseede `ja` die nooit onderbouwd wordt, is in de praktijk niet
-    anders dan de stille drift die deze hele voorziening moest voorkomen.
-- **Puur procesmatig, raakt geen specificatie** (bijv. `ci-conventie`,
-  `deploy-guards`): een gewone **gesloten ja/nee-vraag** volstaat, meerdere
-  tegelijk in één keuzeprompt; bij meer dan vier vragen in rondes.
+- **The entry touches `PRD.md`/`ARCHITECTUUR.md`** (most `spec-*` entries
+  and the NFRs): this is the **substantiation requirement**, and applies to
+  *every* row that belongs here, not only the NFRs from "Non-functional
+  characteristics" — `proces-prd` or `architectuurdocument` itself also
+  deserves a real reason, not an automatism.
+  - A row that still says **"requires substantiation"**: replace it with an
+    objective argument, grounded in *this* project, for why `ja` holds — or,
+    if that argument doesn't hold up, change the row to `nee` with the
+    reason.
+  - An unanswered **`Standaard: vraag`** row: no blank question. Make a
+    reasoned proposal, grounded in this project's actual content, and put
+    it to Ties for confirmation.
+  - An auto-seeded `ja` that never gets substantiated is, in practice, no
+    different from the silent drift this whole mechanism was meant to
+    prevent.
+- **Purely procedural, touches no specification** (e.g. `ci-conventie`,
+  `deploy-guards`): a plain **closed yes/no question** suffices, several at
+  once in a single choice prompt; in rounds once there are more than four
+  questions.
 
-## Vastleggen
+## Recording
 
-Schrijf elk antwoord als rij in `WORKFLOW-ADOPTIE.md`:
-`| <wijziging-id> | ja/nee | <datum> | <toelichting> |`. De toelichting is bij
-elk antwoord de redenering, niet alleen bij "nee" — dat is precies het punt van
-de onderbouwingsplicht.
+Write every answer as a row in `WORKFLOW-ADOPTIE.md`:
+`| <change-id> | ja/nee | <date> | <explanation> |`. The explanation is the
+reasoning for every answer, not only for `nee` — that's exactly the point of
+the substantiation requirement.
 
-Voer bij "ja" uit wat de entry onder "Ja betekent" beschrijft. Is dat meer dan
-een handeling van niets (bijvoorbeeld projectcode aanpassen), maak er dan een
-GitHub-issue voor in plaats van het meteen in diezelfde sessie te doen.
+On `ja`, carry out what the entry describes under "Ja betekent". If that's
+more than a trivial action (e.g. adjusting project code), turn it into a
+GitHub issue instead of doing it right away in the same session.
 
-Het antwoordbestand wordt gecommit: of een project een afspraak toepast is een
-eigenschap van het project, niet van de machine waarop je toevallig werkt.
+The answer file gets committed: whether a project applies an agreement is a
+property of the project, not of whichever machine you happen to be working
+on.

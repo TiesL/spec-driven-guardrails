@@ -1,42 +1,43 @@
 ---
 name: diagnose-bug
 description: >
-  Reproductie → hypotheses → regressietest, in die dwingende volgorde, vóór er
-  ook maar aan een fix begonnen wordt. Gebruik dit bij het diagnosticeren van
-  een bug, vóór je een `fix/<naam>`-branch opent.
+  Reproduction → hypotheses → regression test, in that mandatory order,
+  before any fix is even started. Use this when diagnosing a bug, before
+  opening a `fix/<name>` branch.
 ---
 
-## De dwingende volgorde
+## The mandatory order
 
-**1. Reproductie.** Bouw eerst een deterministische, zelf uitvoerbare
-reproductie — een commando of test die de bug betrouwbaar laat zien, zonder
-menselijke tussenstap. Zonder dat weet je aan het eind niet zeker of je de bug
-hebt opgelost of alleen even niet meer ziet.
+**1. Reproduction.** First build a deterministic, self-executable
+reproduction — a command or test that reliably shows the bug, with no
+human step in between. Without that, you won't know at the end whether
+you fixed the bug or just stopped seeing it.
 
-**2. Hypotheses — getoond vóór ze getest worden.** Formuleer falsifieerbare
-hypotheses over de oorzaak, en laat ze aan Ties zien vóórdat je ze test. Niet
-achteraf samenvatten wat je hebt geprobeerd: hypotheses die pas na afloop
-gedeeld worden zijn niet meer te corrigeren door iemand die de code niet zelf
-leest. Een hypothese die je zelf niet met een concreet experiment kunt
-weerleggen, is geen hypothese maar een gok.
+**2. Hypotheses — shown before they're tested.** Formulate falsifiable
+hypotheses about the cause, and show them to Ties before testing them. Don't
+summarize afterward what you tried: hypotheses that are only shared after
+the fact can no longer be corrected by someone who doesn't read the code
+themselves. A hypothesis you can't refute yourself with a concrete
+experiment isn't a hypothesis but a guess.
 
-**3. Regressietest — vóór de fix.** Schrijf de test die de bug vastlegt vóór je
-de fix schrijft, en bevestig dat hij rood staat op de reproductie uit stap 1.
-Een fix zonder voorafgaande falende test bewijst niets: hij kan toevallig
-werken, of een symptoom verhelpen zonder de oorzaak te raken.
+**3. Regression test — before the fix.** Write the test that captures the
+bug before you write the fix, and confirm it's red against the
+reproduction from step 1. A fix without a prior failing test proves
+nothing: it might work by accident, or address a symptom without touching
+the cause.
 
-**4. Fix.** Pas nu de daadwerkelijke wijziging toe, en bevestig dat de
-regressietest uit stap 3 groen wordt.
+**4. Fix.** Now apply the actual change, and confirm the regression test
+from step 3 turns green.
 
-## Waarom deze volgorde, niet een andere
+## Why this order, not another
 
-Elke stap is een controle op de vorige. Reproductie zonder hypotheses leidt tot
-gokken-en-proberen. Hypotheses zonder ze eerst te tonen zijn niet corrigeerbaar.
-Een fix zonder voorafgaande regressietest laat geen bewijs achter dat de bug
-ooit weg was — alleen dat de code er nu anders uitziet.
+Each step is a check on the previous one. Reproduction without hypotheses
+leads to guess-and-check. Hypotheses without showing them first aren't
+correctable. A fix without a prior regression test leaves no proof the bug
+was ever gone — only that the code now looks different.
 
-## Verhouding tot `tdd-seams`
+## Relationship to `tdd-seams`
 
-Stap 3 volgt dezelfde rood-vóór-groen-discipline als `tdd-seams`, toegepast op
-één specifiek scenario: de regressietest ís de seam waarop deze bug zich
-voordeed, niet een interne implementatiestap.
+Step 3 follows the same red-before-green discipline as `tdd-seams`,
+applied to one specific scenario: the regression test *is* the seam where
+this bug occurred, not an internal implementation step.

@@ -1,62 +1,65 @@
 ---
 name: deploy-guards
 description: >
-  De voorwaarden waaronder deploy naar pre-productie of productie mag draaien
-  (schone werkmap, check slaagt, main gelijk aan origin/main, groene CI), en
-  waarom. Gebruik dit bij het bouwen of aanpassen van een deploy-script, of
-  wanneer een deploy geweigerd wordt.
+  The conditions under which deploy to pre-production or production may
+  run (clean working tree, check passes, main equal to origin/main, green
+  CI), and why. Use this when building or changing a deploy script, or
+  when a deploy is refused.
 ---
 
-## `deploy` weigert te draaien vanuit een ongeverifieerde toestand
+## `deploy` refuses to run from an unverified state
 
-`deploy` controleert zelf of de toestand deugt en stopt als dat niet zo is.
-Welke voorwaarden gelden, hangt af van de doelomgeving.
+`deploy` checks for itself whether the state is sound and stops if it
+isn't. Which conditions apply depends on the target environment.
 
-**Pre-productie (acceptatie) — mag vanaf elke branch.** De omgeving waarin de
-acceptatietest gebeurt, vóór de merge. Voorwaarden: de werkmap is schoon (wat je
-uitrolt is herleidbaar tot één commit — anders weet je niet wát je getest hebt);
-`check` slaagt (`deploy` draait hem zelf, in plaats van erop te vertrouwen dat je
-eraan dacht); de commit is gepusht (zodat CI hem ziet, en terug te vinden is wat
-er in acceptatie stond). Een groene CI-run is hier bewust géén voorwaarde —
-`check` is net lokaal gedraaid, en wachten bij elke iteratie maakt de lus traag.
+**Pre-production (acceptance) — may run from any branch.** The environment
+where acceptance testing happens, before the merge. Conditions: the
+working tree is clean (what you roll out is traceable to a single commit —
+otherwise you don't know *what* you tested); `check` passes (`deploy` runs
+it itself, instead of trusting that you remembered to); the commit is
+pushed (so CI sees it, and what was in acceptance can be found again). A
+green CI run is deliberately *not* a condition here — `check` just ran
+locally, and waiting on every iteration makes the loop slow.
 
-**Productie — alleen vanaf `main`.** Alles hierboven, plus: je staat op `main`
-(alleen dan is de code via een PR gegaan en gereviewd); lokale `main` is gelijk
-aan `origin/main` (anders rol je iets uit dat CI nooit gezien heeft, of juist
-iets verouderds); de laatste CI-run op `main` is geslaagd.
+**Production — only from `main`.** Everything above, plus: you're on
+`main` (only then has the code gone through a PR and been reviewed); local
+`main` equals `origin/main` (otherwise you roll out something CI never
+saw, or something outdated); the latest CI run on `main` succeeded.
 
-Heeft een project meer dan één doelomgeving, dan is er **geen impliciete
-standaard** — de omgeving wordt elke keer expliciet meegegeven. Een
-standaardwaarde die je kunt vergeten is precies het mechanisme dat hier wordt
-afgeschaft.
+If a project has more than one target environment, there is **no implicit
+default** — the environment is passed explicitly every time. A default
+value you can forget is exactly the mechanism being abolished here.
 
-Controles die het netwerk nodig hebben (CI-status, actualiteit van de remote)
-waarschuwen en gaan door als tooling of verbinding ontbreekt; de puur lokale
-controles blokkeren hard. Er is één bewuste uitweg (`--force` of gelijkwaardig)
-die luid meldt wélke controles worden overgeslagen en naar wélke omgeving het
-gaat — een guard zonder uitweg wordt op den duur omzeild door het script aan te
-passen, en dat is erger dan een guard die je expliciet uitzet.
+Checks that need the network (CI status, remote freshness) warn and
+proceed if tooling or connectivity is missing; the purely local checks
+block hard. There is one deliberate escape hatch (`--force` or equivalent)
+that loudly reports *which* checks are being skipped and to *which*
+environment — a guard without an escape hatch eventually gets bypassed by
+editing the script instead, and that's worse than a guard you turn off
+explicitly.
 
-### De volgorde in de praktijk
+### The order in practice
 
-1. Werk op een feature-branch; commit en push.
-2. Deploy die branch naar **pre-productie**; doe daar de acceptatietest.
-3. Gaat die goed: Ties initieert de merge naar `main` (zie "Wrapping up" in
-   `WORKFLOW.md`).
-4. Deploy `main` naar **productie**, na expliciete goedkeuring van Ties.
+1. Work on a feature branch; commit and push.
+2. Deploy that branch to **pre-production**; do the acceptance test there.
+3. If that goes well: Ties initiates the merge to `main` (see "Wrapping
+   up" in `WORKFLOW.md`).
+4. Deploy `main` to **production**, after Ties' explicit approval.
 
-Zonder pre-productieomgeving bijten stap 2 en de afspraak uit "Wrapping up" elkaar:
-verifiëren kan dan alleen in productie, maar daar mag je pas ná de merge komen.
-Laat die spanning niet sluimeren — kies bewust: gebruik de ontsnappingsroute voor
-die ene uitrol en zeg hardop dat je dat doet, óf richt een pre-productieomgeving
-in. Het tweede is de bedoeling.
+Without a pre-production environment, step 2 and the "Wrapping up"
+agreement conflict: verification can then only happen in production, but
+you're only allowed there after the merge. Don't let that tension linger —
+choose deliberately: use the escape hatch for that one rollout and say
+out loud that you're doing so, or set up a pre-production environment. The
+latter is the intent.
 
-### Waarom deze regels bestaan
+### Why these rules exist
 
-Een `deploy` die niet naar git kijkt, rolt uit wat er toevallig in de werkmap
-ligt — ongeacht branch, commit of CI. Draait er daarna een periodieke trigger op
-die code, dan voert ongereviewde code zichzelf uit; een bevestigingsstap in een
-UI beschermt alleen de handmatige route, niet de automatische. Dit is in
-`tennis-admin` één keer misgegaan, en de enige beveiliging tot dat moment was dat
-degene die deployde eraan dacht. Dat is geen beveiliging. Uitgewerkt voorbeeld:
-`scripts/deploy.mjs` in `tennis-admin`.
+A `deploy` that doesn't look at git rolls out whatever happens to be in
+the working tree — regardless of branch, commit, or CI. If a periodic
+trigger then runs on that code, unreviewed code executes itself; a
+confirmation step in a UI only protects the manual route, not the
+automatic one. This went wrong once in `tennis-admin`, and the only
+safeguard up to that point was that whoever deployed remembered to check.
+That's not a safeguard. Worked-out example: `scripts/deploy.mjs` in
+`tennis-admin`.

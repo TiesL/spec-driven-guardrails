@@ -14,11 +14,11 @@ skill="$TEST_REPO_ROOT/skills/tdd-seams/SKILL.md"
 inhoud="$(cat "$skill")"
 
 assert_contains "S68 — noemt 'seam'" "seam" "$inhoud"
-assert_contains "S68 — noemt rood" "rood" "$inhoud"
-assert_contains "S68 — noemt groen" "groen" "$inhoud"
-assert_contains "S68 — anti-patroon: implementatie-gekoppeld" "mplementatie-gekoppeld" "$inhoud"
-assert_contains "S68 — anti-patroon: tautologisch" "autologisch" "$inhoud"
-assert_contains "S68 — anti-patroon: horizontaal slicen" "orizontaal slicen" "$inhoud"
-assert_contains "S68 — tegenover verticale slices" "erticale slices" "$inhoud"
+assert_contains "S68 — noemt red" "red" "$inhoud"
+assert_contains "S68 — noemt green" "green" "$inhoud"
+assert_contains "S68 — anti-patroon: implementation-coupled" "mplementation-coupled" "$inhoud"
+assert_contains "S68 — anti-patroon: tautological" "autological" "$inhoud"
+assert_contains "S68 — anti-patroon: horizontal slicing" "orizontal slicing" "$inhoud"
+assert_contains "S68 — tegenover vertical slices" "ertical slices" "$inhoud"
 
 test_klaar
