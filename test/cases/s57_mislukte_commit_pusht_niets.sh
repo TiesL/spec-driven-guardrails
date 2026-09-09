@@ -77,11 +77,11 @@ status4=$?
 [ "$(git -C "$remote" rev-parse feature/amend)" = "$sha_voor_amend_op_remote" ] \
   || fail "S57/geval4 — de hook forceerde de push stilzwijgend, de remote-SHA veranderde"
 case "$uitvoer4" in
-  *"geschiedenis wijkt af"*) ;;
+  *"local history diverges"*) ;;
   *) fail "S57/geval4 — de melding noemt niet dat de lokale geschiedenis afwijkt (amend/rebase), maar: $uitvoer4" ;;
 esac
 case "$uitvoer4" in
-  *"geen netwerk of geen toegang"*)
+  *"no network or no access"*)
     fail "S57/geval4 — de melding wijt het amend-geval ten onrechte aan netwerk/toegang: $uitvoer4" ;;
 esac
 

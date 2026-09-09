@@ -19,7 +19,7 @@ fout="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"
 
 # Losse grep op "main" zou vals-positief slaan op bijvoorbeeld
 # "spec-maintainability" — de exacte meldingstekst telt.
-if printf '%s\n' "$uitvoer" | grep -q 'Je zit op main\|git checkout -b'; then
+if printf '%s\n' "$uitvoer" | grep -q 'You are on main\|git checkout -b'; then
   fail "S55 — op een feature-branch verscheen toch een melding over main"
 fi
 

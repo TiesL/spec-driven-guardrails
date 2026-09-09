@@ -17,13 +17,13 @@ set -uo pipefail
 
 doel="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
 if [ -z "$doel" ]; then
-  echo "waarschuwing: pre-push-hook is geen symlink (meer) naar claude-workflow — push-controle overgeslagen." >&2
+  echo "warning: the pre-push hook is no longer a symlink to claude-workflow — push check skipped." >&2
   exit 0
 fi
 eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
 regels="$eigen_map/regels.sh"
 if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
-  echo "waarschuwing: git-hooks kon regels.sh niet vinden — push-controle overgeslagen." >&2
+  echo "warning: git hooks couldn't find regels.sh — push check skipped." >&2
   exit 0
 fi
 # shellcheck source=regels.sh
@@ -31,7 +31,7 @@ fi
 HOOFDBRANCH="${HOOFDBRANCH:-main}"
 
 if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
-  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
   exit 0
 fi
 
@@ -44,12 +44,12 @@ while read -r _lokale_ref _lokale_sha remote_ref _remote_sha; do
 done
 
 if [ "$geblokkeerd" -eq 1 ]; then
-  echo "Geblokkeerd door de git-hook: push naar $HOOFDBRANCH." >&2
+  echo "Blocked by the git hook: push to $HOOFDBRANCH." >&2
   echo >&2
-  echo "Reden: $REDEN_PUSH_NAAR_MAIN" >&2
+  echo "Reason: $REDEN_PUSH_NAAR_MAIN" >&2
   echo >&2
-  echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
-  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+  echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <command>" >&2
   exit 1
 fi
 

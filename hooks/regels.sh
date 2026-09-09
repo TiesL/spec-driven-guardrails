@@ -13,11 +13,11 @@
 
 HOOFDBRANCH="main"
 
-REDEN_COMMIT_OP_MAIN="main krijgt zijn wijzigingen via een PR. Maak eerst een branch — je
-       wijzigingen gaan gewoon mee, er raakt niets kwijt:
+REDEN_COMMIT_OP_MAIN="main gets its changes via a PR. Make a branch first — your
+       changes come along unchanged, nothing gets lost:
 
-         git checkout -b feature/<naam>
+         git checkout -b feature/<name>
 
-       Daarna committen en pushen zoals gewoonlijk."
+       Then commit and push as usual."
 
-REDEN_PUSH_NAAR_MAIN="main krijgt zijn wijzigingen via een PR, niet via een directe push."
+REDEN_PUSH_NAAR_MAIN="main gets its changes via a PR, not via a direct push."

@@ -27,7 +27,7 @@ set -uo pipefail
 pr_nummer="${1:?gebruik: check-pr-issue-link.sh <pr-nummer>}"
 
 if ! command -v gh >/dev/null 2>&1; then
-  echo "check-pr-issue-link: gh ontbreekt — kan schakel 3 niet controleren." >&2
+  echo "check-pr-issue-link: gh is missing — can't check link 3." >&2
   exit 1
 fi
 
@@ -42,12 +42,12 @@ aantal="$(gh pr view "$pr_nummer" --json closingIssuesReferences \
 # file's header rules out for the one hard block.
 case "$aantal" in
   ''|*[!0-9]*)
-    echo "check-pr-issue-link: kon PR #$pr_nummer niet raadplegen." >&2
+    echo "check-pr-issue-link: couldn't consult PR #$pr_nummer." >&2
     exit 1 ;;
 esac
 
 if [ "$aantal" -eq 0 ]; then
-  echo "check-pr-issue-link: PR #$pr_nummer verwijst naar geen enkel issue (schakel 3) — voeg 'Closes #<issue>' toe of link het issue in de PR-sidebar." >&2
+  echo "check-pr-issue-link: PR #$pr_nummer references no issue at all (link 3) — add 'Closes #<issue>' or link the issue in the PR sidebar." >&2
   exit 1
 fi
 

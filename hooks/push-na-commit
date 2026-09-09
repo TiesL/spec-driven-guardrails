@@ -91,8 +91,8 @@ fi
 # choice, not a mutation nobody asked for.
 case "$uitvoer" in
   *"(non-fast-forward)"*|*"(fetch first)"*|*"(stale info)"*)
-    echo "waarschuwing: push-na-commit kon niet pushen — de lokale geschiedenis wijkt af van origin (bijvoorbeeld na een amend of rebase). Gebruik zelf 'git push --force-with-lease' als dat de bedoeling was." >&2 ;;
+    echo "warning: push-na-commit couldn't push — local history diverges from origin (for example after an amend or rebase). Use 'git push --force-with-lease' yourself if that was the intent." >&2 ;;
   *)
-    echo "waarschuwing: push-na-commit kon niet pushen (geen netwerk of geen toegang?): $uitvoer" >&2 ;;
+    echo "warning: push-na-commit couldn't push (no network or no access?): $uitvoer" >&2 ;;
 esac
 exit 0

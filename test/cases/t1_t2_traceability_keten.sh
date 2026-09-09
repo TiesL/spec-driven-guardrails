@@ -78,7 +78,7 @@ Dit project beschrijft zijn functionaliteit in proza, zonder ID-koppen.' \
 **Dekt:**')"
 uitvoer="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "AC5 — prefixloos PRD gaf exit $status in plaats van een waarschuwing"
-assert_contains "AC5 — er verschijnt een waarschuwing" "waarschuwing" "$uitvoer"
+assert_contains "AC5 — er verschijnt een waarschuwing" "warning" "$uitvoer"
 
 # S62 — een project dat de conventie nog niet gebruikt, waarschuwt en faalt niet.
 # Alle vier de bestaande projecten zijn dit geval op de dag van invoering.
@@ -90,7 +90,7 @@ p="$(bouw s62 \
 - Given: ...')"
 uitvoer="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "S62 — project zonder Dekt:-velden gaf exit $status in plaats van een waarschuwing"
-assert_contains "S62 — er verschijnt een waarschuwing" "waarschuwing" "$uitvoer"
+assert_contains "S62 — er verschijnt een waarschuwing" "warning" "$uitvoer"
 case "$uitvoer" in
   *F1*|*F2*) fail "S62 — het meldde alsnog ongedekte items: $uitvoer" ;;
 esac

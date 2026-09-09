@@ -158,7 +158,7 @@ uitvoer="$(adopteer_uit_luid "$bron" "$project" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S21b — een kapot blok werd niet geweigerd"
 [ "$(cat "$project/.gitignore")" = "$voor" ] \
   || fail "S21b — het bestand is aangeraakt terwijl het blok beschadigd was"
-assert_contains "S21b — de melding legt uit wat er mis is" "beschadigd beheerd blok" "$uitvoer"
+assert_contains "S21b — de melding legt uit wat er mis is" "corrupted managed block" "$uitvoer"
 
 # Genest: twee beginmarkers vóór de eerste eindmarker. Tellen alleen is niet
 # genoeg, want de aantallen kloppen dan.

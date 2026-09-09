@@ -21,7 +21,7 @@ padzondergh="$(pad_zonder_gh)"
 uitvoer_a="$(printf '%s' "$invoer" | PATH="$padzondergh" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status_a=$?
 [ "$status_a" -ne 2 ] || fail "S17a — gh ontbreekt, maar het commando werd toch geblokkeerd"
-assert_contains "S17a" "waarschuwing" "$uitvoer_a"
+assert_contains "S17a" "warning" "$uitvoer_a"
 
 # Sub-geval b: gh is er, maar het netwerk niet — de aanroep faalt.
 fakebin="$(fake_gh_bin '
@@ -30,6 +30,6 @@ exit 1
 uitvoer_b="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status_b=$?
 [ "$status_b" -ne 2 ] || fail "S17b — gh faalt (geen netwerk), maar het commando werd toch geblokkeerd"
-assert_contains "S17b" "waarschuwing" "$uitvoer_b"
+assert_contains "S17b" "warning" "$uitvoer_b"
 
 test_klaar

@@ -30,7 +30,7 @@ set -uo pipefail
 sha="${1:?gebruik: check-main-via-pr.sh <sha>}"
 
 if ! command -v gh >/dev/null 2>&1; then
-  echo "check-main-via-pr: gh ontbreekt — kan de herkomst van $sha niet vaststellen." >&2
+  echo "check-main-via-pr: gh is missing — can't establish the origin of $sha." >&2
   exit 1
 fi
 
@@ -43,12 +43,12 @@ aantal="$(gh api "repos/{owner}/{repo}/commits/$sha/pulls" --jq 'length' 2>/dev/
 # script rules out.
 case "$aantal" in
   ''|*[!0-9]*)
-    echo "check-main-via-pr: kon de herkomst van commit $sha niet vaststellen." >&2
+    echo "check-main-via-pr: couldn't establish the origin of commit $sha." >&2
     exit 1 ;;
 esac
 
 if [ "$aantal" -eq 0 ]; then
-  echo "check-main-via-pr: commit $sha op main komt niet uit een pull request." >&2
+  echo "check-main-via-pr: commit $sha on main did not come from a pull request." >&2
   exit 1
 fi
 

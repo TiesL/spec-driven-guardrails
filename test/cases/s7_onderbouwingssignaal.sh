@@ -23,11 +23,11 @@ uitvoer="$SANDBOX/uitvoer.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
 
 # Then: er verschijnt een melding met het aantal.
-grep -q '21 rij(en)' "$uitvoer" || {
+grep -q '21 row(s)' "$uitvoer" || {
   fail "S7 — geen melding met het aantal wachtende onderbouwingen"
   cat "$uitvoer" >&2
 }
-grep -qi 'onderbouwing' "$uitvoer" || fail "S7 — de melding noemt 'onderbouwing' niet"
+grep -qi 'substantiation' "$uitvoer" || fail "S7 — de melding noemt 'substantiation' niet"
 
 # En het aantal beweegt mee: één rij onderbouwen maakt er twintig van.
 # Eén rij onderbouwen. Niet met `sed '0,/re/'`: dat adresbereik is een
@@ -41,9 +41,9 @@ mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTIE.md"
 
 na="$SANDBOX/na.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
-grep -q '20 rij(en)' "$na" || {
+grep -q '20 row(s)' "$na" || {
   fail "S7 — het aantal beweegt niet mee na het onderbouwen van één rij"
-  grep -i 'rij(en)' "$na" >&2
+  grep -i 'row(s)' "$na" >&2
 }
 
 # Zijn alle rijen onderbouwd, dan verdwijnt de melding — anders wordt hij ruis.
@@ -53,7 +53,7 @@ rm -f "$project/WORKFLOW-ADOPTIE.md.bak"
 
 leeg="$SANDBOX/leeg.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$leeg" 2>/dev/null
-if grep -qi 'wachten nog op onderbouwing' "$leeg"; then
+if grep -qi 'waiting on substantiation' "$leeg"; then
   fail "S7 — de melding blijft staan terwijl alles onderbouwd is"
 fi
 
@@ -65,9 +65,9 @@ printf '\nLosse notitie: dit vereist onderbouwing bij gelegenheid.\n' \
 
 met_notitie="$SANDBOX/met-notitie.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$met_notitie" 2>/dev/null
-if grep -qi 'wachten nog op onderbouwing' "$met_notitie"; then
+if grep -qi 'waiting on substantiation' "$met_notitie"; then
   fail "S7 — een notitie buiten de tabel telt mee als wachtende onderbouwing"
-  grep -i 'rij(en)' "$met_notitie" >&2
+  grep -i 'row(s)' "$met_notitie" >&2
 fi
 
 test_klaar
