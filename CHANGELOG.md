@@ -40,7 +40,10 @@ blokkade moest voorkomen, tests waren het alternatieve vangnet.
 discussie in #6", en PR #6 zelf heeft precies één comment, nul reviews, nul
 inline-opmerkingen, en noemt geen volgorde. Het gesprek liep in een
 chatsessie. De wél opgeschreven rationales bleken smaller dan de volgorde die
-eruit werd afgeleid.
+eruit werd afgeleid: "refactoren tegen een ongebruikte workflow refactort
+tegen aannames" raakte de skills-migratie en de veldformaten, niet het
+dedupliceren van een `case` of het uitvoerbaar maken van tests — die waren
+intern en toetsbaar zonder praktijkbewijs.
 
 **Volgorde in fasen** (werkitem-ID's `W<n>` zijn de schakel naar de
 GitHub-issues van destijds):
@@ -54,7 +57,13 @@ GitHub-issues van destijds):
   predicaten, W5 nfr-register + generator, W6 changes-archief, W7
   onderbouwingssignaal, W10 git-guardrails-hook, W23 sessiestart-melding, W24
   `ci.yml` valideert PR's/`main`). W4 moest vóór alles wat een derde
-  consument aan de duplicatie toevoegde.
+  consument aan de duplicatie toevoegde; W5 haalde de duplicatie echt weg in
+  plaats van hem te overbruggen. **W10 hoorde hier en niet later**: de
+  hookconfiguratie is gesymlinkt en dus live na `git pull`, het guard-script
+  arriveert via diezelfde pull en wordt gevonden via de bestaande
+  `readlink`-keten — `adopt.sh` speelt geen rol. Het was bovendien de
+  grootste directe veiligheidswinst van de release, dus hoorde alleen het
+  testharnas (W1) hem te blokkeren.
 - **Fase 2 — De structurele wijziging, hoogste risico** (W8 `adopt.sh`
   installeert skills + hooks, W9 `WORKFLOW.md` → kern + Wegwijzer). W8 vóór
   W9: installer-eerst-met-no-op was strikt veiliger dan een vroege puller die
@@ -73,7 +82,12 @@ oorspronkelijke opzet — ze kwamen er nadat, ná afronding van W10, bleek dat d
 guard alleen dekt wat Claude zelf uitvoert, niet wat in een eigen terminal,
 een IDE, of op een tweede machine gebeurt. Zie F17 in `PRD.md` voor de
 blijvende specificatie van die dekking; deze vier werkitems zijn de
-implementatie ervan.
+implementatie ervan. Ingevoegd op de plek waar hun afhankelijkheden ze
+toelieten, niet achteraan: W23 en W24 hingen alleen van het testharnas af (W24
+inhoudelijk van niets, maar rood-vóór-groen gold ook voor hem) en kwamen dus
+in Fase 1; W25 en W26 hingen aan de guard zelf (W26 ook aan `adopt.sh`) en
+volgden in Fase 3; W27 had het bijgewerkte CI-sjabloon nodig en landde in
+Fase 4.
 
 **Extra verificatieronde nodig bevonden voor:** W2 (een onherhaalbare
 nulmeting als hij fout werd vastgelegd), W8 (schrijft in andermans repo's,
