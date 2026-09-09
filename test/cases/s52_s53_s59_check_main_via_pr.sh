@@ -44,7 +44,7 @@ uitvoer="$(PATH="$fakebin:$PATH" "$script" met-pr 2>&1)"; status=$?
 # de reden erbij. Bewust het omgekeerde van de lokale git-hooks (S58).
 uitvoer="$(PATH="$fakebin:$PATH" "$script" onbekend 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S59 — een onbekende herkomst gaf exit 0 (moet falen, geen faal-open)"
-assert_contains "S59 — de melding noemt dat de herkomst niet vastgesteld kon worden" "niet vaststellen" "$uitvoer"
+assert_contains "S59 — de melding noemt dat de herkomst niet vastgesteld kon worden" "couldn't establish" "$uitvoer"
 
 # S59 — ook zonder gh faalt de controle (geen faal-open, in tegenstelling tot
 # de lokale hooks).

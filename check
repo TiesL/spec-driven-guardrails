@@ -28,14 +28,14 @@ fi
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 doel="${1:-$eigen_map}"
 doel="$(cd "$doel" 2>/dev/null && pwd)" || {
-  echo "check: map bestaat niet: ${1:-}" >&2
+  echo "check: directory does not exist: ${1:-}" >&2
   exit 1
 }
 
 fouten=0
 
 melden_fout() {
-  echo "  FOUT: $*" >&2
+  echo "  ERROR: $*" >&2
   fouten=$((fouten + 1))
 }
 
@@ -48,7 +48,7 @@ echo "check: bash -n"
 # `hooks/git-guardrails` and are exactly the code where a silent syntax
 # error is most costly.
 scriptlijst="$(mktemp)" || {
-  echo "check: kon geen tijdelijk bestand aanmaken — controle afgebroken" >&2
+  echo "check: couldn't create a temp file — check aborted" >&2
   exit 1
 }
 trap 'rm -f "$scriptlijst"' EXIT
@@ -59,7 +59,7 @@ trap 'rm -f "$scriptlijst"' EXIT
         if [ ! -r "$kandidaat" ]; then
           # Not silently skipping: a file we can't read is a file we don't
           # know is a script or not.
-          echo "  waarschuwing: ${kandidaat} kon niet gelezen worden — niet gecontroleerd" >&2
+          echo "  warning: ${kandidaat} couldn't be read — not checked" >&2
           continue
         fi
         case "$(head -c 2 "$kandidaat" 2>/dev/null)" in
@@ -85,7 +85,7 @@ done < "$scriptlijst"
 # project. One typo there breaks it immediately, and `bash -n` doesn't see
 # that. This step is deliberately separate from shellcheck: it's not
 # optional.
-echo "check: JSON-validatie"
+echo "check: JSON validation"
 json_bestand="$doel/settings/session-hooks.json"
 if [ -f "$json_bestand" ]; then
   if command -v jq >/dev/null 2>&1; then
@@ -112,7 +112,7 @@ fi
 # the register and template could silently drift apart — exactly the drift
 # the register was meant to remove.
 if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
-  echo "check: NFR-register"
+  echo "check: NFR register"
   if [ -r "$doel/lib/nfr.sh" ]; then
     # shellcheck source=lib/nfr.sh
     . "$doel/lib/nfr.sh"
@@ -141,7 +141,7 @@ fi
 # in its own WORKFLOW-ADOPTIE.md (S32). CHANGES-ARCHIEF.md shares the same
 # entry shape and counts too: retirement must not drop the linkback.
 if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
-  echo "check: PR-linkbacks"
+  echo "check: PR linkbacks"
   # shellcheck source=lib/changes.sh
   . "$doel/lib/changes.sh"
   for bron in "$doel/CHANGES.md" "$doel/CHANGES-ARCHIEF.md"; do
@@ -160,7 +160,7 @@ fi
 pyscripts="$(find "$doel" -type f -name '*.py' -not -path '*/.git/*' | sort)"
 if [ -n "$pyscripts" ]; then
   if command -v python3 >/dev/null 2>&1; then
-    echo "check: python-syntaxis"
+    echo "check: python syntax"
     for script in $pyscripts; do
       if ! foutmelding="$(python3 -m py_compile "$script" 2>&1)"; then
         melden_fout "syntaxfout in ${script#"$doel"/}: $foutmelding"
@@ -168,7 +168,7 @@ if [ -n "$pyscripts" ]; then
     done
     find "$doel" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null
   else
-    echo "check: python3 niet geinstalleerd — python-syntaxis overgeslagen"
+    echo "check: python3 not installed — python syntax skipped"
   fi
 fi
 
@@ -179,29 +179,29 @@ if command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do
     if ! foutmelding="$(shellcheck -s bash -x "$script" 2>&1)"; then
-      echo "  waarschuwing: shellcheck op ${script#"$doel"/}:" >&2
+      echo "  warning: shellcheck on ${script#"$doel"/}:" >&2
       echo "$foutmelding" >&2
     fi
   done < "$scriptlijst"
 else
-  echo "check: shellcheck niet geinstalleerd — overgeslagen (geen fout)"
+  echo "check: shellcheck not installed — skipped (no error)"
 fi
 
 if [ "$fouten" -gt 0 ]; then
   echo >&2
-  echo "check: $fouten fout(en) gevonden." >&2
+  echo "check: $fouten error(s) found." >&2
   exit 1
 fi
 
 # --- 5. Test suite -----------------------------------------------------------
 if [ "$draai_tests" -eq 1 ]; then
-  echo "check: testsuite"
+  echo "check: test suite"
   if [ -x "$doel/test/run.sh" ]; then
     if ! "$doel/test/run.sh"; then
       exit 1
     fi
   else
-    echo "check: test/run.sh ontbreekt of is niet uitvoerbaar" >&2
+    echo "check: test/run.sh is missing or not executable" >&2
     exit 1
   fi
 fi

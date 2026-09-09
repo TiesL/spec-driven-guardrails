@@ -30,7 +30,7 @@ fi
 if ! grep -q 'eigen pre-commit-hook, niet van claude-workflow' "$project/.git/hooks/pre-commit"; then
   fail "S51 — de inhoud van de eigen pre-commit-hook is veranderd"
 fi
-assert_contains "S51 — er kwam een melding over het bestaande bestand" "niet aangeraakt" "$melding"
+assert_contains "S51 — er kwam een melding over het bestaande bestand" "not touched" "$melding"
 if [ -f "$project/.git/hooks/pre-commit.bak" ]; then
   fail "S51 — er werd een .bak gemaakt; de eigen hook had juist met rust gelaten moeten worden"
 fi
@@ -76,6 +76,6 @@ melding2="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.
 if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elders" ]; then
   fail "S51 — een eigen symlink-hook (naar iets anders dan claude-workflow) werd toch vervangen"
 fi
-assert_contains "S51 — er kwam een melding over de eigen symlink-hook" "niet aangeraakt" "$melding2"
+assert_contains "S51 — er kwam een melding over de eigen symlink-hook" "not touched" "$melding2"
 
 test_klaar

@@ -30,7 +30,7 @@ set -uo pipefail
 # bypassed by editing the script instead, and that's worse than a guard you
 # turn off explicitly.
 if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
-  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
   exit 0
 fi
 
@@ -55,12 +55,12 @@ fi
 HOOFDBRANCH="${HOOFDBRANCH:-main}"
 
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "waarschuwing: git-guardrails heeft python3 nodig om het commando te lezen" >&2
-  echo "en laat dit commando dus door. Installeer python3 om de guard te laten werken." >&2
+  echo "warning: git-guardrails needs python3 to read the command" >&2
+  echo "and so lets this command through. Install python3 to make the guard work." >&2
   exit 0
 fi
 if [ ! -r "$lezer" ]; then
-  echo "waarschuwing: git-guardrails mist $lezer en laat dit commando door." >&2
+  echo "warning: git-guardrails is missing $lezer and lets this command through." >&2
   exit 0
 fi
 
@@ -117,12 +117,12 @@ huidige_branch() {
 }
 
 blokkeer() {
-  echo "Geblokkeerd door git-guardrails: $1" >&2
+  echo "Blocked by git-guardrails: $1" >&2
   echo "" >&2
-  echo "Reden: $2" >&2
+  echo "Reason: $2" >&2
   echo "" >&2
-  echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
-  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+  echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <command>" >&2
   exit 2
 }
 
@@ -217,7 +217,7 @@ controleer_merge_guard() {
 
   # AC4: fail open without gh.
   if ! command -v gh >/dev/null 2>&1; then
-    echo "waarschuwing: merge-guard vindt gh niet en slaat de reviewcontrole over." >&2
+    echo "warning: merge-guard can't find gh and skips the review check." >&2
     return 0
   fi
 
@@ -234,7 +234,7 @@ controleer_merge_guard() {
   # the PR — when in doubt, allow, the same ground rule as everywhere else
   # in this script).
   if [ "$status" -ne 0 ]; then
-    echo "waarschuwing: merge-guard kon de PR niet raadplegen (geen netwerk of geen toegang) en slaat de reviewcontrole over." >&2
+    echo "warning: merge-guard couldn't consult the PR (no network or no access) and skips the review check." >&2
     echo "$uitvoer" >&2
     return 0
   fi
@@ -242,14 +242,14 @@ controleer_merge_guard() {
   case "$uitvoer" in
     *"$MERGE_REVIEW_MARKER"*) ;;
     *)
-      blokkeer "gh pr merge zonder review-marker" \
-"deze PR draagt de marker van pre-merge-review niet. Draai die skill eerst en
-       laat de bevindingen (met marker) op de PR staan.
+      blokkeer "gh pr merge without a review marker" \
+"this PR doesn't carry the pre-merge-review marker. Run that skill first and
+       leave the findings (with marker) on the PR.
 
-       Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
-       controle wordt overgeslagen:
+       Is this deliberate, use the explicit escape hatch — and report which
+       check is being skipped:
 
-         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>" ;;
+         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <command>" ;;
   esac
 
   controleer_ci_guard "$doel"
@@ -315,7 +315,7 @@ controleer_ci_guard() {
   esac
 
   if [ "$status" -ne 0 ]; then
-    echo "waarschuwing: merge-guard kon de CI-status niet raadplegen (geen netwerk of geen toegang) en slaat de CI-controle over." >&2
+    echo "warning: merge-guard couldn't consult the CI status (no network or no access) and skips the CI check." >&2
     [ -n "$fouttekst" ] && echo "$fouttekst" >&2
     return 0
   fi
@@ -341,21 +341,21 @@ for item in data:
   parse_status=$?
 
   if [ "$parse_status" -ne 0 ]; then
-    echo "waarschuwing: merge-guard kon de CI-status niet interpreteren (onverwachte uitvoer van gh pr checks) en slaat de CI-controle over." >&2
+    echo "warning: merge-guard couldn't interpret the CI status (unexpected output from gh pr checks) and skips the CI check." >&2
     return 0
   fi
 
   [ -n "$problemen" ] || return 0
 
-  blokkeer "gh pr merge terwijl CI niet groen is" \
-"deze PR heeft één of meer checks die niet zijn geslaagd of nog lopen:
+  blokkeer "gh pr merge while CI isn't green" \
+"this PR has one or more checks that failed or are still running:
 
        $problemen
 
-       Is dit bewust, gebruik dan de expliciete uitweg — en meld daarbij wélke
-       controle wordt overgeslagen:
+       Is this deliberate, use the explicit escape hatch — and report which
+       check is being skipped:
 
-         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>"
+         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <command>"
 }
 
 # --- per command in the chain -----------------------------------------------
@@ -408,7 +408,7 @@ beoordeel_segment() {
         # The escape hatch as the block message prescribes it. It must be
         # able to appear in the command text: a command that hasn't started
         # yet can, by definition, not influence this guard's environment.
-        echo "waarschuwing: git-guardrails is voor dit commando expliciet uitgezet." >&2
+        echo "warning: git-guardrails is explicitly turned off for this command." >&2
         return 0 ;;
       CLAUDE_WORKFLOW_MERGE_GUARD_UIT=*)
         # AC6 (F8): a deliberate, loud escape hatch specific to the merge
@@ -417,7 +417,7 @@ beoordeel_segment() {
         # could also (still) be a destructive git command, and that must
         # still be judged as usual. controleer_merge_guard reads the flag
         # further down.
-        echo "waarschuwing: de merge-guard (review-marker én CI-status) is voor dit commando expliciet overgeslagen." >&2
+        echo "warning: the merge guard (review marker and CI status) is explicitly skipped for this command." >&2
         merge_guard_uit=1
         shift ;;
       [A-Za-z_]*=*) shift ;;
@@ -474,36 +474,36 @@ beoordeel_segment() {
       # project" (reached from WORKFLOW.md's routing table).
       if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
         if is_main "$(huidige_branch)"; then
-          blokkeer "git commit op main" "${REDEN_COMMIT_OP_MAIN:-main krijgt zijn wijzigingen via een PR. Maak eerst een branch.}"
+          blokkeer "git commit on main" "${REDEN_COMMIT_OP_MAIN:-main gets its changes via a PR. Make a branch first.}"
         fi
       fi ;;
     reset)
       for arg in "$@"; do
         [ "$arg" = "--hard" ] && blokkeer "git reset --hard" \
-          "dit gooit je werk in de werkmap onherroepelijk weg."
+          "this irrevocably discards your work in the working tree."
       done ;;
     clean)
       for arg in "$@"; do
         if [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; then
-          blokkeer "git clean $arg" "dit verwijdert ongetrackte bestanden onherroepelijk."
+          blokkeer "git clean $arg" "this irrevocably removes untracked files."
         fi
       done ;;
     branch)
       local heeft_delete=0 heeft_force=0
       for arg in "$@"; do
         korte_vlag_met "$arg" D && blokkeer "git branch $arg" \
-          "dit verwijdert een branch ook als die niet gemerged is; gebruik -d."
+          "this deletes a branch even if it isn't merged; use -d."
         [ "$arg" = "--delete" ] && heeft_delete=1
         { [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; } && heeft_force=1
       done
       if [ "$heeft_delete" -eq 1 ] && [ "$heeft_force" -eq 1 ]; then
         blokkeer "git branch --delete --force" \
-          "dit verwijdert een branch ook als die niet gemerged is; gebruik alleen --delete."
+          "this deletes a branch even if it isn't merged; use only --delete."
       fi ;;
     checkout|restore)
       for arg in "$@"; do
         is_hele_werkmap "$arg" && blokkeer "git $sub $arg" \
-          "dit gooit alle niet-gecommitte wijzigingen in de werkmap weg."
+          "this discards all uncommitted changes in the working tree."
       done ;;
     push)
       local refspecs=() remote_gezien=0
@@ -511,7 +511,7 @@ beoordeel_segment() {
         case "$arg" in
           --all|--mirror)
             blokkeer "git push $arg" \
-              "dit pusht alle branches, dus ook main — ongeacht waar je nu staat." ;;
+              "this pushes all branches, including main — regardless of where you are now." ;;
           -*) continue ;;
         esac
         if [ "$remote_gezien" -eq 0 ]; then
@@ -523,18 +523,18 @@ beoordeel_segment() {
 
       if [ "${#refspecs[@]}" -eq 0 ]; then
         # No refspec: where this goes depends on the current branch.
-        is_main "$(huidige_branch)" && blokkeer "git push vanaf main" \
-          "main is uitgecheckt, dus deze push gaat naar main. Werk op een feature-branch."
+        is_main "$(huidige_branch)" && blokkeer "git push from main" \
+          "main is checked out, so this push goes to main. Work on a feature branch."
         return 0
       fi
 
       for arg in "${refspecs[@]}"; do
         local doel; doel="$(refspec_doel "$arg")"
         if [ "$doel" = "HEAD" ]; then
-          is_main "$(huidige_branch)" && blokkeer "git push origin HEAD vanaf main" \
-            "HEAD wijst hier naar main, dus deze push gaat naar main."
+          is_main "$(huidige_branch)" && blokkeer "git push origin HEAD from main" \
+            "HEAD points to main here, so this push goes to main."
         elif is_main "$doel"; then
-          blokkeer "git push naar main" "${REDEN_PUSH_NAAR_MAIN:-main krijgt zijn wijzigingen via een PR, niet via een directe push.}"
+          blokkeer "git push to main" "${REDEN_PUSH_NAAR_MAIN:-main gets its changes via a PR, not via a direct push.}"
         fi
       done ;;
   esac

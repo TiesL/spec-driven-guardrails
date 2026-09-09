@@ -27,13 +27,13 @@ set -uo pipefail
 
 doel="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
 if [ -z "$doel" ]; then
-  echo "waarschuwing: pre-commit-hook is geen symlink (meer) naar claude-workflow — commit-controle overgeslagen." >&2
+  echo "warning: the pre-commit hook is no longer a symlink to claude-workflow — commit check skipped." >&2
   exit 0
 fi
 eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
 regels="$eigen_map/regels.sh"
 if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
-  echo "waarschuwing: git-hooks kon regels.sh niet vinden — commit-controle overgeslagen." >&2
+  echo "warning: git hooks couldn't find regels.sh — commit check skipped." >&2
   exit 0
 fi
 # shellcheck source=regels.sh
@@ -44,7 +44,7 @@ HOOFDBRANCH="${HOOFDBRANCH:-main}"
 # eventually gets bypassed by editing the script instead, and that's worse
 # than a guard you turn off explicitly.
 if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
-  echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
   exit 0
 fi
 
@@ -53,12 +53,12 @@ fi
 if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
   branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
   if [ "$branch" = "$HOOFDBRANCH" ]; then
-    echo "Geblokkeerd door de git-hook: commit op $HOOFDBRANCH." >&2
+    echo "Blocked by the git hook: commit on $HOOFDBRANCH." >&2
     echo >&2
-    echo "Reden: $REDEN_COMMIT_OP_MAIN" >&2
+    echo "Reason: $REDEN_COMMIT_OP_MAIN" >&2
     echo >&2
-    echo "Moet dit echt, zet de guard dan expliciet uit voor dit ene commando:" >&2
-    echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <commando>" >&2
+    echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+    echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <command>" >&2
     exit 1
   fi
 fi

@@ -13,15 +13,15 @@
 set -euo pipefail
 
 if [ -z "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
-  echo "Fout: SPEC_DRIVEN_GUARDRAILS_DIR is niet ingesteld." >&2
-  echo "Zet dit eenmalig in je shell-profiel, bijv.:" >&2
+  echo "Error: SPEC_DRIVEN_GUARDRAILS_DIR is not set." >&2
+  echo "Set this once in your shell profile, e.g.:" >&2
   echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)\"" >&2
   exit 1
 fi
 CLAUDE_WORKFLOW_DIR="$SPEC_DRIVEN_GUARDRAILS_DIR"
 
 if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
-  echo "Fout: het opgegeven pad ('$CLAUDE_WORKFLOW_DIR') bevat geen WORKFLOW.md — klopt het pad?" >&2
+  echo "Error: the given path ('$CLAUDE_WORKFLOW_DIR') contains no WORKFLOW.md — is the path correct?" >&2
   exit 1
 fi
 
@@ -48,7 +48,7 @@ eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 backup_if_real_file() {
   local path="$1"
   if [ -e "$path" ] && [ ! -L "$path" ]; then
-    echo "Bestaand bestand gevonden op $path — back-up naar $path.bak"
+    echo "Existing file found at $path — backing up to $path.bak"
     mv "$path" "$path.bak"
   elif [ -L "$path" ]; then
     rm "$path"
@@ -59,7 +59,7 @@ scaffold_if_missing() {
   local template="$1" target="$2"
   if [ ! -e "$target" ] && [ -f "$template" ]; then
     cp "$template" "$target"
-    echo "Aangemaakt vanuit template: $target"
+    echo "Created from template: $target"
   fi
 }
 
@@ -70,7 +70,7 @@ copy_issue_templates() {
     mkdir -p "$project_dir/.github/ISSUE_TEMPLATE"
     cp -f "$template_src"/*.md "$project_dir/.github/ISSUE_TEMPLATE/"
     [ -f "$template_src/config.yml" ] && cp -f "$template_src/config.yml" "$project_dir/.github/ISSUE_TEMPLATE/"
-    echo "Issue-templates gekopieerd naar $project_dir/.github/ISSUE_TEMPLATE/"
+    echo "Issue templates copied to $project_dir/.github/ISSUE_TEMPLATE/"
   fi
 }
 
@@ -120,7 +120,7 @@ seed_adoptietabel() {
   _seed_vandaag="$(date +%Y-%m-%d)"
   itereer_alle_entries "$CLAUDE_WORKFLOW_DIR" seed_entry
 
-  echo "Adoptietabel aangemaakt: $doel"
+  echo "Adoption table created: $doel"
 }
 
 GITIGNORE_BEGIN="# claude-workflow: begin — beheerd blok, niet met de hand bewerken"
@@ -167,8 +167,8 @@ schrijf_gitignore_blok() {
     }
     END { if (diepte > 0) { print "een beginmarker zonder eindmarker"; exit 1 } }
   ' "$gitignore")"; then
-    echo "adopt.sh: $gitignore heeft een beschadigd beheerd blok — $marker_probleem." >&2
-    echo "adopt.sh: het bestand is niet aangeraakt. Herstel de markers met de hand en draai opnieuw." >&2
+    echo "adopt.sh: $gitignore has a corrupted managed block — $marker_probleem." >&2
+    echo "adopt.sh: the file was not touched. Fix the markers by hand and run again." >&2
     return 1
   fi
 
@@ -224,7 +224,7 @@ schrijf_gitignore_blok() {
   } > "$gitignore"
 
   rm -f "$tijdelijk"
-  echo "Beheerd .gitignore-blok bijgewerkt: $*"
+  echo "Managed .gitignore block updated: $*"
 }
 
 # Refreshes or creates one skill symlink in doel_map: <doel_map>/<naam> ->
@@ -273,7 +273,7 @@ skill_symlink_opruimen_indien_verweesd() {
 
   if [ ! -e "$bestemming" ]; then
     rm "$link"
-    echo "Verweesde skill-symlink opgeruimd: $(basename "$link")"
+    echo "Orphaned skill symlink cleaned up: $(basename "$link")"
   fi
 }
 
@@ -360,7 +360,7 @@ installeer_git_hooks() {
       if [ "$huidig_doel" = "$bron" ]; then
         rm "$pad"
       else
-        echo "Eigen git-hook gevonden op $pad — niet aangeraakt. De branchbescherming van git-guardrails geldt hier dus niet buiten Claude om, tenzij je die regel zelf in je eigen hook opneemt."
+        echo "Own git hook found at $pad — not touched. git-guardrails' branch protection therefore doesn't apply here outside Claude, unless you include that rule in your own hook."
         continue
       fi
     fi
@@ -406,7 +406,7 @@ adopt_user_trigger() {
   mkdir -p "$HOME/.claude"
   backup_if_real_file "$HOME/.claude/CLAUDE.md"
   ln -s "$CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-  echo "Klaar: ~/.claude/CLAUDE.md -> $CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md"
+  echo "Done: ~/.claude/CLAUDE.md -> $CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md"
 
   installeer_user_skill
 }
@@ -415,7 +415,7 @@ adopt_project() {
   local project_dir="$1"
 
   if [ ! -d "$project_dir/.git" ]; then
-    echo "Fout: '$project_dir' is geen git-repository (geen .git-map gevonden)." >&2
+    echo "Error: '$project_dir' is not a git repository (no .git directory found)." >&2
     exit 1
   fi
 
@@ -479,7 +479,7 @@ adopt_project() {
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
   fi
 
-  echo "Klaar: $project_dir gebruikt nu de gedeelde workflow uit $CLAUDE_WORKFLOW_DIR"
+  echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
 }
 
 if [ "${1:-}" = "--user" ]; then

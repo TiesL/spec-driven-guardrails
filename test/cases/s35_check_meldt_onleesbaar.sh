@@ -24,7 +24,7 @@ uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 assert_contains "S35" "onleesbaar" "$uitvoer"
 
 # And: het verdwijnt niet stilzwijgend uit de controle.
-assert_contains "S35" "kon niet gelezen worden" "$uitvoer"
+assert_contains "S35" "couldn't be read" "$uitvoer"
 
 chmod 644 "$repo/hooks/onleesbaar"
 test_klaar

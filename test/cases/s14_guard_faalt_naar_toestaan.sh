@@ -48,7 +48,7 @@ status2=$?
 # Then: er verschijnt een luide waarschuwing, en het commando wordt toegestaan.
 [ "$status2" -ne 2 ] || fail "S14 — de guard blokkeerde terwijl hij de invoer niet kon lezen"
 [ -s "$fout2" ] || fail "S14 — geen waarschuwing toen de guard de invoer niet kon lezen"
-grep -qi 'waarschuwing' "$fout2" || {
+grep -qi 'warning' "$fout2" || {
   fail "S14 — de melding is niet als waarschuwing herkenbaar"
   cat "$fout2" >&2
 }

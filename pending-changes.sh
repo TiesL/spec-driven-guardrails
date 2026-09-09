@@ -50,7 +50,7 @@ verzamel_openstaand() {
 itereer_alle_entries "$workflow_dir" verzamel_openstaand
 
 if [ ${#openstaand[@]} -gt 0 ]; then
-  echo "Openstaande workflow-wijzigingen voor dit project (zie CHANGES.md in spec-driven-guardrails):"
+  echo "Pending workflow changes for this project (see CHANGES.md in spec-driven-guardrails):"
   for id in "${openstaand[@]}"; do
     vraag="$(awk -v id="## $id" '
       $0 == id { in_entry = 1; next }
@@ -65,7 +65,7 @@ if [ ${#openstaand[@]} -gt 0 ]; then
     fi
     echo "  - $id — $vraag"
   done
-  echo "Leg per wijziging een ja/nee-antwoord vast in WORKFLOW-ADOPTIE.md."
+  echo "Record a yes/no answer per change in WORKFLOW-ADOPTIE.md."
 fi
 
 # A seeded row is not yet a decision. adopt.sh sets every applicable
@@ -94,9 +94,9 @@ if [ -f "$antwoorden" ]; then
   # the same words isn't a pending substantiation.
   wachtend="$(grep -c '^|.*vereist onderbouwing' "$antwoorden" 2>/dev/null)"
   if [ "${wachtend:-0}" -gt 0 ]; then
-    echo "$wachtend rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing."
-    echo "Vervang de voorlopige stempel door een op dit project gegronde redenering,"
-    echo "of zet de rij om naar 'nee' met reden — bij het onderwerp waar je toch al zit."
+    echo "$wachtend row(s) in WORKFLOW-ADOPTIE.md are still waiting on substantiation."
+    echo "Replace the provisional stamp with a reasoning grounded in this project,"
+    echo "or change the row to 'nee' with a reason — while you're already on the topic."
   fi
 fi
 
@@ -128,8 +128,8 @@ if [ -d "$workflow_dir/skills" ]; then
     fi
   done
   if [ -n "$ontbrekend" ]; then
-    echo "Dit project mist de skill(s): $ontbrekend."
-    echo "Draai adopt.sh opnieuw vanuit spec-driven-guardrails om ze te installeren."
+    echo "This project is missing the skill(s): $ontbrekend."
+    echo "Run adopt.sh again from spec-driven-guardrails to install them."
   fi
 fi
 
@@ -141,8 +141,8 @@ fi
 # above (S43).
 if branch="$(git -C "$project_dir" symbolic-ref --short HEAD 2>/dev/null)" \
   && [ "$branch" = "main" ]; then
-  echo "Je zit op main. Nieuw werk hoort op een eigen branch:"
-  echo "  git checkout -b feature/<naam>"
+  echo "You are on main. New work belongs on its own branch:"
+  echo "  git checkout -b feature/<name>"
 fi
 
 # If the local checkout lags behind, the list above may be incomplete.
@@ -150,7 +150,7 @@ fi
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
   achter="$(git -C "$workflow_dir" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
   if [ "${achter:-0}" -gt 0 ]; then
-    echo "Let op: spec-driven-guardrails loopt $achter commit(s) achter op origin/main — draai daar 'git pull'."
+    echo "Note: spec-driven-guardrails is $achter commit(s) behind origin/main — run 'git pull' there."
   fi
 fi
 

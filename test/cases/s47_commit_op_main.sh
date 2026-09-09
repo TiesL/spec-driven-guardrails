@@ -47,7 +47,7 @@ grep -q 'checkout -b' "$melding" || {
   fail "S47 — de melding noemt niet hoe je een branch maakt"
   cat "$melding" >&2
 }
-grep -qi 'gaan gewoon mee\|raakt niets kwijt' "$melding" \
+grep -qi 'come along unchanged\|nothing gets lost' "$melding" \
   || fail "S47 — de melding zegt niet dat de wijzigingen meegaan"
 
 # And: op een feature-branch gaat committen gewoon door.

@@ -34,6 +34,6 @@ uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/
 status=$?
 
 [ "$status" -eq 0 ] || fail "S76 — verwacht doorgang (exit 0) als de CI-opvraging faalt, kreeg $status. Uitvoer: $uitvoer"
-assert_contains "S76 — luide waarschuwing over de overgeslagen CI-controle" "waarschuwing" "$uitvoer"
+assert_contains "S76 — luide waarschuwing over de overgeslagen CI-controle" "warning" "$uitvoer"
 
 test_klaar

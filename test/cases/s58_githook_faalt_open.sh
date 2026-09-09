@@ -27,6 +27,6 @@ status=$?
 
 # Then: luide waarschuwing, en het commando gaat gewoon door.
 [ "$status" -eq 0 ] || fail "S58 — de commit werd geblokkeerd terwijl regels.sh ontbreekt (moet faal-open zijn)"
-assert_contains "S58 — er verschijnt een waarschuwing" "waarschuwing" "$uitvoer"
+assert_contains "S58 — er verschijnt een waarschuwing" "warning" "$uitvoer"
 
 test_klaar

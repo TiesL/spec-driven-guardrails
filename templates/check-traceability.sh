@@ -22,11 +22,11 @@ scenarios="$project/TEST-SCENARIOS.md"
 
 fouten=0
 melding() { echo "traceability: $1" >&2; fouten=$((fouten + 1)); }
-waarschuwing() { echo "traceability: waarschuwing — $1" >&2; }
+waarschuwing() { echo "traceability: warning — $1" >&2; }
 
 for bestand in "$prd" "$scenarios"; do
   if [ ! -f "$bestand" ]; then
-    waarschuwing "${bestand#"$project"/} ontbreekt — niets te controleren"
+    waarschuwing "${bestand#"$project"/} is missing — nothing to check"
     exit 0
   fi
 done
@@ -86,7 +86,7 @@ for paar in "PRD.md:$prd_ids" "TEST-SCENARIOS.md:$scenario_ids"; do
   dubbel="$(printf '%s\n' "${paar#*:}" | grep -v '^$' | sort | uniq -d)"
   if [ -n "$dubbel" ]; then
     for id in $dubbel; do
-      melding "$naam bevat $id meer dan één keer — een verwijzing ernaar is niet eenduidig"
+      melding "$naam contains $id more than once — a reference to it is ambiguous"
     done
   fi
 done
@@ -95,7 +95,7 @@ done
 # existing projects is exactly this case; failing hard there would disable
 # the script immediately, and then it checks nothing anywhere.
 if [ -z "$prd_ids" ]; then
-  waarschuwing "PRD.md heeft geen ID-koppen — schakel 1 is hier niet te controleren"
+  waarschuwing "PRD.md has no ID headings — link 1 can't be checked here"
   [ "$fouten" -eq 0 ] && exit 0
   exit 1
 fi
@@ -105,7 +105,7 @@ controleer_verwijzingen() {
   local bestand="$1" naam="$2" doelen="$3" doelnaam="$4" token
   for token in $(dekt_tokens "$bestand"); do
     printf '%s\n' "$doelen" | grep -qx "$token" \
-      || melding "$naam verwijst naar $token, maar dat ID bestaat niet in $doelnaam"
+      || melding "$naam refers to $token, but that ID doesn't exist in $doelnaam"
   done
 }
 # Reporting broken tokens, in both files.
@@ -113,7 +113,7 @@ for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
   naam="${paar%%:*}"
   while IFS= read -r stuk; do
     [ -n "$stuk" ] || continue
-    melding "$naam: '$stuk' in een Dekt:-veld is geen geldig ID — verwacht komma-gescheiden tokens van de vorm F1, S2 of S2b"
+    melding "$naam: '$stuk' in a Dekt: field is not a valid ID — expected comma-separated tokens like F1, S2, or S2b"
   done <<EOF
 $(dekt_ongeldig "${paar#*:}")
 EOF
@@ -132,14 +132,14 @@ controleer_verwijzingen "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 # once the first reference appears.
 gedekt="$(dekt_tokens "$scenarios" | sort -u)"
 if [ -z "$gedekt" ]; then
-  waarschuwing "TEST-SCENARIOS.md draagt nog geen Dekt:-velden — schakel 1 wordt pas gehandhaafd zodra de eerste verwijzing er staat"
+  waarschuwing "TEST-SCENARIOS.md doesn't carry any Dekt: fields yet — link 1 is only enforced once the first reference appears"
   [ "$fouten" -eq 0 ] && exit 0
   exit 1
 fi
 
 for id in $prd_ids; do
   printf '%s\n' "$gedekt" | grep -qx "$id" \
-    || melding "$id heeft geen enkel scenario dat het dekt"
+    || melding "$id has no scenario covering it"
 done
 
 [ "$fouten" -eq 0 ] || exit 1

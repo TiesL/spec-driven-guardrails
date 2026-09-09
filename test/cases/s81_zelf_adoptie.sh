@@ -67,7 +67,7 @@ hook_uitvoer="$(printf '%s' "$invoer" | "$repo/hooks/git-guardrails" 2>&1)"
 hook_status=$?
 [ "$hook_status" -ne 0 ] \
   || fail "S81 — de PreToolUse-guard weigerde een directe push naar main niet: $hook_uitvoer"
-assert_contains "S81 — de melding komt overeen met de PreToolUse-guard" "main krijgt zijn wijzigingen via een PR" "$hook_uitvoer"
+assert_contains "S81 — de melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$hook_uitvoer"
 
 # And: de native git-hooks zijn ook geïnstalleerd en weigeren hetzelfde
 # buiten Claude Code om (zelfde patroon als S50).
@@ -77,7 +77,7 @@ native_uitvoer="$(cd "$repo" && git commit -q --allow-empty -m "rechtstreeks op 
 native_status=$?
 [ "$native_status" -ne 0 ] \
   || fail "S81 — de native pre-commit-hook weigerde een directe commit op main niet"
-assert_contains "S81 — de native-hookmelding komt overeen met de PreToolUse-guard" "main krijgt zijn wijzigingen via een PR" "$native_uitvoer"
+assert_contains "S81 — de native-hookmelding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$native_uitvoer"
 
 # And: een tweede aanroep is idempotent.
 uitvoer2="$(SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$repo" 2>&1)"

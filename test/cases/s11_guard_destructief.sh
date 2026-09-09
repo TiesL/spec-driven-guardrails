@@ -115,7 +115,7 @@ uit_status=$?
 
 [ "$uit_status" -ne 2 ] || fail "S11 — de uitweg werkt niet; het commando bleef geblokkeerd"
 [ -s "$uit_fout" ] || fail "S11 — de uitweg meldt niets; een stille uitweg is een uitgezette guard"
-grep -qi 'waarschuwing' "$uit_fout" || {
+grep -qi 'warning' "$uit_fout" || {
   fail "S11 — de melding bij de uitweg is niet als waarschuwing herkenbaar"
   cat "$uit_fout" >&2
 }

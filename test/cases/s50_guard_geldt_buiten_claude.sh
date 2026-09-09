@@ -35,7 +35,7 @@ status=$?
 
 # Then: geweigerd, met dezelfde melding als de PreToolUse-guard.
 [ "$status" -ne 0 ] || fail "S50 — commit op main via een rechtstreekse git-aanroep werd niet geweigerd"
-assert_contains "S50 — de melding komt overeen met de PreToolUse-guard" "main krijgt zijn wijzigingen via een PR" "$uitvoer"
+assert_contains "S50 — de melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$uitvoer"
 
 # And: op een feature-branch gaat het gewoon door — dezelfde regel, niet een
 # blokkade van alles.
@@ -50,7 +50,7 @@ git -C "$project" branch -q --unset-upstream 2>/dev/null || true
 push_uitvoer="$(cd "$project" && git push origin main 2>&1)"
 push_status=$?
 [ "$push_status" -ne 0 ] || fail "S50 — git push origin main werd niet geweigerd"
-assert_contains "S50 — de push-melding komt overeen met de PreToolUse-guard" "main krijgt zijn wijzigingen via een PR" "$push_uitvoer"
+assert_contains "S50 — de push-melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$push_uitvoer"
 
 # En: een relatieve SPEC_DRIVEN_GUARDRAILS_DIR mag de symlink niet dangling maken.
 # Gevonden in de review op PR #76: een relatief pad resolvt vanuit de map van
