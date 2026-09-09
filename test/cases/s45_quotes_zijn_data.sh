@@ -49,8 +49,9 @@ toegestaan "heredoc with quoted delimiter" "cat <<'EOF' >> doc.md
 git push origin main
 EOF"
 # The terminator must be exactly the whole line. If the body contains a line
-# where the delimiter only occurs partially, the body does not end there -
-# otherwise the text after it would still be read as a command.
+# where the delimiter appears only as part of something else, the body does
+# not end there - otherwise the text after it would still be read as a
+# command.
 toegestaan "delimiter as a word in the body" 'cat <<EOF > x
 dit is niet EOF maar gewone tekst
 git reset --hard
