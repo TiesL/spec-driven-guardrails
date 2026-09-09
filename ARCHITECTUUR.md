@@ -131,7 +131,11 @@ elke checkout van dit repo.
 
 ## Openstaand na dit document
 
-- Of er bij elke toekomstige release ook een formele GitHub Release
-  (`gh release create`) komt, met notities, naast de bestaande bare git-tag —
-  besloten vóór het afronden van W37, nog niet uitgevoerd op het moment van
-  schrijven.
+- **Beslist (2026-09-09): geen formele GitHub Release voor de bestaande tag
+  vóór epic #52 zelf afgerond is.** `install.sh` en de bare git-tag werken
+  daar niet minder om — een release nu zou alleen een versie discoverable
+  maken die nog niet is wat epic #52 belooft (nog niet vertaald, nog niet
+  ingedikt, nog geen voorpagina). Een `gh release create` per toekomstige
+  tag, met notities, blijft dus open totdat de laatste werkitems onder #52
+  (W33-W35) landen — dan pas is er iets dat een tweede gebruiker ook echt
+  zou moeten willen pinnen.
