@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# R7 — Geadopteerd project blijft de volledige operationele instructie zien.
+# R7 — An adopted project still sees the full operational instruction.
 # Dekt: F12
 #
-# De vijf termen (branching, kwaliteitsreview, onderbouwingsplicht,
-# deploy-guards, adoptieregistratie) moeten na de knip van WORKFLOW.md nog
-# steeds in één sprong oplosbaar zijn: direct in het bestand, of via een
-# expliciete verwijzing naar een skill die ook echt bestaat.
+# The five terms (branching, quality review, substantiation requirement,
+# deploy-guards, adoption registry) must still resolve in a single jump
+# after WORKFLOW.md's trim: directly in the file, or via an explicit
+# reference to a skill that actually exists.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -19,30 +19,30 @@ project="$(vers_project r7)"
 adopteer "$project"
 
 claude_md="$project/CLAUDE.md"
-[ -f "$claude_md" ] || { fail "R7 — CLAUDE.md ontbreekt na adoptie"; test_klaar "R7"; }
+[ -f "$claude_md" ] || { fail "R7 — CLAUDE.md is missing after adoption"; test_klaar "R7"; }
 
 controleer_term() {
   local term="$1"
   local rijen aantal skill doel
   rijen="$(wegwijzer_rijen "$claude_md" | grep -i "$term" || true)"
   aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
-  [ "$aantal" -ge 1 ] || { fail "R7 — '$term' levert geen Wegwijzer-rij op"; return; }
+  [ "$aantal" -ge 1 ] || { fail "R7 — '$term' yields no routing table row"; return; }
   while IFS= read -r rij; do
     [ -n "$rij" ] || continue
     skill="$(skill_van_rij "$rij")"
     doel="$project/.claude/skills/$skill/SKILL.md"
     [ -f "$doel" ] \
-      || fail "R7 — '$term' wijst naar skill '$skill', maar $doel bestaat niet"
+      || fail "R7 — '$term' points to skill '$skill', but $doel does not exist"
   done <<< "$rijen"
 }
 
-controleer_term "kwaliteitsreview"
-controleer_term "onderbouwingsplicht"
+controleer_term "quality review"
+controleer_term "substantiation requirement"
 controleer_term "deploy-guards"
-controleer_term "adoptieregistratie"
+controleer_term "adoption registry"
 
-# Branching is niet verplaatst: de sectie blijft direct in het bestand.
-grep -qi '^## Branchstrategie' "$claude_md" \
-  || fail "R7 — 'Branchstrategie' staat niet meer direct in CLAUDE.md"
+# Branching is not moved: the section stays directly in the file.
+grep -qi '^## Branch strategy' "$claude_md" \
+  || fail "R7 — 'Branch strategy' is no longer directly in CLAUDE.md"
 
 test_klaar "R7"

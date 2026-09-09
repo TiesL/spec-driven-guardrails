@@ -242,10 +242,10 @@ test_klaar() {
   exit 0
 }
 
-# Regels binnen de "## Wegwijzer"-tabel van $1, elk beginnend met '|'. Gebruikt
-# door de W9-tests (R7, S29) die de Wegwijzer-tabel controleren.
+# Regels binnen de "## Routing table"-tabel van $1, elk beginnend met '|'.
+# Gebruikt door de W9-tests (R7, S29) die de routing table controleren.
 wegwijzer_rijen() {
-  awk '/^## Wegwijzer/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
+  awk '/^## Routing table/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
 }
 
 # De laatste kolom van een Wegwijzer-tabelrij, ontdaan van backticks,

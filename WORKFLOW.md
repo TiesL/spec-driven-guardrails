@@ -1,53 +1,52 @@
-# Werkwijze — Git/GitHub-workflow
+# Method — Git/GitHub Workflow
 
-Dit project wordt vanaf meerdere computers ontwikkeld. Volg deze workflow in elke sessie, ongeacht op welke machine je werkt. Deze tekst wordt in geadopteerde projecten gesymlinkt als `CLAUDE.md` — zie `README.md` in dit repo voor de adoptieprocedure.
+This project is developed from multiple computers. Follow this workflow in every session, regardless of which machine you're working on. This text is symlinked as `CLAUDE.md` in adopted projects — see `README.md` in this repo for the adoption procedure.
 
-## Branchstrategie: GitHub Flow
+## Branch strategy: GitHub Flow
 
-- `main` is altijd stabiel/werkend. **Nooit rechtstreeks naar `main` committen of pushen** — dit is een workflow-afspraak, geen technisch afgedwongen regel (GitHub branch protection op private repo's vereist een betaald plan).
-- Al het werk gebeurt op een kortlevende branch vanaf de actuele `main`:
-  - `feature/<kebab-case-omschrijving>` voor nieuwe functionaliteit/epics
-  - `fix/<kebab-case-omschrijving>` voor bugfixes (ook triviale, zoals documentatiecorrecties)
+- `main` is always stable/working. **Never commit or push directly to `main`** — this is a workflow agreement, not a technically enforced rule (GitHub branch protection on private repos requires a paid plan).
+- All work happens on a short-lived branch from the current `main`:
+  - `feature/<kebab-case-description>` for new functionality/epics
+  - `fix/<kebab-case-description>` for bug fixes (including trivial ones, such as documentation corrections)
 
-## Bij het starten van een sessie
+## When starting a session
 
-1. `git fetch origin` (gebeurt ook automatisch via een `SessionStart`-hook, zie `settings/session-hooks.json`).
-2. Ga na of je verder werkt aan bestaand werk (bestaande feature-branch) of iets nieuws begint.
-   - Bestaand werk: `git checkout <branch> && git pull origin <branch>`.
-   - Nieuw werk: `git checkout main && git pull origin main && git checkout -b feature/<naam>` (of `fix/<naam>`).
-3. Bekijk de recente historie voor context: `git log --oneline -10` — vooral nuttig als je op de andere computer verdergaat en wilt zien wat er sinds de laatste keer is gebeurd.
+1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`).
+2. Check whether you're continuing existing work (existing feature branch) or starting something new.
+   - Existing work: `git checkout <branch> && git pull origin <branch>`.
+   - New work: `git checkout main && git pull origin main && git checkout -b feature/<name>` (or `fix/<name>`).
+3. Review recent history for context: `git log --oneline -10` — especially useful if you're continuing on the other computer and want to see what's happened since last time.
 
-## Tijdens het werk
+## During the work
 
-- Commit logische stappen op de feature-branch.
-- Push regelmatig naar `origin/<branch>` — nooit naar `main`. Dit gebeurt ook automatisch: een `SessionEnd`-hook pusht bij het afsluiten van een sessie de huidige branch, met een guard die dit overslaat wanneer toevallig `main` is uitgecheckt (extra vangnet, want er is geen branch protection — zie hieronder).
-- Commitberichten bevatten geen "Co-Authored-By"-trailer — afgedwongen via `attribution.commit: ""` in `settings/session-hooks.json`, niet afhankelijk van of de uitvoerende sessie zich dat herinnert.
+- Commit logical steps on the feature branch.
+- Push regularly to `origin/<branch>` — never to `main`. This also happens automatically: a `SessionEnd` hook pushes the current branch when a session ends, with a guard that skips this when `main` happens to be checked out (extra safety net, since there's no branch protection — see below).
+- Commit messages carry no "Co-Authored-By" trailer — enforced via `attribution.commit: ""` in `settings/session-hooks.json`, not dependent on whether the executing session remembers to do so.
 
-## Afronden
+## Wrapping up
 
-1. Zodra de wijziging klaar en getest is (en, waar van toepassing, handmatig geverifieerd): open een PR met `gh pr create`. Verwijst de PR naar een issue (`Closes #N`), zet die koppeling dan in de **PR-beschrijving zelf**, niet alleen in een commitboodschap: GitHub vult `closingIssuesReferences` — het veld waarop issue-koppeling-controles daadwerkelijk toetsen — uitsluitend uit de PR-titel/-body. Een commit met `Closes #N` sluit het issue weliswaar bij een merge naar `main`, maar zo'n controle ziet de koppeling dan niet terwijl de PR nog open staat.
-2. **Draai een kwaliteitsreview** vóór de merge — zie de skill `pre-merge-review`.
-3. **Wacht op expliciete bevestiging van Ties** dat de test geslaagd is en er geen regressie is, vóór je merget. Merg nooit automatisch zonder die bevestiging.
-4. Merge daarna met `gh pr merge --squash --delete-branch` — dit houdt de historie op `main` overzichtelijk en ruimt de branch (lokaal en remote) direct op.
+1. Once the change is complete and tested (and, where applicable, manually verified): open a PR with `gh pr create`. If the PR refers to an issue (`Closes #N`), put that link in the **PR description itself**, not only in a commit message: GitHub populates `closingIssuesReferences` — the field that issue-linking checks actually test against — exclusively from the PR title/body. A commit with `Closes #N` does close the issue on a merge to `main`, but such a check won't see the link while the PR is still open.
+2. **Run a quality review** before the merge — see the `pre-merge-review` skill.
+3. **Wait for Ties' explicit confirmation** that the test succeeded and there's no regression, before merging. Never merge automatically without that confirmation.
+4. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
-## Wegwijzer
+## Routing table
 
-Dit bestand houdt wat élke sessie nodig heeft. Voor de rest: onderstaande tabel
-lost elk verplaatst onderwerp op in één sprong.
+This file holds what every session needs. For everything else: the table below resolves every moved topic in a single jump.
 
-| Situatie | Skill |
+| Situation | Skill |
 |---|---|
-| Kwaliteitsreview vóór de merge | `pre-merge-review` |
-| Specificeren van werk (PRD, testscenario's, issues), `Dekt:`-conventie | `write-spec` |
-| Onderbouwingsplicht | `adoption-registry` |
-| Adoptieregistratie (per project bijhouden welke wijzigingen van toepassing zijn) | `adoption-registry` |
-| `check`/`deploy`-naamconventie, CI | `check-convention` |
-| Deploy-voorwaarden per omgeving | `deploy-guards` |
-| Complexiteit, technical debt, refactoring | `refactoring-triggers` |
-| Test-first werken: seams, rood-vóór-groen, anti-patronen | `tdd-seams` |
-| Een bug diagnosticeren: reproductie → hypotheses → regressietest → fix | `diagnose-bug` |
-| Nieuw (gerelateerd) project opzetten | `adopt-workflow` (user-level) |
+| Quality review before the merge | `pre-merge-review` |
+| Specifying work (PRD, test scenarios, issues), `Dekt:` convention | `write-spec` |
+| Substantiation requirement | `adoption-registry` |
+| Adoption registry (tracking per project which changes apply) | `adoption-registry` |
+| `check`/`deploy` naming convention, CI | `check-convention` |
+| Deploy conditions per environment | `deploy-guards` |
+| Complexity, technical debt, refactoring | `refactoring-triggers` |
+| Test-first work: seams, red-before-green, anti-patterns | `tdd-seams` |
+| Diagnosing a bug: reproduction → hypotheses → regression test → fix | `diagnose-bug` |
+| Setting up a new (related) project | `adopt-workflow` (user-level) |
 
-## Waarom
+## Why
 
-Zonder deze afspraak ontstaan conflicten en kan werk van de ene computer per ongeluk overschreven worden door werk van de andere. Er is geen technische blokkade tegen directe pushes naar `main` — volg deze workflow dus bewust, ook wanneer een directe push technisch zou lukken.
+Without this agreement, conflicts arise and work from one computer can accidentally be overwritten by work from the other. There is no technical block against direct pushes to `main` — so follow this workflow deliberately, even when a direct push would technically succeed.

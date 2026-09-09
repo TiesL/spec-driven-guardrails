@@ -41,11 +41,11 @@ passen, en dat is erger dan een guard die je expliciet uitzet.
 
 1. Werk op een feature-branch; commit en push.
 2. Deploy die branch naar **pre-productie**; doe daar de acceptatietest.
-3. Gaat die goed: Ties initieert de merge naar `main` (zie "Afronden" in
+3. Gaat die goed: Ties initieert de merge naar `main` (zie "Wrapping up" in
    `WORKFLOW.md`).
 4. Deploy `main` naar **productie**, na expliciete goedkeuring van Ties.
 
-Zonder pre-productieomgeving bijten stap 2 en de afspraak uit "Afronden" elkaar:
+Zonder pre-productieomgeving bijten stap 2 en de afspraak uit "Wrapping up" elkaar:
 verifiëren kan dan alleen in productie, maar daar mag je pas ná de merge komen.
 Laat die spanning niet sluimeren — kies bewust: gebruik de ontsnappingsroute voor
 die ene uitrol en zeg hardop dat je dat doet, óf richt een pre-productieomgeving

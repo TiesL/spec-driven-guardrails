@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S34 — De README beschrijft de nieuwe structuur.
+# S34 — The README describes the current structure.
 # Dekt: F16
 
 set -uo pipefail
@@ -11,20 +11,20 @@ readme="$TEST_REPO_ROOT/README.md"
 
 for map in 'skills/' 'hooks/' 'lib/' 'nfr/' 'test/' 'CHANGES-ARCHIEF.md'; do
   if ! grep -qF "\`$map\`" "$readme"; then
-    fail "S34 — README.md noemt \`$map\` niet in de inhoudstabel"
+    fail "S34 — README.md does not mention \`$map\` in the contents table"
   fi
 done
 
-# "check" komt ook los voor in doorlopende tekst; de tabelrij zelf is wat telt.
+# "check" also appears loose in running text; the table row itself is what counts.
 if ! grep -qE '^\| `check` \|' "$readme"; then
-  fail "S34 — README.md heeft geen tabelrij voor \`check\`"
+  fail "S34 — README.md has no table row for \`check\`"
 fi
 
-if ! grep -q 'vijftien niet-functionele vragen' "$readme"; then
-  fail "S34 — README.md noemt niet 'vijftien niet-functionele vragen'"
+if ! grep -q 'fifteen non-functional questions' "$readme"; then
+  fail "S34 — README.md does not mention 'fifteen non-functional questions'"
 fi
-if grep -q 'vijf niet-functionele vragen' "$readme"; then
-  fail "S34 — README.md noemt nog steeds 'vijf niet-functionele vragen' (verouderd sinds 4821bac)"
+if grep -q 'five non-functional questions' "$readme"; then
+  fail "S34 — README.md still mentions 'five non-functional questions' (outdated since 4821bac)"
 fi
 
 test_klaar

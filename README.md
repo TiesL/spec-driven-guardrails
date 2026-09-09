@@ -1,134 +1,134 @@
 # spec-driven-guardrails
 
-(Voorheen `claude-workflow` — hernoemd in W32/#56, zie PRD.md "Besloten in W29 (#53)", besluit 1.)
+(Formerly `claude-workflow` — renamed in W32/#56, see PRD.md "Besloten in W29 (#53)", decision 1.)
 
-Eén, versiebeheerde bron van waarheid voor de persoonlijke Git/GitHub-workflow die Ties met Claude Code gebruikt in al zijn solo-projecten (niet in team-/werkprojecten). Voorheen stond deze workflow gedupliceerd in elk project (`CLAUDE.md` + `.claude/settings.json`), wat tot drift leidde — dit repo lost dat op.
+One, version-controlled source of truth for the personal Git/GitHub workflow that Ties uses with Claude Code in all his solo projects (not in team/work projects). This workflow used to be duplicated in every project (`CLAUDE.md` + `.claude/settings.json`), which led to drift — this repo solves that.
 
-## Inhoud
+## Contents
 
-| Bestand | Doel |
+| File | Purpose |
 |---|---|
-| `WORKFLOW.md` | De workflow-tekst zelf (GitHub Flow, branch+PR, sessie-stappen, specificatieproces) plus een Wegwijzer die elk verplaatst onderwerp naar zijn skill doorverwijst. Wordt in geadopteerde projecten gesymlinkt als `CLAUDE.md`. |
-| `settings/session-hooks.json` | `SessionStart`/`SessionEnd`-hooks + `attribution.commit`-instelling. Wordt gesymlinkt als `.claude/settings.json`. |
-| `hooks/` | `git-guardrails` — de `PreToolUse`-guard tegen destructieve git-commando's én (W10b) de merge-guard op `gh pr merge` zonder review-marker of met niet-groene CI. Faalt altijd open (geen `gh`/netwerk, ontbrekend hulpprogramma) — een kapotte guard mag nooit het werk blokkeren. Aangeroepen vanuit `settings/session-hooks.json`. |
-| `skills/` | De negen Claude Code skills (`pre-merge-review`, `deploy-guards`, `check-convention`, `adoption-registry`, `write-spec`, `refactoring-triggers`, `tdd-seams`, `diagnose-bug`, `adopt-workflow`) — zie de Wegwijzer in `WORKFLOW.md`. `adopt.sh` symlinkt ze per skill naar `.claude/skills/` van elk geadopteerd project. |
-| `USER-CLAUDE.md` | Korte trigger-instructie voor de automatische adoptievraag bij nieuwe projecten. Wordt gesymlinkt als `~/.claude/CLAUDE.md`. |
-| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generieke sjablonen voor het specificeren van een project (zie de skill `write-spec`). De PRD dwingt vijftien niet-functionele vragen af en scheidt *Bekende beperkingen* van *Technical debt*; de testscenario's vragen naast happy paths ook failure paths; `ARCHITECTUUR.md` legt structurele besluiten en hun herzieningstrigger vast. Worden bij adoptie **gekopieerd**, maar alleen als het bestand daar nog niet bestaat — een al ingevuld exemplaar wordt nooit overschreven. |
-| `templates/ISSUE_TEMPLATE/` | GitHub issue-templates (`epic.md`, `work-item.md`, `config.yml`), qua notatie afgestemd op `PRD.md`/`TEST-SCENARIOS.md`. Worden bij elke adoptie **gekopieerd** (ververst) naar `.github/ISSUE_TEMPLATE/` van het project. |
-| `templates/CONTEXT.md` | Optioneel begrippenkader (projectjargon → betekenis), los van `ARCHITECTUUR.md` dat over structurele besluiten gaat. Wordt alleen gescaffold als het project `proces-context-document` in `CHANGES.md` met `ja` beantwoordde. |
-| `templates/ci.yml` | Generieke GitHub Actions-CI die alleen `npm run check` aanroept (zie de skill `check-convention`). Wordt bij adoptie gescaffold, maar alleen als het project een `package.json` heeft. |
-| `CHANGES.md` | Lijst van adopteerbare wijzigingen: per PR-grote wijziging een gesloten vraag, een "van toepassing als"-conditie en wat "ja" betekent. Projecten leggen hun antwoord vast in hun eigen `WORKFLOW-ADOPTIE.md`. |
-| `CHANGES-ARCHIEF.md` | Geretireerde `CHANGES.md`-entries, met hun ID ongewijzigd zodat een project dat ooit antwoordde nog kan terugvinden waar die rij vandaan komt. |
-| `nfr/` | Het NFR-register: vijftien bestanden, één per niet-functioneel kenmerk (security, data-integriteit, failure modes, …). Enige bron voor zowel de `spec-*`-vragen in `CHANGES.md` als de ingevulde subsecties in `templates/PRD.md` — geen van beide meer los bijgehouden. |
-| `lib/` | Gedeelde bash-bibliotheken: `changes.sh` (de `CHANGES.md`-parser en predicaten, gebruikt door `adopt.sh` én `pending-changes.sh`) en `nfr.sh` (leest/valideert het `nfr/`-register). |
-| `pending-changes.sh` | Bepaalt welke wijzigingen uit `CHANGES.md` en `nfr/` voor een project van toepassing zijn en nog geen antwoord hebben. Wordt aangeroepen door de `SessionStart`-hook. |
-| `adopt.sh` | Script dat de symlinks en kopieën hierboven lokaal aanmaakt/ververst, en de adoptietabel van een nieuw project seedt. |
-| `check` | Het enige commando dat dit repo's eigen CI aanroept: bash-syntaxis, JSON-validatie, NFR-registerdrift, PR-linkbacks, shellcheck (niet-blokkerend), dan de testsuite. Dezelfde `check`/`deploy`-naamconventie die dit repo aan geadopteerde projecten voorschrijft, hier op zichzelf toegepast. |
-| `test/` | De eigen testsuite van dit repo: `run.sh` (draait alles onder `cases/`), `lib.sh` (sandbox- en assert-hulpfuncties) en `fixtures/nulmeting/` (de bevroren nulmeting, zie het `LEESMIJ.md` daar). |
-| `PRD-MULTI-AGENT-WIP.md` | **WIP** — verkennend PRD voor multi-agent softwareontwikkeling in een latere release, gekoppeld aan epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Geen onderdeel van de gedeelde workflow-machinerie hierboven en niet goedgekeurd: richtinggevend, met open ontwerpvragen bewust als **TBD**. |
+| `WORKFLOW.md` | The workflow text itself (GitHub Flow, branch+PR, session steps, specification process) plus a routing table that points every moved topic to its skill. Symlinked as `CLAUDE.md` in adopted projects. |
+| `settings/session-hooks.json` | `SessionStart`/`SessionEnd` hooks + `attribution.commit` setting. Symlinked as `.claude/settings.json`. |
+| `hooks/` | `git-guardrails` — the `PreToolUse` guard against destructive git commands, and (W10b) the merge guard on `gh pr merge` without a review marker or with non-green CI. Always fails open (no `gh`/network, missing tool) — a broken guard must never block work. Invoked from `settings/session-hooks.json`. |
+| `skills/` | The nine Claude Code skills (`pre-merge-review`, `deploy-guards`, `check-convention`, `adoption-registry`, `write-spec`, `refactoring-triggers`, `tdd-seams`, `diagnose-bug`, `adopt-workflow`) — see the routing table in `WORKFLOW.md`. `adopt.sh` symlinks each of them into `.claude/skills/` of every adopted project. |
+| `USER-CLAUDE.md` | Short trigger instruction for the automatic adoption prompt on new projects. Symlinked as `~/.claude/CLAUDE.md`. |
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Bekende beperkingen* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTUUR.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
+| `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
+| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTUUR.md`, which covers structural decisions. Only scaffolded if the project answered `ja` to `proces-context-document` in `CHANGES.md`. |
+| `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |
+| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "ja" means. Projects record their answer in their own `WORKFLOW-ADOPTIE.md`. |
+| `CHANGES-ARCHIEF.md` | Retired `CHANGES.md` entries, with their ID unchanged so a project that once answered can still find where that row came from. |
+| `nfr/` | The NFR registry: fifteen files, one per non-functional attribute (security, data integrity, failure modes, …). The sole source for both the `spec-*` questions in `CHANGES.md` and the filled-in subsections in `templates/PRD.md` — neither is tracked separately anymore. |
+| `lib/` | Shared bash libraries: `changes.sh` (the `CHANGES.md` parser and predicates, used by both `adopt.sh` and `pending-changes.sh`) and `nfr.sh` (reads/validates the `nfr/` registry). |
+| `pending-changes.sh` | Determines which changes from `CHANGES.md` and `nfr/` apply to a project and are still unanswered. Invoked by the `SessionStart` hook. |
+| `adopt.sh` | Script that creates/refreshes the symlinks and copies above locally, and seeds the adoption table of a new project. |
+| `check` | The only command this repo's own CI invokes: bash syntax, JSON validation, NFR registry drift, PR linkbacks, shellcheck (non-blocking), then the test suite. The same `check`/`deploy` naming convention this repo requires of adopted projects, applied here to itself. |
+| `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/nulmeting/` (the frozen baseline, see `LEESMIJ.md` there). |
+| `PRD-MULTI-AGENT-WIP.md` | **WIP** — exploratory PRD for multi-agent software development in a later release, linked to epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Not part of the shared workflow machinery above, and not approved: directional, with open design questions deliberately marked as **TBD**. |
 
-## Waarom lokale symlinks i.p.v. gecommitte symlinks
+## Why local symlinks instead of committed symlinks
 
-De projectmappen staan niet op dezelfde plek op elke computer (bijv. `~/Projects` op de ene, `~/Documents/ClaudeCodeZandbak` op de andere). Een symlink die je commit naar git (relatief of absoluut) kan dus nooit op beide machines tegelijk kloppen. Daarom worden de symlinks **niet gecommit**: `adopt.sh` maakt ze lokaal aan, met een pad dat via de omgevingsvariabele `SPEC_DRIVEN_GUARDRAILS_DIR` per machine correct is.
+Project directories aren't in the same place on every computer (e.g. `~/Projects` on one, `~/Documents/ClaudeCodeZandbak` on the other). A symlink you commit to git (relative or absolute) can therefore never be correct on both machines at once. That's why the symlinks are **not committed**: `adopt.sh` creates them locally, with a path that's correct per machine via the `SPEC_DRIVEN_GUARDRAILS_DIR` environment variable.
 
-## Eenmalige setup per machine (Ties' eigen gebruik: altijd `main` volgen)
+## One-time setup per machine (Ties' own use: always follow `main`)
 
-1. Clone dit repo ergens naar keuze op de machine.
-2. Zet in je shell-profiel (`~/.zshrc` of `~/.bashrc`) één keer:
+1. Clone this repo anywhere you like on the machine.
+2. Set once in your shell profile (`~/.zshrc` or `~/.bashrc`):
    ```bash
-   export SPEC_DRIVEN_GUARDRAILS_DIR="/volledig/pad/naar/spec-driven-guardrails"
+   export SPEC_DRIVEN_GUARDRAILS_DIR="/full/path/to/spec-driven-guardrails"
    ```
-   Herstart je shell (of `source ~/.zshrc`) zodat de variabele actief is.
-3. Zet de userbrede adoptievraag-trigger op:
+   Restart your shell (or `source ~/.zshrc`) so the variable is active.
+3. Set up the user-wide adoption-prompt trigger:
    ```bash
    "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --user
    ```
-   Vanaf nu vraagt Claude Code automatisch, bij het starten van een sessie in een nog niet-geadopteerd git-project, of dat project deze workflow moet gebruiken.
+   From now on, Claude Code will automatically ask, when starting a session in a not-yet-adopted git project, whether that project should use this workflow.
 
-Deze checkout blijft `main` volgen — dit is Ties' eigen, doorlopende
-multi-machine-gebruik. Wil je in plaats daarvan een specifieke, gepinde
-versie (zie hieronder), dan geldt die setup in plaats van stap 1-2 hierboven.
+This checkout keeps following `main` — this is Ties' own, ongoing
+multi-machine use. If you want a specific, pinned version instead
+(see below), that setup replaces steps 1-2 above.
 
-## Een gepinde versie installeren (voor een andere gebruiker dan Ties)
+## Installing a pinned version (for a user other than Ties)
 
-Wil je niet elke wijziging op `main` live meekrijgen, maar op een specifieke,
-getagde release blijven staan tot je zelf besluit te upgraden:
+If you don't want to get every change on `main` live, but instead stay on a
+specific, tagged release until you decide to upgrade:
 
-1. Clone dit repo (zoals hierboven, stap 1).
-2. Draai vanuit die kloon:
+1. Clone this repo (as above, step 1).
+2. Run from that clone:
    ```bash
-   ./install.sh          # pint op de laatste tag
-   ./install.sh <tag>     # pint op een specifieke tag
+   ./install.sh          # pins to the latest tag
+   ./install.sh <tag>     # pins to a specific tag
    ```
-   `install.sh` weigert te draaien op een vieze werkmap (niet-gecommitte
-   wijzigingen), en meldt duidelijk welke tag hij koos of waarom een
-   opgegeven tag niet bestaat.
-3. Volg de instructie die `install.sh` aan het eind print: zet
-   `SPEC_DRIVEN_GUARDRAILS_DIR` naar deze kloon in je shell-profiel (stap 2
-   hierboven, ongewijzigd) en zet desgewenst de user-brede trigger op (stap 3
-   hierboven).
+   `install.sh` refuses to run on a dirty working tree (uncommitted
+   changes), and clearly reports which tag it picked or why a
+   given tag doesn't exist.
+3. Follow the instruction `install.sh` prints at the end: set
+   `SPEC_DRIVEN_GUARDRAILS_DIR` to this clone in your shell profile (step 2
+   above, unchanged), and optionally set the user-wide trigger (step 3
+   above).
 
-Upgraden naar een nieuwere release: draai `install.sh <nieuwe-tag>` opnieuw
-in dezelfde kloon. Dit is functioneel gelijk aan Ties' eigen setup — beide
-resulteren in een checkout waar `adopt.sh` op dezelfde manier tegen draait —
-alleen volgt deze kloon nooit automatisch `main`.
+Upgrading to a newer release: run `install.sh <new-tag>` again
+in the same clone. This is functionally equivalent to Ties' own setup — both
+result in a checkout that `adopt.sh` works against the same way —
+only this clone never follows `main` automatically.
 
-## Een project adopteren
+## Adopting a project
 
-Bestaand project:
+Existing project:
 
 ```bash
-cd /pad/naar/project
+cd /path/to/project
 "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh"
 ```
 
-Nieuw project: eerst `gh repo create <naam> --private --source=. --remote=origin`
-(zie de skill `adopt-workflow` voor de `git init`-variant), dan dezelfde
-`adopt.sh`-stap.
+New project: first `gh repo create <name> --private --source=. --remote=origin`
+(see the `adopt-workflow` skill for the `git init` variant), then the same
+`adopt.sh` step.
 
-Dit zet `CLAUDE.md` en `.claude/settings.json` als lokale symlinks, en voegt ze toe aan `.gitignore` van dat project (het zijn machine-specifieke verwijzingen, geen project-artefacten). Bestaande bestanden op die paden worden — als het geen symlinks zijn — hernoemd naar `*.bak` in plaats van overschreven.
+This sets `CLAUDE.md` and `.claude/settings.json` as local symlinks, and adds them to that project's `.gitignore` (they're machine-specific references, not project artifacts). Existing files at those paths — if they aren't symlinks — are renamed to `*.bak` instead of overwritten.
 
-### Bekende valkuil: branches die ouder zijn dan de adoptie
+### Known pitfall: branches older than the adoption
 
-Git overschrijft een lokale (ongetrackte) symlink zonder waarschuwing zodra je overschakelt naar een branch die `CLAUDE.md`/`.claude/settings.json` nog als gewoon, getrackt bestand bevat (bijv. een feature-branch die vóór de adoptie van dit project is aangemaakt). Na het terugschakelen naar zo'n branch zijn de symlinks dus weg. Oplossingen:
-- **Voorkeur:** merge/rebase `main` in die branch zodra dit project geadopteerd is — daarna verdwijnt het conflict permanent voor die branch.
-- **Alternatief:** draai `adopt.sh` opnieuw na elke keer dat dit gebeurt (idempotent, geen risico).
+Git overwrites a local (untracked) symlink without warning as soon as you switch to a branch that still has `CLAUDE.md`/`.claude/settings.json` as a regular, tracked file (e.g. a feature branch created before this project was adopted). After switching back to such a branch, the symlinks are gone. Solutions:
+- **Preferred:** merge/rebase `main` into that branch once this project is adopted — after that, the conflict disappears permanently for that branch.
+- **Alternative:** run `adopt.sh` again every time this happens (idempotent, no risk).
 
-## Sjablonen: kopie i.p.v. symlink
+## Templates: copy instead of symlink
 
-In tegenstelling tot `CLAUDE.md`/`.claude/settings.json` (lokale symlinks,
-nooit gecommit) worden de bestanden onder `templates/` **gekopieerd** naar
-elk geadopteerd project, met twee verschillende gedragingen:
+Unlike `CLAUDE.md`/`.claude/settings.json` (local symlinks,
+never committed), the files under `templates/` are **copied** into
+each adopted project, with two different behaviors:
 
-- **`PRD.md`/`TEST-SCENARIOS.md`** — scaffold: alleen aangemaakt als het
-  bestand in het project nog niet bestaat. Dit zijn project-eigen, in te
-  vullen documenten; een al ingevuld exemplaar wordt nooit overschreven.
-- **`ISSUE_TEMPLATE/*`** — altijd ververst bij elke `adopt.sh`-run. Dit is
-  meta-configuratie (GitHub-issueformulieren), geen invulbare inhoud.
+- **`PRD.md`/`TEST-SCENARIOS.md`** — scaffold: only created if the
+  file doesn't already exist in the project. These are project-owned,
+  fillable documents; a filled-in copy is never overwritten.
+- **`ISSUE_TEMPLATE/*`** — always refreshed on every `adopt.sh` run. This is
+  meta-configuration (GitHub issue forms), not fillable content.
 
-Een symlink werkt hier sowieso niet voor de issue-templates: GitHub rendert
-die server-side vanuit de repo-inhoud zelf, niet via lokale
-bestandssysteem-symlinks. Gevolg van "kopie": na een wijziging aan een
-canoniek sjabloon in dit repo moet `adopt.sh` opnieuw gedraaid worden in elk
-project om de issue-template-kopie daar te verversen (idempotent, geen
-risico — zelfde soort afspraak als bij de bekende valkuil hierboven).
+A symlink wouldn't work here anyway for the issue templates: GitHub renders
+them server-side from the repo content itself, not via local
+filesystem symlinks. Consequence of "copy": after a change to a
+canonical template in this repo, `adopt.sh` must be run again in every
+project to refresh the issue-template copy there (idempotent, no
+risk — the same kind of agreement as the known pitfall above).
 
-## Adoptieregistratie
+## Adoption registry
 
-Elk geadopteerd project houdt in `WORKFLOW-ADOPTIE.md` bij welke wijzigingen uit
-`CHANGES.md` het toepast. Een `SessionStart`-hook meldt wat er nog openstaat;
-Claude stelt die vragen als gesloten ja/nee-keuzes en legt het antwoord vast.
-Zie de skill `adoption-registry` (bereikbaar via de Wegwijzer in `WORKFLOW.md`) voor het volledige verhaal.
+Every adopted project tracks in `WORKFLOW-ADOPTIE.md` which changes from
+`CHANGES.md` it applies. A `SessionStart` hook reports what's still open;
+Claude poses those as closed yes/no choices and records the answer.
+See the `adoption-registry` skill (reachable via the routing table in `WORKFLOW.md`) for the full story.
 
-Handmatig nakijken kan ook:
+Manual checking is also possible:
 
 ```bash
-"$SPEC_DRIVEN_GUARDRAILS_DIR/pending-changes.sh" /pad/naar/project
+"$SPEC_DRIVEN_GUARDRAILS_DIR/pending-changes.sh" /path/to/project
 ```
 
-De hook lokaliseert dit repo overigens via de symlink
-(`readlink .claude/settings.json`) en niet via een omgevingsvariabele — een
-niet-interactieve shell laadt je `~/.zshrc` niet, dus daarop kan een hook niet
-rekenen. Wijst die symlink naar een map die niet meer bestaat (bijv. na een
-hernoeming vóór her-adoptie), dan meldt de `SessionStart`-hook dat expliciet
-in plaats van stilzwijgend geen hooks te draaien.
+The hook locates this repo via the symlink
+(`readlink .claude/settings.json`), not via an environment variable — a
+non-interactive shell doesn't load your `~/.zshrc`, so a hook can't
+rely on that. If that symlink points to a directory that no longer exists (e.g. after a
+rename before re-adoption), the `SessionStart` hook reports that explicitly
+instead of silently running no hooks.
