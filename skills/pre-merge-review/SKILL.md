@@ -1,135 +1,134 @@
 ---
 name: pre-merge-review
 description: >
-  Hoe de kwaliteitsreview vóór een merge draait: verse context, een model dat
-  minstens zo vaardig is als wie de code schreef, scope proportioneel aan de
-  PR, bevindingen in de PR zelf. Gebruik dit vóór je een PR merget, of
-  wanneer iemand vraagt hoe de kwaliteitsreview werkt.
+  How the quality review before a merge runs: fresh context, a model at
+  least as skilled as whoever wrote the code, scope proportional to the
+  PR, findings in the PR itself. Use this before merging a PR, or when
+  someone asks how the quality review works.
 context: fork
 allowed-tools: Read, Grep, Glob, Bash
 ---
 
-## Kwaliteitsreview vóór de merge
+## Quality review before the merge
 
-Ties kan de technische output niet zelf volledig beoordelen. De review moet dus
-*leesbaar bewijs* opleveren in plaats van een geruststelling.
+Ties can't fully assess the technical output himself. The review must
+therefore produce *readable evidence* instead of reassurance.
 
-**Hoe hij draait.** `context: fork` geeft de verse, geïsoleerde context — geen
-"ik heb dit net gebouwd en het werkt" in de context. Het model is bewust niet
-vastgepind in de frontmatter — zie **Modelkeuze** hieronder. `allowed-tools`
-sluit `Edit`/`Write`/`NotebookEdit` uit: deze skill kan de werkkopie niet met
-een editortool wijzigen. `Bash` staat wél toe (nodig voor `scope.sh`, `gh pr
-diff`, het bevindingen-comment plaatsen) en is dus geen technisch afgedwongen
-schrijfverbod — gebruik het uitsluitend om te lezen en om het comment te
-plaatsen, nooit om bestanden te wijzigen. Deze skill levert bevindingen, geen
-fixes.
+**How it runs.** `context: fork` provides fresh, isolated context — no "I
+just built this and it works" in the context. The model is deliberately
+not pinned in the frontmatter — see **Model choice** below. `allowed-tools`
+excludes `Edit`/`Write`/`NotebookEdit`: this skill cannot modify the
+working tree with an editor tool. `Bash` *is* allowed (needed for
+`scope.sh`, `gh pr diff`, posting the findings comment) and is therefore
+not a technically enforced write ban — use it only to read and to post the
+comment, never to change files. This skill delivers findings, not fixes.
 
-## Modelkeuze
+## Model choice
 
-Geen vast model — dat zou niet meewegen wat de PR daadwerkelijk vraagt, en
-Ties wil bewust variëren in modelgebruik in plaats van reflexmatig overal het
-zwaarste model in te zetten. Kies per aanroep een model dat **minstens zo
-vaardig is als het model dat de gereviewde wijziging schreef**, en binnen die
-ondergrens het meest kosteneffectieve. Een eenvoudige wijziging van een licht
-model mag met een licht model gereviewd worden; een wijziging van een zwaar
-model verdient nooit een lichtere reviewer.
+No fixed model — that wouldn't account for what the PR actually calls
+for, and Ties deliberately wants to vary model use rather than reflexively
+reaching for the heaviest model every time. Choose, per invocation, a
+model that is **at least as skilled as the model that wrote the reviewed
+change**, and, within that floor, the most cost-effective. A simple change
+by a light model may be reviewed by a light model; a change by a heavy
+model never deserves a lighter reviewer.
 
-Wijkt de gekozen keuze af van wat voor de hand ligt, maak dat dan zichtbaar —
-in de PR of het bevindingen-comment — zodat een lezer achteraf ziet welk
-model reviewde en waarom. De rest van deze procedure (geïsoleerde context,
-`scope.sh`, `scenario-poort.sh`, de marker) verandert niet mee met de
-modelkeuze: dat is een aparte knop, geen package deal — een afwijkende
-modelkeuze is geen vrijbrief om ook de rest van de procedure over te slaan.
+If the chosen model deviates from what's obvious, make that visible — in
+the PR or the findings comment — so a later reader can see which model
+reviewed and why. The rest of this procedure (isolated context,
+`scope.sh`, `scenario-poort.sh`, the marker) doesn't change with the model
+choice: that's a separate knob, not a package deal — a different model
+choice is no license to also skip the rest of the procedure.
 
-## De scope
+## The scope
 
-**Altijd**, ongeacht welke NFR's dit project heeft gekozen: complexiteit (is
-dit de eenvoudigste vorm die werkt?) en dependencies (is een nieuwe
-afhankelijkheid nodig, onderhouden, veilig?) — basishygiëne, niet optioneel.
+**Always**, regardless of which NFRs this project chose: complexity (is
+this the simplest form that works?) and dependencies (is a new dependency
+needed, maintained, safe?) — basic hygiene, not optional.
 
-**Daarbovenop**: precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in
-dit project met "ja" is beantwoord (`WORKFLOW-ADOPTIE.md`) — er wordt niet
-gereviewd op iets wat niet eens gespecificeerd is.
+**On top of that**: exactly the NFRs whose corresponding `spec-*` question
+was answered `ja` for this project (`WORKFLOW-ADOPTIE.md`) — nothing gets
+reviewed against a specification it isn't even part of.
 
-Bereken die scope niet uit het hoofd — draai:
+Don't compute that scope by hand — run:
 
 ```
 .claude/skills/pre-merge-review/scope.sh .
 ```
 
-Dat print, één per regel: `complexiteit`, `dependencies`, en daarna per
-beantwoorde NFR `<id>: <kopnaam>` — waarbij `<kopnaam>` de `###`-sectie in
-`PRD.md` is die bij het gegenereerde anker (`<!-- nfr: <id> -->`, uit F4)
-hoort. Ontbreekt dat anker, dan valt het script terug op de kopnaam uit het
-`nfr/`-register van `spec-driven-guardrails` en meldt dat op stderr — een project
-zonder ankers blokkeert de review dus niet, hij degradeert.
+That prints, one per line: `complexiteit`, `dependencies`, and then per
+answered NFR `<id>: <heading name>` — where `<heading name>` is the `###`
+section in `PRD.md` matching the generated anchor (`<!-- nfr: <id> -->`,
+from F4). If that anchor is missing, the script falls back to the heading
+name from `spec-driven-guardrails`'s `nfr/` register and reports that on
+stderr — a project without anchors doesn't block the review, it degrades.
 
-Een NFR-regel die eindigt op `[vereist onderbouwing]` betekent: die
-`WORKFLOW-ADOPTIE.md`-rij draagt nog de voorlopige stempel uit F6, geen echt
-"ja". Behandel dat als reviewbevinding (zie hieronder) — niet als een gewone
-scoperegel om op te reviewen.
+An NFR line ending in `[vereist onderbouwing]` means: that
+`WORKFLOW-ADOPTIE.md` row still carries the provisional stamp from F6, not
+a real "yes". Treat that as a review finding (see below) — not as an
+ordinary scope line to review.
 
-Het lezen van de diff zelf wordt gedelegeerd aan de bestaande
-`code-review`-skill, met deze scope als invoer.
+Reading the diff itself is delegated to the existing `code-review` skill,
+with this scope as input.
 
-## De PR-poort (schakel 2 en 3, W20)
+## The PR gate (links 2 and 3, W20)
 
-Naast de NFR-scope hierboven controleert deze skill ook de traceabilityketen
-richting issues, met `gh` en netwerk die hij toch al gebruikt:
+Besides the NFR scope above, this skill also checks the traceability chain
+toward issues, using `gh` and network access it already needs anyway:
 
-**Schakel 2 — wordt elk scenario door een issue genoemd?** Draai:
+**Link 2 — is every scenario named by an issue?** Run:
 
 ```
 .claude/skills/pre-merge-review/scenario-poort.sh .
 ```
 
-Dat print, één per regel, elk scenario-ID uit `TEST-SCENARIOS.md` dat door
-geen enkel issue in zijn `**Dekt:**`-veld genoemd wordt. Alleen dat veld telt
-— een ID dat toevallig in een zin voorkomt (bijvoorbeeld "we hebben inmiddels
-s1 varianten getest") is geen verwijzing. Elke gemelde regel is een bevinding.
+That prints, one per line, every scenario ID from `TEST-SCENARIOS.md` that
+is named by no issue in its `**Dekt:**` field. Only that field counts —
+an ID that happens to appear in a sentence (e.g. "we've already tested
+some s1 variants") is not a reference. Every reported line is a finding.
 
-**Schakel 3 — verwijst déze PR naar een issue?** Eén aanroep:
+**Link 3 — does *this* PR reference an issue?** One call:
 
 ```
 gh pr view --json closingIssuesReferences --jq '.closingIssuesReferences | length'
 ```
 
-Is dat `0`, dan is dat een bevinding: de PR mist `Closes #<issue>` of een
-gelinkt issue. Dezelfde controle staat als hard slot in CI (W19b,
-`check-pr-issue-link.sh`) — deze skill draait hem daarnaast al vóór de merge,
-met de bevinding in de PR zelf.
+If that's `0`, that's a finding: the PR is missing `Closes #<issue>` or a
+linked issue. The same check exists as a hard block in CI (W19b,
+`check-pr-issue-link.sh`) — this skill additionally runs it before the
+merge, with the finding in the PR itself.
 
-Beide controles falen open zonder `gh` of netwerk: een waarschuwing, geen
-blokkade — dezelfde grondregel als de deploy-guards en de merge-guard (W10b).
+Both checks fail open without `gh` or network: a warning, not a block —
+the same ground rule as deploy-guards and the merge guard (W10b).
 
-## Onderbouwingsgat als bevinding
+## Substantiation gap as a finding
 
-Raakt de PR een onderwerp waarvan de scope-regel `[vereist onderbouwing]`
-draagt, dan is dat zelf een expliciete bevinding in de PR: de bijbehorende
-`WORKFLOW-ADOPTIE.md`-rij moet vóór de merge een echt antwoord krijgen (zie de
-skill `adoption-registry`) — dit is de eerste poort van de gefaseerde
-onderbouwingsplicht (F6).
+If the PR touches a topic whose scope line carries `[vereist
+onderbouwing]`, that is itself an explicit finding in the PR: the
+corresponding `WORKFLOW-ADOPTIE.md` row must get a real answer before the
+merge (see the `adoption-registry` skill) — this is the first gate of the
+phased substantiation requirement (F6).
 
-## De marker
+## The marker
 
-Plaats in het bevindingen-comment op de PR, op een eigen regel, letterlijk:
+Post, in the findings comment on the PR, on its own line, literally:
 
 ```
 <!-- pre-merge-review:done -->
 ```
 
-Machineherkenbaar en vast — nooit parafraseren. De merge-guard (F8, W10b)
-zoekt hier straks op.
+Machine-recognizable and fixed — never paraphrase. The merge guard (F8,
+W10b) looks for this later.
 
-## Wat ermee gebeurt
+## What happens with it
 
-De bevindingen komen in de PR te staan, niet alleen in de chat: leesbaar,
-blijvend, achteraf terug te vinden. Elke bevinding wordt daarna óf opgelost,
-óf vastgelegd onder *Technical debt* in de PRD met een reden. Niets verdwijnt
-stilzwijgend.
+The findings go into the PR itself, not only in the chat: readable,
+persistent, findable afterward. Every finding is then either resolved, or
+recorded under *Technical debt* in the PRD with a reason. Nothing
+disappears silently.
 
-## De grens ervan
+## Its limits
 
-Modellen delen veel trainingsdata, dus ook een ander model heeft deels
-overlappende blinde vlekken. Dit verhoogt de bodem; het vervangt geen ervaren
-engineer die met andere ogen kijkt.
+Models share a lot of training data, so even a different model has partly
+overlapping blind spots. This raises the floor; it doesn't replace an
+experienced engineer looking with different eyes.

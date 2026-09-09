@@ -1,33 +1,33 @@
 ---
 name: check-convention
 description: >
-  De vaste, platform-neutrale commandonamen check en deploy, en hoe CI die
-  aanroept zonder eigen checks te verzinnen. Gebruik dit bij het opzetten of
-  aanpassen van CI, of bij twijfel over waar een projectspecifieke check hoort.
+  The fixed, platform-neutral command names check and deploy, and how CI
+  calls them without inventing its own checks. Use this when setting up or
+  changing CI, or when unsure where a project-specific check belongs.
 ---
 
-## Testen en deployen automatiseren
+## Automating testing and deployment
 
-Voor projecten met buildbare/testbare code gelden twee vaste, platform-
-neutrale commandonamen:
+For projects with buildable/testable code, two fixed, platform-neutral
+command names apply:
 
-1. **`check`** — alles wat bepaalt of een wijziging goed is (typecheck,
-   lint, tests, build). De GitHub Actions-workflow (zie `templates/ci.yml`,
-   automatisch gescaffold door `adopt.sh` als het project een
-   `package.json` heeft) roept dit commando aan en verzint zelf geen
-   losse checks — één bron van waarheid, geen drift tussen lokaal en CI.
-2. **`deploy`** — rolt daadwerkelijk uit naar een doelomgeving. Blijft altijd
-   een bewuste, handmatig gestarte stap: geen automatische uitrol bij een
-   merge — dezelfde soort regie als bij de afspraak dat een merge pas gebeurt
-   na expliciete bevestiging van Ties (zie "Wrapping up" in `WORKFLOW.md`).
-   Zie de skill `deploy-guards` voor de voorwaarden waaronder `deploy` mag
-   draaien.
+1. **`check`** — everything that decides whether a change is good
+   (typecheck, lint, tests, build). The GitHub Actions workflow (see
+   `templates/ci.yml`, automatically scaffolded by `adopt.sh` if the
+   project has a `package.json`) calls this command and doesn't invent any
+   separate checks of its own — one source of truth, no drift between
+   local and CI.
+2. **`deploy`** — actually rolls out to a target environment. Always
+   remains a deliberate, manually started step: no automatic rollout on a
+   merge — the same kind of control as the agreement that a merge only
+   happens after Ties' explicit confirmation (see "Wrapping up" in
+   `WORKFLOW.md`). See the `deploy-guards` skill for the conditions under
+   which `deploy` may run.
 
-Projectspecifieke checks (een eigen lintregel, een domeinspecifieke
-validatie) horen thuis in het `check`-script van het project zelf, niet in
-`spec-driven-guardrails`.
+Project-specific checks (a custom lint rule, a domain-specific validation)
+belong in the project's own `check` script, not in `spec-driven-guardrails`.
 
-Dit sjabloon veronderstelt npm. Voor een project op een andere stack geldt
-hetzelfde principe (vaste `check`/`deploy`-namen, CI roept alleen `check`
-aan), toegepast met de eigen tooling van die stack — `adopt.sh` scaffoldt
-`ci.yml` alleen wanneer een `package.json` aanwezig is.
+This template assumes npm. For a project on a different stack, the same
+principle applies (fixed `check`/`deploy` names, CI only calls `check`),
+applied with that stack's own tooling — `adopt.sh` only scaffolds `ci.yml`
+when a `package.json` is present.

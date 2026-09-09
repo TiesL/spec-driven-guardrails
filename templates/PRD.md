@@ -138,7 +138,7 @@ verandert — geen actie nodig.
 
 Wat je anders zou bouwen als je opnieuw begon: toevallige complexiteit, bewuste
 shortcuts, verouderde dependencies, ontbrekende tests. Hier landen ook
-geaccepteerde reviewbevindingen. Zie *Complexiteit, technical debt en
+geaccepteerde reviewbevindingen. Zie *Complexity, technical debt,
 refactoring* in `CLAUDE.md`.
 
 | Wat | Waarom nu acceptabel | Trigger om aan te pakken |

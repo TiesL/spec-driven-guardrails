@@ -1,41 +1,42 @@
 ---
 name: refactoring-triggers
 description: >
-  Complexiteit, technical debt en refactoring als één lus, en de drie
-  concrete triggers om af te lossen (ontwerp tegengesproken, code met een
-  debt-regel aangeraakt, register dat blijft groeien). Gebruik dit wanneer je
-  twijfelt of iets nu gerefactored moet worden of als schuld vastgelegd.
+  Complexity, technical debt, and refactoring as one loop, and the three
+  concrete triggers for paying it down (design contradicted, code touched
+  that carries a debt entry, a register that keeps growing). Use this
+  when unsure whether something should be refactored now or recorded as
+  debt.
 ---
 
-## Complexiteit, technical debt en refactoring
+## Complexity, technical debt, and refactoring
 
-Deze drie zijn geen losse aandachtspunten maar één lus: bouwen voegt
-complexiteit toe → wat daarvan blijft zitten wordt technical debt → refactoring
-is hoe je die afbetaalt. Zonder expliciete triggers gebeurt dat laatste nooit, en
-groeit er alleen maar code bovenop code.
+These three aren't separate concerns but one loop: building adds
+complexity → whatever of that sticks around becomes technical debt →
+refactoring is how you pay it off. Without explicit triggers, that last
+step never happens, and code just keeps piling up on top of code.
 
-**Niet alle complexiteit is gelijk.** Essentiële complexiteit komt uit het domein
-zelf en is niet weg te refactoren — die beheers je met structuur. Toevallige
-complexiteit komt voort uit hoe iets nu eenmaal gebouwd is, en is wél
-reduceerbaar. Alleen de tweede soort is af te betalen; jagen op de eerste is
-verspilde moeite.
+**Not all complexity is equal.** Essential complexity comes from the
+domain itself and can't be refactored away — you manage it with
+structure. Accidental complexity comes from how something happens to be
+built, and *can* be reduced. Only the second kind can be paid down;
+chasing the first is wasted effort.
 
-**Technical debt is breder dan complexiteit alleen** — ook bewuste shortcuts,
-verouderde dependencies en ontbrekende tests horen erbij. Het register staat in
-de PRD, met per regel waarom het nu acceptabel is en wat de trigger is om het aan
-te pakken.
+**Technical debt is broader than complexity alone** — deliberate
+shortcuts, outdated dependencies, and missing tests belong to it too. The
+register lives in the PRD, with, per row, why it's acceptable for now and
+what the trigger is to address it.
 
-**Refactoring is de aflossing.** Drie triggers, van hard naar zacht:
+**Refactoring is the repayment.** Three triggers, from hard to soft:
 
-1. **Het vastgelegde ontwerp wordt tegengesproken.** Merk je bij een work item
-   dat het alleen gebouwd kan worden door een architectuureis uit
-   `ARCHITECTUUR.md` te schenden, bouw het dan niet alsnog via een omweg. Dat is
-   het signaal dat óf het ontwerp herzien moet worden, óf de functionaliteit
-   anders ontworpen moet worden — als eigen work item, zodat het zichtbaar
-   gebeurt in plaats van als uitzondering weg te zakken in de code. Zo begint
-   architectuurerosie: één uitzondering per keer, tot niemand de structuur meer
-   herkent.
-2. **Je raakt code aan waar al een debt-regel op staat.** Dat is het goedkoopste
-   moment om hem af te betalen — je zit er toch al in.
-3. **Het register groeit terwijl er niets uit verdwijnt.** Een signaal om te
-   kijken wat er structureel misgaat, geen harde regel.
+1. **The recorded design is contradicted.** If you notice, while doing a
+   work item, that it can only be built by violating an architecture
+   requirement in `ARCHITECTUUR.md`, don't build it anyway via a
+   workaround. That's the signal that either the design needs revising, or
+   the functionality needs to be designed differently — as its own work
+   item, so it happens visibly instead of sinking into the code as an
+   unnoticed exception. That's how architectural erosion starts: one
+   exception at a time, until no one recognizes the structure anymore.
+2. **You touch code that already carries a debt entry.** That's the
+   cheapest moment to pay it off — you're already in there.
+3. **The register keeps growing while nothing leaves it.** A signal to
+   look at what's structurally going wrong, not a hard rule.
