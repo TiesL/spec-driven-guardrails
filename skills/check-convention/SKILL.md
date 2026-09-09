@@ -19,7 +19,7 @@ neutrale commandonamen:
 2. **`deploy`** — rolt daadwerkelijk uit naar een doelomgeving. Blijft altijd
    een bewuste, handmatig gestarte stap: geen automatische uitrol bij een
    merge — dezelfde soort regie als bij de afspraak dat een merge pas gebeurt
-   na expliciete bevestiging van Ties (zie "Afronden" in `WORKFLOW.md`).
+   na expliciete bevestiging van Ties (zie "Wrapping up" in `WORKFLOW.md`).
    Zie de skill `deploy-guards` voor de voorwaarden waaronder `deploy` mag
    draaien.
 

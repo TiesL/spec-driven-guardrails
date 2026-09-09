@@ -1,6 +1,6 @@
 # spec-driven-guardrails
 
-(Formerly `claude-workflow` — renamed in W32/#56, see PRD.md "Decided in W29 (#53)", decision 1.)
+(Formerly `claude-workflow` — renamed in W32/#56, see PRD.md "Besloten in W29 (#53)", decision 1.)
 
 One, version-controlled source of truth for the personal Git/GitHub workflow that Ties uses with Claude Code in all his solo projects (not in team/work projects). This workflow used to be duplicated in every project (`CLAUDE.md` + `.claude/settings.json`), which led to drift — this repo solves that.
 
@@ -13,7 +13,7 @@ One, version-controlled source of truth for the personal Git/GitHub workflow tha
 | `hooks/` | `git-guardrails` — the `PreToolUse` guard against destructive git commands, and (W10b) the merge guard on `gh pr merge` without a review marker or with non-green CI. Always fails open (no `gh`/network, missing tool) — a broken guard must never block work. Invoked from `settings/session-hooks.json`. |
 | `skills/` | The nine Claude Code skills (`pre-merge-review`, `deploy-guards`, `check-convention`, `adoption-registry`, `write-spec`, `refactoring-triggers`, `tdd-seams`, `diagnose-bug`, `adopt-workflow`) — see the routing table in `WORKFLOW.md`. `adopt.sh` symlinks each of them into `.claude/skills/` of every adopted project. |
 | `USER-CLAUDE.md` | Short trigger instruction for the automatic adoption prompt on new projects. Symlinked as `~/.claude/CLAUDE.md`. |
-| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Known limitations* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTUUR.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Bekende beperkingen* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTUUR.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
 | `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTUUR.md`, which covers structural decisions. Only scaffolded if the project answered `ja` to `proces-context-document` in `CHANGES.md`. |
 | `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |

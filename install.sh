@@ -9,7 +9,7 @@
 #
 # Dit script adopteert geen project — dat blijft adopt.sh's taak, met
 # SPEC_DRIVEN_GUARDRAILS_DIR gezet naar déze kloon. install.sh vervangt
-# alleen de "kloon + checkout + env-var"-stappen uit README.md's "Eenmalige
+# alleen de "kloon + checkout + env-var"-stappen uit README.md's "One-time
 # setup per machine", met een gepinde tag in plaats van een live `main`.
 #
 # Geen curl-naar-bash: dit repo draait op auditeerbare scripts, en een kloon
