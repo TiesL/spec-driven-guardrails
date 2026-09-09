@@ -3,13 +3,6 @@
 **Status:** As-built voor epic #11 (gesloten, uitgeleverd 2026-09-06 — zie
 `CHANGELOG.md`); "Besloten in W29 (#53)" hieronder stuurt het lopende epic #52.
 
-Vervangt en integreert de drie afzonderlijk aangemaakte epics
-[#7](https://github.com/TiesL/claude-workflow/issues/7),
-[#8](https://github.com/TiesL/claude-workflow/issues/8) en
-[#9](https://github.com/TiesL/claude-workflow/issues/9). Die drie hadden
-overlappende doelen en tegenstrijdige volgorde-eisen; dit document is het
-geïntegreerde plan, met nieuwe inzichten uit de validatie erin verwerkt.
-
 ---
 
 ## Context
@@ -18,10 +11,10 @@ geïntegreerde plan, met nieuwe inzichten uit de validatie erin verwerkt.
 gedeelde bron van waarheid voor Ties' persoonlijke Git/GitHub-workflow,
 geadopteerd door vier projecten via lokale symlinks.
 
-Aanleiding is de kwaliteitsreview op PR #6 — de eerste PR waarop de eigen
-reviewregel is toegepast. Die vond vier structurele problemen (→ #7) plus een
-traceability-gat (→ #8). #9 kwam later, vanuit een vergelijking met
-`mattpocock/skills`.
+Dit document is het geïntegreerde plan voor epic #11, dat drie eerder los
+aangemaakte epics samenvoegde nadat de kwaliteitsreview op PR #6 structurele
+problemen en een traceability-gat blootlegde — zie `CHANGELOG.md` voor de
+volledige voorgeschiedenis en de volgordebesluiten die daaruit volgden.
 
 **De rode draad**: dit repo schrijft conventies voor die het zelf niet
 controleert. De NFR-lijst staat op twee plekken en wordt met de hand synchroon
@@ -36,21 +29,6 @@ dekkingsveld, en `kwaliteitsreview-voor-merge` is door geen enkel project ooit
 beantwoord. De conventies bestaan; de naleving is nihil.
 
 Deze release verplaatst die conventies van proza naar mechanisme.
-
-### Bewuste afwijking van de afgesproken volgorde
-
-#7 en #8 zijn geblokkeerd op "één echt work item end-to-end". Dat is geverifieerd
-**niet gehaald**: de beste kandidaat (tennis-admin PR #5) mist het issue vooraan,
-de review in het midden en de acceptatietest vóór de merge, en dateert van vóór de
-helft van de regels die hij zou moeten aantonen.
-
-Ties heeft besloten de blokkade te overrulen, **met twee mitigaties**:
-
-1. De veldformaten uit #8 worden eerst samen doorgenomen (W17) — menselijke review
-   vervangt daar het ontbrekende praktijkbewijs.
-2. De nulmeting wordt vastgelegd als uitvoerbare tests vóór er iets verandert
-   (W1–W3). Refactoren tegen aannames is precies wat de blokkade moest voorkomen;
-   tests zijn het alternatieve vangnet.
 
 ---
 
@@ -798,140 +776,28 @@ zijn eigen uitleg; de kern verwijst er expliciet naar, zodat R7 blijft gelden.
 
 ---
 
-## Volgorde en werkitems
+## Herbruikbare ontwerpprincipes
 
-De werkitem-ID's hieronder (`W<n>`) zijn de schakel tussen dit document en de
-GitHub-issues: elk issue draagt zijn `W`-id in de titel en verwijst met `**Dekt:**`
-naar de functionaliteit en scenario's die het realiseert.
+Uit de uitvoering van epic #11 gedestilleerd — het volledige werkitem-schema
+en de volgordebesluiten staan in `CHANGELOG.md`; dit zijn de principes die
+toekomstige epics nog steeds opgaan, losgemaakt van de uitvoeringsgeschiedenis
+waarin ze ontstonden.
 
-**Rood vóór groen geldt voor elk werkitem**: het scenario dat het werkitem dekt
-wordt eerst als test toegevoegd en aantoonbaar *rood* gezien, daarna pas volgt de
-implementatie. W1–W3 zijn daar de bootstrap van — zonder harnas en nulmeting is
-"rood" niet vast te stellen.
-
-### Fase 0 — Fundament (geen gedragsverandering)
-
-| # | Werkitem | Blokkeert |
-|---|---|---|
-| **W1** | Testharnas + `./check` + CI (F1) | alles |
-| **W2** | Nulmeting-fixtures voor alle vier de projecten (F2) | W3 |
-| **W3** | R1–R4, R6, R9 als tests tegen de **huidige** `main` | W4–W6 |
-| W16 | Blocking-edges in issue-templates (F14) | W17 |
-| W12b | Feitelijke correcties in `README.md`/`WORKFLOW.md` (F16, deels) | — |
-
-W3 is de kern van de mitigatie: groen op ongewijzigde `main`, vóór er iets
-verandert. Alle vier de bronnen staan lokaal, dus de nulmeting kan direct
-ingevroren worden.
-
-### Fase 1 — Refactors, aantoonbaar gedragsbehoudend
-
-| # | Werkitem | Hangt af van |
-|---|---|---|
-| W4 | `lib/changes.sh`: gedeelde parser + predicaten (F3) | W3 |
-| W5 | `nfr/`-register + generator + consistentiecheck (F4) | W1, W4 |
-| W6 | `CHANGES-ARCHIEF.md` + sectiescheidingen ontdubbelzinnigen (F5) | W3, W4 |
-| W7 | Onderbouwingssignaal + verouderde-adoptie-melding (F6) | W4 |
-| W10 | Git-guardrails hook (F7) | W1 |
-| W23 | Sessiestart meldt dat `main` is uitgecheckt (F18) | W1 |
-| W24 | `templates/ci.yml` valideert PR's en `main` (F17) | W1 |
-
-W4 vóór alles wat een derde script toevoegt, anders verdrievoudig je de duplicatie
-in plaats van hem op te lossen. W5 haalt de duplicatie echt weg in plaats van hem
-te overbruggen.
-
-W10 hoort hier en niet later: de hookconfiguratie is gesymlinkt en dus live na
-`git pull`, het guard-script arriveert via diezelfde pull en wordt gevonden via de
-bestaande `readlink`-keten — `adopt.sh` speelt geen rol. Het is bovendien de
-grootste directe veiligheidswinst van de release, dus alleen het testharnas (W1)
-hoort hem te blokkeren.
-
-### Fase 2 — De structurele wijziging (hoogste risico)
-
-| # | Werkitem | Hangt af van |
-|---|---|---|
-| W8 | `adopt.sh` installeert skills + hooks, no-op als `skills/` ontbreekt (F9) | W4 |
-| W9 | `WORKFLOW.md` → kern + Wegwijzer; `skills/` gevuld (F10, F12) | W3, W7, W8 |
-
-**W8 vóór W9, niet andersom.** Landen de skills eerst, dan verwijst `WORKFLOW.md`
-op elke machine die pullt naar skills die nergens geïnstalleerd zijn — R7 geschonden
-in productie zolang dat venster duurt. Installer-eerst-met-no-op is strikt veiliger.
-W7 vóór W9 zodat projecten zichzelf melden als verouderd.
-
-### Fase 3 — Skills en guards
-
-| # | Werkitem | Hangt af van |
-|---|---|---|
-| W13 | `pre-merge-review` met echte scoping (F11) | W5, W9 |
-| W10b | Merge-guard op `gh pr merge` (F8) | W10, W13 |
-| W14 | `tdd-seams` + `CHANGES.md`-entry (F10) | W9 |
-| W15 | `diagnose-bug` + `CHANGES.md`-entry (F10) | W9 |
-| W16b | `templates/CONTEXT.md` + entry (F10) | W9 |
-| W25 | Pushen zodra er gecommit is (F18) | W10 |
-| W26 | Git-hooks in het project, ook buiten Claude om (F17) | W8, W10 |
-
-W14–W16b voegen elk een `CHANGES.md`-entry toe, dus elk laat alle vier de
-projecten een nieuwe vraag stellen. Dicht bij elkaar landen, zodat die vragen in
-één batch komen in plaats van over vier sessies te druppelen.
-
-### Fase 4 — Traceability
-
-| # | Werkitem | Hangt af van |
-|---|---|---|
-| **W17** | **Ontwerpreview mét Ties — geen code** | W16 |
-| W18 | `Dekt:` + `AC<n>` in de sjablonen (F13, besluit a en b) | W17 |
-| W19 | `templates/check-traceability.sh` offline + entry (F13, besluit c en d) | W18, W4 |
-| W19b | CI-check "PR verwijst naar issue" in de PR-workflow (F13, besluit d) | W18 |
-| W20 | PR-poort in `pre-merge-review` (F13, besluit d) | W13, W19 |
-| W27 | CI detecteert commits op `main` buiten een PR om (F17) | W24 |
-
-W17 is de afgesproken mitigatie voor het overrulen van de blokkade en moet een
-zichtbaar item zijn met eigen afronding. Te bespreken: de `AC<n>`-hernoeming, één
-`Dekt:` voor beide richtingen, de tokengrammatica inclusief `S2b`,
-prefix-agnostische integriteit in plaats van verplichte `F`/`S`, en het verplaatsen
-van schakel 2 en 3 naar `pre-merge-review` plus CI.
-
-### Fase 5 — Release
-
-| # | Werkitem | Hangt af van |
-|---|---|---|
-| W21 | `**PR:**`-linkbacks herstellen + test die het afdwingt (F15) | W6 |
-| W22 | `CHANGELOG.md` + tag + `README.md` (F15, F16) | alles |
-
-**Eigen verificatieronde verdienen:** W2 (onherhaalbaar als de nulmeting fout
-wordt vastgelegd), W8 (schrijft in andermans repo's, migreert een *getrackte*
-`.gitignore`), W9 (betekenisverlies dat geen `grep` ziet), W10 en W10b (een vals
-positief blokkeert werk in elk project, en bereikt ze zónder her-adoptie omdat de
-hookconfiguratie gesymlinkt is), en W26 (schrijft git-hooks in andermans repo's,
-en een hook die te streng is blokkeert daar élk commando, niet alleen dat van
-Claude).
-
-### Uitbreiding na het doorlichten van de dekking
-
-W23–W27 stonden niet in de oorspronkelijke opzet. Ze komen voort uit de vraag wat
-de guard uit W10 nu precies dekt, gesteld nadat die af was. Het antwoord bleek
-smaller dan de stelling die eromheen was gegroeid: de guard dekt wat Claude
-uitvoert, niet wat er in een eigen terminal, een IDE of op een tweede machine
-gebeurt (F17), en het veiligstellen van werk hangt aan een `SessionEnd`-hook
-waarvoor geen garantie bestaat (F18).
-
-Ze zijn ingevoegd op de plek waar hun afhankelijkheden ze toelaten, niet
-achteraan: W23 en W24 hangen alleen van het testharnas af — W24 inhoudelijk van
-niets, maar rood vóór groen geldt ook voor hem, dus W1 blijft de voorwaarde. Beide
-horen daarmee in Fase 1. W25 en W26 hangen aan de guard zelf (en W26 daarnaast aan
-`adopt.sh`), dus die volgen in Fase 3. W27 heeft het bijgewerkte CI-sjabloon
-nodig en landt in Fase 4.
-
-### Waarom deze volgorde afwijkt van de oorspronkelijk afgesproken
-
-De afgesproken volgorde (a)-(b)-(c)-(d) stond op één plek: de body van #8. #7 bevat
-geen letterlijst en verwijst naar "de discussie in #6" — en PR #6 heeft precies één
-comment, nul reviews, nul inline-opmerkingen, en noemt geen volgorde. Het gesprek
-stond in een chatsessie, niet op GitHub.
-
-De wél opgeschreven rationales zijn smaller dan de volgorde die eruit is afgeleid.
-"Refactoren tegen een ongebruikte workflow refactort tegen aannames" raakt de
-skills-migratie en de veldformaten — niet het dedupliceren van een `case` of het
-uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
+- **Installer vóór referentie.** Een symlink of scaffold die ergens naar
+  verwijst moet zelf al bestaan vóór iets anders ernaar verwijst — anders wijst
+  een vroege `git pull` naar iets dat nergens geïnstalleerd is.
+- **Dedupliceren vóór uitbreiden.** Voeg geen derde consument toe aan
+  gedupliceerde logica; haal de duplicatie eerst weg, anders vermenigvuldig je
+  het probleem in plaats van het op te lossen.
+- **Vergelijkbare `CHANGES.md`-toevoegingen bundelen.** Werkitems die elk een
+  nieuwe adoptievraag toevoegen landen dicht bij elkaar, zodat geadopteerde
+  projecten één vragenbatch krijgen in plaats van een druppel over meerdere
+  sessies.
+- **Extra verificatieronde bij onomkeerbaarheid, schrijven in andermans
+  repo's, of betekenisverlies dat `grep` niet ziet.** Zulke wijzigingen
+  verdienen een aparte, handmatige controle bovenop `./check` — een vals
+  positief of een stille inhoudelijke fout raakt daar niet één sessie, maar
+  meteen alle geadopteerde projecten.
 
 ---
 
@@ -981,7 +847,7 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 
 | Wat | Waarom nu acceptabel | Trigger om aan te pakken |
 |---|---|---|
-| Fase 4 ontworpen zonder praktijkbewijs | Bewust overruled; W17 vervangt bewijs door menselijke review | Zodra het eerste echte work item de keten doorloopt |
+| Traceability-mechanisme (F13, W17-W20) ontworpen zonder praktijkbewijs | Bewust overruled; W17 vervangt bewijs door menselijke review | Zodra het eerste echte work item de keten doorloopt |
 | `templates/PRD.md` wordt een build-artefact | Prijs voor het weghalen van de NFR-duplicatie; `check` bewaakt het | Als de generator meer kost dan hij bespaart |
 | Schakel 2 (scenario → issue) blijft zonder hard slot | Poort in `pre-merge-review` dekt hem; alleen schakel 3 gaat ook in CI | Als scenario's structureel zonder issue blijven |
 | Skills binden dit repo aan Claude Code | Bewust begrensd, niveau a — zie "Grens tussen kern en agent-gereedschap (W31, #55)" onder *Portability*; AC4/AC5 uit #55 zijn bewust uitgesteld tot W35 een neutraliteitsclaim maakt | Bij overstap naar een andere agent, of zodra W35 (#59) een claim maakt die AC4/AC5 dan wél nodig heeft |
@@ -1018,8 +884,8 @@ uitvoerbaar maken van tests. Die zijn intern en toetsbaar zonder praktijkbewijs.
 ## Open vragen
 
 1. **Wordt de end-to-end doorloop een echt issue?** De oorspronkelijke gedachte
-   was hem ná Fase 3 en vóór Fase 4 te plannen, zodat praktijkbewijs W17's
-   menselijke review zou vervangen. Die volgorde is achterhaald: W17 (#29) is
+   was hem vóór W17 te plannen, zodat praktijkbewijs W17's menselijke review
+   zou vervangen. Die volgorde is achterhaald: W17 (#29) is
    afgerond en de vijf veldformaatbesluiten liggen vast. De doorloop blijft
    waardevol, maar nu als toets óf die besluiten in de praktijk houden — niet
    als vervanging van een review die al gedaan is.
