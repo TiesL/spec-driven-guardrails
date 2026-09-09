@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# install.sh — Pin deze checkout op een getagde release, voor een consument
-# die niet Ties' eigen multi-machine, altijd-main-volgende gebruik wil (W37,
-# #79). Draai dit ná het klonen van dit repo, vanuit de kloon zelf.
+# install.sh — Pins this checkout to a tagged release, for a consumer who
+# doesn't want Ties' own multi-machine, always-follow-main usage (W37,
+# #79). Run this after cloning this repo, from inside the clone itself.
 #
-# Gebruik:
-#   ./install.sh          # pint op de laatste tag
-#   ./install.sh <tag>     # pint op een specifieke tag
+# Usage:
+#   ./install.sh          # pins to the latest tag
+#   ./install.sh <tag>     # pins to a specific tag
 #
-# Dit script adopteert geen project — dat blijft adopt.sh's taak, met
-# SPEC_DRIVEN_GUARDRAILS_DIR gezet naar déze kloon. install.sh vervangt
-# alleen de "kloon + checkout + env-var"-stappen uit README.md's "One-time
-# setup per machine", met een gepinde tag in plaats van een live `main`.
+# This script doesn't adopt a project — that stays adopt.sh's job, with
+# SPEC_DRIVEN_GUARDRAILS_DIR set to this clone. install.sh only replaces
+# the "clone + checkout + env var" steps from README.md's "One-time setup
+# per machine", with a pinned tag instead of a live `main`.
 #
-# Geen curl-naar-bash: dit repo draait op auditeerbare scripts, en een kloon
-# is voor deze doelgroep (iemand die al Claude Code + git gebruikt) een
-# redelijke vraag.
+# No curl-to-bash: this repo runs on auditable scripts, and a clone is a
+# reasonable ask for this audience (someone already using Claude Code +
+# git).
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -euo pipefail
 
@@ -28,9 +28,9 @@ if [ ! -f "$eigen_map/WORKFLOW.md" ] || [ ! -f "$eigen_map/adopt.sh" ] || [ ! -d
   exit 1
 fi
 
-# Bij twijfel niets aanraken. `git checkout <tag>` gooit lokale,
-# niet-gecommitte wijzigingen anders stilzwijgend weg — precies de fout die
-# een pin-actie nooit mag maken.
+# When in doubt, touch nothing. `git checkout <tag>` would otherwise
+# silently discard local, uncommitted changes — exactly the mistake a pin
+# action must never make.
 vuil="$(git status --porcelain)"
 if [ -n "$vuil" ]; then
   echo "Fout: deze checkout heeft niet-gecommitte wijzigingen — install.sh raakt ze niet aan, los dat eerst op:" >&2

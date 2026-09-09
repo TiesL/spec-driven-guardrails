@@ -1,52 +1,53 @@
 #!/usr/bin/env bash
-# hooks/git-guardrails — PreToolUse-guard tegen destructieve git-commando's, én
-# (W10b, F8) de merge-guard op `gh pr merge`.
+# hooks/git-guardrails — PreToolUse guard against destructive git commands,
+# and (W10b, F8) the merge guard on `gh pr merge`.
 #
-# "Nooit rechtstreeks naar main" was een afspraak zonder slot: branch protection
-# vereist een betaald plan op private repo's. Dit is dat slot.
+# "Never directly to main" was an agreement with no lock: branch protection
+# requires a paid plan on private repos. This is that lock.
 #
-# Tweede case, zelfde mechaniek: `gh pr merge` wordt geblokkeerd als de PR geen
-# machineherkenbare review-marker draagt (die `pre-merge-review` plaatst, F11),
-# of als de PR checks heeft die niet zijn geslaagd (issue #81 — CI faalde zes
-# runs op rij, onopgemerkt, want niets in de merge-flow keek ernaar). Faal-open
-# zonder `gh` of netwerk — geen van beide controles is ooit het commando dat
-# een sessie vastzet. Een onderbouwde `nee` op de `kwaliteitsreview-voor-merge`-
-# rij in `WORKFLOW-ADOPTIE.md` schakelt beide controles voor dat project uit,
-# lokaal gelezen, zonder netwerkaanroep.
+# Second case, same mechanism: `gh pr merge` is blocked if the PR doesn't
+# carry a machine-recognizable review marker (which `pre-merge-review`
+# places, F11), or if the PR has checks that haven't passed (issue #81 — CI
+# failed six runs in a row, unnoticed, because nothing in the merge flow
+# looked at it). Fails open without `gh` or network — neither check is ever
+# the command that locks up a session. A substantiated `nee` on the
+# `kwaliteitsreview-voor-merge` row in `WORKFLOW-ADOPTIE.md` turns off both
+# checks for that project, read locally, with no network call.
 #
-# Contract (Claude Code PreToolUse): JSON op stdin met `tool_name` en
-# `tool_input.command`; exitstatus 2 blokkeert en stderr wordt de melding aan
-# Claude. Elke andere status laat het commando doorgaan.
+# Contract (Claude Code PreToolUse): JSON on stdin with `tool_name` and
+# `tool_input.command`; exit status 2 blocks and stderr becomes the message
+# to Claude. Any other status lets the command through.
 #
-# Grondregel: bij twijfel toestaan. Een gemist geval is vervelend; een vals
-# positief blokkeert werk in vier projecten tegelijk en bereikt ze zónder
-# her-adoptie, omdat de hookconfiguratie gesymlinkt is.
+# Ground rule: when in doubt, allow. A missed case is annoying; a false
+# positive blocks work in four projects at once and reaches them without a
+# re-adoption, because the hook configuration is symlinked.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
-# Bewuste uitweg. Een guard zonder uitweg wordt op den duur omzeild door het
-# script aan te passen, en dat is erger dan een guard die je expliciet uitzet.
+# Deliberate escape hatch. A guard without an escape hatch eventually gets
+# bypassed by editing the script instead, and that's worse than a guard you
+# turn off explicitly.
 if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
   echo "waarschuwing: git-guardrails staat uit via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
   exit 0
 fi
 
-# Lezen met een bash-redirect in plaats van `cat`: de guard moet ook in een
-# kale PATH nog zijn waarschuwing kunnen geven, en dat lukt niet als hij al op
-# een ontbrekend hulpprogramma struikelt.
+# Reading with a bash redirect instead of `cat`: the guard must still be
+# able to give its warning even on a bare PATH, and that doesn't work if it
+# already trips over a missing utility.
 invoer="$(</dev/stdin)"
 [ -n "$invoer" ] || exit 0
 
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lezer="$eigen_map/lees-commando.py"
 
-# HOOFDBRANCH en de REDEN_*-teksten komen uit regels.sh, gedeeld met de
-# native git-hooks (W26) — welke branch beschermd is en wat de melding zegt
-# staat zo op één plek. Ontbreekt het bestand (kapotte checkout), dan valt
-# terug op het hardgecodeerde "main": bij twijfel toestaan geldt hier ook voor
-# de eigen infrastructuur van de guard.
+# HOOFDBRANCH and the REDEN_* texts come from regels.sh, shared with the
+# native git hooks (W26) — which branch is protected and what the message
+# says lives in one place this way. If the file is missing (broken
+# checkout), this falls back to the hardcoded "main": when in doubt, allow
+# also applies here to the guard's own infrastructure.
 if [ -r "$eigen_map/regels.sh" ]; then
   # shellcheck source=regels.sh
   . "$eigen_map/regels.sh"
@@ -63,47 +64,50 @@ if [ ! -r "$lezer" ]; then
   exit 0
 fi
 
-# De lezer bepaalt als enige hoe het commando gelezen wordt: JSON, heredocs,
-# quoting en tokenisatie. Deze guard vergelijkt alleen nog tokens. Zonder die
-# scheiding moest bash quoting nabootsen, en dat blokkeerde onschuldige
-# commando's — een `;` in een commitboodschap brak het commando in stukken.
+# The reader is the only thing that decides how the command is read: JSON,
+# heredocs, quoting, and tokenization. This guard only ever compares tokens.
+# Without that separation, bash had to emulate quoting, and that blocked
+# innocent commands — a `;` in a commit message split the command into
+# pieces.
 #
-# Via een bestand, niet via $(...): een tokenstroom is NUL-gescheiden en
-# commandosubstitutie gooit NUL-bytes weg.
+# Via a file, not via $(...): a token stream is NUL-separated and command
+# substitution discards NUL bytes.
 stroom="$(mktemp)" || exit 0
 trap 'rm -f "$stroom"' EXIT
 
 printf '%s' "$invoer" | python3 "$lezer" > "$stroom"
 case $? in
   0) ;;
-  4) exit 0 ;;   # geen Bash-aanroep of geen commando
-  *) exit 0 ;;   # niet te lezen: niet gokken naar een lezing
+  4) exit 0 ;;   # not a Bash call, or no command
+  *) exit 0 ;;   # unreadable: don't guess at a reading
 esac
 
-# --- hulpfuncties ----------------------------------------------------------
-# De padbepalende opties van het beoordeelde commando gaan mee, zodat git zelf
-# uitrekent welke repo bedoeld is. `git -C ../ander push origin HEAD` gaat over
-# die andere repo, niet over de map waar de sessie toevallig staat.
+# --- helper functions -------------------------------------------------------
+# The path-determining options of the judged command come along, so git
+# itself computes which repo is meant. `git -C ../other push origin HEAD`
+# acts on that other repo, not on the directory the session happens to be
+# in.
 #
-# Bewust alleen `-C`, `--git-dir` en `--work-tree`: die bepalen het pad. Andere
-# globale opties komen uit dezelfde niet-vertrouwde tekst als het commando zelf
-# en worden niet doorgegeven. Daarmee mist de guard `-c core.worktree=<pad>` —
-# dezelfde uitwerking via de config-route. Bewust geaccepteerd: dat geval
-# openzetten vraagt een witte lijst van veilige configsleutels, en een gemist
-# geval weegt hier lichter dan die vraag heropenen.
+# Deliberately only `-C`, `--git-dir`, and `--work-tree`: those determine the
+# path. Other global options come from the same untrusted text as the
+# command itself and are not passed through. That means the guard misses
+# `-c core.worktree=<path>` — the same effect via the config route.
+# Deliberately accepted: opening up that case requires an allowlist of safe
+# config keys, and a missed case weighs less here than reopening that
+# question.
 #
-# Als argv-array, nooit als samengestelde string: die opnieuw door een shell
-# laten lezen brengt precies de woordsplitsing terug die deze guard wegneemt.
-# `symbolic-ref` en niet `rev-parse --abbrev-ref`: die laatste geeft op een repo
-# zonder commits de letterlijke tekst "HEAD" terug in plaats van de branchnaam.
-# Dat werkt hier toevallig goed — "HEAD" is nu eenmaal niet "main" — maar het is
-# een toevalstreffer, en wie die aanroep ooit corrigeert zou daarmee stil de
-# eerste commit van elk nieuw project blokkeren. symbolic-ref noemt de branch
-# ook vóór de eerste commit; de uitzondering daarvoor staat expliciet bij
-# `commit` en leunt niet op een toevalligheid.
+# As an argv array, never as a composed string: letting a shell read that
+# again brings back exactly the word splitting this guard removes.
+# `symbolic-ref` and not `rev-parse --abbrev-ref`: the latter returns the
+# literal text "HEAD" instead of the branch name on a repo with no commits.
+# That happens to work here — "HEAD" is simply never "main" — but it's a
+# coincidence, and whoever ever "fixes" that call would silently block the
+# first commit of every new project. symbolic-ref also names the branch
+# before the first commit; the exception for that lives explicitly at
+# `commit` and doesn't rely on a coincidence.
 #
-# Losse HEAD (detached) levert een lege naam op, en dat valt via `is_main` in
-# de veilige richting: niet blokkeren.
+# A detached HEAD yields an empty name, and that falls, via `is_main`, in
+# the safe direction: don't block.
 huidige_branch() {
   if [ "${#padopties[@]}" -gt 0 ]; then
     git -C "$werkmap" "${padopties[@]}" symbolic-ref --short HEAD 2>/dev/null
@@ -122,8 +126,8 @@ blokkeer() {
   exit 2
 }
 
-# Bepaalt de bestemming van één refspec. `feature:main` levert `main`,
-# `+main` levert `main`, `:main` (verwijderen) ook.
+# Determines the destination of one refspec. `feature:main` yields `main`,
+# `+main` yields `main`, `:main` (delete) too.
 refspec_doel() {
   local spec="${1#+}"
   case "$spec" in
@@ -139,21 +143,21 @@ is_main() {
   esac
 }
 
-# --- de merge-guard (W10b, F8) ---------------------------------------------
-# De marker die `pre-merge-review` (F11) letterlijk voorschrijft. Bewust hier
-# gedupliceerd als string, niet ingelezen uit SKILL.md: deze guard mag niet
-# afhangen van de aanwezigheid of vorm van een skill-bestand in het project.
+# --- the merge guard (W10b, F8) ---------------------------------------------
+# The marker that `pre-merge-review` (F11) literally prescribes. Deliberately
+# duplicated here as a string, not read from SKILL.md: this guard must not
+# depend on the presence or shape of a skill file in the project.
 MERGE_REVIEW_MARKER='<!-- pre-merge-review:done -->'
 
-# Beoordeelt `gh ...`-segmenten. Alleen `pr merge` is relevant; al het overige
-# gaat ongemoeid door.
+# Judges `gh ...` segments. Only `pr merge` is relevant; everything else
+# passes through untouched.
 #
-# Waardevlaggen van "gh pr merge" die het vólgende token opeisen (bron: `gh pr
-# merge --help`). Zonder deze lijst schuift bijvoorbeeld `--body "tekst"` op
-# de doelpositie (nummer/url/branch), en beoordeelt de guard de verkeerde PR
-# in plaats van de PR van de huidige branch — precies het geval waarin
-# `gh pr view <lichaamstekst>` faalt en de guard via het faal-openpad een PR
-# zonder marker alsnog doorlaat.
+# Value flags of "gh pr merge" that claim the *next* token (source: `gh pr
+# merge --help`). Without this list, `--body "text"`, for example, would
+# shift into the target position (number/url/branch), and the guard would
+# judge the wrong PR instead of the current branch's PR — exactly the case
+# where `gh pr view <body text>` fails and the guard, via the fail-open
+# path, lets a PR without a marker through anyway.
 beoordeel_gh_segment() {
   local arg
 
@@ -162,9 +166,10 @@ beoordeel_gh_segment() {
     arg="$1"
     case "$arg" in
       -R|--repo|-R*|--repo=*)
-        # Een andere repository dan de werkmap. Bij twijfel toestaan: dat
-        # vergt kennis over een repo die deze guard niet heeft, en een gemist
-        # geval weegt hier lichter dan een vals-positieve blokkade.
+        # A different repository than the working directory. When in doubt,
+        # allow: that requires knowledge about a repo this guard doesn't
+        # have, and a missed case weighs less here than a false-positive
+        # block.
         return 0 ;;
       -A|--author-email|-b|--body|-F|--body-file|--match-head-commit|-t|--subject)
         [ $# -ge 2 ] || return 0
@@ -187,16 +192,17 @@ beoordeel_gh_segment() {
   controleer_merge_guard "${posities[2]:-}"
 }
 
-# AC2–AC6 (F8/S15–S18): het daadwerkelijke oordeel over één `gh pr merge`.
-# $1 is het optionele doel (nummer/url/branch) dat na "merge" stond.
+# AC2–AC6 (F8/S15–S18): the actual judgment on one `gh pr merge`.
+# $1 is the optional target (number/url/branch) that stood after "merge".
 controleer_merge_guard() {
   local doel="$1"
 
-  # AC6: de expliciete uitweg, gezet in beoordeel_segment (al luid gemeld).
+  # AC6: the explicit escape hatch, set in beoordeel_segment (already
+  # loudly reported).
   [ "${merge_guard_uit:-0}" -eq 1 ] && return 0
 
-  # AC5: een onderbouwde `nee` op kwaliteitsreview-voor-merge schakelt uit —
-  # lokale grep, vóór enige gh-aanroep, dus zonder netwerk.
+  # AC5: a substantiated `nee` on kwaliteitsreview-voor-merge turns it off —
+  # local grep, before any gh call, so no network.
   local projectroot antwoorden regel antwoord
   projectroot="$(git -C "$werkmap" rev-parse --show-toplevel 2>/dev/null)"
   [ -n "$projectroot" ] || projectroot="$werkmap"
@@ -209,7 +215,7 @@ controleer_merge_guard() {
     fi
   fi
 
-  # AC4: faal-open zonder gh.
+  # AC4: fail open without gh.
   if ! command -v gh >/dev/null 2>&1; then
     echo "waarschuwing: merge-guard vindt gh niet en slaat de reviewcontrole over." >&2
     return 0
@@ -224,9 +230,9 @@ controleer_merge_guard() {
   uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>&1)"
   status=$?
 
-  # AC4: faal-open zonder netwerk (of elke andere reden waarom gh de PR niet
-  # kan raadplegen — bij twijfel toestaan, dezelfde grondregel als overal in
-  # dit script).
+  # AC4: fail open without network (or any other reason gh can't consult
+  # the PR — when in doubt, allow, the same ground rule as everywhere else
+  # in this script).
   if [ "$status" -ne 0 ]; then
     echo "waarschuwing: merge-guard kon de PR niet raadplegen (geen netwerk of geen toegang) en slaat de reviewcontrole over." >&2
     echo "$uitvoer" >&2
@@ -249,13 +255,14 @@ controleer_merge_guard() {
   controleer_ci_guard "$doel"
 }
 
-# Gevonden bij het reviewen van PR #80 (issue #81): CI faalde stelselmatig
-# sinds PR #76, zes runs op rij, en niets in de merge-flow zag het — geen
-# branch protection (private repo, geen betaald plan), en `gh pr merge`
-# waarschuwt niet bij falende checks. Zelfde mechaniek en faal-open-filosofie
-# als de review-marker-check hierboven, tweede controle in dezelfde poort.
+# Found while reviewing PR #80 (issue #81): CI had been systematically
+# failing since PR #76, six runs in a row, and nothing in the merge flow
+# saw it — no branch protection (private repo, no paid plan), and
+# `gh pr merge` doesn't warn on failing checks. Same mechanism and
+# fail-open philosophy as the review-marker check above, second check in
+# the same gate.
 #
-# $1 is hetzelfde optionele doel (nummer/url/branch) als bij de marker-check.
+# $1 is the same optional target (number/url/branch) as the marker check.
 controleer_ci_guard() {
   local doel="$1"
 
@@ -266,20 +273,20 @@ controleer_ci_guard() {
     aanroep=(gh pr checks --json "bucket,name")
   fi
 
-  # stdout en stderr apart, niet met 2>&1 samengevoegd: een routineuze
-  # stderr-regel van gh (een update-melding, een deprecatiewaarschuwing) zou
-  # anders de JSON op stdout verontreinigen. json.load faalt dan, ving eerder
-  # een brede except Exception op en liet zo een rode PR zwijgend door — geen
-  # waarschuwing, gewoon een lege bevindingenlijst. Precies dezelfde faalklasse
-  # als de bug die deze PR repareert, nu voorkomen door de streams te
-  # scheiden i.p.v. te vertrouwen op nette output.
+  # stdout and stderr kept separate, not merged with 2>&1: a routine stderr
+  # line from gh (an update notice, a deprecation warning) would otherwise
+  # contaminate the JSON on stdout. json.load would then fail, an earlier
+  # broad except Exception caught that and so let a red PR through in
+  # silence — no warning, just an empty findings list. Exactly the same
+  # failure class as the bug this PR fixes, now prevented by separating the
+  # streams instead of trusting clean output.
   #
-  # gh's eigen --json normaliseert de exitstatus van "checks falen/lopen nog"
-  # (normaal 1 resp. 8, zie `gh help exit-codes`) terug naar 0: de aanroep
-  # zelf slaagde immers, alleen de inhoud van de checks is niet groen. Een
-  # niet-nul status hier betekent dus altijd dat de opvraging zelf mislukte
-  # (geen netwerk, geen PR gevonden, geen toegang) — behalve het geval
-  # hieronder, waarin gh zelfs met --json zijn platte foutmelding teruggeeft.
+  # gh's own --json normalizes the exit status of "checks failing/still
+  # running" (normally 1 and 8 respectively, see `gh help exit-codes`) back
+  # to 0: the call itself succeeded after all, only the content of the
+  # checks isn't green. A non-zero status here therefore always means the
+  # lookup itself failed (no network, no PR found, no access) — except the
+  # case below, where gh returns its plain error message even with --json.
   local foutbestand fouttekst
   foutbestand="$(mktemp)" 2>/dev/null || foutbestand=""
   if [ -n "$foutbestand" ]; then
@@ -293,16 +300,16 @@ controleer_ci_guard() {
     fouttekst=""
   fi
 
-  # Geen checks gerapporteerd is geen fout en geen rode vlag: CI is optioneel
-  # (zie F6). gh geeft dat geval niet als lege JSON-lijst terug — ook met
-  # --json blijft het zijn platte tekstmelding op stderr, met exitstatus 1
-  # (geverifieerd tegen echte PR's, niet aangenomen). Dat apart vangen vóórdat
-  # het als een echte fout telt: anders krijgt elk geadopteerd project zonder
-  # CI een misleidende "geen netwerk of geen toegang"-waarschuwing op elke
-  # merge. De tekst is Engelse gh-uitvoer en dus in principe breekbaar over
-  # gh-versies heen; verandert hij, dan valt dit terug op de generieke
-  # faal-openmelding hieronder — nog steeds toestaan, alleen een minder
-  # precieze reden.
+  # No checks reported is not an error and not a red flag: CI is optional
+  # (see F6). gh doesn't return that case as an empty JSON list — even with
+  # --json it still gives its plain text message on stderr, with exit
+  # status 1 (verified against real PRs, not assumed). Catching that
+  # separately before it counts as a real error: otherwise every adopted
+  # project without CI gets a misleading "no network or no access" warning
+  # on every merge. The text is English gh output and thus in principle
+  # fragile across gh versions; if it changes, this falls back to the
+  # generic fail-open message below — still allowing, just a less precise
+  # reason.
   case "$fouttekst" in
     "no checks reported on"*) return 0 ;;
   esac
@@ -313,10 +320,10 @@ controleer_ci_guard() {
     return 0
   fi
 
-  # Alleen python3 filtert hier, niet gh's eigen -q: die syntax is niet
-  # gegarandeerd stabiel over gh-versies, en python3 is al een vereiste
-  # dependency van deze guard (lees-commando.py). Een parseerfout is nu een
-  # aparte, luide uitkomst — niet meer verward met "geen problemen gevonden".
+  # Only python3 filters here, not gh's own -q: that syntax isn't
+  # guaranteed stable across gh versions, and python3 is already a required
+  # dependency of this guard (lees-commando.py). A parse error is now a
+  # separate, loud outcome — no longer confused with "no problems found".
   local problemen parse_status
   problemen="$(printf '%s' "$uitvoer" | python3 -c '
 import json, sys
@@ -351,13 +358,13 @@ for item in data:
          CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <commando>"
 }
 
-# --- per commando in de keten ----------------------------------------------
-# Alleen segmenten die zelf met `git` beginnen worden beoordeeld. Zo blokkeert
-# `echo "gebruik nooit git reset --hard"` niets: daar staat `git` niet vooraan.
-# Is dit een korte-vlagcluster (`-fd`, `-D`) die <letter> bevat? Lange opties
-# tellen niet mee: `--exclude=foo` bevat een `f`, maar is geen `-f`. Dat
-# onderscheid is niet cosmetisch — zonder dat blokkeert de guard `git clean -n
-# --exclude=foo`, een dry run die niets weggooit.
+# --- per command in the chain -----------------------------------------------
+# Only segments that themselves start with `git` are judged. So
+# `echo "never use git reset --hard"` blocks nothing: `git` isn't at the
+# front there. Is this a short-flag cluster (`-fd`, `-D`) that contains
+# <letter>? Long options don't count: `--exclude=foo` contains an `f`, but
+# isn't a `-f`. That distinction isn't cosmetic — without it, the guard
+# would block `git clean -n --exclude=foo`, a dry run that discards nothing.
 korte_vlag_met() {
   local token="$1" letter="$2"
   case "$token" in
@@ -372,7 +379,8 @@ korte_vlag_met() {
   esac
 }
 
-# Wijst dit argument de hele werkmap aan? `.`, `./` en `./.` zijn dezelfde plek.
+# Does this argument point at the entire working directory? `.`, `./`, and
+# `./.` are the same place.
 is_hele_werkmap() {
   case "$1" in
     .|./|./.) return 0 ;;
@@ -380,33 +388,35 @@ is_hele_werkmap() {
   esac
 }
 
-# Krijgt de tokens van één segment als argumenten — al ontdaan van quotes.
+# Gets the tokens of one segment as arguments — already stripped of quotes.
 beoordeel_segment() {
   [ $# -gt 0 ] || return 0
 
-  # Alleen relevant voor het gh-pad hieronder; hier gereset zodat elk segment
-  # met een schone lei begint. Bewust géén `return 0` bij het zetten ervan
-  # (zie hieronder): dat zou dit hele segment overslaan, dus ook een
-  # destructief git-commando dat toevallig met dezelfde var-prefix begint.
+  # Only relevant for the gh path below; reset here so every segment starts
+  # with a clean slate. Deliberately no `return 0` when setting it (see
+  # below): that would skip this entire segment, including a destructive
+  # git command that happens to start with the same var prefix.
   merge_guard_uit=0
 
-  # Omgevingsvariabelen vóór het commando horen bij de aanroep, niet bij een
-  # ander programma: `GIT_TRACE=1 git reset --hard` is nog steeds een
-  # git-commando. Zonder deze stap omzeilt elke var-prefix de hele guard.
+  # Environment variables before the command belong to the call, not to a
+  # different program: `GIT_TRACE=1 git reset --hard` is still a git
+  # command. Without this step, any var prefix would bypass the whole
+  # guard.
   while [ $# -gt 0 ]; do
     case "$1" in
       CLAUDE_WORKFLOW_GUARDRAILS_UIT=*)
-        # De uitweg zoals de blokkade-melding hem voorschrijft. Hij moet in de
-        # commandotekst kunnen staan: een nog niet gestart commando kan de
-        # omgeving van deze guard per definitie niet beinvloeden.
+        # The escape hatch as the block message prescribes it. It must be
+        # able to appear in the command text: a command that hasn't started
+        # yet can, by definition, not influence this guard's environment.
         echo "waarschuwing: git-guardrails is voor dit commando expliciet uitgezet." >&2
         return 0 ;;
       CLAUDE_WORKFLOW_MERGE_GUARD_UIT=*)
-        # AC6 (F8): een bewuste, luide uitweg specifiek voor de merge-guard —
-        # los van de destructieve-git-uitweg hierboven. Alleen een vlag
-        # zetten, niet meteen terugkeren: dit commando kan ook (nog steeds)
-        # een destructief git-commando zijn, en dát moet gewoon beoordeeld
-        # blijven worden. controleer_merge_guard leest de vlag verderop.
+        # AC6 (F8): a deliberate, loud escape hatch specific to the merge
+        # guard — separate from the destructive-git escape hatch above.
+        # Only setting a flag, not returning immediately: this command
+        # could also (still) be a destructive git command, and that must
+        # still be judged as usual. controleer_merge_guard reads the flag
+        # further down.
         echo "waarschuwing: de merge-guard (review-marker én CI-status) is voor dit commando expliciet overgeslagen." >&2
         merge_guard_uit=1
         shift ;;
@@ -427,8 +437,8 @@ beoordeel_segment() {
     return
   fi
 
-  # Globale git-opties overslaan. De padbepalende worden onthouden; die gaan
-  # mee naar de branch-controle zodat git zelf de repo bepaalt.
+  # Skipping global git options. The path-determining ones are remembered;
+  # they go along to the branch check so git itself determines the repo.
   padopties=()
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -454,13 +464,14 @@ beoordeel_segment() {
   local arg
   case "$sub" in
     commit)
-      # Werk hoort op een feature-branch te ontstaan, niet op main. De guard
-      # blokkeerde eerder alleen de push; dan liep je een hele sessie door en
-      # ontdekte je het pas aan het eind, met alle commits op main.
+      # Work should originate on a feature branch, not on main. The guard
+      # used to only block the push; then you'd run through a whole session
+      # and only discover it at the end, with every commit on main.
       #
-      # Uitzondering: een repo zonder commits. De allereerste commit van een
-      # nieuw project staat per definitie op main, en die stap staat zo in
-      # WORKFLOW.md onder "Nieuw project opzetten".
+      # Exception: a repo with no commits. The very first commit of a new
+      # project is, by definition, on main, and that step is documented that
+      # way in the `adopt-workflow` skill under "Setting up a new (related)
+      # project" (reached from WORKFLOW.md's routing table).
       if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
         if is_main "$(huidige_branch)"; then
           blokkeer "git commit op main" "${REDEN_COMMIT_OP_MAIN:-main krijgt zijn wijzigingen via een PR. Maak eerst een branch.}"
@@ -511,7 +522,7 @@ beoordeel_segment() {
       done
 
       if [ "${#refspecs[@]}" -eq 0 ]; then
-        # Geen refspec: waar dit heen gaat hangt af van de huidige branch.
+        # No refspec: where this goes depends on the current branch.
         is_main "$(huidige_branch)" && blokkeer "git push vanaf main" \
           "main is uitgecheckt, dus deze push gaat naar main. Werk op een feature-branch."
         return 0
@@ -529,18 +540,18 @@ beoordeel_segment() {
   esac
 }
 
-# De tokenstroom lezen. Records zijn NUL-gescheiden en dragen een typeteken:
-# `c` de werkmap, `t` een token, `e` het einde van een segment.
-# Standaard de eigen werkdirectory; de stroom overschrijft hem als eerste
-# record. Die volgorde is gegarandeerd, maar de fallback hoort ervóór te staan:
-# een segment wordt al beoordeeld tijdens de lus.
+# Reading the token stream. Records are NUL-separated and carry a type
+# character: `c` the working directory, `t` a token, `e` the end of a
+# segment. Defaults to the current working directory; the stream overwrites
+# it as the first record. That order is guaranteed, but the fallback belongs
+# before it: a segment is already judged during the loop.
 werkmap="$PWD"
 tokens=()
 padopties=()
 
 while IFS= read -r -d '' record; do
-  # Substring-expansie, geen patroonvergelijking: een waarde kan glob-tekens
-  # bevatten en die zouden een `%%`-constructie laten misgrijpen.
+  # Substring expansion, not pattern matching: a value may contain glob
+  # characters, and those would make a `%%` construct misfire.
   soort="${record:0:1}"
   waarde="${record:1}"
   case "$soort" in

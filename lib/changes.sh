@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# lib/changes.sh — De gedeelde parser en predicaatlogica voor CHANGES.md.
+# lib/changes.sh — The shared parser and predicate logic for CHANGES.md.
 #
-# Sourcen, niet uitvoeren. Zowel adopt.sh als pending-changes.sh gebruikt dit;
-# vóór deze bibliotheek stonden de predicaten letterlijk twee keer en het
-# parserskelet ook, waardoor ze uit de pas konden lopen zonder dat iets klaagde.
+# Source, don't execute. Both adopt.sh and pending-changes.sh use this;
+# before this library, the predicates lived literally twice, and so did the
+# parser skeleton, letting them drift out of sync without anything
+# complaining.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
-# De enige predicaatlogica. Uitgedrukt als case in plaats van eval van vrije
-# tekst uit CHANGES.md: voorspelbaar, en een typefout levert "onbekend" op in
-# plaats van een onbedoeld commando.
+# The one and only predicate logic. Expressed as a case instead of eval of
+# free text from CHANGES.md: predictable, and a typo yields "unknown"
+# instead of an unintended command.
 predicaat_waar() {
   local predicaat="$1" project_dir="$2"
   case "$predicaat" in
@@ -25,45 +26,47 @@ predicaat_waar() {
   esac
 }
 
-# Loopt de entries in <bron> langs en roept <callback> aan met
+# Walks the entries in <bron> and calls <callback> with
 # <id> <standaard> <predicaat>.
 #
-# Alleen entries mét een "Van toepassing als"-veld leiden tot een aanroep: dat
-# veld is wat een entry actief maakt.
+# Only entries with a "Van toepassing als" field lead to a call: that field
+# is what makes an entry active.
 #
-# Een `## `-kop zonder dat veld levert een waarschuwing op. Sinds de
-# sectiescheidingen in CHANGES.md `###` zijn, betekent `## ` onvoorwaardelijk
-# "entry", en is zo'n kop dus een vergeten predicaat in plaats van een kopje.
-# Retirement gebeurt door te verhuizen naar CHANGES-ARCHIEF.md, niet door velden
-# weg te laten. De waarschuwing gaat naar stderr: zichtbaar bij `check` en bij
-# handmatig draaien, en onderdrukt in de SessionStart-hook, waar een project er
-# toch niets aan kan doen.
+# A `## ` heading without that field produces a warning. Since section
+# separators in CHANGES.md are `###`, `## ` unconditionally means "entry",
+# so such a heading is a forgotten predicate, not a subheading. Retirement
+# happens by moving to CHANGES-ARCHIEF.md, not by dropping fields. The
+# warning goes to stderr: visible in `check` and when run manually, and
+# suppressed in the SessionStart hook, where a project can't do anything
+# about it anyway.
 #
-# `standaard` is "ja" wanneer de entry geen `**Standaard:**`-veld draagt.
+# `standaard` is "ja" when the entry carries no `**Standaard:**` field.
 #
-# **Contract voor de callback:** zijn exitstatus draagt geen betekenis voor deze
-# lus, maar een niet-nul status wordt wel gemeld en telt mee in de eindstatus.
-# Dat is bewust: zonder die afhandeling zou een callback die per ongeluk 1
-# teruggeeft — bijvoorbeeld door een afsluitende `a && b` waarvan `a` onwaar is —
-# een aanroeper met `set -e` stilzwijgend laten stoppen, halverwege de lus en
-# zonder enige melding. adopt.sh draait met `set -e`, pending-changes.sh niet;
-# die asymmetrie maakt zo'n fout makkelijk te maken en moeilijk te zien.
+# **Contract for the callback:** its exit status carries no meaning for
+# this loop, but a non-zero status is reported and counts toward the final
+# status. That's deliberate: without that handling, a callback that
+# accidentally returns 1 — for example through a trailing `a && b` where
+# `a` is false — would silently stop a caller running with `set -e`,
+# halfway through the loop and with no report at all. adopt.sh runs with
+# `set -e`, pending-changes.sh doesn't; that asymmetry makes such a mistake
+# easy to make and hard to see.
 #
-# De aanroeper beslist wat hij met `standaard` doet — dat is bewust niet hier
-# geregeld. adopt.sh slaat `vraag` over (die entries worden nooit automatisch
-# beantwoord); pending-changes.sh negeert het veld juist, want een onbeantwoorde
-# vraag staat open ongeacht zijn startpunt. Een vlag in deze bibliotheek zou dat
-# verschil verstoppen en op een ongelukje laten lijken; hier zichtbaar bij beide
-# aanroepers is beter. Zie de comments daar, die naar elkaar verwijzen.
+# The caller decides what to do with `standaard` — deliberately not settled
+# here. adopt.sh skips `vraag` (those entries are never answered
+# automatically); pending-changes.sh, on the other hand, ignores the field,
+# because an unanswered question stays pending regardless of its starting
+# point. A flag in this library would hide that difference and make it look
+# like an oversight; visible at both callers is better. See the comments
+# there, which reference each other.
 itereer_entries() {
   local bron="$1" callback="$2"
   local regel huidig_id="" standaard="ja" predicaat
   local fouten=0 gezien_predicaat=0
 
-  # `|| [ -n "$regel" ]` vangt een bron zonder afsluitende newline op: read geeft
-  # dan een niet-nul status terwijl de laatste regel wél gelezen is. Zonder dat
-  # valt die regel weg — en sinds de waarschuwing hieronder zou een entry dan
-  # stilzwijgend overgeslagen worden mét een misleidende melding erbij.
+  # `|| [ -n "$regel" ]` catches a source with no trailing newline: read
+  # then returns a non-zero status while the last line has still been read.
+  # Without that, that line would drop — and given the warning below, an
+  # entry would then be silently skipped along with a misleading message.
   while IFS= read -r regel || [ -n "$regel" ]; do
     case "$regel" in
       '## '*)
@@ -88,7 +91,7 @@ itereer_entries() {
     esac
   done < "$bron"
 
-  # Ook de laatste entry in het bestand telt mee.
+  # The last entry in the file counts too.
   if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then
     echo "waarschuwing: entry '$huidig_id' in $bron heeft geen 'Van toepassing als'-veld" >&2
   fi
@@ -96,14 +99,15 @@ itereer_entries() {
   [ "$fouten" -eq 0 ]
 }
 
-# De ID's van entries zonder een https-**PR:**-veld, één per regel (W21, F15,
-# S32). Zelfde entryvorm als itereer_entries hierboven ("## " opent een entry),
-# maar zonder het predicaatcontract — dit werkt ook op CHANGES-ARCHIEF.md, waar
-# Standaard en Van toepassing als bewust ontbreken.
+# The IDs of entries without an https-**PR:** field, one per line (W21,
+# F15, S32). Same entry shape as itereer_entries above ("## " opens an
+# entry), but without the predicate contract — this also works on
+# CHANGES-ARCHIEF.md, where Standaard and Van toepassing als are
+# deliberately absent.
 #
-# Geen strengere URL-validatie dan "begint met https://": de linkback moet
-# terugvindbaar zijn, niet per se naar GitHub wijzen — een project zou zijn
-# eigen forge kunnen gebruiken.
+# No stricter URL validation than "starts with https://": the linkback must
+# be findable again, not necessarily point to GitHub — a project could use
+# its own forge.
 pr_links_ontbrekend() {
   local bron="$1"
   [ -f "$bron" ] || return 0
@@ -128,12 +132,12 @@ pr_links_ontbrekend() {
   fi
 }
 
-# Loopt béide bronnen langs: de entries in CHANGES.md en het NFR-register in
-# nfr/. Sinds W5 staan de vijftien niet-functionele kenmerken niet meer als
-# spec-*-entries in CHANGES.md, maar in een eigen register — deze functie houdt
-# dat voor de aanroepers één ding.
+# Walks *both* sources: the entries in CHANGES.md and the NFR register in
+# nfr/. Since W5, the fifteen non-functional characteristics no longer live
+# as spec-* entries in CHANGES.md but in their own register — this function
+# keeps that one thing for callers.
 #
-# <workflow_dir> is de map met CHANGES.md en nfr/.
+# <workflow_dir> is the directory with CHANGES.md and nfr/.
 itereer_alle_entries() {
   local workflow_dir="$1" callback="$2"
   local fouten=0

@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
-"""Leest de PreToolUse-invoer en levert een ondubbelzinnige tokenstroom.
+"""Reads the PreToolUse input and produces an unambiguous token stream.
 
-Dit is de enige plek die bepaalt *hoe* een commando gelezen wordt. De guard zelf
-(`hooks/git-guardrails`) vergelijkt alleen nog tokens; hij krijgt geen ruwe tekst
-meer te zien. Zonder die scheiding moest bash zelf quoting nabootsen, en dat ging
-mis: een `;` binnen een commitboodschap brak het commando in stukken, waarna een
-onschuldige zin als commando werd beoordeeld.
+This is the only place that decides *how* a command is read. The guard itself
+(`hooks/git-guardrails`) only ever compares tokens; it never sees raw text
+again. Without that separation, bash itself had to emulate quoting, and that
+went wrong: a `;` inside a commit message split the command into pieces, after
+which an innocent sentence got judged as a command.
 
-Uitvoer: NUL-gescheiden records op stdout.
+Output: NUL-separated records on stdout.
 
-    c<pad>    de werkmap uit de invoer (eenmalig, als eerste)
-    t<token>  een token binnen het huidige segment
-    e         einde van een segment
+    c<path>   the working directory from the input (once, first)
+    t<token>  a token within the current segment
+    e         end of a segment
 
-Het typeteken vooraan is nodig omdat een token leeg mag zijn (`git commit -m ""`);
-zonder dat teken zou een leeg token niet van een segmentgrens te onderscheiden
-zijn. NUL is het enige veilige scheidingsteken: na het verwijderen van quotes kan
-een token zelf een newline bevatten, bijvoorbeeld bij een meerregelige
-commitboodschap.
+The leading type character is needed because a token may be empty
+(`git commit -m ""`); without it, an empty token couldn't be distinguished
+from a segment boundary. NUL is the only safe separator: after quotes are
+stripped, a token itself may contain a newline, for example in a multi-line
+commit message.
 
-Exitstatus:
-    0  stroom volgt
-    3  invoer niet te lezen (geen geldige JSON, of quoting die niet sluit)
-    4  niet van toepassing (geen Bash-aanroep, of geen commando)
+Exit status:
+    0  stream follows
+    3  input unreadable (not valid JSON, or unclosed quoting)
+    4  not applicable (not a Bash call, or no command)
 """
 
 import json
@@ -30,25 +30,25 @@ import re
 import shlex
 import sys
 
-# `<<` of `<<-`, gevolgd door een eventueel gequote delimiter. Een here-string
-# (`<<<`) is geen heredoc, vandaar de twee uitsluitingen aan weerszijden.
+# `<<` or `<<-`, followed by an optionally quoted delimiter. A here-string
+# (`<<<`) is not a heredoc, hence the two exclusions on either side.
 HEREDOC = re.compile(r"""(?<!<)<<(?!<)(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\2""")
 
 
 def zonder_heredocs(tekst):
-    """Snijdt heredoc-bodies weg. Aparte pas, vóór het tokeniseren.
+    """Cuts away heredoc bodies. Separate pass, before tokenizing.
 
-    De inhoud van een heredoc is data, geen shell-syntaxis: een regel die daar
-    toevallig met `git` begint is geen commando. Deze pas draait bewust vóór de
-    tokenizer en zonder enig quote-bewustzijn. Zou hij verweven raken met het
-    bijhouden van aanhalingstekens, dan zou een losse apostrof in de body (denk
-    aan "don't") de quote-stand voor al het volgende laten omslaan.
+    The content of a heredoc is data, not shell syntax: a line that happens to
+    start with `git` there isn't a command. This pass deliberately runs before
+    the tokenizer and with no quote awareness at all. If it got entangled with
+    tracking quote state, a stray apostrophe in the body (think "don't") would
+    flip the quote state for everything that follows.
 
-    De terminator moet de héle regel zijn (op leidende tabs na bij `<<-`). Een
-    substring-match zou de body te vroeg laten eindigen, waardoor data alsnog als
-    beoordeelbare syntaxis verschijnt — precies de fout die we hier dichten. Een
-    niet-herkende terminator laat de rest juist wegvallen, en dat is de veilige
-    kant op: hooguit een gemist geval, nooit een blokkade erbij.
+    The terminator must be the *entire* line (leading tabs aside for `<<-`). A
+    substring match would end the body too early, letting data show up as
+    judgeable syntax after all — exactly the bug this closes. An unrecognized
+    terminator instead drops the rest, and that's the safe direction: at worst
+    a missed case, never an extra block.
     """
     regels = tekst.split("\n")
     behouden = []
@@ -74,19 +74,19 @@ def zonder_heredocs(tekst):
                 gevonden = True
                 break
         if not gevonden:
-            # Geen herkenbare terminator: de rest is body, of het commando is
-            # afgekapt. Niet verder beoordelen.
+            # No recognizable terminator: the rest is body, or the command is
+            # truncated. Don't judge any further.
             break
 
     return "\n".join(behouden)
 
 
 def tokeniseer(tekst):
-    """Quote-bewuste tokenisatie; scheidingstekens tellen alleen buiten quotes."""
+    """Quote-aware tokenization; separators only count outside quotes."""
     lexer = shlex.shlex(tekst, posix=True, punctuation_chars=";|&\n")
     lexer.whitespace_split = True
-    # Newline uit de witruimte halen, zodat hij als scheidingsteken overblijft:
-    # `git a\ngit b` zijn twee commando's, geen woorden van één.
+    # Remove newline from whitespace, so it remains a separator:
+    # `git a\ngit b` are two commands, not words of one.
     lexer.whitespace = " \t\r"
     return list(lexer)
 
@@ -112,7 +112,7 @@ def main():
     try:
         tokens = tokeniseer(zonder_heredocs(commando))
     except ValueError:
-        # Quoting die niet sluit. Niet gokken naar een lezing.
+        # Unclosed quoting. Don't guess at a reading.
         return 3
 
     uit = sys.stdout.buffer

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# hooks/regels.sh — De regels die de PreToolUse-guard (hooks/git-guardrails)
-# en de native git-hooks (W26, pre-commit/pre-push) delen: welke branch
-# beschermd is en wat de melding zegt.
+# hooks/regels.sh — The rules shared by the PreToolUse guard
+# (hooks/git-guardrails) and the native git hooks (W26, pre-commit/pre-push):
+# which branch is protected and what the message says.
 #
-# Puur data, geen invoerlaag. Hoe elke hook zijn commando leest verschilt
-# fundamenteel — de quote-bewuste tokenisatie uit lees-commando.py is per
-# definitie PreToolUse-specifiek, een native git-hook krijgt nooit een
-# commandostring — en hoort dus niet hier. Wat gedeeld kán worden is dít:
-# welke branch beschermd is, en de tekst van de melding.
+# Pure data, not an input layer. How each hook reads its command differs
+# fundamentally — the quote-aware tokenization from lees-commando.py is by
+# definition PreToolUse-specific, a native git hook never gets a command
+# string — and so doesn't belong here. What *can* be shared is this: which
+# branch is protected, and the text of the message.
 #
-# Sourcen, niet uitvoeren.
+# Source, don't execute.
 
 HOOFDBRANCH="main"
 

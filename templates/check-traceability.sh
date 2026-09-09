@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Schakel 1 van de traceabilityketen: elke functionaliteit heeft een scenario,
-# en elke dekkingsverwijzing lost op.
+# Link 1 of the traceability chain: every functionality has a scenario,
+# and every coverage reference resolves.
 #
-# Aanroepen vanuit het `check` van het project:
+# Called from the project's own `check`:
 #
 #   ./check-traceability.sh .
 #
-# Bewust offline en zonder `gh`: dit is de enige schakel die geen netwerk nodig
-# heeft, en een controle die netwerk vraagt hoort niet in een lokale `check`.
-# De schakels scenario -> issue -> PR zitten in `pre-merge-review` en in CI.
+# Deliberately offline and without `gh`: this is the only link that needs
+# no network, and a check that needs network doesn't belong in a local
+# `check`. The scenario -> issue -> PR links live in `pre-merge-review` and
+# in CI.
 #
-# Geen `eval`. Dit script leest tekst die niet volledig onder eigen beheer staat;
-# een ID dat per ongeluk een commando is, mag nooit iets uitvoeren.
+# No `eval`. This script reads text that isn't fully under its own control;
+# an ID that accidentally is a command must never execute anything.
 
 set -uo pipefail
 
@@ -30,22 +31,23 @@ for bestand in "$prd" "$scenarios"; do
   fi
 done
 
-# De ID's uit de koppen van een bestand, één per regel.
+# The IDs from a file's headings, one per line.
 #
-# Alleen koppen tellen. Een ID in lopende tekst is geen definitie, en een
-# schrijfwijze als "F13a" in een zin zou anders een niet-bestaand item in het
-# leven roepen. Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar
-# `R`/`A`/`B`/`P` en `OP` komen in bestaande projecten voor, en een hardcoded
-# lijst maakt dit script daar op dag één onbruikbaar.
+# Only headings count. An ID in running text is not a definition, and a
+# spelling like "F13a" in a sentence would otherwise bring a non-existent
+# item into being. The prefix isn't fixed: `F`/`S` is customary, but
+# `R`/`A`/`B`/`P` and `OP` occur in existing projects, and a hardcoded list
+# would make this script unusable there on day one.
 ids_uit_koppen() {
   grep -oE '^#+[[:space:]]+[A-Z]{1,2}[0-9]+[a-z]?([[:space:]]|$)' "$1" \
     | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# De ruwe inhoud van de Dekt:-velden, één komma-gescheiden stuk per regel.
+# The raw content of the Dekt: fields, one comma-separated piece per line.
 #
-# Alleen het veld telt, aan regelbegin. Dat voorkomt vals-positieven per
-# constructie: een zin die toevallig "S1" bevat is geen verwijzing.
+# Only the field counts, at the start of a line. That prevents false
+# positives by construction: a sentence that happens to contain "S1" is
+# not a reference.
 dekt_ruw() {
   grep '^\*\*Dekt:\*\*' "$1" \
     | sed 's/^\*\*Dekt:\*\*[[:space:]]*//' \
@@ -54,21 +56,22 @@ dekt_ruw() {
     | grep -v '^$'
 }
 
-# De geldige ID's uit de Dekt:-velden.
+# The valid IDs from the Dekt: fields.
 #
-# Een placeholder tussen punthaken wordt overgeslagen: een vers gescaffold
-# project draagt `**Dekt:** <F1>` uit het sjabloon, en een controle die daarop
-# meteen faalt, staat morgen uit.
+# A placeholder between angle brackets is skipped: a freshly scaffolded
+# project carries `**Dekt:** <F1>` from the template, and a check that
+# fails on that immediately would be disabled by tomorrow.
 dekt_tokens() {
   dekt_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
 }
 
-# Alles in een Dekt:-veld dat geen ID en geen placeholder is.
+# Everything in a Dekt: field that's neither an ID nor a placeholder.
 #
-# Dit apart melden in plaats van stil wegfilteren. Een tikfout als `F-2`, een
-# lijst met spaties in plaats van komma's, of een veld dat over twee regels
-# doorloopt, verdween anders geruisloos - en dan belooft de controle dat elk
-# token oplost terwijl hij precies de kapotte tokens niet ziet.
+# Reporting this separately instead of silently filtering it out. A typo
+# like `F-2`, a list with spaces instead of commas, or a field that runs
+# across two lines would otherwise vanish without a trace — and then the
+# check promises that every token resolves while it's exactly the broken
+# tokens it doesn't see.
 dekt_ongeldig() {
   dekt_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
 }
@@ -76,8 +79,8 @@ dekt_ongeldig() {
 prd_ids="$(ids_uit_koppen "$prd")"
 scenario_ids="$(ids_uit_koppen "$scenarios")"
 
-# Dubbele ID's binnen één bestand. Dat is een echte fout, geen stijlkwestie: een
-# verwijzing naar zo'n ID is niet meer eenduidig op te lossen.
+# Duplicate IDs within one file. That's a real error, not a style issue: a
+# reference to such an ID can no longer resolve unambiguously.
 for paar in "PRD.md:$prd_ids" "TEST-SCENARIOS.md:$scenario_ids"; do
   naam="${paar%%:*}"
   dubbel="$(printf '%s\n' "${paar#*:}" | grep -v '^$' | sort | uniq -d)"
@@ -88,16 +91,16 @@ for paar in "PRD.md:$prd_ids" "TEST-SCENARIOS.md:$scenario_ids"; do
   fi
 done
 
-# Een PRD zonder ID's is geen fout maar een waarschuwing. Eén van de vier
-# bestaande projecten is precies dit geval; hard falen zou het script daar
-# meteen uitschakelen en dan controleert het nergens meer iets.
+# A PRD with no IDs is not an error but a warning. One of the four
+# existing projects is exactly this case; failing hard there would disable
+# the script immediately, and then it checks nothing anywhere.
 if [ -z "$prd_ids" ]; then
   waarschuwing "PRD.md heeft geen ID-koppen — schakel 1 is hier niet te controleren"
   [ "$fouten" -eq 0 ] && exit 0
   exit 1
 fi
 
-# Elk Dekt:-token lost op in de ID's van het ándere bestand.
+# Every Dekt: token resolves in the IDs of the *other* file.
 controleer_verwijzingen() {
   local bestand="$1" naam="$2" doelen="$3" doelnaam="$4" token
   for token in $(dekt_tokens "$bestand"); do
@@ -105,7 +108,7 @@ controleer_verwijzingen() {
       || melding "$naam verwijst naar $token, maar dat ID bestaat niet in $doelnaam"
   done
 }
-# Kapotte tokens melden, in beide bestanden.
+# Reporting broken tokens, in both files.
 for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
   naam="${paar%%:*}"
   while IFS= read -r stuk; do
@@ -119,14 +122,14 @@ done
 controleer_verwijzingen "$scenarios" "TEST-SCENARIOS.md" "$prd_ids" "PRD.md"
 controleer_verwijzingen "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 
-# Schakel 1 zelf: elke functionaliteit is door minstens één scenario gedekt.
+# Link 1 itself: every functionality is covered by at least one scenario.
 #
-# Draagt geen enkel scenario een Dekt:-veld, dan gebruikt dit project de
-# conventie nog niet. Dan is elke functionaliteit per definitie ongedekt, en zou
-# dit script bij invoering in één klap over álle items klagen. Dat is de
-# retrofit die het ontwerp juist vermijdt: de conventie geldt vanaf het
-# eerstvolgende werk. Vandaar een waarschuwing, en handhaving zodra de eerste
-# verwijzing er staat.
+# If no scenario carries a Dekt: field at all, this project isn't using
+# the convention yet. Then every functionality is by definition uncovered,
+# and this script would complain about *all* items at once on introduction.
+# That's exactly the retrofit the design avoids: the convention applies
+# starting with the next piece of work. Hence a warning, and enforcement
+# once the first reference appears.
 gedekt="$(dekt_tokens "$scenarios" | sort -u)"
 if [ -z "$gedekt" ]; then
   waarschuwing "TEST-SCENARIOS.md draagt nog geen Dekt:-velden — schakel 1 wordt pas gehandhaafd zodra de eerste verwijzing er staat"

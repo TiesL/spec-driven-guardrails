@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# find-shared-vocabulary.sh — Genereert kandidaten voor laag B (W33/#57, W38):
-# elke letterlijke string die een script uit dit repo matcht in een bestand
-# of GitHub-issue/PR van een ánder (geadopteerd) repo. Vervangt geen
-# menselijk oordeel — surfaced kandidaten, de curatie staat in issue #110.
+# find-shared-vocabulary.sh — Generates candidates for layer B (W33/#57, W38):
+# every literal string that a script from this repo matches in a file or
+# GitHub issue/PR of a different (adopted) repo. Doesn't replace human
+# judgment — surfaces candidates, the curation lives in issue #110.
 #
-# Twee delen:
-#   1. Regressiecontrole: bestaat elk al-bevestigd laag-B-token nog op de
-#      plek waar het gevonden werd? Verdwijnt hij stilzwijgend (bijvoorbeeld
-#      door een refactor), dan is deze inventaris zelf verouderd.
-#   2. Kandidatenscan: grept dezelfde scripts op nieuwe combinaties van een
-#      project_dir-achtige variabele en een letterlijke, gequote string
-#      erna — mogelijke nieuwe laag-B-kandidaten die niet in deel 1 staan.
+# Two parts:
+#   1. Regression check: does every already-confirmed layer-B token still
+#      exist where it was found? If it silently disappears (e.g. through a
+#      refactor), this inventory itself is out of date.
+#   2. Candidate scan: greps the same scripts for new combinations of a
+#      project_dir-like variable and a literal, quoted string after it —
+#      possible new layer-B candidates not covered by part 1.
 #
-# Gebruik: ./find-shared-vocabulary.sh
-# Draai opnieuw zodra adopt.sh, pending-changes.sh, de skills/pre-merge-review-
-# scripts, templates/check-*.sh, hooks/git-guardrails of lib/*.sh wijzigen.
+# Usage: ./find-shared-vocabulary.sh
+# Re-run whenever adopt.sh, pending-changes.sh, the skills/pre-merge-review
+# scripts, templates/check-*.sh, hooks/git-guardrails, or lib/*.sh change.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
@@ -61,9 +61,9 @@ kandidaat_scripts="adopt.sh pending-changes.sh hooks/git-guardrails lib/changes.
 
 for script in $kandidaat_scripts; do
   [ -f "$script" ] || continue
-  # Regels met een project_dir/antwoorden/prd/scenarios-achtige variabele
-  # gevolgd door grep/case op een gequote string — de vorm die elk al
-  # gevonden laag-B-token deelt.
+  # Lines with a project_dir/antwoorden/prd/scenarios-like variable followed
+  # by grep/case on a quoted string — the shape every layer-B token found so
+  # far shares.
   treffers="$(grep -nE '\$(project_dir|antwoorden|prd|scenarios)' "$script" \
     | grep -E "grep |case |==|~" \
     | grep -vE '^\s*#')"

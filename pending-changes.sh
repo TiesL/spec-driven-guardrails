@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# pending-changes.sh — Meldt welke adopteerbare wijzigingen uit CHANGES.md nog
-# geen antwoord hebben in WORKFLOW-ADOPTIE.md van een project.
+# pending-changes.sh — Reports which adoptable changes from CHANGES.md
+# still have no answer in a project's WORKFLOW-ADOPTIE.md.
 #
-# Gebruik:
-#   ./pending-changes.sh [/pad/naar/project]   # standaard: huidige directory
+# Usage:
+#   ./pending-changes.sh [/path/to/project]   # default: current directory
 #
-# Wordt aangeroepen door de SessionStart-hook (zie settings/session-hooks.json).
-# Print niets wanneer er niets openstaat, en eindigt altijd met exit 0 — een
-# hook mag een sessie nooit blokkeren.
+# Called by the SessionStart hook (see settings/session-hooks.json). Prints
+# nothing when nothing is pending, and always ends with exit 0 — a hook
+# must never block a session.
 #
-# Een wijziging staat open wanneer haar "Van toepassing als"-predicaat waar is
-# én er geen rij voor dat ID in WORKFLOW-ADOPTIE.md staat. De afwezigheid van
-# een rij betekent dus "nog niet van toepassing geweest": wordt de conditie later
-# alsnog waar, dan duikt de vraag vanzelf op.
+# A change is pending when its "Van toepassing als" predicate is true *and*
+# there's no row for that ID in WORKFLOW-ADOPTIE.md. So a row's absence
+# means "hasn't applied yet": if the condition later becomes true, the
+# question surfaces on its own.
 
 set -uo pipefail
 
@@ -28,17 +28,18 @@ antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
 
 [ -f "$changes" ] || exit 0
 
-# shellcheck disable=SC2329  # aangeroepen vanuit verzamel_openstaand
+# shellcheck disable=SC2329  # called from verzamel_openstaand
 beantwoord() {
   [ -f "$antwoorden" ] && grep -q "^| *$1 *|" "$antwoorden"
 }
 
 openstaand=()
 
-# Callback voor itereer_entries. `standaard` blijft hier bewust ongebruikt: een
-# onbeantwoorde vraag staat open ongeacht of hij `ja` of `vraag` als startpunt
-# had. adopt.sh doet met datzelfde veld juist wél iets — zie de callback daar.
-# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+# Callback for itereer_entries. `standaard` is deliberately unused here: an
+# unanswered question is pending regardless of whether it started as `ja`
+# or `vraag`. adopt.sh does do something with that same field — see the
+# callback there.
+# shellcheck disable=SC2329  # called indirectly, via itereer_entries
 verzamel_openstaand() {
   local id="$1" predicaat="$3"
   if predicaat_waar "$predicaat" "$project_dir" && ! beantwoord "$id"; then
@@ -58,7 +59,7 @@ if [ ${#openstaand[@]} -gt 0 ]; then
       }
       in_entry && /^## / { exit }
     ' "$changes")"
-    # Staat het ID niet in CHANGES.md, dan komt hij uit het NFR-register.
+    # If the ID isn't in CHANGES.md, it comes from the NFR register.
     if [ -z "$vraag" ]; then
       vraag="$(nfr_vraag "$workflow_dir/nfr" "$id")"
     fi
@@ -67,29 +68,30 @@ if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Leg per wijziging een ja/nee-antwoord vast in WORKFLOW-ADOPTIE.md."
 fi
 
-# Een geseede rij is nog geen besluit. adopt.sh zet elke van toepassing zijnde
-# `Standaard: ja`-wijziging op "ja — vereist onderbouwing": een voorlopige
-# stempel. beantwoord() ziet alleen dát er een rij staat, nooit wat erin staat,
-# dus zonder dit signaal meldt een vers geadopteerd project niets openstaand
-# terwijl er zeventien voorlopige stempels liggen.
+# A seeded row is not yet a decision. adopt.sh sets every applicable
+# `Standaard: ja` change to "ja — vereist onderbouwing": a provisional
+# stamp. beantwoord() only sees *that* a row exists, never what's in it, so
+# without this signal a freshly adopted project would report nothing
+# pending while seventeen provisional stamps sit there.
 #
-# beantwoord() wordt daarvoor bewust niet aangepast: dat zou de openstaand-set
-# veranderen en daarmee R9 breken, de regressietest die bewaakt dat geen enkel
-# project ooit een vraag opnieuw krijgt. Dit staat er dus náást.
+# beantwoord() is deliberately not changed for this: that would change the
+# pending set and thereby break R9, the regression test that guards that no
+# project ever gets asked a question again. This exists alongside it
+# instead.
 #
-# Gefaseerd onderbouwen is het uitgangspunt (zie F6): niet alles ineens, maar
-# bij eerste aanraking van het onderwerp. Dit is poort 3 — het signaal blijft
-# zichtbaar tot een rij echt beantwoord is.
+# Phased substantiation is the premise (see F6): not everything at once,
+# but on first contact with the topic. This is gate 3 — the signal stays
+# visible until a row is genuinely answered.
 if [ -f "$antwoorden" ]; then
-  # Geen `|| echo 0`: grep -c print zélf al "0" bij nul treffers, en geeft
-  # daarnaast exitstatus 1. Die twee samen leveren de string "0\n0" op, waar de
-  # vergelijking hieronder op stukloopt. De ${wachtend:-0}-fallback dekt het
-  # geval dat grep helemaal niets naar stdout schrijft, bijvoorbeeld bij
-  # ontbrekende leesrechten.
+  # No `|| echo 0`: grep -c itself already prints "0" on zero matches, and
+  # also returns exit status 1. Those two together yield the string "0\n0",
+  # which trips up the comparison below. The ${wachtend:-0} fallback covers
+  # the case where grep writes nothing to stdout at all, for example on
+  # missing read permissions.
   #
-  # Alleen tabelrijen tellen mee, net als beantwoord() dat op de ID-kolom
-  # ankert: een losse notitie boven of onder de tabel die toevallig dezelfde
-  # woorden bevat, is geen wachtende onderbouwing.
+  # Only table rows count, the same way beantwoord() anchors on the ID
+  # column: a stray note above or below the table that happens to contain
+  # the same words isn't a pending substantiation.
   wachtend="$(grep -c '^|.*vereist onderbouwing' "$antwoorden" 2>/dev/null)"
   if [ "${wachtend:-0}" -gt 0 ]; then
     echo "$wachtend rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing."
@@ -98,24 +100,26 @@ if [ -f "$antwoorden" ]; then
   fi
 fi
 
-# Mist het project skills die dit repo wél heeft, dan is de adoptie verouderd.
+# If the project is missing skills this repo does have, the adoption is
+# out of date.
 #
-# LET OP: deze melding adviseert `adopt.sh` opnieuw te draaien. Dat helpt pas
-# zodra adopt.sh skills daadwerkelijk installeert — dat landt in W8 (#20). Tot
-# die tijd is de hele controle een no-op, want `skills/` bestaat nog niet. Voeg
-# die map dus niet toe vóór W8, anders adviseert dit een reparatie die niets
-# doet.
-# Wat gesymlinkt is (WORKFLOW.md, de hookconfiguratie) is na een `git pull`
-# direct actief; wat adopt.sh installeert loopt achter tot iemand hem opnieuw
-# draait. Zonder deze melding houdt een project stilzwijgend de oude wereld.
+# NOTE: this message advises re-running `adopt.sh`. That only helps once
+# adopt.sh actually installs skills — that lands in W8 (#20). Until then,
+# this whole check is a no-op, because `skills/` doesn't exist yet. So
+# don't add that directory before W8, or this advises a fix that does
+# nothing.
+# What's symlinked (WORKFLOW.md, the hook configuration) is active
+# immediately after a `git pull`; what adopt.sh installs lags behind until
+# someone re-runs it. Without this message, a project would silently keep
+# the old world.
 if [ -d "$workflow_dir/skills" ]; then
   ontbrekend=""
   for skill_pad in "$workflow_dir"/skills/*/; do
     [ -d "$skill_pad" ] || continue
     skill="$(basename "$skill_pad")"
     if [ ! -e "$project_dir/.claude/skills/$skill" ]; then
-      # Komma-gescheiden: een skillnaam met een spatie erin zou anders niet te
-      # onderscheiden zijn van meerdere losse namen.
+      # Comma-separated: a skill name with a space in it would otherwise be
+      # indistinguishable from multiple separate names.
       if [ -n "$ontbrekend" ]; then
         ontbrekend="$ontbrekend, $skill"
       else
@@ -129,19 +133,20 @@ if [ -d "$workflow_dir/skills" ]; then
   fi
 fi
 
-# Staat main uitgecheckt, dan is dat het moment waarop vertakken nog gratis is
-# (W23, F18/S54/S55). De commit-blokkade in hooks/git-guardrails grijpt pas
-# wanneer er al werk is — Edit, Write, git add en git stash gaan allemaal door
-# op main. Puur informatief: geen mutatie, geen blokkade, exit 0 en niets op
-# stderr, dezelfde eis als het onderbouwingssignaal hierboven (S43).
+# If main is checked out, that's the moment branching off is still free
+# (W23, F18/S54/S55). The commit block in hooks/git-guardrails only kicks
+# in once there's already work — Edit, Write, git add, and git stash all go
+# through on main. Purely informational: no mutation, no block, exit 0 and
+# nothing on stderr, the same requirement as the substantiation signal
+# above (S43).
 if branch="$(git -C "$project_dir" symbolic-ref --short HEAD 2>/dev/null)" \
   && [ "$branch" = "main" ]; then
   echo "Je zit op main. Nieuw werk hoort op een eigen branch:"
   echo "  git checkout -b feature/<naam>"
 fi
 
-# Loopt de lokale checkout achter, dan is bovenstaande lijst mogelijk
-# onvolledig. Alleen melden, niet zelf pullen — een hook hoort niets te muteren.
+# If the local checkout lags behind, the list above may be incomplete.
+# Only report, don't pull automatically — a hook shouldn't mutate anything.
 if git -C "$workflow_dir" rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
   achter="$(git -C "$workflow_dir" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
   if [ "${achter:-0}" -gt 0 ]; then

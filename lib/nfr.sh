@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# lib/nfr.sh — Het NFR-register: parsen en het PRD-blok genereren.
+# lib/nfr.sh — The NFR register: parsing and generating the PRD block.
 #
-# Sourcen, niet uitvoeren. De vijftien niet-functionele kenmerken stonden eerder
-# op twee plekken — als spec-*-entries in CHANGES.md en als ###-subsecties in
-# templates/PRD.md — die met de hand synchroon gehouden moesten worden. Nu zijn
-# beide consument van dit register.
+# Source, don't execute. The fifteen non-functional characteristics used to
+# live in two places — as spec-* entries in CHANGES.md and as ### subsections
+# in templates/PRD.md — which had to be kept in sync by hand. Now both are
+# consumers of this register.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
-# Leest één veld uit de frontmatter van een registerbestand.
+# Reads one field from a register file's frontmatter.
 nfr_veld() {
   local bestand="$1" naam="$2"
   awk -v n="$naam" '
@@ -21,7 +21,7 @@ nfr_veld() {
   ' "$bestand"
 }
 
-# Leest de inhoud van een ##-sectie uit een registerbestand, als één regel.
+# Reads the content of a ## section from a register file, as a single line.
 nfr_sectie() {
   local bestand="$1" kop="$2"
   awk -v k="## $kop" '
@@ -32,13 +32,13 @@ nfr_sectie() {
   ' "$bestand" | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//'
 }
 
-# De registerbestanden op volgorde, één pad per regel.
+# The register files in order, one path per line.
 #
-# Een ontbrekend of niet-numeriek `volgorde`-veld wordt luid gemeld en het
-# bestand gaat achteraan — nooit stilzwijgend overslaan. Een NFR die ongemerkt
-# uit het register valt, verdwijnt namelijk uit álle consumenten tegelijk: hij
-# wordt niet meer gevraagd, niet meer geseed en staat niet meer in het
-# sjabloonblok — en omdat beide kanten hem missen, ziet de driftcontrole niets.
+# A missing or non-numeric `volgorde` field is loudly reported and the file
+# goes to the back — never silently skipped. An NFR that unnoticeably falls
+# out of the register disappears from *all* consumers at once: it's no
+# longer asked, no longer seeded, and no longer in the template block — and
+# because both sides miss it, the drift check sees nothing.
 nfr_bestanden() {
   local nfr_map="$1" bestand vol
   [ -d "$nfr_map" ] || return 0
@@ -54,9 +54,9 @@ nfr_bestanden() {
   done | sort -n | cut -f2-
 }
 
-# Controleert de registerbestanden op volledigheid. Print elk probleem en geeft
-# 1 terug als er iets mis is. `check` gebruikt dit: een kapot registerbestand
-# hoort de bouw te laten falen, niet stil te verdwijnen.
+# Checks the register files for completeness. Prints every problem and
+# returns 1 if something is wrong. `check` uses this: a broken register file
+# should fail the build, not silently disappear.
 nfr_valideer() {
   local nfr_map="$1" bestand vol id kop pred status fouten=0
 
@@ -86,20 +86,20 @@ nfr_valideer() {
   [ "$fouten" -eq 0 ]
 }
 
-# Loopt de actieve registerbestanden langs, op `volgorde`, en roept <callback>
-# aan met <id> <standaard> <predicaat>. Dezelfde signatuur als de callback van
-# itereer_entries, zodat een aanroeper beide bronnen gelijk kan behandelen.
+# Walks the active register files, by `volgorde`, and calls <callback> with
+# <id> <standaard> <predicaat>. Same signature as itereer_entries' callback,
+# so a caller can treat both sources the same way.
 #
-# `status: geretireerd` slaat het bestand over. Dat is de retirementvorm voor
-# deze vijftien: een veld in plaats van een bestandsverhuizing.
+# `status: geretireerd` skips the file. That's the retirement form for these
+# fifteen: a field instead of moving the file.
 itereer_nfr() {
   local nfr_map="$1" callback="$2"
   local bestand id standaard predicaat status fouten=0
 
   [ -d "$nfr_map" ] || return 0
 
-  # Sorteren op het volgorde-veld, niet op bestandsnaam: de volgorde hoort bij
-  # de inhoud (hij bepaalt het PRD-blok) en niet bij hoe het bestand heet.
+  # Sorting on the volgorde field, not on filename: the order belongs to the
+  # content (it determines the PRD block), not to what the file is called.
   local lijst
   lijst="$(nfr_bestanden "$nfr_map")"
 
@@ -128,9 +128,10 @@ EOF
   [ "$fouten" -eq 0 ]
 }
 
-# De vraagtekst van één kenmerk, als één regel. pending-changes.sh toont die bij
-# een openstaande wijziging; sinds de spec-*-entries uit CHANGES.md zijn gehaald
-# is dit register de enige plek waar hij staat.
+# The question text of one characteristic, as a single line.
+# pending-changes.sh shows it for a pending change; since the spec-*
+# entries were removed from CHANGES.md, this register is the only place it
+# lives.
 nfr_vraag() {
   local nfr_map="$1" id="$2"
   local bestand="$nfr_map/$id.md"
@@ -138,9 +139,9 @@ nfr_vraag() {
   nfr_sectie "$bestand" Vraag
 }
 
-# Print het NFR-blok zoals het in templates/PRD.md hoort te staan. Het ID staat
-# als HTML-commentaar in de uitvoer: daar keyt pre-merge-review (W13) op om de
-# reviewscope aan de beantwoorde spec-*-rijen te koppelen.
+# Prints the NFR block as it should appear in templates/PRD.md. The ID
+# appears as an HTML comment in the output: pre-merge-review (W13) keys on
+# that to link the review scope to the answered spec-* rows.
 nfr_blok() {
   local nfr_map="$1"
   local bestand kop id status lijst
@@ -156,8 +157,8 @@ nfr_blok() {
     echo
     echo "### $kop"
     echo "<!-- nfr: $id -->"
-    # Wikkelen op dezelfde breedte als de rest van het sjabloon, zodat het blok
-    # als handgeschreven markdown leest en de diff bij een wijziging klein is.
+    # Wrapping at the same width as the rest of the template, so the block
+    # reads as hand-written markdown and the diff on a change stays small.
     printf '<%s>\n' "$(nfr_sectie "$bestand" Invulhulp)" | fold -s -w 79 | sed 's/ *$//'
 
   done <<EOF
@@ -165,9 +166,9 @@ $lijst
 EOF
 }
 
-# Zet een NFR-blok om naar één regel per kenmerk, met het ID vooraan. Zo noemt
-# een diff tussen twee blokken vanzelf welk kenmerk verschilt, in plaats van
-# alleen welke regelnummers.
+# Turns an NFR block into one line per characteristic, with the ID up front.
+# That way a diff between two blocks naturally names which characteristic
+# differs, instead of only which line numbers.
 nfr_records() {
   awk '
     BEGIN { RS = ""; FS = "\n" }
@@ -187,9 +188,9 @@ nfr_records() {
   ' | sort
 }
 
-# Vergelijkt het ingecheckte blok in <sjabloon> met wat de generator uit
-# <nfr_map> produceert. Print de afwijkende kenmerken en geeft 1 terug als er
-# verschil is.
+# Compares the checked-in block in <sjabloon> with what the generator
+# produces from <nfr_map>. Prints the differing characteristics and returns
+# 1 if there's a difference.
 nfr_drift() {
   local nfr_map="$1" sjabloon="$2"
   local ingecheckt gegenereerd verschil status=0
@@ -208,8 +209,8 @@ nfr_drift() {
   ' "$sjabloon" > "$blok_ingecheckt"
   nfr_blok "$nfr_map" > "$blok_gegenereerd"
 
-  # Eerst de vololgorde, in documentvolgorde. nfr_records sorteert namelijk op
-  # ID, waardoor een verkeerde volgorde daar wegvalt tegen de vergelijking.
+  # First the order, in document order. nfr_records sorts by ID after all,
+  # so a wrong order would drop out there against the comparison.
   local volgorde_in volgorde_gen
   volgorde_in="$(grep -oE '<!-- nfr: [a-z-]+' "$blok_ingecheckt" | sed 's/.*nfr: //' | tr '\n' ' ')"
   volgorde_gen="$(grep -oE '<!-- nfr: [a-z-]+' "$blok_gegenereerd" | sed 's/.*nfr: //' | tr '\n' ' ')"

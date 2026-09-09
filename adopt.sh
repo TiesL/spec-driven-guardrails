@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# adopt.sh — Adopteer de gedeelde spec-driven-guardrails-workflow in een
-# project, of zet de userbrede adoptievraag-trigger op (--user).
+# adopt.sh — Adopts the shared spec-driven-guardrails workflow in a
+# project, or sets up the user-wide adoption-question trigger (--user).
 #
-# Gebruik:
-#   ./adopt.sh                 # adopteert de workflow in de huidige directory
-#   ./adopt.sh /pad/naar/proj   # adopteert de workflow in de opgegeven directory
-#   ./adopt.sh --user           # zet ~/.claude/CLAUDE.md symlink (eenmalig per machine)
+# Usage:
+#   ./adopt.sh                 # adopts the workflow in the current directory
+#   ./adopt.sh /path/to/proj   # adopts the workflow in the given directory
+#   ./adopt.sh --user           # sets the ~/.claude/CLAUDE.md symlink (once per machine)
 #
-# Vereist: omgevingsvariabele SPEC_DRIVEN_GUARDRAILS_DIR, wijzend naar de
-# lokale checkout van dit repo op déze machine (zie README.md).
+# Requires: environment variable SPEC_DRIVEN_GUARDRAILS_DIR, pointing at the
+# local checkout of this repo on *this* machine (see README.md).
 
 set -euo pipefail
 
@@ -25,19 +25,20 @@ if [ ! -f "$CLAUDE_WORKFLOW_DIR/WORKFLOW.md" ]; then
   exit 1
 fi
 
-# Genormaliseerd naar een absoluut pad, hier eenmalig en globaal — niet pas
-# lokaal in adopt_project(). Elke symlink die dit script zet (skills,
-# git-hooks, CLAUDE.md/settings.json) wijst naar CLAUDE_WORKFLOW_DIR (intern:
-# de geresolveerde locatie, ongeacht via welke omgevingsvariabele die
-# binnenkwam); een relatief pad zou zo'n symlink dangling maken (relatieve
-# targets resolven vanuit de map van de symlink zelf, niet vanuit de map waar
-# adopt.sh vandaan draaide) — en git slaat een dangling git-hook stilzwijgend
-# over, zonder enige melding. Precies de faalmodus die F17 wil uitroeien.
+# Normalized to an absolute path, once and globally here — not only
+# locally in adopt_project(). Every symlink this script sets (skills,
+# git hooks, CLAUDE.md/settings.json) points at CLAUDE_WORKFLOW_DIR
+# (internal: the resolved location, regardless of which environment
+# variable it came in through); a relative path would make such a symlink
+# dangling (relative targets resolve from the symlink's own directory, not
+# from the directory adopt.sh happened to run from) — and git silently
+# skips a dangling git hook, with no report at all. Exactly the failure
+# mode F17 aims to eliminate.
 CLAUDE_WORKFLOW_DIR="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
 
-# De bibliotheek komt uit de checkout waar dít script in staat, niet uit
-# CLAUDE_WORKFLOW_DIR: code hoort bij het script dat hem aanroept. De data
-# (CHANGES.md, templates) komt wél uit CLAUDE_WORKFLOW_DIR, zoals altijd.
+# The library comes from the checkout *this* script lives in, not from
+# CLAUDE_WORKFLOW_DIR: code belongs with the script that calls it. The data
+# (CHANGES.md, templates) *does* come from CLAUDE_WORKFLOW_DIR, as always.
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/changes.sh
 . "$eigen_map/lib/changes.sh"
@@ -73,13 +74,13 @@ copy_issue_templates() {
   fi
 }
 
-# Callback voor itereer_entries. De invoer komt via _seed_*-globals in plaats
-# van via dynamische scope, zodat zichtbaar is waar hij vandaan komt.
+# Callback for itereer_entries. The input comes via _seed_* globals instead
+# of dynamic scope, so it's visible where it comes from.
 #
-# `standaard: vraag` wordt hier overgeslagen: die entries worden nooit
-# automatisch beantwoord. pending-changes.sh negeert datzelfde veld juist — zie
-# de callback daar. Die asymmetrie is bewust en staat daarom bij beide
-# aanroepers, niet verstopt in lib/changes.sh.
+# `standaard: vraag` is skipped here: those entries are never answered
+# automatically. pending-changes.sh, on the other hand, ignores that same
+# field — see the callback there. That asymmetry is deliberate and so
+# lives at both callers, not hidden in lib/changes.sh.
 seed_entry() {
   local id="$1" standaard="$2" predicaat="$3"
   if [ "$standaard" = "vraag" ]; then
@@ -91,10 +92,10 @@ seed_entry() {
   echo "| $id | ja | $_seed_vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$_seed_doel"
 }
 
-# Legt bij adoptie vast dat dit project akkoord is met de huidige staat van de
-# workflow: elke nú van toepassing zijnde wijziging krijgt "ja". Wat niet van
-# toepassing is krijgt geen rij en wordt later alsnog gevraagd zodra de conditie
-# waar wordt (zie pending-changes.sh).
+# Records at adoption time that this project agrees to the current state
+# of the workflow: every currently applicable change gets "ja". Whatever
+# doesn't apply gets no row and is asked about later once the condition
+# becomes true (see pending-changes.sh).
 seed_adoptietabel() {
   local project_dir="$1"
   local doel="$project_dir/WORKFLOW-ADOPTIE.md"
@@ -125,19 +126,20 @@ seed_adoptietabel() {
 GITIGNORE_BEGIN="# claude-workflow: begin — beheerd blok, niet met de hand bewerken"
 GITIGNORE_EIND="# claude-workflow: eind"
 
-# Zet het beheerde blok in .gitignore, met precies de meegegeven regels.
+# Sets the managed block in .gitignore, with exactly the given lines.
 #
-# Waarom een blok en geen losse regels: zonder markering is niet te zien welke
-# regels van deze workflow zijn, en dus ook niet welke weg mogen als een
-# conventie verdwijnt. Losse regels stapelen zich op en blijven eeuwig staan.
+# Why a block and not loose lines: without a marker, there's no way to see
+# which lines belong to this workflow, and thus no way to see which ones
+# may go when a convention disappears. Loose lines pile up and stick
+# around forever.
 #
-# De migratie haalt dezelfde regels weg als ze los buiten het blok staan - dat
-# is de bestaande situatie in alle vier de projecten. Alles wat niet letterlijk
-# een beheerde regel of onderdeel van het blok is, blijft ongemoeid, op zijn
-# plek en in zijn volgorde. Dat is geen nettigheid: `tennis-admin/.gitignore`
-# sluit met `tennis-registration/` en `tennis-invoicing/` twee geneste
-# git-repo's uit, en die per ongeluk opeten maakt van twee hele repo's
-# ongetrackte inhoud.
+# The migration removes the same lines when they appear loose, outside the
+# block — that's the existing situation in all four projects. Everything
+# that isn't literally a managed line or part of the block is left alone,
+# in its place and in its order. That's not tidiness: `tennis-admin/.gitignore`
+# excludes two nested git repos with `tennis-registration/` and
+# `tennis-invoicing/`, and accidentally swallowing those turns two whole
+# repos into untracked content.
 schrijf_gitignore_blok() {
   local project_dir="$1"; shift
   local gitignore="$project_dir/.gitignore"
@@ -145,14 +147,15 @@ schrijf_gitignore_blok() {
 
   touch "$gitignore"
 
-  # Eerst controleren of de markers kloppen. Een blok met alleen een
-  # beginmarker liet een eerdere versie alles daarna stilzwijgend wissen: de
-  # awk hieronder zet zijn vlag op de beginmarker en wacht op een eindmarker
-  # die nooit komt, dus loopt hij door tot het einde van het bestand.
+  # First checking that the markers are sound. A block with only a begin
+  # marker let an earlier version silently erase everything after it: the
+  # awk below sets its flag on the begin marker and waits for an end marker
+  # that never comes, so it runs through to the end of the file.
   #
-  # Bij twijfel niets aanraken en luid melden. Dit bestand is getrackt en bevat
-  # in minstens één project regels die geneste git-repo's uitsluiten; er stil
-  # doorheen ploegen is de duurste fout die dit script kan maken.
+  # When in doubt, touch nothing and report loudly. This file is tracked
+  # and in at least one project contains lines excluding nested git repos;
+  # silently plowing through it is the most expensive mistake this script
+  # can make.
   if ! marker_probleem="$(awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
     $0 == begin {
       if (diepte > 0) { print "een tweede beginmarker op regel " NR " terwijl het vorige blok nog niet gesloten is"; exit 1 }
@@ -169,19 +172,19 @@ schrijf_gitignore_blok() {
     return 1
   fi
 
-  # Bestaande inhoud, zonder het oude blok en zonder de losse varianten van de
-  # beheerde regels.
+  # Existing content, without the old block and without the loose variants
+  # of the managed lines.
   awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
     $0 == begin { in_blok = 1; next }
     in_blok { if ($0 == eind) in_blok = 0; next }
     { print }
   ' "$gitignore" > "$tijdelijk"
 
-  # De losse varianten weghalen. Vergelijken gebeurt op de regel zonder
-  # regeleinde-rommel en zonder witruimte aan het eind: `CLAUDE.md` met een
-  # achtergebleven carriage return of drie spaties erachter is dezelfde regel
-  # voor git, en een exacte vergelijking zou hem laten staan naast de nieuwe -
-  # dan staat hij twee keer in plaats van gemigreerd.
+  # Removing the loose variants. Comparison happens on the line stripped
+  # of line-ending clutter and trailing whitespace: `CLAUDE.md` with a
+  # leftover carriage return or three trailing spaces is the same line to
+  # git, and an exact comparison would leave it standing next to the new
+  # one — then it appears twice instead of migrated.
   local regel
   for regel in "$@"; do
     awk -v weg="$regel" '
@@ -192,15 +195,16 @@ schrijf_gitignore_blok() {
     mv "$tijdelijk.f" "$tijdelijk"
   done
 
-  # Alleen de witregels aan het éínd weghalen, anders groeit het bestand met een
-  # witregel per run en is de adoptie niet meer idempotent. Witregels midden in
-  # het bestand blijven: die scheiden groepen, en ze weggooien is precies het
-  # ongevraagd herschrijven van andermans .gitignore dat hier niet hoort.
+  # Only removing blank lines at the *end*, otherwise the file grows one
+  # blank line per run and adoption stops being idempotent. Blank lines in
+  # the middle of the file stay: those separate groups, and discarding
+  # them is exactly the unsolicited rewriting of someone else's .gitignore
+  # that doesn't belong here.
   #
-  # De test is `length($0) == 0`, niet `NF`: awk splitst op witruimte, dus een
-  # regel met alleen spaties heeft NF nul en zou als lege regel teruggeschreven
-  # worden - met de spaties eraf. Dat is een wijziging van inhoud buiten het
-  # blok, en die hoort dit script niet te maken.
+  # The test is `length($0) == 0`, not `NF`: awk splits on whitespace, so
+  # a line with only spaces has NF zero and would be written back as an
+  # empty line — with the spaces stripped. That's a change to content
+  # outside the block, and this script shouldn't make it.
   awk '
     length($0) > 0 { for (i = 1; i <= wacht; i++) print ""; wacht = 0; print; next }
     { wacht++ }
@@ -223,10 +227,10 @@ schrijf_gitignore_blok() {
   echo "Beheerd .gitignore-blok bijgewerkt: $*"
 }
 
-# Ververst of legt één skill-symlink aan in doel_map: <doel_map>/<naam> ->
-# <bron_map>/<naam>. Alleen vervangen als het bestaande pad zelf een symlink is
-# of nog niet bestaat - een echte map (van het project of de gebruiker zelf)
-# wordt nooit overschreven.
+# Refreshes or creates one skill symlink in doel_map: <doel_map>/<naam> ->
+# <bron_map>/<naam>. Only replaced if the existing path is itself a symlink
+# or doesn't exist yet — a real directory (belonging to the project or the
+# user themselves) is never overwritten.
 skill_symlink_bijwerken() {
   local doel_map="$1" naam="$2" bron_map="$3"
   if [ -L "$doel_map/$naam" ] || [ ! -e "$doel_map/$naam" ]; then
@@ -235,18 +239,18 @@ skill_symlink_bijwerken() {
   fi
 }
 
-# Ruimt één symlink op als hij verweesd is: hij wijst (opgelost) naar iets
-# onder bron_echt dat niet meer bestaat. Een verweesde skill is niet inert:
-# Claude Code meldt er elke sessie een laadfout op.
+# Cleans up one symlink if it's orphaned: it points (resolved) at
+# something under bron_echt that no longer exists. An orphaned skill isn't
+# inert: Claude Code reports a load error for it every session.
 #
-# Strikt: alleen symlinks die naar bron_echt wijzen én waarvan het doel niet
-# meer bestaat. Een symlink die ergens anders heen wijst is niet van ons om op
-# te ruimen. Vergelijken gebeurt op opgeloste paden, niet op de tekst van de
-# symlink - een relatieve link naar dezelfde plek is dezelfde link, en een
-# tekstuele prefixvergelijking ziet dat niet.
+# Strict: only symlinks that point at bron_echt *and* whose target no
+# longer exists. A symlink pointing somewhere else isn't ours to clean up.
+# Comparison happens on resolved paths, not on the symlink's text — a
+# relative link to the same place is the same link, and a textual prefix
+# comparison wouldn't see that.
 #
-# Lukt het oplossen niet, dan blijft de link staan. Bij twijfel niets
-# weggooien: dit is andermans map.
+# If resolving fails, the link is left standing. When in doubt, discard
+# nothing: this is someone else's directory.
 skill_symlink_opruimen_indien_verweesd() {
   local link="$1" bron_echt="$2"
   [ -L "$link" ] || return 0
@@ -273,14 +277,16 @@ skill_symlink_opruimen_indien_verweesd() {
   fi
 }
 
-# Installeert de skills van dit repo als losse symlinks in het project.
+# Installs this repo's skills as individual symlinks in the project.
 #
-# Per skill een symlink in een echte map, niet één map-symlink. Dat laatste
-# maakt de hele skills-namespace eigendom van spec-driven-guardrails, waarmee een
-# project nooit een eigen skill kan hebben zonder te de-adopteren.
+# One symlink per skill in a real directory, not a single directory
+# symlink. The latter would make the entire skills namespace owned by
+# spec-driven-guardrails, leaving a project unable to ever have its own
+# skill without de-adopting.
 #
-# Zonder skills/-map: niets doen, en géén lege map achterlaten. De installer
-# landt vóór de inhoud, dus dit is de normale toestand tot die map gevuld is.
+# Without a skills/ directory: do nothing, and leave *no* empty directory
+# behind. The installer lands before the content, so this is the normal
+# state until that directory is populated.
 installeer_skills() {
   local project_dir="$1"
   local bron="$CLAUDE_WORKFLOW_DIR/skills"
@@ -311,32 +317,32 @@ installeer_skills() {
   done
 }
 
-# Installeert de native git-hooks (W26, F17) als symlinks in
-# <project>/.git/hooks/, zodat de guard-regel ook geldt buiten Claude Code om
-# (eigen terminal, IDE, ander agent-harnas). Symlink, geen kopie: dezelfde
-# reden als bij CLAUDE.md/settings.json — de regel moet altijd de actuele
-# versie uit spec-driven-guardrails zijn, niet een momentopname.
+# Installs the native git hooks (W26, F17) as symlinks in
+# <project>/.git/hooks/, so the guard rule also applies outside Claude Code
+# (plain terminal, IDE, a different agent harness). Symlink, not a copy:
+# same reason as CLAUDE.md/settings.json — the rule must always be the
+# current version from spec-driven-guardrails, not a snapshot.
 #
-# AC5/S51: anders dan CLAUDE.md/settings.json (bewust ééndoelige bestanden)
-# is een eigen pre-commit/pre-push van een project een reëel scenario — een
-# lint-hook bijvoorbeeld — met een heel ander doel dan branchbescherming.
-# backup_if_real_file zou zo'n hook stilzwijgend buiten werking stellen achter
-# een .bak; dat is meer dan "melden", dat is functionaliteit verliezen zonder
-# terugweg. Een écht bestand (geen symlink) wordt dus met rust gelaten, luid
-# gemeld, en niet geïnstalleerd.
+# AC5/S51: unlike CLAUDE.md/settings.json (deliberately single-purpose
+# files), a project having its own pre-commit/pre-push is a real
+# scenario — a lint hook, for example — with a purpose entirely different
+# from branch protection. backup_if_real_file would silently disable such
+# a hook behind a .bak; that's more than "reporting", that's losing
+# functionality with no way back. A *real* file (not a symlink) is
+# therefore left alone, loudly reported, and not installed.
 #
-# Een symlink telt alleen als "van ons" als hij al naar precies dít doelbestand
-# wijst — dan vervangen (idempotent: "twee keer draaien geeft een identieke
-# boom"). Een symlink naar iets anders (de eigen dotfiles van het project,
-# bijvoorbeeld) is net zo goed een eigen keuze als een echt bestand, en krijgt
-# dezelfde behandeling: met rust laten, luid melden.
+# A symlink only counts as "ours" if it already points at exactly this
+# target file — then it's replaced (idempotent: "running twice yields an
+# identical tree"). A symlink to something else (the project's own
+# dotfiles, for example) is just as much a deliberate choice as a real
+# file, and gets the same treatment: left alone, loudly reported.
 installeer_git_hooks() {
   local project_dir="$1"
   local git_dir="$project_dir/.git"
   local hooks_dir="$git_dir/hooks"
 
-  # Geen .git-map: niets te doen. adopt_project heeft dit al gecontroleerd,
-  # maar deze functie moet ook op zichzelf correct zijn.
+  # No .git directory: nothing to do. adopt_project already checked this,
+  # but this function must also be correct on its own.
   [ -d "$git_dir" ] || return 0
   mkdir -p "$hooks_dir"
 
@@ -363,28 +369,30 @@ installeer_git_hooks() {
   done
 }
 
-# Installeert precies de user-level skill (adopt-workflow) in
-# ~/.claude/skills/. F10: dit is de enige skill die op userniveau hoort, want
-# USER-CLAUDE.md laadt juist in niet-geadopteerde projecten, waar
-# .claude/skills/ niet bestaat.
+# Installs exactly the user-level skill (adopt-workflow) into
+# ~/.claude/skills/. F10: this is the only skill that belongs at user
+# level, because USER-CLAUDE.md specifically loads in non-adopted
+# projects, where .claude/skills/ doesn't exist.
 installeer_user_skill() {
   local naam="adopt-workflow"
   local bron="$CLAUDE_WORKFLOW_DIR/skills"
   local doel="$HOME/.claude/skills"
 
-  # Anders dan $project_dir/.claude/skills is dit niet een map die dit repo
-  # volledig bezit: het is de hele persoonlijke skill-namespace van de
-  # gebruiker op déze machine, die zelf al symlinks naar elders kan bevatten.
-  # Die blind vervangen als hij toevallig een symlink is, hoort hier niet -
-  # "bij twijfel niets weggooien" geldt op userniveau nog sterker dan in een
-  # project. mkdir -p is hier een veilige no-op als het pad al bestaat.
+  # Unlike $project_dir/.claude/skills, this isn't a directory this repo
+  # fully owns: it's the user's entire personal skill namespace on *this*
+  # machine, which may itself already contain symlinks to elsewhere.
+  # Blindly replacing it just because it happens to be a symlink doesn't
+  # belong here — "when in doubt, discard nothing" applies at user level
+  # even more strongly than in a project. mkdir -p here is a safe no-op if
+  # the path already exists.
   if [ ! -d "$bron" ]; then
     return 0
   fi
   mkdir -p "$doel"
 
-  # De installatiestap alleen als de skill er nu is; de opruimstap altijd,
-  # ook als de skill inmiddels weg is - juist dan kan de link verweesd zijn.
+  # The install step only if the skill exists now; the cleanup step
+  # always, even if the skill has since disappeared — that's exactly when
+  # the link may be orphaned.
   if [ -d "$bron/$naam" ]; then
     skill_symlink_bijwerken "$doel" "$naam" "$bron"
   fi
@@ -411,10 +419,11 @@ adopt_project() {
     exit 1
   fi
 
-  # spec-driven-guardrails adopteert bewust ook zichzelf (issue #98): geen
-  # uitzondering hier, één mechanisme voor elk doel. Zonder dit stond dit
-  # repo's eigen checkout zonder de git-guardrails-hook en de merge-guard —
-  # F7/F8 golden dus nooit voor de bron die ze zelf specificeert.
+  # spec-driven-guardrails deliberately adopts itself too (issue #98): no
+  # exception here, one mechanism for every target. Without this, this
+  # repo's own checkout would go without the git-guardrails hook and the
+  # merge guard — F7/F8 would then never apply to the very source that
+  # specifies them.
   mkdir -p "$project_dir/.claude"
 
   backup_if_real_file "$project_dir/CLAUDE.md"
@@ -423,10 +432,10 @@ adopt_project() {
   backup_if_real_file "$project_dir/.claude/settings.json"
   ln -s "$CLAUDE_WORKFLOW_DIR/settings/session-hooks.json" "$project_dir/.claude/settings.json"
 
-  # `.claude/skills/` hoort erbij: dat zijn symlinks naar een absoluut pad op
-  # déze machine. Ze committen levert in elke andere checkout kapotte links op,
-  # en zonder deze regel verschijnt er bij de eerste her-adoptie na W9 in alle
-  # vier de projecten een stapel ongetrackte bestanden.
+  # `.claude/skills/` belongs here too: those are symlinks to an absolute
+  # path on *this* machine. Committing them yields broken links in every
+  # other checkout, and without this line, the first re-adoption after W9
+  # would leave a pile of untracked files in all four projects.
   schrijf_gitignore_blok "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
   installeer_skills "$project_dir"
   installeer_git_hooks "$project_dir"
@@ -435,11 +444,11 @@ adopt_project() {
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTUUR.md" "$project_dir/ARCHITECTUUR.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-traceability.sh" "$project_dir/check-traceability.sh"
-  # Expliciet uitvoerbaar maken. `cp` neemt de rechten van de bron over, maar
-  # dat is geen garantie waar dit script op mag leunen: een niet-uitvoerbaar
-  # script faalt pas bij de eerste aanroep, en dan lijkt de controle kapot in
-  # plaats van verkeerd geïnstalleerd. Als `if`, niet als `&&`: onder `set -e`
-  # zou een falende test de hele adoptie afbreken.
+  # Explicitly making it executable. `cp` inherits the source's
+  # permissions, but that's not a guarantee this script may rely on: a
+  # non-executable script only fails on its first call, and then the
+  # check looks broken instead of wrongly installed. As `if`, not `&&`:
+  # under `set -e`, a failing test would abort the entire adoption.
   if [ -f "$project_dir/check-traceability.sh" ]; then
     chmod +x "$project_dir/check-traceability.sh"
   fi
@@ -460,12 +469,12 @@ adopt_project() {
 
   seed_adoptietabel "$project_dir"
 
-  # CONTEXT.md is optioneel (W16b): scaffold alleen zodra het project
-  # proces-context-document met "ja" heeft beantwoord. Geen predicaat zoals
-  # heeft-package-json — de conditie leeft in de eigen adoptietabel van het
-  # project, dus die wordt hier rechtstreeks gelezen. Dit werkt zowel bij een
-  # verse adoptie (als Standaard:ja het net geseed heeft) als bij een
-  # her-adoptie nadat iemand de rij later alsnog op "ja" heeft gezet.
+  # CONTEXT.md is optional (W16b): scaffold only once the project has
+  # answered proces-context-document with "ja". No predicate like
+  # heeft-package-json — the condition lives in the project's own adoption
+  # table, so it's read directly here. This works both for a fresh
+  # adoption (if Standaard:ja just seeded it) and for a re-adoption after
+  # someone later set the row to "ja" anyway.
   if grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
   fi

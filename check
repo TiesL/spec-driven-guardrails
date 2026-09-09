@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# check — Alles wat bepaalt of een wijziging in dit repo goed is.
+# check — Everything that decides whether a change in this repo is good.
 #
-# Dit is het `check`-commando dat WORKFLOW.md voorschrijft, hier op dit repo
-# zelf toegepast. CI roept uitsluitend dit script aan en verzint geen losse
-# stappen — een bron van waarheid, geen drift tussen lokaal en CI.
+# This is the `check` command that WORKFLOW.md prescribes, applied here to
+# this repo itself. CI only ever calls this script and doesn't invent
+# separate steps — one source of truth, no drift between local and CI.
 #
-# Gebruik:
-#   ./check                    # statische controles + testsuite
-#   ./check --no-tests [map]   # alleen de statische controles, evt. op een
-#                              # andere map (gebruikt door de testsuite zelf,
-#                              # die anders zichzelf zou aanroepen)
+# Usage:
+#   ./check                    # static checks + test suite
+#   ./check --no-tests [dir]   # only the static checks, optionally on a
+#                              # different directory (used by the test suite
+#                              # itself, which would otherwise call itself)
 #
-# Dit repo heeft bewust geen package.json: dat zou het eigen
-# `heeft-package-json`-predicaat omzetten en veranderen wat adopt.sh en
-# pending-changes.sh over dit repo zeggen.
+# This repo deliberately has no package.json: that would flip its own
+# `heeft-package-json` predicate and change what adopt.sh and
+# pending-changes.sh say about this repo.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
@@ -39,14 +39,14 @@ melden_fout() {
   fouten=$((fouten + 1))
 }
 
-# --- 1. Bash-syntaxis ------------------------------------------------------
-# Alle *.sh plus het check-script zelf. .git blijft buiten beschouwing.
+# --- 1. Bash syntax ---------------------------------------------------------
+# All *.sh plus the check script itself. .git is left out of consideration.
 echo "check: bash -n"
-# Alle shellscripts, NUL-gescheiden zodat een pad met spaties niet
-# stilzwijgend wordt gesplitst. Naast *.sh en `check` tellen ook bestanden
-# zonder extensie mee die een bash/sh-shebang dragen: de hook-guards heten
-# `hooks/git-guardrails` en zijn juist de code waar een stille syntaxfout het
-# duurst is.
+# All shell scripts, NUL-separated so a path with spaces doesn't silently
+# get split. Besides *.sh and `check`, extensionless files carrying a
+# bash/sh shebang also count: the hook guards are named
+# `hooks/git-guardrails` and are exactly the code where a silent syntax
+# error is most costly.
 scriptlijst="$(mktemp)" || {
   echo "check: kon geen tijdelijk bestand aanmaken — controle afgebroken" >&2
   exit 1
@@ -57,17 +57,17 @@ trap 'rm -f "$scriptlijst"' EXIT
   find "$doel" -type f -not -name '*.sh' -not -name 'check' -not -path '*/.git/*' -print0 \
     | while IFS= read -r -d '' kandidaat; do
         if [ ! -r "$kandidaat" ]; then
-          # Niet stil overslaan: een bestand dat we niet kunnen lezen is een
-          # bestand waarvan we niet weten of het een script is.
+          # Not silently skipping: a file we can't read is a file we don't
+          # know is a script or not.
           echo "  waarschuwing: ${kandidaat} kon niet gelezen worden — niet gecontroleerd" >&2
           continue
         fi
         case "$(head -c 2 "$kandidaat" 2>/dev/null)" in
           '#!')
             case "$(head -n 1 "$kandidaat" 2>/dev/null)" in
-              # Alleen shells die `bash -n` zinnig kan parsen. Patronen
-              # bewust niet-overlappend: "/sh" dekt #!/bin/sh (ook met
-              # argumenten), "env sh" dekt #!/usr/bin/env sh.
+              # Only shells `bash -n` can meaningfully parse. Patterns
+              # deliberately non-overlapping: "/sh" covers #!/bin/sh (also
+              # with arguments), "env sh" covers #!/usr/bin/env sh.
               *bash*|*'/sh'*|*'env sh'*) printf '%s\0' "$kandidaat" ;;
             esac ;;
         esac
@@ -80,10 +80,11 @@ while IFS= read -r -d '' script; do
   fi
 done < "$scriptlijst"
 
-# --- 2. JSON-validatie -----------------------------------------------------
-# session-hooks.json is gesymlinkt als .claude/settings.json in elk geadopteerd
-# project. Eén typefout is daar per direct kapot, en `bash -n` ziet dat niet.
-# Deze stap staat bewust los van shellcheck: hij is niet optioneel.
+# --- 2. JSON validation ------------------------------------------------------
+# session-hooks.json is symlinked as .claude/settings.json in every adopted
+# project. One typo there breaks it immediately, and `bash -n` doesn't see
+# that. This step is deliberately separate from shellcheck: it's not
+# optional.
 echo "check: JSON-validatie"
 json_bestand="$doel/settings/session-hooks.json"
 if [ -f "$json_bestand" ]; then
@@ -96,29 +97,29 @@ if [ -f "$json_bestand" ]; then
       melden_fout "ongeldige JSON in settings/session-hooks.json: $foutmelding"
     fi
   else
-    # Bewust een harde fout, geen waarschuwing. Dit is een puur lokale controle
-    # op een bestand dat in vier projecten gesymlinkt staat; "in orde" melden
-    # zonder het geverifieerd te hebben is de stille degradatie die dit repo
-    # het duurst betaalt. Installeer jq of python3.
+    # Deliberately a hard error, not a warning. This is a purely local check
+    # on a file that's symlinked into four projects; reporting "fine"
+    # without having verified it is the silent degradation this repo pays
+    # for most dearly. Install jq or python3.
     melden_fout "geen jq en geen python3 — settings/session-hooks.json kon niet gevalideerd worden"
   fi
 else
   melden_fout "settings/session-hooks.json ontbreekt"
 fi
 
-# --- 3. NFR-register versus het gegenereerde sjabloonblok -------------------
-# templates/PRD.md is voor dat blok een build-artefact. Zonder deze controle
-# kunnen register en sjabloon stil uit elkaar lopen — precies de drift die het
-# register moest weghalen.
+# --- 3. NFR register versus the generated template block --------------------
+# templates/PRD.md is a build artifact for that block. Without this check,
+# the register and template could silently drift apart — exactly the drift
+# the register was meant to remove.
 if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
   echo "check: NFR-register"
   if [ -r "$doel/lib/nfr.sh" ]; then
     # shellcheck source=lib/nfr.sh
     . "$doel/lib/nfr.sh"
 
-    # Eerst het register zelf. Een kapot bestand valt anders uit álle
-    # consumenten tegelijk weg, en dan ziet de driftcontrole niets: beide
-    # kanten missen hem immers.
+    # First the register itself. A broken file would otherwise disappear
+    # from *all* consumers at once, and then the drift check sees nothing:
+    # both sides miss it after all.
     if ! problemen="$(nfr_valideer "$doel/nfr")"; then
       melden_fout "het NFR-register is niet volledig:"
       printf '%s\n' "$problemen" | sed 's/^/    /' >&2
@@ -135,10 +136,10 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
   fi
 fi
 
-# --- 3a. PR-linkbacks in CHANGES.md / CHANGES-ARCHIEF.md (W21, F15) ---------
-# Zonder deze linkback kan een geadopteerd project niet terugvinden waaróm een
-# rij in zijn eigen WORKFLOW-ADOPTIE.md staat (S32). CHANGES-ARCHIEF.md deelt
-# dezelfde entryvorm en telt mee: retirement mag de linkback niet laten vallen.
+# --- 3a. PR linkbacks in CHANGES.md / CHANGES-ARCHIEF.md (W21, F15) ---------
+# Without this linkback, an adopted project can't find out *why* a row is
+# in its own WORKFLOW-ADOPTIE.md (S32). CHANGES-ARCHIEF.md shares the same
+# entry shape and counts too: retirement must not drop the linkback.
 if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
   echo "check: PR-linkbacks"
   # shellcheck source=lib/changes.sh
@@ -153,9 +154,9 @@ if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
   done
 fi
 
-# --- 3b. Python-syntaxis -----------------------------------------------------
-# Pariteit met `bash -n`: sinds de guard zijn invoer door een python-script laat
-# lezen, hoort ook die kant op syntaxis gecontroleerd te worden.
+# --- 3b. Python syntax -------------------------------------------------------
+# Parity with `bash -n`: since the guard has its input read by a Python
+# script, that side deserves a syntax check too.
 pyscripts="$(find "$doel" -type f -name '*.py' -not -path '*/.git/*' | sort)"
 if [ -n "$pyscripts" ]; then
   if command -v python3 >/dev/null 2>&1; then
@@ -171,9 +172,9 @@ if [ -n "$pyscripts" ]; then
   fi
 fi
 
-# --- 4. shellcheck ---------------------------------------------------------
-# Waarschuwen, niet eisen: niet elke machine heeft hem, en een ontbrekende
-# linter mag geen groene build rood maken.
+# --- 4. shellcheck -----------------------------------------------------------
+# Warning, not requiring: not every machine has it, and a missing linter
+# must not turn a green build red.
 if command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do
@@ -192,7 +193,7 @@ if [ "$fouten" -gt 0 ]; then
   exit 1
 fi
 
-# --- 5. Testsuite ----------------------------------------------------------
+# --- 5. Test suite -----------------------------------------------------------
 if [ "$draai_tests" -eq 1 ]; then
   echo "check: testsuite"
   if [ -x "$doel/test/run.sh" ]; then
