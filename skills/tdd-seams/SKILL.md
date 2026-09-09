@@ -22,7 +22,7 @@ implementation is added. That's not an ordering preference but the only
 proof that the test actually checks something: a test you've never seen
 fail also can't fail when the behavior breaks. This repo applies that to
 itself (see "Rood vóór groen" in `TEST-SCENARIOS.md`) — every new scenario
-starts red, except the regression scenarios R1-R9, which are supposed to
+starts red, except the regression scenarios R1–R9, which are supposed to
 be green.
 
 ## Three anti-patterns, named

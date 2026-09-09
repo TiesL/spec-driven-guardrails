@@ -19,14 +19,14 @@ silent drift.
 
 Every PR on `spec-driven-guardrails` that adds something a project must make
 its own choice about **adds an entry to `CHANGES.md`** — with a closed
-question, a `Standaard` (`ja`/`vraag`), an "applies when" condition, and what
+question, a `Standaard` (`ja`/`vraag`), a "Van toepassing als" condition, and what
 `ja` concretely means. No entry means no question, and thus a false sense of
 coverage; watch for this during review.
 
 `Standaard: ja` vs. `Standaard: vraag` only determines the starting point,
 not whether substantiation is needed. When a new project is adopted,
 `adopt.sh` sets every currently applicable `Standaard: ja` change to
-"`ja` — requires substantiation" (a provisional stamp, not a decision);
+"`ja` — vereist onderbouwing" (a provisional stamp, not a decision);
 `Standaard: vraag` changes are never answered automatically. A missing row
 means "not (yet) applicable": if the condition later becomes true — for
 example, a project gets a deploy command — the question appears on its own.
@@ -36,7 +36,7 @@ until you remove it manually.
 ## When the question appears
 
 At session start, a hook reports which changes apply to *this* project and
-still have no answer (or still say "requires substantiation").
+still have no answer (or still say "vereist onderbouwing").
 
 ## How to handle it
 
@@ -45,10 +45,10 @@ kind of entry:
 
 - **The entry touches `PRD.md`/`ARCHITECTUUR.md`** (most `spec-*` entries
   and the NFRs): this is the **substantiation requirement**, and applies to
-  *every* row that belongs here, not only the NFRs from "Non-functional
-  characteristics" — `proces-prd` or `architectuurdocument` itself also
+  *every* row that belongs here, not only the NFRs from "Niet-functionele
+  kenmerken" — `proces-prd` or `architectuurdocument` itself also
   deserves a real reason, not an automatism.
-  - A row that still says **"requires substantiation"**: replace it with an
+  - A row that still says **"vereist onderbouwing"**: replace it with an
     objective argument, grounded in *this* project, for why `ja` holds — or,
     if that argument doesn't hold up, change the row to `nee` with the
     reason.
