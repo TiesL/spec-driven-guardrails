@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# S63 — adopt.sh scaffoldt de traceability-controle, uitvoerbaar en zonder te
-# overschrijven.
+# S63 — adopt.sh scaffolds the traceability check, executable and without
+# overwriting.
 # Dekt: F13
 #
-# Een controle die alleen in dit repo bestaat, controleert nergens iets.
+# A check that only exists in this repo does not check anything anywhere.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -13,24 +13,24 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een vers project.
+# Given: a fresh project.
 project="$(vers_project vers)"
 adopteer "$project"
 
 doel="$project/check-traceability.sh"
-[ -f "$doel" ] || { fail "S63 — adopt.sh scaffoldde check-traceability.sh niet"; test_klaar; }
-[ -x "$doel" ] || fail "S63 — check-traceability.sh is niet uitvoerbaar"
+[ -f "$doel" ] || { fail "S63 — adopt.sh did not scaffold check-traceability.sh"; test_klaar; }
+[ -x "$doel" ] || fail "S63 — check-traceability.sh is not executable"
 
-# And: hij draait in dat verse project zonder te falen. Een scaffold die meteen
-# rood staat, wordt bij de eerste aanraking uitgezet.
+# And: it runs in that fresh project without failing. A scaffold that is red
+# right away gets switched off at the first touch.
 uitvoer="$("$doel" "$project" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "S63 — de gescaffolde controle faalde in een vers project: $uitvoer"
+[ "$status" -eq 0 ] || fail "S63 — the scaffolded check failed in a fresh project: $uitvoer"
 
-# And: een eigen versie wordt niet overschreven.
+# And: a customized version is not overwritten.
 echo "#!/usr/bin/env bash" > "$doel"
 echo "# eigen variant" >> "$doel"
 adopteer "$project"
 grep -q 'eigen variant' "$doel" \
-  || fail "S63 — adopt.sh overschreef een eigen check-traceability.sh"
+  || fail "S63 — adopt.sh overwrote a customized check-traceability.sh"
 
 test_klaar "S63"

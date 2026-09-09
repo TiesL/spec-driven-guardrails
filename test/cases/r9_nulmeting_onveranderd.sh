@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R9 — De vier bestaande projecten krijgen geen enkele vraag opnieuw.
+# R9 — The four existing projects get no question asked again.
 # Dekt: F2
 
 set -uo pipefail
@@ -17,17 +17,17 @@ for project in $NULMETING_PROJECTEN; do
   gouden="$fixture/verwacht-openstaand.txt"
 
   if [ ! -f "$gouden" ]; then
-    fail "R9 — gouden set ontbreekt: $project"
+    fail "R9 — golden set is missing: $project"
     continue
   fi
 
-  # When: pending-changes.sh draait tegen de ingevroren fixture.
+  # When: pending-changes.sh runs against the frozen fixture.
   huidig="$SANDBOX/$project-huidig.txt"
   openstaande_ids "$fixture" > "$huidig"
 
-  # Then: aantal én identiteit exact gelijk aan de nulmeting. Wijkt het af, dan
-  # noemt assert_ids_gelijk het verschil per ID - een stille wijziging in de
-  # vraagset is nooit acceptabel, ook niet als "opschoning".
+  # Then: count and identity exactly equal to the baseline. If it deviates,
+  # assert_ids_gelijk names the difference per ID - a silent change in the
+  # question set is never acceptable, not even as "cleanup".
   assert_ids_gelijk "R9 — $project" "$gouden" "$huidig"
 done
 

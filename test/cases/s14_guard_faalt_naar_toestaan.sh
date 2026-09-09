@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S14 — De guard faalt naar toestaan als hij zelf stuk is.
+# S14 — The guard fails open (allows) when it is itself broken.
 # Dekt: F7
 
 set -uo pipefail
@@ -11,13 +11,13 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S14 — hooks/git-guardrails ontbreekt"; test_klaar; }
+[ -x "$guard" ] || { fail "S14 — hooks/git-guardrails is missing"; test_klaar; }
 
 project="$(vers_project werk)"
 invoer='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git reset --hard"}}'
 
-# Given: geen jq en geen python3 in PATH. Een minimale bin-map met alleen de
-# basisgereedschappen bootst een kale hook-omgeving na.
+# Given: no jq and no python3 in PATH. A minimal bin directory with only the
+# basic tools mimics a bare hook environment.
 bin="$SANDBOX/minbin"
 mkdir -p "$bin"
 for t in bash sh sed grep cut tr git dirname basename cat head printf; do
@@ -28,13 +28,13 @@ fout="$SANDBOX/stderr.txt"
 printf '%s' "$invoer" | PATH="$bin" "$guard" >/dev/null 2>"$fout"
 status=$?
 
-# Zonder jq en python3 mag de guard best blokkeren als hij het commando alsnog
-# kan lezen — maar hij mag nooit stilvallen zonder iets te zeggen.
+# Without jq and python3 the guard may well block if it can still read the
+# command — but it must never fall silent without saying anything.
 if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
-  fail "S14 — onverwachte exitstatus $status zonder jq/python3"
+  fail "S14 — unexpected exit status $status without jq/python3"
 fi
 
-# Given: helemaal geen bruikbaar gereedschap om de invoer te lezen.
+# Given: no usable tool at all to read the input.
 kaal="$SANDBOX/kaal"
 mkdir -p "$kaal"
 for t in bash sh git; do
@@ -45,20 +45,20 @@ fout2="$SANDBOX/stderr2.txt"
 printf '%s' "$invoer" | PATH="$kaal" "$guard" >/dev/null 2>"$fout2"
 status2=$?
 
-# Then: er verschijnt een luide waarschuwing, en het commando wordt toegestaan.
-[ "$status2" -ne 2 ] || fail "S14 — de guard blokkeerde terwijl hij de invoer niet kon lezen"
-[ -s "$fout2" ] || fail "S14 — geen waarschuwing toen de guard de invoer niet kon lezen"
+# Then: a loud warning appears, and the command is allowed.
+[ "$status2" -ne 2 ] || fail "S14 — the guard blocked while it could not read the input"
+[ -s "$fout2" ] || fail "S14 — no warning when the guard could not read the input"
 grep -qi 'warning' "$fout2" || {
-  fail "S14 — de melding is niet als waarschuwing herkenbaar"
+  fail "S14 — the message is not recognizable as a warning"
   cat "$fout2" >&2
 }
 
-# En bij onleesbare invoer (geen geldige JSON) net zo: toestaan, niet raden.
+# And with unreadable input (not valid JSON) the same: allow, do not guess.
 printf 'dit is geen json' | "$guard" >/dev/null 2>/dev/null
-[ $? -ne 2 ] || fail "S14 — de guard blokkeerde op invoer die geen JSON is"
+[ $? -ne 2 ] || fail "S14 — the guard blocked on input that is not JSON"
 
-# Lege invoer mag hem ook niet laten struikelen.
+# Empty input must not trip it up either.
 printf '' | "$guard" >/dev/null 2>/dev/null
-[ $? -ne 2 ] || fail "S14 — de guard blokkeerde op lege invoer"
+[ $? -ne 2 ] || fail "S14 — the guard blocked on empty input"
 
 test_klaar

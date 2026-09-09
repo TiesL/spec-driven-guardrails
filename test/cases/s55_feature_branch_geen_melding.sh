@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S55 — Op een feature-branch meldt de sessiestart niets.
+# S55 — On a feature branch, the session start reports nothing.
 # Dekt: F18
 
 set -uo pipefail
@@ -17,16 +17,16 @@ git -C "$project" checkout -q -b feature/iets
 uitvoer="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>/dev/null)"
 fout="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"
 
-# Losse grep op "main" zou vals-positief slaan op bijvoorbeeld
-# "spec-maintainability" — de exacte meldingstekst telt.
+# A loose grep on "main" would false-positive on, for example,
+# "spec-maintainability" — the exact message text is what counts.
 if printf '%s\n' "$uitvoer" | grep -q 'You are on main\|git checkout -b'; then
-  fail "S55 — op een feature-branch verscheen toch een melding over main"
+  fail "S55 — a message about main still appeared on a feature branch"
 fi
 
-# And: exit 0 en niets op stderr, conform S43.
+# And: exit 0 and nothing on stderr, per S43.
 status=0
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" >/dev/null 2>/dev/null || status=$?
-[ "$status" -eq 0 ] || fail "S55 — pending-changes.sh gaf exit $status in plaats van 0"
-[ -z "$fout" ] || fail "S55 — er kwam iets op stderr: $fout"
+[ "$status" -eq 0 ] || fail "S55 — pending-changes.sh gave exit $status instead of 0"
+[ -z "$fout" ] || fail "S55 — something appeared on stderr: $fout"
 
 test_klaar

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S15 — Merge zonder review-marker wordt geblokkeerd.
+# S15 — Merge without a review marker is blocked.
 # Dekt: F8
 
 set -uo pipefail
@@ -20,7 +20,7 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 2 ] || fail "S15 — verwacht blokkade (exit 2), kreeg $status. Uitvoer: $uitvoer"
+[ "$status" -eq 2 ] || fail "S15 — expected block (exit 2), got $status. Output: $uitvoer"
 assert_contains "S15" "pre-merge-review" "$uitvoer"
 
 test_klaar

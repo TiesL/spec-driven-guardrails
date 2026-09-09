@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# S31 — Blocking-edges staan in beide issue-templates.
+# S31 — Blocking edges are present in both issue templates.
 #
-# De velden moeten machineleesbaar zijn, niet alleen aanwezig: aan regelbegin en
-# in de `**Veld:**`-vorm die de bestaande issues al gebruiken. Een variant als
-# `- Blocked by:` leest voor een mens hetzelfde en is voor een grep iets anders,
-# en dan levert de conventie geen graaf op maar een gevoel.
+# The fields must be machine-readable, not just present: at the start of a
+# line and in the `**Field:**` form the existing issues already use. A
+# variant like `- Blocked by:` reads the same to a human and is something
+# different for a grep, and then the convention doesn't yield a graph, just a
+# feeling.
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../lib.sh
@@ -12,16 +13,17 @@ set -uo pipefail
 
 repo="$TEST_REPO_ROOT"
 
-# Het sjabloon zonder zijn HTML-commentaar. Een veld dat per ongeluk binnen
-# `<!-- ... -->` belandt staat er voor een grep gewoon, maar bereikt het issue
-# nooit — dan verstopt het sjabloon precies wat het moet voorschrijven.
+# The template without its HTML comments. A field that accidentally ends up
+# inside `<!-- ... -->` is still there as far as grep is concerned, but never
+# reaches the issue — then the template hides exactly what it's supposed to
+# prescribe.
 zonder_commentaar() {
   awk '/<!--/ { in_c = 1 } !in_c; /-->/ { in_c = 0 }' "$1"
 }
 
 for sjabloon in work-item epic; do
   pad="$repo/templates/ISSUE_TEMPLATE/$sjabloon.md"
-  [ -f "$pad" ] || fail "S31 — $sjabloon.md ontbreekt"
+  [ -f "$pad" ] || fail "S31 — $sjabloon.md is missing"
 
   zichtbaar="$(zonder_commentaar "$pad")"
 
@@ -29,21 +31,22 @@ for sjabloon in work-item epic; do
     regel="$(printf '%s\n' "$zichtbaar" | grep "^\*\*$veld:\*\*" || true)"
 
     [ -n "$regel" ] \
-      || fail "S31 — $sjabloon.md heeft geen '**$veld:**' aan regelbegin, buiten commentaar"
+      || fail "S31 — $sjabloon.md has no '**$veld:**' at the start of a line, outside comments"
 
-    # AC2: het veld moet een `#<nummer>`-token kunnen dragen. Het sjabloon toont
-    # dat met een kaal `#`; de controle eist de vorm, niet een verzonnen nummer.
-    # Beide velden, niet alleen het eerste — een controle die maar één van twee
-    # velden ziet, dekt de helft van wat hij beweert.
+    # AC2: the field must be able to carry a `#<number>` token. The template
+    # shows that with a bare `#`; the check requires the form, not a made-up
+    # number. Both fields, not just the first — a check that only sees one of
+    # two fields covers half of what it claims to.
     case "$regel" in
       *"#"*) ;;
-      *) fail "S31 — $sjabloon.md: '$regel' laat niet zien dat er een #-nummer in hoort" ;;
+      *) fail "S31 — $sjabloon.md: '$regel' does not show that a #-number belongs in it" ;;
     esac
   done
 done
 
-# AC3: adopt.sh ververst de sjablonen in een project, ook als er al een oudere
-# versie ligt. Zonder dat blijft de conventie in dit repo hangen.
+# AC3: adopt.sh refreshes the templates in a project, even if an older
+# version is already there. Without that, the convention stays stuck in this
+# repo.
 sandbox_create
 trap sandbox_destroy EXIT
 
@@ -54,6 +57,6 @@ echo "verouderd sjabloon zonder velden" > "$project/.github/ISSUE_TEMPLATE/work-
 adopteer "$project"
 
 grep -q '^\*\*Blocked by:\*\*' "$project/.github/ISSUE_TEMPLATE/work-item.md" \
-  || fail "S31 — adopt.sh ververste het verouderde sjabloon niet"
+  || fail "S31 — adopt.sh did not refresh the outdated template"
 
 test_klaar "S31"

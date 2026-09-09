@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S6 — Een entry zonder `Van toepassing als` levert een waarschuwing.
+# S6 — An entry without `Van toepassing als` produces a warning.
 # Dekt: F5
 
 set -uo pipefail
@@ -12,7 +12,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een bron met een ## -kop zonder Van toepassing als-veld.
+# Given: a source with a ## heading without a Van toepassing als field.
 bron="$SANDBOX/CHANGES.md"
 cat > "$bron" <<'MD'
 # Adopteerbare wijzigingen
@@ -42,60 +42,60 @@ MD
 
 gezien="$SANDBOX/gezien.txt"
 : > "$gezien"
-# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via itereer_entries
 noteer() { printf '%s\n' "$1" >> "$gezien"; }
 
-# When: de gedeelde parser die bron leest.
+# When: the shared parser reads that source.
 melding="$SANDBOX/melding.txt"
 itereer_entries "$bron" noteer 2>"$melding"
 status=$?
 
-# Then: er verschijnt een waarschuwing die het ID noemt.
+# Then: a warning appears that names the ID.
 grep -q 'vergeten-entry' "$melding" || {
-  fail "S6 — geen waarschuwing die 'vergeten-entry' noemt"
+  fail "S6 — no warning naming 'vergeten-entry'"
   cat "$melding" >&2
 }
-grep -qi 'waarschuwing' "$melding" || fail "S6 — de melding is niet als waarschuwing herkenbaar"
+grep -qi 'waarschuwing' "$melding" || fail "S6 — the message is not recognizable as a warning"
 
-# And: de entry wordt niet geseed of gevraagd.
+# And: the entry is not seeded or asked about.
 if grep -qx 'vergeten-entry' "$gezien"; then
-  fail "S6 — vergeten-entry leverde toch een callback op"
+  fail "S6 — vergeten-entry still produced a callback"
 fi
-grep -qx 'echte-entry' "$gezien" || fail "S6 — de entry mét predicaat is niet verwerkt"
+grep -qx 'echte-entry' "$gezien" || fail "S6 — the entry with a predicate was not processed"
 
-# And: ook een kapotte entry ná een goede wordt gemeld. De parserstand mag niet
-# van de vorige entry blijven hangen.
-grep -q 'vergeten-na-goede' "$melding" || fail "S6 — geen waarschuwing voor een kapotte entry ná een goede"
+# And: a broken entry after a good one is also reported. The parser state
+# must not carry over from the previous entry.
+grep -q 'vergeten-na-goede' "$melding" || fail "S6 — no warning for a broken entry after a good one"
 
-# And: ook wanneer hij de laatste in het bestand is — dan is er geen volgende
-# kop meer die de controle triggert.
-grep -q 'vergeten-als-laatste' "$melding" || fail "S6 — geen waarschuwing voor een kapotte entry als laatste in het bestand"
+# And: also when it is the last one in the file — then there is no
+# following heading left to trigger the check.
+grep -q 'vergeten-als-laatste' "$melding" || fail "S6 — no warning for a broken entry as the last one in the file"
 
-# En de goede entries zijn allemaal verwerkt.
-grep -qx 'nog-een-goede' "$gezien" || fail "S6 — nog-een-goede is niet verwerkt"
+# And the good entries are all processed.
+grep -qx 'nog-een-goede' "$gezien" || fail "S6 — nog-een-goede was not processed"
 
-# And: de waarschuwing blokkeert niets.
-[ "$status" -eq 0 ] || fail "S6 — itereer_entries gaf status $status; een waarschuwing mag niet blokkeren"
+# And: the warning blocks nothing.
+[ "$status" -eq 0 ] || fail "S6 — itereer_entries gave status $status; a warning must not block"
 
-# And: een bron zonder afsluitende newline verliest zijn laatste regel niet.
+# And: a source without a trailing newline does not lose its last line.
 zonder_nl="$SANDBOX/zonder-newline.md"
 printf '# K\n\n## laatste-entry\n\n- **Van toepassing als:** altijd' > "$zonder_nl"
 gezien2="$SANDBOX/gezien2.txt"
 : > "$gezien2"
-# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via itereer_entries
 noteer2() { printf '%s\n' "$1" >> "$gezien2"; }
 melding2="$SANDBOX/melding2.txt"
 itereer_entries "$zonder_nl" noteer2 2>"$melding2"
-grep -qx 'laatste-entry' "$gezien2" || fail "S6 — laatste entry verdween door een ontbrekende slot-newline"
+grep -qx 'laatste-entry' "$gezien2" || fail "S6 — the last entry disappeared due to a missing trailing newline"
 if grep -q 'laatste-entry' "$melding2"; then
-  fail "S6 — misleidende waarschuwing voor een entry die wél een predicaat heeft"
+  fail "S6 — misleading warning for an entry that does have a predicate"
 fi
 
-# En de echte CHANGES.md is schoon: geen enkele kop zonder predicaat.
+# And the real CHANGES.md is clean: not a single heading without a predicate.
 echte_melding="$SANDBOX/echt.txt"
 itereer_entries "$TEST_REPO_ROOT/CHANGES.md" noteer 2>"$echte_melding" >/dev/null
 if grep -qi 'waarschuwing' "$echte_melding"; then
-  fail "S6 — de echte CHANGES.md levert waarschuwingen op:"
+  fail "S6 — the real CHANGES.md produces warnings:"
   cat "$echte_melding" >&2
 fi
 

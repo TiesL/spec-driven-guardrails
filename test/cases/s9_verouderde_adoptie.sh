@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S9 — Verouderde adoptie meldt zichzelf.
+# S9 — An outdated adoption reports itself.
 # Dekt: F6
 
 set -uo pipefail
@@ -11,59 +11,59 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
-# Dit scenario simuleert zelf de opeenvolging "geen skills -> wel skills, nog
-# niet geïnstalleerd". Sinds W9 heeft de echte checkout een gevulde skills/,
-# dus die eerst weghalen - anders start dit scenario al met de tweede
-# toestand en test het zijn eigen eerste regel niet meer.
+# This scenario itself simulates the sequence "no skills -> skills exist, not
+# yet installed". Since W9 the real checkout has a populated skills/,
+# so remove that first — otherwise this scenario already starts in the second
+# state and no longer tests its own first rule.
 rm -rf "$repo/skills"
 project="$(vers_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 
-# Vooraf: zonder skills-map in het repo hoort er niets gemeld te worden.
+# Beforehand: without a skills directory in the repo, nothing should be reported.
 schoon="$SANDBOX/schoon.txt"
 "$repo/pending-changes.sh" "$project" > "$schoon" 2>/dev/null
 if grep -qi 'missing the skill' "$schoon"; then
-  fail "S9 — melding verscheen terwijl dit repo helemaal geen skills heeft"
+  fail "S9 — message appeared even though this repo has no skills at all"
 fi
 
-# Given: het repo heeft skills, het project heeft ze niet geïnstalleerd.
+# Given: the repo has skills, the project has not installed them.
 mkdir -p "$repo/skills/pre-merge-review" "$repo/skills/deploy-guards"
 echo "---" > "$repo/skills/pre-merge-review/SKILL.md"
 echo "---" > "$repo/skills/deploy-guards/SKILL.md"
 
-# When: een sessie start.
+# When: a session starts.
 uitvoer="$SANDBOX/uitvoer.txt"
 "$repo/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
 status=$?
 
-# Then: de hook meldt dat adopt.sh opnieuw moet draaien.
+# Then: the hook reports that adopt.sh needs to run again.
 grep -qi 'missing the skill' "$uitvoer" || {
-  fail "S9 — geen melding over ontbrekende skills"
+  fail "S9 — no message about missing skills"
   cat "$uitvoer" >&2
 }
-grep -qi 'adopt.sh again' "$uitvoer" || fail "S9 — de melding zegt niet wat je moet doen"
+grep -qi 'adopt.sh again' "$uitvoer" || fail "S9 — the message does not say what to do"
 
-# And: meerdere namen zijn van elkaar te onderscheiden. Zonder scheidingsteken
-# is "deploy-guards pre merge review" niet te lezen als twee skills waarvan er
-# één een spatie in zijn naam heeft.
-# Alleen op de skills-regel kijken: de vraagteksten hierboven bevatten zelf
-# komma's, dus een grep over de hele uitvoer zou altijd raak zijn.
+# And: multiple names are distinguishable from each other. Without a separator
+# "deploy-guards pre merge review" cannot be read as two skills, one of which
+# has a space in its name.
+# Only look at the skills line: the question texts above themselves contain
+# commas, so a grep over the whole output would always match.
 skillregel="$(grep 'missing the skill' "$uitvoer")"
 case "$skillregel" in
   *', '*) ;;
-  *) fail "S9 — meerdere ontbrekende skills worden niet gescheiden: $skillregel" ;;
+  *) fail "S9 — multiple missing skills are not separated: $skillregel" ;;
 esac
 
-# And: de ontbrekende skills staan er bij naam bij. Zonder die namen is de
-# melding niet bruikbaar - je weet dan niet wát er mist of waarom.
+# And: the missing skills are listed by name. Without those names the
+# message is not usable — you would not know what is missing or why.
 for skill in pre-merge-review deploy-guards; do
-  grep -q "$skill" "$uitvoer" || fail "S9 — de melding noemt de ontbrekende skill '$skill' niet"
+  grep -q "$skill" "$uitvoer" || fail "S9 — the message does not name the missing skill '$skill'"
 done
 
-# And: de sessie start gewoon door — een hook mag nooit blokkeren.
-[ "$status" -eq 0 ] || fail "S9 — pending-changes.sh gaf status $status; dat blokkeert een sessie"
+# And: the session simply continues to start — a hook must never block.
+[ "$status" -eq 0 ] || fail "S9 — pending-changes.sh gave status $status; that blocks a session"
 
-# Na installatie van de skills verdwijnt de melding weer.
+# After installing the skills, the message disappears again.
 mkdir -p "$project/.claude/skills"
 ln -s "$repo/skills/pre-merge-review" "$project/.claude/skills/pre-merge-review"
 ln -s "$repo/skills/deploy-guards" "$project/.claude/skills/deploy-guards"
@@ -71,7 +71,7 @@ ln -s "$repo/skills/deploy-guards" "$project/.claude/skills/deploy-guards"
 na="$SANDBOX/na.txt"
 "$repo/pending-changes.sh" "$project" > "$na" 2>/dev/null
 if grep -qi 'missing the skill' "$na"; then
-  fail "S9 — de melding blijft staan terwijl alle skills geïnstalleerd zijn"
+  fail "S9 — the message stays even though all skills are installed"
 fi
 
 test_klaar

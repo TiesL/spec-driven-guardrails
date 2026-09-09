@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S41 — Een kapot registerbestand valt niet stil weg.
+# S41 — A broken register file does not silently disappear.
 # Dekt: F4
 
 set -uo pipefail
@@ -26,9 +26,9 @@ Waar gaat dit over?
 MD
 }
 
-# Elk geval is een volledig bruikbaar bestand op één gebrek na. Zonder controle
-# verdwijnt zo'n bestand uit álle consumenten tegelijk, en dan ziet de
-# driftcontrole niets: beide kanten missen hem immers.
+# Each case is a fully usable file with a single defect. Without a check,
+# such a file disappears from all consumers at once, and then the
+# drift check sees nothing: both sides are missing it after all.
 for geval in geen-volgorde naam-wijkt-af; do
   repo="$SANDBOX/repo-$geval"
   mkdir -p "$repo"
@@ -49,17 +49,17 @@ for geval in geen-volgorde naam-wijkt-af; do
   status=$?
 
   if [ "$status" -eq 0 ]; then
-    fail "S41 — check slaagde bij een kapot registerbestand ($geval)"
+    fail "S41 — check succeeded on a broken register file ($geval)"
   fi
   case "$uitvoer" in
     *nfr/spec-*) ;;
-    *) fail "S41 — de melding noemt het betreffende bestand niet ($geval)" ;;
+    *) fail "S41 — the message does not name the file in question ($geval)" ;;
   esac
 done
 
-# CRLF-regeleinden mogen een bestand niet onzichtbaar maken. Dat is een aparte
-# eis: zo'n bestand is inhoudelijk in orde, dus het hoort gewoon meegenomen te
-# worden — niet stil overgeslagen omdat de frontmatter niet herkend wordt.
+# CRLF line endings must not make a file invisible. That is a separate
+# requirement: such a file is fine content-wise, so it should just be
+# included — not silently skipped because the frontmatter is not recognized.
 repo="$SANDBOX/repo-crlf"
 mkdir -p "$repo"
 (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
@@ -70,12 +70,12 @@ mkdir -p "$repo"
 . "$repo/lib/nfr.sh"
 
 [ "$(nfr_veld "$repo/nfr/spec-proef.md" id)" = "spec-proef" ] \
-  || fail "S41 — CRLF-bestand: het id wordt niet gelezen"
+  || fail "S41 — CRLF file: the id is not being read"
 [ "$(nfr_veld "$repo/nfr/spec-proef.md" volgorde)" = "16" ] \
-  || fail "S41 — CRLF-bestand: de volgorde wordt niet gelezen"
+  || fail "S41 — CRLF file: the order is not being read"
 
 blok="$SANDBOX/blok-crlf.txt"
 nfr_blok "$repo/nfr" > "$blok"
-grep -q 'spec-proef' "$blok" || fail "S41 — CRLF-bestand verdween uit het gegenereerde blok"
+grep -q 'spec-proef' "$blok" || fail "S41 — CRLF file disappeared from the generated block"
 
 test_klaar

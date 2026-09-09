@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S1 — `check` faalt op een syntaxfout in een script.
+# S1 — `check` fails on a syntax error in a script.
 # Dekt: F1
 
 set -uo pipefail
@@ -12,23 +12,23 @@ trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
 
-# Given: een script in dit repo met een bash-syntaxfout.
+# Given: a script in this repo with a bash syntax error.
 printf '\nif [ 1 -eq 1 ]; then\n  echo kapot\n' >> "$repo/pending-changes.sh"
 
-# When: ./check draait (zonder de testsuite, anders roept de suite zichzelf aan).
+# When: ./check runs (without the test suite, otherwise the suite calls itself).
 uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 status=$?
 
-# Then: exit != 0, met het betreffende bestand in de melding.
+# Then: exit != 0, with the file in question in the message.
 if [ "$status" -eq 0 ]; then
-  fail "S1 — check slaagde terwijl er een syntaxfout in pending-changes.sh staat"
+  fail "S1 — check succeeded while there is a syntax error in pending-changes.sh"
 fi
 assert_contains "S1" "pending-changes.sh" "$uitvoer"
 
-# Een script hoeft geen .sh-extensie te hebben om een shellscript te zijn. De
-# hook-guards uit W10 komen als `hooks/git-guardrails` zonder extensie, en dat
-# is precies de code waar een stille syntaxfout het duurst is: hij blokkeert
-# werk in vier projecten tegelijk.
+# A script does not need a .sh extension to be a shell script. The
+# hook guards from W10 arrive as `hooks/git-guardrails` without an extension, and
+# that is exactly the code where a silent syntax error is the most costly: it blocks
+# work in four projects at once.
 repo2="$SANDBOX/repo2"
 mkdir -p "$repo2/settings" "$repo2/hooks"
 cp "$TEST_REPO_ROOT/settings/session-hooks.json" "$repo2/settings/"
@@ -39,8 +39,8 @@ uitvoer2="$("$TEST_REPO_ROOT/check" --no-tests "$repo2" 2>&1)"
 status2=$?
 
 if [ "$status2" -eq 0 ]; then
-  fail "S1 — check miste een syntaxfout in een script zonder .sh-extensie"
+  fail "S1 — check missed a syntax error in a script without a .sh extension"
 fi
-assert_contains "S1 (zonder extensie)" "git-guardrails" "$uitvoer2"
+assert_contains "S1 (without extension)" "git-guardrails" "$uitvoer2"
 
 test_klaar

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S47 — Committen op main wordt geblokkeerd, met een begaanbare uitweg.
+# S47 — Committing on main is blocked, with a workable way out.
 # Dekt: F7
 
 set -uo pipefail
@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S47 — hooks/git-guardrails ontbreekt"; test_klaar; }
+[ -x "$guard" ] || { fail "S47 — hooks/git-guardrails is missing"; test_klaar; }
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
@@ -28,38 +28,38 @@ op_feature="$(vers_project op-feature)"
 git -C "$op_feature" commit -q --allow-empty -m start
 git -C "$op_feature" checkout -q -b feature/werk
 
-# Een repo zonder ook maar één commit: HEAD bestaat nog niet.
+# A repo without even a single commit: HEAD does not yet exist.
 vers="$(vers_project vers)"
 
-# Then: committen op main wordt geblokkeerd.
+# Then: committing on main is blocked.
 [ "$(langs_guard "$op_main" 'git commit -m "iets"')" = "2" ] \
-  || fail "S47 — committen op main werd niet geblokkeerd"
+  || fail "S47 — committing on main was not blocked"
 [ "$(langs_guard "$op_main" 'git commit --amend')" = "2" ] \
-  || fail "S47 — amenden op main werd niet geblokkeerd"
+  || fail "S47 — amending on main was not blocked"
 
-# And: de melding noemt de uitweg én dat er niets kwijtraakt. Zonder die twee
-# blijft het werk ongecommit, en dat is onveiliger dan wat je net tegenhield.
+# And: the message mentions the way out and that nothing gets lost. Without
+# those two, the work stays uncommitted, and that is less safe than what was just stopped.
 melding="$SANDBOX/melding.txt"
 printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"git commit -m x"}}' \
   "$op_main" | "$guard" >/dev/null 2>"$melding"
 
 grep -q 'checkout -b' "$melding" || {
-  fail "S47 — de melding noemt niet hoe je een branch maakt"
+  fail "S47 — the message does not mention how to create a branch"
   cat "$melding" >&2
 }
 grep -qi 'come along unchanged\|nothing gets lost' "$melding" \
-  || fail "S47 — de melding zegt niet dat de wijzigingen meegaan"
+  || fail "S47 — the message does not say that the changes come along"
 
-# And: op een feature-branch gaat committen gewoon door.
+# And: on a feature branch, committing just proceeds.
 [ "$(langs_guard "$op_feature" 'git commit -m "iets"')" != "2" ] \
-  || fail "S47 — committen op een feature-branch werd geblokkeerd"
+  || fail "S47 — committing on a feature branch was blocked"
 
-# And: de allereerste commit van een nieuw project staat per definitie op main.
+# And: the very first commit of a new project is on main by definition.
 [ "$(langs_guard "$vers" 'git commit -m "eerste commit"')" != "2" ] \
-  || fail "S47 — de eerste commit van een leeg repo werd geblokkeerd"
+  || fail "S47 — the first commit of an empty repo was blocked"
 
-# En vertakken blijft natuurlijk gewoon mogelijk — anders is de uitweg dicht.
+# And branching remains of course simply possible — otherwise the way out is closed.
 [ "$(langs_guard "$op_main" 'git checkout -b feature/nieuw')" != "2" ] \
-  || fail "S47 — vertakken vanaf main werd geblokkeerd; de uitweg is dan dicht"
+  || fail "S47 — branching from main was blocked; the way out is then closed"
 
 test_klaar

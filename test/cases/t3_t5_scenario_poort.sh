@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# T3, T5 — schakel 2 (scenario -> issue) als poort in pre-merge-review (W20).
+# T3, T5 — link 2 (scenario -> issue) as a gate in pre-merge-review (W20).
 # Dekt: F13
 #
-# "Wordt dit scenario door een issue genoemd" is een strikte veldmatch: alleen
-# het **Dekt:**-veld van een issue telt, een ID dat toevallig in een zin
-# voorkomt niet (T5). T3: een ongedekt scenario wordt expliciet genoemd.
+# "Is this scenario named by an issue" is a strict field match: only
+# an issue's **Dekt:** field counts, an ID that happens to appear in a
+# sentence does not (T5). T3: an uncovered scenario is named explicitly.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -12,7 +12,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/skills/pre-merge-review/scenario-poort.sh"
-[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-poort.sh ontbreekt of is niet uitvoerbaar"; test_klaar; }
+[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-poort.sh is missing or not executable"; test_klaar; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -27,8 +27,8 @@ cat > "$project/TEST-SCENARIOS.md" <<'EOF'
 ### S3 — wordt door geen enkel issue genoemd
 EOF
 
-# Eén issue: noemt S1 losjes in de body (geen verwijzing), dekt S2b wel via
-# het daarvoor bestemde veld. S3 komt in geen enkele body voor.
+# One issue: mentions S1 loosely in the body (not a reference), does cover
+# S2b via the field meant for that. S3 does not appear in any body.
 fakebin="$(fake_gh_bin '
 case "$*" in
   "issue list --state all --limit 500 --json body --jq .[].body")
@@ -40,25 +40,25 @@ exit 1
 ')"
 
 uitvoer="$(PATH="$fakebin:$PATH" "$script" "$project" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "T3/T5 — de poort faalde onverwacht (exit $status): $uitvoer"
+[ "$status" -eq 0 ] || fail "T3/T5 — the gate failed unexpectedly (exit $status): $uitvoer"
 
-# T3 — S3 is ongedekt en wordt expliciet genoemd.
-assert_contains "T3 — S3 wordt genoemd als ongedekt" "S3" "$uitvoer"
+# T3 — S3 is uncovered and is named explicitly.
+assert_contains "T3 — S3 is named as uncovered" "S3" "$uitvoer"
 
-# T5 — de losse tekstvermelding van s1 telt niet als dekking: S1 blijft dus
-# ook ongedekt.
-assert_contains "T5 — S1 blijft ongedekt (lopende tekst telt niet)" "S1" "$uitvoer"
+# T5 — the loose text mention of s1 does not count as coverage: S1 thus
+# also stays uncovered.
+assert_contains "T5 — S1 stays uncovered (running prose does not count)" "S1" "$uitvoer"
 
-# T5 — S2b telt wél, via het veld: geen "S2b ... ongedekt"-regel.
+# T5 — S2b does count, via the field: no "S2b ... uncovered" line.
 case "$uitvoer" in
   *"S2b wordt door geen enkel issue gedekt"*)
-    fail "T5 — S2b (gedekt via het Dekt-veld) werd toch als ongedekt gemeld" ;;
+    fail "T5 — S2b (covered via the Dekt field) was reported as uncovered anyway" ;;
 esac
 
-# AC4 — de poort faalt niet blokkerend zonder gh.
+# AC4 — the gate does not fail blockingly without gh.
 padzondergh="$(pad_zonder_gh)"
 uitvoer_geengh="$(PATH="$padzondergh" "$script" "$project" 2>&1)"; status_geengh=$?
-[ "$status_geengh" -eq 0 ] || fail "AC4 — zonder gh gaf de poort exit $status_geengh in plaats van 0"
-assert_contains "AC4 — er verschijnt een waarschuwing zonder gh" "waarschuwing" "$uitvoer_geengh"
+[ "$status_geengh" -eq 0 ] || fail "AC4 — without gh the gate gave exit $status_geengh instead of 0"
+assert_contains "AC4 — a warning appears without gh" "waarschuwing" "$uitvoer_geengh"
 
 test_klaar

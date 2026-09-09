@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S83 — Schakel 3 (PR verwijst naar issue) draait in dit repo's eigen CI.
+# S83 — Link 3 (PR references issue) runs in this repo's own CI.
 # Dekt: F17
 
 set -uo pipefail
@@ -11,38 +11,38 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 pad="$TEST_REPO_ROOT/.github/workflows/ci.yml"
-[ -f "$pad" ] || { fail "S83 — $pad ontbreekt"; test_klaar; }
+[ -f "$pad" ] || { fail "S83 — $pad is missing"; test_klaar; }
 
-# Then: een stap die check-pr-issue-link.sh aanroept, alleen op het
-# pull_request-event — dezelfde vorm als "Commit op main komt uit een PR"
-# hieronder gebruikt voor het push-event. grep -A4: genoeg regels om if/env/
-# GITHUB_TOKEN/run te vangen zonder de volgende stap mee te pakken.
+# Then: a step that calls check-pr-issue-link.sh, only on the
+# pull_request event — the same shape as "Commit op main komt uit een PR"
+# below uses for the push event. grep -A4: enough lines to catch if/env/
+# GITHUB_TOKEN/run without picking up the next step.
 stap="$(grep -A4 'name: PR verwijst naar issue' "$pad")"
-[ -n "$stap" ] || fail "S83 — $pad heeft geen 'PR verwijst naar issue'-stap"
+[ -n "$stap" ] || fail "S83 — $pad has no 'PR verwijst naar issue' step"
 
 case "$stap" in
   *"if: github.event_name == 'pull_request'"*) ;;
-  *) fail "S83 — de schakel-3-stap is niet aan het pull_request-event gekoppeld" ;;
+  *) fail "S83 — the link-3 step is not tied to the pull_request event" ;;
 esac
 
 case "$stap" in
   *check-pr-issue-link.sh*) ;;
-  *) fail "S83 — de schakel-3-stap roept check-pr-issue-link.sh niet aan" ;;
+  *) fail "S83 — the link-3 step does not call check-pr-issue-link.sh" ;;
 esac
 
-# And: de job heeft nog steeds pull-requests: read (issue #85/#91) — zonder
-# die scope blokkeert deze stap elke PR, niet incidenteel.
+# And: the job still has pull-requests: read (issue #85/#91) — without
+# that scope this step blocks every PR, not incidentally.
 grep -qE '^\s*pull-requests:\s*read\s*$' "$pad" \
-  || fail "S83 — de check-job mist pull-requests: read"
+  || fail "S83 — the check job is missing pull-requests: read"
 
-# And: issues: read. closingIssuesReferences — waar check-pr-issue-link.sh op
-# leest — is een veld over het gekoppelde issue zelf, niet over de PR.
-# Zonder issues:read levert de opvraging onder het CI-token stilzwijgend een
-# lege lijst op, ook als de koppeling echt bestaat: precies wat er op PR #105
-# gebeurde (run 34234378780) vóórdat deze regel er stond. pull-requests:read
-# alleen bleek dus niet genoeg voor schakel 3, in weerwil van wat #85/#91
-# aannam.
+# And: issues: read. closingIssuesReferences — what check-pr-issue-link.sh
+# reads — is a field about the linked issue itself, not about the PR.
+# Without issues:read the query under the CI token silently returns an
+# empty list, even when the link genuinely exists: exactly what happened on
+# PR #105 (run 34234378780) before this line was added. pull-requests:read
+# alone thus turned out not to be enough for link 3, contrary to what
+# #85/#91 assumed.
 grep -qE '^\s*issues:\s*read\s*$' "$pad" \
-  || fail "S83 — de check-job mist issues: read"
+  || fail "S83 — the check job is missing issues: read"
 
 test_klaar

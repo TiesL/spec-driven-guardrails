@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S74 — De merge-guard laat `gh pr merge` door als alle checks slagen.
+# S74 — The merge guard lets `gh pr merge` through when all checks pass.
 # Dekt: F8
 
 set -uo pipefail
@@ -20,6 +20,6 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S74 — verwacht doorgang (exit 0) bij groene CI, kreeg $status. Uitvoer: $uitvoer"
+[ "$status" -eq 0 ] || fail "S74 — expected passthrough (exit 0) for green CI, got $status. Output: $uitvoer"
 
 test_klaar

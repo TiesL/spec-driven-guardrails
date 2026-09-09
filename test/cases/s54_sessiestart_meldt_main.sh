@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S54 — Sessiestart meldt dat `main` is uitgecheckt.
+# S54 — Session start reports that `main` is checked out.
 # Dekt: F18
 
 set -uo pipefail
@@ -15,7 +15,7 @@ git -C "$project" commit -q --allow-empty -m start
 
 uitvoer="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>/dev/null)"
 
-assert_contains "S54 — de melding noemt main" "main" "$uitvoer"
-assert_contains "S54 — de melding stelt git checkout -b voor" "git checkout -b" "$uitvoer"
+assert_contains "S54 — the message mentions main" "main" "$uitvoer"
+assert_contains "S54 — the message suggests git checkout -b" "git checkout -b" "$uitvoer"
 
 test_klaar

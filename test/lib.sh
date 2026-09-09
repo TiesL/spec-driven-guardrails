@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# test/lib.sh — Gedeelde hulpfuncties voor de testsuite.
+# test/lib.sh — Shared helper functions for the test suite.
 #
-# Sourcen, niet uitvoeren. Elke test draait in een eigen sandbox met een
-# geinjecteerde HOME en SPEC_DRIVEN_GUARDRAILS_DIR, zodat een test nooit de echte
-# omgeving van de gebruiker kan raken.
+# Source, don't execute. Every test runs in its own sandbox with an
+# injected HOME and SPEC_DRIVEN_GUARDRAILS_DIR, so a test can never touch
+# the user's real environment.
 #
-# Bash 3.2-compatibel: geen declare -A, geen mapfile, geen ${var,,}.
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
-# De echte home, vastgelegd voordat een test hem kan overschrijven. Dit is de
-# waarde waartegen sandbox_guard vergelijkt.
+# The real home, captured before a test can overwrite it. This is the
+# value sandbox_guard compares against.
 TEST_REAL_HOME="${TEST_REAL_HOME:-$HOME}"
 export TEST_REAL_HOME
 
-# Wortel van dit repo, onafhankelijk van waarvandaan de test wordt aangeroepen.
+# Root of this repo, independent of where the test is invoked from.
 TEST_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export TEST_REPO_ROOT
 
-# De vier bevroren nulmeting-projecten, in de vaste volgorde waarin ze overal
-# doorheen deze testsuite genoemd worden (R9, S4, S66, S67) — één plek in
-# plaats van de lijst per test opnieuw uittypen.
+# The four frozen baseline projects, in the fixed order they're named
+# throughout this test suite (R9, S4, S66, S67) — one place instead of
+# retyping the list per test.
 NULMETING_PROJECTEN="a2t-emails tennis-admin tennis-registration tennis-invoicing"
 
 _test_failures=0
@@ -28,10 +28,10 @@ fail() {
   _test_failures=$((_test_failures + 1))
 }
 
-# De harde weigering uit S3. Draait na elke sandboxopzet: staat HOME dan nog op
-# de echte home, dan is de sandbox niet actief en zou de test in de echte
-# omgeving van de gebruiker schrijven. Dat is geen waarschuwing waard maar een
-# onmiddellijke stop.
+# The hard refusal from S3. Runs after every sandbox setup: if HOME still
+# points at the real home, the sandbox isn't active and the test would
+# write into the user's real environment. That's not worth a warning but
+# an immediate stop.
 sandbox_guard() {
   if [ "$HOME" = "$TEST_REAL_HOME" ]; then
     echo "AFGEBROKEN: sandboxopzet heeft HOME niet omgezet (HOME is nog '$HOME')." >&2
@@ -45,7 +45,8 @@ sandbox_guard() {
   return 0
 }
 
-# Maakt een sandbox en zet HOME en SPEC_DRIVEN_GUARDRAILS_DIR erheen. Zet SANDBOX.
+# Creates a sandbox and points HOME and SPEC_DRIVEN_GUARDRAILS_DIR at it.
+# Sets SANDBOX.
 sandbox_create() {
   SANDBOX="$(mktemp -d)"
   export SANDBOX
@@ -53,10 +54,11 @@ sandbox_create() {
   mkdir -p "$HOME"
   export SPEC_DRIVEN_GUARDRAILS_DIR="$SANDBOX/workflow"
 
-  # Een identiteit voor git, net zoals HOME: een test mag niet afhangen van de
-  # configuratie van de machine waarop hij toevallig draait. Zonder dit slaagt
-  # `git commit` lokaal (waar een globale identiteit staat) en faalt hij op een
-  # verse CI-runner - precies het soort verschil dat je pas laat ontdekt.
+  # An identity for git, just like HOME: a test must not depend on the
+  # configuration of the machine it happens to run on. Without this,
+  # `git commit` succeeds locally (where a global identity exists) and
+  # fails on a fresh CI runner — exactly the kind of difference you only
+  # discover late.
   export GIT_AUTHOR_NAME="claude-workflow test"
   export GIT_AUTHOR_EMAIL="test@example.invalid"
   export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
@@ -73,37 +75,38 @@ sandbox_destroy() {
   fi
 }
 
-# Kopieert dit repo naar de sandbox, zodat een test bestanden mag stukmaken
-# zonder de werkkopie te raken. Laat .git buiten beschouwing: niet nodig voor
-# de statische controles en het scheelt tijd.
+# Copies this repo into the sandbox, so a test may break files without
+# touching the working copy. Leaves .git out of consideration: not needed
+# for the static checks and it saves time.
 sandbox_copy_repo() {
   local doel="$SANDBOX/${1:-repo}"
   mkdir -p "$doel"
-  # Sinds spec-driven-guardrails zichzelf adopteert (issue #98) heeft de echte
-  # checkout CLAUDE.md/.claude/settings.json/.claude/skills als absolute
-  # symlinks terug naar zichzelf. tar kopieert een symlink als symlink, dus
-  # zonder deze uitsluiting zou elke sandboxkopie een symlink bevatten die
-  # naar de échte werkkopie buiten de sandbox wijst — precies de
-  # isolatiegarantie doorbreken die sandbox_guard() elders afdwingt. Dezelfde
-  # drie paden als het .gitignore-beheerde blok (schrijf_gitignore_blok):
-  # gitignored omdat ze machine-specifiek zijn, dus ook hier geen onderdeel
-  # van een "schone" repo-snapshot.
+  # Since spec-driven-guardrails adopts itself (issue #98), the real
+  # checkout has CLAUDE.md/.claude/settings.json/.claude/skills as
+  # absolute symlinks back to itself. tar copies a symlink as a symlink,
+  # so without this exclusion every sandbox copy would contain a symlink
+  # pointing at the real working copy outside the sandbox — exactly the
+  # isolation guarantee sandbox_guard() enforces elsewhere. Same three
+  # paths as the .gitignore-managed block (schrijf_gitignore_blok):
+  # gitignored because they're machine-specific, so not part of a "clean"
+  # repo snapshot here either.
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./CLAUDE.md' \
     --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) \
     | (cd "$doel" && tar -xf -)
   echo "$doel"
 }
 
-# Maakt een vers, leeg git-project in de sandbox en echoot het pad. adopt.sh
-# weigert zonder .git, dus dat init'en hoort bij de opzet.
+# Creates a fresh, empty git project in the sandbox and echoes the path.
+# adopt.sh refuses without .git, so that init belongs to the setup.
 #
-# Expliciet -b main: git's eigen default-branchnaam is niet overal gelijk.
-# Deze Mac heeft init.defaultBranch=main (Apple's Command Line Tools zetten
-# dat systeembreed); de GitHub Actions-runner heeft die override niet en valt
-# terug op "master". Scenario's die specifiek gedrag op een branch genaamd
-# `main` toetsen (S50, S54) faalden daardoor stelselmatig in CI terwijl ze
-# lokaal altijd groen waren — gevonden via issue #81, nadat CI zes runs op rij
-# rood bleek zonder dat iemand het merkte.
+# Explicit -b main: git's own default branch name isn't the same
+# everywhere. This Mac has init.defaultBranch=main (Apple's Command Line
+# Tools set that system-wide); the GitHub Actions runner doesn't have that
+# override and falls back to "master". Scenarios that test specific
+# behavior on a branch named `main` (S50, S54) therefore failed
+# systematically in CI while always being green locally — found via issue
+# #81, after CI had been red for six runs in a row without anyone
+# noticing.
 vers_project() {
   local naam="$1"
   local pad="$SANDBOX/$naam"
@@ -112,39 +115,41 @@ vers_project() {
   echo "$pad"
 }
 
-# Adopteert de workflow in een project, met dit repo als bron. adopt.sh leest
-# alleen uit SPEC_DRIVEN_GUARDRAILS_DIR en schrijft uitsluitend in het project.
+# Adopts the workflow in a project, with this repo as the source. adopt.sh
+# only reads from SPEC_DRIVEN_GUARDRAILS_DIR and only writes into the
+# project.
 adopteer() {
   SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
 }
 
-# De openstaande ID's voor een project, alfabetisch, één per regel.
+# The pending IDs for a project, alphabetically, one per line.
 openstaande_ids() {
   "$TEST_REPO_ROOT/pending-changes.sh" "$1" 2>/dev/null \
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort
 }
 
-# De ID's die adopt.sh in de adoptietabel heeft geseed, alfabetisch.
+# The IDs adopt.sh seeded in the adoption table, alphabetically.
 geseede_ids() {
   local tabel="$1/WORKFLOW-ADOPTIE.md"
   [ -f "$tabel" ] || return 0
   grep '^| [a-z]' "$tabel" | sed 's/^| *//; s/ *|.*//' | sort
 }
 
-# Vergelijkt twee ID-lijsten en meldt het verschil per ID.
+# Compares two ID lists and reports the difference per ID.
 assert_ids_gelijk() {
   local omschrijving="$1" verwacht="$2" gekregen="$3"
   if ! diff -u "$verwacht" "$gekregen" >/dev/null 2>&1; then
-    fail "$omschrijving — ID-set wijkt af:"
+    fail "$omschrijving — ID set differs:"
     diff -u "$verwacht" "$gekregen" >&2
     return 1
   fi
   return 0
 }
 
-# Bouwt een bin-map met alleen de basisgereedschappen die `check` nodig heeft,
-# bewust zonder jq en python3. Echoot het pad, te gebruiken als PATH. Zo is de
-# "geen enkele validator beschikbaar"-tak te toetsen zonder iets te deinstalleren.
+# Builds a bin directory with only the base tools `check` needs,
+# deliberately without jq and python3. Echoes the path, to be used as
+# PATH. This way the "no validator available at all" branch can be tested
+# without uninstalling anything.
 minimale_path_zonder_validators() {
   local bin="$SANDBOX/minbin"
   mkdir -p "$bin"
@@ -155,10 +160,10 @@ minimale_path_zonder_validators() {
   echo "$bin"
 }
 
-# Bouwt een bin-map met een nep-`gh`, voor tests die gh's netwerk-/PR-gedrag
-# moeten simuleren zonder een echte aanroep. $1 is het scriptlichaam van de
-# nep-gh (ziet zijn argumenten via "$@"/"$*"). Echoot het pad; zet dit vóór de
-# rest van PATH.
+# Builds a bin directory with a fake `gh`, for tests that need to simulate
+# gh's network/PR behavior without a real call. $1 is the fake gh's script
+# body (sees its arguments via "$@"/"$*"). Echoes the path; put this ahead
+# of the rest of PATH.
 fake_gh_bin() {
   local bin="$SANDBOX/fakegh"
   mkdir -p "$bin"
@@ -170,19 +175,19 @@ fake_gh_bin() {
   echo "$bin"
 }
 
-# Bouwt een gedeelde nep-`gh` voor de merge-guard-tests die een letterlijke
-# marker en een letterlijk checks-antwoord teruggeven — de twee uniforme
-# gevallen. Bewust smal: geen sentinel-waarden, geen afwijkende foutvormen.
-# Een test met een eigen foutvorm (S75, S76 — een niet-nul exit van
-# `pr checks`, met of zonder stderr-melding) bouwt die zelf met `fake_gh_bin`,
-# net als vóór deze helper (W95, na review: een sentinel-gestuurde variant
-# hiervan werd afgewezen als precies de generieke templating-oplossing die
-# W95 zelf uitsloot).
+# Builds a shared fake `gh` for the merge-guard tests that returns a
+# literal marker and a literal checks answer — the two uniform cases.
+# Deliberately narrow: no sentinel values, no divergent error shapes. A
+# test with its own error shape (S75, S76 — a non-zero exit from
+# `pr checks`, with or without a stderr message) builds that itself with
+# `fake_gh_bin`, same as before this helper existed (W95, after review: a
+# sentinel-driven variant of this was rejected as exactly the generic
+# templating solution W95 itself ruled out).
 #
-# $1 — marker-tekst. Leeg = geen marker ("geen marker hier"); anders komt de
-#      tekst letterlijk in de `<!-- ... -->`-opmerking terecht.
-# $2 — checks-JSON-antwoord, of leeg om geen "pr checks"-tak te bouwen
-#      (S15, S16, S65 vragen daar niet naar).
+# $1 — marker text. Empty = no marker ("geen marker hier"); otherwise the
+#      text ends up literally in the `<!-- ... -->` comment.
+# $2 — checks JSON answer, or empty to not build a "pr checks" branch
+#      (S15, S16, S65 don't ask about that).
 fake_gh_merge_bin() {
   local marker="${1:-}" checks_json="${2:-}"
   local comments_body
@@ -214,9 +219,9 @@ exit 1'
   fake_gh_bin "$script"
 }
 
-# Bouwt een PATH zonder `gh`, voor het faal-open-scenario waarin gh ontbreekt.
-# Andere gereedschappen die de guard nodig heeft (git, python3) blijven erin,
-# in tegenstelling tot minimale_path_zonder_validators hierboven.
+# Builds a PATH without `gh`, for the fail-open scenario where gh is
+# missing. Other tools the guard needs (git, python3) stay in it, unlike
+# minimale_path_zonder_validators above.
 pad_zonder_gh() {
   local bin="$SANDBOX/nogh"
   mkdir -p "$bin"
@@ -231,7 +236,7 @@ assert_contains() {
   local omschrijving="$1" naald="$2" hooiberg="$3"
   case "$hooiberg" in
     *"$naald"*) return 0 ;;
-    *) fail "$omschrijving — '$naald' ontbreekt in de uitvoer"; return 1 ;;
+    *) fail "$omschrijving — '$naald' is missing from the output"; return 1 ;;
   esac
 }
 
@@ -242,14 +247,14 @@ test_klaar() {
   exit 0
 }
 
-# Regels binnen de "## Routing table"-tabel van $1, elk beginnend met '|'.
-# Gebruikt door de W9-tests (R7, S29) die de routing table controleren.
+# Lines within the "## Routing table" table of $1, each starting with '|'.
+# Used by the W9 tests (R7, S29) that check the routing table.
 wegwijzer_rijen() {
   awk '/^## Routing table/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
 }
 
-# De laatste kolom van een Wegwijzer-tabelrij, ontdaan van backticks,
-# witruimte en de "(user-level)"-suffix.
+# The last column of a routing table row, stripped of backticks,
+# whitespace, and the "(user-level)" suffix.
 skill_van_rij() {
   printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
     | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'

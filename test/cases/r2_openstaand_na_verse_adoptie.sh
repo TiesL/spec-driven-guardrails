@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R2 — Openstaande vragen na verse adoptie.
+# R2 — Open questions after a fresh adoption.
 # Dekt: F3
 
 set -uo pipefail
@@ -10,15 +10,15 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een vers project, direct na adoptie.
+# Given: a fresh project, right after adoption.
 project="$(vers_project leeg)"
 adopteer "$project"
 
-# When: pending-changes.sh draait.
+# When: pending-changes.sh runs.
 gekregen="$SANDBOX/gekregen.txt"
 openstaande_ids "$project" > "$gekregen"
 
-# Then: exact deze 8 ID's, in willekeurige volgorde.
+# Then: exactly these 8 IDs, in any order.
 verwacht="$SANDBOX/verwacht.txt"
 cat > "$verwacht" <<'IDS'
 proces-context-document

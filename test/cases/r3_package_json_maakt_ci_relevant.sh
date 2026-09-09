@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R3 — package.json maakt ci-conventie relevant.
+# R3 — package.json makes ci-conventie relevant.
 # Dekt: F3
 
 set -uo pipefail
@@ -17,26 +17,25 @@ zonder="$SANDBOX/zonder.txt"
 openstaande_ids "$project" > "$zonder"
 
 if grep -qx 'ci-conventie' "$zonder"; then
-  fail "R3 — ci-conventie stond al open zonder package.json"
+  fail "R3 — ci-conventie was already open without package.json"
 fi
 
-# Given: hetzelfde project, nu met een package.json.
+# Given: the same project, now with a package.json.
 echo '{"name":"t"}' > "$project/package.json"
 
-# When/Then: ci-conventie verschijnt aanvullend als openstaand.
+# When/Then: ci-conventie additionally appears as open.
 met="$SANDBOX/met.txt"
 openstaande_ids "$project" > "$met"
 
-grep -qx 'ci-conventie' "$met" || fail "R3 — ci-conventie verscheen niet na toevoegen van package.json"
+grep -qx 'ci-conventie' "$met" || fail "R3 — ci-conventie did not appear after adding package.json"
 
-# En verder verandert er niets: het verschil zijn precies de vier ID's die aan
-# `heeft-package-json` hangen. `ci-conventie` gaat over wát de CI doet,
-# `ci-op-pr-en-main` over wannéér hij draait, `ci-schakel-3-hard-slot` en
-# `ci-detecteert-main-buiten-pr` over extra stappen die hij daarnaast
-# uitvoert; los van elkaar te beantwoorden, maar afhankelijk van hetzelfde
-# predicaat.
+# And nothing else changes: the difference is exactly the four IDs attached to
+# `heeft-package-json`. `ci-conventie` is about what the CI does,
+# `ci-op-pr-en-main` about when it runs, `ci-schakel-3-hard-slot` and
+# `ci-detecteert-main-buiten-pr` about extra steps it also carries out;
+# answerable independently, but dependent on the same predicate.
 verschil="$(comm -13 "$zonder" "$met" | tr '\n' ' ')"
 [ "$verschil" = "ci-conventie ci-detecteert-main-buiten-pr ci-op-pr-en-main ci-schakel-3-hard-slot " ] \
-  || fail "R3 — verschil is '$verschil', 'ci-conventie ci-detecteert-main-buiten-pr ci-op-pr-en-main ci-schakel-3-hard-slot' verwacht"
+  || fail "R3 — difference is '$verschil', expected 'ci-conventie ci-detecteert-main-buiten-pr ci-op-pr-en-main ci-schakel-3-hard-slot'"
 
 test_klaar

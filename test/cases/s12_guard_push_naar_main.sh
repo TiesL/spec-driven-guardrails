@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S12 — Push naar main wordt geblokkeerd, ook via refspec.
+# S12 — Push to main is blocked, also via refspec.
 # Dekt: F7
 
 set -uo pipefail
@@ -12,13 +12,13 @@ trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 if [ ! -x "$guard" ]; then
-  fail "S12 — hooks/git-guardrails ontbreekt"
+  fail "S12 — hooks/git-guardrails is missing"
   test_klaar
 fi
 
-# Twee werkmappen: één op een feature-branch, één op main. De guard moet de
-# huidige branch raadplegen, want `git push origin HEAD` betekent iets anders
-# afhankelijk van waar je staat.
+# Two working directories: one on a feature branch, one on main. The guard must
+# consult the current branch, because `git push origin HEAD` means something different
+# depending on where you are.
 op_feature="$(vers_project op-feature)"
 git -C "$op_feature" commit -q --allow-empty -m start
 git -C "$op_feature" checkout -q -b feature/werk
@@ -38,38 +38,38 @@ langs_guard() {
 geblokkeerd() {
   local omschrijving="$1" commando="$2" map="$3"
   if [ "$(langs_guard "$commando" "$map")" != "2" ]; then
-    fail "S12 — niet geblokkeerd: $omschrijving ($commando)"
+    fail "S12 — not blocked: $omschrijving ($commando)"
   fi
 }
 toegestaan() {
   local omschrijving="$1" commando="$2" map="$3"
   if [ "$(langs_guard "$commando" "$map")" = "2" ]; then
-    fail "S12 — ten onrechte geblokkeerd: $omschrijving ($commando)"
+    fail "S12 — wrongly blocked: $omschrijving ($commando)"
   fi
 }
 
-# Expliciete refspecs die main raken — vanaf welke branch dan ook.
+# Explicit refspecs that hit main — from whichever branch.
 geblokkeerd "push origin main"        "git push origin main"        "$op_feature"
 geblokkeerd "push origin HEAD:main"   "git push origin HEAD:main"   "$op_feature"
-geblokkeerd "push met --force"        "git push --force origin main" "$op_feature"
-geblokkeerd "push met +main"          "git push origin +main"       "$op_feature"
-geblokkeerd "push die main verwijdert" "git push origin :main"      "$op_feature"
+geblokkeerd "push with --force"        "git push --force origin main" "$op_feature"
+geblokkeerd "push with +main"          "git push origin +main"       "$op_feature"
+geblokkeerd "push that deletes main" "git push origin :main"      "$op_feature"
 
-# --all en --mirror pushen alle branches, dus ook main - ongeacht waar je staat.
+# --all and --mirror push all branches, so also main - regardless of where you are.
 geblokkeerd "push --all"              "git push --all origin"       "$op_feature"
 geblokkeerd "push --mirror"           "git push --mirror origin"    "$op_feature"
-geblokkeerd "push met env-prefix"     "FOO=1 git push origin main"  "$op_feature"
+geblokkeerd "push with env prefix"     "FOO=1 git push origin main"  "$op_feature"
 
-# De toestandsafhankelijke kale push: alleen op de huidige branch keyen mist de
-# categorie hierboven, en alleen op refspecs keyen mist deze.
-geblokkeerd "kale push op main"       "git push"                    "$op_main"
-geblokkeerd "push origin HEAD op main" "git push origin HEAD"       "$op_main"
+# The state-dependent bare push: only keying on the current branch misses the
+# category above, and only keying on refspecs misses this one.
+geblokkeerd "bare push on main"       "git push"                    "$op_main"
+geblokkeerd "push origin HEAD on main" "git push origin HEAD"       "$op_main"
 
-# Legitiem werk moet blijven werken — de SessionEnd-hook doet precies dit.
-toegestaan "push origin HEAD op feature" "git push origin HEAD"     "$op_feature"
-toegestaan "kale push op feature"        "git push"                 "$op_feature"
+# Legitimate work must keep working — the SessionEnd hook does exactly this.
+toegestaan "push origin HEAD on feature" "git push origin HEAD"     "$op_feature"
+toegestaan "bare push on feature"        "git push"                 "$op_feature"
 toegestaan "push -u origin HEAD"         "git push -u origin HEAD"  "$op_feature"
-toegestaan "push naar een feature-branch" "git push origin feature/werk" "$op_feature"
-toegestaan "push naar maintenance"        "git push origin maintenance"  "$op_feature"
+toegestaan "push to a feature branch" "git push origin feature/werk" "$op_feature"
+toegestaan "push to maintenance"        "git push origin maintenance"  "$op_feature"
 
 test_klaar

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S44 — De hookbedrading laat de blokkade door.
+# S44 — The hook wiring lets the block through.
 # Dekt: F7
 
 set -uo pipefail
@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een project waarvan .claude/settings.json naar dit repo symlinkt.
+# Given: a project whose .claude/settings.json symlinks to this repo.
 project="$(vers_project bedraad)"
 mkdir -p "$project/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project/.claude/settings.json"
@@ -28,49 +28,49 @@ print(h["command"])
 )"
 
 if [ -z "$opdracht" ]; then
-  fail "S44 — geen PreToolUse-opdracht gevonden in session-hooks.json"
+  fail "S44 — no PreToolUse command found in session-hooks.json"
   test_klaar
 fi
 
 invoer='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git reset --hard"}}'
 
-# When/Then: de bedrading levert exit 2 op — de blokkade komt er echt uit.
+# When/Then: the wiring produces exit 2 — the block really comes through.
 printf '%s' "$invoer" | (cd "$project" && bash -c "$opdracht") >/dev/null 2>&1
 status=$?
-[ "$status" -eq 2 ] || fail "S44 — de bedrading gaf $status in plaats van 2; de guard blokkeert niet"
+[ "$status" -eq 2 ] || fail "S44 — the wiring returned $status instead of 2; the guard does not block"
 
-# And: de vorm met && en || doet dat níét. Deze controle staat er zodat die
-# vorm niet ooit terugsluipt: hij ziet er werkend uit, maar de || vangt exit 2
-# op en meldt succes.
+# And: the form with && and || does not do that. This check exists so that
+# form never sneaks back in: it looks like it works, but the || catches exit 2
+# and reports success.
 fout_vorm='wf=$(dirname "$(dirname "$(readlink .claude/settings.json 2>/dev/null)")") && [ -x "$wf/hooks/git-guardrails" ] && "$wf/hooks/git-guardrails" || exit 0'
 printf '%s' "$invoer" | (cd "$project" && bash -c "$fout_vorm") >/dev/null 2>&1
 if [ $? -eq 2 ]; then
-  fail "S44 — de aanname klopt niet meer: de &&/||-vorm laat exit 2 wél door"
+  fail "S44 — the assumption no longer holds: the &&/|| form does let exit 2 through"
 fi
 
-# En de geconfigureerde opdracht gebruikt die vorm dus niet.
+# And the configured command therefore does not use that form.
 case "$opdracht" in
-  *'|| exit 0'*) fail "S44 — de hookopdracht gebruikt de vorm die exit 2 opslokt" ;;
+  *'|| exit 0'*) fail "S44 — the hook command uses the form that swallows exit 2" ;;
 esac
 case "$opdracht" in
   *'exec '*) ;;
-  *) fail "S44 — de hookopdracht gebruikt geen exec; de exitstatus komt dan niet door" ;;
+  *) fail "S44 — the hook command does not use exec; the exit status does not then come through" ;;
 esac
 
-# And: de bedrading mag niet afhangen van de toevallige werkdirectory van het
-# hook-proces. Draait die in een submap, dan zou een relatief `readlink` niets
-# vinden en de guard stil uitvallen - zonder enige melding, in tegenstelling
-# tot het luide falen bij ontbrekende jq/python3.
+# And: the wiring must not depend on the incidental working directory of the
+# hook process. If it runs in a subdirectory, a relative `readlink` would find
+# nothing and the guard would silently fail - without any message, unlike the
+# loud failure on missing jq/python3.
 mkdir -p "$project/src/diep"
 printf '%s' "$invoer" | (cd "$project/src/diep" && CLAUDE_PROJECT_DIR="$project" bash -c "$opdracht") >/dev/null 2>&1
 status_diep=$?
-[ "$status_diep" -eq 2 ] || fail "S44 — de bedrading valt uit vanuit een submap (exit $status_diep)"
+[ "$status_diep" -eq 2 ] || fail "S44 — the wiring fails from a subdirectory (exit $status_diep)"
 
-# Legitiem werk moet er ook via de bedrading doorheen komen.
+# Legitimate work must also get through the wiring.
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 ok='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git push origin HEAD"}}'
 printf '%s' "$ok" | (cd "$project" && bash -c "$opdracht") >/dev/null 2>&1
-[ $? -ne 2 ] || fail "S44 — de bedrading blokkeert een legitieme push"
+[ $? -ne 2 ] || fail "S44 — the wiring blocks a legitimate push"
 
 test_klaar

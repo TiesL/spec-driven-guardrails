@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S42 — Elke gemelde wijziging toont de vraag uit zijn eigen bron.
+# S42 — Every reported change shows the question from its own source.
 # Dekt: F4
 
 set -uo pipefail
@@ -9,7 +9,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: de openstaande wijzigingen van een project, uit beide bronnen.
+# Given: the pending changes of a project, from both sources.
 project="$(vers_project doelproject)"
 adopteer "$project"
 
@@ -25,7 +25,7 @@ while IFS= read -r regel; do
   id="${regel#  - }"; id="${id%% —*}"
   getoond="${regel#*— }"
 
-  # De verwachte tekst komt uit de bron waar dit ID staat.
+  # The expected text comes from the source where this ID is defined.
   verwacht="$(awk -v zoek="## $id" '
     $0 == zoek { in_entry = 1; next }
     in_entry && /\*\*Vraag:\*\*/ { sub(/.*\*\*Vraag:\*\* */, ""); print; exit }
@@ -33,9 +33,9 @@ while IFS= read -r regel; do
   ' "$TEST_REPO_ROOT/CHANGES.md")"
   bron="CHANGES.md"
   if [ -z "$verwacht" ]; then
-    # Bewust niet via nfr_vraag(): dat is de functie die hier getest wordt.
-    # Zou dit orakel diezelfde functie gebruiken, dan bewegen verwachting en
-    # werkelijkheid samen mee en meet de test niets.
+    # Deliberately not via nfr_vraag(): that is the function being tested here.
+    # If this oracle used that same function, expectation and reality would
+    # move together and the test would measure nothing.
     verwacht="$(awk '
       /^## Vraag$/ { in_sec = 1; next }
       in_sec && /^## / { exit }
@@ -45,17 +45,17 @@ while IFS= read -r regel; do
   fi
 
   if [ -z "$verwacht" ]; then
-    fail "S42 — geen bron gevonden voor $id"
+    fail "S42 — no source found for $id"
     continue
   fi
   if [ "$getoond" != "$verwacht" ]; then
-    fail "S42 — $id toont niet de vraag uit $bron"
+    fail "S42 — $id does not show the question from $bron"
     echo "    getoond:  $getoond" >&2
     echo "    verwacht: $verwacht" >&2
   fi
   gezien=$((gezien + 1))
 done < "$uitvoer"
 
-[ "$gezien" -ge 7 ] || fail "S42 — maar $gezien regels gecontroleerd; de opzet deugt niet"
+[ "$gezien" -ge 7 ] || fail "S42 — only $gezien lines checked; the setup is flawed"
 
 test_klaar

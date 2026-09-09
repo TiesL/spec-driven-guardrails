@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S27 — Ontbrekende ankers degraderen de scope, ze blokkeren hem niet.
+# S27 — Missing anchors degrade the scope, they don't block it.
 # Dekt: F11
 
 set -uo pipefail
@@ -22,8 +22,8 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | spec-security | ja | 2026-01-01 | van toepassing |
 EOF
 
-# Een PRD.md zonder het door F4 geplaatste anker — bijvoorbeeld een project dat
-# de sectie met de hand schreef vóór de generator bestond.
+# A PRD.md without the anchor placed by F4 — for example a project that wrote
+# the section by hand before the generator existed.
 cat > "$project/PRD.md" <<'EOF'
 # PRD
 
@@ -39,19 +39,19 @@ stderr="$SANDBOX/stderr.txt"
 status=$?
 
 if [ "$status" -ne 0 ]; then
-  fail "S27 — een ontbrekend anker hoort niet te blokkeren, exitstatus was $status"
+  fail "S27 — a missing anchor should not block, exit status was $status"
 fi
 
-# Then: de skill valt terug op de kopnaam uit het register (Security, uit
-# nfr/spec-security.md) in plaats van niets te melden.
+# Then: the skill falls back to the heading name from the register (Security,
+# from nfr/spec-security.md) instead of reporting nothing.
 if ! grep -qx 'spec-security: Security' "$stdout"; then
-  fail "S27 — viel niet terug op de kopnaam uit het register"
+  fail "S27 — did not fall back to the heading name from the register"
   cat "$stdout" >&2
 fi
 
-# And: hij meldt expliciet dat het anker ontbreekt.
+# And: it explicitly reports that the anchor is missing.
 if ! grep -q 'anker' "$stderr" || ! grep -q 'ontbreekt' "$stderr"; then
-  fail "S27 — meldde niet expliciet dat het anker ontbreekt"
+  fail "S27 — did not explicitly report that the anchor is missing"
   cat "$stderr" >&2
 fi
 

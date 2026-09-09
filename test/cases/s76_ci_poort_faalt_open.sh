@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# S76 — De CI-poort faalt open als de CI-opvraging zelf mislukt.
+# S76 — The CI gate fails open when the CI query itself fails.
 # Dekt: F8
 #
-# De review-marker is aanwezig (dus de eerste controle slaagt); de CI-check
-# zelf faalt (geen netwerk, gh-fout, wat dan ook). Dezelfde grondregel als
-# overal in deze guard: de controle is nooit het commando dat vastloopt.
+# The review marker is present (so the first check passes); the CI check
+# itself fails (no network, gh error, whatever). Same ground rule as
+# everywhere in this guard: the check is never the command that gets stuck.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -33,7 +33,7 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S76 — verwacht doorgang (exit 0) als de CI-opvraging faalt, kreeg $status. Uitvoer: $uitvoer"
-assert_contains "S76 — luide waarschuwing over de overgeslagen CI-controle" "warning" "$uitvoer"
+[ "$status" -eq 0 ] || fail "S76 — expected passthrough (exit 0) when the CI query fails, got $status. Output: $uitvoer"
+assert_contains "S76 — loud warning about the skipped CI check" "warning" "$uitvoer"
 
 test_klaar

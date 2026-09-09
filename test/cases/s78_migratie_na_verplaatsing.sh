@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# S78 — Eén 'adopt.sh'-run wijst een project met verhuisde symlinks (bijv. na
-# de W32/#56-hernoeming) volledig om naar de nieuwe locatie.
+# S78 — A single 'adopt.sh' run fully repoints a project with relocated symlinks
+# (e.g. after the W32/#56 rename) to the new location.
 # Dekt: W32 AC4
 
 set -uo pipefail
@@ -11,33 +11,33 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een project geadopteerd vanuit een "oude" checkout-locatie.
+# Given: a project adopted from an "old" checkout location.
 oud="$(sandbox_copy_repo oude-checkout)"
 project="$(vers_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$oud" "$oud/adopt.sh" "$project" >/dev/null 2>&1
 
 [ "$(readlink "$project/CLAUDE.md")" = "$oud/WORKFLOW.md" ] \
-  || fail "S78 — voorbereiding: CLAUDE.md wijst niet naar de oude locatie"
+  || fail "S78 — setup: CLAUDE.md does not point to the old location"
 [ "$(readlink "$project/.claude/settings.json")" = "$oud/settings/session-hooks.json" ] \
-  || fail "S78 — voorbereiding: settings.json wijst niet naar de oude locatie"
+  || fail "S78 — setup: settings.json does not point to the old location"
 
-# When: de checkout "verhuist" (simuleert een repo-hernoeming: nieuwe map,
-# oude is weg) en adopt.sh draait opnieuw, nu met de nieuwe locatie.
+# When: the checkout "relocates" (simulates a repo rename: new directory,
+# old one is gone) and adopt.sh runs again, now with the new location.
 nieuw="$SANDBOX/nieuwe-checkout"
 mv "$oud" "$nieuw"
 SPEC_DRIVEN_GUARDRAILS_DIR="$nieuw" "$nieuw/adopt.sh" "$project" >/dev/null 2>&1
 
-# Then: beide symlinks wijzen nu naar de nieuwe locatie, in één handeling.
+# Then: both symlinks now point to the new location, in a single action.
 [ "$(readlink "$project/CLAUDE.md")" = "$nieuw/WORKFLOW.md" ] \
-  || fail "S78 — CLAUDE.md wijst na de migratie niet naar de nieuwe locatie"
+  || fail "S78 — CLAUDE.md does not point to the new location after the migration"
 [ "$(readlink "$project/.claude/settings.json")" = "$nieuw/settings/session-hooks.json" ] \
-  || fail "S78 — settings.json wijst na de migratie niet naar de nieuwe locatie"
+  || fail "S78 — settings.json does not point to the new location after the migration"
 
-# And: een derde run is een no-op — geen foutmelding, geen wijziging.
+# And: a third run is a no-op — no error, no change.
 na_eerste="$(readlink "$project/CLAUDE.md")"
 SPEC_DRIVEN_GUARDRAILS_DIR="$nieuw" "$nieuw/adopt.sh" "$project" >/dev/null 2>&1 \
-  || fail "S78 — een herhaalde run na migratie faalde"
+  || fail "S78 — a repeated run after migration failed"
 [ "$(readlink "$project/CLAUDE.md")" = "$na_eerste" ] \
-  || fail "S78 — een herhaalde run na migratie veranderde de symlink opnieuw"
+  || fail "S78 — a repeated run after migration changed the symlink again"
 
 test_klaar
