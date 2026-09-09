@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S29 — De Wegwijzer lost elk verplaatst onderwerp in één sprong op.
+# S29 — The routing table resolves every moved topic in a single jump.
 # Dekt: F12
 
 set -uo pipefail
@@ -8,7 +8,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 workflow="$TEST_REPO_ROOT/WORKFLOW.md"
-[ -f "$workflow" ] || { fail "S29 — WORKFLOW.md ontbreekt"; test_klaar "S29"; }
+[ -f "$workflow" ] || { fail "S29 — WORKFLOW.md is missing"; test_klaar "S29"; }
 
 alle_skills="$(cd "$TEST_REPO_ROOT/skills" 2>/dev/null && ls -d */ 2>/dev/null | sed 's#/$##')"
 
@@ -18,31 +18,31 @@ controleer_precies_een_rij() {
   rijen="$(wegwijzer_rijen "$workflow" | grep -i "$term" || true)"
   aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
   if [ "$aantal" -ne 1 ]; then
-    fail "S29 — '$term' levert $aantal Wegwijzer-rijen op, 1 verwacht"
+    fail "S29 — '$term' yields $aantal routing table rows, 1 expected"
     return
   fi
   skill="$(skill_van_rij "$rijen")"
   printf '%s\n' "$alle_skills" | grep -qxF "$skill" \
-    || fail "S29 — '$term' wijst naar '$skill', dat geen bestaande skill is"
+    || fail "S29 — '$term' points to '$skill', which is not an existing skill"
   [ "$skill" = "$verwachte_skill" ] \
-    || fail "S29 — '$term' wijst naar '$skill', '$verwachte_skill' verwacht"
+    || fail "S29 — '$term' points to '$skill', expected '$verwachte_skill'"
 }
 
-controleer_precies_een_rij "kwaliteitsreview" "pre-merge-review"
-controleer_precies_een_rij "onderbouwingsplicht" "adoption-registry"
-controleer_precies_een_rij "adoptieregistratie" "adoption-registry"
+controleer_precies_een_rij "quality review" "pre-merge-review"
+controleer_precies_een_rij "substantiation requirement" "adoption-registry"
+controleer_precies_een_rij "adoption registry" "adoption-registry"
 controleer_precies_een_rij "deploy-guards" "deploy-guards"
 
-# Onderbouwingsplicht en adoptieregistratie landen in dezelfde skill, maar
-# horen twee eigen rijen te zijn, niet stilzwijgend één samengevoegde rij.
-rij_onderbouwing="$(wegwijzer_rijen "$workflow" | grep -i "onderbouwingsplicht" || true)"
-rij_adoptie="$(wegwijzer_rijen "$workflow" | grep -i "adoptieregistratie" || true)"
+# Substantiation requirement and adoption registry land in the same skill,
+# but should be two separate rows, not silently merged into one.
+rij_onderbouwing="$(wegwijzer_rijen "$workflow" | grep -i "substantiation requirement" || true)"
+rij_adoptie="$(wegwijzer_rijen "$workflow" | grep -i "adoption registry" || true)"
 [ -z "$rij_onderbouwing" ] || [ -z "$rij_adoptie" ] || [ "$rij_onderbouwing" != "$rij_adoptie" ] \
-  || fail "S29 — onderbouwingsplicht en adoptieregistratie delen dezelfde Wegwijzer-rij"
+  || fail "S29 — substantiation requirement and adoption registry share the same routing table row"
 
-# Branching is niet verplaatst: geen Wegwijzer-rij nodig, de sectie blijft
-# direct in WORKFLOW.md staan.
-grep -qi '^## Branchstrategie' "$workflow" \
-  || fail "S29 — 'Branchstrategie' staat niet meer direct in WORKFLOW.md"
+# Branching is not moved: no routing table row needed, the section stays
+# directly in WORKFLOW.md.
+grep -qi '^## Branch strategy' "$workflow" \
+  || fail "S29 — 'Branch strategy' is no longer directly in WORKFLOW.md"
 
 test_klaar "S29"
