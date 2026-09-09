@@ -1,159 +1,159 @@
-# PRD — claude-workflow, release "Van proza naar mechanisme"
+# PRD — claude-workflow, release "From prose to mechanism"
 
-**Status:** As-built voor epic #11 (gesloten, uitgeleverd 2026-09-06 — zie
-`CHANGELOG.md`); "Besloten in W29 (#53)" hieronder stuurt het lopende epic #52.
+**Status:** As-built for epic #11 (closed, shipped 2026-09-06 — see
+`CHANGELOG.md`); "Besloten in W29 (#53)" below steers the ongoing epic #52.
 
 ---
 
 ## Context
 
-`spec-driven-guardrails` (voorheen `claude-workflow`, hernoemd in W32/#56) is de
-gedeelde bron van waarheid voor Ties' persoonlijke Git/GitHub-workflow,
-geadopteerd door vier projecten via lokale symlinks.
+`spec-driven-guardrails` (formerly `claude-workflow`, renamed in W32/#56) is the
+shared source of truth for Ties' personal Git/GitHub workflow, adopted by
+four projects via local symlinks.
 
-Dit document is het geïntegreerde plan voor epic #11, dat drie eerder los
-aangemaakte epics samenvoegde nadat de kwaliteitsreview op PR #6 structurele
-problemen en een traceability-gat blootlegde — zie `CHANGELOG.md` voor de
-volledige voorgeschiedenis en de volgordebesluiten die daaruit volgden.
+This document is the integrated plan for epic #11, which merged three
+earlier, separately created epics after the quality review on PR #6 exposed
+structural problems and a traceability gap — see `CHANGELOG.md` for the full
+history and the ordering decisions that followed from it.
 
-**De rode draad**: dit repo schrijft conventies voor die het zelf niet
-controleert. De NFR-lijst staat op twee plekken en wordt met de hand synchroon
-gehouden. De predicaatlogica staat twee keer, de predicaatlijst zelfs drie keer.
-"Nooit rechtstreeks naar `main`" is een afspraak zonder slot. De
-onderbouwingsplicht is proza dat geen script kan zien. De traceabilityvelden zijn
-vrije tekst die niemand leest.
+**The common thread**: this repo prescribes conventions it doesn't check itself.
+The NFR list lives in two places and is kept in sync by hand. The predicate
+logic exists twice, the predicate list even three times. "Never directly to
+`main`" is an agreement with no lock. The substantiation requirement is prose
+that no script can see. The traceability fields are free text nobody reads.
 
-Het meetbare gevolg, over vier projecten en 27 gemergede PR's: **nul** PR's
-verwijzen naar een issue, **nul** hebben een review, **nul** scenario's hebben een
-dekkingsveld, en `kwaliteitsreview-voor-merge` is door geen enkel project ooit
-beantwoord. De conventies bestaan; de naleving is nihil.
+The measurable consequence, across four projects and 27 merged PRs: **zero**
+PRs reference an issue, **zero** have a review, **zero** scenarios have a
+coverage field, and `kwaliteitsreview-voor-merge` has never been answered by
+any project. The conventions exist; compliance is nil.
 
-Deze release verplaatst die conventies van proza naar mechanisme.
+This release moves those conventions from prose to mechanism.
 
 ---
 
-## Architectuur
+## Architecture
 
-Vier lagen, van hard naar zacht afdwingbaar. **Waar handhaving mogelijk is, geen proza.**
+Four layers, from hard to soft enforceability. **Where enforcement is possible, no prose.**
 
-| Laag | Mechanisme | Dwingt af? | Wat er ligt |
+| Layer | Mechanism | Enforces? | What's there |
 |---|---|---|---|
-| 1 | **Hooks** (`settings/session-hooks.json`) | Ja, hard | Git-guardrails (`PreToolUse`), merge-guard, fetch/push, melding openstaande wijzigingen |
-| 2 | **Scripts + `check`** | Ja, in CI | Predicaten, NFR-consistentie, traceability, regressietests |
-| 3 | **Skills** (`skills/<naam>/SKILL.md`) | Nee — laadt op maat | Deploy, adoptieprotocol, review, TDD, bugdiagnose |
-| 4 | **Proza** (`WORKFLOW.md` → `CLAUDE.md`) | Nee | Alleen wat élke sessie nodig heeft |
+| 1 | **Hooks** (`settings/session-hooks.json`) | Yes, hard | Git guardrails (`PreToolUse`), merge guard, fetch/push, outstanding-changes notice |
+| 2 | **Scripts + `check`** | Yes, in CI | Predicates, NFR consistency, traceability, regression tests |
+| 3 | **Skills** (`skills/<name>/SKILL.md`) | No — loads on demand | Deploy, adoption protocol, review, TDD, bug diagnosis |
+| 4 | **Prose** (`WORKFLOW.md` → `CLAUDE.md`) | No | Only what every session needs |
 
-### Correctie op de aanname in #9
+### Correction to the assumption in #9
 
-#9 stelt: *"Prozabeleid verwatert; een aangeroepen skill niet."* Dat is half waar,
-en het onderscheid bepaalt wat deze release kan beloven.
+#9 states: *"Prose policy erodes; an invoked skill doesn't."* That's half true,
+and the distinction determines what this release can promise.
 
-Geverifieerd in de documentatie: **een hook kan een skill niet aanroepen.** Hij kan
-er via `systemMessage` naar verwijzen, maar Claude mag dat negeren. Skills geven
-**lokaliteit en lagere tokenkosten** — de tekst laadt vers op het moment dat hij
-telt — maar **geen handhaving**. De handhavingswinst komt van laag 1 en 2.
+Verified in the documentation: **a hook cannot invoke a skill.** It can
+reference one via `systemMessage`, but Claude may ignore that. Skills provide
+**locality and lower token cost** — the text loads fresh at the moment it
+matters — but **no enforcement**. The enforcement gain comes from layers 1 and 2.
 
-### Twee harde randvoorwaarden
+### Two hard constraints
 
-**Bash 3.2.** macOS levert `/bin/bash` 3.2.57, en hooks draaien non-interactief met
-een minimale `PATH`. Geen `declare -A`, geen `mapfile`, geen `${var,,}`. Set-
-vergelijkingen dus via gesorteerde tempfiles en `diff`/`comm`, niet via
-associatieve arrays.
+**Bash 3.2.** macOS ships `/bin/bash` 3.2.57, and hooks run non-interactively with
+a minimal `PATH`. No `declare -A`, no `mapfile`, no `${var,,}`. Set
+comparisons therefore go via sorted tempfiles and `diff`/`comm`, not
+associative arrays.
 
-**`settings/session-hooks.json` mag niet verplaatsen.** De SessionStart-hook
-lokaliseert dit repo via `dirname(dirname(readlink .claude/settings.json))`. Dat
-pad verplaatsen breekt elk geadopteerd project stil — die symlinks zijn lokaal,
-ongetrackt, en de keten eindigt op `|| true`.
+**`settings/session-hooks.json` must not move.** The SessionStart hook
+locates this repo via `dirname(dirname(readlink .claude/settings.json))`. Moving
+that path silently breaks every adopted project — those symlinks are local,
+untracked, and the chain ends in `|| true`.
 
-Daaruit volgt een ontwerpregel die de hele release raakt: **wat gesymlinkt is,
-is direct live in alle vier de projecten na een `git pull`; wat `adopt.sh`
-installeert, niet.** Elke wijziging aan `session-hooks.json` moet dus veilig zijn
-in een project dat `adopt.sh` nog niet opnieuw draaide.
-
----
-
-## Databron(nen)
-
-N.v.t., onderbouwd. Dit repo heeft geen datalaag; zijn "bronnen" zijn getrackte
-markdown-bestanden (`CHANGES.md`, straks `nfr/*.md`) die door bash-scripts
-geparseerd worden. De parseerbaarheid daarvan is een functionele eis (F3), geen
-databron in de zin van dit sjabloon.
+From that follows a design rule that touches the whole release: **what's
+symlinked is live in all four projects immediately after a `git pull`; what
+`adopt.sh` installs is not.** So every change to `session-hooks.json` must be
+safe in a project that hasn't re-run `adopt.sh` yet.
 
 ---
 
-## Functionaliteit
+## Data source(s)
 
-### F1 — Testharnas en eigen `check`
+N/A, substantiated. This repo has no data layer; its "sources" are tracked
+markdown files (`CHANGES.md`, soon `nfr/*.md`) parsed by bash scripts. Their
+parseability is a functional requirement (F3), not a data source in the
+sense this template means.
 
-Pure bash, geen framework. `./check` draait `bash -n` over alle scripts,
-valideert `settings/session-hooks.json` als JSON (`jq empty`, anders
-`python3 -m json.tool` — het bestand is gesymlinkt, dus één typefout is per
-direct kapot in vier projecten en `bash -n` ziet het niet), draait `shellcheck`
-als die er is (waarschuwen, niet eisen), dan `test/run.sh`. Elke test draait in
-een `mktemp -d`-sandbox met geïnjecteerde `HOME` en `CLAUDE_WORKFLOW_DIR`, met
-een harde weigering te draaien als `HOME` na sandboxopzet nog de echte home is.
+---
 
-Maakt R1–R9 en T1–T5 uitvoerbaar in plaats van proza-vinkjes in een PR-body.
-Levert tevens het `check`-commando dat dit repo zelf voorschrijft maar niet heeft.
+## Functionality
 
-**Geen `package.json` toevoegen** om `templates/ci.yml` te kunnen hergebruiken:
-dat zou het eigen `heeft-package-json`-predicaat omzetten en veranderen wat de
-scripts over dit repo zeggen. CI roept `./check` rechtstreeks aan — precies het
-"andere stack"-geval dat de skill `check-convention` al beschrijft.
+### F1 — Test harness and its own `check`
 
-### F2 — Vastgelegde nulmeting als fixtures
+Pure bash, no framework. `./check` runs `bash -n` over all scripts,
+validates `settings/session-hooks.json` as JSON (`jq empty`, otherwise
+`python3 -m json.tool` — the file is symlinked, so a single typo is
+instantly broken in four projects and `bash -n` won't see it), runs `shellcheck`
+if present (warn, not require), then `test/run.sh`. Every test runs in a
+`mktemp -d` sandbox with injected `HOME` and `CLAUDE_WORKFLOW_DIR`, with a
+hard refusal to run if `HOME` is still the real home after sandbox setup.
 
-De huidige uitkomst voor alle **vier** adopters, ingevroren in
-`test/fixtures/nulmeting/` als gouden sets, vóór er iets verandert.
+Makes R1–R9 and T1–T5 executable instead of prose checkboxes in a PR body.
+Also delivers the `check` command this repo itself prescribes but doesn't have.
 
-Een handmatige dry run tegen kopieën is niet herhaalbaar; invriezen als fixture
-maakt R9 een permanente regressietest. De bronnen staan alle vier lokaal —
-`tennis-registration` en `tennis-invoicing` als volwaardige git-repo's (eigen
-`.git`, eigen remote, eigen `WORKFLOW-ADOPTIE.md`) genest in `tennis-admin/`.
+**Do not add a `package.json`** just to reuse `templates/ci.yml`: that would
+flip this repo's own `heeft-package-json` predicate and change what the
+scripts say about this repo. CI calls `./check` directly — exactly the
+"different stack" case the `check-convention` skill already describes.
 
-`a2t-emails` is de vierde en heeft **helemaal geen** `WORKFLOW-ADOPTIE.md`. Zijn
-nulmeting is dus "alles openstaand" — vastleggen zoals gevonden, niet eerst
-repareren, anders legt de fixture de reparatie vast in plaats van de toestand.
+### F2 — Recorded baseline as fixtures
 
-**W28:** de vraagset komt sinds W5 uit twee bronnen, `CHANGES.md` én `nfr/`, en
-tot W28 was alleen de eerste ingevroren (`CHANGES.md.momentopname`).
-`nfr.momentopname/` (verbatim kopie van `nfr/`, één `cp -r`) sluit dat gat —
-zie `test/fixtures/nulmeting/LEESMIJ.md`.
+The current outcome for all **four** adopters, frozen in
+`test/fixtures/nulmeting/` as golden sets, before anything changes.
 
-### F3 — Gedeelde parser én predicaten (`lib/changes.sh`)
+A manual dry run against copies isn't repeatable; freezing it as a fixture
+makes R9 a permanent regression test. All four sources live locally —
+`tennis-registration` and `tennis-invoicing` as full-fledged git repos (own
+`.git`, own remote, own `WORKFLOW-ADOPTIE.md`) nested inside `tennis-admin/`.
 
-Niet alleen de predicaten zijn gedupliceerd — de hele `CHANGES.md`-parser is dat
-(`## `-koppen, `${regel##*\*\* }`, de `case`-skeletten). Beide verhuizen.
+`a2t-emails` is the fourth and has **no** `WORKFLOW-ADOPTIE.md` at all. Its
+baseline is therefore "everything outstanding" — record it as found, don't fix
+it first, or the fixture would capture the fix instead of the actual state.
+
+**W28:** the question set has come from two sources since W5, `CHANGES.md` and
+`nfr/`, and until W28 only the first was frozen (`CHANGES.md.momentopname`).
+`nfr.momentopname/` (a verbatim copy of `nfr/`, a single `cp -r`) closes that
+gap — see `test/fixtures/nulmeting/LEESMIJ.md`.
+
+### F3 — Shared parser and predicates (`lib/changes.sh`)
+
+It's not just the predicates that are duplicated — the entire `CHANGES.md`
+parser is too (`## ` headings, `${regel##*\*\* }`, the `case` skeletons). Both move.
 
 ```
-predicaat_waar <predicaat> <project_dir>   # de enige predicaatlogica
+predicaat_waar <predicaat> <project_dir>   # the sole predicate logic
 itereer_entries <bron> <callback>          # callback <id> <standaard> <predicaat>
 ```
 
-De **bewuste asymmetrie** (`adopt.sh` slaat `Standaard: vraag` over,
-`pending-changes.sh` negeert `Standaard`) komt in de callback bij de aanroeper te
-liggen, met aan beide kanten een comment dat naar de ander verwijst. Beter dan een
-`--negeer-standaard`-vlag, die het verschil in de bibliotheek verstopt en het op
-een ongelukje laat lijken.
+The **deliberate asymmetry** (`adopt.sh` skips `Standaard: vraag`,
+`pending-changes.sh` ignores `Standaard`) lives in the caller's callback, with a
+comment on both sides pointing to the other. Better than a `--negeer-standaard`
+flag, which would hide the difference inside the library and make it look
+like an accident.
 
-De prozalijst in `CHANGES.md` verwijst voortaan naar de bibliotheek in plaats van
-de predicaten een derde keer op te sommen.
+The prose list in `CHANGES.md` now refers to the library instead of listing
+the predicates a third time.
 
-### F4 — Eén bron van waarheid voor de NFR's: een `nfr/`-register
+### F4 — One source of truth for the NFRs: an `nfr/` registry
 
-De NFR's staan nu op **twee canonieke plekken** in dit repo: als `spec-*`-entries
-in `CHANGES.md` (de adoptievraag) en als `###`-subsecties in `templates/PRD.md` (de
-invulhulp). Geen van beide is logisch de eigenaar; het zijn twee consumenten van
-dezelfde vijftien begrippen. De juiste oplossing is dus niet "koppel A aan B", maar
-**abstraheer naar C en laat A en B ernaar verwijzen**.
+The NFRs currently live in **two canonical places** in this repo: as
+`spec-*` entries in `CHANGES.md` (the adoption question) and as `###`
+subsections in `templates/PRD.md` (the fill-in guidance). Neither is logically
+the owner; they're two consumers of the same fifteen concepts. The right fix
+is therefore not "link A to B," but **abstract into C and let A and B point
+to it**.
 
 ```
 nfr/spec-security.md
 nfr/spec-data-integriteit.md
-…  (vijftien bestanden)
+…  (fifteen files)
 ```
 
-Elk bestand draagt alles wat over die ene NFR bekend is:
+Each file carries everything known about that one NFR:
 
 ```markdown
 ---
@@ -178,722 +178,731 @@ Wie mag wat? Welke rechten zijn minimaal nodig? Waar staan secrets, en hoe komen
 ze niet in git terecht?
 ```
 
-Wat daarmee verdwijnt:
+What this eliminates:
 
-- **Het naamgevingsprobleem lost op in plaats van te worden opgevangen.** `id` en
-  `kop` staan in hetzelfde bestand, dus `spec-compliance` ↔ "Compliance en
-  auditeerbaarheid" vraagt geen normalisatie, geen stopwoordregel, geen aliastabel.
-- **`CHANGES.md` krimpt van 27 naar 12 entries.** De scripts itereren `CHANGES.md`
-  én `nfr/*.md`. Dat dient de groeiende leeslast directer dan het archief alleen:
-  vijftien van de zevenentwintig entries verlaten het bestand dat elk project bij
-  elke sessie langsloopt.
-- **Retirement wordt een veld** (`status: geretireerd`) in plaats van een
-  bestandsverhuizing, voor deze vijftien.
+- **The naming problem gets solved instead of managed.** `id` and `kop` live
+  in the same file, so `spec-compliance` ↔ "Compliance en auditeerbaarheid"
+  needs no normalization, no stopword rule, no alias table.
+- **`CHANGES.md` shrinks from 27 to 12 entries.** The scripts iterate
+  `CHANGES.md` and `nfr/*.md`. That serves the growing reading burden more
+  directly than the archive alone: fifteen of the twenty-seven entries leave
+  the file every project walks through every session.
+- **Retirement becomes a field** (`status: geretireerd`) instead of a file
+  move, for these fifteen.
 
-Het veld `productie-poort` draagt de tweede poort van F6: welke NFR's vóór de
-eerste productie-uitrol onderbouwd moeten zijn, is hier een vastgelegd besluit in
-plaats van een lijstje in een script.
+The `productie-poort` field carries F6's second gate: which NFRs must be
+substantiated before the first production rollout is now a recorded decision
+instead of a list in a script.
 
-**`templates/PRD.md` wordt gegenereerd** — alleen het NFR-blok, uit `kop` +
-`Invulhulp`, met het `id` als HTML-commentaar erin. `check` faalt als het
-ingecheckte blok niet overeenkomt met wat de generator produceert. Dat de PRD een
-build-artefact wordt, is de prijs; hij is het waard omdat de generator meteen ook
-het anker plaatst waarop F11 leunt.
+**`templates/PRD.md` is generated** — only the NFR block, from `kop` +
+`Invulhulp`, with the `id` as an HTML comment inside it. `check` fails if the
+checked-in block doesn't match what the generator produces. The PRD becoming
+a build artifact is the price; it's worth it because the generator also
+plants the anchor F11 leans on.
 
-**Alleen de vijftien NFR's verhuizen.** De twaalf overige entries (`proces-*`,
-`test-*`, `ci-conventie`, `deploy-guards`) hebben geen tweede consument en dus geen
-duplicatieprobleem.
+**Only the fifteen NFRs move.** The remaining twelve entries (`proces-*`,
+`test-*`, `ci-conventie`, `deploy-guards`) have no second consumer and
+therefore no duplication problem.
 
-### F5 — Retirement met archief (`CHANGES-ARCHIEF.md`)
+### F5 — Retirement with an archive (`CHANGES-ARCHIEF.md`)
 
-Voor de twaalf entries die in `CHANGES.md` blijven. Geretireerde entries verhuizen
-mét ID en reden, zodat een project dat de entry ooit beantwoordde hem via `grep`
-over beide bestanden terugvindt.
+For the twelve entries that stay in `CHANGES.md`. Retired entries move with
+their ID and reason, so a project that once answered the entry can still
+find it via `grep` across both files.
 
-Tegelijk de **sectiescheidingen ontdubbelzinnigen**: `## Proces en ontwerpdiepte`
-en `## Niet-functionele kenmerken (NFR's)` worden `###` of vet. Nu is een
-sectiescheiding voor de parser niet te onderscheiden van een geretireerde entry.
-Daarna betekent `## ` in `CHANGES.md` onvoorwaardelijk "entry", en kan de gedeelde
-parser waarschuwen bij een entry zonder `Van toepassing als`.
+At the same time, **disambiguate the section separators**:
+`## Proces en ontwerpdiepte` and `## Niet-functionele kenmerken (NFR's)`
+become `###` or bold. Right now a section separator is indistinguishable
+from a retired entry to the parser. After this, `## ` in `CHANGES.md`
+unconditionally means "entry," and the shared parser can warn on an entry
+without a `Van toepassing als`.
 
-Beide bestaande retirementvormen worden expliciet benoemd:
-verwijderen-als-nooit-beantwoord versus bevriezen-als-wel-beantwoord.
+Both existing retirement forms get named explicitly:
+remove-if-never-answered versus freeze-if-already-answered.
 
-### F6 — De onderbouwingsplicht wordt zichtbaar — zonder R9 te breken
+### F6 — The substantiation requirement becomes visible — without breaking R9
 
-`beantwoord()` in `pending-changes.sh` kijkt nu alleen *of er een rij is*, nooit
-wat erin staat. Een vers geadopteerd project meldt dus niets openstaand terwijl
-alle zeventien geseede rijen nog "vereist onderbouwing" dragen.
+`beantwoord()` in `pending-changes.sh` currently only checks *whether a row
+exists*, never what's in it. So a freshly adopted project reports nothing
+outstanding while all seventeen seeded rows still carry "vereist onderbouwing."
 
-**Niet `beantwoord()` aanpassen.** Dat zou de openstaand-set veranderen en
-daarmee R9 breken — de belangrijkste regressietest van de release. In plaats
-daarvan een **tweede, aparte melding**:
+**Don't change `beantwoord()`.** That would change the outstanding set and
+thereby break R9 — the release's most important regression test. Instead, a
+**second, separate notice**:
 
 ```
 17 rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing.
 Volg de skill `adoption-registry`.
 ```
 
-Geteld door het antwoordbestand te grepen, niet door te veranderen wat "beantwoord"
-betekent. R9-neutraal per constructie.
+Counted by grepping the answer file, not by changing what "answered" means.
+R9-neutral by construction.
 
-Hierbij ook de **verouderde-adoptie-melding**: mist het project skills die in
-`$CLAUDE_WORKFLOW_DIR/skills` wél bestaan, dan meldt de hook dat `adopt.sh`
-opnieuw moet draaien. Zonder dat landt deze release en houden drie van de vier
-projecten stilzwijgend de oude wereld.
+Also included here: the **outdated-adoption notice**. If the project is
+missing skills that do exist in `$CLAUDE_WORKFLOW_DIR/skills`, the hook
+reports that `adopt.sh` needs to run again. Without that, this release ships
+and three of the four projects silently keep the old world.
 
-**Besloten: gefaseerd onderbouwen, geborgd met drie poorten.** Zeventien rijen
-in één keer wegwerken is onrealistisch huiswerk; het signaal alleen wordt dan
-chronische ruis. Daarom onderbouwen bij eerste aanraking, met voor elke rij een
-uiterste moment:
+**Decided: substantiate in phases, secured by three gates.** Clearing
+seventeen rows at once is unrealistic homework; the signal alone would then
+become chronic noise. So substantiate on first contact, with a deadline for
+each row:
 
-1. **Per PR** — raakt een PR een onderwerp waarvan de rij nog "vereist
-   onderbouwing" zegt, dan is dat een reviewbevinding in `pre-merge-review` en
-   wordt de rij vóór de merge beantwoord (F11).
-2. **Vóór de eerste productie-deploy** — de deploy-guards eisen dat geen rij met
-   `productie-poort: ja` nog "vereist onderbouwing" zegt (F4).
-3. **Elke sessie** — het signaal hierboven blijft; gefaseerd betekent niet
-   onzichtbaar.
+1. **Per PR** — if a PR touches a topic whose row still says "vereist
+   onderbouwing," that's a review finding in `pre-merge-review`, and the row
+   gets answered before the merge (F11).
+2. **Before the first production deploy** — the deploy guards require that no
+   row with `productie-poort: ja` still says "vereist onderbouwing" (F4).
+3. **Every session** — the signal above stays; phased doesn't mean invisible.
 
-Aangeraakt → beantwoord bij die PR; nooit aangeraakt maar kritiek → uiterlijk bij
-de eerste productie-uitrol; de rest → zichtbaar tot je eraan toekomt.
+Touched → answered on that PR; never touched but critical → by the first
+production rollout at the latest; the rest → visible until you get to it.
 
-### F7 — Git-guardrails als `PreToolUse`-hook
+### F7 — Git guardrails as a `PreToolUse` hook
 
-Blokkeert `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
-`commit` **op `main`** en `push` **naar `main`**.
+Blocks `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
+`commit` **on `main`**, and `push` **to `main`**.
 
-**`commit` op `main` blokkeren is een bewuste uitbreiding**, op verzoek van Ties
-toegevoegd nadat bleek dat alleen de push blokkeren een slecht moment oplevert:
-je werkt een hele sessie door, commit alles op `main`, en loopt pas aan het eind
-tegen de muur. Erger nog — de `SessionEnd`-hook slaat zijn push over op `main`,
-dus dat werk bereikt de remote helemaal niet meer, terwijl je vóór deze guard
-nog handmatig had kunnen pushen. De blokkade zet dat moment naar voren; F18
-sluit de keerzijde ervan.
+**Blocking `commit` on `main` is a deliberate extension**, added at Ties'
+request after it turned out that blocking only the push creates a bad moment:
+you work through an entire session, commit everything on `main`, and only hit
+the wall at the end. Worse — the `SessionEnd` hook skips its push on `main`,
+so that work never reaches the remote at all, whereas before this guard you
+could still have pushed it manually. The block moves that moment earlier;
+F18 addresses the flip side of it.
 
-De melding moet daarom de uitweg noemen (`git checkout -b`) én dat de
-wijzigingen meegaan. Zonder dat blijft het werk *ongecommit*, en dat is
-onveiliger dan de lokale commit die je net tegenhield. Uitzondering: een repo
-zonder commits — de allereerste commit van een nieuw project staat per definitie
-op `main`.
+The message must therefore name the way out (`git checkout -b`) and that the
+changes come along. Without that, the work stays *uncommitted*, which is less
+safe than the local commit it just blocked. Exception: a repo with no
+commits — a new project's very first commit is on `main` by definition.
 
-Dat laatste is **tweeledig**: expliciete refspecs die `main` raken
-(`git push origin main`, `git push origin HEAD:main` — vanaf welke branch dan
-ook) én de toestandsafhankelijke kale push (`git push origin HEAD` terwijl `main`
-is uitgecheckt, dus `git rev-parse --abbrev-ref HEAD` raadplegen). Alleen op de
-huidige branch keyen mist de eerste categorie. `mattpocock`'s versie blokkeert
-*alle* `git push` — hier overnemen zou de verplichte feature-branch-pushes én de
-bestaande `SessionEnd`-hook breken.
+That last case is **two-fold**: explicit refspecs that touch `main`
+(`git push origin main`, `git push origin HEAD:main` — from whichever branch)
+and the state-dependent bare push (`git push origin HEAD` while `main` is
+checked out, so `git rev-parse --abbrev-ref HEAD` needs consulting). Keying
+only on the current branch misses the first category. `mattpocock`'s version
+blocks *all* `git push` — adopting that here would break the mandatory
+feature-branch pushes and the existing `SessionEnd` hook.
 
-Wat deze hook per definitie *niet* ziet, is alles buiten de agentic loop: een
-commando dat Ties zelf in zijn terminal typt komt er nooit langs. Dat gat is
-geen detail van de implementatie maar een eigenschap van `PreToolUse`, en het
-wordt apart geadresseerd in F17.
+What this hook by definition *cannot* see is anything outside the agentic
+loop: a command Ties types himself in his terminal never passes through it.
+That gap isn't an implementation detail but a property of `PreToolUse`, and
+it's addressed separately in F17.
 
-JSON-parsing: `jq` als aanwezig (staat in `/usr/bin` op macOS 26), anders
-`python3`; ontbreken beide, dan luid waarschuwen en toestaan.
+JSON parsing: `jq` if present (ships in `/usr/bin` on macOS 26), otherwise
+`python3`; if both are missing, warn loudly and allow.
 
-**Geen `sed`-vangnet.** Een eerdere versie noemde die als derde laag. Bij nader
-inzien is dat schadelijker dan nuttig: een `sed`-benadering van JSON leest
-strings met escapes verkeerd, en een guard die het commando verkeerd leest kan
-zowel iets onschuldigs blokkeren als iets destructiefs doorlaten — precies de
-twee uitkomsten die hij moet voorkomen. Niets kunnen lezen en dat luid melden
-is eerlijker dan een gok.
+**No `sed` fallback.** An earlier version named that as a third layer. On
+reflection, that's more harmful than useful: a `sed` approach to JSON
+misreads strings with escapes, and a guard that misreads the command can
+either block something harmless or let something destructive through —
+exactly the two outcomes it's supposed to prevent. Being unable to read
+anything and saying so loudly is more honest than a guess.
 
-De hookregel moet `if [ -x … ]; then exec …; fi; exit 0` zijn, **niet**
-`[ -x … ] && … || exit 0` — die tweede vorm slikt exit 2 in en zet de guard stil
-uit terwijl hij geïnstalleerd lijkt.
+The hook rule must be `if [ -x … ]; then exec …; fi; exit 0`, **not**
+`[ -x … ] && … || exit 0` — that second form swallows exit code 2 and
+silently disables the guard while it appears to be installed.
 
-### F8 — Merge-guard: geen merge zonder review-bewijs én groene CI
+### F8 — Merge guard: no merge without review evidence and green CI
 
-Dezelfde `PreToolUse`-mechaniek, tweede case: `gh pr merge` wordt geblokkeerd als
-de PR geen machineherkenbare review-marker draagt (zie F11). De merge is hét
-choke point van de workflow, en de nulmeting (0 reviews op 27 PR's) bewijst dat
-een verplichting zonder slot daar niet werkt — waarschuwen in plaats van
-blokkeren zou dat faalpatroon herhalen.
+Same `PreToolUse` mechanism, second case: `gh pr merge` gets blocked if the
+PR carries no machine-recognizable review marker (see F11). The merge is the
+workflow's real choke point, and the baseline (0 reviews on 27 PRs) proves
+that a requirement with no lock doesn't work there — warning instead of
+blocking would repeat that failure pattern.
 
-**Uitgebreid met een CI-controle (issue #81).** Zes CI-runs op rij faalden
-onopgemerkt na PR #76 — PR #76, #78 en (initieel) #80 zijn allemaal rood
-gemerged, omdat niets in de merge-flow ernaar keek: dit repo heeft geen branch
-protection (privé, geen betaald plan) en `gh pr merge` waarschuwt zelf niet bij
-falende checks. Dezelfde poort die de review-marker controleert, controleert nu
-ook `gh pr checks` op de PR: elke check die niet `pass` of `skipping` is
-(faalt, of loopt nog) blokkeert de merge, met de naam van die check in de
-melding.
+**Extended with a CI check (issue #81).** Six CI runs in a row failed
+unnoticed after PR #76 — PR #76, #78, and (initially) #80 were all merged
+red, because nothing in the merge flow looked at it: this repo has no branch
+protection (private, no paid plan) and `gh pr merge` doesn't itself warn on
+failing checks. The same gate that checks the review marker now also checks
+`gh pr checks` on the PR: any check that isn't `pass` or `skipping` (failing,
+or still running) blocks the merge, naming that check in the message.
 
-Randvoorwaarden, voor beide controles: **faal-open** zonder `gh` of netwerk
-(luid melden, toestaan) — inclusief wanneer een project geen CI heeft
-geadopteerd (geen checks gerapporteerd is geen rode vlag, CI is optioneel, zie
-F6); een onderbouwde `nee`-rij voor `kwaliteitsreview-voor-merge` in
-`WORKFLOW-ADOPTIE.md` schakelt beide controles voor dat project uit (lokale
-grep, geen netwerk); en er is een expliciete overrule die luid meldt wat wordt
-overgeslagen — dezelfde filosofie als bij de deploy-guards.
+Preconditions, for both checks: **fail-open** without `gh` or network (warn
+loudly, allow) — including when a project hasn't adopted CI (no reported
+checks is not a red flag, CI is optional, see F6); a substantiated `nee` row
+for `kwaliteitsreview-voor-merge` in `WORKFLOW-ADOPTIE.md` disables both
+checks for that project (local grep, no network); and there's an explicit
+override that loudly reports what's being skipped — the same philosophy as
+the deploy guards.
 
-### F9 — Skills-infrastructuur in `adopt.sh`
+### F9 — Skills infrastructure in `adopt.sh`
 
-**Per-skill symlinks in een echte `.claude/skills/`-map**, plus het opruimen van
-verweesde workflow-eigen symlinks.
+**Per-skill symlinks in a real `.claude/skills/` directory**, plus cleanup of
+orphaned workflow-owned symlinks.
 
-Eén map-symlink (`.claude/skills -> $CLAUDE_WORKFLOW_DIR/skills`) is verleidelijk —
-één regel, en nieuwe skills liften mee op een `git pull`. Toch afgewezen: het maakt
-de **hele skills-namespace van het project eigendom van `claude-workflow`**.
-`tennis-admin` kan dan nooit een eigen skill hebben zonder te de-adopteren. Dat is
-precies de koppeling die dit repo bestaat om te vermijden. Bovendien is alleen de
-per-skill-vorm gedocumenteerd.
+A single directory symlink (`.claude/skills -> $CLAUDE_WORKFLOW_DIR/skills`)
+is tempting — one line, and new skills ride along on a `git pull`. Rejected
+anyway: it would make the **project's entire skills namespace owned by
+`claude-workflow`**. `tennis-admin` could then never have a skill of its own
+without de-adopting. That's exactly the coupling this repo exists to avoid.
+Moreover, only the per-skill form is documented.
 
-Het opruimen is het deel dat telt: skills worden hernoemd, en een verweesde
-`.claude/skills/oude-naam/` is niet inert — Claude Code meldt er elke sessie een
-laadfout op, in vier projecten tegelijk. Regel: verwijder alleen symlinks die naar
-`$CLAUDE_WORKFLOW_DIR` wijzen én niet meer bestaan. Echte mappen (een projecteigen
-skill) nooit aanraken.
+The cleanup is the part that matters: skills get renamed, and an orphaned
+`.claude/skills/old-name/` isn't inert — Claude Code reports a load error for
+it every session, in four projects at once. Rule: only remove symlinks that
+point at `$CLAUDE_WORKFLOW_DIR` and no longer exist. Never touch real
+directories (a project's own skill).
 
-`.gitignore` krijgt een **beheerd blok** in plaats van losse regels: de lijst gaat
-churnen en de huidige append-only functie kan niets verwijderen. Migratie moet de
-twee bestaande losse regels weghalen, anders staan ze dubbel.
+`.gitignore` gets a **managed block** instead of loose lines: the list is
+going to churn, and the current append-only function can't remove anything.
+Migration must strip the two existing loose lines, or they'd end up duplicated.
 
-### F10 — Het skill-register
+### F10 — The skill register
 
-Namen in het Engels, body en beschrijving in het Nederlands. De naam is een
-identifier die in dezelfde platte namespace staat als `code-review` en
-`security-review`; `kwaliteitsreview-voor-merge` daarnaast leest als een ongelukje.
-Alles wat Ties leest en onderhoudt blijft Nederlands.
+Names in English, body and description in Dutch. The name is an identifier
+that sits in the same flat namespace as `code-review` and `security-review`;
+`kwaliteitsreview-voor-merge` next to those reads like an accident. Everything
+Ties reads and maintains stays Dutch.
 
-| Skill | Aanroep | Wat erin gaat |
+| Skill | Invocation | What goes in it |
 |---|---|---|
-| `pre-merge-review` | model + user | "Kwaliteitsreview vóór de merge" (40 regels) + scoping + de PR-poort uit F13 |
-| `deploy-guards` | model | Deploy-voorwaarden per omgeving (~52 regels) + de productie-poort uit F6 |
-| `check-convention` | model | `check`/`deploy`-naamconventie + CI (~22 regels) |
-| `adoption-registry` | model | Adoptieregistratie (35) + onderbouwingsplicht (15) + protocol uit `USER-CLAUDE.md` |
-| `write-spec` | model + user | Specificeren van werk + `Dekt:`-conventie + `CONTEXT.md`-glossarium |
-| `refactoring-triggers` | model | Complexiteit/debt/refactoring (32 regels) |
-| `tdd-seams` | model + user | Nieuw: seams, rood-vóór-groen, drie anti-patterns |
-| `diagnose-bug` | model | Nieuw: reproductie → hypotheses → regressietest vóór fix |
-| `adopt-workflow` | **user-level** | Adoptievraag + nieuw project opzetten |
+| `pre-merge-review` | model + user | "Quality review before the merge" (40 lines) + scoping + F13's PR gate |
+| `deploy-guards` | model | Deploy conditions per environment (~52 lines) + F6's production gate |
+| `check-convention` | model | `check`/`deploy` naming convention + CI (~22 lines) |
+| `adoption-registry` | model | Adoption registry (35) + substantiation requirement (15) + the protocol from `USER-CLAUDE.md` |
+| `write-spec` | model + user | Specifying work + `Dekt:` convention + `CONTEXT.md` glossary |
+| `refactoring-triggers` | model | Complexity/debt/refactoring (32 lines) |
+| `tdd-seams` | model + user | New: seams, red-before-green, three anti-patterns |
+| `diagnose-bug` | model | New: reproduction → hypotheses → regression test before fix |
+| `adopt-workflow` | **user-level** | Adoption question + setting up a new project |
 
-**Drie keuzes die uitleg verdienen:**
+**Three choices that deserve explanation:**
 
-*De onderbouwingsplicht gaat naar `adoption-registry`, niet `write-spec`.* Hij
-staat nu onder "Specificeren van werk", maar gáát over het beantwoorden van
-`WORKFLOW-ADOPTIE.md`-rijen — hetzelfde onderwerp als de registratiesectie, die
-hem al samengevat herhaalt, en `USER-CLAUDE.md` een derde keer. Eén skill vouwt
-drie kopieën samen.
+*The substantiation requirement goes to `adoption-registry`, not `write-spec`.*
+It currently sits under "Specifying work," but it's actually about answering
+`WORKFLOW-ADOPTIE.md` rows — the same subject as the registry section, which
+already restates it in summary, and `USER-CLAUDE.md` a third time. One skill
+folds three copies into one.
 
-*`adopt-workflow` is de enige user-level skill.* `USER-CLAUDE.md` hangt op
-`~/.claude/CLAUDE.md` en laadt in **niet-geadopteerde** projecten, waar
-`.claude/skills/` niet bestaat. Elke skill waarnaar `USER-CLAUDE.md` verwijst moet
-dus in `~/.claude/skills/` staan, geïnstalleerd door `adopt.sh --user`. Die
-asymmetrie is makkelijk fout te doen en levert een dode verwijzing op in precies de
-projecten waar je het niet merkt.
+*`adopt-workflow` is the only user-level skill.* `USER-CLAUDE.md` sits at
+`~/.claude/CLAUDE.md` and loads in **not-yet-adopted** projects, where
+`.claude/skills/` doesn't exist. So every skill `USER-CLAUDE.md` refers to must
+live in `~/.claude/skills/`, installed by `adopt.sh --user`. That asymmetry is
+easy to get wrong and produces a dead reference in exactly the projects where
+you won't notice.
 
-*`CONTEXT.md` krijgt géén eigen skill.* Het is een sjabloon plus een conventie:
-`templates/CONTEXT.md`, een `CHANGES.md`-entry, en twee zinnen in `write-spec`.
-Negen skills is al de grens van wat samenhangend blijft.
+*`CONTEXT.md` gets no skill of its own.* It's a template plus a convention:
+`templates/CONTEXT.md`, a `CHANGES.md` entry, and two sentences in
+`write-spec`. Nine skills is already the limit of what stays coherent.
 
-### F11 — `pre-merge-review` als uitvoerbare skill
+### F11 — `pre-merge-review` as an executable skill
 
-De sterkste post. `WORKFLOW.md` *vraagt in proza* om een review "met verse context
-en op een ander model". Frontmatter drukt dat letterlijk uit: `context: fork` geeft
-de verse, geïsoleerde context, `model:` pint een ander/zwaarder model,
-`allowed-tools` houdt hem read-only.
+The strongest post. `WORKFLOW.md` *asks in prose* for a review "with fresh
+context and on a different model." Frontmatter expresses that literally:
+`context: fork` gives the fresh, isolated context, `model:` pins a
+different/heavier model, `allowed-tools` keeps it read-only.
 
-De skill leest `WORKFLOW-ADOPTIE.md` → `ja`-beantwoorde `spec-*` → het anker in de
-project-PRD → de reviewscope. Het lezen van de diff wordt gedelegeerd aan de
-bestaande `code-review`-skill; deze skill bezit de *scoping*, de context/model-eis,
-en de "bevindingen in de PR, dan opgelost of onder Technical debt"-stap.
+The skill reads `WORKFLOW-ADOPTIE.md` → `ja`-answered `spec-*` → the anchor in
+the project PRD → the review scope. Reading the diff itself is delegated to
+the existing `code-review` skill; this skill owns the *scoping*, the
+context/model requirement, and the "findings in the PR, then resolved or
+filed under Technical debt" step.
 
-Twee toevoegingen uit de merge-guard en het onderbouwingsbesluit: de skill plaatst
-een **machineherkenbare marker** in zijn bevindingen-comment (waar F8 op keyt), en
-hij behandelt een geraakt onderwerp waarvan de `WORKFLOW-ADOPTIE.md`-rij nog
-"vereist onderbouwing" zegt als reviewbevinding — die rij wordt vóór de merge
-beantwoord (de eerste poort van F6).
+Two additions from the merge-guard and substantiation decisions: the skill
+places a **machine-recognizable marker** in its findings comment (which F8
+keys on), and it treats a touched topic whose `WORKFLOW-ADOPTIE.md` row still
+says "vereist onderbouwing" as a review finding — that row gets answered
+before the merge (F6's first gate).
 
-### F12 — De kern: `WORKFLOW.md` + Wegwijzer
+### F12 — The core: `WORKFLOW.md` + routing table
 
-`WORKFLOW.md` krimpt van 250 naar ~85 regels en houdt wat élke sessie nodig heeft:
-branchstrategie, sessiestart, tijdens het werk, de vierstapsvolgorde van Afronden,
-en het slot.
+`WORKFLOW.md` shrinks from 250 to ~85 lines and keeps what every session
+needs: branch strategy, session start, during the work, the four-step
+wrap-up sequence, and the closing note.
 
-Nieuw en dragend: een **Wegwijzer** — een tabel situatie → skill. Dat is het
-R7-bewijsstuk ("direct in het bestand, óf via een expliciete, direct volgbare
-verwijzing"). Hij moet élk verplaatst onderwerp noemen; R7's vijf termen
-(branching, kwaliteitsreview, onderbouwingsplicht, deploy-guards,
-adoptieregistratie) moeten elk in één sprong oplossen. Twee ervan landen in
-dezelfde skill — dan twee rijen, niet stilzwijgend samengevoegd.
+New and load-bearing: a **routing table** — a situation → skill table. That's
+the R7 evidence ("directly in the file, or via an explicit, directly
+followable reference"). It must name every moved topic; R7's five terms
+(branching, quality review, substantiation requirement, deploy-guards,
+adoption registry) must each resolve in a single jump. Two of them land in
+the same skill — so two rows, not silently merged into one.
 
-### F13 — Traceability, herontworpen op de werkelijkheid
+### F13 — Traceability, redesigned around reality
 
-De oorspronkelijke opzet ging uit van `F<n>`/`S<n>` overal. De werkelijkheid:
+The original design assumed `F<n>`/`S<n>` everywhere. Reality:
 
-| Project | PRD-ids | Scenario-ids | Issues gebruikt? |
+| Project | PRD ids | Scenario ids | Issues used? |
 |---|---|---|---|
-| tennis-admin (vlaggenschip) | F1–F26 | **R(44) / A(24) / B(22) / P(6)** | 1 ooit, nog open |
-| a2t-emails | F1–F8 | S1–S20 (+ `S2b`) | 6, **allemaal open** |
-| tennis-registration | F1–F7 | S1–S16 | nooit |
-| tennis-invoicing | **geen `F<n>`** | S1–S29, **S26/S27/S28 dubbel** | nooit |
+| tennis-admin (flagship) | F1–F26 | **R(44) / A(24) / B(22) / P(6)** | 1 ever, still open |
+| a2t-emails | F1–F8 | S1–S20 (+ `S2b`) | 6, **all open** |
+| tennis-registration | F1–F7 | S1–S16 | never |
+| tennis-invoicing | **no `F<n>`** | S1–S29, **S26/S27/S28 duplicated** | never |
 
-**Besloten in W17 (#29)**, de ontwerpreview met Ties die de blokkade "eerst één
-work item end-to-end" vervangt. Alle vier de besluiten hieronder zijn bevestigd,
-met één toevoeging: besluit c krijgt een expliciete beperking, zie daar. De
-onderbouwing is vóór het besluit opnieuw tegen de vier projecten geverifieerd —
-twee claims bleken onvolledig en staan hieronder gecorrigeerd.
+**Decided in W17 (#29)**, the design review with Ties that replaces the "one
+work item end-to-end first" blocker. All four decisions below are confirmed,
+with one addition: decision c gets an explicit limitation, see there. The
+substantiation was re-verified against the four projects before the decision —
+two claims turned out incomplete and are corrected below.
 
-Vier ontwerpbesluiten die het ontwerp redden van deze werkelijkheid. De letters
-**a** tot en met **d** hieronder zijn prozalabels, geen ID's: alleen `F13` is een
-functionaliteitsitem. De collector uit besluit c verzamelt daarom uitsluitend
-ID-tokens uit **koppen** — schrijfwijzen als "F13a" in lopende tekst, en ID's van
-andere projecten zoals de `F1–F26` in de tabel hierboven, tellen niet mee.
+Four design decisions that rescue the design from this reality. The letters
+**a** through **d** below are prose labels, not IDs: only `F13` is a
+functionality item. The collector from decision c therefore only gathers ID
+tokens from **headings** — forms like "F13a" in running text, and other
+projects' IDs like the `F1–F26` in the table above, don't count.
 
-**a. `AC<n>` in `work-item.md`.** Dat sjabloon nummert zijn eigen
-acceptatiecriteria `### S1:` — dezelfde namespace als `TEST-SCENARIOS.md`, dus elke
-`grep` op `S<n>` raakt gegarandeerd het issue zelf. Niet `A<n>`, en die botsing is
-scherper dan hij op het eerste gezicht lijkt: `templates/ARCHITECTUUR.md` gebruikt
-`A1` voor architectuureisen, en tennis-admin heeft 24 `A<n>`-scenario's. Zou
-tennis-admin dat sjabloon scaffolden, dan betekent `A1` twee dingen binnen één
-project — geen botsing tussen projecten, maar binnen één. Geverifieerd: `AC` komt
-in geen van de vier projecten voor.
+**a. `AC<n>` in `work-item.md`.** That template numbers its own acceptance
+criteria `### S1:` — the same namespace as `TEST-SCENARIOS.md`, so any `grep`
+on `S<n>` is guaranteed to hit the issue itself. Not `A<n>`, and that
+collision is sharper than it looks at first glance: `templates/ARCHITECTUUR.md`
+uses `A1` for architecture requirements, and tennis-admin has 24 `A<n>`
+scenarios. If tennis-admin scaffolded that template, `A1` would mean two
+things within one project — not a collision between projects, but within one.
+Verified: `AC` doesn't occur in any of the four projects.
 
-**b. Eén veldnaam, `**Dekt:**`**, in beide richtingen; het prefix van het token
-zegt welke schakel het is. Strikt: regelbegin, komma-gescheiden tokens die matchen
-op `^[A-Z]{1,2}[0-9]+[a-z]?$`. Beide kwantoren komen uit de werkelijkheid, niet uit
-smaak. De `[a-z]?` is er om `a2t-emails`' `S2b`; de `{1,2}` om tennis-admins
-`OP<n>` — dat project gebruikt `OP` voor open punten in zowel `PRD.md` als
-`ARCHITECTUUR.md`, en `O<n>` voor afgewogen architectuuropties. Een grammatica die
-één van beide afwijst is op dag één onbruikbaar in een van de vier projecten.
-Alleen het veld telt; dat voorkomt vals-positieven per constructie.
+**b. One field name, `**Dekt:**`**, in both directions; the token's prefix
+says which link it is. Strict: start of line, comma-separated tokens
+matching `^[A-Z]{1,2}[0-9]+[a-z]?$`. Both quantifiers come from reality, not
+taste. The `[a-z]?` is there for `a2t-emails`' `S2b`; the `{1,2}` for
+tennis-admin's `OP<n>` — that project uses `OP` for open points in both
+`PRD.md` and `ARCHITECTUUR.md`, and `O<n>` for weighed architecture options.
+A grammar that rejects either one is unusable on day one in one of the four
+projects. Only the field counts; that prevents false positives by construction.
 
-**c. Geen `F`/`S` hardcoderen — link-integriteit controleren.** Verzamel de
-ID-tokens uit de koppen van `PRD.md` en `TEST-SCENARIOS.md`, en controleer dat elk
-`Dekt:`-token in de andere set oplost. Dan werkt tennis-admins `R/A/B/P`
-ongewijzigd (de B-serie werd in een eerdere inventarisatie over het hoofd gezien —
-precies het soort fout waar een hardcoded prefixlijst op stukloopt), worden
-tennis-invoicings dubbele ID's een **gemelde fout** (een echte latente bug die het
-oorspronkelijke ontwerp niet zag), en levert een PRD zonder `F<n>` een
-**waarschuwing** op, geen harde fout. Een check die op dag één faalt in een van de
-vier projecten, staat op dag twee uit.
+**c. Don't hardcode `F`/`S` — check link integrity instead.** Collect the ID
+tokens from the headings of `PRD.md` and `TEST-SCENARIOS.md`, and check that
+every `Dekt:` token resolves in the other set. This makes tennis-admin's
+`R/A/B/P` work unchanged (the B-series was overlooked in an earlier
+inventory — exactly the kind of mistake a hardcoded prefix list runs into),
+turns tennis-invoicing's duplicate IDs into a **reported error** (a real
+latent bug the original design didn't see), and gives a PRD without `F<n>` a
+**warning**, not a hard error. A check that fails on day one in one of the
+four projects is off by day two.
 
-*Wat deze keuze kost*: zie "Bekende beperkingen" hieronder (het OP5-geval).
+*What this choice costs*: see "Known limitations" below (the OP5 case).
 
-De reikwijdte is wel begrensd door besluit c zelf: de collector leest alleen
-koppen uit `PRD.md` en `TEST-SCENARIOS.md`. Tennis-admins `O1`–`O5` — afgewogen
-architectuuropties waarvan er vier verworpen zijn — staan uitsluitend in
-`ARCHITECTUUR.md` en worden dus niet verzameld. `Dekt: O2` lost daarom júist niet
-op en wórdt gemeld. Alleen wat in de twee gescande bestanden staat, kan dit
-probleem geven.
+The scope is bounded by decision c itself: the collector only reads headings
+from `PRD.md` and `TEST-SCENARIOS.md`. tennis-admin's `O1`–`O5` — weighed
+architecture options, four of which were rejected — live exclusively in
+`ARCHITECTUUR.md` and therefore aren't collected. `Dekt: O2` therefore
+correctly fails to resolve and gets reported. This problem can only occur for
+things that live in the two scanned files.
 
-Dat is bewust geaccepteerd in W17. Een verwijzing naar een verkeerd maar bestaand
-doel is een documentatiefout die een mens in de review ziet; een hardcoded
-`F`/`S`-lijst maakt de controle onbruikbaar in twee van de vier projecten. Drie
-alternatieven zijn afgewogen en afgevallen, elk op dezelfde grond — ze vragen
-per-projectconfiguratie die stilzwijgend veroudert:
+That's deliberately accepted in W17. A reference to a wrong-but-existing
+target is a documentation error a human catches in review; a hardcoded
+`F`/`S` list makes the check useless in two of the four projects. Three
+alternatives were weighed and rejected, on the same ground each time — they
+require per-project configuration that silently goes stale:
 
-- **Uitsluitlijst per prefix.** Veroudert zodra een project een nieuw prefix gaat
-  gebruiken.
-- **Filteren op bestand.** Sluit `ARCHITECTUUR.md` uit, maar dat doet besluit c al;
-  het `OP<n>`-geval zit in de PRD zelf en blijft staan.
-- **Filteren op sectie binnen de PRD**, bijvoorbeeld alleen koppen onder
-  `## Functionaliteit`. Aantrekkelijk, en daarom nagerekend: van de vier projecten
-  gebruikt alleen tennis-admin een sectie `## Open punten`; de andere drie hebben
-  helemaal geen open-puntensectie, en `templates/PRD.md` evenmin — dit repo zelf
-  gebruikt `## Open vragen`. De sectienamen lopen dus al uiteen vóór er iets op
-  gebouwd is, en filteren daarop verplaatst de veroudering van prefixen naar
-  kopteksten in plaats van hem weg te nemen.
+- **Per-prefix exclusion list.** Goes stale the moment a project starts using
+  a new prefix.
+- **Filter by file.** Excludes `ARCHITECTUUR.md`, but decision c already does
+  that; the `OP<n>` case lives in the PRD itself and remains.
+- **Filter by section within the PRD**, e.g. only headings under
+  `## Functionaliteit`. Attractive, and therefore checked: of the four
+  projects, only tennis-admin uses a `## Open punten` section; the other
+  three have no open-points section at all, and `templates/PRD.md` doesn't
+  either — this repo itself uses `## Open questions`. So the section names
+  already diverge before anything is built on them, and filtering on that
+  would move the staleness from prefixes to heading text instead of removing it.
 
-Zie *Bekende beperkingen*.
+See *Known limitations*.
 
-**d. Splitsen op netwerkafhankelijkheid.** Schakel 1 (functionaliteit → scenario)
-is offline en gaat in `templates/check-traceability.sh`, gescaffold zoals `ci.yml`,
-aangeroepen vanuit het eigen `check` van het project. Schakels 2 en 3 (scenario →
-issue → PR) zijn **geen audit-script**, maar een **poort in `pre-merge-review`**:
-die skill draait precies op het moment vóór de merge, heeft al `gh` en netwerk, en
-schrijft zijn bevindingen al in de PR. "Verwijst *deze* PR naar een issue" is één
-`gh pr view --json closingIssuesReferences`.
+**d. Split by network dependency.** Link 1 (functionality → scenario) is
+offline and lives in `templates/check-traceability.sh`, scaffolded like
+`ci.yml`, invoked from the project's own `check`. Links 2 and 3 (scenario →
+issue → PR) are **not an audit script**, but a **gate in `pre-merge-review`**:
+that skill runs at exactly the moment before the merge, already has `gh` and
+network, and already writes its findings into the PR. "Does *this* PR
+reference an issue" is one `gh pr view --json closingIssuesReferences`.
 
-Schakel 3 krijgt daarnaast een **hard slot in CI**: een skill blijft vrijwillig, en
-de nulmeting bewijst wat daarvan komt. Op GitHub Actions is `GITHUB_TOKEN` gratis
-beschikbaar — het gh-auth-argument dat schakel 2/3 uit het lokale `check` houdt,
-geldt daar niet — en de check beoordeelt alleen de huidige PR, dus hij is even
-retrofit-vrij als de poort.
+Link 3 additionally gets a **hard block in CI**: a skill remains voluntary,
+and the baseline proves what comes of that. On GitHub Actions,
+`GITHUB_TOKEN` is available for free — the gh-auth argument that keeps links
+2/3 out of the local `check` doesn't apply there — and the check only judges
+the current PR, so it's just as retrofit-free as the gate.
 
-Daarmee verdwijnt het retrofitprobleem: een audit over 27 issueloze PR's zou eeuwig
-blijven falen; een poort geldt vanaf de volgende merge.
+That eliminates the retrofit problem: an audit over 27 issueless PRs would
+fail forever; a gate applies from the next merge onward.
 
-### F14 — Blocking-edges in de issue-templates
+### F14 — Blocking edges in the issue templates
 
-`**Blocked by:** #` / `**Blocks:** #` in `work-item.md` en `epic.md`. Bewust het
-platte veld, want `gh issue view` toont `blocked-by`/`blocking` al; native
-sub-issues zouden de conventie aan GitHub Projects binden.
+`**Blocked by:** #` / `**Blocks:** #` in `work-item.md` and `epic.md`.
+Deliberately a plain field, since `gh issue view` already shows
+`blocked-by`/`blocking`; native sub-issues would tie the convention to
+GitHub Projects.
 
-### F15 — Releasemechaniek
+### F15 — Release mechanism
 
-Dit repo heeft geen tags, releases, `CHANGELOG.md` of versieveld. Deze release
-voegt `CHANGELOG.md` toe, tagt het mergepunt, en herstelt de stilgevallen
-`**PR:**`-verwijzing — die geldt nu in 3 van 27 entries, want de conventie viel
-direct na invoering stil. Plus een test die dat permanent afdwingt.
+This repo has no tags, releases, `CHANGELOG.md`, or version field. This
+release adds `CHANGELOG.md`, tags the merge point, and restores the stalled
+`**PR:**` reference — which currently holds for 3 of 27 entries, since the
+convention stalled right after being introduced. Plus a test that enforces
+that permanently.
 
-Geadopteerde projecten volgen `main` live via symlink, dus een tag is een menselijk
-referentiepunt, geen pinbare versie. *(Herzien voor consumenten buiten Ties'
-eigen gebruik: W37 (#79) bouwt op dit tagmechanisme een pinbaar
-consumentenpad, zie "Besloten in W29 (#53)", besluit 5. Dit — main live via
-symlink volgen — blijft Ties' eigen model.)* De eerste CHANGELOG-entry documenteert de
-vereiste actie: **`adopt.sh` opnieuw draaien in elk project op elke machine, én
-`adopt.sh --user` één keer per machine** — zonder dat laatste ontbreekt de
-user-level skill en verwijst de bijgewerkte `USER-CLAUDE.md` naar iets dat er niet
-is (dezelfde asymmetrie als onder F10 beschreven).
+Adopted projects follow `main` live via symlink, so a tag is a human
+reference point, not a pinnable version. *(Revised for consumers outside
+Ties' own use: W37 (#79) builds a pinnable consumer path on top of this tag
+mechanism, see "Besloten in W29 (#53)", decision 5. This — following `main`
+live via symlink — remains Ties' own model.)* The first CHANGELOG entry
+documents the required action: **run `adopt.sh` again in every project on
+every machine, and `adopt.sh --user` once per machine** — without that last
+step, the user-level skill is missing and the updated `USER-CLAUDE.md` points
+at something that isn't there (the same asymmetry described under F10).
 
-### F16 — Achterstallig onderhoud
+### F16 — Deferred maintenance
 
-- `a2t-emails`: geen `WORKFLOW-ADOPTIE.md` (aanvullen, niet vers seeden met de
-  datum van vandaag — dat zou vervalsen wanneer een keuze gemaakt is).
-- `a2t-emails`: ongetrackte `AGENTS.md`, een 15 KB **kopie** van `WORKFLOW.md` —
-  een tweede, driftende bron van waarheid die de nieuwe slanke kern actief gaat
-  tegenspreken. Verwijderen.
-- `README.md`: "**vijf** niet-functionele vragen" — het zijn er vijftien sinds
-  `4821bac`.
-- `tennis-registration`: achtergebleven branch `chore/sessionend-push-hook`.
-- Alle vier: ankers in de project-PRD's bijwerken (companion, geen blocker —
-  `pre-merge-review` valt terug op kopnamen en méldt dat de ankers ontbreken).
+- `a2t-emails`: no `WORKFLOW-ADOPTIE.md` (fill it in, don't freshly seed it
+  with today's date — that would misrepresent when a choice was made).
+- `a2t-emails`: an untracked `AGENTS.md`, a 15 KB **copy** of `WORKFLOW.md` —
+  a second, drifting source of truth that will actively contradict the new,
+  slim core. Remove it.
+- `README.md`: "**five** non-functional questions" — there have been fifteen
+  since `4821bac`.
+- `tennis-registration`: a leftover branch `chore/sessionend-push-hook`.
+- All four: refresh the anchors in the project PRDs (a companion task, not a
+  blocker — `pre-merge-review` falls back to heading names and reports that
+  the anchors are missing).
 
-### F17 — Dekking buiten de agentic loop
+### F17 — Coverage outside the agentic loop
 
-De guard uit F7 is een `PreToolUse`-hook, en die ziet uitsluitend wat Claude zelf
-uitvoert. De documentatie beschrijft het event als "before a tool call executes"
-en kent geen ander aangrijpingspunt; commando's die Ties zelf in zijn terminal
-typt zijn geen tool-aanroep en komen er dus nooit langs. Dat is een gevolgtrekking
-uit de beschreven scope, niet een waarschuwing die de documentatie zelf geeft —
-maar hij is dwingend: er ís geen mechanisme waarlangs die commando's de hook
-zouden bereiken. Diezelfde `git reset --hard` in een eigen
-terminalvenster, in een IDE, of op een tweede machine zonder `adopt.sh` gaat
-onverkort door.
+The guard from F7 is a `PreToolUse` hook, and it only ever sees what Claude
+itself executes. The documentation describes the event as "before a tool
+call executes" and names no other hook point; commands Ties types himself in
+his terminal are not a tool call and therefore never pass through it. That's
+an inference from the documented scope, not a warning the documentation
+itself gives — but it's conclusive: there simply is no mechanism by which
+those commands would reach the hook. The same `git reset --hard` in Ties'
+own terminal window, in an IDE, or on a second machine without `adopt.sh`
+goes through unchecked.
 
-Serverzijdige branch protection zou de juiste plek zijn, maar die deur is dicht:
-GitHub antwoordt op een private repo letterlijk *"Upgrade to GitHub Pro or make
-this repository public"*. Zolang dat zo is, moet de dekking uit drie
-lokaal-en-CI-gebaseerde lagen komen:
+Server-side branch protection would be the right place for this, but that
+door is closed: GitHub literally answers, on a private repo, *"Upgrade to
+GitHub Pro or make this repository public."* As long as that's the case,
+coverage has to come from three local-and-CI-based layers:
 
-- **`templates/ci.yml` valideert pull requests en `main`** (W24). Het sjabloon
-  gebruikte `on: push: branches-ignore: [main]` en valideerde dus *noch* PR's
-  *noch* `main` — net als de workflow van dit repo zelf, die dezelfde vorm had. Elk nieuw project start daarmee zwakker dan `tennis-admin`, dat
-  een met de hand geschreven `ci.yml` heeft met `on: pull_request` én
-  `push: branches: [main]`. Het `pull_request`-event is bovendien nodig om een
-  controle als *required check* te kunnen instellen — de vorm die een merge
-  daadwerkelijk kan tegenhouden. Het sjabloon repareren helpt alleen nieuwe
-  projecten, dus hoort er een `CHANGES.md`-entry bij (`ci-op-pr-en-main`,
-  `heeft-package-json`): bestaande projecten houden anders hun zwakkere CI
-  zonder dat iemand ernaar vraagt. Die entry staat los van `ci-conventie` —
-  dát antwoord gaat over wát de workflow doet, dit over wannéér hij draait.
-- **Git-hooks in het project** (W26). Een `pre-commit`- en `pre-push`-hook dekt
-  élk gereedschap op die machine. Ze hergebruiken de beslislogica uit
-  `hooks/git-guardrails`. Let op wát er te hergebruiken valt: een native
-  `pre-commit` krijgt geen commandostring, dus de quote-bewuste tokenisatie uit
-  `lees-commando.py` is per definitie `PreToolUse`-specifiek. Wat gedeeld kan
-  worden zijn de *regels* — welke branch beschermd is, wat de melding zegt, welke
-  uitweg hij noemt. Dat is smaller dan "hergebruik het script", en W26 moet dat
-  onderscheid expliciet maken in plaats van een simpele hergebruikoefening aan te
-  nemen. Beperking:
-  git-hooks zijn machine-lokaal en reizen niet mee met een clone, dus een nieuwe
-  machine heeft ze pas na `adopt.sh`. Dat is dezelfde beperking als bij de
-  bestaande hooks, en de verouderde-adoptie-melding uit F6 maakt hem zichtbaar.
-- **CI detecteert commits op `main` die niet uit een PR komen** (W27). Dit is
-  detectie in plaats van preventie — het commando is dan al uitgevoerd — maar
-  het is het enige mechanisme dat op elke machine en met elk gereedschap werkt.
-  De controle beoordeelt alleen de binnenkomende push, niet de historie: een
-  retrofit die op dag één rood staat leert je de melding te negeren.
+- **`templates/ci.yml` validates pull requests and `main`** (W24). The
+  template used `on: push: branches-ignore: [main]` and therefore validated
+  *neither* PRs *nor* `main` — just like this repo's own workflow, which had
+  the same form. Every new project therefore starts weaker than
+  `tennis-admin`, which has a hand-written `ci.yml` with `on: pull_request`
+  and `push: branches: [main]`. The `pull_request` event is also needed to
+  set up a check as a *required check* — the form that can actually block a
+  merge. Fixing the template only helps new projects, so it comes with a
+  `CHANGES.md` entry (`ci-op-pr-en-main`, `heeft-package-json`): existing
+  projects would otherwise keep their weaker CI without anyone asking. That
+  entry is separate from `ci-conventie` — that answer covers *what* the
+  workflow does, this one covers *when* it runs.
+- **Git hooks in the project** (W26). A `pre-commit` and `pre-push` hook
+  cover every tool on that machine. They reuse the decision logic from
+  `hooks/git-guardrails`. Note what's actually reusable: a native
+  `pre-commit` receives no command string, so the quote-aware tokenization
+  from `lees-commando.py` is `PreToolUse`-specific by definition. What can be
+  shared is the *rules* — which branch is protected, what the message says,
+  which way out it names. That's narrower than "reuse the script," and W26
+  must make that distinction explicit instead of assuming a simple reuse
+  exercise. Limitation: git hooks are machine-local and don't travel with a
+  clone, so a new machine only has them after `adopt.sh`. That's the same
+  limitation as the existing hooks, and F6's outdated-adoption notice makes
+  it visible.
+- **CI detects commits on `main` that don't come from a PR** (W27). This is
+  detection rather than prevention — the command has already run by then —
+  but it's the only mechanism that works on every machine with every tool.
+  The check only judges the incoming push, not the history: a retrofit that's
+  red from day one teaches you to ignore the message.
 
-De drie lagen zijn bewust niet uitwisselbaar. W24 en W26 voorkomen, W27 vangt op
-wat er doorheen glipt.
+The three layers are deliberately not interchangeable. W24 and W26 prevent,
+W27 catches what slips through.
 
-### F18 — Werk veiligstellen zonder op het sessie-einde te leunen
+### F18 — Securing work without relying on the session end
 
-De `SessionEnd`-hook is op dit moment de enige automatische push. Al het werk
-sinds de vorige sessie hangt daarvan af. De documentatie van Claude Code zegt
-alleen dat `SessionEnd` afgaat "when a session terminates", met een gedeeld
-tijdsbudget van 1,5 seconde, en noemt als redenen `clear`, `resume`, `logout`,
-`prompt_input_exit` en `other`. Over een crash, een gesloten terminalvenster of
-stroomuitval staat er **niets** — er is dus geen toezegging dat de hook dan
-draait, en het budget maakt bovendien niet uit hoeveel er nog te pushen valt.
-Die stilte is geen bewijs dat het misgaat, maar wel reden om er niet het enige
-vangnet van te maken.
+The `SessionEnd` hook is currently the only automatic push. All work since
+the previous session depends on it. Claude Code's documentation only says
+that `SessionEnd` fires "when a session terminates," with a shared time
+budget of 1.5 seconds, and names `clear`, `resume`, `logout`,
+`prompt_input_exit`, and `other` as reasons. About a crash, a closed
+terminal window, or a power outage it says **nothing** — so there's no
+guarantee the hook runs then, and the budget also doesn't care how much
+there still is to push. That silence isn't proof it goes wrong, but it is
+reason not to make it the only safety net.
 
-De commit-blokkade uit F7 verscherpt dat zelfs: blokkeer je de commit op `main`
-en wordt die melding genegeerd, dan blijft het werk *ongecommit* en heeft
-`SessionEnd` niets te pushen. Twee aanvullingen sluiten dat gat aan beide
-kanten:
+The commit block from F7 sharpens that further: block the commit on `main`
+and ignore that message, and the work stays *uncommitted* — `SessionEnd`
+then has nothing to push. Two additions close that gap on both sides:
 
-- **Sessiestart meldt dat `main` is uitgecheckt** (W23). De commit-blokkade
-  grijpt pas wanneer er al werk is; een melding bij sessiestart grijpt ervóór, op
-  het moment dat vertakken nog gratis is. De guard blokkeert namelijk de commit,
-  maar niet het bewerken van bestanden — Edit, Write, `git add` en `git stash`
-  gaan gewoon door. Puur informatief: de hook muteert niets en blokkeert niets,
-  en houdt zich aan dezelfde eis als het onderbouwingssignaal (exit 0, niets op
-  stderr).
-- **Pushen zodra er gecommit is** (W25). Een `PostToolUse`-hook pusht de huidige
-  branch na een geslaagde `git commit`. Het is dezelfde handeling die
-  `SessionEnd` al doet, alleen eerder en vaker — geen nieuwe branchnamen, geen
-  mutatie die niemand vroeg. `WORKFLOW.md` schrijft "push regelmatig" al voor;
-  dit maakt dat mechanisch in plaats van iets dat onthouden moet worden. Zonder
-  netwerk of `origin` meldt hij het en houdt hij niets op.
+- **Session start reports that `main` is checked out** (W23). The commit
+  block only engages once work already exists; a notice at session start
+  engages before that, while branching is still free. The guard blocks the
+  commit, but not editing files — Edit, Write, `git add`, and `git stash`
+  proceed normally. Purely informational: the hook mutates nothing and
+  blocks nothing, and follows the same rule as the substantiation signal
+  (exit 0, nothing on stderr).
+- **Push as soon as something is committed** (W25). A `PostToolUse` hook
+  pushes the current branch after a successful `git commit`. It's the same
+  action `SessionEnd` already does, just earlier and more often — no new
+  branch names, no mutation nobody asked for. `WORKFLOW.md` already
+  prescribes "push regularly"; this makes that mechanical instead of
+  something that has to be remembered. Without network or `origin`, it
+  reports that and doesn't hold anything up.
 
 ---
 
-## Niet-functionele kenmerken
+## Non-functional characteristics
 
 ### Security
 
-Relevant, beperkt. De guardrails-hook (F7) is zelf een beveiligingsmaatregel.
-`check-traceability.sh` parseert issue- en PR-tekst — invoer die niet volledig
-onder eigen beheer staat — dus geen `eval`, net zoals de predicaten bewust een
-`case` zijn. Geen secrets in dit repo.
+Relevant, limited. The guardrails hook (F7) is itself a security measure.
+`check-traceability.sh` parses issue and PR text — input that isn't fully
+under this repo's own control — so no `eval`, just as the predicates are
+deliberately a `case`. No secrets in this repo.
 
-### Data-integriteit
+### Data integrity
 
-Sterk relevant. `WORKFLOW-ADOPTIE.md` is de duurzame vastlegging van besluiten en
-mag nooit overschreven worden. F16 raakt dit direct: `a2t-emails` aanvullen mag
-geen verse seed met de datum van vandaag worden. F6 is expliciet zo ontworpen dat
-het de betekenis van "beantwoord" *niet* verandert. `adopt.sh` blijft idempotent —
-"twee keer draaien geeft een identieke boom" wordt een test.
+Strongly relevant. `WORKFLOW-ADOPTIE.md` is the durable record of decisions
+and must never be overwritten. F16 touches this directly: filling in
+`a2t-emails` must not become a fresh seed with today's date. F6 is explicitly
+designed so it does *not* change what "answered" means. `adopt.sh` stays
+idempotent — "running it twice yields an identical tree" becomes a test.
 
 ### Failure modes
 
-Sterk relevant. Harde eis: een hook blokkeert nooit een sessie. De nieuwe
-`PreToolUse`-hooks (F7, F8) zijn de uitzondering — die hóren te blokkeren, maar
-moeten falen naar *toestaan* als ze zelf stuk zijn (en F8 ook zonder `gh` of
-netwerk), en de `if/exec/fi`-vorm is daarvoor doorslaggevend.
-`check-traceability.sh` waarschuwt en gaat door zonder `gh` of netwerk, conform de
-bestaande regel bij de deploy-guards.
+Strongly relevant. Hard requirement: a hook never blocks a session. The new
+`PreToolUse` hooks (F7, F8) are the exception — they're *supposed* to block,
+but must fail to *allow* if they're broken themselves (and F8 also without
+`gh` or network), and the `if/exec/fi` form is decisive for that.
+`check-traceability.sh` warns and proceeds without `gh` or network, following
+the existing rule from the deploy guards.
 
 ### Observability
 
-Relevant. Stille degradatie is de belangrijkste faalmodus: de hookketen eindigt op
-`|| true`, dus een kapotte symlink levert stilte op. `check` (F1) en de
-verouderde-adoptie-melding (F6) zijn het tegengif — wat CI en de hook kunnen zien,
-verwatert niet.
+Relevant. Silent degradation is the main failure mode: the hook chain ends in
+`|| true`, so a broken symlink produces silence. `check` (F1) and the
+outdated-adoption notice (F6) are the antidote — what CI and the hook can
+see doesn't erode.
 
-### Performance en schaal
+### Performance and scale
 
-Nauwelijks relevant, wel benoemd. `pending-changes.sh` herleest zijn bron één keer
-per openstaand ID (O(n·m)); bij 27 entries verwaarloosbaar. F4 splitst de bron in
-tweeën, dus de gedeelde parser mag daar niet trager van worden.
+Barely relevant, but named. `pending-changes.sh` re-reads its source once per
+outstanding ID (O(n·m)); negligible at 27 entries. F4 splits the source in
+two, so the shared parser must not get slower because of that.
 
 ### Deployability
 
-Sterk relevant, en ongebruikelijk van vorm. "Uitrollen" is: mergen naar `main`.
-Consumenten volgen `main` live via symlink, dus elke merge is onmiddellijk actief
-in vier projecten, zonder opt-in en zonder terugrolpad anders dan een revert. Er is
-geen staging tussen merge en gebruik — dat verhoogt de eis aan F1. Wat `adopt.sh`
-installeert loopt juist achter tot iemand hem opnieuw draait; F6 maakt dat
-zelfmeldend.
+Strongly relevant, and unusual in form. "Rolling out" means: merging to
+`main`. Consumers follow `main` live via symlink, so every merge is
+immediately active in four projects, with no opt-in and no rollback path
+other than a revert. There's no staging between merge and use — that raises
+the bar for F1. What `adopt.sh` installs lags behind instead, until someone
+re-runs it; F6 makes that self-reporting.
 
 ### Privacy
 
-N.v.t., onderbouwd. Geen persoonsgegevens buiten de git-auteurinformatie die er al
-staat. Adoptietabellen bevatten besluiten.
+N/A, substantiated. No personal data beyond the git author information
+that's already there. Adoption tables contain decisions.
 
-### Compliance en auditeerbaarheid
+### Compliance and auditability
 
-N.v.t. als wettelijke eis; wél als zelfopgelegde. De adoptieregistratie bestáát om
-aantoonbaar te maken welk project welke afspraak toepast en waarom. F4 en F5 mogen
-die aantoonbaarheid niet breken: een verhuisde of gearchiveerde entry moet vindbaar
-blijven vanuit een `WORKFLOW-ADOPTIE.md` die ernaar verwijst. Dat is R8, en na F4
-geldt het ook voor de vijftien verhuisde NFR's.
+N/A as a legal requirement; yes as a self-imposed one. The adoption registry
+exists precisely to make it demonstrable which project applies which
+agreement and why. F4 and F5 must not break that demonstrability: a moved or
+archived entry must remain findable from a `WORKFLOW-ADOPTIE.md` that points
+to it. That's R8, and after F4 it also applies to the fifteen relocated NFRs.
 
-### Backup en herstel
+### Backup and recovery
 
-Relevant, laag risico. Alles van waarde staat in git. Het kwetsbare deel is wat
-níét in git staat: de lokale, ongetrackte symlinks per machine. Herstellen door
-`adopt.sh` opnieuw te draaien — idempotent, al gedocumenteerd als vangnet.
+Relevant, low risk. Everything of value lives in git. The vulnerable part is
+what's *not* in git: the local, untracked symlinks per machine. Recover by
+re-running `adopt.sh` — idempotent, already documented as a safety net.
 
 ### Portability
 
-Relevant, met een bewuste nieuwe binding. Tot nu toe was dit repo bash + `gh` +
-markdown. Skills zijn een **Claude Code-specifiek** formaat; de frontmatter die F11
-gebruikt (`context: fork`, `model:`) is niet door andere harnassen ondersteund.
-Bewust aangegaan, hier vastgelegd zodat het een besluit is en geen ongeluk.
-Daarbinnen nog een grens: die frontmatter is recent, en de twee machines kunnen
-verschillende Claude Code-versies draaien — controleren vóór W13 erop leunt. Bash
-3.2 is de tweede portabiliteitsgrens en beperkt het scriptidioom.
+Relevant, with a deliberate new dependency. Until now, this repo was bash +
+`gh` + markdown. Skills are a **Claude Code-specific** format; the
+frontmatter F11 uses (`context: fork`, `model:`) isn't supported by other
+harnesses. Deliberately taken on, recorded here so it's a decision and not an
+accident. Within that, a further limit: this frontmatter is recent, and the
+two machines may run different Claude Code versions — verify before W13
+relies on it. Bash 3.2 is the second portability limit and constrains the
+scripting idiom.
 
-**Grens tussen kern en agent-gereedschap (W31, #55).** Niveau **a — alleen
-benoemen**: deze tabel documenteert de grens die al impliciet bestaat, zonder
-een adapterlaag of contract te bouwen (zie "Besloten in W29 (#53)", besluit 2).
+**Boundary between the core and agent tooling (W31, #55).** Level **a —
+naming only**: this table documents the boundary that already implicitly
+exists, without building an adapter layer or contract (see "Besloten in W29
+(#53)", decision 2).
 
-| Agent-onafhankelijk | Claude Code-specifiek |
+| Agent-independent | Claude Code-specific |
 |---|---|
-| Sjablonen (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTUUR.md`) | `settings/session-hooks.json` |
-| Adoptieregistratie (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
-| Het `nfr/`-register | `skills/` |
-| Traceability (`Dekt:`, `AC<n>`) | `CLAUDE.md` als symlinknaam |
-| Git-conventies, `check`, de testharnas | `.claude/`-mappenstructuur |
+| Templates (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTUUR.md`) | `settings/session-hooks.json` |
+| Adoption registry (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
+| The `nfr/` registry | `skills/` |
+| Traceability (`Dekt:`, `AC<n>`) | `CLAUDE.md` as the symlink name |
+| Git conventions, `check`, the test harness | the `.claude/` directory structure |
 
-Twee dingen die geen nette laag zijn en dat ook niet kunnen worden: de
-afdwinging zelf is agent-specifiek (een `PreToolUse`-hook bestaat bij de gratie
-van Claude Code; een andere agent heeft een ander mechanisme of geen), en de
-kern is niet gratis draagbaar (`check`, de testharnas en de scripts zijn bash
-— platformafhankelijk, niet agent-afhankelijk).
+Two things that aren't a clean layer and can't become one: the enforcement
+itself is agent-specific (a `PreToolUse` hook exists only by grace of Claude
+Code; another agent has a different mechanism or none), and the core isn't
+freely portable (`check`, the test harness, and the scripts are bash —
+platform-dependent, not agent-dependent).
 
-`#55` specificeerde ook AC4 (een doorlopende `check`-test die de linkerkolom
-tegen `.claude/`-, `SKILL.md`- en hooknaam-verwijzingen bewaakt) en AC5 (een
-eenmalige meting van wat zonder `.claude/` nog werkt). Beide zijn **bewust
-uitgesteld**: ze verdedigen tegen een claim die nog nergens gemaakt wordt — de
-voorpagina die die claim zou kunnen maken (W35, #59) is er nog niet. Bouwen
-tegen een belofte die niet bestaat is dezelfde speculatie die niveau b/c al
-afwees (rule-of-three, zie hierboven). Trigger om alsnog te bouwen: zodra W35
-een agent-neutraliteitsclaim naar buiten toe maakt.
+`#55` also specified AC4 (an ongoing `check` test that guards the left
+column against `.claude/`, `SKILL.md`, and hook-name references) and AC5 (a
+one-time measurement of what still works without `.claude/`). Both are
+**deliberately deferred**: they defend against a claim nobody is making yet —
+the front page that could make that claim (W35, #59) doesn't exist yet.
+Building against a promise that doesn't exist is the same speculation level
+b/c already rejected (rule-of-three, see above). Trigger to build them after
+all: as soon as W35 makes an agent-neutrality claim to the outside world.
 
 ### Maintainability
 
-Sterk relevant — grotendeels waar de release over gaat. F3 haalt de parser- en
-predicaatduplicatie weg, F4 de NFR-duplicatie, F5 de groeiende leeslast. Nieuwe
-last die erbij komt: een `skills/`-boom, een `nfr/`-register met generator, een
-testharnas en een derde script. Netto positief, niet gratis.
+Strongly relevant — largely what this release is about. F3 removes the
+parser and predicate duplication, F4 the NFR duplication, F5 the growing
+reading burden. New burden added: a `skills/` tree, an `nfr/` registry with a
+generator, a test harness, and a third script. Net positive, not free.
 
 ### Testability
 
-Sterk relevant, en nu de grootste leemte: **nul** tests bij veertien
-gespecificeerde scenario's. Ontwerpeis die eruit volgt: beide scripts moeten hun
-invoer injecteerbaar maken. `pending-changes.sh` is er bijna; `adopt.sh` haalt
-alles uit globals en vereist `.git`, dus fixtures moeten `git init`'d zijn.
+Strongly relevant, and currently the biggest gap: **zero** tests for fourteen
+specified scenarios. Design requirement that follows from that: both scripts
+must make their input injectable. `pending-changes.sh` is nearly there;
+`adopt.sh` pulls everything from globals and requires `.git`, so fixtures
+must be `git init`'d.
 
 ### Usability
 
-Relevant. De gebruiker is Ties plus de agent. De concrete faalmodus staat al in de
-PR #6-review: zeventien rijen huiswerk per nieuw project, in één klap generiek
-beantwoord. F6 maakt dat zichtbaar én besluit het: gefaseerd onderbouwen, geborgd
-met drie poorten.
+Relevant. The user is Ties plus the agent. The concrete failure mode is
+already in the PR #6 review: seventeen rows of homework per new project,
+generically answered in one stroke. F6 makes that visible and decides it:
+substantiate in phases, secured by three gates.
 
-### Kostenbeheersing
+### Cost management
 
-Relevant, in tokens. `WORKFLOW.md` laadt volledig in élke sessie van élk project.
-Circa 45% is voorwaardelijk relevant. Skillbeschrijvingen kosten één keer per
-sessie een paar honderd tokens; de body pas bij aanroep. Meetpunt: regels in
-`CLAUDE.md` vóór/ná, te vermelden in de PR van F12.
+Relevant, in tokens. `WORKFLOW.md` loads in full in every session of every
+project. Roughly 45% is conditionally relevant. Skill descriptions cost a
+few hundred tokens once per session; the body only on invocation.
+Measurement point: lines in `CLAUDE.md` before/after, to be reported in F12's PR.
 
-### Documentatie
+### Documentation
 
-Relevant. `README.md` is aantoonbaar verouderd (F16) en heeft rijen nodig voor
-`skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check` en `CHANGES-ARCHIEF.md`, plus
-uitleg waarom skills gesymlinkt maar sjablonen gekopieerd worden. Elke skill draagt
-zijn eigen uitleg; de kern verwijst er expliciet naar, zodat R7 blijft gelden.
-
----
-
-## Herbruikbare ontwerpprincipes
-
-Uit de uitvoering van epic #11 gedestilleerd — het volledige werkitem-schema
-en de volgordebesluiten staan in `CHANGELOG.md`; dit zijn de principes die
-toekomstige epics nog steeds opgaan, losgemaakt van de uitvoeringsgeschiedenis
-waarin ze ontstonden.
-
-- **Installer vóór referentie.** Een symlink of scaffold die ergens naar
-  verwijst moet zelf al bestaan vóór iets anders ernaar verwijst — anders wijst
-  een vroege `git pull` naar iets dat nergens geïnstalleerd is.
-- **Dedupliceren vóór uitbreiden.** Voeg geen derde consument toe aan
-  gedupliceerde logica; haal de duplicatie eerst weg, anders vermenigvuldig je
-  het probleem in plaats van het op te lossen.
-- **Vergelijkbare `CHANGES.md`-toevoegingen bundelen.** Werkitems die elk een
-  nieuwe adoptievraag toevoegen landen dicht bij elkaar, zodat geadopteerde
-  projecten één vragenbatch krijgen in plaats van een druppel over meerdere
-  sessies.
-- **Extra verificatieronde bij onomkeerbaarheid, schrijven in andermans
-  repo's, of betekenisverlies dat `grep` niet ziet.** Zulke wijzigingen
-  verdienen een aparte, handmatige controle bovenop `./check` — een vals
-  positief of een stille inhoudelijke fout raakt daar niet één sessie, maar
-  meteen alle geadopteerde projecten.
+Relevant. `README.md` is demonstrably outdated (F16) and needs rows for
+`skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check`, and
+`CHANGES-ARCHIEF.md`, plus an explanation of why skills are symlinked but
+templates are copied. Every skill carries its own explanation; the core
+explicitly points to it, so R7 keeps holding.
 
 ---
 
-## Niet in scope
+## Reusable design principles
 
-- **De end-to-end doorloop zelf.** Blijft nodig, heeft nog steeds geen issue, epic
-  of eigenaar — hij bestaat alleen als zin in twee andere issues. Aanbeveling: er
-  een echt issue van maken, met `a2t-emails` PR #10 als waarschijnlijkste vehikel
-  (dat heeft als enige al issues #3–#8 openstaan).
-- **Retroactieve traceability** over 27 issueloze PR's.
-- **De twaalf niet-NFR-entries naar `nfr/` verplaatsen** — geen tweede consument,
-  dus geen duplicatieprobleem.
-- **`mattpocock/skills`' grilling/to-spec-sjabloon overnemen.** De grilling-*techniek*
-  als methode om NFR-secties in te vullen blijft een aparte verkenning.
-- **Een pinbare versie voor consumenten.** *(Herzien: alsnog opgepakt in W37
-  (#79), zie "Besloten in W29 (#53)", besluit 5 — deze uitsluiting gold voor
-  epic #11, niet meer voor epic #52.)*
+Distilled from executing epic #11 — the full work-item schedule and the
+ordering decisions live in `CHANGELOG.md`; these are the principles future
+epics still apply, detached from the execution history in which they arose.
+
+- **Installer before reference.** A symlink or scaffold that points
+  somewhere must already exist before anything else points to it — otherwise
+  an early `git pull` points at something installed nowhere.
+- **Deduplicate before extending.** Don't add a third consumer to
+  duplicated logic; remove the duplication first, or you multiply the
+  problem instead of solving it.
+- **Bundle similar `CHANGES.md` additions.** Work items that each add a new
+  adoption question land close together, so adopted projects get one batch
+  of questions instead of a drip across multiple sessions.
+- **Extra verification round for irreversibility, writing into other
+  people's repos, or meaning loss that `grep` can't see.** Such changes
+  deserve a separate, manual check on top of `./check` — a false positive or
+  a silent substantive error there doesn't hit one session, but immediately
+  every adopted project.
 
 ---
 
-## Bekende beperkingen
+## Out of scope
 
-- Skills geven geen handhaving; een hook kan er alleen naar verwijzen.
-- De guardrails-hook is machine-lokaal: een nieuwe machine zonder `adopt.sh`-run
-  heeft hem niet. Dat geldt ook voor de git-hooks uit F17 — die reizen niet mee
-  met een clone.
-- Serverzijdige branch protection is niet beschikbaar: GitHub vraagt daarvoor op
-  een private repo om een betaald plan. W27 is daarom detectie achteraf, geen
-  preventie; het commando is dan al uitgevoerd.
-- Modellen delen trainingsdata, dus ook `pre-merge-review` verhoogt de bodem zonder
-  blinde vlekken uit te sluiten — die kanttekening staat al in de skill `pre-merge-review`.
-- Bash 3.2 beperkt het scriptidioom.
-- De link-integriteitscontrole uit F13 toetst dát een `Dekt:`-verwijzing oplost,
-  niet of het doel zinnig is. Een verwijzing naar een open punt dat als kop in de
-  PRD staat — tennis-admins `OP5` — slaagt. Bewust geaccepteerd in W17 (#29): elk
-  alternatief breekt de controle in twee van de vier projecten of vraagt
-  configuratie per project die veroudert.
-- Dezelfde controle gaat ervan uit dat een ID-token in hoogstens één van de twee
-  gescande bestanden als kop voorkomt. Staat hetzelfde token als kop in zowel
-  `PRD.md` als `TEST-SCENARIOS.md`, dan is niet meer te bepalen welke kant een
-  `Dekt:`-verwijzing op wijst. Geen van de vier projecten heeft die overlap nu;
-  het ontwerp beschermt er niet tegen.
+- **The end-to-end run-through itself.** Still needed, still has no issue,
+  epic, or owner — it only exists as a sentence in two other issues.
+  Recommendation: turn it into a real issue, with `a2t-emails` PR #10 as the
+  most likely vehicle (the only one that already has issues #3–#8 open).
+- **Retroactive traceability** over 27 issueless PRs.
+- **Moving the twelve non-NFR entries into `nfr/`** — no second consumer, so
+  no duplication problem.
+- **Adopting `mattpocock/skills`' grilling/to-spec template.** The grilling
+  *technique* as a method for filling in NFR sections remains a separate
+  exploration.
+- **A pinnable version for consumers.** *(Revised: picked up after all in
+  W37 (#79), see "Besloten in W29 (#53)", decision 5 — this exclusion held
+  for epic #11, no longer for epic #52.)*
+
+---
+
+## Known limitations
+
+- Skills provide no enforcement; a hook can only point to one.
+- The guardrails hook is machine-local: a new machine without an `adopt.sh`
+  run doesn't have it. The same applies to the git hooks from F17 — those
+  don't travel with a clone.
+- Server-side branch protection isn't available: GitHub requires a paid plan
+  for that on a private repo. W27 is therefore after-the-fact detection, not
+  prevention; the command has already run by then.
+- Models share training data, so `pre-merge-review` too raises the floor
+  without ruling out blind spots — that caveat is already in the
+  `pre-merge-review` skill.
+- Bash 3.2 constrains the scripting idiom.
+- F13's link-integrity check verifies *that* a `Dekt:` reference resolves,
+  not whether the target makes sense. A reference to an open point that
+  appears as a heading in the PRD — tennis-admin's `OP5` — succeeds.
+  Deliberately accepted in W17 (#29): every alternative breaks the check in
+  two of the four projects or requires per-project configuration that goes
+  stale.
+- The same check assumes an ID token appears as a heading in at most one of
+  the two scanned files. If the same token is a heading in both `PRD.md` and
+  `TEST-SCENARIOS.md`, it's no longer possible to tell which direction a
+  `Dekt:` reference points. None of the four projects has that overlap now;
+  the design doesn't guard against it.
 
 ---
 
 ## Technical debt
 
-| Wat | Waarom nu acceptabel | Trigger om aan te pakken |
+| What | Why acceptable for now | Trigger to address |
 |---|---|---|
-| Traceability-mechanisme (F13, W17-W20) ontworpen zonder praktijkbewijs | Bewust overruled; W17 vervangt bewijs door menselijke review | Zodra het eerste echte work item de keten doorloopt |
-| `templates/PRD.md` wordt een build-artefact | Prijs voor het weghalen van de NFR-duplicatie; `check` bewaakt het | Als de generator meer kost dan hij bespaart |
-| Schakel 2 (scenario → issue) blijft zonder hard slot | Poort in `pre-merge-review` dekt hem; alleen schakel 3 gaat ook in CI | Als scenario's structureel zonder issue blijven |
-| Skills binden dit repo aan Claude Code | Bewust begrensd, niveau a — zie "Grens tussen kern en agent-gereedschap (W31, #55)" onder *Portability*; AC4/AC5 uit #55 zijn bewust uitgesteld tot W35 een neutraliteitsclaim maakt | Bij overstap naar een andere agent, of zodra W35 (#59) een claim maakt die AC4/AC5 dan wél nodig heeft |
-| `templates/ci.yml` is npm-only ondanks "platformneutraal" | Bestond al; alle adopters zijn npm of hebben geen CI | Eerste adopter op een andere stack |
-| Vier projecten hebben ~24 van 27 wijzigingen onbeantwoord | Tabellen dateren van vóór PR #6 | W7 maakt het zichtbaar; F6's drie poorten halen het gefaseerd in |
-| Projecten die met het oude `templates/ci.yml` scaffoldden houden hun zwakkere CI | De entry `ci-op-pr-en-main` stelt de vraag, maar beantwoordt hem niet; tot dan blijft de zwakkere workflow staan | Zodra een project de vraag beantwoordt — de melding bij sessiestart houdt hem zichtbaar |
-| `check-traceability.sh` is een ongebruikte root-kopie van `templates/check-traceability.sh` | Zelf-adoptie (#98) scaffoldt hem zoals bij elk project; dit repo regelt traceability al anders (T1/T2 draaien `templates/check-traceability.sh` direct tegen dit repo) — een uitzondering hiervoor in `adopt.sh` zou het "geen speciaal geval"-principe van #98 doorbreken | Zodra `templates/check-traceability.sh` wijzigt zonder dat iemand opmerkt dat de root-kopie meeloopt (geen test bewaakt drift tussen de twee), of als een lezer de root-kopie per ongeluk voor de bron aanziet |
+| Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
+| `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
+| Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
+| Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |
+| `templates/ci.yml` is npm-only despite "platform-neutral" | Pre-existing; all adopters are npm or have no CI | First adopter on a different stack |
+| Four projects have ~24 of 27 changes unanswered | Tables predate PR #6 | W7 makes it visible; F6's three gates bring it in gradually |
+| Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-op-pr-en-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
+| `check-traceability.sh` is an unused root copy of `templates/check-traceability.sh` | Self-adoption (#98) scaffolds it like any project; this repo already handles traceability differently (T1/T2 run `templates/check-traceability.sh` directly against this repo) — an exception for it in `adopt.sh` would break #98's "no special case" principle | Once `templates/check-traceability.sh` changes without anyone noticing the root copy needs to follow (no test guards drift between the two), or if a reader mistakes the root copy for the source |
+| `pre-merge-review`'s `scope.sh` falls back to `nfr/*.md`'s (still-Dutch) heading names for this repo's own NFR rows, now mismatched against this file's translated section headings (no `<!-- nfr: id -->` anchors exist in this hand-authored `PRD.md`, so the fallback was always active) | `scope.sh` degrades to a stderr warning rather than blocking (S27); the printed names are cosmetically stale, not incorrect data | Once `nfr/*.md` is translated via its own frozen-baseline refresh procedure (`LEESMIJ.md`) — separate from this translation effort since editing `nfr/*.md` directly breaks S66's freeze invariant |
 
 ---
 
-## Verificatie
+## Verification
 
-1. **Nulmeting eerst.** W3 is groen op ongewijzigde `main` vóór W4 begint. Elke
-   afwijking daarna staat expliciet toegelicht in de PR — een stille wijziging in
-   de vraagset is nooit acceptabel, ook niet als "opschoning" (R9).
-2. **Rood vóór groen per werkitem.** Het dekkende scenario wordt eerst toegevoegd
-   en rood gezien; de PR toont beide toestanden.
-3. **R1–R9, T1–T5 en S1–S63** draaien in `check`, tegen fixtures, nooit tegen de
-   echte projecten.
-4. **R7 mechanisch én met de hand.** De test grept `WORKFLOW.md` op vijf termen en
-   controleert dat elke genoemde skill een `SKILL.md` heeft. Dat ziet geen
-   betekenisverlies — dus daarnaast een sessie openen in `tennis-admin` na
-   her-adoptie en elke Wegwijzer-rij daadwerkelijk volgen.
-5. **Skill-discovery** aantonen in een echt geadopteerd project vóór W9–W15.
-6. **`adopt.sh` twee keer draaien** geeft een identieke boom en een identieke
+1. **Baseline first.** W3 is green on unmodified `main` before W4 starts.
+   Every deviation after that is explicitly explained in the PR — a silent
+   change in the question set is never acceptable, not even as "cleanup" (R9).
+2. **Red before green per work item.** The covering scenario is added first
+   and seen red; the PR shows both states.
+3. **R1–R9, T1–T5, and S1–S63** run in `check`, against fixtures, never
+   against the real projects.
+4. **R7 mechanically and by hand.** The test greps `WORKFLOW.md` for five
+   terms and checks that every named skill has a `SKILL.md`. That doesn't
+   see meaning loss — so additionally, open a session in `tennis-admin`
+   after re-adoption and actually follow every routing-table row.
+5. **Prove skill discovery** in a real adopted project before W9–W15.
+6. **Running `adopt.sh` twice** produces an identical tree and an identical
    `.gitignore`.
-7. **Tokenmeting**: regels in `CLAUDE.md` vóór/ná, in de PR van W9.
-8. **`bash -n`** op elk gewijzigd script — bestaande conventie uit alle zes PR's.
-9. **Deze release past zijn eigen regel toe**: elke PR krijgt de kwaliteitsreview
-   vóór de merge, mét bevindingen in de PR. Nul van de 27 PR's tot nu toe deden dat.
+7. **Token measurement**: lines in `CLAUDE.md` before/after, in W9's PR.
+8. **`bash -n`** on every changed script — existing convention from all six PRs.
+9. **This release applies its own rule**: every PR gets the quality review
+   before the merge, with findings in the PR. Zero of the 27 PRs so far did that.
 
 ---
 
-## Open vragen
+## Open questions
 
-1. **Wordt de end-to-end doorloop een echt issue?** De oorspronkelijke gedachte
-   was hem vóór W17 te plannen, zodat praktijkbewijs W17's menselijke review
-   zou vervangen. Die volgorde is achterhaald: W17 (#29) is
-   afgerond en de vijf veldformaatbesluiten liggen vast. De doorloop blijft
-   waardevol, maar nu als toets óf die besluiten in de praktijk houden — niet
-   als vervanging van een review die al gedaan is.
-2. **`kwaliteitsreview-voor-merge` is door geen enkel project beantwoord** en geen
-   enkele PR had ooit een review. Moet W13 die entry meteen in alle vier de
-   projecten voorleggen?
-3. ~~Genereren of samenstellen?~~ Beantwoord: genereren — zie `genereer-prd-blok`
-   en F4.
+1. **Does the end-to-end run-through become a real issue?** The original
+   idea was to plan it before W17, so practical proof would replace W17's
+   human review. That order is now moot: W17 (#29) is done and the five
+   field-format decisions are locked in. The run-through remains valuable,
+   but now as a check on whether those decisions hold up in practice — not
+   as a replacement for a review that's already happened.
+2. **`kwaliteitsreview-voor-merge` has been answered by no project** and no
+   PR ever had a review. Should W13 put that entry in front of all four
+   projects right away?
+3. ~~Generate or assemble?~~ Answered: generate — see `genereer-prd-blok`
+   and F4.
 
 ---
 
@@ -952,7 +961,7 @@ plaats van alleen goedkoop, krijgt W31 (#55) er twee concrete stappen bij: een
 `check`-test die de grens afdwingt (niet alleen beschrijft), en een eenmalige
 meting van wat er zonder Claude Code daadwerkelijk nog werkt.
 
-De bestaande technical-debt-rij ("Skills binden dit repo aan Claude Code")
+De bestaande technical-debt-rij ("Skills bind this repo to Claude Code")
 wordt door dít besluit niet gesloten — dat gebeurt pas als W31 de grenstabel
 en de twee bovenstaande stappen heeft geleverd, en dan niet als "opgelost"
 maar als "bewust begrensd, met een concrete trigger om verder te gaan (niveau
@@ -1027,9 +1036,9 @@ ontwikkelaar die het repo nooit zag, installeert het uitsluitend vanuit de
 beantwoordde wat "installeren" betekent voor iemand die niet Ties is. Het
 huidige model — los checkout, een omgevingsvariabele, `adopt.sh` — is een model
 voor één persoon op meerdere machines, niet voor een consument die niet main
-wil volgen. Dit document sloot "een pinbare versie voor consumenten" voorheen
-expliciet uit (zie "Niet in scope" hierboven, en F15's "een tag is een
-menselijk referentiepunt, geen pinbare versie" — beide bijgewerkt met een
+wil volgen. Dit document sloot "a pinnable version for consumers" voorheen
+expliciet uit (zie "Out of scope" hierboven, en F15's "a tag is a human
+reference point, not a pinnable version" — beide bijgewerkt met een
 verwijzing hierheen), wat de belofte van deze release (deelbaarheid)
 tegensprak.
 
@@ -1049,24 +1058,24 @@ mee.
 
 ---
 
-## Projectbestanden
+## Project files
 
-| Bestand | Doel |
+| File | Purpose |
 |---|---|
-| `WORKFLOW.md` | De workflow-kern; gesymlinkt als `CLAUDE.md` in elk geadopteerd project |
-| `USER-CLAUDE.md` | Userbrede trigger-instructie; gesymlinkt als `~/.claude/CLAUDE.md` |
-| `CHANGES.md` | Adopteerbare wijzigingen (na F4: de twaalf niet-NFR-entries) |
-| `CHANGES-ARCHIEF.md` | Geretireerde entries, met ID en reden (F5, nieuw) |
-| `nfr/*.md` | Register van de vijftien NFR's — één bron voor vraag, betekenis en invulhulp (F4, nieuw) |
-| `lib/changes.sh` | Gedeelde parser en predicaatlogica (F3, nieuw) |
-| `adopt.sh` | Installeert symlinks, kopieën, skills en de adoptietabel |
-| `pending-changes.sh` | Meldt openstaande wijzigingen en onderbouwingen bij sessiestart |
-| `check` | Eigen testcommando: syntax, JSON-validatie, shellcheck, testsuite (F1, nieuw) |
-| `test/` | Testharnas en `fixtures/nulmeting/` (F1, F2, nieuw) |
-| `hooks/` | Guard-scripts voor de `PreToolUse`-hooks (F7, F8, nieuw) |
-| `skills/*/SKILL.md` | De negen skills (F10, nieuw) |
-| `settings/session-hooks.json` | Hookconfiguratie; gesymlinkt als `.claude/settings.json` |
-| `templates/` | Sjablonen voor geadopteerde projecten (PRD, testscenario's, architectuur, CI, issues) |
-| `PRD.md` | Dit document |
-| `TEST-SCENARIOS.md` | De scenario's die dit document dekken |
-| `CHANGELOG.md` | Releasehistorie met vereiste acties per release (F15, nieuw) |
+| `WORKFLOW.md` | The workflow core; symlinked as `CLAUDE.md` in every adopted project |
+| `USER-CLAUDE.md` | User-wide trigger instruction; symlinked as `~/.claude/CLAUDE.md` |
+| `CHANGES.md` | Adoptable changes (after F4: the twelve non-NFR entries) |
+| `CHANGES-ARCHIEF.md` | Retired entries, with ID and reason (F5, new) |
+| `nfr/*.md` | Registry of the fifteen NFRs — one source for question, meaning, and fill-in guidance (F4, new) |
+| `lib/changes.sh` | Shared parser and predicate logic (F3, new) |
+| `adopt.sh` | Installs symlinks, copies, skills, and the adoption table |
+| `pending-changes.sh` | Reports outstanding changes and substantiations at session start |
+| `check` | Its own test command: syntax, JSON validation, shellcheck, test suite (F1, new) |
+| `test/` | Test harness and `fixtures/nulmeting/` (F1, F2, new) |
+| `hooks/` | Guard scripts for the `PreToolUse` hooks (F7, F8, new) |
+| `skills/*/SKILL.md` | The nine skills (F10, new) |
+| `settings/session-hooks.json` | Hook configuration; symlinked as `.claude/settings.json` |
+| `templates/` | Templates for adopted projects (PRD, test scenarios, architecture, CI, issues) |
+| `PRD.md` | This document |
+| `TEST-SCENARIOS.md` | The scenarios that cover this document |
+| `CHANGELOG.md` | Release history with required actions per release (F15, new) |

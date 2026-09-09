@@ -12,7 +12,7 @@
 > Dit document beschrijft een gewenste richting, geen definitieve architectuur of implementatieplan. Besluiten, concrete tooling en technische uitwerking blijven expliciet **TBD**.
 
 > **Verhouding tot de andere documenten in dit repo.** Dit is *niet* het PRD van
-> de lopende release — dat is [`PRD.md`](PRD.md) ("Van proza naar mechanisme",
+> de lopende release — dat is [`PRD.md`](PRD.md) ("From prose to mechanism",
 > epic [#11](https://github.com/TiesL/claude-workflow/issues/11)). Dit document
 > is een verkenning voor een latere release en is nog niet vertaald naar
 > work items; dat gebeurt pas na expliciete besluitvorming. De workflow-afspraken
