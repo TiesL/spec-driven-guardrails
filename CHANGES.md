@@ -11,8 +11,12 @@ Per entry:
   `pending-changes.sh` toont alleen die eerste regel.
 - **Standaard** — `ja` (in het algemeen wenselijk, tenzij een project een
   reden heeft om af te wijken) of `vraag` (geen algemene voorkeur, hangt af
-  van het project). Dit is Ties' eigen voorkeur per onderwerp, niet een
-  afgeleide categorie. Bepaalt alleen het startpunt: `adopt.sh` seedt
+  van het project). Dit is de **productdefault** per onderwerp — een
+  verdedigbare startwaarde voor elke nieuwe adopter, geen afgeleide
+  categorie en geen voorschrift. Ties' eigen antwoorden in de vier bestaande
+  projecten (elk `WORKFLOW-ADOPTIE.md`) zijn een uitgewerkt voorbeeld van hoe
+  die default toegepast is, niet iets dat een nieuwe adopter moet overnemen.
+  Bepaalt alleen het startpunt: `adopt.sh` seedt
   `ja`-entries bij adoptie met een voorlopige stempel; `vraag`-entries seeden
   nooit. **Geen van beide betekent stilzwijgend accepteren** — zie de
   onderbouwingsstap in de skill `adoption-registry`: `ja`-rijen
