@@ -46,7 +46,7 @@ te verkeerd te typen of de env var te vergeten, zonder enige validatie
 `git checkout`).
 
 ### Optie 2 — Convenience-entrypoint `install.sh` (gekozen)
-Automatiseert checkout + validatie or nadat de gebruiker al gekloond heeft.
+Automatiseert checkout + validatie vlak nadat de gebruiker al gekloond heeft.
 Voegt precies twee nieuwe, toetsbare garanties toe die optie 1 niet geeft: een
 vieze werkmap wordt geweigerd in plaats van overschreven, en een onbekende tag
 faalt met een duidelijke melding in plaats van een cryptische git-foutmelding.
