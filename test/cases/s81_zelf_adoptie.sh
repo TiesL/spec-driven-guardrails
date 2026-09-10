@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S81 — spec-driven-guardrails can adopt itself.
-# Dekt: F7, F8
+# Covers: F7, F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

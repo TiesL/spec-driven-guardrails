@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S70 — `CONTEXT.md` is scaffolded as soon as the row is set to `yes`.
-# Dekt: F10
+# Covers: F10
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -37,7 +37,7 @@ This file holds what every session needs. For everything else: the table below r
 | Situation | Skill |
 |---|---|
 | Quality review before the merge | `pre-merge-review` |
-| Specifying work (PRD, test scenarios, issues), `Dekt:` convention | `write-spec` |
+| Specifying work (PRD, test scenarios, issues), `Covers:` convention | `write-spec` |
 | Substantiation requirement | `adoption-registry` |
 | Adoption registry (tracking per project which changes apply) | `adoption-registry` |
 | `check`/`deploy` naming convention, CI | `check-convention` |

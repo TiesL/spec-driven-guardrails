@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S55 — On a feature branch, the session start reports nothing.
-# Dekt: F18
+# Covers: F18
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

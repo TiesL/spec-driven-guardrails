@@ -18,7 +18,7 @@ labels: ""
   te stellen welk scenario werkelijk een issue heeft.
 
   `S<n>` hoort hier dus alleen thuis als verwijzing naar een scenario, in het
-  veld **Dekt:** hieronder.
+  veld **Covers:** hieronder.
 -->
 
 ### AC1: <naam van het criterium>
@@ -38,11 +38,11 @@ labels: ""
   Projects.
 -->
 **Epic:** #
-**Dekt:** <F1, S2>
+**Covers:** <F1, S2>
 **Blocked by:** #
 **Blocks:** #
 <!--
-  **Dekt:** noemt wat dit werkitem realiseert: functionaliteit uit PRD.md en
+  **Covers:** noemt wat dit werkitem realiseert: functionaliteit uit PRD.md en
   scenario's uit TEST-SCENARIOS.md, komma-gescheiden, bijvoorbeeld `F3, S7, S8`.
   Eén veldnaam voor beide richtingen — het prefix van het token zegt al welke
   kant het op wijst.

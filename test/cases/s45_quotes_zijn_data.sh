@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S45 — Text inside quotes is data, not a command.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

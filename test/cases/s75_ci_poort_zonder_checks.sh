@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S75 — The merge guard does not block when no checks are reported.
-# Dekt: F8
+# Covers: F8
 #
 # A project without a CI workflow (CI is optional at adoption, see ci-conventie
 # in CHANGES.md) must not get stuck on a check that has nothing to check for

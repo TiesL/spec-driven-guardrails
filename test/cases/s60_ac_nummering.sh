@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S60 — Acceptance criteria in the template are named AC<n>.
-# Dekt: F13
+# Covers: F13
 #
 # As long as an issue names its own criteria `S1`, every grep for scenario
 # references also hits the issue itself. Link 2 (scenario -> issue) is then
@@ -28,23 +28,23 @@ eigen_nummering="$(grep -nE '^#+ +S[0-9]+' "$sjabloon" || true)"
   || fail "S60 — work-item.md still numbers itself with S<n>: $eigen_nummering"
 
 # And: the template carries the coverage field, at line start.
-grep -q '^\*\*Dekt:\*\*' "$sjabloon" \
-  || fail "S60 — work-item.md has no '**Dekt:**' at line start"
+grep -q '^\*\*Covers:\*\*' "$sjabloon" \
+  || fail "S60 — work-item.md has no '**Covers:**' at line start"
 
-# And: **Dekt:** sits between Epic and Blocked by. That is not a matter of
+# And: **Covers:** sits between Epic and Blocked by. That is not a matter of
 # taste: every existing issue in this repo writes that order, and a template
 # that models a different order produces two notations, one of which would
 # accidentally become the norm later on.
-volgorde="$(grep -nE '^\*\*(Epic|Dekt|Blocked by|Blocks):\*\*' "$sjabloon" | sed 's/^[0-9]*://; s/:\*\*.*/:**/' | tr '\n' ' ')"
-verwacht="**Epic:** **Dekt:** **Blocked by:** **Blocks:** "
+volgorde="$(grep -nE '^\*\*(Epic|Covers|Blocked by|Blocks):\*\*' "$sjabloon" | sed 's/^[0-9]*://; s/:\*\*.*/:**/' | tr '\n' ' ')"
+verwacht="**Epic:** **Covers:** **Blocked by:** **Blocks:** "
 [ "$volgorde" = "$verwacht" ] \
   || fail "S60 — field order is '$volgorde', expected '$verwacht'"
 
-# And: the loose lines that Dekt replaces are gone. If they remain, there are
+# And: the loose lines that Covers: replaces are gone. If they remain, there are
 # two ways to write the same thing and nobody can guess which one counts.
 for oud in "PRD-sectie" "TEST-SCENARIOS.md-scenario"; do
   grep -q "^$oud" "$sjabloon" \
-    && fail "S60 — '$oud' is still there alongside **Dekt:**"
+    && fail "S60 — '$oud' is still there alongside **Covers:**"
 done
 
 test_klaar "S60"

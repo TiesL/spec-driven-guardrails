@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S14 — The guard fails open (allows) when it is itself broken.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R8 — Retirement keeps working after restructuring CHANGES.md.
-# Dekt: F5
+# Covers: F5
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

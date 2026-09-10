@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S1 — `check` fails on a syntax error in a script.
-# Dekt: F1
+# Covers: F1
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

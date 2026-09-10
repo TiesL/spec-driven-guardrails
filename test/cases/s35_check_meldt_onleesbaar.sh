@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S35 — `check` reports what it was unable to check.
-# Dekt: F1
+# Covers: F1
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

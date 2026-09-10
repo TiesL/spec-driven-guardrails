@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S63 — adopt.sh scaffolds the traceability check, executable and without
 # overwriting.
-# Dekt: F13
+# Covers: F13
 #
 # A check that only exists in this repo does not check anything anywhere.
 

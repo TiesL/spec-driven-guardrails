@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S86 — SessionStart/SessionEnd hooks work regardless of the incidental cwd.
-# Dekt: F6, F18
+# Covers: F6, F18
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

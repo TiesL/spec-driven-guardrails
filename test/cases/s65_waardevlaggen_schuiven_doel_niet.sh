@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S65 — Value flags of `gh pr merge` do not shift the target.
-# Dekt: F8
+# Covers: F8
 #
 # Found in pre-merge-review on PR #70: --body/--subject (and the other value
 # flags of `gh pr merge`) were skipped as a loose "-*" token, but their value

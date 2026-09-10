@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S17 — The merge guard fails open without gh or without network.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

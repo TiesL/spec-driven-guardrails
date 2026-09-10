@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S7 — The signal counts rows still waiting on substantiation.
-# Dekt: F6
+# Covers: F6
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

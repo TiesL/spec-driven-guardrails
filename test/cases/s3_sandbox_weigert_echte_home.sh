@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S3 — The test sandbox refuses to run with the real HOME.
-# Dekt: F1
+# Covers: F1
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

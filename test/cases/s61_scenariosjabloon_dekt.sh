@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S61 — The scenario template carries the coverage field and the grammar.
-# Dekt: F13
+# Covers: F13
 #
 # A template that models the form without naming it does not teach the
 # exception. Then the first `S2b` runs into an enforcement nobody saw
@@ -14,7 +14,7 @@ set -uo pipefail
 sjabloon="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
 [ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_klaar; }
 
-# Then: every example scenario shows a **Dekt:** field directly under its heading.
+# Then: every example scenario shows a **Covers:** field directly under its heading.
 #
 # The check remembers the previous line instead of looking ahead. A
 # look-ahead variant loses a heading as soon as a new one directly follows -
@@ -22,13 +22,13 @@ sjabloon="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
 # run - and it never sees the file's last heading, since no line follows it
 # anymore. Both cases produced a green result while the field was missing.
 ontbreekt="$(awk '
-  vorige_kop != "" && $0 !~ /^\*\*Dekt:\*\*/ { print vorige_kop }
+  vorige_kop != "" && $0 !~ /^\*\*Covers:\*\*/ { print vorige_kop }
   { vorige_kop = "" }
   /^### [A-Z]{1,2}[0-9]+[a-z]?( |$)/ { vorige_kop = $2 }
   END { if (vorige_kop != "") print vorige_kop }
 ' "$sjabloon")"
 [ -z "$ontbreekt" ] \
-  || fail "S61 — scenarios without **Dekt:** directly under the heading: $(echo "$ontbreekt" | tr '\n' ' ')"
+  || fail "S61 — scenarios without **Covers:** directly under the heading: $(echo "$ontbreekt" | tr '\n' ' ')"
 
 # And: there is at least one example scenario, otherwise the check above is
 # empty and green at the same time.
@@ -52,8 +52,8 @@ grep -q 'S2b' "$sjabloon" \
 # And: the field shows a placeholder, not a made-up ID. A template with a
 # real-looking `F3` invites copying it, and then the first scenario of every
 # new project refers to functionality that does not exist.
-verzonnen="$(grep '^\*\*Dekt:\*\*' "$sjabloon" | grep -v '<' || true)"
+verzonnen="$(grep '^\*\*Covers:\*\*' "$sjabloon" | grep -v '<' || true)"
 [ -z "$verzonnen" ] \
-  || fail "S61 — **Dekt:** without a placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
+  || fail "S61 — **Covers:** without a placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
 
 test_klaar "S61"

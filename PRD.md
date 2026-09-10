@@ -362,7 +362,7 @@ Ties reads and maintains stays Dutch.
 | `deploy-guards` | model | Deploy conditions per environment (~52 lines) + F6's production gate |
 | `check-convention` | model | `check`/`deploy` naming convention + CI (~22 lines) |
 | `adoption-registry` | model | Adoption registry (35) + substantiation requirement (15) + the protocol from `USER-CLAUDE.md` |
-| `write-spec` | model + user | Specifying work + `Dekt:` convention + `CONTEXT.md` glossary |
+| `write-spec` | model + user | Specifying work + `Covers:` convention + `CONTEXT.md` glossary |
 | `refactoring-triggers` | model | Complexity/debt/refactoring (32 lines) |
 | `tdd-seams` | model + user | New: seams, red-before-green, three anti-patterns |
 | `diagnose-bug` | model | New: reproduction → hypotheses → regression test before fix |
@@ -451,7 +451,7 @@ scenarios. If tennis-admin scaffolded that template, `A1` would mean two
 things within one project — not a collision between projects, but within one.
 Verified: `AC` doesn't occur in any of the four projects.
 
-**b. One field name, `**Dekt:**`**, in both directions; the token's prefix
+**b. One field name, `**Covers:**`**, in both directions; the token's prefix
 says which link it is. Strict: start of line, comma-separated tokens
 matching `^[A-Z]{1,2}[0-9]+[a-z]?$`. Both quantifiers come from reality, not
 taste. The `[a-z]?` is there for `a2t-emails`' `S2b`; the `{1,2}` for
@@ -462,7 +462,7 @@ projects. Only the field counts; that prevents false positives by construction.
 
 **c. Don't hardcode `F`/`S` — check link integrity instead.** Collect the ID
 tokens from the headings of `PRD.md` and `TEST-SCENARIOS.md`, and check that
-every `Dekt:` token resolves in the other set. This makes tennis-admin's
+every `Covers:` token resolves in the other set. This makes tennis-admin's
 `R/A/B/P` work unchanged (the B-series was overlooked in an earlier
 inventory — exactly the kind of mistake a hardcoded prefix list runs into),
 turns tennis-invoicing's duplicate IDs into a **reported error** (a real
@@ -475,7 +475,7 @@ four projects is off by day two.
 The scope is bounded by decision c itself: the collector only reads headings
 from `PRD.md` and `TEST-SCENARIOS.md`. tennis-admin's `O1`–`O5` — weighed
 architecture options, four of which were rejected — live exclusively in
-`ARCHITECTUUR.md` and therefore aren't collected. `Dekt: O2` therefore
+`ARCHITECTUUR.md` and therefore aren't collected. `Covers: O2` therefore
 correctly fails to resolve and gets reported. This problem can only occur for
 things that live in the two scanned files.
 
@@ -726,7 +726,7 @@ exists, without building an adapter layer or contract (see "Besloten in W29
 | Templates (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTUUR.md`) | `settings/session-hooks.json` |
 | Adoption registry (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
 | The `nfr/` registry | `skills/` |
-| Traceability (`Dekt:`, `AC<n>`) | `CLAUDE.md` as the symlink name |
+| Traceability (`Covers:`, `AC<n>`) | `CLAUDE.md` as the symlink name |
 | Git conventions, `check`, the test harness | the `.claude/` directory structure |
 
 Two things that aren't a clean layer and can't become one: the enforcement
@@ -837,7 +837,7 @@ epics still apply, detached from the execution history in which they arose.
   without ruling out blind spots — that caveat is already in the
   `pre-merge-review` skill.
 - Bash 3.2 constrains the scripting idiom.
-- F13's link-integrity check verifies *that* a `Dekt:` reference resolves,
+- F13's link-integrity check verifies *that* a `Covers:` reference resolves,
   not whether the target makes sense. A reference to an open point that
   appears as a heading in the PRD — tennis-admin's `OP5` — succeeds.
   Deliberately accepted in W17 (#29): every alternative breaks the check in
@@ -846,7 +846,7 @@ epics still apply, detached from the execution history in which they arose.
 - The same check assumes an ID token appears as a heading in at most one of
   the two scanned files. If the same token is a heading in both `PRD.md` and
   `TEST-SCENARIOS.md`, it's no longer possible to tell which direction a
-  `Dekt:` reference points. None of the four projects has that overlap now;
+  `Covers:` reference points. None of the four projects has that overlap now;
   the design doesn't guard against it.
 
 ---
@@ -867,7 +867,7 @@ epics still apply, detached from the execution history in which they arose.
 | `pending-changes.sh` (W42/#114) embeds ~75 lines of network-mutating, `gh`-calling logic (the old-format migration notice and tracking-issue creation) inside a script whose module comment otherwise promises "no network, no mutation" | The exception is honestly documented and pinned to an explicit `-R <host>/<owner>/<repo>` derived from the project's own remote — found and reviewed by Opus (two review rounds) during pre-merge-review of PR #127 | If this logic grows further, or if another mutating exception is added — pulling it into its own script the `SessionStart` hook calls alongside `pending-changes.sh` would keep the no-mutation contract intact, make the mutating path independently testable, and self-delete once every project has migrated |
 | `test/cases/s38_veld_zonder_kop.sh`'s second half (the `adopt.sh`-through-a-minimal-fake-workflow-dir check) has been silently non-executing since `lib/nfr.sh` became a required `adopt.sh` dependency — the fake dir never copied it, so `adopt.sh` dies before writing any table, and the `[ -f "$tabel" ]` guard treats that as a pass. Found during PR #127's pre-merge-review (round 2, N2), pre-existing and unrelated to that PR's own changes | The scenario's first half (`itereer_entries` on a malformed source) is real and still passing; only the `adopt.sh`-integration half is silently skipped | Copy `lib/nfr.sh` into the fake workflow dir alongside `lib/changes.sh`, and make a missing table a hard failure rather than a silently skipped check |
 | Most `test/lib.sh` helpers that call `pending-changes.sh` (`openstaande_ids()` and its callers — s71, s72, r3, r4, r6, r8, r9, s8, s36, and others) run it on the plain, un-isolated `PATH`, relying entirely on sandboxed projects never having a `github.com` origin remote to keep `gh` unreachable. Found during PR #127's pre-merge-review (round 2, N3) | Correct today because the source-level fix (no origin → no `gh` call at all) carries the load; not defense in depth | If a future fixture or helper ever gives a sandboxed project a real `github.com`-shaped remote, add a refusing fake `gh` on `PATH` by default in `check`/`test/lib.sh`'s `sandbox_create()`, so no test can reach a real `gh` regardless of what any individual test sets up |
-| Other `gh` call sites in this repo (`skills/pre-merge-review/scenario-poort.sh`'s `gh issue list`, `hooks/git-guardrails`'s `gh pr view`/`gh pr checks`) rely on `gh`'s own cwd/`GH_REPO`/`GH_HOST`-based repo detection, unlike `pending-changes.sh`'s W42 fix — found during PR #127's pre-merge-review (round 2, N4) | All are read-only (no wrong-repo *write* risk, only wrong-repo *evidence* — e.g. link 2 reading another repo's `**Dekt:**` fields); pre-existing, not introduced by W42 | If any of these gains a mutating capability, or if wrong-repo evidence-reading becomes a real incident, pin `-R <host>/<owner>/<repo>` there too, the same way |
+| Other `gh` call sites in this repo (`skills/pre-merge-review/scenario-poort.sh`'s `gh issue list`, `hooks/git-guardrails`'s `gh pr view`/`gh pr checks`) rely on `gh`'s own cwd/`GH_REPO`/`GH_HOST`-based repo detection, unlike `pending-changes.sh`'s W42 fix — found during PR #127's pre-merge-review (round 2, N4) | All are read-only (no wrong-repo *write* risk, only wrong-repo *evidence* — e.g. link 2 reading another repo's `**Covers:**` fields); pre-existing, not introduced by W42 | If any of these gains a mutating capability, or if wrong-repo evidence-reading becomes a real incident, pin `-R <host>/<owner>/<repo>` there too, the same way |
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S72 — Existing projects are still presented with the main-via-PR question.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

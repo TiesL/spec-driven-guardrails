@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S34 — The README describes the current structure.
-# Dekt: F16
+# Covers: F16
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

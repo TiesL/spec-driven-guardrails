@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S29 — The routing table resolves every moved topic in a single jump.
-# Dekt: F12
+# Covers: F12
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

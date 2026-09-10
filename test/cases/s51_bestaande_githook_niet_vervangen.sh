@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S51 — An existing git hook is not silently replaced.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

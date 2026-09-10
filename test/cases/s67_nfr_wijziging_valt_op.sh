@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S67 — A change in the nfr register that affects the question set stands out.
-# Dekt: F2
+# Covers: F2
 #
 # Demonstrated with a mutation, same style as R6/S41: a new nfr file with
 # `van-toepassing-als: altijd` must make R9 diverge for every fixture, and

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R6 — Predicate behavior identical and demonstrably correct.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

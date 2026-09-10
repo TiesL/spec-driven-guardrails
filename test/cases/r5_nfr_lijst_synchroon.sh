@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R5 — NFR list stays 1-to-1 in sync.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

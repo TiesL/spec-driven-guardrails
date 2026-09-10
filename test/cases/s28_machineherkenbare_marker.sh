@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S28 — pre-merge-review places a machine-recognizable marker in its findings
 # comment, which the future merge guard (W10b/F8) keys on.
-# Dekt: F11
+# Covers: F11
 #
 # The merge guard does not exist yet (W10b) and actually placing a PR comment
 # requires gh/network — so this is a document-contract test, in the style of

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S44 — The hook wiring lets the block through.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

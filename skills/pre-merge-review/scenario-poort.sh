@@ -6,11 +6,16 @@
 #   scenario-poort.sh <project_dir>
 #
 # Voor elk scenario-ID uit <project_dir>/TEST-SCENARIOS.md: wordt het genoemd
-# in het **Dekt:**-veld van minstens één issue (open of dicht)? Alleen dat
+# in het **Covers:**-veld van minstens één issue (open of dicht)? Alleen dat
 # veld telt — dezelfde grammatica en dezelfde "alleen het veld telt"-regel als
 # templates/check-traceability.sh (schakel 1), hier toegepast op issues in
 # plaats van op PRD.md/TEST-SCENARIOS.md onderling. Een ID dat toevallig in
 # een zin voorkomt is geen verwijzing.
+#
+# W42/#114: issue-bodies matchen zowel **Covers:** als het pre-migratie
+# **Dekt:**-veld, blijvend — in tegenstelling tot PRD.md/TEST-SCENARIOS.md
+# (die krijgen een echte cutover) is een historisch, mogelijk al gesloten
+# issue niet iets wat deze migratie herschrijft. Bevestigd met Ties.
 #
 # Faal-open zonder gh of netwerk: waarschuwen, niet blokkeren — dezelfde
 # grondregel als de deploy-guards en de merge-guard (W10b).
@@ -48,11 +53,13 @@ if [ "$status" -ne 0 ]; then
   exit 0
 fi
 
-# Zelfde vorm als dekt_ruw/dekt_tokens in check-traceability.sh: alleen het
-# **Dekt:**-veld aan regelbegin telt, komma-gescheiden.
+# Zelfde vorm als covers_ruw/covers_tokens in check-traceability.sh: alleen
+# het **Covers:**-veld aan regelbegin telt, komma-gescheiden. Matcht ook het
+# pre-migratie **Dekt:**-veld (blijvende uitzondering, zie boven) — vandaar
+# de alternatie in de grep-patronen hieronder.
 gedekt="$(printf '%s\n' "$issuebodies" \
-  | grep '^\*\*Dekt:\*\*' \
-  | sed 's/^\*\*Dekt:\*\*[[:space:]]*//' \
+  | grep -E '^\*\*(Covers|Dekt):\*\*' \
+  | sed 's/^\*\*Covers:\*\*[[:space:]]*//; s/^\*\*Dekt:\*\*[[:space:]]*//' \
   | tr ',' '\n' \
   | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
   | grep -v '^$' \

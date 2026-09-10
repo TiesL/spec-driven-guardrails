@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S47 — Committing on main is blocked, with a workable way out.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

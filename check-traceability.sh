@@ -42,35 +42,43 @@ ids_uit_koppen() {
     | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# De ruwe inhoud van de Dekt:-velden, één komma-gescheiden stuk per regel.
+# De ruwe inhoud van de Covers:-velden, één komma-gescheiden stuk per regel.
 #
 # Alleen het veld telt, aan regelbegin. Dat voorkomt vals-positieven per
 # constructie: een zin die toevallig "S1" bevat is geen verwijzing.
-dekt_ruw() {
-  grep '^\*\*Dekt:\*\*' "$1" \
-    | sed 's/^\*\*Dekt:\*\*[[:space:]]*//' \
+covers_ruw() {
+  grep '^\*\*Covers:\*\*' "$1" \
+    | sed 's/^\*\*Covers:\*\*[[:space:]]*//' \
     | tr ',' '\n' \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
     | grep -v '^$'
 }
 
-# De geldige ID's uit de Dekt:-velden.
+# De geldige ID's uit de Covers:-velden.
 #
 # Een placeholder tussen punthaken wordt overgeslagen: een vers gescaffold
-# project draagt `**Dekt:** <F1>` uit het sjabloon, en een controle die daarop
+# project draagt `**Covers:** <F1>` uit het sjabloon, en een controle die daarop
 # meteen faalt, staat morgen uit.
-dekt_tokens() {
-  dekt_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
+covers_tokens() {
+  covers_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
 }
 
-# Alles in een Dekt:-veld dat geen ID en geen placeholder is.
+# Alles in een Covers:-veld dat geen ID en geen placeholder is.
 #
 # Dit apart melden in plaats van stil wegfilteren. Een tikfout als `F-2`, een
 # lijst met spaties in plaats van komma's, of een veld dat over twee regels
 # doorloopt, verdween anders geruisloos - en dan belooft de controle dat elk
 # token oplost terwijl hij precies de kapotte tokens niet ziet.
-dekt_ongeldig() {
-  dekt_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
+covers_ongeldig() {
+  covers_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
+}
+
+# W42/#114: een achtergebleven **Dekt:**-veld van vóór de Covers:-cutover
+# mag niet stilzwijgend verdwijnen (AC3) — niet als geldige Covers:-
+# verwijzing geparsed, en niet stilzwijgend genegeerd alsof het bestand
+# helemaal geen dekkingsveld draagt.
+dekt_achtergebleven() {
+  grep -c '^\*\*Dekt:\*\*' "$1" 2>/dev/null || true
 }
 
 prd_ids="$(ids_uit_koppen "$prd")"
@@ -97,10 +105,21 @@ if [ -z "$prd_ids" ]; then
   exit 1
 fi
 
-# Elk Dekt:-token lost op in de ID's van het ándere bestand.
+# Een achtergebleven Dekt:-veld, in beide bestanden, wordt expliciet
+# gemeld in plaats van stilzwijgend als proza geparsed of stilzwijgend
+# behandeld als "geen dekkingsveld" — zie AC3, W42/#114.
+for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
+  naam="${paar%%:*}"
+  aantal="$(dekt_achtergebleven "${paar#*:}")"
+  if [ "${aantal:-0}" -gt 0 ]; then
+    melding "$naam draagt nog $aantal pre-migratie Dekt:-veld(en) — zet ze om naar Covers: (zie #114)"
+  fi
+done
+
+# Elk Covers:-token lost op in de ID's van het ándere bestand.
 controleer_verwijzingen() {
   local bestand="$1" naam="$2" doelen="$3" doelnaam="$4" token
-  for token in $(dekt_tokens "$bestand"); do
+  for token in $(covers_tokens "$bestand"); do
     printf '%s\n' "$doelen" | grep -qx "$token" \
       || melding "$naam verwijst naar $token, maar dat ID bestaat niet in $doelnaam"
   done
@@ -110,9 +129,9 @@ for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
   naam="${paar%%:*}"
   while IFS= read -r stuk; do
     [ -n "$stuk" ] || continue
-    melding "$naam: '$stuk' in een Dekt:-veld is geen geldig ID — verwacht komma-gescheiden tokens van de vorm F1, S2 of S2b"
+    melding "$naam: '$stuk' in een Covers:-veld is geen geldig ID — verwacht komma-gescheiden tokens van de vorm F1, S2 of S2b"
   done <<EOF
-$(dekt_ongeldig "${paar#*:}")
+$(covers_ongeldig "${paar#*:}")
 EOF
 done
 
@@ -121,15 +140,20 @@ controleer_verwijzingen "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 
 # Schakel 1 zelf: elke functionaliteit is door minstens één scenario gedekt.
 #
-# Draagt geen enkel scenario een Dekt:-veld, dan gebruikt dit project de
+# Draagt geen enkel scenario een Covers:-veld, dan gebruikt dit project de
 # conventie nog niet. Dan is elke functionaliteit per definitie ongedekt, en zou
 # dit script bij invoering in één klap over álle items klagen. Dat is de
 # retrofit die het ontwerp juist vermijdt: de conventie geldt vanaf het
 # eerstvolgende werk. Vandaar een waarschuwing, en handhaving zodra de eerste
 # verwijzing er staat.
-gedekt="$(dekt_tokens "$scenarios" | sort -u)"
-if [ -z "$gedekt" ]; then
-  waarschuwing "TEST-SCENARIOS.md draagt nog geen Dekt:-velden — schakel 1 wordt pas gehandhaafd zodra de eerste verwijzing er staat"
+#
+# Een achtergebleven Dekt:-veld is een andere situatie, al hierboven gemeld,
+# en mag deze waarschuwing niet ook nog triggeren: het project gebruikt de
+# conventie wél, alleen nog op het pre-migratie-veld — "draagt nog geen
+# Covers:-velden" zou dan zowel misleidend als dubbelop zijn.
+gedekt="$(covers_tokens "$scenarios" | sort -u)"
+if [ -z "$gedekt" ] && [ "$(dekt_achtergebleven "$scenarios")" -eq 0 ]; then
+  waarschuwing "TEST-SCENARIOS.md draagt nog geen Covers:-velden — schakel 1 wordt pas gehandhaafd zodra de eerste verwijzing er staat"
   [ "$fouten" -eq 0 ] && exit 0
   exit 1
 fi

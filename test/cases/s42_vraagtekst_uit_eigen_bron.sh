@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S42 — Every reported change shows the question from its own source.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

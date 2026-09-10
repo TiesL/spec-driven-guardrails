@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S69 — `diagnose-bug` describes the mandatory order.
-# Dekt: F10
+# Covers: F10
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S2 — `check` fails on invalid JSON in the hook configuration.
-# Dekt: F1
+# Covers: F1
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

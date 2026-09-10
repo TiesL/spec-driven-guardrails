@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R9 — The four existing projects get no question asked again.
-# Dekt: F2
+# Covers: F2
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

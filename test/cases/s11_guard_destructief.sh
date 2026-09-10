@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S11 — Destructive commands are blocked.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

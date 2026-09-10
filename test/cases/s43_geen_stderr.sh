@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S43 — A healthy source produces nothing on stderr.
-# Dekt: F6
+# Covers: F6
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

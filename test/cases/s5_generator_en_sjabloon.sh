@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S5 — Generator and checked-in template do not drift apart.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

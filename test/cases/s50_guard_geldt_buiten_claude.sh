@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S50 — The guard also applies outside of Claude.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

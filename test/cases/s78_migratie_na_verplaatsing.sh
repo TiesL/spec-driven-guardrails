@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S78 — A single 'adopt.sh' run fully repoints a project with relocated symlinks
 # (e.g. after the W32/#56 rename) to the new location.
-# Dekt: W32 AC4
+# Covers: W32 AC4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

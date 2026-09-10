@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S33 — The CHANGELOG mentions the required manual actions.
-# Dekt: F15
+# Covers: F15
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

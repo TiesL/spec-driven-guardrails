@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # T4 — CI check "PR references issue" (link 3, hard block).
-# Dekt: F13
+# Covers: F13
 #
 # templates/check-pr-issue-link.sh judges only the PR that triggers the CI
 # run (W19b) — no audit over history, that would keep failing forever on

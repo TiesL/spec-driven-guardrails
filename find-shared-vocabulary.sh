@@ -53,8 +53,10 @@ controleer "entry-ID process-context-document als logica-gate (W42/#114)" adopt.
 controleer "entry-ID proces-context-document als pre-migratie-fallback (W42/#114)" adopt.sh 'proces-context-document'
 controleer "entry-ID quality-review-before-merge als logica-gate (W42/#114)" hooks/git-guardrails 'quality-review-before-merge'
 controleer "entry-ID kwaliteitsreview-voor-merge als pre-migratie-fallback (W42/#114)" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
-controleer "het \\*\\*Dekt:\\*\\*-veld (project-eigen PRD/TEST-SCENARIOS)" templates/check-traceability.sh 'Dekt:'
-controleer "het \\*\\*Dekt:\\*\\*-veld (externe issue-bodies)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
+controleer "het \\*\\*Covers:\\*\\*-veld als logica-gate (project-eigen PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Covers:'
+controleer "het \\*\\*Dekt:\\*\\*-veld als pre-migratie-detectie (project-eigen PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Dekt:'
+controleer "het \\*\\*Covers:\\*\\*-veld als logica-gate (externe issue-bodies, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Covers:'
+controleer "het \\*\\*Dekt:\\*\\*-veld als blijvende uitzondering (externe issue-bodies, historisch, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
 controleer "de <!-- nfr: <id> -->-anker" lib/nfr.sh 'nfr: \$id'
 controleer "de <!-- pre-merge-review:done -->-marker (externe PR-comments)" hooks/git-guardrails 'pre-merge-review:done'
 

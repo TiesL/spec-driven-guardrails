@@ -6,7 +6,7 @@ beschrijven alleen waarneembaar gedrag.
 
 Notatie: **Given / When / Then**.
 
-Elk scenario draagt een `**Dekt:**`-veld direct onder zijn kop, met de
+Elk scenario draagt een `**Covers:**`-veld direct onder zijn kop, met de
 functionaliteit uit `PRD.md` die het scenario beschrijft. Komma-gescheiden bij
 meer dan één, bijvoorbeeld `F3, F4`.
 
@@ -31,13 +31,13 @@ beschrijven is de snelste manier om je te laten verrassen door productie.
 ## <Feature-gebied 1>
 
 ### S1 — <titel: het verwachte gedrag>
-**Dekt:** <F<n>>
+**Covers:** <F<n>>
 - Given: ...
 - When: ...
 - Then: ...
 
 ### S2 — <titel: wat er misgaat>
-**Dekt:** <F<n>>
+**Covers:** <F<n>>
 - Given: <onverwachte invoer, ontbrekende gegevens, of een afhankelijkheid die faalt>
 - When: ...
 - Then: <het waarneembare gedrag — een leesbare melding, een overgeslagen actie,
