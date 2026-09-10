@@ -4,13 +4,13 @@ ci-detecteert-main-buiten-pr
 ci-op-pr-en-main
 ci-poort-op-merge
 ci-schakel-3-hard-slot
-kwaliteitsreview-voor-merge
-proces-context-document
 proces-diagnose-bug
 proces-issue-tracking
 proces-prd
 proces-refactoring-triggers
 proces-technical-debt-register
+process-context-document
+quality-review-before-merge
 spec-backup-herstel
 spec-compliance
 spec-data-integriteit

@@ -35,7 +35,7 @@ na_twee="$(cat "$project/.github/workflows/ci.yml")"
 # new projects; existing ones keep their own workflow. That is why the
 # adoption registry asks the question — that is the mechanism that makes a
 # silent deviation audible, not a one-time message in adopt.sh.
-tabel="$project/WORKFLOW-ADOPTIE.md"
+tabel="$project/WORKFLOW-ADOPTION.md"
 grep -q '^| ci-op-pr-en-main ' "$tabel" \
   || fail "S49 — ci-op-pr-en-main is not in the adoption table of a project with package.json"
 
@@ -43,7 +43,7 @@ grep -q '^| ci-op-pr-en-main ' "$tabel" \
 # the same scoping as ci-conventie, which this entry builds on.
 kaal="$(vers_project zonder-package-json)"
 adopteer "$kaal"
-if grep -q '^| ci-op-pr-en-main ' "$kaal/WORKFLOW-ADOPTIE.md"; then
+if grep -q '^| ci-op-pr-en-main ' "$kaal/WORKFLOW-ADOPTION.md"; then
   fail "S49 — ci-op-pr-en-main was seeded in a project without package.json"
 fi
 

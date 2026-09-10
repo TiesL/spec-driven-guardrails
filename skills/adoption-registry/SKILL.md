@@ -2,7 +2,7 @@
 name: adoption-registry
 description: >
   Adoption registry and the substantiation requirement: how a project
-  records per change in WORKFLOW-ADOPTIE.md what it applies, and how to
+  records per change in WORKFLOW-ADOPTION.md what it applies, and how to
   handle a pending or still-to-be-substantiated row (spec-touching vs.
   purely procedural). Use this when a session reports pending workflow
   changes, or when drafting/revising PRD.md or ARCHITECTUUR.md.
@@ -11,7 +11,7 @@ description: >
 ## Why: a choice per change, per project
 
 Not every agreement from `spec-driven-guardrails` fits every project. That's
-why every adopted project records in `WORKFLOW-ADOPTIE.md` which changes it
+why every adopted project records in `WORKFLOW-ADOPTION.md` which changes it
 applies — so deviating is a registered, substantiated exception instead of
 silent drift.
 
@@ -26,17 +26,17 @@ coverage; watch for this during review.
 `Standaard: ja` vs. `Standaard: vraag` only determines the starting point,
 not whether substantiation is needed. When a new project is adopted,
 `adopt.sh` sets every currently applicable `Standaard: ja` change to
-"`ja` — vereist onderbouwing" (a provisional stamp, not a decision);
+"`yes` — requires substantiation" (a provisional stamp, not a decision);
 `Standaard: vraag` changes are never answered automatically. A missing row
 means "not (yet) applicable": if the condition later becomes true — for
 example, a project gets a deploy command — the question appears on its own.
-A `nee` row is a deliberate, substantiated exception and stays in place
+A `no` row is a deliberate, substantiated exception and stays in place
 until you remove it manually.
 
 ## When the question appears
 
 At session start, a hook reports which changes apply to *this* project and
-still have no answer (or still say "vereist onderbouwing").
+still have no answer (or still say "requires substantiation").
 
 ## How to handle it
 
@@ -48,14 +48,14 @@ kind of entry:
   *every* row that belongs here, not only the NFRs from "Niet-functionele
   kenmerken" — `proces-prd` or `architectuurdocument` itself also
   deserves a real reason, not an automatism.
-  - A row that still says **"vereist onderbouwing"**: replace it with an
-    objective argument, grounded in *this* project, for why `ja` holds — or,
-    if that argument doesn't hold up, change the row to `nee` with the
+  - A row that still says **"requires substantiation"**: replace it with an
+    objective argument, grounded in *this* project, for why `yes` holds —
+    or, if that argument doesn't hold up, change the row to `no` with the
     reason.
   - An unanswered **`Standaard: vraag`** row: no blank question. Make a
     reasoned proposal, grounded in this project's actual content, and put
     it to Ties for confirmation.
-  - An auto-seeded `ja` that never gets substantiated is, in practice, no
+  - An auto-seeded `yes` that never gets substantiated is, in practice, no
     different from the silent drift this whole mechanism was meant to
     prevent.
 - **Purely procedural, touches no specification** (e.g. `ci-conventie`,
@@ -65,12 +65,12 @@ kind of entry:
 
 ## Recording
 
-Write every answer as a row in `WORKFLOW-ADOPTIE.md`:
-`| <change-id> | ja/nee | <date> | <explanation> |`. The explanation is the
-reasoning for every answer, not only for `nee` — that's exactly the point of
+Write every answer as a row in `WORKFLOW-ADOPTION.md`:
+`| <change-id> | yes/no | <date> | <explanation> |`. The explanation is the
+reasoning for every answer, not only for `no` — that's exactly the point of
 the substantiation requirement.
 
-On `ja`, carry out what the entry describes under "Ja betekent". If that's
+On `yes`, carry out what the entry describes under "Ja betekent". If that's
 more than a trivial action (e.g. adjusting project code), turn it into a
 GitHub issue instead of doing it right away in the same session.
 

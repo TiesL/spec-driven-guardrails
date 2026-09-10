@@ -15,9 +15,9 @@ One, version-controlled source of truth for the personal Git/GitHub workflow tha
 | `USER-CLAUDE.md` | Short trigger instruction for the automatic adoption prompt on new projects. Symlinked as `~/.claude/CLAUDE.md`. |
 | `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Bekende beperkingen* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTUUR.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
-| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTUUR.md`, which covers structural decisions. Only scaffolded if the project answered `ja` to `proces-context-document` in `CHANGES.md`. |
+| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTUUR.md`, which covers structural decisions. Only scaffolded if the project answered `yes` to `process-context-document` in `CHANGES.md`. |
 | `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |
-| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "ja" means. Projects record their answer in their own `WORKFLOW-ADOPTIE.md`. |
+| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "ja" means. Projects record their answer in their own `WORKFLOW-ADOPTION.md` (or its pre-migration name, `WORKFLOW-ADOPTIE.md` — see W42/#114). |
 | `CHANGES-ARCHIEF.md` | Retired `CHANGES.md` entries, with their ID unchanged so a project that once answered can still find where that row came from. |
 | `nfr/` | The NFR registry: fifteen files, one per non-functional attribute (security, data integrity, failure modes, …). The sole source for both the `spec-*` questions in `CHANGES.md` and the filled-in subsections in `templates/PRD.md` — neither is tracked separately anymore. |
 | `lib/` | Shared bash libraries: `changes.sh` (the `CHANGES.md` parser and predicates, used by both `adopt.sh` and `pending-changes.sh`) and `nfr.sh` (reads/validates the `nfr/` registry). |
@@ -115,7 +115,7 @@ risk — the same kind of agreement as the known pitfall above).
 
 ## Adoption registry
 
-Every adopted project tracks in `WORKFLOW-ADOPTIE.md` which changes from
+Every adopted project tracks in `WORKFLOW-ADOPTION.md` which changes from
 `CHANGES.md` it applies. A `SessionStart` hook reports what's still open;
 Claude poses those as closed yes/no choices and records the answer.
 See the `adoption-registry` skill (reachable via the routing table in `WORKFLOW.md`) for the full story.

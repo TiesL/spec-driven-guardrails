@@ -24,7 +24,7 @@ that no script can see. The traceability fields are free text nobody reads.
 
 The measurable consequence, across four projects and 27 merged PRs: **zero**
 PRs reference an issue, **zero** have a review, **zero** scenarios have a
-coverage field, and `kwaliteitsreview-voor-merge` has never been answered by
+coverage field, and `quality-review-before-merge` has never been answered by
 any project. The conventions exist; compliance is nil.
 
 This release moves those conventions from prose to mechanism.
@@ -322,7 +322,7 @@ or still running) blocks the merge, naming that check in the message.
 Preconditions, for both checks: **fail-open** without `gh` or network (warn
 loudly, allow) — including when a project hasn't adopted CI (no reported
 checks is not a red flag, CI is optional, see F6); a substantiated `nee` row
-for `kwaliteitsreview-voor-merge` in `WORKFLOW-ADOPTIE.md` disables both
+for `quality-review-before-merge` in `WORKFLOW-ADOPTIE.md` disables both
 checks for that project (local grep, no network); and there's an explicit
 override that loudly reports what's being skipped — the same philosophy as
 the deploy guards.
@@ -353,7 +353,7 @@ Migration must strip the two existing loose lines, or they'd end up duplicated.
 
 Names in English, body and description in Dutch. The name is an identifier
 that sits in the same flat namespace as `code-review` and `security-review`;
-`kwaliteitsreview-voor-merge` next to those reads like an accident. Everything
+`quality-review-before-merge` next to those reads like an accident. Everything
 Ties reads and maintains stays Dutch.
 
 | Skill | Invocation | What goes in it |
@@ -898,7 +898,7 @@ epics still apply, detached from the execution history in which they arose.
    field-format decisions are locked in. The run-through remains valuable,
    but now as a check on whether those decisions hold up in practice — not
    as a replacement for a review that's already happened.
-2. **`kwaliteitsreview-voor-merge` has been answered by no project** and no
+2. **`quality-review-before-merge` has been answered by no project** and no
    PR ever had a review. Should W13 put that entry in front of all four
    projects right away?
 3. ~~Generate or assemble?~~ Answered: generate — see `genereer-prd-blok`

@@ -10,9 +10,9 @@
 # places, F11), or if the PR has checks that haven't passed (issue #81 — CI
 # failed six runs in a row, unnoticed, because nothing in the merge flow
 # looked at it). Fails open without `gh` or network — neither check is ever
-# the command that locks up a session. A substantiated `nee` on the
-# `kwaliteitsreview-voor-merge` row in `WORKFLOW-ADOPTIE.md` turns off both
-# checks for that project, read locally, with no network call.
+# the command that locks up a session. A substantiated `no` on the
+# `quality-review-before-merge` row in `WORKFLOW-ADOPTION.md` turns off
+# both checks for that project, read locally, with no network call.
 #
 # Contract (Claude Code PreToolUse): JSON on stdin with `tool_name` and
 # `tool_input.command`; exit status 2 blocks and stderr becomes the message
@@ -201,11 +201,21 @@ controleer_merge_guard() {
   # loudly reported).
   [ "${merge_guard_uit:-0}" -eq 1 ] && return 0
 
-  # AC5: a substantiated `nee` on kwaliteitsreview-voor-merge turns it off —
-  # local grep, before any gh call, so no network.
+  # AC5: a substantiated `no` on quality-review-before-merge turns it off —
+  # local grep, before any gh call, so no network. Checks both the new and
+  # the pre-migration (W42/#114) filename/ID/value, since a project that
+  # hasn't migrated yet still answers with the old vocabulary.
   local projectroot antwoorden regel antwoord
   projectroot="$(git -C "$werkmap" rev-parse --show-toplevel 2>/dev/null)"
   [ -n "$projectroot" ] || projectroot="$werkmap"
+  antwoorden="$projectroot/WORKFLOW-ADOPTION.md"
+  if [ -f "$antwoorden" ]; then
+    regel="$(grep -m1 '^| *quality-review-before-merge *|' "$antwoorden")"
+    if [ -n "$regel" ]; then
+      antwoord="$(printf '%s\n' "$regel" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
+      [ "$antwoord" = "no" ] && return 0
+    fi
+  fi
   antwoorden="$projectroot/WORKFLOW-ADOPTIE.md"
   if [ -f "$antwoorden" ]; then
     regel="$(grep -m1 '^| *kwaliteitsreview-voor-merge *|' "$antwoorden")"

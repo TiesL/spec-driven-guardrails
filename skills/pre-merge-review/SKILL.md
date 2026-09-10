@@ -47,7 +47,7 @@ this the simplest form that works?) and dependencies (is a new dependency
 needed, maintained, safe?) — basic hygiene, not optional.
 
 **On top of that**: exactly the NFRs whose corresponding `spec-*` question
-was answered `ja` for this project (`WORKFLOW-ADOPTIE.md`) — nothing gets
+was answered `yes` for this project (`WORKFLOW-ADOPTION.md`) — nothing gets
 reviewed against a specification it isn't even part of.
 
 Don't compute that scope by hand — run:
@@ -64,7 +64,7 @@ name from `spec-driven-guardrails`'s `nfr/` register and reports that on
 stderr — a project without anchors doesn't block the review, it degrades.
 
 An NFR line ending in `[vereist onderbouwing]` means: that
-`WORKFLOW-ADOPTIE.md` row still carries the provisional stamp from F6, not
+`WORKFLOW-ADOPTION.md` row still carries the provisional stamp from F6, not
 a real "yes". Treat that as a review finding (see below) — not as an
 ordinary scope line to review.
 
@@ -105,7 +105,7 @@ the same ground rule as deploy-guards and the merge guard (W10b).
 
 If the PR touches a topic whose scope line carries `[vereist
 onderbouwing]`, that is itself an explicit finding in the PR: the
-corresponding `WORKFLOW-ADOPTIE.md` row must get a real answer before the
+corresponding `WORKFLOW-ADOPTION.md` row must get a real answer before the
 merge (see the `adoption-registry` skill) — this is the first gate of the
 phased substantiation requirement (F6).
 

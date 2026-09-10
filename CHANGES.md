@@ -227,7 +227,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
-## proces-context-document
+## process-context-document
 
 - **Vraag:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
 - **Standaard:** vraag
@@ -236,7 +236,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
   proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
   besluiten gaat, niet over taal. `adopt.sh` scaffoldt het sjabloon zodra deze
-  rij op `ja` staat.
+  rij op `yes` staat.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## proces-issue-tracking
@@ -283,12 +283,12 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** naast unittests bestaan er tests die de samenwerking tussen componenten (of met een extern platform) verifiëren, en `check` draait ze — of een expliciete reden waarom dat voor dit project niet proportioneel is.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
-## kwaliteitsreview-voor-merge
+## quality-review-before-merge
 
 - **Vraag:** Moet elke PR in dit project vóór de merge een kwaliteitsreview krijgen, met de bevindingen in de PR?
 - **Standaard:** ja
 - **Van toepassing als:** altijd
-- **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "ja" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
+- **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "yes" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## ci-poort-op-merge
@@ -296,7 +296,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Vraag:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
 - **Standaard:** ja
 - **Van toepassing als:** altijd
-- **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `kwaliteitsreview-voor-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `kwaliteitsreview-voor-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
+- **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `quality-review-before-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `quality-review-before-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## proces-technical-debt-register

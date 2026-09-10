@@ -10,13 +10,13 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a freshly adopted project with 21 seeded rows carrying "vereist
-# onderbouwing".
+# Given: a freshly adopted project with 21 seeded rows carrying "requires
+# substantiation".
 project="$(vers_project doelproject)"
 adopteer "$project"
 
-rijen="$(grep -c 'vereist onderbouwing' "$project/WORKFLOW-ADOPTIE.md")"
-[ "$rijen" -eq 21 ] || fail "S7 — $rijen rows with 'vereist onderbouwing', 21 expected"
+rijen="$(grep -c 'requires substantiation' "$project/WORKFLOW-ADOPTION.md")"
+[ "$rijen" -eq 21 ] || fail "S7 — $rijen rows with 'requires substantiation', 21 expected"
 
 # When: pending-changes.sh runs.
 uitvoer="$SANDBOX/uitvoer.txt"
@@ -34,10 +34,10 @@ grep -qi 'substantiation' "$uitvoer" || fail "S7 — the message does not mentio
 # extension that BSD sed on macOS does not know, and the substitution then
 # silently does not take.
 awk '
-  !gedaan && sub(/vereist onderbouwing tijdens PRD\/architectuur/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
+  !gedaan && sub(/requires substantiation tijdens PRD\/architectuur/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
   { print }
-' "$project/WORKFLOW-ADOPTIE.md" > "$SANDBOX/tabel.tmp"
-mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTIE.md"
+' "$project/WORKFLOW-ADOPTION.md" > "$SANDBOX/tabel.tmp"
+mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTION.md"
 
 na="$SANDBOX/na.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
@@ -47,9 +47,9 @@ grep -q '20 row(s)' "$na" || {
 }
 
 # Once all rows are substantiated, the message disappears — otherwise it becomes noise.
-sed -i.bak 's/bij adoptie — vereist onderbouwing tijdens PRD\/architectuur/onderbouwd/g' \
-  "$project/WORKFLOW-ADOPTIE.md"
-rm -f "$project/WORKFLOW-ADOPTIE.md.bak"
+sed -i.bak 's/bij adoptie — requires substantiation tijdens PRD\/architectuur/onderbouwd/g' \
+  "$project/WORKFLOW-ADOPTION.md"
+rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 
 leeg="$SANDBOX/leeg.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$leeg" 2>/dev/null
@@ -60,8 +60,8 @@ fi
 # And the count only looks at table rows. A loose note outside the table that
 # happens to contain the same words is not a pending substantiation —
 # beantwoord() anchors on the ID column for the same reason.
-printf '\nLosse notitie: dit vereist onderbouwing bij gelegenheid.\n' \
-  >> "$project/WORKFLOW-ADOPTIE.md"
+printf '\nLosse notitie: dit requires substantiation bij gelegenheid.\n' \
+  >> "$project/WORKFLOW-ADOPTION.md"
 
 met_notitie="$SANDBOX/met-notitie.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$met_notitie" 2>/dev/null

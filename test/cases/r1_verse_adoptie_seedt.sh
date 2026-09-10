@@ -16,18 +16,18 @@ project="$(vers_project leeg)"
 # When: adopt.sh is run.
 adopteer "$project"
 
-tabel="$project/WORKFLOW-ADOPTIE.md"
+tabel="$project/WORKFLOW-ADOPTION.md"
 if [ ! -f "$tabel" ]; then
-  fail "R1 — adopt.sh did not create WORKFLOW-ADOPTIE.md"
+  fail "R1 — adopt.sh did not create WORKFLOW-ADOPTION.md"
   test_klaar
 fi
 
-# Then: exactly 21 rows, all carrying "vereist onderbouwing".
+# Then: exactly 21 rows, all carrying "requires substantiation".
 rijen="$(grep -c '^| [a-z]' "$tabel")"
 [ "$rijen" -eq 21 ] || fail "R1 — $rijen rows seeded, 21 expected"
 
-onderbouwing="$(grep -c 'vereist onderbouwing' "$tabel")"
-[ "$onderbouwing" -eq 21 ] || fail "R1 — $onderbouwing rows with 'vereist onderbouwing', 21 expected"
+onderbouwing="$(grep -c 'requires substantiation' "$tabel")"
+[ "$onderbouwing" -eq 21 ] || fail "R1 — $onderbouwing rows with 'requires substantiation', 21 expected"
 
 # And: the retired legacy entry is not in there.
 if grep -q 'prd-testscenarios-issue-templates' "$tabel"; then

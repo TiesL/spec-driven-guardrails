@@ -46,7 +46,16 @@ workflow_dir="${2:-$(cd "$eigen_map/../.." && pwd)}"
 # shellcheck source=../../lib/nfr.sh
 . "$workflow_dir/lib/nfr.sh"
 
-antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
+# W42/#114: the new filename/value takes priority; the pre-migration
+# filename/value is still read so scope still works for a project that
+# hasn't migrated yet (pending-changes.sh is what flags that migration,
+# not this script).
+antwoorden="$project_dir/WORKFLOW-ADOPTION.md"
+ja_waarde="yes"
+if [ ! -f "$antwoorden" ]; then
+  antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
+  ja_waarde="ja"
+fi
 prd="$project_dir/PRD.md"
 
 echo "complexiteit"
@@ -54,12 +63,13 @@ echo "dependencies"
 
 [ -f "$antwoorden" ] || exit 0
 
-# ID's van elke spec-*-rij met Antwoord exact "ja".
-ja_ids="$(awk -F'|' '
+# ID's van elke spec-*-rij met Antwoord exact "yes" (of "ja" in het
+# pre-migratieformaat).
+ja_ids="$(awk -F'|' -v verwacht="$ja_waarde" '
   /^\| *spec-[a-z-]+ *\|/ {
     id = $2; gsub(/^[ \t]+|[ \t]+$/, "", id)
     antwoord = $3; gsub(/^[ \t]+|[ \t]+$/, "", antwoord)
-    if (antwoord == "ja") print id
+    if (antwoord == verwacht) print id
   }
 ' "$antwoorden")"
 
@@ -86,7 +96,7 @@ while IFS= read -r id; do
   # voorlopige stempel staat in Toelichting, niet in Antwoord.
   regel="$(grep -m1 "^| *$id *|" "$antwoorden")"
   case "$regel" in
-    *"vereist onderbouwing"*) echo "$id: $kop [vereist onderbouwing]" ;;
+    *"vereist onderbouwing"*|*"requires substantiation"*) echo "$id: $kop [vereist onderbouwing]" ;;
     *) echo "$id: $kop" ;;
   esac
 done <<EOF

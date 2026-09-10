@@ -43,7 +43,7 @@ controleer() {
 }
 
 controleer "WORKFLOW-ADOPTIE.md als bestandsnaam" pending-changes.sh 'WORKFLOW-ADOPTIE\.md'
-controleer "ja/nee-antwoordwaarden (seed)" adopt.sh '\| ja \|'
+controleer "yes/no-antwoordwaarden (seed, W42/#114)" adopt.sh '\| yes \|'
 controleer "de stempel 'vereist onderbouwing'" pending-changes.sh 'vereist onderbouwing'
 controleer ".gitignore-beheerde-blokmarkering" adopt.sh 'claude-workflow: begin'
 controleer "issue-templates (cp -f)" adopt.sh 'cp -f "\$template_src"'

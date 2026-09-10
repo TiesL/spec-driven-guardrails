@@ -399,10 +399,11 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: er verschijnt een luide waarschuwing dat de reviewcontrole is overgeslagen
 - And: het commando wordt toegestaan
 
-### S18 — Een onderbouwde `nee` schakelt de guard uit
+### S18 — Een onderbouwde `nee`/`no` schakelt de guard uit
 **Dekt:** F8
-- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `kwaliteitsreview-voor-merge`
-  op `nee` heeft staan
+- Given: een project waarvan `WORKFLOW-ADOPTIE.md` (pre-migratieformaat, W42/#114)
+  of `WORKFLOW-ADOPTION.md` `kwaliteitsreview-voor-merge` respectievelijk
+  `quality-review-before-merge` op `nee`/`no` heeft staan
 - When: `gh pr merge` wordt aangeroepen op een PR zonder marker
 - Then: het commando gaat door, zonder blokkade
 - And: dat gebeurt zonder netwerkaanroep — de rij wordt lokaal gelezen
@@ -536,7 +537,7 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 
 ### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `ja` staat
 **Dekt:** F10
-- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `proces-context-document`
+- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `process-context-document`
   op `ja` heeft staan
 - When: `adopt.sh` draait
 - Then: `CONTEXT.md` wordt aangemaakt vanuit `templates/CONTEXT.md`, als het
@@ -934,3 +935,18 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - Then: er wordt niet gepusht, en op `main` gebeurt sowieso niets
 - And: de hook meldt het en houdt het werk niet op — een push die niet lukt mag
   nooit een commando blokkeren
+
+### S85 — Een project op het pre-migratieformaat wordt per rij gemeld, met een issue
+**Dekt:** F6, W42/#114
+- Given: een project met een `WORKFLOW-ADOPTIE.md` (geen `WORKFLOW-ADOPTION.md`)
+  met rijen op het oude `ja`/`nee`-formaat
+- When: `pending-changes.sh` draait
+- Then: elke rij op het oude formaat wordt individueel gemeld, zonder dat een
+  al beantwoorde rij ten onrechte als openstaande vraag telt
+- And: er wordt een issue aangemaakt op de eigen repo van het project, met een
+  machineherkenbare marker
+- And: draait `pending-changes.sh` nogmaals terwijl dat issue al open staat,
+  dan wordt er geen tweede issue aangemaakt (idempotent, marker-gestuurd)
+- And: is `project_dir` geen eigen git-root (bijvoorbeeld een map binnen een
+  ánder repo, zoals de bevroren nulmeting-fixtures), dan wordt `gh` helemaal
+  niet aangeroepen — nooit schrijven naar het verkeerde repo
