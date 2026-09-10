@@ -89,19 +89,28 @@ seed_entry() {
   if ! predicaat_waar "$predicaat" "$_seed_project_dir"; then
     return 0
   fi
-  echo "| $id | ja | $_seed_vandaag | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |" >> "$_seed_doel"
+  echo "| $id | yes | $_seed_vandaag | bij adoptie — requires substantiation tijdens PRD/architectuur |" >> "$_seed_doel"
 }
 
 # Records at adoption time that this project agrees to the current state
-# of the workflow: every currently applicable change gets "ja". Whatever
+# of the workflow: every currently applicable change gets "yes". Whatever
 # doesn't apply gets no row and is asked about later once the condition
 # becomes true (see pending-changes.sh).
+#
+# Checks for the pre-migration filename (WORKFLOW-ADOPTIE.md, W42/#114) too,
+# not just the new one: a project that already has an old-format answer
+# file must not get a second, English-named file seeded alongside it —
+# that would duplicate every already-answered question. pending-changes.sh
+# is what flags an old-format file for migration; this function only ever
+# seeds a genuinely new adoption.
 seed_adoptietabel() {
   local project_dir="$1"
-  local doel="$project_dir/WORKFLOW-ADOPTIE.md"
+  local doel="$project_dir/WORKFLOW-ADOPTION.md"
+  local oud="$project_dir/WORKFLOW-ADOPTIE.md"
   local changes="$CLAUDE_WORKFLOW_DIR/CHANGES.md"
 
   [ -e "$doel" ] && return 0
+  [ -e "$oud" ] && return 0
   [ -f "$changes" ] || return 0
 
   {
@@ -123,8 +132,8 @@ seed_adoptietabel() {
   echo "Adoption table created: $doel"
 }
 
-GITIGNORE_BEGIN="# claude-workflow: begin — beheerd blok, niet met de hand bewerken"
-GITIGNORE_EIND="# claude-workflow: eind"
+GITIGNORE_BEGIN="# claude-workflow: begin — managed block, do not edit by hand"
+GITIGNORE_EIND="# claude-workflow: end"
 
 # Sets the managed block in .gitignore, with exactly the given lines.
 #
@@ -470,12 +479,18 @@ adopt_project() {
   seed_adoptietabel "$project_dir"
 
   # CONTEXT.md is optional (W16b): scaffold only once the project has
-  # answered proces-context-document with "ja". No predicate like
+  # answered process-context-document with "yes". No predicate like
   # heeft-package-json — the condition lives in the project's own adoption
   # table, so it's read directly here. This works both for a fresh
   # adoption (if Standaard:ja just seeded it) and for a re-adoption after
-  # someone later set the row to "ja" anyway.
-  if grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
+  # someone later set the row to "yes" anyway.
+  #
+  # Also checks the pre-migration filename/ID/value (W42/#114): a project
+  # that hasn't migrated yet still answers with the old vocabulary, and
+  # this scaffold shouldn't wait on that unrelated migration to keep
+  # working.
+  if grep -qE '^\| *process-context-document *\| *yes *\|' "$project_dir/WORKFLOW-ADOPTION.md" 2>/dev/null \
+    || grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
   fi
 

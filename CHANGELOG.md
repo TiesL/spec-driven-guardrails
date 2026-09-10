@@ -13,7 +13,7 @@ van dit repo verplaatsen van proza (tekst die onthouden moet worden) naar
 mechanisme (hooks, scripts, `check`, skills), overal waar handhaving mogelijk
 is. Aanleiding: over vier projecten en 27 gemergede PR's verwees **nul** PR's
 naar een issue, had **nul** een kwaliteitsreview, en was
-`kwaliteitsreview-voor-merge` door geen enkel project ooit beantwoord — terwijl
+`quality-review-before-merge` door geen enkel project ooit beantwoord — terwijl
 `WORKFLOW.md` dat allemaal al voorschreef.
 
 ### Herkomst en volgordebesluiten

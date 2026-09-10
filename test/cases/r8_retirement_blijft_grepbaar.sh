@@ -36,7 +36,7 @@ project="$(vers_project doelproject)"
 adopteer "$project"
 
 # Then: the entry is seeded or asked nowhere.
-if grep -q "$geretireerd" "$project/WORKFLOW-ADOPTIE.md"; then
+if grep -q "$geretireerd" "$project/WORKFLOW-ADOPTION.md"; then
   fail "R8 — $geretireerd is seeded in the adoption table"
 fi
 if openstaande_ids "$project" | grep -qx "$geretireerd"; then

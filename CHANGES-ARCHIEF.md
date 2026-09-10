@@ -2,14 +2,16 @@
 
 Hier staan entries die niet meer gelden. Ze zijn uit `CHANGES.md` gehaald zodat
 elk nieuw project alleen de actuele leeslast draagt, maar ze blijven hier staan
-omdat projecten er in hun `WORKFLOW-ADOPTIE.md` naar verwijzen. Een `grep` over
+omdat projecten er in hun `WORKFLOW-ADOPTION.md` (of, vóór de laag-B-migratie
+W42/#114, hun `WORKFLOW-ADOPTIE.md`) naar verwijzen. Een `grep` over
 `CHANGES.md` en dit bestand samen vindt elk ID dat ooit beantwoord is.
 
 **Een entry retireren.** Twee vormen, afhankelijk van wat er al gebeurd is:
 
 - **Nooit ergens beantwoord** — haal hem gewoon weg. Er is geen rij die ernaar
   verwijst, dus er valt niets na te zoeken. Controleer dat met een `grep` over
-  alle `WORKFLOW-ADOPTIE.md`-bestanden voordat je dit doet.
+  alle `WORKFLOW-ADOPTION.md`- én `WORKFLOW-ADOPTIE.md`-bestanden voordat je
+  dit doet.
 - **Ergens wél beantwoord** — verhuis hem hierheen, met het ID ongewijzigd en
   een expliciete reden. Hernoem `Ja betekent` naar `Ja betekende`.
 

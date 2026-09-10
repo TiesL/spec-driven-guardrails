@@ -21,8 +21,8 @@ openstaande_ids "$project" > "$gekregen"
 # Then: exactly these 8 IDs, in any order.
 verwacht="$SANDBOX/verwacht.txt"
 cat > "$verwacht" <<'IDS'
-proces-context-document
 proces-issue-tracking
+process-context-document
 spec-compliance
 spec-kostenbeheersing
 spec-performance-schaal

@@ -24,7 +24,7 @@ that no script can see. The traceability fields are free text nobody reads.
 
 The measurable consequence, across four projects and 27 merged PRs: **zero**
 PRs reference an issue, **zero** have a review, **zero** scenarios have a
-coverage field, and `kwaliteitsreview-voor-merge` has never been answered by
+coverage field, and `quality-review-before-merge` has never been answered by
 any project. The conventions exist; compliance is nil.
 
 This release moves those conventions from prose to mechanism.
@@ -321,8 +321,8 @@ or still running) blocks the merge, naming that check in the message.
 
 Preconditions, for both checks: **fail-open** without `gh` or network (warn
 loudly, allow) — including when a project hasn't adopted CI (no reported
-checks is not a red flag, CI is optional, see F6); a substantiated `nee` row
-for `kwaliteitsreview-voor-merge` in `WORKFLOW-ADOPTIE.md` disables both
+checks is not a red flag, CI is optional, see F6); a substantiated `no` row
+for `quality-review-before-merge` in `WORKFLOW-ADOPTION.md` disables both
 checks for that project (local grep, no network); and there's an explicit
 override that loudly reports what's being skipped — the same philosophy as
 the deploy guards.
@@ -353,7 +353,7 @@ Migration must strip the two existing loose lines, or they'd end up duplicated.
 
 Names in English, body and description in Dutch. The name is an identifier
 that sits in the same flat namespace as `code-review` and `security-review`;
-`kwaliteitsreview-voor-merge` next to those reads like an accident. Everything
+`quality-review-before-merge` next to those reads like an accident. Everything
 Ties reads and maintains stays Dutch.
 
 | Skill | Invocation | What goes in it |
@@ -864,6 +864,10 @@ epics still apply, detached from the execution history in which they arose.
 | Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-op-pr-en-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
 | `check-traceability.sh` is an unused root copy of `templates/check-traceability.sh` | Self-adoption (#98) scaffolds it like any project; this repo already handles traceability differently (T1/T2 run `templates/check-traceability.sh` directly against this repo) — an exception for it in `adopt.sh` would break #98's "no special case" principle | Once `templates/check-traceability.sh` changes without anyone noticing the root copy needs to follow (no test guards drift between the two), or if a reader mistakes the root copy for the source |
 | `pre-merge-review`'s `scope.sh` falls back to `nfr/*.md`'s (still-Dutch) heading names for this repo's own NFR rows, now mismatched against this file's translated section headings (no `<!-- nfr: id -->` anchors exist in this hand-authored `PRD.md`, so the fallback was always active) | `scope.sh` degrades to a stderr warning rather than blocking (S27); the printed names are cosmetically stale, not incorrect data | Once `nfr/*.md` is translated via its own frozen-baseline refresh procedure (`LEESMIJ.md`) — separate from this translation effort since editing `nfr/*.md` directly breaks S66's freeze invariant |
+| `pending-changes.sh` (W42/#114) embeds ~75 lines of network-mutating, `gh`-calling logic (the old-format migration notice and tracking-issue creation) inside a script whose module comment otherwise promises "no network, no mutation" | The exception is honestly documented and pinned to an explicit `-R <host>/<owner>/<repo>` derived from the project's own remote — found and reviewed by Opus (two review rounds) during pre-merge-review of PR #127 | If this logic grows further, or if another mutating exception is added — pulling it into its own script the `SessionStart` hook calls alongside `pending-changes.sh` would keep the no-mutation contract intact, make the mutating path independently testable, and self-delete once every project has migrated |
+| `test/cases/s38_veld_zonder_kop.sh`'s second half (the `adopt.sh`-through-a-minimal-fake-workflow-dir check) has been silently non-executing since `lib/nfr.sh` became a required `adopt.sh` dependency — the fake dir never copied it, so `adopt.sh` dies before writing any table, and the `[ -f "$tabel" ]` guard treats that as a pass. Found during PR #127's pre-merge-review (round 2, N2), pre-existing and unrelated to that PR's own changes | The scenario's first half (`itereer_entries` on a malformed source) is real and still passing; only the `adopt.sh`-integration half is silently skipped | Copy `lib/nfr.sh` into the fake workflow dir alongside `lib/changes.sh`, and make a missing table a hard failure rather than a silently skipped check |
+| Most `test/lib.sh` helpers that call `pending-changes.sh` (`openstaande_ids()` and its callers — s71, s72, r3, r4, r6, r8, r9, s8, s36, and others) run it on the plain, un-isolated `PATH`, relying entirely on sandboxed projects never having a `github.com` origin remote to keep `gh` unreachable. Found during PR #127's pre-merge-review (round 2, N3) | Correct today because the source-level fix (no origin → no `gh` call at all) carries the load; not defense in depth | If a future fixture or helper ever gives a sandboxed project a real `github.com`-shaped remote, add a refusing fake `gh` on `PATH` by default in `check`/`test/lib.sh`'s `sandbox_create()`, so no test can reach a real `gh` regardless of what any individual test sets up |
+| Other `gh` call sites in this repo (`skills/pre-merge-review/scenario-poort.sh`'s `gh issue list`, `hooks/git-guardrails`'s `gh pr view`/`gh pr checks`) rely on `gh`'s own cwd/`GH_REPO`/`GH_HOST`-based repo detection, unlike `pending-changes.sh`'s W42 fix — found during PR #127's pre-merge-review (round 2, N4) | All are read-only (no wrong-repo *write* risk, only wrong-repo *evidence* — e.g. link 2 reading another repo's `**Dekt:**` fields); pre-existing, not introduced by W42 | If any of these gains a mutating capability, or if wrong-repo evidence-reading becomes a real incident, pin `-R <host>/<owner>/<repo>` there too, the same way |
 
 ---
 
@@ -898,7 +902,7 @@ epics still apply, detached from the execution history in which they arose.
    field-format decisions are locked in. The run-through remains valuable,
    but now as a check on whether those decisions hold up in practice — not
    as a replacement for a review that's already happened.
-2. **`kwaliteitsreview-voor-merge` has been answered by no project** and no
+2. **`quality-review-before-merge` has been answered by no project** and no
    PR ever had a review. Should W13 put that entry in front of all four
    projects right away?
 3. ~~Generate or assemble?~~ Answered: generate — see `genereer-prd-blok`

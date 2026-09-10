@@ -62,7 +62,7 @@ cp "$bron" "$nep/CHANGES.md"
 project="$(vers_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
 
-tabel="$project/WORKFLOW-ADOPTIE.md"
+tabel="$project/WORKFLOW-ADOPTION.md"
 if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then
   fail "S38 — adopt.sh wrote a row with an empty ID"
   grep -nE '^\| *\|' "$tabel" >&2

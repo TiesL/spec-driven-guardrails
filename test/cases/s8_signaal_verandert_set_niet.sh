@@ -17,9 +17,9 @@ adopteer "$project"
 met_gaten="$SANDBOX/met-gaten.txt"
 openstaande_ids "$project" > "$met_gaten"
 
-sed -i.bak 's/bij adoptie — vereist onderbouwing tijdens PRD\/architectuur/onderbouwd voor dit project/g' \
-  "$project/WORKFLOW-ADOPTIE.md"
-rm -f "$project/WORKFLOW-ADOPTIE.md.bak"
+sed -i.bak 's/bij adoptie — requires substantiation tijdens PRD\/architectuur/onderbouwd voor dit project/g' \
+  "$project/WORKFLOW-ADOPTION.md"
+rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 
 zonder_gaten="$SANDBOX/zonder-gaten.txt"
 openstaande_ids "$project" > "$zonder_gaten"

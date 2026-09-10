@@ -181,6 +181,30 @@ eigen `ci.yml` hadden vóór dit werkitem — de vraag alsnog voorgelegd krijgen
 Elk +1: a2t-emails 31→32, tennis-admin 30→31. `CHANGES.md.momentopname`
 ververst.
 
+## Bijgewerkt voor W42 (#114)
+
+Geen toename of afname, maar wel een naamswijziging: de laag-B-migratie
+hernoemt twee entry-ID's van Nederlands naar Engels —
+`proces-context-document` wordt `process-context-document`,
+`kwaliteitsreview-voor-merge` wordt `quality-review-before-merge`. Beide
+stonden in alle vier de gouden sets als openstaand (nooit beantwoord door
+een van de vier projecten), dus de tel blijft ongewijzigd; alleen de
+letterlijke ID-string in `verwacht-openstaand.txt` verandert, met een
+herberekende alfabetische positie (`process-` sorteert ná alle `proces-*`,
+`quality-` ná `proces(s)-` en vóór `spec-*`). `CHANGES.md.momentopname`
+ververst.
+
+Dit is tegelijk het eerste échte gebruik van dit soort golden-set-fixture
+voor een gedragswijziging in plaats van alleen een vraagset-uitbreiding:
+`pending-changes.sh` behandelt een project met de pre-migratie
+`WORKFLOW-ADOPTIE.md` (geen `WORKFLOW-ADOPTION.md`) nu ook als een project
+dat per rij gemeld moet worden (zie S85) — maar dat raakt uitsluitend de
+nieuwe migratiemelding, niet de openstaand-lijst die `openstaande_ids()`
+uitleest (bewust een ander regelprefix, zodat de twee elkaar niet kunnen
+verwarren). De vier bevroren projecten missen allemaal een
+`WORKFLOW-ADOPTION.md`, dus die melding verschijnt voortaan bij elke R9-run
+— dat is verwacht en onderdeel van S85, niet van R9's eigen contract.
+
 ## Bijwerken — alleen bewust
 
 Een afwijking betekent één van twee dingen:

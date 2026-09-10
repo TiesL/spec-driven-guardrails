@@ -128,9 +128,12 @@ openstaande_ids() {
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort
 }
 
-# The IDs adopt.sh seeded in the adoption table, alphabetically.
+# The IDs adopt.sh seeded in the adoption table, alphabetically. Checks
+# the pre-migration filename too (W42/#114), since a fixture project may
+# still be on the old format.
 geseede_ids() {
-  local tabel="$1/WORKFLOW-ADOPTIE.md"
+  local tabel="$1/WORKFLOW-ADOPTION.md"
+  [ -f "$tabel" ] || tabel="$1/WORKFLOW-ADOPTIE.md"
   [ -f "$tabel" ] || return 0
   grep '^| [a-z]' "$tabel" | sed 's/^| *//; s/ *|.*//' | sort
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S82 — A fresh WORKFLOW-ADOPTIE.md names the correct repo name.
+# S82 — A fresh WORKFLOW-ADOPTION.md names the correct repo name.
 # Dekt: F3
 
 set -uo pipefail
@@ -16,18 +16,18 @@ project="$(vers_project leeg)"
 # When: adopt.sh is run.
 adopteer "$project"
 
-tabel="$project/WORKFLOW-ADOPTIE.md"
+tabel="$project/WORKFLOW-ADOPTION.md"
 if [ ! -f "$tabel" ]; then
-  fail "S82 — adopt.sh did not create a WORKFLOW-ADOPTIE.md"
+  fail "S82 — adopt.sh did not create a WORKFLOW-ADOPTION.md"
   test_klaar
 fi
 
 # Then: the header refers to the current name, not the name from before
 # the W32 rename (#56).
 if grep -q "claude-workflow" "$tabel"; then
-  fail "S82 — WORKFLOW-ADOPTIE.md still refers to the old name claude-workflow"
+  fail "S82 — WORKFLOW-ADOPTION.md still refers to the old name claude-workflow"
 fi
 grep -q "spec-driven-guardrails" "$tabel" \
-  || fail "S82 — WORKFLOW-ADOPTIE.md does not mention spec-driven-guardrails"
+  || fail "S82 — WORKFLOW-ADOPTION.md does not mention spec-driven-guardrails"
 
 test_klaar

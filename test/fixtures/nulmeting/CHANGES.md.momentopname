@@ -11,8 +11,12 @@ Per entry:
   `pending-changes.sh` toont alleen die eerste regel.
 - **Standaard** — `ja` (in het algemeen wenselijk, tenzij een project een
   reden heeft om af te wijken) of `vraag` (geen algemene voorkeur, hangt af
-  van het project). Dit is Ties' eigen voorkeur per onderwerp, niet een
-  afgeleide categorie. Bepaalt alleen het startpunt: `adopt.sh` seedt
+  van het project). Dit is de **productdefault** per onderwerp — een
+  verdedigbare startwaarde voor elke nieuwe adopter, geen afgeleide
+  categorie en geen voorschrift. Ties' eigen antwoorden in de vier bestaande
+  projecten (elk `WORKFLOW-ADOPTIE.md`) zijn een uitgewerkt voorbeeld van hoe
+  die default toegepast is, niet iets dat een nieuwe adopter moet overnemen.
+  Bepaalt alleen het startpunt: `adopt.sh` seedt
   `ja`-entries bij adoptie met een voorlopige stempel; `vraag`-entries seeden
   nooit. **Geen van beide betekent stilzwijgend accepteren** — zie de
   onderbouwingsstap in de skill `adoption-registry`: `ja`-rijen
@@ -127,7 +131,18 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   over een extra stap die hij daarnaast uitvoert. `scaffold_if_missing`
   overschrijft een bestaande `ci.yml` nooit, dus een project dat die al had
   vóór W19b krijgt de stap niet vanzelf — deze vraag maakt dat zichtbaar in
-  plaats van stil te laten liggen.
+  plaats van stil te laten liggen. Sinds issue #85 heeft `templates/ci.yml`
+  ook het `permissions: pull-requests: read`-blok dat deze stap nodig heeft —
+  zonder dat blokkeert hij elke PR. Sinds issue #106 bevat dat blok ook
+  `issues: read`: `closingIssuesReferences` (waar deze stap op leest) gaat
+  over het gekoppelde issue zelf, niet over de PR, en levert zonder die
+  scope stilzwijgend een lege lijst op, ook als de koppeling echt bestaat —
+  `pull-requests: read` alleen bleek dus niet genoeg (empirisch aangetoond op
+  PR #105, hetzelfde gat maar dan in dit repo's eigen workflow, issue #99).
+  Een project dat vóór #106 scaffoldde mist `issues: read` — controleer of
+  `pull-requests: read` én `issues: read` allebei gelden voor de `check`-job
+  (job- of workflow-niveau) — en moet het anders handmatig toevoegen of
+  opnieuw scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detecteert-main-buiten-pr
@@ -147,7 +162,15 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   twijfel juist doorlaten. `scaffold_if_missing` overschrijft een bestaande
   `ci.yml` nooit, dus een
   project dat die al had vóór W27 krijgt de stap niet vanzelf — deze vraag
-  maakt dat zichtbaar.
+  maakt dat zichtbaar. Sinds issue #85 heeft `templates/ci.yml` ook het
+  `permissions: pull-requests: read`-blok dat `check-main-via-pr.sh` nodig
+  heeft — het ontbreken ervan is precies wat issue #83 blootlegde: die
+  controle riep `gh api .../commits/$sha/pulls` aan en faalde onder het
+  default, minimale tokenscope (dat al wél `contents: read` bevat). Een
+  project dat vóór die fix scaffoldde mist het blok — controleer of
+  `pull-requests: read` ergens geldt voor de `check`-job (job- of
+  workflow-niveau) — en moet het anders handmatig toevoegen of opnieuw
+  scaffolden.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
 ## traceability-schakel-1
@@ -204,7 +227,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
-## proces-context-document
+## process-context-document
 
 - **Vraag:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
 - **Standaard:** vraag
@@ -213,7 +236,7 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
   zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
   proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
   besluiten gaat, niet over taal. `adopt.sh` scaffoldt het sjabloon zodra deze
-  rij op `ja` staat.
+  rij op `yes` staat.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## proces-issue-tracking
@@ -260,13 +283,21 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Ja betekent:** naast unittests bestaan er tests die de samenwerking tussen componenten (of met een extern platform) verifiëren, en `check` draait ze — of een expliciete reden waarom dat voor dit project niet proportioneel is.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
-## kwaliteitsreview-voor-merge
+## quality-review-before-merge
 
 - **Vraag:** Moet elke PR in dit project vóór de merge een kwaliteitsreview krijgen, met de bevindingen in de PR?
 - **Standaard:** ja
 - **Van toepassing als:** altijd
-- **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "ja" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
+- **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "yes" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
+
+## ci-poort-op-merge
+
+- **Vraag:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
+- **Standaard:** ja
+- **Van toepassing als:** altijd
+- **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `quality-review-before-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `quality-review-before-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
+- **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## proces-technical-debt-register
 
