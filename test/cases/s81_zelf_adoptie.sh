@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S81 — spec-driven-guardrails kan zichzelf adopteren.
+# S81 — spec-driven-guardrails can adopt itself.
 # Dekt: F7, F8
 
 set -uo pipefail
@@ -10,81 +10,81 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een sandboxkopie van dit repo, gebruikt als zowel
-# SPEC_DRIVEN_GUARDRAILS_DIR als adoptiedoel. sandbox_copy_repo kopieert de
-# huidige staat van dit repo (inclusief de eventuele weigering hierboven, als
-# die nog niet verwijderd is — precies wat "eerst rood" hier toetst).
+# Given: a sandbox copy of this repo, used as both
+# SPEC_DRIVEN_GUARDRAILS_DIR and the adoption target. sandbox_copy_repo copies
+# the current state of this repo (including the refusal above, if
+# not yet removed — exactly what "red first" tests here).
 repo="$(sandbox_copy_repo)"
 git -C "$repo" init -q -b main
 git -C "$repo" -c user.name=test -c user.email=test@example.invalid \
   commit -q --allow-empty -m "eerste commit"
 
-# Vingerafdruk van bestaande, gecommitte bestanden vóór adoptie — om aan te
-# tonen dat zelf-adoptie niets van dit repo zelf overschrijft.
+# Fingerprint of existing, committed files before adoption — to show
+# that self-adoption overwrites nothing of this repo itself.
 before_prd="$(cat "$repo/PRD.md")"
 before_scenarios="$(cat "$repo/TEST-SCENARIOS.md")"
 before_check="$(cat "$repo/check")"
 
-# When: adopt.sh draait met zichzelf als bron én doel.
+# When: adopt.sh runs with itself as both source and target.
 uitvoer="$(SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$repo" 2>&1)"
 status=$?
 
-# Then: hij adopteert daadwerkelijk, in plaats van de weigering te tonen.
+# Then: it actually adopts, instead of showing the refusal.
 case "$uitvoer" in
   *"geen adoptie nodig"*)
-    fail "S81 — adopt.sh weigert nog steeds zichzelf te adopteren: $uitvoer"
+    fail "S81 — adopt.sh still refuses to adopt itself: $uitvoer"
     test_klaar
     ;;
 esac
-[ "$status" -eq 0 ] || fail "S81 — adopt.sh tegen zichzelf gaf exitstatus $status: $uitvoer"
+[ "$status" -eq 0 ] || fail "S81 — adopt.sh against itself gave exit status $status: $uitvoer"
 
-# Exacte vergelijking, niet een */WORKFLOW.md-patroon: dat laatste zou ook
-# slagen als de symlink per ongeluk naar WORKFLOW.md in het échte repo buiten
-# de sandbox wijst in plaats van naar de sandboxkopie zelf.
-[ -L "$repo/CLAUDE.md" ] || fail "S81 — CLAUDE.md is geen symlink na zelf-adoptie"
+# Exact comparison, not a */WORKFLOW.md pattern: the latter would also
+# pass if the symlink accidentally pointed to WORKFLOW.md in the real repo
+# outside the sandbox instead of the sandbox copy itself.
+[ -L "$repo/CLAUDE.md" ] || fail "S81 — CLAUDE.md is not a symlink after self-adoption"
 doel_claude="$(readlink "$repo/CLAUDE.md" 2>/dev/null)"
 [ "$doel_claude" = "$repo/WORKFLOW.md" ] \
-  || fail "S81 — CLAUDE.md wijst niet naar de sandboxkopie van WORKFLOW.md: $doel_claude"
+  || fail "S81 — CLAUDE.md does not point to the sandbox copy of WORKFLOW.md: $doel_claude"
 
-[ -L "$repo/.claude/settings.json" ] || fail "S81 — .claude/settings.json is geen symlink na zelf-adoptie"
+[ -L "$repo/.claude/settings.json" ] || fail "S81 — .claude/settings.json is not a symlink after self-adoption"
 doel_settings="$(readlink "$repo/.claude/settings.json" 2>/dev/null)"
 [ "$doel_settings" = "$repo/settings/session-hooks.json" ] \
-  || fail "S81 — .claude/settings.json wijst niet naar de sandboxkopie van settings/session-hooks.json: $doel_settings"
+  || fail "S81 — .claude/settings.json does not point to the sandbox copy of settings/session-hooks.json: $doel_settings"
 
-# And: geen enkel bestaand, gecommit bestand verandert.
+# And: not a single existing, committed file changes.
 [ "$(cat "$repo/PRD.md")" = "$before_prd" ] \
-  || fail "S81 — PRD.md is gewijzigd door zelf-adoptie"
+  || fail "S81 — PRD.md was changed by self-adoption"
 [ "$(cat "$repo/TEST-SCENARIOS.md")" = "$before_scenarios" ] \
-  || fail "S81 — TEST-SCENARIOS.md is gewijzigd door zelf-adoptie"
+  || fail "S81 — TEST-SCENARIOS.md was changed by self-adoption"
 [ "$(cat "$repo/check")" = "$before_check" ] \
-  || fail "S81 — check is gewijzigd door zelf-adoptie"
+  || fail "S81 — check was changed by self-adoption"
 
-# And: de git-guardrails-hook is daarna functioneel — een gefabriceerde
-# PreToolUse-aanroep die een directe push naar main voorstelt, wordt
-# geweigerd, net als in elk geadopteerd project.
+# And: the git-guardrails hook is functional afterward — a fabricated
+# PreToolUse call proposing a direct push to main is
+# refused, just as in any adopted project.
 invoer='{"tool_name":"Bash","cwd":"'"$repo"'","tool_input":{"command":"git push origin main"}}'
 hook_uitvoer="$(printf '%s' "$invoer" | "$repo/hooks/git-guardrails" 2>&1)"
 hook_status=$?
 [ "$hook_status" -ne 0 ] \
-  || fail "S81 — de PreToolUse-guard weigerde een directe push naar main niet: $hook_uitvoer"
-assert_contains "S81 — de melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$hook_uitvoer"
+  || fail "S81 — the PreToolUse guard did not refuse a direct push to main: $hook_uitvoer"
+assert_contains "S81 — the message matches the PreToolUse guard" "main gets its changes via a PR" "$hook_uitvoer"
 
-# And: de native git-hooks zijn ook geïnstalleerd en weigeren hetzelfde
-# buiten Claude Code om (zelfde patroon als S50).
-[ -L "$repo/.git/hooks/pre-commit" ] || fail "S81 — pre-commit is geen symlink na zelf-adoptie"
-[ -L "$repo/.git/hooks/pre-push" ] || fail "S81 — pre-push is geen symlink na zelf-adoptie"
+# And: the native git hooks are also installed and refuse the same
+# outside Claude Code (same pattern as S50).
+[ -L "$repo/.git/hooks/pre-commit" ] || fail "S81 — pre-commit is not a symlink after self-adoption"
+[ -L "$repo/.git/hooks/pre-push" ] || fail "S81 — pre-push is not a symlink after self-adoption"
 native_uitvoer="$(cd "$repo" && git commit -q --allow-empty -m "rechtstreeks op main" 2>&1)"
 native_status=$?
 [ "$native_status" -ne 0 ] \
-  || fail "S81 — de native pre-commit-hook weigerde een directe commit op main niet"
-assert_contains "S81 — de native-hookmelding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$native_uitvoer"
+  || fail "S81 — the native pre-commit hook did not refuse a direct commit to main"
+assert_contains "S81 — the native hook message matches the PreToolUse guard" "main gets its changes via a PR" "$native_uitvoer"
 
-# And: een tweede aanroep is idempotent.
+# And: a second call is idempotent.
 uitvoer2="$(SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$repo" 2>&1)"
 status2=$?
-[ "$status2" -eq 0 ] || fail "S81 — een tweede zelf-adoptie faalt: $uitvoer2"
+[ "$status2" -eq 0 ] || fail "S81 — a second self-adoption fails: $uitvoer2"
 gitignore_regels="$(grep -c '^CLAUDE\.md$' "$repo/.gitignore" 2>/dev/null || echo 0)"
 [ "$gitignore_regels" -le 1 ] \
-  || fail "S81 — een tweede zelf-adoptie voegt CLAUDE.md dubbel toe aan .gitignore"
+  || fail "S81 — a second self-adoption adds CLAUDE.md to .gitignore twice"
 
 test_klaar

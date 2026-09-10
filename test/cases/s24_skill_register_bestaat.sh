@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# S24 — Elke skill in het register bestaat en is vindbaar.
+# S24 — Every skill in the register exists and is findable.
 # Dekt: F10
 #
-# Alle negen skills uit PRD.md F10, niet alleen de vijf die in de Wegwijzer
-# landen: `tdd-seams` en `diagnose-bug` krijgen hun inhoud pas in W14/W15, maar
-# horen nu al als SKILL.md te bestaan (stub), anders liegt het register.
+# All nine skills from PRD.md F10, not just the five that land in the routing
+# table: `tdd-seams` and `diagnose-bug` only get their content in W14/W15, but
+# should already exist as SKILL.md (stub) now, otherwise the register lies.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -16,13 +16,13 @@ skills="pre-merge-review deploy-guards check-convention adoption-registry write-
 for naam in $skills; do
   pad="$TEST_REPO_ROOT/skills/$naam/SKILL.md"
   if [ ! -f "$pad" ]; then
-    fail "S24 — $pad ontbreekt"
+    fail "S24 — $pad is missing"
     continue
   fi
   grep -q '^name:' "$pad" \
-    || fail "S24 — $naam/SKILL.md heeft geen 'name:' in de frontmatter"
+    || fail "S24 — $naam/SKILL.md has no 'name:' in the frontmatter"
   grep -q '^description:' "$pad" \
-    || fail "S24 — $naam/SKILL.md heeft geen 'description:' in de frontmatter"
+    || fail "S24 — $naam/SKILL.md has no 'description:' in the frontmatter"
 done
 
 test_klaar "S24"

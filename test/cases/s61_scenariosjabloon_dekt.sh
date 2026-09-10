@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# S61 — Het scenariosjabloon draagt het dekkingsveld en de grammatica.
+# S61 — The scenario template carries the coverage field and the grammar.
 # Dekt: F13
 #
-# Een sjabloon dat de vorm voordoet zonder hem te benoemen leert de uitzondering
-# niet aan. Dan strandt de eerste `S2b` op een handhaving die niemand had zien
-# aankomen - en a2t-emails heeft die S2b vandaag al.
+# A template that models the form without naming it does not teach the
+# exception. Then the first `S2b` runs into an enforcement nobody saw
+# coming - and a2t-emails already has that S2b today.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -12,15 +12,15 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 sjabloon="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
-[ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md ontbreekt"; test_klaar; }
+[ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_klaar; }
 
-# Then: elk voorbeeldscenario toont een **Dekt:**-veld direct onder zijn kop.
+# Then: every example scenario shows a **Dekt:** field directly under its heading.
 #
-# De controle onthoudt de vórige regel in plaats van vooruit te kijken. Een
-# vooruitkijkende variant verliest een kop zodra er direct een nieuwe op volgt -
-# dan slaat het kop-patroon toe vóór de controle op de vorige kop kan draaien -
-# en ziet de laatste kop van het bestand nooit, want daar komt geen regel meer
-# achter. Beide gevallen leverden groen op terwijl het veld ontbrak.
+# The check remembers the previous line instead of looking ahead. A
+# look-ahead variant loses a heading as soon as a new one directly follows -
+# the heading pattern then fires before the check on the previous heading can
+# run - and it never sees the file's last heading, since no line follows it
+# anymore. Both cases produced a green result while the field was missing.
 ontbreekt="$(awk '
   vorige_kop != "" && $0 !~ /^\*\*Dekt:\*\*/ { print vorige_kop }
   { vorige_kop = "" }
@@ -28,32 +28,32 @@ ontbreekt="$(awk '
   END { if (vorige_kop != "") print vorige_kop }
 ' "$sjabloon")"
 [ -z "$ontbreekt" ] \
-  || fail "S61 — scenario's zonder **Dekt:** direct onder de kop: $(echo "$ontbreekt" | tr '\n' ' ')"
+  || fail "S61 — scenarios without **Dekt:** directly under the heading: $(echo "$ontbreekt" | tr '\n' ' ')"
 
-# And: er is minstens één voorbeeldscenario, anders is de controle hierboven leeg
-# en groen tegelijk.
+# And: there is at least one example scenario, otherwise the check above is
+# empty and green at the same time.
 aantal="$(grep -cE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' "$sjabloon")"
 [ "$aantal" -ge 1 ] \
-  || fail "S61 — geen enkel voorbeeldscenario in het sjabloon"
+  || fail "S61 — not a single example scenario in the template"
 
-# And: élke scenariokop draagt een ID. Alleen tellen wat een ID heeft laat een
-# kop zónder ID ongemoeid, en dan doet het sjabloon precies voor wat de
-# conventie verbiedt.
+# And: every scenario heading carries an ID. Counting only what has an ID
+# leaves a heading without an ID untouched, and then the template does
+# exactly what the convention forbids.
 zonder_id="$(grep -E '^### ' "$sjabloon" | grep -vE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' || true)"
 [ -z "$zonder_id" ] \
-  || fail "S61 — scenariokop zonder ID: $(printf '%s' "$zonder_id" | tr '\n' ' ')"
+  || fail "S61 — scenario heading without an ID: $(printf '%s' "$zonder_id" | tr '\n' ' ')"
 
-# And: de grammatica staat er expliciet, met S2b als voorbeeld.
+# And: the grammar is stated explicitly, with S2b as an example.
 grep -q '\^\[A-Z\]{1,2}\[0-9\]+\[a-z\]?\$' "$sjabloon" \
-  || fail "S61 — de tokengrammatica staat niet letterlijk in het sjabloon"
+  || fail "S61 — the token grammar is not stated literally in the template"
 grep -q 'S2b' "$sjabloon" \
-  || fail "S61 — S2b staat niet als voorbeeld bij de grammatica"
+  || fail "S61 — S2b is not present as an example alongside the grammar"
 
-# And: het veld toont een placeholder, geen verzonnen ID. Een sjabloon met een
-# echt ogend `F3` nodigt uit om dat over te nemen, en dan verwijst het eerste
-# scenario van elk nieuw project naar functionaliteit die er niet is.
+# And: the field shows a placeholder, not a made-up ID. A template with a
+# real-looking `F3` invites copying it, and then the first scenario of every
+# new project refers to functionality that does not exist.
 verzonnen="$(grep '^\*\*Dekt:\*\*' "$sjabloon" | grep -v '<' || true)"
 [ -z "$verzonnen" ] \
-  || fail "S61 — **Dekt:** zonder placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
+  || fail "S61 — **Dekt:** without a placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
 
 test_klaar "S61"

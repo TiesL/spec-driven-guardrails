@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# S64 — De merge-guard-uitweg schakelt alleen de merge-guard uit.
+# S64 — The merge-guard escape hatch only disables the merge guard.
 # Dekt: F8
 #
-# Gevonden in pre-merge-review op PR #70: CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1
-# deed een blanco `return 0` voor het hele segment, en liet daarmee ook
-# destructieve git-commando's met dezelfde var-prefix door.
+# Found in pre-merge-review on PR #70: CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 did a
+# blanket `return 0` for the entire segment, and thereby also let through
+# destructive git commands with the same var prefix.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -21,7 +21,7 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"CLAUDE
 uitvoer="$(printf '%s' "$invoer" | "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 2 ] || fail "S64 — de merge-guard-uitweg liet 'git reset --hard' door (exit $status). Uitvoer: $uitvoer"
-assert_contains "S64 — de blokkade noemt reset --hard" "reset --hard" "$uitvoer"
+[ "$status" -eq 2 ] || fail "S64 — the merge-guard escape hatch let 'git reset --hard' through (exit $status). Output: $uitvoer"
+assert_contains "S64 — the block mentions reset --hard" "reset --hard" "$uitvoer"
 
 test_klaar

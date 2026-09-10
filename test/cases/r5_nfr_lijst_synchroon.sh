@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R5 — NFR-lijst blijft 1-op-1 synchroon.
+# R5 — NFR list stays 1-to-1 in sync.
 # Dekt: F4
 
 set -uo pipefail
@@ -14,16 +14,16 @@ nfr_map="$TEST_REPO_ROOT/nfr"
 sjabloon="$TEST_REPO_ROOT/templates/PRD.md"
 
 if [ ! -d "$nfr_map" ]; then
-  fail "R5 — nfr/ ontbreekt"
+  fail "R5 — nfr/ is missing"
   test_klaar
 fi
 
-# Given: de NFR-ID's uit het register en de ###-subsecties in het sjabloon.
+# Given: the NFR IDs from the register and the ###-subsections in the template.
 uit_register="$SANDBOX/register.txt"
 uit_sjabloon="$SANDBOX/sjabloon.txt"
 
-# Het register levert het paar id/kop uit hetzelfde bestand — geen normalisatie
-# van "spec-compliance" naar "Compliance en auditeerbaarheid" nodig.
+# The register supplies the id/heading pair from the same file — no normalization
+# from "spec-compliance" to "Compliance en auditeerbaarheid" needed.
 for bestand in "$nfr_map"/*.md; do
   [ -e "$bestand" ] || continue
   id="$(awk -F': *' '/^id:/{print $2; exit}' "$bestand")"
@@ -31,15 +31,15 @@ for bestand in "$nfr_map"/*.md; do
   status="$(awk -F': *' '/^status:/{print $2; exit}' "$bestand")"
   [ "$status" = "geretireerd" ] && continue
   if [ -z "$id" ] || [ -z "$kop" ]; then
-    fail "R5 — $(basename "$bestand") mist een id of kop"
+    fail "R5 — $(basename "$bestand") is missing an id or heading"
     continue
   fi
   printf '%s\t%s\n' "$id" "$kop" >> "$uit_register"
 done
 sort -o "$uit_register" "$uit_register" 2>/dev/null || : > "$uit_register"
 
-# Het sjabloon levert de koppen uit het gegenereerde blok, met het ID uit het
-# HTML-commentaar dat de generator erbij zet.
+# The template supplies the headings from the generated block, with the ID from
+# the HTML comment that the generator adds alongside it.
 awk '
   /<!-- nfr-blok:begin/ { in_blok = 1; next }
   /<!-- nfr-blok:eind/  { in_blok = 0 }
@@ -47,18 +47,18 @@ awk '
   in_blok && /<!-- nfr:/ { id = $0; sub(/.*<!-- nfr: */, "", id); sub(/ *-->.*/, "", id); print id "\t" kop }
 ' "$sjabloon" | sort > "$uit_sjabloon"
 
-# Then: exacte 1-op-1-overeenkomst, geen ontbrekende of overtollige kant.
+# Then: exact 1-to-1 match, no missing or excess side.
 aantal="$(grep -c . "$uit_register" 2>/dev/null || echo 0)"
-[ "$aantal" -eq 15 ] || fail "R5 — $aantal actieve NFR's in het register, 15 verwacht"
+[ "$aantal" -eq 15 ] || fail "R5 — $aantal active NFRs in the register, expected 15"
 
 if ! diff -u "$uit_register" "$uit_sjabloon" >/dev/null 2>&1; then
-  fail "R5 — register en sjabloon lopen uit de pas:"
+  fail "R5 — register and template are out of sync:"
   diff -u "$uit_register" "$uit_sjabloon" >&2
 fi
 
-# And: geen spec-*-entries meer in CHANGES.md — het register is de enige bron.
+# And: no more spec-* entries in CHANGES.md — the register is the sole source.
 if grep -q '^## spec-' "$TEST_REPO_ROOT/CHANGES.md"; then
-  fail "R5 — CHANGES.md bevat nog spec-*-entries"
+  fail "R5 — CHANGES.md still contains spec-* entries"
   grep -n '^## spec-' "$TEST_REPO_ROOT/CHANGES.md" >&2
 fi
 

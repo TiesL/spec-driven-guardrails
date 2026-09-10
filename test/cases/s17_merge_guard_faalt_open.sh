@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S17 — De merge-guard faalt open zonder gh of zonder netwerk.
+# S17 — The merge guard fails open without gh or without network.
 # Dekt: F8
 
 set -uo pipefail
@@ -16,20 +16,20 @@ git -C "$project" checkout -q -b feature/werk
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 
-# Sub-geval a: gh ontbreekt volledig.
+# Sub-case a: gh is missing entirely.
 padzondergh="$(pad_zonder_gh)"
 uitvoer_a="$(printf '%s' "$invoer" | PATH="$padzondergh" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status_a=$?
-[ "$status_a" -ne 2 ] || fail "S17a — gh ontbreekt, maar het commando werd toch geblokkeerd"
+[ "$status_a" -ne 2 ] || fail "S17a — gh is missing, but the command was blocked anyway"
 assert_contains "S17a" "warning" "$uitvoer_a"
 
-# Sub-geval b: gh is er, maar het netwerk niet — de aanroep faalt.
+# Sub-case b: gh is present, but the network is not — the call fails.
 fakebin="$(fake_gh_bin '
 exit 1
 ')"
 uitvoer_b="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status_b=$?
-[ "$status_b" -ne 2 ] || fail "S17b — gh faalt (geen netwerk), maar het commando werd toch geblokkeerd"
+[ "$status_b" -ne 2 ] || fail "S17b — gh fails (no network), but the command was blocked anyway"
 assert_contains "S17b" "warning" "$uitvoer_b"
 
 test_klaar

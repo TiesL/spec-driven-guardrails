@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# S67 — Een wijziging in het nfr-register die de vraagset raakt, valt op.
+# S67 — A change in the nfr register that affects the question set stands out.
 # Dekt: F2
 #
-# Aangetoond met een mutatie, zelfde stijl als R6/S41: een nieuw nfr-bestand
-# met `van-toepassing-als: altijd` moet R9 voor élke fixture laten afwijken,
-# en dat verschil moet het nieuwe ID benoemen — niet stilzwijgend oplosbaar
-# door alleen de gouden set aan te passen.
+# Demonstrated with a mutation, same style as R6/S41: a new nfr file with
+# `van-toepassing-als: altijd` must make R9 diverge for every fixture, and
+# that difference must name the new ID — not something silently resolvable
+# by only adjusting the golden set.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -42,17 +42,18 @@ Dit bestand bestaat alleen om S67 aan te tonen.
 Niet van toepassing.
 EOF
 
-# TEST_REPO_ROOT overschrijven zou andere tests raken; deze test roept
-# pending-changes.sh rechtstreeks in de gemuteerde kopie aan, in plaats van
-# via de openstaande_ids()-helper die op TEST_REPO_ROOT leunt.
+# Overwriting TEST_REPO_ROOT would affect other tests; this test calls
+# pending-changes.sh directly in the mutated copy, instead of via the
+# openstaande_ids() helper that relies on TEST_REPO_ROOT.
 #
-# Alle vier moeten afwijken, niet "minstens één": elk nfr-bestand draagt
-# van-toepassing-als: altijd (LEESMIJ.md), dus een mutatie die niet bij alle
-# vier opvalt, wijst op een project dat de nfr-bron toch niet meeneemt.
+# All four must diverge, not "at least one": every nfr file carries
+# van-toepassing-als: altijd (LEESMIJ.md), so a mutation that does not stand
+# out for all four points to a project that does not pick up the nfr source
+# after all.
 for project in $NULMETING_PROJECTEN; do
   gouden="$nulmeting/$project/verwacht-openstaand.txt"
   if [ ! -f "$gouden" ]; then
-    fail "S67 — gouden set ontbreekt: $project"
+    fail "S67 — golden set missing: $project"
     continue
   fi
 
@@ -61,9 +62,9 @@ for project in $NULMETING_PROJECTEN; do
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$huidig"
 
   if diff -q "$gouden" "$huidig" >/dev/null 2>&1; then
-    fail "S67 — $project week niet af van een nieuw altijd-van-toepassing nfr-bestand; de mutatie viel daar nergens op"
+    fail "S67 — $project did not diverge from a new always-applicable nfr file; the mutation went unnoticed there"
   elif ! grep -qx 'spec-mutatietest' "$huidig"; then
-    fail "S67 — $project week af, maar noemde spec-mutatietest niet als nieuw ID"
+    fail "S67 — $project diverged, but did not name spec-mutatietest as the new ID"
   fi
 done
 

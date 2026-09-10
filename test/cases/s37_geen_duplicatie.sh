@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S37 — Predicaat- en parserlogica staat op precies één plek.
+# S37 — Predicate and parser logic lives in exactly one place.
 # Dekt: F3
 
 set -uo pipefail
@@ -10,40 +10,41 @@ set -uo pipefail
 bibliotheek="$TEST_REPO_ROOT/lib/changes.sh"
 
 if [ ! -f "$bibliotheek" ]; then
-  fail "S37 — lib/changes.sh ontbreekt"
+  fail "S37 — lib/changes.sh is missing"
   test_klaar
 fi
 
-# Then: de aanroepers bevatten geen eigen predicaattak of koploper meer.
+# Then: the callers no longer contain their own predicate branch or parser
+# header.
 for script in adopt.sh pending-changes.sh; do
   pad="$TEST_REPO_ROOT/$script"
 
   for patroon in 'heeft-package-json)' 'heeft-deploy-script)'; do
     if grep -q -- "$patroon" "$pad"; then
-      fail "S37 — $script bevat weer een eigen predicaattak: $patroon"
+      fail "S37 — $script contains its own predicate branch again: $patroon"
     fi
   done
 
-  # De koploper van de parser: een case-tak op '## '. De bibliotheek hoort de
-  # enige plek te zijn die CHANGES.md regel voor regel uit elkaar haalt.
+  # The header of the parser: a case branch on '## '. The library should be
+  # the only place that parses CHANGES.md line by line.
   if grep -q "'## '\*)" "$pad"; then
-    fail "S37 — $script bevat weer een eigen CHANGES.md-parser"
+    fail "S37 — $script contains its own CHANGES.md parser again"
   fi
 
-  grep -q 'lib/changes.sh' "$pad" || fail "S37 — $script sourcet de bibliotheek niet"
+  grep -q 'lib/changes.sh' "$pad" || fail "S37 — $script does not source the library"
 done
 
-# And: de bibliotheek bevat ze wél. Zonder deze controle zou de test ook slagen
-# als iemand lib/changes.sh leeghaalt.
+# And: the library does contain them. Without this check, the test would also
+# pass if someone emptied out lib/changes.sh.
 for patroon in 'heeft-package-json)' 'heeft-deploy-script)' "'## '\*)"; do
-  grep -q -- "$patroon" "$bibliotheek" || fail "S37 — lib/changes.sh mist: $patroon"
+  grep -q -- "$patroon" "$bibliotheek" || fail "S37 — lib/changes.sh is missing: $patroon"
 done
 
-# And: beide scripts roepen de bibliotheekfunctie ook daadwerkelijk aan. De
-# controles hierboven zoeken op tekst en zien dus alleen letterlijke kopieen;
-# logica die in een andere vorm is herschreven — een if-keten in plaats van een
-# case — zou er ongemerkt doorheen glippen. Deze controle is gedragsmatig: de
-# functie wordt geinstrumenteerd en er wordt vastgesteld dat hij is aangeroepen.
+# And: both scripts actually call the library function too. The checks above
+# search for text and therefore only see literal copies; logic rewritten in a
+# different form — an if-chain instead of a case — would slip through
+# unnoticed. This check is behavioral: the function is instrumented and it is
+# confirmed that it was called.
 sandbox_create
 trap sandbox_destroy EXIT
 
@@ -52,7 +53,7 @@ log="$SANDBOX/aanroepen.txt"
 
 cat >> "$repo/lib/changes.sh" <<INSTR
 
-# --- alleen voor S37: legt vast dat deze functie is aangeroepen ---
+# --- for S37 only: records that this function was called ---
 predicaat_waar() {
   printf '%s\n' "\$1" >> "$log"
   case "\$1" in
@@ -70,13 +71,13 @@ project="$(vers_project doelproject)"
 : > "$log"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
-  fail "S37 — adopt.sh riep predicaat_waar uit de bibliotheek niet aan"
+  fail "S37 — adopt.sh did not call predicaat_waar from the library"
 fi
 
 : > "$log"
 "$repo/pending-changes.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
-  fail "S37 — pending-changes.sh riep predicaat_waar uit de bibliotheek niet aan"
+  fail "S37 — pending-changes.sh did not call predicaat_waar from the library"
 fi
 
 test_klaar

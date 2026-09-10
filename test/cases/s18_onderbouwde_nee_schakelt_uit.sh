@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S18 — Een onderbouwde `nee` schakelt de merge-guard uit, zonder netwerkaanroep.
+# S18 — A substantiated `nee` disables the merge guard, without a network call.
 # Dekt: F8
 
 set -uo pipefail
@@ -22,7 +22,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<EOF
 | kwaliteitsreview-voor-merge | nee | 2026-01-01 | dit project heeft geen PR's, alleen directe commits door één persoon |
 EOF
 
-# Zou de guard gh toch aanroepen, dan verraadt dit bestand dat.
+# If the guard were to call gh anyway, this file would reveal that.
 sentinel="$SANDBOX/gh-was-aangeroepen"
 fakebin="$(fake_gh_bin '
 touch "'"$sentinel"'"
@@ -33,7 +33,7 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S18 — verwacht doorgang (exit 0), kreeg $status. Uitvoer: $uitvoer"
-[ ! -e "$sentinel" ] || fail "S18 — de guard riep gh aan terwijl de rij op 'nee' staat; dat hoort lokaal te blijven"
+[ "$status" -eq 0 ] || fail "S18 — expected pass-through (exit 0), got $status. Output: $uitvoer"
+[ ! -e "$sentinel" ] || fail "S18 — the guard called gh while the row is set to 'nee'; that should stay local"
 
 test_klaar

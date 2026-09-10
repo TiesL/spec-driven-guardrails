@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S26 — De reviewscope volgt de beantwoorde spec-*-rijen.
+# S26 — The review scope follows the answered spec-* rows.
 # Dekt: F11
 
 set -uo pipefail
@@ -14,11 +14,11 @@ repo="$(sandbox_copy_repo)"
 project="$SANDBOX/project"
 mkdir -p "$project"
 
-# spec-security staat op een echt "ja", spec-data-integriteit draagt nog de
-# voorlopige stempel die adopt.sh's seed_entry() zet: Antwoord blijft
-# letterlijk "ja", de tekst "vereist onderbouwing" zit in Toelichting. Beide
-# horen in scope — spec-privacy staat op "nee" en spec-testability is
-# onbeantwoord (geen rij) — geen van beide hoort in scope.
+# spec-security has a real "ja", spec-data-integriteit still carries the
+# provisional stamp that adopt.sh's seed_entry() sets: Antwoord stays
+# literally "ja", the text "vereist onderbouwing" sits in Toelichting. Both
+# belong in scope — spec-privacy is "nee" and spec-testability is unanswered
+# (no row) — neither belongs in scope.
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoptie van gedeelde workflow-wijzigingen
 
@@ -29,34 +29,34 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | spec-privacy | nee | 2026-01-01 | niet van toepassing |
 EOF
 
-# De ankers komen uit het gegenereerde PRD-blok van dit repo zelf.
+# The anchors come from this repo's own generated PRD block.
 cp "$repo/templates/PRD.md" "$project/PRD.md"
 
 uitvoer="$SANDBOX/uitvoer.txt"
 "$repo/skills/pre-merge-review/scope.sh" "$project" "$repo" > "$uitvoer" 2>/dev/null
 
 if ! grep -qx 'complexiteit' "$uitvoer"; then
-  fail "S26 — 'complexiteit' hoort altijd in de scope, ongeacht spec-*"
+  fail "S26 — 'complexiteit' always belongs in scope, regardless of spec-*"
 fi
 if ! grep -qx 'dependencies' "$uitvoer"; then
-  fail "S26 — 'dependencies' hoort altijd in de scope, ongeacht spec-*"
+  fail "S26 — 'dependencies' always belongs in scope, regardless of spec-*"
 fi
 if ! grep -qx 'spec-security: Security' "$uitvoer"; then
-  fail "S26 — spec-security (ja) ontbreekt in de scope"
+  fail "S26 — spec-security (ja) is missing from the scope"
 fi
 if ! grep -qx 'spec-data-integriteit: Data-integriteit \[vereist onderbouwing\]' "$uitvoer"; then
-  fail "S26 — spec-data-integriteit (voorlopige 'ja') hoort gemarkeerd in de scope te staan"
+  fail "S26 — spec-data-integriteit (provisional 'ja') should appear marked in the scope"
 fi
 if grep -q 'spec-privacy' "$uitvoer"; then
-  fail "S26 — spec-privacy staat op 'nee' en hoort niet in de scope"
+  fail "S26 — spec-privacy is 'nee' and does not belong in the scope"
 fi
 if grep -q 'spec-testability' "$uitvoer"; then
-  fail "S26 — spec-testability is onbeantwoord en hoort niet in de scope"
+  fail "S26 — spec-testability is unanswered and does not belong in the scope"
 fi
 
 regels="$(grep -c '.' "$uitvoer")"
 if [ "$regels" -ne 4 ]; then
-  fail "S26 — verwacht precies 4 scope-regels (complexiteit, dependencies, 2 NFR's), kreeg $regels"
+  fail "S26 — expected exactly 4 scope lines (complexiteit, dependencies, 2 NFRs), got $regels"
   cat "$uitvoer" >&2
 fi
 

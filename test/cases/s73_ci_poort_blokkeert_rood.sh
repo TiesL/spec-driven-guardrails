@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S73 — De merge-guard blokkeert `gh pr merge` als CI niet groen is.
+# S73 — The merge guard blocks `gh pr merge` when CI is not green.
 # Dekt: F8
 
 set -uo pipefail
@@ -20,7 +20,7 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 2 ] || fail "S73 — verwacht blokkade (exit 2) bij falende CI, kreeg $status. Uitvoer: $uitvoer"
-assert_contains "S73 — de melding noemt de falende check" "check: fail" "$uitvoer"
+[ "$status" -eq 2 ] || fail "S73 — expected block (exit 2) for failing CI, got $status. Output: $uitvoer"
+assert_contains "S73 — the message names the failing check" "check: fail" "$uitvoer"
 
 test_klaar

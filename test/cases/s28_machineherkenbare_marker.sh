@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# S28 — pre-merge-review plaatst een machineherkenbare marker in zijn
-# bevindingen-comment, waar de toekomstige merge-guard (W10b/F8) op keyt.
+# S28 — pre-merge-review places a machine-recognizable marker in its findings
+# comment, which the future merge guard (W10b/F8) keys on.
 # Dekt: F11
 #
-# De merge-guard bestaat nog niet (W10b) en het echt plaatsen van een
-# PR-comment vraagt gh/netwerk — dit is dus een documentcontract-test, in de
-# stijl van s29: hij toetst dat SKILL.md één vaste, grep-bare marker
-# voorschrijft, in plaats van runtime-gedrag te simuleren.
+# The merge guard does not exist yet (W10b) and actually placing a PR comment
+# requires gh/network — so this is a document-contract test, in the style of
+# s29: it checks that SKILL.md prescribes one fixed, grep-able marker, instead
+# of simulating runtime behavior.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -21,14 +21,14 @@ skill="$repo/skills/pre-merge-review/SKILL.md"
 marker='<!-- pre-merge-review:done -->'
 
 if ! grep -qF "$marker" "$skill"; then
-  fail "S28 — SKILL.md schrijft de marker '$marker' niet voor"
+  fail "S28 — SKILL.md does not prescribe the marker '$marker'"
 fi
 
-# Machineherkenbaar betekent ook: één vaste tekst, niet per project of per
-# review anders geformuleerd. Precies één definitie in het skill-register.
+# Machine-recognizable also means: one fixed text, not phrased differently per
+# project or per review. Exactly one definition in the skill register.
 aantal="$(grep -rlF "$marker" "$repo/skills" | wc -l | tr -d ' ')"
 if [ "$aantal" -ne 1 ]; then
-  fail "S28 — marker '$marker' hoort in precies één skill te staan, stond in $aantal"
+  fail "S28 — marker '$marker' should appear in exactly one skill, appeared in $aantal"
 fi
 
 test_klaar

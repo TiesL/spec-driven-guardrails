@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S25 — De user-level skill staat op userniveau.
+# S25 — The user-level skill lives at the user level.
 # Dekt: F10
 
 set -uo pipefail
@@ -14,56 +14,57 @@ project="$(vers_project s25)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 
 doel="$HOME/.claude/skills/adopt-workflow/SKILL.md"
-[ -f "$doel" ] || fail "S25 — $doel bestaat niet na 'adopt.sh --user'"
+[ -f "$doel" ] || fail "S25 — $doel does not exist after 'adopt.sh --user'"
 
-# F10: adopt-workflow is de énige user-level skill. Niet alleen "bestaat", ook
-# "er staat verder niets" - anders is dit geen echte controle.
+# F10: adopt-workflow is the only user-level skill. Not just "exists", also
+# "nothing else is there" - otherwise this isn't a real check.
 aantal="$(find "$HOME/.claude/skills" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')"
 [ "$aantal" -eq 1 ] \
-  || fail "S25 — \$HOME/.claude/skills bevat $aantal item(s), 1 verwacht (alleen adopt-workflow)"
+  || fail "S25 — \$HOME/.claude/skills contains $aantal item(s), expected 1 (only adopt-workflow)"
 
 [ ! -e "$project/.claude" ] \
-  || fail "S25 — het (niet-geadopteerde) project kreeg een .claude-map, terwijl adopt-workflow userbreed hoort te landen"
+  || fail "S25 — the (unadopted) project got a .claude directory, while adopt-workflow should land user-wide"
 
-# Tweede run: idempotent, geen kapotte link.
+# Second run: idempotent, no broken link.
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
-[ -f "$doel" ] || fail "S25 — een tweede '--user'-run liet de skill niet bestaan"
+[ -f "$doel" ] || fail "S25 — a second '--user' run left the skill not existing"
 
-# --- Regressie: een verweesde link blijft opruimbaar, ook als de skill zelf
-# inmiddels weg is uit de bron. Zonder dit meldt élke sessie in élk project
-# een laadfout, want de vorige installatie liet een dode link achter.
+# --- Regression: an orphaned link stays cleanable, even once the skill itself
+# has since disappeared from the source. Without this, every session in every
+# project reports a load error, because the previous installation left a dead
+# link behind.
 kaal="$(sandbox_copy_repo kaal)"
 rm -rf "$HOME/.claude"
 SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
 [ -L "$HOME/.claude/skills/adopt-workflow" ] \
-  || fail "S25 — voorbereidende installatie (kale kopie) legde geen symlink aan"
+  || fail "S25 — the preparatory install (bare copy) did not create a symlink"
 
 rm -rf "$kaal/skills/adopt-workflow"
 SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" --user >/dev/null 2>&1
 if [ -e "$HOME/.claude/skills/adopt-workflow" ] || [ -L "$HOME/.claude/skills/adopt-workflow" ]; then
-  fail "S25 — een verweesde adopt-workflow-link op userniveau is niet opgeruimd nadat de bron verdween"
+  fail "S25 — an orphaned adopt-workflow link at the user level was not cleaned up after the source disappeared"
 fi
 
-# --- Regressie: een eigen ~/.claude/skills-symlink van de gebruiker blijft
-# heel. Dit is de hele persoonlijke skill-namespace op deze machine, niet iets
-# van dit repo - "bij twijfel niets weggooien" geldt hier sterker dan in een
-# project.
+# --- Regression: a user's own ~/.claude/skills symlink stays intact. This is
+# the whole personal skill namespace on this machine, not something belonging
+# to this repo - "when in doubt, discard nothing" applies here even more
+# strongly than in a project.
 rm -rf "$HOME/.claude"
 mkdir -p "$SANDBOX/elders-skills/eigen-skill"
-echo "# van de gebruiker zelf" > "$SANDBOX/elders-skills/eigen-skill/SKILL.md"
+echo "# from the user themselves" > "$SANDBOX/elders-skills/eigen-skill/SKILL.md"
 mkdir -p "$HOME/.claude"
 ln -s "$SANDBOX/elders-skills" "$HOME/.claude/skills"
 
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 
 [ -L "$HOME/.claude/skills" ] \
-  || fail "S25 — een eigen ~/.claude/skills-symlink van de gebruiker is vervangen door een echte map"
+  || fail "S25 — a user's own ~/.claude/skills symlink was replaced by a real directory"
 bestemming="$(readlink "$HOME/.claude/skills")"
 [ "$bestemming" = "$SANDBOX/elders-skills" ] \
-  || fail "S25 — de eigen ~/.claude/skills-symlink wijst niet meer naar dezelfde plek"
+  || fail "S25 — the user's own ~/.claude/skills symlink no longer points to the same place"
 [ -f "$SANDBOX/elders-skills/eigen-skill/SKILL.md" ] \
-  || fail "S25 — de inhoud achter de eigen symlink is verdwenen"
+  || fail "S25 — the content behind the user's own symlink disappeared"
 [ -f "$SANDBOX/elders-skills/adopt-workflow/SKILL.md" ] \
-  || fail "S25 — adopt-workflow is niet geïnstalleerd binnen de eigen symlink-bestemming"
+  || fail "S25 — adopt-workflow was not installed inside the user's own symlink target"
 
 test_klaar "S25"

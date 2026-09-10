@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S50 — De guard geldt ook buiten Claude om.
+# S50 — The guard also applies outside of Claude.
 # Dekt: F17
 
 set -uo pipefail
@@ -13,52 +13,52 @@ trap sandbox_destroy EXIT
 project="$(vers_project native-hooks)"
 adopteer "$project"
 
-# Een echte bare remote, anders bereikt git push origin main de pre-push-hook
-# nooit — git faalt dan al eerder op "geen remote", en dat zou deze test iets
-# heel anders laten aantonen dan bedoeld.
+# A real bare remote, otherwise git push origin main never reaches the
+# pre-push hook — git would already fail earlier on "no remote", and that
+# would let this test demonstrate something quite different than intended.
 remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
 git -C "$project" remote add origin "$remote"
 
-# Given: main uitgecheckt, de git-hooks geïnstalleerd (door adopteer). Eerst
-# één toegestane eerste commit — een repo zonder commits mag zijn allereerste
-# commit op main krijgen (zelfde uitzondering als in hooks/git-guardrails) —
-# zodat de tweede poging hieronder de regel echt op de proef stelt.
-[ -L "$project/.git/hooks/pre-commit" ] || fail "S50 — pre-commit is geen symlink na adopt.sh"
-[ -L "$project/.git/hooks/pre-push" ] || fail "S50 — pre-push is geen symlink na adopt.sh"
+# Given: main checked out, the git hooks installed (by adopteer). First one
+# allowed first commit — a repo without commits is allowed to have its very
+# first commit on main (same exception as in hooks/git-guardrails) — so that
+# the second attempt below really puts the rule to the test.
+[ -L "$project/.git/hooks/pre-commit" ] || fail "S50 — pre-commit is not a symlink after adopt.sh"
+[ -L "$project/.git/hooks/pre-push" ] || fail "S50 — pre-push is not a symlink after adopt.sh"
 git -C "$project" commit -q --allow-empty -m "eerste commit, toegestaan op main" \
-  || fail "S50 — de allereerste commit (uitzondering) werd onterecht geweigerd"
+  || fail "S50 — the very first commit (exception) was wrongly refused"
 
-# When: git commit rechtstreeks in een shell, zonder Claude ertussen.
+# When: git commit directly in a shell, without Claude in between.
 uitvoer="$(cd "$project" && git commit -q --allow-empty -m "rechtstreeks op main" 2>&1)"
 status=$?
 
-# Then: geweigerd, met dezelfde melding als de PreToolUse-guard.
-[ "$status" -ne 0 ] || fail "S50 — commit op main via een rechtstreekse git-aanroep werd niet geweigerd"
-assert_contains "S50 — de melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$uitvoer"
+# Then: refused, with the same message as the PreToolUse guard.
+[ "$status" -ne 0 ] || fail "S50 — commit on main via a direct git call was not refused"
+assert_contains "S50 — the message matches the PreToolUse guard" "main gets its changes via a PR" "$uitvoer"
 
-# And: op een feature-branch gaat het gewoon door — dezelfde regel, niet een
-# blokkade van alles.
+# And: on a feature branch it just proceeds — the same rule, not a
+# blanket block of everything.
 git -C "$project" checkout -q -b feature/iets
 if ! git -C "$project" commit -q --allow-empty -m "op een branch" 2>&1; then
-  fail "S50 — een legitieme commit op een feature-branch werd geblokkeerd"
+  fail "S50 — a legitimate commit on a feature branch was blocked"
 fi
 
-# En git push origin main rechtstreeks, ook zonder Claude.
+# And git push origin main directly, also without Claude.
 git -C "$project" checkout -q main
 git -C "$project" branch -q --unset-upstream 2>/dev/null || true
 push_uitvoer="$(cd "$project" && git push origin main 2>&1)"
 push_status=$?
-[ "$push_status" -ne 0 ] || fail "S50 — git push origin main werd niet geweigerd"
-assert_contains "S50 — de push-melding komt overeen met de PreToolUse-guard" "main gets its changes via a PR" "$push_uitvoer"
+[ "$push_status" -ne 0 ] || fail "S50 — git push origin main was not refused"
+assert_contains "S50 — the push message matches the PreToolUse guard" "main gets its changes via a PR" "$push_uitvoer"
 
-# En: een relatieve SPEC_DRIVEN_GUARDRAILS_DIR mag de symlink niet dangling maken.
-# Gevonden in de review op PR #76: een relatief pad resolvt vanuit de map van
-# de symlink zelf (.git/hooks/), niet vanuit de map waar adopt.sh vandaan
-# draaide — en git slaat een dangling git-hook stilzwijgend over, zonder
-# enige melding. Precies aangetoond met een echt relatief pad, niet
-# geredeneerd: adopt.sh vanuit een submap van $TEST_REPO_ROOT aanroepen met
-# een relatieve SPEC_DRIVEN_GUARDRAILS_DIR.
+# And: a relative SPEC_DRIVEN_GUARDRAILS_DIR must not make the symlink dangling.
+# Found in the review on PR #76: a relative path resolves from the directory
+# of the symlink itself (.git/hooks/), not from the directory adopt.sh was
+# run from — and git silently skips a dangling git hook, without any
+# message. Demonstrated exactly with a real relative path, not reasoned
+# about: calling adopt.sh from a subdirectory of $TEST_REPO_ROOT with
+# a relative SPEC_DRIVEN_GUARDRAILS_DIR.
 project_relatief="$(vers_project relatieve-workflow-dir)"
 (
   cd "$TEST_REPO_ROOT/hooks" || exit 1
@@ -67,15 +67,15 @@ project_relatief="$(vers_project relatieve-workflow-dir)"
 doel="$(readlink "$project_relatief/.git/hooks/pre-commit" 2>/dev/null)"
 case "$doel" in
   /*) ;;
-  *) fail "S50 — een relatieve SPEC_DRIVEN_GUARDRAILS_DIR gaf een niet-absolute symlink-target: $doel" ;;
+  *) fail "S50 — a relative SPEC_DRIVEN_GUARDRAILS_DIR produced a non-absolute symlink target: $doel" ;;
 esac
 [ -e "$project_relatief/.git/hooks/pre-commit" ] \
-  || fail "S50 — de pre-commit-symlink is dangling na een relatieve SPEC_DRIVEN_GUARDRAILS_DIR"
+  || fail "S50 — the pre-commit symlink is dangling after a relative SPEC_DRIVEN_GUARDRAILS_DIR"
 
 git -C "$project_relatief" commit -q --allow-empty -m "eerste commit"
 relatief_uitvoer="$(cd "$project_relatief" && git commit -q --allow-empty -m "tweede, op main" 2>&1)"
 relatief_status=$?
 [ "$relatief_status" -ne 0 ] \
-  || fail "S50 — met een relatieve SPEC_DRIVEN_GUARDRAILS_DIR blokkeerde de git-hook niet (dangling symlink, stil overgeslagen door git)"
+  || fail "S50 — with a relative SPEC_DRIVEN_GUARDRAILS_DIR the git hook did not block (dangling symlink, silently skipped by git)"
 
 test_klaar

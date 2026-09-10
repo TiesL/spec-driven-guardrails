@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S80 — De check-job heeft leestoegang tot pull requests en issues.
+# S80 — The check job has read access to pull requests and issues.
 # Dekt: F17
 
 set -uo pipefail
@@ -10,38 +10,37 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Is "<sleutel>: read" ergens in dit bestand van kracht voor de check-job —
-# op job-niveau (onder "check:") of op workflow-niveau (vóór "jobs:")? Beide
-# tellen: een workflow-brede permissions:-sleutel geldt voor elke job eronder.
+# Is "<key>: read" in effect somewhere in this file for the check job —
+# at job level (under "check:") or at workflow level (before "jobs:")? Both
+# count: a workflow-wide permissions: key applies to every job under it.
 heeft_read_permissie() {
   local sleutel="$1" pad="$2"
   grep -qE "^[[:space:]]*${sleutel}:[[:space:]]*read[[:space:]]*\$" "$pad"
 }
 
-# check-pr-issue-link.sh (schakel 3, hard slot) en check-main-via-pr.sh
-# hebben allebei pull-requests:read nodig om PR's op te vragen; zonder
-# expliciete permissions krijgen ze het default, minimale tokenscope,
-# waaronder beide falen — niet incidenteel, zoals issue #83 en #85 allebei
-# lieten zien.
+# check-pr-issue-link.sh (link 3, hard block) and check-main-via-pr.sh
+# both need pull-requests:read to query PRs; without explicit permissions
+# they get the default, minimal token scope, under which both fail — not
+# incidentally, as issue #83 and #85 both showed.
 #
-# issues:read is een apart gat: closingIssuesReferences (waar
-# check-pr-issue-link.sh op leest) gaat over het gekoppelde issue zelf, niet
-# over de PR. Zonder issues:read levert de opvraging stilzwijgend een lege
-# lijst op, ook als de koppeling echt bestaat — geverifieerd op PR #105
-# (issue #99, dit repo's eigen workflow) vóór hetzelfde gat hier voor
-# templates/ci.yml werd gedicht (issue #106).
+# issues:read is a separate gap: closingIssuesReferences (what
+# check-pr-issue-link.sh reads) is about the linked issue itself, not
+# about the PR. Without issues:read the query silently returns an empty
+# list, even when the link genuinely exists — verified on PR #105
+# (issue #99, this repo's own workflow) before the same gap here for
+# templates/ci.yml was closed (issue #106).
 for bestand in templates/ci.yml .github/workflows/ci.yml; do
   pad="$TEST_REPO_ROOT/$bestand"
 
   if [ ! -f "$pad" ]; then
-    fail "S80 — $bestand ontbreekt"
+    fail "S80 — $bestand is missing"
     continue
   fi
 
   heeft_read_permissie pull-requests "$pad" \
-    || fail "S80 — $bestand geeft de check-job geen pull-requests: read"
+    || fail "S80 — $bestand does not give the check job pull-requests: read"
   heeft_read_permissie issues "$pad" \
-    || fail "S80 — $bestand geeft de check-job geen issues: read"
+    || fail "S80 — $bestand does not give the check job issues: read"
 done
 
 test_klaar

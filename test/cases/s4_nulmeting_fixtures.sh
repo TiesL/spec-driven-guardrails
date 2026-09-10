@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S4 — Nulmeting-fixture legt `a2t-emails` vast zoals gevonden.
+# S4 — Baseline fixture captures `a2t-emails` as found.
 # Dekt: F2
 
 set -uo pipefail
@@ -9,34 +9,34 @@ set -uo pipefail
 
 nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 
-# De viervoudige vergelijking van gouden sets zit in R9
-# (r9_nulmeting_onveranderd.sh). Dit scenario gaat specifiek over de vraag of
-# a2t-emails is vastgelegd zoals gevonden, zonder reparatie.
+# The fourfold comparison of golden sets is in R9
+# (r9_nulmeting_onveranderd.sh). This scenario is specifically about whether
+# a2t-emails is captured as found, without repair.
 
-# a2t-emails is het bijzondere geval: geen WORKFLOW-ADOPTIE.md, dus alles staat
-# open. Vastleggen zoals gevonden - niet eerst repareren, anders legt de fixture
-# de reparatie vast in plaats van de toestand.
+# a2t-emails is the special case: no WORKFLOW-ADOPTIE.md, so everything is
+# open. Capture as found - do not repair first, otherwise the fixture
+# captures the repair instead of the state.
 a2t="$nulmeting/a2t-emails"
 
 if [ -e "$a2t/WORKFLOW-ADOPTIE.md" ]; then
-  fail "S4 — de a2t-emails-fixture heeft een WORKFLOW-ADOPTIE.md; die hoort er niet te zijn"
+  fail "S4 — the a2t-emails fixture has a WORKFLOW-ADOPTIE.md; it should not be there"
 fi
 
-# Niet-circulaire controle dat er niets vooraf beantwoord is: ci-conventie is in
-# tennis-admin wél beantwoord. Staat hij hier open, dan is de fixture ongerepareerd.
-# Geen `if [ -f ... ]`-guard: ontbreekt de gouden set, dan is dat een fout en
-# geen reden om stilzwijgend niets te controleren.
+# Non-circular check that nothing has been answered in advance: ci-conventie is
+# indeed answered in tennis-admin. If it is open here, the fixture is unrepaired.
+# No `if [ -f ... ]` guard: if the golden set is missing, that is a fault and
+# not a reason to silently check nothing.
 if [ ! -f "$a2t/verwacht-openstaand.txt" ]; then
-  fail "S4 — gouden set van a2t-emails ontbreekt"
+  fail "S4 — golden set of a2t-emails is missing"
   test_klaar
 fi
 
 if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
-  fail "S4 — ci-conventie ontbreekt in de a2t-nulmeting; lijkt vooraf beantwoord"
+  fail "S4 — ci-conventie is missing from the a2t baseline; appears to have been answered in advance"
 fi
 aantal="$(grep -c . "$a2t/verwacht-openstaand.txt")"
 if [ "$aantal" -lt 20 ]; then
-  fail "S4 — a2t-nulmeting telt maar $aantal ID's; 'alles openstaand' verwacht"
+  fail "S4 — a2t baseline only counts $aantal IDs; 'everything open' was expected"
 fi
 
 test_klaar

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S7 — Het signaal telt rijen die nog op onderbouwing wachten.
+# S7 — The signal counts rows still waiting on substantiation.
 # Dekt: F6
 
 set -uo pipefail
@@ -10,29 +10,29 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een vers geadopteerd project met 21 geseede rijen die "vereist
-# onderbouwing" dragen.
+# Given: a freshly adopted project with 21 seeded rows carrying "vereist
+# onderbouwing".
 project="$(vers_project doelproject)"
 adopteer "$project"
 
 rijen="$(grep -c 'vereist onderbouwing' "$project/WORKFLOW-ADOPTIE.md")"
-[ "$rijen" -eq 21 ] || fail "S7 — $rijen rijen met 'vereist onderbouwing', 21 verwacht"
+[ "$rijen" -eq 21 ] || fail "S7 — $rijen rows with 'vereist onderbouwing', 21 expected"
 
-# When: pending-changes.sh draait.
+# When: pending-changes.sh runs.
 uitvoer="$SANDBOX/uitvoer.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
 
-# Then: er verschijnt een melding met het aantal.
+# Then: a message appears with the count.
 grep -q '21 row(s)' "$uitvoer" || {
-  fail "S7 — geen melding met het aantal wachtende onderbouwingen"
+  fail "S7 — no message with the count of pending substantiations"
   cat "$uitvoer" >&2
 }
-grep -qi 'substantiation' "$uitvoer" || fail "S7 — de melding noemt 'substantiation' niet"
+grep -qi 'substantiation' "$uitvoer" || fail "S7 — the message does not mention 'substantiation'"
 
-# En het aantal beweegt mee: één rij onderbouwen maakt er twintig van.
-# Eén rij onderbouwen. Niet met `sed '0,/re/'`: dat adresbereik is een
-# GNU-uitbreiding die BSD-sed op macOS niet kent, en de vervanging grijpt dan
-# stilzwijgend niet.
+# And the count moves along: substantiating one row makes it twenty.
+# Substantiate one row. Not with `sed '0,/re/'`: that address range is a GNU
+# extension that BSD sed on macOS does not know, and the substitution then
+# silently does not take.
 awk '
   !gedaan && sub(/vereist onderbouwing tijdens PRD\/architectuur/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
   { print }
@@ -42,11 +42,11 @@ mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTIE.md"
 na="$SANDBOX/na.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
 grep -q '20 row(s)' "$na" || {
-  fail "S7 — het aantal beweegt niet mee na het onderbouwen van één rij"
+  fail "S7 — the count does not move along after substantiating one row"
   grep -i 'row(s)' "$na" >&2
 }
 
-# Zijn alle rijen onderbouwd, dan verdwijnt de melding — anders wordt hij ruis.
+# Once all rows are substantiated, the message disappears — otherwise it becomes noise.
 sed -i.bak 's/bij adoptie — vereist onderbouwing tijdens PRD\/architectuur/onderbouwd/g' \
   "$project/WORKFLOW-ADOPTIE.md"
 rm -f "$project/WORKFLOW-ADOPTIE.md.bak"
@@ -54,19 +54,19 @@ rm -f "$project/WORKFLOW-ADOPTIE.md.bak"
 leeg="$SANDBOX/leeg.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$leeg" 2>/dev/null
 if grep -qi 'waiting on substantiation' "$leeg"; then
-  fail "S7 — de melding blijft staan terwijl alles onderbouwd is"
+  fail "S7 — the message remains while everything is substantiated"
 fi
 
-# En de telling kijkt alleen naar tabelrijen. Een losse notitie buiten de tabel
-# die toevallig dezelfde woorden bevat, is geen wachtende onderbouwing —
-# beantwoord() ankert om dezelfde reden op de ID-kolom.
+# And the count only looks at table rows. A loose note outside the table that
+# happens to contain the same words is not a pending substantiation —
+# beantwoord() anchors on the ID column for the same reason.
 printf '\nLosse notitie: dit vereist onderbouwing bij gelegenheid.\n' \
   >> "$project/WORKFLOW-ADOPTIE.md"
 
 met_notitie="$SANDBOX/met-notitie.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$met_notitie" 2>/dev/null
 if grep -qi 'waiting on substantiation' "$met_notitie"; then
-  fail "S7 — een notitie buiten de tabel telt mee als wachtende onderbouwing"
+  fail "S7 — a note outside the table counts as a pending substantiation"
   grep -i 'row(s)' "$met_notitie" >&2
 fi
 

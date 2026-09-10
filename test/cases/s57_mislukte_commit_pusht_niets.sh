@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S57 — Een mislukte commit of ontbrekend netwerk pusht niets.
+# S57 — A failed commit or missing network pushes nothing.
 # Dekt: F18
 
 set -uo pipefail
@@ -11,10 +11,10 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 hook="$TEST_REPO_ROOT/hooks/push-na-commit"
-[ -x "$hook" ] || { fail "S57 — hooks/push-na-commit ontbreekt"; test_klaar; }
+[ -x "$hook" ] || { fail "S57 — hooks/push-na-commit is missing"; test_klaar; }
 
-# Geval 1: geen origin — de hook mag niets ophouden en niets op stderr geven
-# dat als een fout oogt.
+# Case 1: no origin — the hook must not hang and must not print anything to
+# stderr that looks like an error.
 project="$(vers_project geen-origin)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
@@ -23,10 +23,10 @@ git -C "$project" commit -q --allow-empty -m "werk zonder remote"
 invoer1='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git commit -m x"}}'
 status1=0
 printf '%s' "$invoer1" | "$hook" >/dev/null 2>/dev/null || status1=$?
-[ "$status1" -eq 0 ] || fail "S57/geval1 — geen origin gaf exit $status1 in plaats van 0"
+[ "$status1" -eq 0 ] || fail "S57/geval1 — no origin gave exit $status1 instead of 0"
 
-# Geval 2: op main gebeurt sowieso niets, ook al bestaat de remote wél —
-# dezelfde grens als de bestaande SessionEnd-hook.
+# Case 2: nothing happens on main regardless, even when the remote does
+# exist — the same boundary as the existing SessionEnd hook.
 project_main="$(vers_project op-main)"
 remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
@@ -37,11 +37,11 @@ invoer2='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_m
 printf '%s' "$invoer2" | "$hook" >/dev/null 2>&1
 
 if git -C "$remote" rev-parse --verify --quiet main >/dev/null 2>&1; then
-  fail "S57/geval2 — main werd toch gepusht vanuit push-na-commit"
+  fail "S57/geval2 — main was pushed after all from push-na-commit"
 fi
 
-# Geval 3: een commando dat geen git commit is, pusht niets — geen enkele
-# poging, ook al is er een remote en een feature-branch met unpushed werk.
+# Case 3: a command that is not a git commit pushes nothing — no attempt at
+# all, even though there is a remote and a feature branch with unpushed work.
 project_ander="$(vers_project ander-commando)"
 git -C "$project_ander" remote add origin "$remote"
 git -C "$project_ander" commit -q --allow-empty -m start
@@ -52,14 +52,14 @@ invoer3='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_a
 printf '%s' "$invoer3" | "$hook" >/dev/null 2>&1
 
 if git -C "$remote" rev-parse --verify --quiet feature/iets >/dev/null 2>&1; then
-  fail "S57/geval3 — een niet-commit-commando triggerde toch een push"
+  fail "S57/geval3 — a non-commit command triggered a push after all"
 fi
 
-# Geval 4: het routinematige amend/rebase-geval, uit de review op PR #76.
-# `git commit --amend` slaagt lokaal maar de daaropvolgende push wordt door
-# origin geweigerd (non-fast-forward) — dat is geen netwerk- of
-# toegangsprobleem, en de hook moet dat niet zo bestempelen, en zeker niet
-# stilzwijgend forceren.
+# Case 4: the routine amend/rebase case, from the review on PR #76.
+# `git commit --amend` succeeds locally but the subsequent push is rejected
+# by origin (non-fast-forward) — that is not a network or access problem,
+# and the hook must not label it as such, and certainly must not silently
+# force it.
 project_amend="$(vers_project amend)"
 git -C "$project_amend" remote add origin "$remote"
 git -C "$project_amend" commit -q --allow-empty -m start
@@ -73,16 +73,16 @@ invoer4='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_a
 uitvoer4="$(printf '%s' "$invoer4" | "$hook" 2>&1)"
 status4=$?
 
-[ "$status4" -eq 0 ] || fail "S57/geval4 — een geweigerde push (non-fast-forward) blokkeerde het commando (exit $status4)"
+[ "$status4" -eq 0 ] || fail "S57/geval4 — a rejected push (non-fast-forward) blocked the command (exit $status4)"
 [ "$(git -C "$remote" rev-parse feature/amend)" = "$sha_voor_amend_op_remote" ] \
-  || fail "S57/geval4 — de hook forceerde de push stilzwijgend, de remote-SHA veranderde"
+  || fail "S57/geval4 — the hook silently forced the push, the remote SHA changed"
 case "$uitvoer4" in
   *"local history diverges"*) ;;
-  *) fail "S57/geval4 — de melding noemt niet dat de lokale geschiedenis afwijkt (amend/rebase), maar: $uitvoer4" ;;
+  *) fail "S57/geval4 — the message does not mention that local history diverges (amend/rebase), but: $uitvoer4" ;;
 esac
 case "$uitvoer4" in
   *"no network or no access"*)
-    fail "S57/geval4 — de melding wijt het amend-geval ten onrechte aan netwerk/toegang: $uitvoer4" ;;
+    fail "S57/geval4 — the message wrongly blames the amend case on network/access: $uitvoer4" ;;
 esac
 
 test_klaar

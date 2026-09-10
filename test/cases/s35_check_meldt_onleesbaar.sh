@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S35 — `check` meldt wat hij niet heeft kunnen controleren.
+# S35 — `check` reports what it was unable to check.
 # Dekt: F1
 
 set -uo pipefail
@@ -12,18 +12,18 @@ trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
 
-# Given: een bestand dat check zou moeten onderzoeken maar niet kan lezen.
+# Given: a file that check should examine but cannot read.
 mkdir -p "$repo/hooks"
 printf '#!/usr/bin/env bash\nif [ 1 -eq 1 ]; then\n  echo kapot\n' > "$repo/hooks/onleesbaar"
 chmod 000 "$repo/hooks/onleesbaar"
 
-# When: ./check draait.
+# When: ./check runs.
 uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 
-# Then: er verschijnt een waarschuwing die het bestand noemt.
+# Then: a warning appears that names the file.
 assert_contains "S35" "onleesbaar" "$uitvoer"
 
-# And: het verdwijnt niet stilzwijgend uit de controle.
+# And: it doesn't silently drop out of the check.
 assert_contains "S35" "couldn't be read" "$uitvoer"
 
 chmod 644 "$repo/hooks/onleesbaar"

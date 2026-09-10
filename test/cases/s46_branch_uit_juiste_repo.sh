@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S46 — De branch wordt bepaald in de repo waar het commando over gaat.
+# S46 — The branch is determined in the repo the command is about.
 # Dekt: F7
 
 set -uo pipefail
@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S46 — hooks/git-guardrails ontbreekt"; test_klaar; }
+[ -x "$guard" ] || { fail "S46 — hooks/git-guardrails is missing"; test_klaar; }
 
 op_main="$(vers_project op-main)"
 git -C "$op_main" commit -q --allow-empty -m start
@@ -28,38 +28,38 @@ langs_guard() {
   echo $?
 }
 
-# Given: de sessie staat op main, het commando gaat over een repo op een
-# feature-branch. Zou de guard naar de sessiemap kijken, dan blokkeert hij
-# legitiem werk in een andere repo.
+# Given: the session is on main, the command is about a repo on a
+# feature branch. If the guard looked at the session directory, it would block
+# legitimate work in another repo.
 if [ "$(langs_guard "$op_main" "git -C $op_feature push origin HEAD")" = "2" ]; then
-  fail "S46 — push in een andere repo geblokkeerd op grond van de sessiemap"
+  fail "S46 — push in another repo blocked based on the session directory"
 fi
 
-# En omgekeerd: de sessie staat op een feature-branch, het commando gaat over een
-# repo op main. Dat hoort wél geblokkeerd te worden.
+# And conversely: the session is on a feature branch, the command is about a
+# repo on main. That should indeed be blocked.
 if [ "$(langs_guard "$op_feature" "git -C $op_main push origin HEAD")" != "2" ]; then
-  fail "S46 — push naar main in een andere repo doorgelaten"
+  fail "S46 — push to main in another repo let through"
 fi
 
-# --git-dir en --work-tree tellen net zo mee; git rekent zelf uit hoe ze zich
-# verhouden. Hier alleen dat de guard ze niet meer als gewone vlag wegslikt,
-# want dan verdween het subcommando uit beeld.
+# --git-dir and --work-tree count just as much; git itself works out how they
+# relate. Here only that the guard no longer swallows them as an ordinary flag,
+# because then the subcommand would disappear from view.
 if [ "$(langs_guard "$op_feature" "git --git-dir $op_main/.git --work-tree $op_main push origin HEAD")" != "2" ]; then
-  fail "S46 — --git-dir/--work-tree worden niet meegenomen in de branchbepaling"
+  fail "S46 — --git-dir/--work-tree are not taken into account in the branch determination"
 fi
 if [ "$(langs_guard "$op_feature" "git --git-dir /tmp/bestaat-niet reset --hard")" != "2" ]; then
-  fail "S46 — een destructief commando met --git-dir wordt niet meer herkend"
+  fail "S46 — a destructive command with --git-dir is no longer recognized"
 fi
 
-# Bestaat het pad niet of is het geen repo, dan komt er geen branch uit. Niet
-# blokkeren: bij twijfel toestaan.
+# If the path does not exist or is not a repo, no branch comes out. Do not
+# block: when in doubt, allow.
 geen_repo="$SANDBOX/geen-repo"
 mkdir -p "$geen_repo"
 if [ "$(langs_guard "$op_feature" "git -C $geen_repo push origin HEAD")" = "2" ]; then
-  fail "S46 — geblokkeerd terwijl het doelpad geen git-repo is"
+  fail "S46 — blocked while the target path is not a git repo"
 fi
 if [ "$(langs_guard "$op_feature" "git -C /bestaat/echt/niet push origin HEAD")" = "2" ]; then
-  fail "S46 — geblokkeerd terwijl het doelpad niet bestaat"
+  fail "S46 — blocked while the target path does not exist"
 fi
 
 test_klaar

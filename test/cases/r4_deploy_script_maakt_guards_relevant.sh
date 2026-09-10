@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R4 — Een "deploy"-script maakt deploy-guards relevant.
+# R4 — A "deploy" script makes deploy-guards relevant.
 # Dekt: F3
 
 set -uo pipefail
@@ -18,19 +18,19 @@ zonder="$SANDBOX/zonder.txt"
 openstaande_ids "$project" > "$zonder"
 
 if grep -qx 'deploy-guards' "$zonder"; then
-  fail "R4 — deploy-guards stond al open zonder deploy-script"
+  fail "R4 — deploy-guards was already open without a deploy script"
 fi
 
-# Given: package.json met een "deploy"-script.
+# Given: package.json with a "deploy" script.
 echo '{"name":"t","scripts":{"deploy":"node deploy.mjs"}}' > "$project/package.json"
 
-# When/Then: deploy-guards verschijnt als openstaand.
+# When/Then: deploy-guards appears as open.
 met="$SANDBOX/met.txt"
 openstaande_ids "$project" > "$met"
 
-grep -qx 'deploy-guards' "$met" || fail "R4 — deploy-guards verscheen niet na toevoegen van het deploy-script"
+grep -qx 'deploy-guards' "$met" || fail "R4 — deploy-guards did not appear after adding the deploy script"
 
 verschil="$(comm -13 "$zonder" "$met" | tr '\n' ' ')"
-[ "$verschil" = "deploy-guards " ] || fail "R4 — verschil is '$verschil', alleen 'deploy-guards' verwacht"
+[ "$verschil" = "deploy-guards " ] || fail "R4 — difference is '$verschil', expected only 'deploy-guards'"
 
 test_klaar

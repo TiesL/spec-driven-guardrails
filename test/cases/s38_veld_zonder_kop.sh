@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S38 — Een veld zonder voorafgaande kop levert geen entry.
+# S38 — A field without a preceding heading yields no entry.
 # Dekt: F3
 
 set -uo pipefail
@@ -12,7 +12,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een misvormde bron — een veld vóór de eerste kop.
+# Given: a malformed source — a field before the first heading.
 bron="$SANDBOX/CHANGES.md"
 cat > "$bron" <<'MD'
 # Adopteerbare wijzigingen
@@ -28,29 +28,30 @@ MD
 gezien="$SANDBOX/gezien.txt"
 : > "$gezien"
 
-# shellcheck disable=SC2329  # indirect aangeroepen, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via itereer_entries
 noteer() { printf '%s\n' "$1" >> "$gezien"; }
 
-# When: itereer_entries die bron leest.
+# When: itereer_entries reads that source.
 itereer_entries "$bron" noteer
 
-# Then: alleen de entry ná de kop is gezien; het losse veld leverde niets op.
-# wc -l, niet grep -c: een callback met een leeg ID schrijft een lege regel, en
-# die moet juist meegeteld worden - dat is het geval dat dit scenario zoekt.
+# Then: only the entry after the heading was seen; the loose field yielded
+# nothing. wc -l, not grep -c: a callback with an empty ID writes an empty
+# line, and that must be counted too - that's exactly the case this scenario
+# is looking for.
 aantal="$(wc -l < "$gezien" | tr -d ' ')"
-[ "$aantal" -eq 1 ] || fail "S38 — $aantal callbacks, 1 verwacht (veld zonder kop is meegeteld)"
-grep -qx 'echte-entry' "$gezien" || fail "S38 — de entry na de kop is niet verwerkt"
+[ "$aantal" -eq 1 ] || fail "S38 — $aantal callbacks, expected 1 (field without heading is counted)"
+grep -qx 'echte-entry' "$gezien" || fail "S38 — the entry after the heading was not processed"
 
-# And: er is geen aanroep met een leeg ID geweest.
+# And: there was no call with an empty ID.
 if grep -qx '' "$gezien"; then
-  fail "S38 — callback aangeroepen met een leeg ID"
+  fail "S38 — callback called with an empty ID"
 fi
 
-# And: hetzelfde geldt via adopt.sh zelf. De guard zat vóór W4 alleen in
-# pending-changes.sh; adopt.sh produceerde bij zo'n misvormde bron een rij met
-# een leeg ID. Deze controle loopt via het echte script in plaats van via de
-# bibliotheek, want geseede_ids() filtert op '^| [a-z]' en zou een lege-ID-rij
-# nooit zien.
+# And: the same holds via adopt.sh itself. Before W4, the guard was only in
+# pending-changes.sh; with such a malformed source, adopt.sh produced a row
+# with an empty ID. This check runs through the real script instead of
+# through the library, because geseede_ids() filters on '^| [a-z]' and would
+# never see an empty-ID row.
 nep="$SANDBOX/nepworkflow"
 mkdir -p "$nep/lib" "$nep/templates"
 cp "$TEST_REPO_ROOT/lib/changes.sh" "$nep/lib/"
@@ -63,7 +64,7 @@ SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
 
 tabel="$project/WORKFLOW-ADOPTIE.md"
 if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then
-  fail "S38 — adopt.sh schreef een rij met een leeg ID"
+  fail "S38 — adopt.sh wrote a row with an empty ID"
   grep -nE '^\| *\|' "$tabel" >&2
 fi
 

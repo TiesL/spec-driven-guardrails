@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# S75 — De merge-guard blokkeert niet als er geen checks gerapporteerd zijn.
+# S75 — The merge guard does not block when no checks are reported.
 # Dekt: F8
 #
-# Een project zonder CI-workflow (CI is optioneel bij adoptie, zie ci-conventie
-# in CHANGES.md) mag niet vastlopen op een controle die voor dat project niets
-# te controleren heeft. Geen checks is geen rode vlag.
+# A project without a CI workflow (CI is optional at adoption, see ci-conventie
+# in CHANGES.md) must not get stuck on a check that has nothing to check for
+# that project. No checks is not a red flag.
 #
-# Gevonden bij het reviewen van PR #82: gh geeft dit geval niet terug als een
-# lege JSON-lijst, ook niet met --json. Zelfs dan blijft het zijn platte
-# tekstmelding op stderr geven, met exitstatus 1 (geverifieerd tegen een
-# echte PR zonder checks). De fake hieronder bootst dat exact na — een fake
-# die "[]" teruggaf zou een pad testen dat in het echt niet bestaat.
+# Found while reviewing PR #82: gh does not return this case as an
+# empty JSON list, not even with --json. Even then it still gives its plain
+# text message on stderr, with exit status 1 (verified against a
+# real PR without checks). The fake below mimics that exactly — a fake
+# that returned "[]" would test a path that does not exist in reality.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -40,6 +40,6 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S75 — verwacht doorgang (exit 0) zonder gerapporteerde checks, kreeg $status. Uitvoer: $uitvoer"
+[ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $uitvoer"
 
 test_klaar

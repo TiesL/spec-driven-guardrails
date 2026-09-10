@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S72 — Bestaande projecten krijgen de main-via-PR-vraag alsnog voorgelegd.
+# S72 — Existing projects are still presented with the main-via-PR question.
 # Dekt: F17
 
 set -uo pipefail
@@ -10,10 +10,10 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een project met package.json en een al bestaande ci.yml die
-# check-main-via-pr.sh niet aanroept, plus een WORKFLOW-ADOPTIE.md van vóór
-# deze entry bestond — precies het geval waarin scaffold_if_missing de ci.yml
-# ongemoeid laat én seed_adoptietabel niets meer seedt (dat bestand bestaat al).
+# Given: a project with package.json and an already-existing ci.yml that
+# does not call check-main-via-pr.sh, plus a WORKFLOW-ADOPTIE.md predating
+# this entry — exactly the case where scaffold_if_missing leaves the ci.yml
+# untouched and seed_adoptietabel no longer seeds anything (that file already exists).
 project="$(vers_project met-eigen-ci)"
 echo '{}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"
@@ -36,26 +36,26 @@ EOF
 
 adopteer "$project"
 
-# And: de eigen ci.yml blijft ongemoeid — scaffold_if_missing overschrijft
-# niets (zelfde regel als S49 voor ci-op-pr-en-main).
+# And: the existing ci.yml stays untouched — scaffold_if_missing overwrites
+# nothing (same rule as S49 for ci-op-pr-en-main).
 if ! grep -qx '      - run: npm run check' "$project/.github/workflows/ci.yml"; then
-  fail "S72 — de bestaande ci.yml werd overschreven"
+  fail "S72 — the existing ci.yml was overwritten"
 fi
 if grep -q 'check-main-via-pr' "$project/.github/workflows/ci.yml"; then
-  fail "S72 — de bestaande ci.yml riep check-main-via-pr.sh toch aan (onverwacht voor dit scenario)"
+  fail "S72 — the existing ci.yml called check-main-via-pr.sh anyway (unexpected for this scenario)"
 fi
 
 openstaande="$(openstaande_ids "$project")"
 if ! printf '%s\n' "$openstaande" | grep -qx 'ci-detecteert-main-buiten-pr'; then
-  fail "S72 — ci-detecteert-main-buiten-pr verscheen niet als openstaand voor een bestaand package.json-project"
+  fail "S72 — ci-detecteert-main-buiten-pr did not appear as outstanding for an existing package.json project"
   printf '%s\n' "$openstaande" >&2
 fi
 
-# And: een project zonder package.json krijgt die vraag niet.
+# And: a project without package.json does not get that question.
 project_zonder="$(vers_project zonder-package-json)"
 openstaande_zonder="$(openstaande_ids "$project_zonder")"
 if printf '%s\n' "$openstaande_zonder" | grep -qx 'ci-detecteert-main-buiten-pr'; then
-  fail "S72 — de main-via-PR-vraag verscheen ook zonder package.json"
+  fail "S72 — the main-via-PR question appeared even without package.json"
 fi
 
 test_klaar

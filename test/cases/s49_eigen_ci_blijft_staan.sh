@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# S49 — Een eigen ci.yml wordt niet overschreven; de afwijking wordt zichtbaar
-# via de adoptieregistratie in plaats van via een stille kopie.
+# S49 — A custom ci.yml is not overwritten; the deviation becomes visible
+# via the adoption registry instead of via a silent copy.
 # Dekt: F17
 
 set -uo pipefail
@@ -11,40 +11,40 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: een project met een package.json — anders scaffoldt adopt.sh sowieso
-# geen workflow — en een handgeschreven ci.yml die afwijkt van het sjabloon.
+# Given: a project with a package.json — otherwise adopt.sh would not scaffold
+# a workflow anyway — and a handwritten ci.yml that deviates from the template.
 project="$(vers_project eigen-ci)"
 echo '{"name":"t"}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"
 eigen='name: Eigen CI die niet van het sjabloon komt'
 echo "$eigen" > "$project/.github/workflows/ci.yml"
 
-# When: adopt.sh draait, twee keer.
+# When: adopt.sh runs, twice.
 adopteer "$project"
 na_een="$(cat "$project/.github/workflows/ci.yml")"
 adopteer "$project"
 na_twee="$(cat "$project/.github/workflows/ci.yml")"
 
-# Then: het bestand is ongemoeid gebleven.
-[ "$na_een" = "$eigen" ] || fail "S49 — adopt.sh overschreef een eigen ci.yml"
+# Then: the file was left untouched.
+[ "$na_een" = "$eigen" ] || fail "S49 — adopt.sh overwrote a custom ci.yml"
 
-# And: twee keer draaien geeft hetzelfde resultaat.
-[ "$na_twee" = "$na_een" ] || fail "S49 — adopt.sh is niet idempotent op ci.yml"
+# And: running twice gives the same result.
+[ "$na_twee" = "$na_een" ] || fail "S49 — adopt.sh is not idempotent on ci.yml"
 
-# And: de afwijking blijft niet onzichtbaar. Het sjabloon repareren helpt alleen
-# nieuwe projecten; bestaande houden hun eigen workflow. Daarom stelt de
-# adoptieregistratie de vraag — dat is het mechanisme dat een stille afwijking
-# hoorbaar maakt, niet een melding in adopt.sh die één keer voorbijkomt.
+# And: the deviation does not stay invisible. Repairing the template only helps
+# new projects; existing ones keep their own workflow. That is why the
+# adoption registry asks the question — that is the mechanism that makes a
+# silent deviation audible, not a one-time message in adopt.sh.
 tabel="$project/WORKFLOW-ADOPTIE.md"
 grep -q '^| ci-op-pr-en-main ' "$tabel" \
-  || fail "S49 — ci-op-pr-en-main staat niet in de adoptietabel van een project met package.json"
+  || fail "S49 — ci-op-pr-en-main is not in the adoption table of a project with package.json"
 
-# And: voor een project zonder package.json is de vraag niet van toepassing —
-# dezelfde afbakening als ci-conventie, waar deze entry op voortbouwt.
+# And: for a project without package.json the question does not apply —
+# the same scoping as ci-conventie, which this entry builds on.
 kaal="$(vers_project zonder-package-json)"
 adopteer "$kaal"
 if grep -q '^| ci-op-pr-en-main ' "$kaal/WORKFLOW-ADOPTIE.md"; then
-  fail "S49 — ci-op-pr-en-main is geseed in een project zonder package.json"
+  fail "S49 — ci-op-pr-en-main was seeded in a project without package.json"
 fi
 
 test_klaar

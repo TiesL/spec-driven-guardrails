@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S58 — Een git-hook die zijn oordeel niet kan vellen, laat door.
+# S58 — A git hook that cannot form a judgment lets it through.
 # Dekt: F17
 
 set -uo pipefail
@@ -10,8 +10,8 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Een kopie van de repo waarin regels.sh weg is — het bronscript ontbreekt,
-# precies het geval uit S58.
+# A copy of the repo where regels.sh is removed — the source script is
+# missing, exactly the case from S58.
 repo="$(sandbox_copy_repo)"
 rm -f "$repo/hooks/regels.sh"
 
@@ -20,13 +20,13 @@ mkdir -p "$project/.git/hooks"
 ln -s "$repo/hooks/pre-commit" "$project/.git/hooks/pre-commit"
 ln -s "$repo/hooks/pre-push" "$project/.git/hooks/pre-push"
 
-# Given/When: een commit op main, terwijl regels.sh ontbreekt.
+# Given/When: a commit on main, while regels.sh is missing.
 git -C "$project" commit -q --allow-empty -m "eerste commit"
 uitvoer="$(cd "$project" && git commit -q --allow-empty -m "tweede commit op main" 2>&1)"
 status=$?
 
-# Then: luide waarschuwing, en het commando gaat gewoon door.
-[ "$status" -eq 0 ] || fail "S58 — de commit werd geblokkeerd terwijl regels.sh ontbreekt (moet faal-open zijn)"
-assert_contains "S58 — er verschijnt een waarschuwing" "warning" "$uitvoer"
+# Then: a loud warning, and the command just proceeds.
+[ "$status" -eq 0 ] || fail "S58 — the commit was blocked while regels.sh is missing (must fail open)"
+assert_contains "S58 — a warning appears" "warning" "$uitvoer"
 
 test_klaar

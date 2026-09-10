@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S16 — Merge mét review-marker gaat door.
+# S16 — Merge with a review marker goes through.
 # Dekt: F8
 
 set -uo pipefail
@@ -20,6 +20,6 @@ invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr 
 uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S16 — verwacht doorgang (exit 0), kreeg $status. Uitvoer: $uitvoer"
+[ "$status" -eq 0 ] || fail "S16 — expected pass-through (exit 0), got $status. Output: $uitvoer"
 
 test_klaar
