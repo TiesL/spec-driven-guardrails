@@ -2,7 +2,7 @@
 # S79 — A .claude/settings.json pointing to a non-existent directory (e.g.
 # after a rename like W32/#56, before re-adoption) reports itself loudly at
 # session start, instead of silently running no hooks.
-# Dekt: W32 AC3
+# Covers: W32 AC3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

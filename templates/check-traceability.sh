@@ -43,37 +43,45 @@ ids_uit_koppen() {
     | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//'
 }
 
-# The raw content of the Dekt: fields, one comma-separated piece per line.
+# The raw content of the Covers: fields, one comma-separated piece per line.
 #
 # Only the field counts, at the start of a line. That prevents false
 # positives by construction: a sentence that happens to contain "S1" is
 # not a reference.
-dekt_ruw() {
-  grep '^\*\*Dekt:\*\*' "$1" \
-    | sed 's/^\*\*Dekt:\*\*[[:space:]]*//' \
+covers_ruw() {
+  grep '^\*\*Covers:\*\*' "$1" \
+    | sed 's/^\*\*Covers:\*\*[[:space:]]*//' \
     | tr ',' '\n' \
     | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
     | grep -v '^$'
 }
 
-# The valid IDs from the Dekt: fields.
+# The valid IDs from the Covers: fields.
 #
 # A placeholder between angle brackets is skipped: a freshly scaffolded
-# project carries `**Dekt:** <F1>` from the template, and a check that
+# project carries `**Covers:** <F1>` from the template, and a check that
 # fails on that immediately would be disabled by tomorrow.
-dekt_tokens() {
-  dekt_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
+covers_tokens() {
+  covers_ruw "$1" | grep -E '^[A-Z]{1,2}[0-9]+[a-z]?$'
 }
 
-# Everything in a Dekt: field that's neither an ID nor a placeholder.
+# Everything in a Covers: field that's neither an ID nor a placeholder.
 #
 # Reporting this separately instead of silently filtering it out. A typo
 # like `F-2`, a list with spaces instead of commas, or a field that runs
 # across two lines would otherwise vanish without a trace — and then the
 # check promises that every token resolves while it's exactly the broken
 # tokens it doesn't see.
-dekt_ongeldig() {
-  dekt_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
+covers_ongeldig() {
+  covers_ruw "$1" | grep -vE '^[A-Z]{1,2}[0-9]+[a-z]?$' | grep -v '<'
+}
+
+# W42/#114: a **Dekt:** field left over from before the Covers: cutover
+# must not silently vanish (AC3) — neither treated as a valid Covers:
+# reference nor silently ignored as if the file carried no coverage field
+# at all.
+dekt_leftover() {
+  grep -c '^\*\*Dekt:\*\*' "$1" 2>/dev/null || true
 }
 
 prd_ids="$(ids_uit_koppen "$prd")"
@@ -100,10 +108,21 @@ if [ -z "$prd_ids" ]; then
   exit 1
 fi
 
-# Every Dekt: token resolves in the IDs of the *other* file.
+# A leftover Dekt: field, in either file, is reported explicitly rather
+# than silently parsed as prose or silently treated as "no coverage field
+# at all" — see AC3, W42/#114.
+for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
+  naam="${paar%%:*}"
+  aantal="$(dekt_leftover "${paar#*:}")"
+  if [ "${aantal:-0}" -gt 0 ]; then
+    melding "$naam still carries $aantal pre-migration Dekt: field(s) — convert them to Covers: (see #114)"
+  fi
+done
+
+# Every Covers: token resolves in the IDs of the *other* file.
 controleer_verwijzingen() {
   local bestand="$1" naam="$2" doelen="$3" doelnaam="$4" token
-  for token in $(dekt_tokens "$bestand"); do
+  for token in $(covers_tokens "$bestand"); do
     printf '%s\n' "$doelen" | grep -qx "$token" \
       || melding "$naam refers to $token, but that ID doesn't exist in $doelnaam"
   done
@@ -113,9 +132,9 @@ for paar in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
   naam="${paar%%:*}"
   while IFS= read -r stuk; do
     [ -n "$stuk" ] || continue
-    melding "$naam: '$stuk' in a Dekt: field is not a valid ID — expected comma-separated tokens like F1, S2, or S2b"
+    melding "$naam: '$stuk' in a Covers: field is not a valid ID — expected comma-separated tokens like F1, S2, or S2b"
   done <<EOF
-$(dekt_ongeldig "${paar#*:}")
+$(covers_ongeldig "${paar#*:}")
 EOF
 done
 
@@ -124,15 +143,20 @@ controleer_verwijzingen "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 
 # Link 1 itself: every functionality is covered by at least one scenario.
 #
-# If no scenario carries a Dekt: field at all, this project isn't using
+# If no scenario carries a Covers: field at all, this project isn't using
 # the convention yet. Then every functionality is by definition uncovered,
 # and this script would complain about *all* items at once on introduction.
 # That's exactly the retrofit the design avoids: the convention applies
 # starting with the next piece of work. Hence a warning, and enforcement
 # once the first reference appears.
-gedekt="$(dekt_tokens "$scenarios" | sort -u)"
-if [ -z "$gedekt" ]; then
-  waarschuwing "TEST-SCENARIOS.md doesn't carry any Dekt: fields yet — link 1 is only enforced once the first reference appears"
+#
+# A leftover Dekt: field is a different situation, already reported above,
+# and must not also trigger this warning: the project *is* using the
+# convention, just on the pre-migration field name — saying it "doesn't
+# carry any Covers: fields yet" would be misleading on top of redundant.
+gedekt="$(covers_tokens "$scenarios" | sort -u)"
+if [ -z "$gedekt" ] && [ "$(dekt_leftover "$scenarios")" -eq 0 ]; then
+  waarschuwing "TEST-SCENARIOS.md doesn't carry any Covers: fields yet — link 1 is only enforced once the first reference appears"
   [ "$fouten" -eq 0 ] && exit 0
   exit 1
 fi

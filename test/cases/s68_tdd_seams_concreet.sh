@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S68 — `tdd-seams` states the discipline concretely, not as exhortation.
-# Dekt: F10
+# Covers: F10
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S8 — The signal does not change the outstanding set.
-# Dekt: F6
+# Covers: F6
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

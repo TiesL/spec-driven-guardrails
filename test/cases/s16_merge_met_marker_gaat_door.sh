@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S16 — Merge with a review marker goes through.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

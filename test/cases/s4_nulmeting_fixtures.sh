@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S4 — Baseline fixture captures `a2t-emails` as found.
-# Dekt: F2
+# Covers: F2
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

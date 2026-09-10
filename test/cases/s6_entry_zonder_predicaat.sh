@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S6 — An entry without `Van toepassing als` produces a warning.
-# Dekt: F5
+# Covers: F5
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

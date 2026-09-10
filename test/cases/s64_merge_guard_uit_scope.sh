@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S64 — The merge-guard escape hatch only disables the merge guard.
-# Dekt: F8
+# Covers: F8
 #
 # Found in pre-merge-review on PR #70: CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 did a
 # blanket `return 0` for the entire segment, and thereby also let through

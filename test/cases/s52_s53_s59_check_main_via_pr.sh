@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S52, S53, S59 — CI detects commits on main that do not come from a PR.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

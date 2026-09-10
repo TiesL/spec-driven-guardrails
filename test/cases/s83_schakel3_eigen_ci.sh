@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S83 — Link 3 (PR references issue) runs in this repo's own CI.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

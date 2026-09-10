@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S66 — The source of the question set is fully frozen, including the nfr part.
-# Dekt: F2
+# Covers: F2
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

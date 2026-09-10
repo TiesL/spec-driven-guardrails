@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S26 — The review scope follows the answered spec-* rows.
-# Dekt: F11
+# Covers: F11
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

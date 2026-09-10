@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S80 — The check job has read access to pull requests and issues.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

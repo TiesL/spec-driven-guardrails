@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S46 — The branch is determined in the repo the command is about.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

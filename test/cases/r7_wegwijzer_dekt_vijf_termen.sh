@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R7 — An adopted project still sees the full operational instruction.
-# Dekt: F12
+# Covers: F12
 #
 # The five terms (branching, quality review, substantiation requirement,
 # deploy-guards, adoption registry) must still resolve in a single jump

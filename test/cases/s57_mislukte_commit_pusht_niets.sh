@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S57 — A failed commit or missing network pushes nothing.
-# Dekt: F18
+# Covers: F18
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

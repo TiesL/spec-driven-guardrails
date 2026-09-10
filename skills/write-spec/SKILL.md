@@ -2,7 +2,7 @@
 name: write-spec
 description: >
   How work gets specified: keeping PRD.md and TEST-SCENARIOS.md up to
-  date, splitting work into GitHub issues, and the Dekt:-convention
+  date, splitting work into GitHub issues, and the Covers:-convention
   (token grammar, traceability) that links scenarios to functionality.
   Use this when drafting issues, PRD sections, or test scenarios.
 ---
@@ -31,9 +31,9 @@ from the structural decisions in `ARCHITECTUUR.md`)? Update it as soon as a
 new term arises or an existing one changes meaning — don't try to make it
 complete in one pass.
 
-## Recording coverage with `Dekt:`
+## Recording coverage with `Covers:`
 
-Every test scenario carries a `**Dekt:**` field under its heading, with
+Every test scenario carries a `**Covers:**` field under its heading, with
 the functionality from `PRD.md` it describes. Comma-separated when there's
 more than one. The token form is a fixed grammar: `^[A-Z]{1,2}[0-9]+[a-z]?$`
 — for example `F1`, `S2`, or `S2b`. Two leading letters is also allowed

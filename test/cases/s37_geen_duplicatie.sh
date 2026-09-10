@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S37 — Predicate and parser logic lives in exactly one place.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

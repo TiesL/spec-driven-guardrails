@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S25 — The user-level skill lives at the user level.
-# Dekt: F10
+# Covers: F10
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

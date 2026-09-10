@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S73 — The merge guard blocks `gh pr merge` when CI is not green.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

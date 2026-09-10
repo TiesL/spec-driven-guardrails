@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R4 — A "deploy" script makes deploy-guards relevant.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

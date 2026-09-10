@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S36 — An ID in the explanation does not count as an answer.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

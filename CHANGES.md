@@ -180,24 +180,24 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 - **Van toepassing als:** altijd
 - **Ja betekent:** het project heeft `check-traceability.sh` (gescaffold door
   `adopt.sh`) en roept dat aan vanuit zijn eigen `check`. Scenario's dragen een
-  `**Dekt:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
+  `**Covers:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
 
   **"Ja" betekent met terugwerkende kracht.** Dat is een bewuste keuze, geen
   bijwerking. Het script handhaaft op bestandsniveau: zolang géén enkel scenario
-  een `Dekt:`-veld draagt, waarschuwt hij alleen — maar zodra het eerste veld er
+  een `Covers:`-veld draagt, waarschuwt hij alleen — maar zodra het eerste veld er
   staat, geldt de eis voor **alle** functionaliteit in de PRD, ook voor items
   die niets met dat werk te maken hebben. Er is dus geen geleidelijke ingroei:
   wie het veld voor het eerst invult zonder de rest mee te nemen, zet de hele
   achterstand van het project in één commit rood.
 
-  Antwoord daarom pas "ja" als de bestaande scenario's hun `Dekt:`-velden
+  Antwoord daarom pas "ja" als de bestaande scenario's hun `Covers:`-velden
   hebben. Voor een project met een reële achterstand is dat een eigen stuk werk,
   geen bijzaak van de eerstvolgende PR — reken op één regel per scenario plus de
   afweging welk scenario welke functionaliteit werkelijk dekt.
 
   Twee dingen die daarnaast gelden. Een `PRD.md` zonder ID-koppen is een
   waarschuwing, geen fout: schakel 1 valt daar niet te controleren. En
-  **dubbele ID's zijn wél een harde fout**, ook zonder enig `Dekt:`-veld — een
+  **dubbele ID's zijn wél een harde fout**, ook zonder enig `Covers:`-veld — een
   verwijzing naar een ID dat twee keer voorkomt is niet eenduidig op te lossen.
   Een project met dubbele ID's herstelt die eerst; `tennis-invoicing` is dat
   geval vandaag.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S58 — A git hook that cannot form a judgment lets it through.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

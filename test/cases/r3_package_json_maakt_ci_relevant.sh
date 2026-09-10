@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R3 — package.json makes ci-conventie relevant.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

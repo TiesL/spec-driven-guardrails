@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S84 — install.sh installs a pinned version, not the current main.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

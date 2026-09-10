@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S54 — Session start reports that `main` is checked out.
-# Dekt: F18
+# Covers: F18
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

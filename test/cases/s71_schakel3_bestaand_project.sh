@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S71 — Existing projects are still presented with the link-3 question.
-# Dekt: F13
+# Covers: F13
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

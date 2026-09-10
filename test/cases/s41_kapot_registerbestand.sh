@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S41 — A broken register file does not silently disappear.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

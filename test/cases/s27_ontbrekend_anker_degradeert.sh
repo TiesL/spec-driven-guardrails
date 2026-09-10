@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S27 — Missing anchors degrade the scope, they don't block it.
-# Dekt: F11
+# Covers: F11
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

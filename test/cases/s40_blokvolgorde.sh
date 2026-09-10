@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S40 — The order of the template block is fixed.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

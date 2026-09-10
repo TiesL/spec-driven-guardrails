@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S85 — A pre-migration project is reported per row, with a tracking issue.
-# Dekt: F6, W42/#114
+# Covers: F6, W42/#114
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

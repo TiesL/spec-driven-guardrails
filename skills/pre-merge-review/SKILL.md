@@ -83,7 +83,7 @@ toward issues, using `gh` and network access it already needs anyway:
 ```
 
 That prints, one per line, every scenario ID from `TEST-SCENARIOS.md` that
-is named by no issue in its `**Dekt:**` field. Only that field counts —
+is named by no issue in its `**Covers:**` field. Only that field counts —
 an ID that happens to appear in a sentence (e.g. "we've already tested
 some s1 variants") is not a reference. Every reported line is a finding.
 

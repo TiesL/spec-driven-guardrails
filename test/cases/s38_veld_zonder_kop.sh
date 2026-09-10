@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S38 — A field without a preceding heading yields no entry.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S56 — A successful commit is pushed immediately.
-# Dekt: F18
+# Covers: F18
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S39 — A retired attribute disappears from both consumers.
-# Dekt: F4
+# Covers: F4
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

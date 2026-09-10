@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S48 — The CI template validates pull requests and `main`.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

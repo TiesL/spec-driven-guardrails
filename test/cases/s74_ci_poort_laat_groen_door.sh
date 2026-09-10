@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S74 — The merge guard lets `gh pr merge` through when all checks pass.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

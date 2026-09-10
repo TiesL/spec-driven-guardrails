@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S12 — Push to main is blocked, also via refspec.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

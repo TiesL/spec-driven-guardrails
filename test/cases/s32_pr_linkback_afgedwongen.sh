@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S32 — Every active entry has a PR linkback.
-# Dekt: F15
+# Covers: F15
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

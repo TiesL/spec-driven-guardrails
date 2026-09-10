@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R2 — Open questions after a fresh adoption.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

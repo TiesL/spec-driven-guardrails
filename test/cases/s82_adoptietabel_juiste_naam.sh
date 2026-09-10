@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S82 — A fresh WORKFLOW-ADOPTION.md names the correct repo name.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

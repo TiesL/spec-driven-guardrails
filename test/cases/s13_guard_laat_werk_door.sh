@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S13 — Push to a feature branch keeps working.
-# Dekt: F7
+# Covers: F7
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

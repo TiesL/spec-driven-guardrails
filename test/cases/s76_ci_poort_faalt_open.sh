@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S76 — The CI gate fails open when the CI query itself fails.
-# Dekt: F8
+# Covers: F8
 #
 # The review marker is present (so the first check passes); the CI check
 # itself fails (no network, gh error, whatever). Same ground rule as

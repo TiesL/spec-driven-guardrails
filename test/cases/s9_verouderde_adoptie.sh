@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S9 — An outdated adoption reports itself.
-# Dekt: F6
+# Covers: F6
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

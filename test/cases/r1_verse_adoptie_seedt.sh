@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # R1 — A fresh adoption seeds exactly the same rows.
-# Dekt: F3
+# Covers: F3
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

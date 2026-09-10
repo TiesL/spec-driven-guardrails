@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S49 — A custom ci.yml is not overwritten; the deviation becomes visible
 # via the adoption registry instead of via a silent copy.
-# Dekt: F17
+# Covers: F17
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

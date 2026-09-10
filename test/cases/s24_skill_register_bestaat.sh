@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S24 — Every skill in the register exists and is findable.
-# Dekt: F10
+# Covers: F10
 #
 # All nine skills from PRD.md F10, not just the five that land in the routing
 # table: `tdd-seams` and `diagnose-bug` only get their content in W14/W15, but

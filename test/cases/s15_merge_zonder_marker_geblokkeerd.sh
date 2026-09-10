@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S15 — Merge without a review marker is blocked.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

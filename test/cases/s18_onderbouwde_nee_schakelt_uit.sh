@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S18 — A substantiated `nee` disables the merge guard, without a network call.
-# Dekt: F8
+# Covers: F8
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
