@@ -42,13 +42,17 @@ controleer() {
   fi
 }
 
-controleer "WORKFLOW-ADOPTIE.md als bestandsnaam" pending-changes.sh 'WORKFLOW-ADOPTIE\.md'
+controleer "WORKFLOW-ADOPTION.md als bestandsnaam" pending-changes.sh 'WORKFLOW-ADOPTION\.md'
+controleer "WORKFLOW-ADOPTIE.md als pre-migratie-fallback (W42/#114)" pending-changes.sh 'WORKFLOW-ADOPTIE\.md'
 controleer "yes/no-antwoordwaarden (seed, W42/#114)" adopt.sh '\| yes \|'
-controleer "de stempel 'vereist onderbouwing'" pending-changes.sh 'vereist onderbouwing'
+controleer "de stempel 'requires substantiation' (W42/#114)" adopt.sh 'requires substantiation'
+controleer "de stempel 'vereist onderbouwing' als pre-migratie-fallback (W42/#114)" pending-changes.sh 'vereist onderbouwing'
 controleer ".gitignore-beheerde-blokmarkering" adopt.sh 'claude-workflow: begin'
 controleer "issue-templates (cp -f)" adopt.sh 'cp -f "\$template_src"'
-controleer "entry-ID proces-context-document als logica-gate" adopt.sh 'proces-context-document'
-controleer "entry-ID kwaliteitsreview-voor-merge als logica-gate" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
+controleer "entry-ID process-context-document als logica-gate (W42/#114)" adopt.sh 'process-context-document'
+controleer "entry-ID proces-context-document als pre-migratie-fallback (W42/#114)" adopt.sh 'proces-context-document'
+controleer "entry-ID quality-review-before-merge als logica-gate (W42/#114)" hooks/git-guardrails 'quality-review-before-merge'
+controleer "entry-ID kwaliteitsreview-voor-merge als pre-migratie-fallback (W42/#114)" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
 controleer "het \\*\\*Dekt:\\*\\*-veld (project-eigen PRD/TEST-SCENARIOS)" templates/check-traceability.sh 'Dekt:'
 controleer "het \\*\\*Dekt:\\*\\*-veld (externe issue-bodies)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
 controleer "de <!-- nfr: <id> -->-anker" lib/nfr.sh 'nfr: \$id'

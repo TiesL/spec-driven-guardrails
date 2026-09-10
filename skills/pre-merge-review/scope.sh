@@ -46,16 +46,20 @@ workflow_dir="${2:-$(cd "$eigen_map/../.." && pwd)}"
 # shellcheck source=../../lib/nfr.sh
 . "$workflow_dir/lib/nfr.sh"
 
-# W42/#114: the new filename/value takes priority; the pre-migration
-# filename/value is still read so scope still works for a project that
-# hasn't migrated yet (pending-changes.sh is what flags that migration,
-# not this script).
+# W42/#114: the new filename takes priority; the pre-migration filename is
+# still read so scope still works for a project that hasn't migrated yet
+# (pending-changes.sh is what flags that migration, not this script).
+#
+# Deliberately accepts *both* "yes" and "ja" as the affirmative value,
+# regardless of which filename was found — not filename-determined. A
+# project can rename WORKFLOW-ADOPTIE.md to WORKFLOW-ADOPTION.md without,
+# in the same step, having converted every row's ja/nee to yes/no (the
+# migration notice lists the rename before the value change). Picking the
+# expected value from the filename alone would then silently produce an
+# empty NFR scope — no warning, review looks clean, nothing was actually
+# checked.
 antwoorden="$project_dir/WORKFLOW-ADOPTION.md"
-ja_waarde="yes"
-if [ ! -f "$antwoorden" ]; then
-  antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
-  ja_waarde="ja"
-fi
+[ -f "$antwoorden" ] || antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
 prd="$project_dir/PRD.md"
 
 echo "complexiteit"
@@ -63,13 +67,12 @@ echo "dependencies"
 
 [ -f "$antwoorden" ] || exit 0
 
-# ID's van elke spec-*-rij met Antwoord exact "yes" (of "ja" in het
-# pre-migratieformaat).
-ja_ids="$(awk -F'|' -v verwacht="$ja_waarde" '
+# ID's van elke spec-*-rij met Antwoord exact "yes" of "ja".
+ja_ids="$(awk -F'|' '
   /^\| *spec-[a-z-]+ *\|/ {
     id = $2; gsub(/^[ \t]+|[ \t]+$/, "", id)
     antwoord = $3; gsub(/^[ \t]+|[ \t]+$/, "", antwoord)
-    if (antwoord == verwacht) print id
+    if (antwoord == "yes" || antwoord == "ja") print id
   }
 ' "$antwoorden")"
 

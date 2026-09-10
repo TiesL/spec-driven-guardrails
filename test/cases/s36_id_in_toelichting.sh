@@ -23,8 +23,8 @@ grep -qx 'test-integratie' "$voor" || {
 }
 
 # Given: the ID appears in the free-text explanation of another row.
-printf '| proces-prd | ja | 2026-01-01 | nog geen test-integratie afgesproken |\n' \
-  >> "$project/WORKFLOW-ADOPTIE.md"
+printf '| proces-prd | yes | 2026-01-01 | nog geen test-integratie afgesproken |\n' \
+  >> "$project/WORKFLOW-ADOPTION.md"
 
 # When/Then: the change is still open - only the ID column counts.
 na="$SANDBOX/na.txt"

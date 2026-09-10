@@ -321,8 +321,8 @@ or still running) blocks the merge, naming that check in the message.
 
 Preconditions, for both checks: **fail-open** without `gh` or network (warn
 loudly, allow) — including when a project hasn't adopted CI (no reported
-checks is not a red flag, CI is optional, see F6); a substantiated `nee` row
-for `quality-review-before-merge` in `WORKFLOW-ADOPTIE.md` disables both
+checks is not a red flag, CI is optional, see F6); a substantiated `no` row
+for `quality-review-before-merge` in `WORKFLOW-ADOPTION.md` disables both
 checks for that project (local grep, no network); and there's an explicit
 override that loudly reports what's being skipped — the same philosophy as
 the deploy guards.
@@ -864,6 +864,7 @@ epics still apply, detached from the execution history in which they arose.
 | Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-op-pr-en-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
 | `check-traceability.sh` is an unused root copy of `templates/check-traceability.sh` | Self-adoption (#98) scaffolds it like any project; this repo already handles traceability differently (T1/T2 run `templates/check-traceability.sh` directly against this repo) — an exception for it in `adopt.sh` would break #98's "no special case" principle | Once `templates/check-traceability.sh` changes without anyone noticing the root copy needs to follow (no test guards drift between the two), or if a reader mistakes the root copy for the source |
 | `pre-merge-review`'s `scope.sh` falls back to `nfr/*.md`'s (still-Dutch) heading names for this repo's own NFR rows, now mismatched against this file's translated section headings (no `<!-- nfr: id -->` anchors exist in this hand-authored `PRD.md`, so the fallback was always active) | `scope.sh` degrades to a stderr warning rather than blocking (S27); the printed names are cosmetically stale, not incorrect data | Once `nfr/*.md` is translated via its own frozen-baseline refresh procedure (`LEESMIJ.md`) — separate from this translation effort since editing `nfr/*.md` directly breaks S66's freeze invariant |
+| `pending-changes.sh` (W42/#114) embeds ~55 lines of network-mutating, `gh`-calling logic (the old-format migration notice and tracking-issue creation) inside a script whose module comment otherwise promises "no network, no mutation" | The exception is honestly documented and pinned to an explicit `-R <owner>/<repo>` derived from the project's own remote — found and reviewed by Opus during pre-merge-review of PR #127 | If this logic grows further, or if another mutating exception is added — pulling it into its own script the `SessionStart` hook calls alongside `pending-changes.sh` would keep the no-mutation contract intact and make the mutating path independently testable |
 
 ---
 

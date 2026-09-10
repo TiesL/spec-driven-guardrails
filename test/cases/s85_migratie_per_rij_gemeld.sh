@@ -10,9 +10,12 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a real git project with an old-format answer file — two answered
-# rows (one ja, one nee) that are not otherwise pending.
+# Given: a real git project, with its own github.com origin (the target the
+# tracking issue must be pinned to — see the git-root-only case further
+# down for what happens without one), and an old-format answer file with
+# two answered rows (one ja, one nee) that are not otherwise pending.
 project="$(vers_project pre-migratie)"
+git -C "$project" remote add origin 'https://github.com/example-org/pre-migratie.git'
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoptie van gedeelde workflow-wijzigingen
 
@@ -22,18 +25,18 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | deploy-guards | nee | 2026-01-01 | verouderd antwoord |
 EOF
 
-# A fake gh that reports no matching existing issue, records the exact
-# "issue create" call, and confirms it ran from the project's own
-# directory (not some other repo).
+# A fake gh that reports no matching existing issue and records the exact
+# calls made — including the -R flag, to prove the target repo is pinned
+# explicitly rather than left to gh's own cwd/GH_REPO-based detection.
 gh_log="$SANDBOX/gh-calls.txt"
 : > "$gh_log"
 fakebin="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log"'"
 case "$*" in
-  "issue list --state open --json body --jq .[].body")
+  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     printf ""
     exit 0 ;;
-  "issue create --title "*)
+  "issue create -R example-org/pre-migratie --title "*)
     exit 0 ;;
 esac
 exit 1
@@ -54,17 +57,35 @@ fi
 
 # And: those two rows do not appear in the pending set at all — they have
 # real answers, just in the old vocabulary.
+#
+# openstaande_ids() calls pending-changes.sh itself, with no PATH override
+# of its own — this is exactly the kind of call this test exists to catch:
+# without a fake gh here, it would reach a real `gh` again. A dedicated
+# fake that reports the marker as already present, so it can never create
+# an issue, keeps this check from perturbing the $gh_log count asserted
+# on below.
 gekregen="$SANDBOX/gekregen.txt"
-openstaande_ids "$project" > "$gekregen"
+fakebin_readonly="$(fake_gh_bin '
+case "$*" in
+  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+    printf "<!-- workflow-adoptie-migratie -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+PATH="$fakebin_readonly:$PATH" openstaande_ids "$project" > "$gekregen"
 if grep -qx 'ci-conventie' "$gekregen" || grep -qx 'deploy-guards' "$gekregen"; then
   fail "S85 — an already-answered old-format row was swept into the pending ID set"
 fi
 
-# And: a tracking issue was filed on the project's own repo.
+# And: a tracking issue was filed, pinned explicitly to the project's own
+# repo via -R (not left to gh's cwd/GH_REPO-based detection).
 assert_contains "S85 — reports the tracking issue" "Filed a tracking issue" "$uitvoer"
 [ "$(grep -c '^issue create' "$gh_log")" -eq 1 ] \
   || fail "S85 — expected exactly one 'gh issue create' call, got $(grep -c '^issue create' "$gh_log")"
 grep -q 'ci-conventie' "$gh_log" || fail "S85 — the issue body/title does not mention ci-conventie"
+grep -q -- '-R example-org/pre-migratie' "$gh_log" \
+  || fail "S85 — gh was not called with an explicit -R for the project's own repo"
 
 # When: pending-changes.sh runs again, but this time an open issue with the
 # marker already exists.
@@ -73,10 +94,10 @@ gh_log2="$SANDBOX/gh-calls-2.txt"
 fakebin2="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log2"'"
 case "$*" in
-  "issue list --state open --json body --jq .[].body")
+  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     printf "bestaande body\\n<!-- workflow-adoptie-migratie -->"
     exit 0 ;;
-  "issue create --title "*)
+  "issue create -R example-org/pre-migratie --title "*)
     exit 0 ;;
 esac
 exit 1
@@ -87,19 +108,60 @@ PATH="$fakebin2:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" > /dev/nu
 [ "$(grep -c '^issue create' "$gh_log2")" -eq 0 ] \
   || fail "S85 — a second tracking issue was created even though one already exists"
 
-# And: a project directory that is not its own git root (e.g. a directory
-# nested inside a different repo, like the frozen nulmeting fixtures) never
-# triggers a gh call at all — never write to the wrong repository.
-geneste_map="$project/binnenin"
-mkdir -p "$geneste_map"
-cp "$project/WORKFLOW-ADOPTIE.md" "$geneste_map/WORKFLOW-ADOPTIE.md"
+# When: the idempotency lookup itself fails (bad token, network, rate
+# limit) rather than succeeding with no marker found.
 gh_log3="$SANDBOX/gh-calls-3.txt"
 : > "$gh_log3"
 fakebin3="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log3"'"
+case "$*" in
+  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+    echo "HTTP 401 Bad credentials" >&2
+    exit 1 ;;
+  "issue create -R example-org/pre-migratie --title "*)
+    exit 0 ;;
+esac
 exit 1
 ')"
-PATH="$fakebin3:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$geneste_map" > /dev/null 2>&1
-[ -s "$gh_log3" ] && fail "S85 — gh was called for a directory that is not its own git root"
+uitvoer3="$(PATH="$fakebin3:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
+
+# Then: a failed lookup must never be treated as "no marker found" — that
+# would file a duplicate tracking issue every session the lookup happens
+# to fail. Fail closed instead: skip, don't create, report the failure.
+[ "$(grep -c '^issue create' "$gh_log3")" -eq 0 ] \
+  || fail "S85 — a transient 'gh issue list' failure still created an issue (possible duplicate)"
+assert_contains "S85 — reports the lookup failure" "could not check for an existing" "$uitvoer3"
+
+# And: a project directory that is not its own git root (e.g. a directory
+# nested inside a different repo, like the frozen nulmeting fixtures) never
+# triggers a gh call at all — never write to the wrong repository, and this
+# holds regardless of GH_REPO being set in the environment.
+geneste_map="$project/binnenin"
+mkdir -p "$geneste_map"
+cp "$project/WORKFLOW-ADOPTIE.md" "$geneste_map/WORKFLOW-ADOPTIE.md"
+gh_log4="$SANDBOX/gh-calls-4.txt"
+: > "$gh_log4"
+fakebin4="$(fake_gh_bin '
+echo "$*" >> "'"$gh_log4"'"
+exit 1
+')"
+PATH="$fakebin4:$PATH" GH_REPO="TiesL/spec-driven-guardrails" \
+  "$TEST_REPO_ROOT/pending-changes.sh" "$geneste_map" > /dev/null 2>&1
+[ -s "$gh_log4" ] && fail "S85 — gh was called for a directory that is not its own git root"
+
+# And: a project with no github.com origin at all (true for every
+# sandboxed test project, and for a project that has never been pushed
+# anywhere) never calls gh either — there is nothing to pin -R to, and
+# guessing would reintroduce the exact ambiguity -R exists to remove.
+zonder_remote="$(vers_project zonder-remote)"
+cp "$project/WORKFLOW-ADOPTIE.md" "$zonder_remote/WORKFLOW-ADOPTIE.md"
+gh_log5="$SANDBOX/gh-calls-5.txt"
+: > "$gh_log5"
+fakebin5="$(fake_gh_bin '
+echo "$*" >> "'"$gh_log5"'"
+exit 1
+')"
+PATH="$fakebin5:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$zonder_remote" > /dev/null 2>&1
+[ -s "$gh_log5" ] && fail "S85 — gh was called for a project with no github.com origin remote"
 
 test_klaar

@@ -535,10 +535,11 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: het staat er expliciet bij dat hypotheses getoond worden vóórdat ze
   getest worden
 
-### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `ja` staat
+### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `yes`/`ja` staat
 **Dekt:** F10
-- Given: een project waarvan `WORKFLOW-ADOPTIE.md` `process-context-document`
-  op `ja` heeft staan
+- Given: een project waarvan `WORKFLOW-ADOPTION.md` (of, pre-migratie
+  W42/#114, `WORKFLOW-ADOPTIE.md`) `process-context-document`
+  respectievelijk `proces-context-document` op `yes`/`ja` heeft staan
 - When: `adopt.sh` draait
 - Then: `CONTEXT.md` wordt aangemaakt vanuit `templates/CONTEXT.md`, als het
   nog niet bestaat

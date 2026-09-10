@@ -142,25 +142,48 @@ if [ -f "$oud_bestand" ] && [ ! -f "$nieuw_bestand" ]; then
     echo "Rename WORKFLOW-ADOPTIE.md to WORKFLOW-ADOPTION.md and change each row's"
     echo "answer from ja/nee to yes/no."
 
-    # Guard before ever calling gh: $project_dir must be its own git root,
-    # not a directory nested inside a different repo with no .git of its
-    # own (e.g. a test fixture living inside this repo's tree). Without
-    # this, `gh` silently resolves to whatever repo the nearest .git
-    # belongs to — which is not this project at all, and would read or
-    # write issues on the wrong repository entirely.
-    # Both sides resolved with `pwd -P`: `git rev-parse --show-toplevel`
-    # always resolves symlinks physically, but $project_dir may not have
-    # (e.g. on macOS, where /var is itself a symlink to /private/var) —
-    # comparing an unresolved path against a resolved one would make this
-    # guard reject a perfectly real git root.
+    # Guard before ever calling gh, in two independent layers:
+    #
+    # 1. $project_dir must be its own git root, not a directory nested
+    #    inside a different repo with no .git of its own (e.g. a test
+    #    fixture living inside this repo's tree). Both sides resolved with
+    #    `pwd -P`: `git rev-parse --show-toplevel` always resolves symlinks
+    #    physically, but $project_dir may not have (e.g. on macOS, where
+    #    /var is itself a symlink to /private/var) — comparing an
+    #    unresolved path against a resolved one would make this guard
+    #    reject a perfectly real git root.
+    #
+    # 2. The repo target is pinned explicitly via `-R owner/repo`, parsed
+    #    from the project's own `origin` remote — never left to gh's own
+    #    cwd-based detection. That detection also honors GH_REPO, which
+    #    overrides cwd entirely: with GH_REPO set in the environment, layer
+    #    1 alone would still let `gh` silently target whatever GH_REPO
+    #    names instead of this project. Pinning `-R` explicitly closes that
+    #    hole regardless of GH_REPO. If origin isn't a github.com remote
+    #    (or there's no origin at all — true for every sandboxed test
+    #    project), there is nothing to pin to, so gh is never called at
+    #    all — the same fail-closed direction as everywhere else in this
+    #    script.
     eigen_git_root="$(git -C "$project_dir" rev-parse --show-toplevel 2>/dev/null)"
     project_dir_echt="$(cd "$project_dir" 2>/dev/null && pwd -P)"
+    remote_url="$(git -C "$project_dir" remote get-url origin 2>/dev/null)"
+    repo_doel="$(printf '%s' "$remote_url" | sed -nE \
+      's#^(git@github\.com:|https://github\.com/)([^/]+/[^/]+)(\.git)?$#\2#p')"
+    repo_doel="${repo_doel%.git}"
     if command -v gh >/dev/null 2>&1 && [ -n "$eigen_git_root" ] \
-      && [ "$eigen_git_root" = "$project_dir_echt" ]; then
+      && [ "$eigen_git_root" = "$project_dir_echt" ] && [ -n "$repo_doel" ]; then
       migratie_marker='<!-- workflow-adoptie-migratie -->'
       migratie_titel="Migrate WORKFLOW-ADOPTIE.md to the English format (workflow language migration, #114)"
-      bestaande_bodies="$(cd "$project_dir" && gh issue list --state open --json body --jq '.[].body' 2>/dev/null)"
-      if ! printf '%s' "$bestaande_bodies" | grep -qF "$migratie_marker"; then
+      lijst_status=0
+      bestaande_bodies="$(gh issue list -R "$repo_doel" --state open --limit 200 --json body --jq '.[].body' 2>/dev/null)" \
+        || lijst_status=$?
+      # Fail closed: if the lookup itself failed (bad token, network,
+      # rate limit), that's indistinguishable from "no marker found" by
+      # content alone — but must not be treated the same, or a transient
+      # failure files a duplicate tracking issue every single session.
+      if [ "$lijst_status" -ne 0 ]; then
+        echo "warning: could not check for an existing migration-tracking issue (gh issue list failed) — skipping this session, not filing a possible duplicate." >&2
+      elif ! printf '%s' "$bestaande_bodies" | grep -qF "$migratie_marker"; then
         migratie_lijst="$(printf '%s\n' "$oude_rijen" | sed 's/^/- /')"
         migratie_body="This project's \`WORKFLOW-ADOPTIE.md\` still uses the pre-migration Dutch vocabulary (\`ja\`/\`nee\`), which spec-driven-guardrails no longer supports as of the W42 migration (#114 in spec-driven-guardrails).
 
@@ -170,7 +193,7 @@ $migratie_lijst
 To migrate: rename \`WORKFLOW-ADOPTIE.md\` to \`WORKFLOW-ADOPTION.md\`, and change each row's answer from \`ja\`/\`nee\` to \`yes\`/\`no\`.
 
 $migratie_marker"
-        if (cd "$project_dir" && gh issue create --title "$migratie_titel" --body "$migratie_body" >/dev/null 2>&1); then
+        if gh issue create -R "$repo_doel" --title "$migratie_titel" --body "$migratie_body" >/dev/null 2>&1; then
           echo "Filed a tracking issue for this migration on this project's repo."
         else
           echo "warning: could not file a tracking issue for this migration (no network, no access, or gh not configured for this repo)."
