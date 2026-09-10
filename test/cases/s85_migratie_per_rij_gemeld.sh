@@ -33,10 +33,10 @@ gh_log="$SANDBOX/gh-calls.txt"
 fakebin="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log"'"
 case "$*" in
-  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+  "issue list -R github.com/example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     printf ""
     exit 0 ;;
-  "issue create -R example-org/pre-migratie --title "*)
+  "issue create -R github.com/example-org/pre-migratie --title "*)
     exit 0 ;;
 esac
 exit 1
@@ -67,7 +67,7 @@ fi
 gekregen="$SANDBOX/gekregen.txt"
 fakebin_readonly="$(fake_gh_bin '
 case "$*" in
-  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+  "issue list -R github.com/example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     printf "<!-- workflow-adoptie-migratie -->"
     exit 0 ;;
 esac
@@ -84,7 +84,7 @@ assert_contains "S85 — reports the tracking issue" "Filed a tracking issue" "$
 [ "$(grep -c '^issue create' "$gh_log")" -eq 1 ] \
   || fail "S85 — expected exactly one 'gh issue create' call, got $(grep -c '^issue create' "$gh_log")"
 grep -q 'ci-conventie' "$gh_log" || fail "S85 — the issue body/title does not mention ci-conventie"
-grep -q -- '-R example-org/pre-migratie' "$gh_log" \
+grep -q -- '-R github.com/example-org/pre-migratie' "$gh_log" \
   || fail "S85 — gh was not called with an explicit -R for the project's own repo"
 
 # When: pending-changes.sh runs again, but this time an open issue with the
@@ -94,10 +94,10 @@ gh_log2="$SANDBOX/gh-calls-2.txt"
 fakebin2="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log2"'"
 case "$*" in
-  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+  "issue list -R github.com/example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     printf "bestaande body\\n<!-- workflow-adoptie-migratie -->"
     exit 0 ;;
-  "issue create -R example-org/pre-migratie --title "*)
+  "issue create -R github.com/example-org/pre-migratie --title "*)
     exit 0 ;;
 esac
 exit 1
@@ -115,10 +115,10 @@ gh_log3="$SANDBOX/gh-calls-3.txt"
 fakebin3="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log3"'"
 case "$*" in
-  "issue list -R example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
+  "issue list -R github.com/example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
     echo "HTTP 401 Bad credentials" >&2
     exit 1 ;;
-  "issue create -R example-org/pre-migratie --title "*)
+  "issue create -R github.com/example-org/pre-migratie --title "*)
     exit 0 ;;
 esac
 exit 1

@@ -167,8 +167,14 @@ if [ -f "$oud_bestand" ] && [ ! -f "$nieuw_bestand" ]; then
     eigen_git_root="$(git -C "$project_dir" rev-parse --show-toplevel 2>/dev/null)"
     project_dir_echt="$(cd "$project_dir" 2>/dev/null && pwd -P)"
     remote_url="$(git -C "$project_dir" remote get-url origin 2>/dev/null)"
+    # Host-qualified (`github.com/owner/repo`), not bare `owner/repo`: gh's
+    # `-R`/`--repo` flag accepts an optional `HOST/` prefix, and without it
+    # resolves the host from GH_HOST — the exact same class of override as
+    # GH_REPO, just one field over. The origin URL already states the host
+    # is github.com; discarding that would leave the call pinned to the
+    # right path on whatever host GH_HOST happens to name.
     repo_doel="$(printf '%s' "$remote_url" | sed -nE \
-      's#^(git@github\.com:|https://github\.com/)([^/]+/[^/]+)(\.git)?$#\2#p')"
+      's#^(git@github\.com:|https://github\.com/)([^/]+/[^/]+)(\.git)?$#github.com/\2#p')"
     repo_doel="${repo_doel%.git}"
     if command -v gh >/dev/null 2>&1 && [ -n "$eigen_git_root" ] \
       && [ "$eigen_git_root" = "$project_dir_echt" ] && [ -n "$repo_doel" ]; then
