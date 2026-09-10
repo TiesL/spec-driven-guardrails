@@ -951,3 +951,21 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: is `project_dir` geen eigen git-root (bijvoorbeeld een map binnen een
   ánder repo, zoals de bevroren nulmeting-fixtures), dan wordt `gh` helemaal
   niet aangeroepen — nooit schrijven naar het verkeerde repo
+
+### S86 — De SessionStart/SessionEnd-hooks werken onafhankelijk van de toevallige cwd
+**Dekt:** F6, F18
+- Given: `settings/session-hooks.json`'s `SessionStart`- en `SessionEnd`-commando's,
+  aangeroepen vanuit een andere map dan het project zelf, met `CLAUDE_PROJECT_DIR`
+  correct gezet — de PreToolUse/PostToolUse-hooks lossen dit al zo op (S44), maar
+  `SessionStart`/`SessionEnd` deden dat niet: een relatieve `readlink
+  .claude/settings.json` respectievelijk kale `git`-aanroep zonder `-C` levert dan
+  stilzwijgend niets op, zonder enige melding — gevonden tijdens W42/#114's
+  uitrol naar tennis-admin, waar precies dit de openstaand-melding en de
+  migratiemelding allebei liet uitblijven
+- When: `git fetch origin`, de `pending-changes.sh`-aanroep, en `git push origin
+  HEAD` (op een niet-`main`-branch) draaien vanuit die andere map
+- Then: alle drie doen precies hetzelfde alsof ze vanuit de projectmap zelf
+  draaiden — de fetch/push raken de juiste remote, en de melding verschijnt
+- And: de oorspronkelijke, cwd-afhankelijke vorm van elk commando faalt
+  aantoonbaar hetzelfde scenario (stil niets doen), ter bevestiging dat dit
+  een echte regressie was en geen toeval
