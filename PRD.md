@@ -158,44 +158,44 @@ Each file carries everything known about that one NFR:
 ```markdown
 ---
 id: spec-security
-kop: Security
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: ja
-status: actief
+heading: Security
+default: yes
+applies-if: always
+production-gate: yes
+status: active
 ---
 
-## Vraag
-Is Security relevant genoeg voor dit project om te specificeren (toegang,
-autorisatie, secrets)?
+## Question
+Is Security relevant enough for this project to specify (access,
+authorization, secrets)?
 
-## Ja betekent
-`PRD.md` beantwoordt de subsectie "Security" — wie mag wat, welke rechten zijn
-minimaal nodig, waar staan secrets.
+## Yes means
+`PRD.md` answers the "Security" subsection — who is allowed to do what, what
+permissions are minimally needed, where secrets live.
 
-## Invulhulp
-Wie mag wat? Welke rechten zijn minimaal nodig? Waar staan secrets, en hoe komen
-ze niet in git terecht?
+## Guidance
+Who is allowed to do what? What permissions are minimally needed? Where do
+secrets live, and how do they stay out of git?
 ```
 
 What this eliminates:
 
-- **The naming problem gets solved instead of managed.** `id` and `kop` live
-  in the same file, so `spec-compliance` ↔ "Compliance en auditeerbaarheid"
-  needs no normalization, no stopword rule, no alias table.
+- **The naming problem gets solved instead of managed.** `id` and `heading`
+  live in the same file, so `spec-compliance` ↔ "Compliance and
+  auditability" needs no normalization, no stopword rule, no alias table.
 - **`CHANGES.md` shrinks from 27 to 12 entries.** The scripts iterate
   `CHANGES.md` and `nfr/*.md`. That serves the growing reading burden more
   directly than the archive alone: fifteen of the twenty-seven entries leave
   the file every project walks through every session.
-- **Retirement becomes a field** (`status: geretireerd`) instead of a file
+- **Retirement becomes a field** (`status: retired`) instead of a file
   move, for these fifteen.
 
-The `productie-poort` field carries F6's second gate: which NFRs must be
+The `production-gate` field carries F6's second gate: which NFRs must be
 substantiated before the first production rollout is now a recorded decision
 instead of a list in a script.
 
-**`templates/PRD.md` is generated** — only the NFR block, from `kop` +
-`Invulhulp`, with the `id` as an HTML comment inside it. `check` fails if the
+**`templates/PRD.md` is generated** — only the NFR block, from `heading` +
+`Guidance`, with the `id` as an HTML comment inside it. `check` fails if the
 checked-in block doesn't match what the generator produces. The PRD becoming
 a build artifact is the price; it's worth it because the generator also
 plants the anchor F11 leans on.
@@ -224,15 +224,17 @@ remove-if-never-answered versus freeze-if-already-answered.
 
 `beantwoord()` in `pending-changes.sh` currently only checks *whether a row
 exists*, never what's in it. So a freshly adopted project reports nothing
-outstanding while all seventeen seeded rows still carry "vereist onderbouwing."
+outstanding while all seventeen seeded rows still carry "requires
+substantiation."
 
 **Don't change `beantwoord()`.** That would change the outstanding set and
 thereby break R9 — the release's most important regression test. Instead, a
 **second, separate notice**:
 
 ```
-17 rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing.
-Volg de skill `adoption-registry`.
+17 row(s) in WORKFLOW-ADOPTION.md are still waiting on substantiation.
+Replace the provisional stamp with a reasoning grounded in this project,
+or change the row to 'no' with a reason — while you're already on the topic.
 ```
 
 Counted by grepping the answer file, not by changing what "answered" means.
@@ -910,155 +912,159 @@ epics still apply, detached from the execution history in which they arose.
 
 ---
 
-## Besloten in W29 (#53)
+## Decided in W29 (#53)
 
-Ontwerpsessie met Ties, geen code (AC3 van dat werkitem) — vier beslissingen die
-epic #52 sturen, elk met redenering. Vervolgitems die hierop anticipeerden zijn
-bijgewerkt: W31 (#55), W32 (#56), W33 (#57), W35 (#59) en epic #52 zelf.
+Design session with Ties, no code (AC3 of that work item) — four decisions
+that steer epic #52, each with its reasoning. Follow-up items that
+anticipated this have been updated: W31 (#55), W32 (#56), W33 (#57), W35
+(#59), and epic #52 itself.
 
-**Herzien na een onafhankelijke second opinion** (een vers model, zonder de
-context van de ontwerpsessie zelf, gevraagd om puur de inhoud van de vier
-besluiten te bekritiseren — niet de tekst). Die review vond een harde naam-
-botsing en drie onderbouwingen die de juiste uitkomst hadden met een zwakke
-reden. Alle vier zijn hierop aangepast; besluit 5 is nieuw en volgt uit een
-gat dat de review blootlegde.
+**Revised after an independent second opinion** (a fresh model, with no
+context from the design session itself, asked to critique purely the
+content of the four decisions — not the writing). That review found a hard
+naming collision and three substantiations that had the right outcome for
+a weak reason. All four were adjusted as a result; decision 5 is new and
+follows from a gap the review exposed.
 
-### 1. De naam: `spec-driven-guardrails`
+### 1. The name: `spec-driven-guardrails`
 
-**Herzien.** De oorspronkelijke werktitel `agentic-SDD-workflow` bleek bij
-extern zoekwerk **de eigen term van GitHub's Spec Kit** te zijn voor zijn
-methodiek ("Agentic SDD"). Voor de doelgroep die dit veld kent, leest die naam
-als een derivaat van Spec Kit, niet als iets zelfstandigs — en het veld is
-sowieso al vol vergelijkbare namen (`cc-sdd`, `agentic-sdlc-spec-kit`,
-`specky`). Voor een release waarvan het hele doel deelbaarheid is, is dat geen
-detail.
+**Revised.** The original working title `agentic-SDD-workflow` turned out,
+on external research, to be **GitHub's own Spec Kit's term** for its
+methodology ("Agentic SDD"). For the audience that knows this field, that
+name reads as a derivative of Spec Kit, not as something standalone — and
+the field is already full of similar names anyway (`cc-sdd`,
+`agentic-sdlc-spec-kit`, `specky`). For a release whose whole point is
+shareability, that's not a detail.
 
-`spec-driven-guardrails` — het eerder overwogen en afgevallen alternatief —
-botst nergens mee en legt de nadruk op wat dit project onderscheidt van een
-willekeurige SDD-aanpak: **de afdwinging**, niet nóg een spec-generator. Het
-vermijdt ook het acroniem dat botste met besluit 4's doelgroep. Consequent
-kleine letters (geen gemengde casing) — wordt een mapnaam, een repo-URL en de
-basis van een omgevingsvariabele, en gemengde casing is daar een bekende bron
-van cross-platform ellende.
+`spec-driven-guardrails` — the previously considered and dropped
+alternative — collides with nothing and puts the emphasis on what
+distinguishes this project from an arbitrary SDD approach: **the
+enforcement**, not yet another spec generator. It also avoids the
+acronym that collided with decision 4's audience. Consistently lowercase
+(no mixed casing) — it becomes a directory name, a repo URL, and the basis
+of an environment variable, and mixed casing is a known source of
+cross-platform trouble there.
 
-### 2. Provider-agnostisch: niveau a — alleen benoemen
+### 2. Provider-agnostic: level a — naming only
 
-Van de drie niveaus (a: benoemen, b: adapterlaag met één invulling, c: een
-tweede invulling erbij bouwen) is gekozen voor **a**. De grens tussen
-agent-onafhankelijk en Claude Code-specifiek (zie W31/#55) wordt gedocumenteerd,
-niet gebouwd als contract.
+Of the three levels (a: name it, b: an adapter layer with one
+implementation, c: build a second implementation alongside it), **a** was
+chosen. The boundary between agent-independent and Claude-Code-specific
+(see W31/#55) gets documented, not built as a contract.
 
-**Onderbouwing herzien.** De oorspronkelijke reden ("een contract zonder
-tweede invulling blijft een aanname") bewijst te veel — met die redenering is
-geen enkele abstractie ooit gerechtvaardigd vóór haar tweede consument. De
-werkelijke reden is een rule-of-three: er is geen tweede agent in zicht en geen
-concrete vrager, dus is een contract nu speculatief. De sterkste reden stond er
-al, maar op de tweede plaats: epic #52's eigen grens ("geen nieuwe
-functionaliteit").
+**Substantiation revised.** The original reason ("a contract with no
+second implementation stays an assumption") proves too much — by that
+reasoning, no abstraction is ever justified before its second consumer.
+The real reason is a rule-of-three: there's no second agent in sight and
+no concrete requester, so a contract is speculative right now. The
+strongest reason was already there, but in second place: epic #52's own
+boundary ("no new functionality").
 
-**Het risico dat wél reëel is:** na deze release presenteert het product zich
-naar buiten als neutraal (nieuwe naam, voorpagina voor een niet-technische
-lezer), terwijl het 100% aan Claude Code vastzit — hooks, skills,
-`.claude/settings.json`. Dat is geen technische schuld maar een belofte-schuld,
-die je aan precies de nieuwe lezer verkoopt. Om niveau a sterk te maken in
-plaats van alleen goedkoop, krijgt W31 (#55) er twee concrete stappen bij: een
-`check`-test die de grens afdwingt (niet alleen beschrijft), en een eenmalige
-meting van wat er zonder Claude Code daadwerkelijk nog werkt.
+**The risk that *is* real:** after this release, the product presents
+itself externally as neutral (new name, a front page for a non-technical
+reader), while it's 100% tied to Claude Code — hooks, skills,
+`.claude/settings.json`. That's not technical debt but promise debt, sold
+to exactly the new reader. To make level a strong rather than merely
+cheap, W31 (#55) gets two concrete steps added to it: a `check` test that
+enforces the boundary (not just describes it), and a one-time measurement
+of what actually still works without Claude Code.
 
-De bestaande technical-debt-rij ("Skills bind this repo to Claude Code")
-wordt door dít besluit niet gesloten — dat gebeurt pas als W31 de grenstabel
-en de twee bovenstaande stappen heeft geleverd, en dan niet als "opgelost"
-maar als "bewust begrensd, met een concrete trigger om verder te gaan (niveau
-b of c)".
+The existing technical-debt row ("Skills bind this repo to Claude Code")
+isn't closed by this decision — that only happens once W31 delivers the
+boundary table and the two steps above, and then not as "resolved" but as
+"deliberately bounded, with a concrete trigger to go further (level b or
+c)".
 
-### 3. Taalscope: A + B, via een criterium — niet via een lijst
+### 3. Translation scope: A + B, via a criterion — not via a list
 
-Dat dit repo zelf — documentatie, hookmeldingen, testnamen, commentaar — Engels
-wordt, staat niet ter discussie; dat is W33 (#57)'s hoofdwerk. Waar dit besluit
-ook echt over gaat: welke stukken van die vertaling meebewegen in de vier
-Nederlandse geadopteerde projecten, waar ze niet zelf vertaald worden.
+That this repo itself — documentation, hook messages, test names,
+comments — becomes English isn't in question; that's W33 (#57)'s main
+work. What this decision is actually about: which pieces of that
+translation move along in the four Dutch adopted projects, where they
+aren't translated themselves.
 
-**Herzien: het criterium vervangt de opsomming.** De oorspronkelijke lijst (twee
-items: entry-ID's en `**Dekt:**`/`AC<n>`) bleek bij natrekken onvolledig — de
-review vond zelfstandig minstens vijf machinaal gematchte Nederlandse tokens
-die er niet in stonden (de bestandsnaam `WORKFLOW-ADOPTIE.md` zelf, de
-`ja`/`nee`-antwoordwaarden, de stempel "vereist onderbouwing", de
-`.gitignore`-beheerde-blokmarkering, en de issue-templates die sowieso al bij
-elke `adopt.sh`-run ververst worden). Een hand-onderhouden lijst heeft precies
-de faalmodus die dit besluit zegt te bestrijden: iets wordt gemist en zakt
-stilzwijgend weg.
+**Revised: the criterion replaces the enumeration.** The original list
+(two items: entry IDs and `**Dekt:**`/`AC<n>`) turned out, on closer
+inspection, to be incomplete — the review independently found at least
+five machine-matched Dutch tokens missing from it (the filename
+`WORKFLOW-ADOPTIE.md` itself, the `ja`/`nee` answer values, the "requires
+substantiation" stamp, the `.gitignore`-managed block marker, and the
+issue templates that get refreshed on every `adopt.sh` run anyway). A
+hand-maintained list has exactly the failure mode this decision says it's
+fighting: something gets missed and quietly falls through.
 
-Het achterliggende, wél houdbare criterium:
+The underlying, actually durable criterion:
 
-> **Migreert mee: elke letterlijke string die een script uit dit repo matcht in
-> een bestand van een ander repo.**
+> **Migrates along: every literal string that a script from this repo
+> matches in a file of another repo.**
 
-Dat is laag **A** (fysiek gedeelde bestanden — symlinks: `CLAUDE.md`,
-`WORKFLOW.md`, `skills/*/SKILL.md`, `session-hooks.json`) plus laag **B**
-(gedeelde vocabulaire die als los token in andermans bestand staat, en die een
-script van dit repo terugleest). W33 (#57) genereert de volledige inventaris
-van laag B door de scripts zelf te doorzoeken op wat ze in andermans bestanden
-matchen, in plaats van de lijst hier met de hand te proberen compleet te
-krijgen.
+That's layer **A** (physically shared files — symlinks: `CLAUDE.md`,
+`WORKFLOW.md`, `skills/*/SKILL.md`, `session-hooks.json`) plus layer **B**
+(shared vocabulary that sits as a loose token in someone else's file, and
+that a script from this repo reads back). W33 (#57) generates the full
+inventory of layer B by searching the scripts themselves for what they
+match in other files, instead of trying to keep the list here complete by
+hand.
 
-Expliciet buiten scope blijft een derde laag, **C — gescaffolde documentkoppen
-en scriptoutput** (bijv. `check-traceability.sh`'s eigen meldingen ín de vier
-projecten) die na het scaffolden lokaal eigendom zijn geworden van die
-projecten, en die geen enkel script van dit repo terugleest. Die migreert niet
-mee. Nieuw gescaffolde kopieën, voor toekomstige projecten, zijn wél Engels — de
-bronsjablonen in `templates/` maken deel uit van dit repo en gaan dus mee.
+Explicitly out of scope stays a third layer, **C — scaffolded document
+headings and script output** (e.g. `check-traceability.sh`'s own messages
+*inside* the four projects) that, after scaffolding, have become locally
+owned by those projects, and that no script from this repo reads back.
+That doesn't migrate along. Newly scaffolded copies, for future projects,
+are English — the source templates in `templates/` are part of this repo
+and so do migrate.
 
-Overwogen en niet gekozen: backwards-compatibele parsers (bijv. `Dekt:` én
-`Covers:` allebei laten werken, met een overgangswaarschuwing) in plaats van
-een migratie ineens. Dat zou de cross-repo-mutatie vermijden, maar is niet
-gekozen omdat het de dubbele-taal-periode zonder einddatum in stand houdt —
-precies wat dit repo elders (zie R9, de nulmeting) probeert te voorkomen.
+Considered and not chosen: backward-compatible parsers (e.g. letting both
+`Dekt:` and `Covers:` work, with a transition warning) instead of a single
+migration. That would avoid the cross-repo mutation, but wasn't chosen
+because it keeps the dual-language period open-ended — exactly what this
+repo elsewhere (see R9, the nulmeting) tries to prevent.
 
-### 4. Voorpagina: welke vraag wordt eerst beantwoord — niet welke lezer is primair
+### 4. Front page: which question gets answered first — not which reader is primary
 
-**Herzien.** "De functionele lezer is primair" bleek twee gaten te hebben: de
-oorspronkelijke onderbouwing ("de ontwikkelaar vindt zijn weg via
-`WORKFLOW.md`") is insiderlogica — dat bestand is een agent-instructietekst,
-geen installatiehandleiding, en dus geen wegwijzer voor een echte
-buitenstaander. Belangrijker: de functionele lezer kan de eerste installatiestap
-(clonen, omgevingsvariabele zetten, een bash-script draaien, Claude Code
-hebben) sowieso niet zelf zetten — een voorpagina geoptimaliseerd voor iemand
-die er niet naar kan handelen, converteert niets.
+**Revised.** "The functional reader is primary" turned out to have two
+gaps: the original substantiation ("the developer finds their way via
+`WORKFLOW.md`") is insider logic — that file is agent-instruction text,
+not an installation manual, and so no guide for a genuine outsider. More
+importantly: the functional reader can't take the first installation step
+(cloning, setting an environment variable, running a bash script, having
+Claude Code) themselves anyway — a front page optimized for someone who
+can't act on it converts nothing.
 
-De vraag wordt daarom niet "welke lezer is primair", maar **welke vraag wordt
-als eerste beantwoord**: functionele framing boven de vouw (welk probleem, voor
-wie, wat kost het — business analisten, product owners en product managers
-lezen dat eerst), gevolgd door een zelfstandige ontwikkelaarssectie die op
-zichzelf compleet is om te installeren, zonder de rest gelezen te hoeven
-hebben. W35 (#59) krijgt hiervoor een extra acceptatiecriterium: een
-ontwikkelaar die het repo nooit zag, installeert het uitsluitend vanuit de
+The question therefore isn't "which reader is primary," but **which
+question gets answered first**: functional framing above the fold (what
+problem, for whom, what does it cost — business analysts, product owners,
+and product managers read that first), followed by a self-contained
+developer section that's complete on its own for installing, with no need
+to have read the rest. W35 (#59) gets an extra acceptance criterion for
+this: a developer who never saw the repo installs it using only
 `README.md`.
 
-### 5. Installatie- en updatemodel: getagde, pinbare release
+### 5. Installation and update model: a tagged, pinnable release
 
-**Nieuw, uit de second opinion.** Geen van de vier oorspronkelijke besluiten
-beantwoordde wat "installeren" betekent voor iemand die niet Ties is. Het
-huidige model — los checkout, een omgevingsvariabele, `adopt.sh` — is een model
-voor één persoon op meerdere machines, niet voor een consument die niet main
-wil volgen. Dit document sloot "a pinnable version for consumers" voorheen
-expliciet uit (zie "Out of scope" hierboven, en F15's "a tag is a human
-reference point, not a pinnable version" — beide bijgewerkt met een
-verwijzing hierheen), wat de belofte van deze release (deelbaarheid)
-tegensprak.
+**New, from the second opinion.** None of the four original decisions
+answered what "installing" means for someone who isn't Ties. The current
+model — a loose checkout, an environment variable, `adopt.sh` — is a model
+for one person on multiple machines, not for a consumer who doesn't want
+to follow main. This document previously explicitly excluded "a pinnable
+version for consumers" (see "Out of scope" above, and F15's "a tag is a
+human reference point, not a pinnable version" — both updated with a
+reference here), which contradicted this release's own promise
+(shareability).
 
-Besloten: consumenten pinnen een **getagde release** (bouwend op W22/#35's
-bestaande tag-/CHANGELOG-mechanisme uit epic #11 — F15 beschreef dat mechanisme
-correct voor Ties' eigen live-via-symlink-gebruik; W37 bouwt er een tweede,
-pinbaar pad bovenop, geen vervanging); het losse-checkout-plus-env-var-model
-blijft daarnaast bestaan voor Ties' eigen multi-machine-gebruik. Uitgewerkt als
-nieuw werkitem: **W37 (#79)**.
+Decided: consumers pin a **tagged release** (building on W22/#35's
+existing tag/CHANGELOG mechanism from epic #11 — F15 correctly described
+that mechanism for Ties' own live-via-symlink usage; W37 builds a second,
+pinnable path on top of it, not a replacement); the loose-checkout-plus-
+env-var model continues to exist alongside it for Ties' own multi-machine
+usage. Worked out as a new work item: **W37 (#79)**.
 
-Aanvullend besloten: `CHANGES.md` wordt gelezen als **productdefaults**, niet
-als Ties' persoonlijke voorkeurenregister. Elke entry krijgt daarmee impliciet
-een verdedigbare default voor een nieuwe adopter; Ties' eigen antwoorden in de
-vier bestaande projecten blijven staan als voorbeeld, niet als voorschrift.
-Ook uitgewerkt in W37 (#79) — die tekst in `CHANGES.md`'s inleiding wijzigt
-mee.
+Also decided: `CHANGES.md` is read as **product defaults**, not as Ties'
+personal preference register. Every entry thereby implicitly gets a
+defensible default for a new adopter; Ties' own answers in the four
+existing projects remain as a worked example, not as a prescription. Also
+worked out in W37 (#79) — that text in `CHANGES.md`'s intro changes along
+with it.
 
 ---
 
