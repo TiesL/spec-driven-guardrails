@@ -37,7 +37,7 @@ controleer "freshly adopted project" "$vers"
 
 # Everything substantiated: zero pending rows. That is exactly the
 # boundary where the counting went wrong.
-sed -i.bak 's/bij adoptie — requires substantiation tijdens PRD\/architectuur/onderbouwd/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd/g' \
   "$vers/WORKFLOW-ADOPTION.md"
 rm -f "$vers/WORKFLOW-ADOPTION.md.bak"
 controleer "project with no pending substantiations" "$vers"

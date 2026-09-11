@@ -1,10 +1,10 @@
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
 Per wijziging uit `CHANGES.md` in [spec-driven-guardrails](https://github.com/TiesL/spec-driven-guardrails)
 of dit project hem toepast. Geen rij betekent: (nog) niet van toepassing —
 de vraag verschijnt vanzelf zodra dat verandert.
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | traceability-schakel-1 | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | proces-prd | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |

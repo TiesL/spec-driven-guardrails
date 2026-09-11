@@ -17,9 +17,9 @@ trap sandbox_destroy EXIT
 project="$(vers_project pre-migratie)"
 git -C "$project" remote add origin 'https://github.com/example-org/pre-migratie.git'
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | ci-conventie | ja | 2026-01-01 | verouderd antwoord |
 | deploy-guards | nee | 2026-01-01 | verouderd antwoord |

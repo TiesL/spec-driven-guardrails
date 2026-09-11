@@ -15,9 +15,9 @@ project="$SANDBOX/project"
 mkdir -p "$project"
 
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | spec-security | ja | 2026-01-01 | van toepassing |
 EOF

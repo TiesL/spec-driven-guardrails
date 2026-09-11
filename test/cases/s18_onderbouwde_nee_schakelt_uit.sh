@@ -15,9 +15,9 @@ git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
 cat > "$project/WORKFLOW-ADOPTIE.md" <<EOF
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | kwaliteitsreview-voor-merge | nee | 2026-01-01 | dit project heeft geen PR's, alleen directe commits door één persoon |
 EOF
@@ -43,9 +43,9 @@ git -C "$project2" commit -q --allow-empty -m start
 git -C "$project2" checkout -q -b feature/werk
 
 cat > "$project2/WORKFLOW-ADOPTION.md" <<EOF
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | quality-review-before-merge | no | 2026-01-01 | dit project heeft geen PR's, alleen directe commits door één persoon |
 EOF

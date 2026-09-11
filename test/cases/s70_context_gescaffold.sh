@@ -47,9 +47,9 @@ fi
 # since that scaffold shouldn't wait on an unrelated migration.
 project3="$(vers_project met-context-oud)"
 cat > "$project3/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | proces-context-document | ja | 2026-01-01 | dit project groeit met genoeg eigen jargon om vast te leggen |
 EOF

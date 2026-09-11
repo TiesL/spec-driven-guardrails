@@ -89,7 +89,7 @@ seed_entry() {
   if ! predicaat_waar "$predicaat" "$_seed_project_dir"; then
     return 0
   fi
-  echo "| $id | yes | $_seed_vandaag | bij adoptie — requires substantiation tijdens PRD/architectuur |" >> "$_seed_doel"
+  echo "| $id | yes | $_seed_vandaag | at adoption — requires substantiation during PRD/architecture |" >> "$_seed_doel"
 }
 
 # Records at adoption time that this project agrees to the current state
@@ -114,13 +114,13 @@ seed_adoptietabel() {
   [ -f "$changes" ] || return 0
 
   {
-    echo "# Adoptie van gedeelde workflow-wijzigingen"
+    echo "# Adoption of shared workflow changes"
     echo
     echo "Per change from \`CHANGES.md\` in [spec-driven-guardrails](https://github.com/TiesL/spec-driven-guardrails)"
     echo "whether this project applies it. No row means: not (yet) applicable —"
     echo "the question shows up on its own once that changes."
     echo
-    echo "| Wijziging | Antwoord | Datum | Toelichting |"
+    echo "| Change | Answer | Date | Notes |"
     echo "|---|---|---|---|"
   } > "$doel"
 

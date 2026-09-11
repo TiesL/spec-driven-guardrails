@@ -27,9 +27,9 @@ jobs:
       - run: npm run check
 EOF
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | ci-conventie | ja | 2026-01-01 | van toepassing |
 EOF
