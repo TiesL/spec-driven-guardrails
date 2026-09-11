@@ -981,3 +981,18 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
 - And: dat veld wordt niet stilzwijgend als geldige Covers:-verwijzing
   geparsed, en telt ook niet mee als "dit project gebruikt de conventie nog
   niet" — beide zouden het achtergebleven token onzichtbaar maken
+
+### S88 — Geen Nederlands buiten laag C
+**Covers:** F13
+- Given: dit repo, ná W38–W42, met `check-no-dutch.sh`'s vaste
+  woordenlijst en zijn twee gescheiden uitsluitingslijsten — permanent
+  (laag C, historisch, epic #65, `USER-CLAUDE.md`) en tijdelijk-openstaand
+  (getrackt in #136/#137/#138, bedoeld om te krimpen zodra die sluiten)
+- When: `check-no-dutch.sh` draait
+- Then: geen enkel bestand buiten die twee lijsten bevat nog een woord uit
+  de woordenlijst
+- And: `./check` roept dit script zelf aan (stap 3c) en faalt hard als het
+  iets vindt — niet fail-open, want dit is een repo-eigen controle zonder
+  netwerkafhankelijkheid
+- And: het script sluit zichzelf uit van zijn eigen scan — de woordenlijst
+  die het bevat is geen onvertaald proza

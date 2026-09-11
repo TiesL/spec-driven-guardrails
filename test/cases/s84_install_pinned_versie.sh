@@ -48,14 +48,14 @@ echo "lokale, niet-gecommitte wijziging" >> "$repo/README.md"
 vies_uitvoer="$(cd "$repo" && ./install.sh oude-versie 2>&1)"
 vies_status=$?
 [ "$vies_status" -ne 0 ] || fail "S84 — install.sh with a dirty working directory was not refused"
-assert_contains "S84 — the refusal names the uncommitted changes" "wijziging" "$vies_uitvoer"
+assert_contains "S84 — the refusal names the uncommitted changes" "uncommitted changes" "$vies_uitvoer"
 git -C "$repo" checkout -q -- README.md
 
 # And: an unknown tag fails with a clear message.
 onbekend_uitvoer="$(cd "$repo" && ./install.sh deze-tag-bestaat-niet 2>&1)"
 onbekend_status=$?
 [ "$onbekend_status" -ne 0 ] || fail "S84 — an unknown tag was not refused"
-assert_contains "S84 — the message says the tag does not exist" "bestaat niet" "$onbekend_uitvoer"
+assert_contains "S84 — the message says the tag does not exist" "doesn't exist" "$onbekend_uitvoer"
 
 # And: without an argument, the latest tag is used, reported explicitly.
 zonder_arg_uitvoer="$(cd "$repo" && ./install.sh 2>&1)"

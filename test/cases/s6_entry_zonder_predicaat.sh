@@ -55,7 +55,7 @@ grep -q 'vergeten-entry' "$melding" || {
   fail "S6 — no warning naming 'vergeten-entry'"
   cat "$melding" >&2
 }
-grep -qi 'waarschuwing' "$melding" || fail "S6 — the message is not recognizable as a warning"
+grep -qi 'warning' "$melding" || fail "S6 — the message is not recognizable as a warning"
 
 # And: the entry is not seeded or asked about.
 if grep -qx 'vergeten-entry' "$gezien"; then
@@ -94,7 +94,7 @@ fi
 # And the real CHANGES.md is clean: not a single heading without a predicate.
 echte_melding="$SANDBOX/echt.txt"
 itereer_entries "$TEST_REPO_ROOT/CHANGES.md" noteer 2>"$echte_melding" >/dev/null
-if grep -qi 'waarschuwing' "$echte_melding"; then
+if grep -qi 'warning' "$echte_melding"; then
   fail "S6 — the real CHANGES.md produces warnings:"
   cat "$echte_melding" >&2
 fi

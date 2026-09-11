@@ -34,12 +34,12 @@ fail() {
 # an immediate stop.
 sandbox_guard() {
   if [ "$HOME" = "$TEST_REAL_HOME" ]; then
-    echo "AFGEBROKEN: sandboxopzet heeft HOME niet omgezet (HOME is nog '$HOME')." >&2
-    echo "Een test mag nooit in de echte home schrijven." >&2
+    echo "ABORTED: sandbox setup did not redirect HOME (HOME is still '$HOME')." >&2
+    echo "A test must never write into the real home." >&2
     return 1
   fi
   if [ -z "${HOME:-}" ]; then
-    echo "AFGEBROKEN: HOME is leeg na sandboxopzet." >&2
+    echo "ABORTED: HOME is empty after sandbox setup." >&2
     return 1
   fi
   return 0
@@ -187,7 +187,7 @@ fake_gh_bin() {
 # sentinel-driven variant of this was rejected as exactly the generic
 # templating solution W95 itself ruled out).
 #
-# $1 — marker text. Empty = no marker ("geen marker hier"); otherwise the
+# $1 — marker text. Empty = no marker ("no marker here"); otherwise the
 #      text ends up literally in the `<!-- ... -->` comment.
 # $2 — checks JSON answer, or empty to not build a "pr checks" branch
 #      (S15, S16, S65 don't ask about that).
@@ -195,7 +195,7 @@ fake_gh_merge_bin() {
   local marker="${1:-}" checks_json="${2:-}"
   local comments_body
   if [ -z "$marker" ]; then
-    comments_body='geen marker hier'
+    comments_body='no marker here'
   else
     comments_body="bevindingen\\n<!-- $marker -->"
   fi
