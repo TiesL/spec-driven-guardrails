@@ -1,341 +1,349 @@
-# Adopteerbare wijzigingen
+# Adoptable changes
 
-Elke PR op dit repo die iets toevoegt waarover een project een eigen keuze moet
-maken, voegt hier één entry toe. Zonder entry stelt de voorziening in de
-projecten geen vraag en denk je ten onrechte dat je gedekt bent — zie
-de skill `adoption-registry`.
+Every PR on this repo that adds something a project must make its own choice
+about adds one entry here. Without an entry, the mechanism asks projects no
+question, and you mistakenly think you're covered — see the `adoption-registry`
+skill.
 
 Per entry:
 
-- **Vraag** — gesloten, met ja/nee te beantwoorden. Houd hem op één regel:
-  `pending-changes.sh` toont alleen die eerste regel.
-- **Standaard** — `ja` (in het algemeen wenselijk, tenzij een project een
-  reden heeft om af te wijken) of `vraag` (geen algemene voorkeur, hangt af
-  van het project). Dit is de **productdefault** per onderwerp — een
-  verdedigbare startwaarde voor elke nieuwe adopter, geen afgeleide
-  categorie en geen voorschrift. Ties' eigen antwoorden in de vier bestaande
-  projecten (elk `WORKFLOW-ADOPTIE.md`) zijn een uitgewerkt voorbeeld van hoe
-  die default toegepast is, niet iets dat een nieuwe adopter moet overnemen.
-  Bepaalt alleen het startpunt: `adopt.sh` seedt
-  `ja`-entries bij adoptie met een voorlopige stempel; `vraag`-entries seeden
-  nooit. **Geen van beide betekent stilzwijgend accepteren** — zie de
-  onderbouwingsstap in de skill `adoption-registry`: `ja`-rijen
-  moeten bij het opstellen van `PRD.md`/`ARCHITECTUUR.md` alsnog objectief
-  onderbouwd worden (of omgezet naar `nee`), `vraag`-rijen krijgen een
-  beargumenteerd voorstel in plaats van een blanco vraag.
-- **Van toepassing als** — één van de predicaten uit `lib/changes.sh`, de
-  bibliotheek die `adopt.sh` en `pending-changes.sh` allebei sourcen. Die lijst
-  staat daar en niet hier: een derde kopie in proza loopt vroeg of laat uit de
-  pas met de code. De conditie wordt elke sessie opnieuw geëvalueerd, zodat een
-  wijziging alsnog opduikt zodra hij relevant wordt voor een project.
-- **Ja betekent** — wat er concreet gebeurt bij een `ja`.
-- **PR** — de linkback (W21, F15): de PR die dit stelt. Dat is de PR die de
-  onderliggende capability daadwerkelijk levert, niet per se de PR die deze
-  regel voor het laatst heeft aangeraakt. Bij een latere herschrijving,
-  hernoeming of splitsing (zoals `technical-debt-en-refactoring` dat in W6
-  uiteenviel in `proces-technical-debt-register` en
-  `proces-refactoring-triggers`) blijft de linkback naar de PR wijzen die het
-  ding zelf bouwde, niet naar de herstructurering van dit bestand — anders
-  wijst de helft van de entries in één klap naar dezelfde
-  "fijnmaziger maken"-PR, en dat vertelt een project niets over waaróm de vraag
-  bestaat. `./check` controleert alleen dat het veld een URL is, niet of hij
-  naar de juiste PR wijst — dat blijft mensenwerk bij het schrijven van de
-  entry.
+- **Question** — closed, answerable with yes/no. Keep it on one line:
+  `pending-changes.sh` only shows that first line.
+- **Default** — `yes` (generally desirable, unless a project has a reason to
+  deviate) or `question` (no general preference, depends on the project).
+  This is the **product default** per topic — a defensible starting value
+  for every new adopter, not a derived category and not a prescription.
+  Ties' own answers in the four existing projects (each `WORKFLOW-ADOPTION.md`)
+  are a worked example of how that default was applied, not something a new
+  adopter has to copy. Only determines the starting point: `adopt.sh` seeds
+  `yes` entries at adoption with a provisional stamp; `question` entries never
+  seed. **Neither means silent acceptance** — see the substantiation step in
+  the `adoption-registry` skill: `yes` rows still need to be objectively
+  substantiated when `PRD.md`/`ARCHITECTUUR.md` are written (or changed to
+  `no`), `question` rows get a reasoned proposal instead of a blank question.
+- **Applies if** — one of the predicates from `lib/changes.sh`, the library
+  both `adopt.sh` and `pending-changes.sh` source. That list lives there and
+  not here: a third copy in prose would sooner or later drift out of step
+  with the code. The condition is re-evaluated every session, so a change
+  still surfaces once it becomes relevant for a project.
+- **Yes means** — what concretely happens on a `yes`.
+- **PR** — the linkback (W21, F15): the PR that establishes this. That's the
+  PR that actually delivers the underlying capability, not necessarily the
+  PR that last touched this row. On a later rewrite, rename, or split (like
+  `technical-debt-en-refactoring`, which W6 split into
+  `proces-technical-debt-register` and `proces-refactoring-triggers`), the
+  linkback keeps pointing at the PR that built the thing itself, not at the
+  restructuring of this file — otherwise half the entries would suddenly
+  point at the same "make it finer-grained" PR, and that tells a project
+  nothing about *why* the question exists. `./check` only verifies that the
+  field is a URL, not that it points at the right PR — that stays human work
+  when writing the entry.
 
-Het ID is de kop (`##`). Verander een bestaand ID nooit **als het al door
-een project beantwoord is** — projecten verwijzen ernaar in hun
-`WORKFLOW-ADOPTIE.md`, en een hernoeming laat de vraag daar opnieuw opduiken.
-Een entry die nog nergens beantwoord is, mag wél herzien of vervangen worden;
-controleer dat met `grep` over alle `WORKFLOW-ADOPTIE.md`'s voordat je dat
-doet.
+The ID is the heading (`##`). Never change an existing ID **once a project
+has answered it** — projects reference it in their own
+`WORKFLOW-ADOPTION.md`, and a rename makes the question resurface there.
+An entry nobody has answered anywhere yet may be revised or replaced;
+check that with `grep` across every `WORKFLOW-ADOPTION.md` before doing so.
 
-**Sectiescheidingen** zijn `###`, entries `##`. Dat onderscheid is niet
-cosmetisch: de parser leest elke `## `-kop als entry, dus een kopje op dat
-niveau zou een naamloze entry worden.
+**Section separators** are `###`, entries are `##`. That distinction isn't
+cosmetic: the parser reads every `## ` heading as an entry, so a subheading
+at that level would become a nameless entry.
 
-**Naamgeving.** Het prefix `spec-` is gereserveerd voor de vijftien NFR's —
-één per subsectie onder *Niet-functionele kenmerken* in `templates/PRD.md`,
-en niets anders. De reviewreikwijdte in de skill `pre-merge-review` keyt op dat prefix, dus
-een niet-NFR die `spec-` heet zou daar ten onrechte in meegesleept worden.
-Procesafspraken krijgen `proces-`, testniveaus `test-`.
+**Naming.** The `spec-` prefix is reserved for the fifteen NFRs — one per
+subsection under *Non-functional characteristics* in `templates/PRD.md`, and
+nothing else. The review scope in the `pre-merge-review` skill keys on that
+prefix, so a non-NFR named `spec-` would get wrongly swept into it. Process
+agreements get `proces-`, test levels get `test-`.
 
-**Een entry retireren.** Haal hem uit dit bestand. Nooit ergens beantwoord?
-Dan gewoon verwijderen — controleer dat met een `grep` over alle
-`WORKFLOW-ADOPTIE.md`-bestanden. Wél ergens beantwoord? Dan verhuizen naar
-`CHANGES-ARCHIEF.md`, met het ID ongewijzigd en een expliciete reden, zodat een
-project kan nazoeken waar zijn rij vandaan komt. Zie dat bestand voor de
-volledige procedure.
+**Retiring an entry.** Take it out of this file. Never answered anywhere?
+Then just delete it — check that with a `grep` across every
+`WORKFLOW-ADOPTION.md` file. Answered somewhere? Then move it to
+`CHANGES-ARCHIEF.md`, with the ID unchanged and an explicit reason, so a
+project can trace where its row came from. See that file for the full
+procedure.
 
-Laat de entry níét inert achter door alleen de velden weg te laten: sinds de
-sectiescheidingen `###` zijn, is een `## `-kop hier onvoorwaardelijk een entry,
-en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
+Don't leave the entry inert by just dropping the fields: since section
+separators are `###`, a `## ` heading here is unconditionally an entry, and
+the shared parser warns if it has no `Applies if`.
 
 ---
 
 ## ci-conventie
 
-- **Question:** Moet dit project de CI-conventie volgen (CI roept alleen `check` aan, geen losse checks in de workflow-YAML)?
+- **Question:** Must this project follow the CI convention (CI calls only `check`, no separate checks in the workflow YAML)?
 - **Default:** yes
 - **Applies if:** heeft-package-json
-- **Ja betekent:** het project heeft een `check`-script dat typecheck, lint,
-  tests en build omvat, en een CI-workflow die uitsluitend dát script aanroept.
-  `adopt.sh` scaffoldt `templates/ci.yml` als er nog geen workflow is; een eigen,
-  uitgebreidere workflow mag, zolang die de conventie volgt.
+- **Yes means:** the project has a `check` script covering typecheck, lint,
+  tests, and build, and a CI workflow that calls only that script.
+  `adopt.sh` scaffolds `templates/ci.yml` if there's no workflow yet; a
+  custom, more elaborate workflow is fine, as long as it follows the
+  convention.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/2
 
 ## deploy-guards
 
-- **Question:** Moet dit project de deploy-guards toepassen?
+- **Question:** Must this project apply the deploy-guards?
 - **Default:** yes
 - **Applies if:** heeft-deploy-script
-- **Ja betekent:** het deployscript weigert te draaien vanuit een ongeverifieerde
-  toestand, met de voorwaarden per doelomgeving uit de skill `deploy-guards`.
-  Is dat nog niet zo, maak er dan een work item voor.
+- **Yes means:** the deploy script refuses to run from an unverified state,
+  with the conditions per target environment from the `deploy-guards`
+  skill. If that's not yet the case, make it a work item.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/3
 
 ## ci-op-pr-en-main
 
-- **Question:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
+- **Question:** Must this project's CI run on pull requests *and* on pushes to `main`?
 - **Default:** yes
 - **Applies if:** heeft-package-json
-- **Ja betekent:** de workflow heeft zowel een `pull_request`-trigger als
-  `push: branches: [main]`. Het verschil met alleen een push op de branch is
-  wezenlijk: `pull_request` beoordeelt het samengevoegde resultaat, dus het geval
-  waarin twee los groene branches samen breken, en het is de vorm die als
-  vereiste controle op een pull request ingesteld kan worden. De push-trigger is
-  de achtervang voor wat `main` langs een andere weg bereikt. Dit staat los van
-  `ci-conventie`: dát antwoord gaat over wát de workflow doet (alleen `check`
-  aanroepen), dit over wannéér hij draait. Een project dat het eerste al
-  beantwoordde, is over het tweede nooit iets gevraagd.
+- **Yes means:** the workflow has both a `pull_request` trigger and
+  `push: branches: [main]`. The difference from only a push on the branch is
+  substantial: `pull_request` evaluates the merged result, so it catches the
+  case where two separately-green branches break together, and it's the
+  form that can be set as a required check on a pull request. The push
+  trigger is the backstop for whatever reaches `main` some other way. This
+  is separate from `ci-conventie`: that answer is about *what* the workflow
+  does (call only `check`), this one is about *when* it runs. A project
+  that already answered the first is never asked about the second.
 
-  Twee dingen om te weten voor je "ja" antwoordt. Ten eerste vervalt de
-  validatie van een push naar een feature-branch waar nog geen pull request bij
-  hoort: het eerste CI-signaal komt dan pas bij het openen van de PR. Dat is de
-  prijs voor het beoordelen van het samengevoegde resultaat, en in een workflow
-  waarin de PR vroeg opengaat is die klein. Ten tweede erft deze vraag het
-  bereik van `heeft-package-json`: een project met een CI-workflow maar zonder
-  `package.json` krijgt hem niet, net als bij `ci-conventie`.
+  Two things worth knowing before answering "yes". First, this drops
+  validation for a push to a feature branch with no pull request yet: the
+  first CI signal then only arrives once the PR opens. That's the price of
+  evaluating the merged result, and small in a workflow where the PR opens
+  early. Second, this question inherits the scope of `heeft-package-json`:
+  a project with a CI workflow but no `package.json` doesn't get it, same
+  as `ci-conventie`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
 ## ci-schakel-3-hard-slot
 
-- **Question:** Faalt de CI van dit project een pull request die naar geen enkel issue verwijst (schakel 3, hard slot)?
+- **Question:** Does this project's CI fail a pull request that references no issue (link 3, hard block)?
 - **Default:** yes
 - **Applies if:** heeft-package-json
-- **Ja betekent:** `check-pr-issue-link.sh` is gescaffold (`adopt.sh`, zie
-  `templates/check-pr-issue-link.sh`) en de workflow roept het aan op het
-  `pull_request`-event, met het PR-nummer als argument — zie
-  `templates/ci.yml`. Alleen de triggerende PR wordt beoordeeld, geen audit
-  over de geschiedenis (F13 besluit d, W19b). Dit staat los van
-  `ci-op-pr-en-main`: dát antwoord gaat over wannéér de workflow draait, dit
-  over een extra stap die hij daarnaast uitvoert. `scaffold_if_missing`
-  overschrijft een bestaande `ci.yml` nooit, dus een project dat die al had
-  vóór W19b krijgt de stap niet vanzelf — deze vraag maakt dat zichtbaar in
-  plaats van stil te laten liggen. Sinds issue #85 heeft `templates/ci.yml`
-  ook het `permissions: pull-requests: read`-blok dat deze stap nodig heeft —
-  zonder dat blokkeert hij elke PR. Sinds issue #106 bevat dat blok ook
-  `issues: read`: `closingIssuesReferences` (waar deze stap op leest) gaat
-  over het gekoppelde issue zelf, niet over de PR, en levert zonder die
-  scope stilzwijgend een lege lijst op, ook als de koppeling echt bestaat —
-  `pull-requests: read` alleen bleek dus niet genoeg (empirisch aangetoond op
-  PR #105, hetzelfde gat maar dan in dit repo's eigen workflow, issue #99).
-  Een project dat vóór #106 scaffoldde mist `issues: read` — controleer of
-  `pull-requests: read` én `issues: read` allebei gelden voor de `check`-job
-  (job- of workflow-niveau) — en moet het anders handmatig toevoegen of
-  opnieuw scaffolden.
+- **Yes means:** `check-pr-issue-link.sh` is scaffolded (`adopt.sh`, see
+  `templates/check-pr-issue-link.sh`) and the workflow calls it on the
+  `pull_request` event, with the PR number as argument — see
+  `templates/ci.yml`. Only the triggering PR is judged, no audit over
+  history (F13 decision d, W19b). This is separate from `ci-op-pr-en-main`:
+  that answer is about *when* the workflow runs, this one about an extra
+  step it also performs. `scaffold_if_missing` never overwrites an existing
+  `ci.yml`, so a project that already had one before W19b doesn't get the
+  step automatically — this question makes that visible instead of letting
+  it lie dormant. Since issue #85, `templates/ci.yml` also carries the
+  `permissions: pull-requests: read` block this step needs — without it,
+  it blocks every PR. Since issue #106, that block also includes
+  `issues: read`: `closingIssuesReferences` (which this step reads) is
+  about the linked issue itself, not the PR, and silently returns an empty
+  list without that scope, even when the link genuinely exists —
+  `pull-requests: read` alone turned out not to be enough (demonstrated
+  empirically on PR #105, the same gap but in this repo's own workflow,
+  issue #99). A project that scaffolded before #106 is missing
+  `issues: read` — check that both `pull-requests: read` and `issues: read`
+  apply to the `check` job (job- or workflow-level) — and must otherwise
+  add it by hand or re-scaffold.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detecteert-main-buiten-pr
 
-- **Question:** Faalt de CI van dit project een push naar `main` die niet uit een pull request komt?
+- **Question:** Does this project's CI fail a push to `main` that doesn't come from a pull request?
 - **Default:** yes
 - **Applies if:** heeft-package-json
-- **Ja betekent:** `check-main-via-pr.sh` is gescaffold (`adopt.sh`, zie
-  `templates/check-main-via-pr.sh`) en de workflow roept het aan op het
-  `push`-event naar `main`, met de commit-SHA als argument — zie
-  `templates/ci.yml`. Detectie, geen preventie: het commando is dan al
-  uitgevoerd, maar het is het enige mechanisme dat werkt zonder GitHub
-  Pro/publieke repo (W27, F17). Beoordeelt alleen de binnenkomende push, geen
-  audit over de geschiedenis. Kan de herkomst niet worden vastgesteld, dan
-  faalt de controle — bewust het omgekeerde van de native git-hooks (W26,
-  `adopt.sh` installeert die altijd, zonder eigen adoptievraag), die bij
-  twijfel juist doorlaten. `scaffold_if_missing` overschrijft een bestaande
-  `ci.yml` nooit, dus een
-  project dat die al had vóór W27 krijgt de stap niet vanzelf — deze vraag
-  maakt dat zichtbaar. Sinds issue #85 heeft `templates/ci.yml` ook het
-  `permissions: pull-requests: read`-blok dat `check-main-via-pr.sh` nodig
-  heeft — het ontbreken ervan is precies wat issue #83 blootlegde: die
-  controle riep `gh api .../commits/$sha/pulls` aan en faalde onder het
-  default, minimale tokenscope (dat al wél `contents: read` bevat). Een
-  project dat vóór die fix scaffoldde mist het blok — controleer of
-  `pull-requests: read` ergens geldt voor de `check`-job (job- of
-  workflow-niveau) — en moet het anders handmatig toevoegen of opnieuw
-  scaffolden.
+- **Yes means:** `check-main-via-pr.sh` is scaffolded (`adopt.sh`, see
+  `templates/check-main-via-pr.sh`) and the workflow calls it on the
+  `push` event to `main`, with the commit SHA as argument — see
+  `templates/ci.yml`. Detection, not prevention: the command has already
+  run by then, but it's the only mechanism that works without GitHub
+  Pro/a public repo (W27, F17). Judges only the incoming push, no audit
+  over history. If the origin can't be established, the check fails —
+  deliberately the opposite of the native git hooks (W26, `adopt.sh`
+  always installs those, with no adoption question of their own), which
+  let a push through when in doubt. `scaffold_if_missing` never overwrites
+  an existing `ci.yml`, so a project that already had one before W27
+  doesn't get the step automatically — this question makes that visible.
+  Since issue #85, `templates/ci.yml` also carries the
+  `permissions: pull-requests: read` block `check-main-via-pr.sh` needs —
+  its absence is exactly what issue #83 exposed: that check called
+  `gh api .../commits/$sha/pulls` and failed under the default, minimal
+  token scope (which already includes `contents: read`). A project that
+  scaffolded before that fix is missing the block — check whether
+  `pull-requests: read` applies anywhere to the `check` job (job- or
+  workflow-level) — and must otherwise add it by hand or re-scaffold.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
 ## traceability-schakel-1
 
-- **Question:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
+- **Question:** Must this project offline-check that every functionality in `PRD.md` is covered by at least one scenario in `TEST-SCENARIOS.md`?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** het project heeft `check-traceability.sh` (gescaffold door
-  `adopt.sh`) en roept dat aan vanuit zijn eigen `check`. Scenario's dragen een
-  `**Covers:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
+- **Yes means:** the project has `check-traceability.sh` (scaffolded by
+  `adopt.sh`) and calls it from its own `check`. Scenarios carry a
+  `**Covers:**` field pointing at the functionality they describe.
 
-  **"Ja" betekent met terugwerkende kracht.** Dat is een bewuste keuze, geen
-  bijwerking. Het script handhaaft op bestandsniveau: zolang géén enkel scenario
-  een `Covers:`-veld draagt, waarschuwt hij alleen — maar zodra het eerste veld er
-  staat, geldt de eis voor **alle** functionaliteit in de PRD, ook voor items
-  die niets met dat werk te maken hebben. Er is dus geen geleidelijke ingroei:
-  wie het veld voor het eerst invult zonder de rest mee te nemen, zet de hele
-  achterstand van het project in één commit rood.
+  **"Yes" means retroactively too.** That's a deliberate choice, not a side
+  effect. The script enforces at file level: as long as *no* scenario
+  carries a `Covers:` field, it only warns — but once the first field is
+  there, the requirement applies to **all** functionality in the PRD, even
+  items unrelated to that piece of work. There's no gradual ramp-up: whoever
+  fills in the field for the first time without bringing the rest along
+  turns the project's entire backlog red in one commit.
 
-  Antwoord daarom pas "ja" als de bestaande scenario's hun `Covers:`-velden
-  hebben. Voor een project met een reële achterstand is dat een eigen stuk werk,
-  geen bijzaak van de eerstvolgende PR — reken op één regel per scenario plus de
-  afweging welk scenario welke functionaliteit werkelijk dekt.
+  So only answer "yes" once the existing scenarios have their `Covers:`
+  fields. For a project with a real backlog, that's its own piece of work,
+  not a side note on the next PR — budget one line per scenario plus the
+  judgment call of which scenario actually covers which functionality.
 
-  Twee dingen die daarnaast gelden. Een `PRD.md` zonder ID-koppen is een
-  waarschuwing, geen fout: schakel 1 valt daar niet te controleren. En
-  **dubbele ID's zijn wél een harde fout**, ook zonder enig `Covers:`-veld — een
-  verwijzing naar een ID dat twee keer voorkomt is niet eenduidig op te lossen.
-  Een project met dubbele ID's herstelt die eerst; `tennis-invoicing` is dat
-  geval vandaag.
+  Two more things that apply. A `PRD.md` with no ID headings is a warning,
+  not an error: link 1 can't be checked there. And **duplicate IDs are a
+  hard error**, even with no `Covers:` field at all — a reference to an ID
+  that occurs twice can't be resolved unambiguously. A project with
+  duplicate IDs fixes those first; `tennis-invoicing` is that case today.
 
-  Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
-  scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. Alleen het veld telt —
-  een ID in lopende tekst is geen verwijzing.
+  The prefix isn't fixed: `F`/`S` is customary, but a project that numbers
+  its scenarios `R`/`A`/`B`/`P` works unchanged. Only the field counts — an
+  ID in running text is not a reference.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/63
 
 ---
 
-### Proces en ontwerpdiepte
+### Process and design depth
 
 ## proces-prd
 
-- **Question:** Houdt dit project een `PRD.md` bij als normatieve specificatie?
+- **Question:** Does this project maintain a `PRD.md` as its normative specification?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** `PRD.md` bestaat en wordt actueel gehouden (as-built of ontwerp) — zie `templates/PRD.md`.
+- **Yes means:** `PRD.md` exists and is kept current (as-built or design) — see `templates/PRD.md`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## architectuurdocument
 
-- **Question:** Moet dit project zijn architectuurbesluiten vastleggen in `ARCHITECTUUR.md`?
+- **Question:** Must this project record its architecture decisions in `ARCHITECTUUR.md`?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
+- **Yes means:** structural choices (platform, layers, data ownership, substantial dependencies) are recorded with criteria, weighed options, the decision, the architecture requirements that follow from it, and when the choice should be revisited. `adopt.sh` scaffolds the template.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## process-context-document
 
-- **Question:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
+- **Question:** Does this project maintain a `CONTEXT.md`: project jargon → meaning?
 - **Default:** question
 - **Applies if:** always
-- **Ja betekent:** `CONTEXT.md` bestaat en wordt levend gehouden — bijgewerkt
-  zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
-  proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
-  besluiten gaat, niet over taal. `adopt.sh` scaffoldt het sjabloon zodra deze
-  rij op `yes` staat.
+- **Yes means:** `CONTEXT.md` exists and is kept living — updated as a new
+  term arises or changes meaning, not attempted complete in one go.
+  Separate from `ARCHITECTUUR.md`, which is about structural decisions, not
+  language. `adopt.sh` scaffolds the template once this row is `yes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## proces-issue-tracking
 
-- **Question:** Splitst dit project werk op in GitHub-issues (epics/work items)?
+- **Question:** Does this project split work into GitHub issues (epics/work items)?
 - **Default:** question
 - **Applies if:** always
-- **Ja betekent:** `adopt.sh` ververst `.github/ISSUE_TEMPLATE/`, en werk wordt vanuit de PRD opgesplitst in een `Epic`-issue met `Work item`-issues — zie `templates/ISSUE_TEMPLATE/`.
+- **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets split from the PRD into an `Epic` issue with `Work item` issues — see `templates/ISSUE_TEMPLATE/`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit
 
-- **Question:** Heeft dit project unittests voor de kernlogica?
+- **Question:** Does this project have unit tests for its core logic?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** de kernlogica (idealiter een domeinlaag zonder externe afhankelijkheden — zie `spec-testability`) heeft unittests, en `check` draait ze.
+- **Yes means:** the core logic (ideally a domain layer with no external dependencies — see `spec-testability`) has unit tests, and `check` runs them.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## test-feature-gwt
 
-- **Question:** Beschrijft dit project functionaliteit als Given/When/Then-scenario's?
+- **Question:** Does this project describe functionality as Given/When/Then scenarios?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
+- **Yes means:** `TEST-SCENARIOS.md` exists and covers every functionality item from the PRD with at least one Given/When/Then scenario for the expected behavior — see `templates/TEST-SCENARIOS.md`. The failure scenarios alongside those fall under `spec-failure-modes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-tdd-seams
 
-- **Question:** Werkt dit project test-first op vooraf afgesproken seams, met rood-vóór-groen-discipline?
+- **Question:** Does this project work test-first on pre-agreed seams, with red-before-green discipline?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** tests raken alleen het publieke grensvlak aan (nooit interne
-  implementatiedetails), staan aantoonbaar rood vóór de implementatie, en
-  vermijden de drie met naam benoemde anti-patronen (implementatie-gekoppeld,
-  tautologisch, horizontaal slicen) — zie de skill `tdd-seams`. Aanvullend op
-  `test-unit`/`test-feature-gwt`, die alleen vragen óf er tests zijn, niet hoe.
+- **Yes means:** tests touch only the public boundary (never internal
+  implementation details), are demonstrably red before the implementation,
+  and avoid the three named anti-patterns (implementation-coupled,
+  tautological, horizontal slicing) — see the `tdd-seams` skill. On top of
+  `test-unit`/`test-feature-gwt`, which only ask *whether* there are tests,
+  not how.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## test-integratie
 
-- **Question:** Heeft dit project geautomatiseerde integratietests (over componentgrenzen heen, tegen een echte of gesimuleerde externe afhankelijkheid)?
+- **Question:** Does this project have automated integration tests (across component boundaries, against a real or simulated external dependency)?
 - **Default:** question
 - **Applies if:** always
-- **Ja betekent:** naast unittests bestaan er tests die de samenwerking tussen componenten (of met een extern platform) verifiëren, en `check` draait ze — of een expliciete reden waarom dat voor dit project niet proportioneel is.
+- **Yes means:** besides unit tests, there are tests verifying the collaboration between components (or with an external platform), and `check` runs them — or an explicit reason why that isn't proportionate for this project.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## quality-review-before-merge
 
-- **Question:** Moet elke PR in dit project vóór de merge een kwaliteitsreview krijgen, met de bevindingen in de PR?
+- **Question:** Must every PR in this project get a quality review before the merge, with findings in the PR?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "yes" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
+- **Yes means:** before the merge, a review runs with fresh context and on
+  a different model than the one that wrote the code. The review always
+  checks complexity and dependencies (basic hygiene), plus exactly the
+  NFRs whose corresponding `spec-*` question this project answered "yes"
+  to. Findings go into the PR; every finding is either resolved or
+  recorded under *Technical debt* in the PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## ci-poort-op-merge
 
-- **Question:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
+- **Question:** Does the merge guard also block `gh pr merge` when the PR has checks that didn't pass (alongside the existing block on a missing review marker)?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `quality-review-before-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `quality-review-before-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
+- **Yes means:** the same guard that already blocks on a missing
+  `pre-merge-review` marker (see `quality-review-before-merge`) now also
+  blocks when `gh pr checks` reports a check that isn't `pass`/`skipping` —
+  found after CI turned out red for six runs in a row, unnoticed (issue
+  #81). Fails open without `gh`, network, or reported checks: a project
+  with no CI (`ci-conventie` doesn't apply, or isn't answered yet) reports
+  no checks and so isn't blocked. The same `no` on
+  `quality-review-before-merge` disables both checks — this isn't an
+  independent on/off switch, since it's the same gate.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## proces-technical-debt-register
 
-- **Question:** Houdt dit project een apart Technical debt-register bij naast Bekende beperkingen?
+- **Question:** Does this project keep a separate Technical debt register alongside Known limitations?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** `PRD.md` scheidt *Bekende beperkingen* (blijft zo) van *Technical debt* (per regel: waarom nu acceptabel, en de trigger om het aan te pakken) — beide subsecties staan al in het sjabloon.
+- **Yes means:** `PRD.md` separates *Known limitations* (stays that way) from *Technical debt* (per line: why acceptable for now, and the trigger to address it) — both subsections are already in the template.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-refactoring-triggers
 
-- **Question:** Gelden de refactoring-triggers uit de skill `refactoring-triggers` voor dit project?
+- **Question:** Do the refactoring triggers from the `refactoring-triggers` skill apply to this project?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie de skill `refactoring-triggers`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
+- **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTUUR.md` (see `architectuurdocument`), only the second and third trigger apply.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-diagnose-bug
 
-- **Question:** Volgt dit project bij het diagnosticeren van een bug de dwingende volgorde reproductie → hypotheses → regressietest → fix?
+- **Question:** Does this project follow the mandatory order reproduction → hypotheses → regression test → fix when diagnosing a bug?
 - **Default:** yes
 - **Applies if:** always
-- **Ja betekent:** eerst een deterministische, zelf uitvoerbare reproductie;
-  dan falsifieerbare hypotheses, getoond vóórdat ze getest worden; dan een
-  regressietest die rood staat op de reproductie; pas dan de fix — zie de
-  skill `diagnose-bug`. Een fix zonder voorafgaande falende test bewijst
-  niets.
+- **Yes means:** first a deterministic, self-runnable reproduction; then
+  falsifiable hypotheses, shown before they're tested; then a regression
+  test that's red on the reproduction; only then the fix — see the
+  `diagnose-bug` skill. A fix with no prior failing test proves nothing.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ---
 
-### Niet-functionele kenmerken (NFR's)
+### Non-functional characteristics (NFRs)
 
-De vijftien niet-functionele kenmerken staan niet hier maar in `nfr/` — één
-bestand per kenmerk, met de vraag, wat "ja" betekent en de invulhulp bij elkaar.
-Ze stonden eerder zowel hier als in `templates/PRD.md` en moesten met de hand
-synchroon blijven; nu zijn beide consument van datzelfde register.
+The fifteen non-functional characteristics don't live here but in `nfr/` —
+one file per characteristic, with the question, what "yes" means, and the
+guidance together. They used to live both here and in `templates/PRD.md`
+and had to be kept in sync by hand; now both are consumers of that same
+register.
 
-De scripts lezen `CHANGES.md` én `nfr/`, dus voor een project verandert er
-niets: dezelfde vragen, op dezelfde momenten. Retirement gaat daar via het veld
-`status: geretireerd` in plaats van een verhuizing naar het archief.
+The scripts read both `CHANGES.md` and `nfr/`, so nothing changes for a
+project: the same questions, at the same moments. Retirement there goes via
+the `status: retired` field instead of a move to the archive.
