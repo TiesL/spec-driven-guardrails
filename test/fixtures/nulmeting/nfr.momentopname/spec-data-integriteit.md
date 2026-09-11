@@ -1,14 +1,14 @@
 ---
 id: spec-data-integriteit
-kop: Data integrity
-volgorde: 2
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: ja
-status: actief
+heading: Data integrity
+order: 2
+default: yes
+applies-if: always
+production-gate: yes
+status: active
 ---
 
-## Vraag
+## Question
 
 Is Data integrity relevant enough for this project to specify (invariants,
 idempotence, concurrent writes, correctness over time)?
@@ -17,7 +17,7 @@ idempotence, concurrent writes, correctness over time)?
 
 `PRD.md` answers the "Data integrity" subsection.
 
-## Invulhulp
+## Guidance
 
 Which invariants must always hold? Which writes must be idempotent (running
 twice = the effect of once)? What happens when two things write at the same

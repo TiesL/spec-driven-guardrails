@@ -17,7 +17,7 @@ if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   fail "S5 — check already complains on the unchanged state"
 fi
 
-# Given: an nfr/*.md whose Invulhulp has been changed without regenerating.
+# Given: an nfr/*.md whose Guidance has been changed without regenerating.
 doel="$repo/nfr/spec-security.md"
 if [ ! -f "$doel" ]; then
   fail "S5 — nfr/spec-security.md is missing"
@@ -28,7 +28,7 @@ python3 - "$doel" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p).read()
-kop = "## Invulhulp"
+kop = "## Guidance"
 i = s.index(kop) + len(kop)
 open(p, "w").write(s[:i] + "\nEen bewust afwijkende invulhulp voor deze test.\n")
 PY

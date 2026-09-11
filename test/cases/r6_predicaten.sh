@@ -52,7 +52,7 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   # the only check that sees when adopt.sh is MISSING something. The union below
   # cannot do that by construction: what adopt.sh does not seed simply stays
   # open, so the union remains unchanged. Both predicate
-  # entries have `Standaard: ja`, so applicable here means seeded.
+  # entries have `Default: yes`, so applicable here means seeded.
   for paar in "ci-conventie:$verwacht_ci" "ci-op-pr-en-main:$verwacht_ci" "ci-schakel-3-hard-slot:$verwacht_ci" "ci-detecteert-main-buiten-pr:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
     if grep -qx "$id" "$geseed"; then feitelijk=ja; else feitelijk=nee; fi
@@ -76,8 +76,8 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   fi
 
   # And: both scripts arrive at the same answer. adopt.sh seeds the applicable
-  # `Standaard: ja` entries; what remains open afterward are the
-  # `Standaard: vraag` entries. Together exactly what was open before the adoption.
+  # `Default: yes` entries; what remains open afterward are the
+  # `Default: question` entries. Together exactly what was open before the adoption.
   assert_ids_gelijk "R6 — $naam: seed logic versus van_toepassing()" "$voor" "$samen"
 done < "$tabel"
 

@@ -74,9 +74,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## ci-conventie
 
-- **Vraag:** Moet dit project de CI-conventie volgen (CI roept alleen `check` aan, geen losse checks in de workflow-YAML)?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-package-json
+- **Question:** Moet dit project de CI-conventie volgen (CI roept alleen `check` aan, geen losse checks in de workflow-YAML)?
+- **Default:** yes
+- **Applies if:** heeft-package-json
 - **Ja betekent:** het project heeft een `check`-script dat typecheck, lint,
   tests en build omvat, en een CI-workflow die uitsluitend dát script aanroept.
   `adopt.sh` scaffoldt `templates/ci.yml` als er nog geen workflow is; een eigen,
@@ -85,9 +85,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## deploy-guards
 
-- **Vraag:** Moet dit project de deploy-guards toepassen?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-deploy-script
+- **Question:** Moet dit project de deploy-guards toepassen?
+- **Default:** yes
+- **Applies if:** heeft-deploy-script
 - **Ja betekent:** het deployscript weigert te draaien vanuit een ongeverifieerde
   toestand, met de voorwaarden per doelomgeving uit de skill `deploy-guards`.
   Is dat nog niet zo, maak er dan een work item voor.
@@ -95,9 +95,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## ci-op-pr-en-main
 
-- **Vraag:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-package-json
+- **Question:** Moet de CI van dit project draaien op pull requests én op pushes naar `main`?
+- **Default:** yes
+- **Applies if:** heeft-package-json
 - **Ja betekent:** de workflow heeft zowel een `pull_request`-trigger als
   `push: branches: [main]`. Het verschil met alleen een push op de branch is
   wezenlijk: `pull_request` beoordeelt het samengevoegde resultaat, dus het geval
@@ -119,9 +119,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## ci-schakel-3-hard-slot
 
-- **Vraag:** Faalt de CI van dit project een pull request die naar geen enkel issue verwijst (schakel 3, hard slot)?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-package-json
+- **Question:** Faalt de CI van dit project een pull request die naar geen enkel issue verwijst (schakel 3, hard slot)?
+- **Default:** yes
+- **Applies if:** heeft-package-json
 - **Ja betekent:** `check-pr-issue-link.sh` is gescaffold (`adopt.sh`, zie
   `templates/check-pr-issue-link.sh`) en de workflow roept het aan op het
   `pull_request`-event, met het PR-nummer als argument — zie
@@ -147,9 +147,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## ci-detecteert-main-buiten-pr
 
-- **Vraag:** Faalt de CI van dit project een push naar `main` die niet uit een pull request komt?
-- **Standaard:** ja
-- **Van toepassing als:** heeft-package-json
+- **Question:** Faalt de CI van dit project een push naar `main` die niet uit een pull request komt?
+- **Default:** yes
+- **Applies if:** heeft-package-json
 - **Ja betekent:** `check-main-via-pr.sh` is gescaffold (`adopt.sh`, zie
   `templates/check-main-via-pr.sh`) en de workflow roept het aan op het
   `push`-event naar `main`, met de commit-SHA als argument — zie
@@ -175,9 +175,9 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## traceability-schakel-1
 
-- **Vraag:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Moet dit project offline controleren dat elke functionaliteit in `PRD.md` door minstens één scenario in `TEST-SCENARIOS.md` gedekt wordt?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** het project heeft `check-traceability.sh` (gescaffold door
   `adopt.sh`) en roept dat aan vanuit zijn eigen `check`. Scenario's dragen een
   `**Covers:**`-veld dat naar de functionaliteit verwijst die ze beschrijven.
@@ -213,25 +213,25 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## proces-prd
 
-- **Vraag:** Houdt dit project een `PRD.md` bij als normatieve specificatie?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Houdt dit project een `PRD.md` bij als normatieve specificatie?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** `PRD.md` bestaat en wordt actueel gehouden (as-built of ontwerp) — zie `templates/PRD.md`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## architectuurdocument
 
-- **Vraag:** Moet dit project zijn architectuurbesluiten vastleggen in `ARCHITECTUUR.md`?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Moet dit project zijn architectuurbesluiten vastleggen in `ARCHITECTUUR.md`?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** structurele keuzes (platform, lagen, eigenaarschap van gegevens, substantiële dependencies) worden vastgelegd met criteria, afgewogen opties, het besluit, de architectuureisen die eruit volgen, en wanneer de keuze herzien zou moeten worden. `adopt.sh` scaffoldt het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## process-context-document
 
-- **Vraag:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
+- **Question:** Houdt dit project een `CONTEXT.md` bij: projectjargon → betekenis?
+- **Default:** question
+- **Applies if:** always
 - **Ja betekent:** `CONTEXT.md` bestaat en wordt levend gehouden — bijgewerkt
   zodra een nieuwe term ontstaat of van betekenis verandert, niet in één keer
   proberen compleet te maken. Los van `ARCHITECTUUR.md`, dat over structurele
@@ -241,33 +241,33 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## proces-issue-tracking
 
-- **Vraag:** Splitst dit project werk op in GitHub-issues (epics/work items)?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
+- **Question:** Splitst dit project werk op in GitHub-issues (epics/work items)?
+- **Default:** question
+- **Applies if:** always
 - **Ja betekent:** `adopt.sh` ververst `.github/ISSUE_TEMPLATE/`, en werk wordt vanuit de PRD opgesplitst in een `Epic`-issue met `Work item`-issues — zie `templates/ISSUE_TEMPLATE/`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit
 
-- **Vraag:** Heeft dit project unittests voor de kernlogica?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Heeft dit project unittests voor de kernlogica?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** de kernlogica (idealiter een domeinlaag zonder externe afhankelijkheden — zie `spec-testability`) heeft unittests, en `check` draait ze.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## test-feature-gwt
 
-- **Vraag:** Beschrijft dit project functionaliteit als Given/When/Then-scenario's?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Beschrijft dit project functionaliteit als Given/When/Then-scenario's?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** `TEST-SCENARIOS.md` bestaat en dekt elk functionaliteitsitem uit de PRD met minstens één Given/When/Then-scenario voor het verwachte gedrag — zie `templates/TEST-SCENARIOS.md`. De faalscenario's daarnaast vallen onder `spec-failure-modes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-tdd-seams
 
-- **Vraag:** Werkt dit project test-first op vooraf afgesproken seams, met rood-vóór-groen-discipline?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Werkt dit project test-first op vooraf afgesproken seams, met rood-vóór-groen-discipline?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** tests raken alleen het publieke grensvlak aan (nooit interne
   implementatiedetails), staan aantoonbaar rood vóór de implementatie, en
   vermijden de drie met naam benoemde anti-patronen (implementatie-gekoppeld,
@@ -277,49 +277,49 @@ en waarschuwt de gedeelde parser als er geen `Van toepassing als` bij staat.
 
 ## test-integratie
 
-- **Vraag:** Heeft dit project geautomatiseerde integratietests (over componentgrenzen heen, tegen een echte of gesimuleerde externe afhankelijkheid)?
-- **Standaard:** vraag
-- **Van toepassing als:** altijd
+- **Question:** Heeft dit project geautomatiseerde integratietests (over componentgrenzen heen, tegen een echte of gesimuleerde externe afhankelijkheid)?
+- **Default:** question
+- **Applies if:** always
 - **Ja betekent:** naast unittests bestaan er tests die de samenwerking tussen componenten (of met een extern platform) verifiëren, en `check` draait ze — of een expliciete reden waarom dat voor dit project niet proportioneel is.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## quality-review-before-merge
 
-- **Vraag:** Moet elke PR in dit project vóór de merge een kwaliteitsreview krijgen, met de bevindingen in de PR?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Moet elke PR in dit project vóór de merge een kwaliteitsreview krijgen, met de bevindingen in de PR?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** vóór de merge draait een review met verse context en op een ander model dan dat de code schreef. De review checkt altijd complexiteit en dependencies (basishygiëne), plus precies de NFR's waarvoor de bijbehorende `spec-*`-vraag in dit project met "yes" is beantwoord. Bevindingen komen in de PR; elke bevinding wordt opgelost of vastgelegd onder *Technical debt* in de PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## ci-poort-op-merge
 
-- **Vraag:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Blokkeert de merge-guard `gh pr merge` ook als de PR checks heeft die niet zijn geslaagd (naast de bestaande blokkade op een ontbrekende review-marker)?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** dezelfde guard die al blokkeert op een ontbrekende `pre-merge-review`-marker (zie `quality-review-before-merge`) blokkeert nu ook als `gh pr checks` een check teruggeeft die niet `pass`/`skipping` is — gevonden nadat CI zes runs op rij rood bleek, onopgemerkt (issue #81). Faalt open zonder `gh`, netwerk, of gerapporteerde checks: een project zonder CI (`ci-conventie` is niet van toepassing, of nog niet beantwoord) meldt geen checks en wordt dus niet geblokkeerd. Dezelfde `nee` op `quality-review-before-merge` schakelt beide controles uit — dit is geen los op-of-af, want het is dezelfde poort.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## proces-technical-debt-register
 
-- **Vraag:** Houdt dit project een apart Technical debt-register bij naast Bekende beperkingen?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Houdt dit project een apart Technical debt-register bij naast Bekende beperkingen?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** `PRD.md` scheidt *Bekende beperkingen* (blijft zo) van *Technical debt* (per regel: waarom nu acceptabel, en de trigger om het aan te pakken) — beide subsecties staan al in het sjabloon.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-refactoring-triggers
 
-- **Vraag:** Gelden de refactoring-triggers uit de skill `refactoring-triggers` voor dit project?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Gelden de refactoring-triggers uit de skill `refactoring-triggers` voor dit project?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** een work item dat het vastgelegde ontwerp zou schenden, wordt niet via een omweg toch gebouwd — dat is het signaal voor een eigen herontwerp-work-item. Zie de skill `refactoring-triggers`. De eerste trigger veronderstelt een vastgelegd ontwerp; heeft dit project geen `ARCHITECTUUR.md` (zie `architectuurdocument`), dan gelden alleen de tweede en derde trigger.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-diagnose-bug
 
-- **Vraag:** Volgt dit project bij het diagnosticeren van een bug de dwingende volgorde reproductie → hypotheses → regressietest → fix?
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Question:** Volgt dit project bij het diagnosticeren van een bug de dwingende volgorde reproductie → hypotheses → regressietest → fix?
+- **Default:** yes
+- **Applies if:** always
 - **Ja betekent:** eerst een deterministische, zelf uitvoerbare reproductie;
   dan falsifieerbare hypotheses, getoond vóórdat ze getest worden; dan een
   regressietest die rood staat op de reproductie; pas dan de fix — zie de

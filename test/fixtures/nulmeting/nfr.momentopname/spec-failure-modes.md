@@ -1,14 +1,14 @@
 ---
 id: spec-failure-modes
-kop: Failure modes
-volgorde: 3
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: nee
-status: actief
+heading: Failure modes
+order: 3
+default: yes
+applies-if: always
+production-gate: no
+status: active
 ---
 
-## Vraag
+## Question
 
 Is Resilience relevant enough for this project to specify (failure modes
 and recovery behavior)?
@@ -18,7 +18,7 @@ and recovery behavior)?
 `PRD.md` answers the "Failure modes" subsection, and `TEST-SCENARIOS.md`
 gets at least one scenario per functionality item for what goes wrong.
 
-## Invulhulp
+## Guidance
 
 What can go wrong — unexpected input, a dependency that drops out, an
 expired authorization? What's the behavior then, and how do you recover?

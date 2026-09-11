@@ -28,7 +28,7 @@ while IFS= read -r regel; do
   # The expected text comes from the source where this ID is defined.
   verwacht="$(awk -v zoek="## $id" '
     $0 == zoek { in_entry = 1; next }
-    in_entry && /\*\*Vraag:\*\*/ { sub(/.*\*\*Vraag:\*\* */, ""); print; exit }
+    in_entry && /\*\*Question:\*\*/ { sub(/.*\*\*Question:\*\* */, ""); print; exit }
     in_entry && /^## / { exit }
   ' "$TEST_REPO_ROOT/CHANGES.md")"
   bron="CHANGES.md"
@@ -37,7 +37,7 @@ while IFS= read -r regel; do
     # If this oracle used that same function, expectation and reality would
     # move together and the test would measure nothing.
     verwacht="$(awk '
-      /^## Vraag$/ { in_sec = 1; next }
+      /^## Question$/ { in_sec = 1; next }
       in_sec && /^## / { exit }
       in_sec { print }
     ' "$TEST_REPO_ROOT/nfr/$id.md" 2>/dev/null | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//')"

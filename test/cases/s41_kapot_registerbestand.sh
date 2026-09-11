@@ -12,15 +12,15 @@ trap sandbox_destroy EXIT
 
 geldig_blok() {
   cat <<'MD'
-## Vraag
+## Question
 
 Is dit kenmerk relevant?
 
-## Ja betekent
+## Yes means
 
 `PRD.md` beantwoordt de subsectie "Proef".
 
-## Invulhulp
+## Guidance
 
 Waar gaat dit over?
 MD
@@ -37,11 +37,11 @@ for geval in geen-volgorde naam-wijkt-af; do
   case "$geval" in
     geen-volgorde)
       doel="$repo/nfr/spec-proef.md"
-      { printf -- '---\nid: spec-proef\nkop: Proef\nstandaard: ja\nvan-toepassing-als: altijd\nproductie-poort: nee\nstatus: actief\n---\n\n'
+      { printf -- '---\nid: spec-proef\nheading: Proef\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
         geldig_blok; } > "$doel" ;;
     naam-wijkt-af)
       doel="$repo/nfr/spec-verkeerd-genoemd.md"
-      { printf -- '---\nid: spec-proef\nkop: Proef\nvolgorde: 16\nstandaard: ja\nvan-toepassing-als: altijd\nproductie-poort: nee\nstatus: actief\n---\n\n'
+      { printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
         geldig_blok; } > "$doel" ;;
   esac
 
@@ -63,7 +63,7 @@ done
 repo="$SANDBOX/repo-crlf"
 mkdir -p "$repo"
 (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
-{ printf -- '---\nid: spec-proef\nkop: Proef\nvolgorde: 16\nstandaard: ja\nvan-toepassing-als: altijd\nproductie-poort: nee\nstatus: actief\n---\n\n'
+{ printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
   geldig_blok; } | sed 's/$/\r/' > "$repo/nfr/spec-proef.md"
 
 # shellcheck source=../../lib/nfr.sh
@@ -71,7 +71,7 @@ mkdir -p "$repo"
 
 [ "$(nfr_veld "$repo/nfr/spec-proef.md" id)" = "spec-proef" ] \
   || fail "S41 — CRLF file: the id is not being read"
-[ "$(nfr_veld "$repo/nfr/spec-proef.md" volgorde)" = "16" ] \
+[ "$(nfr_veld "$repo/nfr/spec-proef.md" order)" = "16" ] \
   || fail "S41 — CRLF file: the order is not being read"
 
 blok="$SANDBOX/blok-crlf.txt"

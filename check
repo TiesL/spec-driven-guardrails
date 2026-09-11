@@ -129,7 +129,7 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
       :
     else
       melden_fout "templates/PRD.md is out of sync with nfr/ — run ./genereer-prd-blok"
-      printf '%s\n' "$afwijkend" | sed 's/^/    betreft: /' >&2
+      printf '%s\n' "$afwijkend" | sed 's/^/    regarding: /' >&2
     fi
   else
     melden_fout "lib/nfr.sh is missing or unreadable — NFR register not checked"

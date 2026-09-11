@@ -27,9 +27,9 @@ uit_sjabloon="$SANDBOX/sjabloon.txt"
 for bestand in "$nfr_map"/*.md; do
   [ -e "$bestand" ] || continue
   id="$(awk -F': *' '/^id:/{print $2; exit}' "$bestand")"
-  kop="$(awk -F': *' '/^kop:/{print $2; exit}' "$bestand")"
+  kop="$(awk -F': *' '/^heading:/{print $2; exit}' "$bestand")"
   status="$(awk -F': *' '/^status:/{print $2; exit}' "$bestand")"
-  [ "$status" = "geretireerd" ] && continue
+  [ "$status" = "retired" ] && continue
   if [ -z "$id" ] || [ -z "$kop" ]; then
     fail "R5 — $(basename "$bestand") is missing an id or heading"
     continue
@@ -41,8 +41,8 @@ sort -o "$uit_register" "$uit_register" 2>/dev/null || : > "$uit_register"
 # The template supplies the headings from the generated block, with the ID from
 # the HTML comment that the generator adds alongside it.
 awk '
-  /<!-- nfr-blok:begin/ { in_blok = 1; next }
-  /<!-- nfr-blok:eind/  { in_blok = 0 }
+  /<!-- nfr-block:begin/ { in_blok = 1; next }
+  /<!-- nfr-block:end/  { in_blok = 0 }
   in_blok && /^### /     { kop = substr($0, 5) }
   in_blok && /<!-- nfr:/ { id = $0; sub(/.*<!-- nfr: */, "", id); sub(/ *-->.*/, "", id); print id "\t" kop }
 ' "$sjabloon" | sort > "$uit_sjabloon"

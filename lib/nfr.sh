@@ -34,7 +34,7 @@ nfr_sectie() {
 
 # The register files in order, one path per line.
 #
-# A missing or non-numeric `volgorde` field is loudly reported and the file
+# A missing or non-numeric `order` field is loudly reported and the file
 # goes to the back — never silently skipped. An NFR that unnoticeably falls
 # out of the register disappears from *all* consumers at once: it's no
 # longer asked, no longer seeded, and no longer in the template block — and
@@ -44,10 +44,10 @@ nfr_bestanden() {
   [ -d "$nfr_map" ] || return 0
   for bestand in "$nfr_map"/*.md; do
     [ -e "$bestand" ] || continue
-    vol="$(nfr_veld "$bestand" volgorde)"
+    vol="$(nfr_veld "$bestand" order)"
     case "$vol" in
       ''|*[!0-9]*)
-        echo "warning: $bestand has no valid 'volgorde' field — put at the end" >&2
+        echo "warning: $bestand has no valid 'order' field — put at the end" >&2
         vol=99999 ;;
     esac
     printf '%s\t%s\n' "$vol" "$bestand"
@@ -58,24 +58,24 @@ nfr_bestanden() {
 # returns 1 if something is wrong. `check` uses this: a broken register file
 # should fail the build, not silently disappear.
 nfr_valideer() {
-  local nfr_map="$1" bestand vol id kop pred status fouten=0
+  local nfr_map="$1" bestand vol id heading pred status fouten=0
 
   [ -d "$nfr_map" ] || return 0
 
   for bestand in "$nfr_map"/*.md; do
     [ -e "$bestand" ] || continue
     id="$(nfr_veld "$bestand" id)"
-    kop="$(nfr_veld "$bestand" kop)"
-    vol="$(nfr_veld "$bestand" volgorde)"
-    pred="$(nfr_veld "$bestand" van-toepassing-als)"
+    heading="$(nfr_veld "$bestand" heading)"
+    vol="$(nfr_veld "$bestand" order)"
+    pred="$(nfr_veld "$bestand" applies-if)"
     status="$(nfr_veld "$bestand" status)"
 
-    [ -n "$id" ]     || { echo "$bestand: field 'id' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$kop" ]    || { echo "$bestand: field 'kop' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$pred" ]   || { echo "$bestand: field 'van-toepassing-als' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$status" ] || { echo "$bestand: field 'status' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$id" ]      || { echo "$bestand: field 'id' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$heading" ] || { echo "$bestand: field 'heading' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$pred" ]    || { echo "$bestand: field 'applies-if' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$status" ]  || { echo "$bestand: field 'status' is missing"; fouten=$((fouten + 1)); }
     case "$vol" in
-      ''|*[!0-9]*) echo "$bestand: field 'volgorde' is missing or not numeric"; fouten=$((fouten + 1)) ;;
+      ''|*[!0-9]*) echo "$bestand: field 'order' is missing or not numeric"; fouten=$((fouten + 1)) ;;
     esac
     if [ -n "$id" ] && [ "$(basename "$bestand" .md)" != "$id" ]; then
       echo "$bestand: filename and id ('$id') don't match"
@@ -86,11 +86,11 @@ nfr_valideer() {
   [ "$fouten" -eq 0 ]
 }
 
-# Walks the active register files, by `volgorde`, and calls <callback> with
-# <id> <standaard> <predicaat>. Same signature as itereer_entries' callback,
+# Walks the active register files, by `order`, and calls <callback> with
+# <id> <default> <predicate>. Same signature as itereer_entries' callback,
 # so a caller can treat both sources the same way.
 #
-# `status: geretireerd` skips the file. That's the retirement form for these
+# `status: retired` skips the file. That's the retirement form for these
 # fifteen: a field instead of moving the file.
 itereer_nfr() {
   local nfr_map="$1" callback="$2"
@@ -98,7 +98,7 @@ itereer_nfr() {
 
   [ -d "$nfr_map" ] || return 0
 
-  # Sorting on the volgorde field, not on filename: the order belongs to the
+  # Sorting on the order field, not on filename: the order belongs to the
   # content (it determines the PRD block), not to what the file is called.
   local lijst
   lijst="$(nfr_bestanden "$nfr_map")"
@@ -106,14 +106,14 @@ itereer_nfr() {
   while IFS= read -r bestand; do
     [ -n "$bestand" ] || continue
     status="$(nfr_veld "$bestand" status)"
-    [ "$status" = "geretireerd" ] && continue
+    [ "$status" = "retired" ] && continue
 
     id="$(nfr_veld "$bestand" id)"
-    standaard="$(nfr_veld "$bestand" standaard)"
-    predicaat="$(nfr_veld "$bestand" van-toepassing-als)"
+    standaard="$(nfr_veld "$bestand" default)"
+    predicaat="$(nfr_veld "$bestand" applies-if)"
 
     if [ -z "$id" ] || [ -z "$predicaat" ]; then
-      echo "warning: $bestand is missing an id or van-toepassing-als" >&2
+      echo "warning: $bestand is missing an id or applies-if" >&2
       continue
     fi
 
@@ -136,7 +136,7 @@ nfr_vraag() {
   local nfr_map="$1" id="$2"
   local bestand="$nfr_map/$id.md"
   [ -f "$bestand" ] || return 0
-  nfr_sectie "$bestand" Vraag
+  nfr_sectie "$bestand" Question
 }
 
 # Prints the NFR block as it should appear in templates/PRD.md. The ID
@@ -151,15 +151,15 @@ nfr_blok() {
   while IFS= read -r bestand; do
     [ -n "$bestand" ] || continue
     status="$(nfr_veld "$bestand" status)"
-    [ "$status" = "geretireerd" ] && continue
-    kop="$(nfr_veld "$bestand" kop)"
+    [ "$status" = "retired" ] && continue
+    kop="$(nfr_veld "$bestand" heading)"
     id="$(nfr_veld "$bestand" id)"
     echo
     echo "### $kop"
     echo "<!-- nfr: $id -->"
     # Wrapping at the same width as the rest of the template, so the block
     # reads as hand-written markdown and the diff on a change stays small.
-    printf '<%s>\n' "$(nfr_sectie "$bestand" Invulhulp)" | fold -s -w 79 | sed 's/ *$//'
+    printf '<%s>\n' "$(nfr_sectie "$bestand" Guidance)" | fold -s -w 79 | sed 's/ *$//'
 
   done <<EOF
 $lijst
@@ -173,7 +173,7 @@ nfr_records() {
   awk '
     BEGIN { RS = ""; FS = "\n" }
     {
-      id = "onbekend"
+      id = "unknown"
       for (i = 1; i <= NF; i++) {
         if ($i ~ /<!-- nfr: /) {
           id = $i
@@ -203,8 +203,8 @@ nfr_drift() {
   blok_gegenereerd="$(mktemp)"
 
   awk '
-    /<!-- nfr-blok:begin/ { in_blok = 1; next }
-    /<!-- nfr-blok:eind/  { in_blok = 0 }
+    /<!-- nfr-block:begin/ { in_blok = 1; next }
+    /<!-- nfr-block:end/  { in_blok = 0 }
     in_blok { print }
   ' "$sjabloon" > "$blok_ingecheckt"
   nfr_blok "$nfr_map" > "$blok_gegenereerd"
@@ -216,7 +216,7 @@ nfr_drift() {
   volgorde_gen="$(grep -oE '<!-- nfr: [a-z-]+' "$blok_gegenereerd" | sed 's/.*nfr: //' | tr '\n' ' ')"
   if [ "$volgorde_in" != "$volgorde_gen" ]; then
     status=1
-    echo "volgorde van het blok wijkt af"
+    echo "block order differs"
   fi
 
   nfr_records < "$blok_ingecheckt" > "$ingecheckt"
