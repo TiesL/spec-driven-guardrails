@@ -39,13 +39,18 @@ esac
 # doesn't accidentally swallow everything.
 [ "$status_laag_c" -ne 0 ] || fail "S88 — README.md's violation disappeared once another file was excluded"
 
-# And: the same sentence in a file tracked as a pending exclusion (#138)
-# is not reported either — real gap, already tracked, not silently fixed
-# by this check pretending it doesn't exist.
-echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/PRD.md"
-uitvoer_pending="$("$script" "$repo" 2>&1)"
+# And: a file tracked as a pending exclusion is not reported either — a
+# real, already-tracked gap isn't silently fixed by this check pretending
+# it doesn't exist. Rather than relying on a real file currently on the
+# pending list (that list is empty once #136/#137/#138 are all done, so
+# hardcoding one here would make this test fragile against exactly that
+# progress), inject a synthetic pending entry into the sandboxed script.
+sed -i.bak "s|pending_uitgesloten=''|pending_uitgesloten='./NEP-PENDING.md'|" "$repo/check-no-dutch.sh"
+rm -f "$repo/check-no-dutch.sh.bak"
+echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/NEP-PENDING.md"
+uitvoer_pending="$("$repo/check-no-dutch.sh" "$repo" 2>&1)"
 case "$uitvoer_pending" in
-  *"PRD.md"*) fail "S88 — a tracked-pending file (#138) was reported anyway" ;;
+  *"NEP-PENDING.md"*) fail "S88 — a tracked-pending file was reported anyway" ;;
 esac
 
 # And: the script excludes itself from its own scan — its marker-word list

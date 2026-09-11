@@ -51,9 +51,11 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 # necessary literal, not untranslated prose.
 permanent_uitgesloten='./ARCHITECTUUR.md ./WORKFLOW-ADOPTION.md ./check-traceability.sh ./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
 
-# Pending exclusions — real translation gaps, already tracked in an open
-# issue. Remove the line the moment that issue closes.
-pending_uitgesloten='./PRD.md' # #138
+# Pending exclusions — real translation gaps, tracked in an open issue.
+# Add a line the moment a new gap is found; remove it the moment that
+# issue closes. Empty now: #136/#137/#138 (the gaps that motivated this
+# list) are all done.
+pending_uitgesloten=''
 
 fout=0
 
