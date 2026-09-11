@@ -747,265 +747,265 @@ something new is being added.
 
 ---
 
-## Dekking buiten de agentic loop
+## Coverage outside the agentic loop
 
-### S48 — Het CI-sjabloon valideert pull requests en `main`
+### S48 — The CI template validates pull requests and `main`
 **Covers:** F17
-- Given: een project dat met `templates/ci.yml` scaffoldt
-- When: er een pull request wordt geopend en er naar `main` wordt gepusht
-- Then: de workflow draait in beide gevallen
-- And: hij roept nog steeds uitsluitend `check` aan — de CI-conventie zelf
-  verandert niet, alleen wanneer hij afgaat
+- Given: a project scaffolding with `templates/ci.yml`
+- When: a pull request is opened and a push to `main` happens
+- Then: the workflow runs in both cases
+- And: it still calls only `check` — the CI convention itself doesn't
+  change, only when it fires
 
-### S49 — Een eigen `ci.yml` wordt niet overschreven
+### S49 — A custom `ci.yml` isn't overwritten
 **Covers:** F17
-- Given: een project met een handgeschreven `ci.yml` die afwijkt van het sjabloon
-- When: `adopt.sh` opnieuw draait
-- Then: dat bestand blijft ongemoeid — `scaffold_if_missing` schrijft alleen wat
-  ontbreekt
-- And: de afwijking blijft niet onzichtbaar. De adoptieregistratie stelt de vraag
-  `ci-op-pr-en-main`, en blijft die stellen tot het project hem beantwoordt. Dat
-  is het mechanisme, niet een melding in `adopt.sh` die één keer voorbijkomt en
-  daarna weg is
+- Given: a project with a hand-written `ci.yml` that deviates from the template
+- When: `adopt.sh` runs again
+- Then: that file stays untouched — `scaffold_if_missing` only writes what's
+  missing
+- And: the deviation doesn't stay invisible. The adoption registry asks the
+  `ci-op-pr-en-main` question, and keeps asking until the project answers
+  it. That's the mechanism, not a one-time notice in `adopt.sh` that
+  appears once and is gone
 
-### S50 — De guard geldt ook buiten Claude om
+### S50 — The guard also applies outside Claude
 **Covers:** F17
-- Given: een geadopteerd project met `main` uitgecheckt en de git-hooks
-  geïnstalleerd
-- When: `git commit` of `git push origin main` rechtstreeks in een shell wordt
-  aangeroepen, dus zonder tussenkomst van Claude
-- Then: het wordt geweigerd, met dezelfde melding als de `PreToolUse`-guard
-- And: de *regel* staat maar op één plek — welke branch beschermd is en wat de
-  melding zegt, komt uit dezelfde bron als de `PreToolUse`-guard. De inleeslaag
-  verschilt noodzakelijk: een native `pre-commit` krijgt geen commandostring om
-  te tokeniseren
+- Given: an adopted project with `main` checked out and the git hooks installed
+- When: `git commit` or `git push origin main` is called directly in a
+  shell, so with no Claude involved
+- Then: it's refused, with the same message as the `PreToolUse` guard
+- And: the *rule* lives in exactly one place — which branch is protected
+  and what the message says comes from the same source as the
+  `PreToolUse` guard. The parsing layer necessarily differs: a native
+  `pre-commit` gets no command string to tokenize
 
-### S51 — Een bestaande git-hook wordt niet stilzwijgend vervangen
+### S51 — An existing git hook isn't silently replaced
 **Covers:** F17
-- Given: een project met een eigen `pre-commit`-hook die niet van dit repo komt
-- When: `adopt.sh` draait
-- Then: die hook wordt niet overschreven zonder melding
-- And: twee keer draaien geeft een identieke boom — hooks stapelen niet
+- Given: a project with its own `pre-commit` hook not from this repo
+- When: `adopt.sh` runs
+- Then: that hook isn't overwritten without notice
+- And: running twice produces an identical tree — hooks don't stack
 
-### S52 — Een commit op `main` buiten een PR om wordt gemeld
+### S52 — A commit on `main` outside a PR is reported
 **Covers:** F17
-- Given: een commit die rechtstreeks naar `main` is gepusht
-- When: de CI-workflow draait
-- Then: hij faalt, met de betreffende commit in de melding
-- And: een merge-commit die wél uit een pull request komt laat hij door
-- And: de controle geldt zowel in `spec-driven-guardrails` zelf als in elk project dat
-  met `templates/ci.yml` scaffoldt — een regel die dit repo aan anderen oplegt
-  maar zelf ontloopt, is geen regel
+- Given: a commit pushed directly to `main`
+- When: the CI workflow runs
+- Then: it fails, with the commit in question in the message
+- And: a merge commit that does come from a pull request goes through
+- And: the check applies both in `spec-driven-guardrails` itself and in
+  every project scaffolding with `templates/ci.yml` — a rule this repo
+  imposes on others but dodges itself isn't a rule
 
-### S53 — De controle beoordeelt de push, niet de historie
+### S53 — The check judges the push, not the history
 **Covers:** F17
-- Given: eerdere commits op `main` die niet aan de eis voldoen
-- When: de workflow op een nieuwe push draait
-- Then: alleen die push wordt beoordeeld
-- And: de controle staat dus niet op dag één rood — een retrofit die altijd
-  faalt leert je precies één ding, en dat is de melding negeren
+- Given: earlier commits on `main` that don't meet the requirement
+- When: the workflow runs on a new push
+- Then: only that push is judged
+- And: the check therefore isn't red on day one — a retrofit that always
+  fails teaches you exactly one thing, and that's to ignore the message
 
-### S58 — Een git-hook die zijn oordeel niet kan vellen, laat door
+### S58 — A git hook that can't render its verdict lets things through
 **Covers:** F17
-- Given: een geadopteerd project waarin de git-hook zijn beslislogica niet kan
-  uitvoeren — het bronscript ontbreekt, of de vereiste interpreter is er niet
-- When: `git commit` of `git push` wordt aangeroepen
-- Then: er verschijnt een luide waarschuwing die zegt dat de controle níét is
-  uitgevoerd
-- And: het commando gaat door, net als bij S14 — een kapotte guard mag nooit het
-  werk blokkeren, en zeker niet buiten Claude om, waar geen agent meekijkt die
-  de melding kan duiden
+- Given: an adopted project where the git hook can't run its decision
+  logic — the source script is missing, or the required interpreter isn't
+  there
+- When: `git commit` or `git push` is called
+- Then: a loud warning appears saying the check was **not** performed
+- And: the command goes through, same as S14 — a broken guard must never
+  block the work, and especially not outside Claude, where no agent is
+  watching who could interpret the message
 
-### S59 — Een CI-controle die zijn oordeel niet kan vellen, faalt
+### S59 — A CI check that can't render its verdict fails
 **Covers:** F17
-- Given: de workflow uit S52 kan de herkomst van een push naar `main` niet
-  vaststellen (geen API-antwoord, ontbrekende rechten)
-- When: de controle draait
-- Then: hij faalt, met de reden erbij
-- And: dat is bewust het omgekeerde van S58. Een lokale hook die faalt houdt
-  werk tegen dat allang legitiem kan zijn; een CI-controle die stil groen wordt
-  meldt dat er niets aan de hand is terwijl hij niets weet — en dat is precies
-  de stille degradatie die dit repo het duurst betaalt
+- Given: the workflow from S52 can't establish the origin of a push to
+  `main` (no API response, missing permissions)
+- When: the check runs
+- Then: it fails, with the reason given
+- And: that's deliberately the reverse of S58. A local hook that fails
+  holds back work that could already be legitimate; a CI check that goes
+  silently green reports that nothing's wrong while it knows nothing — and
+  that's exactly the silent degradation this repo pays for most dearly
 
-### S72 — Bestaande projecten krijgen de main-via-PR-vraag alsnog voorgelegd
+### S72 — Existing projects still get the main-via-PR question
 **Covers:** F17
-- Given: een project met een `package.json` en een al bestaande `ci.yml` die
-  `check-main-via-pr.sh` niet aanroept (`scaffold_if_missing` laat zo'n
-  bestand ongemoeid — zelfde patroon als `ci-schakel-3-hard-slot` bij W19b)
-- When: `pending-changes.sh` draait
-- Then: een nieuwe entry verschijnt als openstaand
-- And: een project zonder `package.json` krijgt die vraag niet
+- Given: a project with a `package.json` and an already-existing `ci.yml`
+  that doesn't call `check-main-via-pr.sh` (`scaffold_if_missing` leaves
+  such a file alone — the same pattern as `ci-schakel-3-hard-slot` in W19b)
+- When: `pending-changes.sh` runs
+- Then: a new entry appears as pending
+- And: a project with no `package.json` doesn't get that question
 
-### S80 — De check-job heeft leestoegang tot pull requests en issues
+### S80 — The check job has read access to pull requests and issues
 **Covers:** F17
-- Given: `templates/ci.yml` en dit repo's eigen `.github/workflows/ci.yml`
-- When: op beide bestanden gecontroleerd wordt welke tokenscope de `check`-job
-  krijgt
-- Then: `pull-requests: read` geldt voor die job, op job- of workflow-niveau
-- And: zonder die scope draait `check-pr-issue-link.sh` (schakel 3) en
-  `check-main-via-pr.sh` onder het default, minimale tokenscope, en falen
-  beide — niet incidenteel, zoals issue #83 en #85 allebei lieten zien
-- And: `issues: read` geldt óók — een apart gat: `closingIssuesReferences`
-  (waar `check-pr-issue-link.sh` op leest) gaat over het gekoppelde issue
-  zelf, niet over de PR, en `pull-requests: read` alleen bleek daar niet
-  genoeg voor. Zonder `issues: read` levert de opvraging stilzwijgend een
-  lege lijst op, ook als de koppeling echt bestaat (ontdekt op PR #105 voor
-  dit repo's eigen workflow, issue #99; hetzelfde gat gold voor
+- Given: `templates/ci.yml` and this repo's own `.github/workflows/ci.yml`
+- When: both files are checked for what token scope the `check` job gets
+- Then: `pull-requests: read` applies to that job, at job or workflow level
+- And: without that scope, `check-pr-issue-link.sh` (link 3) and
+  `check-main-via-pr.sh` run under the default, minimal token scope, and
+  both fail — not incidentally, as issues #83 and #85 both showed
+- And: `issues: read` applies too — a separate gap: `closingIssuesReferences`
+  (which `check-pr-issue-link.sh` reads) is about the linked issue itself,
+  not the PR, and `pull-requests: read` alone turned out not to be enough
+  there. Without `issues: read` the lookup silently returns an empty list,
+  even when the link genuinely exists (discovered on PR #105 for this
+  repo's own workflow, issue #99; the same gap applied to
   `templates/ci.yml`, issue #106)
 
-### S83 — Schakel 3 draait ook in dit repo's eigen CI
+### S83 — Link 3 also runs in this repo's own CI
 **Covers:** F17
 - Given: `.github/workflows/ci.yml`
-- When: een pull request tegen dit repo wordt geopend
-- Then: `check-pr-issue-link.sh` draait, met zowel `pull-requests: read`
-  (S80) als `issues: read` — dat laatste is een apart gat: zonder is levert
-  `closingIssuesReferences` stilzwijgend een lege lijst op, ook als de
-  koppeling echt bestaat (ontdekt op PR #105, run 34234378780)
-- And: een PR zonder `Closes #N` (of een gelijkwaardige koppeling) in de
-  PR-body faalt zichtbaar in CI, terwijl de PR nog open staat — niet pas
-  achteraf zichtbaar via `pending-changes.sh` of een handmatige
-  `pre-merge-review`, zoals bij PR's #96/#97 (2026-09-08) gebeurde
+- When: a pull request against this repo is opened
+- Then: `check-pr-issue-link.sh` runs, with both `pull-requests: read`
+  (S80) and `issues: read` — the latter is a separate gap: without it,
+  `closingIssuesReferences` silently returns an empty list, even when the
+  link genuinely exists (discovered on PR #105, run 34234378780)
+- And: a PR with no `Closes #N` (or an equivalent link) in the PR body
+  fails visibly in CI, while the PR is still open — not only visible
+  afterward via `pending-changes.sh` or a manual `pre-merge-review`, as
+  happened with PRs #96/#97 (2026-09-08)
 
 ---
 
-## Zelf-adoptie
+## Self-adoption
 
-### S81 — spec-driven-guardrails kan zichzelf adopteren
+### S81 — spec-driven-guardrails can adopt itself
 **Covers:** F7, F8
-- Given: een sandboxkopie van dit repo, gebruikt als zowel
-  `SPEC_DRIVEN_GUARDRAILS_DIR` als adoptiedoel
-- When: `adopt.sh` daartegen draait
-- Then: hij adopteert daadwerkelijk — `CLAUDE.md` en `.claude/settings.json`
-  zijn symlinks naar zijn eigen `WORKFLOW.md` en
-  `settings/session-hooks.json` — in plaats van de weigering "geen adoptie
-  nodig" te tonen
-- And: geen enkel bestaand, gecommit bestand (`PRD.md`, `TEST-SCENARIOS.md`,
-  `check`, ...) verandert
-- And: de git-guardrails-hook is daarna functioneel: een gefabriceerde
-  `PreToolUse`-aanroep die een directe `git push origin main` voorstelt,
-  wordt geweigerd — dezelfde controle die geadopteerde projecten krijgen
-- And: de native git-hooks zijn ook geïnstalleerd en weigeren een directe
-  `git push origin main` buiten Claude Code om (zelfde patroon als S50)
-- And: een tweede `adopt.sh`-aanroep is idempotent — geen fouten, geen
-  dubbele `.gitignore`-regels
+- Given: a sandbox copy of this repo, used as both
+  `SPEC_DRIVEN_GUARDRAILS_DIR` and the adoption target
+- When: `adopt.sh` runs against it
+- Then: it actually adopts — `CLAUDE.md` and `.claude/settings.json` are
+  symlinks to its own `WORKFLOW.md` and `settings/session-hooks.json` —
+  instead of showing the "no adoption needed" refusal
+- And: no existing, committed file (`PRD.md`, `TEST-SCENARIOS.md`,
+  `check`, ...) changes
+- And: the git-guardrails hook is functional afterward: a fabricated
+  `PreToolUse` call proposing a direct `git push origin main` is refused —
+  the same check adopted projects get
+- And: the native git hooks are also installed and refuse a direct
+  `git push origin main` outside Claude Code (same pattern as S50)
+- And: a second `adopt.sh` call is idempotent — no errors, no duplicate
+  `.gitignore` lines
 
-### S82 — Een verse WORKFLOW-ADOPTIE.md noemt de juiste repo-naam
+### S82 — A fresh WORKFLOW-ADOPTIE.md names the right repo
 **Covers:** F3
-- Given: een vers geadopteerd project
-- When: `adopt.sh` `WORKFLOW-ADOPTIE.md` aanmaakt
-- Then: de header verwijst naar `spec-driven-guardrails`
-- And: niet naar `claude-workflow` — de naam van vóór de W32-hernoeming (#56)
+- Given: a freshly adopted project
+- When: `adopt.sh` creates `WORKFLOW-ADOPTIE.md`
+- Then: the header refers to `spec-driven-guardrails`
+- And: not to `claude-workflow` — the name from before the W32 rename (#56)
 
 ---
 
-## Installatie
+## Installation
 
-### S84 — install.sh installeert een gepinde versie, niet de actuele main
+### S84 — install.sh installs a pinned version, not the current main
 **Covers:** F17
-- Given: een kloon van dit repo met een tag op een oudere staat, gevolgd door
-  een nieuwere commit
-- When: `install.sh <tag>` daartegen draait
-- Then: de checkout staat na afloop op de gepinde commit, niet op de nieuwere
-  inhoud
-- And: een vieze werkmap (niet-gecommitte wijzigingen) wordt geweigerd, zonder
-  iets uit te checken — anders zou `git checkout` ze stilzwijgend weggooien
-- And: een onbekende tag faalt met een duidelijke melding
-- And: zonder argument wordt de laatste tag gebruikt, expliciet gemeld op
-  stdout — nooit stilzwijgend
+- Given: a clone of this repo with a tag on an older state, followed by a
+  newer commit
+- When: `install.sh <tag>` runs against it
+- Then: the checkout ends up on the pinned commit, not the newer content
+- And: a dirty working tree (uncommitted changes) is refused, with
+  nothing checked out — otherwise `git checkout` would silently discard
+  them
+- And: an unknown tag fails with a clear message
+- And: with no argument, the latest tag is used, explicitly reported on
+  stdout — never silently
 
 ---
 
-## Werk veiligstellen zonder sessie-einde
+## Securing work without a session end
 
-### S54 — Sessiestart meldt dat `main` is uitgecheckt
+### S54 — Session start reports that `main` is checked out
 **Covers:** F18
-- Given: een geadopteerd project met `main` uitgecheckt
-- When: een sessie start
-- Then: er verschijnt een melding die `main` noemt en `git checkout -b` voorstelt
-- And: dat is vóór er werk is — de commit-blokkade uit F7 grijpt pas erna, als
-  vertakken niet meer gratis voelt
+- Given: an adopted project with `main` checked out
+- When: a session starts
+- Then: a message appears naming `main` and suggesting `git checkout -b`
+- And: that's before there's any work — the commit block from F7 only
+  kicks in afterward, once branching no longer feels free
 
-### S55 — Op een feature-branch meldt de sessiestart niets
+### S55 — On a feature branch, session start reports nothing
 **Covers:** F18
-- Given: hetzelfde project op `feature/<naam>`
-- When: `pending-changes.sh` draait
-- Then: er verschijnt geen melding over de branch
-- And: exit 0 en niets op stderr, conform S43 — een hook die ruis produceert
-  wordt weggeklikt en daarmee waardeloos
+- Given: the same project on `feature/<name>`
+- When: `pending-changes.sh` runs
+- Then: no message about the branch appears
+- And: exit 0 and nothing on stderr, per S43 — a hook that produces noise
+  gets dismissed and becomes worthless as a result
 
-### S56 — Een geslaagde commit is meteen gepusht
+### S56 — A successful commit is pushed immediately
 **Covers:** F18
-- Given: een feature-branch met een nieuwe commit
-- When: de commit slaagt
-- Then: de huidige branch staat op `origin`
-- And: het werk is daarmee veilig zodra het is vastgelegd, in plaats van pas bij
-  een nette afsluiting — waarvoor `SessionEnd` geen garantie geeft
+- Given: a feature branch with a new commit
+- When: the commit succeeds
+- Then: the current branch is on `origin`
+- And: the work is thereby safe the moment it's recorded, rather than
+  only on a clean exit — which `SessionEnd` gives no guarantee of
 
-### S57 — Een mislukte commit of ontbrekend netwerk pusht niets
+### S57 — A failed commit or missing network pushes nothing
 **Covers:** F18
-- Given: een `git commit` die faalt (niets te committen, afgebroken editor), of
-  een omgeving zonder verbinding of zonder `origin`
-- When: de hook draait
-- Then: er wordt niet gepusht, en op `main` gebeurt sowieso niets
-- And: de hook meldt het en houdt het werk niet op — een push die niet lukt mag
-  nooit een commando blokkeren
+- Given: a `git commit` that fails (nothing to commit, aborted editor), or
+  an environment with no connection or no `origin`
+- When: the hook runs
+- Then: nothing is pushed, and nothing happens to `main` either way
+- And: the hook reports it and doesn't hold up the work — a push that
+  doesn't succeed must never block a command
 
-### S85 — Een project op het pre-migratieformaat wordt per rij gemeld, met een issue
+### S85 — A project on the pre-migration format is reported per row, with an issue
 **Covers:** F6
-- Given: een project met een `WORKFLOW-ADOPTIE.md` (geen `WORKFLOW-ADOPTION.md`)
-  met rijen op het oude `ja`/`nee`-formaat
-- When: `pending-changes.sh` draait
-- Then: elke rij op het oude formaat wordt individueel gemeld, zonder dat een
-  al beantwoorde rij ten onrechte als openstaande vraag telt
-- And: er wordt een issue aangemaakt op de eigen repo van het project, met een
-  machineherkenbare marker
-- And: draait `pending-changes.sh` nogmaals terwijl dat issue al open staat,
-  dan wordt er geen tweede issue aangemaakt (idempotent, marker-gestuurd)
-- And: is `project_dir` geen eigen git-root (bijvoorbeeld een map binnen een
-  ánder repo, zoals de bevroren nulmeting-fixtures), dan wordt `gh` helemaal
-  niet aangeroepen — nooit schrijven naar het verkeerde repo
+- Given: a project with a `WORKFLOW-ADOPTIE.md` (no `WORKFLOW-ADOPTION.md`)
+  with rows in the old `ja`/`nee` format
+- When: `pending-changes.sh` runs
+- Then: every row on the old format is reported individually, without an
+  already-answered row wrongly counting as a pending question
+- And: an issue is created on the project's own repo, with a
+  machine-recognizable marker
+- And: if `pending-changes.sh` runs again while that issue is already
+  open, no second issue is created (idempotent, marker-driven)
+- And: if `project_dir` isn't its own git root (e.g. a directory inside a
+  *different* repo, like the frozen nulmeting fixtures), `gh` isn't
+  called at all — never write to the wrong repo
 
-### S86 — De SessionStart/SessionEnd-hooks werken onafhankelijk van de toevallige cwd
+### S86 — The SessionStart/SessionEnd hooks work independently of the incidental cwd
 **Covers:** F6, F18
-- Given: `settings/session-hooks.json`'s `SessionStart`- en `SessionEnd`-commando's,
-  aangeroepen vanuit een andere map dan het project zelf, met `CLAUDE_PROJECT_DIR`
-  correct gezet — de PreToolUse/PostToolUse-hooks lossen dit al zo op (S44), maar
-  `SessionStart`/`SessionEnd` deden dat niet: een relatieve `readlink
-  .claude/settings.json` respectievelijk kale `git`-aanroep zonder `-C` levert dan
-  stilzwijgend niets op, zonder enige melding — gevonden tijdens W42/#114's
-  uitrol naar tennis-admin, waar precies dit de openstaand-melding en de
-  migratiemelding allebei liet uitblijven
-- When: `git fetch origin`, de `pending-changes.sh`-aanroep, en `git push origin
-  HEAD` (op een niet-`main`-branch) draaien vanuit die andere map
-- Then: alle drie doen precies hetzelfde alsof ze vanuit de projectmap zelf
-  draaiden — de fetch/push raken de juiste remote, en de melding verschijnt
-- And: de oorspronkelijke, cwd-afhankelijke vorm van elk commando faalt
-  aantoonbaar hetzelfde scenario (stil niets doen), ter bevestiging dat dit
-  een echte regressie was en geen toeval
+- Given: `settings/session-hooks.json`'s `SessionStart` and `SessionEnd`
+  commands, called from a directory other than the project itself, with
+  `CLAUDE_PROJECT_DIR` correctly set — the PreToolUse/PostToolUse hooks
+  already handle this correctly (S44), but `SessionStart`/`SessionEnd`
+  didn't: a relative `readlink .claude/settings.json` respectively a bare
+  `git` call with no `-C` then silently produces nothing, with no message
+  at all — found during W42/#114's rollout to tennis-admin, where exactly
+  this made both the pending-changes notice and the migration notice fail
+  to appear
+- When: `git fetch origin`, the `pending-changes.sh` call, and
+  `git push origin HEAD` (on a non-`main` branch) run from that other
+  directory
+- Then: all three do exactly the same as if they'd run from the project
+  directory itself — the fetch/push hit the right remote, and the message
+  appears
+- And: the original, cwd-dependent form of each command demonstrably fails
+  the same scenario (silently doing nothing), confirming this was a real
+  regression, not a coincidence
 
-### S87 — Een achtergebleven Dekt:-veld verdwijnt niet stilzwijgend
+### S87 — A leftover Dekt: field doesn't silently disappear
 **Covers:** F13
-- Given: een `TEST-SCENARIOS.md` of `PRD.md` met een `**Dekt:**`-veld van
-  vóór de Covers:-cutover (W42/#114) — het token dat `check-traceability.sh`
-  vóór deze migratie zelf gebruikte
-- When: `check-traceability.sh` op dat project draait
-- Then: het meldt expliciet welk bestand nog een pre-migratie Dekt:-veld
-  draagt en hoeveel, met een verwijzing naar #114
-- And: dat veld wordt niet stilzwijgend als geldige Covers:-verwijzing
-  geparsed, en telt ook niet mee als "dit project gebruikt de conventie nog
-  niet" — beide zouden het achtergebleven token onzichtbaar maken
+- Given: a `TEST-SCENARIOS.md` or `PRD.md` with a `**Dekt:**` field from
+  before the Covers: cutover (W42/#114) — the token `check-traceability.sh`
+  itself used before this migration
+- When: `check-traceability.sh` runs on that project
+- Then: it explicitly reports which file still carries a pre-migration
+  Dekt: field and how many, referencing #114
+- And: that field isn't silently parsed as a valid Covers: reference, and
+  doesn't count as "this project doesn't use the convention yet" either —
+  both would make the leftover token invisible
 
-### S88 — Geen Nederlands buiten laag C
+### S88 — No Dutch outside layer C
 **Covers:** F13
-- Given: dit repo, ná W38–W42, met `check-no-dutch.sh`'s vaste
-  woordenlijst en zijn twee gescheiden uitsluitingslijsten — permanent
-  (laag C, historisch, epic #65, `USER-CLAUDE.md`) en tijdelijk-openstaand
-  (getrackt in #136/#137/#138, bedoeld om te krimpen zodra die sluiten)
-- When: `check-no-dutch.sh` draait
-- Then: geen enkel bestand buiten die twee lijsten bevat nog een woord uit
-  de woordenlijst
-- And: `./check` roept dit script zelf aan (stap 3c) en faalt hard als het
-  iets vindt — niet fail-open, want dit is een repo-eigen controle zonder
-  netwerkafhankelijkheid
-- And: het script sluit zichzelf uit van zijn eigen scan — de woordenlijst
-  die het bevat is geen onvertaald proza
+- Given: this repo, after W38–W42, with `check-no-dutch.sh`'s fixed
+  marker list and its two separate exclusion lists — permanent (layer C,
+  historical, epic #65, `USER-CLAUDE.md`) and pending (tracked in
+  #136/#137/#138, meant to shrink once those close)
+- When: `check-no-dutch.sh` runs
+- Then: no file outside those two lists still carries a word from the
+  marker list
+- And: `./check` calls this script itself (step 3c) and fails hard if it
+  finds anything — not fail-open, since this is a repo-own check with no
+  network dependency
+- And: the script excludes itself from its own scan — the marker list it
+  carries isn't untranslated prose
