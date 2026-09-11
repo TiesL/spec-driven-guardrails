@@ -224,15 +224,17 @@ remove-if-never-answered versus freeze-if-already-answered.
 
 `beantwoord()` in `pending-changes.sh` currently only checks *whether a row
 exists*, never what's in it. So a freshly adopted project reports nothing
-outstanding while all seventeen seeded rows still carry "vereist onderbouwing."
+outstanding while all seventeen seeded rows still carry "requires
+substantiation."
 
 **Don't change `beantwoord()`.** That would change the outstanding set and
 thereby break R9 — the release's most important regression test. Instead, a
 **second, separate notice**:
 
 ```
-17 rij(en) in WORKFLOW-ADOPTIE.md wachten nog op onderbouwing.
-Volg de skill `adoption-registry`.
+17 row(s) in WORKFLOW-ADOPTION.md are still waiting on substantiation.
+Replace the provisional stamp with a reasoning grounded in this project,
+or change the row to 'no' with a reason — while you're already on the topic.
 ```
 
 Counted by grepping the answer file, not by changing what "answered" means.

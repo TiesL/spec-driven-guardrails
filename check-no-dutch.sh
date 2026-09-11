@@ -41,7 +41,22 @@ doel="$(cd "$doel" 2>/dev/null && pwd)" || {
 # melding()/waarschuwing() helpers, whose actual message text is English).
 # An identifier isn't prose a reader translates; the other markers below
 # are verbs/prepositions/conjunctions with no such collision risk.
-markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit gebruikt draait controleert bestaat'
+#
+# Also deliberately excludes "onderbouwing": that word is legitimately
+# preserved in several places as a direct quote of the pre-migration
+# "vereist onderbouwing" stamp (e.g. pending-changes.sh's dual-format
+# check, or #114/#131-style historical quotes) — adding it would flag
+# intentional preservation as a violation.
+#
+# Known limitation, not silently ignored: this list is lowercase and
+# case-sensitive on purpose (see above), which means a Dutch sentence
+# starting mid-word-capitalized, like "Volg de skill ...", is invisible
+# to this check even though "volg" itself would otherwise be a safe
+# marker. Found via #154's pre-merge review missing exactly such a
+# sentence. No fix applied here: making the match case-insensitive would
+# reopen the waarschuwing/melding identifier-collision problem above.
+# Catching sentence-initial Dutch remains manual-review territory.
+markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit gebruikt draait controleert bestaat wachten'
 
 # Permanent exclusions — layer C (this repo's own self-adopted, frozen
 # copies, same treatment as the three external projects' equivalent
