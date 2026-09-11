@@ -1,14 +1,14 @@
 ---
 id: spec-observability
-kop: Observability
-volgorde: 4
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: nee
-status: actief
+heading: Observability
+order: 4
+default: yes
+applies-if: always
+production-gate: no
+status: active
 ---
 
-## Vraag
+## Question
 
 Is Observability relevant enough for this project to specify?
 
@@ -17,7 +17,7 @@ Is Observability relevant enough for this project to specify?
 `PRD.md` answers the "Observability" subsection — especially relevant for
 background jobs and triggers that can fail silently.
 
-## Invulhulp
+## Guidance
 
 How do you notice it's broken? Explicitly for background jobs and triggers:
 a job that fails silently fails invisibly.

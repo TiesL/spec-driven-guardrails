@@ -93,7 +93,7 @@ while IFS= read -r id; do
 
   if [ -z "$kop" ]; then
     echo "warning: anchor for $id is missing from ${prd#"$project_dir"/} — falling back to the heading name from the NFR register" >&2
-    kop="$(nfr_veld "$workflow_dir/nfr/$id.md" kop)"
+    kop="$(nfr_veld "$workflow_dir/nfr/$id.md" heading)"
     [ -n "$kop" ] || kop="$id"
   fi
 

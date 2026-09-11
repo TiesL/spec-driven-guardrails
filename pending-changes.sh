@@ -10,7 +10,7 @@
 # nothing when nothing is pending, and always ends with exit 0 — a hook
 # must never block a session.
 #
-# A change is pending when its "Van toepassing als" predicate is true *and*
+# A change is pending when its "Applies if" predicate is true *and*
 # there's no row for that ID in the answer file. So a row's absence means
 # "hasn't applied yet": if the condition later becomes true, the question
 # surfaces on its own.
@@ -46,8 +46,8 @@ beantwoord() {
 openstaand=()
 
 # Callback for itereer_entries. `standaard` is deliberately unused here: an
-# unanswered question is pending regardless of whether it started as `ja`
-# or `vraag`. adopt.sh does do something with that same field — see the
+# unanswered question is pending regardless of whether it started as `yes`
+# or `question`. adopt.sh does do something with that same field — see the
 # callback there.
 # shellcheck disable=SC2329  # called indirectly, via itereer_entries
 verzamel_openstaand() {
@@ -64,8 +64,8 @@ if [ ${#openstaand[@]} -gt 0 ]; then
   for id in "${openstaand[@]}"; do
     vraag="$(awk -v id="## $id" '
       $0 == id { in_entry = 1; next }
-      in_entry && /\*\*Vraag:\*\*/ {
-        sub(/.*\*\*Vraag:\*\* */, ""); print; exit
+      in_entry && /\*\*Question:\*\*/ {
+        sub(/.*\*\*Question:\*\* */, ""); print; exit
       }
       in_entry && /^## / { exit }
     ' "$changes")"
@@ -84,7 +84,7 @@ if [ ${#openstaand[@]} -gt 0 ]; then
 fi
 
 # A seeded row is not yet a decision. adopt.sh sets every applicable
-# `Standaard: ja` change to "ja — vereist onderbouwing": a provisional
+# `Default: yes` change to "yes — requires substantiation": a provisional
 # stamp. beantwoord() only sees *that* a row exists, never what's in it, so
 # without this signal a freshly adopted project would report nothing
 # pending while seventeen provisional stamps sit there.

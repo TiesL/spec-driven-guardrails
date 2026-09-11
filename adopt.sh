@@ -77,13 +77,13 @@ copy_issue_templates() {
 # Callback for itereer_entries. The input comes via _seed_* globals instead
 # of dynamic scope, so it's visible where it comes from.
 #
-# `standaard: vraag` is skipped here: those entries are never answered
+# `standaard: question` is skipped here: those entries are never answered
 # automatically. pending-changes.sh, on the other hand, ignores that same
 # field — see the callback there. That asymmetry is deliberate and so
 # lives at both callers, not hidden in lib/changes.sh.
 seed_entry() {
   local id="$1" standaard="$2" predicaat="$3"
-  if [ "$standaard" = "vraag" ]; then
+  if [ "$standaard" = "question" ]; then
     return 0
   fi
   if ! predicaat_waar "$predicaat" "$_seed_project_dir"; then

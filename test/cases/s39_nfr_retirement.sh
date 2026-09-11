@@ -13,7 +13,7 @@ trap sandbox_destroy EXIT
 repo="$(sandbox_copy_repo)"
 project="$(vers_project doelproject)"
 
-# spec-portability has `Standaard: vraag`, so it is left open after a fresh
+# spec-portability has `Default: question`, so it is left open after a fresh
 # adoption. That is the control value.
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 # Capture the output first: `... | grep -q` closes the pipe at the first hit,
@@ -26,8 +26,8 @@ if ! grep -q 'spec-portability' "$voor"; then
   test_klaar
 fi
 
-# Given: that attribute gets status: geretireerd.
-sed -i.bak 's/^status: actief$/status: geretireerd/' "$repo/nfr/spec-portability.md"
+# Given: that attribute gets status: retired.
+sed -i.bak 's/^status: active$/status: retired/' "$repo/nfr/spec-portability.md"
 rm -f "$repo/nfr/spec-portability.md.bak"
 
 # When/Then: it is no longer asked.
@@ -60,7 +60,7 @@ fi
 (cd "$repo" && ./genereer-prd-blok >/dev/null 2>&1)
 if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   fail "S39 — check still complains after regenerating"
-  "$repo/check" --no-tests "$repo" 2>&1 | grep -E 'FOUT|betreft' >&2
+  "$repo/check" --no-tests "$repo" 2>&1 | grep -E 'ERROR|regarding' >&2
 fi
 
 test_klaar

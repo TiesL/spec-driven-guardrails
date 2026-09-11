@@ -17,12 +17,12 @@ bron="$SANDBOX/CHANGES.md"
 cat > "$bron" <<'MD'
 # Adopteerbare wijzigingen
 
-- **Van toepassing als:** altijd
+- **Applies if:** always
 
 ## echte-entry
 
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Default:** yes
+- **Applies if:** always
 MD
 
 gezien="$SANDBOX/gezien.txt"

@@ -1,14 +1,14 @@
 ---
 id: spec-privacy
-kop: Privacy
-volgorde: 7
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: ja
-status: actief
+heading: Privacy
+order: 7
+default: yes
+applies-if: always
+production-gate: yes
+status: active
 ---
 
-## Vraag
+## Question
 
 Is Privacy relevant enough for this project to specify (personal data,
 retention period, access)?
@@ -18,7 +18,7 @@ retention period, access)?
 `PRD.md` answers the "Privacy" subsection — what personal data is
 processed, how long it's retained, who can see it.
 
-## Invulhulp
+## Guidance
 
 What personal data is processed? How long is it retained, and who can see
 it?

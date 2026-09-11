@@ -3,7 +3,7 @@
 # Covers: F2
 #
 # Demonstrated with a mutation, same style as R6/S41: a new nfr file with
-# `van-toepassing-als: altijd` must make R9 diverge for every fixture, and
+# `applies-if: always` must make R9 diverge for every fixture, and
 # that difference must name the new ID — not something silently resolvable
 # by only adjusting the golden set.
 
@@ -21,23 +21,23 @@ nulmeting="$repo/test/fixtures/nulmeting"
 cat > "$repo/nfr/spec-mutatietest.md" <<'EOF'
 ---
 id: spec-mutatietest
-kop: Mutatietest
-volgorde: 16
-standaard: ja
-van-toepassing-als: altijd
-productie-poort: nee
-status: actief
+heading: Mutatietest
+order: 16
+default: yes
+applies-if: always
+production-gate: no
+status: active
 ---
 
-## Vraag
+## Question
 
 Is dit een test-mutatie?
 
-## Ja betekent
+## Yes means
 
 Dit bestand bestaat alleen om S67 aan te tonen.
 
-## Invulhulp
+## Guidance
 
 Niet van toepassing.
 EOF
@@ -47,7 +47,7 @@ EOF
 # openstaande_ids() helper that relies on TEST_REPO_ROOT.
 #
 # All four must diverge, not "at least one": every nfr file carries
-# van-toepassing-als: altijd (LEESMIJ.md), so a mutation that does not stand
+# applies-if: always (LEESMIJ.md), so a mutation that does not stand
 # out for all four points to a project that does not pick up the nfr source
 # after all.
 for project in $NULMETING_PROJECTEN; do

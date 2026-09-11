@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S6 — An entry without `Van toepassing als` produces a warning.
+# S6 — An entry without `Applies if` produces a warning.
 # Covers: F5
 
 set -uo pipefail
@@ -12,32 +12,32 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a source with a ## heading without a Van toepassing als field.
+# Given: a source with a ## heading without an Applies if field.
 bron="$SANDBOX/CHANGES.md"
 cat > "$bron" <<'MD'
 # Adopteerbare wijzigingen
 
 ## vergeten-entry
 
-- **Vraag:** Iets waar niemand een predicaat bij zette?
-- **Standaard:** ja
+- **Question:** Iets waar niemand een predicaat bij zette?
+- **Default:** yes
 
 ## echte-entry
 
-- **Standaard:** ja
-- **Van toepassing als:** altijd
+- **Default:** yes
+- **Applies if:** always
 
 ## vergeten-na-goede
 
-- **Vraag:** Vergeten predicaat, maar dan ná een entry die er wél een heeft?
+- **Question:** Vergeten predicaat, maar dan ná een entry die er wél een heeft?
 
 ## nog-een-goede
 
-- **Van toepassing als:** altijd
+- **Applies if:** always
 
 ## vergeten-als-laatste
 
-- **Vraag:** Vergeten predicaat, als laatste in het bestand?
+- **Question:** Vergeten predicaat, als laatste in het bestand?
 MD
 
 gezien="$SANDBOX/gezien.txt"
@@ -79,7 +79,7 @@ grep -qx 'nog-een-goede' "$gezien" || fail "S6 — nog-een-goede was not process
 
 # And: a source without a trailing newline does not lose its last line.
 zonder_nl="$SANDBOX/zonder-newline.md"
-printf '# K\n\n## laatste-entry\n\n- **Van toepassing als:** altijd' > "$zonder_nl"
+printf '# K\n\n## laatste-entry\n\n- **Applies if:** always' > "$zonder_nl"
 gezien2="$SANDBOX/gezien2.txt"
 : > "$gezien2"
 # shellcheck disable=SC2329  # called indirectly, via itereer_entries

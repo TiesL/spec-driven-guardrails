@@ -13,7 +13,7 @@ trap sandbox_destroy EXIT
 project="$(vers_project met-toelichting)"
 adopteer "$project"
 
-# test-integratie has `Standaard: vraag` and is therefore never seeded: it is
+# test-integratie has `Default: question` and is therefore never seeded: it is
 # still open after a fresh adoption. That's the control value.
 voor="$SANDBOX/voor.txt"
 openstaande_ids "$project" > "$voor"
