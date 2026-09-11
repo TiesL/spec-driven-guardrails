@@ -65,8 +65,10 @@ git/bash mechanics being the point.
 
 Adopting this doesn't make the discipline free — it makes it checked:
 
-- You still write the PRD entries, the test scenarios, and answer the
-  non-functional questions yourself; nothing here generates those for you.
+- You still own the decisions: a PRD entry, a test scenario, or a
+  non-functional answer can be agent-drafted, but nothing is accepted
+  without your review and explicit approval — this repo checks the
+  discipline, it doesn't remove you from the loop.
 - You still request the merge and confirm it explicitly — this repo never
   merges on its own (see "Known limitations" below for why that isn't
   stronger).
