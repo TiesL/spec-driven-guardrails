@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# test/run.sh — Draait alle testgevallen in test/cases/.
+# test/run.sh — Runs all test cases in test/cases/.
 #
-# Elk testgeval is een zelfstandig script dat test/lib.sh sourcet en met een
-# nulstatus eindigt als het slaagt. Ze draaien elk in een eigen proces, zodat
-# een test die zijn HOME omzet dat nooit voor een volgende test doet.
+# Each test case is a standalone script that sources test/lib.sh and exits
+# with status 0 on success. They each run in their own process, so a test
+# that redirects its HOME never does so for a following test.
 #
-# Gebruik: ./test/run.sh [naamfragment]
+# Usage: ./test/run.sh [name fragment]
 
 set -uo pipefail
 
 hier="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 filter="${1:-}"
 
-# Verdediging in de diepte. sandbox_guard is opt-in per testgeval; een test die
-# sandbox_create vergeet zou zonder dit in de echte home schrijven. Door HOME
-# hier al naar een schildwachtmap te wijzen, kan zo'n vergeten aanroep hooguit
-# daar landen - en dat is achteraf zichtbaar.
-# De echte home eerst vastleggen: hem in dezelfde commando-prefix uitlezen
-# waarin HOME wordt overschreven, leest verwarrend (SC2097/SC2098).
+# Defense in depth. sandbox_guard is opt-in per test case; a test that
+# forgets sandbox_create would, without this, write into the real home. By
+# already pointing HOME at a sentinel directory here, such a forgotten call
+# can land at most there — and that's visible afterward.
+# Capturing the real home first: reading it in the same command prefix
+# where HOME gets overwritten reads confusingly (SC2097/SC2098).
 echte_home="$HOME"
 schildwacht="$(mktemp -d)"
 trap 'rm -rf "$schildwacht"' EXIT
@@ -45,19 +45,19 @@ for geval in "$hier"/cases/*.sh; do
     mislukt="$mislukt $naam"
   fi
   if [ -n "$(ls -A "$schildwacht" 2>/dev/null)" ]; then
-    echo "    waarschuwing: $naam schreef in HOME zonder sandbox_create" >&2
+    echo "    warning: $naam wrote into HOME without sandbox_create" >&2
   fi
 done
 
 echo
 if [ "$gefaald" -gt 0 ]; then
-  echo "Tests: $geslaagd geslaagd, $gefaald gefaald —$mislukt" >&2
+  echo "Tests: $geslaagd passed, $gefaald failed —$mislukt" >&2
   exit 1
 fi
 
 if [ "$geslaagd" -eq 0 ]; then
-  echo "Tests: geen enkel testgeval gedraaid — dat is geen groen." >&2
+  echo "Tests: not a single test case ran — that's not green." >&2
   exit 1
 fi
 
-echo "Tests: $geslaagd geslaagd."
+echo "Tests: $geslaagd passed."

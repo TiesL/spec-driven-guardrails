@@ -172,6 +172,21 @@ if [ -n "$pyscripts" ]; then
   fi
 fi
 
+# --- 3c. No Dutch outside layer C (W43, #115) --------------------------------
+# Repo-specific, not something an adopted project carries — gated on the
+# script's own presence in $doel so a sandboxed copy of this repo (used by
+# the test suite itself) is checked the same way, without assuming
+# anything about an arbitrary external project.
+if [ -x "$doel/check-no-dutch.sh" ]; then
+  echo "check: no Dutch outside layer C"
+  dutch_uitvoer="$(mktemp)"
+  if ! "$doel/check-no-dutch.sh" "$doel" >"$dutch_uitvoer" 2>&1; then
+    melden_fout "Dutch text found outside layer C — see below:"
+    sed 's/^/    /' "$dutch_uitvoer" >&2
+  fi
+  rm -f "$dutch_uitvoer"
+fi
+
 # --- 4. shellcheck -----------------------------------------------------------
 # Warning, not requiring: not every machine has it, and a missing linter
 # must not turn a green build red.
@@ -206,4 +221,4 @@ if [ "$draai_tests" -eq 1 ]; then
   fi
 fi
 
-echo "check: in orde."
+echo "check: ok."

@@ -10,15 +10,15 @@ status: actief
 
 ## Vraag
 
-Is Testability relevant genoeg voor dit project om te specificeren?
+Is Testability relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Testability" — hoe is de code zo gebouwd
-dat hij te testen is (bijv. een domeinlaag zonder externe afhankelijkheden).
+`PRD.md` answers the "Testability" subsection — how the code is built so it
+can be tested (e.g. a domain layer with no external dependencies).
 
 ## Invulhulp
 
-Hoe is de code zo gebouwd dat hij te testen is — bijv. een domeinlaag zonder
-externe afhankelijkheden (zie een architectuureis in `ARCHITECTUUR.md` als die
-er is)?
+How is the code built so it can be tested — e.g. a domain layer with no
+external dependencies (see an architecture requirement in `ARCHITECTUUR.md`
+if one exists)?

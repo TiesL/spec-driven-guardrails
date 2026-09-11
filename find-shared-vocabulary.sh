@@ -25,43 +25,43 @@ cd "$eigen_map"
 
 fout=0
 
-echo "=== Deel 1: regressiecontrole op bevestigde laag-B-tokens ==="
+echo "=== Part 1: regression check on confirmed layer-B tokens ==="
 
 controleer() {
   local omschrijving="$1" bestand="$2" patroon="$3"
   if [ ! -f "$bestand" ]; then
-    echo "MIST: $omschrijving — $bestand bestaat niet meer" >&2
+    echo "MISSING: $omschrijving — $bestand no longer exists" >&2
     fout=1
     return
   fi
   if grep -qE -- "$patroon" "$bestand"; then
     echo "ok — $omschrijving ($bestand)"
   else
-    echo "MIST: $omschrijving — patroon niet meer gevonden in $bestand" >&2
+    echo "MISSING: $omschrijving — pattern no longer found in $bestand" >&2
     fout=1
   fi
 }
 
-controleer "WORKFLOW-ADOPTION.md als bestandsnaam" pending-changes.sh 'WORKFLOW-ADOPTION\.md'
-controleer "WORKFLOW-ADOPTIE.md als pre-migratie-fallback (W42/#114)" pending-changes.sh 'WORKFLOW-ADOPTIE\.md'
-controleer "yes/no-antwoordwaarden (seed, W42/#114)" adopt.sh '\| yes \|'
-controleer "de stempel 'requires substantiation' (W42/#114)" adopt.sh 'requires substantiation'
-controleer "de stempel 'vereist onderbouwing' als pre-migratie-fallback (W42/#114)" pending-changes.sh 'vereist onderbouwing'
-controleer ".gitignore-beheerde-blokmarkering" adopt.sh 'claude-workflow: begin'
-controleer "issue-templates (cp -f)" adopt.sh 'cp -f "\$template_src"'
-controleer "entry-ID process-context-document als logica-gate (W42/#114)" adopt.sh 'process-context-document'
-controleer "entry-ID proces-context-document als pre-migratie-fallback (W42/#114)" adopt.sh 'proces-context-document'
-controleer "entry-ID quality-review-before-merge als logica-gate (W42/#114)" hooks/git-guardrails 'quality-review-before-merge'
-controleer "entry-ID kwaliteitsreview-voor-merge als pre-migratie-fallback (W42/#114)" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
-controleer "het \\*\\*Covers:\\*\\*-veld als logica-gate (project-eigen PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Covers:'
-controleer "het \\*\\*Dekt:\\*\\*-veld als pre-migratie-detectie (project-eigen PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Dekt:'
-controleer "het \\*\\*Covers:\\*\\*-veld als logica-gate (externe issue-bodies, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Covers:'
-controleer "het \\*\\*Dekt:\\*\\*-veld als blijvende uitzondering (externe issue-bodies, historisch, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
-controleer "de <!-- nfr: <id> -->-anker" lib/nfr.sh 'nfr: \$id'
-controleer "de <!-- pre-merge-review:done -->-marker (externe PR-comments)" hooks/git-guardrails 'pre-merge-review:done'
+controleer "WORKFLOW-ADOPTION.md as the filename" pending-changes.sh 'WORKFLOW-ADOPTION\.md'
+controleer "WORKFLOW-ADOPTIE.md as the pre-migration fallback (W42/#114)" pending-changes.sh 'WORKFLOW-ADOPTIE\.md'
+controleer "yes/no answer values (seed, W42/#114)" adopt.sh '\| yes \|'
+controleer "the 'requires substantiation' stamp (W42/#114)" adopt.sh 'requires substantiation'
+controleer "the 'vereist onderbouwing' stamp as the pre-migration fallback (W42/#114)" pending-changes.sh 'vereist onderbouwing'
+controleer ".gitignore-managed block marker" adopt.sh 'claude-workflow: begin'
+controleer "issue templates (cp -f)" adopt.sh 'cp -f "\$template_src"'
+controleer "entry ID process-context-document as a logic gate (W42/#114)" adopt.sh 'process-context-document'
+controleer "entry ID proces-context-document as the pre-migration fallback (W42/#114)" adopt.sh 'proces-context-document'
+controleer "entry ID quality-review-before-merge as a logic gate (W42/#114)" hooks/git-guardrails 'quality-review-before-merge'
+controleer "entry ID kwaliteitsreview-voor-merge as the pre-migration fallback (W42/#114)" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
+controleer "the \\*\\*Covers:\\*\\*-field as a logic gate (project-owned PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Covers:'
+controleer "the \\*\\*Dekt:\\*\\*-field as pre-migration detection (project-owned PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Dekt:'
+controleer "the \\*\\*Covers:\\*\\*-field as a logic gate (external issue bodies, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Covers:'
+controleer "the \\*\\*Dekt:\\*\\*-field as a permanent exception (external issue bodies, historical, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
+controleer "the <!-- nfr: <id> --> anchor" lib/nfr.sh 'nfr: \$id'
+controleer "the <!-- pre-merge-review:done --> marker (external PR comments)" hooks/git-guardrails 'pre-merge-review:done'
 
 echo
-echo "=== Deel 2: kandidatenscan (nieuwe combinaties, handmatig te beoordelen) ==="
+echo "=== Part 2: candidate scan (new combinations, needs manual review) ==="
 
 kandidaat_scripts="adopt.sh pending-changes.sh hooks/git-guardrails lib/changes.sh lib/nfr.sh skills/pre-merge-review/scope.sh skills/pre-merge-review/scenario-poort.sh templates/check-traceability.sh templates/check-pr-issue-link.sh templates/check-main-via-pr.sh"
 
@@ -81,8 +81,8 @@ done
 
 echo
 if [ "$fout" -eq 0 ]; then
-  echo "find-shared-vocabulary.sh: alle bevestigde laag-B-tokens nog aanwezig."
+  echo "find-shared-vocabulary.sh: all confirmed layer-B tokens still present."
 else
-  echo "find-shared-vocabulary.sh: inventaris is verouderd — zie MIST hierboven." >&2
+  echo "find-shared-vocabulary.sh: inventory is out of date — see MISSING above." >&2
 fi
 exit "$fout"

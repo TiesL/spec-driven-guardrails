@@ -1,6 +1,6 @@
 ---
 id: spec-kostenbeheersing
-kop: Kostenbeheersing
+kop: Cost control
 volgorde: 14
 standaard: vraag
 van-toepassing-als: altijd
@@ -10,14 +10,14 @@ status: actief
 
 ## Vraag
 
-Is Kostenbeheersing relevant genoeg voor dit project om te specificeren?
+Is Cost control relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Kostenbeheersing" — welke quota of kosten
-in zicht komen, en wat er gebeurt als je eroverheen gaat.
+`PRD.md` answers the "Cost control" subsection — what quotas or costs come
+into view, and what happens if you go over them.
 
 ## Invulhulp
 
-Welke quota of kosten komen in zicht (API-aanroepen, opslag, compute)? Wat
-gebeurt er als je eroverheen gaat?
+What quotas or costs come into view (API calls, storage, compute)? What
+happens if you go over them?

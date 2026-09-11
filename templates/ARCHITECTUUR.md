@@ -1,97 +1,96 @@
-# Architectuurafweging — <onderwerp van het besluit>
+# Architecture decision — <subject of the decision>
 
-Dit document legt vast *waarom* het systeem is zoals het is. `PRD.md` beschrijft
-wat het moet doen; hier staat welke structurele keuzes daaronder liggen, welke
-alternatieven zijn afgewogen, en wanneer een keuze opnieuw tegen het licht moet.
+This document records *why* the system is the way it is. `PRD.md` describes
+what it must do; this is where the structural choices underneath that live,
+which alternatives were weighed, and when a choice should be revisited.
 
-Niet elk besluit hoort hier. Wel: platformkeuzes, de indeling in lagen of
-componenten, waar gegevens eigenaar van zijn, en het toevoegen van een
-substantiële dependency. Niet: hoe één functie is geschreven.
-
----
-
-## Het besluit
-
-**Besloten op <datum>: <de keuze in één zin>.**
-
-<Twee tot vijf zinnen: wat is er gekozen, en wat betekent dat concreet voor hoe
-het systeem eruitziet.>
+Not every decision belongs here. Yes: platform choices, the split into
+layers or components, who owns which data, and adding a substantial
+dependency. No: how one function is written.
 
 ---
 
-## Beoordelingscriteria
+## The decision
 
-<Waarop zijn de opties beoordeeld, en waarom die criteria? Noem ze vóór de
-opties — anders kies je achteraf de criteria die de gewenste uitkomst
-rechtvaardigen.>
+**Decided on <date>: <the choice, in one sentence>.**
 
-| Criterium | Waarom dit telt |
+<Two to five sentences: what was chosen, and what that means concretely for
+what the system looks like.>
+
+---
+
+## Evaluation criteria
+
+<What were the options judged against, and why those criteria? Name them
+before the options — otherwise you pick, after the fact, the criteria that
+justify the outcome you wanted.>
+
+| Criterion | Why it counts |
 |---|---|
-| | |
 
 ---
 
-## Afgewogen opties
+## Options weighed
 
-### Optie 1 — <naam>
-<Wat het is, en hoe het scoort op de criteria. Voor- en nadelen.>
+### Option 1 — <name>
+<What it is, and how it scores on the criteria. Pros and cons.>
 
-### Optie 2 — <naam>
-<Idem.>
-
----
-
-## Vergelijking en keuze
-
-<Waarom de gekozen optie wint. Benoem expliciet wat je ervoor inlevert — een
-keuze zonder nadelen is meestal een keuze die niet goed genoeg is onderzocht.>
+### Option 2 — <name>
+<Same.>
 
 ---
 
-## Architectuureisen die hieruit volgen
+## Comparison and choice
 
-Genummerde, toetsbare eisen waar de code zich aan houdt. Deze zijn de meetlat
-voor de refactoring-trigger uit `CLAUDE.md`: bouw je iets dat een eis hier
-schendt, dan is dat een signaal om te herontwerpen, niet om een uitzondering te
-maken.
-
-### A1 — <naam van de eis>
-<Wat de eis inhoudt, en waaróm — welk probleem voorkomt hij? Hoe zie je of hij
-geschonden wordt?>
+<Why the chosen option wins. Name explicitly what you're giving up for it —
+a choice with no downsides is usually a choice that wasn't examined closely
+enough.>
 
 ---
 
-## Systeemgrenzen en eigenaarschap
+## Architecture requirements that follow from this
 
-<Welke componenten zijn er, en wat is de afspraak tussen die componenten? Wie is
-eigenaar van welke gegevens? Wat mag wél en niet rechtstreeks bij elkaar naar
-binnen kijken?>
+Numbered, testable requirements the code adheres to. These are the yardstick
+for the refactoring trigger in `CLAUDE.md`: if you're building something
+that violates a requirement here, that's a signal to redesign, not to make
+an exception.
+
+### A1 — <name of the requirement>
+<What the requirement entails, and why — what problem does it prevent? How
+do you tell if it's being violated?>
+
+---
+
+## System boundaries and ownership
+
+<What components are there, and what's the agreement between those
+components? Who owns which data? What may and may not look directly into
+each other?>
 
 ---
 
 ## Dependencies
 
-Een bibliotheek toevoegen is een architectuurbesluit, geen implementatiedetail.
-Per substantiële dependency:
+Adding a library is an architecture decision, not an implementation detail.
+Per substantial dependency:
 
-| Dependency | Waarvoor | Onderhoud en volwassenheid | Licentie | Waarom niet zelf bouwen |
+| Dependency | For what | Maintenance and maturity | License | Why not build it ourselves |
 |---|---|---|---|---|
-| | | | | |
 
 ---
 
-## Wanneer we deze keuze zouden herzien
+## When we would revisit this choice
 
-<Concrete, herkenbare signalen — geen "als het niet meer bevalt". Bijvoorbeeld:
-een limiet die in zicht komt, een aanname die niet blijkt te kloppen, een
-functionaliteit die er structureel niet in past.>
+<Concrete, recognizable signals — not "if it stops feeling right." For
+example: a limit coming into view, an assumption turning out to be false, a
+piece of functionality that structurally doesn't fit.>
 
 -
 
 ---
 
-## Openstaand na dit document
+## Still open after this document
 
-<Wat is bewust nog niet besloten, en wanneer moet dat wel?>
+<What's deliberately not yet decided, and when should it be?>
 
 -

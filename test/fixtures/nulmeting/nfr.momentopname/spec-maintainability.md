@@ -10,15 +10,15 @@ status: actief
 
 ## Vraag
 
-Is Maintainability relevant genoeg voor dit project om expliciet te
-specificeren?
+Is Maintainability relevant enough for this project to specify explicitly?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Maintainability" — module-indeling, wie
-moet dit later kunnen begrijpen en wijzigen.
+`PRD.md` answers the "Maintainability" subsection — the module breakdown,
+who needs to be able to understand and change this later.
 
 ## Invulhulp
 
-Hoe is het systeem ingedeeld in modules/componenten? Wie moet dit later kunnen
-begrijpen en wijzigen, en wat maakt dat mogelijk of juist moeilijk?
+How is the system divided into modules/components? Who needs to be able to
+understand and change this later, and what makes that possible or
+difficult?

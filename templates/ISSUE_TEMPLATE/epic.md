@@ -1,32 +1,32 @@
 ---
 name: Epic
-about: Grotere wijziging, opgesplitst in work items
+about: Larger change, split into work items
 title: "[Epic] "
 labels: epic
 ---
 
-## Doel
-<!-- Wat moet dit epic opleveren, in 1-2 zinnen -->
+## Goal
+<!-- What must this epic deliver, in 1-2 sentences -->
 
-## Context / aanleiding
+## Context / motivation
 
 ## Scope
 -
 
-## Niet in scope
+## Out of scope
 -
 
 ## Work items
-<!-- Koppel de issues die dit epic opsplitsen -->
+<!-- Link the issues that split up this epic -->
 - [ ] #
 
-## Open vragen
+## Open questions
 -
 
-## Gerelateerd
+## Related
 <!--
-  Ook een epic hangt af van ander werk. Vul beide kanten in — de volgorde wordt
-  gelezen vanuit het issue dat wacht, niet vanuit het issue dat blokkeert.
+  An epic also depends on other work. Fill in both sides — the order is
+  read from the issue that's waiting, not from the issue that's blocking.
 -->
 **Blocked by:** #
 **Blocks:** #

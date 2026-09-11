@@ -47,7 +47,7 @@ nfr_bestanden() {
     vol="$(nfr_veld "$bestand" volgorde)"
     case "$vol" in
       ''|*[!0-9]*)
-        echo "waarschuwing: $bestand heeft geen geldig 'volgorde'-veld — achteraan gezet" >&2
+        echo "warning: $bestand has no valid 'volgorde' field — put at the end" >&2
         vol=99999 ;;
     esac
     printf '%s\t%s\n' "$vol" "$bestand"
@@ -70,15 +70,15 @@ nfr_valideer() {
     pred="$(nfr_veld "$bestand" van-toepassing-als)"
     status="$(nfr_veld "$bestand" status)"
 
-    [ -n "$id" ]     || { echo "$bestand: veld 'id' ontbreekt"; fouten=$((fouten + 1)); }
-    [ -n "$kop" ]    || { echo "$bestand: veld 'kop' ontbreekt"; fouten=$((fouten + 1)); }
-    [ -n "$pred" ]   || { echo "$bestand: veld 'van-toepassing-als' ontbreekt"; fouten=$((fouten + 1)); }
-    [ -n "$status" ] || { echo "$bestand: veld 'status' ontbreekt"; fouten=$((fouten + 1)); }
+    [ -n "$id" ]     || { echo "$bestand: field 'id' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$kop" ]    || { echo "$bestand: field 'kop' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$pred" ]   || { echo "$bestand: field 'van-toepassing-als' is missing"; fouten=$((fouten + 1)); }
+    [ -n "$status" ] || { echo "$bestand: field 'status' is missing"; fouten=$((fouten + 1)); }
     case "$vol" in
-      ''|*[!0-9]*) echo "$bestand: veld 'volgorde' ontbreekt of is niet numeriek"; fouten=$((fouten + 1)) ;;
+      ''|*[!0-9]*) echo "$bestand: field 'volgorde' is missing or not numeric"; fouten=$((fouten + 1)) ;;
     esac
     if [ -n "$id" ] && [ "$(basename "$bestand" .md)" != "$id" ]; then
-      echo "$bestand: bestandsnaam en id ('$id') komen niet overeen"
+      echo "$bestand: filename and id ('$id') don't match"
       fouten=$((fouten + 1))
     fi
   done
@@ -113,12 +113,12 @@ itereer_nfr() {
     predicaat="$(nfr_veld "$bestand" van-toepassing-als)"
 
     if [ -z "$id" ] || [ -z "$predicaat" ]; then
-      echo "waarschuwing: $bestand mist een id of van-toepassing-als" >&2
+      echo "warning: $bestand is missing an id or van-toepassing-als" >&2
       continue
     fi
 
     if ! "$callback" "$id" "$standaard" "$predicaat"; then
-      echo "waarschuwing: verwerking van NFR '$id' gaf een fout" >&2
+      echo "warning: processing NFR '$id' produced an error" >&2
       fouten=$((fouten + 1))
     fi
   done <<EOF

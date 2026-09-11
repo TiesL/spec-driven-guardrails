@@ -167,4 +167,4 @@ for id in $prd_ids; do
 done
 
 [ "$fouten" -eq 0 ] || exit 1
-echo "traceability: in orde"
+echo "traceability: ok"

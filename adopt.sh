@@ -116,9 +116,9 @@ seed_adoptietabel() {
   {
     echo "# Adoptie van gedeelde workflow-wijzigingen"
     echo
-    echo "Per wijziging uit \`CHANGES.md\` in [spec-driven-guardrails](https://github.com/TiesL/spec-driven-guardrails)"
-    echo "of dit project hem toepast. Geen rij betekent: (nog) niet van toepassing —"
-    echo "de vraag verschijnt vanzelf zodra dat verandert."
+    echo "Per change from \`CHANGES.md\` in [spec-driven-guardrails](https://github.com/TiesL/spec-driven-guardrails)"
+    echo "whether this project applies it. No row means: not (yet) applicable —"
+    echo "the question shows up on its own once that changes."
     echo
     echo "| Wijziging | Antwoord | Datum | Toelichting |"
     echo "|---|---|---|---|"

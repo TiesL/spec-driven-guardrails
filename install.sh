@@ -24,7 +24,7 @@ eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$eigen_map"
 
 if [ ! -f "$eigen_map/WORKFLOW.md" ] || [ ! -f "$eigen_map/adopt.sh" ] || [ ! -d "$eigen_map/.git" ]; then
-  echo "Fout: '$eigen_map' lijkt geen kloon van spec-driven-guardrails (WORKFLOW.md, adopt.sh of .git ontbreekt)." >&2
+  echo "Error: '$eigen_map' doesn't look like a spec-driven-guardrails clone (WORKFLOW.md, adopt.sh, or .git is missing)." >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ fi
 # action must never make.
 vuil="$(git status --porcelain)"
 if [ -n "$vuil" ]; then
-  echo "Fout: deze checkout heeft niet-gecommitte wijzigingen — install.sh raakt ze niet aan, los dat eerst op:" >&2
+  echo "Error: this checkout has uncommitted changes — install.sh won't touch them, resolve that first:" >&2
   echo "$vuil" >&2
   exit 1
 fi
@@ -43,20 +43,20 @@ git fetch --tags --quiet
 tag="${1:-}"
 if [ -z "$tag" ]; then
   if ! tag="$(git describe --tags --abbrev=0 2>/dev/null)"; then
-    echo "Fout: geen tags gevonden om op te pinnen. Geef een expliciete tag mee, of gebruik main voor Ties' eigen doorlopende gebruik." >&2
+    echo "Error: no tags found to pin to. Pass an explicit tag, or use main for Ties' own ongoing usage." >&2
     exit 1
   fi
-  echo "Geen tag opgegeven — laatste tag gekozen: $tag"
+  echo "No tag given — picked the latest tag: $tag"
 fi
 
 if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-  echo "Fout: tag '$tag' bestaat niet in deze checkout (na een verse \`git fetch --tags\`)." >&2
+  echo "Error: tag '$tag' doesn't exist in this checkout (after a fresh \`git fetch --tags\`)." >&2
   exit 1
 fi
 
 git checkout --quiet "$tag"
 
-echo "Klaar: deze checkout staat nu gepind op $tag."
-echo "Zet in je shell-profiel (\`~/.zshrc\` of \`~/.bashrc\`), als dat nog niet zo is:"
+echo "Done: this checkout is now pinned to $tag."
+echo "Add this to your shell profile (\`~/.zshrc\` or \`~/.bashrc\`), if it isn't already there:"
 echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$eigen_map\""
-echo "Adopteer daarna een project zoals gebruikelijk: \"\$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh\"."
+echo "Then adopt a project as usual: \"\$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh\"."

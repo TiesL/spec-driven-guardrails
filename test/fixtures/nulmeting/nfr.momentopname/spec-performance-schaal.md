@@ -1,6 +1,6 @@
 ---
 id: spec-performance-schaal
-kop: Performance en schaal
+kop: Performance and scale
 volgorde: 5
 standaard: vraag
 van-toepassing-als: altijd
@@ -10,15 +10,14 @@ status: actief
 
 ## Vraag
 
-Zijn Performance en schaal relevant genoeg voor dit project om te
-specificeren?
+Are Performance and scale relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Performance en schaal" — verwachte omvang,
-platformlimieten, quota.
+`PRD.md` answers the "Performance and scale" subsection — expected volume,
+platform limits, quotas.
 
 ## Invulhulp
 
-Verwachte omvang van data en gebruik. Welke platformlimieten of quota komen in
-zicht, en wat gebeurt er als je eroverheen gaat?
+Expected volume of data and usage. Which platform limits or quotas come
+into view, and what happens if you go over them?

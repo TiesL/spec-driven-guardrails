@@ -15,8 +15,8 @@ status=$?
 if [ "$status" -eq 0 ]; then
   fail "S3 — sandbox_guard let the real HOME through"
 fi
-assert_contains "S3" "AFGEBROKEN" "$uitvoer"
-assert_contains "S3" "echte home" "$uitvoer"
+assert_contains "S3" "ABORTED" "$uitvoer"
+assert_contains "S3" "real home" "$uitvoer"
 
 # And an empty HOME is just as much not a sandbox.
 uitvoer_leeg="$(HOME="" sandbox_guard 2>&1)"
@@ -24,7 +24,7 @@ status_leeg=$?
 if [ "$status_leeg" -eq 0 ]; then
   fail "S3 — sandbox_guard let an empty HOME through"
 fi
-assert_contains "S3 (empty HOME)" "AFGEBROKEN" "$uitvoer_leeg"
+assert_contains "S3 (empty HOME)" "ABORTED" "$uitvoer_leeg"
 
 # And: nothing was written outside the temporary directory. The guard runs
 # before every write action, so a refused setup leaves no traces.

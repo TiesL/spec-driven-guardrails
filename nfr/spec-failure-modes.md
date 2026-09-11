@@ -10,15 +10,15 @@ status: actief
 
 ## Vraag
 
-Is Resilience relevant genoeg voor dit project om te specificeren (failure
-modes en herstelgedrag)?
+Is Resilience relevant enough for this project to specify (failure modes
+and recovery behavior)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Failure modes", en `TEST-SCENARIOS.md`
-krijgt per functionaliteitsitem minstens één scenario voor wat er misgaat.
+`PRD.md` answers the "Failure modes" subsection, and `TEST-SCENARIOS.md`
+gets at least one scenario per functionality item for what goes wrong.
 
 ## Invulhulp
 
-Wat kan er misgaan — onverwachte invoer, een afhankelijkheid die wegvalt, een
-verlopen autorisatie? Wat is het gedrag dan, en hoe herstel je?
+What can go wrong — unexpected input, a dependency that drops out, an
+expired authorization? What's the behavior then, and how do you recover?

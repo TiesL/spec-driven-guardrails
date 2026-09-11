@@ -10,15 +10,15 @@ status: actief
 
 ## Vraag
 
-Is Security relevant genoeg voor dit project om te specificeren (toegang,
-autorisatie, secrets)?
+Is Security relevant enough for this project to specify (access,
+authorization, secrets)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Security" — wie mag wat, welke rechten zijn
-minimaal nodig, waar staan secrets.
+`PRD.md` answers the "Security" subsection — who is allowed to do what,
+what permissions are minimally needed, where secrets live.
 
 ## Invulhulp
 
-Wie mag wat? Welke rechten zijn minimaal nodig? Waar staan secrets, en hoe
-komen ze niet in git terecht?
+Who is allowed to do what? What permissions are minimally needed? Where do
+secrets live, and how do they stay out of git?

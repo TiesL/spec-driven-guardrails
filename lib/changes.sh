@@ -71,7 +71,7 @@ itereer_entries() {
     case "$regel" in
       '## '*)
         if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then
-          echo "waarschuwing: entry '$huidig_id' in $bron heeft geen 'Van toepassing als'-veld" >&2
+          echo "warning: entry '$huidig_id' in $bron has no 'Van toepassing als' field" >&2
         fi
         huidig_id="${regel#\#\# }"
         standaard="ja"
@@ -85,7 +85,7 @@ itereer_entries() {
         [ -n "$huidig_id" ] || continue
         gezien_predicaat=1
         if ! "$callback" "$huidig_id" "$standaard" "$predicaat"; then
-          echo "waarschuwing: verwerking van entry '$huidig_id' gaf een fout" >&2
+          echo "warning: processing entry '$huidig_id' produced an error" >&2
           fouten=$((fouten + 1))
         fi ;;
     esac
@@ -93,7 +93,7 @@ itereer_entries() {
 
   # The last entry in the file counts too.
   if [ -n "$huidig_id" ] && [ "$gezien_predicaat" -eq 0 ]; then
-    echo "waarschuwing: entry '$huidig_id' in $bron heeft geen 'Van toepassing als'-veld" >&2
+    echo "warning: entry '$huidig_id' in $bron has no 'Van toepassing als' field" >&2
   fi
 
   [ "$fouten" -eq 0 ]

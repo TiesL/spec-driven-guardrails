@@ -1,6 +1,6 @@
 ---
 id: spec-data-integriteit
-kop: Data-integriteit
+kop: Data integrity
 volgorde: 2
 standaard: ja
 van-toepassing-als: altijd
@@ -10,16 +10,16 @@ status: actief
 
 ## Vraag
 
-Is Data-integriteit relevant genoeg voor dit project om te specificeren
-(invarianten, idempotentie, gelijktijdig schrijven, correctheid over tijd)?
+Is Data integrity relevant enough for this project to specify (invariants,
+idempotence, concurrent writes, correctness over time)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Data-integriteit".
+`PRD.md` answers the "Data integrity" subsection.
 
 ## Invulhulp
 
-Welke invarianten moeten altijd gelden? Welke schrijfacties moeten idempotent
-zijn (twee keer uitvoeren = één keer effect)? Wat gebeurt er als twee dingen
-tegelijk schrijven? Blijft de data ook over tijd correct — geen geleidelijke
-drift, geen stille corruptie?
+Which invariants must always hold? Which writes must be idempotent (running
+twice = the effect of once)? What happens when two things write at the same
+time? Does the data stay correct over time — no gradual drift, no silent
+corruption?

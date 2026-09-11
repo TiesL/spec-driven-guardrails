@@ -10,17 +10,17 @@ status: actief
 
 ## Vraag
 
-Is Deployability relevant genoeg voor dit project om te specificeren
-(omgevingen, rollout, terugdraaien)?
+Is Deployability relevant enough for this project to specify (environments,
+rollout, rollback)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Deployability" — welke omgevingen er zijn
-(bijv. pre-productie/productie), hoe wordt uitgerold, hoe rol je terug. Het
-procesmatige tegenhanger hiervan zijn `ci-conventie` en `deploy-guards`.
+`PRD.md` answers the "Deployability" subsection — what environments exist
+(e.g. pre-production/production), how rollout works, how you roll back. Its
+process-side counterpart is `ci-conventie` and `deploy-guards`.
 
 ## Invulhulp
 
-Welke omgevingen zijn er (bijv. pre-productie/productie)? Hoe wordt uitgerold?
-Hoe rol je terug? Zie ook `ci-conventie`/`deploy-guards` in `CHANGES.md` voor
-de procesmatige kant hiervan.
+What environments are there (e.g. pre-production/production)? How is it
+rolled out? How do you roll back? See also `ci-conventie`/`deploy-guards` in
+`CHANGES.md` for the process side of this.
