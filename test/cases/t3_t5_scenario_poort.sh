@@ -61,14 +61,14 @@ assert_contains "T5 — S1 stays uncovered (running prose does not count)" "S1" 
 
 # T5 — S2b does count, via the current Covers: field: no "S2b ... uncovered" line.
 case "$uitvoer" in
-  *"S2b wordt door geen enkel issue gedekt"*)
+  *"S2b is covered by no issue"*)
     fail "T5 — S2b (covered via the Covers: field) was reported as uncovered anyway" ;;
 esac
 
 # W42/#114 — S4 also counts, via the pre-migration Dekt: field on a
 # historical issue: no "S4 ... uncovered" line either.
 case "$uitvoer" in
-  *"S4 wordt door geen enkel issue gedekt"*)
+  *"S4 is covered by no issue"*)
     fail "W42/#114 — S4 (covered via a historical Dekt: field) was reported as uncovered anyway" ;;
 esac
 
@@ -76,6 +76,6 @@ esac
 padzondergh="$(pad_zonder_gh)"
 uitvoer_geengh="$(PATH="$padzondergh" "$script" "$project" 2>&1)"; status_geengh=$?
 [ "$status_geengh" -eq 0 ] || fail "AC4 — without gh the gate gave exit $status_geengh instead of 0"
-assert_contains "AC4 — a warning appears without gh" "waarschuwing" "$uitvoer_geengh"
+assert_contains "AC4 — a warning appears without gh" "warning" "$uitvoer_geengh"
 
 test_klaar

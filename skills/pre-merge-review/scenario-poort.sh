@@ -1,62 +1,61 @@
 #!/usr/bin/env bash
-# skills/pre-merge-review/scenario-poort.sh — Schakel 2 (scenario -> issue) als
-# poort in pre-merge-review (W20, F13 besluit d).
+# skills/pre-merge-review/scenario-poort.sh — Link 2 (scenario -> issue) as
+# a gate in pre-merge-review (W20, F13 decision d).
 #
-# Gebruik:
+# Usage:
 #   scenario-poort.sh <project_dir>
 #
-# Voor elk scenario-ID uit <project_dir>/TEST-SCENARIOS.md: wordt het genoemd
-# in het **Covers:**-veld van minstens één issue (open of dicht)? Alleen dat
-# veld telt — dezelfde grammatica en dezelfde "alleen het veld telt"-regel als
-# templates/check-traceability.sh (schakel 1), hier toegepast op issues in
-# plaats van op PRD.md/TEST-SCENARIOS.md onderling. Een ID dat toevallig in
-# een zin voorkomt is geen verwijzing.
+# For every scenario ID from <project_dir>/TEST-SCENARIOS.md: is it named
+# in the **Covers:** field of at least one issue (open or closed)? Only
+# that field counts — same grammar and same "only the field counts" rule
+# as templates/check-traceability.sh (link 1), applied here to issues
+# instead of to PRD.md/TEST-SCENARIOS.md against each other. An ID that
+# happens to appear in a sentence is not a reference.
 #
-# W42/#114: issue-bodies matchen zowel **Covers:** als het pre-migratie
-# **Dekt:**-veld, blijvend — in tegenstelling tot PRD.md/TEST-SCENARIOS.md
-# (die krijgen een echte cutover) is een historisch, mogelijk al gesloten
-# issue niet iets wat deze migratie herschrijft. Bevestigd met Ties.
+# W42/#114: issue bodies match both **Covers:** and the pre-migration
+# **Dekt:** field, permanently — unlike PRD.md/TEST-SCENARIOS.md (which get
+# a real cutover), a historical, possibly already-closed issue is not
+# something this migration rewrites. Confirmed with Ties.
 #
-# Faal-open zonder gh of netwerk: waarschuwen, niet blokkeren — dezelfde
-# grondregel als de deploy-guards en de merge-guard (W10b).
+# Fail-open without gh or network: warn, don't block — same ground rule as
+# the deploy-guards and the merge guard (W10b).
 #
-# Uitvoer op stdout: één regel per ongedekt scenario:
-#   "<id> wordt door geen enkel issue gedekt (schakel 2)"
+# Output on stdout: one line per uncovered scenario:
+#   "<id> is covered by no issue (link 2)"
 #
-# Geen `eval`. TEST-SCENARIOS.md en issue-teksten zijn tekst die niet volledig
-# onder eigen beheer staat. Bash 3.2-compatibel: geen declare -A, geen
-# mapfile, geen ${var,,}.
+# No `eval`. TEST-SCENARIOS.md and issue text aren't fully under their own
+# control. Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
 
-project_dir="${1:?gebruik: scenario-poort.sh <project_dir>}"
+project_dir="${1:?usage: scenario-poort.sh <project_dir>}"
 scenarios="$project_dir/TEST-SCENARIOS.md"
 
 [ -f "$scenarios" ] || exit 0
 
-# Zelfde regex als check-traceability.sh's ids_uit_koppen: alleen koppen
-# tellen, prefix ligt niet vast (F/S is gebruikelijk, R/A/B/P/OP komen voor).
+# Same regex as check-traceability.sh's ids_uit_koppen: only headings
+# count, the prefix isn't fixed (F/S is customary, R/A/B/P/OP occur).
 scenario_ids="$(grep -oE '^#+[[:space:]]+[A-Z]{1,2}[0-9]+[a-z]?([[:space:]]|$)' "$scenarios" \
   | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//')"
 [ -n "$scenario_ids" ] || exit 0
 
 if ! command -v gh >/dev/null 2>&1; then
-  echo "waarschuwing: scenario-poort vindt gh niet en slaat schakel 2 over." >&2
+  echo "warning: scenario-poort can't find gh and is skipping link 2." >&2
   exit 0
 fi
 
 issuebodies="$(gh issue list --state all --limit 500 --json body --jq '.[].body' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
-  echo "waarschuwing: scenario-poort kon issues niet raadplegen (geen netwerk of geen toegang) en slaat schakel 2 over." >&2
+  echo "warning: scenario-poort couldn't consult issues (no network or no access) and is skipping link 2." >&2
   echo "$issuebodies" >&2
   exit 0
 fi
 
-# Zelfde vorm als covers_ruw/covers_tokens in check-traceability.sh: alleen
-# het **Covers:**-veld aan regelbegin telt, komma-gescheiden. Matcht ook het
-# pre-migratie **Dekt:**-veld (blijvende uitzondering, zie boven) — vandaar
-# de alternatie in de grep-patronen hieronder.
+# Same shape as covers_ruw/covers_tokens in check-traceability.sh: only the
+# **Covers:** field at the start of a line counts, comma-separated. Also
+# matches the pre-migration **Dekt:** field (permanent exception, see
+# above) — hence the alternation in the grep patterns below.
 gedekt="$(printf '%s\n' "$issuebodies" \
   | grep -E '^\*\*(Covers|Dekt):\*\*' \
   | sed 's/^\*\*Covers:\*\*[[:space:]]*//; s/^\*\*Dekt:\*\*[[:space:]]*//' \
@@ -68,6 +67,6 @@ gedekt="$(printf '%s\n' "$issuebodies" \
 printf '%s\n' "$scenario_ids" | while IFS= read -r id; do
   [ -n "$id" ] || continue
   if ! printf '%s\n' "$gedekt" | grep -qxF "$id"; then
-    echo "$id wordt door geen enkel issue gedekt (schakel 2)"
+    echo "$id is covered by no issue (link 2)"
   fi
 done

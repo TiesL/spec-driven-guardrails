@@ -50,7 +50,7 @@ if ! grep -qx 'spec-security: Security' "$stdout"; then
 fi
 
 # And: it explicitly reports that the anchor is missing.
-if ! grep -q 'anker' "$stderr" || ! grep -q 'ontbreekt' "$stderr"; then
+if ! grep -q 'anchor' "$stderr" || ! grep -q 'missing' "$stderr"; then
   fail "S27 — did not explicitly report that the anchor is missing"
   cat "$stderr" >&2
 fi

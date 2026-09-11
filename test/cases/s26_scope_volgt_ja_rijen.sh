@@ -35,8 +35,8 @@ cp "$repo/templates/PRD.md" "$project/PRD.md"
 uitvoer="$SANDBOX/uitvoer.txt"
 "$repo/skills/pre-merge-review/scope.sh" "$project" "$repo" > "$uitvoer" 2>/dev/null
 
-if ! grep -qx 'complexiteit' "$uitvoer"; then
-  fail "S26 — 'complexiteit' always belongs in scope, regardless of spec-*"
+if ! grep -qx 'complexity' "$uitvoer"; then
+  fail "S26 — 'complexity' always belongs in scope, regardless of spec-*"
 fi
 if ! grep -qx 'dependencies' "$uitvoer"; then
   fail "S26 — 'dependencies' always belongs in scope, regardless of spec-*"
@@ -44,7 +44,7 @@ fi
 if ! grep -qx 'spec-security: Security' "$uitvoer"; then
   fail "S26 — spec-security (ja) is missing from the scope"
 fi
-if ! grep -qx 'spec-data-integriteit: Data-integriteit \[vereist onderbouwing\]' "$uitvoer"; then
+if ! grep -qx 'spec-data-integriteit: Data-integriteit \[requires substantiation\]' "$uitvoer"; then
   fail "S26 — spec-data-integriteit (provisional 'ja') should appear marked in the scope"
 fi
 if grep -q 'spec-privacy' "$uitvoer"; then
@@ -56,7 +56,7 @@ fi
 
 regels="$(grep -c '.' "$uitvoer")"
 if [ "$regels" -ne 4 ]; then
-  fail "S26 — expected exactly 4 scope lines (complexiteit, dependencies, 2 NFRs), got $regels"
+  fail "S26 — expected exactly 4 scope lines (complexity, dependencies, 2 NFRs), got $regels"
   cat "$uitvoer" >&2
 fi
 

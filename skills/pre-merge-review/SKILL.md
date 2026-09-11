@@ -56,14 +56,14 @@ Don't compute that scope by hand — run:
 .claude/skills/pre-merge-review/scope.sh .
 ```
 
-That prints, one per line: `complexiteit`, `dependencies`, and then per
+That prints, one per line: `complexity`, `dependencies`, and then per
 answered NFR `<id>: <heading name>` — where `<heading name>` is the `###`
 section in `PRD.md` matching the generated anchor (`<!-- nfr: <id> -->`,
 from F4). If that anchor is missing, the script falls back to the heading
 name from `spec-driven-guardrails`'s `nfr/` register and reports that on
 stderr — a project without anchors doesn't block the review, it degrades.
 
-An NFR line ending in `[vereist onderbouwing]` means: that
+An NFR line ending in `[requires substantiation]` means: that
 `WORKFLOW-ADOPTION.md` row still carries the provisional stamp from F6, not
 a real "yes". Treat that as a review finding (see below) — not as an
 ordinary scope line to review.
@@ -103,8 +103,8 @@ the same ground rule as deploy-guards and the merge guard (W10b).
 
 ## Substantiation gap as a finding
 
-If the PR touches a topic whose scope line carries `[vereist
-onderbouwing]`, that is itself an explicit finding in the PR: the
+If the PR touches a topic whose scope line carries `[requires
+substantiation]`, that is itself an explicit finding in the PR: the
 corresponding `WORKFLOW-ADOPTION.md` row must get a real answer before the
 merge (see the `adoption-registry` skill) — this is the first gate of the
 phased substantiation requirement (F6).
