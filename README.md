@@ -40,10 +40,12 @@ It is not:
 
 There's also a second reader this repo is useful to even without adopting
 it: a **business analyst, product owner, or product manager** working with
-a development team, who wants to see a concrete example of specifying,
-demonstrably delivering, and tracing requirements through to code — that's
-what `PRD.md`, `TEST-SCENARIOS.md`, and the traceability chain between them
-are, without the surrounding git/bash mechanics being the point.
+a development team. In practice: given a feature branch's pull request,
+they can trace backward through the enforced chain — the PR names the
+GitHub issue it closes, that issue names the test scenarios it covers, and
+each scenario is a Given/When/Then they can run directly as user
+acceptance testing — without reading code, and without the surrounding
+git/bash mechanics being the point.
 
 ## What you get if you adopt it
 
@@ -98,8 +100,9 @@ on being honest about where it doesn't hold:
 Each of these is backed by a concrete mechanism in this repo, not asserted
 on its own:
 
-- **Specification-Driven Development (SDD)** — `PRD.md` is the normative
-  spec; functionality is written down before it's built.
+- **Specification-Driven Development (SDD)** — `PRD.md` as the normative
+  spec, broken down into epic/work-item GitHub issues before
+  implementation starts.
 - **Architecture Decision Records** — `ARCHITECTUUR.md` records structural
   decisions, alternatives considered, and the trigger to revisit them.
 - **Non-functional requirements specification** — the `nfr/` register: one
