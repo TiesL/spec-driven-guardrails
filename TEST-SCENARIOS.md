@@ -395,351 +395,355 @@ something new is being added.
 - When: `gh pr merge` is called
 - Then: the command is blocked, referencing `pre-merge-review`
 
-### S16 — Merge mét review-marker gaat door
+### S16 — Merge with a review marker goes through
 **Covers:** F8
-- Given: een open PR met de marker die `pre-merge-review` plaatst
-- When: `gh pr merge` wordt aangeroepen
-- Then: het commando gaat door
+- Given: an open PR with the marker `pre-merge-review` places
+- When: `gh pr merge` is called
+- Then: the command goes through
 
-### S17 — De merge-guard faalt open zonder netwerk
+### S17 — The merge guard fails open without network
 **Covers:** F8
-- Given: `gh` ontbreekt of heeft geen netwerkverbinding
-- When: `gh pr merge` wordt aangeroepen
-- Then: er verschijnt een luide waarschuwing dat de reviewcontrole is overgeslagen
-- And: het commando wordt toegestaan
+- Given: `gh` is missing or has no network connection
+- When: `gh pr merge` is called
+- Then: a loud warning appears that the review check was skipped
+- And: the command is allowed
 
-### S18 — Een onderbouwde `nee`/`no` schakelt de guard uit
+### S18 — A substantiated `nee`/`no` disables the guard
 **Covers:** F8
-- Given: een project waarvan `WORKFLOW-ADOPTIE.md` (pre-migratieformaat, W42/#114)
-  of `WORKFLOW-ADOPTION.md` `kwaliteitsreview-voor-merge` respectievelijk
-  `quality-review-before-merge` op `nee`/`no` heeft staan
-- When: `gh pr merge` wordt aangeroepen op een PR zonder marker
-- Then: het commando gaat door, zonder blokkade
-- And: dat gebeurt zonder netwerkaanroep — de rij wordt lokaal gelezen
+- Given: a project whose `WORKFLOW-ADOPTIE.md` (pre-migration format, W42/#114)
+  or `WORKFLOW-ADOPTION.md` has `kwaliteitsreview-voor-merge` respectively
+  `quality-review-before-merge` set to `nee`/`no`
+- When: `gh pr merge` is called on a PR with no marker
+- Then: the command goes through, unblocked
+- And: that happens without a network call — the row is read locally
 
-### S64 — De merge-guard-uitweg schakelt alleen de merge-guard uit
+### S64 — The merge-guard bypass disables only the merge guard
 **Covers:** F8
-- Given: hetzelfde commandosegment bevat zowel
-  `CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1` als een destructief git-commando
-  (bijvoorbeeld `git reset --hard`)
-- When: dat segment beoordeeld wordt
-- Then: het destructieve git-commando wordt nog steeds geblokkeerd
-- And: de uitweg schakelt uitsluitend de merge-guard uit, niet de rest van
-  git-guardrails — anders is de luide, gerichte uitweg uit AC6 in de praktijk
-  een blanco vrijbrief voor het hele segment
+- Given: the same command segment contains both
+  `CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1` and a destructive git command
+  (e.g. `git reset --hard`)
+- When: that segment is evaluated
+- Then: the destructive git command is still blocked
+- And: the bypass disables only the merge guard, not the rest of
+  git-guardrails — otherwise the loud, targeted bypass from AC6 would in
+  practice be a blank check for the whole segment
 
-### S65 — Waardevlaggen van `gh pr merge` schuiven het doel niet op
+### S65 — `gh pr merge`'s value flags don't shift the target
 **Covers:** F8
-- Given: `gh pr merge --body "een tekst met woorden" --subject "titel"` zonder
-  expliciet PR-nummer/url/branch
-- When: de merge-guard het doel bepaalt
-- Then: hij vraagt de PR van de huidige branch op (`gh pr view` zonder
-  argument), niet `gh pr view "een tekst met woorden"`
-- And: een marker-loze PR wordt dus nog steeds geblokkeerd, in plaats van via
-  het faal-openpad (een mislukte opvraging van een niet-bestaande "PR" met die
-  naam) alsnog toegelaten te worden
+- Given: `gh pr merge --body "some text with words" --subject "title"` with
+  no explicit PR number/url/branch
+- When: the merge guard determines the target
+- Then: it looks up the PR of the current branch (`gh pr view` with no
+  argument), not `gh pr view "some text with words"`
+- And: a marker-less PR therefore still gets blocked, instead of slipping
+  through the fail-open path (a failed lookup of a non-existent "PR" with
+  that name)
 
-### S73 — Merge wordt geblokkeerd als CI niet groen is
+### S73 — Merge is blocked when CI isn't green
 **Covers:** F8
-- Given: een PR met de review-marker, maar met een check die faalt
-- When: `gh pr merge` wordt aangeroepen
-- Then: het commando wordt geblokkeerd, met de naam van de falende check in de
-  melding
+- Given: a PR with the review marker, but with a failing check
+- When: `gh pr merge` is called
+- Then: the command is blocked, with the name of the failing check in the
+  message
 
-### S74 — Merge gaat door als alle checks slagen
+### S74 — Merge goes through when all checks pass
 **Covers:** F8
-- Given: een PR met de review-marker en alle checks `pass`
-- When: `gh pr merge` wordt aangeroepen
-- Then: het commando gaat door
+- Given: a PR with the review marker and all checks `pass`
+- When: `gh pr merge` is called
+- Then: the command goes through
 
-### S75 — Geen gerapporteerde checks blokkeert niet
+### S75 — No reported checks doesn't block
 **Covers:** F8
-- Given: een PR met de review-marker, maar zonder gerapporteerde checks (geen
-  CI geadopteerd voor dat project, zie F6)
-- When: `gh pr merge` wordt aangeroepen
-- Then: het commando gaat door — geen checks is geen rode vlag
+- Given: a PR with the review marker, but with no reported checks (no CI
+  adopted for that project, see F6)
+- When: `gh pr merge` is called
+- Then: the command goes through — no checks is not a red flag
 
-### S76 — De CI-controle faalt open als de opvraging zelf mislukt
+### S76 — The CI check fails open if the lookup itself fails
 **Covers:** F8
-- Given: een PR met de review-marker, maar de CI-opvraging zelf mislukt (geen
-  netwerk, geen toegang)
-- When: `gh pr merge` wordt aangeroepen
-- Then: er verschijnt een luide waarschuwing dat de CI-controle is
-  overgeslagen
-- And: het commando wordt toegestaan
+- Given: a PR with the review marker, but the CI lookup itself fails (no
+  network, no access)
+- When: `gh pr merge` is called
+- Then: a loud warning appears that the CI check was skipped
+- And: the command is allowed
 
 ---
 
-## Skills-infrastructuur
+## Skills infrastructure
 
-### S19 — `adopt.sh` installeert per-skill symlinks
+### S19 — `adopt.sh` installs per-skill symlinks
 **Covers:** F9
-- Given: een geadopteerd project en een gevulde `skills/`-map in dit repo
-- When: `adopt.sh` draait
-- Then: `.claude/skills/<naam>` bestaat per skill als symlink naar dit repo
-- And: `.claude/skills` zelf is een echte map, geen symlink
+- Given: an adopted project and a populated `skills/` directory in this repo
+- When: `adopt.sh` runs
+- Then: `.claude/skills/<name>` exists per skill as a symlink to this repo
+- And: `.claude/skills` itself is a real directory, not a symlink
 
-### S20 — Verweesde symlinks worden opgeruimd, echte mappen niet
+### S20 — Orphaned symlinks are cleaned up, real directories aren't
 **Covers:** F9
-- Given: `.claude/skills/oude-naam` wijst naar een niet meer bestaande skill in
-  dit repo, en `.claude/skills/eigen-skill` is een echte map van het project
-- When: `adopt.sh` draait
-- Then: `oude-naam` is verwijderd
-- And: `eigen-skill` is onaangeroerd
+- Given: `.claude/skills/old-name` points at a skill that no longer exists
+  in this repo, and `.claude/skills/own-skill` is a real directory of the
+  project
+- When: `adopt.sh` runs
+- Then: `old-name` is removed
+- And: `own-skill` is untouched
 
-### S21 — Het `.gitignore`-blok wordt beheerd, niet gestapeld
+### S21 — The `.gitignore` block is managed, not stacked
 **Covers:** F9
-- Given: een `.gitignore` met de twee bestaande losse regels `CLAUDE.md` en
+- Given: a `.gitignore` with the two existing loose lines `CLAUDE.md` and
   `.claude/settings.json`
-- When: `adopt.sh` draait
-- Then: die regels staan precies één keer, binnen het beheerde blok
-- And: regels buiten het blok blijven onaangeroerd
+- When: `adopt.sh` runs
+- Then: those lines appear exactly once, within the managed block
+- And: lines outside the block stay untouched
 
 ### S22 — `adopt.sh` is idempotent
 **Covers:** F9
-- Given: een geadopteerd project
-- When: `adopt.sh` twee keer achter elkaar draait
-- Then: de bestandsboom is na de tweede run identiek aan na de eerste
-- And: `.gitignore` is byte-identiek
+- Given: an adopted project
+- When: `adopt.sh` runs twice in a row
+- Then: the file tree after the second run is identical to after the first
+- And: `.gitignore` is byte-identical
 
-### S23 — `adopt.sh` is een no-op zonder `skills/`
+### S23 — `adopt.sh` is a no-op without `skills/`
 **Covers:** F9
-- Given: een checkout van dit repo van vóór deze release, zonder `skills/`-map
-- When: `adopt.sh` draait
-- Then: de adoptie slaagt zonder foutmelding
-- And: er wordt geen lege `.claude/skills/` achtergelaten
+- Given: a checkout of this repo from before this release, with no
+  `skills/` directory
+- When: `adopt.sh` runs
+- Then: adoption succeeds with no error
+- And: no empty `.claude/skills/` is left behind
 
 ---
 
-## Skills en review
+## Skills and review
 
-### S24 — Elke skill in het register bestaat en is vindbaar
+### S24 — Every skill in the register exists and is findable
 **Covers:** F10
-- Given: het skill-register uit `PRD.md` F10
-- When: `./check` draait
-- Then: elke genoemde skill heeft een `SKILL.md` met een `name` en `description`
-  in de frontmatter
+- Given: the skill register from `PRD.md` F10
+- When: `./check` runs
+- Then: every named skill has a `SKILL.md` with a `name` and `description`
+  in its frontmatter
 
-### S25 — De user-level skill staat op userniveau
+### S25 — The user-level skill sits at user level
 **Covers:** F10
-- Given: een niet-geadopteerd git-project
-- When: `adopt.sh --user` is gedraaid en een sessie start
-- Then: `adopt-workflow` is beschikbaar zonder dat `.claude/skills/` in dat
-  project bestaat
+- Given: a non-adopted git project
+- When: `adopt.sh --user` has been run and a session starts
+- Then: `adopt-workflow` is available with no `.claude/skills/` existing
+  in that project
 
-### S68 — `tdd-seams` benoemt de discipline concreet, niet aansporend
+### S68 — `tdd-seams` names the discipline concretely, not just encouragingly
 **Covers:** F10
 - Given: `skills/tdd-seams/SKILL.md`
-- When: hij gelezen wordt
-- Then: hij noemt "seam", "rood" én "groen" (rood-vóór-groen), en de drie
-  anti-patronen met naam: implementatie-gekoppeld, tautologisch, en
-  horizontaal slicen tegenover verticale slices
+- When: it's read
+- Then: it names "seam", "red" and "green" (red-before-green), and the
+  three anti-patterns by name: implementation-coupled, tautological, and
+  horizontal slicing versus vertical slices
 
-### S69 — `diagnose-bug` beschrijft de dwingende volgorde
+### S69 — `diagnose-bug` describes the mandatory order
 **Covers:** F10
 - Given: `skills/diagnose-bug/SKILL.md`
-- When: hij gelezen wordt
-- Then: reproductie, hypotheses en regressietest staan er alle drie in, in die
-  volgorde vóór de fix
-- And: het staat er expliciet bij dat hypotheses getoond worden vóórdat ze
-  getest worden
+- When: it's read
+- Then: reproduction, hypotheses, and regression test all appear, in that
+  order, before the fix
+- And: it explicitly states that hypotheses are shown before they're tested
 
-### S70 — `CONTEXT.md` wordt gescaffold zodra de rij op `yes`/`ja` staat
+### S70 — `CONTEXT.md` is scaffolded once the row is `yes`/`ja`
 **Covers:** F10
-- Given: een project waarvan `WORKFLOW-ADOPTION.md` (of, pre-migratie
-  W42/#114, `WORKFLOW-ADOPTIE.md`) `process-context-document`
-  respectievelijk `proces-context-document` op `yes`/`ja` heeft staan
-- When: `adopt.sh` draait
-- Then: `CONTEXT.md` wordt aangemaakt vanuit `templates/CONTEXT.md`, als het
-  nog niet bestaat
-- And: een al bestaand `CONTEXT.md` wordt nooit overschreven
-- And: staat de rij op `nee` of ontbreekt ze, dan scaffoldt `adopt.sh` niets
+- Given: a project whose `WORKFLOW-ADOPTION.md` (or, pre-migration
+  W42/#114, `WORKFLOW-ADOPTIE.md`) has `process-context-document`
+  respectively `proces-context-document` set to `yes`/`ja`
+- When: `adopt.sh` runs
+- Then: `CONTEXT.md` is created from `templates/CONTEXT.md`, if it doesn't
+  exist yet
+- And: an already-existing `CONTEXT.md` is never overwritten
+- And: if the row is `nee`/`no` or missing, `adopt.sh` scaffolds nothing
 
-### S26 — De reviewscope volgt de beantwoorde `spec-*`-rijen
+### S26 — The review scope follows the answered `spec-*` rows
 **Covers:** F11
-- Given: een project waarvan `WORKFLOW-ADOPTIE.md` alleen `spec-security` en
-  `spec-data-integriteit` op `ja` heeft
-- When: `pre-merge-review` draait
-- Then: de scope bevat complexiteit en dependencies plus precies die twee NFR's
-- And: NFR's die op `nee` of onbeantwoord staan komen niet in de scope
+- Given: a project whose `WORKFLOW-ADOPTIE.md` has only `spec-security` and
+  `spec-data-integriteit` set to `ja`
+- When: `pre-merge-review` runs
+- Then: the scope contains complexity and dependencies plus exactly those
+  two NFRs
+- And: NFRs set to `nee` or unanswered don't appear in the scope
 
-### S27 — Ontbrekende ankers degraderen, ze blokkeren niet
+### S27 — Missing anchors degrade, they don't block
 **Covers:** F11
-- Given: een project-PRD zonder de door F4 geplaatste ankers
-- When: `pre-merge-review` draait
-- Then: de skill valt terug op de kopnamen
-- And: hij meldt expliciet dat de ankers ontbreken
+- Given: a project PRD without the anchors F4 places
+- When: `pre-merge-review` runs
+- Then: the skill falls back to the heading names
+- And: it explicitly reports that the anchors are missing
 
-### S28 — De review plaatst een machineherkenbare marker
+### S28 — The review places a machine-recognizable marker
 **Covers:** F11
-- Given: een PR waarop `pre-merge-review` zijn bevindingen plaatst
-- When: de merge-guard die PR daarna beoordeelt
-- Then: de marker wordt gevonden en de merge wordt toegestaan
+- Given: a PR on which `pre-merge-review` posts its findings
+- When: the merge guard judges that PR afterward
+- Then: the marker is found and the merge is allowed
 
-### S29 — De Wegwijzer lost elk verplaatst onderwerp in één sprong op
+### S29 — The routing table resolves every moved topic in a single jump
 **Covers:** F12
-- Given: de vijf termen uit R7 (branching, kwaliteitsreview, onderbouwingsplicht,
-  deploy-guards, adoptieregistratie)
-- When: `WORKFLOW.md` op elk van die termen wordt gegrept
-- Then: voor kwaliteitsreview, onderbouwingsplicht, deploy-guards en
-  adoptieregistratie — die zíjn verplaatst — levert elke term een Wegwijzer-rij
-  op die naar precies één bestaande skill verwijst
-- And: twee termen die in dezelfde skill landen krijgen twee eigen rijen
-- And: branching is niet verplaatst (F12 houdt branchstrategie in de kern) en
-  lost dus op zoals R7 dat toestaat: direct in het bestand, zonder
-  Wegwijzer-rij
+- Given: the five terms from R7 (branching, quality review, the
+  substantiation requirement, deploy-guards, the adoption registry)
+- When: `WORKFLOW.md` is grepped for each of those terms
+- Then: for quality review, the substantiation requirement, deploy-guards,
+  and the adoption registry — which *have* moved — every term yields a
+  routing-table row pointing at exactly one existing skill
+- And: two terms that land in the same skill get two rows of their own
+- And: branching hasn't moved (F12 keeps the branch strategy in the core)
+  and so resolves the way R7 allows: directly in the file, with no
+  routing-table row
 
 ---
 
 ## Traceability
 
-### T1 — Volledige keten, alles gedekt
+### T1 — Full chain, everything covered
 **Covers:** F13
-- Given: `PRD.md` met `F1`; `TEST-SCENARIOS.md` met `S1` (`Covers: F1`) en `S2`
-  (`Covers: F1`); een issue dat `S1` en `S2` noemt; een PR die naar dat issue verwijst
-- When: de controle draait
-- Then: geen fouten, exit 0
+- Given: `PRD.md` with `F1`; `TEST-SCENARIOS.md` with `S1` (`Covers: F1`) and `S2`
+  (`Covers: F1`); an issue naming `S1` and `S2`; a PR referencing that issue
+- When: the check runs
+- Then: no errors, exit 0
 
-### T2 — Functionaliteit zonder scenario
+### T2 — Functionality with no scenario
 **Covers:** F13
-- Given: `PRD.md` met `F2`, geen enkel scenario met `Covers: F2`
-- When: de controle draait
-- Then: faalt met een melding die expliciet `F2` noemt
+- Given: `PRD.md` with `F2`, no scenario with `Covers: F2`
+- When: the check runs
+- Then: it fails with a message explicitly naming `F2`
 
-### T3 — Scenario zonder issue
+### T3 — Scenario with no issue
 **Covers:** F13
-- Given: `S3` bestaat, geen enkel issue noemt `S3` in het daarvoor bestemde veld
-- When: de poort in `pre-merge-review` draait
-- Then: de bevinding noemt expliciet `S3`
+- Given: `S3` exists, no issue names `S3` in the field meant for that
+- When: the gate in `pre-merge-review` runs
+- Then: the finding explicitly names `S3`
 
-### T4 — PR zonder gelinkt issue
+### T4 — PR with no linked issue
 **Covers:** F13
-- Given: een PR zonder `Closes #<n>` en zonder gelinkt issue
-- When: de CI-check op de PR draait
-- Then: de check faalt en noemt de betreffende PR
+- Given: a PR with no `Closes #<n>` and no linked issue
+- When: the CI check on the PR runs
+- Then: the check fails and names the PR in question
 
-### T5 — Vals-positief voorkomen
+### T5 — Preventing a false positive
 **Covers:** F13
-- Given: een issue-tekst die `S1` noemt in een zin die geen verwijzing is
-  (bijv. "we hebben inmiddels s1 varianten getest")
-- When: de controle draait
-- Then: dit telt **niet** mee als schakel — alleen het daarvoor bestemde veld telt
-- And: een token als `S2b` telt wél, mits het in het veld staat
+- Given: issue text naming `S1` in a sentence that isn't a reference
+  (e.g. "we've already tested some s1 variants")
+- When: the check runs
+- Then: this does **not** count as a link — only the field meant for that
+  counts
+- And: a token like `S2b` does count, provided it's in the field
 
-### S30 — Dubbele en onbekende ID's worden gemeld
+### S30 — Duplicate and unknown IDs are reported
 **Covers:** F13
-- Given: een `TEST-SCENARIOS.md` met twee scenario's die hetzelfde ID dragen, en
-  een `Covers:`-token dat nergens oplost
-- When: de offline controle draait
-- Then: beide problemen worden apart gemeld, met ID
-- And: een `PRD.md` zonder enig `F<n>` levert een **waarschuwing** op, geen harde fout
+- Given: a `TEST-SCENARIOS.md` with two scenarios carrying the same ID, and
+  a `Covers:` token that resolves nowhere
+- When: the offline check runs
+- Then: both problems are reported separately, with ID
+- And: a `PRD.md` with no `F<n>` at all produces a **warning**, not a hard error
 
-### S62 — Zonder dekkingsvelden waarschuwt de controle, en handhaaft niet
+### S62 — Without coverage fields the check warns, and doesn't enforce
 **Covers:** F13
-- Given: een project waarvan geen enkel scenario een `**Covers:**`-veld draagt —
-  alle vier de bestaande projecten zijn dit geval op de dag van invoering
-- When: de offline controle draait
-- Then: er verschijnt een waarschuwing en exit 0
-- And: er wordt geen enkel ongedekt item gemeld. Zonder die uitzondering klaagt
-  de controle bij invoering in één klap over álles, en dat is de retrofit die
-  het ontwerp juist vermijdt
-- And: zodra het eerste `**Covers:**`-veld er staat, handhaaft hij wél — anders kan
-  één verwijzing de rest ongestraft laten liggen
+- Given: a project where no scenario carries a `**Covers:**` field —
+  all four existing projects are this case on the day of introduction
+- When: the offline check runs
+- Then: a warning appears and exit 0
+- And: no uncovered item is reported at all. Without that exception the
+  check would complain about *everything* at once on introduction, which
+  is exactly the retrofit the design avoids
+- And: once the first `**Covers:**` field is there, it does enforce —
+  otherwise a single reference could leave the rest unpunished
 
-### S63 — De controle wordt gescaffold en draait in een vers project
+### S63 — The check gets scaffolded and runs in a fresh project
 **Covers:** F13
-- Given: een project dat `adopt.sh` voor het eerst draait
-- When: de adoptie klaar is
-- Then: `check-traceability.sh` staat er, uitvoerbaar
-- And: hij draait daar zonder te falen — een scaffold die meteen rood staat,
-  wordt bij de eerste aanraking uitgezet
-- And: een eigen versie van dat bestand wordt niet overschreven
+- Given: a project running `adopt.sh` for the first time
+- When: adoption is done
+- Then: `check-traceability.sh` is there, executable
+- And: it runs there without failing — a scaffold that's immediately red
+  gets switched off on first contact
+- And: a project's own version of that file is never overwritten
 
-### S71 — Bestaande projecten krijgen de schakel-3-vraag alsnog voorgelegd
+### S71 — Existing projects still get the link-3 question
 **Covers:** F13
-- Given: een project met een `package.json` en een al bestaande `ci.yml` die
-  `check-pr-issue-link.sh` niet aanroept (W19b's `scaffold_if_missing` laat
-  zo'n bestand ongemoeid — het sjabloon repareren helpt alleen nieuwe
-  projecten, zelfde patroon als `ci-op-pr-en-main` bij W24)
-- When: `pending-changes.sh` draait
-- Then: een nieuwe entry verschijnt als openstaand
-- And: een project zonder `package.json` krijgt die vraag niet
+- Given: a project with a `package.json` and an already-existing `ci.yml`
+  that doesn't call `check-pr-issue-link.sh` (W19b's `scaffold_if_missing`
+  leaves such a file alone — fixing the template only helps new projects,
+  the same pattern as `ci-op-pr-en-main` in W24)
+- When: `pending-changes.sh` runs
+- Then: a new entry appears as pending
+- And: a project with no `package.json` doesn't get that question
 
 ---
 
-## Issue-templates en release
+## Issue templates and release
 
-### S31 — Blocking-edges staan in beide issue-templates
+### S31 — Blocking edges are in both issue templates
 **Covers:** F14
-- Given: `templates/ISSUE_TEMPLATE/work-item.md` en `epic.md`
-- When: een issue vanuit het sjabloon wordt aangemaakt
-- Then: beide bevatten een `**Blocked by:**`- en een `**Blocks:**`-veld, aan
-  regelbegin en in de `**Veld:**`-vorm die de bestaande issues gebruiken
-- And: een variant als `- Blocked by:` telt niet — die leest voor een mens
-  hetzelfde en is voor een grep iets anders, en dan levert de conventie geen
-  graaf op maar een gevoel
-- And: een project met een verouderd sjabloon krijgt het nieuwe bij de
-  eerstvolgende adoptie
+- Given: `templates/ISSUE_TEMPLATE/work-item.md` and `epic.md`
+- When: an issue is created from the template
+- Then: both carry a `**Blocked by:**` and a `**Blocks:**` field, at the
+  start of a line and in the `**Field:**` form the existing issues use
+- And: a variant like `- Blocked by:` doesn't count — that reads the same
+  to a human and is something different to a grep, and then the
+  convention doesn't produce a graph but a feeling
+- And: a project with an outdated template gets the new one on its next
+  adoption
 
-### S60 — Acceptatiecriteria in het sjabloon heten `AC<n>`
+### S60 — Acceptance criteria in the template are named `AC<n>`
 **Covers:** F13
 - Given: `templates/ISSUE_TEMPLATE/work-item.md`
-- When: een issue vanuit het sjabloon wordt aangemaakt
-- Then: de acceptatiecriteria zijn `AC<n>` genummerd, niet `S<n>`
-- And: zolang een issue zijn eigen criteria `S1` noemt, raakt elke `grep` naar
-  scenarioverwijzingen het issue zelf — dan is schakel 2 niet controleerbaar
-- And: dit scenario hoort bij W18 en wacht op de uitkomst van W17; valt die
-  hernoeming anders uit, dan verandert dit scenario mee
-- And: dit dekt **F13**, niet F14. De ongesplitste S31 droeg `Dekt: F14` voor
-  beide claims, maar F13 punt a is de plek waar de `AC<n>`-hernoeming besloten
-  wordt; F14 gaat uitsluitend over de blocking-edges
-- And: `S<n>` mag in het sjabloon alleen nog voorkomen als verwijzing naar
-  `TEST-SCENARIOS.md`, niet als eigen nummering
+- When: an issue is created from the template
+- Then: the acceptance criteria are numbered `AC<n>`, not `S<n>`
+- And: as long as an issue names its own criteria `S1`, every grep for
+  scenario references also hits the issue itself — then link 2 isn't
+  verifiable
+- And: this scenario belongs to W18 and awaits the outcome of W17; if that
+  rename turns out differently, this scenario changes along with it
+- And: this covers **F13**, not F14. The unsplit S31 carried `Dekt: F14`
+  for both claims, but F13 point a is where the `AC<n>` rename is decided;
+  F14 is exclusively about the blocking edges
+- And: `S<n>` may only still appear in the template as a reference to
+  `TEST-SCENARIOS.md`, not as its own numbering
 
-### S61 — Het scenariosjabloon draagt het dekkingsveld en de grammatica
+### S61 — The scenario template carries the coverage field and the grammar
 **Covers:** F13
 - Given: `templates/TEST-SCENARIOS.md`
-- When: een project ermee scaffoldt
-- Then: elk voorbeeldscenario toont een `**Covers:**`-veld direct onder de kop
-- And: de tokengrammatica `^[A-Z]{1,2}[0-9]+[a-z]?$` staat er expliciet bij, met
-  `S2b` als voorbeeld — een sjabloon dat de vorm voordoet zonder hem te benoemen
-  leert de uitzondering niet aan, en dan strandt de eerste `S2b` op een
-  handhaving die niemand had zien aankomen
-- And: het sjabloon toont het veld met een placeholder, niet met een verzonnen
-  ID dat nergens op slaat
+- When: a project scaffolds with it
+- Then: every example scenario shows a `**Covers:**` field directly under
+  its heading
+- And: the token grammar `^[A-Z]{1,2}[0-9]+[a-z]?$` is stated explicitly
+  alongside it, with `S2b` as an example — a template that models the
+  form without naming it doesn't teach the exception, and then the first
+  `S2b` runs into an enforcement nobody saw coming
+- And: the template shows the field with a placeholder, not a made-up ID
+  that means nothing
 
-### S32 — Elke actieve entry heeft een PR-linkback
+### S32 — Every active entry has a PR linkback
 **Covers:** F15
-- Given: `CHANGES.md` met een entry zonder `**PR:**`-veld
-- When: `./check` draait
-- Then: exit ≠ 0, met het ID van die entry in de melding
+- Given: `CHANGES.md` with an entry with no `**PR:**` field
+- When: `./check` runs
+- Then: exit ≠ 0, with that entry's ID in the message
 
-### S33 — De CHANGELOG noemt de vereiste handmatige acties
+### S33 — The CHANGELOG names the required manual actions
 **Covers:** F15
-- Given: de eerste `CHANGELOG.md`-entry van deze release
-- When: hij gelezen wordt
-- Then: hij noemt zowel `adopt.sh` per project als `adopt.sh --user` per machine
+- Given: this release's first `CHANGELOG.md` entry
+- When: it's read
+- Then: it names both `adopt.sh` per project and `adopt.sh --user` per machine
 
-### S35 — `check` meldt wat hij niet heeft kunnen controleren
+### S35 — `check` reports what it couldn't check
 **Covers:** F1
-- Given: een bestand dat `check` zou moeten onderzoeken maar niet kan lezen
-  (bijvoorbeeld een script zonder leesrechten)
-- When: `./check` draait
-- Then: er verschijnt een waarschuwing die het bestand noemt
-- And: het bestand verdwijnt niet stilzwijgend uit de controle — stille
-  degradatie is de faalmodus die dit repo het duurst betaalt
+- Given: a file `check` should examine but can't read (e.g. a script with
+  no read permission)
+- When: `./check` runs
+- Then: a warning appears naming the file
+- And: the file doesn't silently disappear from the check — silent
+  degradation is the failure mode this repo pays for most dearly
 
 ---
 
-## Issue-templates en release (vervolg)
+## Issue templates and release (continued)
 
-### S34 — De README beschrijft de nieuwe structuur
+### S34 — The README describes the new structure
 **Covers:** F16
-- Given: `README.md` na deze release
-- When: de inhoudstabel gelezen wordt
-- Then: er staan rijen voor `skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check`
-  en `CHANGES-ARCHIEF.md`
-- And: het aantal niet-functionele vragen staat op vijftien, niet vijf
+- Given: `README.md` after this release
+- When: the table of contents is read
+- Then: it has rows for `skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check`,
+  and `CHANGES-ARCHIEF.md`
+- And: the count of non-functional questions is fifteen, not five
 
 ---
 
