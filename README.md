@@ -133,6 +133,42 @@ manual, guarded command — it requires a clean working tree, green CI, and
 runs against production only from `main` — by design, not because it was
 never built.
 
+## The workflow, visually
+
+```mermaid
+flowchart TD
+    A["Human: write/update a PRD requirement\n(PRD.md, e.g. F13)"] --> B["Agent: draft a test scenario\nGiven/When/Then, **Covers:** F13"]
+    B --> B2["Human: review and approve the scenario"]
+    B2 --> C["Agent: file a GitHub issue\n(epic or work item), **Covers:** scenario ID"]
+    C --> C2["Human: review and approve the issue"]
+    C2 --> D["Agent: create a short-lived branch\nfeature/... or fix/..."]
+    D --> E["Agent: write a failing test first\n(TDD, red-before-green)"]
+    E --> F["Agent: implement until the test is green"]
+    F --> G["Agent: commit + push to the branch"]
+    G --> H["Agent: open a PR\nbody includes 'Closes #issue'"]
+    H --> I["CI: run `check`\n(same command as local)"]
+    I -->|red| E
+    I -->|green| R["Agent: confirm absence of regression\nand full test suite passing"]
+    R --> J["Different agent instance\n(equal or greater capability):\nrun pre-merge-review skill"]
+    J -->|findings| F
+    J -->|clean, marker posted| K["Human: own review of the PR"]
+    K --> L["Human: confirm merge, explicitly"]
+    L --> M["Merge guard checks:\nreview marker + green CI"]
+    M -->|missing either| N["Merge blocked"]
+    M -->|both present| O["Squash-merge to main\n+ delete branch"]
+    O --> P["Optional: tag a release\n(CHANGELOG.md)"]
+    P --> Q["Human: run `deploy`\nmanual, guarded — never automatic"]
+
+    H -.->|"Closes #issue"| C
+    C -.->|"Covers: scenario"| B
+    B -.->|"Covers: F13"| A
+    S["BA/PO/PM: read the PR"] -.-> H
+```
+
+The dashed lines are the traceability chain read backward from a PR — the
+path a business analyst, product owner, or product manager walks for the
+UAT use case described above.
+
 ## Getting started
 
 There are two independent paths from here, depending on who you are:
