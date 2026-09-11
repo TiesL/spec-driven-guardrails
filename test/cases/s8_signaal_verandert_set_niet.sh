@@ -17,7 +17,7 @@ adopteer "$project"
 met_gaten="$SANDBOX/met-gaten.txt"
 openstaande_ids "$project" > "$met_gaten"
 
-sed -i.bak 's/bij adoptie — requires substantiation tijdens PRD\/architectuur/onderbouwd voor dit project/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd voor dit project/g' \
   "$project/WORKFLOW-ADOPTION.md"
 rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 

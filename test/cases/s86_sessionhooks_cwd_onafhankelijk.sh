@@ -38,9 +38,9 @@ project="$(vers_project doelproject)"
 mkdir -p "$project/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project/.claude/settings.json"
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | ci-conventie | ja | 2026-01-01 | verouderd antwoord |
 EOF

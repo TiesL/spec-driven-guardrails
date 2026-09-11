@@ -15,17 +15,17 @@ project="$SANDBOX/project"
 mkdir -p "$project"
 
 # spec-security has a real "ja", spec-data-integriteit still carries the
-# provisional stamp that adopt.sh's seed_entry() sets: Antwoord stays
-# literally "ja", the text "vereist onderbouwing" sits in Toelichting. Both
+# provisional stamp that adopt.sh's seed_entry() sets: Answer stays
+# literally "ja", the text "vereist onderbouwing" sits in Notes. Both
 # belong in scope — spec-privacy is "nee" and spec-testability is unanswered
 # (no row) — neither belongs in scope.
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
-# Adoptie van gedeelde workflow-wijzigingen
+# Adoption of shared workflow changes
 
-| Wijziging | Antwoord | Datum | Toelichting |
+| Change | Answer | Date | Notes |
 |---|---|---|---|
 | spec-security | ja | 2026-01-01 | van toepassing |
-| spec-data-integriteit | ja | 2026-01-01 | bij adoptie — vereist onderbouwing tijdens PRD/architectuur |
+| spec-data-integriteit | ja | 2026-01-01 | at adoption — requires substantiation during PRD/architecture |
 | spec-privacy | nee | 2026-01-01 | niet van toepassing |
 EOF
 

@@ -34,7 +34,7 @@ grep -qi 'substantiation' "$uitvoer" || fail "S7 — the message does not mentio
 # extension that BSD sed on macOS does not know, and the substitution then
 # silently does not take.
 awk '
-  !gedaan && sub(/requires substantiation tijdens PRD\/architectuur/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
+  !gedaan && sub(/requires substantiation during PRD\/architecture/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
   { print }
 ' "$project/WORKFLOW-ADOPTION.md" > "$SANDBOX/tabel.tmp"
 mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTION.md"
@@ -47,7 +47,7 @@ grep -q '20 row(s)' "$na" || {
 }
 
 # Once all rows are substantiated, the message disappears — otherwise it becomes noise.
-sed -i.bak 's/bij adoptie — requires substantiation tijdens PRD\/architectuur/onderbouwd/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd/g' \
   "$project/WORKFLOW-ADOPTION.md"
 rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 

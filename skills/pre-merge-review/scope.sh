@@ -12,10 +12,10 @@
 #
 # Complexity and dependencies always belong in the scope (basic hygiene,
 # F11), regardless of which NFRs this project chose. On top of that: every
-# spec-* row in <project_dir>/WORKFLOW-ADOPTION.md whose Antwoord is exactly
-# "yes" (adoption-registry's format: the Antwoord column is always
+# spec-* row in <project_dir>/WORKFLOW-ADOPTION.md whose Answer is exactly
+# "yes" (adoption-registry's format: the Answer column is always
 # literally "yes"/"ja" or "no"/"nee", never more text). adopt.sh doesn't put
-# F6's provisional stamp in that column, but in the Toelichting: "at
+# F6's provisional stamp in that column, but in the Notes: "at
 # adoption — requires substantiation during ..." (see seed_entry() in
 # adopt.sh). A yes-row whose whole line contains the text "requires
 # substantiation" therefore stays visibly flagged in the output — same grep
@@ -69,7 +69,7 @@ echo "dependencies"
 
 [ -f "$antwoorden" ] || exit 0
 
-# IDs of every spec-* row whose Antwoord is exactly "yes" or "ja".
+# IDs of every spec-* row whose Answer is exactly "yes" or "ja".
 ja_ids="$(awk -F'|' '
   /^\| *spec-[a-z-]+ *\|/ {
     id = $2; gsub(/^[ \t]+|[ \t]+$/, "", id)
@@ -98,7 +98,7 @@ while IFS= read -r id; do
   fi
 
   # Same grep shape as pending-changes.sh: the whole row counts, since the
-  # provisional stamp lives in Toelichting, not in Antwoord.
+  # provisional stamp lives in Notes, not in Answer.
   regel="$(grep -m1 "^| *$id *|" "$antwoorden")"
   case "$regel" in
     *"vereist onderbouwing"*|*"requires substantiation"*) echo "$id: $kop [requires substantiation]" ;;
