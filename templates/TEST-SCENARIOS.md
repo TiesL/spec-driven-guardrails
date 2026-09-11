@@ -1,45 +1,45 @@
-# Testscenario's — <Projectnaam>
+# Test scenarios — <Project name>
 
-Doel: deze scenario's beschrijven het beoogde/waargenomen gedrag (zie
-`PRD.md`). Ze zijn onafhankelijk van de gekozen technische oplossing en
-beschrijven alleen waarneembaar gedrag.
+Purpose: these scenarios describe the intended/observed behavior (see
+`PRD.md`). They're independent of the chosen technical solution and
+describe only observable behavior.
 
-Notatie: **Given / When / Then**.
+Notation: **Given / When / Then**.
 
-Elk scenario draagt een `**Covers:**`-veld direct onder zijn kop, met de
-functionaliteit uit `PRD.md` die het scenario beschrijft. Komma-gescheiden bij
-meer dan één, bijvoorbeeld `F3, F4`.
+Every scenario carries a `**Covers:**` field directly under its heading,
+with the functionality from `PRD.md` that the scenario describes.
+Comma-separated for more than one, e.g. `F3, F4`.
 
-Elk token matcht `^[A-Z]{1,2}[0-9]+[a-z]?$`. Die staart-letter is geen
-slordigheid maar bestaand gebruik — een project in gebruik heeft een `S2b`
-tussen `S2` en `S3` — en twee beginletters komen ook voor (`OP4`). Een
-grammatica die daar geen rekening mee houdt, wijst op dag één geldige ID's af.
+Every token matches `^[A-Z]{1,2}[0-9]+[a-z]?$`. That trailing letter isn't
+sloppiness but existing usage — a project in production has an `S2b`
+between `S2` and `S3` — and two leading letters occur too (`OP4`). A grammar
+that doesn't account for that rejects valid IDs on day one.
 
-Het prefix ligt niet vast. `F` voor functionaliteit en `S` voor scenario is
-gebruikelijk, maar een project dat zijn scenario's `R`/`A`/`B`/`P` nummert werkt
-ongewijzigd: de controle toetst dat een token oplost naar een bestaande kop,
-niet welke letter ervoor staat. Alleen het veld telt — een ID in lopende tekst
-is geen verwijzing.
+The prefix isn't fixed. `F` for functionality and `S` for scenario is
+customary, but a project that numbers its scenarios `R`/`A`/`B`/`P` works
+unchanged: the check verifies that a token resolves to an existing heading,
+not which letter comes before it. Only the field counts — an ID in running
+text is not a reference.
 
-Elk functionaliteitsitem uit `PRD.md` krijgt minstens één scenario voor het
-verwachte gedrag én minstens één voor wat er misgaat: onverwachte invoer,
-ontbrekende gegevens, of een afhankelijkheid die wegvalt. Alleen happy paths
-beschrijven is de snelste manier om je te laten verrassen door productie.
+Every functionality item from `PRD.md` gets at least one scenario for the
+expected behavior, and at least one for what goes wrong: unexpected input,
+missing data, or a dependency dropping out. Describing only happy paths is
+the fastest way to get surprised by production.
 
 ---
 
-## <Feature-gebied 1>
+## <Feature area 1>
 
-### S1 — <titel: het verwachte gedrag>
+### S1 — <title: the expected behavior>
 **Covers:** <F<n>>
 - Given: ...
 - When: ...
 - Then: ...
 
-### S2 — <titel: wat er misgaat>
+### S2 — <title: what goes wrong>
 **Covers:** <F<n>>
-- Given: <onverwachte invoer, ontbrekende gegevens, of een afhankelijkheid die faalt>
+- Given: <unexpected input, missing data, or a dependency that fails>
 - When: ...
-- Then: <het waarneembare gedrag — een leesbare melding, een overgeslagen actie,
-  een herstelbare toestand; niet "er gebeurt iets onduidelijks">
-- And: <wat er níét gebeurt: geen halve schrijfactie, geen stille fout>
+- Then: <the observable behavior — a readable message, a skipped action, a
+  recoverable state; not "something unclear happens">
+- And: <what does *not* happen: no partial write, no silent failure>

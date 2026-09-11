@@ -10,15 +10,14 @@ status: actief
 
 ## Vraag
 
-Is Portability/vendor lock-in relevant genoeg voor dit project om te
-specificeren?
+Is Portability/vendor lock-in relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Portability" — wat er gebeurt als het
-gekozen platform verandert of stopt.
+`PRD.md` answers the "Portability" subsection — what happens if the chosen
+platform changes or is discontinued.
 
 ## Invulhulp
 
-Wat gebeurt er als het gekozen platform verandert of stopt? Hoe groot is de
-afhankelijkheid van platformspecifieke eigenaardigheden?
+What happens if the chosen platform changes or is discontinued? How much
+dependency is there on platform-specific quirks?

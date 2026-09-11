@@ -44,7 +44,7 @@ fi
 if ! grep -qx 'spec-security: Security' "$uitvoer"; then
   fail "S26 — spec-security (ja) is missing from the scope"
 fi
-if ! grep -qx 'spec-data-integriteit: Data-integriteit \[requires substantiation\]' "$uitvoer"; then
+if ! grep -qx 'spec-data-integriteit: Data integrity \[requires substantiation\]' "$uitvoer"; then
   fail "S26 — spec-data-integriteit (provisional 'ja') should appear marked in the scope"
 fi
 if grep -q 'spec-privacy' "$uitvoer"; then

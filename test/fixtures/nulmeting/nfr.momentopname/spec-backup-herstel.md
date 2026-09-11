@@ -1,6 +1,6 @@
 ---
 id: spec-backup-herstel
-kop: Backup en herstel
+kop: Backup and recovery
 volgorde: 9
 standaard: ja
 van-toepassing-als: altijd
@@ -10,16 +10,16 @@ status: actief
 
 ## Vraag
 
-Is Backup en herstel relevant genoeg voor dit project om te specificeren
-(inclusief disaster recovery)?
+Is Backup and recovery relevant enough for this project to specify
+(including disaster recovery)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Backup en herstel" — wat er gebeurt bij
-dataverlies én bij het wegvallen van de hele omgeving.
+`PRD.md` answers the "Backup en herstel" subsection — what happens on data
+loss, and on the entire environment disappearing.
 
 ## Invulhulp
 
-Wat gebeurt er bij dataverlies binnen een werkende omgeving? Wat gebeurt er
-als de omgeving zelf wegvalt (disaster recovery) — een account, een
-script-project?
+What happens on data loss within a working environment? What happens if the
+environment itself disappears (disaster recovery) — an account, a script
+project?

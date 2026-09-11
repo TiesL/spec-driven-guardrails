@@ -1,6 +1,6 @@
 ---
 id: spec-documentatie
-kop: Documentatie
+kop: Documentation
 volgorde: 15
 standaard: ja
 van-toepassing-als: altijd
@@ -10,16 +10,17 @@ status: actief
 
 ## Vraag
 
-Is Documentatie relevant genoeg voor dit project om expliciet te specificeren
-(levend houden, evt. API-specificatie)?
+Is Documentation relevant enough for this project to specify explicitly
+(keeping it living, an API specification if applicable)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Documentatie" — hoe blijven
-`PRD.md`/`ARCHITECTUUR.md` actueel bij implementatiewijzigingen, en of een
-formele API-specificatie nodig is.
+`PRD.md` answers the "Documentation" subsection — how `PRD.md`/
+`ARCHITECTUUR.md` stay current as the implementation changes, and whether a
+formal API specification is needed.
 
 ## Invulhulp
 
-Hoe blijven `PRD.md`/`ARCHITECTUUR.md` actueel bij implementatiewijzigingen?
-Is een formele API-specificatie nodig, en zo ja, waar staat die?
+How do `PRD.md`/`ARCHITECTUUR.md` stay current as the implementation
+changes? Is a formal API specification needed, and if so, where does it
+live?

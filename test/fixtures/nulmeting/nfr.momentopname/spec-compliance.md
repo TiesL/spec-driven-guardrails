@@ -1,6 +1,6 @@
 ---
 id: spec-compliance
-kop: Compliance en auditeerbaarheid
+kop: Compliance and auditability
 volgorde: 8
 standaard: vraag
 van-toepassing-als: altijd
@@ -10,16 +10,16 @@ status: actief
 
 ## Vraag
 
-Is Compliance/auditeerbaarheid relevant genoeg voor dit project om te
-specificeren (bewaarplicht, controleerbaarheid)?
+Is Compliance/auditability relevant enough for this project to specify
+(retention obligations, auditability)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Compliance en auditeerbaarheid" — welke
-wettelijke of zelfopgelegde verplichtingen gelden, en hoe je achteraf kunt
-aantonen dat eraan voldaan is.
+`PRD.md` answers the "Compliance and auditability" subsection — what legal
+or self-imposed obligations apply, and how you can demonstrate after the
+fact that they were met.
 
 ## Invulhulp
 
-Welke wettelijke of zelfopgelegde verplichtingen gelden (bijv. fiscale
-bewaarplicht)? Hoe toon je achteraf aan dat eraan voldaan is?
+What legal or self-imposed obligations apply (e.g. a statutory retention
+period)? How do you demonstrate after the fact that they were met?

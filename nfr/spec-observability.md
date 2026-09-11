@@ -10,14 +10,14 @@ status: actief
 
 ## Vraag
 
-Is Observability relevant genoeg voor dit project om te specificeren?
+Is Observability relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Observability" — vooral van belang bij
-achtergrondjobs en triggers die stil kunnen falen.
+`PRD.md` answers the "Observability" subsection — especially relevant for
+background jobs and triggers that can fail silently.
 
 ## Invulhulp
 
-Hoe merk je dát het stuk is? Expliciet voor achtergrondjobs en triggers: een
-job die stil faalt, faalt onzichtbaar.
+How do you notice it's broken? Explicitly for background jobs and triggers:
+a job that fails silently fails invisibly.

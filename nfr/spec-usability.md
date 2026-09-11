@@ -10,15 +10,14 @@ status: actief
 
 ## Vraag
 
-Is Usability/toegankelijkheid relevant genoeg voor dit project om te
-specificeren?
+Is Usability/accessibility relevant enough for this project to specify?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Usability" — voor wie is dit bruikbaar, en
-onder welke omstandigheden (bijv. mobiel, direct na de les).
+`PRD.md` answers the "Usability" subsection — who this is usable for, and
+under what circumstances (e.g. mobile, right after class).
 
 ## Invulhulp
 
-Voor wie is dit bruikbaar, en onder welke omstandigheden (bijv. mobiel, direct
-na de les, zonder handleiding)?
+Who is this usable for, and under what circumstances (e.g. mobile, right
+after class, without a manual)?

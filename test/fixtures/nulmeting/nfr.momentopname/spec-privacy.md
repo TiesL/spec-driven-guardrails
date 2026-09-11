@@ -10,15 +10,15 @@ status: actief
 
 ## Vraag
 
-Is Privacy relevant genoeg voor dit project om te specificeren
-(persoonsgegevens, bewaartermijn, inzage)?
+Is Privacy relevant enough for this project to specify (personal data,
+retention period, access)?
 
-## Ja betekent
+## Yes means
 
-`PRD.md` beantwoordt de subsectie "Privacy" — welke persoonsgegevens worden
-verwerkt, hoe lang bewaard, wie kan ze zien.
+`PRD.md` answers the "Privacy" subsection — what personal data is
+processed, how long it's retained, who can see it.
 
 ## Invulhulp
 
-Welke persoonsgegevens worden verwerkt? Hoe lang worden ze bewaard, en wie kan
-ze zien?
+What personal data is processed? How long is it retained, and who can see
+it?

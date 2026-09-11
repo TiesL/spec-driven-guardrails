@@ -1,58 +1,59 @@
 ---
 name: Work item
-about: Concreet, testbaar stuk werk (onderdeel van een epic)
+about: Concrete, testable piece of work (part of an epic)
 title: ""
 labels: ""
 ---
 
-## Beschrijving
-<!-- Wat moet er gebouwd/gewijzigd worden, en waarom -->
+## Description
+<!-- What needs to be built/changed, and why -->
 
-## Acceptatiecriteria
+## Acceptance criteria
 <!--
-  Given/When/Then, dezelfde notatie als TEST-SCENARIOS.md.
+  Given/When/Then, same notation as TEST-SCENARIOS.md.
 
-  Nummer ze `AC<n>`, niet `S<n>`. Die laatste is de nummering van
-  TEST-SCENARIOS.md, en als een issue zijn eigen criteria zo noemt, raakt elke
-  zoekactie naar scenarioverwijzingen het issue zelf — dan valt niet meer vast
-  te stellen welk scenario werkelijk een issue heeft.
+  Number them `AC<n>`, not `S<n>`. The latter is TEST-SCENARIOS.md's own
+  numbering, and if an issue names its own criteria that way, every search
+  for scenario references also hits the issue itself — then it's no longer
+  possible to establish which scenario actually has an issue.
 
-  `S<n>` hoort hier dus alleen thuis als verwijzing naar een scenario, in het
-  veld **Covers:** hieronder.
+  `S<n>` therefore only belongs here as a reference to a scenario, in the
+  **Covers:** field below.
 -->
 
-### AC1: <naam van het criterium>
+### AC1: <name of the criterion>
 - Given ...
 - When ...
 - Then ...
 
-## Gerelateerd
+## Related
 <!--
-  Blocked by / Blocks maken het werk leesbaar als afhankelijkheidsgraaf in
-  plaats van als platte lijst. Vul ze aan beide kanten in: staat de edge maar
-  op een plek, dan klopt de volgorde vanuit het andere issue gezien niet, en
-  precies daar wordt hij gelezen.
+  Blocked by / Blocks make the work readable as a dependency graph instead
+  of a flat list. Fill in both sides: if the edge sits in only one place,
+  the order doesn't read correctly from the other issue, and that's exactly
+  where it gets read.
 
-  Bewust dit platte veld en geen native sub-issues: `gh issue view` toont
-  blocked-by/blocking al, en native relaties binden de conventie aan GitHub
-  Projects.
+  Deliberately this flat field, not native sub-issues: `gh issue view`
+  already shows blocked-by/blocking, and native relations would bind the
+  convention to GitHub Projects.
 -->
 **Epic:** #
 **Covers:** <F1, S2>
 **Blocked by:** #
 **Blocks:** #
 <!--
-  **Covers:** noemt wat dit werkitem realiseert: functionaliteit uit PRD.md en
-  scenario's uit TEST-SCENARIOS.md, komma-gescheiden, bijvoorbeeld `F3, S7, S8`.
-  Eén veldnaam voor beide richtingen — het prefix van het token zegt al welke
-  kant het op wijst.
+  **Covers:** names what this work item realizes: functionality from
+  PRD.md and scenarios from TEST-SCENARIOS.md, comma-separated, e.g.
+  `F3, S7, S8`. One field name for both directions — the token's prefix
+  already says which way it points.
 
-  Elk token matcht `^[A-Z]{1,2}[0-9]+[a-z]?$`. Die letter aan het eind is geen
-  slordigheid maar bestaand gebruik (`S2b`); twee beginletters ook (`OP4`).
-  Alleen dit veld telt — een ID dat in lopende tekst voorkomt is geen
-  verwijzing.
+  Every token matches `^[A-Z]{1,2}[0-9]+[a-z]?$`. That trailing letter
+  isn't sloppiness but existing usage (`S2b`); two leading letters occur
+  too (`OP4`). Only this field counts — an ID that appears in running text
+  is not a reference.
 
-  Het prefix ligt niet vast: `F`/`S` is gebruikelijk, maar een project dat zijn
-  scenario's `R`/`A`/`B`/`P` nummert werkt ongewijzigd. De controle toetst dat
-  het token oplost naar een bestaande kop, niet welke letter ervoor staat.
+  The prefix isn't fixed: `F`/`S` is customary, but a project that numbers
+  its scenarios `R`/`A`/`B`/`P` works unchanged. The check verifies that
+  the token resolves to an existing heading, not which letter comes
+  before it.
 -->

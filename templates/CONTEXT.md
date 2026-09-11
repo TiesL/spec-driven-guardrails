@@ -1,10 +1,10 @@
-# Begrippenkader — <Projectnaam>
+# Glossary — <Project name>
 
-Projectjargon → betekenis. Los van `ARCHITECTUUR.md`: dat gaat over
-structurele besluiten, dit over taal. Optioneel en levend — bijwerken zodra
-een nieuwe term ontstaat of een bestaande van betekenis verandert, niet in één
-keer volledig proberen te maken.
+Project jargon → meaning. Separate from `ARCHITECTUUR.md`: that's about
+structural decisions, this is about language. Optional and living — update
+it as a new term arises or an existing one changes meaning, don't try to
+make it complete in one go.
 
-| Term | Betekenis |
+| Term | Meaning |
 |---|---|
-| <term> | <wat hij hier betekent, en waarom dat afwijkt van het voor de hand liggende> |
+| <term> | <what it means here, and why that diverges from the obvious reading> |
