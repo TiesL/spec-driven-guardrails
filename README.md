@@ -1,7 +1,5 @@
 # spec-driven-guardrails
 
-(Formerly `claude-workflow` — renamed in W32/#56, see PRD.md "Decided in W29 (#53)", decision 1.)
-
 ## What problem this solves
 
 When you work with an AI coding agent, two things tend to go wrong once a
