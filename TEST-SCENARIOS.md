@@ -1,390 +1,399 @@
-# Testscenario's — spec-driven-guardrails
+# Test scenarios — spec-driven-guardrails
 
-Doel: deze scenario's beschrijven het beoogde/waargenomen gedrag (zie `PRD.md`).
-Ze zijn onafhankelijk van de gekozen technische oplossing en beschrijven alleen
-waarneembaar gedrag.
+Purpose: these scenarios describe the intended/observed behavior (see
+`PRD.md`). They're independent of the chosen technical solution and
+describe only observable behavior.
 
-Notatie: **Given / When / Then**.
+Notation: **Given / When / Then**.
 
-Elk scenario draagt een `**Covers:**`-veld met de functionaliteit uit `PRD.md` die
-het toetst — de conventie uit F13, besluit b, hier op dit repo zelf
-toegepast. De prefixen zijn bewust gemengd: `R<n>` zijn de regressiescenario's uit het oorspronkelijke
-issue #7, `T<n>` de traceabilityscenario's uit #8, `S<n>` de nieuwe. Dat is geen
-slordigheid maar de proef op de som van F13, besluit c: de
-integriteitscontrole mag geen prefix hardcoderen.
+Every scenario carries a `**Covers:**` field with the functionality from
+`PRD.md` that it tests — the convention from F13, decision b, applied here
+to this repo itself. The prefixes are deliberately mixed: `R<n>` are the
+regression scenarios from the original issue #7, `T<n>` the traceability
+scenarios from #8, `S<n>` the new ones. That's not sloppiness but the proof
+of F13, decision c: the integrity check must not hardcode a prefix.
 
-**Rood vóór groen.** Elk scenario wordt toegevoegd en aantoonbaar rood gezien
-vóórdat de bijbehorende implementatie landt. De uitzondering is R1–R9: die horen
-juist **groen** te zijn op ongewijzigde `main` — zij leggen de nulmeting vast en
-bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
+**Red before green.** Every scenario is added and demonstrably seen red
+before the corresponding implementation lands. The exception is R1–R9:
+those are meant to be **green** on unchanged `main` — they record the
+baseline and prove that the refactor preserves behavior, not that
+something new is being added.
 
 ---
 
-## Regressie — gedragsbehoud over de refactor heen
+## Regression — behavior preserved across the refactor
 
-### R1 — Verse adoptie seedt exact dezelfde rijen
+### R1 — A fresh adoption seeds exactly the same rows
 **Covers:** F3
-- Given: een leeg git-project zonder `package.json`
-- When: `adopt.sh .` wordt gedraaid
-- Then: `WORKFLOW-ADOPTIE.md` bevat exact 17 rijen, allemaal met "vereist
-  onderbouwing tijdens PRD/architectuur"
-- And: de legacy-entry `prd-testscenarios-issue-templates` staat er **niet** in
+- Given: an empty git project with no `package.json`
+- When: `adopt.sh .` is run
+- Then: `WORKFLOW-ADOPTION.md` contains exactly 17 rows, all with "requires
+  substantiation during PRD/architecture"
+- And: the legacy entry `prd-testscenarios-issue-templates` is **not** in it
 
-### R2 — Openstaande vragen na verse adoptie
+### R2 — Pending questions after a fresh adoption
 **Covers:** F3
-- Given: hetzelfde verse project, direct na adoptie
-- When: `pending-changes.sh .` wordt gedraaid
-- Then: exact deze 7 ID's verschijnen als openstaand, in willekeurige volgorde:
+- Given: the same fresh project, right after adoption
+- When: `pending-changes.sh .` is run
+- Then: exactly these 7 IDs appear as pending, in any order:
   `proces-issue-tracking`, `test-integratie`, `spec-performance-schaal`,
   `spec-compliance`, `spec-portability`, `spec-usability`, `spec-kostenbeheersing`
 
-### R3 — `package.json` maakt `ci-conventie` relevant
+### R3 — `package.json` makes `ci-conventie` relevant
 **Covers:** F3
-- Given: hetzelfde project, nu met een `package.json`
-- When: `pending-changes.sh .` wordt gedraaid
-- Then: `ci-conventie` verschijnt aanvullend als openstaand
+- Given: the same project, now with a `package.json`
+- When: `pending-changes.sh .` is run
+- Then: `ci-conventie` additionally appears as pending
 
-### R4 — Een `"deploy"`-script maakt `deploy-guards` relevant
+### R4 — A `"deploy"` script makes `deploy-guards` relevant
 **Covers:** F3
-- Given: `package.json` met een `"deploy"`-script
-- When: `pending-changes.sh .` wordt gedraaid
-- Then: `deploy-guards` verschijnt als openstaand
+- Given: `package.json` with a `"deploy"` script
+- When: `pending-changes.sh .` is run
+- Then: `deploy-guards` appears as pending
 
-### R5 — NFR-lijst blijft 1-op-1 synchroon
+### R5 — The NFR list stays 1:1 in sync
 **Covers:** F4
-- Given: de vijftien NFR-ID's en de vijftien `###`-subsecties onder
-  "Niet-functionele kenmerken" in `templates/PRD.md`
-- When: beide lijsten naast elkaar gelegd worden
-- Then: exacte 1-op-1-overeenkomst, geen ontbrekende of overtollige kant
-- And: na F4 gebeurt dat via het `id`/`kop`-paar uit `nfr/*.md`, zonder
-  normalisatieheuristiek
+- Given: the fifteen NFR IDs and the fifteen `###` subsections under
+  "Non-functional characteristics" in `templates/PRD.md`
+- When: both lists are laid side by side
+- Then: an exact 1:1 correspondence, no side missing or surplus
+- And: since F4, that happens via the `id`/`heading` pair from `nfr/*.md`,
+  with no normalization heuristic
 
-### R6 — Predicaatgedrag identiek én aantoonbaar juist
+### R6 — Predicate behavior identical, and demonstrably correct
 **Covers:** F3
-- Given: vier testprojecten (met/zonder `package.json` × met/zonder `"deploy"`-script)
-- When: de seed-logica en `van_toepassing()` beide `heeft-package-json` en
-  `heeft-deploy-script` evalueren tegen elk van de vier
-- Then: beide komen voor elke combinatie tot exact hetzelfde antwoord
-- And: voor **elk** predicaat bestaat minstens één geval waarin het waar is én de
-  bijbehorende entry onbeantwoord — anders is een té streng geworden predicaat
-  onzichtbaar, omdat het verschil dan nergens in een openstaand-set landt
-- And: de uitkomst per combinatie is expliciet vastgelegd, niet alleen onderling
-  vergeleken; twee identiek kapotte predicaten zijn het met elkaar eens en zouden
-  een zuivere gelijkheidstest passeren
-- And: wat `adopt.sh` daadwerkelijk seedt wordt **rechtstreeks** tegen de
-  vastgelegde uitkomst gehouden, niet alleen via een vereniging met de
-  openstaand-set. Een vereniging kan alleen zien dat er te véél geseed is: wat
-  `adopt.sh` mist, blijft gewoon openstaan en valt daardoor weg tegen elkaar
+- Given: four test projects (with/without `package.json` × with/without a `"deploy"` script)
+- When: the seed logic and `predicaat_waar()` both evaluate
+  `heeft-package-json` and `heeft-deploy-script` against each of the four
+- Then: both reach exactly the same answer for every combination
+- And: for **every** predicate there's at least one case where it's true
+  *and* the corresponding entry is unanswered — otherwise a predicate that
+  became too strict is invisible, since the difference lands nowhere in a
+  pending set
+- And: the outcome per combination is recorded explicitly, not only
+  compared against each other; two identically broken predicates agree
+  with each other and would pass a pure equality test
+- And: what `adopt.sh` actually seeds is checked **directly** against the
+  recorded outcome, not only via a union with the pending set. A union can
+  only see that too much was seeded: whatever `adopt.sh` misses just stays
+  pending and so cancels out against itself
 
-### R7 — Geadopteerd project blijft de volledige operationele instructie zien
+### R7 — An adopted project still sees the full operational instruction
 **Covers:** F12
-- Given: een geadopteerd project waarvan `CLAUDE.md` naar de opgesplitste
-  `WORKFLOW.md` symlinkt
-- When: een sessie start en `CLAUDE.md` gelezen wordt
-- Then: branching, kwaliteitsreview, onderbouwingsplicht, deploy-guards en
-  adoptieregistratie zijn allemaal bereikbaar — direct in het bestand, of via een
-  expliciete, direct volgbare verwijzing
-- And: elke in de Wegwijzer genoemde skill bestaat als `SKILL.md`
-
-### R8 — Retirement blijft werken na herstructurering van `CHANGES.md`
-**Covers:** F5
-- Given: een geretireerde entry, verhuisd naar `CHANGES-ARCHIEF.md`
-- When: `adopt.sh` en `pending-changes.sh` tegen een project draaien
-- Then: de entry wordt nergens meer geseed of gevraagd
-- And: het ID blijft vindbaar via `grep` over `CHANGES.md` + het archiefbestand
-  samen, zodat een project dat de entry ooit beantwoordde kan nazoeken waar die
-  rij vandaan komt
-
-### R9 — De vier bestaande projecten krijgen geen enkele vraag opnieuw
-**Covers:** F2
-- Given: de ingevroren nulmeting-fixtures van `tennis-admin`,
-  `tennis-registration`, `tennis-invoicing` en `a2t-emails`
-- When: `pending-changes.sh` na de refactor tegen elke fixture draait
-- Then: aantal én identiteit van openstaande vragen is exact gelijk aan de nulmeting
-- And: wijkt dit af, dan faalt de test met het verschil per ID benoemd — een
-  stille wijziging in de vraagset is nooit acceptabel, ook niet als "opschoning"
-
-### S66 — De bron van de vraagset is volledig ingevroren, ook het nfr-deel
-**Covers:** F2
-- Given: de nulmeting-fixtures, ná W28
-- When: een gouden set wordt nagerekend
-- Then: elk `spec-*`-ID erin is te herleiden tot een ingevroren bestand in
-  `test/fixtures/nulmeting/nfr.momentopname/`, verbatim gelijk aan
-  `CHANGES.md.momentopname`'s vorm
-- And: geen enkel ID hangt alleen af van de actuele, niet-ingevroren vorm van
-  `nfr/`
-
-### S67 — Een wijziging in het nfr-register die de vraagset raakt, valt op
-**Covers:** F2
-- Given: een `nfr/`-bestand met `van-toepassing-als: altijd` wordt toegevoegd
-  (alle vijftien bestaande dragen dat predicaat, dus raakt elke toevoeging,
-  verwijdering of retirement per definitie alle vier de fixtures)
-- When: `pending-changes.sh` na die wijziging tegen een fixture draait
-- Then: de uitkomst wijkt af van de ingevroren gouden set, met het nieuwe ID
-  benoemd — R9 vangt dit al, aangetoond met een mutatie
-- And: dat verschil is niet op te lossen door alleen de gouden set aan te
-  passen: `nfr.momentopname` moet dan bewust meeveranderen, met toelichting in
-  de PR (zie `LEESMIJ.md`)
-
----
-
-## Testharnas en `check`
-
-### S1 — `check` faalt op een syntaxfout in een script
-**Covers:** F1
-- Given: een script in dit repo met een bash-syntaxfout
-- When: `./check` draait
-- Then: exit ≠ 0, met het betreffende bestand in de melding
-
-### S2 — `check` faalt op ongeldige JSON in de hookconfiguratie
-**Covers:** F1
-- Given: `settings/session-hooks.json` met een ontbrekende komma
-- When: `./check` draait
-- Then: exit ≠ 0 met een melding die het bestand noemt
-- And: dit gebeurt ook wanneer `shellcheck` niet geïnstalleerd is — de
-  JSON-validatie is geen optionele stap
-- And: ontbreken `jq` én `python3`, dan faalt `check` alsnog — hij kan het
-  bestand dan niet verifiëren en mag dus niet "in orde" melden
-
-### S3 — De testsandbox weigert te draaien met de echte `HOME`
-**Covers:** F1
-- Given: een test waarvan de sandboxopzet `HOME` niet heeft omgezet
-- When: die test start
-- Then: de run stopt onmiddellijk met een expliciete melding
-- And: er is niets geschreven buiten de tijdelijke map
-
-### S4 — Nulmeting-fixture legt `a2t-emails` vast zoals gevonden
-**Covers:** F2
-- Given: `a2t-emails` heeft geen `WORKFLOW-ADOPTIE.md`
-- When: de nulmeting-fixture wordt aangemaakt
-- Then: de fixture legt "alles openstaand" vast
-- And: er wordt géén `WORKFLOW-ADOPTIE.md` aangemaakt of gerepareerd — de fixture
-  bevat de toestand, niet de reparatie
-
----
-
-## NFR-register en archief
-
-### S38 — Een veld zonder voorafgaande kop levert geen entry
-**Covers:** F3
-- Given: een misvormde bron waarin een `Van toepassing als`-veld staat vóór de
-  eerste `## `-kop
-- When: `itereer_entries` die bron leest
-- Then: er wordt geen callback aangeroepen voor dat veld — een entry zonder ID
-  zou anders als lege rij in een adoptietabel belanden
-- And: de entries ná de eerste kop worden gewoon verwerkt
-- And: hetzelfde geldt via `adopt.sh` zelf, niet alleen via de bibliotheek
-  rechtstreeks: de adoptietabel bevat geen rij met een leeg ID
-
-### S37 — Predicaat- en parserlogica staat op precies één plek
-**Covers:** F3
-- Given: `lib/changes.sh` bevat de predicaten en het parserskelet
-- When: `adopt.sh` en `pending-changes.sh` worden doorzocht
-- Then: geen van beide bevat nog een eigen `heeft-*`-tak of een eigen
-  `## `-koploper — ze sourcen de bibliotheek
-- And: de bibliotheek bevat ze wél, zodat de test faalt als hij leeggehaald wordt
-  in plaats van alleen bij terugkerende duplicatie
-- And: beide scripts roepen `predicaat_waar` uit de bibliotheek **daadwerkelijk
-  aan** — vastgesteld door de functie te instrumenteren en te draaien, niet door
-  op tekst te zoeken. Een tekstmatch ziet alleen letterlijke kopieën; logica die
-  in een andere vorm is herschreven glipt er ongemerkt doorheen
-
-### S36 — Een ID in de toelichting telt niet als antwoord
-**Covers:** F3
-- Given: een `WORKFLOW-ADOPTIE.md` waarin het ID van een nog onbeantwoorde
-  wijziging voorkomt in de vrije toelichtingstekst van een ándere rij
-- When: `pending-changes.sh` draait
-- Then: die wijziging staat nog steeds open — alleen de ID-kolom telt als antwoord
-- And: toelichtingen zijn vrije tekst en ID's als `test-integratie` zijn gewone
-  woorden, dus een onverankerde match zou stilzwijgend vragen laten verdwijnen
-
----
-
-## NFR-register en archief (vervolg)
-
-### S5 — Generator en ingecheckt sjabloon lopen niet uit de pas
-**Covers:** F4
-- Given: een `nfr/*.md` waarvan de `Invulhulp` gewijzigd is zonder
-  `templates/PRD.md` te regenereren
-- When: `./check` draait
-- Then: exit ≠ 0, met de betreffende NFR in de melding
-
-### S39 — Een geretireerd kenmerk verdwijnt uit beide consumenten
-**Covers:** F4
-- Given: een `nfr/*.md` met `status: geretireerd`
-- When: `pending-changes.sh` draait en het sjabloonblok wordt gegenereerd
-- Then: het kenmerk wordt niet meer gevraagd en staat niet meer in het blok
-- And: na regenereren klaagt `check` niet — retirement is hier een veld, geen
-  verhuizing, en dat moet aan beide kanten doorwerken
-
-### S40 — De volgorde van het sjabloonblok ligt vast
-**Covers:** F4
-- Given: het `volgorde`-veld bepaalt waar een kenmerk in het blok staat
-- When: het blok in een andere volgorde wordt gegenereerd dan wat is ingecheckt
-- Then: `check` faalt — een vergelijking die op ID sorteert ziet dat verschil
-  niet, dus de volgorde wordt apart getoetst
-
-### S41 — Een kapot registerbestand valt niet stil weg
-**Covers:** F4
-- Given: een `nfr/*.md` waarin een verplicht veld ontbreekt of onbruikbaar is
-  (geen `volgorde`, CRLF-regeleinden, een naam die niet bij het `id` past)
-- When: `./check` draait
-- Then: exit ≠ 0, met het bestand en het ontbrekende veld in de melding
-- And: dat is niet af te vangen met de driftcontrole alleen — een kenmerk dat uit
-  het register valt, verdwijnt uit álle consumenten tegelijk, en dan zijn beide
-  kanten van die vergelijking het gewoon met elkaar eens
-
-### S42 — Elke gemelde wijziging toont de vraag uit zijn eigen bron
-**Covers:** F4
-- Given: de openstaande wijzigingen van een project, uit `CHANGES.md` én `nfr/`
-- When: `pending-changes.sh` draait
-- Then: elke regel toont de vraagtekst die bij dat ID in zijn bron staat
-- And: een verminkte of lege tekst wordt gevangen — een vergelijking op alleen
-  ID's ziet dat niet, terwijl het wél is wat de gebruiker leest
-
-### S6 — Een entry zonder `Van toepassing als` levert een waarschuwing
-**Covers:** F5
-- Given: `CHANGES.md` met een `## `-kop zonder `Van toepassing als`-veld, terwijl
-  de sectiescheidingen naar `###` zijn omgezet
-- When: de gedeelde parser die bron leest
-- Then: er verschijnt een waarschuwing die het ID noemt
-- And: de entry wordt niet geseed of gevraagd — een waarschuwing blokkeert niets
-- And: dat geldt ook wanneer de kapotte entry ná een goede komt, en wanneer hij
-  de laatste in het bestand is — de parserstand mag niet van de vorige entry
-  blijven hangen
-- And: een bron zonder afsluitende newline verliest zijn laatste regel niet;
-  anders wordt een entry stilzwijgend overgeslagen mét een misleidende melding
-
----
-
-## Onderbouwingsplicht en poorten
-
-### S43 — Een gezonde bron levert niets op stderr
-**Covers:** F6
-- Given: een geadopteerd project met een goed gevormde `WORKFLOW-ADOPTIE.md` —
-  met wachtende onderbouwingen, zonder, of zonder tabel
-- When: `pending-changes.sh` draait
-- Then: er komt niets op stderr
-- And: dit is geen cosmetische eis. De SessionStart-hook stuurt stderr naar
-  `/dev/null` en elke testaanroep deed dat ook, waardoor een shellfout in het
-  script structureel onzichtbaar bleef — inclusief één die in drie van de vier
-  echte projecten dagelijks afging
-
-### S7 — Het signaal telt rijen die nog op onderbouwing wachten
-**Covers:** F6
-- Given: een vers geadopteerd project met 17 geseede rijen die "vereist
-  onderbouwing" dragen
-- When: `pending-changes.sh` draait
-- Then: er verschijnt een melding "17 rij(en) … wachten nog op onderbouwing"
-
-### S8 — Het signaal verandert de openstaand-set niet
-**Covers:** F6
-- Given: hetzelfde project
-- When: `pending-changes.sh` draait
-- Then: de lijst openstaande ID's is identiek aan die vóór F6 — het nieuwe
-  signaal staat ernaast, niet erin
-
-### S9 — Verouderde adoptie meldt zichzelf
-**Covers:** F6
-- Given: een geadopteerd project zonder `.claude/skills/`, terwijl
-  `$CLAUDE_WORKFLOW_DIR/skills` skills bevat
-- When: een sessie start
-- Then: de hook meldt dat `adopt.sh` opnieuw moet draaien
-- And: de sessie start gewoon door — de melding blokkeert niets
-
-### S10 — De productie-poort blokkeert een onderbouwingsgat
-**Covers:** F6
-- Given: een project waarvan een rij met `productie-poort: ja` nog "vereist
-  onderbouwing" zegt
-- When: `deploy` naar productie wordt aangeroepen
-- Then: de deploy stopt met een melding die de betreffende rij noemt
-- And: dezelfde deploy naar pre-productie gaat wél door
-
----
-
-## Git-guardrails
-
-### S44 — De hookbedrading laat de blokkade door
-**Covers:** F7
-- Given: een project waarvan `.claude/settings.json` naar dit repo symlinkt
-- When: de geconfigureerde `PreToolUse`-opdracht een te blokkeren commando krijgt
-- Then: exitstatus 2 komt eruit — de guard blokkeert daadwerkelijk
-- And: de vorm `[ -x … ] && … || exit 0` doet dat níét: de `||` vangt exit 2 op
-  en meldt succes, waarmee de guard stil uit staat terwijl hij geïnstalleerd
-  lijkt. Daarom `if … then exec … fi; exit 0`
-
-### S47 — Committen op `main` wordt geblokkeerd, met een begaanbare uitweg
-**Covers:** F7
-- Given: `main` is uitgecheckt in een repo die al commits heeft
-- When: `git commit` wordt aangeroepen
-- Then: het wordt geblokkeerd, en de melding noemt `git checkout -b` én dat de
-  wijzigingen gewoon meegaan
-- And: dat laatste is geen beleefdheid maar noodzaak — zonder die uitweg blijft
-  het werk ongecommit, en dat is onveiliger dan de lokale commit die je net
-  tegenhield
-- And: op een feature-branch gaat committen gewoon door
-- And: een repo zonder commits is de uitzondering: de allereerste commit van een
-  nieuw project staat per definitie op `main`, en die stap staat zo in
+- Given: an adopted project whose `CLAUDE.md` symlinks to the split-out
   `WORKFLOW.md`
+- When: a session starts and `CLAUDE.md` is read
+- Then: branching, quality review, the substantiation requirement,
+  deploy-guards, and the adoption registry are all reachable — directly in
+  the file, or via an explicit, directly followable reference
+- And: every skill named in the routing table exists as a `SKILL.md`
 
-### S45 — Tekst binnen quotes is data, geen commando
-**Covers:** F7
-- Given: een commando met een `;`, `|` of `&` binnen een gequote string, of met
-  een heredoc waarvan de body met `git` begint
-- When: de guard het beoordeelt
-- Then: het gaat door — de inhoud van een string of heredoc is data
-- And: een gequote vlag telt juist wél mee: `git reset "--hard"` is hetzelfde
-  commando als zonder quotes. Beide eisen tegelijk kunnen alleen met echte
-  quote-bewuste tokenisatie; quoted spans maskeren lost het eerste op en maakt
-  het tweede permanent onmogelijk
+### R8 — Retirement keeps working after restructuring `CHANGES.md`
+**Covers:** F5
+- Given: a retired entry, moved to `CHANGES-ARCHIEF.md`
+- When: `adopt.sh` and `pending-changes.sh` run against a project
+- Then: the entry is no longer seeded or asked about anywhere
+- And: the ID stays findable via `grep` across `CHANGES.md` plus the
+  archive file together, so a project that once answered the entry can
+  trace where that row came from
 
-### S46 — De branch wordt bepaald in de repo waar het commando over gaat
-**Covers:** F7
-- Given: `git -C <pad> push origin HEAD`, waarbij `<pad>` een andere repo is dan
-  de map waar de sessie staat
-- When: de guard de huidige branch bepaalt
-- Then: hij kijkt naar de repo uit `-C`, niet naar de sessiemap
-- And: `--git-dir` en `--work-tree` tellen net zo mee, en git rekent zelf uit hoe
-  ze zich verhouden — de guard herimplementeert die regels niet
-- And: bestaat dat pad niet of is het geen repo, dan komt er geen branch uit en
-  wordt er niet geblokkeerd
+### R9 — The four existing projects are never asked a question again
+**Covers:** F2
+- Given: the frozen nulmeting fixtures of `tennis-admin`,
+  `tennis-registration`, `tennis-invoicing`, and `a2t-emails`
+- When: `pending-changes.sh` runs against each fixture after the refactor
+- Then: the number and identity of pending questions is exactly equal to
+  the baseline
+- And: if this diverges, the test fails naming the difference per ID — a
+  silent change in the question set is never acceptable, not even as
+  "cleanup"
 
-### S11 — Destructieve commando's worden geblokkeerd
-**Covers:** F7
-- Given: de guardrails-hook is actief
-- When: `git reset --hard`, `git clean -fd`, `git branch -D <naam>` of
-  `git checkout .` wordt aangeroepen
-- Then: het commando wordt geblokkeerd met een leesbare reden
+### S66 — The source of the question set is fully frozen, including the nfr part
+**Covers:** F2
+- Given: the nulmeting fixtures, after W28
+- When: a golden set is recomputed
+- Then: every `spec-*` ID in it traces back to a frozen file in
+  `test/fixtures/nulmeting/nfr.momentopname/`, verbatim equal to
+  `CHANGES.md.momentopname`'s form
+- And: no ID depends only on the current, non-frozen form of `nfr/`
 
-### S12 — Push naar `main` wordt geblokkeerd, ook via refspec
-**Covers:** F7
-- Given: een uitgecheckte feature-branch
-- When: `git push origin main` of `git push origin HEAD:main` wordt aangeroepen
-- Then: het commando wordt geblokkeerd
-- And: `git push origin HEAD` terwijl `main` is uitgecheckt wordt óók geblokkeerd
-
-### S13 — Push naar een feature-branch blijft werken
-**Covers:** F7
-- Given: een uitgecheckte feature-branch
-- When: `git push origin HEAD` wordt aangeroepen
-- Then: het commando gaat door — de bestaande `SessionEnd`-hook blijft werken
-
-### S14 — De guard faalt naar toestaan als hij zelf stuk is
-**Covers:** F7
-- Given: geen `jq`, geen `python3` en geen bruikbare `sed` in `PATH`
-- When: een willekeurig git-commando langs de guard komt
-- Then: er verschijnt een luide waarschuwing
-- And: het commando wordt toegestaan — een kapotte guard blokkeert nooit het werk
+### S67 — A change in the nfr register that affects the question set stands out
+**Covers:** F2
+- Given: an `nfr/` file with `applies-if: always` gets added (all fifteen
+  existing ones carry that predicate, so any addition, removal, or
+  retirement by definition touches all four fixtures)
+- When: `pending-changes.sh` runs against a fixture after that change
+- Then: the outcome diverges from the frozen golden set, naming the new
+  ID — R9 already catches this, demonstrated with a mutation
+- And: that difference can't be resolved by only adjusting the golden set:
+  `nfr.momentopname` must then deliberately change along with it, with an
+  explanation in the PR (see `LEESMIJ.md`)
 
 ---
 
-## Merge-guard
+## Test harness and `check`
 
-### S15 — Merge zonder review-marker wordt geblokkeerd
+### S1 — `check` fails on a syntax error in a script
+**Covers:** F1
+- Given: a script in this repo with a bash syntax error
+- When: `./check` runs
+- Then: exit ≠ 0, with the file in question named in the message
+
+### S2 — `check` fails on invalid JSON in the hook configuration
+**Covers:** F1
+- Given: `settings/session-hooks.json` with a missing comma
+- When: `./check` runs
+- Then: exit ≠ 0 with a message naming the file
+- And: this also happens when `shellcheck` isn't installed — JSON
+  validation isn't an optional step
+- And: if both `jq` and `python3` are missing, `check` still fails — it
+  can't verify the file then, so it must not report "ok"
+
+### S3 — The test sandbox refuses to run with the real `HOME`
+**Covers:** F1
+- Given: a test whose sandbox setup didn't redirect `HOME`
+- When: that test starts
+- Then: the run stops immediately with an explicit message
+- And: nothing was written outside the temporary directory
+
+### S4 — The nulmeting fixture records `a2t-emails` as found
+**Covers:** F2
+- Given: `a2t-emails` has no `WORKFLOW-ADOPTIE.md`
+- When: the nulmeting fixture is created
+- Then: the fixture records "everything pending"
+- And: no `WORKFLOW-ADOPTIE.md` is created or fixed — the fixture holds
+  the state, not the repair
+
+---
+
+## NFR register and archive
+
+### S38 — A field with no preceding heading yields no entry
+**Covers:** F3
+- Given: a malformed source where an `Applies if` field appears before the
+  first `## ` heading
+- When: `itereer_entries` reads that source
+- Then: no callback is called for that field — an entry with no ID would
+  otherwise end up as a blank row in an adoption table
+- And: the entries after the first heading are processed normally
+- And: the same holds via `adopt.sh` itself, not just via the library
+  directly: the adoption table contains no row with an empty ID
+
+### S37 — Predicate and parser logic live in exactly one place
+**Covers:** F3
+- Given: `lib/changes.sh` holds the predicates and the parser skeleton
+- When: `adopt.sh` and `pending-changes.sh` are searched
+- Then: neither still has its own `heeft-*` branch or its own `## `
+  heading-reader — they source the library
+- And: the library does have them, so the test fails if it's gutted
+  instead of only on recurring duplication
+- And: both scripts **actually call** `predicaat_waar` from the library —
+  established by instrumenting and running the function, not by searching
+  text. A text match only sees literal copies; logic rewritten in another
+  form slips through unnoticed
+
+### S36 — An ID inside a note doesn't count as an answer
+**Covers:** F3
+- Given: a `WORKFLOW-ADOPTIE.md` where the ID of a still-unanswered change
+  appears in the free-text note of a *different* row
+- When: `pending-changes.sh` runs
+- Then: that change is still pending — only the ID column counts as an
+  answer
+- And: notes are free text and IDs like `test-integratie` are ordinary
+  words, so an unanchored match would silently make questions disappear
+
+---
+
+## NFR register and archive (continued)
+
+### S5 — Generator and checked-in template don't drift apart
+**Covers:** F4
+- Given: an `nfr/*.md` whose `Guidance` has been changed without
+  regenerating `templates/PRD.md`
+- When: `./check` runs
+- Then: exit ≠ 0, with the relevant NFR in the message
+
+### S39 — A retired attribute disappears from both consumers
+**Covers:** F4
+- Given: an `nfr/*.md` with `status: retired`
+- When: `pending-changes.sh` runs and the template block is generated
+- Then: the attribute is no longer asked about and no longer in the block
+- And: after regenerating, `check` doesn't complain — retirement here is a
+  field, not a move, and that must carry through on both sides
+
+### S40 — The order of the template block is fixed
+**Covers:** F4
+- Given: the `order` field determines where an attribute sits in the block
+- When: the block is generated in a different order than what's checked in
+- Then: `check` fails — a comparison that sorts by ID doesn't see that
+  difference, so order is checked separately
+
+### S41 — A broken register file doesn't silently disappear
+**Covers:** F4
+- Given: an `nfr/*.md` missing a required field or with one that's unusable
+  (no `order`, CRLF line endings, a filename that doesn't match its `id`)
+- When: `./check` runs
+- Then: exit ≠ 0, with the file and the missing field in the message
+- And: this isn't caught by the drift check alone — an attribute that
+  falls out of the register disappears from *all* consumers at once, and
+  then both sides of that comparison simply agree with each other
+
+### S42 — Every reported change shows the question from its own source
+**Covers:** F4
+- Given: a project's pending changes, from both `CHANGES.md` and `nfr/`
+- When: `pending-changes.sh` runs
+- Then: every line shows the question text that belongs to that ID in its
+  source
+- And: a garbled or empty text is caught — a comparison on IDs alone
+  wouldn't see that, while it's exactly what the user reads
+
+### S6 — An entry without `Applies if` produces a warning
+**Covers:** F5
+- Given: `CHANGES.md` with a `## ` heading with no `Applies if` field,
+  now that section separators have become `###`
+- When: the shared parser reads that source
+- Then: a warning appears naming the ID
+- And: the entry is not seeded or asked about — a warning blocks nothing
+- And: that also holds when the broken entry comes after a good one, and
+  when it's the last one in the file — the parser state must not carry
+  over from the previous entry
+- And: a source with no trailing newline doesn't lose its last line;
+  otherwise an entry would be silently skipped along with a misleading
+  message
+
+---
+
+## Substantiation requirement and gates
+
+### S43 — A healthy source produces nothing on stderr
+**Covers:** F6
+- Given: an adopted project with a well-formed `WORKFLOW-ADOPTIE.md` —
+  with pending substantiations, without, or without a table at all
+- When: `pending-changes.sh` runs
+- Then: nothing appears on stderr
+- And: this isn't a cosmetic requirement. The SessionStart hook sends
+  stderr to `/dev/null`, and every test call did too, which meant a shell
+  error in the script stayed structurally invisible — including one that
+  went off daily in three of the four real projects
+
+### S7 — The signal counts rows still waiting on substantiation
+**Covers:** F6
+- Given: a freshly adopted project with 17 seeded rows carrying "requires
+  substantiation"
+- When: `pending-changes.sh` runs
+- Then: a message appears, "17 row(s) … still waiting on substantiation"
+
+### S8 — The signal doesn't change the pending set
+**Covers:** F6
+- Given: the same project
+- When: `pending-changes.sh` runs
+- Then: the list of pending IDs is identical to before F6 — the new
+  signal sits alongside it, not inside it
+
+### S9 — A stale adoption reports itself
+**Covers:** F6
+- Given: an adopted project with no `.claude/skills/`, while
+  `$CLAUDE_WORKFLOW_DIR/skills` has skills
+- When: a session starts
+- Then: the hook reports that `adopt.sh` needs to run again
+- And: the session just starts anyway — the message blocks nothing
+
+### S10 — The production gate blocks a substantiation gap
+**Covers:** F6
+- Given: a project where a row with `production-gate: yes` still says
+  "requires substantiation"
+- When: `deploy` to production is called
+- Then: the deploy stops with a message naming the row in question
+- And: the same deploy to pre-production does go through
+
+---
+
+## Git guardrails
+
+### S44 — The hook wiring lets the block through
+**Covers:** F7
+- Given: a project whose `.claude/settings.json` symlinks to this repo
+- When: the configured `PreToolUse` command gets a command that should be
+  blocked
+- Then: exit status 2 comes out — the guard actually blocks
+- And: the form `[ -x … ] && … || exit 0` does **not**: the `||` catches
+  exit 2 and reports success, silently disabling the guard while it looks
+  installed. Hence `if … then exec … fi; exit 0`
+
+### S47 — Committing on `main` is blocked, with a workable way out
+**Covers:** F7
+- Given: `main` is checked out in a repo that already has commits
+- When: `git commit` is called
+- Then: it's blocked, and the message names `git checkout -b` and that the
+  changes just come along
+- And: the latter isn't courtesy but necessity — without that way out the
+  work stays uncommitted, which is less safe than the local commit that
+  was just stopped
+- And: committing on a feature branch just goes through
+- And: a repo with no commits is the exception: the very first commit of a
+  new project is, by definition, on `main`, and that step is documented
+  that way in `WORKFLOW.md`
+
+### S45 — Text inside quotes is data, not a command
+**Covers:** F7
+- Given: a command with a `;`, `|`, or `&` inside a quoted string, or a
+  heredoc whose body starts with `git`
+- When: the guard evaluates it
+- Then: it goes through — the content of a string or heredoc is data
+- And: a quoted flag does count: `git reset "--hard"` is the same command
+  as without quotes. Both requirements at once can only be met with real
+  quote-aware tokenization; masking quoted spans solves the first and
+  makes the second permanently impossible
+
+### S46 — The branch is determined in the repo the command is about
+**Covers:** F7
+- Given: `git -C <path> push origin HEAD`, where `<path>` is a different
+  repo than the directory the session is in
+- When: the guard determines the current branch
+- Then: it looks at the repo from `-C`, not at the session's directory
+- And: `--git-dir` and `--work-tree` count the same way, and git itself
+  works out how they relate — the guard doesn't reimplement those rules
+- And: if that path doesn't exist or isn't a repo, no branch comes out and
+  nothing is blocked
+
+### S11 — Destructive commands are blocked
+**Covers:** F7
+- Given: the guardrails hook is active
+- When: `git reset --hard`, `git clean -fd`, `git branch -D <name>`, or
+  `git checkout .` is called
+- Then: the command is blocked with a readable reason
+
+### S12 — Push to `main` is blocked, including via a refspec
+**Covers:** F7
+- Given: a checked-out feature branch
+- When: `git push origin main` or `git push origin HEAD:main` is called
+- Then: the command is blocked
+- And: `git push origin HEAD` while `main` is checked out is **also**
+  blocked
+
+### S13 — Push to a feature branch keeps working
+**Covers:** F7
+- Given: a checked-out feature branch
+- When: `git push origin HEAD` is called
+- Then: the command goes through — the existing `SessionEnd` hook keeps
+  working
+
+### S14 — The guard fails open if it's broken itself
+**Covers:** F7
+- Given: no `jq`, no `python3`, and no usable `sed` in `PATH`
+- When: any git command passes through the guard
+- Then: a loud warning appears
+- And: the command is allowed — a broken guard never blocks the work
+
+---
+
+## Merge guard
+
+### S15 — Merge without a review marker is blocked
 **Covers:** F8
-- Given: een open PR zonder review-marker in de comments
-- When: `gh pr merge` wordt aangeroepen
-- Then: het commando wordt geblokkeerd, met verwijzing naar `pre-merge-review`
+- Given: an open PR with no review marker in the comments
+- When: `gh pr merge` is called
+- Then: the command is blocked, referencing `pre-merge-review`
 
 ### S16 — Merge mét review-marker gaat door
 **Covers:** F8
@@ -938,7 +947,7 @@ bewijzen dat de refactor gedrag behoudt, niet dat er iets nieuws bij komt.
   nooit een commando blokkeren
 
 ### S85 — Een project op het pre-migratieformaat wordt per rij gemeld, met een issue
-**Covers:** F6, W42/#114
+**Covers:** F6
 - Given: een project met een `WORKFLOW-ADOPTIE.md` (geen `WORKFLOW-ADOPTION.md`)
   met rijen op het oude `ja`/`nee`-formaat
 - When: `pending-changes.sh` draait
