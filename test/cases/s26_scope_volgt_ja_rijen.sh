@@ -14,7 +14,7 @@ repo="$(sandbox_copy_repo)"
 project="$SANDBOX/project"
 mkdir -p "$project"
 
-# spec-security has a real "ja", spec-data-integriteit still carries the
+# spec-security has a real "ja", spec-data-integrity still carries the
 # provisional stamp that adopt.sh's seed_entry() sets: Answer stays
 # literally "ja", the text "vereist onderbouwing" sits in Notes. Both
 # belong in scope — spec-privacy is "nee" and spec-testability is unanswered
@@ -25,7 +25,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | Change | Answer | Date | Notes |
 |---|---|---|---|
 | spec-security | ja | 2026-01-01 | van toepassing |
-| spec-data-integriteit | ja | 2026-01-01 | at adoption — requires substantiation during PRD/architecture |
+| spec-data-integrity | ja | 2026-01-01 | at adoption — requires substantiation during PRD/architecture |
 | spec-privacy | nee | 2026-01-01 | niet van toepassing |
 EOF
 
@@ -44,8 +44,8 @@ fi
 if ! grep -qx 'spec-security: Security' "$uitvoer"; then
   fail "S26 — spec-security (ja) is missing from the scope"
 fi
-if ! grep -qx 'spec-data-integriteit: Data integrity \[requires substantiation\]' "$uitvoer"; then
-  fail "S26 — spec-data-integriteit (provisional 'ja') should appear marked in the scope"
+if ! grep -qx 'spec-data-integrity: Data integrity \[requires substantiation\]' "$uitvoer"; then
+  fail "S26 — spec-data-integrity (provisional 'ja') should appear marked in the scope"
 fi
 if grep -q 'spec-privacy' "$uitvoer"; then
   fail "S26 — spec-privacy is 'nee' and does not belong in the scope"

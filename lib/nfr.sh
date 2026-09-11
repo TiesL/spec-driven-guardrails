@@ -139,6 +139,45 @@ nfr_vraag() {
   nfr_sectie "$bestand" Question
 }
 
+# #156: five NFR filenames/IDs were renamed from Dutch to English
+# (spec-data-integriteit -> spec-data-integrity, spec-documentatie ->
+# spec-documentation, spec-kostenbeheersing -> spec-cost-management,
+# spec-performance-schaal -> spec-performance-scale, spec-backup-herstel
+# -> spec-backup-recovery). A project that already answered under an old
+# ID keeps that row exactly as it is — same "never rewrite what a project
+# already recorded" principle as W42/#114's ja/nee support — so callers
+# need to recognize both. These two lookups are the only place that
+# mapping is spelled out; add a case to both when a future rename needs
+# the same treatment.
+
+# Given any ID (old or new, or unrelated), the current one. Old IDs no
+# longer have a file in nfr/, so this is how a caller finds the real file
+# from a possibly-stale ID read out of a project's own WORKFLOW-ADOPTION.md.
+nfr_huidig_id() {
+  case "$1" in
+    spec-data-integriteit) echo spec-data-integrity ;;
+    spec-documentatie) echo spec-documentation ;;
+    spec-kostenbeheersing) echo spec-cost-management ;;
+    spec-performance-schaal) echo spec-performance-scale ;;
+    spec-backup-herstel) echo spec-backup-recovery ;;
+    *) echo "$1" ;;
+  esac
+}
+
+# Given a *current* ID, the pre-rename ID it used to have — empty if it
+# was never renamed. The reverse lookup, for checking whether a project's
+# answer file has a row under the old name for a question asked by its
+# current ID.
+nfr_oude_id() {
+  case "$1" in
+    spec-data-integrity) echo spec-data-integriteit ;;
+    spec-documentation) echo spec-documentatie ;;
+    spec-cost-management) echo spec-kostenbeheersing ;;
+    spec-performance-scale) echo spec-performance-schaal ;;
+    spec-backup-recovery) echo spec-backup-herstel ;;
+  esac
+}
+
 # Prints the NFR block as it should appear in templates/PRD.md. The ID
 # appears as an HTML comment in the output: pre-merge-review (W13) keys on
 # that to link the review scope to the answered spec-* rows.

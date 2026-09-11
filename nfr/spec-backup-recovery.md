@@ -1,5 +1,5 @@
 ---
-id: spec-backup-herstel
+id: spec-backup-recovery
 heading: Backup and recovery
 order: 9
 default: yes

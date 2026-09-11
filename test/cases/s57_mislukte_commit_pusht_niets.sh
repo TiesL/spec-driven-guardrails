@@ -10,8 +10,8 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-hook="$TEST_REPO_ROOT/hooks/push-na-commit"
-[ -x "$hook" ] || { fail "S57 — hooks/push-na-commit is missing"; test_klaar; }
+hook="$TEST_REPO_ROOT/hooks/push-after-commit"
+[ -x "$hook" ] || { fail "S57 — hooks/push-after-commit is missing"; test_klaar; }
 
 # Case 1: no origin — the hook must not hang and must not print anything to
 # stderr that looks like an error.
@@ -37,7 +37,7 @@ invoer2='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_m
 printf '%s' "$invoer2" | "$hook" >/dev/null 2>&1
 
 if git -C "$remote" rev-parse --verify --quiet main >/dev/null 2>&1; then
-  fail "S57/geval2 — main was pushed after all from push-na-commit"
+  fail "S57/geval2 — main was pushed after all from push-after-commit"
 fi
 
 # Case 3: a command that is not a git commit pushes nothing — no attempt at

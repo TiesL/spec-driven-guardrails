@@ -14,7 +14,7 @@ repo="$(sandbox_copy_repo)"
 
 # Given: the order field determines the position in the block. Two attributes swap.
 een="$repo/nfr/spec-security.md"        # order: 1
-twee="$repo/nfr/spec-data-integriteit.md" # order: 2
+twee="$repo/nfr/spec-data-integrity.md" # order: 2
 sed -i.bak 's/^order: 1$/order: 2/' "$een"
 sed -i.bak 's/^order: 2$/order: 1/' "$twee"
 rm -f "$repo"/nfr/*.bak
@@ -31,7 +31,7 @@ fi
 assert_contains "S40" "order" "$uitvoer"
 
 # And after regenerating it is fine again.
-(cd "$repo" && ./genereer-prd-blok >/dev/null 2>&1)
+(cd "$repo" && ./generate-prd-block >/dev/null 2>&1)
 "$repo/check" --no-tests "$repo" >/dev/null 2>&1 || fail "S40 — check still complains after regenerating"
 
 test_klaar

@@ -24,8 +24,8 @@ cat > "$verwacht" <<'IDS'
 proces-issue-tracking
 process-context-document
 spec-compliance
-spec-kostenbeheersing
-spec-performance-schaal
+spec-cost-management
+spec-performance-scale
 spec-portability
 spec-usability
 test-integratie

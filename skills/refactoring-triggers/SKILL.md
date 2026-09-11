@@ -30,7 +30,7 @@ what the trigger is to address it.
 
 1. **The recorded design is contradicted.** If you notice, while doing a
    work item, that it can only be built by violating an architecture
-   requirement in `ARCHITECTUUR.md`, don't build it anyway via a
+   requirement in `ARCHITECTURE.md`, don't build it anyway via a
    workaround. That's the signal that either the design needs revising, or
    the functionality needs to be designed differently — as its own work
    item, so it happens visibly instead of sinking into the code as an

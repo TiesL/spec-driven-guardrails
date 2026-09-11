@@ -18,8 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; wf=$(dirname \"$(dirname \"$(readlink \"$p/.claude/settings.json\" 2>/dev/null)\")\"); if [ -x \"$wf/hooks/push-na-commit\" ]; then exec \"$wf/hooks/push-na-commit\"; fi; exit 0",
-            "statusMessage": "push-na-commit"
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; wf=$(dirname \"$(dirname \"$(readlink \"$p/.claude/settings.json\" 2>/dev/null)\")\"); if [ -x \"$wf/hooks/push-after-commit\" ]; then exec \"$wf/hooks/push-after-commit\"; fi; exit 0",
+            "statusMessage": "push-after-commit"
           }
         ]
       }

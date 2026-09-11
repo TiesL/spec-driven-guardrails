@@ -205,6 +205,31 @@ verwarren). De vier bevroren projecten missen allemaal een
 `WORKFLOW-ADOPTION.md`, dus die melding verschijnt voortaan bij elke R9-run
 — dat is verwacht en onderdeel van S85, niet van R9's eigen contract.
 
+## Bijgewerkt voor #156
+
+Vijf `nfr/`-bestandsnamen (en dus hun `spec-*`-ID) zijn van Nederlands naar
+Engels hernoemd: `spec-data-integriteit` → `spec-data-integrity`,
+`spec-documentatie` → `spec-documentation`, `spec-kostenbeheersing` →
+`spec-cost-management`, `spec-performance-schaal` →
+`spec-performance-scale`, `spec-backup-herstel` → `spec-backup-recovery`.
+Zelfde soort wijziging als W42 (#114) hierboven, nu toegepast op de
+`nfr/`-bron in plaats van op `CHANGES.md`: geen van de vier bevroren
+projecten had een van deze vijf ooit beantwoord, dus de tel blijft
+ongewijzigd — alleen de letterlijke ID-string in elke
+`verwacht-openstaand.txt` verandert, met een herberekende alfabetische
+positie. `nfr.momentopname/` is ververst (`rm -rf` + `cp -r nfr`), zoals
+deze procedure hieronder voorschrijft voor elke wijziging die de vijftien
+`nfr/`-bestanden raakt.
+
+Nieuw ten opzichte van W42: `lib/nfr.sh` kreeg `nfr_huidig_id`/`nfr_oude_id`
+— een permanente alias tussen elk hernoemd paar, zodat een project dat al
+onder de oude naam heeft geantwoord (dit repo zelf deed dat, zie
+`WORKFLOW-ADOPTION.md`, en mogelijk een van de drie externe projecten)
+dat antwoord niet kwijtraakt. Geen van de vier bevroren fixtures oefent dat
+pad uit (zij hadden geen van de vijf ooit beantwoord), dus deze nulmeting
+bewijst niets over de alias zelf — dat bewijs levert een aparte, gerichte
+test (zie `test/cases/`).
+
 ## Bijwerken — alleen bewust
 
 Een afwijking betekent één van twee dingen:

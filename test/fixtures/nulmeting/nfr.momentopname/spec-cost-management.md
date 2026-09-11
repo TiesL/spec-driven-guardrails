@@ -1,5 +1,5 @@
 ---
-id: spec-kostenbeheersing
+id: spec-cost-management
 heading: Cost control
 order: 14
 default: question

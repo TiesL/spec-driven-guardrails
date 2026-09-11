@@ -21,12 +21,12 @@ if [ -z "$doel" ]; then
   exit 0
 fi
 eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
-regels="$eigen_map/regels.sh"
+regels="$eigen_map/rules.sh"
 if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
-  echo "warning: git hooks couldn't find regels.sh — push check skipped." >&2
+  echo "warning: git hooks couldn't find rules.sh — push check skipped." >&2
   exit 0
 fi
-# shellcheck source=regels.sh
+# shellcheck source=rules.sh
 . "$regels"
 HOOFDBRANCH="${HOOFDBRANCH:-main}"
 

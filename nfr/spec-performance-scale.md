@@ -1,5 +1,5 @@
 ---
-id: spec-performance-schaal
+id: spec-performance-scale
 heading: Performance and scale
 order: 5
 default: question

@@ -19,7 +19,7 @@ Per entry:
   `yes` entries at adoption with a provisional stamp; `question` entries never
   seed. **Neither means silent acceptance** — see the substantiation step in
   the `adoption-registry` skill: `yes` rows still need to be objectively
-  substantiated when `PRD.md`/`ARCHITECTUUR.md` are written (or changed to
+  substantiated when `PRD.md`/`ARCHITECTURE.md` are written (or changed to
   `no`), `question` rows get a reasoned proposal instead of a blank question.
 - **Applies if** — one of the predicates from `lib/changes.sh`, the library
   both `adopt.sh` and `pending-changes.sh` source. That list lives there and
@@ -216,7 +216,7 @@ the shared parser warns if it has no `Applies if`.
 
 ## architectuurdocument
 
-- **Question:** Must this project record its architecture decisions in `ARCHITECTUUR.md`?
+- **Question:** Must this project record its architecture decisions in `ARCHITECTURE.md`?
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** structural choices (platform, layers, data ownership, substantial dependencies) are recorded with criteria, weighed options, the decision, the architecture requirements that follow from it, and when the choice should be revisited. `adopt.sh` scaffolds the template.
@@ -229,7 +229,7 @@ the shared parser warns if it has no `Applies if`.
 - **Applies if:** always
 - **Yes means:** `CONTEXT.md` exists and is kept living — updated as a new
   term arises or changes meaning, not attempted complete in one go.
-  Separate from `ARCHITECTUUR.md`, which is about structural decisions, not
+  Separate from `ARCHITECTURE.md`, which is about structural decisions, not
   language. `adopt.sh` scaffolds the template once this row is `yes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
@@ -320,7 +320,7 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Do the refactoring triggers from the `refactoring-triggers` skill apply to this project?
 - **Default:** yes
 - **Applies if:** always
-- **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTUUR.md` (see `architectuurdocument`), only the second and third trigger apply.
+- **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTURE.md` (see `architectuurdocument`), only the second and third trigger apply.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## proces-diagnose-bug

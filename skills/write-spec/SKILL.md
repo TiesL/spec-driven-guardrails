@@ -24,10 +24,10 @@ description: >
    tennis-registration and tennis-invoicing).
 
 For the substantiation requirement when drafting or revising
-`PRD.md`/`ARCHITECTUUR.md` — see the `adoption-registry` skill.
+`PRD.md`/`ARCHITECTURE.md` — see the `adoption-registry` skill.
 
 Does this project have a `CONTEXT.md` (project jargon → meaning, separate
-from the structural decisions in `ARCHITECTUUR.md`)? Update it as soon as a
+from the structural decisions in `ARCHITECTURE.md`)? Update it as soon as a
 new term arises or an existing one changes meaning — don't try to make it
 complete in one pass.
 

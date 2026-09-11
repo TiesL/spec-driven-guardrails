@@ -40,7 +40,14 @@ antwoorden="$project_dir/WORKFLOW-ADOPTION.md"
 
 # shellcheck disable=SC2329  # called from verzamel_openstaand
 beantwoord() {
-  [ -f "$antwoorden" ] && grep -q "^| *$1 *|" "$antwoorden"
+  local id="$1" oud
+  [ -f "$antwoorden" ] || return 1
+  grep -q "^| *$id *|" "$antwoorden" && return 0
+  # #156: also accept the pre-rename ID for a project that answered
+  # before an NFR was renamed — same spirit as W42/#114's filename
+  # fallback above, applied to the ID instead of the filename.
+  oud="$(nfr_oude_id "$id")"
+  [ -n "$oud" ] && grep -q "^| *$oud *|" "$antwoorden"
 }
 
 openstaand=()
