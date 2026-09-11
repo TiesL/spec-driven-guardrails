@@ -53,7 +53,7 @@ permanent_uitgesloten='./ARCHITECTUUR.md ./WORKFLOW-ADOPTION.md ./check-traceabi
 
 # Pending exclusions — real translation gaps, already tracked in an open
 # issue. Remove the line the moment that issue closes.
-pending_uitgesloten='./PRD.md ./TEST-SCENARIOS.md' # #138
+pending_uitgesloten='./PRD.md' # #138
 
 fout=0
 
