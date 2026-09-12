@@ -14,30 +14,30 @@ trap sandbox_destroy EXIT
 # set to "yes" (a fresh adoption does not seed it that way — Standaard is
 # "vraag" — so this simulates re-adoption after someone later set the row
 # to "yes").
-project="$(vers_project met-context)"
-adopteer "$project"
+project="$(fresh_project met-context)"
+adopt "$project"
 cat >> "$project/WORKFLOW-ADOPTION.md" <<'EOF'
 | process-context-document | yes | 2026-01-01 | dit project groeit met genoeg eigen jargon om vast te leggen |
 EOF
 
 rm -f "$project/CONTEXT.md"
-adopteer "$project"
+adopt "$project"
 
 if [ ! -f "$project/CONTEXT.md" ]; then
   fail "S70 — CONTEXT.md was not scaffolded while the row is set to 'yes'"
-  test_klaar
+  test_done
 fi
 
 # And: an already-existing copy is never overwritten.
 printf 'eigen inhoud, niet aankomen\n' > "$project/CONTEXT.md"
-adopteer "$project"
+adopt "$project"
 if ! grep -qx 'eigen inhoud, niet aankomen' "$project/CONTEXT.md"; then
   fail "S70 — an existing CONTEXT.md was overwritten"
 fi
 
 # And: a project without that row (or set to "no") gets nothing.
-project2="$(vers_project zonder-context)"
-adopteer "$project2"
+project2="$(fresh_project zonder-context)"
+adopt "$project2"
 if [ -f "$project2/CONTEXT.md" ]; then
   fail "S70 — CONTEXT.md was scaffolded without the row being set to 'yes'"
 fi
@@ -45,7 +45,7 @@ fi
 # And: the same holds for the pre-migration format (W42/#114) — a project
 # still on the old filename/ID/value also gets CONTEXT.md scaffolded,
 # since that scaffold shouldn't wait on an unrelated migration.
-project3="$(vers_project met-context-oud)"
+project3="$(fresh_project met-context-oud)"
 cat > "$project3/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoption of shared workflow changes
 
@@ -63,4 +63,4 @@ writespec="$TEST_REPO_ROOT/skills/write-spec/SKILL.md"
 assert_contains "S70/AC2 — write-spec mentions CONTEXT.md" "CONTEXT.md" "$(cat "$writespec")"
 assert_contains "S70/AC2 — write-spec states when you update it" "Update it" "$(cat "$writespec")"
 
-test_klaar
+test_done

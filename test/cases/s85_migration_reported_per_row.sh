@@ -14,7 +14,7 @@ trap sandbox_destroy EXIT
 # tracking issue must be pinned to — see the git-root-only case further
 # down for what happens without one), and an old-format answer file with
 # two answered rows (one ja, one nee) that are not otherwise pending.
-project="$(vers_project pre-migratie)"
+project="$(fresh_project pre-migratie)"
 git -C "$project" remote add origin 'https://github.com/example-org/pre-migratie.git'
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoption of shared workflow changes
@@ -47,7 +47,7 @@ uitvoer="$(PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project"
 
 # Then: each old-format row is named individually, with a bullet that does
 # not collide with the pending-question list's own "  - " prefix (that
-# prefix is what test/lib.sh's openstaande_ids() greps for).
+# prefix is what test/lib.sh's pending_ids() greps for).
 assert_contains "S85 — mentions the pre-migration notice" "pre-migration format" "$uitvoer"
 assert_contains "S85 — names ci-conventie" "* ci-conventie" "$uitvoer"
 assert_contains "S85 — names deploy-guards" "* deploy-guards" "$uitvoer"
@@ -58,7 +58,7 @@ fi
 # And: those two rows do not appear in the pending set at all — they have
 # real answers, just in the old vocabulary.
 #
-# openstaande_ids() calls pending-changes.sh itself, with no PATH override
+# pending_ids() calls pending-changes.sh itself, with no PATH override
 # of its own — this is exactly the kind of call this test exists to catch:
 # without a fake gh here, it would reach a real `gh` again. A dedicated
 # fake that reports the marker as already present, so it can never create
@@ -73,7 +73,7 @@ case "$*" in
 esac
 exit 1
 ')"
-PATH="$fakebin_readonly:$PATH" openstaande_ids "$project" > "$gekregen"
+PATH="$fakebin_readonly:$PATH" pending_ids "$project" > "$gekregen"
 if grep -qx 'ci-conventie' "$gekregen" || grep -qx 'deploy-guards' "$gekregen"; then
   fail "S85 — an already-answered old-format row was swept into the pending ID set"
 fi
@@ -153,7 +153,7 @@ PATH="$fakebin4:$PATH" GH_REPO="TiesL/spec-driven-guardrails" \
 # sandboxed test project, and for a project that has never been pushed
 # anywhere) never calls gh either — there is nothing to pin -R to, and
 # guessing would reintroduce the exact ambiguity -R exists to remove.
-zonder_remote="$(vers_project zonder-remote)"
+zonder_remote="$(fresh_project zonder-remote)"
 cp "$project/WORKFLOW-ADOPTIE.md" "$zonder_remote/WORKFLOW-ADOPTIE.md"
 gh_log5="$SANDBOX/gh-calls-5.txt"
 : > "$gh_log5"
@@ -164,4 +164,4 @@ exit 1
 PATH="$fakebin5:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$zonder_remote" > /dev/null 2>&1
 [ -s "$gh_log5" ] && fail "S85 — gh was called for a project with no github.com origin remote"
 
-test_klaar
+test_done

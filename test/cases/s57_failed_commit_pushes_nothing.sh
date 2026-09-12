@@ -11,11 +11,11 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 hook="$TEST_REPO_ROOT/hooks/push-after-commit"
-[ -x "$hook" ] || { fail "S57 — hooks/push-after-commit is missing"; test_klaar; }
+[ -x "$hook" ] || { fail "S57 — hooks/push-after-commit is missing"; test_done; }
 
 # Case 1: no origin — the hook must not hang and must not print anything to
 # stderr that looks like an error.
-project="$(vers_project geen-origin)"
+project="$(fresh_project geen-origin)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 git -C "$project" commit -q --allow-empty -m "werk zonder remote"
@@ -27,7 +27,7 @@ printf '%s' "$invoer1" | "$hook" >/dev/null 2>/dev/null || status1=$?
 
 # Case 2: nothing happens on main regardless, even when the remote does
 # exist — the same boundary as the existing SessionEnd hook.
-project_main="$(vers_project op-main)"
+project_main="$(fresh_project op-main)"
 remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
 git -C "$project_main" remote add origin "$remote"
@@ -42,7 +42,7 @@ fi
 
 # Case 3: a command that is not a git commit pushes nothing — no attempt at
 # all, even though there is a remote and a feature branch with unpushed work.
-project_ander="$(vers_project ander-commando)"
+project_ander="$(fresh_project ander-commando)"
 git -C "$project_ander" remote add origin "$remote"
 git -C "$project_ander" commit -q --allow-empty -m start
 git -C "$project_ander" checkout -q -b feature/iets
@@ -60,7 +60,7 @@ fi
 # by origin (non-fast-forward) — that is not a network or access problem,
 # and the hook must not label it as such, and certainly must not silently
 # force it.
-project_amend="$(vers_project amend)"
+project_amend="$(fresh_project amend)"
 git -C "$project_amend" remote add origin "$remote"
 git -C "$project_amend" commit -q --allow-empty -m start
 git -C "$project_amend" checkout -q -b feature/amend
@@ -85,4 +85,4 @@ case "$uitvoer4" in
     fail "S57/geval4 — the message wrongly blames the amend case on network/access: $uitvoer4" ;;
 esac
 
-test_klaar
+test_done

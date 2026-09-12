@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 pad="$TEST_REPO_ROOT/.github/workflows/ci.yml"
-[ -f "$pad" ] || { fail "S83 — $pad is missing"; test_klaar; }
+[ -f "$pad" ] || { fail "S83 — $pad is missing"; test_done; }
 
 # Then: a step that calls check-pr-issue-link.sh, only on the
 # pull_request event — the same shape as "Commit op main komt uit een PR"
@@ -45,4 +45,4 @@ grep -qE '^\s*pull-requests:\s*read\s*$' "$pad" \
 grep -qE '^\s*issues:\s*read\s*$' "$pad" \
   || fail "S83 — the check job is missing issues: read"
 
-test_klaar
+test_done

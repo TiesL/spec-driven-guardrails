@@ -11,15 +11,15 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: an empty git project without package.json.
-project="$(vers_project leeg)"
+project="$(fresh_project leeg)"
 
 # When: adopt.sh is run.
-adopteer "$project"
+adopt "$project"
 
 tabel="$project/WORKFLOW-ADOPTION.md"
 if [ ! -f "$tabel" ]; then
   fail "S82 — adopt.sh did not create a WORKFLOW-ADOPTION.md"
-  test_klaar
+  test_done
 fi
 
 # Then: the header refers to the current name, not the name from before
@@ -30,4 +30,4 @@ fi
 grep -q "spec-driven-guardrails" "$tabel" \
   || fail "S82 — WORKFLOW-ADOPTION.md does not mention spec-driven-guardrails"
 
-test_klaar
+test_done

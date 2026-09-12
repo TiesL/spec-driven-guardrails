@@ -50,13 +50,13 @@ done
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project met-oud-sjabloon)"
+project="$(fresh_project met-oud-sjabloon)"
 mkdir -p "$project/.github/ISSUE_TEMPLATE"
 echo "verouderd sjabloon zonder velden" > "$project/.github/ISSUE_TEMPLATE/work-item.md"
 
-adopteer "$project"
+adopt "$project"
 
 grep -q '^\*\*Blocked by:\*\*' "$project/.github/ISSUE_TEMPLATE/work-item.md" \
   || fail "S31 — adopt.sh did not refresh the outdated template"
 
-test_klaar "S31"
+test_done "S31"

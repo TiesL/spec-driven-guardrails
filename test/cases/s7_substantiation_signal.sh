@@ -12,8 +12,8 @@ trap sandbox_destroy EXIT
 
 # Given: a freshly adopted project with 21 seeded rows carrying "requires
 # substantiation".
-project="$(vers_project doelproject)"
-adopteer "$project"
+project="$(fresh_project doelproject)"
+adopt "$project"
 
 rijen="$(grep -c 'requires substantiation' "$project/WORKFLOW-ADOPTION.md")"
 [ "$rijen" -eq 21 ] || fail "S7 — $rijen rows with 'requires substantiation', 21 expected"
@@ -70,4 +70,4 @@ if grep -qi 'waiting on substantiation' "$met_notitie"; then
   grep -i 'row(s)' "$met_notitie" >&2
 fi
 
-test_klaar
+test_done

@@ -9,7 +9,7 @@ set -uo pipefail
 
 skill="$TEST_REPO_ROOT/skills/tdd-seams/SKILL.md"
 
-[ -f "$skill" ] || { fail "S68 — skills/tdd-seams/SKILL.md is missing"; test_klaar; }
+[ -f "$skill" ] || { fail "S68 — skills/tdd-seams/SKILL.md is missing"; test_done; }
 
 inhoud="$(cat "$skill")"
 
@@ -20,4 +20,4 @@ assert_contains "S68 — anti-pattern: tautological" "autological" "$inhoud"
 assert_contains "S68 — anti-pattern: horizontal slicing" "orizontal slicing" "$inhoud"
 assert_contains "S68 — versus vertical slices" "ertical slices" "$inhoud"
 
-test_klaar
+test_done

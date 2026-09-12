@@ -11,9 +11,9 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S45 — hooks/git-guardrails is missing"; test_klaar; }
+[ -x "$guard" ] || { fail "S45 — hooks/git-guardrails is missing"; test_done; }
 
-werkmap="$(vers_project werkmap)"
+werkmap="$(fresh_project werkmap)"
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
@@ -72,4 +72,4 @@ geblokkeerd "backslash escape"           'git reset \-\-hard'
 # An imbalance in the quoting is not a command we can read; do not guess then.
 toegestaan "quoting that does not close"      'git commit -m "open'
 
-test_klaar
+test_done

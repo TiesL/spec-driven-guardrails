@@ -12,7 +12,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 sjabloon="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
-[ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_klaar; }
+[ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_done; }
 
 # Then: every example scenario shows a **Covers:** field directly under its heading.
 #
@@ -56,4 +56,4 @@ verzonnen="$(grep '^\*\*Covers:\*\*' "$sjabloon" | grep -v '<' || true)"
 [ -z "$verzonnen" ] \
   || fail "S61 — **Covers:** without a placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
 
-test_klaar "S61"
+test_done "S61"

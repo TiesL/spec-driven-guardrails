@@ -17,7 +17,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/skills/pre-merge-review/scenario-poort.sh"
-[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-poort.sh is missing or not executable"; test_klaar; }
+[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-poort.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -73,9 +73,9 @@ case "$uitvoer" in
 esac
 
 # AC4 — the gate does not fail blockingly without gh.
-padzondergh="$(pad_zonder_gh)"
+padzondergh="$(path_without_gh)"
 uitvoer_geengh="$(PATH="$padzondergh" "$script" "$project" 2>&1)"; status_geengh=$?
 [ "$status_geengh" -eq 0 ] || fail "AC4 — without gh the gate gave exit $status_geengh instead of 0"
 assert_contains "AC4 — a warning appears without gh" "warning" "$uitvoer_geengh"
 
-test_klaar
+test_done

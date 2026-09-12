@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a project whose .claude/settings.json symlinks to this repo.
-project="$(vers_project bedraad)"
+project="$(fresh_project bedraad)"
 mkdir -p "$project/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project/.claude/settings.json"
 
@@ -29,7 +29,7 @@ print(h["command"])
 
 if [ -z "$opdracht" ]; then
   fail "S44 — no PreToolUse command found in session-hooks.json"
-  test_klaar
+  test_done
 fi
 
 invoer='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git reset --hard"}}'
@@ -73,4 +73,4 @@ ok='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","too
 printf '%s' "$ok" | (cd "$project" && bash -c "$opdracht") >/dev/null 2>&1
 [ $? -ne 2 ] || fail "S44 — the wiring blocks a legitimate push"
 
-test_klaar
+test_done

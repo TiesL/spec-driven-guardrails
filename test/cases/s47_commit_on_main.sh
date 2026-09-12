@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S47 — hooks/git-guardrails is missing"; test_klaar; }
+[ -x "$guard" ] || { fail "S47 — hooks/git-guardrails is missing"; test_done; }
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
@@ -20,16 +20,16 @@ langs_guard() {
   echo $?
 }
 
-op_main="$(vers_project op-main)"
+op_main="$(fresh_project op-main)"
 git -C "$op_main" commit -q --allow-empty -m start
 git -C "$op_main" branch -M main
 
-op_feature="$(vers_project op-feature)"
+op_feature="$(fresh_project op-feature)"
 git -C "$op_feature" commit -q --allow-empty -m start
 git -C "$op_feature" checkout -q -b feature/werk
 
 # A repo without even a single commit: HEAD does not yet exist.
-vers="$(vers_project vers)"
+vers="$(fresh_project vers)"
 
 # Then: committing on main is blocked.
 [ "$(langs_guard "$op_main" 'git commit -m "iets"')" = "2" ] \
@@ -62,4 +62,4 @@ grep -qi 'come along unchanged\|nothing gets lost' "$melding" \
 [ "$(langs_guard "$op_main" 'git checkout -b feature/nieuw')" != "2" ] \
   || fail "S47 — branching from main was blocked; the way out is then closed"
 
-test_klaar
+test_done

@@ -43,4 +43,4 @@ for bestand in templates/ci.yml .github/workflows/ci.yml; do
     || fail "S80 — $bestand does not give the check job issues: read"
 done
 
-test_klaar
+test_done

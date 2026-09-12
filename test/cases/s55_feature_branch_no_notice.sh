@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project op-feature)"
+project="$(fresh_project op-feature)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/iets
 
@@ -29,4 +29,4 @@ status=0
 [ "$status" -eq 0 ] || fail "S55 — pending-changes.sh gave exit $status instead of 0"
 [ -z "$fout" ] || fail "S55 — something appeared on stderr: $fout"
 
-test_klaar
+test_done

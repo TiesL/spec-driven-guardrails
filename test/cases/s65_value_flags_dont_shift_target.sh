@@ -16,7 +16,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project waardevlaggen)"
+project="$(fresh_project waardevlaggen)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -30,4 +30,4 @@ status=$?
 
 [ "$status" -eq 2 ] || fail "S65 — a marker-less PR with --body/--subject was not blocked (exit $status). Output: $uitvoer"
 
-test_klaar
+test_done

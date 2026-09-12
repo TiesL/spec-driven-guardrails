@@ -12,7 +12,7 @@ snapshot="$nulmeting/CHANGES.md.momentopname"
 
 if [ ! -f "$snapshot" ]; then
   fail "S90 — test/fixtures/nulmeting/CHANGES.md.momentopname is missing"
-  test_klaar
+  test_done
 fi
 
 # The smoke detector: CHANGES.md.momentopname must today be exactly equal to
@@ -27,4 +27,4 @@ if ! verschil="$(diff "$TEST_REPO_ROOT/CHANGES.md" "$snapshot" 2>&1)"; then
   printf '%s\n' "$verschil" >&2
 fi
 
-test_klaar
+test_done

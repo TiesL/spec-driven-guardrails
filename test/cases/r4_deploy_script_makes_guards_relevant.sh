@@ -10,12 +10,12 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project leeg)"
-adopteer "$project"
+project="$(fresh_project leeg)"
+adopt "$project"
 echo '{"name":"t"}' > "$project/package.json"
 
 zonder="$SANDBOX/zonder.txt"
-openstaande_ids "$project" > "$zonder"
+pending_ids "$project" > "$zonder"
 
 if grep -qx 'deploy-guards' "$zonder"; then
   fail "R4 — deploy-guards was already open without a deploy script"
@@ -26,11 +26,11 @@ echo '{"name":"t","scripts":{"deploy":"node deploy.mjs"}}' > "$project/package.j
 
 # When/Then: deploy-guards appears as open.
 met="$SANDBOX/met.txt"
-openstaande_ids "$project" > "$met"
+pending_ids "$project" > "$met"
 
 grep -qx 'deploy-guards' "$met" || fail "R4 — deploy-guards did not appear after adding the deploy script"
 
 verschil="$(comm -13 "$zonder" "$met" | tr '\n' ' ')"
 [ "$verschil" = "deploy-guards " ] || fail "R4 — difference is '$verschil', expected only 'deploy-guards'"
 
-test_klaar
+test_done

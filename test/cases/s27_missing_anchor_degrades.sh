@@ -55,4 +55,4 @@ if ! grep -q 'anchor' "$stderr" || ! grep -q 'missing' "$stderr"; then
   cat "$stderr" >&2
 fi
 
-test_klaar
+test_done

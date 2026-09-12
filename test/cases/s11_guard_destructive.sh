@@ -13,10 +13,10 @@ trap sandbox_destroy EXIT
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 if [ ! -x "$guard" ]; then
   fail "S11 — hooks/git-guardrails is missing or not executable"
-  test_klaar
+  test_done
 fi
 
-werkmap="$(vers_project werkmap)"
+werkmap="$(fresh_project werkmap)"
 
 # Runs the command past the guard, with the same JSON shape that Claude Code
 # delivers on stdin. Echoes the exit status: 2 means blocked.
@@ -120,4 +120,4 @@ grep -qi 'warning' "$uit_fout" || {
   cat "$uit_fout" >&2
 }
 
-test_klaar
+test_done

@@ -15,7 +15,7 @@ trap sandbox_destroy EXIT
 repo="$(sandbox_copy_repo)"
 rm -f "$repo/hooks/rules.sh"
 
-project="$(vers_project kapotte-bron)"
+project="$(fresh_project kapotte-bron)"
 mkdir -p "$project/.git/hooks"
 ln -s "$repo/hooks/pre-commit" "$project/.git/hooks/pre-commit"
 ln -s "$repo/hooks/pre-push" "$project/.git/hooks/pre-push"
@@ -29,4 +29,4 @@ status=$?
 [ "$status" -eq 0 ] || fail "S58 — the commit was blocked while rules.sh is missing (must fail open)"
 assert_contains "S58 — a warning appears" "warning" "$uitvoer"
 
-test_klaar
+test_done

@@ -48,7 +48,7 @@ assert_contains "S2 (without shellcheck)" "session-hooks.json" "$uitvoer_zonder_
 # And: if both jq and python3 are missing, check cannot verify the file. It
 # must not report "fine" in that case - a green result without a check is
 # exactly the silent degradation this repo pays for most dearly.
-minbin="$(minimale_path_zonder_validators)"
+minbin="$(minimal_path_without_validators)"
 uitvoer_zonder_validator="$(PATH="$minbin" "$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 status_zonder_validator=$?
 
@@ -57,4 +57,4 @@ if [ "$status_zonder_validator" -eq 0 ]; then
 fi
 assert_contains "S2 (no validator)" "session-hooks.json" "$uitvoer_zonder_validator"
 
-test_klaar
+test_done

@@ -15,7 +15,7 @@ sjabloon="$TEST_REPO_ROOT/templates/PRD.md"
 
 if [ ! -d "$nfr_map" ]; then
   fail "R5 — nfr/ is missing"
-  test_klaar
+  test_done
 fi
 
 # Given: the NFR IDs from the register and the ###-subsections in the template.
@@ -62,4 +62,4 @@ if grep -q '^## spec-' "$TEST_REPO_ROOT/CHANGES.md"; then
   grep -n '^## spec-' "$TEST_REPO_ROOT/CHANGES.md" >&2
 fi
 
-test_klaar
+test_done

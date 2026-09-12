@@ -19,7 +19,7 @@ export TEST_REPO_ROOT
 # The four frozen baseline projects, in the fixed order they're named
 # throughout this test suite (R9, S4, S66, S67) — one place instead of
 # retyping the list per test.
-NULMETING_PROJECTEN="a2t-emails tennis-admin tennis-registration tennis-invoicing"
+BASELINE_PROJECTS="a2t-emails tennis-admin tennis-registration tennis-invoicing"
 
 _test_failures=0
 
@@ -79,8 +79,8 @@ sandbox_destroy() {
 # touching the working copy. Leaves .git out of consideration: not needed
 # for the static checks and it saves time.
 sandbox_copy_repo() {
-  local doel="$SANDBOX/${1:-repo}"
-  mkdir -p "$doel"
+  local target="$SANDBOX/${1:-repo}"
+  mkdir -p "$target"
   # Since spec-driven-guardrails adopts itself (issue #98), the real
   # checkout has CLAUDE.md/.claude/settings.json/.claude/skills as
   # absolute symlinks back to itself. tar copies a symlink as a symlink,
@@ -92,8 +92,8 @@ sandbox_copy_repo() {
   # repo snapshot here either.
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./CLAUDE.md' \
     --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) \
-    | (cd "$doel" && tar -xf -)
-  echo "$doel"
+    | (cd "$target" && tar -xf -)
+  echo "$target"
 }
 
 # Creates a fresh, empty git project in the sandbox and echoes the path.
@@ -107,23 +107,23 @@ sandbox_copy_repo() {
 # systematically in CI while always being green locally — found via issue
 # #81, after CI had been red for six runs in a row without anyone
 # noticing.
-vers_project() {
-  local naam="$1"
-  local pad="$SANDBOX/$naam"
-  mkdir -p "$pad"
-  git -C "$pad" init -q -b main
-  echo "$pad"
+fresh_project() {
+  local name="$1"
+  local path="$SANDBOX/$name"
+  mkdir -p "$path"
+  git -C "$path" init -q -b main
+  echo "$path"
 }
 
 # Adopts the workflow in a project, with this repo as the source. adopt.sh
 # only reads from SPEC_DRIVEN_GUARDRAILS_DIR and only writes into the
 # project.
-adopteer() {
+adopt() {
   SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
 }
 
 # The pending IDs for a project, alphabetically, one per line.
-openstaande_ids() {
+pending_ids() {
   "$TEST_REPO_ROOT/pending-changes.sh" "$1" 2>/dev/null \
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort
 }
@@ -131,19 +131,19 @@ openstaande_ids() {
 # The IDs adopt.sh seeded in the adoption table, alphabetically. Checks
 # the pre-migration filename too (W42/#114), since a fixture project may
 # still be on the old format.
-geseede_ids() {
-  local tabel="$1/WORKFLOW-ADOPTION.md"
-  [ -f "$tabel" ] || tabel="$1/WORKFLOW-ADOPTIE.md"
-  [ -f "$tabel" ] || return 0
-  grep '^| [a-z]' "$tabel" | sed 's/^| *//; s/ *|.*//' | sort
+seeded_ids() {
+  local table="$1/WORKFLOW-ADOPTION.md"
+  [ -f "$table" ] || table="$1/WORKFLOW-ADOPTIE.md"
+  [ -f "$table" ] || return 0
+  grep '^| [a-z]' "$table" | sed 's/^| *//; s/ *|.*//' | sort
 }
 
 # Compares two ID lists and reports the difference per ID.
-assert_ids_gelijk() {
-  local omschrijving="$1" verwacht="$2" gekregen="$3"
-  if ! diff -u "$verwacht" "$gekregen" >/dev/null 2>&1; then
-    fail "$omschrijving — ID set differs:"
-    diff -u "$verwacht" "$gekregen" >&2
+assert_ids_equal() {
+  local description="$1" expected="$2" actual="$3"
+  if ! diff -u "$expected" "$actual" >/dev/null 2>&1; then
+    fail "$description — ID set differs:"
+    diff -u "$expected" "$actual" >&2
     return 1
   fi
   return 0
@@ -153,12 +153,12 @@ assert_ids_gelijk() {
 # deliberately without jq and python3. Echoes the path, to be used as
 # PATH. This way the "no validator available at all" branch can be tested
 # without uninstalling anything.
-minimale_path_zonder_validators() {
+minimal_path_without_validators() {
   local bin="$SANDBOX/minbin"
   mkdir -p "$bin"
-  local t pad
+  local t path
   for t in bash sh find sort head mktemp rm cat dirname basename tr grep sed chmod mkdir cp tar env; do
-    pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bin/$t"
+    path="$(command -v "$t" 2>/dev/null)" && ln -sf "$path" "$bin/$t"
   done
   echo "$bin"
 }
@@ -197,7 +197,7 @@ fake_gh_merge_bin() {
   if [ -z "$marker" ]; then
     comments_body='no marker here'
   else
-    comments_body="bevindingen\\n<!-- $marker -->"
+    comments_body="findings\\n<!-- $marker -->"
   fi
 
   local script
@@ -224,26 +224,26 @@ exit 1'
 
 # Builds a PATH without `gh`, for the fail-open scenario where gh is
 # missing. Other tools the guard needs (git, python3) stay in it, unlike
-# minimale_path_zonder_validators above.
-pad_zonder_gh() {
+# minimal_path_without_validators above.
+path_without_gh() {
   local bin="$SANDBOX/nogh"
   mkdir -p "$bin"
-  local t pad
+  local t path
   for t in bash sh git python3 find sort head mktemp rm cat dirname basename tr grep sed awk chmod mkdir cp tar env printf; do
-    pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bin/$t"
+    path="$(command -v "$t" 2>/dev/null)" && ln -sf "$path" "$bin/$t"
   done
   echo "$bin"
 }
 
 assert_contains() {
-  local omschrijving="$1" naald="$2" hooiberg="$3"
-  case "$hooiberg" in
-    *"$naald"*) return 0 ;;
-    *) fail "$omschrijving — '$naald' is missing from the output"; return 1 ;;
+  local description="$1" needle="$2" haystack="$3"
+  case "$haystack" in
+    *"$needle"*) return 0 ;;
+    *) fail "$description — '$needle' is missing from the output"; return 1 ;;
   esac
 }
 
-test_klaar() {
+test_done() {
   if [ "$_test_failures" -gt 0 ]; then
     exit 1
   fi
@@ -252,13 +252,13 @@ test_klaar() {
 
 # Lines within the "## Routing table" table of $1, each starting with '|'.
 # Used by the W9 tests (R7, S29) that check the routing table.
-wegwijzer_rijen() {
+routing_table_rows() {
   awk '/^## Routing table/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
 }
 
 # The last column of a routing table row, stripped of backticks,
 # whitespace, and the "(user-level)" suffix.
-skill_van_rij() {
+skill_from_row() {
   printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
     | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'
 }

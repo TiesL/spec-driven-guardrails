@@ -11,13 +11,13 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S46 — hooks/git-guardrails is missing"; test_klaar; }
+[ -x "$guard" ] || { fail "S46 — hooks/git-guardrails is missing"; test_done; }
 
-op_main="$(vers_project op-main)"
+op_main="$(fresh_project op-main)"
 git -C "$op_main" commit -q --allow-empty -m start
 git -C "$op_main" branch -M main
 
-op_feature="$(vers_project op-feature)"
+op_feature="$(fresh_project op-feature)"
 git -C "$op_feature" commit -q --allow-empty -m start
 git -C "$op_feature" checkout -q -b feature/werk
 
@@ -62,4 +62,4 @@ if [ "$(langs_guard "$op_feature" "git -C /bestaat/echt/niet push origin HEAD")"
   fail "S46 — blocked while the target path does not exist"
 fi
 
-test_klaar
+test_done

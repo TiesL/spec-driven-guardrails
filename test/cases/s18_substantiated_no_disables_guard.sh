@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project uitgeschakeld)"
+project="$(fresh_project uitgeschakeld)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -38,7 +38,7 @@ status=$?
 
 # And: the same holds for the post-migration format (W42/#114) — new
 # filename, new ID, new value.
-project2="$(vers_project uitgeschakeld-nieuw)"
+project2="$(fresh_project uitgeschakeld-nieuw)"
 git -C "$project2" commit -q --allow-empty -m start
 git -C "$project2" checkout -q -b feature/werk
 
@@ -63,4 +63,4 @@ status2=$?
 [ "$status2" -eq 0 ] || fail "S18 — post-migration format: expected pass-through (exit 0), got $status2. Output: $uitvoer2"
 [ ! -e "$sentinel2" ] || fail "S18 — post-migration format: the guard called gh while the row is set to 'no'; that should stay local"
 
-test_klaar
+test_done

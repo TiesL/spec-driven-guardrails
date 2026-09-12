@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 
-for project in $NULMETING_PROJECTEN; do
+for project in $BASELINE_PROJECTS; do
   fixture="$nulmeting/$project"
   gouden="$fixture/verwacht-openstaand.txt"
 
@@ -23,12 +23,12 @@ for project in $NULMETING_PROJECTEN; do
 
   # When: pending-changes.sh runs against the frozen fixture.
   huidig="$SANDBOX/$project-huidig.txt"
-  openstaande_ids "$fixture" > "$huidig"
+  pending_ids "$fixture" > "$huidig"
 
   # Then: count and identity exactly equal to the baseline. If it deviates,
-  # assert_ids_gelijk names the difference per ID - a silent change in the
+  # assert_ids_equal names the difference per ID - a silent change in the
   # question set is never acceptable, not even as "cleanup".
-  assert_ids_gelijk "R9 — $project" "$gouden" "$huidig"
+  assert_ids_equal "R9 — $project" "$gouden" "$huidig"
 done
 
-test_klaar
+test_done

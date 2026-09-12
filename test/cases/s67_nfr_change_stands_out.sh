@@ -44,13 +44,13 @@ EOF
 
 # Overwriting TEST_REPO_ROOT would affect other tests; this test calls
 # pending-changes.sh directly in the mutated copy, instead of via the
-# openstaande_ids() helper that relies on TEST_REPO_ROOT.
+# pending_ids() helper that relies on TEST_REPO_ROOT.
 #
 # All four must diverge, not "at least one": every nfr file carries
 # applies-if: always (LEESMIJ.md), so a mutation that does not stand
 # out for all four points to a project that does not pick up the nfr source
 # after all.
-for project in $NULMETING_PROJECTEN; do
+for project in $BASELINE_PROJECTS; do
   gouden="$nulmeting/$project/verwacht-openstaand.txt"
   if [ ! -f "$gouden" ]; then
     fail "S67 — golden set missing: $project"
@@ -68,4 +68,4 @@ for project in $NULMETING_PROJECTEN; do
   fi
 done
 
-test_klaar
+test_done

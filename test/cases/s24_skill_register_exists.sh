@@ -25,4 +25,4 @@ for naam in $skills; do
     || fail "S24 — $naam/SKILL.md has no 'description:' in the frontmatter"
 done
 
-test_klaar "S24"
+test_done "S24"

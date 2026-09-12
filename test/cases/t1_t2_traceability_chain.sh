@@ -13,7 +13,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/templates/check-traceability.sh"
-[ -x "$script" ] || { fail "T1 — templates/check-traceability.sh is missing or not executable"; test_klaar; }
+[ -x "$script" ] || { fail "T1 — templates/check-traceability.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -265,4 +265,4 @@ case "$uitvoer" in
     fail "S87 — a leftover Dekt: field was treated as 'convention not in use yet'" ;;
 esac
 
-test_klaar "T1/T2/T5/S30/S62/S87"
+test_done "T1/T2/T5/S30/S62/S87"

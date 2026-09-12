@@ -21,7 +21,7 @@ fi
 doel="$repo/nfr/spec-security.md"
 if [ ! -f "$doel" ]; then
   fail "S5 — nfr/spec-security.md is missing"
-  test_klaar
+  test_done
 fi
 
 python3 - "$doel" <<'PY'
@@ -43,4 +43,4 @@ if [ "$status" -eq 0 ]; then
 fi
 assert_contains "S5" "spec-security" "$uitvoer"
 
-test_klaar
+test_done

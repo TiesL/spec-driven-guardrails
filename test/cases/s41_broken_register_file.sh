@@ -78,4 +78,4 @@ blok="$SANDBOX/blok-crlf.txt"
 nfr_block "$repo/nfr" > "$blok"
 grep -q 'spec-proef' "$blok" || fail "S41 — CRLF file disappeared from the generated block"
 
-test_klaar
+test_done

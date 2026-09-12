@@ -16,7 +16,7 @@ repo="$(sandbox_copy_repo)"
 # so remove that first — otherwise this scenario already starts in the second
 # state and no longer tests its own first rule.
 rm -rf "$repo/skills"
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 
 # Beforehand: without a skills directory in the repo, nothing should be reported.
@@ -74,4 +74,4 @@ if grep -qi 'missing the skill' "$na"; then
   fail "S9 — the message stays even though all skills are installed"
 fi
 
-test_klaar
+test_done

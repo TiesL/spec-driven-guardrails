@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project eigen-hook)"
+project="$(fresh_project eigen-hook)"
 mkdir -p "$project/.git/hooks"
 cat > "$project/.git/hooks/pre-commit" <<'EOF'
 #!/usr/bin/env bash
@@ -19,7 +19,7 @@ exit 0
 EOF
 chmod +x "$project/.git/hooks/pre-commit"
 
-# Not via the adopteer() helper: that throws all output to /dev/null, and
+# Not via the adopt() helper: that throws all output to /dev/null, and
 # this test specifically needs to see the message.
 melding="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project" 2>&1)"
 
@@ -41,7 +41,7 @@ fi
 # And: running twice gives an identical tree — the custom hook remains a
 # regular file with the same content, pre-push remains the same symlink, no
 # .bak added.
-adopteer "$project" >/dev/null 2>&1
+adopt "$project" >/dev/null 2>&1
 if [ -L "$project/.git/hooks/pre-commit" ]; then
   fail "S51 — after a second run the custom hook still became a symlink"
 fi
@@ -60,7 +60,7 @@ fi
 # not silently replaced. Found in the review on PR #76: the original check
 # only tested "is this not a symlink", not "does this symlink already point
 # to our own source".
-project2="$(vers_project eigen-symlink-hook)"
+project2="$(fresh_project eigen-symlink-hook)"
 mkdir -p "$project2/.git/hooks"
 elders="$SANDBOX/ergens-anders-pre-push"
 cat > "$elders" <<'EOF'
@@ -78,4 +78,4 @@ if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elders" ]; then
 fi
 assert_contains "S51 — a message appeared about the custom symlink hook" "not touched" "$melding2"
 
-test_klaar
+test_done

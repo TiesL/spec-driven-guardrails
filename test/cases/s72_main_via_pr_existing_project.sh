@@ -14,7 +14,7 @@ trap sandbox_destroy EXIT
 # does not call check-main-via-pr.sh, plus a WORKFLOW-ADOPTIE.md predating
 # this entry — exactly the case where scaffold_if_missing leaves the ci.yml
 # untouched and seed_adoption_table no longer seeds anything (that file already exists).
-project="$(vers_project met-eigen-ci)"
+project="$(fresh_project met-eigen-ci)"
 echo '{}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"
 cat > "$project/.github/workflows/ci.yml" <<'EOF'
@@ -34,7 +34,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 | ci-conventie | ja | 2026-01-01 | van toepassing |
 EOF
 
-adopteer "$project"
+adopt "$project"
 
 # And: the existing ci.yml stays untouched — scaffold_if_missing overwrites
 # nothing (same rule as S49 for ci-op-pr-en-main).
@@ -45,17 +45,17 @@ if grep -q 'check-main-via-pr' "$project/.github/workflows/ci.yml"; then
   fail "S72 — the existing ci.yml called check-main-via-pr.sh anyway (unexpected for this scenario)"
 fi
 
-openstaande="$(openstaande_ids "$project")"
+openstaande="$(pending_ids "$project")"
 if ! printf '%s\n' "$openstaande" | grep -qx 'ci-detecteert-main-buiten-pr'; then
   fail "S72 — ci-detecteert-main-buiten-pr did not appear as outstanding for an existing package.json project"
   printf '%s\n' "$openstaande" >&2
 fi
 
 # And: a project without package.json does not get that question.
-project_zonder="$(vers_project zonder-package-json)"
-openstaande_zonder="$(openstaande_ids "$project_zonder")"
+project_zonder="$(fresh_project zonder-package-json)"
+openstaande_zonder="$(pending_ids "$project_zonder")"
 if printf '%s\n' "$openstaande_zonder" | grep -qx 'ci-detecteert-main-buiten-pr'; then
   fail "S72 — the main-via-PR question appeared even without package.json"
 fi
 
-test_klaar
+test_done

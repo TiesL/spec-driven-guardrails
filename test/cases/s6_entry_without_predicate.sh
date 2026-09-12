@@ -99,4 +99,4 @@ if grep -qi 'warning' "$echte_melding"; then
   cat "$echte_melding" >&2
 fi
 
-test_klaar
+test_done

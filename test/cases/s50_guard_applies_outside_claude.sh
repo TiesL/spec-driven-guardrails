@@ -10,8 +10,8 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project native-hooks)"
-adopteer "$project"
+project="$(fresh_project native-hooks)"
+adopt "$project"
 
 # A real bare remote, otherwise git push origin main never reaches the
 # pre-push hook — git would already fail earlier on "no remote", and that
@@ -20,7 +20,7 @@ remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
 git -C "$project" remote add origin "$remote"
 
-# Given: main checked out, the git hooks installed (by adopteer). First one
+# Given: main checked out, the git hooks installed (by adopt). First one
 # allowed first commit — a repo without commits is allowed to have its very
 # first commit on main (same exception as in hooks/git-guardrails) — so that
 # the second attempt below really puts the rule to the test.
@@ -59,7 +59,7 @@ assert_contains "S50 — the push message matches the PreToolUse guard" "main ge
 # message. Demonstrated exactly with a real relative path, not reasoned
 # about: calling adopt.sh from a subdirectory of $TEST_REPO_ROOT with
 # a relative SPEC_DRIVEN_GUARDRAILS_DIR.
-project_relatief="$(vers_project relatieve-workflow-dir)"
+project_relatief="$(fresh_project relatieve-workflow-dir)"
 (
   cd "$TEST_REPO_ROOT/hooks" || exit 1
   SPEC_DRIVEN_GUARDRAILS_DIR=".." "$TEST_REPO_ROOT/adopt.sh" "$project_relatief" >/dev/null 2>&1
@@ -78,4 +78,4 @@ relatief_status=$?
 [ "$relatief_status" -ne 0 ] \
   || fail "S50 — with a relative SPEC_DRIVEN_GUARDRAILS_DIR the git hook did not block (dangling symlink, silently skipped by git)"
 
-test_klaar
+test_done

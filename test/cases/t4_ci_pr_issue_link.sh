@@ -12,7 +12,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/templates/check-pr-issue-link.sh"
-[ -x "$script" ] || { fail "T4 — templates/check-pr-issue-link.sh is missing or not executable"; test_klaar; }
+[ -x "$script" ] || { fail "T4 — templates/check-pr-issue-link.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -54,4 +54,4 @@ echo null > "$fixtures/44"
 uitvoer="$(PATH="$fakebin:$PATH" "$script" 44 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T4 — non-numeric gh output ('null') gave exit 0 instead of a hard error"
 
-test_klaar
+test_done

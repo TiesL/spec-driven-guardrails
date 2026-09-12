@@ -27,7 +27,7 @@ print(h["command"])
 
 # Given: a project whose .claude/settings.json points to a vanished checkout
 # — the exact state after a repo rename before re-adoption.
-project="$(vers_project verweesd)"
+project="$(fresh_project verweesd)"
 mkdir -p "$project/.claude"
 verdwenen="$SANDBOX/checkout-die-niet-meer-bestaat"
 mkdir -p "$verdwenen/settings"
@@ -47,7 +47,7 @@ printf '%s' "$uitvoer" | grep -qi 'adopt.sh opnieuw' \
 
 # --- Regression: a healthy symlink stays silent (no false alarms) and
 # lets pending-changes.sh run normally.
-project_gezond="$(vers_project gezond)"
+project_gezond="$(fresh_project gezond)"
 mkdir -p "$project_gezond/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project_gezond/.claude/settings.json"
 uitvoer_gezond="$(cd "$project_gezond" && bash -c "$opdracht" 2>&1)"
@@ -56,10 +56,10 @@ printf '%s' "$uitvoer_gezond" | grep -qi 'niet bestaat' \
 
 # --- Regression: no .claude/settings.json (non-adopted project) stays
 # silent — no message, no error status.
-project_kaal="$(vers_project kaal)"
+project_kaal="$(fresh_project kaal)"
 uitvoer_kaal="$(cd "$project_kaal" && bash -c "$opdracht" 2>&1)"
 status_kaal=$?
 [ "$status_kaal" -eq 0 ] || fail "S79 — a non-adopted project gave an error status"
 [ -z "$uitvoer_kaal" ] || fail "S79 — a non-adopted project gave unexpected output: $uitvoer_kaal"
 
-test_klaar
+test_done

@@ -37,4 +37,4 @@ schoon_status=$?
 [ "$schoon_status" -eq 0 ] || fail "S92 — check failed on this repo's own, currently-clean PRD.md/TEST-SCENARIOS.md: $schoon_uitvoer"
 assert_contains "S92 — check-traceability.sh ran" "traceability" "$schoon_uitvoer"
 
-test_klaar
+test_done

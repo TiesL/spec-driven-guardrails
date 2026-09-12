@@ -28,7 +28,7 @@ fi
 # not a reason to silently check nothing.
 if [ ! -f "$a2t/verwacht-openstaand.txt" ]; then
   fail "S4 — golden set of a2t-emails is missing"
-  test_klaar
+  test_done
 fi
 
 if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
@@ -39,4 +39,4 @@ if [ "$aantal" -lt 20 ]; then
   fail "S4 — a2t baseline only counts $aantal IDs; 'everything open' was expected"
 fi
 
-test_klaar
+test_done

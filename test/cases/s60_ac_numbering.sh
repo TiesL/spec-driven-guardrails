@@ -14,7 +14,7 @@ set -uo pipefail
 sjabloon="$TEST_REPO_ROOT/templates/ISSUE_TEMPLATE/work-item.md"
 
 # Given: the template for a work item.
-[ -f "$sjabloon" ] || { fail "S60 — work-item.md is missing"; test_klaar; }
+[ -f "$sjabloon" ] || { fail "S60 — work-item.md is missing"; test_done; }
 
 # Then: the criteria are numbered AC<n>.
 grep -qE '^#+ +AC[0-9]+' "$sjabloon" \
@@ -47,4 +47,4 @@ for oud in "PRD-sectie" "TEST-SCENARIOS.md-scenario"; do
     && fail "S60 — '$oud' is still there alongside **Covers:**"
 done
 
-test_klaar "S60"
+test_done "S60"

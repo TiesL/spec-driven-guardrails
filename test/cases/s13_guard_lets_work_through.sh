@@ -11,9 +11,9 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S13 — hooks/git-guardrails is missing"; test_klaar; }
+[ -x "$guard" ] || { fail "S13 — hooks/git-guardrails is missing"; test_done; }
 
-project="$(vers_project werk)"
+project="$(fresh_project werk)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -33,4 +33,4 @@ printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","cwd":"%s","tool_inpu
   "$project" | "$guard" >/dev/null 2>&1
 [ $? -ne 2 ] || fail "S13 — the guard blocks a non-Bash tool"
 
-test_klaar
+test_done

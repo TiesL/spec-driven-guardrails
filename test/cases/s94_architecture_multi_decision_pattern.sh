@@ -8,7 +8,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 sjabloon="$TEST_REPO_ROOT/templates/ARCHITECTURE.md"
-[ -f "$sjabloon" ] || { fail "S94 — templates/ARCHITECTURE.md is missing"; test_klaar; }
+[ -f "$sjabloon" ] || { fail "S94 — templates/ARCHITECTURE.md is missing"; test_done; }
 
 inhoud="$(cat "$sjabloon")"
 
@@ -51,4 +51,4 @@ if ! diff -u "$verwacht" "$gekregen" >/dev/null 2>&1; then
   diff -u "$verwacht" "$gekregen" >&2
 fi
 
-test_klaar
+test_done

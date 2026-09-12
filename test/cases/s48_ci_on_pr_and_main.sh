@@ -71,4 +71,4 @@ for bestand in templates/ci.yml .github/workflows/ci.yml; do
   done < <(grep -E '^\s+- run:' "$pad")
 done
 
-test_klaar
+test_done

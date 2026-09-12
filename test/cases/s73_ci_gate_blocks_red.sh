@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project ci-rood)"
+project="$(fresh_project ci-rood)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -23,4 +23,4 @@ status=$?
 [ "$status" -eq 2 ] || fail "S73 — expected block (exit 2) for failing CI, got $status. Output: $uitvoer"
 assert_contains "S73 — the message names the failing check" "check: fail" "$uitvoer"
 
-test_klaar
+test_done
