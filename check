@@ -187,6 +187,23 @@ if [ -x "$doel/check-no-dutch.sh" ]; then
   rm -f "$dutch_uitvoer"
 fi
 
+# --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
+# This repo requires every adopted project to run this exact check
+# (traceability-schakel-1 in CHANGES.md, answered `yes` in this repo's own
+# WORKFLOW-ADOPTION.md), but until now never ran it on its own PRD.md/
+# TEST-SCENARIOS.md — found when S85's own malformed Covers: field
+# (`F6, W42/#114`) sat undetected until check-traceability.sh was run by
+# hand. Gated on the script's own presence, same reasoning as 3c: a
+# sandboxed copy of this repo is checked the same way as the real one,
+# without assuming anything about an arbitrary external project.
+if [ -x "$doel/check-traceability.sh" ]; then
+  echo "check: traceability (link 1)"
+  if ! traceability_uitvoer="$("$doel/check-traceability.sh" "$doel" 2>&1)"; then
+    melden_fout "check-traceability.sh reported a problem:"
+    printf '%s\n' "$traceability_uitvoer" | sed 's/^/    /' >&2
+  fi
+fi
+
 # --- 4. shellcheck -----------------------------------------------------------
 # Warning, not requiring: not every machine has it, and a missing linter
 # must not turn a green build red.
