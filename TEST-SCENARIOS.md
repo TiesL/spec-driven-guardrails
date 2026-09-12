@@ -1045,3 +1045,18 @@ something new is being added.
 - And: `async` is not `true` — a failed push must stay visible, not
   silently backgrounded (found via #133: the default 1.5s `SessionEnd`
   budget cancelled a real `git push` more often than it succeeded)
+
+### S92 — `check` runs this repo's own traceability check (link 1)
+**Covers:** F13
+- Given: this repo's own `check-traceability.sh`, self-adopted (#98) but
+  never invoked by `./check` — found via #147, when S85's own malformed
+  `**Covers:** F6, W42/#114` field sat undetected until the script was
+  run by hand
+- When: `./check` runs against a project whose `TEST-SCENARIOS.md` has an
+  invalid `Covers:` token
+- Then: `check` fails and names the broken token, instead of reporting
+  green while schakel 1 is silently broken
+- And: on this repo's own, currently-clean `PRD.md`/`TEST-SCENARIOS.md`,
+  `./check` still runs `check-traceability.sh` and stays green — this is
+  wiring the check in, not fixing a pre-existing gap in this repo's own
+  coverage
