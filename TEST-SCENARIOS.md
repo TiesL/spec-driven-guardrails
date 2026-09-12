@@ -1034,3 +1034,14 @@ something new is being added.
   drifting silently (found via #160: 562 lines of undetected drift since
   the snapshot was last refreshed in #127, long before three later
   translation PRs rewrote the live file)
+
+### S91 — The SessionEnd push hook carries an explicit, realistic timeout
+**Covers:** F18
+- Given: `settings/session-hooks.json`'s `SessionEnd` push hook
+- When: the hook configuration is read
+- Then: it carries an explicit `timeout` field, generous enough for a
+  network push (at least 10s) and within Claude Code's documented 60s
+  ceiling for the shared `SessionEnd` budget
+- And: `async` is not `true` — a failed push must stay visible, not
+  silently backgrounded (found via #133: the default 1.5s `SessionEnd`
+  budget cancelled a real `git push` more often than it succeeded)
