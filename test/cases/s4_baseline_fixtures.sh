@@ -10,7 +10,7 @@ set -uo pipefail
 nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 
 # The fourfold comparison of golden sets is in R9
-# (r9_nulmeting_onveranderd.sh). This scenario is specifically about whether
+# (r9_baseline_unchanged.sh). This scenario is specifically about whether
 # a2t-emails is captured as found, without repair.
 
 # a2t-emails is the special case: no WORKFLOW-ADOPTIE.md, so everything is
