@@ -2,7 +2,7 @@
 # S64 — The merge-guard escape hatch only disables the merge guard.
 # Covers: F8
 #
-# Found in pre-merge-review on PR #70: CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 did a
+# Found in pre-merge-review on PR #70: CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 did a
 # blanket `return 0` for the entire segment, and thereby also let through
 # destructive git commands with the same var prefix.
 
@@ -17,7 +17,7 @@ trap sandbox_destroy EXIT
 project="$(vers_project uitweg-scope)"
 git -C "$project" commit -q --allow-empty -m start
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 git reset --hard"}}'
+invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 git reset --hard"}}'
 uitvoer="$(printf '%s' "$invoer" | "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 

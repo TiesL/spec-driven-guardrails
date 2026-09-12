@@ -39,11 +39,11 @@ CLAUDE_WORKFLOW_DIR="$(cd "$CLAUDE_WORKFLOW_DIR" && pwd)"
 # The library comes from the checkout *this* script lives in, not from
 # CLAUDE_WORKFLOW_DIR: code belongs with the script that calls it. The data
 # (CHANGES.md, templates) *does* come from CLAUDE_WORKFLOW_DIR, as always.
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/changes.sh
-. "$eigen_map/lib/changes.sh"
+. "$own_dir/lib/changes.sh"
 # shellcheck source=lib/nfr.sh
-. "$eigen_map/lib/nfr.sh"
+. "$own_dir/lib/nfr.sh"
 
 backup_if_real_file() {
   local path="$1"
@@ -77,19 +77,19 @@ copy_issue_templates() {
 # Callback for iterate_entries. The input comes via _seed_* globals instead
 # of dynamic scope, so it's visible where it comes from.
 #
-# `standaard: question` is skipped here: those entries are never answered
+# `default: question` is skipped here: those entries are never answered
 # automatically. pending-changes.sh, on the other hand, ignores that same
 # field — see the callback there. That asymmetry is deliberate and so
 # lives at both callers, not hidden in lib/changes.sh.
 seed_entry() {
-  local id="$1" standaard="$2" predicaat="$3"
-  if [ "$standaard" = "question" ]; then
+  local id="$1" default="$2" predicate="$3"
+  if [ "$default" = "question" ]; then
     return 0
   fi
-  if ! predicate_true "$predicaat" "$_seed_project_dir"; then
+  if ! predicate_true "$predicate" "$_seed_project_dir"; then
     return 0
   fi
-  echo "| $id | yes | $_seed_vandaag | at adoption — requires substantiation during PRD/architecture |" >> "$_seed_doel"
+  echo "| $id | yes | $_seed_today | at adoption — requires substantiation during PRD/architecture |" >> "$_seed_target"
 }
 
 # Records at adoption time that this project agrees to the current state
@@ -103,14 +103,14 @@ seed_entry() {
 # that would duplicate every already-answered question. pending-changes.sh
 # is what flags an old-format file for migration; this function only ever
 # seeds a genuinely new adoption.
-seed_adoptietabel() {
+seed_adoption_table() {
   local project_dir="$1"
-  local doel="$project_dir/WORKFLOW-ADOPTION.md"
-  local oud="$project_dir/WORKFLOW-ADOPTIE.md"
+  local target="$project_dir/WORKFLOW-ADOPTION.md"
+  local old_file="$project_dir/WORKFLOW-ADOPTIE.md"
   local changes="$CLAUDE_WORKFLOW_DIR/CHANGES.md"
 
-  [ -e "$doel" ] && return 0
-  [ -e "$oud" ] && return 0
+  [ -e "$target" ] && return 0
+  [ -e "$old_file" ] && return 0
   [ -f "$changes" ] || return 0
 
   {
@@ -122,18 +122,18 @@ seed_adoptietabel() {
     echo
     echo "| Change | Answer | Date | Notes |"
     echo "|---|---|---|---|"
-  } > "$doel"
+  } > "$target"
 
   _seed_project_dir="$project_dir"
-  _seed_doel="$doel"
-  _seed_vandaag="$(date +%Y-%m-%d)"
+  _seed_target="$target"
+  _seed_today="$(date +%Y-%m-%d)"
   iterate_all_entries "$CLAUDE_WORKFLOW_DIR" seed_entry
 
-  echo "Adoption table created: $doel"
+  echo "Adoption table created: $target"
 }
 
 GITIGNORE_BEGIN="# claude-workflow: begin — managed block, do not edit by hand"
-GITIGNORE_EIND="# claude-workflow: end"
+GITIGNORE_END="# claude-workflow: end"
 
 # Sets the managed block in .gitignore, with exactly the given lines.
 #
@@ -149,10 +149,10 @@ GITIGNORE_EIND="# claude-workflow: end"
 # excludes two nested git repos with `tennis-registration/` and
 # `tennis-invoicing/`, and accidentally swallowing those turns two whole
 # repos into untracked content.
-schrijf_gitignore_blok() {
+write_gitignore_block() {
   local project_dir="$1"; shift
   local gitignore="$project_dir/.gitignore"
-  local tijdelijk="$gitignore.claude-workflow-tmp"
+  local temp_file="$gitignore.claude-workflow-tmp"
 
   touch "$gitignore"
 
@@ -165,43 +165,43 @@ schrijf_gitignore_blok() {
   # and in at least one project contains lines excluding nested git repos;
   # silently plowing through it is the most expensive mistake this script
   # can make.
-  if ! marker_probleem="$(awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
+  if ! marker_problem="$(awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_END" '
     $0 == begin {
-      if (diepte > 0) { print "a second begin marker on line " NR " while the previous block is not closed yet"; exit 1 }
-      diepte++; next
+      if (depth > 0) { print "a second begin marker on line " NR " while the previous block is not closed yet"; exit 1 }
+      depth++; next
     }
     $0 == eind {
-      if (diepte == 0) { print "an end marker on line " NR " with no matching begin marker"; exit 1 }
-      diepte--; next
+      if (depth == 0) { print "an end marker on line " NR " with no matching begin marker"; exit 1 }
+      depth--; next
     }
-    END { if (diepte > 0) { print "a begin marker with no end marker"; exit 1 } }
+    END { if (depth > 0) { print "a begin marker with no end marker"; exit 1 } }
   ' "$gitignore")"; then
-    echo "adopt.sh: $gitignore has a corrupted managed block — $marker_probleem." >&2
+    echo "adopt.sh: $gitignore has a corrupted managed block — $marker_problem." >&2
     echo "adopt.sh: the file was not touched. Fix the markers by hand and run again." >&2
     return 1
   fi
 
   # Existing content, without the old block and without the loose variants
   # of the managed lines.
-  awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_EIND" '
-    $0 == begin { in_blok = 1; next }
-    in_blok { if ($0 == eind) in_blok = 0; next }
+  awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_END" '
+    $0 == begin { in_block = 1; next }
+    in_block { if ($0 == eind) in_block = 0; next }
     { print }
-  ' "$gitignore" > "$tijdelijk"
+  ' "$gitignore" > "$temp_file"
 
   # Removing the loose variants. Comparison happens on the line stripped
   # of line-ending clutter and trailing whitespace: `CLAUDE.md` with a
   # leftover carriage return or three trailing spaces is the same line to
   # git, and an exact comparison would leave it standing next to the new
   # one — then it appears twice instead of migrated.
-  local regel
-  for regel in "$@"; do
-    awk -v weg="$regel" '
-      { kaal = $0; sub(/\r$/, "", kaal); sub(/[ \t]+$/, "", kaal) }
-      kaal == weg { next }
+  local line
+  for line in "$@"; do
+    awk -v to_remove="$line" '
+      { stripped = $0; sub(/\r$/, "", stripped); sub(/[ \t]+$/, "", stripped) }
+      stripped == to_remove { next }
       { print }
-    ' "$tijdelijk" > "$tijdelijk.f"
-    mv "$tijdelijk.f" "$tijdelijk"
+    ' "$temp_file" > "$temp_file.f"
+    mv "$temp_file.f" "$temp_file"
   done
 
   # Only removing blank lines at the *end*, otherwise the file grows one
@@ -215,44 +215,44 @@ schrijf_gitignore_blok() {
   # empty line — with the spaces stripped. That's a change to content
   # outside the block, and this script shouldn't make it.
   awk '
-    length($0) > 0 { for (i = 1; i <= wacht; i++) print ""; wacht = 0; print; next }
-    { wacht++ }
-  ' "$tijdelijk" > "$tijdelijk.f"
-  mv "$tijdelijk.f" "$tijdelijk"
+    length($0) > 0 { for (i = 1; i <= blank_run; i++) print ""; blank_run = 0; print; next }
+    { blank_run++ }
+  ' "$temp_file" > "$temp_file.f"
+  mv "$temp_file.f" "$temp_file"
 
   {
-    if [ -s "$tijdelijk" ]; then
-      cat "$tijdelijk"
+    if [ -s "$temp_file" ]; then
+      cat "$temp_file"
       echo
     fi
     echo "$GITIGNORE_BEGIN"
-    for regel in "$@"; do
-      echo "$regel"
+    for line in "$@"; do
+      echo "$line"
     done
-    echo "$GITIGNORE_EIND"
+    echo "$GITIGNORE_END"
   } > "$gitignore"
 
-  rm -f "$tijdelijk"
+  rm -f "$temp_file"
   echo "Managed .gitignore block updated: $*"
 }
 
-# Refreshes or creates one skill symlink in doel_map: <doel_map>/<naam> ->
-# <bron_map>/<naam>. Only replaced if the existing path is itself a symlink
+# Refreshes or creates one skill symlink in target_dir: <target_dir>/<name> ->
+# <source_dir>/<name>. Only replaced if the existing path is itself a symlink
 # or doesn't exist yet — a real directory (belonging to the project or the
 # user themselves) is never overwritten.
-skill_symlink_bijwerken() {
-  local doel_map="$1" naam="$2" bron_map="$3"
-  if [ -L "$doel_map/$naam" ] || [ ! -e "$doel_map/$naam" ]; then
-    rm -f "$doel_map/$naam"
-    ln -s "$bron_map/$naam" "$doel_map/$naam"
+skill_symlink_update() {
+  local target_dir="$1" name="$2" source_dir="$3"
+  if [ -L "$target_dir/$name" ] || [ ! -e "$target_dir/$name" ]; then
+    rm -f "$target_dir/$name"
+    ln -s "$source_dir/$name" "$target_dir/$name"
   fi
 }
 
 # Cleans up one symlink if it's orphaned: it points (resolved) at
-# something under bron_echt that no longer exists. An orphaned skill isn't
+# something under source_real that no longer exists. An orphaned skill isn't
 # inert: Claude Code reports a load error for it every session.
 #
-# Strict: only symlinks that point at bron_echt *and* whose target no
+# Strict: only symlinks that point at source_real *and* whose target no
 # longer exists. A symlink pointing somewhere else isn't ours to clean up.
 # Comparison happens on resolved paths, not on the symlink's text — a
 # relative link to the same place is the same link, and a textual prefix
@@ -260,27 +260,27 @@ skill_symlink_bijwerken() {
 #
 # If resolving fails, the link is left standing. When in doubt, discard
 # nothing: this is someone else's directory.
-skill_symlink_opruimen_indien_verweesd() {
-  local link="$1" bron_echt="$2"
+skill_symlink_cleanup_if_orphaned() {
+  local link="$1" source_real="$2"
   [ -L "$link" ] || return 0
 
-  local bestemming map map_echt
-  bestemming="$(readlink "$link")"
-  case "$bestemming" in
+  local destination dir dir_real
+  destination="$(readlink "$link")"
+  case "$destination" in
     /*) ;;
-    *) bestemming="$(dirname "$link")/$bestemming" ;;
+    *) destination="$(dirname "$link")/$destination" ;;
   esac
 
-  map="$(dirname "$bestemming")"
-  map_echt="$(cd "$map" 2>/dev/null && pwd -P)" || return 0
-  [ -n "$map_echt" ] || return 0
+  dir="$(dirname "$destination")"
+  dir_real="$(cd "$dir" 2>/dev/null && pwd -P)" || return 0
+  [ -n "$dir_real" ] || return 0
 
-  case "$map_echt/$(basename "$bestemming")" in
-    "$bron_echt"/*) ;;
+  case "$dir_real/$(basename "$destination")" in
+    "$source_real"/*) ;;
     *) return 0 ;;
   esac
 
-  if [ ! -e "$bestemming" ]; then
+  if [ ! -e "$destination" ]; then
     rm "$link"
     echo "Orphaned skill symlink cleaned up: $(basename "$link")"
   fi
@@ -296,33 +296,33 @@ skill_symlink_opruimen_indien_verweesd() {
 # Without a skills/ directory: do nothing, and leave *no* empty directory
 # behind. The installer lands before the content, so this is the normal
 # state until that directory is populated.
-installeer_skills() {
+install_skills() {
   local project_dir="$1"
-  local bron="$CLAUDE_WORKFLOW_DIR/skills"
-  local doel="$project_dir/.claude/skills"
+  local source="$CLAUDE_WORKFLOW_DIR/skills"
+  local target="$project_dir/.claude/skills"
 
-  if [ ! -d "$bron" ]; then
+  if [ ! -d "$source" ]; then
     return 0
   fi
 
-  if [ -L "$doel" ]; then
-    rm "$doel"
+  if [ -L "$target" ]; then
+    rm "$target"
   fi
-  mkdir -p "$doel"
+  mkdir -p "$target"
 
-  local pad naam
-  for pad in "$bron"/*/; do
-    [ -d "$pad" ] || continue
-    naam="$(basename "$pad")"
-    skill_symlink_bijwerken "$doel" "$naam" "$bron"
+  local path name
+  for path in "$source"/*/; do
+    [ -d "$path" ] || continue
+    name="$(basename "$path")"
+    skill_symlink_update "$target" "$name" "$source"
   done
 
-  local bron_echt
-  bron_echt="$(cd "$bron" && pwd -P)"
+  local source_real
+  source_real="$(cd "$source" && pwd -P)"
 
   local link
-  for link in "$doel"/*; do
-    skill_symlink_opruimen_indien_verweesd "$link" "$bron_echt"
+  for link in "$target"/*; do
+    skill_symlink_cleanup_if_orphaned "$link" "$source_real"
   done
 }
 
@@ -345,7 +345,7 @@ installeer_skills() {
 # identical tree"). A symlink to something else (the project's own
 # dotfiles, for example) is just as much a deliberate choice as a real
 # file, and gets the same treatment: left alone, loudly reported.
-installeer_git_hooks() {
+install_git_hooks() {
   local project_dir="$1"
   local git_dir="$project_dir/.git"
   local hooks_dir="$git_dir/hooks"
@@ -355,26 +355,26 @@ installeer_git_hooks() {
   [ -d "$git_dir" ] || return 0
   mkdir -p "$hooks_dir"
 
-  local naam pad bron huidig_doel
-  for naam in pre-commit pre-push; do
-    bron="$CLAUDE_WORKFLOW_DIR/hooks/$naam"
-    [ -f "$bron" ] || continue
-    pad="$hooks_dir/$naam"
-    if [ -e "$pad" ] || [ -L "$pad" ]; then
-      if [ -L "$pad" ]; then
-        huidig_doel="$(readlink "$pad" 2>/dev/null)"
+  local name path source current_target
+  for name in pre-commit pre-push; do
+    source="$CLAUDE_WORKFLOW_DIR/hooks/$name"
+    [ -f "$source" ] || continue
+    path="$hooks_dir/$name"
+    if [ -e "$path" ] || [ -L "$path" ]; then
+      if [ -L "$path" ]; then
+        current_target="$(readlink "$path" 2>/dev/null)"
       else
-        huidig_doel=""
+        current_target=""
       fi
-      if [ "$huidig_doel" = "$bron" ]; then
-        rm "$pad"
+      if [ "$current_target" = "$source" ]; then
+        rm "$path"
       else
-        echo "Own git hook found at $pad — not touched. git-guardrails' branch protection therefore doesn't apply here outside Claude, unless you include that rule in your own hook."
+        echo "Own git hook found at $path — not touched. git-guardrails' branch protection therefore doesn't apply here outside Claude, unless you include that rule in your own hook."
         continue
       fi
     fi
-    ln -s "$bron" "$pad"
-    chmod +x "$bron" 2>/dev/null || true
+    ln -s "$source" "$path"
+    chmod +x "$source" 2>/dev/null || true
   done
 }
 
@@ -382,10 +382,10 @@ installeer_git_hooks() {
 # ~/.claude/skills/. F10: this is the only skill that belongs at user
 # level, because USER-CLAUDE.md specifically loads in non-adopted
 # projects, where .claude/skills/ doesn't exist.
-installeer_user_skill() {
-  local naam="adopt-workflow"
-  local bron="$CLAUDE_WORKFLOW_DIR/skills"
-  local doel="$HOME/.claude/skills"
+install_user_skill() {
+  local name="adopt-workflow"
+  local source="$CLAUDE_WORKFLOW_DIR/skills"
+  local target="$HOME/.claude/skills"
 
   # Unlike $project_dir/.claude/skills, this isn't a directory this repo
   # fully owns: it's the user's entire personal skill namespace on *this*
@@ -394,21 +394,21 @@ installeer_user_skill() {
   # belong here — "when in doubt, discard nothing" applies at user level
   # even more strongly than in a project. mkdir -p here is a safe no-op if
   # the path already exists.
-  if [ ! -d "$bron" ]; then
+  if [ ! -d "$source" ]; then
     return 0
   fi
-  mkdir -p "$doel"
+  mkdir -p "$target"
 
   # The install step only if the skill exists now; the cleanup step
   # always, even if the skill has since disappeared — that's exactly when
   # the link may be orphaned.
-  if [ -d "$bron/$naam" ]; then
-    skill_symlink_bijwerken "$doel" "$naam" "$bron"
+  if [ -d "$source/$name" ]; then
+    skill_symlink_update "$target" "$name" "$source"
   fi
 
-  local bron_echt
-  bron_echt="$(cd "$bron" && pwd -P)"
-  skill_symlink_opruimen_indien_verweesd "$doel/$naam" "$bron_echt"
+  local source_real
+  source_real="$(cd "$source" && pwd -P)"
+  skill_symlink_cleanup_if_orphaned "$target/$name" "$source_real"
 }
 
 adopt_user_trigger() {
@@ -417,7 +417,7 @@ adopt_user_trigger() {
   ln -s "$CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md" "$HOME/.claude/CLAUDE.md"
   echo "Done: ~/.claude/CLAUDE.md -> $CLAUDE_WORKFLOW_DIR/USER-CLAUDE.md"
 
-  installeer_user_skill
+  install_user_skill
 }
 
 adopt_project() {
@@ -445,9 +445,9 @@ adopt_project() {
   # path on *this* machine. Committing them yields broken links in every
   # other checkout, and without this line, the first re-adoption after W9
   # would leave a pile of untracked files in all four projects.
-  schrijf_gitignore_blok "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
-  installeer_skills "$project_dir"
-  installeer_git_hooks "$project_dir"
+  write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
+  install_skills "$project_dir"
+  install_git_hooks "$project_dir"
 
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
@@ -485,7 +485,7 @@ adopt_project() {
     fi
   fi
 
-  seed_adoptietabel "$project_dir"
+  seed_adoption_table "$project_dir"
 
   # CONTEXT.md is optional (W16b): scaffold only once the project has
   # answered process-context-document with "yes". No predicate like

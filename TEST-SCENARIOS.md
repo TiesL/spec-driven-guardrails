@@ -420,7 +420,7 @@ something new is being added.
 ### S64 — The merge-guard bypass disables only the merge guard
 **Covers:** F8
 - Given: the same command segment contains both
-  `CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1` and a destructive git command
+  `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` and a destructive git command
   (e.g. `git reset --hard`)
 - When: that segment is evaluated
 - Then: the destructive git command is still blocked

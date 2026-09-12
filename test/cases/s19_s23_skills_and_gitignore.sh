@@ -33,8 +33,8 @@ adopteer_uit_luid() {
 # The markers as adopt.sh writes them, read from the script itself instead of
 # retyped here - otherwise this test would be checking its own copy.
 GITIGNORE_BEGIN="$(sed -n 's/^GITIGNORE_BEGIN="\(.*\)"$/\1/p' "$bron/adopt.sh")"
-GITIGNORE_EIND="$(sed -n 's/^GITIGNORE_EIND="\(.*\)"$/\1/p' "$bron/adopt.sh")"
-[ -n "$GITIGNORE_BEGIN" ] && [ -n "$GITIGNORE_EIND" ] \
+GITIGNORE_END="$(sed -n 's/^GITIGNORE_END="\(.*\)"$/\1/p' "$bron/adopt.sh")"
+[ -n "$GITIGNORE_BEGIN" ] && [ -n "$GITIGNORE_END" ] \
   || fail "S21 — the markers cannot be read from adopt.sh"
 
 # --- S19 -------------------------------------------------------------------
@@ -163,7 +163,7 @@ assert_contains "S21b — the message explains what is wrong" "corrupted managed
 # Nested: two begin markers before the first end marker. Counting alone is not
 # enough, because the counts still match in that case.
 project="$(vers_project s21b-genest)"
-printf 'x\n%s\n%s\nCLAUDE.md\n%s\n%s\n' "$GITIGNORE_BEGIN" "$GITIGNORE_BEGIN" "$GITIGNORE_EIND" "$GITIGNORE_EIND" > "$project/.gitignore"
+printf 'x\n%s\n%s\nCLAUDE.md\n%s\n%s\n' "$GITIGNORE_BEGIN" "$GITIGNORE_BEGIN" "$GITIGNORE_END" "$GITIGNORE_END" > "$project/.gitignore"
 voor="$(cat "$project/.gitignore")"
 adopteer_uit_luid "$bron" "$project" >/dev/null 2>&1
 [ "$?" -ne 0 ] || fail "S21b — a nested block was not rejected"

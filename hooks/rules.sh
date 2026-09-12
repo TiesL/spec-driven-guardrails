@@ -11,13 +11,13 @@
 #
 # Source, don't execute.
 
-HOOFDBRANCH="main"
+MAIN_BRANCH="main"
 
-REDEN_COMMIT_OP_MAIN="main gets its changes via a PR. Make a branch first — your
+REASON_COMMIT_ON_MAIN="main gets its changes via a PR. Make a branch first — your
        changes come along unchanged, nothing gets lost:
 
          git checkout -b feature/<name>
 
        Then commit and push as usual."
 
-REDEN_PUSH_NAAR_MAIN="main gets its changes via a PR, not via a direct push."
+REASON_PUSH_TO_MAIN="main gets its changes via a PR, not via a direct push."

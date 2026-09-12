@@ -19,24 +19,24 @@
 
 set -uo pipefail
 
-draai_tests=1
+run_tests=1
 if [ "${1:-}" = "--no-tests" ]; then
-  draai_tests=0
+  run_tests=0
   shift
 fi
 
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-doel="${1:-$eigen_map}"
-doel="$(cd "$doel" 2>/dev/null && pwd)" || {
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target="${1:-$own_dir}"
+target="$(cd "$target" 2>/dev/null && pwd)" || {
   echo "check: directory does not exist: ${1:-}" >&2
   exit 1
 }
 
-fouten=0
+errors=0
 
-melden_fout() {
+report_error() {
   echo "  ERROR: $*" >&2
-  fouten=$((fouten + 1))
+  errors=$((errors + 1))
 }
 
 # --- 1. Bash syntax ---------------------------------------------------------
@@ -47,38 +47,38 @@ echo "check: bash -n"
 # bash/sh shebang also count: the hook guards are named
 # `hooks/git-guardrails` and are exactly the code where a silent syntax
 # error is most costly.
-scriptlijst="$(mktemp)" || {
+script_list="$(mktemp)" || {
   echo "check: couldn't create a temp file — check aborted" >&2
   exit 1
 }
-trap 'rm -f "$scriptlijst"' EXIT
+trap 'rm -f "$script_list"' EXIT
 {
-  find "$doel" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0
-  find "$doel" -type f -not -name '*.sh' -not -name 'check' -not -path '*/.git/*' -print0 \
-    | while IFS= read -r -d '' kandidaat; do
-        if [ ! -r "$kandidaat" ]; then
+  find "$target" -type f \( -name '*.sh' -o -name 'check' \) -not -path '*/.git/*' -print0
+  find "$target" -type f -not -name '*.sh' -not -name 'check' -not -path '*/.git/*' -print0 \
+    | while IFS= read -r -d '' candidate; do
+        if [ ! -r "$candidate" ]; then
           # Not silently skipping: a file we can't read is a file we don't
           # know is a script or not.
-          echo "  warning: ${kandidaat} couldn't be read — not checked" >&2
+          echo "  warning: ${candidate} couldn't be read — not checked" >&2
           continue
         fi
-        case "$(head -c 2 "$kandidaat" 2>/dev/null)" in
+        case "$(head -c 2 "$candidate" 2>/dev/null)" in
           '#!')
-            case "$(head -n 1 "$kandidaat" 2>/dev/null)" in
+            case "$(head -n 1 "$candidate" 2>/dev/null)" in
               # Only shells `bash -n` can meaningfully parse. Patterns
               # deliberately non-overlapping: "/sh" covers #!/bin/sh (also
               # with arguments), "env sh" covers #!/usr/bin/env sh.
-              *bash*|*'/sh'*|*'env sh'*) printf '%s\0' "$kandidaat" ;;
+              *bash*|*'/sh'*|*'env sh'*) printf '%s\0' "$candidate" ;;
             esac ;;
         esac
       done
-} | sort -z -u > "$scriptlijst"
+} | sort -z -u > "$script_list"
 
 while IFS= read -r -d '' script; do
-  if ! foutmelding="$(bash -n "$script" 2>&1)"; then
-    melden_fout "syntax error in ${script#"$doel"/}: $foutmelding"
+  if ! error_message="$(bash -n "$script" 2>&1)"; then
+    report_error "syntax error in ${script#"$target"/}: $error_message"
   fi
-done < "$scriptlijst"
+done < "$script_list"
 
 # --- 2. JSON validation ------------------------------------------------------
 # session-hooks.json is symlinked as .claude/settings.json in every adopted
@@ -86,53 +86,53 @@ done < "$scriptlijst"
 # that. This step is deliberately separate from shellcheck: it's not
 # optional.
 echo "check: JSON validation"
-json_bestand="$doel/settings/session-hooks.json"
-if [ -f "$json_bestand" ]; then
+json_file="$target/settings/session-hooks.json"
+if [ -f "$json_file" ]; then
   if command -v jq >/dev/null 2>&1; then
-    if ! foutmelding="$(jq empty "$json_bestand" 2>&1)"; then
-      melden_fout "invalid JSON in settings/session-hooks.json: $foutmelding"
+    if ! error_message="$(jq empty "$json_file" 2>&1)"; then
+      report_error "invalid JSON in settings/session-hooks.json: $error_message"
     fi
   elif command -v python3 >/dev/null 2>&1; then
-    if ! foutmelding="$(python3 -m json.tool "$json_bestand" 2>&1 >/dev/null)"; then
-      melden_fout "invalid JSON in settings/session-hooks.json: $foutmelding"
+    if ! error_message="$(python3 -m json.tool "$json_file" 2>&1 >/dev/null)"; then
+      report_error "invalid JSON in settings/session-hooks.json: $error_message"
     fi
   else
     # Deliberately a hard error, not a warning. This is a purely local check
     # on a file that's symlinked into four projects; reporting "fine"
     # without having verified it is the silent degradation this repo pays
     # for most dearly. Install jq or python3.
-    melden_fout "no jq and no python3 — settings/session-hooks.json couldn't be validated"
+    report_error "no jq and no python3 — settings/session-hooks.json couldn't be validated"
   fi
 else
-  melden_fout "settings/session-hooks.json is missing"
+  report_error "settings/session-hooks.json is missing"
 fi
 
 # --- 3. NFR register versus the generated template block --------------------
 # templates/PRD.md is a build artifact for that block. Without this check,
 # the register and template could silently drift apart — exactly the drift
 # the register was meant to remove.
-if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
+if [ -d "$target/nfr" ] && [ -f "$target/templates/PRD.md" ]; then
   echo "check: NFR register"
-  if [ -r "$doel/lib/nfr.sh" ]; then
+  if [ -r "$target/lib/nfr.sh" ]; then
     # shellcheck source=lib/nfr.sh
-    . "$doel/lib/nfr.sh"
+    . "$target/lib/nfr.sh"
 
     # First the register itself. A broken file would otherwise disappear
     # from *all* consumers at once, and then the drift check sees nothing:
     # both sides miss it after all.
-    if ! problemen="$(nfr_validate "$doel/nfr")"; then
-      melden_fout "the NFR register is incomplete:"
-      printf '%s\n' "$problemen" | sed 's/^/    /' >&2
+    if ! problems="$(nfr_validate "$target/nfr")"; then
+      report_error "the NFR register is incomplete:"
+      printf '%s\n' "$problems" | sed 's/^/    /' >&2
     fi
 
-    if afwijkend="$(nfr_drift "$doel/nfr" "$doel/templates/PRD.md")"; then
+    if differences="$(nfr_drift "$target/nfr" "$target/templates/PRD.md")"; then
       :
     else
-      melden_fout "templates/PRD.md is out of sync with nfr/ — run ./generate-prd-block"
-      printf '%s\n' "$afwijkend" | sed 's/^/    regarding: /' >&2
+      report_error "templates/PRD.md is out of sync with nfr/ — run ./generate-prd-block"
+      printf '%s\n' "$differences" | sed 's/^/    regarding: /' >&2
     fi
   else
-    melden_fout "lib/nfr.sh is missing or unreadable — NFR register not checked"
+    report_error "lib/nfr.sh is missing or unreadable — NFR register not checked"
   fi
 fi
 
@@ -140,16 +140,16 @@ fi
 # Without this linkback, an adopted project can't find out *why* a row is
 # in its own WORKFLOW-ADOPTIE.md (S32). CHANGES-ARCHIEF.md shares the same
 # entry shape and counts too: retirement must not drop the linkback.
-if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
+if [ -f "$target/CHANGES.md" ] && [ -r "$target/lib/changes.sh" ]; then
   echo "check: PR linkbacks"
   # shellcheck source=lib/changes.sh
-  . "$doel/lib/changes.sh"
-  for bron in "$doel/CHANGES.md" "$doel/CHANGES-ARCHIEF.md"; do
-    [ -f "$bron" ] || continue
-    ontbrekend="$(pr_links_missing "$bron")"
-    if [ -n "$ontbrekend" ]; then
-      melden_fout "${bron#"$doel"/} is missing a **PR:** field at:"
-      printf '%s\n' "$ontbrekend" | sed 's/^/    - /' >&2
+  . "$target/lib/changes.sh"
+  for source in "$target/CHANGES.md" "$target/CHANGES-ARCHIEF.md"; do
+    [ -f "$source" ] || continue
+    missing="$(pr_links_missing "$source")"
+    if [ -n "$missing" ]; then
+      report_error "${source#"$target"/} is missing a **PR:** field at:"
+      printf '%s\n' "$missing" | sed 's/^/    - /' >&2
     fi
   done
 fi
@@ -157,16 +157,16 @@ fi
 # --- 3b. Python syntax -------------------------------------------------------
 # Parity with `bash -n`: since the guard has its input read by a Python
 # script, that side deserves a syntax check too.
-pyscripts="$(find "$doel" -type f -name '*.py' -not -path '*/.git/*' | sort)"
+pyscripts="$(find "$target" -type f -name '*.py' -not -path '*/.git/*' | sort)"
 if [ -n "$pyscripts" ]; then
   if command -v python3 >/dev/null 2>&1; then
     echo "check: python syntax"
     for script in $pyscripts; do
-      if ! foutmelding="$(python3 -m py_compile "$script" 2>&1)"; then
-        melden_fout "syntax error in ${script#"$doel"/}: $foutmelding"
+      if ! error_message="$(python3 -m py_compile "$script" 2>&1)"; then
+        report_error "syntax error in ${script#"$target"/}: $error_message"
       fi
     done
-    find "$doel" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null
+    find "$target" -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null
   else
     echo "check: python3 not installed — python syntax skipped"
   fi
@@ -174,17 +174,17 @@ fi
 
 # --- 3c. No Dutch outside layer C (W43, #115) --------------------------------
 # Repo-specific, not something an adopted project carries — gated on the
-# script's own presence in $doel so a sandboxed copy of this repo (used by
+# script's own presence in $target so a sandboxed copy of this repo (used by
 # the test suite itself) is checked the same way, without assuming
 # anything about an arbitrary external project.
-if [ -x "$doel/check-no-dutch.sh" ]; then
+if [ -x "$target/check-no-dutch.sh" ]; then
   echo "check: no Dutch outside layer C"
-  dutch_uitvoer="$(mktemp)"
-  if ! "$doel/check-no-dutch.sh" "$doel" >"$dutch_uitvoer" 2>&1; then
-    melden_fout "Dutch text found outside layer C — see below:"
-    sed 's/^/    /' "$dutch_uitvoer" >&2
+  dutch_output="$(mktemp)"
+  if ! "$target/check-no-dutch.sh" "$target" >"$dutch_output" 2>&1; then
+    report_error "Dutch text found outside layer C — see below:"
+    sed 's/^/    /' "$dutch_output" >&2
   fi
-  rm -f "$dutch_uitvoer"
+  rm -f "$dutch_output"
 fi
 
 # --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
@@ -196,11 +196,11 @@ fi
 # hand. Gated on the script's own presence, same reasoning as 3c: a
 # sandboxed copy of this repo is checked the same way as the real one,
 # without assuming anything about an arbitrary external project.
-if [ -x "$doel/check-traceability.sh" ]; then
+if [ -x "$target/check-traceability.sh" ]; then
   echo "check: traceability (link 1)"
-  if ! traceability_uitvoer="$("$doel/check-traceability.sh" "$doel" 2>&1)"; then
-    melden_fout "check-traceability.sh reported a problem:"
-    printf '%s\n' "$traceability_uitvoer" | sed 's/^/    /' >&2
+  if ! traceability_output="$("$target/check-traceability.sh" "$target" 2>&1)"; then
+    report_error "check-traceability.sh reported a problem:"
+    printf '%s\n' "$traceability_output" | sed 's/^/    /' >&2
   fi
 fi
 
@@ -210,10 +210,10 @@ fi
 # this, the gap only stays visible if someone happens to add a Notes
 # explanation by hand — observed missing that discipline during
 # tennis-invoicing's adoption catch-up (PR TiesL/tennis-invoicing#18/#19).
-if [ -r "$doel/lib/nfr.sh" ] && [ -d "$doel/nfr" ]; then
+if [ -r "$target/lib/nfr.sh" ] && [ -d "$target/nfr" ]; then
   # shellcheck source=lib/nfr.sh
-  . "$doel/lib/nfr.sh"
-  missing_subsections="$(nfr_missing_subsection "$doel/nfr" "$doel")"
+  . "$target/lib/nfr.sh"
+  missing_subsections="$(nfr_missing_subsection "$target/nfr" "$target")"
   if [ -n "$missing_subsections" ]; then
     echo "check: NFR subsections"
     printf '%s\n' "$missing_subsections" | sed 's/^/  warning: /' >&2
@@ -226,26 +226,26 @@ fi
 if command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do
-    if ! foutmelding="$(shellcheck -s bash -x "$script" 2>&1)"; then
-      echo "  warning: shellcheck on ${script#"$doel"/}:" >&2
-      echo "$foutmelding" >&2
+    if ! error_message="$(shellcheck -s bash -x "$script" 2>&1)"; then
+      echo "  warning: shellcheck on ${script#"$target"/}:" >&2
+      echo "$error_message" >&2
     fi
-  done < "$scriptlijst"
+  done < "$script_list"
 else
   echo "check: shellcheck not installed — skipped (no error)"
 fi
 
-if [ "$fouten" -gt 0 ]; then
+if [ "$errors" -gt 0 ]; then
   echo >&2
-  echo "check: $fouten error(s) found." >&2
+  echo "check: $errors error(s) found." >&2
   exit 1
 fi
 
 # --- 5. Test suite -----------------------------------------------------------
-if [ "$draai_tests" -eq 1 ]; then
+if [ "$run_tests" -eq 1 ]; then
   echo "check: test suite"
-  if [ -x "$doel/test/run.sh" ]; then
-    if ! "$doel/test/run.sh"; then
+  if [ -x "$target/test/run.sh" ]; then
+    if ! "$target/test/run.sh"; then
       exit 1
     fi
   else

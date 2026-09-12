@@ -33,7 +33,7 @@ scenarios="$project_dir/TEST-SCENARIOS.md"
 
 [ -f "$scenarios" ] || exit 0
 
-# Same regex as check-traceability.sh's ids_uit_koppen: only headings
+# Same regex as check-traceability.sh's ids_from_headings: only headings
 # count, the prefix isn't fixed (F/S is customary, R/A/B/P/OP occur).
 scenario_ids="$(grep -oE '^#+[[:space:]]+[A-Z]{1,2}[0-9]+[a-z]?([[:space:]]|$)' "$scenarios" \
   | sed 's/^#*[[:space:]]*//; s/[[:space:]]*$//')"
@@ -52,7 +52,7 @@ if [ "$status" -ne 0 ]; then
   exit 0
 fi
 
-# Same shape as covers_ruw/covers_tokens in check-traceability.sh: only the
+# Same shape as covers_raw/covers_tokens in check-traceability.sh: only the
 # **Covers:** field at the start of a line counts, comma-separated. Also
 # matches the pre-migration **Dekt:** field (permanent exception, see
 # above) — hence the alternation in the grep patterns below.

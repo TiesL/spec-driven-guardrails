@@ -87,7 +87,7 @@ sandbox_copy_repo() {
   # so without this exclusion every sandbox copy would contain a symlink
   # pointing at the real working copy outside the sandbox — exactly the
   # isolation guarantee sandbox_guard() enforces elsewhere. Same three
-  # paths as the .gitignore-managed block (schrijf_gitignore_blok):
+  # paths as the .gitignore-managed block (write_gitignore_block):
   # gitignored because they're machine-specific, so not part of a "clean"
   # repo snapshot here either.
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./CLAUDE.md' \
