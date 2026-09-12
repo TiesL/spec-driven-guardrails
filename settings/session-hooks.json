@@ -34,8 +34,8 @@
           },
           {
             "type": "command",
-            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; doel=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$doel\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$doel\")\"); if [ ! -d \"$wf\" ]; then echo \"Waarschuwing: .claude/settings.json wijst naar een map die niet bestaat ($wf) — draai adopt.sh opnieuw vanaf de huidige checkout. Tot dan draaien er geen hooks/guardrails.\"; exit 0; fi; if [ -x \"$wf/pending-changes.sh\" ]; then \"$wf/pending-changes.sh\" \"$p\" 2>/dev/null; fi; exit 0",
-            "statusMessage": "openstaande workflow-wijzigingen"
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ ! -d \"$wf\" ]; then echo \"Warning: .claude/settings.json points to a directory that doesn't exist ($wf) — run adopt.sh again from the current checkout. Until then, no hooks/guardrails run.\"; exit 0; fi; if [ -x \"$wf/pending-changes.sh\" ]; then \"$wf/pending-changes.sh\" \"$p\" 2>/dev/null; fi; exit 0",
+            "statusMessage": "pending workflow changes"
           }
         ]
       }

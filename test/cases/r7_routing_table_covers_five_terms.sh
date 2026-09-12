@@ -23,17 +23,17 @@ claude_md="$project/CLAUDE.md"
 
 controleer_term() {
   local term="$1"
-  local rijen aantal skill doel
-  rijen="$(routing_table_rows "$claude_md" | grep -i "$term" || true)"
-  aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
-  [ "$aantal" -ge 1 ] || { fail "R7 — '$term' yields no routing table row"; return; }
-  while IFS= read -r rij; do
-    [ -n "$rij" ] || continue
-    skill="$(skill_from_row "$rij")"
-    doel="$project/.claude/skills/$skill/SKILL.md"
-    [ -f "$doel" ] \
-      || fail "R7 — '$term' points to skill '$skill', but $doel does not exist"
-  done <<< "$rijen"
+  local rows count skill target
+  rows="$(routing_table_rows "$claude_md" | grep -i "$term" || true)"
+  count="$(printf '%s\n' "$rows" | grep -c . || true)"
+  [ "$count" -ge 1 ] || { fail "R7 — '$term' yields no routing table row"; return; }
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    skill="$(skill_from_row "$row")"
+    target="$project/.claude/skills/$skill/SKILL.md"
+    [ -f "$target" ] \
+      || fail "R7 — '$term' points to skill '$skill', but $target does not exist"
+  done <<< "$rows"
 }
 
 controleer_term "quality review"

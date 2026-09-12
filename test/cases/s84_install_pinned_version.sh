@@ -28,39 +28,39 @@ git -C "$repo" -c user.name=test -c user.email=test@example.invalid \
 git -C "$repo" -c user.name=test -c user.email=test@example.invalid \
   commit -q -m "nieuwe versie"
 
-oude_commit="$(git -C "$repo" rev-parse oude-versie)"
+old_commit="$(git -C "$repo" rev-parse oude-versie)"
 
 # When: install.sh runs with an explicit, existing tag.
-uitvoer="$(cd "$repo" && ./install.sh oude-versie 2>&1)"
+output="$(cd "$repo" && ./install.sh oude-versie 2>&1)"
 status=$?
 
 # Then: HEAD is on the pinned commit, not the new one.
-[ "$status" -eq 0 ] || fail "S84 — install.sh with a valid tag gave exit status $status: $uitvoer"
-huidige_commit="$(git -C "$repo" rev-parse HEAD)"
-[ "$huidige_commit" = "$oude_commit" ] \
+[ "$status" -eq 0 ] || fail "S84 — install.sh with a valid tag gave exit status $status: $output"
+current_commit="$(git -C "$repo" rev-parse HEAD)"
+[ "$current_commit" = "$old_commit" ] \
   || fail "S84 — after install.sh oude-versie, HEAD is not on the pinned commit"
 if grep -q "NIEUWE INHOUD" "$repo/WORKFLOW.md"; then
   fail "S84 — WORKFLOW.md still contains the newer content after the pin"
 fi
 
 # And: a dirty working directory is refused, without checking out anything.
-echo "lokale, niet-gecommitte wijziging" >> "$repo/README.md"
-vies_uitvoer="$(cd "$repo" && ./install.sh oude-versie 2>&1)"
-vies_status=$?
-[ "$vies_status" -ne 0 ] || fail "S84 — install.sh with a dirty working directory was not refused"
-assert_contains "S84 — the refusal names the uncommitted changes" "uncommitted changes" "$vies_uitvoer"
+echo "local, uncommitted change" >> "$repo/README.md"
+dirty_output="$(cd "$repo" && ./install.sh oude-versie 2>&1)"
+dirty_status=$?
+[ "$dirty_status" -ne 0 ] || fail "S84 — install.sh with a dirty working directory was not refused"
+assert_contains "S84 — the refusal names the uncommitted changes" "uncommitted changes" "$dirty_output"
 git -C "$repo" checkout -q -- README.md
 
 # And: an unknown tag fails with a clear message.
-onbekend_uitvoer="$(cd "$repo" && ./install.sh deze-tag-bestaat-niet 2>&1)"
-onbekend_status=$?
-[ "$onbekend_status" -ne 0 ] || fail "S84 — an unknown tag was not refused"
-assert_contains "S84 — the message says the tag does not exist" "doesn't exist" "$onbekend_uitvoer"
+unknown_output="$(cd "$repo" && ./install.sh nonexistent-tag 2>&1)"
+unknown_status=$?
+[ "$unknown_status" -ne 0 ] || fail "S84 — an unknown tag was not refused"
+assert_contains "S84 — the message says the tag does not exist" "doesn't exist" "$unknown_output"
 
 # And: without an argument, the latest tag is used, reported explicitly.
-zonder_arg_uitvoer="$(cd "$repo" && ./install.sh 2>&1)"
-zonder_arg_status=$?
-[ "$zonder_arg_status" -eq 0 ] || fail "S84 — install.sh without an argument failed: $zonder_arg_uitvoer"
-assert_contains "S84 — without an argument, install.sh reports which tag it chose" "oude-versie" "$zonder_arg_uitvoer"
+without_arg_output="$(cd "$repo" && ./install.sh 2>&1)"
+without_arg_status=$?
+[ "$without_arg_status" -eq 0 ] || fail "S84 — install.sh without an argument failed: $without_arg_output"
+assert_contains "S84 — without an argument, install.sh reports which tag it chose" "oude-versie" "$without_arg_output"
 
 test_done

@@ -22,9 +22,9 @@ mkdir -p "$fixtures"
 
 fakebin="$(fake_gh_bin '
 nummer="$3"
-bestand="'"$fixtures"'/$nummer"
-if [ -f "$bestand" ]; then
-  cat "$bestand"
+file="'"$fixtures"'/$nummer"
+if [ -f "$file" ]; then
+  cat "$file"
   exit 0
 fi
 exit 1
@@ -32,26 +32,26 @@ exit 1
 
 # AC2 — a PR without a linked issue fails, with the PR number in the message.
 echo 0 > "$fixtures/42"
-uitvoer="$(PATH="$fakebin:$PATH" "$script" 42 2>&1)"; status=$?
+output="$(PATH="$fakebin:$PATH" "$script" 42 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T4/AC2 — PR without a linked issue gave exit 0"
-assert_contains "T4/AC2 — the PR number is in the message" "42" "$uitvoer"
+assert_contains "T4/AC2 — the PR number is in the message" "42" "$output"
 
 # AC3 — a PR with a linked issue passes.
 echo 1 > "$fixtures/43"
-uitvoer="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "T4/AC3 — PR with a linked issue gave exit $status: $uitvoer"
+output="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "T4/AC3 — PR with a linked issue gave exit $status: $output"
 
 # AC4 — only the current PR is judged: PR 42 (issue-less, already checked
 # above) still sits that way in the fixtures, and a call for PR 43 does not
 # touch that.
-uitvoer="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
+output="$(PATH="$fakebin:$PATH" "$script" 43 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "T4/AC4 — the earlier PR 42 affected the judgment of PR 43"
 
 # No fail-open on unexpected gh output (found in pre-merge-review on
 # PR #70): "null" or other junk instead of a number must not silently let
 # this hard block pass.
 echo null > "$fixtures/44"
-uitvoer="$(PATH="$fakebin:$PATH" "$script" 44 2>&1)"; status=$?
+output="$(PATH="$fakebin:$PATH" "$script" 44 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T4 — non-numeric gh output ('null') gave exit 0 instead of a hard error"
 
 test_done

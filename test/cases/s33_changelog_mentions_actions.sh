@@ -11,15 +11,15 @@ changelog="$TEST_REPO_ROOT/CHANGELOG.md"
 
 [ -f "$changelog" ] || { fail "S33 — CHANGELOG.md is missing"; test_done; }
 
-inhoud="$(cat "$changelog")"
+content="$(cat "$changelog")"
 
 # Two separate assertions, not one on "adopt.sh" plus one on "adopt.sh --user":
 # "adopt.sh" alone always matches as soon as the --user form appears anywhere,
 # so the first assertion could never fail on its own. A line without "--user"
 # that still mentions "adopt.sh" proves that the per-project instruction is
 # stated separately from the per-machine instruction.
-zonder_user="$(printf '%s\n' "$inhoud" | grep -v -- '--user')"
-assert_contains "S33 — mentions adopt.sh per project (separate from --user)" "adopt.sh" "$zonder_user"
-assert_contains "S33 — mentions adopt.sh --user per machine" "adopt.sh --user" "$inhoud"
+without_user="$(printf '%s\n' "$content" | grep -v -- '--user')"
+assert_contains "S33 — mentions adopt.sh per project (separate from --user)" "adopt.sh" "$without_user"
+assert_contains "S33 — mentions adopt.sh --user per machine" "adopt.sh --user" "$content"
 
 test_done

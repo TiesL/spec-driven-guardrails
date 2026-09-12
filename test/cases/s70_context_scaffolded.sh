@@ -14,10 +14,10 @@ trap sandbox_destroy EXIT
 # set to "yes" (a fresh adoption does not seed it that way — Standaard is
 # "vraag" — so this simulates re-adoption after someone later set the row
 # to "yes").
-project="$(fresh_project met-context)"
+project="$(fresh_project with-context)"
 adopt "$project"
 cat >> "$project/WORKFLOW-ADOPTION.md" <<'EOF'
-| process-context-document | yes | 2026-01-01 | dit project groeit met genoeg eigen jargon om vast te leggen |
+| process-context-document | yes | 2026-01-01 | this project is growing enough of its own jargon to be worth recording |
 EOF
 
 rm -f "$project/CONTEXT.md"
@@ -29,14 +29,14 @@ if [ ! -f "$project/CONTEXT.md" ]; then
 fi
 
 # And: an already-existing copy is never overwritten.
-printf 'eigen inhoud, niet aankomen\n' > "$project/CONTEXT.md"
+printf 'own content, do not touch\n' > "$project/CONTEXT.md"
 adopt "$project"
-if ! grep -qx 'eigen inhoud, niet aankomen' "$project/CONTEXT.md"; then
+if ! grep -qx 'own content, do not touch' "$project/CONTEXT.md"; then
   fail "S70 — an existing CONTEXT.md was overwritten"
 fi
 
 # And: a project without that row (or set to "no") gets nothing.
-project2="$(fresh_project zonder-context)"
+project2="$(fresh_project without-context)"
 adopt "$project2"
 if [ -f "$project2/CONTEXT.md" ]; then
   fail "S70 — CONTEXT.md was scaffolded without the row being set to 'yes'"
@@ -45,13 +45,13 @@ fi
 # And: the same holds for the pre-migration format (W42/#114) — a project
 # still on the old filename/ID/value also gets CONTEXT.md scaffolded,
 # since that scaffold shouldn't wait on an unrelated migration.
-project3="$(fresh_project met-context-oud)"
+project3="$(fresh_project with-context-old)"
 cat > "$project3/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoption of shared workflow changes
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| proces-context-document | ja | 2026-01-01 | dit project groeit met genoeg eigen jargon om vast te leggen |
+| proces-context-document | ja | 2026-01-01 | this project is growing enough of its own jargon to be worth recording |
 EOF
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project3" >/dev/null 2>&1
 if [ ! -f "$project3/CONTEXT.md" ]; then

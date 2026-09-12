@@ -13,8 +13,8 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a malformed source — a field before the first heading.
-bron="$SANDBOX/CHANGES.md"
-cat > "$bron" <<'MD'
+source="$SANDBOX/CHANGES.md"
+cat > "$source" <<'MD'
 # Adopteerbare wijzigingen
 
 - **Applies if:** always
@@ -25,25 +25,25 @@ cat > "$bron" <<'MD'
 - **Applies if:** always
 MD
 
-gezien="$SANDBOX/gezien.txt"
-: > "$gezien"
+seen="$SANDBOX/seen.txt"
+: > "$seen"
 
 # shellcheck disable=SC2329  # called indirectly, via iterate_entries
-noteer() { printf '%s\n' "$1" >> "$gezien"; }
+noteer() { printf '%s\n' "$1" >> "$seen"; }
 
 # When: iterate_entries reads that source.
-iterate_entries "$bron" noteer
+iterate_entries "$source" noteer
 
 # Then: only the entry after the heading was seen; the loose field yielded
 # nothing. wc -l, not grep -c: a callback with an empty ID writes an empty
 # line, and that must be counted too - that's exactly the case this scenario
 # is looking for.
-aantal="$(wc -l < "$gezien" | tr -d ' ')"
-[ "$aantal" -eq 1 ] || fail "S38 — $aantal callbacks, expected 1 (field without heading is counted)"
-grep -qx 'echte-entry' "$gezien" || fail "S38 — the entry after the heading was not processed"
+count="$(wc -l < "$seen" | tr -d ' ')"
+[ "$count" -eq 1 ] || fail "S38 — $count callbacks, expected 1 (field without heading is counted)"
+grep -qx 'echte-entry' "$seen" || fail "S38 — the entry after the heading was not processed"
 
 # And: there was no call with an empty ID.
-if grep -qx '' "$gezien"; then
+if grep -qx '' "$seen"; then
   fail "S38 — callback called with an empty ID"
 fi
 
@@ -57,15 +57,15 @@ mkdir -p "$nep/lib" "$nep/templates"
 cp "$TEST_REPO_ROOT/lib/changes.sh" "$nep/lib/"
 cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
 echo "# Werkwijze" > "$nep/WORKFLOW.md"
-cp "$bron" "$nep/CHANGES.md"
+cp "$source" "$nep/CHANGES.md"
 
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
 
-tabel="$project/WORKFLOW-ADOPTION.md"
-if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then
+table="$project/WORKFLOW-ADOPTION.md"
+if [ -f "$table" ] && grep -qE '^\| *\|' "$table"; then
   fail "S38 — adopt.sh wrote a row with an empty ID"
-  grep -nE '^\| *\|' "$tabel" >&2
+  grep -nE '^\| *\|' "$table" >&2
 fi
 
 test_done

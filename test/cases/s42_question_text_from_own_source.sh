@@ -10,20 +10,20 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: the pending changes of a project, from both sources.
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 adopt "$project"
 
-uitvoer="$SANDBOX/uitvoer.txt"
-"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
+output="$SANDBOX/output.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$output" 2>/dev/null
 
-gezien=0
-while IFS= read -r regel; do
-  case "$regel" in
+seen=0
+while IFS= read -r line; do
+  case "$line" in
     '  - '*) ;;
     *) continue ;;
   esac
-  id="${regel#  - }"; id="${id%% —*}"
-  getoond="${regel#*— }"
+  id="${line#  - }"; id="${id%% —*}"
+  getoond="${line#*— }"
 
   # The expected text comes from the source where this ID is defined.
   verwacht="$(awk -v zoek="## $id" '
@@ -53,9 +53,9 @@ while IFS= read -r regel; do
     echo "    getoond:  $getoond" >&2
     echo "    verwacht: $verwacht" >&2
   fi
-  gezien=$((gezien + 1))
-done < "$uitvoer"
+  seen=$((seen + 1))
+done < "$output"
 
-[ "$gezien" -ge 7 ] || fail "S42 — only $gezien lines checked; the setup is flawed"
+[ "$seen" -ge 7 ] || fail "S42 — only $seen lines checked; the setup is flawed"
 
 test_done

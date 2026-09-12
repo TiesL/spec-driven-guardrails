@@ -10,32 +10,32 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 adopt "$project"
 
 # Given: the same project, once with substantiation gaps and once without.
-met_gaten="$SANDBOX/met-gaten.txt"
-pending_ids "$project" > "$met_gaten"
+with_gaps="$SANDBOX/met-gaten.txt"
+pending_ids "$project" > "$with_gaps"
 
-sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd voor dit project/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd before dit project/g' \
   "$project/WORKFLOW-ADOPTION.md"
 rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 
-zonder_gaten="$SANDBOX/zonder-gaten.txt"
-pending_ids "$project" > "$zonder_gaten"
+without_gaps="$SANDBOX/zonder-gaten.txt"
+pending_ids "$project" > "$without_gaps"
 
 # Then: the list of outstanding IDs is identical. The signal sits alongside,
 # not inside — beantwoord() is deliberately left unchanged, since that would break R9.
-assert_ids_equal "S8" "$met_gaten" "$zonder_gaten"
+assert_ids_equal "S8" "$with_gaps" "$without_gaps"
 
 # And the message itself does differ between those two states, otherwise
 # this comparison tests nothing.
-voor="$SANDBOX/voor.txt"; na="$SANDBOX/na.txt"
-adopt "$(fresh_project tweede)" >/dev/null 2>&1 || true
-tweede="$SANDBOX/tweede"
-"$TEST_REPO_ROOT/pending-changes.sh" "$tweede" > "$voor" 2>/dev/null
+before="$SANDBOX/before.txt"; na="$SANDBOX/na.txt"
+adopt "$(fresh_project second)" >/dev/null 2>&1 || true
+second="$SANDBOX/second"
+"$TEST_REPO_ROOT/pending-changes.sh" "$second" > "$before" 2>/dev/null
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
-if diff -q "$voor" "$na" >/dev/null 2>&1; then
+if diff -q "$before" "$na" >/dev/null 2>&1; then
   fail "S8 — the output is identical with and without substantiation gaps; the signal does nothing"
 fi
 

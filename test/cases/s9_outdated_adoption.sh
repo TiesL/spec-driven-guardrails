@@ -16,13 +16,13 @@ repo="$(sandbox_copy_repo)"
 # so remove that first — otherwise this scenario already starts in the second
 # state and no longer tests its own first rule.
 rm -rf "$repo/skills"
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 
 # Beforehand: without a skills directory in the repo, nothing should be reported.
-schoon="$SANDBOX/schoon.txt"
-"$repo/pending-changes.sh" "$project" > "$schoon" 2>/dev/null
-if grep -qi 'missing the skill' "$schoon"; then
+clean="$SANDBOX/clean.txt"
+"$repo/pending-changes.sh" "$project" > "$clean" 2>/dev/null
+if grep -qi 'missing the skill' "$clean"; then
   fail "S9 — message appeared even though this repo has no skills at all"
 fi
 
@@ -32,23 +32,23 @@ echo "---" > "$repo/skills/pre-merge-review/SKILL.md"
 echo "---" > "$repo/skills/deploy-guards/SKILL.md"
 
 # When: a session starts.
-uitvoer="$SANDBOX/uitvoer.txt"
-"$repo/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
+output="$SANDBOX/output.txt"
+"$repo/pending-changes.sh" "$project" > "$output" 2>/dev/null
 status=$?
 
 # Then: the hook reports that adopt.sh needs to run again.
-grep -qi 'missing the skill' "$uitvoer" || {
+grep -qi 'missing the skill' "$output" || {
   fail "S9 — no message about missing skills"
-  cat "$uitvoer" >&2
+  cat "$output" >&2
 }
-grep -qi 'adopt.sh again' "$uitvoer" || fail "S9 — the message does not say what to do"
+grep -qi 'adopt.sh again' "$output" || fail "S9 — the message does not say what to do"
 
 # And: multiple names are distinguishable from each other. Without a separator
 # "deploy-guards pre merge review" cannot be read as two skills, one of which
 # has a space in its name.
 # Only look at the skills line: the question texts above themselves contain
 # commas, so a grep over the whole output would always match.
-skillregel="$(grep 'missing the skill' "$uitvoer")"
+skillregel="$(grep 'missing the skill' "$output")"
 case "$skillregel" in
   *', '*) ;;
   *) fail "S9 — multiple missing skills are not separated: $skillregel" ;;
@@ -57,7 +57,7 @@ esac
 # And: the missing skills are listed by name. Without those names the
 # message is not usable — you would not know what is missing or why.
 for skill in pre-merge-review deploy-guards; do
-  grep -q "$skill" "$uitvoer" || fail "S9 — the message does not name the missing skill '$skill'"
+  grep -q "$skill" "$output" || fail "S9 — the message does not name the missing skill '$skill'"
 done
 
 # And: the session simply continues to start — a hook must never block.
@@ -68,9 +68,9 @@ mkdir -p "$project/.claude/skills"
 ln -s "$repo/skills/pre-merge-review" "$project/.claude/skills/pre-merge-review"
 ln -s "$repo/skills/deploy-guards" "$project/.claude/skills/deploy-guards"
 
-na="$SANDBOX/na.txt"
-"$repo/pending-changes.sh" "$project" > "$na" 2>/dev/null
-if grep -qi 'missing the skill' "$na"; then
+after="$SANDBOX/after.txt"
+"$repo/pending-changes.sh" "$project" > "$after" 2>/dev/null
+if grep -qi 'missing the skill' "$after"; then
   fail "S9 — the message stays even though all skills are installed"
 fi
 

@@ -9,22 +9,22 @@ set -uo pipefail
 
 # Given: a test whose sandbox setup did not redirect HOME.
 # When/Then: the guard refuses, with an explicit message.
-uitvoer="$(HOME="$TEST_REAL_HOME" sandbox_guard 2>&1)"
+output="$(HOME="$TEST_REAL_HOME" sandbox_guard 2>&1)"
 status=$?
 
 if [ "$status" -eq 0 ]; then
   fail "S3 — sandbox_guard let the real HOME through"
 fi
-assert_contains "S3" "ABORTED" "$uitvoer"
-assert_contains "S3" "real home" "$uitvoer"
+assert_contains "S3" "ABORTED" "$output"
+assert_contains "S3" "real home" "$output"
 
 # And an empty HOME is just as much not a sandbox.
-uitvoer_leeg="$(HOME="" sandbox_guard 2>&1)"
-status_leeg=$?
-if [ "$status_leeg" -eq 0 ]; then
+output_empty="$(HOME="" sandbox_guard 2>&1)"
+status_empty=$?
+if [ "$status_empty" -eq 0 ]; then
   fail "S3 — sandbox_guard let an empty HOME through"
 fi
-assert_contains "S3 (empty HOME)" "ABORTED" "$uitvoer_leeg"
+assert_contains "S3 (empty HOME)" "ABORTED" "$output_empty"
 
 # And: nothing was written outside the temporary directory. The guard runs
 # before every write action, so a refused setup leaves no traces.

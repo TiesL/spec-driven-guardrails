@@ -13,11 +13,11 @@ trap sandbox_destroy EXIT
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 [ -x "$guard" ] || { fail "S45 — hooks/git-guardrails is missing"; test_done; }
 
-werkmap="$(fresh_project werkmap)"
+workdir="$(fresh_project workdir)"
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
-    "$werkmap" "$(printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
+    "$workdir" "$(printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
     | "$guard" >/dev/null 2>&1
   echo $?
 }
@@ -53,7 +53,7 @@ EOF"
 # not end there - otherwise the text after it would still be read as a
 # command.
 toegestaan "delimiter as a word in the body" 'cat <<EOF > x
-dit is niet EOF maar gewone tekst
+this is not EOF but ordinary text
 git reset --hard
 EOF'
 toegestaan "heredoc with tabs (<<-)"     "$(printf 'cat <<-EOF > x\n\tgit clean -fd\n\tEOF\n')"

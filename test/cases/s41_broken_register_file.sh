@@ -29,29 +29,29 @@ MD
 # Each case is a fully usable file with a single defect. Without a check,
 # such a file disappears from all consumers at once, and then the
 # drift check sees nothing: both sides are missing it after all.
-for geval in geen-volgorde naam-wijkt-af; do
+for geval in no-order name-differs; do
   repo="$SANDBOX/repo-$geval"
   mkdir -p "$repo"
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
 
   case "$geval" in
-    geen-volgorde)
-      doel="$repo/nfr/spec-proef.md"
+    no-order)
+      target="$repo/nfr/spec-proef.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$doel" ;;
-    naam-wijkt-af)
-      doel="$repo/nfr/spec-verkeerd-genoemd.md"
+        geldig_blok; } > "$target" ;;
+    name-differs)
+      target="$repo/nfr/spec-wrongly-named.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$doel" ;;
+        geldig_blok; } > "$target" ;;
   esac
 
-  uitvoer="$("$repo/check" --no-tests "$repo" 2>&1)"
+  output="$("$repo/check" --no-tests "$repo" 2>&1)"
   status=$?
 
   if [ "$status" -eq 0 ]; then
     fail "S41 — check succeeded on a broken register file ($geval)"
   fi
-  case "$uitvoer" in
+  case "$output" in
     *nfr/spec-*) ;;
     *) fail "S41 — the message does not name the file in question ($geval)" ;;
   esac
@@ -74,8 +74,8 @@ mkdir -p "$repo"
 [ "$(nfr_field "$repo/nfr/spec-proef.md" order)" = "16" ] \
   || fail "S41 — CRLF file: the order is not being read"
 
-blok="$SANDBOX/blok-crlf.txt"
-nfr_block "$repo/nfr" > "$blok"
-grep -q 'spec-proef' "$blok" || fail "S41 — CRLF file disappeared from the generated block"
+block="$SANDBOX/block-crlf.txt"
+nfr_block "$repo/nfr" > "$block"
+grep -q 'spec-proef' "$block" || fail "S41 — CRLF file disappeared from the generated block"
 
 test_done

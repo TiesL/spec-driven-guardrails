@@ -35,7 +35,7 @@ Is dit een test-mutatie?
 
 ## Yes means
 
-Dit bestand bestaat alleen om S67 aan te tonen.
+This file exists only to demonstrate S67.
 
 ## Guidance
 

@@ -10,16 +10,16 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project op-feature)"
+project="$(fresh_project on-feature)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/iets
+git -C "$project" checkout -q -b feature/something
 
-uitvoer="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>/dev/null)"
-fout="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"
+output="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>/dev/null)"
+error="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"
 
 # A loose grep on "main" would false-positive on, for example,
 # "spec-maintainability" — the exact message text is what counts.
-if printf '%s\n' "$uitvoer" | grep -q 'You are on main\|git checkout -b'; then
+if printf '%s\n' "$output" | grep -q 'You are on main\|git checkout -b'; then
   fail "S55 — a message about main still appeared on a feature branch"
 fi
 
@@ -27,6 +27,6 @@ fi
 status=0
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" >/dev/null 2>/dev/null || status=$?
 [ "$status" -eq 0 ] || fail "S55 — pending-changes.sh gave exit $status instead of 0"
-[ -z "$fout" ] || fail "S55 — something appeared on stderr: $fout"
+[ -z "$error" ] || fail "S55 — something appeared on stderr: $error"
 
 test_done

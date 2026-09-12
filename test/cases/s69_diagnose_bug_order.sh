@@ -11,12 +11,12 @@ skill="$TEST_REPO_ROOT/skills/diagnose-bug/SKILL.md"
 
 [ -f "$skill" ] || { fail "S69 — skills/diagnose-bug/SKILL.md is missing"; test_done; }
 
-inhoud="$(cat "$skill")"
+content="$(cat "$skill")"
 
-assert_contains "S69 — mentions reproduction" "eproducti" "$inhoud"
-assert_contains "S69 — mentions hypotheses" "ypothes" "$inhoud"
-assert_contains "S69 — mentions regression test" "egression test" "$inhoud"
-assert_contains "S69 — mentions the fix as the last step" "Fix" "$inhoud"
+assert_contains "S69 — mentions reproduction" "eproducti" "$content"
+assert_contains "S69 — mentions hypotheses" "ypothes" "$content"
+assert_contains "S69 — mentions regression test" "egression test" "$content"
+assert_contains "S69 — mentions the fix as the last step" "Fix" "$content"
 
 # The order itself, based on the numbered steps — not based on loose
 # keywords, since the description in the frontmatter already names all three
@@ -33,6 +33,6 @@ if ! { [ -n "$pos_repro" ] && [ -n "$pos_hyp" ] && [ -n "$pos_regr" ] && [ -n "$
 fi
 
 # Hypotheses are shown before they are tested.
-assert_contains "S69 — hypotheses are shown before they are tested" "shown before" "$inhoud"
+assert_contains "S69 — hypotheses are shown before they are tested" "shown before" "$content"
 
 test_done

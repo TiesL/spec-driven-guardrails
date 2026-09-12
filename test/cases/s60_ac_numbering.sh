@@ -11,40 +11,40 @@ set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
-sjabloon="$TEST_REPO_ROOT/templates/ISSUE_TEMPLATE/work-item.md"
+template="$TEST_REPO_ROOT/templates/ISSUE_TEMPLATE/work-item.md"
 
 # Given: the template for a work item.
-[ -f "$sjabloon" ] || { fail "S60 — work-item.md is missing"; test_done; }
+[ -f "$template" ] || { fail "S60 — work-item.md is missing"; test_done; }
 
 # Then: the criteria are numbered AC<n>.
-grep -qE '^#+ +AC[0-9]+' "$sjabloon" \
+grep -qE '^#+ +AC[0-9]+' "$template" \
   || fail "S60 — no AC<n>-numbered acceptance criterion in work-item.md"
 
 # And: no more own S<n> numbering. A heading like `### S1:` is the numbering;
 # `S2b` in running text is a reference and may remain. The distinction is in
 # the heading, not in the letter's occurrence.
-eigen_nummering="$(grep -nE '^#+ +S[0-9]+' "$sjabloon" || true)"
-[ -z "$eigen_nummering" ] \
-  || fail "S60 — work-item.md still numbers itself with S<n>: $eigen_nummering"
+own_numbering="$(grep -nE '^#+ +S[0-9]+' "$template" || true)"
+[ -z "$own_numbering" ] \
+  || fail "S60 — work-item.md still numbers itself with S<n>: $own_numbering"
 
 # And: the template carries the coverage field, at line start.
-grep -q '^\*\*Covers:\*\*' "$sjabloon" \
+grep -q '^\*\*Covers:\*\*' "$template" \
   || fail "S60 — work-item.md has no '**Covers:**' at line start"
 
 # And: **Covers:** sits between Epic and Blocked by. That is not a matter of
 # taste: every existing issue in this repo writes that order, and a template
 # that models a different order produces two notations, one of which would
 # accidentally become the norm later on.
-volgorde="$(grep -nE '^\*\*(Epic|Covers|Blocked by|Blocks):\*\*' "$sjabloon" | sed 's/^[0-9]*://; s/:\*\*.*/:**/' | tr '\n' ' ')"
-verwacht="**Epic:** **Covers:** **Blocked by:** **Blocks:** "
-[ "$volgorde" = "$verwacht" ] \
-  || fail "S60 — field order is '$volgorde', expected '$verwacht'"
+order="$(grep -nE '^\*\*(Epic|Covers|Blocked by|Blocks):\*\*' "$template" | sed 's/^[0-9]*://; s/:\*\*.*/:**/' | tr '\n' ' ')"
+expected="**Epic:** **Covers:** **Blocked by:** **Blocks:** "
+[ "$order" = "$expected" ] \
+  || fail "S60 — field order is '$order', expected '$expected'"
 
 # And: the loose lines that Covers: replaces are gone. If they remain, there are
 # two ways to write the same thing and nobody can guess which one counts.
-for oud in "PRD-sectie" "TEST-SCENARIOS.md-scenario"; do
-  grep -q "^$oud" "$sjabloon" \
-    && fail "S60 — '$oud' is still there alongside **Covers:**"
+for old in "PRD-sectie" "TEST-SCENARIOS.md-scenario"; do
+  grep -q "^$old" "$template" \
+    && fail "S60 — '$old' is still there alongside **Covers:**"
 done
 
 test_done "S60"

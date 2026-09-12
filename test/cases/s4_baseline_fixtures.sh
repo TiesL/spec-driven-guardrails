@@ -34,9 +34,9 @@ fi
 if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
   fail "S4 — ci-conventie is missing from the a2t baseline; appears to have been answered in advance"
 fi
-aantal="$(grep -c . "$a2t/verwacht-openstaand.txt")"
-if [ "$aantal" -lt 20 ]; then
-  fail "S4 — a2t baseline only counts $aantal IDs; 'everything open' was expected"
+count="$(grep -c . "$a2t/verwacht-openstaand.txt")"
+if [ "$count" -lt 20 ]; then
+  fail "S4 — a2t baseline only counts $count IDs; 'everything open' was expected"
 fi
 
 test_done

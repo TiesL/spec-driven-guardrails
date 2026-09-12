@@ -10,27 +10,27 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project met-toelichting)"
+project="$(fresh_project with-notes)"
 adopt "$project"
 
 # test-integratie has `Default: question` and is therefore never seeded: it is
 # still open after a fresh adoption. That's the control value.
-voor="$SANDBOX/voor.txt"
-pending_ids "$project" > "$voor"
-grep -qx 'test-integratie' "$voor" || {
+before="$SANDBOX/before.txt"
+pending_ids "$project" > "$before"
+grep -qx 'test-integratie' "$before" || {
   fail "S36 — test-integratie was not open after fresh adoption; the setup is broken"
   test_done
 }
 
 # Given: the ID appears in the free-text explanation of another row.
-printf '| proces-prd | yes | 2026-01-01 | nog geen test-integratie afgesproken |\n' \
+printf '| proces-prd | yes | 2026-01-01 | no test-integratie agreed yet |\n' \
   >> "$project/WORKFLOW-ADOPTION.md"
 
 # When/Then: the change is still open - only the ID column counts.
-na="$SANDBOX/na.txt"
-pending_ids "$project" > "$na"
+after="$SANDBOX/after.txt"
+pending_ids "$project" > "$after"
 
-if ! grep -qx 'test-integratie' "$na"; then
+if ! grep -qx 'test-integratie' "$after"; then
   fail "S36 — test-integratie disappeared because of a mention in the explanation"
 fi
 

@@ -29,7 +29,7 @@ cat > "$project/WORKFLOW-ADOPTION.md" <<'EOF'
 | spec-security | yes | 2026-01-01 | van toepassing |
 | spec-privacy | yes | 2026-01-01 | subsections not all written yet — see issue #17 |
 | spec-data-integrity | yes | 2026-01-01 | van toepassing |
-| spec-testability | no | 2026-01-01 | niet van toepassing |
+| spec-testability | no | 2026-01-01 | not applicable |
 EOF
 
 cat > "$project/PRD.md" <<'EOF'
@@ -42,24 +42,24 @@ cat > "$project/PRD.md" <<'EOF'
 Filled in.
 EOF
 
-uitvoer="$(
+output="$(
   # shellcheck source=../../lib/nfr.sh
   . "$repo/lib/nfr.sh"
   nfr_missing_subsection "$repo/nfr" "$project"
 )"
 
 # Then: both yes-answered, subsection-less rows are named...
-assert_contains "S93 — spec-security is warned about" "spec-security" "$uitvoer"
-assert_contains "S93 — the missing Security subsection is named" "Security" "$uitvoer"
-assert_contains "S93 — spec-privacy is warned about, despite its Notes" "spec-privacy" "$uitvoer"
+assert_contains "S93 — spec-security is warned about" "spec-security" "$output"
+assert_contains "S93 — the missing Security subsection is named" "Security" "$output"
+assert_contains "S93 — spec-privacy is warned about, despite its Notes" "spec-privacy" "$output"
 
 # ...but the one with a real subsection isn't...
-if printf '%s\n' "$uitvoer" | grep -q 'spec-data-integrity'; then
+if printf '%s\n' "$output" | grep -q 'spec-data-integrity'; then
   fail "S93 — spec-data-integrity has its subsection and should not be warned about"
 fi
 
 # ...and neither is the "no"-answered one.
-if printf '%s\n' "$uitvoer" | grep -q 'spec-testability'; then
+if printf '%s\n' "$output" | grep -q 'spec-testability'; then
   fail "S93 — spec-testability is answered 'no' and should not be warned about"
 fi
 
@@ -70,16 +70,16 @@ fi
 # sandboxed repo copy — real WORKFLOW-ADOPTION.md there already answers
 # spec-security "yes" — and confirm `check` still exits 0 but surfaces
 # the warning.
-zonder_security="$(awk '
+without_security="$(awk '
   /^### Security$/ { skip = 1 }
   /^### Data integrity$/ { skip = 0 }
   !skip { print }
 ' "$repo/PRD.md")"
-printf '%s\n' "$zonder_security" > "$repo/PRD.md"
+printf '%s\n' "$without_security" > "$repo/PRD.md"
 
-check_uitvoer="$("$repo/check" --no-tests "$repo" 2>&1)"
+check_output="$("$repo/check" --no-tests "$repo" 2>&1)"
 check_status=$?
-[ "$check_status" -eq 0 ] || fail "S93 — check must not hard-fail on a missing NFR subsection: $check_uitvoer"
-assert_contains "S93 — check surfaces the warning" "spec-security" "$check_uitvoer"
+[ "$check_status" -eq 0 ] || fail "S93 — check must not hard-fail on a missing NFR subsection: $check_output"
+assert_contains "S93 — check surfaces the warning" "spec-security" "$check_output"
 
 test_done

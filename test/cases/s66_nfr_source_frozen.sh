@@ -15,8 +15,8 @@ if [ ! -d "$snapshot" ]; then
   test_done
 fi
 
-aantal="$(find "$snapshot" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
-if [ "$aantal" -lt 1 ]; then
+count="$(find "$snapshot" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
+if [ "$count" -lt 1 ]; then
   fail "S66 — nfr.momentopname does not contain a single file"
 fi
 

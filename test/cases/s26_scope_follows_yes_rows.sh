@@ -26,38 +26,38 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 |---|---|---|---|
 | spec-security | ja | 2026-01-01 | van toepassing |
 | spec-data-integrity | ja | 2026-01-01 | at adoption — requires substantiation during PRD/architecture |
-| spec-privacy | nee | 2026-01-01 | niet van toepassing |
+| spec-privacy | nee | 2026-01-01 | not applicable |
 EOF
 
 # The anchors come from this repo's own generated PRD block.
 cp "$repo/templates/PRD.md" "$project/PRD.md"
 
-uitvoer="$SANDBOX/uitvoer.txt"
-"$repo/skills/pre-merge-review/scope.sh" "$project" "$repo" > "$uitvoer" 2>/dev/null
+output="$SANDBOX/output.txt"
+"$repo/skills/pre-merge-review/scope.sh" "$project" "$repo" > "$output" 2>/dev/null
 
-if ! grep -qx 'complexity' "$uitvoer"; then
+if ! grep -qx 'complexity' "$output"; then
   fail "S26 — 'complexity' always belongs in scope, regardless of spec-*"
 fi
-if ! grep -qx 'dependencies' "$uitvoer"; then
+if ! grep -qx 'dependencies' "$output"; then
   fail "S26 — 'dependencies' always belongs in scope, regardless of spec-*"
 fi
-if ! grep -qx 'spec-security: Security' "$uitvoer"; then
+if ! grep -qx 'spec-security: Security' "$output"; then
   fail "S26 — spec-security (ja) is missing from the scope"
 fi
-if ! grep -qx 'spec-data-integrity: Data integrity \[requires substantiation\]' "$uitvoer"; then
+if ! grep -qx 'spec-data-integrity: Data integrity \[requires substantiation\]' "$output"; then
   fail "S26 — spec-data-integrity (provisional 'ja') should appear marked in the scope"
 fi
-if grep -q 'spec-privacy' "$uitvoer"; then
+if grep -q 'spec-privacy' "$output"; then
   fail "S26 — spec-privacy is 'nee' and does not belong in the scope"
 fi
-if grep -q 'spec-testability' "$uitvoer"; then
+if grep -q 'spec-testability' "$output"; then
   fail "S26 — spec-testability is unanswered and does not belong in the scope"
 fi
 
-regels="$(grep -c '.' "$uitvoer")"
+regels="$(grep -c '.' "$output")"
 if [ "$regels" -ne 4 ]; then
   fail "S26 — expected exactly 4 scope lines (complexity, dependencies, 2 NFRs), got $regels"
-  cat "$uitvoer" >&2
+  cat "$output" >&2
 fi
 
 test_done

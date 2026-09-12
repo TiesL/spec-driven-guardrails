@@ -15,12 +15,12 @@ trap sandbox_destroy EXIT
 # structurally invisible — one occurred daily in three of the four
 # real projects without anything complaining.
 controleer() {
-  local omschrijving="$1" pad="$2"
-  local fout="$SANDBOX/stderr.txt"
-  "$TEST_REPO_ROOT/pending-changes.sh" "$pad" > /dev/null 2> "$fout"
-  if [ -s "$fout" ]; then
-    fail "S43 — $omschrijving produces output on stderr:"
-    sed 's/^/      /' "$fout" >&2
+  local description="$1" path="$2"
+  local error="$SANDBOX/stderr.txt"
+  "$TEST_REPO_ROOT/pending-changes.sh" "$path" > /dev/null 2> "$error"
+  if [ -s "$error" ]; then
+    fail "S43 — $description produces output on stderr:"
+    sed 's/^/      /' "$error" >&2
   fi
 }
 
@@ -31,19 +31,19 @@ for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
 done
 
 # Freshly adopted: all rows still carry a provisional stamp.
-vers="$(fresh_project vers)"
-adopt "$vers"
-controleer "freshly adopted project" "$vers"
+fresh="$(fresh_project fresh)"
+adopt "$fresh"
+controleer "freshly adopted project" "$fresh"
 
 # Everything substantiated: zero pending rows. That is exactly the
 # boundary where the counting went wrong.
 sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd/g' \
-  "$vers/WORKFLOW-ADOPTION.md"
-rm -f "$vers/WORKFLOW-ADOPTION.md.bak"
-controleer "project with no pending substantiations" "$vers"
+  "$fresh/WORKFLOW-ADOPTION.md"
+rm -f "$fresh/WORKFLOW-ADOPTION.md.bak"
+controleer "project with no pending substantiations" "$fresh"
 
 # And a project that was never adopted.
-kaal="$(fresh_project kaal)"
-controleer "unadopted project" "$kaal"
+bare="$(fresh_project bare)"
+controleer "unadopted project" "$bare"
 
 test_done

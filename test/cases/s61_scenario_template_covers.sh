@@ -11,8 +11,8 @@ set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
-sjabloon="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
-[ -f "$sjabloon" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_done; }
+template="$TEST_REPO_ROOT/templates/TEST-SCENARIOS.md"
+[ -f "$template" ] || { fail "S61 — templates/TEST-SCENARIOS.md is missing"; test_done; }
 
 # Then: every example scenario shows a **Covers:** field directly under its heading.
 #
@@ -26,34 +26,34 @@ ontbreekt="$(awk '
   { vorige_kop = "" }
   /^### [A-Z]{1,2}[0-9]+[a-z]?( |$)/ { vorige_kop = $2 }
   END { if (vorige_kop != "") print vorige_kop }
-' "$sjabloon")"
+' "$template")"
 [ -z "$ontbreekt" ] \
   || fail "S61 — scenarios without **Covers:** directly under the heading: $(echo "$ontbreekt" | tr '\n' ' ')"
 
 # And: there is at least one example scenario, otherwise the check above is
 # empty and green at the same time.
-aantal="$(grep -cE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' "$sjabloon")"
-[ "$aantal" -ge 1 ] \
+count="$(grep -cE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' "$template")"
+[ "$count" -ge 1 ] \
   || fail "S61 — not a single example scenario in the template"
 
 # And: every scenario heading carries an ID. Counting only what has an ID
 # leaves a heading without an ID untouched, and then the template does
 # exactly what the convention forbids.
-zonder_id="$(grep -E '^### ' "$sjabloon" | grep -vE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' || true)"
-[ -z "$zonder_id" ] \
-  || fail "S61 — scenario heading without an ID: $(printf '%s' "$zonder_id" | tr '\n' ' ')"
+without_id="$(grep -E '^### ' "$template" | grep -vE '^### [A-Z]{1,2}[0-9]+[a-z]?( |$)' || true)"
+[ -z "$without_id" ] \
+  || fail "S61 — scenario heading without an ID: $(printf '%s' "$without_id" | tr '\n' ' ')"
 
 # And: the grammar is stated explicitly, with S2b as an example.
-grep -q '\^\[A-Z\]{1,2}\[0-9\]+\[a-z\]?\$' "$sjabloon" \
+grep -q '\^\[A-Z\]{1,2}\[0-9\]+\[a-z\]?\$' "$template" \
   || fail "S61 — the token grammar is not stated literally in the template"
-grep -q 'S2b' "$sjabloon" \
+grep -q 'S2b' "$template" \
   || fail "S61 — S2b is not present as an example alongside the grammar"
 
 # And: the field shows a placeholder, not a made-up ID. A template with a
 # real-looking `F3` invites copying it, and then the first scenario of every
 # new project refers to functionality that does not exist.
-verzonnen="$(grep '^\*\*Covers:\*\*' "$sjabloon" | grep -v '<' || true)"
-[ -z "$verzonnen" ] \
-  || fail "S61 — **Covers:** without a placeholder: $(printf '%s' "$verzonnen" | tr '\n' ' ')"
+fabricated="$(grep '^\*\*Covers:\*\*' "$template" | grep -v '<' || true)"
+[ -z "$fabricated" ] \
+  || fail "S61 — **Covers:** without a placeholder: $(printf '%s' "$fabricated" | tr '\n' ' ')"
 
 test_done "S61"

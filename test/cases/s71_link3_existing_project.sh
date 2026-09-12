@@ -15,7 +15,7 @@ trap sandbox_destroy EXIT
 # this entry's existence — exactly the case where scaffold_if_missing leaves
 # ci.yml untouched and seed_adoption_table no longer seeds anything (that file
 # already exists).
-project="$(fresh_project met-eigen-ci)"
+project="$(fresh_project with-own-ci)"
 echo '{}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"
 cat > "$project/.github/workflows/ci.yml" <<'EOF'
@@ -46,16 +46,16 @@ if grep -q 'check-pr-issue-link' "$project/.github/workflows/ci.yml"; then
   fail "S71 — the existing ci.yml called check-pr-issue-link.sh after all (unexpected for this scenario)"
 fi
 
-openstaande="$(pending_ids "$project")"
-if ! printf '%s\n' "$openstaande" | grep -qx 'ci-schakel-3-hard-slot'; then
+pending="$(pending_ids "$project")"
+if ! printf '%s\n' "$pending" | grep -qx 'ci-schakel-3-hard-slot'; then
   fail "S71 — ci-schakel-3-hard-slot did not appear as pending for an existing package.json project"
-  printf '%s\n' "$openstaande" >&2
+  printf '%s\n' "$pending" >&2
 fi
 
 # And: a project without package.json does not get that question.
-project_zonder="$(fresh_project zonder-package-json)"
-openstaande_zonder="$(pending_ids "$project_zonder")"
-if printf '%s\n' "$openstaande_zonder" | grep -qx 'ci-schakel-3-hard-slot'; then
+project_without="$(fresh_project without-package-json)"
+pending_without="$(pending_ids "$project_without")"
+if printf '%s\n' "$pending_without" | grep -qx 'ci-schakel-3-hard-slot'; then
   fail "S71 — the link-3 question also appeared without package.json"
 fi
 

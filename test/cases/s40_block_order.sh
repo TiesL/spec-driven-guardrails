@@ -13,22 +13,22 @@ trap sandbox_destroy EXIT
 repo="$(sandbox_copy_repo)"
 
 # Given: the order field determines the position in the block. Two attributes swap.
-een="$repo/nfr/spec-security.md"        # order: 1
-twee="$repo/nfr/spec-data-integrity.md" # order: 2
-sed -i.bak 's/^order: 1$/order: 2/' "$een"
-sed -i.bak 's/^order: 2$/order: 1/' "$twee"
+one="$repo/nfr/spec-security.md"        # order: 1
+two="$repo/nfr/spec-data-integrity.md" # order: 2
+sed -i.bak 's/^order: 1$/order: 2/' "$one"
+sed -i.bak 's/^order: 2$/order: 1/' "$two"
 rm -f "$repo"/nfr/*.bak
 
 # When: the checked-in block is still in the old order.
 # Then: check fails. A comparison that sorts by ID does not see this, so the
 # order is tested separately.
-uitvoer="$("$repo/check" --no-tests "$repo" 2>&1)"
+output="$("$repo/check" --no-tests "$repo" 2>&1)"
 status=$?
 
 if [ "$status" -eq 0 ]; then
   fail "S40 — check succeeded while the block order deviates"
 fi
-assert_contains "S40" "order" "$uitvoer"
+assert_contains "S40" "order" "$output"
 
 # And after regenerating it is fine again.
 (cd "$repo" && ./generate-prd-block >/dev/null 2>&1)

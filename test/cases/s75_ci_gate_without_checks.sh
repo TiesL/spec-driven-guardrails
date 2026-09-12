@@ -20,26 +20,26 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project geen-ci)"
+project="$(fresh_project no-ci)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 fakebin="$(fake_gh_bin '
 case "$*" in
   "pr view --json comments")
-    printf "%s" "{\"comments\":[{\"body\":\"bevindingen\\n<!-- pre-merge-review:done -->\"}]}"
+    printf "%s" "{\"comments\":[{\"body\":\"findings\\n<!-- pre-merge-review:done -->\"}]}"
     exit 0 ;;
   "pr checks --json bucket,name")
-    echo "no checks reported on the feature/werk branch" >&2
+    echo "no checks reported on the feature/work branch" >&2
     exit 1 ;;
 esac
 exit 1
 ')"
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
-uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
+output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $uitvoer"
+[ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $output"
 
 test_done
