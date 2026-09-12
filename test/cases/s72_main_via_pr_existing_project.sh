@@ -13,7 +13,7 @@ trap sandbox_destroy EXIT
 # Given: a project with package.json and an already-existing ci.yml that
 # does not call check-main-via-pr.sh, plus a WORKFLOW-ADOPTIE.md predating
 # this entry — exactly the case where scaffold_if_missing leaves the ci.yml
-# untouched and seed_adoptietabel no longer seeds anything (that file already exists).
+# untouched and seed_adoption_table no longer seeds anything (that file already exists).
 project="$(vers_project met-eigen-ci)"
 echo '{}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"

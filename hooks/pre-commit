@@ -11,7 +11,7 @@
 # Contract (git pre-commit): no arguments, runs after the commit has been
 # assembled but before it's final. Exit status != 0 refuses the commit.
 #
-# The same rule as the PreToolUse guard (HOOFDBRANCH, the message text)
+# The same rule as the PreToolUse guard (MAIN_BRANCH, the message text)
 # comes from rules.sh — that lives in one place. What *is* different here:
 # no quote-aware tokenization needed, git has already assembled the commit
 # by the time this hook runs, so there's no command string to read.
@@ -25,26 +25,26 @@
 
 set -uo pipefail
 
-doel="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
-if [ -z "$doel" ]; then
+target="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
+if [ -z "$target" ]; then
   echo "warning: the pre-commit hook is no longer a symlink to claude-workflow — commit check skipped." >&2
   exit 0
 fi
-eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
-regels="$eigen_map/rules.sh"
-if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
+own_dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd)"
+rules_file="$own_dir/rules.sh"
+if [ -z "$own_dir" ] || [ ! -r "$rules_file" ]; then
   echo "warning: git hooks couldn't find rules.sh — commit check skipped." >&2
   exit 0
 fi
 # shellcheck source=rules.sh
-. "$regels"
-HOOFDBRANCH="${HOOFDBRANCH:-main}"
+. "$rules_file"
+MAIN_BRANCH="${MAIN_BRANCH:-main}"
 
 # Same escape hatch as git-guardrails: a guard without an escape hatch
 # eventually gets bypassed by editing the script instead, and that's worse
 # than a guard you turn off explicitly.
-if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
-  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_OFF:-}" ]; then
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_OFF." >&2
   exit 0
 fi
 
@@ -52,13 +52,13 @@ fi
 # definition, on main — same exception as in git-guardrails.
 if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
   branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
-  if [ "$branch" = "$HOOFDBRANCH" ]; then
-    echo "Blocked by the git hook: commit on $HOOFDBRANCH." >&2
+  if [ "$branch" = "$MAIN_BRANCH" ]; then
+    echo "Blocked by the git hook: commit on $MAIN_BRANCH." >&2
     echo >&2
-    echo "Reason: $REDEN_COMMIT_OP_MAIN" >&2
+    echo "Reason: $REASON_COMMIT_ON_MAIN" >&2
     echo >&2
     echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
-    echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <command>" >&2
+    echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
     exit 1
   fi
 fi

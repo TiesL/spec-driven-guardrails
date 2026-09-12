@@ -35,14 +35,15 @@ doel="$(cd "$doel" 2>/dev/null && pwd)" || {
 # (these are all lowercase Dutch function words/verbs; an English sentence
 # starting with one, capitalized, is not what this catches anyway).
 #
-# Deliberately excludes "waarschuwing"/"melding": both are also common
-# Dutch identifier names (function/variable names) throughout this repo's
-# already-translated scripts (e.g. templates/check-traceability.sh's own
-# melding()/waarschuwing() helpers, whose actual message text is English).
-# An identifier isn't prose a reader translates; the other markers below
-# are verbs/prepositions/conjunctions with no such collision risk.
+# "waarschuwing"/"melding" were excluded here until #167: both used to
+# collide with Dutch identifier names (function names in
+# check-traceability.sh/templates/check-traceability.sh). #167 renamed
+# those identifiers to English (report/warn), so the collision is gone
+# and both words are now active markers — the same reasoning also
+# retired check-traceability.sh's own permanent exclusion below, since
+# its content is now fully translated too.
 #
-# Also deliberately excludes "onderbouwing": that word is legitimately
+# Deliberately excludes "onderbouwing": that word is legitimately
 # preserved in several places as a direct quote of the pre-migration
 # "vereist onderbouwing" stamp (e.g. pending-changes.sh's dual-format
 # check, or #114/#131-style historical quotes) — adding it would flag
@@ -53,10 +54,10 @@ doel="$(cd "$doel" 2>/dev/null && pwd)" || {
 # starting mid-word-capitalized, like "Volg de skill ...", is invisible
 # to this check even though "volg" itself would otherwise be a safe
 # marker. Found via #154's pre-merge review missing exactly such a
-# sentence. No fix applied here: making the match case-insensitive would
-# reopen the waarschuwing/melding identifier-collision problem above.
+# sentence. No fix applied here: making the match case-insensitive risks
+# reopening a similar identifier collision for some future marker.
 # Catching sentence-initial Dutch remains manual-review territory.
-markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit gebruikt draait controleert bestaat wachten'
+markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit gebruikt draait controleert bestaat wachten waarschuwing melding'
 
 # Permanent exclusions — layer C (this repo's own self-adopted, frozen
 # copies, same treatment as the three external projects' equivalent
@@ -64,7 +65,7 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 # own personal instruction file (not part of the shared product surface).
 # check-no-dutch.sh itself is excluded: its own marker-word list is a
 # necessary literal, not untranslated prose.
-permanent_uitgesloten='./ARCHITECTURE.md ./WORKFLOW-ADOPTION.md ./check-traceability.sh ./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
+permanent_uitgesloten='./ARCHITECTURE.md ./WORKFLOW-ADOPTION.md ./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
 
 # Pending exclusions — real translation gaps, tracked in an open issue.
 # Add a line the moment a new gap is found; remove it the moment that

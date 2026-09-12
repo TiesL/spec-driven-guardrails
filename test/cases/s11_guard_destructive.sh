@@ -109,7 +109,7 @@ toegestaan "env prefix without danger" "GIT_TRACE=1 git status"
 # affect the guard's own environment, so testing only the guard's own
 # environment would never hit the documented form.
 uit_fout="$SANDBOX/uitweg.txt"
-printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 git reset --hard"}}' \
+printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git reset --hard"}}' \
   "$werkmap" | "$guard" >/dev/null 2>"$uit_fout"
 uit_status=$?
 

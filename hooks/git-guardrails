@@ -29,38 +29,38 @@ set -uo pipefail
 # Deliberate escape hatch. A guard without an escape hatch eventually gets
 # bypassed by editing the script instead, and that's worse than a guard you
 # turn off explicitly.
-if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_UIT:-}" ]; then
-  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_UIT." >&2
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_OFF:-}" ]; then
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_OFF." >&2
   exit 0
 fi
 
 # Reading with a bash redirect instead of `cat`: the guard must still be
 # able to give its warning even on a bare PATH, and that doesn't work if it
 # already trips over a missing utility.
-invoer="$(</dev/stdin)"
-[ -n "$invoer" ] || exit 0
+input="$(</dev/stdin)"
+[ -n "$input" ] || exit 0
 
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-lezer="$eigen_map/read-command.py"
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+reader="$own_dir/read-command.py"
 
-# HOOFDBRANCH and the REDEN_* texts come from rules.sh, shared with the
+# MAIN_BRANCH and the REDEN_* texts come from rules.sh, shared with the
 # native git hooks (W26) — which branch is protected and what the message
 # says lives in one place this way. If the file is missing (broken
 # checkout), this falls back to the hardcoded "main": when in doubt, allow
 # also applies here to the guard's own infrastructure.
-if [ -r "$eigen_map/rules.sh" ]; then
+if [ -r "$own_dir/rules.sh" ]; then
   # shellcheck source=rules.sh
-  . "$eigen_map/rules.sh"
+  . "$own_dir/rules.sh"
 fi
-HOOFDBRANCH="${HOOFDBRANCH:-main}"
+MAIN_BRANCH="${MAIN_BRANCH:-main}"
 
 if ! command -v python3 >/dev/null 2>&1; then
   echo "warning: git-guardrails needs python3 to read the command" >&2
   echo "and so lets this command through. Install python3 to make the guard work." >&2
   exit 0
 fi
-if [ ! -r "$lezer" ]; then
-  echo "warning: git-guardrails is missing $lezer and lets this command through." >&2
+if [ ! -r "$reader" ]; then
+  echo "warning: git-guardrails is missing $reader and lets this command through." >&2
   exit 0
 fi
 
@@ -72,10 +72,10 @@ fi
 #
 # Via a file, not via $(...): a token stream is NUL-separated and command
 # substitution discards NUL bytes.
-stroom="$(mktemp)" || exit 0
-trap 'rm -f "$stroom"' EXIT
+stream="$(mktemp)" || exit 0
+trap 'rm -f "$stream"' EXIT
 
-printf '%s' "$invoer" | python3 "$lezer" > "$stroom"
+printf '%s' "$input" | python3 "$reader" > "$stream"
 case $? in
   0) ;;
   4) exit 0 ;;   # not a Bash call, or no command
@@ -108,27 +108,27 @@ esac
 #
 # A detached HEAD yields an empty name, and that falls, via `is_main`, in
 # the safe direction: don't block.
-huidige_branch() {
-  if [ "${#padopties[@]}" -gt 0 ]; then
-    git -C "$werkmap" "${padopties[@]}" symbolic-ref --short HEAD 2>/dev/null
+current_branch() {
+  if [ "${#path_options[@]}" -gt 0 ]; then
+    git -C "$workdir" "${path_options[@]}" symbolic-ref --short HEAD 2>/dev/null
   else
-    git -C "$werkmap" symbolic-ref --short HEAD 2>/dev/null
+    git -C "$workdir" symbolic-ref --short HEAD 2>/dev/null
   fi
 }
 
-blokkeer() {
+block() {
   echo "Blocked by git-guardrails: $1" >&2
   echo "" >&2
   echo "Reason: $2" >&2
   echo "" >&2
   echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
-  echo "  CLAUDE_WORKFLOW_GUARDRAILS_UIT=1 <command>" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
   exit 2
 }
 
 # Determines the destination of one refspec. `feature:main` yields `main`,
 # `+main` yields `main`, `:main` (delete) too.
-refspec_doel() {
+refspec_target() {
   local spec="${1#+}"
   case "$spec" in
     *:*) echo "${spec##*:}" ;;
@@ -138,7 +138,7 @@ refspec_doel() {
 
 is_main() {
   case "$1" in
-    "$HOOFDBRANCH"|"refs/heads/$HOOFDBRANCH") return 0 ;;
+    "$MAIN_BRANCH"|"refs/heads/$MAIN_BRANCH") return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -158,10 +158,10 @@ MERGE_REVIEW_MARKER='<!-- pre-merge-review:done -->'
 # judge the wrong PR instead of the current branch's PR — exactly the case
 # where `gh pr view <body text>` fails and the guard, via the fail-open
 # path, lets a PR without a marker through anyway.
-beoordeel_gh_segment() {
+judge_gh_segment() {
   local arg
 
-  local posities=()
+  local positions=()
   while [ $# -gt 0 ]; do
     arg="$1"
     case "$arg" in
@@ -182,46 +182,46 @@ beoordeel_gh_segment() {
         shift
         continue ;;
       *)
-        posities+=("$arg")
+        positions+=("$arg")
         shift ;;
     esac
   done
 
-  [ "${posities[0]:-}" = "pr" ] && [ "${posities[1]:-}" = "merge" ] || return 0
+  [ "${positions[0]:-}" = "pr" ] && [ "${positions[1]:-}" = "merge" ] || return 0
 
-  controleer_merge_guard "${posities[2]:-}"
+  check_merge_guard "${positions[2]:-}"
 }
 
 # AC2–AC6 (F8/S15–S18): the actual judgment on one `gh pr merge`.
 # $1 is the optional target (number/url/branch) that stood after "merge".
-controleer_merge_guard() {
-  local doel="$1"
+check_merge_guard() {
+  local target="$1"
 
-  # AC6: the explicit escape hatch, set in beoordeel_segment (already
+  # AC6: the explicit escape hatch, set in judge_segment (already
   # loudly reported).
-  [ "${merge_guard_uit:-0}" -eq 1 ] && return 0
+  [ "${merge_guard_off:-0}" -eq 1 ] && return 0
 
   # AC5: a substantiated `no` on quality-review-before-merge turns it off —
   # local grep, before any gh call, so no network. Checks both the new and
   # the pre-migration (W42/#114) filename/ID/value, since a project that
   # hasn't migrated yet still answers with the old vocabulary.
-  local projectroot antwoorden regel antwoord
-  projectroot="$(git -C "$werkmap" rev-parse --show-toplevel 2>/dev/null)"
-  [ -n "$projectroot" ] || projectroot="$werkmap"
-  antwoorden="$projectroot/WORKFLOW-ADOPTION.md"
-  if [ -f "$antwoorden" ]; then
-    regel="$(grep -m1 '^| *quality-review-before-merge *|' "$antwoorden")"
-    if [ -n "$regel" ]; then
-      antwoord="$(printf '%s\n' "$regel" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
-      [ "$antwoord" = "no" ] && return 0
+  local project_root answers line answer
+  project_root="$(git -C "$workdir" rev-parse --show-toplevel 2>/dev/null)"
+  [ -n "$project_root" ] || project_root="$workdir"
+  answers="$project_root/WORKFLOW-ADOPTION.md"
+  if [ -f "$answers" ]; then
+    line="$(grep -m1 '^| *quality-review-before-merge *|' "$answers")"
+    if [ -n "$line" ]; then
+      answer="$(printf '%s\n' "$line" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
+      [ "$answer" = "no" ] && return 0
     fi
   fi
-  antwoorden="$projectroot/WORKFLOW-ADOPTIE.md"
-  if [ -f "$antwoorden" ]; then
-    regel="$(grep -m1 '^| *kwaliteitsreview-voor-merge *|' "$antwoorden")"
-    if [ -n "$regel" ]; then
-      antwoord="$(printf '%s\n' "$regel" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
-      [ "$antwoord" = "nee" ] && return 0
+  answers="$project_root/WORKFLOW-ADOPTIE.md"
+  if [ -f "$answers" ]; then
+    line="$(grep -m1 '^| *kwaliteitsreview-voor-merge *|' "$answers")"
+    if [ -n "$line" ]; then
+      answer="$(printf '%s\n' "$line" | awk -F'|' '{a=$3; gsub(/^[ \t]+|[ \t]+$/, "", a); print a}')"
+      [ "$answer" = "nee" ] && return 0
     fi
   fi
 
@@ -231,13 +231,13 @@ controleer_merge_guard() {
     return 0
   fi
 
-  local aanroep uitvoer status
-  if [ -n "$doel" ]; then
-    aanroep=(gh pr view "$doel" --json comments)
+  local call output status
+  if [ -n "$target" ]; then
+    call=(gh pr view "$target" --json comments)
   else
-    aanroep=(gh pr view --json comments)
+    call=(gh pr view --json comments)
   fi
-  uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>&1)"
+  output="$(cd "$workdir" && "${call[@]}" 2>&1)"
   status=$?
 
   # AC4: fail open without network (or any other reason gh can't consult
@@ -245,24 +245,24 @@ controleer_merge_guard() {
   # in this script).
   if [ "$status" -ne 0 ]; then
     echo "warning: merge-guard couldn't consult the PR (no network or no access) and skips the review check." >&2
-    echo "$uitvoer" >&2
+    echo "$output" >&2
     return 0
   fi
 
-  case "$uitvoer" in
+  case "$output" in
     *"$MERGE_REVIEW_MARKER"*) ;;
     *)
-      blokkeer "gh pr merge without a review marker" \
+      block "gh pr merge without a review marker" \
 "this PR doesn't carry the pre-merge-review marker. Run that skill first and
        leave the findings (with marker) on the PR.
 
        Is this deliberate, use the explicit escape hatch — and report which
        check is being skipped:
 
-         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <command>" ;;
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>" ;;
   esac
 
-  controleer_ci_guard "$doel"
+  check_ci_guard "$target"
 }
 
 # Found while reviewing PR #80 (issue #81): CI had been systematically
@@ -273,14 +273,14 @@ controleer_merge_guard() {
 # the same gate.
 #
 # $1 is the same optional target (number/url/branch) as the marker check.
-controleer_ci_guard() {
-  local doel="$1"
+check_ci_guard() {
+  local target="$1"
 
-  local aanroep uitvoer status
-  if [ -n "$doel" ]; then
-    aanroep=(gh pr checks "$doel" --json "bucket,name")
+  local call output status
+  if [ -n "$target" ]; then
+    call=(gh pr checks "$target" --json "bucket,name")
   else
-    aanroep=(gh pr checks --json "bucket,name")
+    call=(gh pr checks --json "bucket,name")
   fi
 
   # stdout and stderr kept separate, not merged with 2>&1: a routine stderr
@@ -297,17 +297,17 @@ controleer_ci_guard() {
   # checks isn't green. A non-zero status here therefore always means the
   # lookup itself failed (no network, no PR found, no access) — except the
   # case below, where gh returns its plain error message even with --json.
-  local foutbestand fouttekst
-  foutbestand="$(mktemp)" 2>/dev/null || foutbestand=""
-  if [ -n "$foutbestand" ]; then
-    uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>"$foutbestand")"
+  local error_file error_text
+  error_file="$(mktemp)" 2>/dev/null || error_file=""
+  if [ -n "$error_file" ]; then
+    output="$(cd "$workdir" && "${call[@]}" 2>"$error_file")"
     status=$?
-    fouttekst="$(cat "$foutbestand" 2>/dev/null)"
-    rm -f "$foutbestand"
+    error_text="$(cat "$error_file" 2>/dev/null)"
+    rm -f "$error_file"
   else
-    uitvoer="$(cd "$werkmap" && "${aanroep[@]}" 2>/dev/null)"
+    output="$(cd "$workdir" && "${call[@]}" 2>/dev/null)"
     status=$?
-    fouttekst=""
+    error_text=""
   fi
 
   # No checks reported is not an error and not a red flag: CI is optional
@@ -320,13 +320,13 @@ controleer_ci_guard() {
   # fragile across gh versions; if it changes, this falls back to the
   # generic fail-open message below — still allowing, just a less precise
   # reason.
-  case "$fouttekst" in
+  case "$error_text" in
     "no checks reported on"*) return 0 ;;
   esac
 
   if [ "$status" -ne 0 ]; then
     echo "warning: merge-guard couldn't consult the CI status (no network or no access) and skips the CI check." >&2
-    [ -n "$fouttekst" ] && echo "$fouttekst" >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
     return 0
   fi
 
@@ -334,8 +334,8 @@ controleer_ci_guard() {
   # guaranteed stable across gh versions, and python3 is already a required
   # dependency of this guard (read-command.py). A parse error is now a
   # separate, loud outcome — no longer confused with "no problems found".
-  local problemen parse_status
-  problemen="$(printf '%s' "$uitvoer" | python3 -c '
+  local problems parse_status
+  problems="$(printf '%s' "$output" | python3 -c '
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -355,17 +355,17 @@ for item in data:
     return 0
   fi
 
-  [ -n "$problemen" ] || return 0
+  [ -n "$problems" ] || return 0
 
-  blokkeer "gh pr merge while CI isn't green" \
+  block "gh pr merge while CI isn't green" \
 "this PR has one or more checks that haven't succeeded or are still running:
 
-       $problemen
+       $problems
 
        Is this deliberate, use the explicit escape hatch — and report which
        check is being skipped:
 
-         CLAUDE_WORKFLOW_MERGE_GUARD_UIT=1 <command>"
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
 }
 
 # --- per command in the chain -----------------------------------------------
@@ -375,7 +375,7 @@ for item in data:
 # <letter>? Long options don't count: `--exclude=foo` contains an `f`, but
 # isn't a `-f`. That distinction isn't cosmetic — without it, the guard
 # would block `git clean -n --exclude=foo`, a dry run that discards nothing.
-korte_vlag_met() {
+short_flag_has() {
   local token="$1" letter="$2"
   case "$token" in
     --*) return 1 ;;
@@ -391,7 +391,7 @@ korte_vlag_met() {
 
 # Does this argument point at the entire working directory? `.`, `./`, and
 # `./.` are the same place.
-is_hele_werkmap() {
+is_whole_workdir() {
   case "$1" in
     .|./|./.) return 0 ;;
     *) return 1 ;;
@@ -399,14 +399,14 @@ is_hele_werkmap() {
 }
 
 # Gets the tokens of one segment as arguments — already stripped of quotes.
-beoordeel_segment() {
+judge_segment() {
   [ $# -gt 0 ] || return 0
 
   # Only relevant for the gh path below; reset here so every segment starts
   # with a clean slate. Deliberately no `return 0` when setting it (see
   # below): that would skip this entire segment, including a destructive
   # git command that happens to start with the same var prefix.
-  merge_guard_uit=0
+  merge_guard_off=0
 
   # Environment variables before the command belong to the call, not to a
   # different program: `GIT_TRACE=1 git reset --hard` is still a git
@@ -414,21 +414,21 @@ beoordeel_segment() {
   # guard.
   while [ $# -gt 0 ]; do
     case "$1" in
-      CLAUDE_WORKFLOW_GUARDRAILS_UIT=*)
+      CLAUDE_WORKFLOW_GUARDRAILS_OFF=*)
         # The escape hatch as the block message prescribes it. It must be
         # able to appear in the command text: a command that hasn't started
         # yet can, by definition, not influence this guard's environment.
         echo "warning: git-guardrails is explicitly turned off for this command." >&2
         return 0 ;;
-      CLAUDE_WORKFLOW_MERGE_GUARD_UIT=*)
+      CLAUDE_WORKFLOW_MERGE_GUARD_OFF=*)
         # AC6 (F8): a deliberate, loud escape hatch specific to the merge
         # guard — separate from the destructive-git escape hatch above.
         # Only setting a flag, not returning immediately: this command
         # could also (still) be a destructive git command, and that must
-        # still be judged as usual. controleer_merge_guard reads the flag
+        # still be judged as usual. check_merge_guard reads the flag
         # further down.
         echo "warning: the merge guard (review marker and CI status) is explicitly skipped for this command." >&2
-        merge_guard_uit=1
+        merge_guard_off=1
         shift ;;
       [A-Za-z_]*=*) shift ;;
       *) break ;;
@@ -439,25 +439,25 @@ beoordeel_segment() {
     git|gh) ;;
     *) return 0 ;;
   esac
-  local programma="$1"
+  local program="$1"
   shift
 
-  if [ "$programma" = "gh" ]; then
-    beoordeel_gh_segment "$@"
+  if [ "$program" = "gh" ]; then
+    judge_gh_segment "$@"
     return
   fi
 
   # Skipping global git options. The path-determining ones are remembered;
   # they go along to the branch check so git itself determines the repo.
-  padopties=()
+  path_options=()
   while [ $# -gt 0 ]; do
     case "$1" in
       -C|--git-dir|--work-tree)
         [ $# -ge 2 ] || return 0
-        padopties+=("$1" "$2")
+        path_options+=("$1" "$2")
         shift 2 ;;
       --git-dir=*|--work-tree=*)
-        padopties+=("$1")
+        path_options+=("$1")
         shift ;;
       -c)
         [ $# -ge 2 ] || return 0
@@ -482,50 +482,50 @@ beoordeel_segment() {
       # project is, by definition, on main, and that step is documented that
       # way in the `adopt-workflow` skill under "Setting up a new (related)
       # project" (reached from WORKFLOW.md's routing table).
-      if git -C "$werkmap" rev-parse --verify HEAD >/dev/null 2>&1; then
-        if is_main "$(huidige_branch)"; then
-          blokkeer "git commit on main" "${REDEN_COMMIT_OP_MAIN:-main gets its changes via a PR. Make a branch first.}"
+      if git -C "$workdir" rev-parse --verify HEAD >/dev/null 2>&1; then
+        if is_main "$(current_branch)"; then
+          block "git commit on main" "${REASON_COMMIT_ON_MAIN:-main gets its changes via a PR. Make a branch first.}"
         fi
       fi ;;
     reset)
       for arg in "$@"; do
-        [ "$arg" = "--hard" ] && blokkeer "git reset --hard" \
+        [ "$arg" = "--hard" ] && block "git reset --hard" \
           "this irrevocably discards your work in the working tree."
       done ;;
     clean)
       for arg in "$@"; do
-        if [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; then
-          blokkeer "git clean $arg" "this irrevocably removes untracked files."
+        if [ "$arg" = "--force" ] || short_flag_has "$arg" f; then
+          block "git clean $arg" "this irrevocably removes untracked files."
         fi
       done ;;
     branch)
-      local heeft_delete=0 heeft_force=0
+      local has_delete=0 has_force=0
       for arg in "$@"; do
-        korte_vlag_met "$arg" D && blokkeer "git branch $arg" \
+        short_flag_has "$arg" D && block "git branch $arg" \
           "this deletes a branch even if it isn't merged; use -d."
-        [ "$arg" = "--delete" ] && heeft_delete=1
-        { [ "$arg" = "--force" ] || korte_vlag_met "$arg" f; } && heeft_force=1
+        [ "$arg" = "--delete" ] && has_delete=1
+        { [ "$arg" = "--force" ] || short_flag_has "$arg" f; } && has_force=1
       done
-      if [ "$heeft_delete" -eq 1 ] && [ "$heeft_force" -eq 1 ]; then
-        blokkeer "git branch --delete --force" \
+      if [ "$has_delete" -eq 1 ] && [ "$has_force" -eq 1 ]; then
+        block "git branch --delete --force" \
           "this deletes a branch even if it isn't merged; use only --delete."
       fi ;;
     checkout|restore)
       for arg in "$@"; do
-        is_hele_werkmap "$arg" && blokkeer "git $sub $arg" \
+        is_whole_workdir "$arg" && block "git $sub $arg" \
           "this discards all uncommitted changes in the working tree."
       done ;;
     push)
-      local refspecs=() remote_gezien=0
+      local refspecs=() remote_seen=0
       for arg in "$@"; do
         case "$arg" in
           --all|--mirror)
-            blokkeer "git push $arg" \
+            block "git push $arg" \
               "this pushes all branches, including main — regardless of where you are now." ;;
           -*) continue ;;
         esac
-        if [ "$remote_gezien" -eq 0 ]; then
-          remote_gezien=1
+        if [ "$remote_seen" -eq 0 ]; then
+          remote_seen=1
         else
           refspecs+=("$arg")
         fi
@@ -533,18 +533,18 @@ beoordeel_segment() {
 
       if [ "${#refspecs[@]}" -eq 0 ]; then
         # No refspec: where this goes depends on the current branch.
-        is_main "$(huidige_branch)" && blokkeer "git push from main" \
+        is_main "$(current_branch)" && block "git push from main" \
           "main is checked out, so this push goes to main. Work on a feature branch."
         return 0
       fi
 
       for arg in "${refspecs[@]}"; do
-        local doel; doel="$(refspec_doel "$arg")"
-        if [ "$doel" = "HEAD" ]; then
-          is_main "$(huidige_branch)" && blokkeer "git push origin HEAD from main" \
+        local target; target="$(refspec_target "$arg")"
+        if [ "$target" = "HEAD" ]; then
+          is_main "$(current_branch)" && block "git push origin HEAD from main" \
             "HEAD points to main here, so this push goes to main."
-        elif is_main "$doel"; then
-          blokkeer "git push to main" "${REDEN_PUSH_NAAR_MAIN:-main gets its changes via a PR, not via a direct push.}"
+        elif is_main "$target"; then
+          block "git push to main" "${REASON_PUSH_TO_MAIN:-main gets its changes via a PR, not via a direct push.}"
         fi
       done ;;
   esac
@@ -555,24 +555,24 @@ beoordeel_segment() {
 # segment. Defaults to the current working directory; the stream overwrites
 # it as the first record. That order is guaranteed, but the fallback belongs
 # before it: a segment is already judged during the loop.
-werkmap="$PWD"
+workdir="$PWD"
 tokens=()
-padopties=()
+path_options=()
 
 while IFS= read -r -d '' record; do
   # Substring expansion, not pattern matching: a value may contain glob
   # characters, and those would make a `%%` construct misfire.
-  soort="${record:0:1}"
-  waarde="${record:1}"
-  case "$soort" in
-    c) [ -n "$waarde" ] && werkmap="$waarde" ;;
-    t) tokens+=("$waarde") ;;
+  kind="${record:0:1}"
+  value="${record:1}"
+  case "$kind" in
+    c) [ -n "$value" ] && workdir="$value" ;;
+    t) tokens+=("$value") ;;
     e)
       if [ "${#tokens[@]}" -gt 0 ]; then
-        beoordeel_segment "${tokens[@]}"
+        judge_segment "${tokens[@]}"
       fi
       tokens=() ;;
   esac
-done < "$stroom"
+done < "$stream"
 
 exit 0
