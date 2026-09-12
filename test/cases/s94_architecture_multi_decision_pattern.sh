@@ -20,21 +20,35 @@ assert_contains "S94 — the multi-decision section exists" "Multiple decisions 
 assert_contains "S94 — tennis-invoicing is named as the concrete example" "tennis-invoicing" "$inhoud"
 
 # And: the single-decision skeleton is unchanged — this is an addition,
-# not a restructuring of the existing case (AC2).
-for kop in \
-  "## The decision" \
-  "## Evaluation criteria" \
-  "## Options weighed" \
-  "## Comparison and choice" \
-  "## Architecture requirements that follow from this" \
-  "## System boundaries and ownership" \
-  "## Dependencies" \
-  "## When we would revisit this choice" \
-  "## Still open after this document"
-do
-  if ! printf '%s\n' "$inhoud" | grep -qxF "$kop"; then
-    fail "S94 — the single-decision skeleton lost its '$kop' heading"
-  fi
-done
+# not a restructuring of the existing case (AC2). Checked as an exact,
+# ordered sequence, not just presence: a reorder is also a
+# restructuring, and presence-only checks (found during review) would
+# miss one heading silently swapping places with another.
+verwacht="$(mktemp)"
+gekregen="$(mktemp)"
+trap 'rm -f "$verwacht" "$gekregen" "$gekregen.tmp"' EXIT
+cat > "$verwacht" <<'EOF'
+## The decision
+## Evaluation criteria
+## Options weighed
+## Comparison and choice
+## Architecture requirements that follow from this
+## System boundaries and ownership
+## Dependencies
+## When we would revisit this choice
+## Still open after this document
+EOF
+printf '%s\n' "$inhoud" | grep -E '^## ' > "$gekregen"
+
+# The new "Multiple decisions" section is expected, additive content —
+# strip it out before comparing, since this check is about the
+# single-decision skeleton's own headings only, not the whole file.
+grep -vxF '## Multiple decisions in one document' "$gekregen" > "$gekregen.tmp"
+mv "$gekregen.tmp" "$gekregen"
+
+if ! diff -u "$verwacht" "$gekregen" >/dev/null 2>&1; then
+  fail "S94 — the single-decision skeleton's headings changed (missing, renamed, or reordered):"
+  diff -u "$verwacht" "$gekregen" >&2
+fi
 
 test_klaar
