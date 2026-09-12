@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 
 # spec-portability has `Default: question`, so it is left open after a fresh
 # adoption. That is the control value.
@@ -23,7 +23,7 @@ voor="$SANDBOX/voor.txt"
 "$repo/pending-changes.sh" "$project" > "$voor" 2>/dev/null
 if ! grep -q 'spec-portability' "$voor"; then
   fail "S39 — spec-portability was not open; setup is flawed"
-  test_klaar
+  test_done
 fi
 
 # Given: that attribute gets status: retired.
@@ -63,4 +63,4 @@ if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   "$repo/check" --no-tests "$repo" 2>&1 | grep -E 'ERROR|regarding' >&2
 fi
 
-test_klaar
+test_done

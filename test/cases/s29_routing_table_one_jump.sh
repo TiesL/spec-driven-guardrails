@@ -8,20 +8,20 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 workflow="$TEST_REPO_ROOT/WORKFLOW.md"
-[ -f "$workflow" ] || { fail "S29 — WORKFLOW.md is missing"; test_klaar "S29"; }
+[ -f "$workflow" ] || { fail "S29 — WORKFLOW.md is missing"; test_done "S29"; }
 
 alle_skills="$(cd "$TEST_REPO_ROOT/skills" 2>/dev/null && ls -d */ 2>/dev/null | sed 's#/$##')"
 
 controleer_precies_een_rij() {
   local term="$1" verwachte_skill="$2"
   local rijen aantal skill
-  rijen="$(wegwijzer_rijen "$workflow" | grep -i "$term" || true)"
+  rijen="$(routing_table_rows "$workflow" | grep -i "$term" || true)"
   aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
   if [ "$aantal" -ne 1 ]; then
     fail "S29 — '$term' yields $aantal routing table rows, 1 expected"
     return
   fi
-  skill="$(skill_van_rij "$rijen")"
+  skill="$(skill_from_row "$rijen")"
   printf '%s\n' "$alle_skills" | grep -qxF "$skill" \
     || fail "S29 — '$term' points to '$skill', which is not an existing skill"
   [ "$skill" = "$verwachte_skill" ] \
@@ -35,8 +35,8 @@ controleer_precies_een_rij "deploy-guards" "deploy-guards"
 
 # Substantiation requirement and adoption registry land in the same skill,
 # but should be two separate rows, not silently merged into one.
-rij_onderbouwing="$(wegwijzer_rijen "$workflow" | grep -i "substantiation requirement" || true)"
-rij_adoptie="$(wegwijzer_rijen "$workflow" | grep -i "adoption registry" || true)"
+rij_onderbouwing="$(routing_table_rows "$workflow" | grep -i "substantiation requirement" || true)"
+rij_adoptie="$(routing_table_rows "$workflow" | grep -i "adoption registry" || true)"
 [ -z "$rij_onderbouwing" ] || [ -z "$rij_adoptie" ] || [ "$rij_onderbouwing" != "$rij_adoptie" ] \
   || fail "S29 — substantiation requirement and adoption registry share the same routing table row"
 
@@ -45,4 +45,4 @@ rij_adoptie="$(wegwijzer_rijen "$workflow" | grep -i "adoption registry" || true
 grep -qi '^## Branch strategy' "$workflow" \
   || fail "S29 — 'Branch strategy' is no longer directly in WORKFLOW.md"
 
-test_klaar "S29"
+test_done "S29"

@@ -15,7 +15,7 @@ trap sandbox_destroy EXIT
 # spec-data-integrity. No PRD.md — this deliberately forces the anchor
 # lookup in scope.sh to miss and fall through to the nfr/ register
 # fallback, the exact path the alias was added to.
-project="$(vers_project alias-oude-id)"
+project="$(fresh_project alias-oude-id)"
 
 cat > "$project/WORKFLOW-ADOPTION.md" <<'EOF'
 # Adoption of shared workflow changes
@@ -27,7 +27,7 @@ EOF
 
 # When: pending-changes.sh runs.
 gekregen="$SANDBOX/gekregen.txt"
-openstaande_ids "$project" > "$gekregen"
+pending_ids "$project" > "$gekregen"
 
 # Then: spec-data-integrity (the current ID) is not reported as pending —
 # the old-ID row satisfies the current question, same as W42/#114's
@@ -46,4 +46,4 @@ if ! grep -qx 'spec-data-integriteit: Data integrity' "$uitvoer"; then
   cat "$uitvoer" >&2
 fi
 
-test_klaar
+test_done

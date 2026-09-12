@@ -8,7 +8,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/check-no-dutch.sh"
-[ -x "$script" ] || { fail "S88 — check-no-dutch.sh is missing or not executable"; test_klaar; }
+[ -x "$script" ] || { fail "S88 — check-no-dutch.sh is missing or not executable"; test_done; }
 
 # Given: the real repo, as it stands today.
 uitvoer="$("$script" "$TEST_REPO_ROOT" 2>&1)"; status=$?
@@ -60,4 +60,4 @@ case "$uitvoer_zelf" in
   *"check-no-dutch.sh"*) fail "S88 — the script flagged itself for its own marker-word list" ;;
 esac
 
-test_klaar
+test_done

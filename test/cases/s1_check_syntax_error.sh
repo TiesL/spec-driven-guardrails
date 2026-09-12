@@ -43,4 +43,4 @@ if [ "$status2" -eq 0 ]; then
 fi
 assert_contains "S1 (without extension)" "git-guardrails" "$uitvoer2"
 
-test_klaar
+test_done

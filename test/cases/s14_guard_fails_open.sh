@@ -11,9 +11,9 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
-[ -x "$guard" ] || { fail "S14 — hooks/git-guardrails is missing"; test_klaar; }
+[ -x "$guard" ] || { fail "S14 — hooks/git-guardrails is missing"; test_done; }
 
-project="$(vers_project werk)"
+project="$(fresh_project werk)"
 invoer='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git reset --hard"}}'
 
 # Given: no jq and no python3 in PATH. A minimal bin directory with only the
@@ -61,4 +61,4 @@ printf 'dit is geen json' | "$guard" >/dev/null 2>/dev/null
 printf '' | "$guard" >/dev/null 2>/dev/null
 [ $? -ne 2 ] || fail "S14 — the guard blocked on empty input"
 
-test_klaar
+test_done

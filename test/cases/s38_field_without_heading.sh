@@ -50,7 +50,7 @@ fi
 # And: the same holds via adopt.sh itself. Before W4, the guard was only in
 # pending-changes.sh; with such a malformed source, adopt.sh produced a row
 # with an empty ID. This check runs through the real script instead of
-# through the library, because geseede_ids() filters on '^| [a-z]' and would
+# through the library, because seeded_ids() filters on '^| [a-z]' and would
 # never see an empty-ID row.
 nep="$SANDBOX/nepworkflow"
 mkdir -p "$nep/lib" "$nep/templates"
@@ -59,7 +59,7 @@ cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
 echo "# Werkwijze" > "$nep/WORKFLOW.md"
 cp "$bron" "$nep/CHANGES.md"
 
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
 
 tabel="$project/WORKFLOW-ADOPTION.md"
@@ -68,4 +68,4 @@ if [ -f "$tabel" ] && grep -qE '^\| *\|' "$tabel"; then
   grep -nE '^\| *\|' "$tabel" >&2
 fi
 
-test_klaar
+test_done

@@ -14,7 +14,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project uitweg-scope)"
+project="$(fresh_project uitweg-scope)"
 git -C "$project" commit -q --allow-empty -m start
 
 invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 git reset --hard"}}'
@@ -24,4 +24,4 @@ status=$?
 [ "$status" -eq 2 ] || fail "S64 — the merge-guard escape hatch let 'git reset --hard' through (exit $status). Output: $uitvoer"
 assert_contains "S64 — the block mentions reset --hard" "reset --hard" "$uitvoer"
 
-test_klaar
+test_done

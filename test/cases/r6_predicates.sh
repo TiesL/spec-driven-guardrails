@@ -11,7 +11,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 tabel="$TEST_REPO_ROOT/test/fixtures/predicaten/waarheidstabel.txt"
-[ -f "$tabel" ] || { fail "R6 — truth table is missing"; test_klaar; }
+[ -f "$tabel" ] || { fail "R6 — truth table is missing"; test_done; }
 
 gezien_ci_waar=0
 gezien_deploy_waar=0
@@ -22,11 +22,11 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   # Given: a fresh project according to this combination. No WORKFLOW-ADOPTIE.md,
   # so every applicable entry is also open - which makes a predicate that became
   # too strict visible here.
-  project="$(vers_project "$naam")"
+  project="$(fresh_project "$naam")"
   [ "$heeft_pkg" = "ja" ] && printf '%s\n' "$inhoud" > "$project/package.json"
 
   voor="$SANDBOX/$naam-voor.txt"
-  openstaande_ids "$project" > "$voor"
+  pending_ids "$project" > "$voor"
 
   # Then: the outcome per combination is exactly what the table specifies.
   for paar in "ci-conventie:$verwacht_ci" "ci-op-pr-en-main:$verwacht_ci" "ci-schakel-3-hard-slot:$verwacht_ci" "ci-detecteert-main-buiten-pr:$verwacht_ci" "deploy-guards:$verwacht_deploy"; do
@@ -40,12 +40,12 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   [ "$verwacht_ci" = "ja" ] && gezien_ci_waar=1
   [ "$verwacht_deploy" = "ja" ] && gezien_deploy_waar=1
 
-  adopteer "$project"
+  adopt "$project"
   na="$SANDBOX/$naam-na.txt"
   samen="$SANDBOX/$naam-samen.txt"
   geseed="$SANDBOX/$naam-geseed.txt"
-  openstaande_ids "$project" > "$na"
-  geseede_ids "$project" > "$geseed"
+  pending_ids "$project" > "$na"
+  seeded_ids "$project" > "$geseed"
   { cat "$geseed" "$na"; } | sort -u > "$samen"
 
   # And: what adopt.sh seeds is checked directly against the table. This is
@@ -78,7 +78,7 @@ while IFS='|' read -r naam heeft_pkg inhoud verwacht_ci verwacht_deploy; do
   # And: both scripts arrive at the same answer. adopt.sh seeds the applicable
   # `Default: yes` entries; what remains open afterward are the
   # `Default: question` entries. Together exactly what was open before the adoption.
-  assert_ids_gelijk "R6 — $naam: seed logic versus van_toepassing()" "$voor" "$samen"
+  assert_ids_equal "R6 — $naam: seed logic versus van_toepassing()" "$voor" "$samen"
 done < "$tabel"
 
 # And: for every predicate there is at least one case where it is true and
@@ -87,4 +87,4 @@ done < "$tabel"
 [ "$gezien_ci_waar" -eq 1 ] || fail "R6 — no case at all where heeft-package-json is true and unanswered"
 [ "$gezien_deploy_waar" -eq 1 ] || fail "R6 — no case at all where heeft-deploy-script is true and unanswered"
 
-test_klaar
+test_done

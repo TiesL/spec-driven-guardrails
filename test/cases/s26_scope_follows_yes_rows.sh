@@ -60,4 +60,4 @@ if [ "$regels" -ne 4 ]; then
   cat "$uitvoer" >&2
 fi
 
-test_klaar
+test_done

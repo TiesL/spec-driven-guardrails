@@ -8,7 +8,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/templates/check-main-via-pr.sh"
-[ -x "$script" ] || { fail "S52 — templates/check-main-via-pr.sh is missing or not executable"; test_klaar; }
+[ -x "$script" ] || { fail "S52 — templates/check-main-via-pr.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -48,8 +48,8 @@ assert_contains "S59 — the message mentions that the origin could not be estab
 
 # S59 — even without gh the check fails (no fail-open, unlike
 # the local hooks).
-padzondergh="$(pad_zonder_gh)"
+padzondergh="$(path_without_gh)"
 uitvoer="$(PATH="$padzondergh" "$script" zonder-pr 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S59 — without gh the check gave exit 0 instead of failing"
 
-test_klaar
+test_done

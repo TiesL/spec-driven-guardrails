@@ -11,15 +11,15 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: an empty git project with no package.json.
-project="$(vers_project leeg)"
+project="$(fresh_project leeg)"
 
 # When: adopt.sh is run.
-adopteer "$project"
+adopt "$project"
 
 tabel="$project/WORKFLOW-ADOPTION.md"
 if [ ! -f "$tabel" ]; then
   fail "R1 — adopt.sh did not create WORKFLOW-ADOPTION.md"
-  test_klaar
+  test_done
 fi
 
 # Then: exactly 21 rows, all carrying "requires substantiation".
@@ -34,4 +34,4 @@ if grep -q 'prd-testscenarios-issue-templates' "$tabel"; then
   fail "R1 — retired entry prd-testscenarios-issue-templates was seeded"
 fi
 
-test_klaar
+test_done

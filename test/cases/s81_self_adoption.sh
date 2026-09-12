@@ -33,7 +33,7 @@ status=$?
 case "$uitvoer" in
   *"geen adoptie nodig"*)
     fail "S81 — adopt.sh still refuses to adopt itself: $uitvoer"
-    test_klaar
+    test_done
     ;;
 esac
 [ "$status" -eq 0 ] || fail "S81 — adopt.sh against itself gave exit status $status: $uitvoer"
@@ -87,4 +87,4 @@ gitignore_regels="$(grep -c '^CLAUDE\.md$' "$repo/.gitignore" 2>/dev/null || ech
 [ "$gitignore_regels" -le 1 ] \
   || fail "S81 — a second self-adoption adds CLAUDE.md to .gitignore twice"
 
-test_klaar
+test_done

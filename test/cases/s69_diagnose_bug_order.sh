@@ -9,7 +9,7 @@ set -uo pipefail
 
 skill="$TEST_REPO_ROOT/skills/diagnose-bug/SKILL.md"
 
-[ -f "$skill" ] || { fail "S69 — skills/diagnose-bug/SKILL.md is missing"; test_klaar; }
+[ -f "$skill" ] || { fail "S69 — skills/diagnose-bug/SKILL.md is missing"; test_done; }
 
 inhoud="$(cat "$skill")"
 
@@ -35,4 +35,4 @@ fi
 # Hypotheses are shown before they are tested.
 assert_contains "S69 — hypotheses are shown before they are tested" "shown before" "$inhoud"
 
-test_klaar
+test_done

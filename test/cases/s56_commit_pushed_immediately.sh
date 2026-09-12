@@ -11,9 +11,9 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 hook="$TEST_REPO_ROOT/hooks/push-after-commit"
-[ -x "$hook" ] || { fail "S56 — hooks/push-after-commit is missing or not executable"; test_klaar; }
+[ -x "$hook" ] || { fail "S56 — hooks/push-after-commit is missing or not executable"; test_done; }
 
-project="$(vers_project met-remote)"
+project="$(fresh_project met-remote)"
 remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
 git -C "$project" remote add origin "$remote"
@@ -33,4 +33,4 @@ printf '%s' "$invoer" | "$hook" >/dev/null 2>&1
 remote_sha="$(git -C "$remote" rev-parse feature/werk 2>/dev/null)"
 [ "$remote_sha" = "$lokale_sha" ] || fail "S56 — feature/werk is not on the remote (or not up to date) after the commit"
 
-test_klaar
+test_done

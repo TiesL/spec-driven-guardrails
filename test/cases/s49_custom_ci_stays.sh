@@ -13,16 +13,16 @@ trap sandbox_destroy EXIT
 
 # Given: a project with a package.json — otherwise adopt.sh would not scaffold
 # a workflow anyway — and a handwritten ci.yml that deviates from the template.
-project="$(vers_project eigen-ci)"
+project="$(fresh_project eigen-ci)"
 echo '{"name":"t"}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"
 eigen='name: Eigen CI die niet van het sjabloon komt'
 echo "$eigen" > "$project/.github/workflows/ci.yml"
 
 # When: adopt.sh runs, twice.
-adopteer "$project"
+adopt "$project"
 na_een="$(cat "$project/.github/workflows/ci.yml")"
-adopteer "$project"
+adopt "$project"
 na_twee="$(cat "$project/.github/workflows/ci.yml")"
 
 # Then: the file was left untouched.
@@ -41,10 +41,10 @@ grep -q '^| ci-op-pr-en-main ' "$tabel" \
 
 # And: for a project without package.json the question does not apply —
 # the same scoping as ci-conventie, which this entry builds on.
-kaal="$(vers_project zonder-package-json)"
-adopteer "$kaal"
+kaal="$(fresh_project zonder-package-json)"
+adopt "$kaal"
 if grep -q '^| ci-op-pr-en-main ' "$kaal/WORKFLOW-ADOPTION.md"; then
   fail "S49 — ci-op-pr-en-main was seeded in a project without package.json"
 fi
 
-test_klaar
+test_done

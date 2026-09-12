@@ -49,4 +49,4 @@ fi
 # failure is exactly the failure mode this repo avoids elsewhere (F6).
 [ "$async_waarde" != "true" ] || fail "S91 — the push hook is 'async': true, which hides a real push failure instead of surfacing it"
 
-test_klaar
+test_done

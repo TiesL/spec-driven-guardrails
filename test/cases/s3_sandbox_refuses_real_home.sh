@@ -52,4 +52,4 @@ if [ -e "$TEST_REAL_HOME/$canary" ]; then
   fail "S3 — something was written to the real home ($TEST_REAL_HOME/$canary)"
 fi
 
-test_klaar
+test_done

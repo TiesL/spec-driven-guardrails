@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project s25)"
+project="$(fresh_project s25)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" --user >/dev/null 2>&1
 
 doel="$HOME/.claude/skills/adopt-workflow/SKILL.md"
@@ -67,4 +67,4 @@ bestemming="$(readlink "$HOME/.claude/skills")"
 [ -f "$SANDBOX/elders-skills/adopt-workflow/SKILL.md" ] \
   || fail "S25 — adopt-workflow was not installed inside the user's own symlink target"
 
-test_klaar "S25"
+test_done "S25"

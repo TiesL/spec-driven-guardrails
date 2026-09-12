@@ -27,4 +27,4 @@ assert_contains "S35" "onleesbaar" "$uitvoer"
 assert_contains "S35" "couldn't be read" "$uitvoer"
 
 chmod 644 "$repo/hooks/onleesbaar"
-test_klaar
+test_done

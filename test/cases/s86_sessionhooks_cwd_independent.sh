@@ -34,7 +34,7 @@ push_opdracht="$(haal_commando SessionEnd 0)"
 # something real to hit), a pre-migration answer table (so the
 # pending-changes.sh call has something to report), and an unrelated
 # "elsewhere" directory to run the hooks from.
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 mkdir -p "$project/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project/.claude/settings.json"
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
@@ -57,7 +57,7 @@ mkdir -p "$elders"
 # --- git fetch origin ------------------------------------------------------
 # A second clone pushes a new commit to the same remote, so this project's
 # fetch has something real to bring in.
-tweede="$(vers_project tweede)"
+tweede="$(fresh_project tweede)"
 git -C "$tweede" remote add origin "$remote"
 git -C "$tweede" pull -q origin main
 git -C "$tweede" commit -q --allow-empty -m "nieuwe commit op de remote"
@@ -106,4 +106,4 @@ if [ "$(git -C "$remote" rev-parse -q --verify refs/heads/feature/werk 2>/dev/nu
   fail "S86 — the old cwd-dependent push form no longer fails to push from elsewhere; the regression proof is stale"
 fi
 
-test_klaar
+test_done

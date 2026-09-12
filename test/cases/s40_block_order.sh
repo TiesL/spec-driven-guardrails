@@ -34,4 +34,4 @@ assert_contains "S40" "order" "$uitvoer"
 (cd "$repo" && ./generate-prd-block >/dev/null 2>&1)
 "$repo/check" --no-tests "$repo" >/dev/null 2>&1 || fail "S40 — check still complains after regenerating"
 
-test_klaar
+test_done

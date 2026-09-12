@@ -138,7 +138,7 @@ if [ -f "$old_file" ] && [ ! -f "$new_file" ]; then
   if [ -n "$old_rows" ]; then
     # Deliberately not "  - $id" (two spaces, dash): that's the exact
     # prefix the pending-question list above uses, and test/lib.sh's
-    # openstaande_ids() greps for it. An old-format row that already has
+    # pending_ids() greps for it. An old-format row that already has
     # a real answer (not actually pending) must never be swept into that
     # set just because this notice used the same bullet shape.
     echo "The following rows in WORKFLOW-ADOPTIE.md still use the pre-migration format (see #114):"

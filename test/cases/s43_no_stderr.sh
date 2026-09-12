@@ -31,8 +31,8 @@ for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
 done
 
 # Freshly adopted: all rows still carry a provisional stamp.
-vers="$(vers_project vers)"
-adopteer "$vers"
+vers="$(fresh_project vers)"
+adopt "$vers"
 controleer "freshly adopted project" "$vers"
 
 # Everything substantiated: zero pending rows. That is exactly the
@@ -43,7 +43,7 @@ rm -f "$vers/WORKFLOW-ADOPTION.md.bak"
 controleer "project with no pending substantiations" "$vers"
 
 # And a project that was never adopted.
-kaal="$(vers_project kaal)"
+kaal="$(fresh_project kaal)"
 controleer "unadopted project" "$kaal"
 
-test_klaar
+test_done

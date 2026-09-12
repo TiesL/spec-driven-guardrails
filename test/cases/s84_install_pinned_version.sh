@@ -63,4 +63,4 @@ zonder_arg_status=$?
 [ "$zonder_arg_status" -eq 0 ] || fail "S84 — install.sh without an argument failed: $zonder_arg_uitvoer"
 assert_contains "S84 — without an argument, install.sh reports which tag it chose" "oude-versie" "$zonder_arg_uitvoer"
 
-test_klaar
+test_done

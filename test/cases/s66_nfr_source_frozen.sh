@@ -12,7 +12,7 @@ snapshot="$nulmeting/nfr.momentopname"
 
 if [ ! -d "$snapshot" ]; then
   fail "S66 — test/fixtures/nulmeting/nfr.momentopname is missing: the nfr part of the question set is not frozen"
-  test_klaar
+  test_done
 fi
 
 aantal="$(find "$snapshot" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')"
@@ -33,7 +33,7 @@ fi
 # file — otherwise that ID would depend only on the current, non-frozen form
 # of nfr/, exactly the gap that W28 closes. A missing golden set is, here just
 # as in R9, an error and not a reason to silently skip that fixture.
-for project in $NULMETING_PROJECTEN; do
+for project in $BASELINE_PROJECTS; do
   gouden="$nulmeting/$project/verwacht-openstaand.txt"
   if [ ! -f "$gouden" ]; then
     fail "S66 — golden set missing: $project"
@@ -61,4 +61,4 @@ if ! verschil="$(diff -r "$TEST_REPO_ROOT/nfr" "$snapshot" 2>&1)"; then
   printf '%s\n' "$verschil" >&2
 fi
 
-test_klaar
+test_done

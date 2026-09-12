@@ -27,4 +27,4 @@ if grep -q 'five non-functional questions' "$readme"; then
   fail "S34 — README.md still mentions 'five non-functional questions' (outdated since 4821bac)"
 fi
 
-test_klaar
+test_done

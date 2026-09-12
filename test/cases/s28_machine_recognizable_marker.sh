@@ -31,4 +31,4 @@ if [ "$aantal" -ne 1 ]; then
   fail "S28 — marker '$marker' should appear in exactly one skill, appeared in $aantal"
 fi
 
-test_klaar
+test_done

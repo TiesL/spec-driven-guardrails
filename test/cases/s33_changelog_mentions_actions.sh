@@ -9,7 +9,7 @@ set -uo pipefail
 
 changelog="$TEST_REPO_ROOT/CHANGELOG.md"
 
-[ -f "$changelog" ] || { fail "S33 — CHANGELOG.md is missing"; test_klaar; }
+[ -f "$changelog" ] || { fail "S33 — CHANGELOG.md is missing"; test_done; }
 
 inhoud="$(cat "$changelog")"
 
@@ -22,4 +22,4 @@ zonder_user="$(printf '%s\n' "$inhoud" | grep -v -- '--user')"
 assert_contains "S33 — mentions adopt.sh per project (separate from --user)" "adopt.sh" "$zonder_user"
 assert_contains "S33 — mentions adopt.sh --user per machine" "adopt.sh --user" "$inhoud"
 
-test_klaar
+test_done

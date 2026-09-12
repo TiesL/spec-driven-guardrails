@@ -14,7 +14,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project ci-query-faalt)"
+project="$(fresh_project ci-query-faalt)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -36,4 +36,4 @@ status=$?
 [ "$status" -eq 0 ] || fail "S76 — expected passthrough (exit 0) when the CI query fails, got $status. Output: $uitvoer"
 assert_contains "S76 — loud warning about the skipped CI check" "warning" "$uitvoer"
 
-test_klaar
+test_done

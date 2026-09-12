@@ -11,7 +11,7 @@ bibliotheek="$TEST_REPO_ROOT/lib/changes.sh"
 
 if [ ! -f "$bibliotheek" ]; then
   fail "S37 — lib/changes.sh is missing"
-  test_klaar
+  test_done
 fi
 
 # Then: the callers no longer contain their own predicate branch or parser
@@ -66,7 +66,7 @@ predicate_true() {
 }
 INSTR
 
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 
 : > "$log"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
@@ -80,4 +80,4 @@ if [ ! -s "$log" ]; then
   fail "S37 — pending-changes.sh did not call predicate_true from the library"
 fi
 
-test_klaar
+test_done

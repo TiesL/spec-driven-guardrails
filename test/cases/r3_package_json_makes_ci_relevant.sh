@@ -10,11 +10,11 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project leeg)"
-adopteer "$project"
+project="$(fresh_project leeg)"
+adopt "$project"
 
 zonder="$SANDBOX/zonder.txt"
-openstaande_ids "$project" > "$zonder"
+pending_ids "$project" > "$zonder"
 
 if grep -qx 'ci-conventie' "$zonder"; then
   fail "R3 — ci-conventie was already open without package.json"
@@ -25,7 +25,7 @@ echo '{"name":"t"}' > "$project/package.json"
 
 # When/Then: ci-conventie additionally appears as open.
 met="$SANDBOX/met.txt"
-openstaande_ids "$project" > "$met"
+pending_ids "$project" > "$met"
 
 grep -qx 'ci-conventie' "$met" || fail "R3 — ci-conventie did not appear after adding package.json"
 
@@ -38,4 +38,4 @@ verschil="$(comm -13 "$zonder" "$met" | tr '\n' ' ')"
 [ "$verschil" = "ci-conventie ci-detecteert-main-buiten-pr ci-op-pr-en-main ci-schakel-3-hard-slot " ] \
   || fail "R3 — difference is '$verschil', expected 'ci-conventie ci-detecteert-main-buiten-pr ci-op-pr-en-main ci-schakel-3-hard-slot'"
 
-test_klaar
+test_done

@@ -38,7 +38,7 @@ GITIGNORE_END="$(sed -n 's/^GITIGNORE_END="\(.*\)"$/\1/p' "$bron/adopt.sh")"
   || fail "S21 — the markers cannot be read from adopt.sh"
 
 # --- S19 -------------------------------------------------------------------
-project="$(vers_project s19)"
+project="$(fresh_project s19)"
 adopteer_uit "$bron" "$project"
 
 skills="$project/.claude/skills"
@@ -95,7 +95,7 @@ fi
 # The most dangerous case, modeled on the real tennis-admin: rules that
 # exclude nested git repos. If those disappear, git suddenly sees two entire
 # repos as untracked content.
-project="$(vers_project s21)"
+project="$(fresh_project s21)"
 cat > "$project/.gitignore" <<'IGNORE'
 tennis-registration/
 tennis-invoicing/
@@ -151,7 +151,7 @@ done
 # A block with only a begin marker made an earlier version silently wipe
 # everything after it. The file is tracked; silently plowing through it is
 # the most expensive mistake this script can make.
-project="$(vers_project s21b-kapot)"
+project="$(fresh_project s21b-kapot)"
 printf 'belangrijke-regel.txt\n%s\nCLAUDE.md\nregel-na-kapot-blok\n' "$GITIGNORE_BEGIN" > "$project/.gitignore"
 voor="$(cat "$project/.gitignore")"
 uitvoer="$(adopteer_uit_luid "$bron" "$project" 2>&1)"; status=$?
@@ -162,7 +162,7 @@ assert_contains "S21b — the message explains what is wrong" "corrupted managed
 
 # Nested: two begin markers before the first end marker. Counting alone is not
 # enough, because the counts still match in that case.
-project="$(vers_project s21b-genest)"
+project="$(fresh_project s21b-genest)"
 printf 'x\n%s\n%s\nCLAUDE.md\n%s\n%s\n' "$GITIGNORE_BEGIN" "$GITIGNORE_BEGIN" "$GITIGNORE_END" "$GITIGNORE_END" > "$project/.gitignore"
 voor="$(cat "$project/.gitignore")"
 adopteer_uit_luid "$bron" "$project" >/dev/null 2>&1
@@ -172,7 +172,7 @@ adopteer_uit_luid "$bron" "$project" >/dev/null 2>&1
 # CRLF and trailing spaces: the same rule as far as git is concerned, but not
 # for an exact comparison. Without normalizing, the old rule stays alongside
 # the new one.
-project="$(vers_project s21b-varianten)"
+project="$(fresh_project s21b-varianten)"
 printf 'CLAUDE.md\r\nCLAUDE.md   \nnode_modules/\n   \n*.log\n' > "$project/.gitignore"
 adopteer_uit "$bron" "$project"
 aantal="$(grep -c 'CLAUDE.md' "$project/.gitignore")"
@@ -191,7 +191,7 @@ grep -qxF '.claude/skills/' "$project/.gitignore" \
   || fail "S21b — .claude/skills/ is not in the managed block"
 
 # --- S22 -------------------------------------------------------------------
-project="$(vers_project s22)"
+project="$(fresh_project s22)"
 adopteer_uit "$bron" "$project"
 boom_een="$(cd "$project" && find . -not -path './.git/*' -not -name '.git' | sort)"
 ignore_een="$(cat "$project/.gitignore")"
@@ -208,7 +208,7 @@ ignore_twee="$(cat "$project/.gitignore")"
 # content, so this is the normal state until W9 is done.
 kaal="$(sandbox_copy_repo kaal)"
 rm -rf "$kaal/skills"
-project="$(vers_project s23)"
+project="$(fresh_project s23)"
 uitvoer="$(SPEC_DRIVEN_GUARDRAILS_DIR="$kaal" "$kaal/adopt.sh" "$project" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "S23 — adoption without skills/ failed with exit $status: $uitvoer"
 if [ -e "$project/.claude/skills" ]; then
@@ -216,4 +216,4 @@ if [ -e "$project/.claude/skills" ]; then
 fi
 [ -L "$project/CLAUDE.md" ] || fail "S23 — ordinary adoption stopped working without skills/"
 
-test_klaar "S19-S23"
+test_done "S19-S23"

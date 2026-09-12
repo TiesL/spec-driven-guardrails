@@ -38,4 +38,4 @@ case "$uitvoer" in
     fail "S32/AC4 — the archived entry was incorrectly flagged: $uitvoer" ;;
 esac
 
-test_klaar
+test_done

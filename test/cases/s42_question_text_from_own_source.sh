@@ -10,8 +10,8 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: the pending changes of a project, from both sources.
-project="$(vers_project doelproject)"
-adopteer "$project"
+project="$(fresh_project doelproject)"
+adopt "$project"
 
 uitvoer="$SANDBOX/uitvoer.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
@@ -58,4 +58,4 @@ done < "$uitvoer"
 
 [ "$gezien" -ge 7 ] || fail "S42 — only $gezien lines checked; the setup is flawed"
 
-test_klaar
+test_done

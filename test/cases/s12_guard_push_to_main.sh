@@ -13,17 +13,17 @@ trap sandbox_destroy EXIT
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 if [ ! -x "$guard" ]; then
   fail "S12 — hooks/git-guardrails is missing"
-  test_klaar
+  test_done
 fi
 
 # Two working directories: one on a feature branch, one on main. The guard must
 # consult the current branch, because `git push origin HEAD` means something different
 # depending on where you are.
-op_feature="$(vers_project op-feature)"
+op_feature="$(fresh_project op-feature)"
 git -C "$op_feature" commit -q --allow-empty -m start
 git -C "$op_feature" checkout -q -b feature/werk
 
-op_main="$(vers_project op-main)"
+op_main="$(fresh_project op-main)"
 git -C "$op_main" commit -q --allow-empty -m start
 git -C "$op_main" branch -M main
 
@@ -72,4 +72,4 @@ toegestaan "push -u origin HEAD"         "git push -u origin HEAD"  "$op_feature
 toegestaan "push to a feature branch" "git push origin feature/werk" "$op_feature"
 toegestaan "push to maintenance"        "git push origin maintenance"  "$op_feature"
 
-test_klaar
+test_done

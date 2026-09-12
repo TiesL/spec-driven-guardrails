@@ -13,7 +13,7 @@ trap sandbox_destroy EXIT
 
 # Given: a project adopted from an "old" checkout location.
 oud="$(sandbox_copy_repo oude-checkout)"
-project="$(vers_project doelproject)"
+project="$(fresh_project doelproject)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$oud" "$oud/adopt.sh" "$project" >/dev/null 2>&1
 
 [ "$(readlink "$project/CLAUDE.md")" = "$oud/WORKFLOW.md" ] \
@@ -40,4 +40,4 @@ SPEC_DRIVEN_GUARDRAILS_DIR="$nieuw" "$nieuw/adopt.sh" "$project" >/dev/null 2>&1
 [ "$(readlink "$project/CLAUDE.md")" = "$na_eerste" ] \
   || fail "S78 — a repeated run after migration changed the symlink again"
 
-test_klaar
+test_done

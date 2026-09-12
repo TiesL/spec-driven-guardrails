@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(vers_project met-marker)"
+project="$(fresh_project met-marker)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -22,4 +22,4 @@ status=$?
 
 [ "$status" -eq 0 ] || fail "S16 — expected pass-through (exit 0), got $status. Output: $uitvoer"
 
-test_klaar
+test_done

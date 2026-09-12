@@ -14,11 +14,11 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a fresh project.
-project="$(vers_project vers)"
-adopteer "$project"
+project="$(fresh_project vers)"
+adopt "$project"
 
 doel="$project/check-traceability.sh"
-[ -f "$doel" ] || { fail "S63 — adopt.sh did not scaffold check-traceability.sh"; test_klaar; }
+[ -f "$doel" ] || { fail "S63 — adopt.sh did not scaffold check-traceability.sh"; test_done; }
 [ -x "$doel" ] || fail "S63 — check-traceability.sh is not executable"
 
 # And: it runs in that fresh project without failing. A scaffold that is red
@@ -29,8 +29,8 @@ uitvoer="$("$doel" "$project" 2>&1)"; status=$?
 # And: a customized version is not overwritten.
 echo "#!/usr/bin/env bash" > "$doel"
 echo "# eigen variant" >> "$doel"
-adopteer "$project"
+adopt "$project"
 grep -q 'eigen variant' "$doel" \
   || fail "S63 — adopt.sh overwrote a customized check-traceability.sh"
 
-test_klaar "S63"
+test_done "S63"

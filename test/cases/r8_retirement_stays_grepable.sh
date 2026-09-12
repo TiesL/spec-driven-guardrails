@@ -15,7 +15,7 @@ archief="$TEST_REPO_ROOT/CHANGES-ARCHIEF.md"
 
 if [ ! -f "$archief" ]; then
   fail "R8 — CHANGES-ARCHIEF.md is missing"
-  test_klaar
+  test_done
 fi
 
 # Given: a retired entry that was once answered, moved to the archive.
@@ -32,14 +32,14 @@ if ! awk -v id="## $geretireerd" '$0==id{gevonden=1;next} gevonden&&/^## /{exit}
 fi
 
 # When: adopt.sh and pending-changes.sh run against a fresh project.
-project="$(vers_project doelproject)"
-adopteer "$project"
+project="$(fresh_project doelproject)"
+adopt "$project"
 
 # Then: the entry is seeded or asked nowhere.
 if grep -q "$geretireerd" "$project/WORKFLOW-ADOPTION.md"; then
   fail "R8 — $geretireerd is seeded in the adoption table"
 fi
-if openstaande_ids "$project" | grep -qx "$geretireerd"; then
+if pending_ids "$project" | grep -qx "$geretireerd"; then
   fail "R8 — $geretireerd is still being asked"
 fi
 
@@ -49,4 +49,4 @@ if ! grep -h "$geretireerd" "$changes" "$archief" >/dev/null 2>&1; then
   fail "R8 — $geretireerd can no longer be found across both files"
 fi
 
-test_klaar
+test_done

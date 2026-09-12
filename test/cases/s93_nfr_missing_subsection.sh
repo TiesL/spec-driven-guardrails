@@ -82,4 +82,4 @@ check_status=$?
 [ "$check_status" -eq 0 ] || fail "S93 — check must not hard-fail on a missing NFR subsection: $check_uitvoer"
 assert_contains "S93 — check surfaces the warning" "spec-security" "$check_uitvoer"
 
-test_klaar
+test_done
