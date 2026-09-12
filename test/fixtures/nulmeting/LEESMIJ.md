@@ -270,3 +270,18 @@ verversing.
 
 Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 "opschoning".
+
+## Bijgewerkt voor #160
+
+Bovenstaande regel ("ververs `CHANGES.md.momentopname` ook bij een zuivere
+prozawijziging") bleek in de praktijk niet afgedwongen: de snapshot was
+sinds #127 (W42) niet meer ververst, terwijl drie latere PR's
+(#136/#137/#138) `CHANGES.md`'s hele proza naar het Engels vertaalden — een
+drift van 562 regels, gevonden tijdens de review van #159. Niets testte de
+twee bestanden tegen elkaar, dus niets sloeg alarm.
+
+`test/cases/s90_changes_momentopname_frozen.sh` (S90) sluit dat gat: een
+`diff` tussen `CHANGES.md` en `CHANGES.md.momentopname`, faalt hard bij elk
+verschil — dezelfde rookmelder-behandeling die S66 al aan `nfr.momentopname/`
+geeft, nu ook hier. Vanaf nu is "ververs de snapshot" geen conventie meer die
+op discipline leunt, maar een check die het afdwingt.
