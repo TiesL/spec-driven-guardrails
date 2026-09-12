@@ -1060,3 +1060,20 @@ something new is being added.
   `./check` still runs `check-traceability.sh` and stays green — this is
   wiring the check in, not fixing a pre-existing gap in this repo's own
   coverage
+
+### S93 — A yes-answered spec-* NFR without its PRD.md subsection is warned about
+**Covers:** F4
+- Given: a `spec-*` row answered `yes`/`ja` in `WORKFLOW-ADOPTION.md`,
+  with no matching `### <heading>` subsection (or `<!-- nfr: id -->`
+  anchor) yet in `PRD.md` — found during tennis-invoicing's adoption
+  catch-up (PR TiesL/tennis-invoicing#18/#19), where the gap only stayed
+  visible because someone happened to add a Notes explanation by hand
+- When: `check` runs
+- Then: it prints an explicit warning naming the row and its missing
+  subsection, without failing the build — a freshly-answered `yes` gets a
+  short, visible grace period
+- And: the warning appears even when the row's Notes column explicitly
+  references an open issue — the whole point is that the check no longer
+  depends on someone remembering to add that note (AC3)
+- And: a row answered `yes` whose subsection already exists, and a row
+  answered `no`/`nee`, are both silent

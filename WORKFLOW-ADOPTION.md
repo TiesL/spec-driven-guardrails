@@ -30,5 +30,5 @@ de vraag verschijnt vanzelf zodra dat verandert.
 | spec-maintainability | yes | 2026-09-08 | Sterk relevant, kern van deze release — F3/F4/F5 verwijderen parser-, NFR- en leeslastduplicatie, tegen de kosten van een nieuwe skills-/nfr-/testboom. Zie PRD.md, sectie Maintainability. |
 | spec-testability | yes | 2026-09-08 | Sterk relevant, ooit de grootste leemte (nul tests bij veertien gespecificeerde scenario's) — nu een testharnas met 83 scenario's. Zie PRD.md, sectie Testability. |
 | spec-usability | yes | 2026-09-08 | Relevant — gebruiker is Ties plus de agent; F6 maakt de onderbouwingslast zichtbaar en faseert haar, in plaats van zeventien rijen huiswerk in één klap. Zie PRD.md, sectie Usability. |
-| spec-cost-management | yes | 2026-09-08 | Relevant, in tokens — WORKFLOW.md laadt volledig in elke sessie van elk project; skillbeschrijvingen kosten weinig, hun body pas bij aanroep. Zie PRD.md, sectie Cost management. |
+| spec-cost-management | yes | 2026-09-08 | Relevant, in tokens — WORKFLOW.md laadt volledig in elke sessie van elk project; skillbeschrijvingen kosten weinig, hun body pas bij aanroep. Zie PRD.md, sectie Cost control. |
 | spec-documentation | yes | 2026-09-08 | Relevant — README.md was aantoonbaar verouderd (F16); elke skill draagt zijn eigen uitleg, de kern verwijst er expliciet naar. Zie PRD.md, sectie Documentation. |

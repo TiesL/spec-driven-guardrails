@@ -768,7 +768,7 @@ already in the PR #6 review: seventeen rows of homework per new project,
 generically answered in one stroke. F6 makes that visible and decides it:
 substantiate in phases, secured by three gates.
 
-### Cost management
+### Cost control
 
 Relevant, in tokens. `WORKFLOW.md` loads in full in every session of every
 project. Roughly 45% is conditionally relevant. Skill descriptions cost a
