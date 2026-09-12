@@ -5,7 +5,7 @@ description: >
   records per change in WORKFLOW-ADOPTION.md what it applies, and how to
   handle a pending or still-to-be-substantiated row (spec-touching vs.
   purely procedural). Use this when a session reports pending workflow
-  changes, or when drafting/revising PRD.md or ARCHITECTUUR.md.
+  changes, or when drafting/revising PRD.md or ARCHITECTURE.md.
 ---
 
 ## Why: a choice per change, per project
@@ -43,7 +43,7 @@ still have no answer (or still say "requires substantiation").
 How you handle a pending or still-to-be-substantiated row depends on the
 kind of entry:
 
-- **The entry touches `PRD.md`/`ARCHITECTUUR.md`** (most `spec-*` entries
+- **The entry touches `PRD.md`/`ARCHITECTURE.md`** (most `spec-*` entries
   and the NFRs): this is the **substantiation requirement**, and applies to
   *every* row that belongs here, not only the NFRs from "Niet-functionele
   kenmerken" — `proces-prd` or `architectuurdocument` itself also

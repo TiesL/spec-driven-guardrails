@@ -451,7 +451,16 @@ adopt_project() {
 
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
-  scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTUUR.md" "$project_dir/ARCHITECTUUR.md"
+  # #156: the template was renamed from ARCHITECTUUR.md to ARCHITECTURE.md.
+  # A project that already scaffolded (and filled in) the old-named file
+  # keeps it as-is — scaffold_if_missing's own "only if missing" check
+  # can't see it, since the filename itself changed, and would otherwise
+  # create a second, blank file alongside the real one.
+  if [ -e "$project_dir/ARCHITECTUUR.md" ]; then
+    echo "Found $project_dir/ARCHITECTUUR.md (pre-rename name, #156) — left as-is, not scaffolding ARCHITECTURE.md alongside it."
+  else
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTURE.md" "$project_dir/ARCHITECTURE.md"
+  fi
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-traceability.sh" "$project_dir/check-traceability.sh"
   # Explicitly making it executable. `cp` inherits the source's
   # permissions, but that's not a guarantee this script may rely on: a

@@ -12,13 +12,13 @@
 # assembled but before it's final. Exit status != 0 refuses the commit.
 #
 # The same rule as the PreToolUse guard (HOOFDBRANCH, the message text)
-# comes from regels.sh — that lives in one place. What *is* different here:
+# comes from rules.sh — that lives in one place. What *is* different here:
 # no quote-aware tokenization needed, git has already assembled the commit
 # by the time this hook runs, so there's no command string to read.
 #
 # Known limitation: if the bash interpreter itself is missing, this script
 # can't even run its own fail-open logic — that's inherent to a shell-script
-# hook and can't be solved from inside the script. If only regels.sh is
+# hook and can't be solved from inside the script. If only rules.sh is
 # missing (source file gone), this script does let it through, loudly.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
@@ -31,12 +31,12 @@ if [ -z "$doel" ]; then
   exit 0
 fi
 eigen_map="$(cd "$(dirname "$doel")" 2>/dev/null && pwd)"
-regels="$eigen_map/regels.sh"
+regels="$eigen_map/rules.sh"
 if [ -z "$eigen_map" ] || [ ! -r "$regels" ]; then
-  echo "warning: git hooks couldn't find regels.sh — commit check skipped." >&2
+  echo "warning: git hooks couldn't find rules.sh — commit check skipped." >&2
   exit 0
 fi
-# shellcheck source=regels.sh
+# shellcheck source=rules.sh
 . "$regels"
 HOOFDBRANCH="${HOOFDBRANCH:-main}"
 

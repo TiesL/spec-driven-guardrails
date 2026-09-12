@@ -149,7 +149,7 @@ to it**.
 
 ```
 nfr/spec-security.md
-nfr/spec-data-integriteit.md
+nfr/spec-data-integrity.md
 …  (fifteen files)
 ```
 
@@ -447,7 +447,7 @@ projects' IDs like the `F1–F26` in the table above, don't count.
 **a. `AC<n>` in `work-item.md`.** That template numbers its own acceptance
 criteria `### S1:` — the same namespace as `TEST-SCENARIOS.md`, so any `grep`
 on `S<n>` is guaranteed to hit the issue itself. Not `A<n>`, and that
-collision is sharper than it looks at first glance: `templates/ARCHITECTUUR.md`
+collision is sharper than it looks at first glance: `templates/ARCHITECTURE.md`
 uses `A1` for architecture requirements, and tennis-admin has 24 `A<n>`
 scenarios. If tennis-admin scaffolded that template, `A1` would mean two
 things within one project — not a collision between projects, but within one.
@@ -458,7 +458,7 @@ says which link it is. Strict: start of line, comma-separated tokens
 matching `^[A-Z]{1,2}[0-9]+[a-z]?$`. Both quantifiers come from reality, not
 taste. The `[a-z]?` is there for `a2t-emails`' `S2b`; the `{1,2}` for
 tennis-admin's `OP<n>` — that project uses `OP` for open points in both
-`PRD.md` and `ARCHITECTUUR.md`, and `O<n>` for weighed architecture options.
+`PRD.md` and `ARCHITECTURE.md`, and `O<n>` for weighed architecture options.
 A grammar that rejects either one is unusable on day one in one of the four
 projects. Only the field counts; that prevents false positives by construction.
 
@@ -477,7 +477,7 @@ four projects is off by day two.
 The scope is bounded by decision c itself: the collector only reads headings
 from `PRD.md` and `TEST-SCENARIOS.md`. tennis-admin's `O1`–`O5` — weighed
 architecture options, four of which were rejected — live exclusively in
-`ARCHITECTUUR.md` and therefore aren't collected. `Covers: O2` therefore
+`ARCHITECTURE.md` and therefore aren't collected. `Covers: O2` therefore
 correctly fails to resolve and gets reported. This problem can only occur for
 things that live in the two scanned files.
 
@@ -489,7 +489,7 @@ require per-project configuration that silently goes stale:
 
 - **Per-prefix exclusion list.** Goes stale the moment a project starts using
   a new prefix.
-- **Filter by file.** Excludes `ARCHITECTUUR.md`, but decision c already does
+- **Filter by file.** Excludes `ARCHITECTURE.md`, but decision c already does
   that; the `OP<n>` case lives in the PRD itself and remains.
 - **Filter by section within the PRD**, e.g. only headings under
   `## Functionaliteit`. Attractive, and therefore checked: of the four
@@ -590,7 +590,7 @@ coverage has to come from three local-and-CI-based layers:
   cover every tool on that machine. They reuse the decision logic from
   `hooks/git-guardrails`. Note what's actually reusable: a native
   `pre-commit` receives no command string, so the quote-aware tokenization
-  from `lees-commando.py` is `PreToolUse`-specific by definition. What can be
+  from `read-command.py` is `PreToolUse`-specific by definition. What can be
   shared is the *rules* — which branch is protected, what the message says,
   which way out it names. That's narrower than "reuse the script," and W26
   must make that distinction explicit instead of assuming a simple reuse
@@ -725,7 +725,7 @@ exists, without building an adapter layer or contract (see "Besloten in W29
 
 | Agent-independent | Claude Code-specific |
 |---|---|
-| Templates (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTUUR.md`) | `settings/session-hooks.json` |
+| Templates (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTURE.md`) | `settings/session-hooks.json` |
 | Adoption registry (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
 | The `nfr/` registry | `skills/` |
 | Traceability (`Covers:`, `AC<n>`) | `CLAUDE.md` as the symlink name |
@@ -907,7 +907,7 @@ epics still apply, detached from the execution history in which they arose.
 2. **`quality-review-before-merge` has been answered by no project** and no
    PR ever had a review. Should W13 put that entry in front of all four
    projects right away?
-3. ~~Generate or assemble?~~ Answered: generate — see `genereer-prd-blok`
+3. ~~Generate or assemble?~~ Answered: generate — see `generate-prd-block`
    and F4.
 
 ---

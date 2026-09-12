@@ -30,10 +30,10 @@ assert_contains "S88 — the offending file is named" "README.md" "$uitvoer_vuil
 
 # And: the same sentence in a permanently excluded file (layer C) is not
 # reported — the exclusion is by design, not a gap.
-echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/ARCHITECTUUR.md"
+echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/ARCHITECTURE.md"
 uitvoer_laag_c="$("$script" "$repo" 2>&1)"; status_laag_c=$?
 case "$uitvoer_laag_c" in
-  *"ARCHITECTUUR.md"*) fail "S88 — a permanently excluded (layer C) file was reported anyway" ;;
+  *"ARCHITECTURE.md"*) fail "S88 — a permanently excluded (layer C) file was reported anyway" ;;
 esac
 # README.md's own violation must still be reported — the exclusion list
 # doesn't accidentally swallow everything.

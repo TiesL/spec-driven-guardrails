@@ -57,7 +57,7 @@ fi
 if "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   fail "S39 — check did not complain, while the template still holds the old block"
 fi
-(cd "$repo" && ./genereer-prd-blok >/dev/null 2>&1)
+(cd "$repo" && ./generate-prd-block >/dev/null 2>&1)
 if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   fail "S39 — check still complains after regenerating"
   "$repo/check" --no-tests "$repo" 2>&1 | grep -E 'ERROR|regarding' >&2

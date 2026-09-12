@@ -10,8 +10,8 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-hook="$TEST_REPO_ROOT/hooks/push-na-commit"
-[ -x "$hook" ] || { fail "S56 — hooks/push-na-commit is missing or not executable"; test_klaar; }
+hook="$TEST_REPO_ROOT/hooks/push-after-commit"
+[ -x "$hook" ] || { fail "S56 — hooks/push-after-commit is missing or not executable"; test_klaar; }
 
 project="$(vers_project met-remote)"
 remote="$SANDBOX/remote.git"

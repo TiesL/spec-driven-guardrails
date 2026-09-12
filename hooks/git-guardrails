@@ -41,16 +41,16 @@ invoer="$(</dev/stdin)"
 [ -n "$invoer" ] || exit 0
 
 eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-lezer="$eigen_map/lees-commando.py"
+lezer="$eigen_map/read-command.py"
 
-# HOOFDBRANCH and the REDEN_* texts come from regels.sh, shared with the
+# HOOFDBRANCH and the REDEN_* texts come from rules.sh, shared with the
 # native git hooks (W26) — which branch is protected and what the message
 # says lives in one place this way. If the file is missing (broken
 # checkout), this falls back to the hardcoded "main": when in doubt, allow
 # also applies here to the guard's own infrastructure.
-if [ -r "$eigen_map/regels.sh" ]; then
-  # shellcheck source=regels.sh
-  . "$eigen_map/regels.sh"
+if [ -r "$eigen_map/rules.sh" ]; then
+  # shellcheck source=rules.sh
+  . "$eigen_map/rules.sh"
 fi
 HOOFDBRANCH="${HOOFDBRANCH:-main}"
 
@@ -332,7 +332,7 @@ controleer_ci_guard() {
 
   # Only python3 filters here, not gh's own -q: that syntax isn't
   # guaranteed stable across gh versions, and python3 is already a required
-  # dependency of this guard (lees-commando.py). A parse error is now a
+  # dependency of this guard (read-command.py). A parse error is now a
   # separate, loud outcome — no longer confused with "no problems found".
   local problemen parse_status
   problemen="$(printf '%s' "$uitvoer" | python3 -c '

@@ -20,5 +20,5 @@ can be tested (e.g. a domain layer with no external dependencies).
 ## Guidance
 
 How is the code built so it can be tested — e.g. a domain layer with no
-external dependencies (see an architecture requirement in `ARCHITECTUUR.md`
+external dependencies (see an architecture requirement in `ARCHITECTURE.md`
 if one exists)?

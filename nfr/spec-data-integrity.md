@@ -1,5 +1,5 @@
 ---
-id: spec-data-integriteit
+id: spec-data-integrity
 heading: Data integrity
 order: 2
 default: yes

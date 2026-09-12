@@ -105,7 +105,7 @@ on its own:
 - **Specification-Driven Development (SDD)** — `PRD.md` as the normative
   spec, broken down into epic/work-item GitHub issues before
   implementation starts.
-- **Architecture Decision Records** — `ARCHITECTUUR.md` records structural
+- **Architecture Decision Records** — `ARCHITECTURE.md` records structural
   decisions, alternatives considered, and the trigger to revisit them.
 - **Non-functional requirements specification** — the `nfr/` register: one
   file per attribute (security, data integrity, failure modes, …), the
@@ -201,9 +201,9 @@ below, without needing anything above this point.
 | `hooks/` | `git-guardrails` — the `PreToolUse` guard against destructive git commands, and (W10b) the merge guard on `gh pr merge` without a review marker or with non-green CI. Always fails open (no `gh`/network, missing tool) — a broken guard must never block work. Invoked from `settings/session-hooks.json`. |
 | `skills/` | The Claude Code skills (`pre-merge-review`, `deploy-guards`, `check-convention`, `adoption-registry`, `write-spec`, `refactoring-triggers`, `tdd-seams`, `diagnose-bug`, `adopt-workflow`) — see the routing table in `WORKFLOW.md`. `adopt.sh` symlinks each of them into `.claude/skills/` of every adopted project. |
 | `USER-CLAUDE.md` | Short trigger instruction for the automatic adoption prompt on new projects. Symlinked as `~/.claude/CLAUDE.md`. |
-| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTUUR.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Known limitations* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTUUR.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTURE.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Known limitations* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTURE.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
-| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTUUR.md`, which covers structural decisions. Only scaffolded if the project answered `yes` to the `process-context-document` question (defined in `CHANGES.md`, answered in the project's own `WORKFLOW-ADOPTION.md`). |
+| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTURE.md`, which covers structural decisions. Only scaffolded if the project answered `yes` to the `process-context-document` question (defined in `CHANGES.md`, answered in the project's own `WORKFLOW-ADOPTION.md`). |
 | `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |
 | `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "yes" means as a product default (not Ties' personal preference — see W37/#79). Projects record their answer in their own `WORKFLOW-ADOPTION.md` (or its pre-migration name, `WORKFLOW-ADOPTIE.md` — see W42/#114). |
 | `CHANGES-ARCHIEF.md` | Retired `CHANGES.md` entries, with their ID unchanged so a project that once answered can still find where that row came from. |
@@ -216,8 +216,8 @@ below, without needing anything above this point.
 | `check-no-dutch.sh` | This repo's own translation-completeness check (W43/#115): scans for a curated list of untranslated-Dutch marker words outside the deliberate layer-C exclusions. |
 | `check-traceability.sh` | The root copy of `templates/check-traceability.sh`, run directly against this repo's own `PRD.md`/`TEST-SCENARIOS.md` (this repo verifies its own traceability chain differently than adopted projects do — see `PRD.md`'s technical debt table). |
 | `find-shared-vocabulary.sh` | Generates candidates for layer B (the shared-vocabulary tokens matched literally across the four adopted projects) — surfaces candidates, doesn't replace human curation. |
-| `genereer-prd-blok` | Regenerates the NFR block inside `templates/PRD.md` from `nfr/`, so the two can't silently drift; `check` fails if the checked-in block doesn't match. |
-| `ARCHITECTUUR.md` | This repo's own architecture-decision record, same purpose as `templates/ARCHITECTUUR.md` produces for an adopted project. |
+| `generate-prd-block` | Regenerates the NFR block inside `templates/PRD.md` from `nfr/`, so the two can't silently drift; `check` fails if the checked-in block doesn't match. |
+| `ARCHITECTURE.md` | This repo's own architecture-decision record, same purpose as `templates/ARCHITECTURE.md` produces for an adopted project. |
 | `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
 | `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
 | `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/nulmeting/` (the frozen baseline, see `LEESMIJ.md` there). |

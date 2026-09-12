@@ -36,8 +36,8 @@ something new is being added.
 - Given: the same fresh project, right after adoption
 - When: `pending-changes.sh .` is run
 - Then: exactly these 7 IDs appear as pending, in any order:
-  `proces-issue-tracking`, `test-integratie`, `spec-performance-schaal`,
-  `spec-compliance`, `spec-portability`, `spec-usability`, `spec-kostenbeheersing`
+  `proces-issue-tracking`, `test-integratie`, `spec-performance-scale`,
+  `spec-compliance`, `spec-portability`, `spec-usability`, `spec-cost-management`
 
 ### R3 — `package.json` makes `ci-conventie` relevant
 **Covers:** F3
@@ -558,7 +558,7 @@ something new is being added.
 ### S26 — The review scope follows the answered `spec-*` rows
 **Covers:** F11
 - Given: a project whose `WORKFLOW-ADOPTIE.md` has only `spec-security` and
-  `spec-data-integriteit` set to `ja`
+  `spec-data-integrity` set to `ja`
 - When: `pre-merge-review` runs
 - Then: the scope contains complexity and dependencies plus exactly those
   two NFRs
@@ -1009,3 +1009,15 @@ something new is being added.
   network dependency
 - And: the script excludes itself from its own scan — the marker list it
   carries isn't untranslated prose
+
+### S89 — An answer under a pre-rename NFR ID is still recognized
+**Covers:** F3, F11
+- Given: a project's `WORKFLOW-ADOPTION.md` answers `yes` under
+  `spec-data-integriteit`, the pre-#156 ID (the NFR was later renamed to
+  `spec-data-integrity`)
+- When: `pending-changes.sh` runs
+- Then: `spec-data-integrity` is not reported as pending — the old-ID row
+  satisfies the current question, the same "never rewrite what a project
+  already recorded" treatment W42/#114 gave the `ja`/`nee` format
+- And: `pre-merge-review`'s `scope.sh` still resolves a readable heading
+  for the row via the alias, instead of falling back to the bare ID
