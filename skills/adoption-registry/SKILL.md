@@ -46,7 +46,7 @@ kind of entry:
 - **The entry touches `PRD.md`/`ARCHITECTURE.md`** (most `spec-*` entries
   and the NFRs): this is the **substantiation requirement**, and applies to
   *every* row that belongs here, not only the NFRs from "Niet-functionele
-  kenmerken" — `proces-prd` or `architectuurdocument` itself also
+  kenmerken" — `process-prd` or `architecture-document` itself also
   deserves a real reason, not an automatism.
   - A row that still says **"requires substantiation"**: replace it with an
     objective argument, grounded in *this* project, for why `yes` holds —
@@ -58,7 +58,7 @@ kind of entry:
   - An auto-seeded `yes` that never gets substantiated is, in practice, no
     different from the silent drift this whole mechanism was meant to
     prevent.
-- **Purely procedural, touches no specification** (e.g. `ci-conventie`,
+- **Purely procedural, touches no specification** (e.g. `ci-convention`,
   `deploy-guards`): a plain **closed yes/no question** suffices, several at
   once in a single choice prompt; in rounds once there are more than four
   questions.

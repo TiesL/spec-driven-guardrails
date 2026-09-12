@@ -21,14 +21,14 @@ pending_ids "$project" > "$actual"
 # Then: exactly these 8 IDs, in any order.
 expected="$SANDBOX/expected.txt"
 cat > "$expected" <<'IDS'
-proces-issue-tracking
 process-context-document
+process-issue-tracking
 spec-compliance
 spec-cost-management
 spec-performance-scale
 spec-portability
 spec-usability
-test-integratie
+test-integration
 IDS
 
 assert_ids_equal "R2" "$expected" "$actual"

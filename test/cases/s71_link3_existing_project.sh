@@ -32,13 +32,13 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | van toepassing |
+| ci-convention | ja | 2026-01-01 | van toepassing |
 EOF
 
 adopt "$project"
 
 # And: the existing ci.yml remains untouched — scaffold_if_missing overwrites
-# nothing (same rule as S49 for ci-op-pr-en-main).
+# nothing (same rule as S49 for ci-on-pr-and-main).
 if ! grep -qx '      - run: npm run check' "$project/.github/workflows/ci.yml"; then
   fail "S71 — the existing ci.yml was overwritten"
 fi
@@ -47,15 +47,15 @@ if grep -q 'check-pr-issue-link' "$project/.github/workflows/ci.yml"; then
 fi
 
 pending="$(pending_ids "$project")"
-if ! printf '%s\n' "$pending" | grep -qx 'ci-schakel-3-hard-slot'; then
-  fail "S71 — ci-schakel-3-hard-slot did not appear as pending for an existing package.json project"
+if ! printf '%s\n' "$pending" | grep -qx 'ci-link-3-hard-block'; then
+  fail "S71 — ci-link-3-hard-block did not appear as pending for an existing package.json project"
   printf '%s\n' "$pending" >&2
 fi
 
 # And: a project without package.json does not get that question.
 project_without="$(fresh_project without-package-json)"
 pending_without="$(pending_ids "$project_without")"
-if printf '%s\n' "$pending_without" | grep -qx 'ci-schakel-3-hard-slot'; then
+if printf '%s\n' "$pending_without" | grep -qx 'ci-link-3-hard-block'; then
   fail "S71 — the link-3 question also appeared without package.json"
 fi
 

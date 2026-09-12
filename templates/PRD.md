@@ -72,7 +72,7 @@ view, and what happens if you go over them?>
 ### Deployability
 <!-- nfr: spec-deployability -->
 <What environments are there (e.g. pre-production/production)? How is it
-rolled out? How do you roll back? See also `ci-conventie`/`deploy-guards` in
+rolled out? How do you roll back? See also `ci-convention`/`deploy-guards` in
 `CHANGES.md` for the process side of this.>
 
 ### Privacy

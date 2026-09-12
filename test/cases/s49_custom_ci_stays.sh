@@ -36,15 +36,15 @@ after_two="$(cat "$project/.github/workflows/ci.yml")"
 # adoption registry asks the question — that is the mechanism that makes a
 # silent deviation audible, not a one-time message in adopt.sh.
 table="$project/WORKFLOW-ADOPTION.md"
-grep -q '^| ci-op-pr-en-main ' "$table" \
-  || fail "S49 — ci-op-pr-en-main is not in the adoption table of a project with package.json"
+grep -q '^| ci-on-pr-and-main ' "$table" \
+  || fail "S49 — ci-on-pr-and-main is not in the adoption table of a project with package.json"
 
 # And: for a project without package.json the question does not apply —
-# the same scoping as ci-conventie, which this entry builds on.
+# the same scoping as ci-convention, which this entry builds on.
 bare="$(fresh_project without-package-json)"
 adopt "$bare"
-if grep -q '^| ci-op-pr-en-main ' "$bare/WORKFLOW-ADOPTION.md"; then
-  fail "S49 — ci-op-pr-en-main was seeded in a project without package.json"
+if grep -q '^| ci-on-pr-and-main ' "$bare/WORKFLOW-ADOPTION.md"; then
+  fail "S49 — ci-on-pr-and-main was seeded in a project without package.json"
 fi
 
 test_done

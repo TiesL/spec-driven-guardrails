@@ -42,7 +42,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | outdated answer |
+| ci-convention | ja | 2026-01-01 | outdated answer |
 EOF
 
 remote="$SANDBOX/remote.git"
@@ -81,7 +81,7 @@ esac
 # --- SessionStart's pending-changes.sh call --------------------------------
 output_pending="$(cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$pending_command" 2>&1)"
 assert_contains "S86 — pending-changes.sh ran and reported something, from elsewhere" \
-  "ci-conventie" "$output_pending"
+  "ci-convention" "$output_pending"
 
 error_pending='target=$(readlink .claude/settings.json 2>/dev/null); if [ -z "$target" ]; then exit 0; fi; wf=$(dirname "$(dirname "$target")"); if [ -x "$wf/pending-changes.sh" ]; then "$wf/pending-changes.sh" . 2>/dev/null; fi; exit 0'
 output_old_pending="$(cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$error_pending" 2>&1)"

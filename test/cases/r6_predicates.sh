@@ -29,7 +29,7 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   pending_ids "$project" > "$before"
 
   # Then: the outcome per combination is exactly what the table specifies.
-  for paar in "ci-conventie:$expected_ci" "ci-op-pr-en-main:$expected_ci" "ci-schakel-3-hard-slot:$expected_ci" "ci-detecteert-main-buiten-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+  for paar in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
     if grep -qx "$id" "$before"; then actual=ja; else actual=nee; fi
     if [ "$actual" != "$verwacht" ]; then
@@ -53,7 +53,7 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   # cannot do that by construction: what adopt.sh does not seed simply stays
   # open, so the union remains unchanged. Both predicate
   # entries have `Default: yes`, so applicable here means seeded.
-  for paar in "ci-conventie:$expected_ci" "ci-op-pr-en-main:$expected_ci" "ci-schakel-3-hard-slot:$expected_ci" "ci-detecteert-main-buiten-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+  for paar in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
     if grep -qx "$id" "$geseed"; then actual=ja; else actual=nee; fi
     if [ "$actual" != "$verwacht" ]; then
@@ -63,9 +63,9 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
 
   # And the total: 21 entries always apply, plus every applicable
   # predicate entry. `heeft-package-json` now contributes four -
-  # `ci-conventie` (what the workflow does), `ci-op-pr-en-main` (when it
-  # runs), `ci-schakel-3-hard-slot` (PR without issue) and
-  # `ci-detecteert-main-buiten-pr` (commit on main without PR). Catches
+  # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
+  # runs), `ci-link-3-hard-block` (PR without issue) and
+  # `ci-detects-main-outside-pr` (commit on main without PR). Catches
   # seed logic that is bulk-wrong.
   verwacht_aantal=21
   [ "$expected_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 4))

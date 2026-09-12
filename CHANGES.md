@@ -31,7 +31,7 @@ Per entry:
   PR that actually delivers the underlying capability, not necessarily the
   PR that last touched this row. On a later rewrite, rename, or split (like
   `technical-debt-en-refactoring`, which W6 split into
-  `proces-technical-debt-register` and `proces-refactoring-triggers`), the
+  `process-technical-debt-register` and `process-refactoring-triggers`), the
   linkback keeps pointing at the PR that built the thing itself, not at the
   restructuring of this file — otherwise half the entries would suddenly
   point at the same "make it finer-grained" PR, and that tells a project
@@ -68,7 +68,7 @@ the shared parser warns if it has no `Applies if`.
 
 ---
 
-## ci-conventie
+## ci-convention
 
 - **Question:** Must this project follow the CI convention (CI calls only `check`, no separate checks in the workflow YAML)?
 - **Default:** yes
@@ -90,7 +90,7 @@ the shared parser warns if it has no `Applies if`.
   skill. If that's not yet the case, make it a work item.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/3
 
-## ci-op-pr-en-main
+## ci-on-pr-and-main
 
 - **Question:** Must this project's CI run on pull requests *and* on pushes to `main`?
 - **Default:** yes
@@ -101,7 +101,7 @@ the shared parser warns if it has no `Applies if`.
   case where two separately-green branches break together, and it's the
   form that can be set as a required check on a pull request. The push
   trigger is the backstop for whatever reaches `main` some other way. This
-  is separate from `ci-conventie`: that answer is about *what* the workflow
+  is separate from `ci-convention`: that answer is about *what* the workflow
   does (call only `check`), this one is about *when* it runs. A project
   that already answered the first is never asked about the second.
 
@@ -111,10 +111,10 @@ the shared parser warns if it has no `Applies if`.
   evaluating the merged result, and small in a workflow where the PR opens
   early. Second, this question inherits the scope of `heeft-package-json`:
   a project with a CI workflow but no `package.json` doesn't get it, same
-  as `ci-conventie`.
+  as `ci-convention`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
-## ci-schakel-3-hard-slot
+## ci-link-3-hard-block
 
 - **Question:** Does this project's CI fail a pull request that references no issue (link 3, hard block)?
 - **Default:** yes
@@ -123,7 +123,7 @@ the shared parser warns if it has no `Applies if`.
   `templates/check-pr-issue-link.sh`) and the workflow calls it on the
   `pull_request` event, with the PR number as argument — see
   `templates/ci.yml`. Only the triggering PR is judged, no audit over
-  history (F13 decision d, W19b). This is separate from `ci-op-pr-en-main`:
+  history (F13 decision d, W19b). This is separate from `ci-on-pr-and-main`:
   that answer is about *when* the workflow runs, this one about an extra
   step it also performs. `scaffold_if_missing` never overwrites an existing
   `ci.yml`, so a project that already had one before W19b doesn't get the
@@ -142,7 +142,7 @@ the shared parser warns if it has no `Applies if`.
   add it by hand or re-scaffold.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
-## ci-detecteert-main-buiten-pr
+## ci-detects-main-outside-pr
 
 - **Question:** Does this project's CI fail a push to `main` that doesn't come from a pull request?
 - **Default:** yes
@@ -169,7 +169,7 @@ the shared parser warns if it has no `Applies if`.
   workflow-level) — and must otherwise add it by hand or re-scaffold.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
-## traceability-schakel-1
+## traceability-link-1
 
 - **Question:** Must this project offline-check that every functionality in `PRD.md` is covered by at least one scenario in `TEST-SCENARIOS.md`?
 - **Default:** yes
@@ -206,7 +206,7 @@ the shared parser warns if it has no `Applies if`.
 
 ### Process and design depth
 
-## proces-prd
+## process-prd
 
 - **Question:** Does this project maintain a `PRD.md` as its normative specification?
 - **Default:** yes
@@ -214,7 +214,7 @@ the shared parser warns if it has no `Applies if`.
 - **Yes means:** `PRD.md` exists and is kept current (as-built or design) — see `templates/PRD.md`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
-## architectuurdocument
+## architecture-document
 
 - **Question:** Must this project record its architecture decisions in `ARCHITECTURE.md`?
 - **Default:** yes
@@ -233,7 +233,7 @@ the shared parser warns if it has no `Applies if`.
   language. `adopt.sh` scaffolds the template once this row is `yes`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
-## proces-issue-tracking
+## process-issue-tracking
 
 - **Question:** Does this project split work into GitHub issues (epics/work items)?
 - **Default:** question
@@ -270,7 +270,7 @@ the shared parser warns if it has no `Applies if`.
   not how.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
-## test-integratie
+## test-integration
 
 - **Question:** Does this project have automated integration tests (across component boundaries, against a real or simulated external dependency)?
 - **Default:** question
@@ -291,7 +291,7 @@ the shared parser warns if it has no `Applies if`.
   recorded under *Technical debt* in the PRD.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
-## ci-poort-op-merge
+## ci-gate-on-merge
 
 - **Question:** Does the merge guard also block `gh pr merge` when the PR has checks that didn't pass (alongside the existing block on a missing review marker)?
 - **Default:** yes
@@ -301,13 +301,13 @@ the shared parser warns if it has no `Applies if`.
   blocks when `gh pr checks` reports a check that isn't `pass`/`skipping` —
   found after CI turned out red for six runs in a row, unnoticed (issue
   #81). Fails open without `gh`, network, or reported checks: a project
-  with no CI (`ci-conventie` doesn't apply, or isn't answered yet) reports
+  with no CI (`ci-convention` doesn't apply, or isn't answered yet) reports
   no checks and so isn't blocked. The same `no` on
   `quality-review-before-merge` disables both checks — this isn't an
   independent on/off switch, since it's the same gate.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
-## proces-technical-debt-register
+## process-technical-debt-register
 
 - **Question:** Does this project keep a separate Technical debt register alongside Known limitations?
 - **Default:** yes
@@ -315,15 +315,15 @@ the shared parser warns if it has no `Applies if`.
 - **Yes means:** `PRD.md` separates *Known limitations* (stays that way) from *Technical debt* (per line: why acceptable for now, and the trigger to address it) — both subsections are already in the template.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
-## proces-refactoring-triggers
+## process-refactoring-triggers
 
 - **Question:** Do the refactoring triggers from the `refactoring-triggers` skill apply to this project?
 - **Default:** yes
 - **Applies if:** always
-- **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTURE.md` (see `architectuurdocument`), only the second and third trigger apply.
+- **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTURE.md` (see `architecture-document`), only the second and third trigger apply.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
-## proces-diagnose-bug
+## process-diagnose-bug
 
 - **Question:** Does this project follow the mandatory order reproduction → hypotheses → regression test → fix when diagnosing a bug?
 - **Default:** yes

@@ -31,13 +31,13 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | van toepassing |
+| ci-convention | ja | 2026-01-01 | van toepassing |
 EOF
 
 adopt "$project"
 
 # And: the existing ci.yml stays untouched — scaffold_if_missing overwrites
-# nothing (same rule as S49 for ci-op-pr-en-main).
+# nothing (same rule as S49 for ci-on-pr-and-main).
 if ! grep -qx '      - run: npm run check' "$project/.github/workflows/ci.yml"; then
   fail "S72 — the existing ci.yml was overwritten"
 fi
@@ -46,15 +46,15 @@ if grep -q 'check-main-via-pr' "$project/.github/workflows/ci.yml"; then
 fi
 
 pending="$(pending_ids "$project")"
-if ! printf '%s\n' "$pending" | grep -qx 'ci-detecteert-main-buiten-pr'; then
-  fail "S72 — ci-detecteert-main-buiten-pr did not appear as outstanding for an existing package.json project"
+if ! printf '%s\n' "$pending" | grep -qx 'ci-detects-main-outside-pr'; then
+  fail "S72 — ci-detects-main-outside-pr did not appear as outstanding for an existing package.json project"
   printf '%s\n' "$pending" >&2
 fi
 
 # And: a project without package.json does not get that question.
 project_without="$(fresh_project without-package-json)"
 pending_without="$(pending_ids "$project_without")"
-if printf '%s\n' "$pending_without" | grep -qx 'ci-detecteert-main-buiten-pr'; then
+if printf '%s\n' "$pending_without" | grep -qx 'ci-detects-main-outside-pr'; then
   fail "S72 — the main-via-PR question appeared even without package.json"
 fi
 

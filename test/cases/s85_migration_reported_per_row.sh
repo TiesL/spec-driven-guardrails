@@ -21,7 +21,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | outdated answer |
+| ci-convention | ja | 2026-01-01 | outdated answer |
 | deploy-guards | nee | 2026-01-01 | outdated answer |
 EOF
 
@@ -49,9 +49,9 @@ output="$(PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 
 # not collide with the pending-question list's own "  - " prefix (that
 # prefix is what test/lib.sh's pending_ids() greps for).
 assert_contains "S85 — mentions the pre-migration notice" "pre-migration format" "$output"
-assert_contains "S85 — names ci-conventie" "* ci-conventie" "$output"
+assert_contains "S85 — names ci-convention" "* ci-convention" "$output"
 assert_contains "S85 — names deploy-guards" "* deploy-guards" "$output"
-if printf '%s\n' "$output" | grep -qE '^  - (ci-conventie|deploy-guards)( |$)'; then
+if printf '%s\n' "$output" | grep -qE '^  - (ci-convention|deploy-guards)( |$)'; then
   fail "S85 — an already-answered old-format row was listed as a pending question"
 fi
 
@@ -74,7 +74,7 @@ esac
 exit 1
 ')"
 PATH="$fakebin_readonly:$PATH" pending_ids "$project" > "$actual"
-if grep -qx 'ci-conventie' "$actual" || grep -qx 'deploy-guards' "$actual"; then
+if grep -qx 'ci-convention' "$actual" || grep -qx 'deploy-guards' "$actual"; then
   fail "S85 — an already-answered old-format row was swept into the pending ID set"
 fi
 
@@ -83,7 +83,7 @@ fi
 assert_contains "S85 — reports the tracking issue" "Filed a tracking issue" "$output"
 [ "$(grep -c '^issue create' "$gh_log")" -eq 1 ] \
   || fail "S85 — expected exactly one 'gh issue create' call, got $(grep -c '^issue create' "$gh_log")"
-grep -q 'ci-conventie' "$gh_log" || fail "S85 — the issue body/title does not mention ci-conventie"
+grep -q 'ci-convention' "$gh_log" || fail "S85 — the issue body/title does not mention ci-convention"
 grep -q -- '-R github.com/example-org/pre-migratie' "$gh_log" \
   || fail "S85 — gh was not called with an explicit -R for the project's own repo"
 
