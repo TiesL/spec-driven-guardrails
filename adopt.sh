@@ -74,7 +74,7 @@ copy_issue_templates() {
   fi
 }
 
-# Callback for itereer_entries. The input comes via _seed_* globals instead
+# Callback for iterate_entries. The input comes via _seed_* globals instead
 # of dynamic scope, so it's visible where it comes from.
 #
 # `standaard: question` is skipped here: those entries are never answered
@@ -86,7 +86,7 @@ seed_entry() {
   if [ "$standaard" = "question" ]; then
     return 0
   fi
-  if ! predicaat_waar "$predicaat" "$_seed_project_dir"; then
+  if ! predicate_true "$predicaat" "$_seed_project_dir"; then
     return 0
   fi
   echo "| $id | yes | $_seed_vandaag | at adoption — requires substantiation during PRD/architecture |" >> "$_seed_doel"
@@ -127,7 +127,7 @@ seed_adoptietabel() {
   _seed_project_dir="$project_dir"
   _seed_doel="$doel"
   _seed_vandaag="$(date +%Y-%m-%d)"
-  itereer_alle_entries "$CLAUDE_WORKFLOW_DIR" seed_entry
+  iterate_all_entries "$CLAUDE_WORKFLOW_DIR" seed_entry
 
   echo "Adoption table created: $doel"
 }

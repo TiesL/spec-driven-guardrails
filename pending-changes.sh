@@ -46,25 +46,25 @@ beantwoord() {
   # #156: also accept the pre-rename ID for a project that answered
   # before an NFR was renamed — same spirit as W42/#114's filename
   # fallback above, applied to the ID instead of the filename.
-  oud="$(nfr_oude_id "$id")"
+  oud="$(nfr_old_id "$id")"
   [ -n "$oud" ] && grep -q "^| *$oud *|" "$antwoorden"
 }
 
 openstaand=()
 
-# Callback for itereer_entries. `standaard` is deliberately unused here: an
+# Callback for iterate_entries. `standaard` is deliberately unused here: an
 # unanswered question is pending regardless of whether it started as `yes`
 # or `question`. adopt.sh does do something with that same field — see the
 # callback there.
-# shellcheck disable=SC2329  # called indirectly, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via iterate_entries
 verzamel_openstaand() {
   local id="$1" predicaat="$3"
-  if predicaat_waar "$predicaat" "$project_dir" && ! beantwoord "$id"; then
+  if predicate_true "$predicaat" "$project_dir" && ! beantwoord "$id"; then
     openstaand+=("$id")
   fi
 }
 
-itereer_alle_entries "$workflow_dir" verzamel_openstaand
+iterate_all_entries "$workflow_dir" verzamel_openstaand
 
 if [ ${#openstaand[@]} -gt 0 ]; then
   echo "Pending workflow changes for this project (see CHANGES.md in spec-driven-guardrails):"
@@ -78,7 +78,7 @@ if [ ${#openstaand[@]} -gt 0 ]; then
     ' "$changes")"
     # If the ID isn't in CHANGES.md, it comes from the NFR register.
     if [ -z "$vraag" ]; then
-      vraag="$(nfr_vraag "$workflow_dir/nfr" "$id")"
+      vraag="$(nfr_question "$workflow_dir/nfr" "$id")"
     fi
     echo "  - $id — $vraag"
   done

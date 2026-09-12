@@ -9,27 +9,27 @@
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 # Reads one field from a register file's frontmatter.
-nfr_veld() {
-  local bestand="$1" naam="$2"
-  awk -v n="$naam" '
+nfr_field() {
+  local file="$1" name="$2"
+  awk -v n="$name" '
     { sub(/\r$/, "") }
     NR == 1 && $0 == "---" { in_fm = 1; next }
     in_fm && $0 == "---"    { exit }
     in_fm && $0 ~ "^" n "[[:space:]]*:" {
       sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+$/, ""); print; exit
     }
-  ' "$bestand"
+  ' "$file"
 }
 
 # Reads the content of a ## section from a register file, as a single line.
-nfr_sectie() {
-  local bestand="$1" kop="$2"
-  awk -v k="## $kop" '
+nfr_section() {
+  local file="$1" heading="$2"
+  awk -v k="## $heading" '
     { sub(/\r$/, "") }
     $0 == k { in_sec = 1; next }
     in_sec && /^## / { exit }
     in_sec { print }
-  ' "$bestand" | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//'
+  ' "$file" | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//'
 }
 
 # The register files in order, one path per line.
@@ -39,104 +39,104 @@ nfr_sectie() {
 # out of the register disappears from *all* consumers at once: it's no
 # longer asked, no longer seeded, and no longer in the template block — and
 # because both sides miss it, the drift check sees nothing.
-nfr_bestanden() {
-  local nfr_map="$1" bestand vol
+nfr_files() {
+  local nfr_map="$1" file order
   [ -d "$nfr_map" ] || return 0
-  for bestand in "$nfr_map"/*.md; do
-    [ -e "$bestand" ] || continue
-    vol="$(nfr_veld "$bestand" order)"
-    case "$vol" in
+  for file in "$nfr_map"/*.md; do
+    [ -e "$file" ] || continue
+    order="$(nfr_field "$file" order)"
+    case "$order" in
       ''|*[!0-9]*)
-        echo "warning: $bestand has no valid 'order' field — put at the end" >&2
-        vol=99999 ;;
+        echo "warning: $file has no valid 'order' field — put at the end" >&2
+        order=99999 ;;
     esac
-    printf '%s\t%s\n' "$vol" "$bestand"
+    printf '%s\t%s\n' "$order" "$file"
   done | sort -n | cut -f2-
 }
 
 # Checks the register files for completeness. Prints every problem and
 # returns 1 if something is wrong. `check` uses this: a broken register file
 # should fail the build, not silently disappear.
-nfr_valideer() {
-  local nfr_map="$1" bestand vol id heading pred status fouten=0
+nfr_validate() {
+  local nfr_map="$1" file order id heading pred status errors=0
 
   [ -d "$nfr_map" ] || return 0
 
-  for bestand in "$nfr_map"/*.md; do
-    [ -e "$bestand" ] || continue
-    id="$(nfr_veld "$bestand" id)"
-    heading="$(nfr_veld "$bestand" heading)"
-    vol="$(nfr_veld "$bestand" order)"
-    pred="$(nfr_veld "$bestand" applies-if)"
-    status="$(nfr_veld "$bestand" status)"
+  for file in "$nfr_map"/*.md; do
+    [ -e "$file" ] || continue
+    id="$(nfr_field "$file" id)"
+    heading="$(nfr_field "$file" heading)"
+    order="$(nfr_field "$file" order)"
+    pred="$(nfr_field "$file" applies-if)"
+    status="$(nfr_field "$file" status)"
 
-    [ -n "$id" ]      || { echo "$bestand: field 'id' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$heading" ] || { echo "$bestand: field 'heading' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$pred" ]    || { echo "$bestand: field 'applies-if' is missing"; fouten=$((fouten + 1)); }
-    [ -n "$status" ]  || { echo "$bestand: field 'status' is missing"; fouten=$((fouten + 1)); }
-    case "$vol" in
-      ''|*[!0-9]*) echo "$bestand: field 'order' is missing or not numeric"; fouten=$((fouten + 1)) ;;
+    [ -n "$id" ]      || { echo "$file: field 'id' is missing"; errors=$((errors + 1)); }
+    [ -n "$heading" ] || { echo "$file: field 'heading' is missing"; errors=$((errors + 1)); }
+    [ -n "$pred" ]    || { echo "$file: field 'applies-if' is missing"; errors=$((errors + 1)); }
+    [ -n "$status" ]  || { echo "$file: field 'status' is missing"; errors=$((errors + 1)); }
+    case "$order" in
+      ''|*[!0-9]*) echo "$file: field 'order' is missing or not numeric"; errors=$((errors + 1)) ;;
     esac
-    if [ -n "$id" ] && [ "$(basename "$bestand" .md)" != "$id" ]; then
-      echo "$bestand: filename and id ('$id') don't match"
-      fouten=$((fouten + 1))
+    if [ -n "$id" ] && [ "$(basename "$file" .md)" != "$id" ]; then
+      echo "$file: filename and id ('$id') don't match"
+      errors=$((errors + 1))
     fi
   done
 
-  [ "$fouten" -eq 0 ]
+  [ "$errors" -eq 0 ]
 }
 
 # Walks the active register files, by `order`, and calls <callback> with
-# <id> <default> <predicate>. Same signature as itereer_entries' callback,
+# <id> <default> <predicate>. Same signature as iterate_entries' callback,
 # so a caller can treat both sources the same way.
 #
 # `status: retired` skips the file. That's the retirement form for these
 # fifteen: a field instead of moving the file.
-itereer_nfr() {
+iterate_nfr() {
   local nfr_map="$1" callback="$2"
-  local bestand id standaard predicaat status fouten=0
+  local file id default predicate status errors=0
 
   [ -d "$nfr_map" ] || return 0
 
   # Sorting on the order field, not on filename: the order belongs to the
   # content (it determines the PRD block), not to what the file is called.
-  local lijst
-  lijst="$(nfr_bestanden "$nfr_map")"
+  local list
+  list="$(nfr_files "$nfr_map")"
 
-  while IFS= read -r bestand; do
-    [ -n "$bestand" ] || continue
-    status="$(nfr_veld "$bestand" status)"
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    status="$(nfr_field "$file" status)"
     [ "$status" = "retired" ] && continue
 
-    id="$(nfr_veld "$bestand" id)"
-    standaard="$(nfr_veld "$bestand" default)"
-    predicaat="$(nfr_veld "$bestand" applies-if)"
+    id="$(nfr_field "$file" id)"
+    default="$(nfr_field "$file" default)"
+    predicate="$(nfr_field "$file" applies-if)"
 
-    if [ -z "$id" ] || [ -z "$predicaat" ]; then
-      echo "warning: $bestand is missing an id or applies-if" >&2
+    if [ -z "$id" ] || [ -z "$predicate" ]; then
+      echo "warning: $file is missing an id or applies-if" >&2
       continue
     fi
 
-    if ! "$callback" "$id" "$standaard" "$predicaat"; then
+    if ! "$callback" "$id" "$default" "$predicate"; then
       echo "warning: processing NFR '$id' produced an error" >&2
-      fouten=$((fouten + 1))
+      errors=$((errors + 1))
     fi
   done <<EOF
-$lijst
+$list
 EOF
 
-  [ "$fouten" -eq 0 ]
+  [ "$errors" -eq 0 ]
 }
 
 # The question text of one characteristic, as a single line.
 # pending-changes.sh shows it for a pending change; since the spec-*
 # entries were removed from CHANGES.md, this register is the only place it
 # lives.
-nfr_vraag() {
+nfr_question() {
   local nfr_map="$1" id="$2"
-  local bestand="$nfr_map/$id.md"
-  [ -f "$bestand" ] || return 0
-  nfr_sectie "$bestand" Question
+  local file="$nfr_map/$id.md"
+  [ -f "$file" ] || return 0
+  nfr_section "$file" Question
 }
 
 # #156: five NFR filenames/IDs were renamed from Dutch to English
@@ -153,7 +153,7 @@ nfr_vraag() {
 # Given any ID (old or new, or unrelated), the current one. Old IDs no
 # longer have a file in nfr/, so this is how a caller finds the real file
 # from a possibly-stale ID read out of a project's own WORKFLOW-ADOPTION.md.
-nfr_huidig_id() {
+nfr_current_id() {
   case "$1" in
     spec-data-integriteit) echo spec-data-integrity ;;
     spec-documentatie) echo spec-documentation ;;
@@ -168,7 +168,7 @@ nfr_huidig_id() {
 # was never renamed. The reverse lookup, for checking whether a project's
 # answer file has a row under the old name for a question asked by its
 # current ID.
-nfr_oude_id() {
+nfr_old_id() {
   case "$1" in
     spec-data-integrity) echo spec-data-integriteit ;;
     spec-documentation) echo spec-documentatie ;;
@@ -181,27 +181,27 @@ nfr_oude_id() {
 # Prints the NFR block as it should appear in templates/PRD.md. The ID
 # appears as an HTML comment in the output: pre-merge-review (W13) keys on
 # that to link the review scope to the answered spec-* rows.
-nfr_blok() {
+nfr_block() {
   local nfr_map="$1"
-  local bestand kop id status lijst
+  local file heading id status list
 
-  lijst="$(nfr_bestanden "$nfr_map")"
+  list="$(nfr_files "$nfr_map")"
 
-  while IFS= read -r bestand; do
-    [ -n "$bestand" ] || continue
-    status="$(nfr_veld "$bestand" status)"
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    status="$(nfr_field "$file" status)"
     [ "$status" = "retired" ] && continue
-    kop="$(nfr_veld "$bestand" heading)"
-    id="$(nfr_veld "$bestand" id)"
+    heading="$(nfr_field "$file" heading)"
+    id="$(nfr_field "$file" id)"
     echo
-    echo "### $kop"
+    echo "### $heading"
     echo "<!-- nfr: $id -->"
     # Wrapping at the same width as the rest of the template, so the block
     # reads as hand-written markdown and the diff on a change stays small.
-    printf '<%s>\n' "$(nfr_sectie "$bestand" Guidance)" | fold -s -w 79 | sed 's/ *$//'
+    printf '<%s>\n' "$(nfr_section "$file" Guidance)" | fold -s -w 79 | sed 's/ *$//'
 
   done <<EOF
-$lijst
+$list
 EOF
 }
 
@@ -220,55 +220,55 @@ nfr_records() {
           sub(/ *-->.*/, "", id)
         }
       }
-      regel = $0
-      gsub(/\n/, " ", regel)
-      print id "\t" regel
+      line = $0
+      gsub(/\n/, " ", line)
+      print id "\t" line
     }
   ' | sort
 }
 
-# Compares the checked-in block in <sjabloon> with what the generator
+# Compares the checked-in block in <template> with what the generator
 # produces from <nfr_map>. Prints the differing characteristics and returns
 # 1 if there's a difference.
 nfr_drift() {
-  local nfr_map="$1" sjabloon="$2"
-  local ingecheckt gegenereerd verschil status=0
+  local nfr_map="$1" template="$2"
+  local checked_in generated differences status=0
 
-  ingecheckt="$(mktemp)"
-  gegenereerd="$(mktemp)"
+  checked_in="$(mktemp)"
+  generated="$(mktemp)"
 
-  local blok_ingecheckt blok_gegenereerd
-  blok_ingecheckt="$(mktemp)"
-  blok_gegenereerd="$(mktemp)"
+  local block_checked_in block_generated
+  block_checked_in="$(mktemp)"
+  block_generated="$(mktemp)"
 
   awk '
-    /<!-- nfr-block:begin/ { in_blok = 1; next }
-    /<!-- nfr-block:end/  { in_blok = 0 }
-    in_blok { print }
-  ' "$sjabloon" > "$blok_ingecheckt"
-  nfr_blok "$nfr_map" > "$blok_gegenereerd"
+    /<!-- nfr-block:begin/ { in_block = 1; next }
+    /<!-- nfr-block:end/  { in_block = 0 }
+    in_block { print }
+  ' "$template" > "$block_checked_in"
+  nfr_block "$nfr_map" > "$block_generated"
 
   # First the order, in document order. nfr_records sorts by ID after all,
   # so a wrong order would drop out there against the comparison.
-  local volgorde_in volgorde_gen
-  volgorde_in="$(grep -oE '<!-- nfr: [a-z-]+' "$blok_ingecheckt" | sed 's/.*nfr: //' | tr '\n' ' ')"
-  volgorde_gen="$(grep -oE '<!-- nfr: [a-z-]+' "$blok_gegenereerd" | sed 's/.*nfr: //' | tr '\n' ' ')"
-  if [ "$volgorde_in" != "$volgorde_gen" ]; then
+  local order_in order_generated
+  order_in="$(grep -oE '<!-- nfr: [a-z-]+' "$block_checked_in" | sed 's/.*nfr: //' | tr '\n' ' ')"
+  order_generated="$(grep -oE '<!-- nfr: [a-z-]+' "$block_generated" | sed 's/.*nfr: //' | tr '\n' ' ')"
+  if [ "$order_in" != "$order_generated" ]; then
     status=1
     echo "block order differs"
   fi
 
-  nfr_records < "$blok_ingecheckt" > "$ingecheckt"
-  nfr_records < "$blok_gegenereerd" > "$gegenereerd"
-  rm -f "$blok_ingecheckt" "$blok_gegenereerd"
+  nfr_records < "$block_checked_in" > "$checked_in"
+  nfr_records < "$block_generated" > "$generated"
+  rm -f "$block_checked_in" "$block_generated"
 
-  if ! diff -q "$ingecheckt" "$gegenereerd" >/dev/null 2>&1; then
+  if ! diff -q "$checked_in" "$generated" >/dev/null 2>&1; then
     status=1
-    verschil="$(diff "$ingecheckt" "$gegenereerd" | grep -E '^[<>]' | awk '{print $2}' | sort -u)"
-    printf '%s\n' "$verschil"
+    differences="$(diff "$checked_in" "$generated" | grep -E '^[<>]' | awk '{print $2}' | sort -u)"
+    printf '%s\n' "$differences"
   fi
 
-  rm -f "$ingecheckt" "$gegenereerd"
+  rm -f "$checked_in" "$generated"
   return "$status"
 }
 
@@ -303,8 +303,8 @@ nfr_missing_subsection() {
     anchor="<!-- nfr: $id -->"
     grep -qF "$anchor" "$prd" 2>/dev/null && continue
 
-    heading="$(nfr_huidig_id "$id")"
-    heading="$(nfr_veld "$nfr_map/$heading.md" heading)"
+    heading="$(nfr_current_id "$id")"
+    heading="$(nfr_field "$nfr_map/$heading.md" heading)"
     [ -n "$heading" ] || heading="$id"
     grep -qxF "### $heading" "$prd" 2>/dev/null && continue
 

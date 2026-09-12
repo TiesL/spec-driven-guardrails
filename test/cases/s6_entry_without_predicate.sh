@@ -42,12 +42,12 @@ MD
 
 gezien="$SANDBOX/gezien.txt"
 : > "$gezien"
-# shellcheck disable=SC2329  # called indirectly, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via iterate_entries
 noteer() { printf '%s\n' "$1" >> "$gezien"; }
 
 # When: the shared parser reads that source.
 melding="$SANDBOX/melding.txt"
-itereer_entries "$bron" noteer 2>"$melding"
+iterate_entries "$bron" noteer 2>"$melding"
 status=$?
 
 # Then: a warning appears that names the ID.
@@ -75,17 +75,17 @@ grep -q 'vergeten-als-laatste' "$melding" || fail "S6 — no warning for a broke
 grep -qx 'nog-een-goede' "$gezien" || fail "S6 — nog-een-goede was not processed"
 
 # And: the warning blocks nothing.
-[ "$status" -eq 0 ] || fail "S6 — itereer_entries gave status $status; a warning must not block"
+[ "$status" -eq 0 ] || fail "S6 — iterate_entries gave status $status; a warning must not block"
 
 # And: a source without a trailing newline does not lose its last line.
 zonder_nl="$SANDBOX/zonder-newline.md"
 printf '# K\n\n## laatste-entry\n\n- **Applies if:** always' > "$zonder_nl"
 gezien2="$SANDBOX/gezien2.txt"
 : > "$gezien2"
-# shellcheck disable=SC2329  # called indirectly, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via iterate_entries
 noteer2() { printf '%s\n' "$1" >> "$gezien2"; }
 melding2="$SANDBOX/melding2.txt"
-itereer_entries "$zonder_nl" noteer2 2>"$melding2"
+iterate_entries "$zonder_nl" noteer2 2>"$melding2"
 grep -qx 'laatste-entry' "$gezien2" || fail "S6 — the last entry disappeared due to a missing trailing newline"
 if grep -q 'laatste-entry' "$melding2"; then
   fail "S6 — misleading warning for an entry that does have a predicate"
@@ -93,7 +93,7 @@ fi
 
 # And the real CHANGES.md is clean: not a single heading without a predicate.
 echte_melding="$SANDBOX/echt.txt"
-itereer_entries "$TEST_REPO_ROOT/CHANGES.md" noteer 2>"$echte_melding" >/dev/null
+iterate_entries "$TEST_REPO_ROOT/CHANGES.md" noteer 2>"$echte_melding" >/dev/null
 if grep -qi 'warning' "$echte_melding"; then
   fail "S6 — the real CHANGES.md produces warnings:"
   cat "$echte_melding" >&2

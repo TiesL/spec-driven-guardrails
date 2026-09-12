@@ -120,7 +120,7 @@ if [ -d "$doel/nfr" ] && [ -f "$doel/templates/PRD.md" ]; then
     # First the register itself. A broken file would otherwise disappear
     # from *all* consumers at once, and then the drift check sees nothing:
     # both sides miss it after all.
-    if ! problemen="$(nfr_valideer "$doel/nfr")"; then
+    if ! problemen="$(nfr_validate "$doel/nfr")"; then
       melden_fout "the NFR register is incomplete:"
       printf '%s\n' "$problemen" | sed 's/^/    /' >&2
     fi
@@ -146,7 +146,7 @@ if [ -f "$doel/CHANGES.md" ] && [ -r "$doel/lib/changes.sh" ]; then
   . "$doel/lib/changes.sh"
   for bron in "$doel/CHANGES.md" "$doel/CHANGES-ARCHIEF.md"; do
     [ -f "$bron" ] || continue
-    ontbrekend="$(pr_links_ontbrekend "$bron")"
+    ontbrekend="$(pr_links_missing "$bron")"
     if [ -n "$ontbrekend" ]; then
       melden_fout "${bron#"$doel"/} is missing a **PR:** field at:"
       printf '%s\n' "$ontbrekend" | sed 's/^/    - /' >&2

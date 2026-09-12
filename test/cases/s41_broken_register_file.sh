@@ -69,13 +69,13 @@ mkdir -p "$repo"
 # shellcheck source=../../lib/nfr.sh
 . "$repo/lib/nfr.sh"
 
-[ "$(nfr_veld "$repo/nfr/spec-proef.md" id)" = "spec-proef" ] \
+[ "$(nfr_field "$repo/nfr/spec-proef.md" id)" = "spec-proef" ] \
   || fail "S41 — CRLF file: the id is not being read"
-[ "$(nfr_veld "$repo/nfr/spec-proef.md" order)" = "16" ] \
+[ "$(nfr_field "$repo/nfr/spec-proef.md" order)" = "16" ] \
   || fail "S41 — CRLF file: the order is not being read"
 
 blok="$SANDBOX/blok-crlf.txt"
-nfr_blok "$repo/nfr" > "$blok"
+nfr_block "$repo/nfr" > "$blok"
 grep -q 'spec-proef' "$blok" || fail "S41 — CRLF file disappeared from the generated block"
 
 test_klaar

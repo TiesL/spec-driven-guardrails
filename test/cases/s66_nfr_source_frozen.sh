@@ -24,7 +24,7 @@ fi
 # a corrupt freeze would let the safety net silently drain out.
 # shellcheck source=../../lib/nfr.sh
 . "$TEST_REPO_ROOT/lib/nfr.sh"
-if ! problemen="$(nfr_valideer "$snapshot")"; then
+if ! problemen="$(nfr_validate "$snapshot")"; then
   fail "S66 — nfr.momentopname is not itself valid:"
   printf '%s\n' "$problemen" >&2
 fi

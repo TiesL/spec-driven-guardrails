@@ -63,7 +63,7 @@ something new is being added.
 ### R6 — Predicate behavior identical, and demonstrably correct
 **Covers:** F3
 - Given: four test projects (with/without `package.json` × with/without a `"deploy"` script)
-- When: the seed logic and `predicaat_waar()` both evaluate
+- When: the seed logic and `predicate_true()` both evaluate
   `heeft-package-json` and `heeft-deploy-script` against each of the four
 - Then: both reach exactly the same answer for every combination
 - And: for **every** predicate there's at least one case where it's true
@@ -172,7 +172,7 @@ something new is being added.
 **Covers:** F3
 - Given: a malformed source where an `Applies if` field appears before the
   first `## ` heading
-- When: `itereer_entries` reads that source
+- When: `iterate_entries` reads that source
 - Then: no callback is called for that field — an entry with no ID would
   otherwise end up as a blank row in an adoption table
 - And: the entries after the first heading are processed normally
@@ -187,7 +187,7 @@ something new is being added.
   heading-reader — they source the library
 - And: the library does have them, so the test fails if it's gutted
   instead of only on recurring duplication
-- And: both scripts **actually call** `predicaat_waar` from the library —
+- And: both scripts **actually call** `predicate_true` from the library —
   established by instrumenting and running the function, not by searching
   text. A text match only sees literal copies; logic rewritten in another
   form slips through unnoticed

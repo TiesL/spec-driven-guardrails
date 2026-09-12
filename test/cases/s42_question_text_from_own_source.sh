@@ -33,7 +33,7 @@ while IFS= read -r regel; do
   ' "$TEST_REPO_ROOT/CHANGES.md")"
   bron="CHANGES.md"
   if [ -z "$verwacht" ]; then
-    # Deliberately not via nfr_vraag(): that is the function being tested here.
+    # Deliberately not via nfr_question(): that is the function being tested here.
     # If this oracle used that same function, expectation and reality would
     # move together and the test would measure nothing.
     verwacht="$(awk '

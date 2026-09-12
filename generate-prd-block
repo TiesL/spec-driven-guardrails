@@ -37,7 +37,7 @@ blok="$(mktemp)"
 trap 'rm -f "$nieuw" "$blok"' EXIT
 
 # Via een bestand, niet via -v: awk accepteert geen meerregelige variabele.
-nfr_blok "$eigen_map/nfr" > "$blok"
+nfr_block "$eigen_map/nfr" > "$blok"
 
 awk -v begin="$begin" -v eind="$eind" -v blokbestand="$blok" '
   index($0, begin) == 1 {
