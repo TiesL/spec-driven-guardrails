@@ -19,7 +19,7 @@ printf '\n### S999 — Injected for S92\n**Covers:** F6, W42/#114\n- Given: noth
   >> "$repo/TEST-SCENARIOS.md"
 
 # When: ./check runs.
-uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
+output="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 status=$?
 
 # Then: check fails, and names the broken token — not silently green
@@ -27,14 +27,14 @@ status=$?
 if [ "$status" -eq 0 ]; then
   fail "S92 — check succeeded despite an invalid Covers: token in TEST-SCENARIOS.md"
 fi
-assert_contains "S92" "W42/#114" "$uitvoer"
+assert_contains "S92" "W42/#114" "$output"
 
 # And: on the real, unmodified repo (no injected error), check-traceability.sh
 # itself must still be part of ./check's output — proving it actually ran,
 # not just that it would have caught this one artificial case.
-schoon_uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$TEST_REPO_ROOT" 2>&1)"
-schoon_status=$?
-[ "$schoon_status" -eq 0 ] || fail "S92 — check failed on this repo's own, currently-clean PRD.md/TEST-SCENARIOS.md: $schoon_uitvoer"
-assert_contains "S92 — check-traceability.sh ran" "traceability" "$schoon_uitvoer"
+clean_output="$("$TEST_REPO_ROOT/check" --no-tests "$TEST_REPO_ROOT" 2>&1)"
+clean_status=$?
+[ "$clean_status" -eq 0 ] || fail "S92 — check failed on this repo's own, currently-clean PRD.md/TEST-SCENARIOS.md: $clean_output"
+assert_contains "S92 — check-traceability.sh ran" "traceability" "$clean_output"
 
 test_done

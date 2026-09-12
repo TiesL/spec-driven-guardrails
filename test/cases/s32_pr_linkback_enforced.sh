@@ -14,9 +14,9 @@ trap sandbox_destroy EXIT
 # **PR:** field. check must not raise an error about that.
 repo_goed="$(sandbox_copy_repo goed)"
 if ! "$repo_goed/check" --no-tests "$repo_goed" >/dev/null 2>&1; then
-  uitvoer="$("$repo_goed/check" --no-tests "$repo_goed" 2>&1)"
-  case "$uitvoer" in
-    *"PR:"*) fail "S32/AC2 — this repo's own CHANGES.md incorrectly gave a PR linkback error: $uitvoer" ;;
+  output="$("$repo_goed/check" --no-tests "$repo_goed" 2>&1)"
+  case "$output" in
+    *"PR:"*) fail "S32/AC2 — this repo's own CHANGES.md incorrectly gave a PR linkback error: $output" ;;
     *) : ;; # other, unrelated failure — not this scenario's concern
   esac
 fi
@@ -27,15 +27,15 @@ repo_kapot="$(sandbox_copy_repo kapot)"
 sed -i.bak '/^- \*\*PR:\*\* https:\/\/github\.com\/TiesL\/claude-workflow\/pull\/1$/d' "$repo_kapot/CHANGES.md"
 rm -f "$repo_kapot/CHANGES.md.bak"
 
-uitvoer="$("$repo_kapot/check" --no-tests "$repo_kapot" 2>&1)"; status=$?
+output="$("$repo_kapot/check" --no-tests "$repo_kapot" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S32/AC1,AC3 — CHANGES.md without a PR field gave exit 0"
-assert_contains "S32 — the ID of the broken entry is in the message" "proces-prd" "$uitvoer"
+assert_contains "S32 — the ID of the broken entry is in the message" "proces-prd" "$output"
 
 # AC4 — an archived entry keeps its linkback; check must not complain about it
 # as long as it stays intact (this repo's CHANGES-ARCHIEF.md, unchanged).
-case "$uitvoer" in
+case "$output" in
   *"prd-testscenarios-issue-templates"*)
-    fail "S32/AC4 — the archived entry was incorrectly flagged: $uitvoer" ;;
+    fail "S32/AC4 — the archived entry was incorrectly flagged: $output" ;;
 esac
 
 test_done

@@ -66,7 +66,7 @@ predicate_true() {
 }
 INSTR
 
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 
 : > "$log"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1

@@ -16,14 +16,14 @@ repo="$(sandbox_copy_repo)"
 printf '\nif [ 1 -eq 1 ]; then\n  echo kapot\n' >> "$repo/pending-changes.sh"
 
 # When: ./check runs (without the test suite, otherwise the suite calls itself).
-uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
+output="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 status=$?
 
 # Then: exit != 0, with the file in question in the message.
 if [ "$status" -eq 0 ]; then
   fail "S1 — check succeeded while there is a syntax error in pending-changes.sh"
 fi
-assert_contains "S1" "pending-changes.sh" "$uitvoer"
+assert_contains "S1" "pending-changes.sh" "$output"
 
 # A script does not need a .sh extension to be a shell script. The
 # hook guards from W10 arrive as `hooks/git-guardrails` without an extension, and

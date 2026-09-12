@@ -18,13 +18,13 @@ if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
 fi
 
 # Given: an nfr/*.md whose Guidance has been changed without regenerating.
-doel="$repo/nfr/spec-security.md"
-if [ ! -f "$doel" ]; then
+target="$repo/nfr/spec-security.md"
+if [ ! -f "$target" ]; then
   fail "S5 — nfr/spec-security.md is missing"
   test_done
 fi
 
-python3 - "$doel" <<'PY'
+python3 - "$target" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -34,13 +34,13 @@ open(p, "w").write(s[:i] + "\nEen bewust afwijkende invulhulp voor deze test.\n"
 PY
 
 # When: ./check runs.
-uitvoer="$("$repo/check" --no-tests "$repo" 2>&1)"
+output="$("$repo/check" --no-tests "$repo" 2>&1)"
 status=$?
 
 # Then: exit != 0, with the relevant NFR in the message.
 if [ "$status" -eq 0 ]; then
   fail "S5 — check succeeded while register and template drift apart"
 fi
-assert_contains "S5" "spec-security" "$uitvoer"
+assert_contains "S5" "spec-security" "$output"
 
 test_done

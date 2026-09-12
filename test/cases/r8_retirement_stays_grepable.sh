@@ -32,7 +32,7 @@ if ! awk -v id="## $geretireerd" '$0==id{gevonden=1;next} gevonden&&/^## /{exit}
 fi
 
 # When: adopt.sh and pending-changes.sh run against a fresh project.
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 adopt "$project"
 
 # Then: the entry is seeded or asked nowhere.

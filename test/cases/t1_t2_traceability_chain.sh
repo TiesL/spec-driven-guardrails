@@ -19,248 +19,248 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Builds a project with the given PRD and scenario content.
-bouw() {
-  local naam="$1" prd="$2" scen="$3"
-  local pad="$SANDBOX/$naam"
-  mkdir -p "$pad"
-  printf '%s\n' "$prd" > "$pad/PRD.md"
-  printf '%s\n' "$scen" > "$pad/TEST-SCENARIOS.md"
-  echo "$pad"
+build() {
+  local name="$1" prd="$2" scen="$3"
+  local path="$SANDBOX/$name"
+  mkdir -p "$path"
+  printf '%s\n' "$prd" > "$path/PRD.md"
+  printf '%s\n' "$scen" > "$path/TEST-SCENARIOS.md"
+  echo "$path"
 }
 
 # T1 — full chain, everything covered.
-p="$(bouw t1 \
-'## Functionaliteit
+p="$(build t1 \
+'## Functionality
 
-### F1 — iets' \
-'### S1 — verwacht gedrag
+### F1 — something' \
+'### S1 — expected behavior
 **Covers:** F1
 
-### S2 — wat er misgaat
+### S2 — what goes wrong
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "T1 — full coverage gave exit $status: $uitvoer"
+output="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "T1 — full coverage gave exit $status: $output"
 
 # T2 — a feature without a scenario fails, by name.
-p="$(bouw t2 \
-'### F1 — gedekt
+p="$(build t2 \
+'### F1 — covered
 
-### F2 — ongedekt' \
-'### S1 — iets
+### F2 — uncovered' \
+'### S1 — something
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T2 — uncovered F2 gave exit 0"
-assert_contains "T2 — the message names F2" "F2" "$uitvoer"
+assert_contains "T2 — the message names F2" "F2" "$output"
 
 # S30 — duplicate IDs and an unknown token, reported separately.
-p="$(bouw s30 \
-'### F1 — iets' \
-'### S1 — eerste
+p="$(build s30 \
+'### F1 — something' \
+'### S1 — first
 **Covers:** F1
 
-### S1 — tweede, zelfde ID
+### S1 — second, same ID
 **Covers:** F1
 
-### S2 — verwijst nergens heen
+### S2 — refers nowhere
 **Covers:** F9')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S30 — duplicate ID and unknown token gave exit 0"
-assert_contains "S30 — the duplicate ID is reported" "S1" "$uitvoer"
-assert_contains "S30 — the unresolved token is reported" "F9" "$uitvoer"
+assert_contains "S30 — the duplicate ID is reported" "S1" "$output"
+assert_contains "S30 — the unresolved token is reported" "F9" "$output"
 
 # AC5 — a PRD without any ID warns and does not fail. tennis-invoicing is this
 # case; if the script failed there, it would get switched off immediately.
-p="$(bouw ac5 \
-'## Functionaliteit
+p="$(build ac5 \
+'## Functionality
 
-Dit project beschrijft zijn functionaliteit in proza, zonder ID-koppen.' \
-'### S1 — iets
+This project describes its functionality in prose, without ID headings.' \
+'### S1 — something
 **Covers:**')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "AC5 — prefix-less PRD gave exit $status instead of a warning"
-assert_contains "AC5 — a warning appears" "warning" "$uitvoer"
+assert_contains "AC5 — a warning appears" "warning" "$output"
 
 # S62 — a project not yet using the convention warns and does not fail.
 # All four existing projects are this case on the day it is introduced.
-p="$(bouw s62 \
+p="$(build s62 \
 '### F1 — iets
 
-### F2 — nog iets' \
-'### S1 — iets, zonder dekkingsveld
+### F2 — something else' \
+'### S1 — something, without a coverage field
 - Given: ...')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "S62 — project without Covers: fields gave exit $status instead of a warning"
-assert_contains "S62 — a warning appears" "warning" "$uitvoer"
-case "$uitvoer" in
-  *F1*|*F2*) fail "S62 — it still reported uncovered items: $uitvoer" ;;
+assert_contains "S62 — a warning appears" "warning" "$output"
+case "$output" in
+  *F1*|*F2*) fail "S62 — it still reported uncovered items: $output" ;;
 esac
 
 # And once the first reference is there, it does enforce — otherwise a
 # project with a single Covers: field could leave the rest unpunished.
-p="$(bouw s62b \
-'### F1 — gedekt
+p="$(build s62b \
+'### F1 — covered
 
-### F2 — ongedekt' \
-'### S1 — iets
+### F2 — uncovered' \
+'### S1 — something
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S62 — with one Covers: field, F2 was not enforced"
-assert_contains "S62 — F2 is reported once the convention is in use" "F2" "$uitvoer"
+assert_contains "S62 — F2 is reported once the convention is in use" "F2" "$output"
 
 # T5 — only the field counts. An ID in running prose is not a reference, and
 # neither is a line that does not start with the field. Without this check
 # any sentence that accidentally mentions an ID would produce coverage that
 # is not really there.
-p="$(bouw t5 \
-'### F1 — gedekt
+p="$(build t5 \
+'### F1 — covered
 
-### F2 — niet gedekt, wordt alleen in proza genoemd' \
-'### S1 — iets
+### F2 — not covered, only mentioned in prose' \
+'### S1 — something
 **Covers:** F1
-- Given: dit scenario noemt Covers: F2 in lopende tekst, wat geen verwijzing is
-- When: het script draait
-- Then: F2 telt niet als gedekt')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+- Given: this scenario mentions Covers: F2 in running text, which is not a reference
+- When: the script runs
+- Then: F2 does not count as covered')"
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T5 — 'Covers: F2' in running prose counted as coverage"
-assert_contains "T5 — F2 stays uncovered" "F2" "$uitvoer"
+assert_contains "T5 — F2 stays uncovered" "F2" "$output"
 
 # Prefix-agnostic. This is the core of decision c from W17: tennis-admin numbers
 # its scenarios R/A/B/P and uses OP for open items. A script keyed to F/S would
 # be unusable there from day one — and that cannot be demonstrated with F/S
 # test data alone.
-p="$(bouw prefixvrij \
-'### R1 — een eis met een eigen prefix
+p="$(build prefixvrij \
+'### R1 — a requirement with its own prefix
 
-### OP4 — een open punt, twee beginletters' \
-'### B7 — scenario met weer een ander prefix
+### OP4 — an open point, two leading letters' \
+'### B7 — scenario with yet another prefix
 **Covers:** R1
 
-### P2b — en een met een staart-letter
+### P2b — and one with a trailing letter
 **Covers:** OP4')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "prefix-agnostic — R/OP/B/P was not recognized: $uitvoer"
+output="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "prefix-agnostic — R/OP/B/P was not recognized: $output"
 
 # And a reference to a non-existent ID with its own prefix is reported,
 # so "approve everything" does not pass as prefix-agnostic.
-p="$(bouw prefixvrij-fout \
-'### R1 — bestaat' \
-'### B7 — verwijst nergens heen
+p="$(build prefix-free-broken \
+'### R1 — exists' \
+'### B7 — refers nowhere
 **Covers:** R9')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "prefix-agnostic — unknown R9 was not reported"
-assert_contains "prefix-agnostic — R9 is in the message" "R9" "$uitvoer"
+assert_contains "prefix-agnostic — R9 is in the message" "R9" "$output"
 
 # A placeholder from the template is not a reference. A freshly scaffolded
 # project carries `**Covers:** <F1>`; if the check fails on that, it would be
 # switched off on first use.
-p="$(bouw placeholder \
-'### F1 — iets' \
-'### S1 — vers uit het sjabloon
+p="$(build placeholder \
+'### F1 — something' \
+'### S1 — fresh from the template
 **Covers:** <F1>')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "placeholder — <F1> was treated as a reference: $uitvoer"
+output="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "placeholder — <F1> was treated as a reference: $output"
 
 # A Covers: token with a trailing letter. a2t-emails has an S2b, and a
 # grammar that rejects that is immediately unusable there. Without this case
 # it cannot be shown that the script accepts the trailing letter — a test
 # with only S1/S2 leaves a stricter grammar untouched.
-p="$(bouw staartletter \
-'### F1 — iets' \
-'### S2b — een scenario met staart-letter
+p="$(build staartletter \
+'### F1 — something' \
+'### S2b — a scenario with a trailing letter
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "trailing-letter — S2b was not recognized as a valid ID: $uitvoer"
+output="$("$script" "$p" 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "trailing-letter — S2b was not recognized as a valid ID: $output"
 
-p="$(bouw staartletter-fout \
+p="$(build staartletter-fout \
 '### F1 — iets
 
-### F2 — ongedekt' \
-'### S1 — verwijst naar een niet-bestaand ID met staart-letter
+### F2 — uncovered' \
+'### S1 — refers to a non-existent ID with a trailing letter
 **Covers:** F1, F2b')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "trailing-letter — unknown F2b was not reported"
-assert_contains "trailing-letter — F2b is in the message" "F2b" "$uitvoer"
+assert_contains "trailing-letter — F2b is in the message" "F2b" "$output"
 
 # The other direction: a Covers: field in PRD.md refers to a scenario. Both
 # directions are checked; without this case, the check on the PRD side
 # could be silently removed.
-p="$(bouw andersom \
-'### F1 — verwijst naar een scenario dat niet bestaat
+p="$(build andersom \
+'### F1 — refers to a scenario that does not exist
 **Covers:** S9' \
-'### S1 — iets
+'### S1 — something
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "other direction — unknown S9 in PRD.md was not reported"
-assert_contains "other direction — S9 is in the message" "S9" "$uitvoer"
+assert_contains "other direction — S9 is in the message" "S9" "$output"
 
 # Exact match, not a substring. Without `grep -qx`, a dangling reference
 # to F1 would silently resolve against an existing F123 — and then the
 # check would report "fine" while no F1 exists anywhere.
-p="$(bouw substring \
-'### F123 — het enige item' \
-'### S1 — dekt F123
+p="$(build substring \
+'### F123 — the only item' \
+'### S1 — covers F123
 **Covers:** F123
 
-### S2 — hangende verwijzing die substring is van F123
+### S2 — dangling reference that is a substring of F123
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "substring — F1 resolved against F123"
-assert_contains "substring — F1 is in the message" "F1" "$uitvoer"
+assert_contains "substring — F1 is in the message" "F1" "$output"
 
 # A duplicate that is not next to its twin. Without sorting before
 # looking for duplicates, `uniq -d` only sees adjacent lines, and then
 # exactly the realistic case slips through: a copy-paste error further down
 # in a large file.
-p="$(bouw duplicaat-uiteen \
-'### F1 — iets' \
-'### S1 — eerste
+p="$(build duplicaat-uiteen \
+'### F1 — something' \
+'### S1 — first
 **Covers:** F1
 
-### S2 — er tussenin
+### S2 — in between
 **Covers:** F1
 
-### S1 — dezelfde ID, ver van de eerste
+### S1 — the same ID, far from the first
 **Covers:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "duplicate-apart — non-adjacent duplicate S1 was missed"
-assert_contains "duplicate-apart — S1 is in the message" "S1" "$uitvoer"
+assert_contains "duplicate-apart — S1 is in the message" "S1" "$output"
 
 # A broken token is reported, not silently filtered out. Otherwise the
 # check would promise that every token resolves while it precisely fails
 # to see the typos.
-p="$(bouw kapot-token \
+p="$(build kapot-token \
 '### F1 — iets
 
 ### F2 — iets' \
-'### S1 — met een tikfout ertussen
+'### S1 — with a typo in between
 **Covers:** F1, F-2, F2')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "broken token — 'F-2' was silently filtered out"
-assert_contains "broken token — F-2 is in the message" "F-2" "$uitvoer"
+assert_contains "broken token — F-2 is in the message" "F-2" "$output"
 
 # Spaces instead of commas produce one unusable token. That too must be
 # reported, since otherwise the field looks filled in while covering nothing.
-p="$(bouw spatie-gescheiden \
+p="$(build spatie-gescheiden \
 '### F1 — iets
 
 ### F2 — iets' \
-'### S1 — spaties in plaats van komma is
+'### S1 — spaces instead of a comma
 **Covers:** F1 F2')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "space-separated — 'F1 F2' was silently filtered out"
 
 # S87 — a leftover **Dekt:** field (pre-Covers:-cutover, W42/#114) is
 # reported by name, neither parsed as a valid Covers: reference nor
 # silently treated as "this project doesn't use the convention yet".
-p="$(bouw achtergebleven-dekt \
-'### F1 — iets' \
-'### S1 — nog op het oude veld
+p="$(build achtergebleven-dekt \
+'### F1 — something' \
+'### S1 — still on the old field
 **Dekt:** F1')"
-uitvoer="$("$script" "$p" 2>&1)"; status=$?
+output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S87 — a leftover Dekt: field gave exit 0"
-assert_contains "S87 — the leftover field is named" "Dekt:" "$uitvoer"
-assert_contains "S87 — it points at #114" "#114" "$uitvoer"
-case "$uitvoer" in
+assert_contains "S87 — the leftover field is named" "Dekt:" "$output"
+assert_contains "S87 — it points at #114" "#114" "$output"
+case "$output" in
   *"doesn't carry any Covers: fields yet"*)
     fail "S87 — a leftover Dekt: field was treated as 'convention not in use yet'" ;;
 esac

@@ -11,16 +11,16 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a fresh project, right after adoption.
-project="$(fresh_project leeg)"
+project="$(fresh_project empty)"
 adopt "$project"
 
 # When: pending-changes.sh runs.
-gekregen="$SANDBOX/gekregen.txt"
-pending_ids "$project" > "$gekregen"
+actual="$SANDBOX/actual.txt"
+pending_ids "$project" > "$actual"
 
 # Then: exactly these 8 IDs, in any order.
-verwacht="$SANDBOX/verwacht.txt"
-cat > "$verwacht" <<'IDS'
+expected="$SANDBOX/expected.txt"
+cat > "$expected" <<'IDS'
 proces-issue-tracking
 process-context-document
 spec-compliance
@@ -31,6 +31,6 @@ spec-usability
 test-integratie
 IDS
 
-assert_ids_equal "R2" "$verwacht" "$gekregen"
+assert_ids_equal "R2" "$expected" "$actual"
 
 test_done

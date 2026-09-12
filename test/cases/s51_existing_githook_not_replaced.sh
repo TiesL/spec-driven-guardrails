@@ -10,27 +10,27 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project eigen-hook)"
+project="$(fresh_project own-hook)"
 mkdir -p "$project/.git/hooks"
 cat > "$project/.git/hooks/pre-commit" <<'EOF'
 #!/usr/bin/env bash
-echo "eigen pre-commit-hook, niet van claude-workflow"
+echo "own pre-commit hook, not from claude-workflow"
 exit 0
 EOF
 chmod +x "$project/.git/hooks/pre-commit"
 
 # Not via the adopt() helper: that throws all output to /dev/null, and
 # this test specifically needs to see the message.
-melding="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project" 2>&1)"
+message="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project" 2>&1)"
 
 # Then: that hook is not overwritten without a message.
 if [ -L "$project/.git/hooks/pre-commit" ]; then
   fail "S51 — the custom pre-commit hook was replaced by a symlink"
 fi
-if ! grep -q 'eigen pre-commit-hook, niet van claude-workflow' "$project/.git/hooks/pre-commit"; then
+if ! grep -q 'own pre-commit hook, not from claude-workflow' "$project/.git/hooks/pre-commit"; then
   fail "S51 — the content of the custom pre-commit hook has changed"
 fi
-assert_contains "S51 — a message appeared about the existing file" "not touched" "$melding"
+assert_contains "S51 — a message appeared about the existing file" "not touched" "$message"
 if [ -f "$project/.git/hooks/pre-commit.bak" ]; then
   fail "S51 — a .bak was created; the custom hook should have been left alone instead"
 fi
@@ -45,7 +45,7 @@ adopt "$project" >/dev/null 2>&1
 if [ -L "$project/.git/hooks/pre-commit" ]; then
   fail "S51 — after a second run the custom hook still became a symlink"
 fi
-if ! grep -q 'eigen pre-commit-hook, niet van claude-workflow' "$project/.git/hooks/pre-commit"; then
+if ! grep -q 'own pre-commit hook, not from claude-workflow' "$project/.git/hooks/pre-commit"; then
   fail "S51 — after a second run the content of the custom hook has changed"
 fi
 if [ -e "$project/.git/hooks/pre-commit.bak" ]; then
@@ -60,20 +60,20 @@ fi
 # not silently replaced. Found in the review on PR #76: the original check
 # only tested "is this not a symlink", not "does this symlink already point
 # to our own source".
-project2="$(fresh_project eigen-symlink-hook)"
+project2="$(fresh_project own-symlink-hook)"
 mkdir -p "$project2/.git/hooks"
-elders="$SANDBOX/ergens-anders-pre-push"
-cat > "$elders" <<'EOF'
+elsewhere="$SANDBOX/ergens-anders-pre-push"
+cat > "$elsewhere" <<'EOF'
 #!/usr/bin/env bash
-echo "eigen symlink-hook, wijst niet naar claude-workflow"
+echo "own symlink hook, doesn't point to claude-workflow"
 exit 0
 EOF
-chmod +x "$elders"
-ln -s "$elders" "$project2/.git/hooks/pre-push"
+chmod +x "$elsewhere"
+ln -s "$elsewhere" "$project2/.git/hooks/pre-push"
 
 melding2="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project2" 2>&1)"
 
-if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elders" ]; then
+if [ "$(readlink "$project2/.git/hooks/pre-push")" != "$elsewhere" ]; then
   fail "S51 — a custom symlink hook (pointing to something other than claude-workflow) was replaced after all"
 fi
 assert_contains "S51 — a message appeared about the custom symlink hook" "not touched" "$melding2"

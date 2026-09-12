@@ -18,13 +18,13 @@ printf '#!/usr/bin/env bash\nif [ 1 -eq 1 ]; then\n  echo kapot\n' > "$repo/hook
 chmod 000 "$repo/hooks/onleesbaar"
 
 # When: ./check runs.
-uitvoer="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
+output="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
 
 # Then: a warning appears that names the file.
-assert_contains "S35" "onleesbaar" "$uitvoer"
+assert_contains "S35" "onleesbaar" "$output"
 
 # And: it doesn't silently drop out of the check.
-assert_contains "S35" "couldn't be read" "$uitvoer"
+assert_contains "S35" "couldn't be read" "$output"
 
 chmod 644 "$repo/hooks/onleesbaar"
 test_done

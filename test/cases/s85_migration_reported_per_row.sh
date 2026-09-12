@@ -14,7 +14,7 @@ trap sandbox_destroy EXIT
 # tracking issue must be pinned to — see the git-root-only case further
 # down for what happens without one), and an old-format answer file with
 # two answered rows (one ja, one nee) that are not otherwise pending.
-project="$(fresh_project pre-migratie)"
+project="$(fresh_project pre-migration)"
 git -C "$project" remote add origin 'https://github.com/example-org/pre-migratie.git'
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 # Adoption of shared workflow changes
@@ -43,15 +43,15 @@ exit 1
 ')"
 
 # When: pending-changes.sh runs.
-uitvoer="$(PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
+output="$(PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
 
 # Then: each old-format row is named individually, with a bullet that does
 # not collide with the pending-question list's own "  - " prefix (that
 # prefix is what test/lib.sh's pending_ids() greps for).
-assert_contains "S85 — mentions the pre-migration notice" "pre-migration format" "$uitvoer"
-assert_contains "S85 — names ci-conventie" "* ci-conventie" "$uitvoer"
-assert_contains "S85 — names deploy-guards" "* deploy-guards" "$uitvoer"
-if printf '%s\n' "$uitvoer" | grep -qE '^  - (ci-conventie|deploy-guards)( |$)'; then
+assert_contains "S85 — mentions the pre-migration notice" "pre-migration format" "$output"
+assert_contains "S85 — names ci-conventie" "* ci-conventie" "$output"
+assert_contains "S85 — names deploy-guards" "* deploy-guards" "$output"
+if printf '%s\n' "$output" | grep -qE '^  - (ci-conventie|deploy-guards)( |$)'; then
   fail "S85 — an already-answered old-format row was listed as a pending question"
 fi
 
@@ -64,7 +64,7 @@ fi
 # fake that reports the marker as already present, so it can never create
 # an issue, keeps this check from perturbing the $gh_log count asserted
 # on below.
-gekregen="$SANDBOX/gekregen.txt"
+actual="$SANDBOX/actual.txt"
 fakebin_readonly="$(fake_gh_bin '
 case "$*" in
   "issue list -R github.com/example-org/pre-migratie --state open --limit 200 --json body --jq .[].body")
@@ -73,14 +73,14 @@ case "$*" in
 esac
 exit 1
 ')"
-PATH="$fakebin_readonly:$PATH" pending_ids "$project" > "$gekregen"
-if grep -qx 'ci-conventie' "$gekregen" || grep -qx 'deploy-guards' "$gekregen"; then
+PATH="$fakebin_readonly:$PATH" pending_ids "$project" > "$actual"
+if grep -qx 'ci-conventie' "$actual" || grep -qx 'deploy-guards' "$actual"; then
   fail "S85 — an already-answered old-format row was swept into the pending ID set"
 fi
 
 # And: a tracking issue was filed, pinned explicitly to the project's own
 # repo via -R (not left to gh's cwd/GH_REPO-based detection).
-assert_contains "S85 — reports the tracking issue" "Filed a tracking issue" "$uitvoer"
+assert_contains "S85 — reports the tracking issue" "Filed a tracking issue" "$output"
 [ "$(grep -c '^issue create' "$gh_log")" -eq 1 ] \
   || fail "S85 — expected exactly one 'gh issue create' call, got $(grep -c '^issue create' "$gh_log")"
 grep -q 'ci-conventie' "$gh_log" || fail "S85 — the issue body/title does not mention ci-conventie"
@@ -153,15 +153,15 @@ PATH="$fakebin4:$PATH" GH_REPO="TiesL/spec-driven-guardrails" \
 # sandboxed test project, and for a project that has never been pushed
 # anywhere) never calls gh either — there is nothing to pin -R to, and
 # guessing would reintroduce the exact ambiguity -R exists to remove.
-zonder_remote="$(fresh_project zonder-remote)"
-cp "$project/WORKFLOW-ADOPTIE.md" "$zonder_remote/WORKFLOW-ADOPTIE.md"
+without_remote="$(fresh_project without-remote)"
+cp "$project/WORKFLOW-ADOPTIE.md" "$without_remote/WORKFLOW-ADOPTIE.md"
 gh_log5="$SANDBOX/gh-calls-5.txt"
 : > "$gh_log5"
 fakebin5="$(fake_gh_bin '
 echo "$*" >> "'"$gh_log5"'"
 exit 1
 ')"
-PATH="$fakebin5:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$zonder_remote" > /dev/null 2>&1
+PATH="$fakebin5:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$without_remote" > /dev/null 2>&1
 [ -s "$gh_log5" ] && fail "S85 — gh was called for a project with no github.com origin remote"
 
 test_done

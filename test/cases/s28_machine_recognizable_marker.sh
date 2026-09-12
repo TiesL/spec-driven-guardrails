@@ -26,9 +26,9 @@ fi
 
 # Machine-recognizable also means: one fixed text, not phrased differently per
 # project or per review. Exactly one definition in the skill register.
-aantal="$(grep -rlF "$marker" "$repo/skills" | wc -l | tr -d ' ')"
-if [ "$aantal" -ne 1 ]; then
-  fail "S28 — marker '$marker' should appear in exactly one skill, appeared in $aantal"
+count="$(grep -rlF "$marker" "$repo/skills" | wc -l | tr -d ' ')"
+if [ "$count" -ne 1 ]; then
+  fail "S28 — marker '$marker' should appear in exactly one skill, appeared in $count"
 fi
 
 test_done

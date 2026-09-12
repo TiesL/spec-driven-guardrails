@@ -14,14 +14,14 @@ alle_skills="$(cd "$TEST_REPO_ROOT/skills" 2>/dev/null && ls -d */ 2>/dev/null |
 
 controleer_precies_een_rij() {
   local term="$1" verwachte_skill="$2"
-  local rijen aantal skill
-  rijen="$(routing_table_rows "$workflow" | grep -i "$term" || true)"
-  aantal="$(printf '%s\n' "$rijen" | grep -c . || true)"
-  if [ "$aantal" -ne 1 ]; then
-    fail "S29 — '$term' yields $aantal routing table rows, 1 expected"
+  local rows count skill
+  rows="$(routing_table_rows "$workflow" | grep -i "$term" || true)"
+  count="$(printf '%s\n' "$rows" | grep -c . || true)"
+  if [ "$count" -ne 1 ]; then
+    fail "S29 — '$term' yields $count routing table rows, 1 expected"
     return
   fi
-  skill="$(skill_from_row "$rijen")"
+  skill="$(skill_from_row "$rows")"
   printf '%s\n' "$alle_skills" | grep -qxF "$skill" \
     || fail "S29 — '$term' points to '$skill', which is not an existing skill"
   [ "$skill" = "$verwachte_skill" ] \
@@ -35,9 +35,9 @@ controleer_precies_een_rij "deploy-guards" "deploy-guards"
 
 # Substantiation requirement and adoption registry land in the same skill,
 # but should be two separate rows, not silently merged into one.
-rij_onderbouwing="$(routing_table_rows "$workflow" | grep -i "substantiation requirement" || true)"
-rij_adoptie="$(routing_table_rows "$workflow" | grep -i "adoption registry" || true)"
-[ -z "$rij_onderbouwing" ] || [ -z "$rij_adoptie" ] || [ "$rij_onderbouwing" != "$rij_adoptie" ] \
+row_substantiation="$(routing_table_rows "$workflow" | grep -i "substantiation requirement" || true)"
+row_adoption="$(routing_table_rows "$workflow" | grep -i "adoption registry" || true)"
+[ -z "$row_substantiation" ] || [ -z "$row_adoption" ] || [ "$row_substantiation" != "$row_adoption" ] \
   || fail "S29 — substantiation requirement and adoption registry share the same routing table row"
 
 # Branching is not moved: no routing table row needed, the section stays

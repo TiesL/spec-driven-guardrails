@@ -16,7 +16,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project waardevlaggen)"
+project="$(fresh_project value-flags)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -24,10 +24,10 @@ git -C "$project" checkout -q -b feature/werk
 # any other target (such as the text from --body) fails.
 fakebin="$(fake_gh_merge_bin "" "")"
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"een tekst met woorden\" --subject titel"}}'
-uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"een tekst met woorden\" --subject titel"}}'
+output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 2 ] || fail "S65 — a marker-less PR with --body/--subject was not blocked (exit $status). Output: $uitvoer"
+[ "$status" -eq 2 ] || fail "S65 — a marker-less PR with --body/--subject was not blocked (exit $status). Output: $output"
 
 test_done

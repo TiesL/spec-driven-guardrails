@@ -30,12 +30,12 @@ git -C "$project" commit -q --allow-empty -m "eerste commit, toegestaan op main"
   || fail "S50 — the very first commit (exception) was wrongly refused"
 
 # When: git commit directly in a shell, without Claude in between.
-uitvoer="$(cd "$project" && git commit -q --allow-empty -m "rechtstreeks op main" 2>&1)"
+output="$(cd "$project" && git commit -q --allow-empty -m "rechtstreeks op main" 2>&1)"
 status=$?
 
 # Then: refused, with the same message as the PreToolUse guard.
 [ "$status" -ne 0 ] || fail "S50 — commit on main via a direct git call was not refused"
-assert_contains "S50 — the message matches the PreToolUse guard" "main gets its changes via a PR" "$uitvoer"
+assert_contains "S50 — the message matches the PreToolUse guard" "main gets its changes via a PR" "$output"
 
 # And: on a feature branch it just proceeds — the same rule, not a
 # blanket block of everything.
@@ -47,10 +47,10 @@ fi
 # And git push origin main directly, also without Claude.
 git -C "$project" checkout -q main
 git -C "$project" branch -q --unset-upstream 2>/dev/null || true
-push_uitvoer="$(cd "$project" && git push origin main 2>&1)"
+push_output="$(cd "$project" && git push origin main 2>&1)"
 push_status=$?
 [ "$push_status" -ne 0 ] || fail "S50 — git push origin main was not refused"
-assert_contains "S50 — the push message matches the PreToolUse guard" "main gets its changes via a PR" "$push_uitvoer"
+assert_contains "S50 — the push message matches the PreToolUse guard" "main gets its changes via a PR" "$push_output"
 
 # And: a relative SPEC_DRIVEN_GUARDRAILS_DIR must not make the symlink dangling.
 # Found in the review on PR #76: a relative path resolves from the directory
@@ -59,21 +59,21 @@ assert_contains "S50 — the push message matches the PreToolUse guard" "main ge
 # message. Demonstrated exactly with a real relative path, not reasoned
 # about: calling adopt.sh from a subdirectory of $TEST_REPO_ROOT with
 # a relative SPEC_DRIVEN_GUARDRAILS_DIR.
-project_relatief="$(fresh_project relatieve-workflow-dir)"
+project_relatief="$(fresh_project relative-workflow-dir)"
 (
   cd "$TEST_REPO_ROOT/hooks" || exit 1
   SPEC_DRIVEN_GUARDRAILS_DIR=".." "$TEST_REPO_ROOT/adopt.sh" "$project_relatief" >/dev/null 2>&1
 )
-doel="$(readlink "$project_relatief/.git/hooks/pre-commit" 2>/dev/null)"
-case "$doel" in
+target="$(readlink "$project_relatief/.git/hooks/pre-commit" 2>/dev/null)"
+case "$target" in
   /*) ;;
-  *) fail "S50 — a relative SPEC_DRIVEN_GUARDRAILS_DIR produced a non-absolute symlink target: $doel" ;;
+  *) fail "S50 — a relative SPEC_DRIVEN_GUARDRAILS_DIR produced a non-absolute symlink target: $target" ;;
 esac
 [ -e "$project_relatief/.git/hooks/pre-commit" ] \
   || fail "S50 — the pre-commit symlink is dangling after a relative SPEC_DRIVEN_GUARDRAILS_DIR"
 
 git -C "$project_relatief" commit -q --allow-empty -m "eerste commit"
-relatief_uitvoer="$(cd "$project_relatief" && git commit -q --allow-empty -m "tweede, op main" 2>&1)"
+relatief_output="$(cd "$project_relatief" && git commit -q --allow-empty -m "tweede, op main" 2>&1)"
 relatief_status=$?
 [ "$relatief_status" -ne 0 ] \
   || fail "S50 — with a relative SPEC_DRIVEN_GUARDRAILS_DIR the git hook did not block (dangling symlink, silently skipped by git)"

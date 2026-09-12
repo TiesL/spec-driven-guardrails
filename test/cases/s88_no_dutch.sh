@@ -11,8 +11,8 @@ script="$TEST_REPO_ROOT/check-no-dutch.sh"
 [ -x "$script" ] || { fail "S88 — check-no-dutch.sh is missing or not executable"; test_done; }
 
 # Given: the real repo, as it stands today.
-uitvoer="$("$script" "$TEST_REPO_ROOT" 2>&1)"; status=$?
-[ "$status" -eq 0 ] || fail "S88 — the real repo is not clean: $uitvoer"
+output="$("$script" "$TEST_REPO_ROOT" 2>&1)"; status=$?
+[ "$status" -eq 0 ] || fail "S88 — the real repo is not clean: $output"
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -24,15 +24,15 @@ repo="$(sandbox_copy_repo)"
 # green because nothing exercises it (red-before-green for this new
 # mechanism itself).
 echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/README.md"
-uitvoer_vuil="$("$script" "$repo" 2>&1)"; status_vuil=$?
+output_dirty="$("$script" "$repo" 2>&1)"; status_vuil=$?
 [ "$status_vuil" -ne 0 ] || fail "S88 — a real Dutch sentence in README.md was not caught"
-assert_contains "S88 — the offending file is named" "README.md" "$uitvoer_vuil"
+assert_contains "S88 — the offending file is named" "README.md" "$output_dirty"
 
 # And: the same sentence in a permanently excluded file (layer C) is not
 # reported — the exclusion is by design, not a gap.
 echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/ARCHITECTURE.md"
-uitvoer_laag_c="$("$script" "$repo" 2>&1)"; status_laag_c=$?
-case "$uitvoer_laag_c" in
+output_layer_c="$("$script" "$repo" 2>&1)"; status_laag_c=$?
+case "$output_layer_c" in
   *"ARCHITECTURE.md"*) fail "S88 — a permanently excluded (layer C) file was reported anyway" ;;
 esac
 # README.md's own violation must still be reported — the exclusion list
@@ -48,15 +48,15 @@ esac
 sed -i.bak "s|pending_uitgesloten=''|pending_uitgesloten='./NEP-PENDING.md'|" "$repo/check-no-dutch.sh"
 rm -f "$repo/check-no-dutch.sh.bak"
 echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/NEP-PENDING.md"
-uitvoer_pending="$("$repo/check-no-dutch.sh" "$repo" 2>&1)"
-case "$uitvoer_pending" in
+output_pending="$("$repo/check-no-dutch.sh" "$repo" 2>&1)"
+case "$output_pending" in
   *"NEP-PENDING.md"*) fail "S88 — a tracked-pending file was reported anyway" ;;
 esac
 
 # And: the script excludes itself from its own scan — its marker-word list
 # is a necessary literal, not untranslated prose.
-uitvoer_zelf="$("$script" "$repo" 2>&1)"
-case "$uitvoer_zelf" in
+output_self="$("$script" "$repo" 2>&1)"
+case "$output_self" in
   *"check-no-dutch.sh"*) fail "S88 — the script flagged itself for its own marker-word list" ;;
 esac
 

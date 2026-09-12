@@ -29,17 +29,17 @@ MD
 # Each case is a fully usable file with a single defect. Without a check,
 # such a file disappears from all consumers at once, and then the
 # drift check sees nothing: both sides are missing it after all.
-for geval in geen-volgorde naam-wijkt-af; do
+for geval in no-order name-differs; do
   repo="$SANDBOX/repo-$geval"
   mkdir -p "$repo"
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
 
   case "$geval" in
-    geen-volgorde)
+    no-order)
       doel="$repo/nfr/spec-proef.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
         geldig_blok; } > "$doel" ;;
-    naam-wijkt-af)
+    name-differs)
       doel="$repo/nfr/spec-verkeerd-genoemd.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
         geldig_blok; } > "$doel" ;;
@@ -74,8 +74,8 @@ mkdir -p "$repo"
 [ "$(nfr_field "$repo/nfr/spec-proef.md" order)" = "16" ] \
   || fail "S41 — CRLF file: the order is not being read"
 
-blok="$SANDBOX/blok-crlf.txt"
-nfr_block "$repo/nfr" > "$blok"
-grep -q 'spec-proef' "$blok" || fail "S41 — CRLF file disappeared from the generated block"
+block="$SANDBOX/block-crlf.txt"
+nfr_block "$repo/nfr" > "$block"
+grep -q 'spec-proef' "$block" || fail "S41 — CRLF file disappeared from the generated block"
 
 test_done

@@ -11,23 +11,23 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: an empty git project without package.json.
-project="$(fresh_project leeg)"
+project="$(fresh_project empty)"
 
 # When: adopt.sh is run.
 adopt "$project"
 
-tabel="$project/WORKFLOW-ADOPTION.md"
-if [ ! -f "$tabel" ]; then
+table="$project/WORKFLOW-ADOPTION.md"
+if [ ! -f "$table" ]; then
   fail "S82 — adopt.sh did not create a WORKFLOW-ADOPTION.md"
   test_done
 fi
 
 # Then: the header refers to the current name, not the name from before
 # the W32 rename (#56).
-if grep -q "claude-workflow" "$tabel"; then
+if grep -q "claude-workflow" "$table"; then
   fail "S82 — WORKFLOW-ADOPTION.md still refers to the old name claude-workflow"
 fi
-grep -q "spec-driven-guardrails" "$tabel" \
+grep -q "spec-driven-guardrails" "$table" \
   || fail "S82 — WORKFLOW-ADOPTION.md does not mention spec-driven-guardrails"
 
 test_done

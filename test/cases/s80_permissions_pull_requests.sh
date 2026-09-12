@@ -14,8 +14,8 @@ trap sandbox_destroy EXIT
 # at job level (under "check:") or at workflow level (before "jobs:")? Both
 # count: a workflow-wide permissions: key applies to every job under it.
 heeft_read_permissie() {
-  local sleutel="$1" pad="$2"
-  grep -qE "^[[:space:]]*${sleutel}:[[:space:]]*read[[:space:]]*\$" "$pad"
+  local key="$1" path="$2"
+  grep -qE "^[[:space:]]*${key}:[[:space:]]*read[[:space:]]*\$" "$path"
 }
 
 # check-pr-issue-link.sh (link 3, hard block) and check-main-via-pr.sh
@@ -29,18 +29,18 @@ heeft_read_permissie() {
 # list, even when the link genuinely exists — verified on PR #105
 # (issue #99, this repo's own workflow) before the same gap here for
 # templates/ci.yml was closed (issue #106).
-for bestand in templates/ci.yml .github/workflows/ci.yml; do
-  pad="$TEST_REPO_ROOT/$bestand"
+for file in templates/ci.yml .github/workflows/ci.yml; do
+  path="$TEST_REPO_ROOT/$file"
 
-  if [ ! -f "$pad" ]; then
-    fail "S80 — $bestand is missing"
+  if [ ! -f "$path" ]; then
+    fail "S80 — $file is missing"
     continue
   fi
 
-  heeft_read_permissie pull-requests "$pad" \
-    || fail "S80 — $bestand does not give the check job pull-requests: read"
-  heeft_read_permissie issues "$pad" \
-    || fail "S80 — $bestand does not give the check job issues: read"
+  heeft_read_permissie pull-requests "$path" \
+    || fail "S80 — $file does not give the check job pull-requests: read"
+  heeft_read_permissie issues "$path" \
+    || fail "S80 — $file does not give the check job issues: read"
 done
 
 test_done

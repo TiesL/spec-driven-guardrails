@@ -12,22 +12,22 @@ trap sandbox_destroy EXIT
 
 # Given: a freshly adopted project with 21 seeded rows carrying "requires
 # substantiation".
-project="$(fresh_project doelproject)"
+project="$(fresh_project target-project)"
 adopt "$project"
 
-rijen="$(grep -c 'requires substantiation' "$project/WORKFLOW-ADOPTION.md")"
-[ "$rijen" -eq 21 ] || fail "S7 — $rijen rows with 'requires substantiation', 21 expected"
+rows="$(grep -c 'requires substantiation' "$project/WORKFLOW-ADOPTION.md")"
+[ "$rows" -eq 21 ] || fail "S7 — $rows rows with 'requires substantiation', 21 expected"
 
 # When: pending-changes.sh runs.
-uitvoer="$SANDBOX/uitvoer.txt"
-"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$uitvoer" 2>/dev/null
+output="$SANDBOX/output.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$output" 2>/dev/null
 
 # Then: a message appears with the count.
-grep -q '21 row(s)' "$uitvoer" || {
+grep -q '21 row(s)' "$output" || {
   fail "S7 — no message with the count of pending substantiations"
-  cat "$uitvoer" >&2
+  cat "$output" >&2
 }
-grep -qi 'substantiation' "$uitvoer" || fail "S7 — the message does not mention 'substantiation'"
+grep -qi 'substantiation' "$output" || fail "S7 — the message does not mention 'substantiation'"
 
 # And the count moves along: substantiating one row makes it twenty.
 # Substantiate one row. Not with `sed '0,/re/'`: that address range is a GNU
@@ -39,11 +39,11 @@ awk '
 ' "$project/WORKFLOW-ADOPTION.md" > "$SANDBOX/tabel.tmp"
 mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTION.md"
 
-na="$SANDBOX/na.txt"
-"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$na" 2>/dev/null
-grep -q '20 row(s)' "$na" || {
+after="$SANDBOX/after.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$after" 2>/dev/null
+grep -q '20 row(s)' "$after" || {
   fail "S7 — the count does not move along after substantiating one row"
-  grep -i 'row(s)' "$na" >&2
+  grep -i 'row(s)' "$after" >&2
 }
 
 # Once all rows are substantiated, the message disappears — otherwise it becomes noise.
@@ -51,9 +51,9 @@ sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/o
   "$project/WORKFLOW-ADOPTION.md"
 rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 
-leeg="$SANDBOX/leeg.txt"
-"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$leeg" 2>/dev/null
-if grep -qi 'waiting on substantiation' "$leeg"; then
+empty="$SANDBOX/empty.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$empty" 2>/dev/null
+if grep -qi 'waiting on substantiation' "$empty"; then
   fail "S7 — the message remains while everything is substantiated"
 fi
 
@@ -63,11 +63,11 @@ fi
 printf '\nLosse notitie: dit requires substantiation bij gelegenheid.\n' \
   >> "$project/WORKFLOW-ADOPTION.md"
 
-met_notitie="$SANDBOX/met-notitie.txt"
-"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$met_notitie" 2>/dev/null
-if grep -qi 'waiting on substantiation' "$met_notitie"; then
+with_note="$SANDBOX/met-notitie.txt"
+"$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$with_note" 2>/dev/null
+if grep -qi 'waiting on substantiation' "$with_note"; then
   fail "S7 — a note outside the table counts as a pending substantiation"
-  grep -i 'row(s)' "$met_notitie" >&2
+  grep -i 'row(s)' "$with_note" >&2
 fi
 
 test_done

@@ -21,17 +21,17 @@ zonder_commentaar() {
   awk '/<!--/ { in_c = 1 } !in_c; /-->/ { in_c = 0 }' "$1"
 }
 
-for sjabloon in work-item epic; do
-  pad="$repo/templates/ISSUE_TEMPLATE/$sjabloon.md"
-  [ -f "$pad" ] || fail "S31 — $sjabloon.md is missing"
+for template in work-item epic; do
+  pad="$repo/templates/ISSUE_TEMPLATE/$template.md"
+  [ -f "$pad" ] || fail "S31 — $template.md is missing"
 
   zichtbaar="$(zonder_commentaar "$pad")"
 
-  for veld in "Blocked by" "Blocks"; do
-    regel="$(printf '%s\n' "$zichtbaar" | grep "^\*\*$veld:\*\*" || true)"
+  for field in "Blocked by" "Blocks"; do
+    regel="$(printf '%s\n' "$zichtbaar" | grep "^\*\*$field:\*\*" || true)"
 
     [ -n "$regel" ] \
-      || fail "S31 — $sjabloon.md has no '**$veld:**' at the start of a line, outside comments"
+      || fail "S31 — $template.md has no '**$field:**' at the start of a line, outside comments"
 
     # AC2: the field must be able to carry a `#<number>` token. The template
     # shows that with a bare `#`; the check requires the form, not a made-up
@@ -39,7 +39,7 @@ for sjabloon in work-item epic; do
     # two fields covers half of what it claims to.
     case "$regel" in
       *"#"*) ;;
-      *) fail "S31 — $sjabloon.md: '$regel' does not show that a #-number belongs in it" ;;
+      *) fail "S31 — $template.md: '$regel' does not show that a #-number belongs in it" ;;
     esac
   done
 done
@@ -50,9 +50,9 @@ done
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project met-oud-sjabloon)"
+project="$(fresh_project with-old-template)"
 mkdir -p "$project/.github/ISSUE_TEMPLATE"
-echo "verouderd sjabloon zonder velden" > "$project/.github/ISSUE_TEMPLATE/work-item.md"
+echo "verouderd template zonder velden" > "$project/.github/ISSUE_TEMPLATE/work-item.md"
 
 adopt "$project"
 

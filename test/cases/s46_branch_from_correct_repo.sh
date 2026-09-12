@@ -13,13 +13,13 @@ trap sandbox_destroy EXIT
 guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 [ -x "$guard" ] || { fail "S46 — hooks/git-guardrails is missing"; test_done; }
 
-op_main="$(fresh_project op-main)"
-git -C "$op_main" commit -q --allow-empty -m start
-git -C "$op_main" branch -M main
+on_main="$(fresh_project on-main)"
+git -C "$on_main" commit -q --allow-empty -m start
+git -C "$on_main" branch -M main
 
-op_feature="$(fresh_project op-feature)"
-git -C "$op_feature" commit -q --allow-empty -m start
-git -C "$op_feature" checkout -q -b feature/werk
+on_feature="$(fresh_project on-feature)"
+git -C "$on_feature" commit -q --allow-empty -m start
+git -C "$on_feature" checkout -q -b feature/werk
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
@@ -31,34 +31,34 @@ langs_guard() {
 # Given: the session is on main, the command is about a repo on a
 # feature branch. If the guard looked at the session directory, it would block
 # legitimate work in another repo.
-if [ "$(langs_guard "$op_main" "git -C $op_feature push origin HEAD")" = "2" ]; then
+if [ "$(langs_guard "$on_main" "git -C $on_feature push origin HEAD")" = "2" ]; then
   fail "S46 — push in another repo blocked based on the session directory"
 fi
 
 # And conversely: the session is on a feature branch, the command is about a
 # repo on main. That should indeed be blocked.
-if [ "$(langs_guard "$op_feature" "git -C $op_main push origin HEAD")" != "2" ]; then
+if [ "$(langs_guard "$on_feature" "git -C $on_main push origin HEAD")" != "2" ]; then
   fail "S46 — push to main in another repo let through"
 fi
 
 # --git-dir and --work-tree count just as much; git itself works out how they
 # relate. Here only that the guard no longer swallows them as an ordinary flag,
 # because then the subcommand would disappear from view.
-if [ "$(langs_guard "$op_feature" "git --git-dir $op_main/.git --work-tree $op_main push origin HEAD")" != "2" ]; then
+if [ "$(langs_guard "$on_feature" "git --git-dir $on_main/.git --work-tree $on_main push origin HEAD")" != "2" ]; then
   fail "S46 — --git-dir/--work-tree are not taken into account in the branch determination"
 fi
-if [ "$(langs_guard "$op_feature" "git --git-dir /tmp/bestaat-niet reset --hard")" != "2" ]; then
+if [ "$(langs_guard "$on_feature" "git --git-dir /tmp/does-not-exist reset --hard")" != "2" ]; then
   fail "S46 — a destructive command with --git-dir is no longer recognized"
 fi
 
 # If the path does not exist or is not a repo, no branch comes out. Do not
 # block: when in doubt, allow.
-geen_repo="$SANDBOX/geen-repo"
-mkdir -p "$geen_repo"
-if [ "$(langs_guard "$op_feature" "git -C $geen_repo push origin HEAD")" = "2" ]; then
+no_repo="$SANDBOX/no-repo"
+mkdir -p "$no_repo"
+if [ "$(langs_guard "$on_feature" "git -C $no_repo push origin HEAD")" = "2" ]; then
   fail "S46 — blocked while the target path is not a git repo"
 fi
-if [ "$(langs_guard "$op_feature" "git -C /bestaat/echt/niet push origin HEAD")" = "2" ]; then
+if [ "$(langs_guard "$on_feature" "git -C /does/not/really/exist push origin HEAD")" = "2" ]; then
   fail "S46 — blocked while the target path does not exist"
 fi
 

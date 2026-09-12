@@ -10,16 +10,16 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project met-marker)"
+project="$(fresh_project with-marker)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
 fakebin="$(fake_gh_merge_bin "pre-merge-review:done" "")"
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
-uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
+output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S16 — expected pass-through (exit 0), got $status. Output: $uitvoer"
+[ "$status" -eq 0 ] || fail "S16 — expected pass-through (exit 0), got $status. Output: $output"
 
 test_done

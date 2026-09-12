@@ -20,7 +20,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project geen-ci)"
+project="$(fresh_project no-ci)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -36,10 +36,10 @@ esac
 exit 1
 ')"
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
-uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
+output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $uitvoer"
+[ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $output"
 
 test_done

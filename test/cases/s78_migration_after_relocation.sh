@@ -12,32 +12,32 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a project adopted from an "old" checkout location.
-oud="$(sandbox_copy_repo oude-checkout)"
-project="$(fresh_project doelproject)"
-SPEC_DRIVEN_GUARDRAILS_DIR="$oud" "$oud/adopt.sh" "$project" >/dev/null 2>&1
+old="$(sandbox_copy_repo oude-checkout)"
+project="$(fresh_project target-project)"
+SPEC_DRIVEN_GUARDRAILS_DIR="$old" "$old/adopt.sh" "$project" >/dev/null 2>&1
 
-[ "$(readlink "$project/CLAUDE.md")" = "$oud/WORKFLOW.md" ] \
+[ "$(readlink "$project/CLAUDE.md")" = "$old/WORKFLOW.md" ] \
   || fail "S78 — setup: CLAUDE.md does not point to the old location"
-[ "$(readlink "$project/.claude/settings.json")" = "$oud/settings/session-hooks.json" ] \
+[ "$(readlink "$project/.claude/settings.json")" = "$old/settings/session-hooks.json" ] \
   || fail "S78 — setup: settings.json does not point to the old location"
 
 # When: the checkout "relocates" (simulates a repo rename: new directory,
 # old one is gone) and adopt.sh runs again, now with the new location.
-nieuw="$SANDBOX/nieuwe-checkout"
-mv "$oud" "$nieuw"
-SPEC_DRIVEN_GUARDRAILS_DIR="$nieuw" "$nieuw/adopt.sh" "$project" >/dev/null 2>&1
+new="$SANDBOX/nieuwe-checkout"
+mv "$old" "$new"
+SPEC_DRIVEN_GUARDRAILS_DIR="$new" "$new/adopt.sh" "$project" >/dev/null 2>&1
 
 # Then: both symlinks now point to the new location, in a single action.
-[ "$(readlink "$project/CLAUDE.md")" = "$nieuw/WORKFLOW.md" ] \
+[ "$(readlink "$project/CLAUDE.md")" = "$new/WORKFLOW.md" ] \
   || fail "S78 — CLAUDE.md does not point to the new location after the migration"
-[ "$(readlink "$project/.claude/settings.json")" = "$nieuw/settings/session-hooks.json" ] \
+[ "$(readlink "$project/.claude/settings.json")" = "$new/settings/session-hooks.json" ] \
   || fail "S78 — settings.json does not point to the new location after the migration"
 
 # And: a third run is a no-op — no error, no change.
-na_eerste="$(readlink "$project/CLAUDE.md")"
-SPEC_DRIVEN_GUARDRAILS_DIR="$nieuw" "$nieuw/adopt.sh" "$project" >/dev/null 2>&1 \
+after_first="$(readlink "$project/CLAUDE.md")"
+SPEC_DRIVEN_GUARDRAILS_DIR="$new" "$new/adopt.sh" "$project" >/dev/null 2>&1 \
   || fail "S78 — a repeated run after migration failed"
-[ "$(readlink "$project/CLAUDE.md")" = "$na_eerste" ] \
+[ "$(readlink "$project/CLAUDE.md")" = "$after_first" ] \
   || fail "S78 — a repeated run after migration changed the symlink again"
 
 test_done

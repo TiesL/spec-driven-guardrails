@@ -11,13 +11,13 @@ skill="$TEST_REPO_ROOT/skills/tdd-seams/SKILL.md"
 
 [ -f "$skill" ] || { fail "S68 — skills/tdd-seams/SKILL.md is missing"; test_done; }
 
-inhoud="$(cat "$skill")"
+content="$(cat "$skill")"
 
-assert_contains "S68 — mentions 'seam'" "seam" "$inhoud"
-assert_contains "S68 — mentions red-before-green" "Red-before-green" "$inhoud"
-assert_contains "S68 — anti-pattern: implementation-coupled" "mplementation-coupled" "$inhoud"
-assert_contains "S68 — anti-pattern: tautological" "autological" "$inhoud"
-assert_contains "S68 — anti-pattern: horizontal slicing" "orizontal slicing" "$inhoud"
-assert_contains "S68 — versus vertical slices" "ertical slices" "$inhoud"
+assert_contains "S68 — mentions 'seam'" "seam" "$content"
+assert_contains "S68 — mentions red-before-green" "Red-before-green" "$content"
+assert_contains "S68 — anti-pattern: implementation-coupled" "mplementation-coupled" "$content"
+assert_contains "S68 — anti-pattern: tautological" "autological" "$content"
+assert_contains "S68 — anti-pattern: horizontal slicing" "orizontal slicing" "$content"
+assert_contains "S68 — versus vertical slices" "ertical slices" "$content"
 
 test_done

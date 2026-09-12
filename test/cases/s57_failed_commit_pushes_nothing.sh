@@ -15,7 +15,7 @@ hook="$TEST_REPO_ROOT/hooks/push-after-commit"
 
 # Case 1: no origin — the hook must not hang and must not print anything to
 # stderr that looks like an error.
-project="$(fresh_project geen-origin)"
+project="$(fresh_project no-origin)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 git -C "$project" commit -q --allow-empty -m "werk zonder remote"
@@ -27,7 +27,7 @@ printf '%s' "$invoer1" | "$hook" >/dev/null 2>/dev/null || status1=$?
 
 # Case 2: nothing happens on main regardless, even when the remote does
 # exist — the same boundary as the existing SessionEnd hook.
-project_main="$(fresh_project op-main)"
+project_main="$(fresh_project on-main)"
 remote="$SANDBOX/remote.git"
 git init -q --bare "$remote"
 git -C "$project_main" remote add origin "$remote"
@@ -42,11 +42,11 @@ fi
 
 # Case 3: a command that is not a git commit pushes nothing — no attempt at
 # all, even though there is a remote and a feature branch with unpushed work.
-project_ander="$(fresh_project ander-commando)"
+project_ander="$(fresh_project different-command)"
 git -C "$project_ander" remote add origin "$remote"
 git -C "$project_ander" commit -q --allow-empty -m start
 git -C "$project_ander" checkout -q -b feature/iets
-git -C "$project_ander" commit -q --allow-empty -m "nog niet gepusht"
+git -C "$project_ander" commit -q --allow-empty -m "not pushed yet"
 
 invoer3='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_ander"'","tool_input":{"command":"git status"}}'
 printf '%s' "$invoer3" | "$hook" >/dev/null 2>&1
@@ -67,14 +67,14 @@ git -C "$project_amend" checkout -q -b feature/amend
 git -C "$project_amend" commit -q --allow-empty -m "eerste versie"
 git -C "$project_amend" push -q -u origin feature/amend
 git -C "$project_amend" commit -q --amend --allow-empty -m "herschreven versie"
-sha_voor_amend_op_remote="$(git -C "$remote" rev-parse feature/amend)"
+sha_before_amend_on_remote="$(git -C "$remote" rev-parse feature/amend)"
 
 invoer4='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_amend"'","tool_input":{"command":"git commit --amend -m x"}}'
 uitvoer4="$(printf '%s' "$invoer4" | "$hook" 2>&1)"
 status4=$?
 
 [ "$status4" -eq 0 ] || fail "S57/geval4 — a rejected push (non-fast-forward) blocked the command (exit $status4)"
-[ "$(git -C "$remote" rev-parse feature/amend)" = "$sha_voor_amend_op_remote" ] \
+[ "$(git -C "$remote" rev-parse feature/amend)" = "$sha_before_amend_on_remote" ] \
   || fail "S57/geval4 — the hook silently forced the push, the remote SHA changed"
 case "$uitvoer4" in
   *"local history diverges"*) ;;

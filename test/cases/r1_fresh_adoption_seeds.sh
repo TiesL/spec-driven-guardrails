@@ -11,26 +11,26 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: an empty git project with no package.json.
-project="$(fresh_project leeg)"
+project="$(fresh_project empty)"
 
 # When: adopt.sh is run.
 adopt "$project"
 
-tabel="$project/WORKFLOW-ADOPTION.md"
-if [ ! -f "$tabel" ]; then
+table="$project/WORKFLOW-ADOPTION.md"
+if [ ! -f "$table" ]; then
   fail "R1 — adopt.sh did not create WORKFLOW-ADOPTION.md"
   test_done
 fi
 
 # Then: exactly 21 rows, all carrying "requires substantiation".
-rijen="$(grep -c '^| [a-z]' "$tabel")"
-[ "$rijen" -eq 21 ] || fail "R1 — $rijen rows seeded, 21 expected"
+rows="$(grep -c '^| [a-z]' "$table")"
+[ "$rows" -eq 21 ] || fail "R1 — $rows rows seeded, 21 expected"
 
-onderbouwing="$(grep -c 'requires substantiation' "$tabel")"
-[ "$onderbouwing" -eq 21 ] || fail "R1 — $onderbouwing rows with 'requires substantiation', 21 expected"
+substantiation="$(grep -c 'requires substantiation' "$table")"
+[ "$substantiation" -eq 21 ] || fail "R1 — $substantiation rows with 'requires substantiation', 21 expected"
 
 # And: the retired legacy entry is not in there.
-if grep -q 'prd-testscenarios-issue-templates' "$tabel"; then
+if grep -q 'prd-testscenarios-issue-templates' "$table"; then
   fail "R1 — retired entry prd-testscenarios-issue-templates was seeded"
 fi
 

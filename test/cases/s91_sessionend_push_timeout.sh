@@ -8,9 +8,9 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 haal_veld() {
-  local veld="$1"
+  local field="$1"
   if command -v jq >/dev/null 2>&1; then
-    jq -r ".hooks.SessionEnd[0].hooks[0].$veld // empty" "$TEST_REPO_ROOT/settings/session-hooks.json"
+    jq -r ".hooks.SessionEnd[0].hooks[0].$field // empty" "$TEST_REPO_ROOT/settings/session-hooks.json"
   else
     python3 -c '
 import json, sys
@@ -22,7 +22,7 @@ v = h.get(sys.argv[2], "")
 if isinstance(v, bool):
     v = "true" if v else "false"
 print(v if v != "" else "")
-' "$TEST_REPO_ROOT/settings/session-hooks.json" "$veld"
+' "$TEST_REPO_ROOT/settings/session-hooks.json" "$field"
   fi
 }
 

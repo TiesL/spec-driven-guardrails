@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-project="$(fresh_project uitgeschakeld)"
+project="$(fresh_project disabled)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/werk
 
@@ -19,7 +19,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<EOF
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| kwaliteitsreview-voor-merge | nee | 2026-01-01 | dit project heeft geen PR's, alleen directe commits door één persoon |
+| kwaliteitsreview-voor-merge | nee | 2026-01-01 | this project has no PRs, only direct commits by one person |
 EOF
 
 # If the guard were to call gh anyway, this file would reveal that.
@@ -29,16 +29,16 @@ touch "'"$sentinel"'"
 exit 1
 ')"
 
-invoer='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
-uitvoer="$(printf '%s' "$invoer" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
+output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 
-[ "$status" -eq 0 ] || fail "S18 — expected pass-through (exit 0), got $status. Output: $uitvoer"
+[ "$status" -eq 0 ] || fail "S18 — expected pass-through (exit 0), got $status. Output: $output"
 [ ! -e "$sentinel" ] || fail "S18 — the guard called gh while the row is set to 'nee'; that should stay local"
 
 # And: the same holds for the post-migration format (W42/#114) — new
 # filename, new ID, new value.
-project2="$(fresh_project uitgeschakeld-nieuw)"
+project2="$(fresh_project disabled-new)"
 git -C "$project2" commit -q --allow-empty -m start
 git -C "$project2" checkout -q -b feature/werk
 
@@ -47,7 +47,7 @@ cat > "$project2/WORKFLOW-ADOPTION.md" <<EOF
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| quality-review-before-merge | no | 2026-01-01 | dit project heeft geen PR's, alleen directe commits door één persoon |
+| quality-review-before-merge | no | 2026-01-01 | this project has no PRs, only direct commits by one person |
 EOF
 
 sentinel2="$SANDBOX/gh-was-aangeroepen-nieuw"

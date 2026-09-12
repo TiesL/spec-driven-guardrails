@@ -28,11 +28,11 @@ heeft_sleutel() {
 
 # The workflow of this repo itself should meet the same requirement as the
 # template — a rule you impose on others but dodge yourself is not a rule.
-for bestand in templates/ci.yml .github/workflows/ci.yml; do
-  pad="$TEST_REPO_ROOT/$bestand"
+for file in templates/ci.yml .github/workflows/ci.yml; do
+  pad="$TEST_REPO_ROOT/$file"
 
   if [ ! -f "$pad" ]; then
-    fail "S48 — $bestand is missing"
+    fail "S48 — $file is missing"
     continue
   fi
 
@@ -42,31 +42,31 @@ for bestand in templates/ci.yml .github/workflows/ci.yml; do
   # branch: `pull_request` judges the merged result, and that is exactly the
   # case that two individually-green branches can break together.
   heeft_sleutel pull_request "$blok" \
-    || fail "S48 — $bestand has no pull_request trigger"
+    || fail "S48 — $file has no pull_request trigger"
 
   # And: pushes to main are validated. `branches-ignore` is filtered out first,
   # otherwise the very line that excludes main would make the check pass —
   # after all it also contains the word `main`.
   positief="$(printf '%s\n' "$blok" | grep -v 'branches-ignore')"
   heeft_sleutel push "$positief" \
-    || fail "S48 — $bestand has no push trigger"
+    || fail "S48 — $file has no push trigger"
   case "$positief" in
     *main*) ;;
-    *) fail "S48 — $bestand does not mention main in its triggers" ;;
+    *) fail "S48 — $file does not mention main in its triggers" ;;
   esac
 
   # And: not via branches-ignore. That form excludes main — the bug this
   # scenario must catch.
   case "$blok" in
-    *branches-ignore*) fail "S48 — $bestand uses branches-ignore and thus skips main" ;;
+    *branches-ignore*) fail "S48 — $file uses branches-ignore and thus skips main" ;;
   esac
 
   # And: the CI convention itself does not change. The workflow exclusively
   # invokes `check`; separate lint, test, or build steps belong in the script.
-  while IFS= read -r regel; do
-    case "$regel" in
+  while IFS= read -r line; do
+    case "$line" in
       *check*|*"npm ci"*) ;;
-      *) fail "S48 — $bestand runs its own step instead of only check: $regel" ;;
+      *) fail "S48 — $file runs its own step instead of only check: $line" ;;
     esac
   done < <(grep -E '^\s+- run:' "$pad")
 done

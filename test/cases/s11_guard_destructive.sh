@@ -16,29 +16,29 @@ if [ ! -x "$guard" ]; then
   test_done
 fi
 
-werkmap="$(fresh_project werkmap)"
+workdir="$(fresh_project workdir)"
 
 # Runs the command past the guard, with the same JSON shape that Claude Code
 # delivers on stdin. Echoes the exit status: 2 means blocked.
 langs_guard() {
-  local commando="$1" map="${2:-$werkmap}"
+  local command="$1" map="${2:-$workdir}"
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
-    "$map" "$(printf '%s' "$commando" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
+    "$map" "$(printf '%s' "$command" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
     | "$guard" >/dev/null 2>&1
   echo $?
 }
 
 geblokkeerd() {
-  local omschrijving="$1" commando="$2"
-  if [ "$(langs_guard "$commando")" != "2" ]; then
-    fail "S11 — not blocked: $omschrijving ($commando)"
+  local description="$1" command="$2"
+  if [ "$(langs_guard "$command")" != "2" ]; then
+    fail "S11 — not blocked: $description ($command)"
   fi
 }
 
 toegestaan() {
-  local omschrijving="$1" commando="$2"
-  if [ "$(langs_guard "$commando")" = "2" ]; then
-    fail "S11 — wrongly blocked: $omschrijving ($commando)"
+  local description="$1" command="$2"
+  if [ "$(langs_guard "$command")" = "2" ]; then
+    fail "S11 — wrongly blocked: $description ($command)"
   fi
 }
 
@@ -108,16 +108,16 @@ toegestaan "env prefix without danger" "GIT_TRACE=1 git status"
 # in the command text. A command that has not yet started cannot by definition
 # affect the guard's own environment, so testing only the guard's own
 # environment would never hit the documented form.
-uit_fout="$SANDBOX/uitweg.txt"
+from_error="$SANDBOX/uitweg.txt"
 printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git reset --hard"}}' \
-  "$werkmap" | "$guard" >/dev/null 2>"$uit_fout"
-uit_status=$?
+  "$workdir" | "$guard" >/dev/null 2>"$from_error"
+from_status=$?
 
-[ "$uit_status" -ne 2 ] || fail "S11 — the escape hatch does not work; the command remained blocked"
-[ -s "$uit_fout" ] || fail "S11 — the escape hatch reports nothing; a silent escape hatch is a disabled guard"
-grep -qi 'warning' "$uit_fout" || {
+[ "$from_status" -ne 2 ] || fail "S11 — the escape hatch does not work; the command remained blocked"
+[ -s "$from_error" ] || fail "S11 — the escape hatch reports nothing; a silent escape hatch is a disabled guard"
+grep -qi 'warning' "$from_error" || {
   fail "S11 — the escape hatch message is not recognizable as a warning"
-  cat "$uit_fout" >&2
+  cat "$from_error" >&2
 }
 
 test_done
