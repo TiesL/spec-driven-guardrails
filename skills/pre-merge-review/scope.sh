@@ -93,11 +93,11 @@ while IFS= read -r id; do
 
   if [ -z "$kop" ]; then
     echo "warning: anchor for $id is missing from ${prd#"$project_dir"/} — falling back to the heading name from the NFR register" >&2
-    kop="$(nfr_veld "$workflow_dir/nfr/$id.md" heading)"
+    kop="$(nfr_field "$workflow_dir/nfr/$id.md" heading)"
     # #156: $id may be a pre-rename ID still recorded in this project's
     # WORKFLOW-ADOPTION.md — nfr/ no longer has a file under that name,
     # so retry under the current one before giving up on a heading.
-    [ -n "$kop" ] || kop="$(nfr_veld "$workflow_dir/nfr/$(nfr_huidig_id "$id").md" heading)"
+    [ -n "$kop" ] || kop="$(nfr_field "$workflow_dir/nfr/$(nfr_current_id "$id").md" heading)"
     [ -n "$kop" ] || kop="$id"
   fi
 

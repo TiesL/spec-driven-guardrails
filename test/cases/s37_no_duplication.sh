@@ -54,7 +54,7 @@ log="$SANDBOX/aanroepen.txt"
 cat >> "$repo/lib/changes.sh" <<INSTR
 
 # --- for S37 only: records that this function was called ---
-predicaat_waar() {
+predicate_true() {
   printf '%s\n' "\$1" >> "$log"
   case "\$1" in
     altijd) return 0 ;;
@@ -71,13 +71,13 @@ project="$(vers_project doelproject)"
 : > "$log"
 SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
-  fail "S37 — adopt.sh did not call predicaat_waar from the library"
+  fail "S37 — adopt.sh did not call predicate_true from the library"
 fi
 
 : > "$log"
 "$repo/pending-changes.sh" "$project" >/dev/null 2>&1
 if [ ! -s "$log" ]; then
-  fail "S37 — pending-changes.sh did not call predicaat_waar from the library"
+  fail "S37 — pending-changes.sh did not call predicate_true from the library"
 fi
 
 test_klaar

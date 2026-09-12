@@ -48,7 +48,7 @@ fi
 # shellcheck source=../../lib/nfr.sh
 . "$repo/lib/nfr.sh"
 blok="$SANDBOX/blok.txt"
-nfr_blok "$repo/nfr" > "$blok"
+nfr_block "$repo/nfr" > "$blok"
 if grep -q 'spec-portability' "$blok"; then
   fail "S39 — spec-portability is still in the generated block"
 fi

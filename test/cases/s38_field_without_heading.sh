@@ -28,11 +28,11 @@ MD
 gezien="$SANDBOX/gezien.txt"
 : > "$gezien"
 
-# shellcheck disable=SC2329  # called indirectly, via itereer_entries
+# shellcheck disable=SC2329  # called indirectly, via iterate_entries
 noteer() { printf '%s\n' "$1" >> "$gezien"; }
 
-# When: itereer_entries reads that source.
-itereer_entries "$bron" noteer
+# When: iterate_entries reads that source.
+iterate_entries "$bron" noteer
 
 # Then: only the entry after the heading was seen; the loose field yielded
 # nothing. wc -l, not grep -c: a callback with an empty ID writes an empty
