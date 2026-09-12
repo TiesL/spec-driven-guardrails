@@ -1077,3 +1077,18 @@ something new is being added.
   depends on someone remembering to add that note (AC3)
 - And: a row answered `yes` whose subsection already exists, and a row
   answered `no`/`nee`, are both silent
+
+### S94 — templates/ARCHITECTURE.md documents the multiple-decisions pattern
+**Covers:** F1
+- Given: `templates/ARCHITECTURE.md`, written for the common case of one
+  project with one architecture decision
+- When: a project needs to record several related decisions in one
+  document — observed in `tennis-invoicing` (platform choice, a
+  data-registration pattern, a dual-entrypoint structure), which had to
+  invent the pattern itself
+- Then: the template documents that pattern explicitly (repeat the
+  decision/criteria/options/comparison block per decision, keep
+  requirements/boundaries/dependencies/revisit-triggers shared), naming
+  `tennis-invoicing`'s own document as the concrete reference
+- And: the single-decision skeleton is unchanged — this is an addition,
+  not a restructuring of the existing case

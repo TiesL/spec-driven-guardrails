@@ -10,6 +10,33 @@ dependency. No: how one function is written.
 
 ---
 
+## Multiple decisions in one document
+
+The skeleton below is written for the common case: one project, one
+architecture decision. A project with several *related* decisions doesn't
+need a separate document per decision — see `tennis-invoicing`'s own
+`ARCHITECTUUR.md` for a real example: three related decisions (platform
+choice, a data-registration pattern, and a dual-entrypoint structure)
+share one document without the result becoming hard to follow.
+
+The pattern:
+
+- Repeat the **The decision / Evaluation criteria / Options weighed /
+  Comparison and choice** block once per decision, as its own `## Decision
+  N — <name>` section (with `### Evaluation criteria`, `### Options
+  weighed`, and `### Comparison and choice` nested under it).
+- Everything from **Architecture requirements that follow from this**
+  onward — requirements, system boundaries, dependencies, revisit
+  triggers, open questions — stays a single, shared section for the whole
+  document, not repeated per decision. Requirements from different
+  decisions can live together in one numbered `A<n>` list.
+
+A project with exactly one decision ignores this section and uses the
+skeleton below exactly as it is — nothing about the single-decision path
+changes.
+
+---
+
 ## The decision
 
 **Decided on <date>: <the choice, in one sentence>.**
