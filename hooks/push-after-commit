@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hooks/push-na-commit — PostToolUse hook (W25, F18): pushes the current
+# hooks/push-after-commit — PostToolUse hook (W25, F18): pushes the current
 # branch as soon as a Bash call contains "git commit". The same action as
 # the existing SessionEnd hook, only earlier and more often — work becomes
 # safe as soon as it's committed, instead of only at a clean session end,
@@ -91,8 +91,8 @@ fi
 # choice, not a mutation nobody asked for.
 case "$uitvoer" in
   *"(non-fast-forward)"*|*"(fetch first)"*|*"(stale info)"*)
-    echo "warning: push-na-commit couldn't push — local history diverges from origin (for example after an amend or rebase). Use 'git push --force-with-lease' yourself if that was the intent." >&2 ;;
+    echo "warning: push-after-commit couldn't push — local history diverges from origin (for example after an amend or rebase). Use 'git push --force-with-lease' yourself if that was the intent." >&2 ;;
   *)
-    echo "warning: push-na-commit couldn't push (no network or no access?): $uitvoer" >&2 ;;
+    echo "warning: push-after-commit couldn't push (no network or no access?): $uitvoer" >&2 ;;
 esac
 exit 0
