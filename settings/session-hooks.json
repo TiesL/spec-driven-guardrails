@@ -46,7 +46,8 @@
           {
             "type": "command",
             "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; [ \"$(git -C \"$p\" rev-parse --abbrev-ref HEAD)\" != \"main\" ] && git -C \"$p\" push origin HEAD 2>&1 || true",
-            "statusMessage": "git push origin HEAD"
+            "statusMessage": "git push origin HEAD",
+            "timeout": 20
           }
         ]
       }
