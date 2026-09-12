@@ -12,9 +12,9 @@ trap sandbox_destroy EXIT
 
 # AC2 — this repo itself, unchanged: every active entry already has a
 # **PR:** field. check must not raise an error about that.
-repo_goed="$(sandbox_copy_repo goed)"
-if ! "$repo_goed/check" --no-tests "$repo_goed" >/dev/null 2>&1; then
-  output="$("$repo_goed/check" --no-tests "$repo_goed" 2>&1)"
+repo_good="$(sandbox_copy_repo good)"
+if ! "$repo_good/check" --no-tests "$repo_good" >/dev/null 2>&1; then
+  output="$("$repo_good/check" --no-tests "$repo_good" 2>&1)"
   case "$output" in
     *"PR:"*) fail "S32/AC2 — this repo's own CHANGES.md incorrectly gave a PR linkback error: $output" ;;
     *) : ;; # other, unrelated failure — not this scenario's concern
@@ -22,12 +22,12 @@ if ! "$repo_goed/check" --no-tests "$repo_goed" >/dev/null 2>&1; then
 fi
 
 # AC1/AC3 — an entry without a **PR:** field fails, with the ID in the message.
-repo_kapot="$(sandbox_copy_repo kapot)"
+repo_broken="$(sandbox_copy_repo broken)"
 # Remove proces-prd's PR line; the rest of the file stays intact.
-sed -i.bak '/^- \*\*PR:\*\* https:\/\/github\.com\/TiesL\/claude-workflow\/pull\/1$/d' "$repo_kapot/CHANGES.md"
-rm -f "$repo_kapot/CHANGES.md.bak"
+sed -i.bak '/^- \*\*PR:\*\* https:\/\/github\.com\/TiesL\/claude-workflow\/pull\/1$/d' "$repo_broken/CHANGES.md"
+rm -f "$repo_broken/CHANGES.md.bak"
 
-output="$("$repo_kapot/check" --no-tests "$repo_kapot" 2>&1)"; status=$?
+output="$("$repo_broken/check" --no-tests "$repo_broken" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S32/AC1,AC3 — CHANGES.md without a PR field gave exit 0"
 assert_contains "S32 — the ID of the broken entry is in the message" "proces-prd" "$output"
 

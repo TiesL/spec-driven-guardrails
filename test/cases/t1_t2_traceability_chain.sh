@@ -83,7 +83,7 @@ assert_contains "AC5 — a warning appears" "warning" "$output"
 # S62 — a project not yet using the convention warns and does not fail.
 # All four existing projects are this case on the day it is introduced.
 p="$(build s62 \
-'### F1 — iets
+'### F1 — something
 
 ### F2 — something else' \
 '### S1 — something, without a coverage field
@@ -128,7 +128,7 @@ assert_contains "T5 — F2 stays uncovered" "F2" "$output"
 # its scenarios R/A/B/P and uses OP for open items. A script keyed to F/S would
 # be unusable there from day one — and that cannot be demonstrated with F/S
 # test data alone.
-p="$(build prefixvrij \
+p="$(build prefix-free \
 '### R1 — a requirement with its own prefix
 
 ### OP4 — an open point, two leading letters' \
@@ -164,15 +164,15 @@ output="$("$script" "$p" 2>&1)"; status=$?
 # grammar that rejects that is immediately unusable there. Without this case
 # it cannot be shown that the script accepts the trailing letter — a test
 # with only S1/S2 leaves a stricter grammar untouched.
-p="$(build staartletter \
+p="$(build trailing-letter \
 '### F1 — something' \
 '### S2b — a scenario with a trailing letter
 **Covers:** F1')"
 output="$("$script" "$p" 2>&1)"; status=$?
 [ "$status" -eq 0 ] || fail "trailing-letter — S2b was not recognized as a valid ID: $output"
 
-p="$(build staartletter-fout \
-'### F1 — iets
+p="$(build trailing-letter-broken \
+'### F1 — something
 
 ### F2 — uncovered' \
 '### S1 — refers to a non-existent ID with a trailing letter
@@ -184,7 +184,7 @@ assert_contains "trailing-letter — F2b is in the message" "F2b" "$output"
 # The other direction: a Covers: field in PRD.md refers to a scenario. Both
 # directions are checked; without this case, the check on the PRD side
 # could be silently removed.
-p="$(build andersom \
+p="$(build other-way \
 '### F1 — refers to a scenario that does not exist
 **Covers:** S9' \
 '### S1 — something
@@ -211,7 +211,7 @@ assert_contains "substring — F1 is in the message" "F1" "$output"
 # looking for duplicates, `uniq -d` only sees adjacent lines, and then
 # exactly the realistic case slips through: a copy-paste error further down
 # in a large file.
-p="$(build duplicaat-uiteen \
+p="$(build duplicate-apart \
 '### F1 — something' \
 '### S1 — first
 **Covers:** F1
@@ -228,10 +228,10 @@ assert_contains "duplicate-apart — S1 is in the message" "S1" "$output"
 # A broken token is reported, not silently filtered out. Otherwise the
 # check would promise that every token resolves while it precisely fails
 # to see the typos.
-p="$(build kapot-token \
-'### F1 — iets
+p="$(build broken-token \
+'### F1 — something
 
-### F2 — iets' \
+### F2 — something' \
 '### S1 — with a typo in between
 **Covers:** F1, F-2, F2')"
 output="$("$script" "$p" 2>&1)"; status=$?
@@ -240,10 +240,10 @@ assert_contains "broken token — F-2 is in the message" "F-2" "$output"
 
 # Spaces instead of commas produce one unusable token. That too must be
 # reported, since otherwise the field looks filled in while covering nothing.
-p="$(build spatie-gescheiden \
-'### F1 — iets
+p="$(build space-separated \
+'### F1 — something
 
-### F2 — iets' \
+### F2 — something' \
 '### S1 — spaces instead of a comma
 **Covers:** F1 F2')"
 output="$("$script" "$p" 2>&1)"; status=$?
@@ -252,7 +252,7 @@ output="$("$script" "$p" 2>&1)"; status=$?
 # S87 — a leftover **Dekt:** field (pre-Covers:-cutover, W42/#114) is
 # reported by name, neither parsed as a valid Covers: reference nor
 # silently treated as "this project doesn't use the convention yet".
-p="$(build achtergebleven-dekt \
+p="$(build leftover-dekt \
 '### F1 — something' \
 '### S1 — still on the old field
 **Dekt:** F1')"

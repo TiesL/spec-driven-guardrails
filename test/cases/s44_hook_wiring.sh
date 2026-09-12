@@ -68,7 +68,7 @@ status_deep=$?
 
 # Legitimate work must also get through the wiring.
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 ok='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git push origin HEAD"}}'
 printf '%s' "$ok" | (cd "$project" && bash -c "$command") >/dev/null 2>&1
 [ $? -ne 2 ] || fail "S44 — the wiring blocks a legitimate push"

@@ -13,7 +13,7 @@ trap sandbox_destroy EXIT
 repo="$(sandbox_copy_repo)"
 
 # Given: a script in this repo with a bash syntax error.
-printf '\nif [ 1 -eq 1 ]; then\n  echo kapot\n' >> "$repo/pending-changes.sh"
+printf '\nif [ 1 -eq 1 ]; then\n  echo broken\n' >> "$repo/pending-changes.sh"
 
 # When: ./check runs (without the test suite, otherwise the suite calls itself).
 output="$("$TEST_REPO_ROOT/check" --no-tests "$repo" 2>&1)"
@@ -32,7 +32,7 @@ assert_contains "S1" "pending-changes.sh" "$output"
 repo2="$SANDBOX/repo2"
 mkdir -p "$repo2/settings" "$repo2/hooks"
 cp "$TEST_REPO_ROOT/settings/session-hooks.json" "$repo2/settings/"
-printf '#!/usr/bin/env bash\nif [ 1 -eq 1 ]; then\n  echo kapot\n' > "$repo2/hooks/git-guardrails"
+printf '#!/usr/bin/env bash\nif [ 1 -eq 1 ]; then\n  echo broken\n' > "$repo2/hooks/git-guardrails"
 chmod +x "$repo2/hooks/git-guardrails"
 
 uitvoer2="$("$TEST_REPO_ROOT/check" --no-tests "$repo2" 2>&1)"

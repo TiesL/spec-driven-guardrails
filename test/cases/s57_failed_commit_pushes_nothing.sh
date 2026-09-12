@@ -17,7 +17,7 @@ hook="$TEST_REPO_ROOT/hooks/push-after-commit"
 # stderr that looks like an error.
 project="$(fresh_project no-origin)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 git -C "$project" commit -q --allow-empty -m "werk zonder remote"
 
 invoer1='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"git commit -m x"}}'
@@ -45,13 +45,13 @@ fi
 project_ander="$(fresh_project different-command)"
 git -C "$project_ander" remote add origin "$remote"
 git -C "$project_ander" commit -q --allow-empty -m start
-git -C "$project_ander" checkout -q -b feature/iets
+git -C "$project_ander" checkout -q -b feature/something
 git -C "$project_ander" commit -q --allow-empty -m "not pushed yet"
 
 invoer3='{"hook_event_name":"PostToolUse","tool_name":"Bash","cwd":"'"$project_ander"'","tool_input":{"command":"git status"}}'
 printf '%s' "$invoer3" | "$hook" >/dev/null 2>&1
 
-if git -C "$remote" rev-parse --verify --quiet feature/iets >/dev/null 2>&1; then
+if git -C "$remote" rev-parse --verify --quiet feature/something >/dev/null 2>&1; then
   fail "S57/geval3 — a non-commit command triggered a push after all"
 fi
 

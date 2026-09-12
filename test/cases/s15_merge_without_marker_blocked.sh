@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project without-marker)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 fakebin="$(fake_gh_merge_bin "" "")"
 

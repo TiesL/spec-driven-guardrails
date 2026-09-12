@@ -15,7 +15,7 @@ guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 
 project="$(fresh_project work)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 # The SessionEnd hook runs exactly this command when ending every
 # session. If the guard blocks that, it breaks the existing provision.

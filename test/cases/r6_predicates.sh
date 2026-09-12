@@ -25,15 +25,15 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   project="$(fresh_project "$name")"
   [ "$heeft_pkg" = "ja" ] && printf '%s\n' "$content" > "$project/package.json"
 
-  voor="$SANDBOX/$name-voor.txt"
-  pending_ids "$project" > "$voor"
+  before="$SANDBOX/$name-before.txt"
+  pending_ids "$project" > "$before"
 
   # Then: the outcome per combination is exactly what the table specifies.
   for paar in "ci-conventie:$expected_ci" "ci-op-pr-en-main:$expected_ci" "ci-schakel-3-hard-slot:$expected_ci" "ci-detecteert-main-buiten-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
-    if grep -qx "$id" "$voor"; then feitelijk=ja; else feitelijk=nee; fi
-    if [ "$feitelijk" != "$verwacht" ]; then
-      fail "R6 — $name: $id applicable=$feitelijk, table says $verwacht"
+    if grep -qx "$id" "$before"; then actual=ja; else actual=nee; fi
+    if [ "$actual" != "$verwacht" ]; then
+      fail "R6 — $name: $id applicable=$actual, table says $verwacht"
     fi
   done
 
@@ -55,9 +55,9 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   # entries have `Default: yes`, so applicable here means seeded.
   for paar in "ci-conventie:$expected_ci" "ci-op-pr-en-main:$expected_ci" "ci-schakel-3-hard-slot:$expected_ci" "ci-detecteert-main-buiten-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${paar%%:*}"; verwacht="${paar#*:}"
-    if grep -qx "$id" "$geseed"; then feitelijk=ja; else feitelijk=nee; fi
-    if [ "$feitelijk" != "$verwacht" ]; then
-      fail "R6 — $name: adopt.sh seeded $id=$feitelijk, table says $verwacht"
+    if grep -qx "$id" "$geseed"; then actual=ja; else actual=nee; fi
+    if [ "$actual" != "$verwacht" ]; then
+      fail "R6 — $name: adopt.sh seeded $id=$actual, table says $verwacht"
     fi
   done
 
@@ -78,7 +78,7 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   # And: both scripts arrive at the same answer. adopt.sh seeds the applicable
   # `Default: yes` entries; what remains open afterward are the
   # `Default: question` entries. Together exactly what was open before the adoption.
-  assert_ids_equal "R6 — $name: seed logic versus van_toepassing()" "$voor" "$samen"
+  assert_ids_equal "R6 — $name: seed logic versus van_toepassing()" "$before" "$samen"
 done < "$table"
 
 # And: for every predicate there is at least one case where it is true and

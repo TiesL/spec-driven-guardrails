@@ -49,10 +49,10 @@ fi
 
 for name in pre-merge-review tdd-seams; do
   [ -L "$skills/$name" ] || fail "S19 — $name is not a symlink"
-  doel="$(readlink "$skills/$name")"
-  case "$doel" in
+  target="$(readlink "$skills/$name")"
+  case "$target" in
     "$source"/skills/*) ;;
-    *) fail "S19 — $name points to $doel, not to the repo's skills directory" ;;
+    *) fail "S19 — $name points to $target, not to the repo's skills directory" ;;
   esac
 done
 
@@ -70,7 +70,7 @@ echo "# from the project itself" > "$skills/own-skill/SKILL.md"
 # still exists, it's luck protecting it, not the prefix check.
 mkdir -p "$SANDBOX/elders/vreemde-skill"
 ln -s "$SANDBOX/elders/vreemde-skill" "$skills/vreemde-skill"
-ln -s "$SANDBOX/elders/nooit-bestaan" "$skills/vreemde-dode-skill"
+ln -s "$SANDBOX/elders/never-existed" "$skills/weird-dead-skill"
 
 adopteer_uit "$source" "$project"
 
@@ -80,7 +80,7 @@ fi
 [ -d "$skills/own-skill" ] || fail "S20 — the project's own 'own-skill' directory was removed"
 [ -f "$skills/own-skill/SKILL.md" ] || fail "S20 — the contents of 'own-skill' are gone"
 [ -L "$skills/vreemde-skill" ] || fail "S20 — a symlink outside this repo was cleaned up; only our own orphaned links may be removed"
-[ -L "$skills/vreemde-dode-skill" ] || fail "S20 — a dead symlink outside this repo was cleaned up; the criterion is the target, not whether the link works"
+[ -L "$skills/weird-dead-skill" ] || fail "S20 — a dead symlink outside this repo was cleaned up; the criterion is the target, not whether the link works"
 
 # A dead orphan with a relative path. Without first resolving the path
 # meaningfully, it falls outside the prefix check and stays forever - and then
@@ -152,7 +152,7 @@ done
 # everything after it. The file is tracked; silently plowing through it is
 # the most expensive mistake this script can make.
 project="$(fresh_project s21b-broken)"
-printf 'belangrijke-line.txt\n%s\nCLAUDE.md\nregel-after-kapot-blok\n' "$GITIGNORE_BEGIN" > "$project/.gitignore"
+printf 'important-line.txt\n%s\nCLAUDE.md\nline-after-broken-block\n' "$GITIGNORE_BEGIN" > "$project/.gitignore"
 before="$(cat "$project/.gitignore")"
 output="$(adopteer_uit_luid "$source" "$project" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S21b — a corrupted block was not rejected"

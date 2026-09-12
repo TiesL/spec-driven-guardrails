@@ -19,7 +19,7 @@ git -C "$on_main" branch -M main
 
 on_feature="$(fresh_project on-feature)"
 git -C "$on_feature" commit -q --allow-empty -m start
-git -C "$on_feature" checkout -q -b feature/werk
+git -C "$on_feature" checkout -q -b feature/work
 
 langs_guard() {
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \

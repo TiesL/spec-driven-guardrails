@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project no-network)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 

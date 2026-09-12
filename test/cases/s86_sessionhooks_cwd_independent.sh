@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-haal_commando() {
+get_command() {
   local event="$1" index="$2"
   if command -v jq >/dev/null 2>&1; then
     jq -r ".hooks.$event[0].hooks[$index].command" "$TEST_REPO_ROOT/settings/session-hooks.json"
@@ -23,9 +23,9 @@ print(h["command"])
   fi
 }
 
-fetch_command="$(haal_commando SessionStart 0)"
-pending_command="$(haal_commando SessionStart 1)"
-push_command="$(haal_commando SessionEnd 0)"
+fetch_command="$(get_command SessionStart 0)"
+pending_command="$(get_command SessionStart 1)"
+push_command="$(get_command SessionEnd 0)"
 [ -n "$fetch_command" ] || fail "S86 — no first SessionStart command found"
 [ -n "$pending_command" ] || fail "S86 — no second SessionStart command found"
 [ -n "$push_command" ] || fail "S86 — no SessionEnd command found"
@@ -42,7 +42,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | verouderd antwoord |
+| ci-conventie | ja | 2026-01-01 | outdated answer |
 EOF
 
 remote="$SANDBOX/remote.git"
@@ -60,7 +60,7 @@ mkdir -p "$elsewhere"
 second="$(fresh_project second)"
 git -C "$second" remote add origin "$remote"
 git -C "$second" pull -q origin main
-git -C "$second" commit -q --allow-empty -m "nieuwe commit op de remote"
+git -C "$second" commit -q --allow-empty -m "new commit on the remote"
 git -C "$second" push -q origin main
 
 (cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$fetch_command") >/dev/null 2>&1
@@ -83,25 +83,25 @@ output_pending="$(cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$pen
 assert_contains "S86 — pending-changes.sh ran and reported something, from elsewhere" \
   "ci-conventie" "$output_pending"
 
-error_pending='doel=$(readlink .claude/settings.json 2>/dev/null); if [ -z "$doel" ]; then exit 0; fi; wf=$(dirname "$(dirname "$doel")"); if [ -x "$wf/pending-changes.sh" ]; then "$wf/pending-changes.sh" . 2>/dev/null; fi; exit 0'
+error_pending='target=$(readlink .claude/settings.json 2>/dev/null); if [ -z "$target" ]; then exit 0; fi; wf=$(dirname "$(dirname "$target")"); if [ -x "$wf/pending-changes.sh" ]; then "$wf/pending-changes.sh" . 2>/dev/null; fi; exit 0'
 output_old_pending="$(cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$error_pending" 2>&1)"
 [ -z "$output_old_pending" ] \
   || fail "S86 — the old cwd-dependent pending-changes form no longer silently does nothing from elsewhere; the regression proof is stale: $output_old_pending"
 
 # --- SessionEnd's git push --------------------------------------------------
-git -C "$project" checkout -q -b feature/werk
-git -C "$project" commit -q --allow-empty -m "werk op een branch"
+git -C "$project" checkout -q -b feature/work
+git -C "$project" commit -q --allow-empty -m "work on a branch"
 
 (cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$push_command") >/dev/null 2>&1
-if [ "$(git -C "$remote" rev-parse -q --verify refs/heads/feature/werk 2>/dev/null)" \
+if [ "$(git -C "$remote" rev-parse -q --verify refs/heads/feature/work 2>/dev/null)" \
   != "$(git -C "$project" rev-parse HEAD)" ]; then
   fail "S86 — 'git push origin HEAD' from elsewhere did not push the project's own branch to its own remote"
 fi
 
 error_push='[ "$(git rev-parse --abbrev-ref HEAD)" != "main" ] && git push origin HEAD 2>&1 || true'
-git -C "$project" commit -q --allow-empty -m "nog een commit"
+git -C "$project" commit -q --allow-empty -m "another commit"
 output_old_push="$(cd "$elsewhere" && CLAUDE_PROJECT_DIR="$project" bash -c "$error_push" 2>&1)"
-if [ "$(git -C "$remote" rev-parse -q --verify refs/heads/feature/werk 2>/dev/null)" \
+if [ "$(git -C "$remote" rev-parse -q --verify refs/heads/feature/work 2>/dev/null)" \
   = "$(git -C "$project" rev-parse HEAD)" ]; then
   fail "S86 — the old cwd-dependent push form no longer fails to push from elsewhere; the regression proof is stale"
 fi

@@ -30,7 +30,7 @@ p = sys.argv[1]
 s = open(p).read()
 kop = "## Guidance"
 i = s.index(kop) + len(kop)
-open(p, "w").write(s[:i] + "\nEen bewust afwijkende invulhulp voor deze test.\n")
+open(p, "w").write(s[:i] + "\nA deliberately different fill-in hint for this test.\n")
 PY
 
 # When: ./check runs.

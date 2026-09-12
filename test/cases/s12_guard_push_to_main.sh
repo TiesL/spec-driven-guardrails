@@ -21,7 +21,7 @@ fi
 # depending on where you are.
 on_feature="$(fresh_project on-feature)"
 git -C "$on_feature" commit -q --allow-empty -m start
-git -C "$on_feature" checkout -q -b feature/werk
+git -C "$on_feature" checkout -q -b feature/work
 
 on_main="$(fresh_project on-main)"
 git -C "$on_main" commit -q --allow-empty -m start
@@ -69,7 +69,7 @@ geblokkeerd "push origin HEAD on main" "git push origin HEAD"       "$on_main"
 toegestaan "push origin HEAD on feature" "git push origin HEAD"     "$on_feature"
 toegestaan "bare push on feature"        "git push"                 "$on_feature"
 toegestaan "push -u origin HEAD"         "git push -u origin HEAD"  "$on_feature"
-toegestaan "push to a feature branch" "git push origin feature/werk" "$on_feature"
+toegestaan "push to a feature branch" "git push origin feature/work" "$on_feature"
 toegestaan "push to maintenance"        "git push origin maintenance"  "$on_feature"
 
 test_done

@@ -67,7 +67,7 @@ geblokkeerd "with two env prefixes"  "FOO=bar GIT_TRACE=1 git clean -fd"
 toegestaan "reset without --hard"    "git reset HEAD~1"
 toegestaan "reset --soft"           "git reset --soft HEAD~1"
 toegestaan "clean -n (dry run)"     "git clean -n"
-toegestaan "branch -d (safe)"     "git branch -d feature/klaar"
+toegestaan "branch -d (safe)"     "git branch -d feature/done"
 toegestaan "branch without flag"     "git branch"
 toegestaan "checkout of a branch" "git checkout main"
 toegestaan "checkout -b"            "git checkout -b feature/nieuw"
@@ -75,7 +75,7 @@ toegestaan "restore of a single file" "git restore src/app.ts"
 toegestaan "checkout of a single file" "git checkout -- src/app.ts"
 toegestaan "status"                 "git status"
 toegestaan "not a git command"      "rm -rf build"
-toegestaan "the text inside a string" "echo 'gebruik nooit git reset --hard'"
+toegestaan "the text inside a string" "echo 'never use git reset --hard'"
 
 # Only segments that start with `git` are evaluated. Without that requirement,
 # every command whose second word happens to be a git subcommand would be

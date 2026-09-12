@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project disabled)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 cat > "$project/WORKFLOW-ADOPTIE.md" <<EOF
 # Adoption of shared workflow changes
@@ -40,7 +40,7 @@ status=$?
 # filename, new ID, new value.
 project2="$(fresh_project disabled-new)"
 git -C "$project2" commit -q --allow-empty -m start
-git -C "$project2" checkout -q -b feature/werk
+git -C "$project2" checkout -q -b feature/work
 
 cat > "$project2/WORKFLOW-ADOPTION.md" <<EOF
 # Adoption of shared workflow changes

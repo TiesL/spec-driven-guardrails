@@ -36,22 +36,22 @@ for geval in no-order name-differs; do
 
   case "$geval" in
     no-order)
-      doel="$repo/nfr/spec-proef.md"
+      target="$repo/nfr/spec-proef.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$doel" ;;
+        geldig_blok; } > "$target" ;;
     name-differs)
-      doel="$repo/nfr/spec-verkeerd-genoemd.md"
+      target="$repo/nfr/spec-wrongly-named.md"
       { printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$doel" ;;
+        geldig_blok; } > "$target" ;;
   esac
 
-  uitvoer="$("$repo/check" --no-tests "$repo" 2>&1)"
+  output="$("$repo/check" --no-tests "$repo" 2>&1)"
   status=$?
 
   if [ "$status" -eq 0 ]; then
     fail "S41 — check succeeded on a broken register file ($geval)"
   fi
-  case "$uitvoer" in
+  case "$output" in
     *nfr/spec-*) ;;
     *) fail "S41 — the message does not name the file in question ($geval)" ;;
   esac

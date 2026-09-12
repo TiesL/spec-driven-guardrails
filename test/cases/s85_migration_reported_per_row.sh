@@ -21,8 +21,8 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-conventie | ja | 2026-01-01 | verouderd antwoord |
-| deploy-guards | nee | 2026-01-01 | verouderd antwoord |
+| ci-conventie | ja | 2026-01-01 | outdated answer |
+| deploy-guards | nee | 2026-01-01 | outdated answer |
 EOF
 
 # A fake gh that reports no matching existing issue and records the exact

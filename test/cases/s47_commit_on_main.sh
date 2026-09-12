@@ -26,13 +26,13 @@ git -C "$on_main" branch -M main
 
 on_feature="$(fresh_project on-feature)"
 git -C "$on_feature" commit -q --allow-empty -m start
-git -C "$on_feature" checkout -q -b feature/werk
+git -C "$on_feature" checkout -q -b feature/work
 
 # A repo without even a single commit: HEAD does not yet exist.
 fresh="$(fresh_project fresh)"
 
 # Then: committing on main is blocked.
-[ "$(langs_guard "$on_main" 'git commit -m "iets"')" = "2" ] \
+[ "$(langs_guard "$on_main" 'git commit -m "something"')" = "2" ] \
   || fail "S47 — committing on main was not blocked"
 [ "$(langs_guard "$on_main" 'git commit --amend')" = "2" ] \
   || fail "S47 — amending on main was not blocked"
@@ -51,7 +51,7 @@ grep -qi 'come along unchanged\|nothing gets lost' "$message" \
   || fail "S47 — the message does not say that the changes come along"
 
 # And: on a feature branch, committing just proceeds.
-[ "$(langs_guard "$on_feature" 'git commit -m "iets"')" != "2" ] \
+[ "$(langs_guard "$on_feature" 'git commit -m "something"')" != "2" ] \
   || fail "S47 — committing on a feature branch was blocked"
 
 # And: the very first commit of a new project is on main by definition.

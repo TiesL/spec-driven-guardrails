@@ -31,7 +31,7 @@ cat > "$source" <<'MD'
 
 - **Question:** Vergeten predicaat, maar dan ná een entry die er wél een heeft?
 
-## nog-een-goede
+## another-good-one
 
 - **Applies if:** always
 
@@ -72,7 +72,7 @@ grep -q 'vergeten-na-goede' "$message" || fail "S6 — no warning for a broken e
 grep -q 'vergeten-als-laatste' "$message" || fail "S6 — no warning for a broken entry as the last one in the file"
 
 # And the good entries are all processed.
-grep -qx 'nog-een-goede' "$seen" || fail "S6 — nog-een-goede was not processed"
+grep -qx 'another-good-one' "$seen" || fail "S6 — another-good-one was not processed"
 
 # And: the warning blocks nothing.
 [ "$status" -eq 0 ] || fail "S6 — iterate_entries gave status $status; a warning must not block"

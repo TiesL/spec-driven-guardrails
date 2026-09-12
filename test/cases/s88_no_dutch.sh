@@ -24,20 +24,20 @@ repo="$(sandbox_copy_repo)"
 # green because nothing exercises it (red-before-green for this new
 # mechanism itself).
 echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/README.md"
-output_dirty="$("$script" "$repo" 2>&1)"; status_vuil=$?
-[ "$status_vuil" -ne 0 ] || fail "S88 — a real Dutch sentence in README.md was not caught"
+output_dirty="$("$script" "$repo" 2>&1)"; status_dirty=$?
+[ "$status_dirty" -ne 0 ] || fail "S88 — a real Dutch sentence in README.md was not caught"
 assert_contains "S88 — the offending file is named" "README.md" "$output_dirty"
 
 # And: the same sentence in a permanently excluded file (layer C) is not
 # reported — the exclusion is by design, not a gap.
 echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/ARCHITECTURE.md"
-output_layer_c="$("$script" "$repo" 2>&1)"; status_laag_c=$?
+output_layer_c="$("$script" "$repo" 2>&1)"; status_layer_c=$?
 case "$output_layer_c" in
   *"ARCHITECTURE.md"*) fail "S88 — a permanently excluded (layer C) file was reported anyway" ;;
 esac
 # README.md's own violation must still be reported — the exclusion list
 # doesn't accidentally swallow everything.
-[ "$status_laag_c" -ne 0 ] || fail "S88 — README.md's violation disappeared once another file was excluded"
+[ "$status_layer_c" -ne 0 ] || fail "S88 — README.md's violation disappeared once another file was excluded"
 
 # And: a file tracked as a pending exclusion is not reported either — a
 # real, already-tracked gap isn't silently fixed by this check pretending

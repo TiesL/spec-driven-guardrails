@@ -12,7 +12,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project on-feature)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/iets
+git -C "$project" checkout -q -b feature/something
 
 output="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>/dev/null)"
 error="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"

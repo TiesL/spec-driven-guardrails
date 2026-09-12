@@ -74,8 +74,8 @@ esac
 
 # AC4 — the gate does not fail blockingly without gh.
 path_without_gh="$(path_without_gh)"
-output_no_gh="$(PATH="$path_without_gh" "$script" "$project" 2>&1)"; status_geengh=$?
-[ "$status_geengh" -eq 0 ] || fail "AC4 — without gh the gate gave exit $status_geengh instead of 0"
+output_no_gh="$(PATH="$path_without_gh" "$script" "$project" 2>&1)"; status_no_gh=$?
+[ "$status_no_gh" -eq 0 ] || fail "AC4 — without gh the gate gave exit $status_no_gh instead of 0"
 assert_contains "AC4 — a warning appears without gh" "warning" "$output_no_gh"
 
 test_done

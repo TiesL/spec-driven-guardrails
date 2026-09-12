@@ -18,7 +18,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project value-flags)"
 git -C "$project" commit -q --allow-empty -m start
-git -C "$project" checkout -q -b feature/werk
+git -C "$project" checkout -q -b feature/work
 
 # The fake gh only accepts "pr view --json comments" (no target argument) —
 # any other target (such as the text from --body) fails.
