@@ -52,7 +52,7 @@ answered() {
 
 pending=()
 
-# Callback for iterate_entries. `standaard` is deliberately unused here: an
+# Callback for iterate_entries. `default` is deliberately unused here: an
 # unanswered question is pending regardless of whether it started as `yes`
 # or `question`. adopt.sh does do something with that same field — see the
 # callback there.
