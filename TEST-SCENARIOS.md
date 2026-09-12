@@ -1021,3 +1021,16 @@ something new is being added.
   already recorded" treatment W42/#114 gave the `ja`/`nee` format
 - And: `pre-merge-review`'s `scope.sh` still resolves a readable heading
   for the row via the alias, instead of falling back to the bare ID
+
+### S90 — CHANGES.md.momentopname stays in step with CHANGES.md
+**Covers:** F2
+- Given: `test/fixtures/nulmeting/CHANGES.md.momentopname`, the frozen
+  human-readable reference copy of `CHANGES.md` from when the golden sets
+  were measured
+- When: `./check` runs
+- Then: the snapshot is byte-identical to the live `CHANGES.md` — the same
+  smoke-detector treatment S66 already gives `nfr.momentopname/`
+- And: a diverged snapshot fails loudly, naming the exact diff, instead of
+  drifting silently (found via #160: 562 lines of undetected drift since
+  the snapshot was last refreshed in #127, long before three later
+  translation PRs rewrote the live file)
