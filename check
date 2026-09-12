@@ -213,10 +213,10 @@ fi
 if [ -r "$doel/lib/nfr.sh" ] && [ -d "$doel/nfr" ]; then
   # shellcheck source=lib/nfr.sh
   . "$doel/lib/nfr.sh"
-  ontbrekend="$(nfr_ontbrekende_subsectie "$doel/nfr" "$doel")"
-  if [ -n "$ontbrekend" ]; then
+  missing_subsections="$(nfr_missing_subsection "$doel/nfr" "$doel")"
+  if [ -n "$missing_subsections" ]; then
     echo "check: NFR subsections"
-    printf '%s\n' "$ontbrekend" | sed 's/^/  warning: /' >&2
+    printf '%s\n' "$missing_subsections" | sed 's/^/  warning: /' >&2
   fi
 fi
 

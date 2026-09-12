@@ -278,36 +278,36 @@ nfr_drift() {
 # before its PRD.md subsection was actually written, and the gap only
 # stayed visible because someone happened to add a Notes explanation
 # pointing at an open issue — a human habit, not a mechanical check.
-# Deliberately a warning, not an error (see nfr_ontbrekende_subsectie's
+# Deliberately a warning, not an error (see nfr_missing_subsection's
 # caller in `check`): a freshly-answered "yes" deserves a short, visible
 # grace period, same spirit as check-traceability.sh's own soft warnings.
 #
 # Prints one line per missing subsection: "<id>: no PRD.md subsection for
 # '<heading>' yet". Never suppressed by a Notes explanation (AC3) — that's
 # the point: the check no longer depends on someone adding one.
-nfr_ontbrekende_subsectie() {
+nfr_missing_subsection() {
   local nfr_map="$1" project_dir="$2"
-  local antwoorden="$project_dir/WORKFLOW-ADOPTION.md"
-  [ -f "$antwoorden" ] || antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
-  [ -f "$antwoorden" ] || return 0
+  local answers="$project_dir/WORKFLOW-ADOPTION.md"
+  [ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
+  [ -f "$answers" ] || return 0
   local prd="$project_dir/PRD.md"
   [ -f "$prd" ] || return 0
 
-  local id antwoord kop anker
-  while IFS='|' read -r _ ruw_id ruw_antwoord _; do
-    id="$(printf '%s' "$ruw_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  local id answer heading anchor
+  while IFS='|' read -r _ raw_id raw_answer _; do
+    id="$(printf '%s' "$raw_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
     case "$id" in spec-*) ;; *) continue ;; esac
-    antwoord="$(printf '%s' "$ruw_antwoord" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-    [ "$antwoord" = "yes" ] || [ "$antwoord" = "ja" ] || continue
+    answer="$(printf '%s' "$raw_answer" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [ "$answer" = "yes" ] || [ "$answer" = "ja" ] || continue
 
-    anker="<!-- nfr: $id -->"
-    grep -qF "$anker" "$prd" 2>/dev/null && continue
+    anchor="<!-- nfr: $id -->"
+    grep -qF "$anchor" "$prd" 2>/dev/null && continue
 
-    kop="$(nfr_huidig_id "$id")"
-    kop="$(nfr_veld "$nfr_map/$kop.md" heading)"
-    [ -n "$kop" ] || kop="$id"
-    grep -qxF "### $kop" "$prd" 2>/dev/null && continue
+    heading="$(nfr_huidig_id "$id")"
+    heading="$(nfr_veld "$nfr_map/$heading.md" heading)"
+    [ -n "$heading" ] || heading="$id"
+    grep -qxF "### $heading" "$prd" 2>/dev/null && continue
 
-    echo "$id: no PRD.md subsection for '$kop' yet"
-  done < "$antwoorden"
+    echo "$id: no PRD.md subsection for '$heading' yet"
+  done < "$answers"
 }

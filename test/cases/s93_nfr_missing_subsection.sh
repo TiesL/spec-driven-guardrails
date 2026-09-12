@@ -45,7 +45,7 @@ EOF
 uitvoer="$(
   # shellcheck source=../../lib/nfr.sh
   . "$repo/lib/nfr.sh"
-  nfr_ontbrekende_subsectie "$repo/nfr" "$project"
+  nfr_missing_subsection "$repo/nfr" "$project"
 )"
 
 # Then: both yes-answered, subsection-less rows are named...
