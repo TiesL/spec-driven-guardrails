@@ -271,3 +271,43 @@ nfr_drift() {
   rm -f "$ingecheckt" "$gegenereerd"
   return "$status"
 }
+
+# #134 — Warns about a yes-answered spec-* row whose PRD.md subsection
+# doesn't exist yet. Observed during tennis-invoicing's adoption catch-up
+# (PR TiesL/tennis-invoicing#18/#19): a row was answered "yes" a day
+# before its PRD.md subsection was actually written, and the gap only
+# stayed visible because someone happened to add a Notes explanation
+# pointing at an open issue — a human habit, not a mechanical check.
+# Deliberately a warning, not an error (see nfr_missing_subsection's
+# caller in `check`): a freshly-answered "yes" deserves a short, visible
+# grace period, same spirit as check-traceability.sh's own soft warnings.
+#
+# Prints one line per missing subsection: "<id>: no PRD.md subsection for
+# '<heading>' yet". Never suppressed by a Notes explanation (AC3) — that's
+# the point: the check no longer depends on someone adding one.
+nfr_missing_subsection() {
+  local nfr_map="$1" project_dir="$2"
+  local answers="$project_dir/WORKFLOW-ADOPTION.md"
+  [ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
+  [ -f "$answers" ] || return 0
+  local prd="$project_dir/PRD.md"
+  [ -f "$prd" ] || return 0
+
+  local id answer heading anchor
+  while IFS='|' read -r _ raw_id raw_answer _; do
+    id="$(printf '%s' "$raw_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    case "$id" in spec-*) ;; *) continue ;; esac
+    answer="$(printf '%s' "$raw_answer" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [ "$answer" = "yes" ] || [ "$answer" = "ja" ] || continue
+
+    anchor="<!-- nfr: $id -->"
+    grep -qF "$anchor" "$prd" 2>/dev/null && continue
+
+    heading="$(nfr_huidig_id "$id")"
+    heading="$(nfr_veld "$nfr_map/$heading.md" heading)"
+    [ -n "$heading" ] || heading="$id"
+    grep -qxF "### $heading" "$prd" 2>/dev/null && continue
+
+    echo "$id: no PRD.md subsection for '$heading' yet"
+  done < "$answers"
+}

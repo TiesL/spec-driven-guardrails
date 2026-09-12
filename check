@@ -204,6 +204,22 @@ if [ -x "$doel/check-traceability.sh" ]; then
   fi
 fi
 
+# --- 3e. Yes-answered NFR without its PRD.md subsection yet (#134) ----------
+# A warning, not an error: a row answered "yes" a moment ago deserves a
+# short, visible grace period before its PRD.md subsection exists. Without
+# this, the gap only stays visible if someone happens to add a Notes
+# explanation by hand — observed missing that discipline during
+# tennis-invoicing's adoption catch-up (PR TiesL/tennis-invoicing#18/#19).
+if [ -r "$doel/lib/nfr.sh" ] && [ -d "$doel/nfr" ]; then
+  # shellcheck source=lib/nfr.sh
+  . "$doel/lib/nfr.sh"
+  missing_subsections="$(nfr_missing_subsection "$doel/nfr" "$doel")"
+  if [ -n "$missing_subsections" ]; then
+    echo "check: NFR subsections"
+    printf '%s\n' "$missing_subsections" | sed 's/^/  warning: /' >&2
+  fi
+fi
+
 # --- 4. shellcheck -----------------------------------------------------------
 # Warning, not requiring: not every machine has it, and a missing linter
 # must not turn a green build red.
