@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# skills/pre-merge-review/scenario-poort.sh — Link 2 (scenario -> issue) as
+# skills/pre-merge-review/scenario-gate.sh — Link 2 (scenario -> issue) as
 # a gate in pre-merge-review (W20, F13 decision d).
 #
 # Usage:
-#   scenario-poort.sh <project_dir>
+#   scenario-gate.sh <project_dir>
 #
 # For every scenario ID from <project_dir>/TEST-SCENARIOS.md: is it named
 # in the **Covers:** field of at least one issue (open or closed)? Only
@@ -28,7 +28,7 @@
 
 set -uo pipefail
 
-project_dir="${1:?usage: scenario-poort.sh <project_dir>}"
+project_dir="${1:?usage: scenario-gate.sh <project_dir>}"
 scenarios="$project_dir/TEST-SCENARIOS.md"
 
 [ -f "$scenarios" ] || exit 0
@@ -40,14 +40,14 @@ scenario_ids="$(grep -oE '^#+[[:space:]]+[A-Z]{1,2}[0-9]+[a-z]?([[:space:]]|$)' 
 [ -n "$scenario_ids" ] || exit 0
 
 if ! command -v gh >/dev/null 2>&1; then
-  echo "warning: scenario-poort can't find gh and is skipping link 2." >&2
+  echo "warning: scenario-gate can't find gh and is skipping link 2." >&2
   exit 0
 fi
 
 issuebodies="$(gh issue list --state all --limit 500 --json body --jq '.[].body' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
-  echo "warning: scenario-poort couldn't consult issues (no network or no access) and is skipping link 2." >&2
+  echo "warning: scenario-gate couldn't consult issues (no network or no access) and is skipping link 2." >&2
   echo "$issuebodies" >&2
   exit 0
 fi
