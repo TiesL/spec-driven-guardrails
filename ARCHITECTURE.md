@@ -1,141 +1,141 @@
-# Architectuurafweging — Installatiemodel voor een tweede gebruiker (W37, #79)
+# Architecture decision — Install model for a second user (W37, #79)
 
-Dit document legt vast *waarom* het systeem is zoals het is. `PRD.md` beschrijft
-wat het moet doen; hier staat welke structurele keuzes daaronder liggen, welke
-alternatieven zijn afgewogen, en wanneer een keuze opnieuw tegen het licht moet.
+This document records *why* the system is the way it is. `PRD.md` describes
+what it must do; this is where the structural choices underneath that live,
+which alternatives were weighed, and when a choice should be revisited.
 
-Niet elk besluit hoort hier. Wel: platformkeuzes, de indeling in lagen of
-componenten, waar gegevens eigenaar van zijn, en het toevoegen van een
-substantiële dependency. Niet: hoe één functie is geschreven.
-
----
-
-## Het besluit
-
-**Besloten op 2026-09-09: een nieuw, git-only entrypoint `install.sh` pint een
-checkout op een getagde release, los van `adopt.sh`.**
-
-`install.sh` draait ná een handmatige `git clone`, vanuit die kloon zelf. Hij
-valideert een schone werkmap, checkt een opgegeven (of anders de laatste) tag
-uit, en meldt de `SPEC_DRIVEN_GUARDRAILS_DIR`-regel die de gebruiker in zijn
-shell-profiel zet. Hij adopteert geen project — dat blijft `adopt.sh`'s taak.
-Ties' eigen multi-machine-gebruik (clone, altijd `main` volgen) verandert niet:
-dit is een tweede, expliciet gekozen pad, geen vervanging.
+Not every decision belongs here. Yes: platform choices, the split into
+layers or components, who owns which data, and adding a substantial
+dependency. No: how one function is written.
 
 ---
 
-## Beoordelingscriteria
+## The decision
 
-| Criterium | Waarom dit telt |
+**Decided on 2026-09-09: a new, git-only entrypoint `install.sh` pins a
+checkout to a tagged release, separate from `adopt.sh`.**
+
+`install.sh` runs after a manual `git clone`, from inside that clone
+itself. It validates a clean working directory, checks out a given (or
+otherwise the latest) tag, and reports the `SPEC_DRIVEN_GUARDRAILS_DIR`
+line the user puts in their shell profile. It doesn't adopt a project —
+that stays `adopt.sh`'s job. Ties' own multi-machine usage (clone, always
+follow `main`) doesn't change: this is a second, explicitly chosen path,
+not a replacement.
+
+---
+
+## Evaluation criteria
+
+| Criterion | Why it counts |
 |---|---|
-| Auditeerbaarheid | Dit repo's hele stijl is doorleesbare bash zonder verrassingen (geen `eval`, faal-open bij twijfel). Een installatiemechanisme dat daaraan tornt ondermijnt precies het vertrouwen dat de rest van het repo opbouwt. |
-| Hergebruik boven nieuw bouwen | W29/#53 besluit 5 was expliciet: bouw op W22's bestaande tag-/`CHANGELOG.md`-mechanisme, vind niets opnieuw uit. |
-| Scheiding van verantwoordelijkheden | "Deze checkout op versie X zetten" en "dit project aan die checkout koppelen" zijn twee verschillende vragen met verschillende faalmodi (een verkeerde tag vs. een verkeerd project) — vermengen maakt beide moeilijker te redeneren. |
-| Passend bij de doelgroep | W37's "tweede gebruiker" is iemand die al Claude Code én git gebruikt (dezelfde workflow wordt geadopteerd) — geen behoefte aan een installatiemechanisme voor wie geen git heeft. |
+| Auditability | This repo's whole style is readable-through bash with no surprises (no `eval`, fail-open when in doubt). An install mechanism that undermines that would undercut exactly the trust the rest of the repo builds. |
+| Reuse over building new | W29/#53 decision 5 was explicit: build on W22's existing tag/`CHANGELOG.md` mechanism, don't reinvent anything. |
+| Separation of concerns | "Pin this checkout to version X" and "link this project to that checkout" are two different questions with different failure modes (a wrong tag vs. a wrong project) — mixing them makes both harder to reason about. |
+| Fits the audience | W37's "second user" is someone already using Claude Code and git (the same workflow is being adopted) — no need for an install mechanism for someone without git. |
 
 ---
 
-## Afgewogen opties
+## Options weighed
 
-### Optie 1 — Alleen documentatie, geen nieuw script
-De consument leest een nieuwe README-sectie en voert de kloon-, checkout- en
-env-var-stappen zelf handmatig uit. Kleinste voetafdruk, nul nieuwe code om te
-onderhouden. Nadeel: drie handmatige stappen zijn drie plekken om een tag-naam
-te verkeerd te typen of de env var te vergeten, zonder enige validatie
-(bijvoorbeeld een vieze werkmap die stilzwijgend wordt overschreven door
-`git checkout`).
+### Option 1 — Documentation only, no new script
+The consumer reads a new README section and carries out the clone, checkout,
+and env-var steps manually. Smallest footprint, zero new code to maintain.
+Downside: three manual steps are three places to mistype a tag name or
+forget the env var, with no validation at all (for example a dirty working
+directory silently overwritten by `git checkout`).
 
-### Optie 2 — Convenience-entrypoint `install.sh` (gekozen)
-Automatiseert checkout + validatie vlak nadat de gebruiker al gekloond heeft.
-Voegt precies twee nieuwe, toetsbare garanties toe die optie 1 niet geeft: een
-vieze werkmap wordt geweigerd in plaats van overschreven, en een onbekende tag
-faalt met een duidelijke melding in plaats van een cryptische git-foutmelding.
+### Option 2 — Convenience entrypoint `install.sh` (chosen)
+Automates checkout + validation right after the user has already cloned.
+Adds exactly two new, testable guarantees option 1 doesn't give: a dirty
+working directory is refused instead of overwritten, and an unknown tag
+fails with a clear message instead of a cryptic git error.
 
-### Optie 3 — `curl | bash`-zelfinstallatie
-Eén commando, geen voorafgaande kloon nodig. Afgewezen: voert externe code uit
-zonder dat de gebruiker hem eerst leest — precies het patroon dat dit repo's
-eigen guardrails (geen `eval`, expliciete faalpaden) elders bestrijden. Zou ook
-een apart, klein hostingprobleem oplossen (waar staat het script vóór de kloon)
-dat de andere opties niet hebben.
+### Option 3 — `curl | bash` self-install
+One command, no prior clone needed. Rejected: runs external code without
+the user reading it first — exactly the pattern this repo's own guardrails
+(no `eval`, explicit failure paths) fight elsewhere. Would also solve a
+separate, small hosting problem (where does the script live before the
+clone) that the other options don't have.
 
-### Optie 4 — Gepakte release-artefacten (tarball/zip zonder git)
-GitHub's automatische source-archief per tag zou dit deels gratis geven. Maar
-de doelgroep heeft al git (zie criterium hierboven), en een apart
-artefactformaat onderhouden voor een niet-bestaande behoefte is precies het
-soort speculatieve bouwwerk dat dit repo's `rule-of-three`-principe elders
-afwijst.
-
----
-
-## Vergelijking en keuze
-
-Optie 2 wint: het lost de twee concrete faalmodi op die optie 1 openlaat
-(stille dataverlies bij een vieze werkmap, onduidelijke fouten bij een
-verkeerde tag), zonder de auditeerbaarheid van optie 3 op te geven of de
-speculatieve complexiteit van optie 4 te introduceren. Wat je ervoor inlevert:
-een extra script om te onderhouden, en de consument moet nog steeds zelf
-`git clone` kunnen — dat is bewust aanvaard, zie de doelgroep-aanname
-hierboven.
+### Option 4 — Packaged release artifacts (tarball/zip without git)
+GitHub's automatic source archive per tag would give this partly for free.
+But the audience already has git (see the criterion above), and
+maintaining a separate artifact format for a need that doesn't exist yet is
+exactly the kind of speculative building this repo's own `rule-of-three`
+principle rejects elsewhere.
 
 ---
 
-## Architectuureisen die hieruit volgen
+## Comparison and choice
 
-### A1 — Nooit schrijven op een vieze werkmap
-`install.sh` controleert `git status --porcelain` vóór elke `git checkout` en
-weigert bij niet-gecommitte wijzigingen. Geschonden wordt dit zichtbaar zodra
-een toekomstige wijziging de checkout-stap vóór de vuil-check zet.
-
-### A2 — `install.sh` roept `adopt.sh` nooit aan
-De twee scripts hebben elk hun eigen faalmodus en hun eigen doelmap (de
-gedeelde checkout zelf, respectievelijk een geadopteerd project). Ze
-samenvoegen zou een fout in de ene stap onherkenbaar maken in de andere.
-
-### A3 — Geen extern uitgevoerde code
-`install.sh` haalt nooit code op om die vervolgens uit te voeren (geen
-`curl | bash`, geen `eval` van opgehaalde inhoud). Alles wat draait, staat al
-in de gekloonde checkout en is dus door de gebruiker leesbaar vóór het draait.
+Option 2 wins: it solves the two concrete failure modes option 1 leaves
+open (silent data loss on a dirty working directory, unclear errors on a
+wrong tag), without giving up option 3's auditability or introducing option
+4's speculative complexity. What you give up for it: one extra script to
+maintain, and the consumer still needs to be able to run `git clone`
+themselves — accepted deliberately, see the audience assumption above.
 
 ---
 
-## Systeemgrenzen en eigenaarschap
+## Architecture requirements that follow from this
 
-- **`install.sh`** is eigenaar van "op welke versie staat déze checkout" — hij
-  wijzigt uitsluitend git-state binnen de eigen map (`git fetch --tags`,
+### A1 — Never write to a dirty working directory
+`install.sh` checks `git status --porcelain` before every `git checkout`
+and refuses on uncommitted changes. This is visibly violated the moment a
+future change puts the checkout step before the dirty check.
+
+### A2 — `install.sh` never calls `adopt.sh`
+The two scripts each have their own failure mode and their own target
+directory (the shared checkout itself, versus an adopted project). Merging
+them would make a bug in one step unrecognizable in the other.
+
+### A3 — No externally fetched code execution
+`install.sh` never fetches code only to then run it (no `curl | bash`, no
+`eval` of fetched content). Everything that runs already lives in the
+cloned checkout and is therefore readable by the user before it runs.
+
+---
+
+## System boundaries and ownership
+
+- **`install.sh`** owns "which version is *this* checkout on" — it only
+  changes git state within its own directory (`git fetch --tags`,
   `git checkout <tag>`).
-- **`adopt.sh`** blijft eigenaar van "welk project is aan welke checkout
-  gekoppeld" — ongewijzigd door dit besluit.
-- De twee communiceren uitsluitend via `SPEC_DRIVEN_GUARDRAILS_DIR`, een
-  omgevingsvariabele die de gebruiker zelf zet — geen directe aanroep tussen
-  de scripts (zie A2).
+- **`adopt.sh`** stays the owner of "which project is linked to which
+  checkout" — unchanged by this decision.
+- The two communicate only via `SPEC_DRIVEN_GUARDRAILS_DIR`, an environment
+  variable the user sets themselves — no direct call between the scripts
+  (see A2).
 
 ---
 
 ## Dependencies
 
-Geen nieuwe. `install.sh` gebruikt uitsluitend `git`, al een vereiste voor
-elke checkout van dit repo.
+None new. `install.sh` uses only `git`, already a requirement for any
+checkout of this repo.
 
 ---
 
-## Wanneer we deze keuze zouden herzien
+## When we would revisit this choice
 
-- Als W35 (#59) een doelgroep beschrijft die geen git heeft — dan wordt optie
-  4 (of een variant) alsnog nodig, niet als vervanging maar als aanvulling.
-- Als het aantal handmatige stappen vóór `install.sh` (kloon, `cd`, script
-  uitvoeren) zelf een aantoonbare bron van fouten blijkt — dan is optie 3
-  (met een expliciete, leesbare tussenstap, geen blinde `curl | bash`) het
-  heroverwegen waard.
+- If W35 (#59) describes an audience without git — then option 4 (or a
+  variant) becomes needed after all, not as a replacement but as an
+  addition.
+- If the number of manual steps before `install.sh` (clone, `cd`, run the
+  script) itself proves to be a demonstrable source of errors — then option
+  3 (with an explicit, readable intermediate step, not a blind
+  `curl | bash`) is worth reconsidering.
 
 ---
 
-## Openstaand na dit document
+## Still open after this document
 
-- **Beslist (2026-09-09): geen formele GitHub Release voor de bestaande tag
-  vóór epic #52 zelf afgerond is.** `install.sh` en de bare git-tag werken
-  daar niet minder om — een release nu zou alleen een versie discoverable
-  maken die nog niet is wat epic #52 belooft (nog niet vertaald, nog niet
-  ingedikt, nog geen voorpagina). Een `gh release create` per toekomstige
-  tag, met notities, blijft dus open totdat de laatste werkitems onder #52
-  (W33-W35) landen — dan pas is er iets dat een tweede gebruiker ook echt
-  zou moeten willen pinnen.
+- **Decided (2026-09-09): no formal GitHub Release for the existing tag
+  before epic #52 itself is done.** `install.sh` and the bare git tag work
+  no less well for it — a release now would only make a version
+  discoverable that isn't yet what epic #52 promises (not yet translated,
+  not yet condensed, no front page yet). A `gh release create` per future
+  tag, with notes, therefore stays open until the last work items under
+  #52 (W33-W35) land — only then is there something a second user should
+  actually want to pin.
