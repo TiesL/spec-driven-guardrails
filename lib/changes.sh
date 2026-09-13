@@ -16,9 +16,9 @@ predicate_true() {
   case "$predicate" in
     always)
       return 0 ;;
-    heeft-package-json)
+    has-package-json)
       [ -f "$project_dir/package.json" ] ;;
-    heeft-deploy-script)
+    has-deploy-script)
       [ -f "$project_dir/package.json" ] &&
         grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json" ;;
     *)
