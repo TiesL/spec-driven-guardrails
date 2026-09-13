@@ -10,50 +10,50 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-geldig_blok() {
+valid_block() {
   cat <<'MD'
 ## Question
 
-Is dit kenmerk relevant?
+Is this characteristic relevant?
 
 ## Yes means
 
-`PRD.md` beantwoordt de subsectie "Proef".
+`PRD.md` answers the "Test" subsection.
 
 ## Guidance
 
-Waar gaat dit over?
+What is this about?
 MD
 }
 
 # Each case is a fully usable file with a single defect. Without a check,
 # such a file disappears from all consumers at once, and then the
 # drift check sees nothing: both sides are missing it after all.
-for geval in no-order name-differs; do
-  repo="$SANDBOX/repo-$geval"
+for case in no-order name-differs; do
+  repo="$SANDBOX/repo-$case"
   mkdir -p "$repo"
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
 
-  case "$geval" in
+  case "$case" in
     no-order)
-      target="$repo/nfr/spec-proef.md"
-      { printf -- '---\nid: spec-proef\nheading: Proef\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$target" ;;
+      target="$repo/nfr/spec-test.md"
+      { printf -- '---\nid: spec-test\nheading: Test\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
+        valid_block; } > "$target" ;;
     name-differs)
       target="$repo/nfr/spec-wrongly-named.md"
-      { printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-        geldig_blok; } > "$target" ;;
+      { printf -- '---\nid: spec-test\nheading: Test\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
+        valid_block; } > "$target" ;;
   esac
 
   output="$("$repo/check" --no-tests "$repo" 2>&1)"
   status=$?
 
   if [ "$status" -eq 0 ]; then
-    fail "S41 — check succeeded on a broken register file ($geval)"
+    fail "S41 — check succeeded on a broken register file ($case)"
   fi
   case "$output" in
     *nfr/spec-*) ;;
-    *) fail "S41 — the message does not name the file in question ($geval)" ;;
+    *) fail "S41 — the message does not name the file in question ($case)" ;;
   esac
 done
 
@@ -63,19 +63,19 @@ done
 repo="$SANDBOX/repo-crlf"
 mkdir -p "$repo"
 (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' -cf - .) | (cd "$repo" && tar -xf -)
-{ printf -- '---\nid: spec-proef\nheading: Proef\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
-  geldig_blok; } | sed 's/$/\r/' > "$repo/nfr/spec-proef.md"
+{ printf -- '---\nid: spec-test\nheading: Test\norder: 16\ndefault: yes\napplies-if: always\nproduction-gate: no\nstatus: active\n---\n\n'
+  valid_block; } | sed 's/$/\r/' > "$repo/nfr/spec-test.md"
 
 # shellcheck source=../../lib/nfr.sh
 . "$repo/lib/nfr.sh"
 
-[ "$(nfr_field "$repo/nfr/spec-proef.md" id)" = "spec-proef" ] \
+[ "$(nfr_field "$repo/nfr/spec-test.md" id)" = "spec-test" ] \
   || fail "S41 — CRLF file: the id is not being read"
-[ "$(nfr_field "$repo/nfr/spec-proef.md" order)" = "16" ] \
+[ "$(nfr_field "$repo/nfr/spec-test.md" order)" = "16" ] \
   || fail "S41 — CRLF file: the order is not being read"
 
 block="$SANDBOX/block-crlf.txt"
 nfr_block "$repo/nfr" > "$block"
-grep -q 'spec-proef' "$block" || fail "S41 — CRLF file disappeared from the generated block"
+grep -q 'spec-test' "$block" || fail "S41 — CRLF file disappeared from the generated block"
 
 test_done

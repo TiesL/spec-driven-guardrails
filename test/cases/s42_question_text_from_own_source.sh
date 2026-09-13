@@ -23,35 +23,35 @@ while IFS= read -r line; do
     *) continue ;;
   esac
   id="${line#  - }"; id="${id%% —*}"
-  getoond="${line#*— }"
+  shown="${line#*— }"
 
   # The expected text comes from the source where this ID is defined.
-  verwacht="$(awk -v zoek="## $id" '
-    $0 == zoek { in_entry = 1; next }
+  expected="$(awk -v search="## $id" '
+    $0 == search { in_entry = 1; next }
     in_entry && /\*\*Question:\*\*/ { sub(/.*\*\*Question:\*\* */, ""); print; exit }
     in_entry && /^## / { exit }
   ' "$TEST_REPO_ROOT/CHANGES.md")"
-  bron="CHANGES.md"
-  if [ -z "$verwacht" ]; then
+  source="CHANGES.md"
+  if [ -z "$expected" ]; then
     # Deliberately not via nfr_question(): that is the function being tested here.
     # If this oracle used that same function, expectation and reality would
     # move together and the test would measure nothing.
-    verwacht="$(awk '
+    expected="$(awk '
       /^## Question$/ { in_sec = 1; next }
       in_sec && /^## / { exit }
       in_sec { print }
     ' "$TEST_REPO_ROOT/nfr/$id.md" 2>/dev/null | sed '/^$/d' | tr '\n' ' ' | sed 's/ *$//')"
-    bron="nfr/$id.md"
+    source="nfr/$id.md"
   fi
 
-  if [ -z "$verwacht" ]; then
+  if [ -z "$expected" ]; then
     fail "S42 — no source found for $id"
     continue
   fi
-  if [ "$getoond" != "$verwacht" ]; then
-    fail "S42 — $id does not show the question from $bron"
-    echo "    getoond:  $getoond" >&2
-    echo "    verwacht: $verwacht" >&2
+  if [ "$shown" != "$expected" ]; then
+    fail "S42 — $id does not show the question from $source"
+    echo "    shown:  $shown" >&2
+    echo "    expected: $expected" >&2
   fi
   seen=$((seen + 1))
 done < "$output"

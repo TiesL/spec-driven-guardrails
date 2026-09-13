@@ -21,12 +21,12 @@ mkdir -p "$source/skills/pre-merge-review" "$source/skills/tdd-seams"
 echo "# review" > "$source/skills/pre-merge-review/SKILL.md"
 echo "# seams"  > "$source/skills/tdd-seams/SKILL.md"
 
-adopteer_uit() {
+adopt_from() {
   SPEC_DRIVEN_GUARDRAILS_DIR="$1" "$1/adopt.sh" "$2" >/dev/null 2>&1
 }
 
 # Same, but with the output visible and the exit status usable.
-adopteer_uit_luid() {
+adopt_from_loud() {
   SPEC_DRIVEN_GUARDRAILS_DIR="$1" "$1/adopt.sh" "$2"
 }
 
@@ -39,7 +39,7 @@ GITIGNORE_END="$(sed -n 's/^GITIGNORE_END="\(.*\)"$/\1/p' "$source/adopt.sh")"
 
 # --- S19 -------------------------------------------------------------------
 project="$(fresh_project s19)"
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 
 skills="$project/.claude/skills"
 [ -d "$skills" ] || fail "S19 — .claude/skills was not created"
@@ -61,33 +61,33 @@ done
 # inert - Claude Code reports a load error for it every session, in four
 # projects at once.
 mkdir -p "$skills"
-ln -s "$source/skills/verdwenen" "$skills/verdwenen"
+ln -s "$source/skills/gone" "$skills/gone"
 mkdir -p "$skills/own-skill"
 echo "# from the project itself" > "$skills/own-skill/SKILL.md"
 # And two symlinks the project itself placed elsewhere: not ours, so not ours
 # to clean up. The second one is deliberately dead - only that one proves the
 # prefix check actually works. If a foreign link points at something that
 # still exists, it's luck protecting it, not the prefix check.
-mkdir -p "$SANDBOX/elders/vreemde-skill"
-ln -s "$SANDBOX/elders/vreemde-skill" "$skills/vreemde-skill"
+mkdir -p "$SANDBOX/elders/foreign-skill"
+ln -s "$SANDBOX/elders/foreign-skill" "$skills/foreign-skill"
 ln -s "$SANDBOX/elders/never-existed" "$skills/weird-dead-skill"
 
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 
-if [ -e "$skills/verdwenen" ] || [ -L "$skills/verdwenen" ]; then
-  fail "S20 — the orphaned symlink 'verdwenen' was left in place"
+if [ -e "$skills/gone" ] || [ -L "$skills/gone" ]; then
+  fail "S20 — the orphaned symlink 'gone' was left in place"
 fi
 [ -d "$skills/own-skill" ] || fail "S20 — the project's own 'own-skill' directory was removed"
 [ -f "$skills/own-skill/SKILL.md" ] || fail "S20 — the contents of 'own-skill' are gone"
-[ -L "$skills/vreemde-skill" ] || fail "S20 — a symlink outside this repo was cleaned up; only our own orphaned links may be removed"
+[ -L "$skills/foreign-skill" ] || fail "S20 — a symlink outside this repo was cleaned up; only our own orphaned links may be removed"
 [ -L "$skills/weird-dead-skill" ] || fail "S20 — a dead symlink outside this repo was cleaned up; the criterion is the target, not whether the link works"
 
 # A dead orphan with a relative path. Without first resolving the path
 # meaningfully, it falls outside the prefix check and stays forever - and then
 # Claude Code reports a load error for it every session.
-ln -s "$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$source/skills/ook-verdwenen" "$skills")" "$skills/relatieve-wees"
-adopteer_uit "$source" "$project"
-if [ -e "$skills/relatieve-wees" ] || [ -L "$skills/relatieve-wees" ]; then
+ln -s "$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$source/skills/also-gone" "$skills")" "$skills/relative-orphan"
+adopt_from "$source" "$project"
+if [ -e "$skills/relative-orphan" ] || [ -L "$skills/relative-orphan" ]; then
   fail "S20 — an orphaned symlink with a relative path was left in place"
 fi
 
@@ -103,25 +103,25 @@ tennis-invoicing/
 CLAUDE.md
 .claude/settings.json
 
-# clasp-koppeling is machinespecifiek
+# clasp link is machine-specific
 .clasp.json
 IGNORE
 before="$(cat "$project/.gitignore")"
 
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 after="$project/.gitignore"
 
 for line in "tennis-registration/" "tennis-invoicing/" ".DS_Store" ".clasp.json"; do
   grep -qxF "$line" "$after" || fail "S21 — the existing rule '$line' disappeared from .gitignore"
 done
-grep -q '^# clasp-koppeling is machinespecifiek$' "$after" \
+grep -q '^# clasp link is machine-specific$' "$after" \
   || fail "S21 — a comment line outside the block disappeared"
 
 # Blank lines in the middle of the file separate groups. Discarding them is
 # exactly the unsolicited rewriting of someone else's .gitignore that has no
 # place here - and it is not theoretical: an earlier version of this script
 # did it, and only a dry run against a copy of a real project surfaced that.
-expected_heading="$(printf 'tennis-registration/\ntennis-invoicing/\n.DS_Store\n\n# clasp-koppeling is machinespecifiek\n.clasp.json')"
+expected_heading="$(printf 'tennis-registration/\ntennis-invoicing/\n.DS_Store\n\n# clasp link is machine-specific\n.clasp.json')"
 actual_heading="$(sed -n '1,6p' "$after")"
 [ "$actual_heading" = "$expected_heading" ] \
   || fail "S21 — the content outside the block was rewritten:
@@ -137,9 +137,9 @@ for line in "CLAUDE.md" ".claude/settings.json"; do
 done
 
 # And they are inside the managed block, not as loose leftovers outside it.
-binnen="$(awk '/^# claude-workflow: begin/{i=1;next} /^# claude-workflow: eind/{i=0} i' "$after")"
+inside="$(awk '/^# claude-workflow: begin/{i=1;next} /^# claude-workflow: end/{i=0} i' "$after")"
 for line in "CLAUDE.md" ".claude/settings.json" ".claude/skills/"; do
-  printf '%s\n' "$binnen" | grep -qxF "$line" \
+  printf '%s\n' "$inside" | grep -qxF "$line" \
     || fail "S21 — '$line' is not inside the managed block"
 done
 
@@ -154,7 +154,7 @@ done
 project="$(fresh_project s21b-broken)"
 printf 'important-line.txt\n%s\nCLAUDE.md\nline-after-broken-block\n' "$GITIGNORE_BEGIN" > "$project/.gitignore"
 before="$(cat "$project/.gitignore")"
-output="$(adopteer_uit_luid "$source" "$project" 2>&1)"; status=$?
+output="$(adopt_from_loud "$source" "$project" 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "S21b — a corrupted block was not rejected"
 [ "$(cat "$project/.gitignore")" = "$before" ] \
   || fail "S21b — the file was touched while the block was corrupted"
@@ -165,7 +165,7 @@ assert_contains "S21b — the message explains what is wrong" "corrupted managed
 project="$(fresh_project s21b-nested)"
 printf 'x\n%s\n%s\nCLAUDE.md\n%s\n%s\n' "$GITIGNORE_BEGIN" "$GITIGNORE_BEGIN" "$GITIGNORE_END" "$GITIGNORE_END" > "$project/.gitignore"
 before="$(cat "$project/.gitignore")"
-adopteer_uit_luid "$source" "$project" >/dev/null 2>&1
+adopt_from_loud "$source" "$project" >/dev/null 2>&1
 [ "$?" -ne 0 ] || fail "S21b — a nested block was not rejected"
 [ "$(cat "$project/.gitignore")" = "$before" ] || fail "S21b — the nested case still touched the file"
 
@@ -174,7 +174,7 @@ adopteer_uit_luid "$source" "$project" >/dev/null 2>&1
 # the new one.
 project="$(fresh_project s21b-variants)"
 printf 'CLAUDE.md\r\nCLAUDE.md   \nnode_modules/\n   \n*.log\n' > "$project/.gitignore"
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 count="$(grep -c 'CLAUDE.md' "$project/.gitignore")"
 [ "$count" -eq 1 ] || fail "S21b — CLAUDE.md appears $count times; CRLF and whitespace variants were not migrated"
 
@@ -192,11 +192,11 @@ grep -qxF '.claude/skills/' "$project/.gitignore" \
 
 # --- S22 -------------------------------------------------------------------
 project="$(fresh_project s22)"
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 tree_one="$(cd "$project" && find . -not -path './.git/*' -not -name '.git' | sort)"
 ignore_one="$(cat "$project/.gitignore")"
 
-adopteer_uit "$source" "$project"
+adopt_from "$source" "$project"
 tree_two="$(cd "$project" && find . -not -path './.git/*' -not -name '.git' | sort)"
 ignore_two="$(cat "$project/.gitignore")"
 

@@ -23,28 +23,28 @@ from_register="$SANDBOX/register.txt"
 from_template="$SANDBOX/template.txt"
 
 # The register supplies the id/heading pair from the same file — no normalization
-# from "spec-compliance" to "Compliance en auditeerbaarheid" needed.
+# from "spec-compliance" to "Compliance and auditability" needed.
 for file in "$nfr_map"/*.md; do
   [ -e "$file" ] || continue
   id="$(awk -F': *' '/^id:/{print $2; exit}' "$file")"
-  kop="$(awk -F': *' '/^heading:/{print $2; exit}' "$file")"
+  heading="$(awk -F': *' '/^heading:/{print $2; exit}' "$file")"
   status="$(awk -F': *' '/^status:/{print $2; exit}' "$file")"
   [ "$status" = "retired" ] && continue
-  if [ -z "$id" ] || [ -z "$kop" ]; then
+  if [ -z "$id" ] || [ -z "$heading" ]; then
     fail "R5 — $(basename "$file") is missing an id or heading"
     continue
   fi
-  printf '%s\t%s\n' "$id" "$kop" >> "$from_register"
+  printf '%s\t%s\n' "$id" "$heading" >> "$from_register"
 done
 sort -o "$from_register" "$from_register" 2>/dev/null || : > "$from_register"
 
 # The template supplies the headings from the generated block, with the ID from
 # the HTML comment that the generator adds alongside it.
 awk '
-  /<!-- nfr-block:begin/ { in_blok = 1; next }
-  /<!-- nfr-block:end/  { in_blok = 0 }
-  in_blok && /^### /     { kop = substr($0, 5) }
-  in_blok && /<!-- nfr:/ { id = $0; sub(/.*<!-- nfr: */, "", id); sub(/ *-->.*/, "", id); print id "\t" kop }
+  /<!-- nfr-block:begin/ { in_block = 1; next }
+  /<!-- nfr-block:end/  { in_block = 0 }
+  in_block && /^### /     { heading = substr($0, 5) }
+  in_block && /<!-- nfr:/ { id = $0; sub(/.*<!-- nfr: */, "", id); sub(/ *-->.*/, "", id); print id "\t" heading }
 ' "$template" | sort > "$from_template"
 
 # Then: exact 1-to-1 match, no missing or excess side.

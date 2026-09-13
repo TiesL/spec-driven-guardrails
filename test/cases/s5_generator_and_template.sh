@@ -28,8 +28,8 @@ python3 - "$target" <<'PY'
 import sys
 p = sys.argv[1]
 s = open(p).read()
-kop = "## Guidance"
-i = s.index(kop) + len(kop)
+heading = "## Guidance"
+i = s.index(heading) + len(heading)
 open(p, "w").write(s[:i] + "\nA deliberately different fill-in hint for this test.\n")
 PY
 

@@ -19,7 +19,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| spec-security | ja | 2026-01-01 | van toepassing |
+| spec-security | ja | 2026-01-01 | applicable |
 EOF
 
 # A PRD.md without the anchor placed by F4 — for example a project that wrote
@@ -27,10 +27,10 @@ EOF
 cat > "$project/PRD.md" <<'EOF'
 # PRD
 
-## Niet-functionele kenmerken
+## Non-functional characteristics
 
 ### Security
-Wie mag wat, welke rechten zijn minimaal nodig.
+Who is allowed to do what, what permissions are minimally needed.
 EOF
 
 stdout="$SANDBOX/stdout.txt"

@@ -14,7 +14,7 @@ trap sandbox_destroy EXIT
 # other test does too. A shell error in the script therefore stayed
 # structurally invisible — one occurred daily in three of the four
 # real projects without anything complaining.
-controleer() {
+check_no_stderr() {
   local description="$1" path="$2"
   local error="$SANDBOX/stderr.txt"
   "$TEST_REPO_ROOT/pending-changes.sh" "$path" > /dev/null 2> "$error"
@@ -27,23 +27,23 @@ controleer() {
 # The four frozen baselines: a real cross-section of what exists in
 # practice, including a project without an adoption table.
 for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
-  controleer "fixture $project" "$TEST_REPO_ROOT/test/fixtures/nulmeting/$project"
+  check_no_stderr "fixture $project" "$TEST_REPO_ROOT/test/fixtures/nulmeting/$project"
 done
 
 # Freshly adopted: all rows still carry a provisional stamp.
 fresh="$(fresh_project fresh)"
 adopt "$fresh"
-controleer "freshly adopted project" "$fresh"
+check_no_stderr "freshly adopted project" "$fresh"
 
 # Everything substantiated: zero pending rows. That is exactly the
 # boundary where the counting went wrong.
-sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/substantiated/g' \
   "$fresh/WORKFLOW-ADOPTION.md"
 rm -f "$fresh/WORKFLOW-ADOPTION.md.bak"
-controleer "project with no pending substantiations" "$fresh"
+check_no_stderr "project with no pending substantiations" "$fresh"
 
 # And a project that was never adopted.
 bare="$(fresh_project bare)"
-controleer "unadopted project" "$bare"
+check_no_stderr "unadopted project" "$bare"
 
 test_done
