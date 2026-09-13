@@ -250,11 +250,11 @@ seventeen rows at once is unrealistic homework; the signal alone would then
 become chronic noise. So substantiate on first contact, with a deadline for
 each row:
 
-1. **Per PR** — if a PR touches a topic whose row still says "vereist
-   onderbouwing," that's a review finding in `pre-merge-review`, and the row
+1. **Per PR** — if a PR touches a topic whose row still says "requires
+   substantiation," that's a review finding in `pre-merge-review`, and the row
    gets answered before the merge (F11).
 2. **Before the first production deploy** — the deploy guards require that no
-   row with `productie-poort: ja` still says "vereist onderbouwing" (F4).
+   row with `production-gate: yes` still says "requires substantiation" (F4).
 3. **Every session** — the signal above stays; phased doesn't mean invisible.
 
 Touched → answered on that PR; never touched but critical → by the first
@@ -396,7 +396,7 @@ context and on a different model." Frontmatter expresses that literally:
 `context: fork` gives the fresh, isolated context, `model:` pins a
 different/heavier model, `allowed-tools` keeps it read-only.
 
-The skill reads `WORKFLOW-ADOPTIE.md` → `ja`-answered `spec-*` → the anchor in
+The skill reads `WORKFLOW-ADOPTION.md` → `yes`-answered `spec-*` → the anchor in
 the project PRD → the review scope. Reading the diff itself is delegated to
 the existing `code-review` skill; this skill owns the *scoping*, the
 context/model requirement, and the "findings in the PR, then resolved or
@@ -404,8 +404,8 @@ filed under Technical debt" step.
 
 Two additions from the merge-guard and substantiation decisions: the skill
 places a **machine-recognizable marker** in its findings comment (which F8
-keys on), and it treats a touched topic whose `WORKFLOW-ADOPTIE.md` row still
-says "vereist onderbouwing" as a review finding — that row gets answered
+keys on), and it treats a touched topic whose `WORKFLOW-ADOPTION.md` row still
+says "requires substantiation" as a review finding — that row gets answered
 before the merge (F6's first gate).
 
 ### F12 — The core: `WORKFLOW.md` + routing table
