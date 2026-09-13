@@ -24,8 +24,8 @@
 
 set -uo pipefail
 
-invoer="$(</dev/stdin)"
-[ -n "$invoer" ] || exit 0
+input_json="$(</dev/stdin)"
+[ -n "$input_json" ] || exit 0
 
 if ! command -v python3 >/dev/null 2>&1; then
   exit 0
@@ -34,7 +34,7 @@ fi
 # Two fields from the same JSON, one python3 call. No eval, no ad-hoc regex
 # on raw JSON text — quotes and escape characters belong to a parser, not
 # to grep.
-gegevens="$(printf '%s' "$invoer" | python3 -c '
+data="$(printf '%s' "$input_json" | python3 -c '
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -52,17 +52,17 @@ if not isinstance(cwd, str):
 print(cmd.replace("\n", " "))
 print(cwd)
 ')"
-[ -n "$gegevens" ] || exit 0
+[ -n "$data" ] || exit 0
 
-commando="$(printf '%s\n' "$gegevens" | sed -n '1p')"
-cwd="$(printf '%s\n' "$gegevens" | sed -n '2p')"
+cmd="$(printf '%s\n' "$data" | sed -n '1p')"
+cwd="$(printf '%s\n' "$data" | sed -n '2p')"
 [ -n "$cwd" ] || cwd="$PWD"
 
 # Just a rough keyword check: this isn't a guard against misuse like
 # git-guardrails, so no quote-aware tokenization needed. A missed match
 # costs at most a slightly later push; a false match costs a no-op git
 # push — neither is harmful.
-case "$commando" in
+case "$cmd" in
   *git\ commit*) ;;
   *) exit 0 ;;
 esac
@@ -79,9 +79,9 @@ fi
 
 # AC5: no network, no problem — report, don't hold things up.
 if git -C "$cwd" rev-parse --verify --quiet "origin/$branch" >/dev/null 2>&1; then
-  uitvoer="$(git -C "$cwd" push origin "$branch" 2>&1)" && exit 0
+  output="$(git -C "$cwd" push origin "$branch" 2>&1)" && exit 0
 else
-  uitvoer="$(git -C "$cwd" push -u origin "$branch" 2>&1)" && exit 0
+  output="$(git -C "$cwd" push -u origin "$branch" 2>&1)" && exit 0
 fi
 
 # Two very different causes, two different messages. A non-fast-forward
@@ -89,10 +89,10 @@ fi
 # access problem — it's local history diverging from origin, and this hook
 # never fixes that automatically with a force-push: that's a deliberate
 # choice, not a mutation nobody asked for.
-case "$uitvoer" in
+case "$output" in
   *"(non-fast-forward)"*|*"(fetch first)"*|*"(stale info)"*)
     echo "warning: push-after-commit couldn't push — local history diverges from origin (for example after an amend or rebase). Use 'git push --force-with-lease' yourself if that was the intent." >&2 ;;
   *)
-    echo "warning: push-after-commit couldn't push (no network or no access?): $uitvoer" >&2 ;;
+    echo "warning: push-after-commit couldn't push (no network or no access?): $output" >&2 ;;
 esac
 exit 0
