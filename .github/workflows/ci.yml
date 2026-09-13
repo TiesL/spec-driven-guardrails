@@ -1,21 +1,21 @@
-# CI voor claude-workflow zelf.
+# CI for claude-workflow itself.
 #
-# Roept ./check aan zonder losse checks te verzinnen — dezelfde conventie die
-# dit repo aan geadopteerde projecten voorschrijft, hier op zichzelf
-# toegepast. Eén uitzondering: de main-via-PR-controle (W27, F17) heeft
-# netwerk nodig en hoort dus niet in het lokale, offline ./check — zelfde
-# reden waarom check-pr-issue-link.sh voor andere projecten ook een losse
-# CI-stap is in plaats van onderdeel van hun check.
+# Calls ./check instead of inventing separate checks — the same convention
+# this repo prescribes for adopted projects, applied to itself. One
+# exception: the main-via-PR check (W27, F17) needs network access and
+# therefore does not belong in the local, offline ./check — the same
+# reason check-pr-issue-link.sh is also a separate CI step for other
+# projects instead of part of their check.
 #
-# Dit is bewust niet templates/ci.yml: dat sjabloon veronderstelt npm, en dit
-# repo heeft geen package.json (zie de toelichting in ./check). Precies het
-# "andere stack"-geval dat WORKFLOW.md beschrijft.
+# This is deliberately not templates/ci.yml: that template assumes npm, and
+# this repo has no package.json (see the explanation in ./check). Exactly
+# the "other stack" case that WORKFLOW.md describes.
 name: CI
 
-# Draait op pull requests én op pushes naar main, om dezelfde reden als het
-# sjabloon: `pull_request` beoordeelt het samengevoegde resultaat en is de vorm
-# die als vereiste controle op een pull request ingesteld kan worden, en de
-# push-trigger vangt op wat main langs een andere weg bereikt.
+# Runs on pull requests and on pushes to main, for the same reason as the
+# template: `pull_request` judges the merged result and is the form that
+# can be set as a required check on a pull request, and the push trigger
+# catches whatever reaches main by another route.
 on:
   pull_request:
   push:
@@ -24,35 +24,35 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Zonder dit blok krijgt de job het default, minimale tokenscope van dit
-    # repo — geen pull-requests:read. De main-via-PR-controle (W27, F17)
-    # roept `gh api .../commits/$sha/pulls` aan en heeft die scope nodig; zonder
-    # expliciete permissions faalt die stap altijd, niet incidenteel (issue
-    # #83 — ontdekt toen de eerste echte push-naar-main-run na PR #80 hierop
-    # struikelde, en `gh run rerun` het niet oploste). contents:read staat
-    # hier ook expliciet: zodra één permission genoemd wordt, vervalt de
-    # impliciete default voor de rest.
+    # Without this block the job gets this repo's default, minimal token
+    # scope — no pull-requests:read. The main-via-PR check (W27, F17) calls
+    # `gh api .../commits/$sha/pulls` and needs that scope; without explicit
+    # permissions that step always fails, not incidentally (issue #83 —
+    # discovered when the first real push-to-main run after PR #80 tripped
+    # on this, and `gh run rerun` did not resolve it). contents:read is also
+    # explicit here: as soon as one permission is named, the implicit
+    # default for the rest no longer applies.
     permissions:
       contents: read
       pull-requests: read
-      # closingIssuesReferences (waar check-pr-issue-link.sh op leest) is een
-      # veld over het gekoppelde issue zelf, niet over de PR — zonder
-      # issues:read levert de GraphQL-opvraging een lege lijst op, ook als de
-      # koppeling écht bestaat (ontdekt op PR #105: gh pr view gaf lokaal,
-      # met een volledig geautoriseerd token, wél "99" terug, maar dezelfde
-      # aanroep faalde in CI onder het toen nog niet-uitgebreide
-      # GITHUB_TOKEN). pull-requests:read alleen is dus niet genoeg voor
-      # schakel 3, in weerwil van wat issue #85/#91 aannam.
+      # closingIssuesReferences (what check-pr-issue-link.sh reads) is a
+      # field about the linked issue itself, not about the PR — without
+      # issues:read the GraphQL query returns an empty list, even when the
+      # link genuinely exists (discovered on PR #105: gh pr view did return
+      # "99" locally, with a fully authorized token, but the same call
+      # failed in CI under the GITHUB_TOKEN, which at the time was not yet
+      # extended). pull-requests:read alone therefore turned out not to be
+      # enough for link 3, contrary to what issue #85/#91 assumed.
       issues: read
     steps:
       - uses: actions/checkout@v4
       - run: ./check
-      - name: PR verwijst naar issue (schakel 3)
+      - name: PR references issue (link 3)
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./templates/check-pr-issue-link.sh "${{ github.event.pull_request.number }}"
-      - name: Commit op main komt uit een PR
+      - name: Commit on main comes from a PR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -14,18 +14,18 @@ path="$TEST_REPO_ROOT/.github/workflows/ci.yml"
 [ -f "$path" ] || { fail "S83 — $path is missing"; test_done; }
 
 # Then: a step that calls check-pr-issue-link.sh, only on the
-# pull_request event — the same shape as "Commit op main komt uit een PR"
+# pull_request event — the same shape as "Commit on main comes from a PR"
 # below uses for the push event. grep -A4: enough lines to catch if/env/
 # GITHUB_TOKEN/run without picking up the next step.
-stap="$(grep -A4 'name: PR verwijst naar issue' "$path")"
-[ -n "$stap" ] || fail "S83 — $path has no 'PR verwijst naar issue' step"
+step="$(grep -A4 'name: PR references issue' "$path")"
+[ -n "$step" ] || fail "S83 — $path has no 'PR references issue' step"
 
-case "$stap" in
+case "$step" in
   *"if: github.event_name == 'pull_request'"*) ;;
   *) fail "S83 — the link-3 step is not tied to the pull_request event" ;;
 esac
 
-case "$stap" in
+case "$step" in
   *check-pr-issue-link.sh*) ;;
   *) fail "S83 — the link-3 step does not call check-pr-issue-link.sh" ;;
 esac

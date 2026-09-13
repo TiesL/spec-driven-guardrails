@@ -1,15 +1,15 @@
 name: CI
 
-# Draait op pull requests én op pushes naar main.
+# Runs on pull requests and on pushes to main.
 #
-# `pull_request` beoordeelt het samengevoegde resultaat — head gemerged in base —
-# en niet alleen de branch op zichzelf. Dat is precies het geval dat twee los
-# groene branches samen kan breken. Het is bovendien de vorm die je als vereiste
-# controle op een pull request kunt instellen, dus de vorm die een merge
-# daadwerkelijk kan tegenhouden.
+# `pull_request` judges the merged result — head merged into base — not
+# just the branch on its own. That is exactly the case where two
+# individually green branches can break together. It is also the form you
+# can set as a required check on a pull request, so the form that can
+# actually block a merge.
 #
-# `push: branches: [main]` is de achtervang: komt er ooit een commit op main die
-# niet uit een pull request komt, dan wordt die alsnog gecontroleerd.
+# `push: branches: [main]` is the backstop: if a commit ever lands on main
+# that did not come from a pull request, it still gets checked.
 on:
   pull_request:
   push:
@@ -18,20 +18,20 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # Zonder dit blok krijgt de job het default, minimale tokenscope van het
-    # geadopteerde project — geen pull-requests:read. "PR verwijst naar issue"
-    # (schakel 3, hard slot) roept `gh pr view --json closingIssuesReferences`
-    # aan en heeft die scope nodig; zonder expliciete permissions blokkeert die
-    # stap elke PR, niet incidenteel (issue #85 — hetzelfde gat als issue
-    # #83/PR #84 in dit repo's eigen CI, hier meegefixt in het sjabloon).
-    # contents:read staat hier ook expliciet: zodra één permission genoemd
-    # wordt, vervalt de impliciete default voor de rest.
+    # Without this block the job gets the adopted project's default,
+    # minimal token scope — no pull-requests:read. "PR references issue"
+    # (link 3, hard block) calls `gh pr view --json closingIssuesReferences`
+    # and needs that scope; without explicit permissions that step blocks
+    # every PR, not incidentally (issue #85 — the same gap as issue #83/PR
+    # #84 in this repo's own CI, fixed here in the template too).
+    # contents:read is also explicit here: as soon as one permission is
+    # named, the implicit default for the rest no longer applies.
     #
-    # issues:read is een apart gat, ontdekt ná pull-requests:read (issue
-    # #106, na dezelfde bug op PR #105 voor dit repo's eigen workflow, issue
-    # #99): closingIssuesReferences gaat over het gekoppelde issue zelf, niet
-    # over de PR. Zonder issues:read levert de opvraging stilzwijgend een
-    # lege lijst op, ook als de koppeling echt bestaat.
+    # issues:read is a separate gap, discovered after pull-requests:read
+    # (issue #106, following the same bug on PR #105 for this repo's own
+    # workflow, issue #99): closingIssuesReferences is about the linked
+    # issue itself, not about the PR. Without issues:read the query
+    # silently returns an empty list, even when the link genuinely exists.
     permissions:
       contents: read
       pull-requests: read
@@ -44,12 +44,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - name: PR verwijst naar issue (schakel 3)
+      - name: PR references issue (link 3)
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./check-pr-issue-link.sh "${{ github.event.pull_request.number }}"
-      - name: Commit op main komt uit een PR
+      - name: Commit on main comes from a PR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ github.token }}
