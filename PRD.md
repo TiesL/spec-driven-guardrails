@@ -374,7 +374,7 @@ Ties reads and maintains stays Dutch.
 
 *The substantiation requirement goes to `adoption-registry`, not `write-spec`.*
 It currently sits under "Specifying work," but it's actually about answering
-`WORKFLOW-ADOPTIE.md` rows — the same subject as the registry section, which
+`WORKFLOW-ADOPTION.md` rows — the same subject as the registry section, which
 already restates it in summary, and `USER-CLAUDE.md` a third time. One skill
 folds three copies into one.
 
@@ -651,7 +651,7 @@ deliberately a `case`. No secrets in this repo.
 
 ### Data integrity
 
-Strongly relevant. `WORKFLOW-ADOPTIE.md` is the durable record of decisions
+Strongly relevant. `WORKFLOW-ADOPTION.md` is the durable record of decisions
 and must never be overwritten. F16 touches this directly: filling in
 `a2t-emails` must not become a fresh seed with today's date. F6 is explicitly
 designed so it does *not* change what "answered" means. `adopt.sh` stays
@@ -698,7 +698,7 @@ that's already there. Adoption tables contain decisions.
 N/A as a legal requirement; yes as a self-imposed one. The adoption registry
 exists precisely to make it demonstrable which project applies which
 agreement and why. F4 and F5 must not break that demonstrability: a moved or
-archived entry must remain findable from a `WORKFLOW-ADOPTIE.md` that points
+archived entry must remain findable from a `WORKFLOW-ADOPTION.md` that points
 to it. That's R8, and after F4 it also applies to the fifteen relocated NFRs.
 
 ### Backup and recovery
@@ -726,7 +726,7 @@ exists, without building an adapter layer or contract (see "Besloten in W29
 | Agent-independent | Claude Code-specific |
 |---|---|
 | Templates (`PRD.md`, `TEST-SCENARIOS.md`, `ARCHITECTURE.md`) | `settings/session-hooks.json` |
-| Adoption registry (`CHANGES.md`, `WORKFLOW-ADOPTIE.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
+| Adoption registry (`CHANGES.md`, `WORKFLOW-ADOPTION.md`) | `hooks/` (`PreToolUse`, `SessionStart`, `SessionEnd`) |
 | The `nfr/` registry | `skills/` |
 | Traceability (`Covers:`, `AC<n>`) | `CLAUDE.md` as the symlink name |
 | Git conventions, `check`, the test harness | the `.claude/` directory structure |
