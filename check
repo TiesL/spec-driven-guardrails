@@ -12,7 +12,7 @@
 #                              # itself, which would otherwise call itself)
 #
 # This repo deliberately has no package.json: that would flip its own
-# `heeft-package-json` predicate and change what adopt.sh and
+# `has-package-json` predicate and change what adopt.sh and
 # pending-changes.sh say about this repo.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
