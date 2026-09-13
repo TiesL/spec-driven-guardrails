@@ -194,7 +194,7 @@ something new is being added.
 
 ### S36 — An ID inside a note doesn't count as an answer
 **Covers:** F3
-- Given: a `WORKFLOW-ADOPTIE.md` where the ID of a still-unanswered change
+- Given: a `WORKFLOW-ADOPTION.md` where the ID of a still-unanswered change
   appears in the free-text note of a *different* row
 - When: `pending-changes.sh` runs
 - Then: that change is still pending — only the ID column counts as an
@@ -267,7 +267,7 @@ something new is being added.
 
 ### S43 — A healthy source produces nothing on stderr
 **Covers:** F6
-- Given: an adopted project with a well-formed `WORKFLOW-ADOPTIE.md` —
+- Given: an adopted project with a well-formed `WORKFLOW-ADOPTION.md` —
   with pending substantiations, without, or without a table at all
 - When: `pending-changes.sh` runs
 - Then: nothing appears on stderr
@@ -886,10 +886,10 @@ something new is being added.
 - And: a second `adopt.sh` call is idempotent — no errors, no duplicate
   `.gitignore` lines
 
-### S82 — A fresh WORKFLOW-ADOPTIE.md names the right repo
+### S82 — A fresh WORKFLOW-ADOPTION.md names the right repo
 **Covers:** F3
 - Given: a freshly adopted project
-- When: `adopt.sh` creates `WORKFLOW-ADOPTIE.md`
+- When: `adopt.sh` creates `WORKFLOW-ADOPTION.md`
 - Then: the header refers to `spec-driven-guardrails`
 - And: not to `claude-workflow` — the name from before the W32 rename (#56)
 
