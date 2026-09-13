@@ -115,7 +115,7 @@ on its own:
 - **Trunk-based branching (GitHub Flow)** — short-lived branches off
   `main`, no long-lived parallel branches.
 - **Automated testing** — unit tests, BDD-style Given/When/Then scenarios
-  in `TEST-SCENARIOS.md`, and frozen-baseline regression tests (`test/fixtures/nulmeting/`).
+  in `TEST-SCENARIOS.md`, and frozen-baseline regression tests (`test/fixtures/baseline/`).
 - **Continuous Integration** — `check` runs identically locally and in CI;
   a merge is blocked while it's red.
 - **Mandatory quality review before merge** — the `pre-merge-review` skill,
@@ -220,7 +220,7 @@ below, without needing anything above this point.
 | `ARCHITECTURE.md` | This repo's own architecture-decision record, same purpose as `templates/ARCHITECTURE.md` produces for an adopted project. |
 | `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
 | `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
-| `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/nulmeting/` (the frozen baseline, see `LEESMIJ.md` there). |
+| `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/baseline/` (the frozen baseline, see `LEESMIJ.md` there). |
 | `PRD-MULTI-AGENT-WIP.md` | **WIP** — exploratory PRD for multi-agent software development in a later release, linked to epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Not part of the shared workflow machinery above, and not approved: directional, with open design questions deliberately marked as **TBD**. |
 
 ## Why local symlinks instead of committed symlinks

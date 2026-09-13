@@ -7,7 +7,7 @@
 # Every project is fresh and has no WORKFLOW-ADOPTIE.md, so every applicable
 # entry is also open. That gives, per predicate, at least one case where it is
 # true *and* unanswered — exactly the branch the real adopters' baseline
-# misses (see test/fixtures/nulmeting/LEESMIJ.md).
+# misses (see test/fixtures/baseline/LEESMIJ.md).
 #
 # name | package.json | scripts content | ci-convention | deploy-guards
 geen-package-json|nee||nee|nee

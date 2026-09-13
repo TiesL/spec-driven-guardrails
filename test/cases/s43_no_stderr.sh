@@ -27,7 +27,7 @@ check_no_stderr() {
 # The four frozen baselines: a real cross-section of what exists in
 # practice, including a project without an adoption table.
 for project in a2t-emails tennis-admin tennis-registration tennis-invoicing; do
-  check_no_stderr "fixture $project" "$TEST_REPO_ROOT/test/fixtures/nulmeting/$project"
+  check_no_stderr "fixture $project" "$TEST_REPO_ROOT/test/fixtures/baseline/$project"
 done
 
 # Freshly adopted: all rows still carry a provisional stamp.

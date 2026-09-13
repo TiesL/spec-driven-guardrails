@@ -17,7 +17,7 @@ Vastgelegd voor werkitem W2 (#13). Regressiescenario R9 leunt hierop.
 | `package.json` | Verbatim overgenomen — de predicaten kijken hiernaar |
 | `verwacht-openstaand.txt` | De gouden set: openstaande ID's, alfabetisch |
 
-`CHANGES.md.momentopname` en `nfr.momentopname/` staan één niveau hoger. Die
+`CHANGES.md.snapshot` en `nfr.snapshot/` staan één niveau hoger. Die
 horen erbij: de openstaand-set is een functie van **drie** invoeren — de
 projecttoestand, `CHANGES.md` én het `nfr/`-register (zie "Bijgewerkt in W28"
 hieronder). Zonder die laatste twee is een gouden set niet te interpreteren.
@@ -53,7 +53,7 @@ precies de twee projecten die er een hebben: `a2t-emails` (25 naar 26) en
 Dat is de tweede soort afwijking uit "Bijwerken — alleen bewust" hieronder: een
 legitiem gewijzigde vraagset, niet een gedragswijziging.
 
-`CHANGES.md.momentopname` is in dezelfde PR ververst. Die verversing haalt meer
+`CHANGES.md.snapshot` is in dezelfde PR ververst. Die verversing haalt meer
 op dan alleen deze entry: de momentopname stond stil sinds W2, terwijl W4, W5 en
 W6 `CHANGES.md` intussen hadden verbouwd. Nagerekend welke ID's dat verschil
 maakt: de vijftien `spec-*`-entries zijn naar `nfr/` verhuisd (W5),
@@ -118,7 +118,7 @@ Vertrouw deze nulmeting dus voor wat hij is: een vangnet voor de
 `traceability-schakel-1` is toegevoegd aan `CHANGES.md`, met
 `Van toepassing als: altijd`. Elk van de vier projecten krijgt die vraag erbij,
 dus elke gouden set groeit met exact dat ene ID: a2t-emails 27, tennis-admin 26,
-tennis-registration en tennis-invoicing elk 25. `CHANGES.md.momentopname` is in
+tennis-registration en tennis-invoicing elk 25. `CHANGES.md.snapshot` is in
 dezelfde PR ververst.
 
 Wat níét verandert: geen bestaande ID is hernoemd of verdwenen, en geen predicaat
@@ -127,8 +127,8 @@ is aangepast. De toename is overal precies één.
 ## Bijgewerkt in W28 (#51)
 
 Het gat hierboven ("wat de momentopname sinds W5 niet meer dekt") is gedicht:
-`nfr.momentopname/` bevat nu een verbatim kopie van `nfr/` op het moment van
-invriezen (`cp -r nfr test/fixtures/nulmeting/nfr.momentopname`). Geen
+`nfr.snapshot/` bevat nu een verbatim kopie van `nfr/` op het moment van
+invriezen (`cp -r nfr test/fixtures/baseline/nfr.snapshot`). Geen
 aparte generator: een directe kopie is proportioneel voor vijftien bestanden,
 en S66 controleert drie dingen: elk `spec-*`-ID uit elke gouden set vindt een
 ingevroren bestand terug, de kopie zelf is nog een geldig register
@@ -143,8 +143,8 @@ tot dan toe niet-ingevroren bron, het verandert niets aan wat die bron zegt.
 S67 toont met een mutatie aan dat een latere, wél vraagset-rakende wijziging
 in `nfr/` (elk bestand daar draagt `van-toepassing-als: altijd`, dus raakt
 alles alle vier de fixtures) door R9 wordt opgevangen — en herinnert er via
-`LEESMIJ.md`'s "Bijwerken — alleen bewust" aan dat `nfr.momentopname/` in dat
-geval bewust mee moet verversen, net als `CHANGES.md.momentopname`.
+`LEESMIJ.md`'s "Bijwerken — alleen bewust" aan dat `nfr.snapshot/` in dat
+geval bewust mee moet verversen, net als `CHANGES.md.snapshot`.
 
 ## Bijgewerkt in W14 (#24), W15 (#25) en W16b (#26)
 
@@ -158,7 +158,7 @@ vraag — wel; alle drie tellen mee waar het gaat om wélke ID's een gouden set
 bevat, want een geseede `ja`-rij hoort net zo goed in de set van "ID's die nu
 bestaan" als een openstaande). Concreet: a2t-emails 27→30, tennis-admin
 26→29, tennis-registration en tennis-invoicing elk 25→28.
-`CHANGES.md.momentopname` is in dezelfde PR (drie keer, per commit) ververst.
+`CHANGES.md.snapshot` is in dezelfde PR (drie keer, per commit) ververst.
 
 ## Bijgewerkt voor issue #74 (ci-schakel-3-hard-slot)
 
@@ -169,7 +169,7 @@ de stap nooit vanzelf. Nieuwe entry `ci-schakel-3-hard-slot`
 (`heeft-package-json`, zelfde predicaat als `ci-conventie`/`ci-op-pr-en-main`)
 maakt dat zichtbaar. Raakt `a2t-emails` en `tennis-admin` (beide hebben een
 `package.json`); `tennis-registration` en `tennis-invoicing` niet. Elk +1:
-a2t-emails 30→31, tennis-admin 29→30. `CHANGES.md.momentopname` ververst.
+a2t-emails 30→31, tennis-admin 29→30. `CHANGES.md.snapshot` ververst.
 
 ## Bijgewerkt in W27 (#48)
 
@@ -178,7 +178,7 @@ Zelfde patroon, ditmaal proactief in plaats van achteraf gerepareerd:
 krijgt meteen een eigen `CHANGES.md`-entry, `ci-detecteert-main-buiten-pr`
 (`heeft-package-json`), zodat `a2t-emails` en `tennis-admin` — die al een
 eigen `ci.yml` hadden vóór dit werkitem — de vraag alsnog voorgelegd krijgen.
-Elk +1: a2t-emails 31→32, tennis-admin 30→31. `CHANGES.md.momentopname`
+Elk +1: a2t-emails 31→32, tennis-admin 30→31. `CHANGES.md.snapshot`
 ververst.
 
 ## Bijgewerkt voor W42 (#114)
@@ -191,7 +191,7 @@ stonden in alle vier de gouden sets als openstaand (nooit beantwoord door
 een van de vier projecten), dus de tel blijft ongewijzigd; alleen de
 letterlijke ID-string in `verwacht-openstaand.txt` verandert, met een
 herberekende alfabetische positie (`process-` sorteert ná alle `proces-*`,
-`quality-` ná `proces(s)-` en vóór `spec-*`). `CHANGES.md.momentopname`
+`quality-` ná `proces(s)-` en vóór `spec-*`). `CHANGES.md.snapshot`
 ververst.
 
 Dit is tegelijk het eerste échte gebruik van dit soort golden-set-fixture
@@ -217,7 +217,7 @@ Zelfde soort wijziging als W42 (#114) hierboven, nu toegepast op de
 projecten had een van deze vijf ooit beantwoord, dus de tel blijft
 ongewijzigd — alleen de letterlijke ID-string in elke
 `verwacht-openstaand.txt` verandert, met een herberekende alfabetische
-positie. `nfr.momentopname/` is ververst (`rm -rf` + `cp -r nfr`), zoals
+positie. `nfr.snapshot/` is ververst (`rm -rf` + `cp -r nfr`), zoals
 deze procedure hieronder voorschrijft voor elke wijziging die de vijftien
 `nfr/`-bestanden raakt.
 
@@ -240,29 +240,29 @@ Een afwijking betekent één van twee dingen:
    nieuwe entry aan `CHANGES.md` toevoegt (W14, W15 en W16b doen dat), of een
    nieuw `nfr/`-bestand toevoegt/weghaalt/retireert. Dan hoort de gouden set
    bijgewerkt te worden, mét toelichting in de PR wélke ID's erbij komen of
-   verdwijnen en waarom. **Ververs in dat geval ook `CHANGES.md.momentopname`
-   én `nfr.momentopname/`**:
+   verdwijnen en waarom. **Ververs in dat geval ook `CHANGES.md.snapshot`
+   én `nfr.snapshot/`**:
 
    ```
-   rm -rf test/fixtures/nulmeting/nfr.momentopname
-   cp -r nfr test/fixtures/nulmeting/nfr.momentopname
+   rm -rf test/fixtures/baseline/nfr.snapshot
+   cp -r nfr test/fixtures/baseline/nfr.snapshot
    ```
 
-   De `rm -rf` eerst is geen voorzichtigheid maar noodzaak: `nfr.momentopname/`
+   De `rm -rf` eerst is geen voorzichtigheid maar noodzaak: `nfr.snapshot/`
    bestaat al na deze PR, en `cp -r nfr <bestaande-map>` nest de bron dan
-   ín de map (`nfr.momentopname/nfr/*.md` naast de oude bestanden) in plaats
+   ín de map (`nfr.snapshot/nfr/*.md` naast de oude bestanden) in plaats
    van hem te vervangen. Verbatim, geen selectie: laat je die achter, dan verwijst de nulmeting naar
    een bron die de nieuwe gouden set niet meer verklaart — precies de
    interpreteerbaarheid die de momentopname moest garanderen. Alle vijftien
    `nfr/`-bestanden dragen `van-toepassing-als: altijd`, dus raakt elke
    toevoeging, verwijdering of retirement per definitie alle vier de fixtures
-   (S67) — een vergeten `nfr.momentopname`-ververs is dus nooit een geval waarin
+   (S67) — een vergeten `nfr.snapshot`-ververs is dus nooit een geval waarin
    toevallig niets verandert.
 
 **Ook een zuivere prozawijziging in `CHANGES.md`** (geen ID, predicaat of
 `Van toepassing als` geraakt — bijvoorbeeld een verwijzing die naar een skill in
 plaats van naar `WORKFLOW.md` gaat wijzen, zoals in W30) verandert de vraagset
-niet en dwingt dus geen gouden-set-update af. `CHANGES.md.momentopname` was tot
+niet en dwingt dus geen gouden-set-update af. `CHANGES.md.snapshot` was tot
 dan toe byte-identiek aan `CHANGES.md`; ververs hem in zo'n geval toch, puur om
 die identiteit te behouden en te voorkomen dat een latere `diff` tussen de twee
 bestanden eruitziet als onopgemerkte drift in plaats van een bewuste, inhoudsloze
@@ -273,16 +273,16 @@ Een stille wijziging in de vraagset is nooit acceptabel, ook niet als
 
 ## Bijgewerkt voor #160
 
-Bovenstaande regel ("ververs `CHANGES.md.momentopname` ook bij een zuivere
+Bovenstaande regel ("ververs `CHANGES.md.snapshot` ook bij een zuivere
 prozawijziging") bleek in de praktijk niet afgedwongen: de snapshot was
 sinds #127 (W42) niet meer ververst, terwijl drie latere PR's
 (#136/#137/#138) `CHANGES.md`'s hele proza naar het Engels vertaalden — een
 drift van 562 regels, gevonden tijdens de review van #159. Niets testte de
 twee bestanden tegen elkaar, dus niets sloeg alarm.
 
-`test/cases/s90_changes_momentopname_frozen.sh` (S90) sluit dat gat: een
-`diff` tussen `CHANGES.md` en `CHANGES.md.momentopname`, faalt hard bij elk
-verschil — dezelfde rookmelder-behandeling die S66 al aan `nfr.momentopname/`
+`test/cases/s90_changes_snapshot_frozen.sh` (S90) sluit dat gat: een
+`diff` tussen `CHANGES.md` en `CHANGES.md.snapshot`, faalt hard bij elk
+verschil — dezelfde rookmelder-behandeling die S66 al aan `nfr.snapshot/`
 geeft, nu ook hier. Vanaf nu is "ververs de snapshot" geen conventie meer die
 op discipline leunt, maar een check die het afdwingt.
 
@@ -308,8 +308,8 @@ het scenario waarvoor `lib/changes.sh`'s nieuwe `changes_current_id`/
 
 Alle vier `verwacht-openstaand.txt`-bestanden zijn bijgewerkt naar de
 nieuwe ID-strings, met herberekende alfabetische posities.
-`CHANGES.md.momentopname` is ververst (de rename raakt `CHANGES.md`
-zelf). `nfr.momentopname/` is óók ververst: `nfr/spec-deployability.md`
+`CHANGES.md.snapshot` is ververst (de rename raakt `CHANGES.md`
+zelf). `nfr.snapshot/` is óók ververst: `nfr/spec-deployability.md`
 noemt `ci-conventie` in zijn eigen Guidance-tekst en moest mee, wat
 verder niets met de dertien CHANGES.md-ID's zelf te maken heeft maar wel
 onder dezelfde freeze valt.

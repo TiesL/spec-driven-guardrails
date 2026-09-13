@@ -7,7 +7,7 @@ set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
-nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
+baseline="$TEST_REPO_ROOT/test/fixtures/baseline"
 
 # The fourfold comparison of golden sets is in R9
 # (r9_baseline_unchanged.sh). This scenario is specifically about whether
@@ -16,7 +16,7 @@ nulmeting="$TEST_REPO_ROOT/test/fixtures/nulmeting"
 # a2t-emails is the special case: no WORKFLOW-ADOPTIE.md, so everything is
 # open. Capture as found - do not repair first, otherwise the fixture
 # captures the repair instead of the state.
-a2t="$nulmeting/a2t-emails"
+a2t="$baseline/a2t-emails"
 
 if [ -e "$a2t/WORKFLOW-ADOPTIE.md" ]; then
   fail "S4 — the a2t-emails fixture has a WORKFLOW-ADOPTIE.md; it should not be there"
