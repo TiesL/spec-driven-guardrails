@@ -489,7 +489,7 @@ adopt_project() {
 
   # CONTEXT.md is optional (W16b): scaffold only once the project has
   # answered process-context-document with "yes". No predicate like
-  # heeft-package-json — the condition lives in the project's own adoption
+  # has-package-json — the condition lives in the project's own adoption
   # table, so it's read directly here. This works both for a fresh
   # adoption (if Standaard:ja just seeded it) and for a re-adoption after
   # someone later set the row to "yes" anyway.

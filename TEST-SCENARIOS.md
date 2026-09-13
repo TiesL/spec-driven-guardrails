@@ -64,7 +64,7 @@ something new is being added.
 **Covers:** F3
 - Given: four test projects (with/without `package.json` × with/without a `"deploy"` script)
 - When: the seed logic and `predicate_true()` both evaluate
-  `heeft-package-json` and `heeft-deploy-script` against each of the four
+  `has-package-json` and `has-deploy-script` against each of the four
 - Then: both reach exactly the same answer for every combination
 - And: for **every** predicate there's at least one case where it's true
   *and* the corresponding entry is unanswered — otherwise a predicate that

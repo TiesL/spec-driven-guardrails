@@ -62,7 +62,7 @@ while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
   done
 
   # And the total: 21 entries always apply, plus every applicable
-  # predicate entry. `heeft-package-json` now contributes four -
+  # predicate entry. `has-package-json` now contributes four -
   # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
   # runs), `ci-link-3-hard-block` (PR without issue) and
   # `ci-detects-main-outside-pr` (commit on main without PR). Catches
@@ -84,7 +84,7 @@ done < "$table"
 # And: for every predicate there is at least one case where it is true and
 # the entry unanswered. Without that requirement a predicate that became too
 # strict stays invisible, since the difference then lands in no open set.
-[ "$seen_ci_true" -eq 1 ] || fail "R6 — no case at all where heeft-package-json is true and unanswered"
-[ "$seen_deploy_true" -eq 1 ] || fail "R6 — no case at all where heeft-deploy-script is true and unanswered"
+[ "$seen_ci_true" -eq 1 ] || fail "R6 — no case at all where has-package-json is true and unanswered"
+[ "$seen_deploy_true" -eq 1 ] || fail "R6 — no case at all where has-deploy-script is true and unanswered"
 
 test_done

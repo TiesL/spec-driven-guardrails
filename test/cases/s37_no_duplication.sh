@@ -19,7 +19,7 @@ fi
 for script in adopt.sh pending-changes.sh; do
   path="$TEST_REPO_ROOT/$script"
 
-  for pattern in 'heeft-package-json)' 'heeft-deploy-script)'; do
+  for pattern in 'has-package-json)' 'has-deploy-script)'; do
     if grep -q -- "$pattern" "$path"; then
       fail "S37 — $script contains its own predicate branch again: $pattern"
     fi
@@ -36,7 +36,7 @@ done
 
 # And: the library does contain them. Without this check, the test would also
 # pass if someone emptied out lib/changes.sh.
-for pattern in 'heeft-package-json)' 'heeft-deploy-script)' "'## '\*)"; do
+for pattern in 'has-package-json)' 'has-deploy-script)' "'## '\*)"; do
   grep -q -- "$pattern" "$library" || fail "S37 — lib/changes.sh is missing: $pattern"
 done
 
@@ -58,8 +58,8 @@ predicate_true() {
   printf '%s\n' "\$1" >> "$log"
   case "\$1" in
     always) return 0 ;;
-    heeft-package-json) [ -f "\$2/package.json" ] ;;
-    heeft-deploy-script)
+    has-package-json) [ -f "\$2/package.json" ] ;;
+    has-deploy-script)
       [ -f "\$2/package.json" ] && grep -q '"deploy"[[:space:]]*:' "\$2/package.json" ;;
     *) return 1 ;;
   esac

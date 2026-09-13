@@ -30,7 +30,7 @@ pending_ids "$project" > "$with"
 grep -qx 'ci-convention' "$with" || fail "R3 — ci-convention did not appear after adding package.json"
 
 # And nothing else changes: the difference is exactly the four IDs attached to
-# `heeft-package-json`. `ci-convention` is about what the CI does,
+# `has-package-json`. `ci-convention` is about what the CI does,
 # `ci-on-pr-and-main` about when it runs, `ci-link-3-hard-block` and
 # `ci-detects-main-outside-pr` about extra steps it also carries out;
 # answerable independently, but dependent on the same predicate.
