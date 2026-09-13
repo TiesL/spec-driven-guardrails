@@ -34,10 +34,10 @@ grep -qi 'substantiation' "$output" || fail "S7 — the message does not mention
 # extension that BSD sed on macOS does not know, and the substitution then
 # silently does not take.
 awk '
-  !gedaan && sub(/requires substantiation during PRD\/architecture/, "onderbouwd: dit project verwerkt persoonsgegevens") { gedaan = 1 }
+  !done && sub(/requires substantiation during PRD\/architecture/, "substantiated: this project processes personal data") { done = 1 }
   { print }
-' "$project/WORKFLOW-ADOPTION.md" > "$SANDBOX/tabel.tmp"
-mv "$SANDBOX/tabel.tmp" "$project/WORKFLOW-ADOPTION.md"
+' "$project/WORKFLOW-ADOPTION.md" > "$SANDBOX/table.tmp"
+mv "$SANDBOX/table.tmp" "$project/WORKFLOW-ADOPTION.md"
 
 after="$SANDBOX/after.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$after" 2>/dev/null
@@ -47,7 +47,7 @@ grep -q '20 row(s)' "$after" || {
 }
 
 # Once all rows are substantiated, the message disappears — otherwise it becomes noise.
-sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/onderbouwd/g' \
+sed -i.bak 's/at adoption — requires substantiation during PRD\/architecture/substantiated/g' \
   "$project/WORKFLOW-ADOPTION.md"
 rm -f "$project/WORKFLOW-ADOPTION.md.bak"
 
@@ -59,11 +59,11 @@ fi
 
 # And the count only looks at table rows. A loose note outside the table that
 # happens to contain the same words is not a pending substantiation —
-# beantwoord() anchors on the ID column for the same reason.
-printf '\nLosse notitie: dit requires substantiation bij gelegenheid.\n' \
+# answered() anchors on the ID column for the same reason.
+printf '\nLoose note: this requires substantiation at some point.\n' \
   >> "$project/WORKFLOW-ADOPTION.md"
 
-with_note="$SANDBOX/met-notitie.txt"
+with_note="$SANDBOX/with-note.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$with_note" 2>/dev/null
 if grep -qi 'waiting on substantiation' "$with_note"; then
   fail "S7 — a note outside the table counts as a pending substantiation"

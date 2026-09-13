@@ -14,14 +14,14 @@ set -uo pipefail
 skills="pre-merge-review deploy-guards check-convention adoption-registry write-spec refactoring-triggers tdd-seams diagnose-bug adopt-workflow"
 
 for name in $skills; do
-  pad="$TEST_REPO_ROOT/skills/$name/SKILL.md"
-  if [ ! -f "$pad" ]; then
-    fail "S24 — $pad is missing"
+  path="$TEST_REPO_ROOT/skills/$name/SKILL.md"
+  if [ ! -f "$path" ]; then
+    fail "S24 — $path is missing"
     continue
   fi
-  grep -q '^name:' "$pad" \
+  grep -q '^name:' "$path" \
     || fail "S24 — $name/SKILL.md has no 'name:' in the frontmatter"
-  grep -q '^description:' "$pad" \
+  grep -q '^description:' "$path" \
     || fail "S24 — $name/SKILL.md has no 'description:' in the frontmatter"
 done
 

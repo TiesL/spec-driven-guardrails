@@ -15,61 +15,61 @@ trap sandbox_destroy EXIT
 # Given: a source with a ## heading without an Applies if field.
 source="$SANDBOX/CHANGES.md"
 cat > "$source" <<'MD'
-# Adopteerbare wijzigingen
+# Adoptable changes
 
-## vergeten-entry
+## forgotten-entry
 
-- **Question:** Iets waar niemand een predicaat bij zette?
+- **Question:** Something nobody attached a predicate to?
 - **Default:** yes
 
-## echte-entry
+## real-entry
 
 - **Default:** yes
 - **Applies if:** always
 
-## vergeten-na-goede
+## forgotten-after-good
 
-- **Question:** Vergeten predicaat, maar dan ná een entry die er wél een heeft?
+- **Question:** Forgotten predicate, but after an entry that does have one?
 
 ## another-good-one
 
 - **Applies if:** always
 
-## vergeten-als-laatste
+## forgotten-as-last
 
-- **Question:** Vergeten predicaat, als laatste in het bestand?
+- **Question:** Forgotten predicate, as the last one in the file?
 MD
 
 seen="$SANDBOX/seen.txt"
 : > "$seen"
 # shellcheck disable=SC2329  # called indirectly, via iterate_entries
-noteer() { printf '%s\n' "$1" >> "$seen"; }
+record() { printf '%s\n' "$1" >> "$seen"; }
 
 # When: the shared parser reads that source.
 message="$SANDBOX/message.txt"
-iterate_entries "$source" noteer 2>"$message"
+iterate_entries "$source" record 2>"$message"
 status=$?
 
 # Then: a warning appears that names the ID.
-grep -q 'vergeten-entry' "$message" || {
-  fail "S6 — no warning naming 'vergeten-entry'"
+grep -q 'forgotten-entry' "$message" || {
+  fail "S6 — no warning naming 'forgotten-entry'"
   cat "$message" >&2
 }
 grep -qi 'warning' "$message" || fail "S6 — the message is not recognizable as a warning"
 
 # And: the entry is not seeded or asked about.
-if grep -qx 'vergeten-entry' "$seen"; then
-  fail "S6 — vergeten-entry still produced a callback"
+if grep -qx 'forgotten-entry' "$seen"; then
+  fail "S6 — forgotten-entry still produced a callback"
 fi
-grep -qx 'echte-entry' "$seen" || fail "S6 — the entry with a predicate was not processed"
+grep -qx 'real-entry' "$seen" || fail "S6 — the entry with a predicate was not processed"
 
 # And: a broken entry after a good one is also reported. The parser state
 # must not carry over from the previous entry.
-grep -q 'vergeten-na-goede' "$message" || fail "S6 — no warning for a broken entry after a good one"
+grep -q 'forgotten-after-good' "$message" || fail "S6 — no warning for a broken entry after a good one"
 
 # And: also when it is the last one in the file — then there is no
 # following heading left to trigger the check.
-grep -q 'vergeten-als-laatste' "$message" || fail "S6 — no warning for a broken entry as the last one in the file"
+grep -q 'forgotten-as-last' "$message" || fail "S6 — no warning for a broken entry as the last one in the file"
 
 # And the good entries are all processed.
 grep -qx 'another-good-one' "$seen" || fail "S6 — another-good-one was not processed"
@@ -78,22 +78,22 @@ grep -qx 'another-good-one' "$seen" || fail "S6 — another-good-one was not pro
 [ "$status" -eq 0 ] || fail "S6 — iterate_entries gave status $status; a warning must not block"
 
 # And: a source without a trailing newline does not lose its last line.
-without_nl="$SANDBOX/zonder-newline.md"
-printf '# K\n\n## laatste-entry\n\n- **Applies if:** always' > "$without_nl"
-gezien2="$SANDBOX/gezien2.txt"
-: > "$gezien2"
+without_nl="$SANDBOX/without-newline.md"
+printf '# K\n\n## last-entry\n\n- **Applies if:** always' > "$without_nl"
+seen2="$SANDBOX/seen2.txt"
+: > "$seen2"
 # shellcheck disable=SC2329  # called indirectly, via iterate_entries
-noteer2() { printf '%s\n' "$1" >> "$gezien2"; }
-melding2="$SANDBOX/melding2.txt"
-iterate_entries "$without_nl" noteer2 2>"$melding2"
-grep -qx 'laatste-entry' "$gezien2" || fail "S6 — the last entry disappeared due to a missing trailing newline"
-if grep -q 'laatste-entry' "$melding2"; then
+record2() { printf '%s\n' "$1" >> "$seen2"; }
+message2="$SANDBOX/message2.txt"
+iterate_entries "$without_nl" record2 2>"$message2"
+grep -qx 'last-entry' "$seen2" || fail "S6 — the last entry disappeared due to a missing trailing newline"
+if grep -q 'last-entry' "$message2"; then
   fail "S6 — misleading warning for an entry that does have a predicate"
 fi
 
 # And the real CHANGES.md is clean: not a single heading without a predicate.
-real_message="$SANDBOX/echt.txt"
-iterate_entries "$TEST_REPO_ROOT/CHANGES.md" noteer 2>"$real_message" >/dev/null
+real_message="$SANDBOX/real.txt"
+iterate_entries "$TEST_REPO_ROOT/CHANGES.md" record 2>"$real_message" >/dev/null
 if grep -qi 'warning' "$real_message"; then
   fail "S6 — the real CHANGES.md produces warnings:"
   cat "$real_message" >&2

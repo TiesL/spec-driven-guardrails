@@ -18,10 +18,10 @@ trap sandbox_destroy EXIT
 repo="$(sandbox_copy_repo)"
 nulmeting="$repo/test/fixtures/nulmeting"
 
-cat > "$repo/nfr/spec-mutatietest.md" <<'EOF'
+cat > "$repo/nfr/spec-mutation-test.md" <<'EOF'
 ---
-id: spec-mutatietest
-heading: Mutatietest
+id: spec-mutation-test
+heading: Mutation test
 order: 16
 default: yes
 applies-if: always
@@ -31,7 +31,7 @@ status: active
 
 ## Question
 
-Is dit een test-mutatie?
+Is this a test mutation?
 
 ## Yes means
 
@@ -39,7 +39,7 @@ This file exists only to demonstrate S67.
 
 ## Guidance
 
-Niet van toepassing.
+Not applicable.
 EOF
 
 # Overwriting TEST_REPO_ROOT would affect other tests; this test calls
@@ -51,20 +51,20 @@ EOF
 # out for all four points to a project that does not pick up the nfr source
 # after all.
 for project in $BASELINE_PROJECTS; do
-  gouden="$nulmeting/$project/verwacht-openstaand.txt"
-  if [ ! -f "$gouden" ]; then
+  golden="$nulmeting/$project/verwacht-openstaand.txt"
+  if [ ! -f "$golden" ]; then
     fail "S67 — golden set missing: $project"
     continue
   fi
 
-  huidig="$SANDBOX/$project-gemuteerd.txt"
+  current="$SANDBOX/$project-mutated.txt"
   "$repo/pending-changes.sh" "$nulmeting/$project" 2>/dev/null \
-    | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$huidig"
+    | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$current"
 
-  if diff -q "$gouden" "$huidig" >/dev/null 2>&1; then
+  if diff -q "$golden" "$current" >/dev/null 2>&1; then
     fail "S67 — $project did not diverge from a new always-applicable nfr file; the mutation went unnoticed there"
-  elif ! grep -qx 'spec-mutatietest' "$huidig"; then
-    fail "S67 — $project diverged, but did not name spec-mutatietest as the new ID"
+  elif ! grep -qx 'spec-mutation-test' "$current"; then
+    fail "S67 — $project diverged, but did not name spec-mutation-test as the new ID"
   fi
 done
 

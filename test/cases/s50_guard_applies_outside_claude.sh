@@ -26,7 +26,7 @@ git -C "$project" remote add origin "$remote"
 # the second attempt below really puts the rule to the test.
 [ -L "$project/.git/hooks/pre-commit" ] || fail "S50 — pre-commit is not a symlink after adopt.sh"
 [ -L "$project/.git/hooks/pre-push" ] || fail "S50 — pre-push is not a symlink after adopt.sh"
-git -C "$project" commit -q --allow-empty -m "eerste commit, toegestaan op main" \
+git -C "$project" commit -q --allow-empty -m "first commit, allowed on main" \
   || fail "S50 — the very first commit (exception) was wrongly refused"
 
 # When: git commit directly in a shell, without Claude in between.
@@ -40,7 +40,7 @@ assert_contains "S50 — the message matches the PreToolUse guard" "main gets it
 # And: on a feature branch it just proceeds — the same rule, not a
 # blanket block of everything.
 git -C "$project" checkout -q -b feature/something
-if ! git -C "$project" commit -q --allow-empty -m "op een branch" 2>&1; then
+if ! git -C "$project" commit -q --allow-empty -m "on a branch" 2>&1; then
   fail "S50 — a legitimate commit on a feature branch was blocked"
 fi
 
@@ -59,23 +59,23 @@ assert_contains "S50 — the push message matches the PreToolUse guard" "main ge
 # message. Demonstrated exactly with a real relative path, not reasoned
 # about: calling adopt.sh from a subdirectory of $TEST_REPO_ROOT with
 # a relative SPEC_DRIVEN_GUARDRAILS_DIR.
-project_relatief="$(fresh_project relative-workflow-dir)"
+project_relative="$(fresh_project relative-workflow-dir)"
 (
   cd "$TEST_REPO_ROOT/hooks" || exit 1
-  SPEC_DRIVEN_GUARDRAILS_DIR=".." "$TEST_REPO_ROOT/adopt.sh" "$project_relatief" >/dev/null 2>&1
+  SPEC_DRIVEN_GUARDRAILS_DIR=".." "$TEST_REPO_ROOT/adopt.sh" "$project_relative" >/dev/null 2>&1
 )
-target="$(readlink "$project_relatief/.git/hooks/pre-commit" 2>/dev/null)"
+target="$(readlink "$project_relative/.git/hooks/pre-commit" 2>/dev/null)"
 case "$target" in
   /*) ;;
   *) fail "S50 — a relative SPEC_DRIVEN_GUARDRAILS_DIR produced a non-absolute symlink target: $target" ;;
 esac
-[ -e "$project_relatief/.git/hooks/pre-commit" ] \
+[ -e "$project_relative/.git/hooks/pre-commit" ] \
   || fail "S50 — the pre-commit symlink is dangling after a relative SPEC_DRIVEN_GUARDRAILS_DIR"
 
-git -C "$project_relatief" commit -q --allow-empty -m "eerste commit"
-relatief_output="$(cd "$project_relatief" && git commit -q --allow-empty -m "tweede, op main" 2>&1)"
-relatief_status=$?
-[ "$relatief_status" -ne 0 ] \
+git -C "$project_relative" commit -q --allow-empty -m "first commit"
+relative_output="$(cd "$project_relative" && git commit -q --allow-empty -m "second, on main" 2>&1)"
+relative_status=$?
+[ "$relative_status" -ne 0 ] \
   || fail "S50 — with a relative SPEC_DRIVEN_GUARDRAILS_DIR the git hook did not block (dangling symlink, silently skipped by git)"
 
 test_done

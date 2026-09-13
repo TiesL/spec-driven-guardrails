@@ -24,7 +24,7 @@ git -C "$project" checkout -q -b feature/work
 # any other target (such as the text from --body) fails.
 fakebin="$(fake_gh_merge_bin "" "")"
 
-input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"een tekst met woorden\" --subject titel"}}'
+input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"a text with words\" --subject title"}}'
 output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"
 status=$?
 

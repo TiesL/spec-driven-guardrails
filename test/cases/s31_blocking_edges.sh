@@ -17,29 +17,29 @@ repo="$TEST_REPO_ROOT"
 # inside `<!-- ... -->` is still there as far as grep is concerned, but never
 # reaches the issue — then the template hides exactly what it's supposed to
 # prescribe.
-zonder_commentaar() {
+without_comments() {
   awk '/<!--/ { in_c = 1 } !in_c; /-->/ { in_c = 0 }' "$1"
 }
 
 for template in work-item epic; do
-  pad="$repo/templates/ISSUE_TEMPLATE/$template.md"
-  [ -f "$pad" ] || fail "S31 — $template.md is missing"
+  path="$repo/templates/ISSUE_TEMPLATE/$template.md"
+  [ -f "$path" ] || fail "S31 — $template.md is missing"
 
-  zichtbaar="$(zonder_commentaar "$pad")"
+  visible="$(without_comments "$path")"
 
   for field in "Blocked by" "Blocks"; do
-    regel="$(printf '%s\n' "$zichtbaar" | grep "^\*\*$field:\*\*" || true)"
+    line="$(printf '%s\n' "$visible" | grep "^\*\*$field:\*\*" || true)"
 
-    [ -n "$regel" ] \
+    [ -n "$line" ] \
       || fail "S31 — $template.md has no '**$field:**' at the start of a line, outside comments"
 
     # AC2: the field must be able to carry a `#<number>` token. The template
     # shows that with a bare `#`; the check requires the form, not a made-up
     # number. Both fields, not just the first — a check that only sees one of
     # two fields covers half of what it claims to.
-    case "$regel" in
+    case "$line" in
       *"#"*) ;;
-      *) fail "S31 — $template.md: '$regel' does not show that a #-number belongs in it" ;;
+      *) fail "S31 — $template.md: '$line' does not show that a #-number belongs in it" ;;
     esac
   done
 done
@@ -52,7 +52,7 @@ trap sandbox_destroy EXIT
 
 project="$(fresh_project with-old-template)"
 mkdir -p "$project/.github/ISSUE_TEMPLATE"
-echo "verouderd template zonder velden" > "$project/.github/ISSUE_TEMPLATE/work-item.md"
+echo "outdated template without fields" > "$project/.github/ISSUE_TEMPLATE/work-item.md"
 
 adopt "$project"
 

@@ -26,9 +26,9 @@ cat > "$project/WORKFLOW-ADOPTION.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| spec-security | yes | 2026-01-01 | van toepassing |
+| spec-security | yes | 2026-01-01 | applicable |
 | spec-privacy | yes | 2026-01-01 | subsections not all written yet — see issue #17 |
-| spec-data-integrity | yes | 2026-01-01 | van toepassing |
+| spec-data-integrity | yes | 2026-01-01 | applicable |
 | spec-testability | no | 2026-01-01 | not applicable |
 EOF
 

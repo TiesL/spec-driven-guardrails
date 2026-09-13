@@ -21,7 +21,7 @@ input='{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"'"$project"'","
 bin="$SANDBOX/minbin"
 mkdir -p "$bin"
 for t in bash sh sed grep cut tr git dirname basename cat head printf; do
-  pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bin/$t"
+  path="$(command -v "$t" 2>/dev/null)" && ln -sf "$path" "$bin/$t"
 done
 
 error="$SANDBOX/stderr.txt"
@@ -38,19 +38,19 @@ fi
 bare="$SANDBOX/bare"
 mkdir -p "$bare"
 for t in bash sh git; do
-  pad="$(command -v "$t" 2>/dev/null)" && ln -sf "$pad" "$bare/$t"
+  path="$(command -v "$t" 2>/dev/null)" && ln -sf "$path" "$bare/$t"
 done
 
-fout2="$SANDBOX/stderr2.txt"
-printf '%s' "$input" | PATH="$bare" "$guard" >/dev/null 2>"$fout2"
+error2="$SANDBOX/stderr2.txt"
+printf '%s' "$input" | PATH="$bare" "$guard" >/dev/null 2>"$error2"
 status2=$?
 
 # Then: a loud warning appears, and the command is allowed.
 [ "$status2" -ne 2 ] || fail "S14 — the guard blocked while it could not read the input"
-[ -s "$fout2" ] || fail "S14 — no warning when the guard could not read the input"
-grep -qi 'warning' "$fout2" || {
+[ -s "$error2" ] || fail "S14 — no warning when the guard could not read the input"
+grep -qi 'warning' "$error2" || {
   fail "S14 — the message is not recognizable as a warning"
-  cat "$fout2" >&2
+  cat "$error2" >&2
 }
 
 # And with unreadable input (not valid JSON) the same: allow, do not guess.

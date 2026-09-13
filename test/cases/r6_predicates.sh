@@ -16,24 +16,24 @@ table="$TEST_REPO_ROOT/test/fixtures/predicaten/waarheidstabel.txt"
 seen_ci_true=0
 seen_deploy_true=0
 
-while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
+while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
   case "$name" in ''|'#'*) continue ;; esac
 
   # Given: a fresh project according to this combination. No WORKFLOW-ADOPTIE.md,
   # so every applicable entry is also open - which makes a predicate that became
   # too strict visible here.
   project="$(fresh_project "$name")"
-  [ "$heeft_pkg" = "ja" ] && printf '%s\n' "$content" > "$project/package.json"
+  [ "$has_pkg" = "ja" ] && printf '%s\n' "$content" > "$project/package.json"
 
   before="$SANDBOX/$name-before.txt"
   pending_ids "$project" > "$before"
 
   # Then: the outcome per combination is exactly what the table specifies.
-  for paar in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
-    id="${paar%%:*}"; verwacht="${paar#*:}"
+  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+    id="${pair%%:*}"; expected="${pair#*:}"
     if grep -qx "$id" "$before"; then actual=ja; else actual=nee; fi
-    if [ "$actual" != "$verwacht" ]; then
-      fail "R6 — $name: $id applicable=$actual, table says $verwacht"
+    if [ "$actual" != "$expected" ]; then
+      fail "R6 — $name: $id applicable=$actual, table says $expected"
     fi
   done
 
@@ -41,23 +41,23 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   [ "$expected_deploy" = "ja" ] && seen_deploy_true=1
 
   adopt "$project"
-  na="$SANDBOX/$name-na.txt"
-  samen="$SANDBOX/$name-samen.txt"
-  geseed="$SANDBOX/$name-geseed.txt"
-  pending_ids "$project" > "$na"
-  seeded_ids "$project" > "$geseed"
-  { cat "$geseed" "$na"; } | sort -u > "$samen"
+  after="$SANDBOX/$name-after.txt"
+  union="$SANDBOX/$name-union.txt"
+  seeded="$SANDBOX/$name-seeded.txt"
+  pending_ids "$project" > "$after"
+  seeded_ids "$project" > "$seeded"
+  { cat "$seeded" "$after"; } | sort -u > "$union"
 
   # And: what adopt.sh seeds is checked directly against the table. This is
   # the only check that sees when adopt.sh is MISSING something. The union below
   # cannot do that by construction: what adopt.sh does not seed simply stays
   # open, so the union remains unchanged. Both predicate
   # entries have `Default: yes`, so applicable here means seeded.
-  for paar in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
-    id="${paar%%:*}"; verwacht="${paar#*:}"
-    if grep -qx "$id" "$geseed"; then actual=ja; else actual=nee; fi
-    if [ "$actual" != "$verwacht" ]; then
-      fail "R6 — $name: adopt.sh seeded $id=$actual, table says $verwacht"
+  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+    id="${pair%%:*}"; expected="${pair#*:}"
+    if grep -qx "$id" "$seeded"; then actual=ja; else actual=nee; fi
+    if [ "$actual" != "$expected" ]; then
+      fail "R6 — $name: adopt.sh seeded $id=$actual, table says $expected"
     fi
   done
 
@@ -67,18 +67,18 @@ while IFS='|' read -r name heeft_pkg content expected_ci expected_deploy; do
   # runs), `ci-link-3-hard-block` (PR without issue) and
   # `ci-detects-main-outside-pr` (commit on main without PR). Catches
   # seed logic that is bulk-wrong.
-  verwacht_aantal=21
-  [ "$expected_ci" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 4))
-  [ "$expected_deploy" = "ja" ] && verwacht_aantal=$((verwacht_aantal + 1))
-  aantal_geseed="$(grep -c . "$geseed")"
-  if [ "$aantal_geseed" -ne "$verwacht_aantal" ]; then
-    fail "R6 — $name: $aantal_geseed rows seeded, expected $verwacht_aantal"
+  expected_count=21
+  [ "$expected_ci" = "ja" ] && expected_count=$((expected_count + 4))
+  [ "$expected_deploy" = "ja" ] && expected_count=$((expected_count + 1))
+  seeded_count="$(grep -c . "$seeded")"
+  if [ "$seeded_count" -ne "$expected_count" ]; then
+    fail "R6 — $name: $seeded_count rows seeded, expected $expected_count"
   fi
 
   # And: both scripts arrive at the same answer. adopt.sh seeds the applicable
   # `Default: yes` entries; what remains open afterward are the
   # `Default: question` entries. Together exactly what was open before the adoption.
-  assert_ids_equal "R6 — $name: seed logic versus van_toepassing()" "$before" "$samen"
+  assert_ids_equal "R6 — $name: seed logic versus applicability" "$before" "$union"
 done < "$table"
 
 # And: for every predicate there is at least one case where it is true and

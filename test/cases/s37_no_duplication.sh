@@ -7,9 +7,9 @@ set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
-bibliotheek="$TEST_REPO_ROOT/lib/changes.sh"
+library="$TEST_REPO_ROOT/lib/changes.sh"
 
-if [ ! -f "$bibliotheek" ]; then
+if [ ! -f "$library" ]; then
   fail "S37 — lib/changes.sh is missing"
   test_done
 fi
@@ -17,27 +17,27 @@ fi
 # Then: the callers no longer contain their own predicate branch or parser
 # header.
 for script in adopt.sh pending-changes.sh; do
-  pad="$TEST_REPO_ROOT/$script"
+  path="$TEST_REPO_ROOT/$script"
 
-  for patroon in 'heeft-package-json)' 'heeft-deploy-script)'; do
-    if grep -q -- "$patroon" "$pad"; then
-      fail "S37 — $script contains its own predicate branch again: $patroon"
+  for pattern in 'heeft-package-json)' 'heeft-deploy-script)'; do
+    if grep -q -- "$pattern" "$path"; then
+      fail "S37 — $script contains its own predicate branch again: $pattern"
     fi
   done
 
   # The header of the parser: a case branch on '## '. The library should be
   # the only place that parses CHANGES.md line by line.
-  if grep -q "'## '\*)" "$pad"; then
+  if grep -q "'## '\*)" "$path"; then
     fail "S37 — $script contains its own CHANGES.md parser again"
   fi
 
-  grep -q 'lib/changes.sh' "$pad" || fail "S37 — $script does not source the library"
+  grep -q 'lib/changes.sh' "$path" || fail "S37 — $script does not source the library"
 done
 
 # And: the library does contain them. Without this check, the test would also
 # pass if someone emptied out lib/changes.sh.
-for patroon in 'heeft-package-json)' 'heeft-deploy-script)' "'## '\*)"; do
-  grep -q -- "$patroon" "$bibliotheek" || fail "S37 — lib/changes.sh is missing: $patroon"
+for pattern in 'heeft-package-json)' 'heeft-deploy-script)' "'## '\*)"; do
+  grep -q -- "$pattern" "$library" || fail "S37 — lib/changes.sh is missing: $pattern"
 done
 
 # And: both scripts actually call the library function too. The checks above
@@ -49,7 +49,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
-log="$SANDBOX/aanroepen.txt"
+log="$SANDBOX/calls.txt"
 
 cat >> "$repo/lib/changes.sh" <<INSTR
 
@@ -57,7 +57,7 @@ cat >> "$repo/lib/changes.sh" <<INSTR
 predicate_true() {
   printf '%s\n' "\$1" >> "$log"
   case "\$1" in
-    altijd) return 0 ;;
+    always) return 0 ;;
     heeft-package-json) [ -f "\$2/package.json" ] ;;
     heeft-deploy-script)
       [ -f "\$2/package.json" ] && grep -q '"deploy"[[:space:]]*:' "\$2/package.json" ;;

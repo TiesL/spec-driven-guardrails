@@ -16,7 +16,7 @@ mkdir -p "$project"
 
 # spec-security has a real "ja", spec-data-integrity still carries the
 # provisional stamp that adopt.sh's seed_entry() sets: Answer stays
-# literally "ja", the text "vereist onderbouwing" sits in Notes. Both
+# literally "ja", the text "requires substantiation" sits in Notes. Both
 # belong in scope — spec-privacy is "nee" and spec-testability is unanswered
 # (no row) — neither belongs in scope.
 cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
@@ -24,7 +24,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| spec-security | ja | 2026-01-01 | van toepassing |
+| spec-security | ja | 2026-01-01 | applicable |
 | spec-data-integrity | ja | 2026-01-01 | at adoption — requires substantiation during PRD/architecture |
 | spec-privacy | nee | 2026-01-01 | not applicable |
 EOF
@@ -54,9 +54,9 @@ if grep -q 'spec-testability' "$output"; then
   fail "S26 — spec-testability is unanswered and does not belong in the scope"
 fi
 
-regels="$(grep -c '.' "$output")"
-if [ "$regels" -ne 4 ]; then
-  fail "S26 — expected exactly 4 scope lines (complexity, dependencies, 2 NFRs), got $regels"
+lines="$(grep -c '.' "$output")"
+if [ "$lines" -ne 4 ]; then
+  fail "S26 — expected exactly 4 scope lines (complexity, dependencies, 2 NFRs), got $lines"
   cat "$output" >&2
 fi
 

@@ -31,7 +31,7 @@ cat > "$project/WORKFLOW-ADOPTIE.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| ci-convention | ja | 2026-01-01 | van toepassing |
+| ci-convention | ja | 2026-01-01 | applicable |
 EOF
 
 adopt "$project"
