@@ -10,7 +10,7 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-table="$TEST_REPO_ROOT/test/fixtures/predicaten/waarheidstabel.txt"
+table="$TEST_REPO_ROOT/test/fixtures/predicates/truth-table.txt"
 [ -f "$table" ] || { fail "R6 — truth table is missing"; test_done; }
 
 seen_ci_true=0
