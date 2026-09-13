@@ -26,9 +26,9 @@ passed=0
 failed=0
 failed_names=""
 
-for case in "$here"/cases/*.sh; do
-  [ -e "$case" ] || continue
-  name="$(basename "$case" .sh)"
+for case_file in "$here"/cases/*.sh; do
+  [ -e "$case_file" ] || continue
+  name="$(basename "$case_file" .sh)"
   if [ -n "$filter" ]; then
     case "$name" in
       *"$filter"*) ;;
@@ -38,7 +38,7 @@ for case in "$here"/cases/*.sh; do
 
   echo "  $name"
   rm -rf "${sentinel:?}"/*
-  if TEST_REAL_HOME="$real_home" HOME="$sentinel" bash "$case"; then
+  if TEST_REAL_HOME="$real_home" HOME="$sentinel" bash "$case_file"; then
     passed=$((passed + 1))
   else
     failed=$((failed + 1))
