@@ -35,7 +35,7 @@ import sys
 HEREDOC = re.compile(r"""(?<!<)<<(?!<)(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\2""")
 
 
-def zonder_heredocs(tekst):
+def without_heredocs(text):
     """Cuts away heredoc bodies. Separate pass, before tokenizing.
 
     The content of a heredoc is data, not shell syntax: a line that happens to
@@ -50,40 +50,40 @@ def zonder_heredocs(tekst):
     terminator instead drops the rest, and that's the safe direction: at worst
     a missed case, never an extra block.
     """
-    regels = tekst.split("\n")
-    behouden = []
+    lines = text.split("\n")
+    kept = []
     i = 0
-    while i < len(regels):
-        regel = regels[i]
-        behouden.append(regel)
+    while i < len(lines):
+        line = lines[i]
+        kept.append(line)
         i += 1
 
-        treffer = HEREDOC.search(regel)
-        if not treffer:
+        match = HEREDOC.search(line)
+        if not match:
             continue
 
-        tabs_weg = treffer.group(1) == "-"
-        delimiter = treffer.group(3)
-        gevonden = False
-        while i < len(regels):
-            kandidaat = regels[i]
-            if tabs_weg:
-                kandidaat = kandidaat.lstrip("\t")
+        strip_tabs = match.group(1) == "-"
+        delimiter = match.group(3)
+        found = False
+        while i < len(lines):
+            candidate = lines[i]
+            if strip_tabs:
+                candidate = candidate.lstrip("\t")
             i += 1
-            if kandidaat == delimiter:
-                gevonden = True
+            if candidate == delimiter:
+                found = True
                 break
-        if not gevonden:
+        if not found:
             # No recognizable terminator: the rest is body, or the command is
             # truncated. Don't judge any further.
             break
 
-    return "\n".join(behouden)
+    return "\n".join(kept)
 
 
-def tokeniseer(tekst):
+def tokenize(text):
     """Quote-aware tokenization; separators only count outside quotes."""
-    lexer = shlex.shlex(tekst, posix=True, punctuation_chars=";|&\n")
+    lexer = shlex.shlex(text, posix=True, punctuation_chars=";|&\n")
     lexer.whitespace_split = True
     # Remove newline from whitespace, so it remains a separator:
     # `git a\ngit b` are two commands, not words of one.
@@ -93,39 +93,39 @@ def tokeniseer(tekst):
 
 def main():
     try:
-        invoer = json.load(sys.stdin)
+        input_data = json.load(sys.stdin)
     except Exception:
         return 3
 
-    if not isinstance(invoer, dict) or invoer.get("tool_name") != "Bash":
+    if not isinstance(input_data, dict) or input_data.get("tool_name") != "Bash":
         return 4
 
-    tool_input = invoer.get("tool_input")
-    commando = tool_input.get("command") if isinstance(tool_input, dict) else None
-    if not isinstance(commando, str) or not commando.strip():
+    tool_input = input_data.get("tool_input")
+    command = tool_input.get("command") if isinstance(tool_input, dict) else None
+    if not isinstance(command, str) or not command.strip():
         return 4
 
-    werkmap = invoer.get("cwd")
-    if not isinstance(werkmap, str):
-        werkmap = ""
+    cwd = input_data.get("cwd")
+    if not isinstance(cwd, str):
+        cwd = ""
 
     try:
-        tokens = tokeniseer(zonder_heredocs(commando))
+        tokens = tokenize(without_heredocs(command))
     except ValueError:
         # Unclosed quoting. Don't guess at a reading.
         return 3
 
-    uit = sys.stdout.buffer
-    uit.write(b"c" + werkmap.encode("utf-8", "surrogateescape") + b"\0")
+    out = sys.stdout.buffer
+    out.write(b"c" + cwd.encode("utf-8", "surrogateescape") + b"\0")
 
-    scheiders = {";", "|", "||", "&", "&&", "\n", ";;", "|&"}
+    separators = {";", "|", "||", "&", "&&", "\n", ";;", "|&"}
     for token in tokens:
-        if token in scheiders:
-            uit.write(b"e\0")
+        if token in separators:
+            out.write(b"e\0")
         else:
-            uit.write(b"t" + token.encode("utf-8", "surrogateescape") + b"\0")
-    uit.write(b"e\0")
-    uit.flush()
+            out.write(b"t" + token.encode("utf-8", "surrogateescape") + b"\0")
+    out.write(b"e\0")
+    out.flush()
     return 0
 
 
