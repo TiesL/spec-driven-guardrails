@@ -285,3 +285,31 @@ twee bestanden tegen elkaar, dus niets sloeg alarm.
 verschil — dezelfde rookmelder-behandeling die S66 al aan `nfr.momentopname/`
 geeft, nu ook hier. Vanaf nu is "ververs de snapshot" geen conventie meer die
 op discipline leunt, maar een check die het afdwingt.
+
+## Bijgewerkt voor #175
+
+Dertien `CHANGES.md`-entry-ID's zijn van Nederlands naar Engels hernoemd
+(`ci-conventie` → `ci-convention`, `ci-op-pr-en-main` →
+`ci-on-pr-and-main`, `ci-schakel-3-hard-slot` → `ci-link-3-hard-block`,
+`ci-detecteert-main-buiten-pr` → `ci-detects-main-outside-pr`,
+`traceability-schakel-1` → `traceability-link-1`, `proces-prd` →
+`process-prd`, `architectuurdocument` → `architecture-document`,
+`proces-issue-tracking` → `process-issue-tracking`, `test-integratie` →
+`test-integration`, `ci-poort-op-merge` → `ci-gate-on-merge`,
+`proces-technical-debt-register` → `process-technical-debt-register`,
+`proces-refactoring-triggers` → `process-refactoring-triggers`,
+`proces-diagnose-bug` → `process-diagnose-bug`). Zelfde soort wijziging
+als #156, nu toegepast op `CHANGES.md` in plaats van op `nfr/`: geen van
+de vier bevroren projecten had ooit een nieuwe seed gekregen die dit zou
+raken (de tel blijft ongewijzigd), maar `tennis-admin`'s eigen
+`WORKFLOW-ADOPTIE.md` had `ci-conventie` al met "ja" beantwoord — precies
+het scenario waarvoor `lib/changes.sh`'s nieuwe `changes_current_id`/
+`changes_old_id`-alias bestaat (zie ook S95).
+
+Alle vier `verwacht-openstaand.txt`-bestanden zijn bijgewerkt naar de
+nieuwe ID-strings, met herberekende alfabetische posities.
+`CHANGES.md.momentopname` is ververst (de rename raakt `CHANGES.md`
+zelf). `nfr.momentopname/` is óók ververst: `nfr/spec-deployability.md`
+noemt `ci-conventie` in zijn eigen Guidance-tekst en moest mee, wat
+verder niets met de dertien CHANGES.md-ID's zelf te maken heeft maar wel
+onder dezelfde freeze valt.

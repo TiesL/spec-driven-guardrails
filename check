@@ -189,7 +189,7 @@ fi
 
 # --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
 # This repo requires every adopted project to run this exact check
-# (traceability-schakel-1 in CHANGES.md, answered `yes` in this repo's own
+# (traceability-link-1 in CHANGES.md, answered `yes` in this repo's own
 # WORKFLOW-ADOPTION.md), but until now never ran it on its own PRD.md/
 # TEST-SCENARIOS.md — found when S85's own malformed Covers: field
 # (`F6, W42/#114`) sat undetected until check-traceability.sh was run by

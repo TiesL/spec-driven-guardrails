@@ -6,17 +6,17 @@ de vraag verschijnt vanzelf zodra dat verandert.
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| traceability-schakel-1 | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| proces-prd | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| architectuurdocument | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| traceability-link-1 | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| process-prd | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| architecture-document | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | test-unit | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | test-feature-gwt | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | test-tdd-seams | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | quality-review-before-merge | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| ci-poort-op-merge | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| proces-technical-debt-register | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| proces-refactoring-triggers | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
-| proces-diagnose-bug | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| ci-gate-on-merge | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| process-technical-debt-register | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| process-refactoring-triggers | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
+| process-diagnose-bug | yes | 2026-09-08 | bij adoptie — requires substantiation tijdens PRD/architectuur |
 | spec-security | yes | 2026-09-08 | Relevant, beperkt — de guardrails-hook (F7) is zelf een beveiligingsmaatregel; check-traceability.sh parseert niet-vertrouwde issue-/PR-tekst zonder eval. Zie PRD.md, sectie Security. |
 | spec-data-integrity | yes | 2026-09-08 | Sterk relevant — WORKFLOW-ADOPTION.md is de duurzame vastlegging van besluiten en mag nooit overschreven worden; adopt.sh moet idempotent blijven. Zie PRD.md, sectie Data integrity. |
 | spec-failure-modes | yes | 2026-09-08 | Sterk relevant — een hook blokkeert nooit een sessie tenzij dat expliciet zijn taak is (F7/F8), en faalt dan open zonder gh of netwerk. Zie PRD.md, sectie Failure modes. |

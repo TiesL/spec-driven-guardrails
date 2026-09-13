@@ -29,9 +29,9 @@ entry, want sectiescheidingen zijn `###`.
 voorziening drie dingen die achteraf apart moeten kunnen (PRD, testscenario's,
 issue-templates). Al beantwoord in drie projecten, dus het ID blijft staan
 zoals het is. Nieuwe logica gebruikt de fijnmazigere entries die ervoor in de
-plaats zijn gekomen, en die in `CHANGES.md` staan: `proces-prd`,
-`architectuurdocument`, `proces-issue-tracking`, `test-unit`,
-`test-feature-gwt`, `test-integratie`.
+plaats zijn gekomen, en die in `CHANGES.md` staan: `process-prd`,
+`architecture-document`, `process-issue-tracking`, `test-unit`,
+`test-feature-gwt`, `test-integration`.
 
 - **Vraag:** Moet dit project `PRD.md`, `TEST-SCENARIOS.md` en de GitHub-issue-templates gebruiken?
 - **Ja betekende:** `adopt.sh` opnieuw draaien — die scaffoldt `PRD.md` en

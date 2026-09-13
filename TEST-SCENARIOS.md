@@ -36,14 +36,14 @@ something new is being added.
 - Given: the same fresh project, right after adoption
 - When: `pending-changes.sh .` is run
 - Then: exactly these 7 IDs appear as pending, in any order:
-  `proces-issue-tracking`, `test-integratie`, `spec-performance-scale`,
+  `process-issue-tracking`, `test-integration`, `spec-performance-scale`,
   `spec-compliance`, `spec-portability`, `spec-usability`, `spec-cost-management`
 
-### R3 — `package.json` makes `ci-conventie` relevant
+### R3 — `package.json` makes `ci-convention` relevant
 **Covers:** F3
 - Given: the same project, now with a `package.json`
 - When: `pending-changes.sh .` is run
-- Then: `ci-conventie` additionally appears as pending
+- Then: `ci-convention` additionally appears as pending
 
 ### R4 — A `"deploy"` script makes `deploy-guards` relevant
 **Covers:** F3
@@ -199,7 +199,7 @@ something new is being added.
 - When: `pending-changes.sh` runs
 - Then: that change is still pending — only the ID column counts as an
   answer
-- And: notes are free text and IDs like `test-integratie` are ordinary
+- And: notes are free text and IDs like `test-integration` are ordinary
   words, so an unanchored match would silently make questions disappear
 
 ---
@@ -662,7 +662,7 @@ something new is being added.
 - Given: a project with a `package.json` and an already-existing `ci.yml`
   that doesn't call `check-pr-issue-link.sh` (W19b's `scaffold_if_missing`
   leaves such a file alone — fixing the template only helps new projects,
-  the same pattern as `ci-op-pr-en-main` in W24)
+  the same pattern as `ci-on-pr-and-main` in W24)
 - When: `pending-changes.sh` runs
 - Then: a new entry appears as pending
 - And: a project with no `package.json` doesn't get that question
@@ -764,7 +764,7 @@ something new is being added.
 - Then: that file stays untouched — `scaffold_if_missing` only writes what's
   missing
 - And: the deviation doesn't stay invisible. The adoption registry asks the
-  `ci-op-pr-en-main` question, and keeps asking until the project answers
+  `ci-on-pr-and-main` question, and keeps asking until the project answers
   it. That's the mechanism, not a one-time notice in `adopt.sh` that
   appears once and is gone
 
@@ -830,7 +830,7 @@ something new is being added.
 **Covers:** F17
 - Given: a project with a `package.json` and an already-existing `ci.yml`
   that doesn't call `check-main-via-pr.sh` (`scaffold_if_missing` leaves
-  such a file alone — the same pattern as `ci-schakel-3-hard-slot` in W19b)
+  such a file alone — the same pattern as `ci-link-3-hard-block` in W19b)
 - When: `pending-changes.sh` runs
 - Then: a new entry appears as pending
 - And: a project with no `package.json` doesn't get that question
@@ -1092,3 +1092,14 @@ something new is being added.
   `tennis-invoicing`'s own document as the concrete reference
 - And: the single-decision skeleton is unchanged — this is an addition,
   not a restructuring of the existing case
+
+### S95 — An answer under a pre-rename CHANGES.md entry ID is still recognized
+**Covers:** F3
+- Given: a project's `WORKFLOW-ADOPTION.md` answers `yes` under
+  `ci-conventie`, the pre-#175 ID (the entry was later renamed to
+  `ci-convention`) — the exact case found in `tennis-admin`'s own
+  frozen fixture
+- When: `pending-changes.sh` runs
+- Then: `ci-convention` is not reported as pending — the old-ID row
+  satisfies the current question, the same alias treatment #156 gave
+  the renamed `nfr/` IDs

@@ -1,15 +1,15 @@
-# Predicaatwaarheidstabel — expliciet vastgelegd, niet afgeleid
+# Predicate truth table — explicitly recorded, not derived
 #
-# R6 eist dat de uitkomst per combinatie hier staat in plaats van alleen
-# onderling vergeleken te worden: twee identiek kapotte predicaten zijn het met
-# elkaar eens en zouden een zuivere gelijkheidstest passeren.
+# R6 requires the outcome per combination to be stated here instead of only
+# compared against each other: two identically broken predicates agree with
+# each other and would pass a plain equality test.
 #
-# Elk project is vers en heeft geen WORKFLOW-ADOPTIE.md, dus elke van toepassing
-# zijnde entry staat ook open. Daarmee is per predicaat minstens één geval
-# aanwezig waarin het waar is én onbeantwoord — precies de tak die de nulmeting
-# van de echte adopters mist (zie test/fixtures/nulmeting/LEESMIJ.md).
+# Every project is fresh and has no WORKFLOW-ADOPTIE.md, so every applicable
+# entry is also open. That gives, per predicate, at least one case where it is
+# true *and* unanswered — exactly the branch the real adopters' baseline
+# misses (see test/fixtures/nulmeting/LEESMIJ.md).
 #
-# naam | package.json | inhoud scripts | ci-conventie | deploy-guards
+# name | package.json | scripts content | ci-convention | deploy-guards
 geen-package-json|nee||nee|nee
 package-json-zonder-deploy|ja|{"name":"t"}|ja|nee
 package-json-met-deploy|ja|{"name":"t","scripts":{"deploy":"node deploy.mjs"}}|ja|ja

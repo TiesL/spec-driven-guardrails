@@ -22,7 +22,7 @@ if [ -e "$a2t/WORKFLOW-ADOPTIE.md" ]; then
   fail "S4 — the a2t-emails fixture has a WORKFLOW-ADOPTIE.md; it should not be there"
 fi
 
-# Non-circular check that nothing has been answered in advance: ci-conventie is
+# Non-circular check that nothing has been answered in advance: ci-convention is
 # indeed answered in tennis-admin. If it is open here, the fixture is unrepaired.
 # No `if [ -f ... ]` guard: if the golden set is missing, that is a fault and
 # not a reason to silently check nothing.
@@ -31,8 +31,8 @@ if [ ! -f "$a2t/verwacht-openstaand.txt" ]; then
   test_done
 fi
 
-if ! grep -qx 'ci-conventie' "$a2t/verwacht-openstaand.txt"; then
-  fail "S4 — ci-conventie is missing from the a2t baseline; appears to have been answered in advance"
+if ! grep -qx 'ci-convention' "$a2t/verwacht-openstaand.txt"; then
+  fail "S4 — ci-convention is missing from the a2t baseline; appears to have been answered in advance"
 fi
 count="$(grep -c . "$a2t/verwacht-openstaand.txt")"
 if [ "$count" -lt 20 ]; then

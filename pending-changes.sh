@@ -47,6 +47,9 @@ answered() {
   # before an NFR was renamed — same spirit as W42/#114's filename
   # fallback above, applied to the ID instead of the filename.
   old_id="$(nfr_old_id "$id")"
+  [ -n "$old_id" ] && grep -q "^| *$old_id *|" "$answers" && return 0
+  # #175: same alias, for the thirteen renamed CHANGES.md entry IDs.
+  old_id="$(changes_old_id "$id")"
   [ -n "$old_id" ] && grep -q "^| *$old_id *|" "$answers"
 }
 

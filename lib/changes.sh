@@ -149,3 +149,51 @@ iterate_all_entries() {
 
   [ "$errors" -eq 0 ]
 }
+
+# #175 — thirteen CHANGES.md entry IDs were renamed from Dutch to English.
+# A project that already answered under an old ID keeps that row exactly
+# as it is — same "never rewrite what a project already recorded"
+# principle as W42/#114's ja/nee support and #156's nfr_current_id/
+# nfr_old_id. These two lookups are the only place the mapping is
+# spelled out; add a case to both when a future rename needs the same
+# treatment.
+
+# Given any ID (old or new, or unrelated), the current one.
+changes_current_id() {
+  case "$1" in
+    ci-conventie) echo ci-convention ;;
+    ci-op-pr-en-main) echo ci-on-pr-and-main ;;
+    ci-schakel-3-hard-slot) echo ci-link-3-hard-block ;;
+    ci-detecteert-main-buiten-pr) echo ci-detects-main-outside-pr ;;
+    traceability-schakel-1) echo traceability-link-1 ;;
+    proces-prd) echo process-prd ;;
+    architectuurdocument) echo architecture-document ;;
+    proces-issue-tracking) echo process-issue-tracking ;;
+    test-integratie) echo test-integration ;;
+    ci-poort-op-merge) echo ci-gate-on-merge ;;
+    proces-technical-debt-register) echo process-technical-debt-register ;;
+    proces-refactoring-triggers) echo process-refactoring-triggers ;;
+    proces-diagnose-bug) echo process-diagnose-bug ;;
+    *) echo "$1" ;;
+  esac
+}
+
+# Given a *current* ID, the pre-rename ID it used to have — empty if it
+# was never renamed.
+changes_old_id() {
+  case "$1" in
+    ci-convention) echo ci-conventie ;;
+    ci-on-pr-and-main) echo ci-op-pr-en-main ;;
+    ci-link-3-hard-block) echo ci-schakel-3-hard-slot ;;
+    ci-detects-main-outside-pr) echo ci-detecteert-main-buiten-pr ;;
+    traceability-link-1) echo traceability-schakel-1 ;;
+    process-prd) echo proces-prd ;;
+    architecture-document) echo architectuurdocument ;;
+    process-issue-tracking) echo proces-issue-tracking ;;
+    test-integration) echo test-integratie ;;
+    ci-gate-on-merge) echo ci-poort-op-merge ;;
+    process-technical-debt-register) echo proces-technical-debt-register ;;
+    process-refactoring-triggers) echo proces-refactoring-triggers ;;
+    process-diagnose-bug) echo proces-diagnose-bug ;;
+  esac
+}

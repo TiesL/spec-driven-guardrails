@@ -201,7 +201,7 @@ a build artifact is the price; it's worth it because the generator also
 plants the anchor F11 leans on.
 
 **Only the fifteen NFRs move.** The remaining twelve entries (`proces-*`,
-`test-*`, `ci-conventie`, `deploy-guards`) have no second consumer and
+`test-*`, `ci-convention`, `deploy-guards`) have no second consumer and
 therefore no duplication problem.
 
 ### F5 — Retirement with an archive (`CHANGES-ARCHIEF.md`)
@@ -582,9 +582,9 @@ coverage has to come from three local-and-CI-based layers:
   and `push: branches: [main]`. The `pull_request` event is also needed to
   set up a check as a *required check* — the form that can actually block a
   merge. Fixing the template only helps new projects, so it comes with a
-  `CHANGES.md` entry (`ci-op-pr-en-main`, `heeft-package-json`): existing
+  `CHANGES.md` entry (`ci-on-pr-and-main`, `heeft-package-json`): existing
   projects would otherwise keep their weaker CI without anyone asking. That
-  entry is separate from `ci-conventie` — that answer covers *what* the
+  entry is separate from `ci-convention` — that answer covers *what* the
   workflow does, this one covers *when* it runs.
 - **Git hooks in the project** (W26). A `pre-commit` and `pre-push` hook
   cover every tool on that machine. They reuse the decision logic from
@@ -863,7 +863,7 @@ epics still apply, detached from the execution history in which they arose.
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |
 | `templates/ci.yml` is npm-only despite "platform-neutral" | Pre-existing; all adopters are npm or have no CI | First adopter on a different stack |
 | Four projects have ~24 of 27 changes unanswered | Tables predate PR #6 | W7 makes it visible; F6's three gates bring it in gradually |
-| Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-op-pr-en-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
+| Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-on-pr-and-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
 | `check-traceability.sh` (root) has no automated guard keeping it in step with `templates/check-traceability.sh` | #147 wired the root copy into this repo's own `check` (it's no longer unused), and #167 found and fixed one real drift between the two (the root copy had gone untranslated — Dutch identifiers and prose — while the template had already been translated); nothing currently prevents the same drift recurring | If `templates/check-traceability.sh` changes again without the root copy following, or if a reader mistakes one for the source of truth for the other |
 | `pre-merge-review`'s `scope.sh` falls back to `nfr/*.md`'s (still-Dutch) heading names for this repo's own NFR rows, now mismatched against this file's translated section headings (no `<!-- nfr: id -->` anchors exist in this hand-authored `PRD.md`, so the fallback was always active) | `scope.sh` degrades to a stderr warning rather than blocking (S27); the printed names are cosmetically stale, not incorrect data | Once `nfr/*.md` is translated via its own frozen-baseline refresh procedure (`LEESMIJ.md`) — separate from this translation effort since editing `nfr/*.md` directly breaks S66's freeze invariant |
 | `pending-changes.sh` (W42/#114) embeds ~75 lines of network-mutating, `gh`-calling logic (the old-format migration notice and tracking-issue creation) inside a script whose module comment otherwise promises "no network, no mutation" | The exception is honestly documented and pinned to an explicit `-R <host>/<owner>/<repo>` derived from the project's own remote — found and reviewed by Opus (two review rounds) during pre-merge-review of PR #127 | If this logic grows further, or if another mutating exception is added — pulling it into its own script the `SessionStart` hook calls alongside `pending-changes.sh` would keep the no-mutation contract intact, make the mutating path independently testable, and self-delete once every project has migrated |
