@@ -36,7 +36,7 @@ model never deserves a lighter reviewer.
 If the chosen model deviates from what's obvious, make that visible — in
 the PR or the findings comment — so a later reader can see which model
 reviewed and why. The rest of this procedure (isolated context,
-`scope.sh`, `scenario-poort.sh`, the marker) doesn't change with the model
+`scope.sh`, `scenario-gate.sh`, the marker) doesn't change with the model
 choice: that's a separate knob, not a package deal — a different model
 choice is no license to also skip the rest of the procedure.
 
@@ -79,7 +79,7 @@ toward issues, using `gh` and network access it already needs anyway:
 **Link 2 — is every scenario named by an issue?** Run:
 
 ```
-.claude/skills/pre-merge-review/scenario-poort.sh .
+.claude/skills/pre-merge-review/scenario-gate.sh .
 ```
 
 That prints, one per line, every scenario ID from `TEST-SCENARIOS.md` that

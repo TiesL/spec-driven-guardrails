@@ -55,15 +55,15 @@ check "entry ID quality-review-before-merge as a logic gate (W42/#114)" hooks/gi
 check "entry ID kwaliteitsreview-voor-merge as the pre-migration fallback (W42/#114)" hooks/git-guardrails 'kwaliteitsreview-voor-merge'
 check "the \\*\\*Covers:\\*\\*-field as a logic gate (project-owned PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Covers:'
 check "the \\*\\*Dekt:\\*\\*-field as pre-migration detection (project-owned PRD/TEST-SCENARIOS, W42/#114)" templates/check-traceability.sh 'Dekt:'
-check "the \\*\\*Covers:\\*\\*-field as a logic gate (external issue bodies, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Covers:'
-check "the \\*\\*Dekt:\\*\\*-field as a permanent exception (external issue bodies, historical, W42/#114)" skills/pre-merge-review/scenario-poort.sh 'Dekt:'
+check "the \\*\\*Covers:\\*\\*-field as a logic gate (external issue bodies, W42/#114)" skills/pre-merge-review/scenario-gate.sh 'Covers:'
+check "the \\*\\*Dekt:\\*\\*-field as a permanent exception (external issue bodies, historical, W42/#114)" skills/pre-merge-review/scenario-gate.sh 'Dekt:'
 check "the <!-- nfr: <id> --> anchor" lib/nfr.sh 'nfr: \$id'
 check "the <!-- pre-merge-review:done --> marker (external PR comments)" hooks/git-guardrails 'pre-merge-review:done'
 
 echo
 echo "=== Part 2: candidate scan (new combinations, needs manual review) ==="
 
-candidate_scripts="adopt.sh pending-changes.sh hooks/git-guardrails lib/changes.sh lib/nfr.sh skills/pre-merge-review/scope.sh skills/pre-merge-review/scenario-poort.sh templates/check-traceability.sh templates/check-pr-issue-link.sh templates/check-main-via-pr.sh"
+candidate_scripts="adopt.sh pending-changes.sh hooks/git-guardrails lib/changes.sh lib/nfr.sh skills/pre-merge-review/scope.sh skills/pre-merge-review/scenario-gate.sh templates/check-traceability.sh templates/check-pr-issue-link.sh templates/check-main-via-pr.sh"
 
 for script in $candidate_scripts; do
   [ -f "$script" ] || continue

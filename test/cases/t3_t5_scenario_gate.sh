@@ -16,8 +16,8 @@ set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
-script="$TEST_REPO_ROOT/skills/pre-merge-review/scenario-poort.sh"
-[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-poort.sh is missing or not executable"; test_done; }
+script="$TEST_REPO_ROOT/skills/pre-merge-review/scenario-gate.sh"
+[ -x "$script" ] || { fail "T3/T5 — skills/pre-merge-review/scenario-gate.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
