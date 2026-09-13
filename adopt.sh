@@ -165,12 +165,12 @@ write_gitignore_block() {
   # and in at least one project contains lines excluding nested git repos;
   # silently plowing through it is the most expensive mistake this script
   # can make.
-  if ! marker_problem="$(awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_END" '
+  if ! marker_problem="$(awk -v begin="$GITIGNORE_BEGIN" -v end="$GITIGNORE_END" '
     $0 == begin {
       if (depth > 0) { print "a second begin marker on line " NR " while the previous block is not closed yet"; exit 1 }
       depth++; next
     }
-    $0 == eind {
+    $0 == end {
       if (depth == 0) { print "an end marker on line " NR " with no matching begin marker"; exit 1 }
       depth--; next
     }
@@ -183,9 +183,9 @@ write_gitignore_block() {
 
   # Existing content, without the old block and without the loose variants
   # of the managed lines.
-  awk -v begin="$GITIGNORE_BEGIN" -v eind="$GITIGNORE_END" '
+  awk -v begin="$GITIGNORE_BEGIN" -v end="$GITIGNORE_END" '
     $0 == begin { in_block = 1; next }
-    in_block { if ($0 == eind) in_block = 0; next }
+    in_block { if ($0 == end) in_block = 0; next }
     { print }
   ' "$gitignore" > "$temp_file"
 

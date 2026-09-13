@@ -5,7 +5,7 @@
 #
 # Called from CI, with the PR number as argument:
 #
-#   ./check-pr-issue-link.sh "$PR_NUMMER"
+#   ./check-pr-issue-link.sh "$PR_NUMBER"
 #
 # Only the current PR is judged — no audit over history: an audit over the
 # 27 issue-less PRs from before this work item would keep failing forever
@@ -24,14 +24,14 @@
 
 set -uo pipefail
 
-pr_nummer="${1:?gebruik: check-pr-issue-link.sh <pr-nummer>}"
+pr_number="${1:?usage: check-pr-issue-link.sh <pr-number>}"
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "check-pr-issue-link: gh is missing — can't check link 3." >&2
   exit 1
 fi
 
-aantal="$(gh pr view "$pr_nummer" --json closingIssuesReferences \
+count="$(gh pr view "$pr_number" --json closingIssuesReferences \
   --jq '.closingIssuesReferences | length' 2>/dev/null)"
 
 # Anything other than a clean non-negative number counts as "couldn't
@@ -40,14 +40,14 @@ aantal="$(gh pr view "$pr_nummer" --json closingIssuesReferences \
 # reports an integer-expression error but `set -e` is off), and the script
 # then runs through to the last line: exactly the fail-open path this
 # file's header rules out for the one hard block.
-case "$aantal" in
+case "$count" in
   ''|*[!0-9]*)
-    echo "check-pr-issue-link: couldn't consult PR #$pr_nummer." >&2
+    echo "check-pr-issue-link: couldn't consult PR #$pr_number." >&2
     exit 1 ;;
 esac
 
-if [ "$aantal" -eq 0 ]; then
-  echo "check-pr-issue-link: PR #$pr_nummer references no issue at all (link 3) — add 'Closes #<issue>' or link the issue in the PR sidebar." >&2
+if [ "$count" -eq 0 ]; then
+  echo "check-pr-issue-link: PR #$pr_number references no issue at all (link 3) — add 'Closes #<issue>' or link the issue in the PR sidebar." >&2
   exit 1
 fi
 

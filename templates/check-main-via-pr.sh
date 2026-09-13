@@ -27,27 +27,27 @@
 
 set -uo pipefail
 
-sha="${1:?gebruik: check-main-via-pr.sh <sha>}"
+sha="${1:?usage: check-main-via-pr.sh <sha>}"
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "check-main-via-pr: gh is missing — can't establish the origin of $sha." >&2
   exit 1
 fi
 
-aantal="$(gh api "repos/{owner}/{repo}/commits/$sha/pulls" --jq 'length' 2>/dev/null)"
+count="$(gh api "repos/{owner}/{repo}/commits/$sha/pulls" --jq 'length' 2>/dev/null)"
 
 # Anything other than a clean non-negative number is "couldn't establish"
 # — including empty output. Without this check, the comparison below fails
 # silently (bash reports an integer-expression error, but set -e is off)
 # and the script runs through to exit 0 — exactly the fail-open path this
 # script rules out.
-case "$aantal" in
+case "$count" in
   ''|*[!0-9]*)
     echo "check-main-via-pr: couldn't establish the origin of commit $sha." >&2
     exit 1 ;;
 esac
 
-if [ "$aantal" -eq 0 ]; then
+if [ "$count" -eq 0 ]; then
   echo "check-main-via-pr: commit $sha on main did not come from a pull request." >&2
   exit 1
 fi

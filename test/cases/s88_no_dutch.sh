@@ -45,12 +45,12 @@ esac
 # pending list (that list is empty once #136/#137/#138 are all done, so
 # hardcoding one here would make this test fragile against exactly that
 # progress), inject a synthetic pending entry into the sandboxed script.
-sed -i.bak "s|pending_uitgesloten=''|pending_uitgesloten='./NEP-PENDING.md'|" "$repo/check-no-dutch.sh"
+sed -i.bak "s|pending_excluded=''|pending_excluded='./FAKE-PENDING.md'|" "$repo/check-no-dutch.sh"
 rm -f "$repo/check-no-dutch.sh.bak"
-echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/NEP-PENDING.md"
+echo "Dit wordt niet vertaald en dat moet gemeld worden." >> "$repo/FAKE-PENDING.md"
 output_pending="$("$repo/check-no-dutch.sh" "$repo" 2>&1)"
 case "$output_pending" in
-  *"NEP-PENDING.md"*) fail "S88 — a tracked-pending file was reported anyway" ;;
+  *"FAKE-PENDING.md"*) fail "S88 — a tracked-pending file was reported anyway" ;;
 esac
 
 # And: the script excludes itself from its own scan — its marker-word list
