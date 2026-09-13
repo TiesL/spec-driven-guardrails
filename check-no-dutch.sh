@@ -24,9 +24,9 @@
 
 set -uo pipefail
 
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-doel="${1:-$eigen_map}"
-doel="$(cd "$doel" 2>/dev/null && pwd)" || {
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+target="${1:-$own_dir}"
+target="$(cd "$target" 2>/dev/null && pwd)" || {
   echo "check-no-dutch: directory does not exist: ${1:-}" >&2
   exit 1
 }
@@ -65,29 +65,29 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 # own personal instruction file (not part of the shared product surface).
 # check-no-dutch.sh itself is excluded: its own marker-word list is a
 # necessary literal, not untranslated prose.
-permanent_uitgesloten='./ARCHITECTURE.md ./WORKFLOW-ADOPTION.md ./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
+permanent_excluded='./ARCHITECTURE.md ./WORKFLOW-ADOPTION.md ./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
 
 # Pending exclusions — real translation gaps, tracked in an open issue.
 # Add a line the moment a new gap is found; remove it the moment that
 # issue closes. Empty now: #136/#137/#138 (the gaps that motivated this
 # list) are all done.
-pending_uitgesloten=''
+pending_excluded=''
 
-fout=0
+error=0
 
-cd "$doel"
-while IFS= read -r -d '' bestand; do
-  case " $permanent_uitgesloten " in
-    *" $bestand "*) continue ;;
+cd "$target"
+while IFS= read -r -d '' file; do
+  case " $permanent_excluded " in
+    *" $file "*) continue ;;
   esac
-  case " $pending_uitgesloten " in
-    *" $bestand "*) continue ;;
+  case " $pending_excluded " in
+    *" $file "*) continue ;;
   esac
 
-  if treffers="$(grep -nwE "$(echo "$markers" | tr ' ' '|')" "$bestand" 2>/dev/null)"; then
-    echo "check-no-dutch: $bestand still carries Dutch text:" >&2
-    printf '%s\n' "$treffers" | sed 's/^/    /' >&2
-    fout=1
+  if matches="$(grep -nwE "$(echo "$markers" | tr ' ' '|')" "$file" 2>/dev/null)"; then
+    echo "check-no-dutch: $file still carries Dutch text:" >&2
+    printf '%s\n' "$matches" | sed 's/^/    /' >&2
+    error=1
   fi
 done < <(find . -type f \( -name '*.sh' -o -name '*.md' \) \
   -not -path './.git/*' \
@@ -95,7 +95,7 @@ done < <(find . -type f \( -name '*.sh' -o -name '*.md' \) \
   -not -path './test/cases/*' \
   -print0)
 
-if [ "$fout" -eq 0 ]; then
+if [ "$error" -eq 0 ]; then
   echo "check-no-dutch: no Dutch found outside layer C and the tracked pending exclusions."
 fi
-exit "$fout"
+exit "$error"

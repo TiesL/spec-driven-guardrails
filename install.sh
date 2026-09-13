@@ -20,21 +20,21 @@
 
 set -euo pipefail
 
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$eigen_map"
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$own_dir"
 
-if [ ! -f "$eigen_map/WORKFLOW.md" ] || [ ! -f "$eigen_map/adopt.sh" ] || [ ! -d "$eigen_map/.git" ]; then
-  echo "Error: '$eigen_map' doesn't look like a spec-driven-guardrails clone (WORKFLOW.md, adopt.sh, or .git is missing)." >&2
+if [ ! -f "$own_dir/WORKFLOW.md" ] || [ ! -f "$own_dir/adopt.sh" ] || [ ! -d "$own_dir/.git" ]; then
+  echo "Error: '$own_dir' doesn't look like a spec-driven-guardrails clone (WORKFLOW.md, adopt.sh, or .git is missing)." >&2
   exit 1
 fi
 
 # When in doubt, touch nothing. `git checkout <tag>` would otherwise
 # silently discard local, uncommitted changes — exactly the mistake a pin
 # action must never make.
-vuil="$(git status --porcelain)"
-if [ -n "$vuil" ]; then
+dirty="$(git status --porcelain)"
+if [ -n "$dirty" ]; then
   echo "Error: this checkout has uncommitted changes — install.sh won't touch them, resolve that first:" >&2
-  echo "$vuil" >&2
+  echo "$dirty" >&2
   exit 1
 fi
 
@@ -58,5 +58,5 @@ git checkout --quiet "$tag"
 
 echo "Done: this checkout is now pinned to $tag."
 echo "Add this to your shell profile (\`~/.zshrc\` or \`~/.bashrc\`), if it isn't already there:"
-echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$eigen_map\""
+echo "  export SPEC_DRIVEN_GUARDRAILS_DIR=\"$own_dir\""
 echo "Then adopt a project as usual: \"\$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh\"."

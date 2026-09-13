@@ -42,8 +42,8 @@ set -uo pipefail
 
 project_dir="${1:?usage: scope.sh <project_dir> [workflow_dir]}"
 
-eigen_map="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-workflow_dir="${2:-$(cd "$eigen_map/../.." && pwd)}"
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+workflow_dir="${2:-$(cd "$own_dir/../.." && pwd)}"
 
 # shellcheck source=../../lib/nfr.sh
 . "$workflow_dir/lib/nfr.sh"
@@ -60,54 +60,54 @@ workflow_dir="${2:-$(cd "$eigen_map/../.." && pwd)}"
 # expected value from the filename alone would then silently produce an
 # empty NFR scope — no warning, review looks clean, nothing was actually
 # checked.
-antwoorden="$project_dir/WORKFLOW-ADOPTION.md"
-[ -f "$antwoorden" ] || antwoorden="$project_dir/WORKFLOW-ADOPTIE.md"
+answers="$project_dir/WORKFLOW-ADOPTION.md"
+[ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
 prd="$project_dir/PRD.md"
 
 echo "complexity"
 echo "dependencies"
 
-[ -f "$antwoorden" ] || exit 0
+[ -f "$answers" ] || exit 0
 
 # IDs of every spec-* row whose Answer is exactly "yes" or "ja".
-ja_ids="$(awk -F'|' '
+yes_ids="$(awk -F'|' '
   /^\| *spec-[a-z-]+ *\|/ {
     id = $2; gsub(/^[ \t]+|[ \t]+$/, "", id)
-    antwoord = $3; gsub(/^[ \t]+|[ \t]+$/, "", antwoord)
-    if (antwoord == "yes" || antwoord == "ja") print id
+    answer = $3; gsub(/^[ \t]+|[ \t]+$/, "", answer)
+    if (answer == "yes" || answer == "ja") print id
   }
-' "$antwoorden")"
+' "$answers")"
 
-[ -n "$ja_ids" ] || exit 0
+[ -n "$yes_ids" ] || exit 0
 
 while IFS= read -r id; do
   [ -n "$id" ] || continue
 
-  kop=""
+  heading=""
   if [ -f "$prd" ]; then
-    kop="$(awk -v anker="<!-- nfr: $id -->" '
-      /^### / { kop = $0; sub(/^### /, "", kop) }
-      $0 == anker { print kop; exit }
+    heading="$(awk -v anchor="<!-- nfr: $id -->" '
+      /^### / { heading = $0; sub(/^### /, "", heading) }
+      $0 == anchor { print heading; exit }
     ' "$prd")"
   fi
 
-  if [ -z "$kop" ]; then
+  if [ -z "$heading" ]; then
     echo "warning: anchor for $id is missing from ${prd#"$project_dir"/} — falling back to the heading name from the NFR register" >&2
-    kop="$(nfr_field "$workflow_dir/nfr/$id.md" heading)"
+    heading="$(nfr_field "$workflow_dir/nfr/$id.md" heading)"
     # #156: $id may be a pre-rename ID still recorded in this project's
     # WORKFLOW-ADOPTION.md — nfr/ no longer has a file under that name,
     # so retry under the current one before giving up on a heading.
-    [ -n "$kop" ] || kop="$(nfr_field "$workflow_dir/nfr/$(nfr_current_id "$id").md" heading)"
-    [ -n "$kop" ] || kop="$id"
+    [ -n "$heading" ] || heading="$(nfr_field "$workflow_dir/nfr/$(nfr_current_id "$id").md" heading)"
+    [ -n "$heading" ] || heading="$id"
   fi
 
   # Same grep shape as pending-changes.sh: the whole row counts, since the
   # provisional stamp lives in Notes, not in Answer.
-  regel="$(grep -m1 "^| *$id *|" "$antwoorden")"
-  case "$regel" in
-    *"vereist onderbouwing"*|*"requires substantiation"*) echo "$id: $kop [requires substantiation]" ;;
-    *) echo "$id: $kop" ;;
+  row="$(grep -m1 "^| *$id *|" "$answers")"
+  case "$row" in
+    *"vereist onderbouwing"*|*"requires substantiation"*) echo "$id: $heading [requires substantiation]" ;;
+    *) echo "$id: $heading" ;;
   esac
 done <<EOF
-$ja_ids
+$yes_ids
 EOF
