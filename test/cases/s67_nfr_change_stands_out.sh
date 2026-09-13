@@ -16,7 +16,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
-nulmeting="$repo/test/fixtures/nulmeting"
+baseline="$repo/test/fixtures/baseline"
 
 cat > "$repo/nfr/spec-mutation-test.md" <<'EOF'
 ---
@@ -51,14 +51,14 @@ EOF
 # out for all four points to a project that does not pick up the nfr source
 # after all.
 for project in $BASELINE_PROJECTS; do
-  golden="$nulmeting/$project/verwacht-openstaand.txt"
+  golden="$baseline/$project/verwacht-openstaand.txt"
   if [ ! -f "$golden" ]; then
     fail "S67 — golden set missing: $project"
     continue
   fi
 
   current="$SANDBOX/$project-mutated.txt"
-  "$repo/pending-changes.sh" "$nulmeting/$project" 2>/dev/null \
+  "$repo/pending-changes.sh" "$baseline/$project" 2>/dev/null \
     | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort > "$current"
 
   if diff -q "$golden" "$current" >/dev/null 2>&1; then

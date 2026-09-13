@@ -103,7 +103,7 @@ scripts say about this repo. CI calls `./check` directly — exactly the
 ### F2 — Recorded baseline as fixtures
 
 The current outcome for all **four** adopters, frozen in
-`test/fixtures/nulmeting/` as golden sets, before anything changes.
+`test/fixtures/baseline/` as golden sets, before anything changes.
 
 A manual dry run against copies isn't repeatable; freezing it as a fixture
 makes R9 a permanent regression test. All four sources live locally —
@@ -115,9 +115,9 @@ baseline is therefore "everything outstanding" — record it as found, don't fix
 it first, or the fixture would capture the fix instead of the actual state.
 
 **W28:** the question set has come from two sources since W5, `CHANGES.md` and
-`nfr/`, and until W28 only the first was frozen (`CHANGES.md.momentopname`).
-`nfr.momentopname/` (a verbatim copy of `nfr/`, a single `cp -r`) closes that
-gap — see `test/fixtures/nulmeting/LEESMIJ.md`.
+`nfr/`, and until W28 only the first was frozen (`CHANGES.md.snapshot`).
+`nfr.snapshot/` (a verbatim copy of `nfr/`, a single `cp -r`) closes that
+gap — see `test/fixtures/baseline/LEESMIJ.md`.
 
 ### F3 — Shared parser and predicates (`lib/changes.sh`)
 
@@ -1018,7 +1018,7 @@ Considered and not chosen: backward-compatible parsers (e.g. letting both
 `Dekt:` and `Covers:` work, with a transition warning) instead of a single
 migration. That would avoid the cross-repo mutation, but wasn't chosen
 because it keeps the dual-language period open-ended — exactly what this
-repo elsewhere (see R9, the nulmeting) tries to prevent.
+repo elsewhere (see R9, the baseline) tries to prevent.
 
 ### 4. Front page: which question gets answered first — not which reader is primary
 
@@ -1081,7 +1081,7 @@ with it.
 | `adopt.sh` | Installs symlinks, copies, skills, and the adoption table |
 | `pending-changes.sh` | Reports outstanding changes and substantiations at session start |
 | `check` | Its own test command: syntax, JSON validation, shellcheck, test suite (F1, new) |
-| `test/` | Test harness and `fixtures/nulmeting/` (F1, F2, new) |
+| `test/` | Test harness and `fixtures/baseline/` (F1, F2, new) |
 | `hooks/` | Guard scripts for the `PreToolUse` hooks (F7, F8, new) |
 | `skills/*/SKILL.md` | The nine skills (F10, new) |
 | `settings/session-hooks.json` | Hook configuration; symlinked as `.claude/settings.json` |

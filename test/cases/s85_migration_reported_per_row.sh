@@ -133,7 +133,7 @@ uitvoer3="$(PATH="$fakebin3:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$projec
 assert_contains "S85 — reports the lookup failure" "could not check for an existing" "$uitvoer3"
 
 # And: a project directory that is not its own git root (e.g. a directory
-# nested inside a different repo, like the frozen nulmeting fixtures) never
+# nested inside a different repo, like the frozen baseline fixtures) never
 # triggers a gh call at all — never write to the wrong repository, and this
 # holds regardless of GH_REPO being set in the environment.
 geneste_map="$project/binnenin"

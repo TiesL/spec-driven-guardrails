@@ -99,7 +99,7 @@ something new is being added.
 
 ### R9 — The four existing projects are never asked a question again
 **Covers:** F2
-- Given: the frozen nulmeting fixtures of `tennis-admin`,
+- Given: the frozen baseline fixtures of `tennis-admin`,
   `tennis-registration`, `tennis-invoicing`, and `a2t-emails`
 - When: `pending-changes.sh` runs against each fixture after the refactor
 - Then: the number and identity of pending questions is exactly equal to
@@ -110,11 +110,11 @@ something new is being added.
 
 ### S66 — The source of the question set is fully frozen, including the nfr part
 **Covers:** F2
-- Given: the nulmeting fixtures, after W28
+- Given: the baseline fixtures, after W28
 - When: a golden set is recomputed
 - Then: every `spec-*` ID in it traces back to a frozen file in
-  `test/fixtures/nulmeting/nfr.momentopname/`, verbatim equal to
-  `CHANGES.md.momentopname`'s form
+  `test/fixtures/baseline/nfr.snapshot/`, verbatim equal to
+  `CHANGES.md.snapshot`'s form
 - And: no ID depends only on the current, non-frozen form of `nfr/`
 
 ### S67 — A change in the nfr register that affects the question set stands out
@@ -126,7 +126,7 @@ something new is being added.
 - Then: the outcome diverges from the frozen golden set, naming the new
   ID — R9 already catches this, demonstrated with a mutation
 - And: that difference can't be resolved by only adjusting the golden set:
-  `nfr.momentopname` must then deliberately change along with it, with an
+  `nfr.snapshot` must then deliberately change along with it, with an
   explanation in the PR (see `LEESMIJ.md`)
 
 ---
@@ -156,10 +156,10 @@ something new is being added.
 - Then: the run stops immediately with an explicit message
 - And: nothing was written outside the temporary directory
 
-### S4 — The nulmeting fixture records `a2t-emails` as found
+### S4 — The baseline fixture records `a2t-emails` as found
 **Covers:** F2
 - Given: `a2t-emails` has no `WORKFLOW-ADOPTIE.md`
-- When: the nulmeting fixture is created
+- When: the baseline fixture is created
 - Then: the fixture records "everything pending"
 - And: no `WORKFLOW-ADOPTIE.md` is created or fixed — the fixture holds
   the state, not the repair
@@ -959,7 +959,7 @@ something new is being added.
 - And: if `pending-changes.sh` runs again while that issue is already
   open, no second issue is created (idempotent, marker-driven)
 - And: if `project_dir` isn't its own git root (e.g. a directory inside a
-  *different* repo, like the frozen nulmeting fixtures), `gh` isn't
+  *different* repo, like the frozen baseline fixtures), `gh` isn't
   called at all — never write to the wrong repo
 
 ### S86 — The SessionStart/SessionEnd hooks work independently of the incidental cwd
@@ -1022,14 +1022,14 @@ something new is being added.
 - And: `pre-merge-review`'s `scope.sh` still resolves a readable heading
   for the row via the alias, instead of falling back to the bare ID
 
-### S90 — CHANGES.md.momentopname stays in step with CHANGES.md
+### S90 — CHANGES.md.snapshot stays in step with CHANGES.md
 **Covers:** F2
-- Given: `test/fixtures/nulmeting/CHANGES.md.momentopname`, the frozen
+- Given: `test/fixtures/baseline/CHANGES.md.snapshot`, the frozen
   human-readable reference copy of `CHANGES.md` from when the golden sets
   were measured
 - When: `./check` runs
 - Then: the snapshot is byte-identical to the live `CHANGES.md` — the same
-  smoke-detector treatment S66 already gives `nfr.momentopname/`
+  smoke-detector treatment S66 already gives `nfr.snapshot/`
 - And: a diverged snapshot fails loudly, naming the exact diff, instead of
   drifting silently (found via #160: 562 lines of undetected drift since
   the snapshot was last refreshed in #127, long before three later
