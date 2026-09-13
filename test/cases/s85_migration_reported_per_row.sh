@@ -123,22 +123,22 @@ case "$*" in
 esac
 exit 1
 ')"
-uitvoer3="$(PATH="$fakebin3:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
+output3="$(PATH="$fakebin3:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
 
 # Then: a failed lookup must never be treated as "no marker found" — that
 # would file a duplicate tracking issue every session the lookup happens
 # to fail. Fail closed instead: skip, don't create, report the failure.
 [ "$(grep -c '^issue create' "$gh_log3")" -eq 0 ] \
   || fail "S85 — a transient 'gh issue list' failure still created an issue (possible duplicate)"
-assert_contains "S85 — reports the lookup failure" "could not check for an existing" "$uitvoer3"
+assert_contains "S85 — reports the lookup failure" "could not check for an existing" "$output3"
 
 # And: a project directory that is not its own git root (e.g. a directory
 # nested inside a different repo, like the frozen baseline fixtures) never
 # triggers a gh call at all — never write to the wrong repository, and this
 # holds regardless of GH_REPO being set in the environment.
-geneste_map="$project/binnenin"
-mkdir -p "$geneste_map"
-cp "$project/WORKFLOW-ADOPTIE.md" "$geneste_map/WORKFLOW-ADOPTIE.md"
+nested_dir="$project/inside"
+mkdir -p "$nested_dir"
+cp "$project/WORKFLOW-ADOPTIE.md" "$nested_dir/WORKFLOW-ADOPTIE.md"
 gh_log4="$SANDBOX/gh-calls-4.txt"
 : > "$gh_log4"
 fakebin4="$(fake_gh_bin '
@@ -146,7 +146,7 @@ echo "$*" >> "'"$gh_log4"'"
 exit 1
 ')"
 PATH="$fakebin4:$PATH" GH_REPO="TiesL/spec-driven-guardrails" \
-  "$TEST_REPO_ROOT/pending-changes.sh" "$geneste_map" > /dev/null 2>&1
+  "$TEST_REPO_ROOT/pending-changes.sh" "$nested_dir" > /dev/null 2>&1
 [ -s "$gh_log4" ] && fail "S85 — gh was called for a directory that is not its own git root"
 
 # And: a project with no github.com origin at all (true for every
