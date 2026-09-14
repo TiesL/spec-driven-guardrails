@@ -1,13 +1,15 @@
 # PRD — claude-workflow, release "From prose to mechanism"
 
-**Status:** As-built for epic #11 (closed, shipped 2026-09-06 — see
-`CHANGELOG.md`); "Besloten in W29 (#53)" below steers the ongoing epic #52.
+**Status:** As-built for epic #11 (closed, shipped 2026-09-06) and epic #52
+(closed, shipped 2026-09-13) — see `CHANGELOG.md` for both, including the
+W29 (#53) design-session decisions that steered epic #52.
 
 ---
 
 ## Context
 
-`spec-driven-guardrails` (formerly `claude-workflow`, renamed in W32/#56) is the
+`spec-driven-guardrails` (formerly `claude-workflow`, renamed in W32/#56 —
+full reasoning in `CHANGELOG.md`, "Decided in W29 (#53)", decision 1) is the
 shared source of truth for Ties' personal Git/GitHub workflow, adopted by
 four projects via local symlinks.
 
@@ -544,8 +546,8 @@ that permanently.
 Adopted projects follow `main` live via symlink, so a tag is a human
 reference point, not a pinnable version. *(Revised for consumers outside
 Ties' own use: W37 (#79) builds a pinnable consumer path on top of this tag
-mechanism, see "Besloten in W29 (#53)", decision 5. This — following `main`
-live via symlink — remains Ties' own model.)* The first CHANGELOG entry
+mechanism — see `CHANGELOG.md`, "Decided in W29 (#53)", decision 5. This —
+following `main` live via symlink — remains Ties' own model.)* The first CHANGELOG entry
 documents the required action: **run `adopt.sh` again in every project on
 every machine, and `adopt.sh --user` once per machine** — without that last
 step, the user-level skill is missing and the updated `USER-CLAUDE.md` points
@@ -806,8 +808,18 @@ scripting idiom.
 
 **Boundary between the core and agent tooling (W31, #55).** Level **a —
 naming only**: this table documents the boundary that already implicitly
-exists, without building an adapter layer or contract (see "Besloten in W29
-(#53)", decision 2).
+exists, without building an adapter layer or contract (see `CHANGELOG.md`,
+"Decided in W29 (#53)", decision 2).
+
+**Translation scope, A + B, via a criterion (W29 decision 3, W33/#57).**
+What migrates along to the four adopted projects (not translated
+themselves) isn't a hand-maintained list but a durable criterion: *every
+literal string that a script from this repo matches in a file of another
+repo* — layer A (physically shared files, e.g. `CLAUDE.md`) plus layer B
+(shared vocabulary a script reads back, e.g. `**Covers:**`). Layer C
+(scaffolded output already locally owned by an adopted project) is
+explicitly excluded. Full reasoning: `CHANGELOG.md`, "Decided in W29
+(#53)", decision 3.
 
 | Agent-independent | Claude Code-specific |
 |---|---|
@@ -831,6 +843,13 @@ the front page that could make that claim (W35, #59) doesn't exist yet.
 Building against a promise that doesn't exist is the same speculation level
 b/c already rejected (rule-of-three, see above). Trigger to build them after
 all: as soon as W35 makes an agent-neutrality claim to the outside world.
+
+**Front page order (W29 decision 4, W35/#59).** Not "which reader is
+primary" but which question gets answered first: functional framing above
+the fold (what problem, for whom, what does it cost), then a
+self-contained developer section complete on its own for installing, with
+no need to have read the rest. Full reasoning: `CHANGELOG.md`, "Decided in
+W29 (#53)", decision 4.
 
 ### Maintainability
 
@@ -907,8 +926,8 @@ epics still apply, detached from the execution history in which they arose.
   *technique* as a method for filling in NFR sections remains a separate
   exploration.
 - **A pinnable version for consumers.** *(Revised: picked up after all in
-  W37 (#79), see "Besloten in W29 (#53)", decision 5 — this exclusion held
-  for epic #11, no longer for epic #52.)*
+  W37 (#79), see `CHANGELOG.md`, "Decided in W29 (#53)", decision 5 — this
+  exclusion held for epic #11, no longer for epic #52.)*
 
 ---
 
@@ -998,162 +1017,6 @@ epics still apply, detached from the execution history in which they arose.
    projects right away?
 3. ~~Generate or assemble?~~ Answered: generate — see `generate-prd-block`
    and F4.
-
----
-
-## Decided in W29 (#53)
-
-Design session with Ties, no code (AC3 of that work item) — four decisions
-that steer epic #52, each with its reasoning. Follow-up items that
-anticipated this have been updated: W31 (#55), W32 (#56), W33 (#57), W35
-(#59), and epic #52 itself.
-
-**Revised after an independent second opinion** (a fresh model, with no
-context from the design session itself, asked to critique purely the
-content of the four decisions — not the writing). That review found a hard
-naming collision and three substantiations that had the right outcome for
-a weak reason. All four were adjusted as a result; decision 5 is new and
-follows from a gap the review exposed.
-
-### 1. The name: `spec-driven-guardrails`
-
-**Revised.** The original working title `agentic-SDD-workflow` turned out,
-on external research, to be **GitHub's own Spec Kit's term** for its
-methodology ("Agentic SDD"). For the audience that knows this field, that
-name reads as a derivative of Spec Kit, not as something standalone — and
-the field is already full of similar names anyway (`cc-sdd`,
-`agentic-sdlc-spec-kit`, `specky`). For a release whose whole point is
-shareability, that's not a detail.
-
-`spec-driven-guardrails` — the previously considered and dropped
-alternative — collides with nothing and puts the emphasis on what
-distinguishes this project from an arbitrary SDD approach: **the
-enforcement**, not yet another spec generator. It also avoids the
-acronym that collided with decision 4's audience. Consistently lowercase
-(no mixed casing) — it becomes a directory name, a repo URL, and the basis
-of an environment variable, and mixed casing is a known source of
-cross-platform trouble there.
-
-### 2. Provider-agnostic: level a — naming only
-
-Of the three levels (a: name it, b: an adapter layer with one
-implementation, c: build a second implementation alongside it), **a** was
-chosen. The boundary between agent-independent and Claude-Code-specific
-(see W31/#55) gets documented, not built as a contract.
-
-**Substantiation revised.** The original reason ("a contract with no
-second implementation stays an assumption") proves too much — by that
-reasoning, no abstraction is ever justified before its second consumer.
-The real reason is a rule-of-three: there's no second agent in sight and
-no concrete requester, so a contract is speculative right now. The
-strongest reason was already there, but in second place: epic #52's own
-boundary ("no new functionality").
-
-**The risk that *is* real:** after this release, the product presents
-itself externally as neutral (new name, a front page for a non-technical
-reader), while it's 100% tied to Claude Code — hooks, skills,
-`.claude/settings.json`. That's not technical debt but promise debt, sold
-to exactly the new reader. To make level a strong rather than merely
-cheap, W31 (#55) gets two concrete steps added to it: a `check` test that
-enforces the boundary (not just describes it), and a one-time measurement
-of what actually still works without Claude Code.
-
-The existing technical-debt row ("Skills bind this repo to Claude Code")
-isn't closed by this decision — that only happens once W31 delivers the
-boundary table and the two steps above, and then not as "resolved" but as
-"deliberately bounded, with a concrete trigger to go further (level b or
-c)".
-
-### 3. Translation scope: A + B, via a criterion — not via a list
-
-That this repo itself — documentation, hook messages, test names,
-comments — becomes English isn't in question; that's W33 (#57)'s main
-work. What this decision is actually about: which pieces of that
-translation move along in the four Dutch adopted projects, where they
-aren't translated themselves.
-
-**Revised: the criterion replaces the enumeration.** The original list
-(two items: entry IDs and `**Dekt:**`/`AC<n>`) turned out, on closer
-inspection, to be incomplete — the review independently found at least
-five machine-matched Dutch tokens missing from it (the filename
-`WORKFLOW-ADOPTIE.md` itself, the `ja`/`nee` answer values, the "requires
-substantiation" stamp, the `.gitignore`-managed block marker, and the
-issue templates that get refreshed on every `adopt.sh` run anyway). A
-hand-maintained list has exactly the failure mode this decision says it's
-fighting: something gets missed and quietly falls through.
-
-The underlying, actually durable criterion:
-
-> **Migrates along: every literal string that a script from this repo
-> matches in a file of another repo.**
-
-That's layer **A** (physically shared files — symlinks: `CLAUDE.md`,
-`WORKFLOW.md`, `skills/*/SKILL.md`, `session-hooks.json`) plus layer **B**
-(shared vocabulary that sits as a loose token in someone else's file, and
-that a script from this repo reads back). W33 (#57) generates the full
-inventory of layer B by searching the scripts themselves for what they
-match in other files, instead of trying to keep the list here complete by
-hand.
-
-Explicitly out of scope stays a third layer, **C — scaffolded document
-headings and script output** (e.g. `check-traceability.sh`'s own messages
-*inside* the four projects) that, after scaffolding, have become locally
-owned by those projects, and that no script from this repo reads back.
-That doesn't migrate along. Newly scaffolded copies, for future projects,
-are English — the source templates in `templates/` are part of this repo
-and so do migrate.
-
-Considered and not chosen: backward-compatible parsers (e.g. letting both
-`Dekt:` and `Covers:` work, with a transition warning) instead of a single
-migration. That would avoid the cross-repo mutation, but wasn't chosen
-because it keeps the dual-language period open-ended — exactly what this
-repo elsewhere (see R9, the baseline) tries to prevent.
-
-### 4. Front page: which question gets answered first — not which reader is primary
-
-**Revised.** "The functional reader is primary" turned out to have two
-gaps: the original substantiation ("the developer finds their way via
-`WORKFLOW.md`") is insider logic — that file is agent-instruction text,
-not an installation manual, and so no guide for a genuine outsider. More
-importantly: the functional reader can't take the first installation step
-(cloning, setting an environment variable, running a bash script, having
-Claude Code) themselves anyway — a front page optimized for someone who
-can't act on it converts nothing.
-
-The question therefore isn't "which reader is primary," but **which
-question gets answered first**: functional framing above the fold (what
-problem, for whom, what does it cost — business analysts, product owners,
-and product managers read that first), followed by a self-contained
-developer section that's complete on its own for installing, with no need
-to have read the rest. W35 (#59) gets an extra acceptance criterion for
-this: a developer who never saw the repo installs it using only
-`README.md`.
-
-### 5. Installation and update model: a tagged, pinnable release
-
-**New, from the second opinion.** None of the four original decisions
-answered what "installing" means for someone who isn't Ties. The current
-model — a loose checkout, an environment variable, `adopt.sh` — is a model
-for one person on multiple machines, not for a consumer who doesn't want
-to follow main. This document previously explicitly excluded "a pinnable
-version for consumers" (see "Out of scope" above, and F15's "a tag is a
-human reference point, not a pinnable version" — both updated with a
-reference here), which contradicted this release's own promise
-(shareability).
-
-Decided: consumers pin a **tagged release** (building on W22/#35's
-existing tag/CHANGELOG mechanism from epic #11 — F15 correctly described
-that mechanism for Ties' own live-via-symlink usage; W37 builds a second,
-pinnable path on top of it, not a replacement); the loose-checkout-plus-
-env-var model continues to exist alongside it for Ties' own multi-machine
-usage. Worked out as a new work item: **W37 (#79)**.
-
-Also decided: `CHANGES.md` is read as **product defaults**, not as Ties'
-personal preference register. Every entry thereby implicitly gets a
-defensible default for a new adopter; Ties' own answers in the four
-existing projects remain as a worked example, not as a prescription. Also
-worked out in W37 (#79) — that text in `CHANGES.md`'s intro changes along
-with it.
 
 ---
 
