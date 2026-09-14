@@ -80,6 +80,24 @@ EOF
 output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
 [ "$status" != "2" ] || fail "S108/AC2 — a legitimate, agreeing Closes was wrongly blocked: $output"
 
+# A cross-repo reference (owner/repo#N, GitHub's own syntax, no space
+# before the #) is not a same-repo stray Closes — checked explicitly after
+# pre-merge-review of PR #224 raised it as a possible false positive; it
+# doesn't reproduce (the keyword regex requires only whitespace between the
+# keyword and #, which excludes any owner/repo text in between either
+# way), but a regression test makes that permanent instead of relying on
+# re-deriving it by hand next time.
+cat > "$view_data" <<'EOF'
+{
+  "closingIssuesReferences": [{"number": 7}],
+  "commits": [
+    {"oid": "aaaaaaa1111111", "messageHeadline": "A commit", "messageBody": "See owner/repo#42, closes #7"}
+  ]
+}
+EOF
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" != "2" ] || fail "S108/cross-repo — a cross-repo owner/repo#42 reference was wrongly treated as a stray same-repo Closes: $output"
+
 # And: no closing keyword anywhere is the ordinary case and must not block.
 cat > "$view_data" <<'EOF'
 {

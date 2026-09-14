@@ -445,11 +445,28 @@ check_stray_closes_guard() {
   else
     call=(gh pr view --json closingIssuesReferences,commits)
   fi
-  output="$(cd "$workdir" && "${call[@]}" 2>&1)"
-  status=$?
+
+  # stdout and stderr kept separate, not merged: a routine stderr line from
+  # gh (an update notice, a deprecation warning) would otherwise contaminate
+  # the JSON on stdout and silently fail this check open — the exact
+  # stream-contamination bug check_ci_guard above was hardened against for
+  # issue #81. Found during this check's own pre-merge-review (PR #224).
+  local error_file error_text
+  error_file="$(mktemp)" 2>/dev/null || error_file=""
+  if [ -n "$error_file" ]; then
+    output="$(cd "$workdir" && "${call[@]}" 2>"$error_file")"
+    status=$?
+    error_text="$(cat "$error_file" 2>/dev/null)"
+    rm -f "$error_file"
+  else
+    output="$(cd "$workdir" && "${call[@]}" 2>/dev/null)"
+    status=$?
+    error_text=""
+  fi
 
   if [ "$status" -ne 0 ]; then
     echo "warning: merge-guard couldn't consult the PR's commits (no network or no access) and skips the stray-Closes check." >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
     return 0
   fi
 
