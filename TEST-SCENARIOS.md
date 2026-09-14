@@ -1191,3 +1191,36 @@ something new is being added.
 - When: the last work item closes
 - Then: the mechanism exits non-zero — not silently treated as a
   successful close
+
+### S108 — A stray commit-level Closes is blocked
+**Covers:** F21
+- Given: a PR whose own `closingIssuesReferences` names issue A, but
+  one of its commits' messages contains a closing keyword for issue B
+  (B ≠ A)
+- When: `gh pr merge` is called
+- Then: the command is blocked, naming issue B and the offending
+  commit
+
+### S109 — A commit-level Closes that agrees with the PR is not blocked
+**Covers:** F21
+- Given: a PR whose own `closingIssuesReferences` and every
+  commit-level closing keyword name the same issue(s)
+- When: `gh pr merge` is called
+- Then: the command is not blocked by this check (the existing
+  marker/CI checks still apply as normal)
+
+### S110 — The stray-Closes check fails open without gh or network
+**Covers:** F21
+- Given: `gh` is missing, or `gh pr view`'s commit lookup fails (no
+  network/access)
+- When: `gh pr merge` is called
+- Then: a loud warning appears that this check was skipped, and the
+  command is allowed — independent of whether the review-marker/CI
+  checks already passed
+
+### S111 — The escape hatch covers the stray-Closes check too
+**Covers:** F21
+- Given: `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` and a genuine stray
+  commit-level Closes
+- When: `gh pr merge` is called
+- Then: the merge proceeds

@@ -726,6 +726,47 @@ was) — nothing here blocks other work if it errors. Repo-local for now;
 scaffolding this to adopted projects (`templates/` + a `CHANGES.md` entry)
 is a deliberately separate, later decision (#219's own "Out of scope").
 
+### F21 — Merge guard: block a stray commit-level Closes (issue #223)
+
+`gh pr merge --squash` composes the squash commit's message from *every*
+constituent commit by default, not from the PR's own title/body — a fact
+that bit this repo concretely: PR #217 had an intermediate commit reading
+"Closes #218" (a note-to-self about separate, still-unfinished follow-up
+work), the PR's own title/body never mentioned #218, but the squash-merge
+commit carried the concatenated commit list onto `main` anyway, and GitHub
+closed #218 for real. Only caught by chance and had to be reopened by
+hand.
+
+This is the flip side of a fact `WORKFLOW.md` already documents (F8's
+context, "Wrapping up" step 1): `closingIssuesReferences` — what link 3
+checks — comes only from the PR's title/body while the PR is open. Once
+merged, a commit-level closing keyword becomes real regardless of what the
+PR itself intended.
+
+**Mechanism:** a new, third check in `hooks/git-guardrails`,
+`check_stray_closes_guard`, run from `check_merge_guard` after the
+existing review-marker and CI checks (F8). Fetches the PR's own
+`closingIssuesReferences` and every constituent commit's message (`gh pr
+view --json closingIssuesReferences,commits`), scans the commits for
+GitHub's own closing-keyword grammar (`close(s/d)`, `fix(es/ed)`,
+`resolve(s/d)`, case-insensitive, followed by `#<n>`), and blocks the merge
+if any referenced issue isn't also in the PR's own `closingIssuesReferences`
+— naming the issue and the offending commit.
+
+**Same gate, not an independent switch.** First implemented as a
+separate, top-level check with its own escape-hatch logic — reverted
+after it broke S18: `CHANGES.md`'s `quality-review-before-merge` entry
+already establishes that a substantiated `no` disables *every* check in
+this gate at once ("this isn't an independent on/off switch, since it's
+the same gate" — written for `ci-gate-on-merge`, equally true here), and
+S18 asserts, as a hard requirement, that `no` means **zero** `gh` calls
+from the merge guard at all. `check_stray_closes_guard` therefore lives
+inside `check_merge_guard`, inheriting both that early return and the
+`merge_guard_off` escape hatch (AC6) from the caller — no separate check
+of its own. Same fail-open rule as every other check in this guard: no
+`gh`/network, or an unreadable response, means a loud warning and the
+merge proceeds.
+
 ---
 
 ## Non-functional characteristics

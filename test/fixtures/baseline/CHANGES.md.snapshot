@@ -307,6 +307,22 @@ the shared parser warns if it has no `Applies if`.
   independent on/off switch, since it's the same gate.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
+## stray-closes-guard
+
+- **Question:** Does the merge guard also block `gh pr merge` when a commit on the PR carries a closing keyword (`Closes #N`, `Fixes #N`, ...) for an issue the PR's own title/body doesn't also close?
+- **Default:** yes
+- **Applies if:** always
+- **Yes means:** the same guard blocks when any constituent commit's
+  message references an issue via GitHub's own closing-keyword grammar
+  that isn't also in the PR's `closingIssuesReferences` — found concretely
+  when an intermediate commit's "Closes #218" (a note-to-self, unrelated
+  to that PR) survived into the squash-merge commit's message (which
+  concatenates every constituent commit by default) and closed that issue
+  for real (issue #223). Fails open without `gh` or network. The same
+  `no` on `quality-review-before-merge` disables this check too — same
+  gate, same rule as `ci-gate-on-merge` above.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/224
+
 ## process-technical-debt-register
 
 - **Question:** Does this project keep a separate Technical debt register alongside Known limitations?

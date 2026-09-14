@@ -308,6 +308,7 @@ check_merge_guard() {
   esac
 
   check_ci_guard "$target"
+  check_stray_closes_guard "$target"
 }
 
 # Found while reviewing PR #80 (issue #81): CI had been systematically
@@ -409,6 +410,108 @@ for item in data:
 
        Is this deliberate, use the explicit escape hatch — and report which
        check is being skipped:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
+}
+
+# Found via issue #223: `gh pr merge --squash` composes its squash commit's
+# message from every constituent commit by default, not from the PR's own
+# title/body. A stray closing keyword in an intermediate commit (a
+# note-to-self at the time, not a real close instruction) therefore still
+# reaches `main` and closes whatever issue it named — regardless of what the
+# PR itself intended to close. Concretely: PR #217 had a commit reading
+# "Closes #218" for unrelated, still-unfinished follow-up work; the PR's own
+# title/body never mentioned #218, but the squash-merge commit did, and
+# GitHub closed it. Third check in the same gate as the review-marker and
+# CI checks above (called from check_merge_guard, after check_ci_guard) —
+# not an independent switch: `CHANGES.md`'s `quality-review-before-merge`
+# entry already establishes that a substantiated "no" there disables every
+# check in this gate at once, not selectively, and this one is no
+# exception. The escape hatch (AC6/merge_guard_off) is likewise inherited
+# from the caller, not re-checked here.
+#
+# $1 is the same optional target (number/url/branch) as the other checks.
+check_stray_closes_guard() {
+  local target="$1"
+
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "warning: merge-guard can't find gh and skips the stray-Closes check." >&2
+    return 0
+  fi
+
+  local call output status
+  if [ -n "$target" ]; then
+    call=(gh pr view "$target" --json closingIssuesReferences,commits)
+  else
+    call=(gh pr view --json closingIssuesReferences,commits)
+  fi
+  output="$(cd "$workdir" && "${call[@]}" 2>&1)"
+  status=$?
+
+  if [ "$status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't consult the PR's commits (no network or no access) and skips the stray-Closes check." >&2
+    return 0
+  fi
+
+  # GitHub's own closing-keyword grammar (close/closes/closed, fix/fixes/
+  # fixed, resolve/resolves/resolved, case-insensitive) applied to every
+  # commit's headline+body, compared against the PR's own
+  # closingIssuesReferences — the same field link 3 already treats as
+  # authoritative for what this PR itself intends to close.
+  local stray parse_status
+  stray="$(printf '%s' "$output" | python3 -c '
+import json, re, sys
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+
+closing = set()
+for ref in (data.get("closingIssuesReferences") or []):
+    n = ref.get("number")
+    if n is not None:
+        closing.add(int(n))
+
+keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", re.IGNORECASE)
+
+seen = set()
+for commit in (data.get("commits") or []):
+    text = (commit.get("messageHeadline") or "") + "\n" + (commit.get("messageBody") or "")
+    sha = (commit.get("oid") or "")[:7]
+    for m in keyword.finditer(text):
+        n = int(m.group(1))
+        if n not in closing and (n, sha) not in seen:
+            seen.add((n, sha))
+            print(str(n) + " " + sha)
+')"
+  parse_status=$?
+
+  if [ "$parse_status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't interpret the PR's commits (unexpected output from gh pr view) and skips the stray-Closes check." >&2
+    return 0
+  fi
+
+  [ -n "$stray" ] || return 0
+
+  local summary line
+  summary=""
+  while IFS=' ' read -r n sha; do
+    [ -n "$n" ] || continue
+    summary="$summary
+       #$n (commit $sha)"
+  done <<<"$stray"
+
+  block "gh pr merge with a stray commit-level Closes" \
+"one or more commits on this PR reference an issue with a closing keyword
+       that the PR's own title/body does not also close. Merging would close
+       it for real anyway: gh pr merge --squash composes its message from
+       every constituent commit by default, not just the PR's title/body.
+$summary
+
+       Fix the commit message, or add the issue to the PR itself if the
+       close is genuinely intended. If this is deliberate, use the explicit
+       escape hatch:
 
          CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
 }
