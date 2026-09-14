@@ -694,6 +694,36 @@ that already exist (on another machine, from before this change) are
 never blocked mid-work — the same "when in doubt, allow" ground rule
 `git-guardrails` follows throughout.
 
+### F20 — Epic auto-close (issue #219)
+
+An epic (`templates/ISSUE_TEMPLATE/epic.md`) stays open until every work
+item under it is done, then someone has to remember to close it by hand —
+found concretely with issue #211: both its work items (#212, #213) closed
+via PR #214, but the epic itself sat open until Ties noticed. The same
+"don't rely on memory, build the mechanism" reasoning as F19.
+
+**Mechanism**: `.github/workflows/epic-auto-close.yml` triggers on
+`issues: closed` and calls `epic-auto-close.sh` with the closed issue's
+number. That script extracts `**Epic:** #<n>` from the closed issue's body
+(the field `templates/ISSUE_TEMPLATE/work-item.md` already asks every work
+item to fill in), and — if the named epic is still open — lists every
+issue in the repo whose body names that same epic (`gh issue list --json
+number,state,body`, filtered locally). If none of them are open anymore,
+the epic closes, with a comment naming which issues were checked.
+
+**Deliberately not the epic's own "Work items" checklist.** That section
+is for human readability and can drift — #211's checklist was never filled
+in at all, yet the mechanism still needs to work from #211's own history.
+The work item's `**Epic:** #` field is the one signal guaranteed to exist
+by the template; same "only the field counts, not prose" rule
+`check-traceability.sh` already applies to `**Covers:**`.
+
+No fail-open the way the merge guard (F8) has one: this runs after the
+fact, on its own event, and a missed close is recoverable by hand (as #211
+was) — nothing here blocks other work if it errors. Repo-local for now;
+scaffolding this to adopted projects (`templates/` + a `CHANGES.md` entry)
+is a deliberately separate, later decision (#219's own "Out of scope").
+
 ---
 
 ## Non-functional characteristics

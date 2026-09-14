@@ -1,0 +1,24 @@
+# Auto-closes an epic once every issue naming it via **Epic:** #<n> is
+# closed (issue #219) — see epic-auto-close.sh for the actual logic and
+# its reasoning. Repo-local for now; scaffolding this to adopted projects
+# is a later, separate decision (see that issue's "Out of scope").
+name: Epic auto-close
+
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  epic-auto-close:
+    runs-on: ubuntu-latest
+    # issues:write to close the epic and post the explaining comment;
+    # contents:read is also explicit here since naming one permission
+    # drops the rest to their implicit default.
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./epic-auto-close.sh "${{ github.event.issue.number }}"
