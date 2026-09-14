@@ -20,6 +20,14 @@ asking for merge confirmation without having run this first; the merge
 guard (`git-guardrails`, `gh pr merge`) blocks an unreviewed merge
 regardless, so skipping this step only costs a round trip.
 
+**Watching CI to know when.** Don't poll `gh pr checks` on a short fixed
+interval — measured against this repo's own last 10 completed CI runs
+(`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8
+minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus
+"still pending" checks before CI ever finishes (issue #215). Instead:
+first check no sooner than 5 minutes after the run starts, then every 1
+minute until it reaches a terminal state.
+
 **How it runs.** `context: fork` provides fresh, isolated context — no "I
 just built this and it works" in the context. The model is deliberately
 not pinned in the frontmatter — see **Model choice** below. `allowed-tools`
