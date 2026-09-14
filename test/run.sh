@@ -35,6 +35,15 @@ if [ "$cores" -gt 4 ] 2>/dev/null; then
 fi
 jobs="${TEST_JOBS:-$cores}"
 
+# xargs -P treats 0 as *unlimited* concurrency (both GNU and BSD xargs),
+# not "serial" — a bare TEST_JOBS=0 would silently reopen the exact
+# ulimit -u process-ceiling race this cap exists to avoid. A non-numeric or
+# non-positive TEST_JOBS falls back to the computed default rather than
+# being handed to xargs unchecked.
+case "$jobs" in
+  ''|*[!0-9]*|0) jobs="$cores" ;;
+esac
+
 real_home="$HOME"
 results_dir="$(mktemp -d)"
 trap 'rm -rf "$results_dir"' EXIT
