@@ -261,7 +261,7 @@ fi
 if branch="$(git -C "$project_dir" symbolic-ref --short HEAD 2>/dev/null)" \
   && [ "$branch" = "main" ]; then
   echo "You are on main. New work belongs on its own branch:"
-  echo "  git checkout -b feature/<name>"
+  echo "  git checkout -b feature/<issue-number>-<name>"
 fi
 
 # If the local checkout lags behind, the list above may be incomplete.

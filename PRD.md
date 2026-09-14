@@ -638,6 +638,54 @@ then has nothing to push. Two additions close that gap on both sides:
   something that has to be remembered. Without network or `origin`, it
   reports that and doesn't hold anything up.
 
+### F19 — Issue-first branching (issue #212)
+
+Link 3 (`check-pr-issue-link.sh`, W19b) already hard-blocks a PR that
+references no issue — but only at PR time, which is after the branch,
+after the commits, sometimes after CI has already failed once with
+nothing to report against (the concrete case that triggered this: a
+session opened a PR with no issue behind it at all). The same gap F17
+already named for destructive commands applies here too: catching a
+problem late doesn't stop the work that happened before it.
+
+**Decision:** the branch name itself carries the issue number —
+`feature/<issue-number>-<short-desc>` / `fix/<issue-number>-<short-desc>`,
+replacing the previous `feature/<short-desc>` convention. Requiring the
+number forces the issue to exist before the branch can even be named;
+there's no way to "forget" it the way a free-text branch name allows.
+
+Enforcement follows F17's three-layer shape, adapted to what's actually
+checkable at each layer (branch names don't survive a squash-merge, so
+CI can't be the third layer here the way it is for F17):
+
+- **`hooks/git-guardrails` (PreToolUse)** blocks `git checkout -b`/
+  `git switch -c` for a `feature/`/`fix/` branch whose name doesn't match
+  `^(feature|fix)/[0-9]+-[a-z0-9-]+$`. When it does match, one `gh issue
+  view <n> --json state` call (fail-open: no `gh`/no network → warn and
+  allow, exactly the merge guard's `check_merge_guard`/`check_ci_guard`
+  pattern from F8) blocks branch creation against a closed or
+  nonexistent issue.
+- **The native `pre-commit` hook** re-checks the same pattern, syntax
+  only, on every commit on a non-main branch — no network call, so this
+  hook keeps its existing offline character, and it's the layer that
+  covers branch/commit activity outside Claude Code (plain terminal, an
+  IDE), the same coverage argument as F17.
+- No CI layer: unlike F17's destructive-command case, a branch name is
+  local metadata that doesn't reach a PR's merged history, so there's
+  nothing for CI to detect after the fact. The two hook layers above are
+  the whole mechanism.
+
+Both hooks share the pattern and message text via `hooks/rules.sh`
+(`BRANCH_ISSUE_PATTERN`, `REASON_BRANCH_NO_ISSUE`) — the same
+one-source-of-truth arrangement F17 already established for
+`MAIN_BRANCH`. Same escape hatch as every guard here:
+`CLAUDE_WORKFLOW_GUARDRAILS_OFF=1`.
+
+Not retroactive: only *creation* of a new branch is judged, so branches
+that already exist (on another machine, from before this change) are
+never blocked mid-work — the same "when in doubt, allow" ground rule
+`git-guardrails` follows throughout.
+
 ---
 
 ## Non-functional characteristics

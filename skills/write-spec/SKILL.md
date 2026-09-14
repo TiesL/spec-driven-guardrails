@@ -15,7 +15,11 @@ description: >
    both automatically if they don't exist yet.
 2. Work is split from the PRD into GitHub issues: one `Epic` issue for the
    whole, `Work item` issues per part to be built (see
-   `templates/ISSUE_TEMPLATE/`).
+   `templates/ISSUE_TEMPLATE/`). No development starts before its issue
+   exists — the branch that implements a work item is named
+   `feature/<issue-number>-<short-desc>` (or `fix/...`), and
+   `git-guardrails`/the native `pre-commit` hook refuse to create a branch
+   without that number (see `WORKFLOW.md`, "Branch strategy").
 3. Every work-item issue has its own Given/When/Then acceptance criteria
    and refers to the matching scenarios in `TEST-SCENARIOS.md` — so every
    issue is directly usable to test the built software against.

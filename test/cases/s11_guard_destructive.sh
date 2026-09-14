@@ -21,10 +21,10 @@ workdir="$(fresh_project workdir)"
 # Runs the command past the guard, with the same JSON shape that Claude Code
 # delivers on stdin. Echoes the exit status: 2 means blocked.
 through_guard() {
-  local command="$1" dir="${2:-$workdir}"
+  local command="$1" dir="${2:-$workdir}" extra_path="${3:-}"
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
     "$dir" "$(printf '%s' "$command" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
-    | "$guard" >/dev/null 2>&1
+    | PATH="${extra_path:+$extra_path:}$PATH" "$guard" >/dev/null 2>&1
   echo $?
 }
 
@@ -36,8 +36,8 @@ blocked() {
 }
 
 allowed() {
-  local description="$1" command="$2"
-  if [ "$(through_guard "$command")" = "2" ]; then
+  local description="$1" command="$2" extra_path="${3:-}"
+  if [ "$(through_guard "$command" "$workdir" "$extra_path")" = "2" ]; then
     fail "S11 — wrongly blocked: $description ($command)"
   fi
 }
@@ -70,7 +70,7 @@ allowed "clean -n (dry run)"     "git clean -n"
 allowed "branch -d (safe)"     "git branch -d feature/done"
 allowed "branch without flag"     "git branch"
 allowed "checkout of a branch" "git checkout main"
-allowed "checkout -b"            "git checkout -b feature/new"
+allowed "checkout -b"            "git checkout -b feature/1-new" "$(path_without_gh)"
 allowed "restore of a single file" "git restore src/app.ts"
 allowed "checkout of a single file" "git checkout -- src/app.ts"
 allowed "status"                 "git status"

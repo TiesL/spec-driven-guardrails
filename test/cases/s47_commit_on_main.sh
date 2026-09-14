@@ -14,9 +14,10 @@ guard="$TEST_REPO_ROOT/hooks/git-guardrails"
 [ -x "$guard" ] || { fail "S47 — hooks/git-guardrails is missing"; test_done; }
 
 langs_guard() {
+  local dir="$1" command="$2" extra_path="${3:-}"
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":%s}}' \
-    "$1" "$(printf '%s' "$2" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
-    | "$guard" >/dev/null 2>&1
+    "$dir" "$(printf '%s' "$command" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
+    | PATH="${extra_path:+$extra_path:}$PATH" "$guard" >/dev/null 2>&1
   echo $?
 }
 
@@ -59,7 +60,7 @@ grep -qi 'come along unchanged\|nothing gets lost' "$message" \
   || fail "S47 — the first commit of an empty repo was blocked"
 
 # And branching remains of course simply possible — otherwise the way out is closed.
-[ "$(langs_guard "$on_main" 'git checkout -b feature/nieuw')" != "2" ] \
+[ "$(langs_guard "$on_main" 'git checkout -b feature/1-nieuw' "$(path_without_gh)")" != "2" ] \
   || fail "S47 — branching from main was blocked; the way out is then closed"
 
 test_done
