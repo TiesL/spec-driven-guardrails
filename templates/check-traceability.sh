@@ -120,10 +120,19 @@ for pair in "PRD.md:$prd" "TEST-SCENARIOS.md:$scenarios"; do
 done
 
 # Every Covers: token resolves in the IDs of the *other* file.
+#
+# <<< here-string, not `printf ... | grep -qx`: under `set -o pipefail`,
+# grep -q exits as soon as it finds a match, and the writer end of a pipe
+# can then get SIGPIPE before it's done — pipefail then reports that
+# non-zero SIGPIPE exit, not grep's real (successful) one, and a token that
+# genuinely does exist gets wrongly reported as missing. Rare enough on a
+# quiet machine to go unnoticed; found because this repo's own test suite
+# started running its cases in parallel (issue #216) and the resulting CPU
+# contention made the race far likelier to actually land.
 check_references() {
   local file="$1" name="$2" targets="$3" target_name="$4" token
   for token in $(covers_tokens "$file"); do
-    printf '%s\n' "$targets" | grep -qx "$token" \
+    grep -qx "$token" <<<"$targets" \
       || report "$name refers to $token, but that ID doesn't exist in $target_name"
   done
 }
@@ -161,8 +170,10 @@ if [ -z "$covered" ] && [ "$(dekt_leftover "$scenarios")" -eq 0 ]; then
   exit 1
 fi
 
+# Same SIGPIPE/pipefail race as check_references() above — <<< instead of
+# a piped printf.
 for id in $prd_ids; do
-  printf '%s\n' "$covered" | grep -qx "$id" \
+  grep -qx "$id" <<<"$covered" \
     || report "$id has no scenario covering it"
 done
 

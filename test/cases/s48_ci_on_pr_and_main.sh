@@ -22,8 +22,15 @@ on_block() {
 
 # Is this a real key in the block, i.e. a line that, after indentation, is exactly
 # `<name>:` or `<name>: <value>`?
+#
+# <<< here-string, not a piped printf: under `set -o pipefail`, grep -q's
+# early exit on a match can SIGPIPE the writer before it's done, and
+# pipefail then reports that non-zero SIGPIPE status instead of grep's real
+# (successful) one — an existing key gets wrongly reported as missing.
+# Found via issue #216 (running test cases in parallel made the race land
+# far more often).
 has_key() {
-  printf '%s\n' "$2" | grep -qE "^[[:space:]]*$1:([[:space:]]|\$)"
+  grep -qE "^[[:space:]]*$1:([[:space:]]|\$)" <<<"$2"
 }
 
 # The workflow of this repo itself should meet the same requirement as the

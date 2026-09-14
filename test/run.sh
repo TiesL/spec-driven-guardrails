@@ -19,27 +19,27 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 filter="${1:-}"
 
 # nproc (GNU coreutils, present on GitHub's ubuntu-latest) or sysctl (macOS)
-# — whichever this machine has, capped at 4. Not "one worker per core": each
-# test case itself briefly spawns a burst of subprocesses (git, tar, sed,
-# python3, ...), and it's the *sum* of those bursts across concurrent
-# workers that competes for the OS's per-user process ceiling (`ulimit -u`),
-# not CPU time. Measured directly on an 8-core machine: 8 workers produced
-# sporadic, different-test-each-run failures (a subprocess spawn losing the
-# race under load); 4 workers ran the full suite clean, repeatedly, at
-# close to the same wall-clock time as 8. A machine with more cores would
-# only make an uncapped default worse, not better, since the process
-# ceiling doesn't scale with core count.
+# — whichever this machine has, capped at 4. Not "one worker per core":
+# under load, higher parallelism was observed to turn a latent bug in
+# individual test cases (and in check-traceability.sh, which several tests
+# call) into an intermittent, different-failure-each-run flake — a
+# `printf ... | grep -q` pattern where grep's early exit on a match can
+# SIGPIPE the writer before it finishes, and `set -o pipefail` then reports
+# that SIGPIPE as the pipeline's failure instead of grep's real (successful)
+# one. Fixed at the instances this surfaced (see their own comments), but a
+# few more of the same pattern remain elsewhere in the repo (issue #218) —
+# so this cap stays as a conservative default while that cleanup is
+# outstanding, not because of a proven, unrelated resource ceiling.
 cores="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 if [ "$cores" -gt 4 ] 2>/dev/null; then
   cores=4
 fi
 jobs="${TEST_JOBS:-$cores}"
 
-# xargs -P treats 0 as *unlimited* concurrency (both GNU and BSD xargs),
-# not "serial" — a bare TEST_JOBS=0 would silently reopen the exact
-# ulimit -u process-ceiling race this cap exists to avoid. A non-numeric or
-# non-positive TEST_JOBS falls back to the computed default rather than
-# being handed to xargs unchecked.
+# xargs -P treats 0 as *unlimited* concurrency (both GNU and BSD xargs), not
+# "serial" — a bare TEST_JOBS=0 would bypass the cap above entirely. A
+# non-numeric or non-positive TEST_JOBS falls back to the computed default
+# rather than being handed to xargs unchecked.
 case "$jobs" in
   ''|*[!0-9]*|0) jobs="$cores" ;;
 esac
