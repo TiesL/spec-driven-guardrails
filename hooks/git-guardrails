@@ -471,10 +471,13 @@ check_stray_closes_guard() {
   fi
 
   # GitHub's own closing-keyword grammar (close/closes/closed, fix/fixes/
-  # fixed, resolve/resolves/resolved, case-insensitive) applied to every
-  # commit's headline+body, compared against the PR's own
-  # closingIssuesReferences — the same field link 3 already treats as
-  # authoritative for what this PR itself intends to close.
+  # fixed, resolve/resolves/resolved, case-insensitive, keyword followed by
+  # either a colon — GitHub also accepts "Fixes: #123" — or plain
+  # whitespace before the #) applied to every commit's headline+body,
+  # compared against the PR's own closingIssuesReferences — the same field
+  # link 3 already treats as authoritative for what this PR itself intends
+  # to close. The colon form was missing from the first version of this
+  # check — found during this very PR's own pre-merge-review (round 3).
   local stray parse_status
   stray="$(printf '%s' "$output" | python3 -c '
 import json, re, sys
@@ -490,7 +493,7 @@ for ref in (data.get("closingIssuesReferences") or []):
     if n is not None:
         closing.add(int(n))
 
-keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", re.IGNORECASE)
+keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?::\s*|\s+)#(\d+)", re.IGNORECASE)
 
 seen = set()
 for commit in (data.get("commits") or []):

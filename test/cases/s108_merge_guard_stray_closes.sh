@@ -66,6 +66,20 @@ output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
 [ "$status" = "2" ] || fail "S108/AC1 — a stray Closes #999 was not blocked (status $status): $output"
 assert_contains "S108/AC1 — names the stray issue" "#999" "$output"
 
+# AC1, colon form — GitHub also accepts "Fixes: #123" as a closing
+# keyword, not just "Fixes #123"; the first version of this check missed
+# it (found during this PR's own pre-merge-review, round 3).
+cat > "$view_data" <<'EOF'
+{
+  "closingIssuesReferences": [{"number": 10}],
+  "commits": [
+    {"oid": "aaaaaaa1111111", "messageHeadline": "First commit", "messageBody": "Fixes: #999"}
+  ]
+}
+EOF
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" = "2" ] || fail "S108/colon-form — a stray 'Fixes: #999' was not blocked (status $status): $output"
+
 # AC2 — every commit-level Closes agrees with the PR's own
 # closingIssuesReferences: not blocked.
 cat > "$view_data" <<'EOF'
