@@ -728,6 +728,18 @@ is a deliberately separate, later decision (#219's own "Out of scope").
 
 ### F21 — Merge guard: block a stray commit-level Closes (issue #223)
 
+**Detects, deliberately, rather than preventing at the source** by forcing
+an explicit `gh pr merge --body`/`--subject` on every merge. Controlling
+the squash message only closes the *default-concatenation* path — someone
+still has to remember to pass `--body`, and a hand-written `--body` can
+just as easily carry a stray keyword by mistake (this repo's own PR #224,
+which built this check, did exactly that in its *description*, not a
+commit — see the Technical debt row below). Detection over the PR's
+`closingIssuesReferences` versus its commits catches every source at once,
+regardless of how the merge is invoked, instead of relying on a
+convention that only covers one specific path and still needs the same
+detection logic behind it to be worth anything.
+
 `gh pr merge --squash` composes the squash commit's message from *every*
 constituent commit by default, not from the PR's own title/body — a fact
 that bit this repo concretely: PR #217 had an intermediate commit reading
