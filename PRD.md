@@ -95,6 +95,14 @@ hard refusal to run if `HOME` is still the real home after sandbox setup.
 Makes R1–R9 and T1–T5 executable instead of prose checkboxes in a PR body.
 Also delivers the `check` command this repo itself prescribes but doesn't have.
 
+As of issue #216/PR #217, `test/run.sh` runs its cases concurrently
+(`xargs -P`, default `min(cores, 4)`, override via `TEST_JOBS`) instead of
+one at a time — each case already ran in its own fully isolated sandbox, so
+the only thing forcing serial execution had been the runner's own
+bookkeeping (a single, reused HOME-leak sentinel, now one per test). Cuts
+this repo's own CI wall-clock time roughly in half to two-thirds, depending
+on the runner's core count.
+
 **Do not add a `package.json`** just to reuse `templates/ci.yml`: that would
 flip this repo's own `has-package-json` predicate and change what the
 scripts say about this repo. CI calls `./check` directly — exactly the
@@ -918,6 +926,8 @@ epics still apply, detached from the execution history in which they arose.
 | `test/cases/s38_field_without_heading.sh`'s second half (the `adopt.sh`-through-a-minimal-fake-workflow-dir check) has been silently non-executing since `lib/nfr.sh` became a required `adopt.sh` dependency — the fake dir never copied it, so `adopt.sh` dies before writing any table, and the `[ -f "$tabel" ]` guard treats that as a pass. Found during PR #127's pre-merge-review (round 2, N2), pre-existing and unrelated to that PR's own changes | The scenario's first half (`iterate_entries` on a malformed source) is real and still passing; only the `adopt.sh`-integration half is silently skipped | Copy `lib/nfr.sh` into the fake workflow dir alongside `lib/changes.sh`, and make a missing table a hard failure rather than a silently skipped check |
 | Most `test/lib.sh` helpers that call `pending-changes.sh` (`pending_ids()` and its callers — s71, s72, r3, r4, r6, r8, r9, s8, s36, and others) run it on the plain, un-isolated `PATH`, relying entirely on sandboxed projects never having a `github.com` origin remote to keep `gh` unreachable. Found during PR #127's pre-merge-review (round 2, N3) | Correct today because the source-level fix (no origin → no `gh` call at all) carries the load; not defense in depth | If a future fixture or helper ever gives a sandboxed project a real `github.com`-shaped remote, add a refusing fake `gh` on `PATH` by default in `check`/`test/lib.sh`'s `sandbox_create()`, so no test can reach a real `gh` regardless of what any individual test sets up |
 | Other `gh` call sites in this repo (`skills/pre-merge-review/scenario-gate.sh`'s `gh issue list`, `hooks/git-guardrails`'s `gh pr view`/`gh pr checks`) rely on `gh`'s own cwd/`GH_REPO`/`GH_HOST`-based repo detection, unlike `pending-changes.sh`'s W42 fix — found during PR #127's pre-merge-review (round 2, N4) | All are read-only (no wrong-repo *write* risk, only wrong-repo *evidence* — e.g. link 2 reading another repo's `**Covers:**` fields); pre-existing, not introduced by W42 | If any of these gains a mutating capability, or if wrong-repo evidence-reading becomes a real incident, pin `-R <host>/<owner>/<repo>` there too, the same way |
+| `test/run.sh`'s per-test `mktemp -d` (its own sentinel, and every test's own `sandbox_create`) is unchecked — a failure there is silently treated as an empty/missing directory rather than a loud error. Pre-existing pattern, but issue #216/PR #217 multiplied the number of concurrent `mktemp -d` calls (one sentinel per worker instead of one per whole run), raising the exposure — found during PR #217's pre-merge-review | `mktemp -d` failing on a CI runner or a developer machine is rare enough, and the blast radius (one test's sentinel silently empty) is small; not worth blocking a test-infra PR over | If a test ever starts failing in a way that traces back to a missing/wrong sentinel directory rather than the test's own logic |
+| `test/run.sh`'s `TEST_JOBS`/core-count validation (non-numeric, zero, negative, `xargs -P 0` meaning unlimited) has no regression test of its own — verified manually during PR #217's development, not covered by an automated case | The logic is small and was exercised by hand across several values before merge; this is test-infrastructure testing itself, where the value of a dedicated meta-test is lower than for the checks it runs — found during PR #217's pre-merge-review | If this validation logic changes again, or if a regression in it ever actually reaches CI unnoticed |
 
 ---
 
