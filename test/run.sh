@@ -31,7 +31,15 @@ filter="${1:-}"
 # so this cap stays as a conservative default while that cleanup is
 # outstanding, not because of a proven, unrelated resource ceiling.
 cores="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
-if [ "$cores" -gt 4 ] 2>/dev/null; then
+# A non-numeric result (an unexpected nproc/sysctl output shape, not just
+# "neither is installed" — that case is already the `|| echo 4` above) falls
+# back to 4 here too, not just for TEST_JOBS below: otherwise `[ "$cores"
+# -gt 4 ]` silently no-ops on bad input (stderr suppressed) and the garbage
+# value flows through unchanged.
+case "$cores" in
+  ''|*[!0-9]*) cores=4 ;;
+esac
+if [ "$cores" -gt 4 ]; then
   cores=4
 fi
 jobs="${TEST_JOBS:-$cores}"
