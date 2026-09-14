@@ -14,6 +14,12 @@ allowed-tools: Read, Grep, Glob, Bash
 Ties can't fully assess the technical output himself. The review must
 therefore produce *readable evidence* instead of reassurance.
 
+**When this runs.** As soon as CI is green on the open PR — immediately,
+not on request and not after asking whether to. Don't skip straight to
+asking for merge confirmation without having run this first; the merge
+guard (`git-guardrails`, `gh pr merge`) blocks an unreviewed merge
+regardless, so skipping this step only costs a round trip.
+
 **How it runs.** `context: fork` provides fresh, isolated context — no "I
 just built this and it works" in the context. The model is deliberately
 not pinned in the frontmatter — see **Model choice** below. `allowed-tools`

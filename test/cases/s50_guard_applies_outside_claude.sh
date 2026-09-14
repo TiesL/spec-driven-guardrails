@@ -39,7 +39,7 @@ assert_contains "S50 — the message matches the PreToolUse guard" "main gets it
 
 # And: on a feature branch it just proceeds — the same rule, not a
 # blanket block of everything.
-git -C "$project" checkout -q -b feature/something
+git -C "$project" checkout -q -b feature/1-something
 if ! git -C "$project" commit -q --allow-empty -m "on a branch" 2>&1; then
   fail "S50 — a legitimate commit on a feature branch was blocked"
 fi

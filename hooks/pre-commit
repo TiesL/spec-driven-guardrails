@@ -61,6 +61,23 @@ if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
     echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
     exit 1
   fi
+
+  # Issue-first branching (F19, issue #212): covers branches/commits made
+  # outside Claude Code, where git-guardrails' PreToolUse check never runs.
+  # Syntax only, no gh/network call — this hook stays fast and offline, the
+  # PreToolUse guard is the layer that also verifies the issue exists.
+  if [ -n "$branch" ] && ! printf '%s' "$branch" | grep -qE "${BRANCH_ISSUE_PATTERN:-^$}"; then
+    case "$branch" in
+      feature/*|fix/*)
+        echo "Blocked by the git hook: commit on $branch without an issue number." >&2
+        echo >&2
+        echo "Reason: $REASON_BRANCH_NO_ISSUE" >&2
+        echo >&2
+        echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+        echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
+        exit 1 ;;
+    esac
+  fi
 fi
 
 exit 0

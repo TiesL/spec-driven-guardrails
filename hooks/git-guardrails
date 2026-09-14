@@ -143,6 +143,51 @@ is_main() {
   esac
 }
 
+# --- issue-first branch guard (F19, issue #212) -----------------------------
+# A new feature/fix branch must name the issue it implements
+# (feature/123-short-desc): requiring the number forces the issue to exist
+# before the branch can even be named. $1 is the branch name being created
+# (from `checkout -b`/`switch -c`); $2 is the subcommand, for the message.
+check_branch_creation() {
+  local branch="$1" sub_cmd="$2"
+  [ -n "$branch" ] || return 0
+
+  case "$branch" in
+    feature/*|fix/*) ;;
+    *) return 0 ;;
+  esac
+
+  if ! printf '%s' "$branch" | grep -qE "${BRANCH_ISSUE_PATTERN:-^$}"; then
+    block "git $sub_cmd $branch" "${REASON_BRANCH_NO_ISSUE:-every feature/fix branch names the issue it implements, e.g. feature/123-short-desc.}"
+  fi
+
+  # AC3: fail open without gh — same rule as the merge guard below.
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "warning: issue-first branch guard can't find gh and skips the issue-existence check." >&2
+    return 0
+  fi
+
+  local issue_number state status
+  issue_number="${branch#*/}"
+  issue_number="${issue_number%%-*}"
+
+  state="$(gh issue view "$issue_number" --json state --jq .state 2>/dev/null)"
+  status=$?
+  if [ "$status" -ne 0 ] || [ -z "$state" ]; then
+    echo "warning: issue-first branch guard couldn't consult issue #$issue_number (no network or no access) and skips the check." >&2
+    return 0
+  fi
+
+  if [ "$state" != "OPEN" ]; then
+    block "git $sub_cmd $branch" \
+"issue #$issue_number is $state, not open — a branch must reference an open
+       issue.
+
+       Is this deliberate, use the explicit escape hatch:
+         CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>"
+  fi
+}
+
 # --- the merge guard (W10b, F8) ---------------------------------------------
 # The marker that `pre-merge-review` (F11) literally prescribes. Deliberately
 # duplicated here as a string, not read from SKILL.md: this guard must not
@@ -514,7 +559,26 @@ judge_segment() {
       for arg in "$@"; do
         is_whole_workdir "$arg" && block "git $sub $arg" \
           "this discards all uncommitted changes in the working tree."
-      done ;;
+      done
+      if [ "$sub" = "checkout" ]; then
+        local args=("$@") new_branch="" idx
+        for ((idx = 0; idx < ${#args[@]}; idx++)); do
+          case "${args[$idx]}" in
+            -b|-B) new_branch="${args[$((idx + 1))]:-}" ;;
+          esac
+        done
+        [ -n "$new_branch" ] && check_branch_creation "$new_branch" "checkout"
+      fi ;;
+    switch)
+      local args=("$@") new_branch="" idx
+      for ((idx = 0; idx < ${#args[@]}; idx++)); do
+        case "${args[$idx]}" in
+          -c|-C|--create|--force-create) new_branch="${args[$((idx + 1))]:-}" ;;
+          --create=*) new_branch="${args[$idx]#--create=}" ;;
+          --force-create=*) new_branch="${args[$idx]#--force-create=}" ;;
+        esac
+      done
+      [ -n "$new_branch" ] && check_branch_creation "$new_branch" "switch" ;;
     push)
       local refspecs=() remote_seen=0
       for arg in "$@"; do

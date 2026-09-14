@@ -1103,3 +1103,49 @@ something new is being added.
 - Then: `ci-convention` is not reported as pending — the old-ID row
   satisfies the current question, the same alias treatment #156 gave
   the renamed `nfr/` IDs
+
+### S96 — Branch creation without an issue number is blocked
+**Covers:** F19
+- Given: a `git checkout -b`/`git switch -c` for a `feature/`/`fix/`
+  branch whose name doesn't match `^(feature|fix)/[0-9]+-[a-z0-9-]+$`
+- When: the command runs
+- Then: `git-guardrails` blocks it, pointing at creating the issue
+  first and naming the branch after its number
+
+### S97 — Branch creation against a closed or nonexistent issue is blocked
+**Covers:** F19
+- Given: a branch name that does match the pattern, but the numbered
+  issue is closed or doesn't exist (`gh issue view <n> --json state`)
+- When: the command runs
+- Then: `git-guardrails` blocks it
+
+### S98 — Branch creation against a real, open issue succeeds
+**Covers:** F19
+- Given: a branch name matching the pattern, and the numbered issue is
+  open
+- When: the command runs
+- Then: the command goes through, unblocked
+
+### S99 — The issue-first guard fails open without gh or network
+**Covers:** F19
+- Given: `gh` is missing, or the `gh issue view` call fails (no
+  network/access)
+- When: a branch name matching the pattern is created
+- Then: a warning appears that the issue-existence check was skipped
+- And: the command is allowed
+
+### S100 — Non-Claude commits are covered by the native pre-commit hook
+**Covers:** F19
+- Given: a first commit on a new non-main branch made outside Claude
+  Code (plain terminal, IDE — `git-guardrails`' PreToolUse hook never
+  runs there)
+- When: the branch name doesn't match the required pattern
+- Then: the native `pre-commit` hook blocks the commit, syntax only, no
+  network call
+
+### S101 — Existing branches and plain checkouts are unaffected
+**Covers:** F19
+- Given: a branch that already exists (created before this change, or
+  on another machine)
+- When: it's checked out without `-b`/`-c` (`git checkout <branch>`)
+- Then: nothing is blocked — only creation of a *new* branch is judged
