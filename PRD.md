@@ -694,6 +694,36 @@ that already exist (on another machine, from before this change) are
 never blocked mid-work — the same "when in doubt, allow" ground rule
 `git-guardrails` follows throughout.
 
+### F20 — Epic auto-close (issue #219)
+
+An epic (`templates/ISSUE_TEMPLATE/epic.md`) stays open until every work
+item under it is done, then someone has to remember to close it by hand —
+found concretely with issue #211: both its work items (#212, #213) closed
+via PR #214, but the epic itself sat open until Ties noticed. The same
+"don't rely on memory, build the mechanism" reasoning as F19.
+
+**Mechanism**: `.github/workflows/epic-auto-close.yml` triggers on
+`issues: closed` and calls `epic-auto-close.sh` with the closed issue's
+number. That script extracts `**Epic:** #<n>` from the closed issue's body
+(the field `templates/ISSUE_TEMPLATE/work-item.md` already asks every work
+item to fill in), and — if the named epic is still open — lists every
+issue in the repo whose body names that same epic (`gh issue list --json
+number,state,body`, filtered locally). If none of them are open anymore,
+the epic closes, with a comment naming which issues were checked.
+
+**Deliberately not the epic's own "Work items" checklist.** That section
+is for human readability and can drift — #211's checklist was never filled
+in at all, yet the mechanism still needs to work from #211's own history.
+The work item's `**Epic:** #` field is the one signal guaranteed to exist
+by the template; same "only the field counts, not prose" rule
+`check-traceability.sh` already applies to `**Covers:**`.
+
+No fail-open the way the merge guard (F8) has one: this runs after the
+fact, on its own event, and a missed close is recoverable by hand (as #211
+was) — nothing here blocks other work if it errors. Repo-local for now;
+scaffolding this to adopted projects (`templates/` + a `CHANGES.md` entry)
+is a deliberately separate, later decision (#219's own "Out of scope").
+
 ---
 
 ## Non-functional characteristics
@@ -928,6 +958,7 @@ epics still apply, detached from the execution history in which they arose.
 | Other `gh` call sites in this repo (`skills/pre-merge-review/scenario-gate.sh`'s `gh issue list`, `hooks/git-guardrails`'s `gh pr view`/`gh pr checks`) rely on `gh`'s own cwd/`GH_REPO`/`GH_HOST`-based repo detection, unlike `pending-changes.sh`'s W42 fix — found during PR #127's pre-merge-review (round 2, N4) | All are read-only (no wrong-repo *write* risk, only wrong-repo *evidence* — e.g. link 2 reading another repo's `**Covers:**` fields); pre-existing, not introduced by W42 | If any of these gains a mutating capability, or if wrong-repo evidence-reading becomes a real incident, pin `-R <host>/<owner>/<repo>` there too, the same way |
 | `test/run.sh`'s per-test `mktemp -d` (its own sentinel, and every test's own `sandbox_create`) is unchecked — a failure there is silently treated as an empty/missing directory rather than a loud error. Pre-existing pattern, but issue #216/PR #217 multiplied the number of concurrent `mktemp -d` calls (one sentinel per worker instead of one per whole run), raising the exposure — found during PR #217's pre-merge-review | `mktemp -d` failing on a CI runner or a developer machine is rare enough, and the blast radius (one test's sentinel silently empty) is small; not worth blocking a test-infra PR over | If a test ever starts failing in a way that traces back to a missing/wrong sentinel directory rather than the test's own logic |
 | `test/run.sh`'s `TEST_JOBS`/core-count validation (non-numeric, zero, negative, `xargs -P 0` meaning unlimited) has no regression test of its own — verified manually during PR #217's development, not covered by an automated case | The logic is small and was exercised by hand across several values before merge; this is test-infrastructure testing itself, where the value of a dedicated meta-test is lower than for the checks it runs — found during PR #217's pre-merge-review | If this validation logic changes again, or if a regression in it ever actually reaches CI unnoticed |
+| `epic-auto-close.sh`'s `gh issue list --state all --json number,state,body --limit 5000` still silently truncates past that many issues — an epic could auto-close while an old open sibling outside the fetched window stays unseen. Raised from 1000 in PR #220's review, but not eliminated — found during PR #220's pre-merge-review (round 2) | Not worth paginating for a repo at ~220 issues; 5000 is a wide margin, and the failure mode (an epic closes slightly early) is low-severity and human-correctable, the same way #211 itself was | If this repo's issue count approaches the limit, or any project adopting this mechanism (once it's scaffolded, see F20) starts near it — switch to `gh api --paginate` instead of a single bounded `--limit` |
 
 ---
 

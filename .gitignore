@@ -3,3 +3,5 @@ CLAUDE.md
 .claude/settings.json
 .claude/skills/
 # claude-workflow: end
+
+.DS_Store

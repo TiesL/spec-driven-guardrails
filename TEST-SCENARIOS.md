@@ -1149,3 +1149,45 @@ something new is being added.
   on another machine)
 - When: it's checked out without `-b`/`-c` (`git checkout <branch>`)
 - Then: nothing is blocked — only creation of a *new* branch is judged
+
+### S102 — Closing the last open work item closes its epic
+**Covers:** F20
+- Given: an open epic, and two issues naming it via `**Epic:** #<epic>`,
+  one already closed
+- When: the second (last open) one closes
+- Then: the epic closes automatically, with a comment naming both
+  issues
+
+### S103 — An open sibling keeps the epic open
+**Covers:** F20
+- Given: an open epic and two issues naming it, both still open
+- When: one of them closes
+- Then: the epic stays open — no close attempt
+
+### S104 — A non-work-item issue closing does nothing
+**Covers:** F20
+- Given: an issue with no `**Epic:**` field in its body
+- When: it closes
+- Then: no epic is touched
+
+### S105 — An already-closed epic is left alone
+**Covers:** F20
+- Given: an epic that's already closed
+- When: another issue naming it closes (a late or duplicate trigger)
+- Then: nothing happens — no duplicate close attempt, no duplicate
+  comment
+
+### S106 — A malformed or dangling Epic reference doesn't crash the mechanism
+**Covers:** F20
+- Given: a work item whose `**Epic:** #<n>` names itself, or names an
+  issue number that doesn't exist
+- When: it closes
+- Then: the run completes without erroring and closes nothing
+
+### S107 — A failed close is reported, not treated as success
+**Covers:** F20
+- Given: every referencing issue is closed, but the `gh issue close`
+  call itself fails (network blip, permissions)
+- When: the last work item closes
+- Then: the mechanism exits non-zero — not silently treated as a
+  successful close
