@@ -41,6 +41,7 @@ case "$1 $2" in
     [ -f "$f" ] && { cat "$f"; exit 0; }
     exit 1 ;;
   "issue close")
+    [ -f "'"$fixtures"'/close-should-fail" ] && exit 1
     n="$3"
     shift 3
     printf "%s|%s\n" "$n" "$*" >> "'"$fixtures"'/closed-log"
@@ -119,6 +120,14 @@ case "$log" in
 esac
 assert_contains "S102/AC1 — comment names #60" "#60" "$log"
 assert_contains "S102/AC1 — comment names #61" "#61" "$log"
+
+# A failed `gh issue close` call (network blip, permissions) is reported
+# as a loud failure, not silently treated as success — found during
+# pre-merge-review of PR #220.
+touch "$fixtures/close-should-fail"
+output="$(run 61)"; status=$?
+rm -f "$fixtures/close-should-fail"
+[ "$status" -ne 0 ] || fail "S102/close-failure — a failed gh issue close was reported as success"
 
 # gh missing entirely: a loud, non-zero failure, not a silent no-op — this
 # script has no fail-open the way the merge guard does (see its own header

@@ -8,6 +8,16 @@ on:
   issues:
     types: [closed]
 
+# Serializes every run of this workflow repo-wide (not per-epic — the
+# epic number isn't known until the script runs, only the closed issue's
+# number is available here). Two work items under the same epic closing
+# near-simultaneously would otherwise both see the epic as OPEN and both
+# try to close it — a low-probability but real race the pre-merge-review
+# of PR #220 flagged. Queuing (no cancel-in-progress) means a run always
+# sees the up-to-date state of every prior close, not a race between them.
+concurrency:
+  group: epic-auto-close
+
 jobs:
   epic-auto-close:
     runs-on: ubuntu-latest

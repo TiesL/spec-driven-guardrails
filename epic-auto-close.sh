@@ -78,7 +78,7 @@ fi
 # not a piped printf: this repo's own test suite just hit the SIGPIPE/
 # pipefail race that pattern invites (issue #216/#218), so it's avoided
 # here from the start rather than fixed later.
-all_issues="$(gh issue list --state all --json number,state,body --limit 1000 2>/dev/null)"
+all_issues="$(gh issue list --state all --json number,state,body --limit 5000 2>/dev/null)"
 status=$?
 if [ "$status" -ne 0 ] || [ -z "$all_issues" ]; then
   echo "epic-auto-close: couldn't list issues — can't tell whether epic #$epic_number's work items are all closed." >&2
@@ -110,9 +110,12 @@ case "$decision" in
     exit 0 ;;
   "CLOSE "*)
     refs="${decision#CLOSE }"
-    gh issue close "$epic_number" \
+    if ! gh issue close "$epic_number" \
       --comment "Auto-closed: every issue naming this as its Epic is closed ($refs)." \
-      >/dev/null
+      >/dev/null 2>&1; then
+      echo "epic-auto-close: closing epic #$epic_number failed." >&2
+      exit 1
+    fi
     echo "epic-auto-close: closed epic #$epic_number ($refs all closed)." ;;
   *)
     echo "epic-auto-close: unexpected decision output: $decision" >&2

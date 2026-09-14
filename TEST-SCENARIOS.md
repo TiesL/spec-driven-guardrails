@@ -1183,3 +1183,11 @@ something new is being added.
   issue number that doesn't exist
 - When: it closes
 - Then: the run completes without erroring and closes nothing
+
+### S107 — A failed close is reported, not treated as success
+**Covers:** F20
+- Given: every referencing issue is closed, but the `gh issue close`
+  call itself fails (network blip, permissions)
+- When: the last work item closes
+- Then: the mechanism exits non-zero — not silently treated as a
+  successful close
