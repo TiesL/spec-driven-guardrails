@@ -10,8 +10,8 @@
 # sentinel directory. That's now one sentinel per test (AC2, issue #216).
 #
 # Usage: ./test/run.sh [name fragment]
-# TEST_JOBS overrides the worker count (default: CPU core count). Set
-# TEST_JOBS=1 to force serial execution, e.g. while chasing a flaky test.
+# TEST_JOBS overrides the worker count (default: min(cores, 4), see below).
+# Set TEST_JOBS=1 to force serial execution, e.g. while chasing a flaky test.
 
 set -uo pipefail
 
@@ -58,10 +58,13 @@ done
 # Runs one test case into $results_dir/<name>.log (its full stdout/stderr,
 # AC3) and $results_dir/<name>.status (its exit code). Own HOME-leak
 # sentinel per call (AC2) — safe to run many of these at once, unlike the
-# single shared sentinel this replaces.
+# single shared sentinel this replaces. The trap (not just the explicit
+# rm -rf below) covers an interrupted run: without it, Ctrl-C during a
+# parallel batch leaks up to $jobs sentinel directories instead of zero.
 run_one() {
   local name="$1" case_file="$here/cases/$1.sh" sentinel status
   sentinel="$(mktemp -d)"
+  trap 'rm -rf "$sentinel"' EXIT
   if TEST_REAL_HOME="$real_home" HOME="$sentinel" bash "$case_file" >"$results_dir/$name.log" 2>&1; then
     status=0
   else
@@ -70,8 +73,17 @@ run_one() {
   if [ -n "$(ls -A "$sentinel" 2>/dev/null)" ]; then
     echo "    warning: $name wrote into HOME without sandbox_create" >>"$results_dir/$name.log"
   fi
-  rm -rf "$sentinel"
   echo "$status" >"$results_dir/$name.status"
+  # Live progress, printed to this process's own inherited stdout (not the
+  # redirected log above) as each test finishes — so a hang shows up as
+  # "nothing new for a while" instead of dead silence until the whole batch
+  # completes. The ordered, full-output summary below still runs afterward;
+  # this line is only the early signal.
+  if [ "$status" = 0 ]; then
+    echo "  ok    $name"
+  else
+    echo "  FAIL  $name"
+  fi
 }
 export -f run_one
 export here results_dir real_home
