@@ -54,12 +54,14 @@ assert_contains "S93 — the missing Security subsection is named" "Security" "$
 assert_contains "S93 — spec-privacy is warned about, despite its Notes" "spec-privacy" "$output"
 
 # ...but the one with a real subsection isn't...
-if printf '%s\n' "$output" | grep -q 'spec-data-integrity'; then
+# <<< here-string, not a piped printf | grep -q, here and below:
+# SIGPIPE/pipefail race, see issue #218.
+if grep -q 'spec-data-integrity' <<<"$output"; then
   fail "S93 — spec-data-integrity has its subsection and should not be warned about"
 fi
 
 # ...and neither is the "no"-answered one.
-if printf '%s\n' "$output" | grep -q 'spec-testability'; then
+if grep -q 'spec-testability' <<<"$output"; then
   fail "S93 — spec-testability is answered 'no' and should not be warned about"
 fi
 

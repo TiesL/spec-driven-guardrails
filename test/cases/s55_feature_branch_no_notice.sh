@@ -19,7 +19,9 @@ error="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1 >/dev/null)"
 
 # A loose grep on "main" would false-positive on, for example,
 # "spec-maintainability" — the exact message text is what counts.
-if printf '%s\n' "$output" | grep -q 'You are on main\|git checkout -b'; then
+# <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+# see issue #218.
+if grep -q 'You are on main\|git checkout -b' <<<"$output"; then
   fail "S55 — a message about main still appeared on a feature branch"
 fi
 

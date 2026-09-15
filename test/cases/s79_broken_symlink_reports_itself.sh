@@ -40,9 +40,11 @@ status=$?
 
 # Then: this reports itself, and the session does not start silently without hooks.
 [ "$status" -eq 0 ] || fail "S79 — the command failed (exit $status) instead of reporting cleanly and continuing"
-printf '%s' "$output" | grep -qi "doesn't exist" \
+# <<< here-string, not a piped printf | grep -q, here and below:
+# SIGPIPE/pipefail race, see issue #218.
+grep -qi "doesn't exist" <<<"$output" \
   || fail "S79 — no message about the missing directory. Output: $output"
-printf '%s' "$output" | grep -qi 'adopt.sh again' \
+grep -qi 'adopt.sh again' <<<"$output" \
   || fail "S79 — the message does not say what to do about it. Output: $output"
 
 # --- Regression: a healthy symlink stays silent (no false alarms) and
@@ -51,7 +53,7 @@ project_healthy="$(fresh_project healthy)"
 mkdir -p "$project_healthy/.claude"
 ln -s "$TEST_REPO_ROOT/settings/session-hooks.json" "$project_healthy/.claude/settings.json"
 output_healthy="$(cd "$project_healthy" && bash -c "$command" 2>&1)"
-printf '%s' "$output_healthy" | grep -qi "doesn't exist" \
+grep -qi "doesn't exist" <<<"$output_healthy" \
   && fail "S79 — false alarm for a healthy symlink. Output: $output_healthy"
 
 # --- Regression: no .claude/settings.json (non-adopted project) stays

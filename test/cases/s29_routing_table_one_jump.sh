@@ -22,7 +22,9 @@ controleer_precies_een_rij() {
     return
   fi
   skill="$(skill_from_row "$rows")"
-  printf '%s\n' "$alle_skills" | grep -qxF "$skill" \
+  # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+  # see issue #218.
+  grep -qxF "$skill" <<<"$alle_skills" \
     || fail "S29 — '$term' points to '$skill', which is not an existing skill"
   [ "$skill" = "$verwachte_skill" ] \
     || fail "S29 — '$term' points to '$skill', expected '$verwachte_skill'"

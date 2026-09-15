@@ -66,7 +66,9 @@ gedekt="$(printf '%s\n' "$issuebodies" \
 
 printf '%s\n' "$scenario_ids" | while IFS= read -r id; do
   [ -n "$id" ] || continue
-  if ! printf '%s\n' "$gedekt" | grep -qxF "$id"; then
+  # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+  # see issue #218.
+  if ! grep -qxF "$id" <<<"$gedekt"; then
     echo "$id is covered by no issue (link 2)"
   fi
 done

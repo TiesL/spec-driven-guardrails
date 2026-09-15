@@ -157,7 +157,9 @@ check_branch_creation() {
     *) return 0 ;;
   esac
 
-  if ! printf '%s' "$branch" | grep -qE "${BRANCH_ISSUE_PATTERN:-^$}"; then
+  # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+  # see issue #218.
+  if ! grep -qE "${BRANCH_ISSUE_PATTERN:-^$}" <<<"$branch"; then
     block "git $sub_cmd $branch" "${REASON_BRANCH_NO_ISSUE:-every feature/fix branch names the issue it implements, e.g. feature/123-short-desc.}"
   fi
 

@@ -1224,3 +1224,18 @@ something new is being added.
   commit-level Closes
 - When: `gh pr merge` is called
 - Then: the merge proceeds
+
+### S112 — A reintroduced printf/echo-into-grep-q is caught, wired into check
+**Covers:** F22
+- Given: a script that pipes `printf`/`echo` into `grep -q...` (the
+  SIGPIPE/pipefail race pattern)
+- When: `check-no-sigpipe-race.sh` runs, directly or via `check`
+- Then: it's reported as an error, naming the file and line — and
+  `check` fails as a whole, the same as any other hard error
+
+### S113 — Comments describing the pattern, and the script's own source, are excluded
+**Covers:** F22
+- Given: a comment line that merely documents the anti-pattern (as
+  several fixed files now do), and the checker script's own source
+- When: `check-no-sigpipe-race.sh` runs
+- Then: neither is reported — only executable, non-comment code counts
