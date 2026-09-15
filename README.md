@@ -171,15 +171,6 @@ a fix for red CI) invalidates the marker by SHA, so nothing merges unreviewed.
 
 ## Getting started
 
-There are two independent paths from here, depending on who you are:
-
-- **Trying this out or adopting it for your own project:** follow
-  "One-time setup per machine" below, then "Adopting a project."
-- **Just want to see the specification/traceability approach:** read
-  `PRD.md` and `TEST-SCENARIOS.md` in this repo directly — they're real,
-  filled-in examples, not templates. `templates/PRD.md` and
-  `templates/TEST-SCENARIOS.md` are the blank versions.
-
 The rest of this document is the complete developer reference — it's
 self-contained: everything needed to install and adopt this workflow is
 below, without needing anything above this point.
