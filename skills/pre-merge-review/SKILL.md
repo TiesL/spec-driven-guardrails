@@ -14,19 +14,19 @@ allowed-tools: Read, Grep, Glob, Bash
 Ties can't fully assess the technical output himself. The review must
 therefore produce *readable evidence* instead of reassurance.
 
-**When this runs.** As soon as CI is green on the open PR — immediately,
-not on request and not after asking whether to. Don't skip straight to
-asking for merge confirmation without having run this first; the merge
-guard (`git-guardrails`, `gh pr merge`) blocks an unreviewed merge
-regardless, so skipping this step only costs a round trip.
-
-**Watching CI to know when.** Don't poll `gh pr checks` on a short fixed
-interval — measured against this repo's own last 10 completed CI runs
-(`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8
-minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus
-"still pending" checks before CI ever finishes (issue #215). Instead:
-first check no sooner than 5 minutes after the run starts, then every 1
-minute until it reaches a terminal state.
+**When this runs.** As soon as the PR is open (or as soon as a push
+settles) — immediately, in parallel with CI, not gated on CI's status.
+Don't skip straight to asking for merge confirmation without having run
+this first; the merge guard (`git-guardrails`, `gh pr merge`) blocks an
+unreviewed merge regardless, so skipping this step only costs a round
+trip. This used to wait for CI to go green first, specifically because an
+earlier review could otherwise go stale (see "The marker" below) — since
+the marker is now pinned to the commit it reviewed (issue #225), a commit
+that lands after review (a fixup, or a fix for a red CI) simply requires a
+fresh review, whenever it ran. There's no longer a reason to wait: CI and
+review both start immediately and run alongside each other, and the merge
+guard separately still requires CI to be green regardless of the review's
+own timing.
 
 **How it runs.** `context: fork` provides fresh, isolated context — no "I
 just built this and it works" in the context. The model is deliberately
@@ -125,14 +125,21 @@ phased substantiation requirement (F6).
 
 ## The marker
 
-Post, in the findings comment on the PR, on its own line, literally:
+Post, in the findings comment on the PR, on its own line:
 
 ```
-<!-- pre-merge-review:done -->
+<!-- pre-merge-review:done sha=<full 40-character commit SHA> -->
 ```
 
-Machine-recognizable and fixed — never paraphrase. The merge guard (F8,
-W10b) looks for this later.
+Fetch the PR's current HEAD SHA — `gh pr view --json headRefOid --jq
+.headRefOid` — and substitute it in. Never paraphrase the fixed
+`<!-- pre-merge-review:done sha=... -->` shape. The merge guard (F8, W10b)
+requires this marker's SHA to match the PR's *current* HEAD when `gh pr
+merge` is called (issue #225) — a marker for an older commit doesn't
+count, the same as no marker at all. That's deliberate: it's what makes it
+safe to run this review before CI finishes (see "When this runs" above)
+instead of waiting for it — a fix commit that lands afterward, for
+whatever reason, automatically needs a fresh review.
 
 ## What happens with it
 

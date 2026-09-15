@@ -825,6 +825,41 @@ Wired into `check` as a hard error, gated on the script's own presence —
 same pattern as `check-no-dutch.sh` (S88) and `check-traceability.sh`
 (link 1).
 
+### F23 — The pre-merge-review marker is pinned to a commit SHA (issue #225)
+
+Two related problems, one fix. **Problem 1** (existed regardless of
+timing): the merge guard's marker check only checked whether the literal
+string `<!-- pre-merge-review:done -->` appeared anywhere in the PR's
+comments, not whether it was posted for the PR's *current* HEAD commit —
+a commit landing after the marker (a last-minute fix, or a fixup after a
+red CI) still got a stale marker accepted. **Problem 2**: `WORKFLOW.md`
+had the review wait for CI to go green specifically to avoid problem 1 —
+running earlier, in parallel with CI, risked exactly that staleness if CI
+then failed and a fix commit followed. That serialization cost real time
+on every PR: CI (5.5-8min this repo, F22) then review (2-5min) in full
+series.
+
+**Mechanism**: the marker becomes `<!-- pre-merge-review:done
+sha=<commit-sha> -->` (`pre-merge-review`'s own `gh pr view --json
+headRefOid` at review time). The merge guard (`check_merge_guard`) now
+fetches `comments,headRefOid` in one call, parses the marker's `sha=` via
+python3 (not a substring match — needs a real comparison), and blocks
+unless some comment carries a marker whose sha equals the PR's *current*
+`headRefOid`. stdout/stderr kept separate before parsing — the same
+stream-contamination hardening as `check_ci_guard` (issue #81) and
+`check_stray_closes_guard` (PR #224's own review), now needed here too
+since this check moved from a substring case match to real JSON parsing.
+
+**Fixing problem 1 removes problem 2's reason to wait.** Once a stale
+marker is structurally rejected, running the review immediately —
+alongside CI, not gated on it — is safe: whichever finishes first, a
+commit landing afterward (whether the review or CI ran first) simply
+requires a fresh review before merge, by construction. `WORKFLOW.md`'s
+"Wrapping up" and the `pre-merge-review` skill both changed: review starts
+as soon as the PR is open; the CI-watch cadence from issue #215 (5min then
+1min) moved to where it now actually applies — knowing when it's safe to
+ask for merge confirmation, not when to start the review.
+
 ---
 
 ## Non-functional characteristics

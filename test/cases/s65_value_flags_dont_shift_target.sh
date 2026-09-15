@@ -20,8 +20,8 @@ project="$(fresh_project value-flags)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/work
 
-# The fake gh only accepts "pr view --json comments" (no target argument) —
-# any other target (such as the text from --body) fails.
+# The fake gh only accepts "pr view --json comments,headRefOid" (no target
+# argument) — any other target (such as the text from --body) fails.
 fakebin="$(fake_gh_merge_bin "" "")"
 
 input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge --body \"a text with words\" --subject title"}}'
