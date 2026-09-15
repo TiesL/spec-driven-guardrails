@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S112-S117 — No producer piped into grep -q (SIGPIPE/pipefail race,
+# S112-S118 — No producer piped into grep -q (SIGPIPE/pipefail race,
 # #218).
 # Covers: F22
 
@@ -125,5 +125,15 @@ rm -f "$repo/pending-changes.sh.bak"
 if ! "$repo/check" --no-tests "$repo" >/dev/null 2>&1; then
   fail "S112 — check still complains after the reintroduced race is removed"
 fi
+
+# And: without python3, check visibly says so (not a silent skip) —
+# check only ever prints a sub-script's own captured output on failure,
+# so a successful-but-skipped run needs its own visible line, the same
+# way the python-syntax step already has one. Found during PR #226's
+# pre-merge-review.
+nopy="$(minimal_path_without_validators)"
+output_nopy="$(PATH="$nopy" "$repo/check" --no-tests "$repo" 2>&1)"
+assert_contains "S112 — python3-missing is reported visibly, not silently skipped" \
+  "SIGPIPE/pipefail race check skipped" "$output_nopy"
 
 test_done

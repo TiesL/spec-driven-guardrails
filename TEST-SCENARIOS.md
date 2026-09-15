@@ -1267,3 +1267,11 @@ something new is being added.
   a trailing backslash
 - When: `check-no-sigpipe-race.sh` runs
 - Then: it's reported, at the line where the logical line starts
+
+### S118 — A missing python3 is reported visibly, not silently skipped
+**Covers:** F22
+- Given: no `python3` on `PATH`
+- When: `check` runs
+- Then: it prints a visible line saying the SIGPIPE/pipefail race
+  check was skipped — `check` only prints a sub-script's own output
+  on failure, so a successful-but-skipped run needs its own line
