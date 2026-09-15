@@ -207,6 +207,20 @@ if [ -x "$target/check-no-sigpipe-race.sh" ]; then
   fi
 fi
 
+# --- 3c3. No apostrophe closing a python3 -c '...' block early (#228) ------
+# Same gating and python3-visibility handling as 3c2 above.
+if [ -x "$target/check-no-quote-break.sh" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    echo "check: no quote-breaking apostrophe"
+    if ! quote_output="$("$target/check-no-quote-break.sh" "$target" 2>&1)"; then
+      report_error "check-no-quote-break.sh reported a problem:"
+      printf '%s\n' "$quote_output" | sed 's/^/    /' >&2
+    fi
+  else
+    echo "check: python3 not installed — quote-break check skipped"
+  fi
+fi
+
 # --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
 # This repo requires every adopted project to run this exact check
 # (traceability-link-1 in CHANGES.md, answered `yes` in this repo's own

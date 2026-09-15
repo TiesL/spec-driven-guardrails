@@ -1290,3 +1290,28 @@ something new is being added.
 - When: `gh pr merge` is called
 - Then: the marker is still recognized — stream contamination must
   not silently fail this check open
+
+### S121 — A reintroduced apostrophe-closed block is caught
+**Covers:** F24
+- Given: a `python3 -c '...'` block containing prose with an
+  apostrophe (`it's`, `doesn't`, `#227's`), closing the bash string
+  early
+- When: `check-no-quote-break.sh` runs, directly or via `check`
+- Then: it's reported as an error, naming the file and the line
+  where the string actually closed
+
+### S122 — Both legitimate closing shapes stay clean
+**Covers:** F24
+- Given: a `python3 -c '...'` block closing on its own (`')"'`), and
+  one closing with trailing arguments (`' "$var" <<<"$data")"'`) —
+  both with the closing `'` as the first character of its line
+- When: `check-no-quote-break.sh` runs
+- Then: neither is reported
+
+### S123 — Wired into check as a hard error, visible without python3
+**Covers:** F24
+- Given: the script's own presence
+- When: `check` runs, with and without `python3` on `PATH`
+- Then: with `python3`, a reintroduced quote-break fails `check` as a
+  hard error; without it, `check` prints a visible skip line rather
+  than silently omitting the check
