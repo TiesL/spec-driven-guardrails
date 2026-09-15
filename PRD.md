@@ -779,6 +779,52 @@ of its own. Same fail-open rule as every other check in this guard: no
 `gh`/network, or an unreadable response, means a loud warning and the
 merge proceeds.
 
+### F22 — No SIGPIPE/pipefail race, as an ongoing check (issue #218)
+
+`printf '%s' "$var" | grep -q ...` under `set -o pipefail` races: `grep -q`
+exits as soon as it matches, which can `SIGPIPE` the still-writing `printf`
+before it finishes, and `pipefail` then reports that `SIGPIPE` exit as the
+pipeline's failure instead of `grep`'s real, successful one — a value that
+genuinely matches gets wrongly reported as not found. Found while
+parallelizing the test suite (#216/#217): rare at low concurrency (the
+write is tiny, usually finishes before `grep` even starts reading), much
+likelier under the CPU contention parallel workers create. Ten instances
+remained after the three that broke CI were fixed directly in #216/#217
+— two in production scripts (`pending-changes.sh`, `scenario-gate.sh`),
+eight in test cases.
+
+**Fixed at all ten, plus two more** (`hooks/git-guardrails`,
+`hooks/pre-commit`) that `check-no-sigpipe-race.sh` — the new check itself
+— found on its very first run: added by F19 (issue-first branching, #212)
+*after* #218 was filed, direct proof of the "easy to reintroduce by habit"
+risk #218's own description named.
+
+**Any producer, not just printf/echo — found the same way, one review
+round later.** The check's own pre-merge-review (PR #226) found a live,
+undetected thirteenth instance the PR itself was supposed to eradicate:
+`pending_ids "$project" | grep -qx "..."` in
+`test/cases/r8_retirement_stays_grepable.sh`, where `pending_ids` ends in
+`sort` — a producer, just not `printf`/`echo`. The race is structural to
+*anything* piped into an early-exiting `grep -q` under `pipefail`, not
+specific to those two commands. Generalizing the check's own pattern
+surfaced two more gaps in its first version: a combined flag cluster
+(`-qx`, `-qF`, ...) wasn't matched (only a bare `-q`, or `q` as the last
+character), and a pipe split across a backslash-continued line wasn't
+either. Fixed, with `||` (boolean or between two independent, file-reading
+greps — no producer, no pipe at all) explicitly not a false positive,
+verified against real instances already in `adopt.sh` and
+`s85_migration_reported_per_row.sh`.
+
+**Ongoing check, not a one-time cleanup** (#218's AC3): this repo prefers
+a mechanism over relying on a habit not slipping, the same reasoning
+behind every other guard here. `check-no-sigpipe-race.sh` scans every
+`*.sh` file plus extensionless bash/sh-shebanged scripts for the pattern,
+excluding comment lines (a line documenting the anti-pattern, as several
+fixed files now do, must not itself trip the check) and its own source.
+Wired into `check` as a hard error, gated on the script's own presence —
+same pattern as `check-no-dutch.sh` (S88) and `check-traceability.sh`
+(link 1).
+
 ---
 
 ## Non-functional characteristics

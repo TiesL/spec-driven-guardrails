@@ -139,7 +139,9 @@ done
 # And they are inside the managed block, not as loose leftovers outside it.
 inside="$(awk '/^# claude-workflow: begin/{i=1;next} /^# claude-workflow: end/{i=0} i' "$after")"
 for line in "CLAUDE.md" ".claude/settings.json" ".claude/skills/"; do
-  printf '%s\n' "$inside" | grep -qxF "$line" \
+  # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+  # see issue #218.
+  grep -qxF "$line" <<<"$inside" \
     || fail "S21 — '$line' is not inside the managed block"
 done
 

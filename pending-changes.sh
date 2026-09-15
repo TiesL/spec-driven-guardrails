@@ -199,7 +199,9 @@ if [ -f "$old_file" ] && [ ! -f "$new_file" ]; then
       # failure files a duplicate tracking issue every single session.
       if [ "$list_status" -ne 0 ]; then
         echo "warning: could not check for an existing migration-tracking issue (gh issue list failed) — skipping this session, not filing a possible duplicate." >&2
-      elif ! printf '%s' "$existing_bodies" | grep -qF "$migration_marker"; then
+      # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail
+      # race, see issue #218.
+      elif ! grep -qF "$migration_marker" <<<"$existing_bodies"; then
         migration_list="$(printf '%s\n' "$old_rows" | sed 's/^/- /')"
         migration_body="This project's \`WORKFLOW-ADOPTIE.md\` still uses the pre-migration Dutch vocabulary (\`ja\`/\`nee\`), which spec-driven-guardrails no longer supports as of the W42 migration (#114 in spec-driven-guardrails).
 

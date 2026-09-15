@@ -66,7 +66,9 @@ if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
   # outside Claude Code, where git-guardrails' PreToolUse check never runs.
   # Syntax only, no gh/network call — this hook stays fast and offline, the
   # PreToolUse guard is the layer that also verifies the issue exists.
-  if [ -n "$branch" ] && ! printf '%s' "$branch" | grep -qE "${BRANCH_ISSUE_PATTERN:-^$}"; then
+  # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+  # see issue #218.
+  if [ -n "$branch" ] && ! grep -qE "${BRANCH_ISSUE_PATTERN:-^$}" <<<"$branch"; then
     case "$branch" in
       feature/*|fix/*)
         echo "Blocked by the git hook: commit on $branch without an issue number." >&2

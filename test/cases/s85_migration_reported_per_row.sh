@@ -51,7 +51,9 @@ output="$(PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/pending-changes.sh" "$project" 
 assert_contains "S85 — mentions the pre-migration notice" "pre-migration format" "$output"
 assert_contains "S85 — names ci-convention" "* ci-convention" "$output"
 assert_contains "S85 — names deploy-guards" "* deploy-guards" "$output"
-if printf '%s\n' "$output" | grep -qE '^  - (ci-convention|deploy-guards)( |$)'; then
+# <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
+# see issue #218.
+if grep -qE '^  - (ci-convention|deploy-guards)( |$)' <<<"$output"; then
   fail "S85 — an already-answered old-format row was listed as a pending question"
 fi
 

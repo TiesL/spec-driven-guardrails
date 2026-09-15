@@ -46,7 +46,9 @@ if grep -q 'check-main-via-pr' "$project/.github/workflows/ci.yml"; then
 fi
 
 pending="$(pending_ids "$project")"
-if ! printf '%s\n' "$pending" | grep -qx 'ci-detects-main-outside-pr'; then
+# <<< here-string, not a piped printf | grep -q, here and below:
+# SIGPIPE/pipefail race, see issue #218.
+if ! grep -qx 'ci-detects-main-outside-pr' <<<"$pending"; then
   fail "S72 — ci-detects-main-outside-pr did not appear as outstanding for an existing package.json project"
   printf '%s\n' "$pending" >&2
 fi
@@ -54,7 +56,7 @@ fi
 # And: a project without package.json does not get that question.
 project_without="$(fresh_project without-package-json)"
 pending_without="$(pending_ids "$project_without")"
-if printf '%s\n' "$pending_without" | grep -qx 'ci-detects-main-outside-pr'; then
+if grep -qx 'ci-detects-main-outside-pr' <<<"$pending_without"; then
   fail "S72 — the main-via-PR question appeared even without package.json"
 fi
 

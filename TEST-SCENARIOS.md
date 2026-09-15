@@ -1224,3 +1224,54 @@ something new is being added.
   commit-level Closes
 - When: `gh pr merge` is called
 - Then: the merge proceeds
+
+### S112 — A reintroduced printf/echo-into-grep-q is caught, wired into check
+**Covers:** F22
+- Given: a script that pipes `printf`/`echo` into `grep -q...` (the
+  SIGPIPE/pipefail race pattern)
+- When: `check-no-sigpipe-race.sh` runs, directly or via `check`
+- Then: it's reported as an error, naming the file and line — and
+  `check` fails as a whole, the same as any other hard error
+
+### S113 — Comments describing the pattern, and the script's own source, are excluded
+**Covers:** F22
+- Given: a comment line that merely documents the anti-pattern (as
+  several fixed files now do), and the checker script's own source
+- When: `check-no-sigpipe-race.sh` runs
+- Then: neither is reported — only executable, non-comment code counts
+
+### S114 — Any producer counts, not just printf/echo
+**Covers:** F22
+- Given: a non-printf/echo producer (e.g. `cat`) piped into `grep -q`
+- When: `check-no-sigpipe-race.sh` runs
+- Then: it's reported the same as a printf/echo instance would be
+
+### S115 — A combined flag cluster is still caught
+**Covers:** F22
+- Given: `grep -qx`/`-qF` (a combined flag cluster, not a bare `-q`)
+  piped into from a producer
+- When: `check-no-sigpipe-race.sh` runs
+- Then: it's reported
+
+### S116 — A boolean || between two file-reading greps is not a false positive
+**Covers:** F22
+- Given: `grep -qx a "$f" || grep -qx b "$f"` — two independent greps,
+  each reading a named file directly, no producer process and no pipe
+  at all
+- When: `check-no-sigpipe-race.sh` runs
+- Then: it's not reported
+
+### S117 — A pipe split across a backslash-continued line is still caught
+**Covers:** F22
+- Given: a producer and `| grep -q` split across two physical lines via
+  a trailing backslash
+- When: `check-no-sigpipe-race.sh` runs
+- Then: it's reported, at the line where the logical line starts
+
+### S118 — A missing python3 is reported visibly, not silently skipped
+**Covers:** F22
+- Given: no `python3` on `PATH`
+- When: `check` runs
+- Then: it prints a visible line saying the SIGPIPE/pipefail race
+  check was skipped — `check` only prints a sub-script's own output
+  on failure, so a successful-but-skipped run needs its own line

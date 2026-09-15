@@ -187,6 +187,26 @@ if [ -x "$target/check-no-dutch.sh" ]; then
   rm -f "$dutch_output"
 fi
 
+# --- 3c2. No printf/echo piped into grep -q (SIGPIPE/pipefail race, #218) --
+# Gated on the script's own presence, same reasoning as 3c: a sandboxed
+# copy of this repo (used by the test suite itself) is checked the same
+# way as the real one. The python3-missing case is checked here, visibly,
+# rather than left to the sub-script's own exit-0 skip path: `check` only
+# ever prints a sub-script's captured output when it *fails* (see the
+# error branch below), so a silent, successful skip would otherwise
+# vanish with zero signal — found during PR #226's pre-merge-review.
+if [ -x "$target/check-no-sigpipe-race.sh" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    echo "check: no SIGPIPE/pipefail race"
+    if ! sigpipe_output="$("$target/check-no-sigpipe-race.sh" "$target" 2>&1)"; then
+      report_error "check-no-sigpipe-race.sh reported a problem:"
+      printf '%s\n' "$sigpipe_output" | sed 's/^/    /' >&2
+    fi
+  else
+    echo "check: python3 not installed — SIGPIPE/pipefail race check skipped"
+  fi
+fi
+
 # --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
 # This repo requires every adopted project to run this exact check
 # (traceability-link-1 in CHANGES.md, answered `yes` in this repo's own

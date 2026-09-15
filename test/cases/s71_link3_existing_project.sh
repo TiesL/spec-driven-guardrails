@@ -47,7 +47,9 @@ if grep -q 'check-pr-issue-link' "$project/.github/workflows/ci.yml"; then
 fi
 
 pending="$(pending_ids "$project")"
-if ! printf '%s\n' "$pending" | grep -qx 'ci-link-3-hard-block'; then
+# <<< here-string, not a piped printf | grep -q, here and below:
+# SIGPIPE/pipefail race, see issue #218.
+if ! grep -qx 'ci-link-3-hard-block' <<<"$pending"; then
   fail "S71 — ci-link-3-hard-block did not appear as pending for an existing package.json project"
   printf '%s\n' "$pending" >&2
 fi
@@ -55,7 +57,7 @@ fi
 # And: a project without package.json does not get that question.
 project_without="$(fresh_project without-package-json)"
 pending_without="$(pending_ids "$project_without")"
-if printf '%s\n' "$pending_without" | grep -qx 'ci-link-3-hard-block'; then
+if grep -qx 'ci-link-3-hard-block' <<<"$pending_without"; then
   fail "S71 — the link-3 question also appeared without package.json"
 fi
 
