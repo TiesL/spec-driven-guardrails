@@ -26,6 +26,7 @@ spec-privacy
 spec-security
 spec-testability
 spec-usability
+stray-closes-guard
 test-feature-gwt
 test-integration
 test-tdd-seams

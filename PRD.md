@@ -726,6 +726,59 @@ was) — nothing here blocks other work if it errors. Repo-local for now;
 scaffolding this to adopted projects (`templates/` + a `CHANGES.md` entry)
 is a deliberately separate, later decision (#219's own "Out of scope").
 
+### F21 — Merge guard: block a stray commit-level Closes (issue #223)
+
+**Detects, deliberately, rather than preventing at the source** by forcing
+an explicit `gh pr merge --body`/`--subject` on every merge. Controlling
+the squash message only closes the *default-concatenation* path — someone
+still has to remember to pass `--body`, and a hand-written `--body` can
+just as easily carry a stray keyword by mistake (this repo's own PR #224,
+which built this check, did exactly that in its *description*, not a
+commit — see the Technical debt row below). Detection over the PR's
+`closingIssuesReferences` versus its commits catches every source at once,
+regardless of how the merge is invoked, instead of relying on a
+convention that only covers one specific path and still needs the same
+detection logic behind it to be worth anything.
+
+`gh pr merge --squash` composes the squash commit's message from *every*
+constituent commit by default, not from the PR's own title/body — a fact
+that bit this repo concretely: PR #217 had an intermediate commit reading
+"Closes #218" (a note-to-self about separate, still-unfinished follow-up
+work), the PR's own title/body never mentioned #218, but the squash-merge
+commit carried the concatenated commit list onto `main` anyway, and GitHub
+closed #218 for real. Only caught by chance and had to be reopened by
+hand.
+
+This is the flip side of a fact `WORKFLOW.md` already documents (F8's
+context, "Wrapping up" step 1): `closingIssuesReferences` — what link 3
+checks — comes only from the PR's title/body while the PR is open. Once
+merged, a commit-level closing keyword becomes real regardless of what the
+PR itself intended.
+
+**Mechanism:** a new, third check in `hooks/git-guardrails`,
+`check_stray_closes_guard`, run from `check_merge_guard` after the
+existing review-marker and CI checks (F8). Fetches the PR's own
+`closingIssuesReferences` and every constituent commit's message (`gh pr
+view --json closingIssuesReferences,commits`), scans the commits for
+GitHub's own closing-keyword grammar (`close(s/d)`, `fix(es/ed)`,
+`resolve(s/d)`, case-insensitive, followed by `#<n>`), and blocks the merge
+if any referenced issue isn't also in the PR's own `closingIssuesReferences`
+— naming the issue and the offending commit.
+
+**Same gate, not an independent switch.** First implemented as a
+separate, top-level check with its own escape-hatch logic — reverted
+after it broke S18: `CHANGES.md`'s `quality-review-before-merge` entry
+already establishes that a substantiated `no` disables *every* check in
+this gate at once ("this isn't an independent on/off switch, since it's
+the same gate" — written for `ci-gate-on-merge`, equally true here), and
+S18 asserts, as a hard requirement, that `no` means **zero** `gh` calls
+from the merge guard at all. `check_stray_closes_guard` therefore lives
+inside `check_merge_guard`, inheriting both that early return and the
+`merge_guard_off` escape hatch (AC6) from the caller — no separate check
+of its own. Same fail-open rule as every other check in this guard: no
+`gh`/network, or an unreadable response, means a loud warning and the
+merge proceeds.
+
 ---
 
 ## Non-functional characteristics
@@ -978,6 +1031,8 @@ epics still apply, detached from the execution history in which they arose.
 | `test/run.sh`'s per-test `mktemp -d` (its own sentinel, and every test's own `sandbox_create`) is unchecked — a failure there is silently treated as an empty/missing directory rather than a loud error. Pre-existing pattern, but issue #216/PR #217 multiplied the number of concurrent `mktemp -d` calls (one sentinel per worker instead of one per whole run), raising the exposure — found during PR #217's pre-merge-review | `mktemp -d` failing on a CI runner or a developer machine is rare enough, and the blast radius (one test's sentinel silently empty) is small; not worth blocking a test-infra PR over | If a test ever starts failing in a way that traces back to a missing/wrong sentinel directory rather than the test's own logic |
 | `test/run.sh`'s `TEST_JOBS`/core-count validation (non-numeric, zero, negative, `xargs -P 0` meaning unlimited) has no regression test of its own — verified manually during PR #217's development, not covered by an automated case | The logic is small and was exercised by hand across several values before merge; this is test-infrastructure testing itself, where the value of a dedicated meta-test is lower than for the checks it runs — found during PR #217's pre-merge-review | If this validation logic changes again, or if a regression in it ever actually reaches CI unnoticed |
 | `epic-auto-close.sh`'s `gh issue list --state all --json number,state,body --limit 5000` still silently truncates past that many issues — an epic could auto-close while an old open sibling outside the fetched window stays unseen. Raised from 1000 in PR #220's review, but not eliminated — found during PR #220's pre-merge-review (round 2) | Not worth paginating for a repo at ~220 issues; 5000 is a wide margin, and the failure mode (an epic closes slightly early) is low-severity and human-correctable, the same way #211 itself was | If this repo's issue count approaches the limit, or any project adopting this mechanism (once it's scaffolded, see F20) starts near it — switch to `gh api --paginate` instead of a single bounded `--limit` |
+| F21's `check_stray_closes_guard` trusts the PR's own `closingIssuesReferences` as ground truth for what it *intends* to close — but that field is itself populated by scanning the PR's title/body text for closing keywords, with no understanding of quoting or context. PR #224 (the PR that built F21) demonstrated this directly: its own description quoted the historical incident text `"Closes #218"`, and GitHub added #218 to `closingIssuesReferences` for real, on a PR that had nothing to do with #218 — found live during that PR's own pre-merge-review, before merge, by re-querying its `closingIssuesReferences` after the fix and seeing it (briefly, until cache caught up) still there. Fixed for that specific PR by rewording its description; F21's check has no general defense against the same mistake in a future PR/issue body | This is the same class of bug F21 exists to catch, one layer up (PR body/title instead of commit message) — genuinely hard to guard against mechanically, since a legitimate reference to another issue in prose is indistinguishable from a real closing intent by keyword-matching alone. Rare in practice: it requires prose that both names a closing keyword and an issue number adjacently, which most PR descriptions don't do outside of exactly this repo's own meta-discussions about the mechanism itself | If this recurs on a future PR — especially one *not* about this mechanism, where it would be far less likely to be caught by the author's own awareness of the pattern |
+| `check_ci_guard` and `check_stray_closes_guard` (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper — found during PR #224's pre-merge-review (round 3) | Two call sites is thin justification for extracting a shared function in a script that otherwise keeps each guard self-contained and independently readable; not worth the churn on a PR already at its third review round | If a third check needs the same pattern, or if the two existing copies ever drift out of sync with each other |
 
 ---
 

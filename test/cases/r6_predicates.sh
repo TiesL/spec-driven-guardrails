@@ -61,13 +61,13 @@ while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
     fi
   done
 
-  # And the total: 21 entries always apply, plus every applicable
+  # And the total: 22 entries always apply, plus every applicable
   # predicate entry. `has-package-json` now contributes four -
   # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
   # runs), `ci-link-3-hard-block` (PR without issue) and
   # `ci-detects-main-outside-pr` (commit on main without PR). Catches
   # seed logic that is bulk-wrong.
-  expected_count=21
+  expected_count=22
   [ "$expected_ci" = "ja" ] && expected_count=$((expected_count + 4))
   [ "$expected_deploy" = "ja" ] && expected_count=$((expected_count + 1))
   seeded_count="$(grep -c . "$seeded")"
