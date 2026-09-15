@@ -54,16 +54,25 @@ fi
 # never see an empty-ID row.
 nep="$SANDBOX/nepworkflow"
 mkdir -p "$nep/lib" "$nep/templates"
-cp "$TEST_REPO_ROOT/lib/changes.sh" "$nep/lib/"
+cp "$TEST_REPO_ROOT/lib/changes.sh" "$TEST_REPO_ROOT/lib/nfr.sh" "$nep/lib/"
 cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
 echo "# Werkwijze" > "$nep/WORKFLOW.md"
 cp "$source" "$nep/CHANGES.md"
 
 project="$(fresh_project target-project)"
-SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" >/dev/null 2>&1
+adopt_output="$(SPEC_DRIVEN_GUARDRAILS_DIR="$nep" "$nep/adopt.sh" "$project" 2>&1)"
 
 table="$project/WORKFLOW-ADOPTION.md"
-if [ -f "$table" ] && grep -qE '^\| *\|' "$table"; then
+if [ ! -f "$table" ]; then
+  # A hard failure, not a silently-passing guard: adopt.sh not even
+  # reaching the point of writing a table (a missing dependency this fake
+  # workflow dir should have provided, e.g. lib/nfr.sh — found via issue
+  # #231, silently non-executing since lib/nfr.sh became a required
+  # adopt.sh dependency) must not read as "no empty-ID row, so we're
+  # fine" — that's a different failure entirely, and a real one.
+  fail "S38 — adopt.sh did not write $table at all"
+  printf '%s\n' "$adopt_output" >&2
+elif grep -qE '^\| *\|' "$table"; then
   fail "S38 — adopt.sh wrote a row with an empty ID"
   grep -nE '^\| *\|' "$table" >&2
 fi
