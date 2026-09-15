@@ -1315,3 +1315,25 @@ something new is being added.
 - Then: with `python3`, a reintroduced quote-break fails `check` as a
   hard error; without it, `check` prints a visible skip line rather
   than silently omitting the check
+
+### S124 — The real repo's two copies are already identical
+**Covers:** F25
+- Given: `check-traceability.sh` and `templates/check-traceability.sh`
+  as they stand today
+- When: `check` runs
+- Then: no drift is reported
+
+### S125 — A drift is caught, and fixing it clears the error
+**Covers:** F25
+- Given: the root copy has been edited to differ from the template
+- When: `check` runs
+- Then: it fails, naming both files
+- And: copying the template back over the root copy makes `check`
+  pass again
+
+### S126 — Gated on both files existing
+**Covers:** F25
+- Given: a target missing one or both of the two files
+- When: `check` runs
+- Then: the sync check doesn't run at all — no error, no false pass
+  claim

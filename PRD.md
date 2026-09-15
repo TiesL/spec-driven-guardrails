@@ -897,6 +897,23 @@ new checker correctly flagged its own test fixture before the test was
 even finished, one more direct demonstration of the class of bug it
 exists to catch.
 
+### F25 — `check-traceability.sh` stays in sync with `templates/` (issue #230)
+
+`check-traceability.sh` (this repo's own root copy) and
+`templates/check-traceability.sh` (scaffolded into adopted projects) are
+meant to be identical — nothing enforced that, and they drifted silently
+twice: #147 wired the root copy into this repo's own `check` at all
+(until then it was unused, so drift went unnoticed by construction), and
+#167 found and fixed one real drift the disconnection allowed (the root
+copy had gone untranslated — Dutch identifiers and prose — while the
+template had already been translated). Recorded as Technical debt.
+
+**Mechanism**: a plain `diff -u` between the two files, inline in `check`
+(not a separate `check-no-...sh` script — small enough that delegating it
+would add indirection without adding anything), gated on both existing so
+a project without `templates/` (fully adopted, no longer carries the
+scaffold source) isn't affected.
+
 ---
 
 ## Non-functional characteristics
@@ -1140,7 +1157,6 @@ epics still apply, detached from the execution history in which they arose.
 | `templates/ci.yml` is npm-only despite "platform-neutral" | Pre-existing; all adopters are npm or have no CI | First adopter on a different stack |
 | Four projects have ~24 of 27 changes unanswered | Tables predate PR #6 | W7 makes it visible; F6's three gates bring it in gradually |
 | Projects that scaffolded with the old `templates/ci.yml` keep their weaker CI | The `ci-on-pr-and-main` entry asks the question but doesn't answer it; until then the weaker workflow stays | Once a project answers the question — the session-start notice keeps it visible |
-| `check-traceability.sh` (root) has no automated guard keeping it in step with `templates/check-traceability.sh` | #147 wired the root copy into this repo's own `check` (it's no longer unused), and #167 found and fixed one real drift between the two (the root copy had gone untranslated — Dutch identifiers and prose — while the template had already been translated); nothing currently prevents the same drift recurring | If `templates/check-traceability.sh` changes again without the root copy following, or if a reader mistakes one for the source of truth for the other |
 | `pre-merge-review`'s `scope.sh` falls back to `nfr/*.md`'s (still-Dutch) heading names for this repo's own NFR rows, now mismatched against this file's translated section headings (no `<!-- nfr: id -->` anchors exist in this hand-authored `PRD.md`, so the fallback was always active) | `scope.sh` degrades to a stderr warning rather than blocking (S27); the printed names are cosmetically stale, not incorrect data | Once `nfr/*.md` is translated via its own frozen-baseline refresh procedure (`LEESMIJ.md`) — separate from this translation effort since editing `nfr/*.md` directly breaks S66's freeze invariant |
 | `pending-changes.sh` (W42/#114) embeds ~75 lines of network-mutating, `gh`-calling logic (the old-format migration notice and tracking-issue creation) inside a script whose module comment otherwise promises "no network, no mutation" | The exception is honestly documented and pinned to an explicit `-R <host>/<owner>/<repo>` derived from the project's own remote — found and reviewed by Opus (two review rounds) during pre-merge-review of PR #127 | If this logic grows further, or if another mutating exception is added — pulling it into its own script the `SessionStart` hook calls alongside `pending-changes.sh` would keep the no-mutation contract intact, make the mutating path independently testable, and self-delete once every project has migrated |
 | `test/cases/s38_field_without_heading.sh`'s second half (the `adopt.sh`-through-a-minimal-fake-workflow-dir check) has been silently non-executing since `lib/nfr.sh` became a required `adopt.sh` dependency — the fake dir never copied it, so `adopt.sh` dies before writing any table, and the `[ -f "$tabel" ]` guard treats that as a pass. Found during PR #127's pre-merge-review (round 2, N2), pre-existing and unrelated to that PR's own changes | The scenario's first half (`iterate_entries` on a malformed source) is real and still passing; only the `adopt.sh`-integration half is silently skipped | Copy `lib/nfr.sh` into the fake workflow dir alongside `lib/changes.sh`, and make a missing table a hard failure rather than a silently skipped check |

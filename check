@@ -221,6 +221,21 @@ if [ -x "$target/check-no-quote-break.sh" ]; then
   fi
 fi
 
+# --- 3c4. check-traceability.sh (root) in sync with templates/ (#230) ------
+# The two must stay identical — they diverged silently twice already
+# (#147 wired the root copy into `check` at all, only then making drift
+# visible; #167 found the root copy had gone untranslated while the
+# template had already been translated). Gated on both existing: a
+# project without `templates/` (fully adopted, no longer carries the
+# scaffold source) isn't affected.
+if [ -f "$target/check-traceability.sh" ] && [ -f "$target/templates/check-traceability.sh" ]; then
+  echo "check: check-traceability.sh in sync with templates/"
+  if ! traceability_diff="$(diff -u "$target/templates/check-traceability.sh" "$target/check-traceability.sh" 2>&1)"; then
+    report_error "check-traceability.sh has drifted from templates/check-traceability.sh:"
+    printf '%s\n' "$traceability_diff" | sed 's/^/    /' >&2
+  fi
+fi
+
 # --- 3d. Traceability chain link 1: PRD.md <-> TEST-SCENARIOS.md (#147) -----
 # This repo requires every adopted project to run this exact check
 # (traceability-link-1 in CHANGES.md, answered `yes` in this repo's own
