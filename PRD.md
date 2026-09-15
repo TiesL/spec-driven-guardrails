@@ -860,6 +860,43 @@ as soon as the PR is open; the CI-watch cadence from issue #215 (5min then
 1min) moved to where it now actually applies — knowing when it's safe to
 ask for merge confirmation, not when to start the review.
 
+### F24 — No apostrophe closing a `python3 -c '...'` block early (issue #228)
+
+A bash *single-quoted* string has no escape mechanism at all — a literal
+apostrophe anywhere inside a `python3 -c '...'` block (ordinary English
+prose, e.g. a comment reading "PR #227's own pre-merge-review") ends the
+string right there. Everything after is reparsed as bash code, with no
+error until a syntax mismatch surfaces somewhere later in the file, often
+at a completely unrelated line — exactly what happened building F23 (issue
+#225): the resulting break in `hooks/git-guardrails` blocked every `Bash`
+tool call in the session, since this repo adopts itself and that file is
+also the session's own `PreToolUse` hook. Recovered only by reading the
+file blind and manually counting quotes until the apostrophe surfaced.
+Recorded as Technical debt at the time, with this issue as the trigger.
+
+**Mechanism**: `check-no-quote-break.sh`, wired into `check` the same way
+as `check-no-sigpipe-race.sh` (F22) — gated on presence, a visible skip
+line (not a silent one) without `python3`. Doesn't need a real bash/python
+parser: every `python3 -c '...'` block in this codebase closes on a line
+whose *first* non-blank character is the closing `'` — checked across
+every existing instance (`hooks/git-guardrails` ×3, `epic-auto-close.sh`,
+two different closer shapes) before relying on it. Bash itself closes a
+single-quoted string at the first `'` it finds after the opener, no
+exceptions, so scanning forward from the opener for the first line
+containing a `'` and checking whether that quote sits at the line's very
+start tells us whether bash's real close point matches the block's
+visually-obvious intended one. An apostrophe in ordinary prose is never
+the first character of its line, since it always follows a word character
+("it's", "#227's") — that's what distinguishes an accidental break from
+the real, intended closer.
+
+**Found live during its own development**: an early test fixture used
+`print('hi')` — a single-quoted Python string literal, itself invalid
+inside this exact bash construct for the same underlying reason — and the
+new checker correctly flagged its own test fixture before the test was
+even finished, one more direct demonstration of the class of bug it
+exists to catch.
+
 ---
 
 ## Non-functional characteristics
