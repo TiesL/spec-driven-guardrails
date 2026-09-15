@@ -2,11 +2,10 @@
 
 ## What problem this solves
 
-When you work with an AI coding agent, two things tend to go wrong once a
-project grows past a toy size: the agent forgets what was decided and why,
-and it merges things nobody reviewed. This repo is one person's (Ties')
-answer to both, built up as a set of git/GitHub conventions plus a handful
-of scripts and Claude Code skills that enforce them:
+When you work with an AI coding agent past toy-project size, two things
+tend to go wrong: it forgets what was decided and why, and it merges
+things nobody reviewed. This repo is one person's (Ties') answer to both —
+git/GitHub conventions plus scripts and skills that enforce them:
 
 - **What was decided, and why, is written down before code exists** — a
   PRD as the normative spec, test scenarios that trace back to it, and an
@@ -15,9 +14,8 @@ of scripts and Claude Code skills that enforce them:
 - **Nothing merges without a traceable link back to a scenario and a
   review** — mechanically checked, not just agreed on and then forgotten.
 
-It's a personal workflow, not a product: the four projects that use it
-today (this repo included) are Ties' own. It's shared here because the
-conventions and scripts are the same across all of them, and duplicating
+It's a personal workflow, not a product: the four projects using it today
+(this repo included) are Ties' own, shared here because duplicating
 `CLAUDE.md` + `.claude/settings.json` per project caused them to drift.
 
 ## Who it's for, and who it's not
@@ -28,15 +26,14 @@ without hand-writing that discipline into every new project.
 
 It is not:
 - **An agent framework.** It doesn't run or orchestrate an agent — it's
-  conventions plus guardrail scripts that an agent (Claude Code,
-  specifically) is instructed to follow.
-- **A replacement for your own process.** If your team already has a
-  review and specification process, this doesn't sit alongside it — it's
-  aimed at the gap that shows up when there isn't one, which is normal for
-  a solo project.
-- **A team tool, as shipped.** It's built and adopted for Ties' own solo
+  conventions plus guardrail scripts an agent (Claude Code, specifically)
+  is instructed to follow.
+- **A replacement for your own process.** If your team already reviews and
+  specifies work, this doesn't sit alongside that — it targets the gap
+  that shows up when there isn't one, which is normal for a solo project.
+- **A team tool, as shipped.** Built and adopted for Ties' own solo
   projects; nothing here assumes a second human reviewer, and it isn't
-  currently adopted into shared team/work repos (see `USER-CLAUDE.md`).
+  adopted into shared team/work repos (see `USER-CLAUDE.md`).
 
 There's also a second reader this repo is useful to even without adopting
 it: a **business analyst, product owner, or product manager** working with
@@ -60,6 +57,10 @@ git/bash mechanics being the point.
   without review evidence or green CI.
 - A registry (`CHANGES.md`) of workflow changes a project can adopt or
   decline, one closed question at a time, instead of a big-bang migration.
+- Guardrails sharpened by dogfooding: issue-first branch naming (no branch
+  without an issue number), automatic epic close-out once every work item
+  under it is closed, review running in parallel with CI instead of after
+  it, and a parallelized test suite (`TEST_JOBS`) for faster feedback.
 
 ## What it costs
 
@@ -80,21 +81,18 @@ Adopting this doesn't make the discipline free — it makes it checked:
 Stated up front, not buried at the bottom — the value of this repo depends
 on being honest about where it doesn't hold:
 
-- **No server-side enforcement.** GitHub branch protection on a private
-  repo requires a paid plan, so nothing here stops a direct push to `main`
-  at the platform level — it's a workflow agreement the agent is
-  instructed to follow, not a technical block.
-- **The guardrails are machine-local.** The `PreToolUse` hook that blocks
-  destructive git commands, and the merge guard, only exist on a machine
-  after `adopt.sh` has run there. A fresh clone on a new machine doesn't
-  have them until you set it up.
-- **It's bash, and it's tied to Claude Code.** The scripts assume Bash 3.2
-  compatibility and the skills are Claude Code skills specifically — this
-  isn't provider-agnostic today (see `PRD.md`'s technical debt table for
-  the deliberate boundary).
-- **Review quality has a ceiling.** `pre-merge-review` raises the floor on
-  what gets caught before a merge, but it's model-based review — it
-  doesn't rule out the same kind of blind spot a human reviewer sharing
+- **No server-side enforcement.** Branch protection on a private GitHub
+  repo requires a paid plan, so nothing stops a direct push to `main` at
+  the platform level — it's a workflow agreement the agent follows, not a
+  technical block.
+- **The guardrails are machine-local.** The `PreToolUse` hook and the merge
+  guard only exist on a machine after `adopt.sh` has run there — a fresh
+  clone doesn't have them until you set it up.
+- **It's bash, and it's tied to Claude Code.** Scripts assume Bash 3.2;
+  skills are Claude Code skills specifically — not provider-agnostic today
+  (see `PRD.md`'s technical debt table for the deliberate boundary).
+- **Review quality has a ceiling.** `pre-merge-review` raises the floor,
+  but it's model-based — it doesn't rule out a blind spot a human sharing
   the same training assumptions might also miss.
 
 ## Software development practices this project enforces
@@ -141,21 +139,22 @@ flowchart TD
     B --> B2["Human: review and approve the scenario"]
     B2 --> C["Agent: file a GitHub issue\n(epic or work item), **Covers:** scenario ID"]
     C --> C2["Human: review and approve the issue"]
-    C2 --> D["Agent: create a short-lived branch\nfeature/... or fix/..."]
+    C2 --> D["Agent: create a short-lived branch\nfeature/<issue#>-... or fix/<issue#>-..."]
     D --> E["Agent: write a failing test first\n(TDD, red-before-green)"]
     E --> F["Agent: implement until the test is green"]
     F --> G["Agent: commit + push to the branch"]
     G --> H["Agent: open a PR\nbody includes 'Closes #issue'"]
     H --> I["CI: run `check`\n(same command as local)"]
+    H --> J["Different agent instance:\nrun pre-merge-review skill\nin parallel with CI, not gated on it"]
     I -->|red| E
-    I -->|green| R["Agent: confirm absence of regression\nand full test suite passing"]
-    R --> J["Different agent instance\n(equal or greater capability):\nrun pre-merge-review skill"]
     J -->|findings| F
-    J -->|clean, marker posted| K["Human: own review of the PR"]
+    J -->|clean| J2["Marker posted,\npinned to the reviewed commit SHA"]
+    I -->|green| M
+    J2 --> M["Merge guard: marker SHA == PR head SHA,\nand CI green?"]
+    M -->|either missing or stale| N["Merge blocked\n(a later push invalidates a stale marker)"]
+    M -->|both hold| K["Human: own review of the PR"]
     K --> L["Human: confirm merge, explicitly"]
-    L --> M["Merge guard checks:\nreview marker + green CI"]
-    M -->|missing either| N["Merge blocked"]
-    M -->|both present| O["Squash-merge to main\n+ delete branch"]
+    L --> O["Squash-merge to main\n+ delete branch"]
     O --> P["Optional: tag a release\n(CHANGELOG.md)"]
     P --> Q["Human: run `deploy`\nmanual, guarded — never automatic"]
 
@@ -165,9 +164,10 @@ flowchart TD
     S["BA/PO/PM: read the PR"] -.-> H
 ```
 
-The dashed lines are the traceability chain read backward from a PR — the
-path a business analyst, product owner, or product manager walks for the
-UAT use case described above.
+Dashed lines: the traceability chain read backward from a PR — the path a
+BA/PO/PM walks for the UAT use case above. Review runs the moment the PR
+opens, in parallel with CI, not after it — a push after review (a fixup, or
+a fix for red CI) invalidates the marker by SHA, so nothing merges unreviewed.
 
 ## Getting started
 
