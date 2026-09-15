@@ -14,7 +14,7 @@ project="$(fresh_project with-marker)"
 git -C "$project" commit -q --allow-empty -m start
 git -C "$project" checkout -q -b feature/work
 
-fakebin="$(fake_gh_merge_bin "pre-merge-review:done" "")"
+fakebin="$(fake_gh_merge_bin "match" "")"
 
 input='{"tool_name":"Bash","cwd":"'"$project"'","tool_input":{"command":"gh pr merge"}}'
 output="$(printf '%s' "$input" | PATH="$fakebin:$PATH" "$TEST_REPO_ROOT/hooks/git-guardrails" 2>&1)"

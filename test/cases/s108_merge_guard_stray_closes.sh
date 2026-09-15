@@ -35,8 +35,8 @@ through_guard() {
 # or, if that file is absent, failing (for the fail-open case).
 fakebin="$(fake_gh_bin '
 case "$*" in
-  "pr view --json comments")
-    printf "%s" "{\"comments\":[{\"body\":\"findings\\n<!-- pre-merge-review:done -->\"}]}"
+  "pr view --json comments,headRefOid")
+    printf "%s" "{\"headRefOid\":\"1111111111111111111111111111111111111111\",\"comments\":[{\"body\":\"findings\\n<!-- pre-merge-review:done sha=1111111111111111111111111111111111111111 -->\"}]}"
     exit 0 ;;
   "pr checks --json bucket,name")
     printf "%s" "[{\"name\":\"check\",\"bucket\":\"pass\"}]"

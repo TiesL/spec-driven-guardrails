@@ -179,31 +179,39 @@ fake_gh_bin() {
 }
 
 # Builds a shared fake `gh` for the merge-guard tests that returns a
-# literal marker and a literal checks answer — the two uniform cases.
-# Deliberately narrow: no sentinel values, no divergent error shapes. A
+# literal marker (now sha-pinned, issue #225) and a literal checks answer
+# — the uniform cases. Deliberately narrow: no divergent error shapes. A
 # test with its own error shape (S75, S76 — a non-zero exit from
 # `pr checks`, with or without a stderr message) builds that itself with
 # `fake_gh_bin`, same as before this helper existed (W95, after review: a
 # sentinel-driven variant of this was rejected as exactly the generic
-# templating solution W95 itself ruled out).
+# templating solution W95 itself ruled out). The two marker sentinels
+# below ("match"/"stale") are a narrow exception to that: the guard now
+# compares the marker's sha against the PR's headRefOid, so a test needs
+# to say which side of that comparison it wants, not an arbitrary string.
 #
-# $1 — marker text. Empty = no marker ("no marker here"); otherwise the
-#      text ends up literally in the `<!-- ... -->` comment.
+# $1 — marker: "" = no marker at all. "match" = a marker whose sha equals
+#      this fake's fixed headRefOid (a real review, for the PR's current
+#      commit). "stale" = a marker whose sha differs from headRefOid (a
+#      review that ran for an older commit — issue #225's AC1).
 # $2 — checks JSON answer, or empty to not build a "pr checks" branch
 #      (S15, S16, S65 don't ask about that).
 fake_gh_merge_bin() {
   local marker="${1:-}" checks_json="${2:-}"
+  local head_sha="1111111111111111111111111111111111111111"
+  local stale_sha="2222222222222222222222222222222222222222"
   local comments_body
-  if [ -z "$marker" ]; then
-    comments_body='no marker here'
-  else
-    comments_body="findings\\n<!-- $marker -->"
-  fi
+  case "$marker" in
+    '') comments_body='no marker here' ;;
+    match) comments_body="findings\\n<!-- pre-merge-review:done sha=$head_sha -->" ;;
+    stale) comments_body="findings\\n<!-- pre-merge-review:done sha=$stale_sha -->" ;;
+    *) comments_body="findings\\n<!-- pre-merge-review:done sha=$marker -->" ;;
+  esac
 
   local script
   script='case "$*" in
-  "pr view --json comments")
-    printf "%s" "{\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
+  "pr view --json comments,headRefOid")
+    printf "%s" "{\"headRefOid\":\"'"$head_sha"'\",\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
     exit 0 ;;'
 
   if [ -n "$checks_json" ]; then

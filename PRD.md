@@ -825,6 +825,41 @@ Wired into `check` as a hard error, gated on the script's own presence —
 same pattern as `check-no-dutch.sh` (S88) and `check-traceability.sh`
 (link 1).
 
+### F23 — The pre-merge-review marker is pinned to a commit SHA (issue #225)
+
+Two related problems, one fix. **Problem 1** (existed regardless of
+timing): the merge guard's marker check only checked whether the literal
+string `<!-- pre-merge-review:done -->` appeared anywhere in the PR's
+comments, not whether it was posted for the PR's *current* HEAD commit —
+a commit landing after the marker (a last-minute fix, or a fixup after a
+red CI) still got a stale marker accepted. **Problem 2**: `WORKFLOW.md`
+had the review wait for CI to go green specifically to avoid problem 1 —
+running earlier, in parallel with CI, risked exactly that staleness if CI
+then failed and a fix commit followed. That serialization cost real time
+on every PR: CI (5.5-8min this repo, F22) then review (2-5min) in full
+series.
+
+**Mechanism**: the marker becomes `<!-- pre-merge-review:done
+sha=<commit-sha> -->` (`pre-merge-review`'s own `gh pr view --json
+headRefOid` at review time). The merge guard (`check_merge_guard`) now
+fetches `comments,headRefOid` in one call, parses the marker's `sha=` via
+python3 (not a substring match — needs a real comparison), and blocks
+unless some comment carries a marker whose sha equals the PR's *current*
+`headRefOid`. stdout/stderr kept separate before parsing — the same
+stream-contamination hardening as `check_ci_guard` (issue #81) and
+`check_stray_closes_guard` (PR #224's own review), now needed here too
+since this check moved from a substring case match to real JSON parsing.
+
+**Fixing problem 1 removes problem 2's reason to wait.** Once a stale
+marker is structurally rejected, running the review immediately —
+alongside CI, not gated on it — is safe: whichever finishes first, a
+commit landing afterward (whether the review or CI ran first) simply
+requires a fresh review before merge, by construction. `WORKFLOW.md`'s
+"Wrapping up" and the `pre-merge-review` skill both changed: review starts
+as soon as the PR is open; the CI-watch cadence from issue #215 (5min then
+1min) moved to where it now actually applies — knowing when it's safe to
+ask for merge confirmation, not when to start the review.
+
 ---
 
 ## Non-functional characteristics
@@ -1078,7 +1113,8 @@ epics still apply, detached from the execution history in which they arose.
 | `test/run.sh`'s `TEST_JOBS`/core-count validation (non-numeric, zero, negative, `xargs -P 0` meaning unlimited) has no regression test of its own — verified manually during PR #217's development, not covered by an automated case | The logic is small and was exercised by hand across several values before merge; this is test-infrastructure testing itself, where the value of a dedicated meta-test is lower than for the checks it runs — found during PR #217's pre-merge-review | If this validation logic changes again, or if a regression in it ever actually reaches CI unnoticed |
 | `epic-auto-close.sh`'s `gh issue list --state all --json number,state,body --limit 5000` still silently truncates past that many issues — an epic could auto-close while an old open sibling outside the fetched window stays unseen. Raised from 1000 in PR #220's review, but not eliminated — found during PR #220's pre-merge-review (round 2) | Not worth paginating for a repo at ~220 issues; 5000 is a wide margin, and the failure mode (an epic closes slightly early) is low-severity and human-correctable, the same way #211 itself was | If this repo's issue count approaches the limit, or any project adopting this mechanism (once it's scaffolded, see F20) starts near it — switch to `gh api --paginate` instead of a single bounded `--limit` |
 | F21's `check_stray_closes_guard` trusts the PR's own `closingIssuesReferences` as ground truth for what it *intends* to close — but that field is itself populated by scanning the PR's title/body text for closing keywords, with no understanding of quoting or context. PR #224 (the PR that built F21) demonstrated this directly: its own description quoted the historical incident text `"Closes #218"`, and GitHub added #218 to `closingIssuesReferences` for real, on a PR that had nothing to do with #218 — found live during that PR's own pre-merge-review, before merge, by re-querying its `closingIssuesReferences` after the fix and seeing it (briefly, until cache caught up) still there. Fixed for that specific PR by rewording its description; F21's check has no general defense against the same mistake in a future PR/issue body | This is the same class of bug F21 exists to catch, one layer up (PR body/title instead of commit message) — genuinely hard to guard against mechanically, since a legitimate reference to another issue in prose is indistinguishable from a real closing intent by keyword-matching alone. Rare in practice: it requires prose that both names a closing keyword and an issue number adjacently, which most PR descriptions don't do outside of exactly this repo's own meta-discussions about the mechanism itself | If this recurs on a future PR — especially one *not* about this mechanism, where it would be far less likely to be caught by the author's own awareness of the pattern |
-| `check_ci_guard` and `check_stray_closes_guard` (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper — found during PR #224's pre-merge-review (round 3) | Two call sites is thin justification for extracting a shared function in a script that otherwise keeps each guard self-contained and independently readable; not worth the churn on a PR already at its third review round | If a third check needs the same pattern, or if the two existing copies ever drift out of sync with each other |
+| `check_ci_guard`, `check_stray_closes_guard`, and now `check_merge_guard`'s marker check (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper. Now three call sites — found during PR #224's pre-merge-review (round 3) at two, found again during PR #227's (round 1) at three. An extraction was attempted during PR #227 and reverted the same session after it (indirectly) caused a real incident: see the row below | Extracting a shared helper is still worth doing, but not attempted again casually — the revert wasn't about the extraction's design, it was about the incident it took down with it | Next time this pattern needs touching — with the apostrophe-in-single-quoted-heredoc risk (row below) fixed first, or checked for explicitly, before editing near either python block again |
+| Writing prose with an apostrophe (`it's`, `doesn't`, `#227's`) inside a bash *single-quoted* `python3 -c '...'` block silently and catastrophically breaks the script: bash single quotes have no escape mechanism, so the apostrophe ends the string early and everything after is reparsed as bash code — with no error until a syntax mismatch surfaces somewhere later in the file, at an unrelated line. Concretely: a comment reading "found during PR #227's own pre-merge-review" inside `check_merge_guard`'s marker-parsing python block took down `hooks/git-guardrails` entirely — and since this repo adopts itself, every `Bash` tool call in the session broke immediately (the `PreToolUse` hook execs this same file to vet every command), discovered only by working blind through `Read`/`Edit` until the apostrophe was found by manual quote-counting | Caught and fixed within the same session, but only by disabling all git/gh command execution until found — a real, high-blast-radius incident, not a near miss | Add a `check-no-...` script (matching `check-no-sigpipe-race.sh`'s F22 pattern) that scans every `python3 -c '...'`-shaped single-quoted block for a bare apostrophe — tracked as its own issue rather than built under this incident's own time pressure |
 
 ---
 

@@ -191,10 +191,13 @@ check_branch_creation() {
 }
 
 # --- the merge guard (W10b, F8) ---------------------------------------------
-# The marker that `pre-merge-review` (F11) literally prescribes. Deliberately
-# duplicated here as a string, not read from SKILL.md: this guard must not
-# depend on the presence or shape of a skill file in the project.
-MERGE_REVIEW_MARKER='<!-- pre-merge-review:done -->'
+# The marker pattern that `pre-merge-review` (F11) literally prescribes:
+# <!-- pre-merge-review:done sha=<40-hex-char HEAD sha> -->. Pinned to a
+# commit (issue #225) — a marker posted for an older commit must not be
+# accepted for a newer one, so a fix commit pushed after review (whether
+# the review ran before or after CI) always requires a fresh one. The
+# regex itself lives inline in check_merge_guard's python block below, not
+# duplicated here as a second source of truth.
 
 # Judges `gh ...` segments. Only `pr merge` is relevant; everything else
 # passes through untouched.
@@ -280,34 +283,86 @@ check_merge_guard() {
 
   local call output status
   if [ -n "$target" ]; then
-    call=(gh pr view "$target" --json comments)
+    call=(gh pr view "$target" --json comments,headRefOid)
   else
-    call=(gh pr view --json comments)
+    call=(gh pr view --json comments,headRefOid)
   fi
-  output="$(cd "$workdir" && "${call[@]}" 2>&1)"
-  status=$?
+
+  # stdout and stderr kept separate, not merged: this now parses real
+  # JSON to compare a sha, not a substring case match — stream
+  # contamination would otherwise silently fail this check open, the same
+  # bug class check_ci_guard below was hardened against for issue #81 and
+  # check_stray_closes_guard for PR #224's own review.
+  local error_file error_text
+  error_file="$(mktemp)" 2>/dev/null || error_file=""
+  if [ -n "$error_file" ]; then
+    output="$(cd "$workdir" && "${call[@]}" 2>"$error_file")"
+    status=$?
+    error_text="$(cat "$error_file" 2>/dev/null)"
+    rm -f "$error_file"
+  else
+    output="$(cd "$workdir" && "${call[@]}" 2>/dev/null)"
+    status=$?
+    error_text=""
+  fi
 
   # AC4: fail open without network (or any other reason gh can't consult
   # the PR — when in doubt, allow, the same ground rule as everywhere else
   # in this script).
   if [ "$status" -ne 0 ]; then
     echo "warning: merge-guard couldn't consult the PR (no network or no access) and skips the review check." >&2
-    echo "$output" >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
     return 0
   fi
 
-  case "$output" in
-    *"$MERGE_REVIEW_MARKER"*) ;;
-    *)
-      block "gh pr merge without a review marker" \
-"this PR doesn't carry the pre-merge-review marker. Run that skill first and
-       leave the findings (with marker) on the PR.
+  # A marker counts only when it names the PR's *current* HEAD commit
+  # (issue #225) — a marker posted for an older commit (a fix pushed
+  # after review, whether the review ran before or after CI) must not be
+  # accepted for a newer one.
+  local marker_status parse_status
+  marker_status="$(printf '%s' "$output" | python3 -c '
+import json, re, sys
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+
+# A missing/empty headRefOid is an unparseable response, not "no commit
+# matches" — falling through with head_sha="" would make every marker
+# compare STALE and hard-block the merge, instead of failing open the
+# same way every other uncertain-state branch here does. Found during
+# this PRs own pre-merge-review (round 2).
+head_sha = data.get("headRefOid") or ""
+if not head_sha:
+    sys.exit(1)
+pattern = re.compile(r"<!-- pre-merge-review:done sha=([0-9a-fA-F]{40}) -->")
+for comment in (data.get("comments") or []):
+    for m in pattern.finditer(comment.get("body") or ""):
+        if m.group(1) == head_sha:
+            print("OK")
+            sys.exit(0)
+print("STALE")
+')"
+  parse_status=$?
+
+  if [ "$parse_status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't interpret the PR's comments (unexpected output from gh pr view) and skips the review check." >&2
+    return 0
+  fi
+
+  if [ "$marker_status" != "OK" ]; then
+    block "gh pr merge without a review marker for the current commit" \
+"this PR doesn't carry a pre-merge-review marker for its current HEAD
+       commit — either no review has run yet, or a commit landed after the
+       last one did. Run that skill again and leave the findings (with a
+       fresh marker) on the PR.
 
        Is this deliberate, use the explicit escape hatch — and report which
        check is being skipped:
 
-         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>" ;;
-  esac
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
+  fi
 
   check_ci_guard "$target"
   check_stray_closes_guard "$target"

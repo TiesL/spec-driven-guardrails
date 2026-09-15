@@ -1275,3 +1275,18 @@ something new is being added.
 - Then: it prints a visible line saying the SIGPIPE/pipefail race
   check was skipped — `check` only prints a sub-script's own output
   on failure, so a successful-but-skipped run needs its own line
+
+### S119 — A marker for an older commit is not accepted for a newer one
+**Covers:** F23
+- Given: a PR with a review marker posted for an older commit than the
+  PR's current HEAD
+- When: `gh pr merge` is called
+- Then: the merge guard blocks — the same message as no marker at all
+
+### S120 — stdout/stderr are kept separate when consulting the marker
+**Covers:** F23
+- Given: `gh pr view`'s response includes routine stderr noise
+  alongside a valid, matching marker on stdout
+- When: `gh pr merge` is called
+- Then: the marker is still recognized — stream contamination must
+  not silently fail this check open

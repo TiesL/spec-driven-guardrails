@@ -18,7 +18,9 @@ trap sandbox_destroy EXIT
 
 repo="$(sandbox_copy_repo)"
 skill="$repo/skills/pre-merge-review/SKILL.md"
-marker='<!-- pre-merge-review:done -->'
+# Sha-pinned since issue #225: the fixed part is the prefix, the sha itself
+# is per-commit and therefore not part of the literal marker text.
+marker='<!-- pre-merge-review:done sha='
 
 if ! grep -qF "$marker" "$skill"; then
   fail "S28 — SKILL.md does not prescribe the marker '$marker'"
