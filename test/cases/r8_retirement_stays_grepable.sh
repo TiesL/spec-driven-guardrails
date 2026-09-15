@@ -39,7 +39,9 @@ adopt "$project"
 if grep -q "$geretireerd" "$project/WORKFLOW-ADOPTION.md"; then
   fail "R8 — $geretireerd is seeded in the adoption table"
 fi
-if pending_ids "$project" | grep -qx "$geretireerd"; then
+# <<< here-string, not a piped pending_ids: SIGPIPE/pipefail race, see
+# issue #218 (pending_ids ends in `sort`, a producer too).
+if grep -qx "$geretireerd" <<<"$(pending_ids "$project")"; then
   fail "R8 — $geretireerd is still being asked"
 fi
 

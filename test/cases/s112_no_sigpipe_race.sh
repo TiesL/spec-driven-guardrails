@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# S112 — No printf/echo piped into grep -q (SIGPIPE/pipefail race, #218).
+# S112-S117 — No producer piped into grep -q (SIGPIPE/pipefail race,
+# #218).
 # Covers: F22
 
 set -uo pipefail
@@ -49,6 +50,62 @@ comment_repo="$(sandbox_copy_repo comment-only)"
 } >> "$comment_repo/pending-changes.sh"
 output_comment="$("$script" "$comment_repo" 2>&1)"; status_comment=$?
 [ "$status_comment" -eq 0 ] || fail "S112 — a comment merely describing the pattern was wrongly flagged: $output_comment"
+
+# And: any producer counts, not just printf/echo (found live in
+# test/cases/r8_retirement_stays_grepable.sh via pending_ids, itself
+# ending in sort — this PR's own pre-merge-review caught the gap in the
+# first version of this check).
+producer_repo="$(sandbox_copy_repo producer)"
+c="cat"
+{
+  echo ''
+  echo "some_function() {"
+  echo "  $c \"\$1\" | $g -q needle"
+  echo '}'
+} >> "$producer_repo/pending-changes.sh"
+output_producer="$("$script" "$producer_repo" 2>&1)"; status_producer=$?
+[ "$status_producer" -ne 0 ] || fail "S112 — a non-printf/echo producer piped into grep -q was not caught"
+
+# And: a combined flag cluster (-qx, -qF, ...), not just a bare -q, still
+# counts — the first version of this check's regex required q to be the
+# last character of the flag cluster and missed -qx entirely.
+flags_repo="$(sandbox_copy_repo flags)"
+{
+  echo ''
+  echo "some_function() {"
+  echo "  $c \"\$1\" | $g -qx needle"
+  echo '}'
+} >> "$flags_repo/pending-changes.sh"
+output_flags="$("$script" "$flags_repo" 2>&1)"; status_flags=$?
+[ "$status_flags" -ne 0 ] || fail "S112 — grep -qx (a combined flag cluster) was not caught"
+
+# And: a boolean "||" between two independent greps, each reading a named
+# file directly (no producer process, no pipe at all), is not a false
+# positive — found for real in this repo's own adopt.sh and
+# s85_migration_reported_per_row.sh while broadening this check.
+or_repo="$(sandbox_copy_repo bool-or)"
+{
+  echo ''
+  echo "some_function() {"
+  echo "  $g -qx a \"\$1\" || $g -qx b \"\$1\""
+  echo '}'
+} >> "$or_repo/pending-changes.sh"
+output_or="$("$script" "$or_repo" 2>&1)"; status_or=$?
+[ "$status_or" -eq 0 ] || fail "S112 — a boolean || between two file-reading greps was wrongly flagged: $output_or"
+
+# And: a pipe split across a backslash-continued line is still caught —
+# the first version of this check only matched pipe+grep on one physical
+# line.
+continuation_repo="$(sandbox_copy_repo continuation)"
+{
+  echo ''
+  echo "some_function() {"
+  echo "  $c \"\$1\" \\"
+  echo "    | $g -q needle"
+  echo '}'
+} >> "$continuation_repo/pending-changes.sh"
+output_continuation="$("$script" "$continuation_repo" 2>&1)"; status_continuation=$?
+[ "$status_continuation" -ne 0 ] || fail "S112 — a pipe split across a backslash-continued line was not caught"
 
 # And: the script excludes itself from its own scan — its own header
 # comment and code necessarily mention the pattern by name.

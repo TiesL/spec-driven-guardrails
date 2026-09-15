@@ -799,6 +799,22 @@ eight in test cases.
 *after* #218 was filed, direct proof of the "easy to reintroduce by habit"
 risk #218's own description named.
 
+**Any producer, not just printf/echo — found the same way, one review
+round later.** The check's own pre-merge-review (PR #226) found a live,
+undetected thirteenth instance the PR itself was supposed to eradicate:
+`pending_ids "$project" | grep -qx "..."` in
+`test/cases/r8_retirement_stays_grepable.sh`, where `pending_ids` ends in
+`sort` — a producer, just not `printf`/`echo`. The race is structural to
+*anything* piped into an early-exiting `grep -q` under `pipefail`, not
+specific to those two commands. Generalizing the check's own pattern
+surfaced two more gaps in its first version: a combined flag cluster
+(`-qx`, `-qF`, ...) wasn't matched (only a bare `-q`, or `q` as the last
+character), and a pipe split across a backslash-continued line wasn't
+either. Fixed, with `||` (boolean or between two independent, file-reading
+greps — no producer, no pipe at all) explicitly not a false positive,
+verified against real instances already in `adopt.sh` and
+`s85_migration_reported_per_row.sh`.
+
 **Ongoing check, not a one-time cleanup** (#218's AC3): this repo prefers
 a mechanism over relying on a habit not slipping, the same reasoning
 behind every other guard here. `check-no-sigpipe-race.sh` scans every
