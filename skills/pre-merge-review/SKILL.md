@@ -39,20 +39,17 @@ comment, never to change files. This skill delivers findings, not fixes.
 
 ## Model choice
 
-No fixed model — that wouldn't account for what the PR actually calls
-for, and Ties deliberately wants to vary model use rather than reflexively
-reaching for the heaviest model every time. Choose, per invocation, a
-model that is **at least as skilled as the model that wrote the reviewed
-change**, and, within that floor, the most cost-effective. A simple change
-by a light model may be reviewed by a light model; a change by a heavy
-model never deserves a lighter reviewer.
+See the `model-choice` skill for the canonical principle (floor + cost,
+stated qualitatively, never a model name) and how it applies across every
+pipeline stage. This review is that skill's Review-stage instance: choose
+a model **at least as skilled as the model that wrote the reviewed
+change**, and, within that floor, the most cost-effective. Record which
+model reviewed — always, not only when it deviates from what's obvious.
 
-If the chosen model deviates from what's obvious, make that visible — in
-the PR or the findings comment — so a later reader can see which model
-reviewed and why. The rest of this procedure (isolated context,
-`scope.sh`, `scenario-gate.sh`, the marker) doesn't change with the model
-choice: that's a separate knob, not a package deal — a different model
-choice is no license to also skip the rest of the procedure.
+The rest of this procedure (isolated context, `scope.sh`,
+`scenario-gate.sh`, the marker) doesn't change with the model choice:
+that's a separate knob, not a package deal — a different model choice is
+no license to also skip the rest of the procedure.
 
 ## The scope
 

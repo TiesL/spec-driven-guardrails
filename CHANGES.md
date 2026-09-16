@@ -350,6 +350,24 @@ the shared parser warns if it has no `Applies if`.
   `diagnose-bug` skill. A fix with no prior failing test proves nothing.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
+## process-model-choice
+
+- **Question:** Does this project apply capability/cost-aware model
+  selection at every artifact-producing pipeline stage (Discovery,
+  Planning, Test authoring, Implementation, Review) — not only at review?
+- **Default:** yes
+- **Applies if:** always
+- **Yes means:** each stage's floor is assessed on that stage's own
+  demands, never inherited from a previous stage's model, and stated
+  qualitatively — never a model name or tier — so the rule doesn't go
+  stale as new models ship. Above that floor, the cheapest model/effort
+  combination that clears it. Every stage after Discovery anchors its
+  floor to whichever model handled the stage before it (Review already
+  worked this way); Discovery, having no predecessor, floors directly on
+  the task's own demands. Every stage records which model/effort was
+  used, always — see the `model-choice` skill.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/236
+
 ---
 
 ### Non-functional characteristics (NFRs)
