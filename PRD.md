@@ -378,6 +378,7 @@ Ties reads and maintains stays Dutch.
 | `refactoring-triggers` | model | Complexity/debt/refactoring (32 lines) |
 | `tdd-seams` | model + user | New: seams, red-before-green, three anti-patterns |
 | `diagnose-bug` | model | New: reproduction → hypotheses → regression test before fix |
+| `model-choice` | model | New (F26): capability/cost-aware model selection at every pipeline stage, stated qualitatively, never a model name |
 | `adopt-workflow` | **user-level** | Adoption question + setting up a new project |
 
 **Three choices that deserve explanation:**
@@ -397,7 +398,7 @@ you won't notice.
 
 *`CONTEXT.md` gets no skill of its own.* It's a template plus a convention:
 `templates/CONTEXT.md`, a `CHANGES.md` entry, and two sentences in
-`write-spec`. Nine skills is already the limit of what stays coherent.
+`write-spec`. Ten skills is already the limit of what stays coherent.
 
 ### F11 — `pre-merge-review` as an executable skill
 
@@ -913,6 +914,37 @@ template had already been translated). Recorded as Technical debt.
 would add indirection without adding anything), gated on both existing so
 a project without `templates/` (fully adopted, no longer carries the
 scaffold source) isn't affected.
+
+### F26 — `model-choice`: capability/cost-aware model selection at every stage (issue #196)
+
+`pre-merge-review`'s "Model choice" section already established one
+instance of a principle: the reviewer must be at least as capable as the
+model that wrote the reviewed change, and, within that floor, the most
+cost-effective choice. That principle applied at exactly one point in a
+work item's life. This generalizes it to every artifact-producing stage
+anticipated by the multi-agent epic (#65) — Discovery, Planning, Test
+authoring, Implementation, Review — before #65 moves from exploration
+into concrete work items.
+
+**The rule stays relative, never a hardcoded name.** A floor is stated as
+what a stage's output has to survive ("can write a test that actually
+falsifies a wrong implementation"), never as a model name or tier
+("mid-tier", a specific model ID). Tiers shift as models are introduced;
+a name written into a skill today is stale the moment a new one ships.
+Every later stage anchors its floor to the stage before it, the same way
+Review already anchored to Implementation. The one stage with no
+predecessor — Discovery — floors directly on the task's own demands
+instead, described the same qualitative way.
+
+**Visibility tightens.** Every stage records which model and reasoning
+effort handled it, always — not only when it deviates from what's
+obvious, which was `pre-merge-review`'s old bar. `pre-merge-review`'s own
+"Model choice" section is replaced with a cross-reference to the new
+`model-choice` skill, so there's one canonical statement instead of two
+that could drift apart.
+
+No behavior change to existing single-agent-per-stage practice — this
+documents the principle so #65's future orchestration has it ready-made.
 
 ---
 

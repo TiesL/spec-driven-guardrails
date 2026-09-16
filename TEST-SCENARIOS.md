@@ -590,6 +590,35 @@ something new is being added.
   and so resolves the way R7 allows: directly in the file, with no
   routing-table row
 
+### S127 — `model-choice` never names a model or tier for a floor
+**Covers:** F26
+- Given: `skills/model-choice/SKILL.md`
+- When: it's read
+- Then: no model name or tier label ("mid-tier", a specific model ID)
+  appears as part of a floor instruction
+- And: every floor is stated as what the stage's output has to survive,
+  not as a model name
+
+### S128 — `model-choice` covers every pipeline stage, with the first stage floored on task demands
+**Covers:** F26
+- Given: `skills/model-choice/SKILL.md`
+- When: it's read
+- Then: it names all five stages from the multi-agent epic (#65) —
+  Discovery, Planning, Test authoring, Implementation, Review — each with
+  its own floor
+- And: it states that every stage after Discovery anchors its floor to
+  the stage before it
+- And: it states that Discovery, having no predecessor, floors on the
+  task's own demands instead
+
+### S129 — `pre-merge-review` cross-references `model-choice` instead of restating it
+**Covers:** F26
+- Given: `skills/pre-merge-review/SKILL.md`'s "Model choice" section
+- When: it's read
+- Then: it refers to the `model-choice` skill for the canonical principle
+- And: it still states the reviewer≥author floor and the always-record
+  requirement for its own stage
+
 ---
 
 ## Traceability

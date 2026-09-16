@@ -47,6 +47,7 @@ This file holds what every session needs. For everything else: the table below r
 | Complexity, technical debt, refactoring | `refactoring-triggers` |
 | Test-first work: seams, red-before-green, anti-patterns | `tdd-seams` |
 | Diagnosing a bug: reproduction → hypotheses → regression test → fix | `diagnose-bug` |
+| Which model/reasoning effort to use for a pipeline stage | `model-choice` |
 | Setting up a new (related) project | `adopt-workflow` (user-level) |
 
 ## Why
