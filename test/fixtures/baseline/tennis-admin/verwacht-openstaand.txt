@@ -6,6 +6,7 @@ ci-on-pr-and-main
 process-context-document
 process-diagnose-bug
 process-issue-tracking
+process-model-choice
 process-prd
 process-refactoring-triggers
 process-technical-debt-register

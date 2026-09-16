@@ -22,12 +22,12 @@ if [ ! -f "$table" ]; then
   test_done
 fi
 
-# Then: exactly 22 rows, all carrying "requires substantiation".
+# Then: exactly 23 rows, all carrying "requires substantiation".
 rows="$(grep -c '^| [a-z]' "$table")"
-[ "$rows" -eq 22 ] || fail "R1 — $rows rows seeded, 22 expected"
+[ "$rows" -eq 23 ] || fail "R1 — $rows rows seeded, 23 expected"
 
 substantiation="$(grep -c 'requires substantiation' "$table")"
-[ "$substantiation" -eq 22 ] || fail "R1 — $substantiation rows with 'requires substantiation', 22 expected"
+[ "$substantiation" -eq 23 ] || fail "R1 — $substantiation rows with 'requires substantiation', 23 expected"
 
 # And: the retired legacy entry is not in there.
 if grep -q 'prd-testscenarios-issue-templates' "$table"; then
