@@ -357,7 +357,7 @@ Based on requirements and architecture, develop:
    - Functional acceptance criteria: specific testable requirements
    - Performance criteria: response times, throughput, resource usage targets
    - Security criteria: specific security requirements to validate
-   - Usability criteria: user experience validation approach
+   - Usability criteria: user experience validation approach — **decided**: applies whenever the product has any interaction surface (GUI, CLI, API response shape, or an agent/LLM harness), not only a graphical UI; folded in here by default, a dedicated UX role only if that surface's complexity/stakes justify it
    - Operational criteria: supportability, monitoring, backup/recovery
 
 3. **Risk-Based Testing**
@@ -613,7 +613,7 @@ Final quality gate before release. Verify that implemented solution meets all re
    - Are there performance concerns or bottlenecks?
    - Is performance acceptable for operational readiness?
 
-5. **Security & Compliance**
+5. **Security & Compliance** — **decided trigger, risk-based, not always-on**: invoke `security-review` when the change touches auth/session handling, secrets/credentials, deploy/CI config, IaC, sensitive/personal data, or an interface accepting untrusted input (API/CLI/webhook). No new risk taxonomy — same OWASP-top-10-style categories this project already uses as baseline. A separate Security agent is only justified when this trigger applies *and* stakes are high (real user credentials, payment data, public-facing production) — not by default.
    - Are security requirements met and validated?
    - Are there identified security vulnerabilities?
    - Are compliance requirements addressed?
@@ -878,8 +878,10 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 
 **Decided: single target, no per-conflict-type routing table.** Every escalation, regardless of category above, follows the same path: role-agent → orchestrator → Ties.
 
+**Decided: conflict between two roles is escalated as both sides, not a merged summary.** When the impediment is a disagreement between two roles' own assessments (e.g. Architect's design vs. Product's requirement, categories 1-2 above), the orchestrator presents both roles' findings side by side, verbatim from their own artifacts — not an orchestrator-authored synthesis, and not only the later role's recommendation. Ties judges from both positions directly.
+
 1. **Orchestrator identifies impediment** with context and recommended actions
-2. **Escalates to Ties** — the one human decision-maker in this project, for every trigger category above
+2. **Escalates to Ties** — the one human decision-maker in this project, for every trigger category above; for a role-vs-role conflict, both roles' assessments are included, not interpreted into one
 3. **Awaits human decision** before proceeding
 4. **Documents impediment resolution** in audit trail
 5. **Routes work** forward based on human decision

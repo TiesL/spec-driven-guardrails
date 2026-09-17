@@ -112,11 +112,37 @@ De onderstaande rollen zijn kernrollen in het beoogde model. Dit zijn verantwoor
 | Reviewer / Lead Developer | Kwaliteit en onderhoudbaarheid van de geleverde ontwikkeloutput onafhankelijk beoordelen. | Pull-requestreview, technische bevindingen, goed- of afkeuring. |
 | Fullstack Developer | Een samenhangend, afgebakend onderdeel end-to-end implementeren, inclusief relevante tests en documentatie. | Implementatie, rode/groene tests, documentatie, pull request. |
 
+### Kernverantwoordelijkheden per rol (besloten)
+
+Aanvullend op de rollentabel hierboven, per rol de kernverantwoordelijkheden en welke vraag die rol beantwoordt (dit is wat overlap voorkomt — elke rol beantwoordt een andere vraag, niet dezelfde vraag opnieuw):
+
+- **Product**: productvisie en releases bepalen, features/requirements prioriteren op basis van business-/gebruikersbehoefte, trade-off- en scopebeslissingen nemen. Beantwoordt: *is de requirement zelf correct en compleet?*
+- **Architect**: systeemstructuur ontwerpen (applicatie-, software-, integratie-, data- en infrastructuurarchitectuur), technologiekeuzes en standaarden vastleggen, schaalbaarheid/performance/onderhoudbaarheid borgen, grote technische besluiten beoordelen, technisch risico mitigeren. Beantwoordt: *voldoet het ontwerp aan de requirement en aan de architectuurprincipes?*
+- **QA**: teststrategie bepalen en uitvoeren, defecten identificeren/rapporteren, functionele en non-functionele requirements verifiëren, kwaliteitsgates bewaken vóór release. Beantwoordt: *gedraagt de implementatie zich volgens de tests, is de coverage toereikend?*
+- **Fullstack Developer**: features/fixes bouwen volgens specificatie, onderhoudbare code schrijven, codekwaliteit en technische schuld beheren, werkende software opleveren.
+- **Reviewer**: onafhankelijke eindgate — verifieert dat er bewijs is dat het voorgaande daadwerkelijk is gebeurd en dat de verzameling artifacts consistent is voor release. Blijft een eigen rol (niet samengevoegd met QA/Fullstack Developer) — dit repo's eigen `pre-merge-review` (F11) bestaat specifiek omdat 0 van de eerste 27 PR's hier enige review hadden; zelfcontrole door dezelfde rol lost dat probleem niet op.
+
+Samenhang: Product bepaalt *wat*; Architect bepaalt *hoe*; Fullstack Developer voert uit; QA verifieert dat het werkt zoals bedoeld; Reviewer bevestigt onafhankelijk de hele keten vóór release.
+
+**Conflict is verwacht, geen fout van het model.** Een andere vraag per rol voorkomt *overbodige* herverificatie, niet legitiem conflict (bijv. Architect's ontwerp vs. Product's requirement, of QA die een ontwerpfout vindt). Zulke conflicten escaleren via het al besloten enkele pad — rol-agent → orchestrator → Ties — zie de Escalation Triggers in `MULTI-AGENT-WORKFLOW.md` (categorieën 1 en 2 daar). **Bij escalatie van een conflict tussen twee rollen presenteert de orchestrator beide rollen' eigen bevindingen naast elkaar** — geen samengevoegde samenvatting, geen alleen-de-laatste-rol-aan-het-woord — zodat Ties zelf vanuit beide posities beoordeelt, niet via orchestrator-interpretatie.
+
 ### Security als expliciete verantwoordelijkheid
 
 Security testing en het controleren van security-relevante risico’s zijn een expliciete verantwoordelijkheid in de workflow. Dit betekent niet automatisch dat er een afzonderlijke Security-agent nodig is. De taak kan, afhankelijk van risico, expertise en automatisering, onderdeel zijn van meerdere rollen of later alsnog als aparte rol/agent worden ingericht.
 
-De minimale security-gates, hun risicogestuurde toepassing en de eigenaar per gate zijn **TBD**.
+**Minimale gates en risicogestuurde toepassing (besloten):** geen los mechanisme — hergebruikt de bestaande `security-review`-skill. Reviewer roept die aan (checklistitem "Security & Compliance", al aanwezig in `MULTI-AGENT-WORKFLOW.md`) wanneer een wijziging raakt aan: auth/sessiebeheer, secrets/credentials, deploy-/CI-configuratie, Infrastructure as Code, gevoelige/persoonsgegevens, of een interface die niet-vertrouwde input ontvangt (API/CLI/webhook) — risicogestuurd, niet altijd-aan. Geen nieuwe risicotaxonomie: dezelfde OWASP-top-10-achtige categorieën die dit project al impliciet als basislijn hanteert.
+
+**Inbedding van de triggerlijst:** tekst in de skill die Reviewer's rolcontract vastlegt (nog te schrijven, zie "Rol-naar-agent toewijzing" hieronder) — dezelfde plek als Reviewer's overige checklistitems, geen nieuw artifacttype. Optioneel aanvullend: een deterministische, padgebaseerde CI-vlag (raakt `auth/`, `.github/workflows/`, IaC-mappen, deploy-scripts) in de stijl van `check-pr-issue-link.sh` — vervangt Reviewer's eigen beoordeling niet, vangt alleen de voor-de-hand-liggende gevallen.
+
+**Wanneer een aparte Security-agent gerechtvaardigd is:** dezelfde voorwaardelijke-escalatie-redenering als bij UX hieronder — wanneer de triggerlijst van toepassing is *en* de inzet hoog is (echte gebruikerscredentials, betaalgegevens, publiek toegankelijke productieomgeving), niet standaard.
+
+### UX als voorwaardelijke verantwoordelijkheid (besloten activeringsregel)
+
+Geen apart UX-rol standaard. Activeringsregel is **niet** "is er een UI" — dat mist bijvoorbeeld een agent die via een LLM-harness (zoals Claude Code) opereert, waar die harness zelf de interface is die de gebruikerservaring bepaalt. In plaats daarvan: **heeft het product enige interactie-oppervlak waar een mens of agent doorheen opereert** — GUI, CLI, API-responsvorm, foutmeldingen, of een agent-/LLM-harness. Dat is bij vrijwel alles waar, behalve een pure interne library zonder extern interface.
+
+- Bij een interactie-oppervlak → UX-verantwoordelijkheid is standaard verdeeld over bestaande rollen: Product (gewenste UX-uitkomst), QA (bestaand checklistitem "Usability criteria"), Reviewer (bestaand checklistitem "Operational Readiness" uitgebreid). Geen nieuwe rol/agent standaard.
+- Geen interactie-oppervlak (zeldzaam) → UX activeert niet.
+- Aparte UX-agent alleen wanneer de daadwerkelijke complexiteit/inzet van dat interactie-oppervlak dat rechtvaardigt — zelfde voorwaardelijke-escalatie-patroon als Security hierboven.
 
 ### Fullstack developers binnen bounded contexts
 
@@ -210,12 +236,12 @@ Status per vraag: **besloten**/**deels besloten** verwijst naar een concreet bes
 1. Welke artifacts zijn per workflowfase minimaal verplicht, en welke relaties moeten machineleesbaar zijn voor traceability? — **deels besloten**: artifacts per granulariteitsniveau vastgelegd in §3.4; het referentieproces (requirement → PR) met artifact per fase staat in `MULTI-AGENT-WORKFLOW.md`. Machineleesbare relatie blijft het bestaande `Covers:`-token; geen nieuw mechanisme geïntroduceerd.
 2. Welke gates zijn verplicht voordat werk naar de volgende fase mag, en welke rol of automatisering beoordeelt elke gate? — **besloten**: gate/rol per fase volgt het referentieproces in `MULTI-AGENT-WORKFLOW.md`, met CI/`pre-merge-review`/`deploy-guards` als nooit-overslaanbare gates (zie "Orchestrator: besloten model", §6).
 3. Hoe wordt context isolation technisch en organisatorisch vormgegeven, inclusief toegang tot repository, GitHub en deploymentomgeving? — **besloten**: skill-gebaseerd bestands-/mapbereik per rol (zie "Rol-naar-agent toewijzing", §4), geen OS-sandboxing, geen worktree-per-rol.
-4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd? — **open**: wie mag een grens verleggen en hoe wordt dat vastgelegd, is nog niet uitgewerkt.
-5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd? — **deels besloten**: geen los Security-agent (blijft onderdeel van Reviewer, §4); welke tests/risicoclassificaties minimaal vereist zijn, blijft **open**.
-6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd? — **open**.
-7. Is een UX-designrol nodig? Zo ja, welke artifacts en gates hoort die rol te bezitten of te beoordelen? — **open**: voorlopige neiging is geen aparte UX-rol voor dit repo zelf (geen UI), maar de regel voor adopterende projecten mét UI is nog niet vastgelegd — mogelijk dezelfde afleidingsregel als bij JTBD/user story in §3.4 (activeren op basis van of `PRD.md` UI/persona's noemt).
+4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd? — **besloten**: geen nieuw mechanisme — een bounded-contextkeuze is een architectuurbesluit als elk ander, vastgelegd als `## Decision N` in `ARCHITECTURE.md`/`ARCHITECTURE-MULTI-AGENT-WIP.md` (§ "System boundaries and ownership" bestaat al in het sjabloon). Wijzigingstrigger hergebruikt de bestaande `refactoring-triggers`-skill, geen nieuwe trigger.
+5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd? — **besloten**: zie "Security als expliciete verantwoordelijkheid" hierboven — risicogestuurde triggerlijst (auth, secrets, deploy/CI-config, IaC, gevoelige data, niet-vertrouwde input), ingebed in Reviewer's rolcontract-skill, geen nieuwe taxonomie.
+6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd? — **besloten**: zie "Kernverantwoordelijkheden per rol" hierboven — elke rol beantwoordt een andere vraag; legitiem conflict tussen rollen escaleert (verwacht, geen fout van het model) via het enkele pad, met beide rollen' bevindingen naast elkaar gepresenteerd aan Ties.
+7. Is een UX-designrol nodig? Zo ja, welke artifacts en gates hoort die rol te bezitten of te beoordelen? — **besloten**: zie "UX als voorwaardelijke verantwoordelijkheid" hierboven — activeringsregel is niet "is er een UI" maar "heeft het product enig interactie-oppervlak" (GUI, CLI, API, of een agent-/LLM-harness); standaard verdeeld over bestaande rollen, aparte agent alleen bij gerechtvaardigde complexiteit/inzet.
 8. Welke taken van de orchestrator worden geautomatiseerd, welke vragen menselijk besluit en hoe worden uitzonderingen vastgelegd? — **besloten**: zie "Orchestrator: besloten model", §6.
-9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **open**: voorlopige richting is hergebruik van het `adoption-registry`-patroon (rij per besluit met evidence-link), niet vastgelegd.
+9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **besloten**: hergebruikt het `WORKFLOW-ADOPTION.md`-patroon (rij per besluit: Change/Answer/Date/Notes), geschaald naar per work-item-issue; evidence zijn verwijzingen naar wat al bestaat (`pre-merge-review`-marker, CI-run, PR) — geen nieuw rapportformat. Orchestrator plaatst dit als één issuecomment per work item, geen apart dashboard.
 10. Hoe sluit dit ontwerp aan op bestaande workflowdocumentatie, bestaande repositories en hun eigen conventies? — **besloten**: hergebruikt bestaande skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) ongewijzigd; de nieuwe rol-/orchestratielaag komt in een eigen skill, geen vervanging.
 
 ## 10. Voorgestelde vervolgscope
