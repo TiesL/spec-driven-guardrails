@@ -212,7 +212,7 @@ below, without needing anything above this point.
 | `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
 | `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
 | `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/baseline/` (the frozen baseline, see `LEESMIJ.md` there). |
-| `PRD-MULTI-AGENT-WIP.md` | **WIP** — exploratory PRD for multi-agent software development in a later release, linked to epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Not part of the shared workflow machinery above, and not approved: directional, with open design questions deliberately marked as **TBD**. |
+| `wip/multi-agent-development/` | **WIP** — exploratory PRD, architecture, and orchestration spec for multi-agent software development in a later release, linked to epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Not part of the shared workflow machinery above, and not approved: directional, with open design questions deliberately marked as **TBD**. Whether this becomes its own release or stays under epic #65 is itself undecided — the folder name doesn't presuppose either. |
 
 ## Why local symlinks instead of committed symlinks
 

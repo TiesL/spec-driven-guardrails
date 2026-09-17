@@ -6,17 +6,17 @@
 | Beoogde release | **TBD** — volgende release van de bestaande agentic development workflow |
 | Type work item | Voorstel voor een GitHub Epic en opvolgende work items |
 | Epic | [#65](https://github.com/TiesL/claude-workflow/issues/65) — Multi-agent softwareontwikkeling in de workflow (WIP-verkenning) |
-| Eigenaar | TiesL / **TBD** |
-| Laatst bijgewerkt | 4 september 2026 |
+| Eigenaar | Ties |
+| Laatst bijgewerkt | 26 september 2026 |
 
 > Dit document beschrijft een gewenste richting, geen definitieve architectuur of implementatieplan. Besluiten, concrete tooling en technische uitwerking blijven expliciet **TBD**.
 
 > **Verhouding tot de andere documenten in dit repo.** Dit is *niet* het PRD van
-> de lopende release — dat is [`PRD.md`](PRD.md) ("From prose to mechanism",
+> de lopende release — dat is [`PRD.md`](../../PRD.md) ("From prose to mechanism",
 > epic [#11](https://github.com/TiesL/claude-workflow/issues/11)). Dit document
 > is een verkenning voor een latere release en is nog niet vertaald naar
 > work items; dat gebeurt pas na expliciete besluitvorming. De workflow-afspraken
-> waarnaar hieronder verwezen wordt, staan in [`WORKFLOW.md`](WORKFLOW.md).
+> waarnaar hieronder verwezen wordt, staan in [`WORKFLOW.md`](../../WORKFLOW.md).
 
 ## 1. Samenvatting
 
@@ -79,6 +79,27 @@ Een agent mag werk uitvoeren en bewijs produceren, maar bepaalt niet zelfstandig
 
 Dit betekent onder meer dat een implementatie niet alleen “klaar” is omdat code is geschreven: relevante tests, review, CI-resultaten, traceability en overige afgesproken controls moeten aantoonbaar aanwezig zijn.
 
+### 3.4 Werkgranulariteit: productbrief, release, feature
+
+Drie niveaus, elk met een eigen artifact, oplopend in omvang:
+
+| Niveau | Trigger | Artifact | Rol |
+| --- | --- | --- | --- |
+| 1. Nieuw product | Project ontstaat | Productbrief — wordt zelf `PRD.md` | Product (alleen; Architect nog niet betrokken) |
+| 2. Nieuwe release/initiatief binnen bestaand product | Scope groot genoeg voor een eigen Epic | Sectie in `PRD.md` + Epic-issue | Product + Architect |
+| 3. Feature binnen een release | Eén afgebakende oplevering | Work item-issue + scenario's in `TEST-SCENARIOS.md` (`Covers:`-token) | Product/Architect (issue) → QA → Fullstack Developer → Reviewer |
+
+Een nieuw product doorloopt alle drie niveaus, in die volgorde. Niveau 3 heeft geen los brief-artifact vooraf: de issue zelf draagt de verkorte productbrief-inhoud (zie hieronder).
+
+**Format van die verkorte inhoud in een issue:** Jobs-to-be-done of user story, afhankelijk van of `PRD.md` een concrete eindgebruiker-persona benoemt naast de beheerder/ontwikkelaar zelf.
+
+- `PRD.md` noemt een externe eindgebruiker-persona → **user story** ("Als [gebruikerstype] wil ik [doel], zodat [reden]").
+- `PRD.md`'s doelgroep is de beheerder, andere ontwikkelaars, of de workflow zelf (zoals dit repo) → **Jobs-to-be-done** ("wanneer [situatie], wil ik [motivatie], zodat [uitkomst]").
+
+Deze regel wordt niet per project apart vastgelegd (geen extra veld in `CONTEXT.md`) — de `write-spec`-skill controleert bij elke issue-opmaak live tegen `PRD.md`'s doelgroep, zodat de regel niet vergeten kan worden en niet verouderd kan raken.
+
+Plaatsing in het sjabloon: bij een Epic-issue vervangt de JTBD-/user-story-regel het `Goal`-veld; bij een Work item-issue vult die regel het `Description`-veld aan (motivatie eerst, daarna de bestaande technische omschrijving van wat gebouwd/gewijzigd moet worden).
+
 ## 4. Rollen en verantwoordelijkheden
 
 De onderstaande rollen zijn kernrollen in het beoogde model. Dit zijn verantwoordelijkheden; de toewijzing aan concrete agents is **TBD**.
@@ -102,6 +123,16 @@ De minimale security-gates, hun risicogestuurde toepassing en de eigenaar per ga
 De voorkeur is om development agents als fullstack developer agents te organiseren binnen heldere bounded contexts of andere samenhangende werkgrenzen. Zij dragen een wijziging van technisch ontwerp tot implementatie, tests en relevante documentatie voor hun afgebakende onderdeel.
 
 Een verplichte splitsing tussen frontend- en backend-agents is nadrukkelijk geen uitgangspunt. Zo’n splitsing kan later passend blijken wanneer integratiecomplexiteit, schaal of domeingrenzen dat rechtvaardigen, maar is geen standaardstructuur.
+
+### Rol-naar-agent toewijzing (besloten)
+
+- Eén sessie per rol per fase; geen langlevende rol-agent. De orchestrator (zie §6) start een verse sub-agent-sessie per fase; overdracht loopt uitsluitend via artifacts, nooit via chatgeheugen.
+- Sequentieel: rollen werken één voor één, geen parallelle uitvoering (vooralsnog — geen infrastructuur hiervoor in dit project).
+- Mens/agent-verdeling: Product en Architect zijn agent-ondersteund met de mens (Ties) leidend; QA en Fullstack Developer zijn agent-eigendom; Reviewer is agent-eigendom, optioneel ondersteund door een menselijke engineer (niet Ties) die de PR rechtstreeks via `gh` beoordeelt; mergebevestiging is en blijft uitsluitend menselijk (Ties), nooit geautomatiseerd — zie ook §6.
+- Identiteit: `role:<naam>`-labels (bijv. `role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`) op het issue/PR waaraan de rol werkt. Geen native GitHub-assignee — de orchestrator is zelf de bron van waarheid over wie waaraan werkt; een label zou dat alleen dubbel en inconsistent maken.
+- Context isolation: skill-gebaseerd bestands-/mapbereik per rol (welke paden een rol-sessie mag lezen/schrijven), geen worktree-per-rol — niet nodig zolang rollen sequentieel werken (één branch, één checkout op elk moment).
+
+Detailuitwerking en de vijf rollen als concrete agent-specificatie: zie [`MULTI-AGENT-WORKFLOW.md`](MULTI-AGENT-WORKFLOW.md).
 
 ## 5. Workflow- en governancestandaarden
 
@@ -135,6 +166,15 @@ Beoogde verantwoordelijkheden van orkestratie:
 
 Compliance betekent hier: aantoonbaar handelen volgens de afgesproken workflow, met expliciete uitzonderingen wanneer daarvan wordt afgeweken. Het mechanisme voor uitzonderingen, overrides en audit trail is **TBD**.
 
+### Orchestrator: besloten model
+
+De orchestrator is een concrete agent (niet alleen een verantwoordelijkheid), gedetailleerd uitgewerkt in [`MULTI-AGENT-WORKFLOW.md`](MULTI-AGENT-WORKFLOW.md) — een geïmporteerde spec, op de volgende punten aangepast aan dit project:
+
+- **Context is artifact-gebaseerd, geen los toestandsobject.** De orchestrator bouwt "gedeelde context" door de bestaande artifacts te lezen (issue, `PRD.md`/`ARCHITECTURE.md`-secties, `TEST-SCENARIOS.md`-items, PR-diff, CI-resultaten) — niet door een eigen ondoorzichtige state bij te houden. Elke context is daardoor door iedereen (mens, verse agent, audit) reconstrueerbaar uit dezelfde bronnen. De geïmporteerde spec sprak nog van een los "shared context object"; dat is hiermee vervangen.
+- **Escalatie kent één doel**: rol-agent → orchestrator → mens (Ties). Geen aparte routing per rol/lead zoals in de oorspronkelijk geïmporteerde spec (Product Lead/Tech Lead/QA Lead/Release Manager/CTO) — dit project heeft één menselijke beslisser.
+- **Non-lineaire routing (loop-back, exceptiepaden) is toegestaan**, maar CI, `pre-merge-review` en `deploy-guards` zijn nooit overslaanbaar, in geen enkel pad. Alleen Product- en Architect-fasen mogen verkort worden (vergelijkbaar met de bestaande verkorte flow voor triviale `fix/<n>`-branches).
+- **Geen geautomatiseerde release/merge, ook niet als toekomstige uitbreiding**: mergebevestiging blijft altijd bij Ties, zoals `WORKFLOW.md` stap 4 al vastlegt. Dit vervangt het "2.0-autoapprove"-voorstel uit de geïmporteerde spec (Dev/QA/Reviewer die release zelf autoriseren) — agents mogen wél autonoom naar de *volgende fase* doorschakelen binnen guardrails, nooit naar release.
+
 ## 7. Begrippenkader en grenzen
 
 Om ontwerpbeslissingen scherp te houden, worden de volgende begrippen onderscheiden:
@@ -165,16 +205,18 @@ Dit document legt nog niet vast:
 
 ## 9. Open questions / TBD
 
-1. Welke artifacts zijn per workflowfase minimaal verplicht, en welke relaties moeten machineleesbaar zijn voor traceability?
-2. Welke gates zijn verplicht voordat werk naar de volgende fase mag, en welke rol of automatisering beoordeelt elke gate?
-3. Hoe wordt context isolation technisch en organisatorisch vormgegeven, inclusief toegang tot repository, GitHub en deploymentomgeving?
-4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd?
-5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd?
-6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd?
-7. Is een UX-designrol nodig? Zo ja, welke artifacts en gates hoort die rol te bezitten of te beoordelen?
-8. Welke taken van de orchestrator worden geautomatiseerd, welke vragen menselijk besluit en hoe worden uitzonderingen vastgelegd?
-9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt?
-10. Hoe sluit dit ontwerp aan op bestaande workflowdocumentatie, bestaande repositories en hun eigen conventies?
+Status per vraag: **besloten**/**deels besloten** verwijst naar een concreet besluit hierboven of in [`ARCHITECTURE-MULTI-AGENT-WIP.md`](ARCHITECTURE-MULTI-AGENT-WIP.md)/[`MULTI-AGENT-WORKFLOW.md`](MULTI-AGENT-WORKFLOW.md); overige blijven **open** — geen enkele hiervan is impliciet beantwoord.
+
+1. Welke artifacts zijn per workflowfase minimaal verplicht, en welke relaties moeten machineleesbaar zijn voor traceability? — **deels besloten**: artifacts per granulariteitsniveau vastgelegd in §3.4; het referentieproces (requirement → PR) met artifact per fase staat in `MULTI-AGENT-WORKFLOW.md`. Machineleesbare relatie blijft het bestaande `Covers:`-token; geen nieuw mechanisme geïntroduceerd.
+2. Welke gates zijn verplicht voordat werk naar de volgende fase mag, en welke rol of automatisering beoordeelt elke gate? — **besloten**: gate/rol per fase volgt het referentieproces in `MULTI-AGENT-WORKFLOW.md`, met CI/`pre-merge-review`/`deploy-guards` als nooit-overslaanbare gates (zie "Orchestrator: besloten model", §6).
+3. Hoe wordt context isolation technisch en organisatorisch vormgegeven, inclusief toegang tot repository, GitHub en deploymentomgeving? — **besloten**: skill-gebaseerd bestands-/mapbereik per rol (zie "Rol-naar-agent toewijzing", §4), geen OS-sandboxing, geen worktree-per-rol.
+4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd? — **open**: wie mag een grens verleggen en hoe wordt dat vastgelegd, is nog niet uitgewerkt.
+5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd? — **deels besloten**: geen los Security-agent (blijft onderdeel van Reviewer, §4); welke tests/risicoclassificaties minimaal vereist zijn, blijft **open**.
+6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd? — **open**.
+7. Is een UX-designrol nodig? Zo ja, welke artifacts en gates hoort die rol te bezitten of te beoordelen? — **open**: voorlopige neiging is geen aparte UX-rol voor dit repo zelf (geen UI), maar de regel voor adopterende projecten mét UI is nog niet vastgelegd — mogelijk dezelfde afleidingsregel als bij JTBD/user story in §3.4 (activeren op basis van of `PRD.md` UI/persona's noemt).
+8. Welke taken van de orchestrator worden geautomatiseerd, welke vragen menselijk besluit en hoe worden uitzonderingen vastgelegd? — **besloten**: zie "Orchestrator: besloten model", §6.
+9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **open**: voorlopige richting is hergebruik van het `adoption-registry`-patroon (rij per besluit met evidence-link), niet vastgelegd.
+10. Hoe sluit dit ontwerp aan op bestaande workflowdocumentatie, bestaande repositories en hun eigen conventies? — **besloten**: hergebruikt bestaande skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) ongewijzigd; de nieuwe rol-/orchestratielaag komt in een eigen skill, geen vervanging.
 
 ## 10. Voorgestelde vervolgscope
 
