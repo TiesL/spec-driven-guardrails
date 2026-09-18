@@ -9,11 +9,12 @@
 # Checks that all five pipeline stages (Discovery, Planning, Test,
 # Implementation, Review) have at least one machine-readable
 #   <!-- model-record: stage=<Stage> model="..." effort="..." -->
-# marker, searched across both the PR's own comments and the comments of
-# every issue it closes (Discovery is typically recorded on the issue,
-# the other four on the PR — but this searches both for either, since
-# model-choice's own "single session" note allows one session to do every
-# stage and record all of them wherever it's writing at the time).
+# marker, searched across the PR's own comments, the PR's own description,
+# and the comments of every issue it closes (Discovery is typically
+# recorded on the issue, the other four on the PR — but this searches all
+# three for either, since model-choice's own "single session" note allows
+# one session to do every stage and record all of them wherever it's
+# writing at the time).
 #
 # Found via #238 (portfolio-mgt-agents): only the Review stage ever
 # recorded a model in practice — Discovery/Planning/Test/Implementation
@@ -37,11 +38,24 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
-body_part="$(gh pr view "$pr_number" --json comments --jq '.comments[].body' 2>&1)"
+comments_part="$(gh pr view "$pr_number" --json comments --jq '.comments[].body' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
   echo "warning: model-record-gate couldn't consult PR #$pr_number's comments (no network or no access) and is skipping the model-record check." >&2
-  echo "$body_part" >&2
+  echo "$comments_part" >&2
+  exit 0
+fi
+
+# Found during PR #251's pre-merge-review: a marker posted directly in
+# the PR's own description (common when a work item's Planning/Test/
+# Implementation markers are added at PR-creation time, before any
+# comment exists) was invisible to this gate — it only ever scanned
+# comments. The description is as durable an artifact as a comment.
+description_part="$(gh pr view "$pr_number" --json body --jq '.body' 2>&1)"
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "warning: model-record-gate couldn't consult PR #$pr_number's description (no network or no access) and is skipping the model-record check." >&2
+  echo "$description_part" >&2
   exit 0
 fi
 
@@ -53,7 +67,8 @@ if [ "$status" -ne 0 ]; then
   exit 0
 fi
 
-all_text="$body_part"
+all_text="$comments_part
+$description_part"
 if [ -n "$issue_numbers" ]; then
   while IFS= read -r issue_num; do
     [ -n "$issue_num" ] || continue

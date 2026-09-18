@@ -29,6 +29,9 @@ case "$*" in
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
     exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
   "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
     printf "%s\n" "239"
     exit 0 ;;
@@ -49,6 +52,9 @@ fakebin_partial="$(fake_gh_bin '
 case "$*" in
   "pr view 246 --json comments --jq .comments[].body")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
     exit 0 ;;
   "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
     printf "%s\n" "239"
@@ -86,6 +92,9 @@ case "$*" in
   "pr view 246 --json comments --jq .comments[].body")
     printf "%s" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
   "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
     printf "%s\n" "239"
     exit 0 ;;
@@ -98,5 +107,31 @@ exit 1
 
 output_issue_fails="$(PATH="$fakebin_issue_fails:$PATH" "$script" 246 2>&1)"
 assert_contains "S130 — a warning appears when the issue lookup fails" "warning" "$output_issue_fails"
+
+# A marker posted directly in the PR's own description, not a comment,
+# must still be found — found during PR #251's pre-merge-review: the gate
+# only ever scanned comments, missing markers added at PR-creation time.
+fakebin_body_marker="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+
+output_body_marker="$(PATH="$fakebin_body_marker:$PATH" "$script" 246)"
+[ -z "$output_body_marker" ] || fail "S130 — expected no findings when markers live in the PR description, got: $output_body_marker"
 
 test_done
