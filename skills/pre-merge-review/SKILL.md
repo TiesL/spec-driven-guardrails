@@ -129,6 +129,26 @@ all. Every reported line is a finding, the same as links 2 and 3 above. A
 row answered `no` (including "no — not yet", see #239 AC3) is never
 checked — it never claimed the postcondition holds in the first place.
 
+## Pending adoption gate (#240)
+
+`pending-changes.sh` already detects every applicable `CHANGES.md` row with
+no answer yet in `WORKFLOW-ADOPTION.md` — but until now it only ran from
+the `SessionStart` hook, a single notice easy to scroll past mid-session
+and never re-surfaced at PR time. Found via #238 (`portfolio-mgt-agents`):
+8 applicable rows sat unanswered and unmentioned across two merged PRs.
+
+Run it the same way the `SessionStart` hook resolves its own checkout path:
+
+```
+p="$(pwd)"; target=$(readlink "$p/.claude/settings.json" 2>/dev/null); \
+  wf=$(dirname "$(dirname "$target")"); \
+  [ -x "$wf/pending-changes.sh" ] && "$wf/pending-changes.sh" "$p"
+```
+
+Any output is a finding in the PR, one row per line — not a hard block
+(same fail-open philosophy as everything else here): a pending row is a
+question to put to Ties, not a reason by itself to refuse the merge.
+
 ## Substantiation gap as a finding
 
 If the PR touches a topic whose scope line carries `[requires
