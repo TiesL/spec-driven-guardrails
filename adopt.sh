@@ -197,6 +197,31 @@ GITIGNORE_END="# claude-workflow: end"
 # excludes two nested git repos with `tennis-registration/` and
 # `tennis-invoicing/`, and accidentally swallowing those turns two whole
 # repos into untracked content.
+# #243 AC2: a managed path already tracked *before* adoption ran makes
+# the .gitignore entry write_gitignore_block adds a no-op — git doesn't
+# stop tracking a path just because it later appears in .gitignore. Found
+# via #238 (portfolio-mgt-agents): CLAUDE.md was committed as an absolute,
+# machine-local symlink before adoption, and the gitignore entry did
+# nothing retroactively.
+#
+# git rm --cached keeps the working-tree file (needed locally) and only
+# removes it from the index — after this, the .gitignore entry actually
+# takes effect. Checked with plain `git ls-files`, not `--error-unmatch`:
+# the latter's directory-pathspec behavior is a poor fit for
+# ".claude/skills/", where any file underneath, not an exact match, is
+# what "tracked" means here.
+untrack_managed_paths() {
+  local project_dir="$1"; shift
+  local path tracked
+  for path in "$@"; do
+    tracked="$(cd "$project_dir" && git ls-files -- "$path" 2>/dev/null)"
+    [ -n "$tracked" ] || continue
+    if (cd "$project_dir" && git rm -r --cached --quiet -- "$path" >/dev/null 2>&1); then
+      echo "Untracked already-tracked managed path: $project_dir/$path (kept locally, now git-ignored)"
+    fi
+  done
+}
+
 write_gitignore_block() {
   local project_dir="$1"; shift
   local gitignore="$project_dir/.gitignore"
@@ -404,7 +429,7 @@ install_git_hooks() {
   mkdir -p "$hooks_dir"
 
   local name path source current_target
-  for name in pre-commit pre-push; do
+  for name in pre-commit pre-push commit-msg; do
     source="$CLAUDE_WORKFLOW_DIR/hooks/$name"
     [ -f "$source" ] || continue
     path="$hooks_dir/$name"
@@ -493,6 +518,7 @@ adopt_project() {
   # path on *this* machine. Committing them yields broken links in every
   # other checkout, and without this line, the first re-adoption after W9
   # would leave a pile of untracked files in all four projects.
+  untrack_managed_paths "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
   write_gitignore_block "$project_dir" "CLAUDE.md" ".claude/settings.json" ".claude/skills/"
   install_skills "$project_dir"
   install_git_hooks "$project_dir"

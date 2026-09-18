@@ -1396,3 +1396,23 @@ something new is being added.
   Work items list has no real `#<n>` entry (only the unfilled template
   placeholder) is reported; a well-formed issue produces no findings;
   without `gh`, the gate fails open with a warning
+
+### S133 — The native commit-msg hook rejects a Co-Authored-By trailer
+**Covers:** F9
+- Given: a commit message carrying a `Co-Authored-By:` trailer (any case),
+  written directly into `-m` rather than added by Claude Code's own
+  commit template
+- When: the commit is attempted
+- Then: it's blocked, naming the trailer; a message with no trailer
+  proceeds; the `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch still lets
+  it through
+
+### S134 — A managed path already tracked before adoption is untracked
+**Covers:** F9
+- Given: `CLAUDE.md` committed as a real, tracked file before `adopt.sh`
+  ever ran
+- When: `adopt.sh` runs
+- Then: the path is no longer tracked (`git rm --cached`), the working-tree
+  file is kept (now the real symlink `adopt.sh` creates, never deleted),
+  and `.gitignore` lists it; a project where the path was never tracked is
+  unaffected
