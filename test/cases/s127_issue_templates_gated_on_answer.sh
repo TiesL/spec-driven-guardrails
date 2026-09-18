@@ -66,4 +66,21 @@ if [ ! -f "$project3/.github/ISSUE_TEMPLATE/work-item.md" ]; then
   fail "S127 — cross case: migrated filename with an unmigrated proces-issue-tracking/ja row did not scaffold"
 fi
 
+# Mixed pairing (found during PR #247's pre-merge-review, round 2): the
+# current id with the Dutch value — plausible from a partial manual
+# migration. Id and value are checked independently, not paired, so this
+# must count too.
+project4="$(fresh_project mixed_pairing)"
+cat > "$project4/WORKFLOW-ADOPTION.md" <<'EOF'
+# Adoption of shared workflow changes
+
+| Change | Answer | Date | Notes |
+|---|---|---|---|
+| process-issue-tracking | ja | 2026-01-01 | current id, Dutch value from a partial manual migration |
+EOF
+adopt "$project4"
+if [ ! -f "$project4/.github/ISSUE_TEMPLATE/work-item.md" ]; then
+  fail "S127 — mixed pairing: current id with Dutch value 'ja' did not scaffold"
+fi
+
 test_done

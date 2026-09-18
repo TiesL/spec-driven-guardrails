@@ -74,21 +74,29 @@ scaffold_if_missing() {
 # formally answered — a project with the directory already in place has
 # self-evidently opted in, answered or not. So the gate applies only to
 # *first creation*, never to refreshing what's already there.
-# Whichever answer file this project actually uses (W42/#114) holds "yes"
-# for process-issue-tracking, checking both the current ID and its
-# pre-rename alias (#175's changes_old_id, the same lookup
-# pending-changes.sh's own answered() uses) — not two hardcoded
-# file/ID/value combinations, which would miss a migrated filename still
-# carrying an unmigrated row. Found during PR #247's pre-merge-review.
+# Whichever answer file this project actually uses (W42/#114) holds a
+# yes/ja answer for process-issue-tracking. Id and value are checked
+# independently, not paired (current id + yes, old id + ja) — same
+# decoupled pattern as lib/nfr.sh's nfr_missing_subsection, which exists
+# for this identical yes/ja-across-a-rename problem. A row could plausibly
+# carry the current id with the Dutch value, or vice versa, from a partial
+# manual migration; pairing them would silently miss that. Found during
+# PR #247's pre-merge-review (round 2).
 issue_tracking_answered_yes() {
-  local project_dir="$1" answers old_id
+  local project_dir="$1" answers row_id answer
   answers="$project_dir/WORKFLOW-ADOPTION.md"
   [ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
   [ -f "$answers" ] || return 1
 
-  grep -qE '^\| *process-issue-tracking *\| *yes *\|' "$answers" 2>/dev/null && return 0
-  old_id="$(changes_old_id process-issue-tracking)"
-  [ -n "$old_id" ] && grep -qE "^\| *$old_id *\| *ja *\|" "$answers" 2>/dev/null
+  while IFS='|' read -r _ raw_id raw_answer _; do
+    row_id="$(printf '%s' "$raw_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [ "$(changes_current_id "$row_id")" = "process-issue-tracking" ] || continue
+    answer="$(printf '%s' "$raw_answer" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if [ "$answer" = "yes" ] || [ "$answer" = "ja" ]; then
+      return 0
+    fi
+  done < "$answers"
+  return 1
 }
 
 copy_issue_templates() {
