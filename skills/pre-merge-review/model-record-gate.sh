@@ -37,36 +37,21 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
-pr_json="$(gh pr view "$pr_number" --json comments,closingIssuesReferences 2>&1)"
+body_part="$(gh pr view "$pr_number" --json comments --jq '.comments[].body' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't consult PR #$pr_number (no network or no access) and is skipping the model-record check." >&2
-  echo "$pr_json" >&2
+  echo "warning: model-record-gate couldn't consult PR #$pr_number's comments (no network or no access) and is skipping the model-record check." >&2
+  echo "$body_part" >&2
   exit 0
 fi
 
-pr_comments="$(printf '%s' "$pr_json" | python3 -c '
-import json, sys
-try:
-    data = json.load(sys.stdin)
-except Exception:
-    sys.exit(1)
-for c in data.get("comments", []):
-    print(c.get("body", ""))
-print("---ISSUES---")
-for ref in data.get("closingIssuesReferences", []):
-    n = ref.get("number")
-    if n is not None:
-        print(n)
-' 2>/dev/null)"
-parse_status=$?
-if [ "$parse_status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't interpret gh's output and is skipping the model-record check." >&2
+issue_numbers="$(gh pr view "$pr_number" --json closingIssuesReferences --jq '.closingIssuesReferences[].number' 2>&1)"
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "warning: model-record-gate couldn't consult PR #$pr_number's closing issues (no network or no access) and is skipping the model-record check." >&2
+  echo "$issue_numbers" >&2
   exit 0
 fi
-
-body_part="$(printf '%s\n' "$pr_comments" | sed -n '1,/^---ISSUES---$/p' | sed '$d')"
-issue_numbers="$(printf '%s\n' "$pr_comments" | sed -n '/^---ISSUES---$/,$p' | tail -n +2)"
 
 all_text="$body_part"
 if [ -n "$issue_numbers" ]; then

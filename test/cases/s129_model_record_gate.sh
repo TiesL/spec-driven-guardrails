@@ -23,8 +23,14 @@ trap sandbox_destroy EXIT
 # closes carries Discovery's. All five present -> no findings.
 fakebin_complete="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments,closingIssuesReferences")
-    printf "%s" "{\"comments\":[{\"body\":\"<!-- model-record: stage=Planning model=\\\"Opus\\\" effort=\\\"high\\\" -->\\n<!-- model-record: stage=Test model=\\\"Sonnet\\\" effort=\\\"medium\\\" -->\\n<!-- model-record: stage=Implementation model=\\\"Sonnet\\\" effort=\\\"medium\\\" -->\\n<!-- model-record: stage=Review model=\\\"Opus\\\" effort=\\\"high\\\" -->\"}],\"closingIssuesReferences\":[{\"number\":239}]}"
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Opus\" effort=\"high\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
     exit 0 ;;
   "issue view 239 --json comments --jq .comments[].body")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
@@ -41,8 +47,11 @@ output_complete="$(PATH="$fakebin_complete:$PATH" "$script" 246)"
 # Implementation are missing from the PR).
 fakebin_partial="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments,closingIssuesReferences")
-    printf "%s" "{\"comments\":[{\"body\":\"<!-- model-record: stage=Review model=\\\"Opus\\\" effort=\\\"high\\\" -->\"}],\"closingIssuesReferences\":[{\"number\":239}]}"
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
     exit 0 ;;
   "issue view 239 --json comments --jq .comments[].body")
     printf "%s" ""
