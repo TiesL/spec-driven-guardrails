@@ -82,7 +82,12 @@ while IFS= read -r issue_num; do
     if ! grep -qE '^### AC[0-9]+' <<<"$body"; then
       echo "issue-structure: #$issue_num is a work item with no AC<n> heading (link 4)"
     fi
-    if ! grep -qE '^\*\*Covers:\*\*' <<<"$body"; then
+    # W42/#114: also accept the pre-migration **Dekt:** field, same
+    # permanent exception scenario-gate.sh already carries — an
+    # historical issue's own field isn't rewritten for this migration.
+    # Found during PR #251's pre-merge-review: this and scenario-gate.sh
+    # would otherwise disagree about the same issue.
+    if ! grep -qE '^\*\*(Covers|Dekt):\*\*' <<<"$body"; then
       echo "issue-structure: #$issue_num is a work item with no Covers: field (link 4)"
     fi
   fi

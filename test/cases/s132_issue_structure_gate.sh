@@ -43,6 +43,31 @@ exit 1
 output_good_wi="$(PATH="$fakebin_good_wi:$PATH" "$script" 246)"
 [ -z "$output_good_wi" ] || fail "S132 — expected no findings for a well-formed work item, got: $output_good_wi"
 
+# W42/#114 (found during PR #251's pre-merge-review): a historical issue
+# using the pre-migration Dekt: field, not Covers:, must count the same —
+# same permanent exception scenario-gate.sh already carries.
+fakebin_dekt="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "104"
+    exit 0 ;;
+  "issue view 104 --json labels --jq .labels[].name")
+    printf "%s\n" ""
+    exit 0 ;;
+  "issue view 104 --json body --jq .body")
+    printf "%s" "### AC1: does the thing
+- Given x
+- When y
+- Then z
+
+**Dekt:** S1"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_dekt="$(PATH="$fakebin_dekt:$PATH" "$script" 246)"
+[ -z "$output_dekt" ] || fail "S132 — expected no findings for a historical issue using Dekt:, got: $output_dekt"
+
 # Case 2: a work item with neither AC nor Covers -> both findings.
 fakebin_bad_wi="$(fake_gh_bin '
 case "$*" in
