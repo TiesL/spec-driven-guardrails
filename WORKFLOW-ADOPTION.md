@@ -4,6 +4,12 @@ Per change from `CHANGES.md` in [spec-driven-guardrails](https://github.com/Ties
 whether this project applies it. No row means: not (yet) applicable —
 the question shows up on its own once that changes.
 
+A `no` answer covers two different cases — say which one in the Notes: a
+permanent decline (the change doesn't fit this project), or **not yet** (the
+change applies, but its precondition doesn't hold yet). A "not yet" row names
+a concrete trigger to revisit, same shape as `PRD.md`'s Technical debt table
+— never `yes` on the strength of intent alone.
+
 | Change | Answer | Date | Notes |
 |---|---|---|---|
 | traceability-link-1 | yes | 2026-09-14 | F13 (PRD.md) redesigned link 1 around this project's own ID conventions (`F<n>`/`S<n>`); `check-traceability.sh` enforces it via `check`, and every one of TEST-SCENARIOS.md's scenarios already carries a `Covers:` field resolving against a PRD heading — this project runs the mechanism on itself, not just on adopters. |

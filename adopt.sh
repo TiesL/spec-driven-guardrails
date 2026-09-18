@@ -120,6 +120,14 @@ seed_adoption_table() {
     echo "whether this project applies it. No row means: not (yet) applicable —"
     echo "the question shows up on its own once that changes."
     echo
+    echo "A \`no\` answer covers two different cases — say which one in the Notes:"
+    echo "a permanent decline (the change doesn't fit this project), or **not yet**"
+    echo "(the change applies, but its precondition doesn't hold yet — e.g. no"
+    echo "architecture decision has been made, so \`architecture-document\` can't"
+    echo "honestly be \`yes\`). A \"not yet\" row names a concrete trigger to revisit,"
+    echo "same shape as \`PRD.md\`'s Technical debt table — never \`yes\` on the"
+    echo "strength of intent alone."
+    echo
     echo "| Change | Answer | Date | Notes |"
     echo "|---|---|---|---|"
   } > "$target"

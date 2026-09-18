@@ -58,6 +58,14 @@ kind of entry:
   - An auto-seeded `yes` that never gets substantiated is, in practice, no
     different from the silent drift this whole mechanism was meant to
     prevent.
+  - **"Applies, but not yet" is not `yes`.** A row whose precondition
+    doesn't currently hold — no architecture decision made yet, no test
+    suite written yet — is `no`, not `yes` on the strength of intent. Say
+    so explicitly in the explanation ("not yet — X doesn't exist yet") and
+    name a concrete trigger to revisit, same shape as `PRD.md`'s Technical
+    debt table. Found via #239: an agent facing this choice with only
+    yes/no in view reached for `yes`, inflating adopted scope with unfilled
+    scaffolding counted as if it were real.
 - **Purely procedural, touches no specification** (e.g. `ci-convention`,
   `deploy-guards`): a plain **closed yes/no question** suffices, several at
   once in a single choice prompt; in rounds once there are more than four
