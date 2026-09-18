@@ -83,6 +83,22 @@ with "never name a model in the floor" above — a floor is an instruction
 that has to keep working after new models ship; a record is a fact about
 one past invocation, and doesn't need to age well.
 
+**Machine-readable form (#241).** Prose alone made this unenforceable in
+practice: only the Review stage ever actually got a model recorded
+(`portfolio-mgt-agents`, #238). Every stage's record is now also a marker,
+in whichever comment (issue, for Discovery; PR, for the rest) that stage
+already writes:
+
+```
+<!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" effort="<low|medium|high>" -->
+```
+
+`skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
+five stages have at least one marker, searched across both the PR's
+comments and the comments of every issue it closes — a finding, same
+non-blocking shape as every other `pre-merge-review` gate, for any stage
+missing one.
+
 ## No behavior change to single-agent-per-stage practice
 
 This skill documents the principle ahead of #65's actual multi-agent

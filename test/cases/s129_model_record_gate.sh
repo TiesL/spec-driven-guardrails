@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# S129 — Model-record gate (#241 AC1): every pipeline stage's model choice
+# must carry a machine-readable marker, not just Review.
+# Covers: F9
+#
+# Found via #238's portfolio-mgt-agents audit: only the Review stage ever
+# recorded a model in practice — Discovery/Planning/Test/Implementation
+# never did, and CHANGES.md's process-model-choice row had no way to
+# check for that mechanically.
+
+set -uo pipefail
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
+
+script="$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh"
+[ -x "$script" ] || { fail "S129 — skills/pre-merge-review/model-record-gate.sh is missing or not executable"; test_done; }
+
+sandbox_create
+trap sandbox_destroy EXIT
+
+# PR carries Review, Planning, Test, Implementation markers; the issue it
+# closes carries Discovery's. All five present -> no findings.
+fakebin_complete="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments,closingIssuesReferences")
+    printf "%s" "{\"comments\":[{\"body\":\"<!-- model-record: stage=Planning model=\\\"Opus\\\" effort=\\\"high\\\" -->\\n<!-- model-record: stage=Test model=\\\"Sonnet\\\" effort=\\\"medium\\\" -->\\n<!-- model-record: stage=Implementation model=\\\"Sonnet\\\" effort=\\\"medium\\\" -->\\n<!-- model-record: stage=Review model=\\\"Opus\\\" effort=\\\"high\\\" -->\"}],\"closingIssuesReferences\":[{\"number\":239}]}"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+
+output_complete="$(PATH="$fakebin_complete:$PATH" "$script" 246)"
+[ -z "$output_complete" ] || fail "S129 — expected no findings when all five stages are recorded, got: $output_complete"
+
+# PR carries only Review's marker; the closed issue carries none. Three
+# stages missing (Discovery is on the issue and absent; Planning/Test/
+# Implementation are missing from the PR).
+fakebin_partial="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments,closingIssuesReferences")
+    printf "%s" "{\"comments\":[{\"body\":\"<!-- model-record: stage=Review model=\\\"Opus\\\" effort=\\\"high\\\" -->\"}],\"closingIssuesReferences\":[{\"number\":239}]}"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" ""
+    exit 0 ;;
+esac
+exit 1
+')"
+
+output_partial="$(PATH="$fakebin_partial:$PATH" "$script" 246)"
+for stage in Discovery Planning Test Implementation; do
+  case "$output_partial" in
+    *"stage $stage"*) : ;;
+    *) fail "S129 — expected a missing-record finding for stage $stage, got: $output_partial" ;;
+  esac
+done
+case "$output_partial" in
+  *"stage Review"*) fail "S129 — Review is recorded and should not be reported missing, got: $output_partial" ;;
+  *) : ;;
+esac
+
+# No gh on PATH: fails open, exit 0, just a warning.
+path_without_gh="$(path_without_gh)"
+output_nogh="$(PATH="$path_without_gh" "$script" 246 2>&1)"; status_nogh=$?
+[ "$status_nogh" -eq 0 ] || fail "S129 — without gh the gate gave exit $status_nogh instead of 0"
+assert_contains "S129 — a warning appears without gh" "warning" "$output_nogh"
+
+test_done
