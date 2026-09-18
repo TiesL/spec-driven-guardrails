@@ -87,4 +87,34 @@ EOF
 output3="$("$script" "$declined")"
 [ -z "$output3" ] || fail "S126 — expected no findings for a 'no — not yet' row, got: $output3"
 
+# Case 4: a CI workflow exists but only checks out the repo, never actually
+# calls `check` — found by pre-merge-review on PR #246: a plain substring
+# match on "check" was silently satisfied by "actions/checkout", the most
+# common line in almost any workflow, so this case never fired.
+checkout_only="$SANDBOX/checkout_only"
+mkdir -p "$checkout_only/.github/workflows"
+cat > "$checkout_only/.github/workflows/ci.yml" <<'EOF'
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+EOF
+cat > "$checkout_only/WORKFLOW-ADOPTION.md" <<'EOF'
+# Adoption of shared workflow changes
+
+| Change | Answer | Date | Notes |
+|---|---|---|---|
+| ci-gate-on-merge | yes | 2026-09-19 | seeded |
+EOF
+
+output4="$("$script" "$checkout_only")"
+case "$output4" in
+  *"ci-gate-on-merge"*"no CI workflow appears to invoke check"*) : ;;
+  *) fail "S126 — expected a finding for a checkout-only workflow that never calls check, got: $output4" ;;
+esac
+
 test_done

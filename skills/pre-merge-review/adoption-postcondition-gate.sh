@@ -64,7 +64,10 @@ if row_answered_yes "ci-gate-on-merge"; then
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     ci_found=1
-    grep -q "check" "$f" 2>/dev/null && ci_calls_check=1
+    # Word-boundary, not a plain substring: "check" alone matches
+    # actions/checkout, present in almost every workflow, which would make
+    # this always report satisfied — found by pre-merge-review on PR #246.
+    grep -qE '\bcheck\b' "$f" 2>/dev/null && ci_calls_check=1
   done < <(find "$project_dir/.github/workflows" -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null)
 
   if [ "$ci_found" -eq 0 ]; then
