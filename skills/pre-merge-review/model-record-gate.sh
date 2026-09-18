@@ -57,7 +57,18 @@ all_text="$body_part"
 if [ -n "$issue_numbers" ]; then
   while IFS= read -r issue_num; do
     [ -n "$issue_num" ] || continue
-    issue_body="$(gh issue view "$issue_num" --json comments --jq '.comments[].body' 2>/dev/null)"
+    issue_body="$(gh issue view "$issue_num" --json comments --jq '.comments[].body' 2>&1)"
+    issue_status=$?
+    if [ "$issue_status" -ne 0 ]; then
+      # Found during PR #249's pre-merge-review (round 2): silently
+      # swallowing this would misreport "no Discovery record" as if the
+      # stage were genuinely missing, rather than "couldn't check" — a
+      # transient failure here must warn, same as every other gh call in
+      # this script, not degrade to a false negative.
+      echo "warning: model-record-gate couldn't consult issue #$issue_num (no network or no access) and is skipping its comments." >&2
+      echo "$issue_body" >&2
+      continue
+    fi
     all_text="$all_text
 $issue_body"
   done <<<"$issue_numbers"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S130 — Finding carry-forward gate (#241 AC2): an open finding from the
+# S131 — Finding carry-forward gate (#241 AC2): an open finding from the
 # previous review round must reappear in the next one, not vanish because
 # that round ran fresh-context.
 # Covers: F9
@@ -14,7 +14,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/skills/pre-merge-review/finding-carryforward-gate.sh"
-[ -x "$script" ] || { fail "S130 — skills/pre-merge-review/finding-carryforward-gate.sh is missing or not executable"; test_done; }
+[ -x "$script" ] || { fail "S131 — skills/pre-merge-review/finding-carryforward-gate.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -34,7 +34,7 @@ exit 1
 output_dropped="$(PATH="$fakebin_dropped:$PATH" "$script" 246)"
 case "$output_dropped" in
   *"missing-decision-log"*"missing from this one"*) : ;;
-  *) fail "S130 — expected a carry-forward finding for missing-decision-log, got: $output_dropped" ;;
+  *) fail "S131 — expected a carry-forward finding for missing-decision-log, got: $output_dropped" ;;
 esac
 
 # Case 2: round 2 explicitly re-flags it as still open — not dropped, no
@@ -50,7 +50,7 @@ exit 1
 ')"
 
 output_carried="$(PATH="$fakebin_carried:$PATH" "$script" 246)"
-[ -z "$output_carried" ] || fail "S130 — expected no findings when the prior round's finding is re-flagged, got: $output_carried"
+[ -z "$output_carried" ] || fail "S131 — expected no findings when the prior round's finding is re-flagged, got: $output_carried"
 
 # Case 3: round 2 marks it resolved — also not dropped, no finding.
 fakebin_resolved="$(fake_gh_bin '
@@ -64,7 +64,7 @@ exit 1
 ')"
 
 output_resolved="$(PATH="$fakebin_resolved:$PATH" "$script" 246)"
-[ -z "$output_resolved" ] || fail "S130 — expected no findings when the prior round's finding is marked resolved, got: $output_resolved"
+[ -z "$output_resolved" ] || fail "S131 — expected no findings when the prior round's finding is marked resolved, got: $output_resolved"
 
 # Case 4: only one review round so far -> nothing to carry forward.
 fakebin_first="$(fake_gh_bin '
@@ -77,12 +77,12 @@ exit 1
 ')"
 
 output_first="$(PATH="$fakebin_first:$PATH" "$script" 246)"
-[ -z "$output_first" ] || fail "S130 — expected no findings with only one review round, got: $output_first"
+[ -z "$output_first" ] || fail "S131 — expected no findings with only one review round, got: $output_first"
 
 # Case 5: no gh on PATH -> fails open, exit 0, warning.
 path_without_gh="$(path_without_gh)"
 output_nogh="$(PATH="$path_without_gh" "$script" 246 2>&1)"; status_nogh=$?
-[ "$status_nogh" -eq 0 ] || fail "S130 — without gh the gate gave exit $status_nogh instead of 0"
-assert_contains "S130 — a warning appears without gh" "warning" "$output_nogh"
+[ "$status_nogh" -eq 0 ] || fail "S131 — without gh the gate gave exit $status_nogh instead of 0"
+assert_contains "S131 — a warning appears without gh" "warning" "$output_nogh"
 
 test_done
