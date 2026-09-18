@@ -49,4 +49,21 @@ if [ -d "$project2/.github/ISSUE_TEMPLATE" ]; then
   fail "S127 — pre-migration format: .github/ISSUE_TEMPLATE/ was created without proces-issue-tracking answered ja"
 fi
 
+# Cross case (found during PR #247's pre-merge-review): a migrated
+# filename (WORKFLOW-ADOPTION.md) that still carries an unmigrated,
+# pre-rename row (proces-issue-tracking / ja) must count the same as the
+# current id/value — matching pending-changes.sh's own answered().
+project3="$(fresh_project migrated-file-old-row)"
+cat > "$project3/WORKFLOW-ADOPTION.md" <<'EOF'
+# Adoption of shared workflow changes
+
+| Change | Answer | Date | Notes |
+|---|---|---|---|
+| proces-issue-tracking | ja | 2026-01-01 | answered before the #175 rename, filename already migrated |
+EOF
+adopt "$project3"
+if [ ! -f "$project3/.github/ISSUE_TEMPLATE/work-item.md" ]; then
+  fail "S127 — cross case: migrated filename with an unmigrated proces-issue-tracking/ja row did not scaffold"
+fi
+
 test_done

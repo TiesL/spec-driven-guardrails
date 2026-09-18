@@ -74,16 +74,30 @@ scaffold_if_missing() {
 # formally answered — a project with the directory already in place has
 # self-evidently opted in, answered or not. So the gate applies only to
 # *first creation*, never to refreshing what's already there.
+# Whichever answer file this project actually uses (W42/#114) holds "yes"
+# for process-issue-tracking, checking both the current ID and its
+# pre-rename alias (#175's changes_old_id, the same lookup
+# pending-changes.sh's own answered() uses) — not two hardcoded
+# file/ID/value combinations, which would miss a migrated filename still
+# carrying an unmigrated row. Found during PR #247's pre-merge-review.
+issue_tracking_answered_yes() {
+  local project_dir="$1" answers old_id
+  answers="$project_dir/WORKFLOW-ADOPTION.md"
+  [ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
+  [ -f "$answers" ] || return 1
+
+  grep -qE '^\| *process-issue-tracking *\| *yes *\|' "$answers" 2>/dev/null && return 0
+  old_id="$(changes_old_id process-issue-tracking)"
+  [ -n "$old_id" ] && grep -qE "^\| *$old_id *\| *ja *\|" "$answers" 2>/dev/null
+}
+
 copy_issue_templates() {
   local project_dir="$1"
   local template_src="$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE"
   [ -d "$template_src" ] || return 0
 
   if [ ! -d "$project_dir/.github/ISSUE_TEMPLATE" ]; then
-    if ! grep -qE '^\| *process-issue-tracking *\| *yes *\|' "$project_dir/WORKFLOW-ADOPTION.md" 2>/dev/null \
-      && ! grep -qE '^\| *proces-issue-tracking *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
-      return 0
-    fi
+    issue_tracking_answered_yes "$project_dir" || return 0
   fi
 
   mkdir -p "$project_dir/.github/ISSUE_TEMPLATE"
