@@ -1386,3 +1386,13 @@ something new is being added.
   not reported if the new comment re-flags it as still open or marks it
   `status=resolved`; with only one review round so far, or without `gh`,
   nothing is reported
+
+### S132 — The 4th traceability link: an issue's own AC/Covers/work-item structure
+**Covers:** F9
+- Given: the issue(s) a PR closes
+- When: `issue-structure-gate.sh <pr-number>` runs
+- Then: a work item issue with no `### AC<n>` heading, or no `**Covers:**`
+  field, is reported (one finding per missing piece); an epic issue whose
+  Work items list has no real `#<n>` entry (only the unfilled template
+  placeholder) is reported; a well-formed issue produces no findings;
+  without `gh`, the gate fails open with a warning

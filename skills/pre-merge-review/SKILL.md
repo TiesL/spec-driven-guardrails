@@ -116,6 +116,21 @@ linked issue. The same check exists as a hard block in CI (W19b,
 `check-pr-issue-link.sh`) — this skill additionally runs it before the
 merge, with the finding in the PR itself.
 
+**Link 4 — does the issue itself have the structure the other three links
+assume (#242)?** Run:
+
+```
+.claude/skills/pre-merge-review/issue-structure-gate.sh <pr-number>
+```
+
+For every issue the PR closes: a work item with no `### AC<n>` heading or
+no `**Covers:**` field is a finding (one per missing piece); an epic whose
+Work items list has no real `#<n>` entry (only the unfilled template
+placeholder) is a finding. Found via #238: `portfolio-mgt-agents` had zero
+issues with any of this structure, and links 1-3 never checked for it —
+they check PRD↔scenario, scenario↔issue, and PR↔issue, never the issue's
+own shape.
+
 Both checks fail open without `gh` or network: a warning, not a block —
 the same ground rule as deploy-guards and the merge guard (W10b).
 
