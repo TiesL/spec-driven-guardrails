@@ -244,15 +244,28 @@ None new. Uses only what this project already has: Claude Code sub-agent dispatc
 
 ## Still open after this document
 
-These remain open per `PRD-MULTI-AGENT-WIP.md` §9 — not answered by this architecture
-document, and not to be treated as decided by omission:
+Per `PRD-MULTI-AGENT-WIP.md` §9, the following are **deels besloten** (mechanism/process
+decided, catalog-level detail still missing) — not to be treated as fully decided by
+omission, but also not fully open:
 
-- OQ4 — how bounded contexts/work boundaries are established and changed.
-- OQ5 — which security tests/risk classifications are minimally required (no separate
-  Security agent is decided; the test/risk catalog itself is not).
-- OQ6 — which verifications Product/Architect are expected to perform beyond what's already
-  in the Reviewer checklist, and how overlap is managed.
-- OQ7 — whether a UX role is needed for adopting projects with a UI (this repo has none;
-  the activation rule for projects that do is not yet written).
-- OQ9 — compliance reporting format (tentative direction: reuse the `adoption-registry`
-  row-per-decision pattern; not decided).
+- OQ4 — decided: a bounded-context change is a normal architecture decision (§ "System
+  boundaries and ownership" above), revisit trigger reuses `refactoring-triggers`. Still
+  missing: who may *propose* a boundary change, and what happens to work already in flight
+  on the old boundary when one lands.
+- OQ5 — decided: no separate Security agent by default; risk-based trigger list (auth,
+  secrets, deploy/CI config, IaC, sensitive data, untrusted input) embedded in Reviewer's
+  role contract. Still missing: an enumerated minimal test catalog per trigger category,
+  not just the trigger list itself.
+- OQ6 — decided: each role verifies a different question (§4's "Kernverantwoordelijkheden
+  per rol"); legitimate conflict escalates, doesn't get suppressed. Still missing: the two
+  concrete overlaps this leaves unresolved — QA vs. Fullstack Developer on who authors the
+  failing test (this project's own `tdd-seams` red-before-green rule makes that
+  load-bearing), and Reviewer vs. `check-traceability.sh` on who verifies traceability.
+- OQ9 — decided: reuse `WORKFLOW-ADOPTION.md`'s row-per-decision pattern, scoped per work
+  item, posted as one orchestrator issue comment. Still missing: a worked example against a
+  real work item, to confirm the pattern actually carries the right evidence links.
+
+OQ7 (UX role) is fully decided, not listed here: the activation rule is "any interaction
+surface" (GUI, CLI, API, or an agent/LLM harness) — which this repo's own Claude Code usage
+already satisfies, so "this repo has none" no longer applies. Nothing catalog-shaped is
+missing for OQ7.

@@ -38,7 +38,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
   - Refactoring-only work: Product phase may be skipped (no requirement change); QA becomes regression-focused, never skipped — see hard gates below
   - Urgent hotfixes: Abbreviated design validation
   - Exploratory spikes: Flexible, iterative approach
-- **Maintains shared context** accessible to all sub-agents across all phases
+- **Reconstructs context per phase from artifacts** (§ Shared Context Requirements below), not held as shared state
 - **Manages handoffs** with full visibility of prior assessments, decisions, and findings
 
 #### 2. Non-Linear Process Management
@@ -88,7 +88,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
   - Can hold work at phase gate pending specific conditions
 
 - **Context Synthesis**
-  - Synthesizes outputs from all prior phases into unified context
+  - Synthesizes prior-phase artifacts into this phase's scoped context, respecting each role's file-scope contract
   - Identifies gaps, conflicts, or inconsistencies requiring resolution
   - Surfaces decisions and assumptions for downstream agent visibility
 
@@ -900,10 +900,10 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
    - Orchestrator: autonomous within defined guardrails
    - Humans: authority on Go/No-Go and high-impact decisions
 
-3. **Transparent Context**
-   - All agents: full context visibility
-   - No information silos between phases
-   - Shared understanding of decisions and assumptions
+3. **Artifact-Based Context**
+   - Each role's context comes from durable artifacts, scoped to what that phase's file-scope contract grants
+   - No hidden orchestrator state (see `ARCHITECTURE-MULTI-AGENT-WIP.md` Decision 1) — anything not written to an artifact hasn't happened
+   - Shared understanding of decisions and assumptions, reconstructed from those artifacts, not held separately
 
 4. **Active Orchestration**
    - Orchestrator: active decision-maker, not just traffic router
@@ -966,7 +966,7 @@ Product → Architect ↔ Fullstack Developer (iterative) → lightweight QA →
 | **Exception Paths** | Not permitted | Permitted (security, refactoring, spike scenarios) |
 | **Looping Back** | Not permitted (phase progression only) | Facilitated & encouraged |
 | **Orchestrator Role** | Follows process; ensures gates passed | Active decision-maker; routes intelligently |
-| **Context Sharing** | Linear handoff between phases | Full visibility across all phases |
+| **Context Sharing** | Linear handoff between phases | Scoped per role's file-scope contract, reconstructed from artifacts — not blanket visibility |
 | **Phase Authority** | Portfolio Board makes all decisions | Single human (Ties) makes all Go/No-Go decisions; agents assess only — decided, not distributed leads |
 | **Agents** | Advisors to portfolio board | Specialized executors and decision contributors |
 
@@ -992,7 +992,7 @@ Product → Architect ↔ Fullstack Developer (iterative) → lightweight QA →
 
 ### Key Success Factors
 
-- **Clear Context**: Ensure shared context is detailed and current
+- **Clear Context**: Ensure each phase's supporting artifacts are complete and current
 - **Transparent Communication**: Make assessment findings clear for downstream agents
 - **Appropriate Escalation**: Escalate intelligently, not reflexively
 - **Respected Authority**: Honor human decision-making authority
