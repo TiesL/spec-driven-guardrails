@@ -63,15 +63,33 @@ scaffold_if_missing() {
   fi
 }
 
+# #240 AC2: process-issue-tracking defaults to "question" (never
+# auto-answered, see seed_entry's comment above). Creating
+# .github/ISSUE_TEMPLATE/ for the first time is exactly the "yes means"
+# action that row gates — doing it unconditionally is what let
+# portfolio-mgt-agents' templates exist with that row still unanswered
+# (#238 finding 4). But S31/AC3 needs the opposite guarantee once a
+# project already has the directory: adopt.sh must always refresh an
+# outdated template there, regardless of whether the row was ever
+# formally answered — a project with the directory already in place has
+# self-evidently opted in, answered or not. So the gate applies only to
+# *first creation*, never to refreshing what's already there.
 copy_issue_templates() {
   local project_dir="$1"
   local template_src="$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE"
-  if [ -d "$template_src" ]; then
-    mkdir -p "$project_dir/.github/ISSUE_TEMPLATE"
-    cp -f "$template_src"/*.md "$project_dir/.github/ISSUE_TEMPLATE/"
-    [ -f "$template_src/config.yml" ] && cp -f "$template_src/config.yml" "$project_dir/.github/ISSUE_TEMPLATE/"
-    echo "Issue templates copied to $project_dir/.github/ISSUE_TEMPLATE/"
+  [ -d "$template_src" ] || return 0
+
+  if [ ! -d "$project_dir/.github/ISSUE_TEMPLATE" ]; then
+    if ! grep -qE '^\| *process-issue-tracking *\| *yes *\|' "$project_dir/WORKFLOW-ADOPTION.md" 2>/dev/null \
+      && ! grep -qE '^\| *proces-issue-tracking *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
+      return 0
+    fi
   fi
+
+  mkdir -p "$project_dir/.github/ISSUE_TEMPLATE"
+  cp -f "$template_src"/*.md "$project_dir/.github/ISSUE_TEMPLATE/"
+  [ -f "$template_src/config.yml" ] && cp -f "$template_src/config.yml" "$project_dir/.github/ISSUE_TEMPLATE/"
+  echo "Issue templates copied to $project_dir/.github/ISSUE_TEMPLATE/"
 }
 
 # Callback for iterate_entries. The input comes via _seed_* globals instead
