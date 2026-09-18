@@ -42,4 +42,13 @@ status=$?
 
 [ "$status" -eq 0 ] || fail "S75 — expected passthrough (exit 0) without reported checks, got $status. Output: $output"
 
+# #239 AC2: this fail-open path let a merge through with zero record of why
+# — unlike the two other fail-open branches in check_ci_guard (no
+# network/access, unparseable gh output), which both echo a warning. A repo
+# with no CI configured otherwise reads as silently fully-adopted.
+case "$output" in
+  *"no CI checks"*) : ;;
+  *) fail "S75 — expected a warning naming the missing CI checks, got: $output" ;;
+esac
+
 test_done

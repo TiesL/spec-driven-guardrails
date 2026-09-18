@@ -112,6 +112,23 @@ merge, with the finding in the PR itself.
 Both checks fail open without `gh` or network: a warning, not a block —
 the same ground rule as deploy-guards and the merge guard (W10b).
 
+## Adoption postcondition gate (#239)
+
+Filesystem-only, no `gh`/network needed, so nothing to fail open on. Run:
+
+```
+.claude/skills/pre-merge-review/adoption-postcondition-gate.sh .
+```
+
+That checks whether a `WORKFLOW-ADOPTION.md` row answered `yes` actually
+holds — scoped to the two rows found broken in practice (#238's
+`portfolio-mgt-agents` audit): `traceability-link-1` answered yes with no
+`check-traceability.sh` present or wired into the project's own `check`;
+`ci-gate-on-merge` answered yes with no CI workflow that calls `check` at
+all. Every reported line is a finding, the same as links 2 and 3 above. A
+row answered `no` (including "no — not yet", see #239 AC3) is never
+checked — it never claimed the postcondition holds in the first place.
+
 ## Substantiation gap as a finding
 
 If the PR touches a topic whose scope line carries `[requires

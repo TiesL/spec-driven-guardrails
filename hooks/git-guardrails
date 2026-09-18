@@ -424,7 +424,9 @@ check_ci_guard() {
   # generic fail-open message below — still allowing, just a less precise
   # reason.
   case "$error_text" in
-    "no checks reported on"*) return 0 ;;
+    "no checks reported on"*)
+      echo "warning: merge-guard found no CI checks configured for this PR and skips the CI check — merging without CI verification." >&2
+      return 0 ;;
   esac
 
   if [ "$status" -ne 0 ]; then
