@@ -44,7 +44,14 @@ stated qualitatively, never a model name) and how it applies across every
 pipeline stage. This review is that skill's Review-stage instance: choose
 a model **at least as skilled as the model that wrote the reviewed
 change**, and, within that floor, the most cost-effective. Record which
-model reviewed — always, not only when it deviates from what's obvious.
+model reviewed — always, not only when it deviates from what's obvious —
+as a `<!-- model-record: stage=Review model="..." effort="..." -->`
+marker (see `model-choice`'s "Machine-readable form"), not just prose.
+
+Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
+that every stage — not only this one — has a matching marker somewhere in
+the PR or the issue(s) it closes. A missing stage is a finding, the same
+non-blocking shape as every other gate here.
 
 The rest of this procedure (isolated context, `scope.sh`,
 `scenario-gate.sh`, the marker) doesn't change with the model choice:
@@ -181,6 +188,27 @@ The findings go into the PR itself, not only in the chat: readable,
 persistent, findable afterward. Every finding is then either resolved, or
 recorded under *Technical debt* in the PRD with a reason. Nothing
 disappears silently.
+
+**Machine-readable disposition, per finding (#241 AC2).** "Nothing
+disappears silently" used to rest entirely on the next round remembering
+— fresh context means it doesn't remember. Found via #238
+(`portfolio-mgt-agents` PR #4): round 1 flagged a missing Decision Log
+entry, round 2 ran fresh-context and never carried it forward, the PR
+merged 17 seconds later. Every individual finding now carries its own
+marker, immediately after that finding's text:
+
+```
+<!-- finding:<short-slug> status=open -->
+<!-- finding:<short-slug> status=resolved -->
+```
+
+On a second (or later) round, run
+`skills/pre-merge-review/finding-carryforward-gate.sh <pr-number>` before
+posting — it compares the two most recent `pre-merge-review:done`
+comments and reports any slug the previous round left `status=open` that
+doesn't reappear (open or resolved) in this round's comment. Every such
+report is itself a finding: re-flag it or explicitly resolve it, don't let
+it just vanish.
 
 ## Its limits
 

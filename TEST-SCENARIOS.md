@@ -1366,3 +1366,23 @@ something new is being added.
 - When: `check` runs
 - Then: the sync check doesn't run at all — no error, no false pass
   claim
+
+### S130 — Every pipeline stage's model choice is machine-checkable, not just Review
+**Covers:** F9
+- Given: a PR and the issue(s) it closes, each carrying zero or more
+  `<!-- model-record: stage=... -->` markers across their comments
+- When: `model-record-gate.sh <pr-number>` runs
+- Then: a missing stage among Discovery/Planning/Test/Implementation/Review
+  is reported, one line per stage; nothing is reported once all five are
+  present; without `gh` the gate fails open with a warning, not a block
+
+### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
+**Covers:** F9
+- Given: a PR's previous `pre-merge-review:done` comment left a finding
+  marked `<!-- finding:<slug> status=open -->`
+- When: `finding-carryforward-gate.sh <pr-number>` runs after a new
+  `pre-merge-review:done` comment is posted
+- Then: the slug is reported if it's missing from the new comment, and
+  not reported if the new comment re-flags it as still open or marks it
+  `status=resolved`; with only one review round so far, or without `gh`,
+  nothing is reported
