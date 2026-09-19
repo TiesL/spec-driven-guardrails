@@ -42,16 +42,23 @@ comment, never to change files. This skill delivers findings, not fixes.
 See the `model-choice` skill for the canonical principle (floor + cost,
 stated qualitatively, never a model name) and how it applies across every
 pipeline stage. This review is that skill's Review-stage instance: choose
-a model **at least as skilled as the model that wrote the reviewed
-change**, and, within that floor, the most cost-effective. Record which
+a model **different from, and at least as skilled as, the model that
+wrote the reviewed change** — same model only when no other capable model
+is available (#244; `CHANGES.md`'s `quality-review-before-merge` and this
+skill used to disagree on this exact point, resolved in favor of the
+stricter rule). Within that floor, the most cost-effective. Record which
 model reviewed — always, not only when it deviates from what's obvious —
 as a `<!-- model-record: stage=Review model="..." effort="..." -->`
-marker (see `model-choice`'s "Machine-readable form"), not just prose.
+marker, adding `same-model-exception="<reason>"` on that same marker only
+when the exception genuinely applies (see `model-choice`'s
+"Machine-readable form"), not just prose.
 
 Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
 the PR or the issue(s) it closes. A missing stage is a finding, the same
-non-blocking shape as every other gate here.
+non-blocking shape as every other gate here. The gate also flags Review
+and Implementation recording the identical model with no
+`same-model-exception` field.
 
 The rest of this procedure (isolated context, `scope.sh`,
 `scenario-gate.sh`, the marker) doesn't change with the model choice:

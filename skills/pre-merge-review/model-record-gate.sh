@@ -25,6 +25,8 @@
 #
 # Output on stdout: one line per missing stage:
 #   "model-record: no record found for stage <Stage> (missing model-choice marker)"
+# plus, when Review and Implementation both have a marker (#244 AC2):
+#   "model-record: Review and Implementation recorded the same model (\"<model>\") with no same-model-exception (#244)"
 #
 # No `eval`. PR/issue comment text isn't under this script's control.
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
@@ -96,3 +98,19 @@ for stage in Discovery Planning Test Implementation Review; do
     echo "model-record: no record found for stage $stage (missing model-choice marker)"
   fi
 done
+
+# #244 AC2: Review must use a different model than Implementation unless
+# an explicit same-model-exception is recorded — the contradiction #244
+# resolved between CHANGES.md and this skill is otherwise just as
+# unenforced as it was before. Only checked when both markers are present
+# (the loop above already reports either one missing).
+impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | head -1)"
+review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | head -1)"
+if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
+  impl_model="$(sed -E 's/.*model="([^"]*)".*/\1/' <<<"$impl_line")"
+  review_model="$(sed -E 's/.*model="([^"]*)".*/\1/' <<<"$review_line")"
+  if [ -n "$impl_model" ] && [ "$impl_model" = "$review_model" ] \
+    && ! grep -q 'same-model-exception=' <<<"$review_line"; then
+    echo "model-record: Review and Implementation recorded the same model (\"$review_model\") with no same-model-exception (#244)"
+  fi
+fi

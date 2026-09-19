@@ -134,4 +134,57 @@ exit 1
 output_body_marker="$(PATH="$fakebin_body_marker:$PATH" "$script" 246)"
 [ -z "$output_body_marker" ] || fail "S130 — expected no findings when markers live in the PR description, got: $output_body_marker"
 
+# #244 AC2: Review and Implementation recording the same model with no
+# same-model-exception is a finding.
+fakebin_same_model="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_same_model="$(PATH="$fakebin_same_model:$PATH" "$script" 246)"
+case "$output_same_model" in
+  *"same model"*"Sonnet"*"same-model-exception"*) : ;;
+  *) fail "S130 — expected a same-model finding, got: $output_same_model" ;;
+esac
+
+# ...but the same pairing with an explicit same-model-exception is not a
+# finding.
+fakebin_same_model_excepted="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"only one model available\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_excepted="$(PATH="$fakebin_same_model_excepted:$PATH" "$script" 246)"
+[ -z "$output_excepted" ] || fail "S130 — expected no findings when the same-model pairing carries an exception, got: $output_excepted"
+
 test_done
