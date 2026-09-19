@@ -1411,7 +1411,7 @@ something new is being added.
   it through
 
 ### S135 — CI-enforcement policy for a genuinely code-less project
-**Covers:** F9
+**Covers:** F8
 - Given: `CHANGES.md`'s `ci-gate-on-merge` entry
 - When: read
 - Then: it states the policy for a project with no check command and no
