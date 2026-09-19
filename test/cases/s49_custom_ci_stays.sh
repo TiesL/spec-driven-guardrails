@@ -11,8 +11,10 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a project with a package.json — otherwise adopt.sh would not scaffold
-# a workflow anyway — and a handwritten ci.yml that deviates from the template.
+# Given: a project with a package.json and a handwritten ci.yml that
+# deviates from the template. The scaffold gate itself is now an
+# executable `check`, not package.json (#248) — this fixture pre-creates
+# ci.yml regardless, so whether the gate would fire doesn't matter here.
 project="$(fresh_project own-ci)"
 echo '{"name":"t"}' > "$project/package.json"
 mkdir -p "$project/.github/workflows"

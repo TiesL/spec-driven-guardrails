@@ -1410,6 +1410,17 @@ something new is being added.
   proceeds; the `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch still lets
   it through
 
+### S136 — CI scaffolding is gated on an executable check, not package.json
+**Covers:** F8
+- Given: a project with an executable `check` at its root but no
+  `package.json`
+- When: `adopt.sh` runs
+- Then: `ci.yml`, `check-pr-issue-link.sh`, and `check-main-via-pr.sh` are
+  all scaffolded; a project with `package.json` alone and no executable
+  `check` gets none of them; the scaffolded `ci.yml` calls `./check`
+  directly (never `npm run check`), with the npm setup steps conditional
+  on `package.json` existing
+
 ### S135 — CI-enforcement policy for a genuinely code-less project
 **Covers:** F8
 - Given: `CHANGES.md`'s `ci-gate-on-merge` entry
