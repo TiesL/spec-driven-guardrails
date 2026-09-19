@@ -69,8 +69,7 @@ if [ "$status" -ne 0 ]; then
   exit 0
 fi
 
-all_text="$comments_part
-$description_part"
+issue_text=""
 if [ -n "$issue_numbers" ]; then
   while IFS= read -r issue_num; do
     [ -n "$issue_num" ] || continue
@@ -86,10 +85,25 @@ if [ -n "$issue_numbers" ]; then
       echo "$issue_body" >&2
       continue
     fi
-    all_text="$all_text
+    issue_text="$issue_text
 $issue_body"
   done <<<"$issue_numbers"
 fi
+
+# Ordered issue -> description -> comments: a heuristic match to the
+# typical stage lifecycle (Discovery on the issue first, then the PR
+# opens with its description, then PR comments accumulate through
+# Planning/Test/Implementation/Review), not a true global timestamp sort
+# — gh's comment JSON does carry createdAt, but nothing here reads it yet.
+# Found during PR #253's pre-merge-review (round 2): the previous order
+# (comments, then description, then issue) put issue comments *last*,
+# so `tail -1` could prefer a stray older marker on the issue over a
+# genuinely newer one on the PR — backwards from the typical case this
+# reorders toward. Recorded as Technical debt (PRD.md) rather than chasing
+# full generality here.
+all_text="$issue_text
+$description_part
+$comments_part"
 
 for stage in Discovery Planning Test Implementation Review; do
   # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail

@@ -305,4 +305,37 @@ case "$output_case_insensitive" in
   *) fail "S130 — expected a case-only spelling difference to still be flagged as the same model, got: $output_case_insensitive" ;;
 esac
 
+# Found during PR #253's pre-merge-review (round 2): a stray, older
+# Review marker on the closing issue must not outrank a genuinely newer
+# one on the PR itself just because issue text used to be concatenated
+# last. The issue's marker (Sonnet, same as Implementation) is the older,
+# wrong one; the PR's own marker (Opus, genuinely different) is what
+# actually reflects this PR's real review and must be what's checked.
+fakebin_issue_marker_stale="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_issue_marker_stale="$(PATH="$fakebin_issue_marker_stale:$PATH" "$script" 246)"
+case "$output_issue_marker_stale" in
+  *"same model"*) fail "S130 — a stray older Review marker on the issue wrongly outranked the PR's own, got: $output_issue_marker_stale" ;;
+  *) : ;;
+esac
+
 test_done
