@@ -66,12 +66,14 @@ something new is being added.
   executable `check` (#248 — independent of `package.json`), and
   `"deploy"`-script content
 - When: the seed logic and `predicate_true()` all evaluate
-  `has-check-command`, `has-package-json`, and `has-deploy-script`
-  against each of the six
+  `has-check-command` and `has-deploy-script` against each of the six —
+  no `CHANGES.md` row uses `has-package-json` directly anymore (#248);
+  `package.json`'s own presence only still matters as the file
+  `has-deploy-script` reads its `"deploy"` key from
 - Then: all reach exactly the same answer for every combination, and the
   two new rows (an executable check without `package.json`, and
   `package.json` without an executable check) prove `has-check-command`
-  is genuinely decoupled from `has-package-json`, not just a rename
+  is genuinely decoupled from `package.json`, not just a rename
 - And: for **every** predicate there's at least one case where it's true
   *and* the corresponding entry is unanswered — otherwise a predicate that
   became too strict is invisible, since the difference lands nowhere in a
