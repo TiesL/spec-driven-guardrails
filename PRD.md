@@ -403,9 +403,13 @@ you won't notice.
 ### F11 — `pre-merge-review` as an executable skill
 
 The strongest post. `WORKFLOW.md` *asks in prose* for a review "with fresh
-context and on a different model." Frontmatter expresses that literally:
-`context: fork` gives the fresh, isolated context, `model:` pins a
-different/heavier model, `allowed-tools` keeps it read-only.
+context and on a different model." Frontmatter expresses part of that
+literally: `context: fork` gives the fresh, isolated context;
+`allowed-tools` keeps it read-only. The model itself is deliberately
+*not* pinned in frontmatter — a stale prior description here said it was —
+`model-choice`'s qualitative floor (#244: a different, at-least-as-capable
+model, exception-only-with-record) governs the choice instead, so the
+rule survives new model releases without editing this skill.
 
 The skill reads `WORKFLOW-ADOPTION.md` → `yes`-answered `spec-*` → the anchor in
 the project PRD → the review scope. Reading the diff itself is delegated to
@@ -918,10 +922,11 @@ scaffold source) isn't affected.
 ### F26 — `model-choice`: capability/cost-aware model selection at every stage (issue #196)
 
 `pre-merge-review`'s "Model choice" section already established one
-instance of a principle: the reviewer must be at least as capable as the
-model that wrote the reviewed change, and, within that floor, the most
-cost-effective choice. That principle applied at exactly one point in a
-work item's life. This generalizes it to every artifact-producing stage
+instance of a principle: the reviewer must use a model different from,
+and at least as capable as, the model that wrote the reviewed change
+(#244 — same model only with an explicit, recorded exception), and,
+within that floor, the most cost-effective choice. That principle applied
+at exactly one point in a work item's life. This generalizes it to every artifact-producing stage
 anticipated by the multi-agent epic (#65) — Discovery, Planning, Test
 authoring, Implementation, Review — before #65 moves from exploration
 into concrete work items.

@@ -104,13 +104,38 @@ done
 # resolved between CHANGES.md and this skill is otherwise just as
 # unenforced as it was before. Only checked when both markers are present
 # (the loop above already reports either one missing).
-impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | head -1)"
-review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | head -1)"
+#
+# Found during PR #253's pre-merge-review (Opus, genuinely different
+# model from Implementation):
+# - `tail -1`, not `head -1` — a later review round's marker must win;
+#   `head -1` let a round-1 different-model marker mask a round-2
+#   same-model violation, and could never clear a round-1 same-model
+#   flag no matter what a later round recorded.
+# - Extraction only trusts the quoted `model="..."` form. An unquoted
+#   marker (`model=Sonnet`) previously made the old sed silently return
+#   the *whole line* unchanged (its pattern simply didn't match) — two
+#   malformed markers could then spuriously compare "equal" on garbage,
+#   or two different garbage lines could wrongly compare "different".
+#   Now: no quoted match -> empty model, comparison skipped entirely
+#   (silence, not a false claim either way) — malformed input is a
+#   distinct failure mode from "same model", not folded into it.
+# - `same-model-exception="..."` must have a non-empty reason;
+#   `same-model-exception=""` no longer satisfies the exception.
+# - Comparison is case-insensitive after trimming — "Claude Sonnet 5" and
+#   "claude sonnet 5" are the same model spelled differently, not two
+#   different ones. This does not catch every possible respelling (e.g.
+#   an abbreviated vs. full name); it catches exact-modulo-case, which is
+#   the actual failure mode worth guarding against here.
+impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | tail -1)"
+review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | tail -1)"
 if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
-  impl_model="$(sed -E 's/.*model="([^"]*)".*/\1/' <<<"$impl_line")"
-  review_model="$(sed -E 's/.*model="([^"]*)".*/\1/' <<<"$review_line")"
-  if [ -n "$impl_model" ] && [ "$impl_model" = "$review_model" ] \
-    && ! grep -q 'same-model-exception=' <<<"$review_line"; then
+  impl_model="$(grep -oE 'model="[^"]*"' <<<"$impl_line" | head -1 | sed 's/^model="//; s/"$//')"
+  review_model="$(grep -oE 'model="[^"]*"' <<<"$review_line" | head -1 | sed 's/^model="//; s/"$//')"
+  impl_model_norm="$(printf '%s' "$impl_model" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  review_model_norm="$(printf '%s' "$review_model" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [ -n "$impl_model_norm" ] && [ -n "$review_model_norm" ] \
+    && [ "$impl_model_norm" = "$review_model_norm" ] \
+    && ! grep -qE 'same-model-exception="[^"]+"' <<<"$review_line"; then
     echo "model-record: Review and Implementation recorded the same model (\"$review_model\") with no same-model-exception (#244)"
   fi
 fi
