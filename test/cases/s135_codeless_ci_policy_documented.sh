@@ -24,7 +24,8 @@ assert_contains "S135 — CHANGES.md documents the code-less policy" "genuinely 
 # Not a bare "not yet" — that substring already occurs elsewhere in
 # CHANGES.md (process-issue-tracking) and would pass even with this
 # policy's own wording removed. Found during PR #255's pre-merge-review.
-assert_contains "S135 — the policy names the correct answer" "once a check command and CI config exist" "$content"
+assert_contains "S135 — the policy names the correct answer" "the honest answer is **\`no\` — not yet**" "$content"
+assert_contains "S135 — the policy names the trigger" "once a check command and CI config exist" "$content"
 assert_contains "S135 — the policy points at the mechanical backstop" "adoption-postcondition-gate.sh" "$content"
 
 test_done
