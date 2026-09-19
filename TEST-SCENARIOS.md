@@ -1410,6 +1410,16 @@ something new is being added.
   proceeds; the `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch still lets
   it through
 
+### S135 — CI-enforcement policy for a genuinely code-less project
+**Covers:** F9
+- Given: `CHANGES.md`'s `ci-gate-on-merge` entry
+- When: read
+- Then: it states the policy for a project with no check command and no
+  CI at all — `no` (not yet), not `yes`, since `yes` claims real CI
+  gating is happening — and points at
+  `adoption-postcondition-gate.sh` (#239) as the mechanical backstop for
+  a project that answers `yes` anyway
+
 ### S134 — A managed path already tracked before adoption is untracked
 **Covers:** F9
 - Given: `CLAUDE.md` committed as a real, tracked file before `adopt.sh`
