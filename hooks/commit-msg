@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# hooks/commit-msg — Native git hook (#243 AC1): rejects a `Co-Authored-By`
+# trailer written directly into a commit message, from any source — the
+# terminal, an IDE, a different agent harness, or `-m` on the command
+# line.
+#
+# Why this exists, not just settings/session-hooks.json's
+# `attribution.commit: ""`: that setting suppresses a trailer Claude Code
+# would otherwise *add itself* via its own commit template — it has no
+# effect on a trailer typed literally into `git commit -m "... Co-Authored-By: ..."`.
+# Found via #238 (portfolio-mgt-agents): every commit there carried the
+# trailer despite that setting being correctly symlinked in, because it
+# was written directly into `-m`, not added by the template mechanism the
+# setting controls.
+#
+# Installed by adopt.sh as a symlink to this file at
+# <project>/.git/hooks/commit-msg — same "no copy that can drift" shape as
+# pre-commit/pre-push.
+#
+# Contract (git commit-msg): receives one argument, the path to a file
+# holding the commit message about to be used. Exit status != 0 refuses
+# the commit, with the message left for editing/retry (git preserves it in
+# .git/COMMIT_EDITMSG).
+#
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
+
+set -uo pipefail
+
+msg_file="${1:?usage: commit-msg <path-to-message-file>}"
+
+target="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
+if [ -z "$target" ]; then
+  echo "warning: the commit-msg hook is no longer a symlink to claude-workflow — commit check skipped." >&2
+  exit 0
+fi
+
+# Same escape hatch as the other native hooks — a guard without one
+# eventually gets bypassed by editing the script instead, worse than a
+# guard you can turn off explicitly.
+if [ -n "${CLAUDE_WORKFLOW_GUARDRAILS_OFF:-}" ]; then
+  echo "warning: git-guardrails is disabled via CLAUDE_WORKFLOW_GUARDRAILS_OFF." >&2
+  exit 0
+fi
+
+[ -r "$msg_file" ] || exit 0
+
+# Anchored at column 0 deliberately, not "^[[:space:]]*Co-Authored-By:" —
+# a git trailer is column-0 by the trailer format's own convention, and
+# the actual attack surface (a trailer typed into -m) is never indented.
+# Flagged during PR #252's pre-merge-review as a conscious call, not a
+# silent gap.
+if grep -qiE '^Co-Authored-By:' "$msg_file"; then
+  echo "Blocked by the git hook: commit message carries a Co-Authored-By trailer." >&2
+  echo >&2
+  echo "Reason: this project's attribution convention (settings/session-hooks.json," >&2
+  echo "attribution.commit) says this trailer is not added here — written directly" >&2
+  echo "into the message, it bypasses that setting instead of respecting it." >&2
+  echo >&2
+  echo "Remove the trailer and commit again. If this is really necessary, turn off" >&2
+  echo "the guard explicitly for this one command:" >&2
+  echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
+  exit 1
+fi
+
+exit 0
