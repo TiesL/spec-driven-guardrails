@@ -122,14 +122,19 @@ copy_issue_templates() {
 # field — see the callback there. That asymmetry is deliberate and so
 # lives at both callers, not hidden in lib/changes.sh.
 seed_entry() {
-  local id="$1" default="$2" predicate="$3"
+  local id="$1" default="$2" predicate="$3" version
   if [ "$default" = "question" ]; then
     return 0
   fi
   if ! predicate_true "$predicate" "$_seed_project_dir"; then
     return 0
   fi
-  echo "| $id | yes | $_seed_today | at adoption — requires substantiation during PRD/architecture |" >> "$_seed_target"
+  # #254: a row seeded today is answered against *today's* CHANGES.md, not
+  # implicitly version 1 — stamping the current version here is what stops
+  # pending-changes.sh's meaning-version check from immediately flagging
+  # a just-seeded row as if it were an old, stale answer.
+  version="$(changes_meaning_version "$id" "$CLAUDE_WORKFLOW_DIR/CHANGES.md")"
+  echo "| $id | yes | $_seed_today | at adoption — requires substantiation during PRD/architecture (meaning v$version) |" >> "$_seed_target"
 }
 
 # Records at adoption time that this project agrees to the current state

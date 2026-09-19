@@ -8,6 +8,61 @@
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
+# #254: a CHANGES.md entry's optional **Meaning version:** field, the
+# number a "Yes means" clause is currently at (absent means version 1).
+# Shared between adopt.sh (which must stamp a freshly seeded row with the
+# *current* version, not silently default it to 1 — a row seeded today
+# was never answered under an old meaning) and pending-changes.sh (which
+# compares an existing answer's recorded version against this).
+changes_meaning_version() {
+  local id="$1" changes_file="$2" raw version
+  # Tolerant of non-canonical spacing (found during PR #261's pre-merge-
+  # review) — a leading space before "-", or more than one space after
+  # it, before "**Meaning version:**" — and of the number itself landing
+  # on a continuation line rather than the field's own line (a bare
+  # "**Meaning version:**" with nothing after it): once inside the field,
+  # keep reading blank/continuation lines until a line whose own leading
+  # token is a digit, or the next field/entry boundary is hit first.
+  #
+  # Anchored at the *start* of the continuation line, not "contains a
+  # digit anywhere" (found during PR #261's pre-merge-review, round 2): a
+  # prose continuation line mentioning an issue number ("#244 added...")
+  # contains a digit too, and an unanchored check would misread that
+  # issue number as the version.
+  raw="$(awk -v id="## $id" '
+    $0 == id { in_entry = 1; next }
+    in_entry && in_field {
+      if (/^[[:space:]]*-[[:space:]]*\*\*/ || /^## /) { exit }
+      if (/^[[:space:]]*[0-9]/) { print; exit }
+      next
+    }
+    in_entry && /^[[:space:]]*-[[:space:]]*\*\*Meaning version:\*\*/ {
+      sub(/^[[:space:]]*-[[:space:]]*\*\*Meaning version:\*\* */, "")
+      in_field = 1
+      if ($0 == "") { next }
+      print; exit
+    }
+    in_entry && /^## / { exit }
+  ' "$changes_file")"
+  # A genuinely absent field (no entry at all matched, or the field
+  # itself is blank all the way to the next boundary) is normal and
+  # defaults to version 1. A field that *is* present with non-numeric
+  # content (a typo'd hand-edit) is not the same thing and must not
+  # silently collapse to the same default — found during PR #261's
+  # pre-merge-review, round 2: both cases used to end in the same
+  # "${version:-1}" fallback, making a malformed field indistinguishable
+  # from an absent one, and the caller's own malformed-input check
+  # (pending-changes.sh) unreachable in practice. Empty $raw -> "1"
+  # (absent, normal). Non-empty $raw with no leading digit -> empty
+  # output (malformed, for the caller to catch and report).
+  if [ -z "$raw" ]; then
+    echo "1"
+    return
+  fi
+  version="$(printf '%s' "$raw" | grep -oE '^[[:space:]]*[0-9]+' | grep -oE '[0-9]+')"
+  echo "$version"
+}
+
 # The one and only predicate logic. Expressed as a case instead of eval of
 # free text from CHANGES.md: predictable, and a typo yields "unknown"
 # instead of an unintended command.

@@ -1484,3 +1484,27 @@ something new is being added.
 - When: read
 - Then: it documents running `pending-changes.sh` as a PR-time finding,
   not only relying on the `SessionStart` notice a session can scroll past
+
+### S141 — A materially tightened row re-surfaces for a project that already answered it
+**Covers:** F9
+- Given: a project's `WORKFLOW-ADOPTION.md` answers a row `yes` with no
+  `(meaning v<N>)` marker, and `CHANGES.md`'s own `**Meaning version:**`
+  for that row is now higher than 1
+- When: `pending-changes.sh <project_dir>` runs
+- Then: the row is reported separately from "never answered", naming the
+  old and new version; re-confirming with the current version marker
+  quiets it; a row whose entry was never touched by a version bump never
+  resurfaces, regardless of how it was answered
+
+### S142 — changes_meaning_version's field extraction, edge cases
+**Covers:** F3
+- Given: synthetic `CHANGES.md` fixtures with the field on its own line,
+  on a continuation line, with non-canonical spacing (extra space after
+  the dash, a leading space before it), absent entirely, malformed
+  (non-numeric content), or a continuation line whose prose happens to
+  contain an unrelated digit (an issue number)
+- When: `changes_meaning_version <id> <file>` runs
+- Then: each resolves to the correct version; absent resolves to 1;
+  malformed resolves to empty (distinct from absent, so a caller can
+  detect it), not silently defaulted to 1; an issue number in a
+  continuation line's prose is never misread as the version

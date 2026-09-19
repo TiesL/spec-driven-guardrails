@@ -38,22 +38,87 @@ answers="$project_dir/WORKFLOW-ADOPTION.md"
 
 [ -f "$changes" ] || exit 0
 
-# shellcheck disable=SC2329  # called from collect_pending
-answered() {
-  local id="$1" old_id
-  [ -f "$answers" ] || return 1
-  grep -q "^| *$id *|" "$answers" && return 0
+# The full matched row's text (whichever id/alias actually matched), or
+# empty if never answered. Factored out of the old boolean answered() so
+# #254 can also read what a row's Notes actually say, not just that a row
+# exists.
+answered_row() {
+  local id="$1" old_id row
+  [ -f "$answers" ] || { echo ""; return; }
+  row="$(grep "^| *$id *|" "$answers" | head -1)"
+  if [ -n "$row" ]; then printf '%s\n' "$row"; return; fi
   # #156: also accept the pre-rename ID for a project that answered
   # before an NFR was renamed — same spirit as W42/#114's filename
   # fallback above, applied to the ID instead of the filename.
   old_id="$(nfr_old_id "$id")"
-  [ -n "$old_id" ] && grep -q "^| *$old_id *|" "$answers" && return 0
+  if [ -n "$old_id" ]; then
+    row="$(grep "^| *$old_id *|" "$answers" | head -1)"
+    if [ -n "$row" ]; then printf '%s\n' "$row"; return; fi
+  fi
   # #175: same alias, for the thirteen renamed CHANGES.md entry IDs.
   old_id="$(changes_old_id "$id")"
-  [ -n "$old_id" ] && grep -q "^| *$old_id *|" "$answers"
+  if [ -n "$old_id" ]; then
+    row="$(grep "^| *$old_id *|" "$answers" | head -1)"
+    if [ -n "$row" ]; then printf '%s\n' "$row"; return; fi
+  fi
+  echo ""
+}
+
+# shellcheck disable=SC2329  # called from collect_pending
+answered() {
+  [ -n "$(answered_row "$1")" ]
+}
+
+# The Question field for an id, from CHANGES.md, falling back to the NFR
+# register — same lookup the pending-report loop already did inline;
+# factored out so #254's resurfaced-row report can reuse it too.
+entry_question() {
+  local id="$1" question
+  question="$(awk -v id="## $id" '
+    $0 == id { in_entry = 1; next }
+    in_entry && /\*\*Question:\*\*/ {
+      sub(/.*\*\*Question:\*\* */, ""); print; exit
+    }
+    in_entry && /^## / { exit }
+  ' "$changes")"
+  if [ -z "$question" ]; then
+    question="$(nfr_question "$workflow_dir/nfr" "$id")"
+  fi
+  printf '%s\n' "$question"
+}
+
+# #254: a row's "Yes means" can be materially tightened after a project
+# already answered it — quality-review-before-merge/#244 is the first
+# real case (added the different-model requirement). changes_meaning_version
+# (lib/changes.sh, shared with adopt.sh's seed_entry) reads the entry's
+# optional **Meaning version:** field, bumped by hand only when an edit is
+# material (never for wording/prose-only changes — #254 AC2 is exactly why
+# this isn't automatic diffing); absent means version 1. Not meaningful for
+# an NFR id (nfr_question's ids aren't CHANGES.md entries) — it returns "1"
+# for those too, so they simply never resurface via this mechanism,
+# matching this issue's stated scope.
+
+# The version a row's *answer* was recorded against — a trailing
+# "(meaning v<N>)" in the row's own text (any column; free text, not a
+# fixed position). Absent means version 1: every row answered before this
+# mechanism existed implicitly answered under whatever CHANGES.md said at
+# the time, which for every existing entry today is version 1.
+answered_meaning_version() {
+  local id="$1" row version
+  row="$(answered_row "$id")"
+  # tail -1, not the first match: a row's own final word wins if more
+  # than one marker somehow ended up in it (found during PR #261's
+  # pre-merge-review — this repo's own re-confirmed row briefly had the
+  # version mentioned twice, once in prose and once as the real trailing
+  # marker; grep -o's multiple lines then broke the numeric comparison
+  # below, which silently swallowed the error and never resurfaced the
+  # row at all — the exact failure this mechanism exists to prevent).
+  version="$(printf '%s' "$row" | grep -oE '\(meaning v[0-9]+\)' | grep -oE '[0-9]+' | tail -1)"
+  echo "${version:-1}"
 }
 
 pending=()
+resurfaced=()
 
 # Callback for iterate_entries. `default` is deliberately unused here: an
 # unanswered question is pending regardless of whether it started as `yes`
@@ -62,8 +127,35 @@ pending=()
 # shellcheck disable=SC2329  # called indirectly, via iterate_entries
 collect_pending() {
   local id="$1" predicate="$3"
-  if predicate_true "$predicate" "$project_dir" && ! answered "$id"; then
+  predicate_true "$predicate" "$project_dir" || return 0
+  if ! answered "$id"; then
     pending+=("$id")
+    return 0
+  fi
+  local current_version answered_version
+  current_version="$(changes_meaning_version "$id" "$changes")"
+  answered_version="$(answered_meaning_version "$id")"
+  # Found during PR #261's pre-merge-review: a malformed version (from
+  # either side) must not silently fall through as "nothing to report" —
+  # for a mechanism whose only job is surfacing a question, an unparseable
+  # comparison is itself something to surface, not swallow.
+  # changes_meaning_version genuinely returns empty for a malformed
+  # (present but non-numeric) field, distinct from its own "1" default for
+  # a field that's simply absent (#261 round 2) — so this branch is a real
+  # catch, not dead code behind a fallback that already sanitized its way
+  # past it.
+  case "$current_version" in
+    ''|*[!0-9]*)
+      echo "warning: pending-changes couldn't read $id's meaning version from CHANGES.md (got \"$current_version\") — skipping the meaning-version check for this row." >&2
+      return 0 ;;
+  esac
+  case "$answered_version" in
+    ''|*[!0-9]*)
+      echo "warning: pending-changes couldn't read $id's answered meaning version from $answers (got \"$answered_version\") — skipping the meaning-version check for this row." >&2
+      return 0 ;;
+  esac
+  if [ "$current_version" -gt "$answered_version" ]; then
+    resurfaced+=("$id|$answered_version|$current_version")
   fi
 }
 
@@ -72,18 +164,7 @@ iterate_all_entries "$workflow_dir" collect_pending
 if [ ${#pending[@]} -gt 0 ]; then
   echo "Pending workflow changes for this project (see CHANGES.md in spec-driven-guardrails):"
   for id in "${pending[@]}"; do
-    question="$(awk -v id="## $id" '
-      $0 == id { in_entry = 1; next }
-      in_entry && /\*\*Question:\*\*/ {
-        sub(/.*\*\*Question:\*\* */, ""); print; exit
-      }
-      in_entry && /^## / { exit }
-    ' "$changes")"
-    # If the ID isn't in CHANGES.md, it comes from the NFR register.
-    if [ -z "$question" ]; then
-      question="$(nfr_question "$workflow_dir/nfr" "$id")"
-    fi
-    echo "  - $id — $question"
+    echo "  - $id — $(entry_question "$id")"
   done
   # Instruction matches whichever format is actually in play (W42/#114):
   # yes/no in the new file, ja/nee if this project hasn't migrated yet.
@@ -91,6 +172,25 @@ if [ ${#pending[@]} -gt 0 ]; then
     */WORKFLOW-ADOPTIE.md) echo "Record a ja/nee answer per change in WORKFLOW-ADOPTIE.md." ;;
     *) echo "Record a yes/no answer per change in WORKFLOW-ADOPTION.md." ;;
   esac
+fi
+
+# #254: a row already answered, but whose meaning has since been
+# materially tightened — re-surfaced separately from "never answered"
+# (above), since the project *did* make a decision, just against an
+# older meaning. Never blocking (same fail-open spirit as the rest of
+# this script), always visible.
+if [ ${#resurfaced[@]} -gt 0 ]; then
+  echo "Answered, but the meaning has changed since (see CHANGES.md in spec-driven-guardrails):"
+  for entry in "${resurfaced[@]}"; do
+    id="${entry%%|*}"
+    rest="${entry#*|}"
+    old_version="${rest%%|*}"
+    new_version="${rest#*|}"
+    echo "  - $id — answered under meaning v$old_version, now v$new_version — $(entry_question "$id")"
+  done
+  echo "Re-confirm each row above: keep the answer if it still holds, change it if it"
+  echo "doesn't, and add \"(meaning v<N>)\" to the row so it isn't asked again for the"
+  echo "same version."
 fi
 
 # A seeded row is not yet a decision. adopt.sh sets every applicable
