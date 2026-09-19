@@ -62,10 +62,18 @@ something new is being added.
 
 ### R6 — Predicate behavior identical, and demonstrably correct
 **Covers:** F3
-- Given: four test projects (with/without `package.json` × with/without a `"deploy"` script)
-- When: the seed logic and `predicate_true()` both evaluate
-  `has-package-json` and `has-deploy-script` against each of the four
-- Then: both reach exactly the same answer for every combination
+- Given: six test projects, varying `package.json` presence, an
+  executable `check` (#248 — independent of `package.json`), and
+  `"deploy"`-script content
+- When: the seed logic and `predicate_true()` all evaluate
+  `has-check-command` and `has-deploy-script` against each of the six —
+  no `CHANGES.md` row uses `has-package-json` directly anymore (#248);
+  `package.json`'s own presence only still matters as the file
+  `has-deploy-script` reads its `"deploy"` key from
+- Then: all reach exactly the same answer for every combination, and the
+  two new rows (an executable check without `package.json`, and
+  `package.json` without an executable check) prove `has-check-command`
+  is genuinely decoupled from `package.json`, not just a rename
 - And: for **every** predicate there's at least one case where it's true
   *and* the corresponding entry is unanswered — otherwise a predicate that
   became too strict is invisible, since the difference lands nowhere in a
@@ -1409,6 +1417,17 @@ something new is being added.
 - Then: it's blocked, naming the trailer; a message with no trailer
   proceeds; the `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch still lets
   it through
+
+### S136 — CI scaffolding is gated on an executable check, not package.json
+**Covers:** F9
+- Given: a project with an executable `check` at its root but no
+  `package.json`
+- When: `adopt.sh` runs
+- Then: `ci.yml`, `check-pr-issue-link.sh`, and `check-main-via-pr.sh` are
+  all scaffolded; a project with `package.json` alone and no executable
+  `check` gets none of them, with `adopt.sh` printing why, not silently;
+  the scaffolded `ci.yml` calls `./check` directly (never `npm run
+  check`), with the npm setup steps conditional on `package.json` existing
 
 ### S135 — CI-enforcement policy for a genuinely code-less project
 **Covers:** F8

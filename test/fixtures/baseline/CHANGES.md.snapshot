@@ -72,7 +72,7 @@ the shared parser warns if it has no `Applies if`.
 
 - **Question:** Must this project follow the CI convention (CI calls only `check`, no separate checks in the workflow YAML)?
 - **Default:** yes
-- **Applies if:** has-package-json
+- **Applies if:** has-check-command
 - **Yes means:** the project has a `check` script covering typecheck, lint,
   tests, and build, and a CI workflow that calls only that script.
   `adopt.sh` scaffolds `templates/ci.yml` if there's no workflow yet; a
@@ -94,7 +94,7 @@ the shared parser warns if it has no `Applies if`.
 
 - **Question:** Must this project's CI run on pull requests *and* on pushes to `main`?
 - **Default:** yes
-- **Applies if:** has-package-json
+- **Applies if:** has-check-command
 - **Yes means:** the workflow has both a `pull_request` trigger and
   `push: branches: [main]`. The difference from only a push on the branch is
   substantial: `pull_request` evaluates the merged result, so it catches the
@@ -109,16 +109,16 @@ the shared parser warns if it has no `Applies if`.
   validation for a push to a feature branch with no pull request yet: the
   first CI signal then only arrives once the PR opens. That's the price of
   evaluating the merged result, and small in a workflow where the PR opens
-  early. Second, this question inherits the scope of `has-package-json`:
-  a project with a CI workflow but no `package.json` doesn't get it, same
-  as `ci-convention`.
+  early. Second, this question inherits the scope of `has-check-command`
+  (#248): a project with a CI workflow but no executable `check` doesn't
+  get it, same as `ci-convention`.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
 ## ci-link-3-hard-block
 
 - **Question:** Does this project's CI fail a pull request that references no issue (link 3, hard block)?
 - **Default:** yes
-- **Applies if:** has-package-json
+- **Applies if:** has-check-command
 - **Yes means:** `check-pr-issue-link.sh` is scaffolded (`adopt.sh`, see
   `templates/check-pr-issue-link.sh`) and the workflow calls it on the
   `pull_request` event, with the PR number as argument — see
@@ -146,7 +146,7 @@ the shared parser warns if it has no `Applies if`.
 
 - **Question:** Does this project's CI fail a push to `main` that doesn't come from a pull request?
 - **Default:** yes
-- **Applies if:** has-package-json
+- **Applies if:** has-check-command
 - **Yes means:** `check-main-via-pr.sh` is scaffolded (`adopt.sh`, see
   `templates/check-main-via-pr.sh`) and the workflow calls it on the
   `push` event to `main`, with the commit SHA as argument — see

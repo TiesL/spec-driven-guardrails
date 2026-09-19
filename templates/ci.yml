@@ -38,12 +38,19 @@ jobs:
       issues: read
     steps:
       - uses: actions/checkout@v4
+      # #248: npm-specific setup is conditional, not assumed — a project
+      # on a different stack (no package.json) skips straight to `check`,
+      # which is responsible for knowing its own stack's tooling either
+      # way (check-convention). Scaffolded here at all only once the
+      # project has an executable `check` — see adopt.sh's #248 AC1 gate.
       - uses: actions/setup-node@v4
+        if: hashFiles('package.json') != ''
         with:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run check
+        if: hashFiles('package.json') != ''
+      - run: ./check
       - name: PR references issue (link 3)
         if: github.event_name == 'pull_request'
         env:

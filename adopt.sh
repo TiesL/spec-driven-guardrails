@@ -546,7 +546,15 @@ adopt_project() {
   fi
   copy_issue_templates "$project_dir"
 
-  if [ -f "$project_dir/package.json" ]; then
+  # #248 AC1: the real precondition for CI is an executable `check` at the
+  # project root — check-convention's own contract, any stack — not
+  # `package.json` specifically. `package.json` alone used to gate this,
+  # which meant a project with a real check script but a different stack
+  # (portfolio-mgt-agents: docs-only, plain shell `check`, #238 finding)
+  # never got CI scaffolded at all, and check-pr-issue-link.sh/
+  # check-main-via-pr.sh — already stack-agnostic, pure `gh` calls, no
+  # npm — stayed trapped behind an unrelated npm check alongside it.
+  if [ -x "$project_dir/check" ]; then
     mkdir -p "$project_dir/.github/workflows"
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" "$project_dir/.github/workflows/ci.yml"
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-pr-issue-link.sh" "$project_dir/check-pr-issue-link.sh"
@@ -557,6 +565,14 @@ adopt_project() {
     if [ -f "$project_dir/check-main-via-pr.sh" ]; then
       chmod +x "$project_dir/check-main-via-pr.sh"
     fi
+  elif [ -f "$project_dir/package.json" ]; then
+    # Found during PR #257's pre-merge-review: a project with package.json
+    # but only an npm "check" script (no root executable `check`) used to
+    # get CI scaffolded under the old gate and silently doesn't anymore —
+    # this is deliberate (check-convention wants a real, stack-neutral
+    # `check` command CI can call directly), but silent narrowing is worse
+    # than a stated reason.
+    echo "Not scaffolding CI: $project_dir/package.json exists, but no executable check at $project_dir/check — add one (see check-convention skill) and run adopt.sh again."
   fi
 
   seed_adoption_table "$project_dir"

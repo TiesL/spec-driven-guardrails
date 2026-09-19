@@ -9,8 +9,14 @@
 # true *and* unanswered — exactly the branch the real adopters' baseline
 # misses (see test/fixtures/baseline/LEESMIJ.md).
 #
-# name | package.json | scripts content | ci-convention | deploy-guards
-geen-package-json|nee||nee|nee
-package-json-zonder-deploy|ja|{"name":"t"}|ja|nee
-package-json-met-deploy|ja|{"name":"t","scripts":{"deploy":"node deploy.mjs"}}|ja|ja
-package-json-met-predeploy|ja|{"name":"t","scripts":{"predeploy":"node x.mjs"}}|ja|nee
+# has-check-command (#248) is independent of package.json — an executable
+# `check` at the project root, any stack — not derived from it, even though
+# package-json-based fixtures below also carry one for the common case.
+#
+# name | package.json | scripts content | executable check | ci-convention | deploy-guards
+geen-package-json|nee||nee|nee|nee
+package-json-zonder-deploy|ja|{"name":"t"}|ja|ja|nee
+package-json-met-deploy|ja|{"name":"t","scripts":{"deploy":"node deploy.mjs"}}|ja|ja|ja
+package-json-met-predeploy|ja|{"name":"t","scripts":{"predeploy":"node x.mjs"}}|ja|ja|nee
+check-zonder-package-json|nee||ja|ja|nee
+package-json-zonder-check|ja|{"name":"t"}|nee|nee|nee

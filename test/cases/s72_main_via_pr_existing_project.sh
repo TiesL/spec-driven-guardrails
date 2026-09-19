@@ -10,12 +10,16 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a project with package.json and an already-existing ci.yml that
-# does not call check-main-via-pr.sh, plus a WORKFLOW-ADOPTIE.md predating
-# this entry — exactly the case where scaffold_if_missing leaves the ci.yml
-# untouched and seed_adoption_table no longer seeds anything (that file already exists).
+# Given: a project with package.json, an executable check (#248 — the
+# real precondition for the CI questions below, not package.json alone),
+# and an already-existing ci.yml that does not call check-main-via-pr.sh,
+# plus a WORKFLOW-ADOPTIE.md predating this entry — exactly the case where
+# scaffold_if_missing leaves the ci.yml untouched and seed_adoption_table
+# no longer seeds anything (that file already exists).
 project="$(fresh_project with-own-ci)"
 echo '{}' > "$project/package.json"
+printf '#!/usr/bin/env bash\nnpm run check\n' > "$project/check"
+chmod +x "$project/check"
 mkdir -p "$project/.github/workflows"
 cat > "$project/.github/workflows/ci.yml" <<'EOF'
 name: CI
@@ -49,15 +53,16 @@ pending="$(pending_ids "$project")"
 # <<< here-string, not a piped printf | grep -q, here and below:
 # SIGPIPE/pipefail race, see issue #218.
 if ! grep -qx 'ci-detects-main-outside-pr' <<<"$pending"; then
-  fail "S72 — ci-detects-main-outside-pr did not appear as outstanding for an existing package.json project"
+  fail "S72 — ci-detects-main-outside-pr did not appear as outstanding for an existing project with an executable check"
   printf '%s\n' "$pending" >&2
 fi
 
-# And: a project without package.json does not get that question.
+# And: a project with neither package.json nor an executable check does
+# not get that question.
 project_without="$(fresh_project without-package-json)"
 pending_without="$(pending_ids "$project_without")"
 if grep -qx 'ci-detects-main-outside-pr' <<<"$pending_without"; then
-  fail "S72 — the main-via-PR question appeared even without package.json"
+  fail "S72 — the main-via-PR question appeared even without an executable check"
 fi
 
 test_done

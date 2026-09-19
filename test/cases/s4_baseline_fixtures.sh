@@ -22,17 +22,23 @@ if [ -e "$a2t/WORKFLOW-ADOPTIE.md" ]; then
   fail "S4 — the a2t-emails fixture has a WORKFLOW-ADOPTIE.md; it should not be there"
 fi
 
-# Non-circular check that nothing has been answered in advance: ci-convention is
-# indeed answered in tennis-admin. If it is open here, the fixture is unrepaired.
-# No `if [ -f ... ]` guard: if the golden set is missing, that is a fault and
-# not a reason to silently check nothing.
+# Non-circular check that nothing has been answered in advance:
+# process-prd (Applies if: always, Default: yes) must be open here — if
+# it isn't, the fixture was silently run through adopt.sh instead of
+# captured pre-adoption. (Previously checked ci-convention specifically,
+# since tennis-admin answers it — but since #248, ci-convention's own
+# predicate is has-check-command, which a2t's frozen fixture never
+# satisfies either way, for a reason unrelated to whether it was
+# pre-answered; process-prd isn't affected by that predicate at all.)
+# No `if [ -f ... ]` guard: if the golden set is missing, that is a fault
+# and not a reason to silently check nothing.
 if [ ! -f "$a2t/verwacht-openstaand.txt" ]; then
   fail "S4 — golden set of a2t-emails is missing"
   test_done
 fi
 
-if ! grep -qx 'ci-convention' "$a2t/verwacht-openstaand.txt"; then
-  fail "S4 — ci-convention is missing from the a2t baseline; appears to have been answered in advance"
+if ! grep -qx 'process-prd' "$a2t/verwacht-openstaand.txt"; then
+  fail "S4 — process-prd is missing from the a2t baseline; appears to have been answered in advance"
 fi
 count="$(grep -c . "$a2t/verwacht-openstaand.txt")"
 if [ "$count" -lt 20 ]; then
