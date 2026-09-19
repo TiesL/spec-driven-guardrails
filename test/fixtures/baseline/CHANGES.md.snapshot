@@ -284,7 +284,12 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** before the merge, a review runs with fresh context and on
-  a different model than the one that wrote the code. The review always
+  a different model than the one that wrote the code — same model only
+  when no other capable model is genuinely available, and then recorded
+  as an explicit exception (`same-model-exception`), never silently
+  treated as satisfying this (#244; resolves a prior contradiction with
+  `pre-merge-review`'s own wording, which used to say only "at least as
+  skilled," permitting same-model review by omission). The review always
   checks complexity and dependencies (basic hygiene), plus exactly the
   NFRs whose corresponding `spec-*` question this project answered "yes"
   to. Findings go into the PR; every finding is either resolved or

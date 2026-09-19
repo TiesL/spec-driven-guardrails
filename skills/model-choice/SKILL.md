@@ -39,8 +39,23 @@ is stale the moment a new model ships. A qualitative description of the
 task's demands doesn't age the same way.
 
 This is the mechanism `pre-merge-review` already used for its reviewer
-floor before this skill existed: "at least as skilled as the model that
-wrote the reviewed change" names no model, only a relation.
+floor before this skill existed: "a different model from, and at least as
+skilled as, the model that wrote the reviewed change" names no model,
+only a relation.
+
+**Resolved contradiction (#244):** `CHANGES.md`'s `quality-review-before-merge`
+entry required "a different model than the one that wrote the code";
+this skill's own floor said only "at least as skilled," permitting the
+same model. `portfolio-mgt-agents` used the same model for both and cited
+this skill — satisfying one text while violating the other. Resolved in
+favor of the stricter rule, since same-model review is exactly the
+correlated-blind-spot risk "Its limits" already warns about: a genuinely
+different model is required whenever more than one capable model is
+available. When only one model is actually available (a single-model
+environment), the same model may review, but the record must say so
+explicitly (`same-model-exception="<reason>"` on the Review marker, see
+"Machine-readable form" below) — never silently treated as satisfying the
+floor.
 
 ## Per-stage floors
 
@@ -52,7 +67,7 @@ Mapped onto the role table from issue #196 / the multi-agent epic (#65):
 | Planning | Architect | Can produce a sound technical approach: right decomposition, right risks surfaced, right sequencing |
 | Test/scenario authoring | QA | Can write a test that actually falsifies a wrong implementation — not a tautology, not one that passes by coincidence (see `tdd-seams`) |
 | Implementation | Developer | Can satisfy the plan and the test correctly, idiomatically, without over- or under-building |
-| Review | Reviewer | At least as capable as the model that did Implementation (existing rule, unchanged) |
+| Review | Reviewer | A different model from, and at least as capable as, the model that did Implementation — same model only when no other capable model is available, and then flagged as such (#244) |
 
 Each floor is assessed independently on that stage's own task — a trivial
 fix might need little for Planning, but Review's floor still tracks
@@ -93,11 +108,21 @@ already writes:
 <!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" effort="<low|medium|high>" -->
 ```
 
+Review's marker takes one more, optional field, only when the same-model
+exception above genuinely applies:
+
+```
+<!-- model-record: stage=Review model="<model>" effort="<...>" same-model-exception="<reason>" -->
+```
+
 `skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
 five stages have at least one marker, searched across both the PR's
 comments and the comments of every issue it closes — a finding, same
 non-blocking shape as every other `pre-merge-review` gate, for any stage
-missing one.
+missing one. It also compares Implementation's and Review's recorded
+`model=` values: identical with no `same-model-exception` field is itself
+a finding (#244 AC2) — the contradiction this resolved is otherwise just
+as unenforced as it was before.
 
 ## No behavior change to single-agent-per-stage practice
 

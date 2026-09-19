@@ -134,4 +134,208 @@ exit 1
 output_body_marker="$(PATH="$fakebin_body_marker:$PATH" "$script" 246)"
 [ -z "$output_body_marker" ] || fail "S130 — expected no findings when markers live in the PR description, got: $output_body_marker"
 
+# #244 AC2: Review and Implementation recording the same model with no
+# same-model-exception is a finding.
+fakebin_same_model="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_same_model="$(PATH="$fakebin_same_model:$PATH" "$script" 246)"
+case "$output_same_model" in
+  *"same model"*"Sonnet"*"same-model-exception"*) : ;;
+  *) fail "S130 — expected a same-model finding, got: $output_same_model" ;;
+esac
+
+# ...but the same pairing with an explicit same-model-exception is not a
+# finding.
+fakebin_same_model_excepted="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"only one model available\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_excepted="$(PATH="$fakebin_same_model_excepted:$PATH" "$script" 246)"
+[ -z "$output_excepted" ] || fail "S130 — expected no findings when the same-model pairing carries an exception, got: $output_excepted"
+
+# Found during PR #253's pre-merge-review: the latest marker per stage
+# must win, not the first. Round 1 recorded a genuine different-model
+# Review; round 2's fixup re-recorded Review with the same model as
+# Implementation, no exception. The violation is in round 2 and must be
+# caught, even though round 1's marker (different model) appears earlier
+# in the text.
+fakebin_latest_wins="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_latest_wins="$(PATH="$fakebin_latest_wins:$PATH" "$script" 246)"
+case "$output_latest_wins" in
+  *"same model"*) : ;;
+  *) fail "S130 — expected the latest (round-2) Review marker to be checked, not the first, got: $output_latest_wins" ;;
+esac
+
+# An unquoted marker (model=Sonnet, no quotes) must not be silently
+# folded into a false "same model" or "different model" claim — the
+# comparison is skipped, not guessed at.
+fakebin_unquoted="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=Sonnet effort=medium -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=Sonnet effort=medium -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_unquoted="$(PATH="$fakebin_unquoted:$PATH" "$script" 246)"
+case "$output_unquoted" in
+  *"same model"*) fail "S130 — expected an unquoted marker to skip the same-model comparison, not claim a match, got: $output_unquoted" ;;
+  *) : ;;
+esac
+
+# An empty-reason exception (same-model-exception="") must not satisfy —
+# it's a same-model marker in all but name.
+fakebin_empty_exception="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_empty_exception="$(PATH="$fakebin_empty_exception:$PATH" "$script" 246)"
+case "$output_empty_exception" in
+  *"same model"*) : ;;
+  *) fail "S130 — expected an empty-reason exception to still be flagged, got: $output_empty_exception" ;;
+esac
+
+# Case-insensitive: "Claude Sonnet 5" and "claude sonnet 5" are the same
+# model spelled differently, still a violation.
+fakebin_case_insensitive="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Claude Sonnet 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"claude sonnet 5\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_case_insensitive="$(PATH="$fakebin_case_insensitive:$PATH" "$script" 246)"
+case "$output_case_insensitive" in
+  *"same model"*) : ;;
+  *) fail "S130 — expected a case-only spelling difference to still be flagged as the same model, got: $output_case_insensitive" ;;
+esac
+
+# Found during PR #253's pre-merge-review (round 2): a stray, older
+# Review marker on the closing issue must not outrank a genuinely newer
+# one on the PR itself just because issue text used to be concatenated
+# last. The issue's marker (Sonnet, same as Implementation) is the older,
+# wrong one; the PR's own marker (Opus, genuinely different) is what
+# actually reflects this PR's real review and must be what's checked.
+fakebin_issue_marker_stale="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_issue_marker_stale="$(PATH="$fakebin_issue_marker_stale:$PATH" "$script" 246)"
+case "$output_issue_marker_stale" in
+  *"same model"*) fail "S130 — a stray older Review marker on the issue wrongly outranked the PR's own, got: $output_issue_marker_stale" ;;
+  *) : ;;
+esac
+
 test_done

@@ -403,9 +403,13 @@ you won't notice.
 ### F11 — `pre-merge-review` as an executable skill
 
 The strongest post. `WORKFLOW.md` *asks in prose* for a review "with fresh
-context and on a different model." Frontmatter expresses that literally:
-`context: fork` gives the fresh, isolated context, `model:` pins a
-different/heavier model, `allowed-tools` keeps it read-only.
+context and on a different model." Frontmatter expresses part of that
+literally: `context: fork` gives the fresh, isolated context;
+`allowed-tools` keeps it read-only. The model itself is deliberately
+*not* pinned in frontmatter — a stale prior description here said it was —
+`model-choice`'s qualitative floor (#244: a different, at-least-as-capable
+model, exception-only-with-record) governs the choice instead, so the
+rule survives new model releases without editing this skill.
 
 The skill reads `WORKFLOW-ADOPTION.md` → `yes`-answered `spec-*` → the anchor in
 the project PRD → the review scope. Reading the diff itself is delegated to
@@ -918,13 +922,14 @@ scaffold source) isn't affected.
 ### F26 — `model-choice`: capability/cost-aware model selection at every stage (issue #196)
 
 `pre-merge-review`'s "Model choice" section already established one
-instance of a principle: the reviewer must be at least as capable as the
-model that wrote the reviewed change, and, within that floor, the most
-cost-effective choice. That principle applied at exactly one point in a
-work item's life. This generalizes it to every artifact-producing stage
-anticipated by the multi-agent epic (#65) — Discovery, Planning, Test
-authoring, Implementation, Review — before #65 moves from exploration
-into concrete work items.
+instance of a principle: the reviewer must use a model different from,
+and at least as capable as, the model that wrote the reviewed change
+(#244 — same model only with an explicit, recorded exception), and,
+within that floor, the most cost-effective choice. That principle applied
+at exactly one point in a work item's life. This generalizes it to every
+artifact-producing stage anticipated by the multi-agent epic (#65) —
+Discovery, Planning, Test authoring, Implementation, Review — before #65
+moves from exploration into concrete work items.
 
 **The rule stays relative, never a hardcoded name.** A floor is stated as
 what a stage's output has to survive ("can write a test that actually
@@ -1183,6 +1188,8 @@ epics still apply, detached from the execution history in which they arose.
 | What | Why acceptable for now | Trigger to address |
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
+| `model-record-gate.sh`'s same-model check (#244 AC2) only catches an exact spelling match (case-folded) between Implementation's and Review's `model=` values — a genuine respelling of the same model (`Claude Sonnet 5` vs. `Sonnet 5` vs. `claude-sonnet-5`) still slips through as "different." Found during PR #253's pre-merge-review (round 2) | A canonical-name alias table would need constant upkeep as new models ship, exactly what the "never name a model" principle elsewhere in `model-choice` warns against; case-folding catches the one respelling class worth the cost | If a real same-model review ever passes this check via a spelling difference, or once a stable, low-maintenance normalization exists |
+| `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
 | `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
 | Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |

@@ -1375,6 +1375,9 @@ something new is being added.
 - Then: a missing stage among Discovery/Planning/Test/Implementation/Review
   is reported, one line per stage; nothing is reported once all five are
   present; without `gh` the gate fails open with a warning, not a block
+- And (#244 AC2): Review and Implementation recording the identical model
+  with no `same-model-exception` field on Review's marker is reported;
+  the identical pairing with that field present is not
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
 **Covers:** F9
