@@ -1495,3 +1495,16 @@ something new is being added.
   old and new version; re-confirming with the current version marker
   quiets it; a row whose entry was never touched by a version bump never
   resurfaces, regardless of how it was answered
+
+### S142 — changes_meaning_version's field extraction, edge cases
+**Covers:** F3
+- Given: synthetic `CHANGES.md` fixtures with the field on its own line,
+  on a continuation line, with non-canonical spacing (extra space after
+  the dash, a leading space before it), absent entirely, malformed
+  (non-numeric content), or a continuation line whose prose happens to
+  contain an unrelated digit (an issue number)
+- When: `changes_meaning_version <id> <file>` runs
+- Then: each resolves to the correct version; absent resolves to 1;
+  malformed resolves to empty (distinct from absent, so a caller can
+  detect it), not silently defaulted to 1; an issue number in a
+  continuation line's prose is never misread as the version

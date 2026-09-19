@@ -83,4 +83,26 @@ case "$output_untouched" in
   *"meaning has changed"*) fail "S141 — an untouched entry wrongly triggered a resurface, got: $output_untouched" ;;
 esac
 
+# Case 4 (found during PR #261's pre-merge-review): a row whose text
+# happens to contain the "(meaning vN)" pattern twice — this repo's own
+# re-confirmed quality-review-before-merge row briefly did, once in prose
+# and once as the real trailing marker — must still resolve to one
+# version (the row's own final word), not silently break the comparison
+# and never resurface at all.
+project_double_marker="$(fresh_project double-marker)"
+git -C "$project_double_marker" commit -q --allow-empty -m start
+cat > "$project_double_marker/WORKFLOW-ADOPTION.md" <<'EOF'
+# Adoption of shared workflow changes
+
+| Change | Answer | Date | Notes |
+|---|---|---|---|
+| quality-review-before-merge | yes | 2026-09-19 | mentions (meaning v1) in prose, then the real trailing marker (meaning v1) |
+EOF
+
+output_double_marker="$("$TEST_REPO_ROOT/pending-changes.sh" "$project_double_marker" 2>&1)"
+case "$output_double_marker" in
+  *"quality-review-before-merge"*"answered under meaning v1, now v2"*) : ;;
+  *) fail "S141 — a row with a duplicated (meaning vN) marker did not resurface, got: $output_double_marker" ;;
+esac
+
 test_done

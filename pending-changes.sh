@@ -138,9 +138,12 @@ collect_pending() {
   # Found during PR #261's pre-merge-review: a malformed version (from
   # either side) must not silently fall through as "nothing to report" —
   # for a mechanism whose only job is surfacing a question, an unparseable
-  # comparison is itself something to surface, not swallow. Both helpers
-  # are expected to always return a clean integer; this is the reported
-  # backstop for if that assumption is ever wrong.
+  # comparison is itself something to surface, not swallow.
+  # changes_meaning_version genuinely returns empty for a malformed
+  # (present but non-numeric) field, distinct from its own "1" default for
+  # a field that's simply absent (#261 round 2) — so this branch is a real
+  # catch, not dead code behind a fallback that already sanitized its way
+  # past it.
   case "$current_version" in
     ''|*[!0-9]*)
       echo "warning: pending-changes couldn't read $id's meaning version from CHANGES.md (got \"$current_version\") — skipping the meaning-version check for this row." >&2
