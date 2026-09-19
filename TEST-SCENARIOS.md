@@ -1508,3 +1508,19 @@ something new is being added.
   malformed resolves to empty (distinct from absent, so a caller can
   detect it), not silently defaulted to 1; an issue number in a
   continuation line's prose is never misread as the version
+
+### S143 — A narrowed predicate re-surfaces a row for a project it no longer applies to
+**Covers:** F9
+- Given: a project's `WORKFLOW-ADOPTION.md` answers a row `yes` with no
+  `(meaning v<N>)` marker, `CHANGES.md`'s own `**Meaning version:**` for
+  that row is now higher than 1, and the row's `Applies if` predicate no
+  longer holds for this project (e.g. `ci-convention`/`has-check-command`
+  for a project with no executable `check`, mirroring #248's real
+  narrowing of the CI-adoption rows from `has-package-json`)
+- When: `pending-changes.sh <project_dir>` runs
+- Then: the row is reported separately, both from "never answered" and
+  from the "meaning has changed" (still-applies) report, naming the old
+  and new version and stating the predicate no longer matches; the same
+  version bump for a project the predicate *still* holds for reports
+  through the existing "meaning has changed" path instead, not this one;
+  re-confirming with the current version marker quiets it, same as S141

@@ -119,19 +119,40 @@ answered_meaning_version() {
 
 pending=()
 resurfaced=()
+narrowed=()
 
 # Callback for iterate_entries. `default` is deliberately unused here: an
 # unanswered question is pending regardless of whether it started as `yes`
 # or `question`. adopt.sh does do something with that same field — see the
 # callback there.
+#
+# #258: the mirror image of #254 — a row's "Applies if" predicate can
+# *narrow* after a project already answered it (e.g. #248 restricted
+# ci-convention/ci-on-pr-and-main/ci-link-3-hard-block/
+# ci-detects-main-outside-pr from has-package-json to has-check-command),
+# silently dropping that project out of the asked set with no notice.
+# Deliberately the same signal as #254 (the row's **Meaning version**,
+# bumped by hand only for a material edit — never automatic diffing, same
+# reasoning as #254's own AC2) rather than a second, parallel mechanism:
+# whoever edits an "Applies if" predicate in a way that could narrow who
+# it applies to bumps that field exactly like a "Yes means" edit would.
+# What differs is only which bucket a version bump lands in, decided by
+# whether the predicate still holds for *this* project right now.
 # shellcheck disable=SC2329  # called indirectly, via iterate_entries
 collect_pending() {
-  local id="$1" predicate="$3"
-  predicate_true "$predicate" "$project_dir" || return 0
-  if ! answered "$id"; then
+  local id="$1" predicate="$3" applies=1
+  predicate_true "$predicate" "$project_dir" || applies=0
+
+  if [ "$applies" -eq 1 ] && ! answered "$id"; then
     pending+=("$id")
     return 0
   fi
+
+  # A row that's inapplicable *and* never answered is simply not pending —
+  # nothing to report, same as always. Only an answered row can be
+  # resurfaced (still applies) or narrowed (no longer applies).
+  answered "$id" || return 0
+
   local current_version answered_version
   current_version="$(changes_meaning_version "$id" "$changes")"
   answered_version="$(answered_meaning_version "$id")"
@@ -155,7 +176,11 @@ collect_pending() {
       return 0 ;;
   esac
   if [ "$current_version" -gt "$answered_version" ]; then
-    resurfaced+=("$id|$answered_version|$current_version")
+    if [ "$applies" -eq 1 ]; then
+      resurfaced+=("$id|$answered_version|$current_version")
+    else
+      narrowed+=("$id|$answered_version|$current_version")
+    fi
   fi
 }
 
@@ -191,6 +216,27 @@ if [ ${#resurfaced[@]} -gt 0 ]; then
   echo "Re-confirm each row above: keep the answer if it still holds, change it if it"
   echo "doesn't, and add \"(meaning v<N>)\" to the row so it isn't asked again for the"
   echo "same version."
+fi
+
+# #258: the mirror image of the resurfaced block above — a row this
+# project already answered, whose "Applies if" predicate no longer holds
+# for it. Unlike "resurfaced", the answer itself isn't necessarily stale;
+# the precondition that made the question relevant is what changed. Still
+# never blocking, still always visible, same fail-open spirit.
+if [ ${#narrowed[@]} -gt 0 ]; then
+  echo "Answered before, but this project may no longer be asked (see CHANGES.md in spec-driven-guardrails):"
+  for entry in "${narrowed[@]}"; do
+    id="${entry%%|*}"
+    rest="${entry#*|}"
+    old_version="${rest%%|*}"
+    new_version="${rest#*|}"
+    echo "  - $id — answered under meaning v$old_version, now v$new_version, and its 'Applies if'" \
+      "condition no longer matches this project — $(entry_question "$id")"
+  done
+  echo "Check why: if this project genuinely no longer needs to answer this, add"
+  echo "\"(meaning v<N>)\" to the row so it isn't reported again for the same version. If"
+  echo "something in this project changed that shouldn't have, that's worth investigating"
+  echo "instead."
 fi
 
 # A seeded row is not yet a decision. adopt.sh sets every applicable
