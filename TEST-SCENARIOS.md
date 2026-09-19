@@ -1448,3 +1448,39 @@ something new is being added.
   file is kept (now the real symlink `adopt.sh` creates, never deleted),
   and `.gitignore` lists it; a project where the path was never tracked is
   unaffected
+
+### S137 — A "no" answer distinguishes a permanent decline from "not yet"
+**Covers:** F9
+- Given: `adopt.sh`'s seeded `WORKFLOW-ADOPTION.md` header
+- When: read
+- Then: it explains that `no` covers two cases — a permanent decline, or
+  "not yet" (applicable, precondition doesn't hold) with a concrete
+  trigger to revisit, same shape as `PRD.md`'s Technical debt table —
+  documented consistently in the seeded header, this repo's own
+  `WORKFLOW-ADOPTION.md`, and the `adoption-registry` skill
+
+### S138 — Adoption postcondition gate: a "yes" answer is checked, not trusted
+**Covers:** F9
+- Given: `WORKFLOW-ADOPTION.md` rows answered `yes` for `traceability-link-1`
+  and `ci-gate-on-merge`
+- When: `adoption-postcondition-gate.sh <project_dir>` runs
+- Then: a finding is reported for each row whose actual precondition
+  doesn't hold (no `check-traceability.sh`, not wired into `check`; no CI
+  workflow, or one that never invokes `check`); no finding when both
+  genuinely hold; a `no — not yet` row (S137) is never checked at all
+
+### S139 — .github/ISSUE_TEMPLATE/ is gated on process-issue-tracking, not unconditional
+**Covers:** F9
+- Given: a fresh project with `process-issue-tracking` unanswered
+- When: `adopt.sh` runs
+- Then: `.github/ISSUE_TEMPLATE/` is not created; once the row is answered
+  `yes` (current or pre-migration `ja` format, either id spelling), the
+  next run creates it; an already-existing directory is still always
+  refreshed regardless of the row's answer (S31/AC3, unaffected)
+
+### S140 — pre-merge-review documents the pending adoption gate
+**Covers:** F10
+- Given: `skills/pre-merge-review/SKILL.md`
+- When: read
+- Then: it documents running `pending-changes.sh` as a PR-time finding,
+  not only relying on the `SessionStart` notice a session can scroll past

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S126 — Adoption postcondition gate (#239 AC1): a "yes" answer in
+# S138 — Adoption postcondition gate (#239 AC1): a "yes" answer in
 # WORKFLOW-ADOPTION.md is checked against its actual precondition, not
 # trusted on its own word.
 # Covers: F9
@@ -15,7 +15,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 
 script="$TEST_REPO_ROOT/skills/pre-merge-review/adoption-postcondition-gate.sh"
-[ -x "$script" ] || { fail "S126 — skills/pre-merge-review/adoption-postcondition-gate.sh is missing or not executable"; test_done; }
+[ -x "$script" ] || { fail "S138 — skills/pre-merge-review/adoption-postcondition-gate.sh is missing or not executable"; test_done; }
 
 sandbox_create
 trap sandbox_destroy EXIT
@@ -36,11 +36,11 @@ output="$("$script" "$broken")"
 
 case "$output" in
   *"traceability-link-1"*"does not exist"*) : ;;
-  *) fail "S126 — expected a finding for the missing check-traceability.sh, got: $output" ;;
+  *) fail "S138 — expected a finding for the missing check-traceability.sh, got: $output" ;;
 esac
 case "$output" in
   *"ci-gate-on-merge"*"no CI workflow exists"*) : ;;
-  *) fail "S126 — expected a finding for the missing CI workflow, got: $output" ;;
+  *) fail "S138 — expected a finding for the missing CI workflow, got: $output" ;;
 esac
 
 # Case 2: both postconditions genuinely hold — no findings.
@@ -70,7 +70,7 @@ cat > "$whole/WORKFLOW-ADOPTION.md" <<'EOF'
 EOF
 
 output2="$("$script" "$whole")"
-[ -z "$output2" ] || fail "S126 — expected no findings when both postconditions hold, got: $output2"
+[ -z "$output2" ] || fail "S138 — expected no findings when both postconditions hold, got: $output2"
 
 # Case 3: a "no — not yet" row (see #239 AC3) is not checked at all — it
 # never claimed the postcondition holds.
@@ -85,7 +85,7 @@ cat > "$declined/WORKFLOW-ADOPTION.md" <<'EOF'
 EOF
 
 output3="$("$script" "$declined")"
-[ -z "$output3" ] || fail "S126 — expected no findings for a 'no — not yet' row, got: $output3"
+[ -z "$output3" ] || fail "S138 — expected no findings for a 'no — not yet' row, got: $output3"
 
 # Case 4: a CI workflow exists but only checks out the repo, never actually
 # calls `check` — found by pre-merge-review on PR #246: a plain substring
@@ -114,7 +114,7 @@ EOF
 output4="$("$script" "$checkout_only")"
 case "$output4" in
   *"ci-gate-on-merge"*"no CI workflow appears to invoke check"*) : ;;
-  *) fail "S126 — expected a finding for a checkout-only workflow that never calls check, got: $output4" ;;
+  *) fail "S138 — expected a finding for a checkout-only workflow that never calls check, got: $output4" ;;
 esac
 
 test_done

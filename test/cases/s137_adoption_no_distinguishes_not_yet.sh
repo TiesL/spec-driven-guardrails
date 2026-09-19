@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S125 — The seeded WORKFLOW-ADOPTION.md explains that "no" covers two
+# S137 — The seeded WORKFLOW-ADOPTION.md explains that "no" covers two
 # distinct cases: a permanent decline, and "not yet — applicable, but the
 # precondition doesn't hold" (with a concrete trigger to revisit, same
 # shape as PRD.md's Technical debt table).
@@ -31,8 +31,23 @@ header="$(cat "$project/WORKFLOW-ADOPTION.md")"
 
 case "$header" in
   *"not yet"*"trigger"*) : ;;
-  *) fail "S125 — expected the seeded header to distinguish a permanent 'no' from a 'not yet' with a revisit trigger. Got:
+  *) fail "S137 — expected the seeded header to distinguish a permanent 'no' from a 'not yet' with a revisit trigger. Got:
 $header" ;;
+esac
+
+# Found during PR #259's pre-merge-review: the scenario's own Then clause
+# claims this distinction is documented in three places, but until now
+# only the seeded header was actually asserted on.
+own_adoption="$(cat "$TEST_REPO_ROOT/WORKFLOW-ADOPTION.md")"
+case "$own_adoption" in
+  *"not yet"*"trigger"*) : ;;
+  *) fail "S137 — expected this repo's own WORKFLOW-ADOPTION.md to carry the same distinction" ;;
+esac
+
+registry_skill="$(cat "$TEST_REPO_ROOT/skills/adoption-registry/SKILL.md")"
+case "$registry_skill" in
+  *"not yet"*"trigger"*) : ;;
+  *) fail "S137 — expected the adoption-registry skill to document the same distinction" ;;
 esac
 
 test_done

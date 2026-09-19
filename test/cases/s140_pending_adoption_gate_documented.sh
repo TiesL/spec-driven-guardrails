@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S128 — pre-merge-review's SKILL.md documents running pending-changes.sh
+# S140 — pre-merge-review's SKILL.md documents running pending-changes.sh
 # as a PR-time finding, not only a SessionStart notice (#240 AC1).
 # Covers: F10
 #
@@ -15,7 +15,7 @@ set -uo pipefail
 skill="$TEST_REPO_ROOT/skills/pre-merge-review/SKILL.md"
 content="$(cat "$skill")"
 
-assert_contains "S128 — SKILL.md documents the pending adoption gate" "Pending adoption gate" "$content"
-assert_contains "S128 — SKILL.md tells the reviewer to run pending-changes.sh" "pending-changes.sh" "$content"
+assert_contains "S140 — SKILL.md documents the pending adoption gate" "Pending adoption gate" "$content"
+assert_contains "S140 — SKILL.md tells the reviewer to run pending-changes.sh" "pending-changes.sh" "$content"
 
 test_done
