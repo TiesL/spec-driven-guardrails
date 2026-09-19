@@ -11,12 +11,14 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a project with a package.json and a handwritten ci.yml that
-# deviates from the template. The scaffold gate itself is now an
-# executable `check`, not package.json (#248) — this fixture pre-creates
-# ci.yml regardless, so whether the gate would fire doesn't matter here.
+# Given: a project with a package.json, an executable check (#248 — the
+# real precondition, both for adopt.sh's own scaffold gate and for the
+# ci-on-pr-and-main registry row below), and a handwritten ci.yml that
+# deviates from the template.
 project="$(fresh_project own-ci)"
 echo '{"name":"t"}' > "$project/package.json"
+printf '#!/usr/bin/env bash\nnpm run check\n' > "$project/check"
+chmod +x "$project/check"
 mkdir -p "$project/.github/workflows"
 own='name: Custom CI that does not come from the template'
 echo "$own" > "$project/.github/workflows/ci.yml"
@@ -39,14 +41,15 @@ after_two="$(cat "$project/.github/workflows/ci.yml")"
 # silent deviation audible, not a one-time message in adopt.sh.
 table="$project/WORKFLOW-ADOPTION.md"
 grep -q '^| ci-on-pr-and-main ' "$table" \
-  || fail "S49 — ci-on-pr-and-main is not in the adoption table of a project with package.json"
+  || fail "S49 — ci-on-pr-and-main is not in the adoption table of a project with an executable check"
 
-# And: for a project without package.json the question does not apply —
-# the same scoping as ci-convention, which this entry builds on.
+# And: for a project with neither package.json nor an executable check
+# the question does not apply — the same scoping as ci-convention, which
+# this entry builds on.
 bare="$(fresh_project without-package-json)"
 adopt "$bare"
 if grep -q '^| ci-on-pr-and-main ' "$bare/WORKFLOW-ADOPTION.md"; then
-  fail "S49 — ci-on-pr-and-main was seeded in a project without package.json"
+  fail "S49 — ci-on-pr-and-main was seeded in a project without an executable check"
 fi
 
 test_done

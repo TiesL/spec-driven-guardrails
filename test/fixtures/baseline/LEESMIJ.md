@@ -313,3 +313,26 @@ zelf). `nfr.snapshot/` is óók ververst: `nfr/spec-deployability.md`
 noemt `ci-conventie` in zijn eigen Guidance-tekst en moest mee, wat
 verder niets met de dertien CHANGES.md-ID's zelf te maken heeft maar wel
 onder dezelfde freeze valt.
+
+## Bijgewerkt voor #248
+
+`ci-convention`, `ci-on-pr-and-main`, `ci-link-3-hard-block` en
+`ci-detects-main-outside-pr` hadden alle vier `Applies if: has-package-json`;
+de echte voorwaarde is nu `has-check-command` (#248 — een uitvoerbare
+`check` in de projectroot, niet `package.json` specifiek, want
+`adopt.sh` scaffoldt CI zelf ook al op die voorwaarde). Geen van de vier
+bevroren projecten had ooit een `check`-bestand vastgelegd (alleen
+`package.json` en `WORKFLOW-ADOPTIE.md` worden meegenomen, zie de tabel
+hierboven) — met de nieuwe predicaat gelden die vier vragen dus voor geen
+van de vier meer als van toepassing.
+
+Dit raakt alleen `a2t-emails` en `tennis-admin` (de twee met
+`package.json`): `a2t-emails`' openstaand-set verliest alle vier IDs (van
+35 naar 31), `tennis-admin`'s verliest de drie onbeantwoorde
+(`ci-on-pr-and-main`, `ci-link-3-hard-block`, `ci-detects-main-outside-pr`
+— `ci-convention` zelf was al beantwoord en telde dus al niet mee, van 34
+naar 31). `tennis-registration` en `tennis-invoicing` (geen
+`package.json`) zijn ongewijzigd. Dit is een bewuste, uitgelegde
+gedragswijziging (#248's hele punt: CI-scaffolding moet niet aannemen dat
+elk project npm gebruikt), geen ongemerkte drift — vandaar hier
+vastgelegd in plaats van alleen de gouden sets stilzwijgend aangepast.

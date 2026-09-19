@@ -1411,7 +1411,7 @@ something new is being added.
   it through
 
 ### S136 — CI scaffolding is gated on an executable check, not package.json
-**Covers:** F8
+**Covers:** F9
 - Given: a project with an executable `check` at its root but no
   `package.json`
 - When: `adopt.sh` runs

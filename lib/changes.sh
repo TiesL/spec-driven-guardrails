@@ -21,6 +21,13 @@ predicate_true() {
     has-deploy-script)
       [ -f "$project_dir/package.json" ] &&
         grep -q '"deploy"[[:space:]]*:' "$project_dir/package.json" ;;
+    has-check-command)
+      # #248: the real precondition for CI-related questions is an
+      # executable `check` at the project root, any stack — the same
+      # gate adopt.sh itself now scaffolds ci.yml on. has-package-json
+      # alone left a project on a different stack never asked these
+      # questions even once CI was actually scaffolded for it.
+      [ -x "$project_dir/check" ] ;;
     *)
       return 1 ;;
   esac

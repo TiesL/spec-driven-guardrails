@@ -565,6 +565,14 @@ adopt_project() {
     if [ -f "$project_dir/check-main-via-pr.sh" ]; then
       chmod +x "$project_dir/check-main-via-pr.sh"
     fi
+  elif [ -f "$project_dir/package.json" ]; then
+    # Found during PR #257's pre-merge-review: a project with package.json
+    # but only an npm "check" script (no root executable `check`) used to
+    # get CI scaffolded under the old gate and silently doesn't anymore —
+    # this is deliberate (check-convention wants a real, stack-neutral
+    # `check` command CI can call directly), but silent narrowing is worse
+    # than a stated reason.
+    echo "Not scaffolding CI: $project_dir/package.json exists, but no executable check at $project_dir/check — add one (see check-convention skill) and run adopt.sh again."
   fi
 
   seed_adoption_table "$project_dir"

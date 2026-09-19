@@ -16,7 +16,7 @@ table="$TEST_REPO_ROOT/test/fixtures/predicates/truth-table.txt"
 seen_ci_true=0
 seen_deploy_true=0
 
-while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
+while IFS='|' read -r name has_pkg content has_check expected_ci expected_deploy; do
   case "$name" in ''|'#'*) continue ;; esac
 
   # Given: a fresh project according to this combination. No WORKFLOW-ADOPTIE.md,
@@ -24,6 +24,10 @@ while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
   # too strict visible here.
   project="$(fresh_project "$name")"
   [ "$has_pkg" = "ja" ] && printf '%s\n' "$content" > "$project/package.json"
+  if [ "$has_check" = "ja" ]; then
+    printf '#!/usr/bin/env bash\necho checked\n' > "$project/check"
+    chmod +x "$project/check"
+  fi
 
   before="$SANDBOX/$name-before.txt"
   pending_ids "$project" > "$before"
@@ -62,7 +66,7 @@ while IFS='|' read -r name has_pkg content expected_ci expected_deploy; do
   done
 
   # And the total: 23 entries always apply, plus every applicable
-  # predicate entry. `has-package-json` now contributes four -
+  # predicate entry. `has-check-command` (#248) now contributes four -
   # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
   # runs), `ci-link-3-hard-block` (PR without issue) and
   # `ci-detects-main-outside-pr` (commit on main without PR). Catches
@@ -84,7 +88,7 @@ done < "$table"
 # And: for every predicate there is at least one case where it is true and
 # the entry unanswered. Without that requirement a predicate that became too
 # strict stays invisible, since the difference then lands in no open set.
-[ "$seen_ci_true" -eq 1 ] || fail "R6 — no case at all where has-package-json is true and unanswered"
+[ "$seen_ci_true" -eq 1 ] || fail "R6 — no case at all where has-check-command is true and unanswered"
 [ "$seen_deploy_true" -eq 1 ] || fail "R6 — no case at all where has-deploy-script is true and unanswered"
 
 test_done

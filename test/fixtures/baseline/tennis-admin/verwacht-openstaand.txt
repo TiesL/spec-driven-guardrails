@@ -1,8 +1,5 @@
 architecture-document
-ci-detects-main-outside-pr
 ci-gate-on-merge
-ci-link-3-hard-block
-ci-on-pr-and-main
 process-context-document
 process-diagnose-bug
 process-issue-tracking
