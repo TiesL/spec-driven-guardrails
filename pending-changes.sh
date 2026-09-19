@@ -106,7 +106,14 @@ entry_question() {
 answered_meaning_version() {
   local id="$1" row version
   row="$(answered_row "$id")"
-  version="$(printf '%s' "$row" | grep -oE '\(meaning v[0-9]+\)' | grep -oE '[0-9]+')"
+  # tail -1, not the first match: a row's own final word wins if more
+  # than one marker somehow ended up in it (found during PR #261's
+  # pre-merge-review — this repo's own re-confirmed row briefly had the
+  # version mentioned twice, once in prose and once as the real trailing
+  # marker; grep -o's multiple lines then broke the numeric comparison
+  # below, which silently swallowed the error and never resurfaced the
+  # row at all — the exact failure this mechanism exists to prevent).
+  version="$(printf '%s' "$row" | grep -oE '\(meaning v[0-9]+\)' | grep -oE '[0-9]+' | tail -1)"
   echo "${version:-1}"
 }
 
@@ -128,7 +135,23 @@ collect_pending() {
   local current_version answered_version
   current_version="$(changes_meaning_version "$id" "$changes")"
   answered_version="$(answered_meaning_version "$id")"
-  if [ "$current_version" -gt "$answered_version" ] 2>/dev/null; then
+  # Found during PR #261's pre-merge-review: a malformed version (from
+  # either side) must not silently fall through as "nothing to report" —
+  # for a mechanism whose only job is surfacing a question, an unparseable
+  # comparison is itself something to surface, not swallow. Both helpers
+  # are expected to always return a clean integer; this is the reported
+  # backstop for if that assumption is ever wrong.
+  case "$current_version" in
+    ''|*[!0-9]*)
+      echo "warning: pending-changes couldn't read $id's meaning version from CHANGES.md (got \"$current_version\") — skipping the meaning-version check for this row." >&2
+      return 0 ;;
+  esac
+  case "$answered_version" in
+    ''|*[!0-9]*)
+      echo "warning: pending-changes couldn't read $id's answered meaning version from $answers (got \"$answered_version\") — skipping the meaning-version check for this row." >&2
+      return 0 ;;
+  esac
+  if [ "$current_version" -gt "$answered_version" ]; then
     resurfaced+=("$id|$answered_version|$current_version")
   fi
 }

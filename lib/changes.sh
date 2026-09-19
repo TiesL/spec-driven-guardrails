@@ -16,17 +16,30 @@
 # compares an existing answer's recorded version against this).
 changes_meaning_version() {
   local id="$1" changes_file="$2" raw version
+  # Tolerant of non-canonical spacing (found during PR #261's pre-merge-
+  # review) — a leading space before "-", or more than one space after
+  # it, before "**Meaning version:**" — and of the number itself landing
+  # on a continuation line rather than the field's own line (a bare
+  # "**Meaning version:**" with nothing after it): once inside the field,
+  # keep reading blank/continuation lines until a line with a leading
+  # digit is found, or the next field/entry boundary is hit first.
   raw="$(awk -v id="## $id" '
     $0 == id { in_entry = 1; next }
-    in_entry && /^- \*\*Meaning version:\*\*/ {
-      sub(/^- \*\*Meaning version:\*\* */, ""); print; exit
+    in_entry && in_field {
+      if (/^[[:space:]]*-[[:space:]]*\*\*/ || /^## /) { exit }
+      if ($0 ~ /[0-9]/) { print; exit }
+      next
+    }
+    in_entry && /^[[:space:]]*-[[:space:]]*\*\*Meaning version:\*\*/ {
+      sub(/^[[:space:]]*-[[:space:]]*\*\*Meaning version:\*\* */, "")
+      if ($0 ~ /[0-9]/) { print; exit }
+      in_field = 1; next
     }
     in_entry && /^## / { exit }
   ' "$changes_file")"
-  # The field's own leading integer only — free text may follow on the
-  # same line (an inline reason) or wrap onto continuation lines this awk
-  # never reads, neither of which is part of the version number itself.
-  version="$(printf '%s' "$raw" | grep -oE '^[0-9]+')"
+  # The line's own leading integer only — free text may follow on the
+  # same line (an inline reason), which is not part of the version number.
+  version="$(printf '%s' "$raw" | grep -oE '^[[:space:]]*[0-9]+' | grep -oE '[0-9]+')"
   echo "${version:-1}"
 }
 
