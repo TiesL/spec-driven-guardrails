@@ -85,3 +85,24 @@ GitHub issue instead of doing it right away in the same session.
 The answer file gets committed: whether a project applies an agreement is a
 property of the project, not of whichever machine you happen to be working
 on.
+
+## When a row's meaning is tightened after it was already answered (#254)
+
+A `CHANGES.md` entry's "Yes means" clause sometimes changes in a way that
+adds a real new obligation — not just prose polish. `quality-review-before-merge`
+is the first real case: #244 added the different-model requirement.
+A project that already answered `yes` under the old, looser meaning would
+otherwise silently keep that stale answer.
+
+If the change is material (adds/removes/changes an obligation, not just
+wording), bump the entry's `**Meaning version:**` field in `CHANGES.md`
+(absent means version 1; never bump for cosmetic edits — that's the whole
+point of the field being a deliberate, hand-set signal rather than
+automatic diffing). `pending-changes.sh` then reports every already-
+answered row whose recorded version is behind current as its own
+"Answered, but the meaning has changed since" notice, distinct from a
+never-answered row.
+
+To re-confirm: keep the answer if it still holds, or change it, then add
+`(meaning v<N>)` (matching the entry's current version) to that row so it
+isn't reported again until the next real tightening.

@@ -8,6 +8,28 @@
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
+# #254: a CHANGES.md entry's optional **Meaning version:** field, the
+# number a "Yes means" clause is currently at (absent means version 1).
+# Shared between adopt.sh (which must stamp a freshly seeded row with the
+# *current* version, not silently default it to 1 — a row seeded today
+# was never answered under an old meaning) and pending-changes.sh (which
+# compares an existing answer's recorded version against this).
+changes_meaning_version() {
+  local id="$1" changes_file="$2" raw version
+  raw="$(awk -v id="## $id" '
+    $0 == id { in_entry = 1; next }
+    in_entry && /^- \*\*Meaning version:\*\*/ {
+      sub(/^- \*\*Meaning version:\*\* */, ""); print; exit
+    }
+    in_entry && /^## / { exit }
+  ' "$changes_file")"
+  # The field's own leading integer only — free text may follow on the
+  # same line (an inline reason) or wrap onto continuation lines this awk
+  # never reads, neither of which is part of the version number itself.
+  version="$(printf '%s' "$raw" | grep -oE '^[0-9]+')"
+  echo "${version:-1}"
+}
+
 # The one and only predicate logic. Expressed as a case instead of eval of
 # free text from CHANGES.md: predictable, and a typo yields "unknown"
 # instead of an unintended command.

@@ -283,6 +283,11 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Must every PR in this project get a quality review before the merge, with findings in the PR?
 - **Default:** yes
 - **Applies if:** always
+- **Meaning version:** 2 — #244 added the different-model requirement (see
+  "Yes means" below); a project that answered `yes` before that (v1: "at
+  least as skilled," same model permitted) is re-surfaced by
+  `pending-changes.sh` for re-confirmation (#254), not silently carried
+  over under the old, looser meaning.
 - **Yes means:** before the merge, a review runs with fresh context and on
   a different model than the one that wrote the code — same model only
   when no other capable model is genuinely available, and then recorded

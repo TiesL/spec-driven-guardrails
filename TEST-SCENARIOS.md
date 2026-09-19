@@ -1484,3 +1484,14 @@ something new is being added.
 - When: read
 - Then: it documents running `pending-changes.sh` as a PR-time finding,
   not only relying on the `SessionStart` notice a session can scroll past
+
+### S141 — A materially tightened row re-surfaces for a project that already answered it
+**Covers:** F9
+- Given: a project's `WORKFLOW-ADOPTION.md` answers a row `yes` with no
+  `(meaning v<N>)` marker, and `CHANGES.md`'s own `**Meaning version:**`
+  for that row is now higher than 1
+- When: `pending-changes.sh <project_dir>` runs
+- Then: the row is reported separately from "never answered", naming the
+  old and new version; re-confirming with the current version marker
+  quiets it; a row whose entry was never touched by a version bump never
+  resurfaces, regardless of how it was answered
