@@ -1398,7 +1398,7 @@ something new is being added.
   without `gh`, the gate fails open with a warning
 
 ### S133 — The native commit-msg hook rejects a Co-Authored-By trailer
-**Covers:** F9
+**Covers:** F17
 - Given: a commit message carrying a `Co-Authored-By:` trailer (any case),
   written directly into `-m` rather than added by Claude Code's own
   commit template

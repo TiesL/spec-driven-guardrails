@@ -2,7 +2,7 @@
 # S133 — The native commit-msg hook rejects a Co-Authored-By trailer
 # written directly into a commit message (#243 AC1), from any source —
 # not only what Claude Code's own attribution.commit setting suppresses.
-# Covers: F9
+# Covers: F17
 #
 # Found via #238 (portfolio-mgt-agents): every commit there carried the
 # trailer despite settings/session-hooks.json's attribution.commit: ""
