@@ -310,6 +310,17 @@ the shared parser warns if it has no `Applies if`.
   no checks and so isn't blocked. The same `no` on
   `quality-review-before-merge` disables both checks — this isn't an
   independent on/off switch, since it's the same gate.
+- **Policy for a genuinely code-less project (#245):** if this project has
+  no check command and no CI configuration at all yet — not "answered no,"
+  but nothing to gate in the first place — the honest answer is **`no` —
+  not yet** (per `process-issue-tracking`'s "not yet" convention,
+  `adoption-registry` skill), naming the trigger ("once a check command
+  and CI config exist"), not `yes`. `yes` on this row is a claim that real
+  CI gating is happening; a project with nothing to gate isn't doing that,
+  even though the guard's fail-open behavior makes the practical effect
+  identical either way. `skills/pre-merge-review/adoption-postcondition-gate.sh`
+  (#239) is the mechanical backstop for a project that answers `yes`
+  anyway without a real CI workflow.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## stray-closes-guard
