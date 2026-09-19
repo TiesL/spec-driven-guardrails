@@ -105,10 +105,11 @@ bookkeeping (a single, reused HOME-leak sentinel, now one per test). Cuts
 this repo's own CI wall-clock time roughly in half to two-thirds, depending
 on the runner's core count.
 
-**Do not add a `package.json`** just to reuse `templates/ci.yml`: that would
-flip this repo's own `has-package-json` predicate and change what the
-scripts say about this repo. CI calls `./check` directly — exactly the
-"different stack" case the `check-convention` skill already describes.
+**Do not add a `package.json`** just to reuse `templates/ci.yml`'s npm
+steps — nothing here needs them. CI calls `./check` directly (#248: the
+CI-adoption predicates key on that executable, not on `package.json`) —
+exactly the "different stack" case the `check-convention` skill already
+describes.
 
 ### F2 — Recorded baseline as fixtures
 
@@ -597,7 +598,7 @@ coverage has to come from three local-and-CI-based layers:
   and `push: branches: [main]`. The `pull_request` event is also needed to
   set up a check as a *required check* — the form that can actually block a
   merge. Fixing the template only helps new projects, so it comes with a
-  `CHANGES.md` entry (`ci-on-pr-and-main`, `has-package-json`): existing
+  `CHANGES.md` entry (`ci-on-pr-and-main`, `has-check-command`): existing
   projects would otherwise keep their weaker CI without anyone asking. That
   entry is separate from `ci-convention` — that answer covers *what* the
   workflow does, this one covers *when* it runs.

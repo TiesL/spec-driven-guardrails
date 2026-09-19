@@ -33,13 +33,18 @@ adopt "$project"
 [ -f "$project/check-main-via-pr.sh" ] || fail "S136 — check-main-via-pr.sh was not scaffolded alongside it"
 
 # And: package.json alone, no executable check, does NOT trigger the
-# scaffold — the real precondition is the check command, not the stack.
+# scaffold — the real precondition is the check command, not the stack —
+# and adopt.sh says why, not silently (found during PR #257's pre-merge-review:
+# an npm project relying only on package.json's own "scripts.check", no
+# root executable check, used to get CI scaffolded and now doesn't, with
+# no message unless one is printed here).
 project_pkg_only="$(fresh_project package-json-only)"
 echo '{"name":"t"}' > "$project_pkg_only/package.json"
-adopt "$project_pkg_only"
+skip_output="$(SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project_pkg_only" 2>&1)"
 if [ -f "$project_pkg_only/.github/workflows/ci.yml" ]; then
   fail "S136 — ci.yml was scaffolded from package.json alone, without an executable check"
 fi
+assert_contains "S136 — adopt.sh explains why CI wasn't scaffolded" "Not scaffolding CI" "$skip_output"
 
 # AC2: the scaffolded ci.yml calls ./check directly, and the npm setup
 # steps are conditional, not assumed.

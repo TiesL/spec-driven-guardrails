@@ -11,9 +11,10 @@
 #                              # different directory (used by the test suite
 #                              # itself, which would otherwise call itself)
 #
-# This repo deliberately has no package.json: that would flip its own
-# `has-package-json` predicate and change what adopt.sh and
-# pending-changes.sh say about this repo.
+# This repo deliberately has no package.json — that's not what governs the
+# CI-adoption predicates anymore (#248: has-check-command, an executable
+# `check` at the project root, which this file itself already satisfies).
+# No package.json purely because this repo has no npm-based code to build.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
