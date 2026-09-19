@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S125 — The seeded WORKFLOW-ADOPTION.md explains that "no" covers two
+# S137 — The seeded WORKFLOW-ADOPTION.md explains that "no" covers two
 # distinct cases: a permanent decline, and "not yet — applicable, but the
 # precondition doesn't hold" (with a concrete trigger to revisit, same
 # shape as PRD.md's Technical debt table).
@@ -31,7 +31,7 @@ header="$(cat "$project/WORKFLOW-ADOPTION.md")"
 
 case "$header" in
   *"not yet"*"trigger"*) : ;;
-  *) fail "S125 — expected the seeded header to distinguish a permanent 'no' from a 'not yet' with a revisit trigger. Got:
+  *) fail "S137 — expected the seeded header to distinguish a permanent 'no' from a 'not yet' with a revisit trigger. Got:
 $header" ;;
 esac
 

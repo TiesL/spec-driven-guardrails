@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S127 — .github/ISSUE_TEMPLATE/ is only created for the first time once
+# S139 — .github/ISSUE_TEMPLATE/ is only created for the first time once
 # process-issue-tracking is answered "yes" — not unconditionally.
 # Covers: F9
 #
@@ -23,7 +23,7 @@ trap sandbox_destroy EXIT
 project="$(fresh_project no-answer-yet)"
 adopt "$project"
 if [ -d "$project/.github/ISSUE_TEMPLATE" ]; then
-  fail "S127 — .github/ISSUE_TEMPLATE/ was created before process-issue-tracking was answered"
+  fail "S139 — .github/ISSUE_TEMPLATE/ was created before process-issue-tracking was answered"
 fi
 
 # Once the row is answered yes, the next adopt.sh run creates it.
@@ -32,7 +32,7 @@ cat >> "$project/WORKFLOW-ADOPTION.md" <<'EOF'
 EOF
 adopt "$project"
 if [ ! -f "$project/.github/ISSUE_TEMPLATE/work-item.md" ]; then
-  fail "S127 — .github/ISSUE_TEMPLATE/ was not created once the row was answered yes"
+  fail "S139 — .github/ISSUE_TEMPLATE/ was not created once the row was answered yes"
 fi
 
 # The pre-migration format (W42/#114) gates the same way.
@@ -46,7 +46,7 @@ cat > "$project2/WORKFLOW-ADOPTIE.md" <<'EOF'
 EOF
 SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$project2" >/dev/null 2>&1
 if [ -d "$project2/.github/ISSUE_TEMPLATE" ]; then
-  fail "S127 — pre-migration format: .github/ISSUE_TEMPLATE/ was created without proces-issue-tracking answered ja"
+  fail "S139 — pre-migration format: .github/ISSUE_TEMPLATE/ was created without proces-issue-tracking answered ja"
 fi
 
 # Cross case (found during PR #247's pre-merge-review): a migrated
@@ -63,7 +63,7 @@ cat > "$project3/WORKFLOW-ADOPTION.md" <<'EOF'
 EOF
 adopt "$project3"
 if [ ! -f "$project3/.github/ISSUE_TEMPLATE/work-item.md" ]; then
-  fail "S127 — cross case: migrated filename with an unmigrated proces-issue-tracking/ja row did not scaffold"
+  fail "S139 — cross case: migrated filename with an unmigrated proces-issue-tracking/ja row did not scaffold"
 fi
 
 # Mixed pairing (found during PR #247's pre-merge-review, round 2): the
@@ -80,7 +80,7 @@ cat > "$project4/WORKFLOW-ADOPTION.md" <<'EOF'
 EOF
 adopt "$project4"
 if [ ! -f "$project4/.github/ISSUE_TEMPLATE/work-item.md" ]; then
-  fail "S127 — mixed pairing: current id with Dutch value 'ja' did not scaffold"
+  fail "S139 — mixed pairing: current id with Dutch value 'ja' did not scaffold"
 fi
 
 test_done
