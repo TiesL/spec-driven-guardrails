@@ -35,4 +35,19 @@ case "$header" in
 $header" ;;
 esac
 
+# Found during PR #259's pre-merge-review: the scenario's own Then clause
+# claims this distinction is documented in three places, but until now
+# only the seeded header was actually asserted on.
+own_adoption="$(cat "$TEST_REPO_ROOT/WORKFLOW-ADOPTION.md")"
+case "$own_adoption" in
+  *"not yet"*"trigger"*) : ;;
+  *) fail "S137 — expected this repo's own WORKFLOW-ADOPTION.md to carry the same distinction" ;;
+esac
+
+registry_skill="$(cat "$TEST_REPO_ROOT/skills/adoption-registry/SKILL.md")"
+case "$registry_skill" in
+  *"not yet"*"trigger"*) : ;;
+  *) fail "S137 — expected the adoption-registry skill to document the same distinction" ;;
+esac
+
 test_done
