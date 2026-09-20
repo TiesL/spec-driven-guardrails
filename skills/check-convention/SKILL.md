@@ -22,7 +22,7 @@ command names apply:
 2. **`deploy`** — actually rolls out to a target environment. Always
    remains a deliberate, manually started step: no automatic rollout on a
    merge — the same kind of control as the agreement that a merge only
-   happens after Ties' explicit confirmation (see "Wrapping up" in
+   happens after TiesL's explicit confirmation (see "Wrapping up" in
    `WORKFLOW.md`). See the `deploy-guards` skill for the conditions under
    which `deploy` may run.
 

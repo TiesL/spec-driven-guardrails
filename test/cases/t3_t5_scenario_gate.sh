@@ -8,7 +8,7 @@
 #
 # W42/#114: an issue's **Dekt:** field (pre-migration, historical/closed
 # issues) counts exactly the same as **Covers:** — a permanent exception
-# for this one script's issue-reading, confirmed with Ties, since rewriting
+# for this one script's issue-reading, confirmed with TiesL, since rewriting
 # the body of every historical issue is out of scope for this migration.
 
 set -uo pipefail

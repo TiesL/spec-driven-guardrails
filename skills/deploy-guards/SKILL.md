@@ -42,9 +42,9 @@ explicitly.
 
 1. Work on a feature branch; commit and push.
 2. Deploy that branch to **pre-production**; do the acceptance test there.
-3. If that goes well: Ties initiates the merge to `main` (see "Wrapping
+3. If that goes well: TiesL initiates the merge to `main` (see "Wrapping
    up" in `WORKFLOW.md`).
-4. Deploy `main` to **production**, after Ties' explicit approval.
+4. Deploy `main` to **production**, after TiesL's explicit approval.
 
 Without a pre-production environment, step 2 and the "Wrapping up"
 agreement conflict: verification can then only happen in production, but

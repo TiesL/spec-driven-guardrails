@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # install.sh — Pins this checkout to a tagged release, for a consumer who
-# doesn't want Ties' own multi-machine, always-follow-main usage (W37,
+# doesn't want TiesL's own multi-machine, always-follow-main usage (W37,
 # #79). Run this after cloning this repo, from inside the clone itself.
 #
 # Usage:
@@ -43,7 +43,7 @@ git fetch --tags --quiet
 tag="${1:-}"
 if [ -z "$tag" ]; then
   if ! tag="$(git describe --tags --abbrev=0 2>/dev/null)"; then
-    echo "Error: no tags found to pin to. Pass an explicit tag, or use main for Ties' own ongoing usage." >&2
+    echo "Error: no tags found to pin to. Pass an explicit tag, or use main for TiesL's own ongoing usage." >&2
     exit 1
   fi
   echo "No tag given — picked the latest tag: $tag"

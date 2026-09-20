@@ -15,7 +15,7 @@
 # W42/#114: issue bodies match both **Covers:** and the pre-migration
 # **Dekt:** field, permanently — unlike PRD.md/TEST-SCENARIOS.md (which get
 # a real cutover), a historical, possibly already-closed issue is not
-# something this migration rewrites. Confirmed with Ties.
+# something this migration rewrites. Confirmed with TiesL.
 #
 # Fail-open without gh or network: warn, don't block — same ground rule as
 # the deploy-guards and the merge guard (W10b).

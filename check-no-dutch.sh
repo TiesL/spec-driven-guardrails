@@ -61,7 +61,7 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 
 # Permanent exclusions — layer C (this repo's own self-adopted, frozen
 # copies, same treatment as the three external projects' equivalent
-# files), historical records, the separate epic #65 WIP track, and Ties'
+# files), historical records, the separate epic #65 WIP track, and TiesL's
 # own personal instruction file (not part of the shared product surface).
 # check-no-dutch.sh itself is excluded: its own marker-word list is a
 # necessary literal, not untranslated prose.

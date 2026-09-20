@@ -11,7 +11,7 @@ allowed-tools: Read, Grep, Glob, Bash
 
 ## Quality review before the merge
 
-Ties can't fully assess the technical output himself. The review must
+TiesL can't fully assess the technical output himself. The review must
 therefore produce *readable evidence* instead of reassurance.
 
 **When this runs.** As soon as the PR is open (or as soon as a push
@@ -176,7 +176,7 @@ p="$(pwd)"; target=$(readlink "$p/.claude/settings.json" 2>/dev/null); \
 
 Any output is a finding in the PR, one row per line — not a hard block
 (same fail-open philosophy as everything else here): a pending row is a
-question to put to Ties, not a reason by itself to refuse the merge.
+question to put to TiesL, not a reason by itself to refuse the merge.
 
 ## Substantiation gap as a finding
 

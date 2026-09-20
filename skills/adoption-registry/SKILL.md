@@ -54,7 +54,7 @@ kind of entry:
     reason.
   - An unanswered **`Standaard: vraag`** row: no blank question. Make a
     reasoned proposal, grounded in this project's actual content, and put
-    it to Ties for confirmation.
+    it to TiesL for confirmation.
   - An auto-seeded `yes` that never gets substantiated is, in practice, no
     different from the silent drift this whole mechanism was meant to
     prevent.
