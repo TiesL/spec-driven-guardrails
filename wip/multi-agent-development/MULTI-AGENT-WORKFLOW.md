@@ -926,33 +926,67 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 
 ### Standard Workflow Path
 
+```mermaid
+flowchart LR
+    Product[Product Assessment] --> Architect[Architect Design]
+    Architect --> QA[QA Strategy]
+    QA --> Dev[Fullstack Developer<br/>Implementation]
+    Dev --> Reviewer[Reviewer Gate]
+    Reviewer --> Release[Release]
+
+    Dev -. "1: architectural issue found" .-> Architect
+    Architect -. "refined design" .-> Dev
+
+    QA -. "2: requirement ambiguity found" .-> Product
+    Product -. "clarified requirement, forward again" .-> Architect
+
+    Reviewer -. "3: significant issues found" .-> Rework{{appropriate earlier phase}}
+    Rework -.-> Architect
+    Rework -.-> QA
+    Rework -.-> Dev
 ```
-Product Assessment → Architect Design → QA Strategy → Fullstack Developer Implementation → Reviewer Gate → Release
-```
+
+Solid arrows: the standard path. Dashed arrows: the three loop-back
+scenarios below, numbered to match.
 
 ### Common Loop-Back Scenarios
 
-```
-Fullstack Developer discovers architectural issue → back to Architect → refined design → back to Fullstack Developer
-QA finds requirement ambiguity → back to Product → clarified requirement → forward through Architect/QA/Fullstack Developer
-Reviewer identifies significant issues → back to appropriate phase for rework
-```
+1. Fullstack Developer discovers an architectural issue → back to
+   Architect → refined design → back to Fullstack Developer.
+2. QA finds a requirement ambiguity → back to Product → clarified
+   requirement → forward again through Architect/QA/Fullstack Developer.
+3. Reviewer identifies significant issues → back to whichever phase the
+   issue actually belongs to, for rework.
 
 ### Exception Path Examples
 
 **Security Hotfix**:
-```
-Product (abbreviated) → Architect (focused) → Fullstack Developer (implementation) → QA (focused) → Reviewer → Release
+```mermaid
+flowchart LR
+    P1[Product<br/>abbreviated] --> A1[Architect<br/>focused]
+    A1 --> D1[Fullstack Developer<br/>implementation]
+    D1 --> Q1[QA<br/>focused]
+    Q1 --> R1[Reviewer]
+    R1 --> Rel1[Release]
 ```
 
 **Refactoring**:
-```
-Architect (focused) → Fullstack Developer (implementation) → QA (regression-focused) → Reviewer → Release
+```mermaid
+flowchart LR
+    A2[Architect<br/>focused] --> D2[Fullstack Developer<br/>implementation]
+    D2 --> Q2[QA<br/>regression-focused]
+    Q2 --> R2[Reviewer]
+    R2 --> Rel2[Release]
 ```
 
 **Spike/POC**:
-```
-Product → Architect ↔ Fullstack Developer (iterative) → lightweight QA → Reviewer (internal-only) → decision on production approach
+```mermaid
+flowchart LR
+    P3[Product] --> A3[Architect]
+    A3 <--> D3[Fullstack Developer<br/>iterative]
+    D3 --> Q3[lightweight QA]
+    Q3 --> R3[Reviewer<br/>internal-only]
+    R3 --> Dec3[decision on<br/>production approach]
 ```
 
 ---
