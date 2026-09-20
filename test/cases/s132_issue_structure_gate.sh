@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S132 — Issue-structure gate (#242): the 4th traceability link, issue ->
 # acceptance-criteria structure.
-# Covers: F9
+# Covers: F29
 #
 # Found via #238's portfolio-mgt-agents audit: zero issues had any epic/
 # work-item structure — no AC<n>, no Covers: field, no linked work items —

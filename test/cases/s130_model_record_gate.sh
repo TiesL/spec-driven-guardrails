@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S130 — Model-record gate (#241 AC1): every pipeline stage's model choice
 # must carry a machine-readable marker, not just Review.
-# Covers: F9
+# Covers: F27
 #
 # Found via #238's portfolio-mgt-agents audit: only the Review stage ever
 # recorded a model in practice — Discovery/Planning/Test/Implementation

@@ -952,6 +952,58 @@ that could drift apart.
 No behavior change to existing single-agent-per-stage practice — this
 documents the principle so #65's future orchestration has it ready-made.
 
+### F27 — Machine-readable model-record markers (issue #241 AC1)
+
+`process-model-choice` was unenforceable in practice: only the Review
+stage ever recorded a model in `portfolio-mgt-agents` (#238);
+Discovery/Planning/Test/Implementation never did, and the skill's prose
+instruction had no mechanical check behind it. Each stage now carries a
+`<!-- model-record: stage=<Stage> model="..." effort="..." -->` marker.
+`model-record-gate.sh <pr-number>` checks a PR's own comments/description
+and the comments of every issue it closes for all five stages, reporting
+whichever are missing. Fails open (a warning, not a block) without `gh`.
+Same mechanism also catches Review recording the identical model as
+Implementation with no `same-model-exception` (#244 AC2) — see the
+Technical debt entries on this gate's own known gaps (spelling-mismatch
+false negatives, comment-ordering heuristic).
+
+### F28 — Machine-readable finding-carryforward markers (issue #241 AC2)
+
+A review finding could silently vanish between fresh-context rounds with
+nothing to catch it — `portfolio-mgt-agents` PR #4: round 1 flagged a
+missing entry, round 2 never carried it forward, merged 17 seconds later.
+Every finding now carries its own
+`<!-- finding:<slug> status=open|resolved -->` marker.
+`finding-carryforward-gate.sh <pr-number>` compares the two most recent
+`pre-merge-review:done` comments and reports any slug the previous round
+left open that doesn't reappear (as still-open or resolved) in the new
+one. With only one review round so far, or without `gh`, it fails open.
+
+### F29 — The 4th traceability link: issue structure (issue #242)
+
+Links 1-3 (F13) check PRD↔scenario, scenario↔issue, and PR↔issue — none
+of them look at the issue's own shape. `portfolio-mgt-agents` had issues
+with no epic/work-item structure at all: no `AC<n>` heading, no
+`**Covers:**` field, no linked work items. `issue-structure-gate.sh
+<pr-number>` closes that gap, run from `pre-merge-review` like links 2/3:
+for every issue a PR closes, a work item missing its `AC<n>` heading or
+`Covers:`/pre-migration `Dekt:` field is a finding (one per missing
+piece); an epic whose Work items list has no real `#<n>` entry (only the
+unfilled template placeholder) is a finding. A well-formed issue produces
+none. Fails open without `gh`.
+
+### F30 — `adopt.sh` untracks a managed path already tracked before adoption (issue #243 AC2)
+
+`CLAUDE.md` committed as a real, tracked file before `adopt.sh` ever ran
+made `write_gitignore_block`'s entry a no-op retroactively — git doesn't
+stop tracking a path just because it later appears in `.gitignore`.
+`untrack_managed_paths()` runs `git rm --cached` on any of the three
+managed paths (`CLAUDE.md`, `.claude/settings.json`, `.claude/skills/`)
+already tracked, keeping the working-tree file (now the real symlink
+`adopt.sh` creates, never deleted) and letting the `.gitignore` entry
+actually take effect. A project where a path was never tracked is
+unaffected.
+
 ---
 
 ## Non-functional characteristics
