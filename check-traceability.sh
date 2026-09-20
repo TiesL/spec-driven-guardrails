@@ -102,10 +102,16 @@ done
 # A PRD with no IDs is not an error but a warning. One of the four
 # existing projects is exactly this case; failing hard there would disable
 # the script immediately, and then it checks nothing anywhere.
+#
+# No early exit here (#275): this used to return immediately, which
+# silently dropped the Dekt-leftover check, the malformed-Covers-field
+# check, and PRD.md's own Covers-token resolution below — none of which
+# actually depend on PRD.md having ID headings at all. Only the one check
+# that genuinely can't be evaluated without prd_ids (scenario Covers:
+# tokens resolving against PRD functionality IDs) is skipped specifically,
+# where it's called.
 if [ -z "$prd_ids" ]; then
   warn "PRD.md has no ID headings — link 1 can't be checked here"
-  [ "$errors" -eq 0 ] && exit 0
-  exit 1
 fi
 
 # A leftover Dekt: field, in either file, is reported explicitly rather
@@ -147,7 +153,15 @@ $(covers_invalid "${pair#*:}")
 EOF
 done
 
-check_references "$scenarios" "TEST-SCENARIOS.md" "$prd_ids" "PRD.md"
+# Skipped specifically, not via an early exit, when PRD.md has no ID
+# headings: every scenario's Covers: token would otherwise be reported as
+# "doesn't exist in PRD.md" against an empty target set — noise, not a
+# real finding, exactly the flood the original warn-instead-of-fail
+# design already avoids. PRD.md's own Covers-token resolution below
+# doesn't depend on prd_ids at all, so it isn't guarded.
+if [ -n "$prd_ids" ]; then
+  check_references "$scenarios" "TEST-SCENARIOS.md" "$prd_ids" "PRD.md"
+fi
 check_references "$prd" "PRD.md" "$scenario_ids" "TEST-SCENARIOS.md"
 
 # Link 1 itself: every functionality is covered by at least one scenario.
