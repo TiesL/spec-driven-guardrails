@@ -8,7 +8,7 @@ This project is developed from multiple computers. Follow this workflow in every
 - All work happens on a short-lived branch from the current `main`, named after the issue it implements:
   - `feature/<issue-number>-<kebab-case-description>` for new functionality/epics
   - `fix/<issue-number>-<kebab-case-description>` for bug fixes (including trivial ones, such as documentation corrections)
-- **No request leads straight to development.** What's being built is specified in an issue first — see the `write-spec` skill for the epic/work-item templates. The branch name can't even be written without that issue's number, and `git-guardrails`/the native `pre-commit` hook enforce the pattern.
+- **No request leads straight to development.** What's being built is specified in an issue first — see the `write-spec` skill for the epic/work-item templates. The branch name can't even be written without that issue's number. **This includes editing a tracked file at all, even a draft you plan to show before committing** — `git-guardrails`/the native `pre-commit` hook enforce the branch-naming and commit-on-main parts of this mechanically, but neither one sees an `Edit`/`Write` tool call (only `Bash`), so nothing mechanical stops the file itself from being changed before the issue and branch exist. "I'll draft it on `main` and ask before committing" is exactly the violation this rule rules out, not an exception to it — create the issue and branch first, then edit.
 
 ## When starting a session
 
@@ -25,6 +25,8 @@ This project is developed from multiple computers. Follow this workflow in every
 - Commit messages carry no "Co-Authored-By" trailer — enforced via `attribution.commit: ""` in `settings/session-hooks.json`, not dependent on whether the executing session remembers to do so.
 
 ## Wrapping up
+
+**Confirmation is required only before merge (step 4 below).** Committing, pushing, opening a PR, and running the review all proceed without asking — do not invent an extra approval checkpoint at any of those points, even right after being corrected on a different mistake. If something about the change is genuinely unclear, ask that specific question directly instead of adding a generic "approve to proceed?" gate.
 
 1. Once the change is complete and tested (and, where applicable, manually verified): open a PR with `gh pr create`. If the PR refers to an issue (`Closes #N`), put that link in the **PR description itself**, not only in a commit message: GitHub populates `closingIssuesReferences` — the field that issue-linking checks actually test against — exclusively from the PR title/body. A commit with `Closes #N` does close the issue on a merge to `main`, but such a check won't see the link while the PR is still open.
 2. **Run the quality review immediately, in parallel with CI, not gated on CI being green** — don't ask whether to, don't wait to be asked, don't wait for CI first; see the `pre-merge-review` skill. The review's marker is pinned to the commit it reviewed, so a commit that lands afterward (a fixup, or a fix for a red CI) simply needs a fresh review, whenever it runs — nothing slips through unreviewed.
