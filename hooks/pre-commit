@@ -82,4 +82,30 @@ if git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
   fi
 fi
 
+# #263: ./check is this project's own local CI entry point. Without this,
+# a commit can land locally with failing lint/type/tests, and the first
+# place that surfaces is the GitHub Actions run. Fail-closed on a real
+# failure — that's the entire point of wiring it in; an escape hatch
+# already exists above (CLAUDE_WORKFLOW_GUARDRAILS_OFF, checked before
+# this point is ever reached). Fail-open when ./check itself can't run at
+# all (missing, not executable): "couldn't verify" is not the same as
+# "verified and red" — same distinction the missing-rules.sh case above
+# already makes.
+project_dir="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -n "$project_dir" ] && [ -x "$project_dir/check" ]; then
+  check_output="$("$project_dir/check" 2>&1)"
+  check_status=$?
+  if [ "$check_status" -ne 0 ]; then
+    echo "Blocked by the git hook: ./check failed." >&2
+    echo >&2
+    echo "$check_output" >&2
+    echo >&2
+    echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+    echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
+    exit 1
+  fi
+elif [ -n "$project_dir" ]; then
+  echo "warning: no executable ./check at the project root — commit-time check skipped." >&2
+fi
+
 exit 0
