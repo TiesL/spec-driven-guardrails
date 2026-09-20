@@ -1376,7 +1376,7 @@ something new is being added.
   claim
 
 ### S130 — Every pipeline stage's model choice is machine-checkable, not just Review
-**Covers:** F9
+**Covers:** F27
 - Given: a PR and the issue(s) it closes, each carrying zero or more
   `<!-- model-record: stage=... -->` markers across their comments
 - When: `model-record-gate.sh <pr-number>` runs
@@ -1388,7 +1388,7 @@ something new is being added.
   the identical pairing with that field present is not
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
-**Covers:** F9
+**Covers:** F28
 - Given: a PR's previous `pre-merge-review:done` comment left a finding
   marked `<!-- finding:<slug> status=open -->`
 - When: `finding-carryforward-gate.sh <pr-number>` runs after a new
@@ -1399,7 +1399,7 @@ something new is being added.
   nothing is reported
 
 ### S132 — The 4th traceability link: an issue's own AC/Covers/work-item structure
-**Covers:** F9
+**Covers:** F29
 - Given: the issue(s) a PR closes
 - When: `issue-structure-gate.sh <pr-number>` runs
 - Then: a work item issue with no `### AC<n>` heading, or no `**Covers:**`
@@ -1440,7 +1440,7 @@ something new is being added.
   a project that answers `yes` anyway
 
 ### S134 — A managed path already tracked before adoption is untracked
-**Covers:** F9
+**Covers:** F30
 - Given: `CLAUDE.md` committed as a real, tracked file before `adopt.sh`
   ever ran
 - When: `adopt.sh` runs

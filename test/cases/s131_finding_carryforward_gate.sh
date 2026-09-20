@@ -2,7 +2,7 @@
 # S131 — Finding carry-forward gate (#241 AC2): an open finding from the
 # previous review round must reappear in the next one, not vanish because
 # that round ran fresh-context.
-# Covers: F9
+# Covers: F28
 #
 # Found via #238 (portfolio-mgt-agents PR #4): round 1 flagged a missing
 # Decision Log entry; round 2 (fresh context) never carried it forward;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S134 — A managed path already tracked before adoption gets untracked,
 # so the .gitignore entry adopt.sh writes actually takes effect (#243 AC2).
-# Covers: F9
+# Covers: F30
 #
 # Found via #238 (portfolio-mgt-agents): CLAUDE.md was committed as an
 # absolute, machine-local symlink before adoption ran; .gitignore's
