@@ -39,9 +39,12 @@ status_clean=$?
 [ "$status_clean" -eq 0 ] || fail "S145 — a push was blocked despite a clean gitleaks scan, got: $output_clean"
 
 # Case 2 (AC2): gitleaks finds something -> push blocked, output shown.
+# Exits 2, per the hook's own --exit-code 2 flag, matching a real finding
+# — not the plain 1 gitleaks also uses for its own internal errors (S145
+# case 5 below).
 project_leak="$(setup_pushable_project gitleaks-leak)"
 adopt "$project_leak"
-fakebin_leak="$(fake_gitleaks_bin 'echo "FAKE LEAK FOUND"; exit 1')"
+fakebin_leak="$(fake_gitleaks_bin 'echo "FAKE LEAK FOUND"; exit 2')"
 output_leak="$(cd "$project_leak" && PATH="$fakebin_leak:$PATH" git push origin feature/1-something 2>&1)"
 status_leak=$?
 [ "$status_leak" -ne 0 ] || fail "S145 — a push was not blocked despite a gitleaks finding"
@@ -62,10 +65,22 @@ assert_contains "S145 — a warning names the missing gitleaks" "gitleaks not fo
 # Case 4 (AC4): the existing escape hatch also covers this guard.
 project_off="$(setup_pushable_project gitleaks-guard-off)"
 adopt "$project_off"
-fakebin_off="$(fake_gitleaks_bin 'exit 1')"
+fakebin_off="$(fake_gitleaks_bin 'exit 2')"
 output_off="$(cd "$project_off" && PATH="$fakebin_off:$PATH" CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git push origin feature/1-something 2>&1)"
 status_off=$?
 [ "$status_off" -eq 0 ] || fail "S145 — the escape hatch did not let a push through despite a gitleaks finding, got: $output_off"
 assert_contains "S145 — a warning names the disabled guard" "disabled via CLAUDE_WORKFLOW_GUARDRAILS_OFF" "$output_off"
+
+# Case 5 (found during PR #270's pre-merge-review): gitleaks itself
+# erroring (exit 1, not the finding-specific exit 2) fails open rather
+# than being misreported as a finding — "couldn't verify" must not be
+# conflated with "verified and clean" in the other direction either.
+project_error="$(setup_pushable_project gitleaks-tool-error)"
+adopt "$project_error"
+fakebin_error="$(fake_gitleaks_bin 'echo "some internal gitleaks error" >&2; exit 1')"
+output_error="$(cd "$project_error" && PATH="$fakebin_error:$PATH" git push origin feature/1-something 2>&1)"
+status_error=$?
+[ "$status_error" -eq 0 ] || fail "S145 — a push was blocked by a gitleaks tool error (not a real finding), got: $output_error"
+assert_contains "S145 — a warning names the scan failure" "gitleaks failed to run" "$output_error"
 
 test_done

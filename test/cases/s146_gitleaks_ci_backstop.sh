@@ -16,7 +16,7 @@ check_gitleaks_step() {
   [ -f "$path" ] || { fail "S146 — $path is missing"; return; }
 
   local step
-  step="$(grep -A10 "name: Secret scan (gitleaks)" "$path")"
+  step="$(grep -A12 "name: Secret scan (gitleaks)" "$path")"
   [ -n "$step" ] || fail "S146 — $label has no 'Secret scan (gitleaks)' step"
 
   case "$step" in
