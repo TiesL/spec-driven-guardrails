@@ -1534,3 +1534,24 @@ something new is being added.
   fails open, with a loud warning that the commit-time check was
   skipped; the existing `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch
   also covers this guard, not only the branch guard
+
+### S145 — hooks/pre-push runs gitleaks, blocking on a real finding
+**Covers:** F17
+- Given: an adopted project pushing to a real remote, with `gitleaks` on
+  `PATH`
+- When: `git push` runs
+- Then: a clean scan doesn't block; a finding blocks the push and shows
+  gitleaks' own output; no `gitleaks` on `PATH` at all fails open, with a
+  loud warning that the push-time scan was skipped; the existing
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch also covers this guard —
+  unconditional on repo visibility throughout, no network lookup involved
+
+### S146 — A gitleaks scan runs in CI too, independent of hooks/pre-push
+**Covers:** F17
+- Given: this repo's own `.github/workflows/ci.yml` and the
+  `templates/ci.yml` adopted projects copy
+- When: read
+- Then: both include an unconditional "Secret scan (gitleaks)" step
+  calling `gitleaks git`, and a `fetch-depth: 0` checkout so the scan
+  sees full history, not just the shallow-clone tip — a backstop for the
+  pre-push hook, which is bypassable with `--no-verify`
