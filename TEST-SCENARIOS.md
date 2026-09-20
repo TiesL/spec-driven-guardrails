@@ -1592,3 +1592,17 @@ something new is being added.
   reported; the same heading appearing more than once is reported; a
   range header expands to every ID in between, not just its two named
   endpoints
+
+### S148 — check-traceability.sh's no-ID-headings warning doesn't mask other checks
+**Covers:** F13
+- Given: a `PRD.md` with no ID headings (a warning, not an error — one
+  real adopted project is exactly this case) and a `TEST-SCENARIOS.md`
+  with a leftover `**Dekt:**` field
+- When: `check-traceability.sh` runs
+- Then: the Dekt: leftover is still reported and the exit status is
+  non-zero, and the "PRD.md has no ID headings" warning still appears
+  unchanged; `PRD.md`'s own `Covers:` token resolution against
+  `TEST-SCENARIOS.md`'s IDs still runs (doesn't depend on PRD IDs); a
+  scenario's own `Covers:` token pointing at a PRD functionality is not
+  wrongly checked against an empty PRD-ID set — that direction alone
+  stays skipped, since it's genuinely inapplicable without PRD IDs
