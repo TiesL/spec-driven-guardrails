@@ -1606,3 +1606,18 @@ something new is being added.
   scenario's own `Covers:` token pointing at a PRD functionality is not
   wrongly checked against an empty PRD-ID set — that direction alone
   stays skipped, since it's genuinely inapplicable without PRD IDs
+
+### S149 — wait-for-ci.sh enforces the 5min-then-1min CI-polling cadence
+**Covers:** F33
+- Given: a PR whose CI run is initially pending
+- When: `wait-for-ci.sh <pr-number>` runs
+- Then: it doesn't query CI status before the initial wait elapses; it
+  polls repeatedly while any check is still pending, and stops once
+  every check reaches a terminal state; it exits 0 and reports "all
+  checks passed" when every terminal state is a passing one (SUCCESS,
+  SKIPPED, NEUTRAL); it exits non-zero and prints each check's name and
+  state when any terminal state isn't; with no `gh` on `PATH`, or a
+  failed lookup, it exits non-zero rather than silently reporting
+  success; a PR with zero checks at all is reported as inconclusive
+  (non-zero), not as "all checks passed" — there's nothing to have
+  passed

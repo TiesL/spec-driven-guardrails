@@ -39,13 +39,14 @@ pending_ids "$project" > "$with"
 
 grep -qx 'ci-convention' "$with" || fail "R3 — ci-convention did not appear after adding an executable check"
 
-# And nothing else changes: the difference is exactly the four IDs attached to
-# `has-check-command`. `ci-convention` is about what the CI does,
+# And nothing else changes: the difference is exactly the five IDs attached
+# to `has-check-command`. `ci-convention` is about what the CI does,
 # `ci-on-pr-and-main` about when it runs, `ci-link-3-hard-block` and
-# `ci-detects-main-outside-pr` about extra steps it also carries out;
-# answerable independently, but dependent on the same predicate.
+# `ci-detects-main-outside-pr` about extra steps it also carries out,
+# `ci-wait-for-cadence` (#265) about how merging waits for it; answerable
+# independently, but dependent on the same predicate.
 difference="$(comm -13 "$pkg_only" "$with" | tr '\n' ' ')"
-[ "$difference" = "ci-convention ci-detects-main-outside-pr ci-link-3-hard-block ci-on-pr-and-main " ] \
-  || fail "R3 — difference is '$difference', expected 'ci-convention ci-detects-main-outside-pr ci-link-3-hard-block ci-on-pr-and-main'"
+[ "$difference" = "ci-convention ci-detects-main-outside-pr ci-link-3-hard-block ci-on-pr-and-main ci-wait-for-cadence " ] \
+  || fail "R3 — difference is '$difference', expected 'ci-convention ci-detects-main-outside-pr ci-link-3-hard-block ci-on-pr-and-main ci-wait-for-cadence'"
 
 test_done

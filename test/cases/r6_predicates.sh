@@ -33,7 +33,7 @@ while IFS='|' read -r name has_pkg content has_check expected_ci expected_deploy
   pending_ids "$project" > "$before"
 
   # Then: the outcome per combination is exactly what the table specifies.
-  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "ci-wait-for-cadence:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${pair%%:*}"; expected="${pair#*:}"
     if grep -qx "$id" "$before"; then actual=ja; else actual=nee; fi
     if [ "$actual" != "$expected" ]; then
@@ -57,7 +57,7 @@ while IFS='|' read -r name has_pkg content has_check expected_ci expected_deploy
   # cannot do that by construction: what adopt.sh does not seed simply stays
   # open, so the union remains unchanged. Both predicate
   # entries have `Default: yes`, so applicable here means seeded.
-  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "deploy-guards:$expected_deploy"; do
+  for pair in "ci-convention:$expected_ci" "ci-on-pr-and-main:$expected_ci" "ci-link-3-hard-block:$expected_ci" "ci-detects-main-outside-pr:$expected_ci" "ci-wait-for-cadence:$expected_ci" "deploy-guards:$expected_deploy"; do
     id="${pair%%:*}"; expected="${pair#*:}"
     if grep -qx "$id" "$seeded"; then actual=ja; else actual=nee; fi
     if [ "$actual" != "$expected" ]; then
@@ -66,13 +66,14 @@ while IFS='|' read -r name has_pkg content has_check expected_ci expected_deploy
   done
 
   # And the total: 23 entries always apply, plus every applicable
-  # predicate entry. `has-check-command` (#248) now contributes four -
+  # predicate entry. `has-check-command` (#248) now contributes five -
   # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
-  # runs), `ci-link-3-hard-block` (PR without issue) and
-  # `ci-detects-main-outside-pr` (commit on main without PR). Catches
+  # runs), `ci-link-3-hard-block` (PR without issue),
+  # `ci-detects-main-outside-pr` (commit on main without PR), and
+  # `ci-wait-for-cadence` (#265: how merging waits for it). Catches
   # seed logic that is bulk-wrong.
   expected_count=23
-  [ "$expected_ci" = "ja" ] && expected_count=$((expected_count + 4))
+  [ "$expected_ci" = "ja" ] && expected_count=$((expected_count + 5))
   [ "$expected_deploy" = "ja" ] && expected_count=$((expected_count + 1))
   seeded_count="$(grep -c . "$seeded")"
   if [ "$seeded_count" -ne "$expected_count" ]; then

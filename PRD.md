@@ -1051,6 +1051,26 @@ resolved.
 Building this check surfaced the pre-existing S78/S79 gap this issue's
 own AC2 names (fixed directly, given real F31), plus seven more (#272).
 
+### F33 — `wait-for-ci.sh` enforces the CI-polling cadence as a script (issue #265)
+
+`WORKFLOW.md`'s merge step stated the 5-minutes-then-1-minute CI-polling
+cadence (issue #215: this repo's own CI clusters at 5.5-8 minutes, so a
+short fixed interval produces a dozen-plus premature "still pending"
+checks) as prose. That rule already lived in always-loaded context, so
+the gap wasn't discoverability — an agent could still improvise a
+different interval ad hoc, the same "agreement in prose, mechanism in a
+script" gap `check-pr-issue-link.sh`/`check-main-via-pr.sh` already
+closed for links 3 and W27.
+
+`templates/wait-for-ci.sh` (scaffolded alongside those two, same
+has-check-command gate — meaningless without CI to poll) waits 5 minutes
+without checking at all, then polls `gh pr checks` every 1 minute until
+every check reaches a terminal state, printing each check's name and
+state and exiting non-zero if any of them didn't pass. Kept in sync with
+its root copy the same way as `check-traceability.sh` (#230's own
+pattern, extended here). `WORKFLOW.md`'s merge step now directs its use
+directly instead of describing the interval only as prose.
+
 ---
 
 ## Non-functional characteristics
