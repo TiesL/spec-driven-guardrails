@@ -1617,4 +1617,7 @@ something new is being added.
   checks passed" when every terminal state is a passing one (SUCCESS,
   SKIPPED, NEUTRAL); it exits non-zero and prints each check's name and
   state when any terminal state isn't; with no `gh` on `PATH`, or a
-  failed lookup, it exits non-zero rather than silently reporting success
+  failed lookup, it exits non-zero rather than silently reporting
+  success; a PR with zero checks at all is reported as inconclusive
+  (non-zero), not as "all checks passed" — there's nothing to have
+  passed

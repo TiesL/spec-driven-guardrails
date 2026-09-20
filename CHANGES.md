@@ -186,6 +186,24 @@ the shared parser warns if it has no `Applies if`.
   workflow-level) — and must otherwise add it by hand or re-scaffold.
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
+## ci-wait-for-cadence
+
+- **Question:** Does merging in this project wait for CI via `wait-for-ci.sh` instead of polling by hand?
+- **Default:** yes
+- **Applies if:** has-check-command
+- **Yes means:** `wait-for-ci.sh` is scaffolded (`adopt.sh`, see
+  `templates/wait-for-ci.sh`) and used at merge time instead of an
+  ad-hoc `gh pr checks` poll loop. The 5-minutes-then-1-minute cadence
+  (issue #215: this repo's own CI clusters at 5.5-8 minutes, so a short
+  fixed interval produces a dozen-plus premature "still pending" checks)
+  was previously stated only as prose in `WORKFLOW.md`'s merge step —
+  already always-loaded context, but nothing stopped an agent from
+  improvising a shorter interval anyway. This question makes the
+  script's existence visible to a project that adopted before it
+  shipped (#265), the same way `ci-link-3-hard-block`/
+  `ci-detects-main-outside-pr` make their own scripts visible.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/279
+
 ## traceability-link-1
 
 - **Question:** Must this project offline-check that every functionality in `PRD.md` is covered by at least one scenario in `TEST-SCENARIOS.md`?

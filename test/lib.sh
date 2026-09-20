@@ -260,7 +260,7 @@ path_without_gh() {
   local bin="$SANDBOX/nogh"
   mkdir -p "$bin"
   local t path
-  for t in bash sh git python3 find sort head mktemp rm cat dirname basename tr grep sed awk chmod mkdir cp tar env printf; do
+  for t in bash sh git python3 find sort head mktemp rm cat dirname basename tr grep sed awk chmod mkdir cp tar env printf sleep date; do
     path="$(command -v "$t" 2>/dev/null)" && ln -sf "$path" "$bin/$t"
   done
   echo "$bin"

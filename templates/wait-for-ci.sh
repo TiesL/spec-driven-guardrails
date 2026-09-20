@@ -56,50 +56,57 @@ is_passing() {
   esac
 }
 
+# One query per poll, name+state together — not a separate --json state
+# pass for the pending-loop and a second --json name,state pass afterward
+# just to print names: two queries invite exactly the drift a single
+# source of truth avoids, and cost an avoidable extra network round trip
+# each time. Found during PR #279's pre-merge-review.
 while true; do
-  states="$(gh pr checks "$pr_number" --json state --jq '.[].state' 2>&1)"
+  detail="$(gh pr checks "$pr_number" --json name,state --jq '.[] | "\(.name)\t\(.state)"' 2>&1)"
   status=$?
   if [ "$status" -ne 0 ]; then
-    echo "wait-for-ci: couldn't consult PR #$pr_number's checks: $states" >&2
+    echo "wait-for-ci: couldn't consult PR #$pr_number's checks: $detail" >&2
     exit 1
   fi
 
   still_pending=0
-  while IFS= read -r state; do
+  while IFS="$(printf '\t')" read -r _name state; do
     [ -n "$state" ] || continue
     if is_pending "$state"; then
       still_pending=1
       break
     fi
   done <<EOF
-$states
+$detail
 EOF
 
   [ "$still_pending" -eq 1 ] || break
   sleep "$poll_interval"
 done
 
-# Terminal state reached for every check. Print the full detail (name +
-# state) regardless of outcome, then decide the exit code from the same
-# state list already fetched above — not from gh pr checks' own exit
-# code, whose non-zero meaning isn't documented precisely enough to rely
-# on here (a real distinction between "still pending" and "genuinely
-# failed" matters and gh's own top-level exit-code docs don't spell it
-# out).
-detail="$(gh pr checks "$pr_number" --json name,state --jq '.[] | "\(.name): \(.state)"' 2>&1)"
-detail_status=$?
-if [ "$detail_status" -ne 0 ]; then
-  echo "wait-for-ci: couldn't consult PR #$pr_number's checks: $detail" >&2
+# A PR with zero checks at all isn't "all checks passed" — there is
+# nothing to have passed. Reported as inconclusive, not silent success:
+# the whole point of this script is answering whether it's safe to ask
+# for merge confirmation, and "no checks ran" doesn't answer that. Found
+# during PR #279's pre-merge-review (untested edge case in round 1).
+if [ -z "$detail" ]; then
+  echo "wait-for-ci: PR #$pr_number has no checks at all — nothing to wait for or confirm." >&2
   exit 1
 fi
-printf '%s\n' "$detail"
+
+while IFS="$(printf '\t')" read -r name state; do
+  [ -n "$name" ] || continue
+  echo "$name: $state"
+done <<EOF
+$detail
+EOF
 
 all_pass=1
-while IFS= read -r state; do
+while IFS="$(printf '\t')" read -r _name state; do
   [ -n "$state" ] || continue
   is_passing "$state" || all_pass=0
 done <<EOF
-$states
+$detail
 EOF
 
 if [ "$all_pass" -eq 1 ]; then
