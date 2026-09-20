@@ -254,6 +254,19 @@ if [ -x "$target/check-traceability.sh" ]; then
   fi
 fi
 
+# --- 3e. test/cases file <-> TEST-SCENARIOS.md heading, 1:1 (#260) ---------
+# Repo-specific, not something an adopted project carries (its own test
+# suite, if any, doesn't follow this convention) — gated on the script's
+# own presence, same reasoning as 3c/3d: a sandboxed copy of this repo is
+# checked the same way as the real one.
+if [ -x "$target/check-scenario-file-sync.sh" ]; then
+  echo "check: test/cases <-> TEST-SCENARIOS.md heading sync"
+  if ! sync_output="$("$target/check-scenario-file-sync.sh" "$target" 2>&1)"; then
+    report_error "check-scenario-file-sync.sh reported a problem:"
+    printf '%s\n' "$sync_output" | sed 's/^/    /' >&2
+  fi
+fi
+
 # --- 3e. Yes-answered NFR without its PRD.md subsection yet (#134) ----------
 # A warning, not an error: a row answered "yes" a moment ago deserves a
 # short, visible grace period before its PRD.md subsection exists. Without
