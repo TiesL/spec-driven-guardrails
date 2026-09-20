@@ -135,18 +135,31 @@ done
 #   distinct failure mode from "same model", not folded into it.
 # - `same-model-exception="..."` must have a non-empty reason;
 #   `same-model-exception=""` no longer satisfies the exception.
-# - Comparison is case-insensitive after trimming — "Claude Sonnet 5" and
-#   "claude sonnet 5" are the same model spelled differently, not two
-#   different ones. This does not catch every possible respelling (e.g.
-#   an abbreviated vs. full name); it catches exact-modulo-case, which is
-#   the actual failure mode worth guarding against here.
+# - Comparison uses normalize_model (#268, replacing a plain case-fold
+#   found insufficient during PR #267's pre-merge-review, round 2:
+#   "Sonnet 5" vs. "claude-sonnet-5" — same model, different label style
+#   — case-folding alone didn't equate those either). Structural, not a
+#   per-model alias table: strips the vendor-prefix word and a trailing
+#   8-digit snapshot-date suffix, then folds every remaining separator
+#   and case difference away. Exact-modulo-format, not exact-modulo-
+#   spelling — an abbreviated name still wouldn't match — but it covers
+#   the display-name-vs-API-id mismatch actually seen in practice without
+#   ever hardcoding a model name.
+normalize_model() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -E 's/^[[:space:]]*claude[- ]*//' \
+    | sed -E 's/-[0-9]{8}$//' \
+    | sed -E 's/[^a-z0-9]+/ /g' \
+    | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
+}
 impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | tail -1)"
 review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | tail -1)"
 if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
   impl_model="$(grep -oE 'model="[^"]*"' <<<"$impl_line" | head -1 | sed 's/^model="//; s/"$//')"
   review_model="$(grep -oE 'model="[^"]*"' <<<"$review_line" | head -1 | sed 's/^model="//; s/"$//')"
-  impl_model_norm="$(printf '%s' "$impl_model" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-  review_model_norm="$(printf '%s' "$review_model" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  impl_model_norm="$(normalize_model "$impl_model")"
+  review_model_norm="$(normalize_model "$review_model")"
   if [ -n "$impl_model_norm" ] && [ -n "$review_model_norm" ] \
     && [ "$impl_model_norm" = "$review_model_norm" ] \
     && ! grep -qE 'same-model-exception="[^"]+"' <<<"$review_line"; then
