@@ -53,7 +53,15 @@ heading_ids="$(mktemp)"
 trap 'rm -f "$file_ids" "$heading_ids"' EXIT
 
 # --- Collect every ID a test file's header comment claims, one
-# "<ID> <basename>" pair per line.
+# "<ID> <basename>" pair per line. [rst] deliberately, not a wildcard:
+# R/S/T is this repo's own fixed, documented prefix set (CONTEXT.md's
+# "F/S/R/T ID prefixes" — F is PRD-only). Unlike check-traceability.sh
+# (link 1, F13 decision c), which deliberately never hardcodes F/S so an
+# adopted project's own prefixes (tennis-admin's R/A/B/P) work unchanged,
+# this check is this repo's own internal test-suite convention, not
+# something scaffolded for adopted projects — a differently-prefixed
+# test/cases file here would be a naming mistake to fix, not a new
+# convention to silently support. Found during PR #273's pre-merge-review.
 for f in "$cases_dir"/[rst][0-9]*.sh; do
   [ -e "$f" ] || continue
   base="$(basename "$f")"
