@@ -122,10 +122,18 @@ adopt() {
   SPEC_DRIVEN_GUARDRAILS_DIR="$TEST_REPO_ROOT" "$TEST_REPO_ROOT/adopt.sh" "$1" >/dev/null 2>&1
 }
 
-# The pending IDs for a project, alphabetically, one per line.
+# The pending (never-answered) IDs for a project, alphabetically, one per
+# line. Scoped to the "Pending workflow changes" block specifically, not a
+# blanket "  - " grep over the whole output (#258): the resurfaced and
+# narrowed reports use the identical bullet shape for a row that *is*
+# answered, and a blanket grep can't tell those apart from a genuinely
+# pending (never-answered) one.
 pending_ids() {
-  "$TEST_REPO_ROOT/pending-changes.sh" "$1" 2>/dev/null \
-    | grep '^  - ' | sed 's/^  - //; s/ —.*//' | sort
+  "$TEST_REPO_ROOT/pending-changes.sh" "$1" 2>/dev/null | awk '
+    /^Pending workflow changes for this project/ { in_block = 1; next }
+    in_block && /^  - / { sub(/^  - /, ""); sub(/ —.*/, ""); print; next }
+    { in_block = 0 }
+  ' | sort
 }
 
 # The IDs adopt.sh seeded in the adoption table, alphabetically. Checks

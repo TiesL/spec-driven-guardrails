@@ -52,8 +52,18 @@ assert_contains "S85 — mentions the pre-migration notice" "pre-migration forma
 assert_contains "S85 — names ci-convention" "* ci-convention" "$output"
 assert_contains "S85 — names deploy-guards" "* deploy-guards" "$output"
 # <<< here-string, not a piped printf | grep -q: SIGPIPE/pipefail race,
-# see issue #218.
-if grep -qE '^  - (ci-convention|deploy-guards)( |$)' <<<"$output"; then
+# see issue #218. Scoped to the "Pending workflow changes" block itself
+# (#258, same fix as test/lib.sh's pending_ids()): ci-convention's own
+# "Applies if" narrowed since (#248), so with no package.json/check in
+# this fixture it now legitimately appears under the separate "may no
+# longer be asked" report below — that's a different, correct signal,
+# not the bug this check exists to catch.
+pending_block="$(awk '
+  /^Pending workflow changes for this project/ { in_block = 1; next }
+  in_block && /^  - / { print; next }
+  { in_block = 0 }
+' <<<"$output")"
+if grep -qE '^  - (ci-convention|deploy-guards)( |$)' <<<"$pending_block"; then
   fail "S85 — an already-answered old-format row was listed as a pending question"
 fi
 

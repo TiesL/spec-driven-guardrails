@@ -106,3 +106,26 @@ never-answered row.
 To re-confirm: keep the answer if it still holds, or change it, then add
 `(meaning v<N>)` (matching the entry's current version) to that row so it
 isn't reported again until the next real tightening.
+
+## When a row's "Applies if" narrows after it was already answered (#258)
+
+The mirror image of the above: instead of "Yes means" getting stricter, an
+entry's `**Applies if:**` predicate itself narrows, so a project that used
+to be asked stops being asked — with nothing telling it so. #248 is the
+first real case: `ci-convention` and its three siblings narrowed from
+`has-package-json` to `has-check-command`, silently dropping a project
+with an npm `scripts.check` but no root executable `check` (`tennis-admin`,
+`a2t-emails`) out of the asked set.
+
+Same signal, same field, same discipline as above — don't build a second
+mechanism for this. Whoever edits an `Applies if` predicate in a way that
+could narrow who it applies to bumps `**Meaning version:**` exactly like a
+material "Yes means" edit would. `pending-changes.sh` then buckets an
+already-answered row with a version bump by whether the predicate still
+holds for that project right now: still holds → the existing "meaning has
+changed" notice; no longer holds → a separate "this project may no longer
+be asked" notice, since there the answer itself isn't necessarily stale —
+the precondition that made the question relevant is what changed.
+
+Re-confirming is the same either way: keep or change the answer, then add
+`(meaning v<N>)` to the row so it isn't reported again for that version.
