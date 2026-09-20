@@ -15,6 +15,10 @@
 
 set -uo pipefail
 
+# Read once, used by both the branch guard below and the gitleaks scan
+# (#264) — stdin can only be consumed once, and both need every ref line.
+push_refs="$(cat)"
+
 target="$(readlink "${BASH_SOURCE[0]}" 2>/dev/null)"
 if [ -z "$target" ]; then
   echo "warning: the pre-push hook is no longer a symlink to claude-workflow — push check skipped." >&2
@@ -41,7 +45,7 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
   if [ "$remote_ref" = "refs/heads/$MAIN_BRANCH" ]; then
     blocked=1
   fi
-done
+done <<<"$push_refs"
 
 if [ "$blocked" -eq 1 ]; then
   echo "Blocked by the git hook: push to $MAIN_BRANCH." >&2
@@ -51,6 +55,73 @@ if [ "$blocked" -eq 1 ]; then
   echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
   echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
   exit 1
+fi
+
+# #264: a gitleaks scan of exactly what's about to reach the remote. A
+# secret only becomes a real leak once it leaves the machine — this is the
+# boundary, not commit time. Unconditional: no repo-visibility lookup (that
+# would add a network dependency and its own failure mode for a scan cheap
+# enough to always run). Fail-closed on a real finding; fail-open if
+# gitleaks itself can't run at all — same "couldn't verify" vs "verified
+# and clean" distinction as the missing-rules.sh case above.
+if command -v gitleaks >/dev/null 2>&1; then
+  project_dir="$(git rev-parse --show-toplevel 2>/dev/null)"
+  zero_sha_pattern='^0+$'
+  leak_output=""
+  error_output=""
+  leak_found=0
+  scan_errored=0
+  while read -r local_ref local_sha _remote_ref remote_sha; do
+    [ -n "${local_ref:-}" ] || continue
+    # A deleted ref (local_sha all-zero) pushes nothing new to scan.
+    [[ "$local_sha" =~ $zero_sha_pattern ]] && continue
+
+    if [[ "${remote_sha:-}" =~ $zero_sha_pattern ]]; then
+      # A new ref on the remote: no upper bound to diff against yet. Scan
+      # everything reachable from local_sha — a safe superset (may
+      # re-scan commits already covered by another pushed branch), never
+      # a gap.
+      log_opts="$local_sha"
+    else
+      log_opts="$remote_sha..$local_sha"
+    fi
+
+    # --exit-code 2 (default is 1) so a real finding is distinguishable
+    # from gitleaks itself failing to run (bad args, unreadable repo,
+    # internal error — also nonzero, but not the same thing). Conflating
+    # the two would misreport a tool error as "found a possible secret"
+    # and block on it — the opposite of this guard's own stated
+    # fail-open-when-can't-verify principle. Found during PR #270's
+    # pre-merge-review.
+    ref_output="$(gitleaks git "${project_dir:-.}" --log-opts="$log_opts" --redact --no-banner --exit-code 2 2>&1)"
+    ref_status=$?
+    if [ "$ref_status" -eq 2 ]; then
+      leak_found=1
+      leak_output="$leak_output
+$ref_output"
+    elif [ "$ref_status" -ne 0 ]; then
+      scan_errored=1
+      error_output="$error_output
+$ref_output"
+    fi
+  done <<<"$push_refs"
+
+  if [ "$leak_found" -eq 1 ]; then
+    echo "Blocked by the git hook: gitleaks found a possible secret in what's being pushed." >&2
+    echo >&2
+    echo "$leak_output" >&2
+    echo >&2
+    echo "If this is really necessary, turn off the guard explicitly for this one command:" >&2
+    echo "  CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 <command>" >&2
+    exit 1
+  fi
+
+  if [ "$scan_errored" -eq 1 ]; then
+    echo "warning: gitleaks failed to run on one or more refs — push-time secret scan skipped for those. Output:" >&2
+    echo "$error_output" >&2
+  fi
+else
+  echo "warning: gitleaks not found on PATH — push-time secret scan skipped." >&2
 fi
 
 exit 0

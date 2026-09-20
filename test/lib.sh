@@ -186,6 +186,21 @@ fake_gh_bin() {
   echo "$bin"
 }
 
+# Same shape as fake_gh_bin, for tests that need a deterministic `gitleaks`
+# instead of the real one (#264) — a real scan depends on what secrets
+# actually happen to be in a sandboxed fixture's history, which is not
+# what these tests are exercising. $1 is the fake gitleaks' script body.
+fake_gitleaks_bin() {
+  local bin="$SANDBOX/fakegitleaks"
+  mkdir -p "$bin"
+  {
+    echo '#!/usr/bin/env bash'
+    echo "$1"
+  } > "$bin/gitleaks"
+  chmod +x "$bin/gitleaks"
+  echo "$bin"
+}
+
 # Builds a shared fake `gh` for the merge-guard tests that returns a
 # literal marker (now sha-pinned, issue #225) and a literal checks answer
 # — the uniform cases. Deliberately narrow: no divergent error shapes. A
