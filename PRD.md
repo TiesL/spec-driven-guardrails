@@ -1004,6 +1004,53 @@ already tracked, keeping the working-tree file (now the real symlink
 actually take effect. A project where a path was never tracked is
 unaffected.
 
+### F31 — `adopt.sh`'s symlink install survives a relocated checkout (issue #56/W32)
+
+`adopt.sh` points `CLAUDE.md` at `$SPEC_DRIVEN_GUARDRAILS_DIR/WORKFLOW.md`
+and `.claude/settings.json` at its `settings/session-hooks.json` — both
+absolute symlinks, so a relocated checkout (a rename, a move) leaves
+every already-adopted project's symlinks dangling until `adopt.sh` runs
+again with the new location. Two things make that recoverable rather
+than a silent trap. First, re-running `adopt.sh` from the new location
+repoints both symlinks in one action, retroactively, no matter how many
+projects or machines are affected — a third run after that is a no-op.
+Second, a dangling `.claude/settings.json` (the checkout moved, but a
+project hasn't re-adopted yet) reports itself loudly at session start
+— "doesn't exist... run adopt.sh again" — instead of silently running no
+hooks at all, which is worse than an error: nothing would otherwise
+indicate the guardrails had gone quiet. A healthy symlink, or a project
+that was never adopted, stays silent either way — this is a diagnostic
+for exactly the broken-symlink state, not a general adoption check.
+
+### F32 — `test/cases` file ↔ `TEST-SCENARIOS.md` heading, enforced 1:1 (issue #260)
+
+The same mistake happened twice: a new `test/cases/s<n>_*.sh` file gets
+numbered without checking `TEST-SCENARIOS.md`'s actual existing scenario
+numbers, colliding with an unrelated pre-existing heading — #241/PR #249
+hit it, #250/PR #259 hit it again for four earlier files, both times
+caught only by hand during `pre-merge-review`. Nothing mechanical checked
+the correspondence at all: `scenario-gate.sh` (link 2) checks headings
+against issue `Covers:` fields, never against test-file names;
+`check-traceability.sh` (link 1) checks PRD-functionality ↔ scenario
+headings, not scenario-to-file correspondence.
+
+`check-scenario-file-sync.sh` closes that gap, wired into `check`. Ground
+truth for which IDs a file covers is its own header comment (the line
+right after the shebang) — `# S19-S23 — ...` (a range, hyphen), `# S52,
+S53, S59 — ...` (a discrete list, comma), prefixes may mix (`# T1, T2,
+S30 — ...`) — not the filename, which is a human mnemonic only (a
+range's filename typically names just its two endpoints). Reports, and
+fails, on: a file claiming an ID with no matching heading; a heading
+with no file claiming it; the same ID claimed by more than one file; the
+same heading appearing more than once. A curated `pending_excluded` list
+(same two-tier pattern as `check-no-dutch.sh`) exempts genuinely
+pre-existing orphan headings found while building this check but out of
+its own scope to resolve — tracked in #272, shrinking as each is
+resolved.
+
+Building this check surfaced the pre-existing S78/S79 gap this issue's
+own AC2 names (fixed directly, given real F31), plus seven more (#272).
+
 ---
 
 ## Non-functional characteristics

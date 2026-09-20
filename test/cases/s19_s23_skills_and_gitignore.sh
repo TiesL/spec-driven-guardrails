@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S19 through S23 — adopt.sh installs skills and manages the .gitignore block.
+# S19-S23 — adopt.sh installs skills and manages the .gitignore block.
 # Covers: F9
 #
 # This work item writes into other repos and migrates a tracked .gitignore.

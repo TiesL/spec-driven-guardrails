@@ -477,6 +477,30 @@ something new is being added.
 
 ---
 
+## Relocation and dangling symlinks
+
+### S78 — A single `adopt.sh` run fully repoints a project after a relocated checkout
+**Covers:** F31
+- Given: a project adopted from a checkout that then relocates (a rename,
+  a move — e.g. W32/#56)
+- When: `adopt.sh` runs again from the new location
+- Then: both `CLAUDE.md` and `.claude/settings.json` are repointed to the
+  new location in one action; a further run after that is a no-op
+
+### S79 — A dangling `.claude/settings.json` reports itself, instead of running no hooks silently
+**Covers:** F31
+- Given: `.claude/settings.json` points at a checkout location that no
+  longer exists (the relocation happened, this project hasn't re-adopted
+  yet)
+- When: a session starts
+- Then: it reports the missing directory and says to run `adopt.sh`
+  again, instead of silently running no hooks at all
+- And: a healthy symlink stays silent (no false alarm), and a project
+  that was never adopted (no `.claude/settings.json` at all) stays
+  silent too
+
+---
+
 ## Skills infrastructure
 
 ### S19 — `adopt.sh` installs per-skill symlinks
@@ -1555,3 +1579,16 @@ something new is being added.
   calling `gitleaks git`, and a `fetch-depth: 0` checkout so the scan
   sees full history, not just the shallow-clone tip — a backstop for the
   pre-push hook, which is bypassable with `--no-verify`
+
+### S147 — check-scenario-file-sync.sh enforces the 1:1 file-to-heading correspondence
+**Covers:** F32
+- Given: `test/cases/*.sh` files (each with a header comment naming the
+  ID(s) it covers, ranges with `-`, discrete lists with `,`) and
+  `TEST-SCENARIOS.md`'s `### <ID>` headings
+- When: `check-scenario-file-sync.sh` runs
+- Then: a file claiming an ID with no matching heading is reported; a
+  heading with no file claiming it is reported (unless on the curated
+  `pending_excluded` list); the same ID claimed by more than one file is
+  reported; the same heading appearing more than once is reported; a
+  range header expands to every ID in between, not just its two named
+  endpoints
