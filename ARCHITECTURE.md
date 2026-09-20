@@ -19,7 +19,7 @@ checkout to a tagged release, separate from `adopt.sh`.**
 itself. It validates a clean working directory, checks out a given (or
 otherwise the latest) tag, and reports the `SPEC_DRIVEN_GUARDRAILS_DIR`
 line the user puts in their shell profile. It doesn't adopt a project —
-that stays `adopt.sh`'s job. Ties' own multi-machine usage (clone, always
+that stays `adopt.sh`'s job. TiesL's own multi-machine usage (clone, always
 follow `main`) doesn't change: this is a second, explicitly chosen path,
 not a replacement.
 

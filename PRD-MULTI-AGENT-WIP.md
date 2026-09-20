@@ -6,7 +6,7 @@
 | Beoogde release | **TBD** — volgende release van de bestaande agentic development workflow |
 | Type work item | Voorstel voor een GitHub Epic en opvolgende work items |
 | Epic | [#65](https://github.com/TiesL/claude-workflow/issues/65) — Multi-agent softwareontwikkeling in de workflow (WIP-verkenning) |
-| Eigenaar | Ties / **TBD** |
+| Eigenaar | TiesL / **TBD** |
 | Laatst bijgewerkt | 4 september 2026 |
 
 > Dit document beschrijft een gewenste richting, geen definitieve architectuur of implementatieplan. Besluiten, concrete tooling en technische uitwerking blijven expliciet **TBD**.

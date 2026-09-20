@@ -1,7 +1,7 @@
 Herkomst van deze nulmeting
 
 Project:            tennis-invoicing
-Pad op vastlegdag:  /Users/ties/Projects/tennis-admin/tennis-invoicing
+Pad op vastlegdag:  ~/Projects/tennis-admin/tennis-invoicing
 Project-HEAD:       4888767c394bee6e4a3ee6b4ad0b58fea7022830
 claude-workflow:    7ab8806a69f4805a4ac35b1b1ab204cbb1ce0872
 Vastgelegd op:      2026-08-31

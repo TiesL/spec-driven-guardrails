@@ -9,7 +9,7 @@ project: `CHANGES.md`.
 ## personal-workflow-to-shareable-product — 2026-09-13
 
 Epic [#52](https://github.com/TiesL/spec-driven-guardrails/issues/52): from
-a workflow built for Ties' own multi-machine use into something a stranger
+a workflow built for TiesL's own multi-machine use into something a stranger
 could plausibly adopt — the rename to `spec-driven-guardrails`, the
 provider-agnostic boundary (naming only), full translation to English, a
 front page ordered for a non-technical reader first, and a tagged,
@@ -17,7 +17,7 @@ pinnable install path for a second user (W37, #79).
 
 ### Decided in W29 (#53)
 
-Design session with Ties, no code (AC3 of that work item) — four decisions
+Design session with TiesL, no code (AC3 of that work item) — four decisions
 that steered this epic, each with its reasoning. Follow-up items that
 anticipated this were updated: W31 (#55), W32 (#56), W33 (#57), W35 (#59),
 and epic #52 itself.
@@ -146,7 +146,7 @@ this: a developer who never saw the repo installs it using only
 #### 5. Installation and update model: a tagged, pinnable release
 
 **New, from the second opinion.** None of the four original decisions
-answered what "installing" means for someone who isn't Ties. The current
+answered what "installing" means for someone who isn't TiesL. The current
 model — a loose checkout, an environment variable, `adopt.sh` — is a model
 for one person on multiple machines, not for a consumer who doesn't want
 to follow main. This document previously explicitly excluded "a pinnable
@@ -157,14 +157,14 @@ reference here), which contradicted this release's own promise
 
 Decided: consumers pin a **tagged release** (building on W22/#35's
 existing tag/CHANGELOG mechanism from epic #11 — F15 correctly described
-that mechanism for Ties' own live-via-symlink usage; W37 builds a second,
+that mechanism for TiesL's own live-via-symlink usage; W37 builds a second,
 pinnable path on top of it, not a replacement); the loose-checkout-plus-
-env-var model continues to exist alongside it for Ties' own multi-machine
+env-var model continues to exist alongside it for TiesL's own multi-machine
 usage. Worked out as a new work item: **W37 (#79)**.
 
-Also decided: `CHANGES.md` is read as **product defaults**, not as Ties'
+Also decided: `CHANGES.md` is read as **product defaults**, not as TiesL's
 personal preference register. Every entry thereby implicitly gets a
-defensible default for a new adopter; Ties' own answers in the four
+defensible default for a new adopter; TiesL's own answers in the four
 existing projects remain as a worked example, not as a prescription. Also
 worked out in W37 (#79) — that text in `CHANGES.md`'s intro changes along
 with it.
@@ -192,7 +192,7 @@ traceability-gat (→ #8) blootlegde; #9 kwam later, vanuit een vergelijking met
 **Overrulen van de "één echt work item end-to-end"-blokkade.** #7 en #8 waren
 daarop geblokkeerd; de beste kandidaat (tennis-admin PR #5) haalde het niet —
 issue vooraan, review in het midden en acceptatietest vóór de merge ontbraken
-alle drie. Ties overrulede de blokkade met twee mitigaties: de veldformaten
+alle drie. TiesL overrulede de blokkade met twee mitigaties: de veldformaten
 uit #8 eerst samen doornemen (W17, menselijke review in plaats van het
 ontbrekende praktijkbewijs), en de nulmeting vastleggen als uitvoerbare tests
 vóór er iets verandert (W1-W3) — refactoren tegen aannames is precies wat de
@@ -234,7 +234,7 @@ GitHub-issues van destijds):
 - **Fase 3 — Skills en guards** (W13 `pre-merge-review`-scoping, W10b
   merge-guard, W14 `tdd-seams`, W15 `diagnose-bug`, W16b `CONTEXT.md`, W25
   push-na-commit, W26 git-hooks in het project).
-- **Fase 4 — Traceability** (W17 ontwerpreview met Ties, W18 `Dekt:`/`AC<n>`,
+- **Fase 4 — Traceability** (W17 ontwerpreview met TiesL, W18 `Dekt:`/`AC<n>`,
   W19 offline traceability-check, W19b CI-hard-slot, W20 PR-poort, W27 CI
   detecteert `main` buiten een PR).
 - **Fase 5 — Release** (W21 PR-linkbacks herstellen, W22 dit `CHANGELOG.md` +
