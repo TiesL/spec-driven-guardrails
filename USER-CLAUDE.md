@@ -10,7 +10,7 @@ Volg daarvoor de skill `adopt-workflow` — geïnstalleerd op userniveau door
 `adopt.sh --user`.
 
 Deze check is bewust *niet* stilzwijgend/automatisch afgedwongen — team- of
-werkprojecten die niet van Ties alleen zijn, horen deze workflow niet ongevraagd
+werkprojecten die niet van TiesL alleen zijn, horen deze workflow niet ongevraagd
 te krijgen. Precies dáárom staat de trigger hier onvoorwaardelijk, in het altijd
 geladen bestand, in plaats van alleen in een skill die pas laadt wanneer hij
 toevallig relevant lijkt.

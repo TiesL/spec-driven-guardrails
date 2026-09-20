@@ -14,7 +14,7 @@ human step in between. Without that, you won't know at the end whether
 you fixed the bug or just stopped seeing it.
 
 **2. Hypotheses — shown before they're tested.** Formulate falsifiable
-hypotheses about the cause, and show them to Ties before testing them. Don't
+hypotheses about the cause, and show them to TiesL before testing them. Don't
 summarize afterward what you tried: hypotheses that are only shared after
 the fact can no longer be corrected by someone who doesn't read the code
 themselves. A hypothesis you can't refute yourself with a concrete

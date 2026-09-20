@@ -4,7 +4,7 @@
 
 When you work with an AI coding agent past toy-project size, two things
 tend to go wrong: it forgets what was decided and why, and it merges
-things nobody reviewed. This repo is one person's (Ties') answer to both —
+things nobody reviewed. This repo is one person's (TiesL's) answer to both —
 git/GitHub conventions plus scripts and skills that enforce them:
 
 - **What was decided, and why, is written down before code exists** — a
@@ -15,7 +15,7 @@ git/GitHub conventions plus scripts and skills that enforce them:
   review** — mechanically checked, not just agreed on and then forgotten.
 
 It's a personal workflow, not a product: the four projects using it today
-(this repo included) are Ties' own, shared here because duplicating
+(this repo included) are TiesL's own, shared here because duplicating
 `CLAUDE.md` + `.claude/settings.json` per project caused them to drift.
 
 ## Who it's for, and who it's not
@@ -31,7 +31,7 @@ It is not:
 - **A replacement for your own process.** If your team already reviews and
   specifies work, this doesn't sit alongside that — it targets the gap
   that shows up when there isn't one, which is normal for a solo project.
-- **A team tool, as shipped.** Built and adopted for Ties' own solo
+- **A team tool, as shipped.** Built and adopted for TiesL's own solo
   projects; nothing here assumes a second human reviewer, and it isn't
   adopted into shared team/work repos (see `USER-CLAUDE.md`).
 
@@ -196,13 +196,13 @@ below, without needing anything above this point.
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
 | `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTURE.md`, which covers structural decisions. Only scaffolded if the project answered `yes` to the `process-context-document` question (defined in `CHANGES.md`, answered in the project's own `WORKFLOW-ADOPTION.md`). |
 | `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |
-| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "yes" means as a product default (not Ties' personal preference — see W37/#79). Projects record their answer in their own `WORKFLOW-ADOPTION.md` (or its pre-migration name, `WORKFLOW-ADOPTIE.md` — see W42/#114). |
+| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "yes" means as a product default (not TiesL's personal preference — see W37/#79). Projects record their answer in their own `WORKFLOW-ADOPTION.md` (or its pre-migration name, `WORKFLOW-ADOPTIE.md` — see W42/#114). |
 | `CHANGES-ARCHIEF.md` | Retired `CHANGES.md` entries, with their ID unchanged so a project that once answered can still find where that row came from. |
 | `nfr/` | The NFR registry: one file per non-functional attribute (security, data integrity, failure modes, …). The sole source for both the `spec-*` questions in `CHANGES.md` and the filled-in subsections in `templates/PRD.md` — neither is tracked separately anymore. |
 | `lib/` | Shared bash libraries: `changes.sh` (the `CHANGES.md` parser and predicates, used by both `adopt.sh` and `pending-changes.sh`) and `nfr.sh` (reads/validates the `nfr/` registry). |
 | `pending-changes.sh` | Determines which changes from `CHANGES.md` and `nfr/` apply to a project and are still unanswered. Invoked by the `SessionStart` hook. |
 | `adopt.sh` | Script that creates/refreshes the symlinks and copies above locally, and seeds the adoption table of a new project. |
-| `install.sh` | Pins a clone of this repo to a tagged release, for a consumer who doesn't want Ties' own always-follow-`main` usage (W37/#79). Run once after cloning; see "Installing a pinned version" below. |
+| `install.sh` | Pins a clone of this repo to a tagged release, for a consumer who doesn't want TiesL's own always-follow-`main` usage (W37/#79). Run once after cloning; see "Installing a pinned version" below. |
 | `check` | The only command this repo's own CI invokes: bash syntax, JSON validation, NFR registry drift, PR linkbacks, shellcheck (non-blocking), then the test suite. The same `check`/`deploy` naming convention this repo requires of adopted projects, applied here to itself. |
 | `check-no-dutch.sh` | This repo's own translation-completeness check (W43/#115): scans for a curated list of untranslated-Dutch marker words outside the deliberate layer-C exclusions. |
 | `check-traceability.sh` | The root copy of `templates/check-traceability.sh`, run directly against this repo's own `PRD.md`/`TEST-SCENARIOS.md` (this repo verifies its own traceability chain differently than adopted projects do — see `PRD.md`'s technical debt table). |
@@ -218,7 +218,7 @@ below, without needing anything above this point.
 
 Project directories aren't in the same place on every computer (e.g. `~/Projects` on one, `~/Documents/ClaudeCodeZandbak` on the other). A symlink you commit to git (relative or absolute) can therefore never be correct on both machines at once. That's why the symlinks are **not committed**: `adopt.sh` creates them locally, with a path that's correct per machine via the `SPEC_DRIVEN_GUARDRAILS_DIR` environment variable.
 
-## One-time setup per machine (Ties' own use: always follow `main`)
+## One-time setup per machine (TiesL's own use: always follow `main`)
 
 1. Clone this repo anywhere you like on the machine.
 2. Set once in your shell profile (`~/.zshrc` or `~/.bashrc`):
@@ -232,11 +232,11 @@ Project directories aren't in the same place on every computer (e.g. `~/Projects
    ```
    From now on, Claude Code will automatically ask, when starting a session in a not-yet-adopted git project, whether that project should use this workflow.
 
-This checkout keeps following `main` — this is Ties' own, ongoing
+This checkout keeps following `main` — this is TiesL's own, ongoing
 multi-machine use. If you want a specific, pinned version instead
 (see below), that setup replaces steps 1-2 above.
 
-## Installing a pinned version (for a user other than Ties)
+## Installing a pinned version (for a user other than TiesL)
 
 If you don't want to get every change on `main` live, but instead stay on a
 specific, tagged release until you decide to upgrade:
@@ -256,7 +256,7 @@ specific, tagged release until you decide to upgrade:
    above).
 
 Upgrading to a newer release: run `install.sh <new-tag>` again
-in the same clone. This is functionally equivalent to Ties' own setup — both
+in the same clone. This is functionally equivalent to TiesL's own setup — both
 result in a checkout that `adopt.sh` works against the same way —
 only this clone never follows `main` automatically.
 

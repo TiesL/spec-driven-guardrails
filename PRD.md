@@ -10,7 +10,7 @@ W29 (#53) design-session decisions that steered epic #52.
 
 `spec-driven-guardrails` (formerly `claude-workflow`, renamed in W32/#56 —
 full reasoning in `CHANGELOG.md`, "Decided in W29 (#53)", decision 1) is the
-shared source of truth for Ties' personal Git/GitHub workflow, adopted by
+shared source of truth for TiesL's personal Git/GitHub workflow, adopted by
 four projects via local symlinks.
 
 This document is the integrated plan for epic #11, which merged three
@@ -276,7 +276,7 @@ production rollout at the latest; the rest → visible until you get to it.
 Blocks `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
 `commit` **on `main`**, and `push` **to `main`**.
 
-**Blocking `commit` on `main` is a deliberate extension**, added at Ties'
+**Blocking `commit` on `main` is a deliberate extension**, added at TiesL's
 request after it turned out that blocking only the push creates a bad moment:
 you work through an entire session, commit everything on `main`, and only hit
 the wall at the end. Worse — the `SessionEnd` hook skips its push on `main`,
@@ -298,7 +298,7 @@ blocks *all* `git push` — adopting that here would break the mandatory
 feature-branch pushes and the existing `SessionEnd` hook.
 
 What this hook by definition *cannot* see is anything outside the agentic
-loop: a command Ties types himself in his terminal never passes through it.
+loop: a command TiesL types himself in his terminal never passes through it.
 That gap isn't an implementation detail but a property of `PreToolUse`, and
 it's addressed separately in F17.
 
@@ -367,7 +367,7 @@ Migration must strip the two existing loose lines, or they'd end up duplicated.
 Names in English, body and description in Dutch. The name is an identifier
 that sits in the same flat namespace as `code-review` and `security-review`;
 `quality-review-before-merge` next to those reads like an accident. Everything
-Ties reads and maintains stays Dutch.
+TiesL reads and maintains stays Dutch.
 
 | Skill | Invocation | What goes in it |
 |---|---|---|
@@ -448,7 +448,7 @@ The original design assumed `F<n>`/`S<n>` everywhere. Reality:
 | tennis-registration | F1–F7 | S1–S16 | never |
 | tennis-invoicing | **no `F<n>`** | S1–S29, **S26/S27/S28 duplicated** | never |
 
-**Decided in W17 (#29)**, the design review with Ties that replaces the "one
+**Decided in W17 (#29)**, the design review with TiesL that replaces the "one
 work item end-to-end first" blocker. All four decisions below are confirmed,
 with one addition: decision c gets an explicit limitation, see there. The
 substantiation was re-verified against the four projects before the decision —
@@ -551,9 +551,9 @@ that permanently.
 
 Adopted projects follow `main` live via symlink, so a tag is a human
 reference point, not a pinnable version. *(Revised for consumers outside
-Ties' own use: W37 (#79) builds a pinnable consumer path on top of this tag
+TiesL's own use: W37 (#79) builds a pinnable consumer path on top of this tag
 mechanism — see `CHANGELOG.md`, "Decided in W29 (#53)", decision 5. This —
-following `main` live via symlink — remains Ties' own model.)* The first CHANGELOG entry
+following `main` live via symlink — remains TiesL's own model.)* The first CHANGELOG entry
 documents the required action: **run `adopt.sh` again in every project on
 every machine, and `adopt.sh --user` once per machine** — without that last
 step, the user-level skill is missing and the updated `USER-CLAUDE.md` points
@@ -577,11 +577,11 @@ at something that isn't there (the same asymmetry described under F10).
 
 The guard from F7 is a `PreToolUse` hook, and it only ever sees what Claude
 itself executes. The documentation describes the event as "before a tool
-call executes" and names no other hook point; commands Ties types himself in
+call executes" and names no other hook point; commands TiesL types himself in
 his terminal are not a tool call and therefore never pass through it. That's
 an inference from the documented scope, not a warning the documentation
 itself gives — but it's conclusive: there simply is no mechanism by which
-those commands would reach the hook. The same `git reset --hard` in Ties'
+those commands would reach the hook. The same `git reset --hard` in TiesL's
 own terminal window, in an IDE, or on a second machine without `adopt.sh`
 goes through unchecked.
 
@@ -707,7 +707,7 @@ never blocked mid-work — the same "when in doubt, allow" ground rule
 An epic (`templates/ISSUE_TEMPLATE/epic.md`) stays open until every work
 item under it is done, then someone has to remember to close it by hand —
 found concretely with issue #211: both its work items (#212, #213) closed
-via PR #214, but the epic itself sat open until Ties noticed. The same
+via PR #214, but the epic itself sat open until TiesL noticed. The same
 "don't rely on memory, build the mechanism" reasoning as F19.
 
 **Mechanism**: `.github/workflows/epic-auto-close.yml` triggers on
@@ -1094,7 +1094,7 @@ must be `git init`'d.
 
 ### Usability
 
-Relevant. The user is Ties plus the agent. The concrete failure mode is
+Relevant. The user is TiesL plus the agent. The concrete failure mode is
 already in the PR #6 review: seventeen rows of homework per new project,
 generically answered in one stroke. F6 makes that visible and decides it:
 substantiate in phases, secured by three gates.

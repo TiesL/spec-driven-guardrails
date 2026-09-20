@@ -19,7 +19,7 @@ Check at the start of a session in a directory that is a git repository:
 3. Is there already a known choice for this project recorded in the memory
    system (previously answered "yes" or "no")? If so: follow that choice
    without asking again.
-4. Otherwise: ask Ties once whether this project should use the shared
+4. Otherwise: ask TiesL once whether this project should use the shared
    personal workflow (`spec-driven-guardrails`).
    - **Yes** → run `spec-driven-guardrails/adopt.sh` from the root of this
      project (requires `SPEC_DRIVEN_GUARDRAILS_DIR` to be set as an
@@ -31,7 +31,7 @@ Check at the start of a session in a directory that is a git repository:
      question isn't asked again every session.
 
 This question is deliberately *not* silent/automatically enforced — team
-or work projects that don't belong to Ties alone shouldn't receive this
+or work projects that don't belong to TiesL alone shouldn't receive this
 workflow unsolicited.
 
 ## Setting up a new (related) project

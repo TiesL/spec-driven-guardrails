@@ -13,7 +13,7 @@ Per entry:
   deviate) or `question` (no general preference, depends on the project).
   This is the **product default** per topic — a defensible starting value
   for every new adopter, not a derived category and not a prescription.
-  Ties' own answers in the four existing projects (each `WORKFLOW-ADOPTION.md`)
+  TiesL's own answers in the four existing projects (each `WORKFLOW-ADOPTION.md`)
   are a worked example of how that default was applied, not something a new
   adopter has to copy. Only determines the starting point: `adopt.sh` seeds
   `yes` entries at adoption with a provisional stamp; `question` entries never
