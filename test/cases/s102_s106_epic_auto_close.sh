@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# S102-S106 — An epic auto-closes once every issue naming it as its Epic
-# is closed; stays open otherwise; never crashes on malformed input.
+# S102-S107 — An epic auto-closes once every issue naming it as its Epic
+# is closed; stays open otherwise; never crashes on malformed input; a
+# failed close is reported, not treated as success.
 # Covers: F20
 
 set -uo pipefail

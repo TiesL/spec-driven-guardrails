@@ -38,10 +38,11 @@ target="$(cd "$target" 2>/dev/null && pwd)" || {
 scenarios="$target/TEST-SCENARIOS.md"
 cases_dir="$target/test/cases"
 
-# Pending exclusions — pre-existing orphan headings (no claiming file),
-# found while building this check, tracked in #272. Remove an entry the
-# moment its issue closes, same two-tier pattern as check-no-dutch.sh.
-pending_excluded='S10 S62 S87 S107 S127 S128 S129'
+# Pending exclusions — same two-tier pattern as check-no-dutch.sh, kept
+# empty now that #272 resolved every entry that used to be here. Add a
+# line the moment a new pre-existing orphan is found; remove it the
+# moment it's resolved.
+pending_excluded=''
 
 # Nothing to check for a project that hasn't scaffolded either — same
 # not-applicable-here as check-traceability.sh's own gating in `check`.
