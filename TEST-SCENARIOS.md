@@ -308,11 +308,13 @@ something new is being added.
 
 ### S10 — The production gate blocks a substantiation gap
 **Covers:** F6
-- Given: a project where a row with `production-gate: yes` still says
-  "requires substantiation"
-- When: `deploy` to production is called
-- Then: the deploy stops with a message naming the row in question
-- And: the same deploy to pre-production does go through
+- Given: `skills/deploy-guards/SKILL.md`
+- When: it's read
+- Then: its Production conditions state that no row with
+  `production-gate: yes` may still say "requires substantiation" —
+  named as its own condition, the same way the other Production
+  conditions are; a project's own `deploy` is what actually enforces
+  this at runtime (per the skill), not a script in this repo
 
 ---
 
