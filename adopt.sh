@@ -570,6 +570,14 @@ adopt_project() {
     if [ -f "$project_dir/check-main-via-pr.sh" ]; then
       chmod +x "$project_dir/check-main-via-pr.sh"
     fi
+    # #265: enforces WORKFLOW.md's 5min-then-1min CI-polling cadence as a
+    # script instead of a prose instruction an agent could improvise
+    # around. Same has-check-command gate as the two above — meaningless
+    # without CI to poll.
+    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/wait-for-ci.sh" "$project_dir/wait-for-ci.sh"
+    if [ -f "$project_dir/wait-for-ci.sh" ]; then
+      chmod +x "$project_dir/wait-for-ci.sh"
+    fi
   elif [ -f "$project_dir/package.json" ]; then
     # Found during PR #257's pre-merge-review: a project with package.json
     # but only an npm "check" script (no root executable `check`) used to

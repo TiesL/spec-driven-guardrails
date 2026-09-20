@@ -31,6 +31,7 @@ adopt "$project"
 [ -f "$project/.github/workflows/ci.yml" ] || fail "S136 — ci.yml was not scaffolded for a project with an executable check but no package.json"
 [ -f "$project/check-pr-issue-link.sh" ] || fail "S136 — check-pr-issue-link.sh was not scaffolded alongside it"
 [ -f "$project/check-main-via-pr.sh" ] || fail "S136 — check-main-via-pr.sh was not scaffolded alongside it"
+[ -f "$project/wait-for-ci.sh" ] || fail "S136 — wait-for-ci.sh was not scaffolded alongside it (#265)"
 
 # And: package.json alone, no executable check, does NOT trigger the
 # scaffold — the real precondition is the check command, not the stack —
