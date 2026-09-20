@@ -1524,3 +1524,13 @@ something new is being added.
   version bump for a project the predicate *still* holds for reports
   through the existing "meaning has changed" path instead, not this one;
   re-confirming with the current version marker quiets it, same as S141
+
+### S144 — hooks/pre-commit runs ./check, blocking on a real failure
+**Covers:** F17
+- Given: an adopted project with an executable `check` at its root
+- When: a commit is attempted (not on `main`)
+- Then: a green `./check` doesn't block; a red `./check` blocks the
+  commit and shows `./check`'s own output; no executable `check` at all
+  fails open, with a loud warning that the commit-time check was
+  skipped; the existing `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch
+  also covers this guard, not only the branch guard
