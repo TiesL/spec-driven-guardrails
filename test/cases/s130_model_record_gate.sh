@@ -338,4 +338,64 @@ case "$output_issue_marker_stale" in
   *) : ;;
 esac
 
+# #268: a display-name label and an API model-id label for the same
+# underlying model must still be flagged — the exact failure case found
+# during PR #267's pre-merge-review, round 2 (Review recorded "Sonnet 5",
+# Implementation recorded "claude-sonnet-5" — plain case-folding didn't
+# equate those either, only normalize_model's structural fold does).
+fakebin_label_mismatch="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet 5\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_label_mismatch="$(PATH="$fakebin_label_mismatch:$PATH" "$script" 246)"
+case "$output_label_mismatch" in
+  *"same model"*) : ;;
+  *) fail "S130 — expected a display-name/API-id label mismatch for the same model to still be flagged, got: $output_label_mismatch" ;;
+esac
+
+# ...but genuinely different models under different label styles (Opus
+# vs. Sonnet) must not be flagged — normalize_model folds format, not
+# model identity, away.
+fakebin_different_models_different_labels="$(fake_gh_bin '
+case "$*" in
+  "pr view 246 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus 5\" effort=\"medium\" -->"
+    exit 0 ;;
+  "pr view 246 --json body --jq .body")
+    printf "%s" ""
+    exit 0 ;;
+  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
+    printf "%s\n" "239"
+    exit 0 ;;
+  "issue view 239 --json comments --jq .comments[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_different_models="$(PATH="$fakebin_different_models_different_labels:$PATH" "$script" 246)"
+case "$output_different_models" in
+  *"same model"*) fail "S130 — genuinely different models under different label styles were wrongly flagged as the same, got: $output_different_models" ;;
+  *) : ;;
+esac
+
 test_done
