@@ -24,7 +24,13 @@ locally, and waiting on every iteration makes the loop slow.
 **Production — only from `main`.** Everything above, plus: you're on
 `main` (only then has the code gone through a PR and been reviewed); local
 `main` equals `origin/main` (otherwise you roll out something CI never
-saw, or something outdated); the latest CI run on `main` succeeded.
+saw, or something outdated); the latest CI run on `main` succeeded; no
+NFR row with `production-gate: yes` in `WORKFLOW-ADOPTION.md` still says
+"requires substantiation" — F6's second gate (`PRD.md`): the topic wasn't
+touched by a PR (gate 1), so this is the deadline that catches it before
+the first real production rollout instead of letting it stay silently
+provisional forever. Named, not just implied: the deploy stops and names
+the row, the same way the other conditions here stop and name themselves.
 
 If a project has more than one target environment, there is **no implicit
 default** — the environment is passed explicitly every time. A default

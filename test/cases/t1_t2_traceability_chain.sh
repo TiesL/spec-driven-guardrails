@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T1, T2, S30 — link 1 of the traceability chain, offline.
+# T1, T2, S30, S62, S87 — link 1 of the traceability chain, offline.
 # Covers: F13
 #
 # The design from W17: do not hardcode F/S. Collect ID tokens from the headings
