@@ -169,6 +169,50 @@ sequential, single-branch scale; revisit trigger below).
 
 ---
 
+## Decision 4 — A two-role conflict escalates as both sides verbatim, not a merged summary
+
+**Decided on 2026-09-21: when the impediment is a genuine disagreement between two roles'
+own assessments (not a routine handoff), the orchestrator presents both roles' findings
+side by side, verbatim from their own artifacts, to Ties. Never an orchestrator-authored
+synthesis, and never only the later role's recommendation.**
+
+### Evaluation criteria
+
+| Criterion | Why it counts |
+|---|---|
+| Decision 1 (artifact-based context, no hidden state) | An orchestrator-authored summary of a disagreement is itself an unwritten interpretation layer — exactly the "shared context object" Decision 1 already rejected, just applied to escalation instead of routing. |
+| Legitimate conflict escalates, doesn't get suppressed (PRD §4, "Kernverantwoordelijkheden per rol") | A merged summary or last-role-only view lets the orchestrator's phrasing quietly resolve the disagreement before Ties ever sees it — the opposite of "escalates." |
+| Decision authority stays with Ties, not the orchestrator (Decision 2) | Ties judging from a synthesis means judging the orchestrator's read of the conflict, not the conflict itself. |
+
+### Options weighed
+
+#### Option 1 — Orchestrator-authored merged summary (rejected)
+The orchestrator reads both roles' findings and writes one combined account for Ties.
+Rejected: this is the orchestrator making an implicit judgment call about which parts of
+each side matter — an interpretation step with no artifact of its own, violating Decision
+1's own reasoning.
+
+#### Option 2 — Only the later role's recommendation (rejected)
+Whichever role escalates last is presented as the current state; the earlier role's
+position is assumed superseded. Rejected: a legitimate disagreement isn't automatically
+resolved by sequence order — QA finding a design flaw doesn't mean QA is right and
+Architect's original reasoning stops mattering.
+
+#### Option 3 — Both roles' findings verbatim, side by side (chosen)
+The orchestrator quotes each role's own artifact text directly, unedited, next to each
+other. No new artifact is created beyond the escalation comment itself, which only
+aggregates pointers/quotes — consistent with Decision 1's "reconstructed from artifacts"
+principle.
+
+### Comparison and choice
+
+Option 3 wins: it's the only option that doesn't insert an unwritten interpretation step
+between the roles' own artifacts and Ties' decision. Cost: a longer escalation comment than
+a summary would be — accepted, since brevity isn't the goal here, an undistorted decision
+is.
+
+---
+
 ## Architecture requirements that follow from this
 
 ### A1 — No orchestrator-held state outside artifacts
@@ -180,16 +224,33 @@ sub-agent didn't also write down.
 ### A2 — Merge/release requires Ties' explicit confirmation, unconditionally
 No code path, orchestrator rule, or agent recommendation may execute a merge or release
 without that confirmation, regardless of how many quality gates already passed. Violated by
-any future "auto-merge on green CI + review" shortcut, however well-gated.
+any future "auto-merge on green CI + review" shortcut, however well-gated. Deliberately no
+escape hatch, unlike A3 below: a human-confirmation gate has nothing to bypass silently —
+there is no script to edit around when the constrained party is the one who has to speak.
+Ties typing an override *is* the confirmation this invariant describes, not an exception
+to it.
 
-### A3 — No phase is skippable or abbreviated in v1
+### A3 — No phase is skippable or abbreviated in v1, with an explicit, logged escape hatch
 All five roles (Product, Architect, QA, Fullstack Developer, Reviewer) fully engage on
 every change, on the standard path or a loop-back — there is no exception-path routing
 (security hotfix, refactor-only, spike, compliance, or otherwise) in v1 (decided, issue
 #281). CI, `pre-merge-review`, and `deploy-guards` were already never-skippable regardless
-of path; this extends the same full-engagement principle to every role. Violated if any
-future exception-path definition skips or abbreviates a role, or lists one of these three
-gates as skippable.
+of path; this extends the same full-engagement principle to every role.
+
+Unlike A2, this one gets a deliberate, loud escape hatch — matching this repo's own
+established principle (`deploy-guards`, `hooks/pre-commit`): a guard without an escape
+hatch eventually gets bypassed by silently reasoning around it instead of turning it off
+explicitly, and A3 is *self-applied by an agent*, not enforced by a script — exactly the
+case that principle warns about. It also matches the PRD's own promise (§6) that the
+exceptions/override mechanism is explicit, not silently absent.
+
+**The hatch:** a role may be skipped or narrowed only when Ties authorizes that specific
+instance. The orchestrator states loudly which role(s) are being skipped and why, and
+records it in the work item's compliance comment (the OQ9 evidence pattern already covers
+this — no second mechanism). Violated if a role is skipped/narrowed without that
+authorization and record, or if any future exception-path definition lists CI,
+`pre-merge-review`, or `deploy-guards` as skippable — those three stay absolute, same as
+A2, since they're mechanically enforced gates, not a role's own self-applied judgment.
 
 ### A4 — Each role session gets only the file/directory scope its phase needs
 Enforced via a skill-based contract (not OS sandboxing) that states which paths a role may

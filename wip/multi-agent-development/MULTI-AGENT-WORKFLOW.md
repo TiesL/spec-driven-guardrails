@@ -53,7 +53,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
 #### 3. Active Decision Making
 
 - **Routing Decisions**: Makes autonomous routing decisions within defined guardrails
-  - Selects phase/flow based on work type, risk profile, and available information
+  - Standard path forward, or loop back to an earlier phase for rework — no work-type/risk-based routing in v1 (issue #281)
   - Can recommend earlier agents reconsider decisions based on downstream feedback
   
 - **Impediment Detection & Escalation**
@@ -90,7 +90,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
 ### Guardrails & Constraints
 
 - Cannot override human decision authority on Go/No-Go gates
-- Cannot make decisions on work outside defined scope (e.g., organizational changes, budget allocation)
+- Cannot make decisions on work outside defined scope (e.g., which project to work on, adopting this workflow elsewhere)
 - Must escalate when conflicting requirements cannot be resolved through process
 - Must preserve audit trail of all routing, decisions, and exceptions
 - Cannot suppress identified risks or quality concerns
@@ -173,10 +173,9 @@ When Product Agent receives work:
    - Are acceptance criteria testable?
 
 4. **Identify Product-Level Risks**
-   - User adoption or training needs
+   - Adoption friction for existing users of this workflow (currently: Ties' own projects)
    - Backward compatibility concerns
-   - Customer communication requirements
-   - Competitive or market timing implications
+   - Whether the change needs a `CHANGES.md` row so adopted projects see it (see `adoption-registry`)
 
 5. **Document Findings**
    - What is clear and can proceed to architecture
@@ -450,8 +449,8 @@ Implement the architectural design reliably and maintainably. Deliver code/solut
 1. **Feasibility Assessment**
    - Can the architecture be implemented as specified?
    - Are there technical obstacles or unforeseen challenges?
-   - Is the team skilled in required technologies?
-   - Is the timeline realistic for scope and complexity?
+   - Does the assigned agent have what it needs (context, tooling access) for the required technologies?
+   - Is the scope realistic to implement and verify within this work item, or does it need splitting?
 
 2. **Technical Implementation Plan**
    - Breakdown of work items and estimated effort
@@ -516,8 +515,8 @@ When Fullstack Developer Agent receives work:
 2. **Assess Implementation Feasibility**
    - Classify per criterion: Sufficient / Point of Attention / Insufficient for development
    - Is architecture buildable as specified?
-   - Are required skills available?
-   - Is timeline realistic?
+   - Does the assigned agent have what it needs to build this?
+   - Is the scope realistic for this work item, or does it need splitting?
 
 3. **Develop Implementation Plan**
    - Work breakdown and effort estimates
@@ -603,7 +602,7 @@ Final quality gate before release. Verify that implemented solution meets all re
    - Is the solution ready for operational support?
    - Are monitoring and alerting in place?
    - Are runbooks and documentation complete?
-   - Is the operations team trained and ready?
+   - Is Ties (the sole operator) aware of what changed and how to operate it?
    - Are backup, recovery, and disaster recovery tested?
 
 7. **Release Readiness**
@@ -657,7 +656,7 @@ When Reviewer Agent receives work:
 4. **Assess Operational Readiness**
    - Monitoring and alerting in place?
    - Runbooks and documentation complete?
-   - Operations team trained?
+   - Is Ties (the sole operator) aware of what changed and how to operate it?
    - Backup/recovery tested?
    - Classify: Ready / Points of Attention / Not Ready
 
@@ -748,12 +747,18 @@ When an agent requests revisit of earlier phase:
    - Request clarification or compromise
 4. **Updated decision flows forward** again through pipeline starting with Orchestrator
 
-### No exception-path routing in v1
+### No scenario-based exception routing in v1
 
 Superseded by "Engagement: full, always" above (issue #281): there is no
 scenario-based exception routing (security/hotfix, refactoring, spike, or
 compliance) in v1. Every change goes through all five roles fully engaged;
 each role's own agent judges how much depth the change actually warrants.
+
+This is distinct from A3's own escape hatch (`ARCHITECTURE-MULTI-AGENT-WIP.md`):
+a genuinely one-off, Ties-authorized deviation from full engagement can still
+happen, but it is never a standing "scenario" the orchestrator recognizes and
+routes to — it's a per-instance, loudly-logged exception to the rule, not a
+category of work.
 
 ---
 
@@ -780,21 +785,21 @@ each role's own agent judges how much depth the change actually warrants.
   - Orchestrator: routes work, facilitates escalation to Ties, cannot override that authority.
 
 - **Orchestrator Authority**: Within defined guardrails, orchestrator makes autonomous decisions on:
-  - Which path (standard, loop-back, or exception) work follows
+  - Which path (standard, or loop-back for rework) work follows
   - Readiness to progress to next phase
   - When to escalate for human decision
   - When to request reconsideration from earlier phase
   - Cannot override human Go/No-Go decisions
-  - Cannot skip CI, `pre-merge-review`, or `deploy-guards` on any path, standard or exception (see `PRD-MULTI-AGENT-WIP.md` §6)
+  - Cannot skip CI, `pre-merge-review`, or `deploy-guards`, ever, under any circumstance including an authorized A3 deviation (see `PRD-MULTI-AGENT-WIP.md` §6, `ARCHITECTURE-MULTI-AGENT-WIP.md` A3)
 
 ### Future Release (2.0+) Roadmap — dropped for merge/release; kept for phase-progress only
 
 **Decided:** merge/release stays human-only, permanently, with no future auto-approve exception — matches `WORKFLOW.md` step 4 and PRD §3.3 ("an agent may produce evidence, but does not itself decide it meets requirements"). The imported spec's "auto-approve release" and "default to approval" items below are replaced: an agent may auto-progress its own output to the *next phase* under guardrails, but never auto-approve a *release*.
 
 - **Fullstack Developer Agent**: may auto-progress minor refactoring to Reviewer when all quality gates pass (no requirement changes, no API changes, passes all tests, improves quality metrics) — Reviewer and CI/`deploy-guards` still run unabbreviated; no release follows without Ties.
-- **QA Agent**: may auto-progress to Reviewer when quality criteria are met (test coverage, no critical defects, performance within targets, security validated) — cannot itself approve release.
+- **QA Agent**: may auto-progress to Fullstack Developer (the immediately next phase) when quality criteria are met (test coverage, no critical defects, performance within targets, security validated) — cannot skip ahead to Reviewer, cannot itself approve release.
 - **Reviewer Agent**: still escalates every release recommendation to Ties; "default to approval" from the import is dropped — Reviewer's approval is a recommendation, never the release decision itself.
-- **Architect Agent**: may auto-progress design alternatives within established patterns to Fullstack Developer without a loop-back; escalates to Ties if a new pattern or major technical decision is needed.
+- **Architect Agent**: may auto-progress design alternatives within established patterns to QA (the immediately next phase) without a loop-back; escalates to Ties if a new pattern or major technical decision is needed. Cannot skip ahead to Fullstack Developer.
 
 ---
 
@@ -814,14 +819,13 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
    - Technical tradeoff with operational or business impact
    - Example: monolith vs. microservices decision, technology platform choice
 
-3. **Quality vs. Deadline Pressure**
-   - Cannot meet quality criteria within timeline
+3. **Quality vs. Scope Pressure**
+   - Cannot meet quality criteria within the work item's current scope
    - Acceptable quality compromise not identified
-   - Example: test coverage targets vs. delivery date
+   - Example: test coverage target vs. a work item that's grown larger than planned
 
-4. **Resource or Capacity Constraints**
-   - Insufficient skills/expertise available
-   - Team capacity insufficient for timeline
+4. **Capability or Tooling Constraints**
+   - The assigned agent/model doesn't clear the floor a stage needs (see `model-choice`)
    - Infrastructure or tooling not available
 
 5. **Systemic or Pattern Issues**
@@ -838,7 +842,7 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 
 **Decided: single target, no per-conflict-type routing table.** Every escalation, regardless of category above, follows the same path: role-agent → orchestrator → Ties.
 
-**Decided: conflict between two roles is escalated as both sides, not a merged summary.** When the impediment is a disagreement between two roles' own assessments (e.g. Architect's design vs. Product's requirement, categories 1-2 above), the orchestrator presents both roles' findings side by side, verbatim from their own artifacts — not an orchestrator-authored synthesis, and not only the later role's recommendation. Ties judges from both positions directly.
+**Decided (`ARCHITECTURE-MULTI-AGENT-WIP.md` Decision 4): conflict between two roles is escalated as both sides, not a merged summary.** When the impediment is a disagreement between two roles' own assessments (e.g. Architect's design vs. Product's requirement, categories 1-2 above), the orchestrator presents both roles' findings side by side, verbatim from their own artifacts — not an orchestrator-authored synthesis, and not only the later role's recommendation. Ties judges from both positions directly.
 
 1. **Orchestrator identifies impediment** with context and recommended actions
 2. **Escalates to Ties** — the one human decision-maker in this project, for every trigger category above; for a role-vs-role conflict, both roles' assessments are included, not interpreted into one
@@ -867,7 +871,7 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 
 4. **Active Orchestration**
    - Orchestrator: active decision-maker, not just traffic router
-   - Intelligent routing based on work type and risk profile
+   - Standard path forward, loop-backs for rework — no work-type/risk-based routing in v1 (issue #281)
    - Proactive impediment detection and escalation
 
 5. **Human Authority**
@@ -877,7 +881,7 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 
 6. **Audit Trail**
    - Every decision, routing, and escalation documented
-   - Rationale recorded for all non-standard flows
+   - Rationale recorded for every loop-back and every authorized A3 deviation
    - Full traceability for retrospectives and process improvement
 
 ---
@@ -947,7 +951,7 @@ scenarios below, numbered to match.
 
 ### Monitoring & Improvement
 
-1. **Track** which flows occur (standard, loop-back, exception)
+1. **Track** which flows occur (standard, loop-back) and how often an authorized A3 deviation happens
 2. **Monitor** escalation patterns and reasons
 3. **Collect** feedback from phase transitions
 4. **Iterate** on process based on observed patterns
