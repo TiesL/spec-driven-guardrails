@@ -14,7 +14,7 @@ The system consists of:
 - **1 Master Orchestrator Agent**: Active workflow coordinator and intelligent decision manager
 - **5 Specialized Sub-Agents**: Product → Architect → QA → Fullstack Developer → Reviewer
 
-This non-linear workflow enables phase skipping, looping back to earlier stages, and exception path routing when business logic or technical discoveries warrant alternative flows.
+This non-linear workflow allows looping back to earlier stages when new insights emerge. All five roles fully engage on every change, always — v1 has no phase skipping or scenario-based routing (see "Engagement: full, always" below).
 
 ---
 
@@ -22,7 +22,7 @@ This non-linear workflow enables phase skipping, looping back to earlier stages,
 
 ### Purpose
 
-Serve as the intelligent workflow manager and active decision-maker. The Orchestrator coordinates all sub-agents, maintains shared context, manages handoffs between phases, and enables non-linear process flows (looping back, exception paths, phase skipping) within defined guardrails.
+Serve as the intelligent workflow manager and active decision-maker. The Orchestrator coordinates all sub-agents, maintains shared context, manages handoffs between phases, and enables non-linear process flows (looping back to an earlier phase for rework) within defined guardrails.
 
 ### Core Responsibilities
 
@@ -33,22 +33,13 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
   - Fullstack Developer discovers architectural issue → route back to Architect
   - QA finds design flaw → route back to Product for requirement clarification
   - Reviewer identifies scope creep → route back to Product
-- **Exception Paths**: Enables alternative routing for specific work types
-  - Security patches: Fast-track through abbreviated QA
-  - Refactoring-only work: Product phase may be skipped (no requirement change); QA becomes regression-focused, never skipped — see hard gates below
-  - Urgent hotfixes: Abbreviated design validation
-  - Exploratory spikes: Flexible, iterative approach
 - **Reconstructs context per phase from artifacts** (§ Shared Context Requirements below), not held as shared state
 - **Manages handoffs** with full visibility of prior assessments, decisions, and findings
 
 #### 2. Non-Linear Process Management
 
-- **Phase Skipping (Non-Liberal)** — **hard gate, decided**: only Product/Architect phases may ever be skipped or abbreviated. Fullstack Developer, Reviewer, CI, and `deploy-guards` are never skippable, on any path (standard, loop-back, or exception) — see `PRD-MULTI-AGENT-WIP.md` §6.
-  - Permitted only when justified by documented business logic
-  - Example: minor config-only changes may skip the Product phase, not the Fullstack Developer/Reviewer/CI phases
-  - Always recorded with explicit justification
-  - Cannot bypass security, compliance, or data integrity gates
-  
+- **Engagement: full, always** — **decided (issue #281)**: all five roles (Product, Architect, QA, Fullstack Developer, Reviewer) fully engage on every change, regardless of type or urgency. No phase is ever skipped or abbreviated by the orchestrator; there is no scenario-based routing (security hotfix, refactor-only, spike, or otherwise) in v1. Each role's own agent judges internally how much depth a given change actually warrants within its own phase — that judgment stays inside the role, not encoded as an orchestrator rule. Scaling engagement back per scenario is deliberately deferred to a later version: modeling it now, before any real usage data, risks over-engineering the first release.
+
 - **Looping Back (Encouraged)**
   - Encourages revisiting earlier phases when new insights emerge
   - Passes updated context to earlier agent for reconsideration
@@ -59,17 +50,6 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
     - "Test results reveal requirement ambiguity" → back to Product
     - "Performance analysis suggests new optimization approach" → back to Architect
     
-- **Exception Path Triggering**
-  - Detects patterns requiring alternative routing
-  - Common scenarios:
-    - Urgent/critical work (security vulnerabilities, production hotfixes)
-    - Experimental/exploratory work (spikes, proofs of concept, prototypes)
-    - Refactoring-only work (no feature or requirement changes)
-    - Tech debt elimination (no external impact)
-    - Compliance-driven changes (regulatory, mandatory updates)
-  - Routes to appropriate exception flow with documented justification
-  - Maintains full audit trail of exception decision
-
 #### 3. Active Decision Making
 
 - **Routing Decisions**: Makes autonomous routing decisions within defined guardrails
@@ -98,7 +78,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
   - Full context from prior phases (read from artifacts, see above)
   - Clear assessment mandate and success criteria
   - Prior assessments, findings, and flagged risks
-  - Routing decision (standard path, loop-back, or exception path)
+  - Routing decision (standard path, or loop-back for rework)
   - A file/directory scope contract limiting which paths this phase's session may read or write — skill-based, not OS-level sandboxing (`PRD-MULTI-AGENT-WIP.md` §4, "Rol-naar-agent toewijzing")
 
 - Orchestrator receives from each sub-agent:
@@ -768,32 +748,12 @@ When an agent requests revisit of earlier phase:
    - Request clarification or compromise
 4. **Updated decision flows forward** again through pipeline starting with Orchestrator
 
-### Exception Path Triggering
+### No exception-path routing in v1
 
-Orchestrator detects patterns requiring exception routing:
-
-1. **Security/Hotfix Path**
-   - Urgent security vulnerability or production hotfix
-   - Abbreviated design validation and abbreviated QA
-   - Focus on minimal change and risk mitigation
-   - May skip refactoring or optimization steps
-
-2. **Refactoring/Tech Debt Path**
-   - Internal refactoring with no external impact
-   - May skip Product phase (no requirement change)
-   - Focus on code quality and maintainability validation
-   - May use lighter QA approach (regression testing focus)
-
-3. **Experimental/Spike Path**
-   - Proof of concept or exploratory work
-   - Iterative approach between Architect/Fullstack Developer
-   - Lighter QA approach or internal-only validation
-   - May loop between architecture and implementation multiple times
-
-4. **Compliance/Regulatory Path**
-   - Mandatory update or compliance requirement
-   - Focused assessment on specific compliance criteria
-   - May not follow standard flow if compliance mandate dictates approach
+Superseded by "Engagement: full, always" above (issue #281): there is no
+scenario-based exception routing (security/hotfix, refactoring, spike, or
+compliance) in v1. Every change goes through all five roles fully engaged;
+each role's own agent judges how much depth the change actually warrants.
 
 ---
 
@@ -891,9 +851,9 @@ Orchestrator flags impediment and escalates to appropriate human decision-maker 
 ## Key Design Principles
 
 1. **Linearity with Flexibility**
-   - Default: sequential flow (Product → Architect → QA → Fullstack Developer → Reviewer)
-   - Enabled: backward loops, exception paths, phase skipping
-   - Justified: when business logic, technical discovery, or risk warrant alternative flow
+   - Default: sequential flow (Product → Architect → QA → Fullstack Developer → Reviewer), all five roles fully engaged, always
+   - Enabled: backward loops to an earlier phase for rework
+   - Justified: when technical discovery or new insight requires revisiting an earlier decision
 
 2. **Bounded Autonomy**
    - Sub-agents: autonomous in assessment and documentation
@@ -958,46 +918,15 @@ scenarios below, numbered to match.
 3. Reviewer identifies significant issues → back to whichever phase the
    issue actually belongs to, for rework.
 
-### Exception Path Examples
-
-**Security Hotfix**:
-```mermaid
-flowchart LR
-    P1[Product<br/>abbreviated] --> A1[Architect<br/>focused]
-    A1 --> D1[Fullstack Developer<br/>implementation]
-    D1 --> Q1[QA<br/>focused]
-    Q1 --> R1[Reviewer]
-    R1 --> Rel1[Release]
-```
-
-**Refactoring**:
-```mermaid
-flowchart LR
-    A2[Architect<br/>focused] --> D2[Fullstack Developer<br/>implementation]
-    D2 --> Q2[QA<br/>regression-focused]
-    Q2 --> R2[Reviewer]
-    R2 --> Rel2[Release]
-```
-
-**Spike/POC**:
-```mermaid
-flowchart LR
-    P3[Product] --> A3[Architect]
-    A3 <--> D3[Fullstack Developer<br/>iterative]
-    D3 --> Q3[lightweight QA]
-    Q3 --> R3[Reviewer<br/>internal-only]
-    R3 --> Dec3[decision on<br/>production approach]
-```
-
 ---
 
 ## Differences from Portfolio Management Workflow
 
 | Aspect | Portfolio Management | Software Development |
 |--------|----------------------|----------------------|
-| **Process Flow** | Strictly Linear (6 phases) | Less Linear (3 standard levels + loops/exceptions) |
-| **Phase Skipping** | Not permitted | Permitted with justification |
-| **Exception Paths** | Not permitted | Permitted (security, refactoring, spike scenarios) |
+| **Process Flow** | Strictly Linear (6 phases) | Linear with rework loops (5 roles, always fully engaged) |
+| **Phase Skipping** | Not permitted | Not permitted (v1 decision, issue #281) |
+| **Exception Paths** | Not permitted | Not permitted (v1 decision, issue #281) |
 | **Looping Back** | Not permitted (phase progression only) | Facilitated & encouraged |
 | **Orchestrator Role** | Follows process; ensures gates passed | Active decision-maker; routes intelligently |
 | **Context Sharing** | Linear handoff between phases | Scoped per role's file-scope contract, reconstructed from artifacts — not blanket visibility |

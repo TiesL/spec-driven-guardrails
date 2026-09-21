@@ -182,11 +182,14 @@ No code path, orchestrator rule, or agent recommendation may execute a merge or 
 without that confirmation, regardless of how many quality gates already passed. Violated by
 any future "auto-merge on green CI + review" shortcut, however well-gated.
 
-### A3 — CI, `pre-merge-review`, and `deploy-guards` are never skippable
-On any path — standard, loop-back, or exception (security hotfix, refactor-only, spike,
-compliance) — these three gates always run. Only Product/Architect phases may be
-abbreviated or skipped. Violated if an exception-path definition ever lists one of these
-three as skippable.
+### A3 — No phase is skippable or abbreviated in v1
+All five roles (Product, Architect, QA, Fullstack Developer, Reviewer) fully engage on
+every change, on the standard path or a loop-back — there is no exception-path routing
+(security hotfix, refactor-only, spike, compliance, or otherwise) in v1 (decided, issue
+#281). CI, `pre-merge-review`, and `deploy-guards` were already never-skippable regardless
+of path; this extends the same full-engagement principle to every role. Violated if any
+future exception-path definition skips or abbreviates a role, or lists one of these three
+gates as skippable.
 
 ### A4 — Each role session gets only the file/directory scope its phase needs
 Enforced via a skill-based contract (not OS sandboxing) that states which paths a role may
