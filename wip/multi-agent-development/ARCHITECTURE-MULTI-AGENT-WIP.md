@@ -280,6 +280,28 @@ it state, contradicting A1).
 - **GitHub** (issues, labels, PRs, CI): owns the actual artifacts and their history. The
   orchestrator reads and writes to GitHub; it doesn't duplicate GitHub's own state.
 
+### Proposing a boundary change mid-work (decided 2026-09-21, resolves OQ4's remaining gap)
+
+Any role may notice mid-work that the current bounded-context boundary doesn't fit. This
+is **not** a synchronous escalation demanding an immediate decision before work continues
+— it's the same "capture as an issue first" discipline this repo already applies to itself
+(`WORKFLOW.md`: "no request leads straight to development"). Concretely:
+
+1. The orchestrator files a new GitHub issue capturing the insight (per `write-spec`'s
+   conventions), same as any other proposed work.
+2. The orchestrator informs Ties that a new issue was filed due to a mid-work insight, and
+   asks: pick it up next, leave it open for later, or close it.
+3. **Current work continues unaffected on the old boundary regardless of that answer** —
+   nothing blocks on Ties' response. The in-flight work item finishes under the boundary it
+   started with; a new boundary, once decided, applies to work items opened after that
+   decision, not retroactively (same "never rewrite what's already answered" principle as
+   `WORKFLOW-ADOPTION.md` rows).
+
+This is a lighter-weight variant of Decision 2's single escalation path, not a new path:
+still role-agent → orchestrator → Ties, just as a non-blocking issue + async triage
+question instead of an in-line decision gate — because a boundary-change proposal, unlike
+a Go/No-Go gate, has nothing that needs deciding before the current work can proceed.
+
 ---
 
 ## Dependencies
@@ -308,26 +330,26 @@ None new. Uses only what this project already has: Claude Code sub-agent dispatc
 
 ## Still open after this document
 
-Per `PRD-MULTI-AGENT-WIP.md` §9, the following are **deels besloten** (mechanism/process
-decided, catalog-level detail still missing) — not to be treated as fully decided by
-omission, but also not fully open:
+None. As of 2026-09-21, all of `PRD-MULTI-AGENT-WIP.md` §9's originally **deels besloten**
+questions (OQ4, OQ5, OQ6, OQ9) are fully decided:
 
-- OQ4 — decided: a bounded-context change is a normal architecture decision (§ "System
-  boundaries and ownership" above), revisit trigger reuses `refactoring-triggers`. Still
-  missing: who may *propose* a boundary change, and what happens to work already in flight
-  on the old boundary when one lands.
-- OQ5 — decided: no separate Security agent by default; risk-based trigger list (auth,
-  secrets, deploy/CI config, IaC, sensitive data, untrusted input) embedded in Reviewer's
-  role contract. Still missing: an enumerated minimal test catalog per trigger category,
-  not just the trigger list itself.
-- OQ6 — decided: each role verifies a different question (§4's "Kernverantwoordelijkheden
-  per rol"); legitimate conflict escalates, doesn't get suppressed. Still missing: the two
-  concrete overlaps this leaves unresolved — QA vs. Fullstack Developer on who authors the
-  failing test (this project's own `tdd-seams` red-before-green rule makes that
-  load-bearing), and Reviewer vs. `check-traceability.sh` on who verifies traceability.
-- OQ9 — decided: reuse `WORKFLOW-ADOPTION.md`'s row-per-decision pattern, scoped per work
-  item, posted as one orchestrator issue comment. Still missing: a worked example against a
-  real work item, to confirm the pattern actually carries the right evidence links.
+- OQ4 — fully decided: a bounded-context change is a normal architecture decision (§
+  "System boundaries and ownership" above), revisit trigger reuses `refactoring-triggers`.
+  Who may propose a change, and what happens to in-flight work on the old boundary: see
+  "Proposing a boundary change mid-work" above.
+- OQ5 — fully decided: no separate Security agent by default; risk-based trigger list
+  (auth, secrets, deploy/CI config, IaC, sensitive data, untrusted input) embedded in
+  Reviewer's role contract, plus a POLP-organized minimal test per trigger category (PRD
+  §4, "Security als expliciete verantwoordelijkheid").
+- OQ6 — fully decided: each role verifies a different question (§4's "Kernverantwoordelijkheden
+  per rol"); legitimate conflict escalates, doesn't get suppressed. Both concrete overlaps
+  resolved (PRD §4, "Overlap 1"/"Overlap 2"): QA sets test strategy + scenario, Fullstack
+  Developer authors the actual failing test; `check-traceability.sh` verifies structural
+  completeness, Reviewer verifies semantic correctness.
+- OQ9 — fully decided: reuse `WORKFLOW-ADOPTION.md`'s row-per-decision pattern, scoped per
+  work item, posted as one orchestrator issue comment. The worked example against a real,
+  already-completed work item (PRD §6, issue #265/PR #279) confirms the pattern actually
+  carries the right evidence links.
 
 OQ7 (UX role) is fully decided, not listed here: the activation rule is "any interaction
 surface" (GUI, CLI, API, or an agent/LLM harness) — which this repo's own Claude Code usage

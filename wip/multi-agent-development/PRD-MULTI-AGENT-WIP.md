@@ -108,8 +108,8 @@ De onderstaande rollen zijn kernrollen in het beoogde model. Dit zijn verantwoor
 | --- | --- | --- |
 | Product | Probleem, gewenste uitkomst, requirements en acceptatiecriteria expliciteren en inhoudelijk valideren. | Requirements, acceptatiecriteria, productvalidatie. |
 | Architect | Samenhang, technische haalbaarheid, grenzen, kwaliteitseisen en ontwerpbesluiten bewaken. | Specificatie/ontwerp, architectuurreview, vastgelegde besluiten. |
-| QA | Teststrategie, kwaliteitsrisico’s en verificatie van gedrag bewaken. | Testgevallen, testresultaten, QA-beoordeling. |
-| Reviewer / Lead Developer | Kwaliteit en onderhoudbaarheid van de geleverde ontwikkeloutput onafhankelijk beoordelen. | Pull-requestreview, technische bevindingen, goed- of afkeuring. |
+| QA | Teststrategie (welk soort test — unit/integratie/end-to-end/penetratie/etc. — past bij deze wijziging) en testscenario's/seams bepalen; kwaliteitsrisico's en verificatie van gedrag bewaken. | Teststrategie, testscenario's/seams, testresultaten, QA-beoordeling. |
+| Reviewer / Lead Developer | Onafhankelijk beoordelen: bewijs dat het voorgaande daadwerkelijk gebeurd is; codekwaliteit, abstracties, hergebruik, verbositeit/efficiëntie. | Pull-requestreview, technische bevindingen, goed- of afkeuring. |
 | Fullstack Developer | Een samenhangend, afgebakend onderdeel end-to-end implementeren, inclusief relevante tests en documentatie. | Implementatie, rode/groene tests, documentatie, pull request. |
 
 ### Kernverantwoordelijkheden per rol (besloten)
@@ -118,9 +118,13 @@ Aanvullend op de rollentabel hierboven, per rol de kernverantwoordelijkheden en 
 
 - **Product**: productvisie en releases bepalen, features/requirements prioriteren op basis van business-/gebruikersbehoefte, trade-off- en scopebeslissingen nemen. Beantwoordt: *is de requirement zelf correct en compleet?*
 - **Architect**: systeemstructuur ontwerpen (applicatie-, software-, integratie-, data- en infrastructuurarchitectuur), technologiekeuzes en standaarden vastleggen, schaalbaarheid/performance/onderhoudbaarheid borgen, grote technische besluiten beoordelen, technisch risico mitigeren. Beantwoordt: *voldoet het ontwerp aan de requirement en aan de architectuurprincipes?*
-- **QA**: teststrategie bepalen en uitvoeren, defecten identificeren/rapporteren, functionele en non-functionele requirements verifiëren, kwaliteitsgates bewaken vóór release. Beantwoordt: *gedraagt de implementatie zich volgens de tests, is de coverage toereikend?*
-- **Fullstack Developer**: features/fixes bouwen volgens specificatie, onderhoudbare code schrijven, codekwaliteit en technische schuld beheren, werkende software opleveren.
-- **Reviewer**: onafhankelijke eindgate — verifieert dat er bewijs is dat het voorgaande daadwerkelijk is gebeurd en dat de verzameling artifacts consistent is voor release. Blijft een eigen rol (niet samengevoegd met QA/Fullstack Developer) — dit repo's eigen `pre-merge-review` (F11) bestaat specifiek omdat, over vier projecten en 27 samengevoegde PR's heen (`PRD.md`), geen enkele daarvan review had; zelfcontrole door dezelfde rol lost dat probleem niet op.
+- **QA**: teststrategie bepalen (welk soort test past — unit/integratie/end-to-end/penetratie/etc.) en testscenario's/seams uitwerken, uitvoeren, defecten identificeren/rapporteren, functionele en non-functionele requirements verifiëren, kwaliteitsgates bewaken vóór release. Beantwoordt: *wat moet getest worden, op welke manier, en gedraagt de implementatie zich volgens die tests?*
+- **Fullstack Developer**: features/fixes bouwen volgens specificatie, **de daadwerkelijke testcode schrijven volgens QA's teststrategie/scenario's** (rood-voor-groen, zie `tdd-seams`), onderhoudbare code schrijven, codekwaliteit en technische schuld beheren, werkende software opleveren.
+- **Reviewer**: onafhankelijke eindgate — verifieert dat er bewijs is dat het voorgaande daadwerkelijk is gebeurd en dat de verzameling artifacts consistent is voor release; beoordeelt daarnaast codekwaliteit, abstracties, hergebruik en verbositeit/efficiëntie (dezelfde reikwijdte als dit repo's eigen `pre-merge-review`/`code-review`). Blijft een eigen rol (niet samengevoegd met QA/Fullstack Developer) — dit repo's eigen `pre-merge-review` (F11) bestaat specifiek omdat, over vier projecten en 27 samengevoegde PR's heen (`PRD.md`), geen enkele daarvan review had; zelfcontrole door dezelfde rol lost dat probleem niet op.
+
+**Overlap 1 — wie schrijft de falende test (QA vs. Fullstack Developer)?** (besloten, resolveert §9 OQ6) Geen overlap zodra de vraag gesplitst wordt: QA bepaalt *wat* getest moet worden en *welk soort test* daarbij past (de strategie/het seam) — dat is QA's bestaande "teststrategie bepalen"-verantwoordelijkheid, nu expliciet inclusief testsoortkeuze. Fullstack Developer schrijft de *daadwerkelijke testcode*, rood-voor-groen, als onderdeel van implementatie — dat is precies wat `tdd-seams`' eigen rood-voor-groen-discipline al beschrijft (het seam is vooraf afgesproken, de rode test hoort bij de implementatiestap). Geen nieuwe regel, alleen de bestaande rolverdeling expliciet gemaakt.
+
+**Overlap 2 — wie verifieert traceability (Reviewer vs. `check-traceability.sh`)?** (besloten, resolveert §9 OQ6) Ook geen overlap: `check-traceability.sh` verifieert *structureel* (link 1, offline, mechanisch) — bestaat er *een* scenario per functionaliteit, resolveren `Covers:`-tokens. Dat kan het script vaststellen, het is geen oordeel. Reviewer verifieert *semantisch* — is het de *juiste* scenario voor de *juiste* functionaliteit, dekt het daadwerkelijk het gedrag dat de requirement vraagt. Dat is precies het soort oordeel een mechanische check niet kan vellen. Andere vraag, geen dubbel werk.
 
 Samenhang: Product bepaalt *wat*; Architect bepaalt *hoe*; Fullstack Developer voert uit; QA verifieert dat het werkt zoals bedoeld; Reviewer bevestigt onafhankelijk de hele keten vóór release.
 
@@ -135,6 +139,19 @@ Security testing en het controleren van security-relevante risico’s zijn een e
 **Inbedding van de triggerlijst:** tekst in de skill die Reviewer's rolcontract vastlegt (nog te schrijven, zie "Rol-naar-agent toewijzing" hieronder) — dezelfde plek als Reviewer's overige checklistitems, geen nieuw artifacttype. Optioneel aanvullend: een deterministische, padgebaseerde CI-vlag (raakt `auth/`, `.github/workflows/`, IaC-mappen, deploy-scripts) in de stijl van `check-pr-issue-link.sh` — vervangt Reviewer's eigen beoordeling niet, vangt alleen de voor-de-hand-liggende gevallen.
 
 **Wanneer een aparte Security-agent gerechtvaardigd is:** dezelfde voorwaardelijke-escalatie-redenering als bij UX hieronder — wanneer de triggerlijst van toepassing is *en* de inzet hoog is (echte gebruikerscredentials, betaalgegevens, publiek toegankelijke productieomgeving), niet standaard.
+
+**Minimale testcatalogus per triggercategorie (besloten, resolveert §9 OQ5):** POLP (Principle of Least Privilege) als organiserend uitgangspunt, voor zowel implementatie als test — niet zes losstaande ad-hoc checks, maar telkens dezelfde vraag: *is dit beperkt tot het minimum dat daadwerkelijk nodig is, en bewijst een test dat een overschrijding daarvan wordt geweigerd?*
+
+| Triggercategorie | Minimale test (POLP-vraag) |
+| --- | --- |
+| Auth/sessiebeheer | Toegang met minder dan de vereiste rol/scope wordt geweigerd — niet alleen "ongeautoriseerd geweigerd" in het algemeen, maar specifiek *te veel* rechten geweigerd. |
+| Secrets/credentials | Het gebruikte credential zelf heeft minimale scope (een scoped token, geen mastersleutel); geen secretwaarde lekt in logs/diff/output (dit repo's eigen `gitleaks`-werk, #264). |
+| Deploy-/CI-configuratie | De toegekende permissies/scope zijn het minimum voor de taak — zoals dit repo's eigen CI al doet (`contents: read` expliciet, alleen uitgebreid wanneer een stap dat echt nodig heeft). |
+| Infrastructure as Code | De geprovisioneerde resource/rol heeft minimale rechten, geen brede/wildcard-toekenningen; een plan/dry-run-diff is bekeken vóór apply, nooit blind toegepast. |
+| Gevoelige/persoonsgegevens | Toegang tot de data is beperkt tot wat daadwerkelijk nodig is (minimale scope, minimale bewaartermijn) — conform de privacy-NFR. |
+| Niet-vertrouwde input (API/CLI/webhook) | De inputverwerking opereert met minimale rechten op die input — valideert vóór gebruik in een bevoegde operatie, geeft niet-vertrouwde input nooit direct door aan een bevoegde operatie (dit repo's eigen "geen `eval`"-principe, toegepast in bredere zin). |
+
+Dit is de ontbrekende catalogus zelf, niet een nieuwe taxonomie — de triggerlijst hierboven blijft ongewijzigd.
 
 ### UX als voorwaardelijke verantwoordelijkheid (besloten activeringsregel)
 
@@ -201,6 +218,23 @@ De orchestrator is een concrete agent (niet alleen een verantwoordelijkheid), ge
 - **Non-lineaire routing (loop-back) is toegestaan voor herwerk, maar fase-verkorting/-overslag hoort niet bij v1 (besloten, issue #281)**: elke rol (Product, Architect, QA, Fullstack Developer, Reviewer) is bij elke verandering volledig betrokken, ongeacht type of urgentie. CI, `pre-merge-review` en `deploy-guards` waren al nooit overslaanbaar; dit trekt hetzelfde principe door naar elke rol — geen scenario-gebaseerde routing (security-hotfix, refactor-only, spike of anderszins) in v1. Hoeveel diepgang een verandering daadwerkelijk vraagt, beoordeelt elke rol zelf, binnen de eigen fase — dat blijft een oordeel van de rol, geen orchestrator-regel. Terugschalen van betrokkenheid per scenario is bewust uitgesteld tot een latere versie: dat nu al modelleren, zonder echte gebruiksdata, riskeert overengineering van de eerste release.
 - **Geen geautomatiseerde release/merge, ook niet als toekomstige uitbreiding**: mergebevestiging blijft altijd bij Ties, zoals `WORKFLOW.md` stap 4 al vastlegt. Dit vervangt het "2.0-autoapprove"-voorstel uit de geïmporteerde spec (Dev/QA/Reviewer die release zelf autoriseren) — agents mogen wél autonoom naar de *volgende fase* doorschakelen binnen guardrails, nooit naar release.
 
+### Compliance-rapportage: patroon en uitgewerkt voorbeeld (besloten, resolveert §9 OQ9)
+
+**Patroon:** hergebruikt `WORKFLOW-ADOPTION.md`'s rij-per-besluit-vorm (Change/Answer/Date/Notes), geschaald naar per work-item-issue. Elke rij verwijst naar bewijs dat al bestaat (`pre-merge-review`-marker, CI-run, PR-veld) — geen nieuw rapportformat, geen apart dashboard. Orchestrator plaatst dit als één issuecomment per work item, ná merge.
+
+**Uitgewerkt voorbeeld**, tegen een echt, al afgerond work item uit dit repo (issue #265 / PR #279, `wait-for-ci.sh`) — om te bevestigen dat het patroon daadwerkelijk de juiste evidence-links draagt, niet als hypothetisch ontwerp:
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| Discovery/Planning/Test/Implementation-model vastgelegd | ✅ | model-record-markers op PR #279 (alle vier `claude-sonnet-5`) |
+| Review: ander/minstens even bekwaam model, of expliciete uitzondering | ✅ | Review-marker met `same-model-exception` (enige beschikbare model in deze sessie) |
+| Quality review vóór merge, bevindingen in de PR | ✅ | pre-merge-review ronde 1 (2 bevindingen: ontbrekende `CHANGES.md`-rij; dubbele `gh`-calls + ongeteste zero-checks-case) en ronde 2 (beide opgelost, marker `pre-merge-review:done sha=...` op de laatste commit) |
+| CI groen | ✅ | check-run gekoppeld aan PR #279, zelf bevestigd via `wait-for-ci.sh` — dogfooding van het opgeleverde werk zelf |
+| Traceability schakel 3 (PR ↔ issue) | ✅ | `Closes #265` in de PR-body, `closingIssuesReferences` = 1 |
+| Ties' expliciete mergebevestiging | ✅ | gegeven vóór `gh pr merge`, conform A2 |
+
+**Vastgesteld:** het patroon draagt daadwerkelijk de juiste evidence-links, elke rij wijst naar iets dat al bestaat, en het past in één issuecomment zonder apart dashboard — de resterende twijfel bij OQ9 is hiermee weggenomen.
+
 ## 7. Begrippenkader en grenzen
 
 Om ontwerpbeslissingen scherp te houden, worden de volgende begrippen onderscheiden:
@@ -246,12 +280,12 @@ Status per vraag: **besloten**/**deels besloten** verwijst naar een concreet bes
 1. Welke artifacts zijn per workflowfase minimaal verplicht, en welke relaties moeten machineleesbaar zijn voor traceability? — **deels besloten**: artifacts per granulariteitsniveau vastgelegd in §3.4; het referentieproces (requirement → PR) met artifact per fase staat in `MULTI-AGENT-WORKFLOW.md`. Machineleesbare relatie blijft het bestaande `Covers:`-token; geen nieuw mechanisme geïntroduceerd.
 2. Welke gates zijn verplicht voordat werk naar de volgende fase mag, en welke rol of automatisering beoordeelt elke gate? — **besloten**: gate/rol per fase volgt het referentieproces in `MULTI-AGENT-WORKFLOW.md`, met CI/`pre-merge-review`/`deploy-guards` als nooit-overslaanbare gates (zie "Orchestrator: besloten model", §6).
 3. Hoe wordt context isolation technisch en organisatorisch vormgegeven, inclusief toegang tot repository, GitHub en deploymentomgeving? — **besloten**: skill-gebaseerd bestands-/mapbereik per rol (zie "Rol-naar-agent toewijzing", §4), geen OS-sandboxing, geen worktree-per-rol.
-4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd? — **deels besloten**: geen nieuw mechanisme — een bounded-contextkeuze is een architectuurbesluit als elk ander, vastgelegd als `## Decision N` in `ARCHITECTURE.md`/`ARCHITECTURE-MULTI-AGENT-WIP.md`. Wijzigingstrigger hergebruikt `refactoring-triggers`. Nog niet vastgelegd: wie een grenswijziging mag *voorstellen*, en wat er gebeurt met werk dat al in uitvoering is op de oude grens.
-5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd? — **deels besloten**: zie "Security als expliciete verantwoordelijkheid" hierboven — risicogestuurde triggerlijst (auth, secrets, deploy/CI-config, IaC, gevoelige data, niet-vertrouwde input), ingebed in Reviewer's rolcontract-skill, geen nieuwe taxonomie. Nog niet vastgelegd: een uitgewerkte minimale testcatalogus per triggercategorie, niet alleen de triggerlijst zelf.
-6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd? — **deels besloten**: zie "Kernverantwoordelijkheden per rol" hierboven — elke rol beantwoordt een andere vraag; legitiem conflict escaleert, wordt niet onderdrukt. Nog niet vastgelegd: twee concrete overlaps die dit openlaat — QA vs. Fullstack Developer over wie de falende test schrijft (relevant door dit project's eigen `tdd-seams` rood-voor-groen-regel), en Reviewer vs. `check-traceability.sh` over wie traceability verifieert.
+4. Hoe worden bounded contexts of andere werkgrenzen vastgesteld en gewijzigd? — **besloten** (21-09-2026): een bounded-contextkeuze is een architectuurbesluit als elk ander, vastgelegd als `## Decision N` in `ARCHITECTURE-MULTI-AGENT-WIP.md`. Wijzigingstrigger hergebruikt `refactoring-triggers`. Wie mag voorstellen en wat gebeurt met werk in uitvoering: zie `ARCHITECTURE-MULTI-AGENT-WIP.md`, "Proposing a boundary change mid-work" — geen synchrone escalatie, een niet-blokkerende issue + async triagevraag aan Ties; werk in uitvoering maakt de oude grens af.
+5. Welke security tests en risicoclassificaties zijn minimaal vereist, en wanneer is een afzonderlijke Security-agent gerechtvaardigd? — **besloten** (21-09-2026): zie "Security als expliciete verantwoordelijkheid" hierboven — risicogestuurde triggerlijst (auth, secrets, deploy/CI-config, IaC, gevoelige data, niet-vertrouwde input), ingebed in Reviewer's rolcontract-skill, geen nieuwe taxonomie, plus een POLP-georganiseerde minimale testcatalogus per triggercategorie (zelfde subsectie).
+6. Welke verificaties worden verwacht van Product en Architect naast QA en Reviewer, en hoe wordt overlap doelbewust beheerd? — **besloten** (21-09-2026): zie "Kernverantwoordelijkheden per rol" hierboven — elke rol beantwoordt een andere vraag; legitiem conflict escaleert, wordt niet onderdrukt. Beide concrete overlaps opgelost (zie "Overlap 1"/"Overlap 2" in dezelfde subsectie): QA bepaalt teststrategie + scenario, Fullstack Developer schrijft de daadwerkelijke falende test; `check-traceability.sh` verifieert structureel, Reviewer verifieert semantisch.
 7. Is een UX-designrol nodig? Zo ja, welke artifacts en gates hoort die rol te bezitten of te beoordelen? — **besloten**: zie "UX als voorwaardelijke verantwoordelijkheid" hierboven — activeringsregel is niet "is er een UI" maar "heeft het product enig interactie-oppervlak" (GUI, CLI, API, of een agent-/LLM-harness); standaard verdeeld over bestaande rollen, aparte agent alleen bij gerechtvaardigde complexiteit/inzet.
 8. Welke taken van de orchestrator worden geautomatiseerd, welke vragen menselijk besluit en hoe worden uitzonderingen vastgelegd? — **besloten**: zie "Orchestrator: besloten model", §6.
-9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **deels besloten**: hergebruikt het `WORKFLOW-ADOPTION.md`-patroon (rij per besluit: Change/Answer/Date/Notes), geschaald naar per work-item-issue; evidence zijn verwijzingen naar wat al bestaat (`pre-merge-review`-marker, CI-run, PR) — geen nieuw rapportformat. Orchestrator plaatst dit als één issuecomment per work item, geen apart dashboard. Nog niet vastgelegd: een uitgewerkt voorbeeld tegen een echt work item, om te bevestigen dat het patroon daadwerkelijk de juiste evidence-links draagt.
+9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **besloten** (21-09-2026): zie §6, "Compliance-rapportage: patroon en uitgewerkt voorbeeld" — het `WORKFLOW-ADOPTION.md`-patroon, plus een uitgewerkt voorbeeld tegen een echt, afgerond work item (#265/PR #279) dat bevestigt dat het patroon de juiste evidence-links draagt.
 10. Hoe sluit dit ontwerp aan op bestaande workflowdocumentatie, bestaande repositories en hun eigen conventies? — **besloten**: hergebruikt bestaande skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) ongewijzigd; de nieuwe rol-/orchestratielaag komt in een eigen skill, geen vervanging.
 
 ## 10. Voorgestelde vervolgscope
@@ -262,15 +296,11 @@ hier eerder als "eerstvolgende ontwerpstap" stond, bestaat inmiddels al —
 Workflow Path-diagram dekken dat. Vier van de zes onderstaande vervolgpunten zijn om
 dezelfde reden ook al (deels) besloten. De daadwerkelijk resterende stap is smaller:
 
-1. **De vier nog open (deels besloten) vragen uit §9 sluiten** — OQ4 (wie mag een
-   grenswijziging voorstellen, en wat gebeurt met werk in uitvoering op de oude grens),
-   OQ5 (uitgewerkte minimale securitytestcatalogus per triggercategorie), OQ6 (de twee
-   concrete rol-overlaps: QA vs. Fullstack Developer over de falende test, Reviewer vs.
-   `check-traceability.sh` over traceability), OQ9 (een uitgewerkt voorbeeld van het
-   compliance-rapportagepatroon tegen een echt work item).
-2. **Het bestaande referentieproces tegen één echt work item doorlopen**, end-to-end, om te
-   bevestigen dat het daadwerkelijk werkt zoals beschreven — dit is tevens OQ9's ontbrekende
-   voorbeeld, geen apart nieuw ontwerp.
+1. **OQ9 sluiten**: het bestaande referentieproces tegen één echt work item doorlopen,
+   end-to-end, om te bevestigen dat het compliance-rapportagepatroon daadwerkelijk werkt
+   zoals beschreven — geen apart nieuw ontwerp, alleen het ontbrekende voorbeeld. (OQ4, OQ5
+   en OQ6 zijn op 21-09-2026 volledig besloten — zie §9.)
+2. Daarna: §11-acceptatie vragen.
 
 Oorspronkelijke vervolgpunten en waar ze inmiddels (deels) landen: een artifact- en
 traceabilitymodel (besloten, §3.4 + het referentieproces); een rol-/agenttoewijzingsmodel en
