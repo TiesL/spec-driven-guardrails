@@ -213,6 +213,48 @@ is.
 
 ---
 
+## Decision 5 — Pre-decision elaboration runs as a reduced Product+Architect "co-thinking session", not the full five-role pipeline
+
+**Decided on 2026-09-23: elaborating a new product brief (PRD §3.4 Level 1) or a new
+release/epic within an existing product (Level 2) engages only the Orchestrator, Product,
+and Architect roles, before any decision to build. QA, Fullstack Developer, and Reviewer do
+not participate. Output goes to a dedicated `wip/<slug>/` folder, never directly into
+`PRD.md`/`ARCHITECTURE.md`.**
+
+### Evaluation criteria
+
+| Criterion | Why it counts |
+|---|---|
+| A3 / issue #281 (no phase-skipping in v1) must not be silently reinterpreted | A3 governs Level 3 execution — an already-scoped work item being implemented. Applying it to pre-decision elaboration, where no work item exists yet, would force QA/Fullstack Developer/Reviewer to review nothing — not full engagement, just motion without signal. |
+| Main docs stay uncluttered by unaccepted exploration (PRD §3.3, completion is an evidence-based decision) | An idea under active elaboration isn't a decision yet; writing it straight into the accepted docs would blur "proposed" with "decided." |
+| Decision 1 (context is artifact-based, reconstructable) | A co-thinking session still needs durable artifacts, not just chat — same principle, smaller role set. |
+
+### Options weighed
+
+#### Option 1 — Run the full five-role pipeline on elaboration work too (rejected)
+Forces QA/Fullstack Developer/Reviewer sessions with no implementation yet to inspect —
+wasted orchestration for no signal, and it collapses the Level 1-3 granularity distinction
+PRD §3.4 already draws.
+
+#### Option 2 — No formal process for elaboration; free-form chat until Ties decides (rejected)
+Reintroduces exactly the "decisions lost to chat instead of durable artifacts" problem this
+whole epic exists to fix (PRD §2, problem statement) — just relocated to the pre-decision
+phase instead of implementation.
+
+#### Option 3 — Reduced pipeline: Orchestrator + Product + Architect only, output to `wip/<slug>/` (chosen)
+Matches the granularity PRD §3.4 already assigns to Levels 1-2 (Product alone / Product +
+Architect), keeps artifact discipline, and doesn't engage roles that have nothing yet to
+evaluate.
+
+### Comparison and choice
+
+Option 3 wins: it's the only option that scales role engagement to what the phase actually
+requires without abandoning artifact discipline. Cost: a second, lighter orchestration mode
+to maintain alongside the full pipeline — accepted, since Option 1's alternative actively
+degrades signal by asking roles to review nothing.
+
+---
+
 ## Architecture requirements that follow from this
 
 ### A1 — No orchestrator-held state outside artifacts
@@ -262,6 +304,18 @@ The orchestrator updates this label as work moves between phases; it is the trac
 record of "who acted," not an execution mechanism. Violated if the label is left stale
 after a phase transition, or if execution logic depends on reading it back (that would make
 it state, contradicting A1).
+
+### A6 — Pre-decision elaboration output lives in `wip/<slug>/`, not in the accepted docs
+A co-thinking session (Decision 5) writes its output to its own `wip/<slug>/` folder — a
+short, kebab-case, descriptive name, independent of any issue number (unlike branch names,
+which this repo's workflow requires to carry one — a co-thinking session may start before
+any issue exists). It never edits `PRD.md`/`ARCHITECTURE.md` directly while still unaccepted.
+Once Ties accepts the output (same explicit-acceptance gate as PRD §11), its content is
+promoted into a new `PRD.md` epic section and a real Epic issue is opened; the `wip/<slug>/`
+folder itself is kept afterward by default, as historical record — same precedent as epic
+#65's own folder — not deleted, unless Ties says otherwise for that specific case. Violated
+if elaboration content is written directly into the accepted docs before acceptance, or if a
+`wip/<slug>/` folder is deleted on promotion without Ties saying so.
 
 ---
 

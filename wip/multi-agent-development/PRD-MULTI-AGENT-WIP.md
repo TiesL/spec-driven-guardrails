@@ -100,6 +100,30 @@ Deze regel wordt niet per project apart vastgelegd (geen extra veld in `CONTEXT.
 
 Concrete plaatsing in `templates/ISSUE_TEMPLATE/epic.md`/`work-item.md` (welk veld deze regel vervangt of aanvult) is **buiten scope voor deze WIP** — zie §8. Dat is een sjabloonwijziging als elke andere en wordt pas een besluit wanneer die templates daadwerkelijk worden aangepast, niet hier vooruitgeschoven.
 
+### 3.5 Pre-decision elaboration: co-thinking sessions (decided, 2026-09-23)
+
+Levels 1 and 2 in §3.4's table (new product; new release/epic within an existing product)
+happen *before* a decision to build. This elaboration/elicitation step runs as a
+**co-thinking session**: Orchestrator + Product + Architect only — QA, Fullstack Developer,
+and Reviewer do not participate, because there is nothing yet to test, implement, or review.
+Full detail (evaluation criteria, options weighed, the architecture requirement it produces)
+is in [`ARCHITECTURE-MULTI-AGENT-WIP.md`](ARCHITECTURE-MULTI-AGENT-WIP.md), Decision 5 and
+A6.
+
+This does not conflict with issue #281's "no phase-skipping in v1" decision (§6,
+"Orchestrator: besloten model" above; A3 in `ARCHITECTURE-MULTI-AGENT-WIP.md`) — that
+decision governs Level 3 execution, where a work item already exists and all five roles
+fully engage on it. A co-thinking session is an earlier, separate layer: there is no work
+item yet, so there is nothing for QA/Fullstack Developer/Reviewer to engage with.
+
+Output goes to a dedicated `wip/<slug>/` folder (short, kebab-case, descriptive name — not
+tied to an issue number, since a co-thinking session may start before any issue exists),
+never directly into `PRD.md`/`ARCHITECTURE.md`. Once Ties explicitly accepts the output
+(same acceptance gate as §11), it gets promoted into a new `PRD.md` epic section and a real
+Epic issue; the `wip/<slug>/` folder itself is kept afterward as historical record by
+default, not deleted — same precedent as this very epic's own `wip/multi-agent-development/`
+folder.
+
 ## 4. Rollen en verantwoordelijkheden
 
 De onderstaande rollen zijn kernrollen in het beoogde model. Dit zijn verantwoordelijkheden; de toewijzing aan concrete agents is **TBD**.
@@ -248,6 +272,7 @@ Om ontwerpbeslissingen scherp te houden, worden de volgende begrippen onderschei
 | Artifact | Een duurzaam, reviewbaar resultaat of bewijsstuk dat werk overdraagbaar en controleerbaar maakt. |
 | Orchestrator | De coördinerende verantwoordelijkheid die werk, afhankelijkheden, gates en compliance bewaakt. |
 | Tooling | De technische middelen die de workflow mogelijk maken of afdwingen, zoals GitHub, CI, testframeworks en deployment- of IaC-tooling. |
+| Co-thinking session (English term, decided 2026-09-23) | A reduced-role elaboration/elicitation step (Orchestrator + Product + Architect only) for a new product or a new release/epic, before deciding to build — see §3.5. |
 
 Deze begrippen moeten in vervolgontwerp consequent worden gebruikt. Een keuze voor tooling mag de governance- of rolverdeling niet ongemerkt bepalen.
 
@@ -326,8 +351,9 @@ Dit documentendrietal is gereed om als attachment of referentie bij een GitHub E
 - elke implementatie-/architectuurkeuze vastlegt als een expliciet, gedateerd besluit — geen enkele keuze is stilzwijgend gemaakt (dit is scherper dan "introduceert geen keuzes": een uitgewerkt architectuurdocument bevát keuzes, de eis is dat ze allemaal traceerbaar besloten zijn, niet dat er geen zijn);
 - een voldoende basis biedt om afzonderlijke, traceerbare vervolgwork items te formuleren.
 
-**Huidige stand.** Het documentendrietal is als WIP opgenomen in dit repo en gekoppeld aan
-epic [#65](https://github.com/TiesL/spec-driven-guardrails/issues/65). Die opname is
-geen acceptatie: de bevestiging hierboven is nog niet gegeven, en zolang dat zo
-is worden er geen vervolgwork items uit afgeleid.
+**Current status (updated 2026-09-23).** Ties confirmed acceptance on 2026-09-21 — see `wip/multi-agent-development/
+DIRECTION-CHECK-SUMMARY.md`. OQ11 (target release timing) stays deliberately open,
+resolved only once the process has run end-to-end on one real work item. Follow-up work
+items are now being drafted (§3.5's co-thinking session, applied first to the plugin
+conversion initiative in `wip/claude-code-plugin/`), consistent with that acceptance.
 
