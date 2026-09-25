@@ -57,7 +57,8 @@ decomposition. See `vendor/codebase-design/DEEPENING.md` for dependency-category
 `DESIGN-IT-TWICE.md` for exploring alternative interfaces via parallel sub-agents.
 
 **Evidence / gates it produces:** specification/design, architecture review, recorded
-decisions.
+decisions — where useful, as diagrams (sequence, flow, component) in Mermaid, this repo's
+own established convention (see `MULTI-AGENT-WORKFLOW.md`'s Workflow Execution Summary).
 
 ---
 
