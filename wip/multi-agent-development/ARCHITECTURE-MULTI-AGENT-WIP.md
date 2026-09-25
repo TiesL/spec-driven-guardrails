@@ -386,6 +386,23 @@ rule for every role and for the orchestrator itself. Violated if a role asks Tie
 it could have found out itself, or asks a question one round before its prerequisite is
 actually settled.
 
+### A11 — Commit and push per logical step is pre-authorized; merge/release never is (decided 2026-09-25)
+A role or the orchestrator, operating on its assigned feature branch, commits and pushes
+after each relevant change without asking first — this repo's own `CLAUDE.md` already says
+so ("commit logical steps on the feature branch... push regularly"). Restated here explicitly
+rather than left to inherit from `CLAUDE.md`, because which concrete runtime a role eventually
+maps to is still **TBD** (PRD §4) — today's roles happen to run as Claude Code sub-agents in
+this project's own directory, where `CLAUDE.md` likely loads automatically, but nothing
+commits a future implementation (e.g. a bare Agent SDK call with its own system prompt) to
+that same inheritance. Same category as A8/A10: state explicitly what a role needs, don't
+assume it arrives by ambient context.
+
+**Sharpens, doesn't loosen, A2**: this is authorization for ordinary commit + push of new
+work, never for merge, release, force-push, or any destructive git operation — those stay
+exactly as unconditional and human-only as A2 already requires. Violated if a role asks for
+confirmation before an ordinary commit/push (needless friction, the opposite failure from
+A2's concern), or if "pre-authorized" is stretched to cover anything A2 forbids.
+
 ---
 
 ## System boundaries and ownership

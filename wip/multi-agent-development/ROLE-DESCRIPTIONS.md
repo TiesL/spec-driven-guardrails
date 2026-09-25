@@ -141,3 +141,7 @@ Product decides *what*; Architect decides *how*; Fullstack Developer executes; Q
 works as intended; Reviewer independently confirms the whole chain before release. Conflict
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
 (Decision 4/A7 in `ARCHITECTURE-MULTI-AGENT-WIP.md`).
+
+**Commit and push per logical step on your assigned branch, without asking** (A11). Never
+merge, release, force-push, or run a destructive git operation — that stays unconditionally
+human-only (A2), no exception.
