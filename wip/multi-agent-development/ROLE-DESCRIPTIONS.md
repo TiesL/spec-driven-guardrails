@@ -130,7 +130,9 @@ whether it's the *right* one) to test code specifically: the same kind of judgme
 mechanical check can't make. Reviewer is the only role positioned after Fullstack Developer
 in the standard path, so this check has nowhere else to live.
 
-**Evidence / gates it produces:** pull-request review, technical findings, approval or
+**Evidence / gates it produces:** pull-request review, technical findings (includes any bug
+found at this gate, reported the same way as a code-quality finding — same channel this
+repo's own `pre-merge-review` already uses, no separate bug-report artifact), approval or
 rejection.
 
 ---
@@ -145,3 +147,21 @@ between roles is expected, not a model failure — it escalates, it doesn't get 
 **Commit and push per logical step on your assigned branch, without asking** (A11). Never
 merge, release, force-push, or run a destructive git operation — that stays unconditionally
 human-only (A2), no exception.
+
+**Reporting a defect or finding (QA, Reviewer): minimal content structure, decided
+2026-09-25.** Neither role had one specified before this — closing that gap now rather than
+implying more rigor than existed. Whether posted as a PR comment or an issue comment, use:
+
+- **Summary** — one sentence stating the defect.
+- **Failure scenario** — concrete input/state that produces the wrong output or behavior;
+  the evidence, not just an assertion.
+- **Location** — file:line for a code-level finding; the relevant scenario ID (e.g. `S<n>`)
+  for a scenario/behavior-level defect without a specific line.
+- **Category** — short label for the kind of defect (e.g. correctness, regression,
+  test-coverage, code-quality).
+- **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
+  never asserted as certain without naming which of the two it is.
+
+No new tooling: this is the same shape already produced by this project's own
+review-finding conventions, written down as a standing content requirement instead of only
+living in an ad hoc tool schema.

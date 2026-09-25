@@ -169,14 +169,21 @@ Aanvullend op de rollentabel hierboven, per rol de kernverantwoordelijkheden en 
 
 **Overlap 2 — wie verifieert traceability (Reviewer vs. `check-traceability.sh`)?** (besloten, resolveert §9 OQ6) Ook geen overlap: `check-traceability.sh` verifieert *structureel* (link 1, offline, mechanisch) — bestaat er *een* scenario per functionaliteit, resolveren `Covers:`-tokens. Dat kan het script vaststellen, het is geen oordeel. Reviewer verifieert *semantisch* — is het de *juiste* scenario voor de *juiste* functionaliteit, dekt het daadwerkelijk het gedrag dat de requirement vraagt. Dat is precies het soort oordeel een mechanische check niet kan vellen. Andere vraag, geen dubbel werk.
 
-**Gap closed (decided 2026-09-25, in English — see `ROLE-DESCRIPTIONS.md` and
-[[feedback_no_dutch_default_english]]): who checks that Fullstack Developer's actual test
-code faithfully implements QA's scenarios/strategy, not just that it exists and passes?**
-Overlap 1 only resolved *who writes* the test; nothing resolved who verifies it matches
-intent. Extends Overlap 2's structural/semantic split to test code specifically: Reviewer
-judges this, since it's the same kind of judgment `check-traceability.sh` can't make, and
-Reviewer is the only role positioned after Fullstack Developer in the standard path (there is
-nowhere else for this check to live).
+**Gap closed (decided 2026-09-25, in English — see `ROLE-DESCRIPTIONS.md`): who checks that
+Fullstack Developer's actual test code faithfully implements QA's scenarios/strategy, not
+just that it exists and passes?** Overlap 1 only resolved *who writes* the test; nothing
+resolved who verifies it matches intent. Extends Overlap 2's structural/semantic split to
+test code specifically: Reviewer judges this, since it's the same kind of judgment
+`check-traceability.sh` can't make, and Reviewer is the only role positioned after Fullstack
+Developer in the standard path (there is nowhere else for this check to live).
+
+**Defect/finding content structure (decided 2026-09-25, in English — see
+`ROLE-DESCRIPTIONS.md`'s "Shared, across all five roles" section for the full template).**
+Neither QA's "defecten identificeren/rapporteren" nor Reviewer's technical findings had a
+defined content shape before this — closed rather than left implied. Minimal fields:
+summary, failure scenario (evidence, not assertion), location (file:line or scenario ID),
+category, and a `CONFIRMED`/`PLAUSIBLE` verdict. No new tooling — the same shape this
+project's own review-finding conventions already produce, written down explicitly.
 
 Samenhang: Product bepaalt *wat*; Architect bepaalt *hoe*; Fullstack Developer voert uit; QA verifieert dat het werkt zoals bedoeld; Reviewer bevestigt onafhankelijk de hele keten vóór release.
 
