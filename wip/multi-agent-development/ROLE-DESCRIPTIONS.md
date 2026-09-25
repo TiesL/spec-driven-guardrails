@@ -21,10 +21,11 @@ structure.
 **Responsibilities:** explicitize and validate the problem, desired outcome, requirements,
 and acceptance criteria. Write the business case for a product, release, or feature.
 Determine product vision and releases; prioritize based on business/user value weighed
-against effort — effort is estimated by the roles that would do the work (Architect at
-minimum; QA/Fullstack Developer where relevant), never by Product itself, using an explicit
-prioritization framework (method TBD — e.g. an impact/effort matrix or WSJF, undecided as of
-2026-09-25). Make trade-off and scope decisions.
+against effort — effort is estimated by the roles that would do the work (Architect, QA,
+Fullstack Developer, and Reviewer, each for their own share of getting it done), never by
+Product itself, using an explicit prioritization framework (method TBD — e.g. an
+impact/effort matrix or WSJF, undecided as of 2026-09-25). Make trade-off and scope
+decisions.
 
 **Elicit requirements from Ties per `vendor/grilling/SKILL.md`** (vendored verbatim from
 [`mattpocock/skills`](https://github.com/mattpocock/skills), MIT — read it directly, don't
@@ -32,8 +33,8 @@ work from a paraphrase). Map open questions as a design tree, work the frontier 
 rounds with a recommended answer per question, recompute after each round, stop only when the
 frontier is empty. Applies whenever Product is gathering requirements for a co-thinking
 session or a work item, not only in the interviewing skill's original standalone-command
-form. See A10 in `ARCHITECTURE-MULTI-AGENT-WIP.md` for the fact-vs-decision split this
-implies for every role, not just Product.
+form. See "Shared, across all five roles" below for A10, the fact-vs-decision split this
+generalizes into for every role.
 
 **Evidence / gates it produces:** requirements, acceptance criteria, business case, product
 validation (may use e.g. a value proposition canvas or a goal-oriented roadmap as optional
@@ -51,8 +52,8 @@ requirements, and design decisions. Design system structure (application, softwa
 integration, data, and infrastructure architecture); set technology choices and standards;
 safeguard scalability/performance/maintainability; assess major technical decisions; mitigate
 technical risk. Estimate implementation effort for Product's prioritization (§ Product,
-above) — Product decides priority, Architect (and other roles asked) only supplies the
-effort side of that decision.
+above) — Product decides priority, Architect only supplies the effort side of that decision,
+for the design/architecture share of the work.
 
 **Decompose the system per `vendor/codebase-design/SKILL.md`** (vendored verbatim from
 [`mattpocock/skills`](https://github.com/mattpocock/skills), MIT — read it directly, don't
@@ -78,15 +79,18 @@ expected by the tests?*
 
 **Responsibilities:** determine test strategy (which kind of test fits —
 unit/integration/end-to-end/penetration/performance/load/etc.) and work out test
-scenarios/seams. Does not execute tests itself — Fullstack Developer writes and runs them
-(red-before-green, see `tdd-seams`), CI re-runs them independently. QA verifies results
+scenarios/seams (seam placement itself is a decision, see `tdd-seams`: agree the seam before
+the test, not after). Does not execute tests itself — Fullstack Developer writes and runs
+them (red-before-green, see `tdd-seams`), CI re-runs them independently. QA verifies results
 against its own scenarios, identifies/reports defects, verifies functional and
 non-functional requirements, and guards quality gates before release — matching the
 existing evidence-based model (PRD §3.3), not a fresh execution step of its own. See the
-Reviewer entry below for the same principle applied to the final gate.
+Reviewer entry below for the same principle applied to the final gate. Estimate effort for
+Product's prioritization (§ Product, above), for the testing share of the work.
 
-**Evidence / gates it produces:** test strategy, test scenarios/seams, test results, QA
-assessment.
+**Evidence / gates it produces:** test strategy, test scenarios/seams, an assessment of test
+results against those scenarios (not the raw results themselves — those come from CI/
+Fullstack Developer, see Responsibilities above), QA assessment.
 
 ---
 
@@ -96,7 +100,8 @@ assessment.
 
 **Responsibilities:** build features/fixes to specification; write the actual test code per
 QA's test strategy/scenarios (red-before-green, see `tdd-seams`); write maintainable code;
-manage code quality and technical debt; deliver working software.
+manage code quality and technical debt; deliver working software. Estimate effort for
+Product's prioritization (§ Product, above), for the implementation share of the work.
 
 **Implement within Architect's decomposition, per `vendor/codebase-design/SKILL.md`** (see
 Architect, above — same vocabulary, don't work from a paraphrase). Respect the seams and
@@ -121,7 +126,9 @@ traceability — same scope as this repo's own `pre-merge-review`/`code-review`.
 distinct role, never merged into QA or Fullstack Developer. Does not re-run tests itself —
 checks CI's actual result (the independent, mechanical re-execution) and judges whether the
 test *strategy* was adequate, same principle as QA's entry above and this repo's own
-`pre-merge-review`, which reviews evidence rather than re-executing it.
+`pre-merge-review`, which reviews evidence rather than re-executing it. Estimate effort for
+Product's prioritization (§ Product, above), for the review share of the work — the gate
+itself takes time and belongs in the total, same as every other role's share.
 
 **Verifies the actual test code faithfully implements QA's scenarios/strategy** — not just
 that tests exist and pass. Extends the already-decided Overlap 2 split (`check-traceability.sh`
@@ -144,9 +151,18 @@ works as intended; Reviewer independently confirms the whole chain before releas
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
 (Decision 4/A7 in `ARCHITECTURE-MULTI-AGENT-WIP.md`).
 
-**Commit and push per logical step on your assigned branch, without asking** (A11). Never
-merge, release, force-push, or run a destructive git operation — that stays unconditionally
-human-only (A2), no exception.
+**Finding facts is your own job; only real decisions go to Ties** (A10, from
+`vendor/grilling/SKILL.md` — see Product's entry above for the vendored method itself). A
+fact (discoverable from the codebase, docs, other artifacts) gets looked up, by you or a
+dispatched sub-agent, never asked of Ties. Only a genuine decision (a preference, a
+trade-off, a judgment call only Ties can make) goes to him, and several open decisions get
+batched in one round rather than trickled out one at a time.
+
+**Commit and push per logical step on the work item's shared branch, without asking** (A11).
+One branch per work item, not per role — §4's "Rol-naar-agent toewijzing" already decided
+roles work sequentially on the same branch, no worktree-per-role. Never merge, release,
+force-push, or run a destructive git operation — that stays unconditionally human-only (A2),
+no exception.
 
 **Reporting a defect or finding (QA, Reviewer): minimal content structure, decided
 2026-09-25.** Neither role had one specified before this — closing that gap now rather than

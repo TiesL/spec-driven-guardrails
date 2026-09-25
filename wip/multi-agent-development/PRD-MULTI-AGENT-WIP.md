@@ -165,6 +165,34 @@ Aanvullend op de rollentabel hierboven, per rol de kernverantwoordelijkheden en 
 - **Fullstack Developer**: features/fixes bouwen volgens specificatie, **de daadwerkelijke testcode schrijven volgens QA's teststrategie/scenario's** (rood-voor-groen, zie `tdd-seams`), onderhoudbare code schrijven, codekwaliteit en technische schuld beheren, werkende software opleveren.
 - **Reviewer**: onafhankelijke eindgate — verifieert dat er bewijs is dat het voorgaande daadwerkelijk is gebeurd en dat de verzameling artifacts consistent is voor release; beoordeelt daarnaast codekwaliteit, abstracties, hergebruik en verbositeit/efficiëntie (dezelfde reikwijdte als dit repo's eigen `pre-merge-review`/`code-review`). Blijft een eigen rol (niet samengevoegd met QA/Fullstack Developer) — dit repo's eigen `pre-merge-review` (F11) bestaat specifiek omdat, over vier projecten en 27 samengevoegde PR's heen (`PRD.md`), geen enkele daarvan review had; zelfcontrole door dezelfde rol lost dat probleem niet op.
 
+**Additional role responsibilities (decided 2026-09-25, in English — full text in
+`ROLE-DESCRIPTIONS.md`, which this paragraph mirrors so it isn't the sole record):**
+
+- **Product** also writes the business case for a product, release, or feature, and
+  prioritizes on business/user value weighed against effort — effort is estimated by
+  Architect, QA, Fullstack Developer, and Reviewer, each for their own share of the work,
+  never by Product itself. Prioritization framework method is TBD (e.g. an impact/effort
+  matrix or WSJF). Product elicits requirements from Ties using the vendored `grilling`
+  skill's design-tree/frontier/rounds method (`ROLE-DESCRIPTIONS.md`, `vendor/grilling/`).
+- **Architect** also decomposes the system per the vendored `codebase-design` skill's deep-
+  module vocabulary (Module, Interface, Seam, Depth, Leverage, Locality —
+  `ROLE-DESCRIPTIONS.md`, `vendor/codebase-design/`), and estimates implementation effort for
+  Product's prioritization.
+- **QA** and **Fullstack Developer** and **Reviewer** each also estimate effort for their own
+  share of the work, for Product's prioritization.
+- **Fullstack Developer** implements within Architect's decomposition (same vendored
+  `codebase-design` vocabulary), respecting decided seams/module boundaries; internal seams
+  private to its own implementation remain its own call.
+- **QA does not execute tests itself** — Fullstack Developer writes and runs them
+  (red-before-green), CI re-runs independently; QA verifies results against its own
+  scenarios. **Reviewer does not re-run tests either** — checks CI's actual result and judges
+  strategy adequacy, and additionally verifies the actual test code faithfully implements
+  QA's scenarios (extends Overlap 2's structural/semantic split to test code — see the gap
+  closed further below).
+- A defect or finding (QA, Reviewer) uses a minimal content structure: summary, failure
+  scenario (evidence, not assertion), location (file:line or scenario ID), category, and a
+  `CONFIRMED`/`PLAUSIBLE` verdict — full detail in `ROLE-DESCRIPTIONS.md`.
+
 **Overlap 1 — wie schrijft de falende test (QA vs. Fullstack Developer)?** (besloten, resolveert §9 OQ6) Geen overlap zodra de vraag gesplitst wordt: QA bepaalt *wat* getest moet worden en *welk soort test* daarbij past (de strategie/het seam) — dat is QA's bestaande "teststrategie bepalen"-verantwoordelijkheid, nu expliciet inclusief testsoortkeuze. Fullstack Developer schrijft de *daadwerkelijke testcode*, rood-voor-groen, als onderdeel van implementatie — dat is precies wat `tdd-seams`' eigen rood-voor-groen-discipline al beschrijft (het seam is vooraf afgesproken, de rode test hoort bij de implementatiestap). Geen nieuwe regel, alleen de bestaande rolverdeling expliciet gemaakt.
 
 **Overlap 2 — wie verifieert traceability (Reviewer vs. `check-traceability.sh`)?** (besloten, resolveert §9 OQ6) Ook geen overlap: `check-traceability.sh` verifieert *structureel* (link 1, offline, mechanisch) — bestaat er *een* scenario per functionaliteit, resolveren `Covers:`-tokens. Dat kan het script vaststellen, het is geen oordeel. Reviewer verifieert *semantisch* — is het de *juiste* scenario voor de *juiste* functionaliteit, dekt het daadwerkelijk het gedrag dat de requirement vraagt. Dat is precies het soort oordeel een mechanische check niet kan vellen. Andere vraag, geen dubbel werk.
