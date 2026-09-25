@@ -169,6 +169,15 @@ Aanvullend op de rollentabel hierboven, per rol de kernverantwoordelijkheden en 
 
 **Overlap 2 — wie verifieert traceability (Reviewer vs. `check-traceability.sh`)?** (besloten, resolveert §9 OQ6) Ook geen overlap: `check-traceability.sh` verifieert *structureel* (link 1, offline, mechanisch) — bestaat er *een* scenario per functionaliteit, resolveren `Covers:`-tokens. Dat kan het script vaststellen, het is geen oordeel. Reviewer verifieert *semantisch* — is het de *juiste* scenario voor de *juiste* functionaliteit, dekt het daadwerkelijk het gedrag dat de requirement vraagt. Dat is precies het soort oordeel een mechanische check niet kan vellen. Andere vraag, geen dubbel werk.
 
+**Gap closed (decided 2026-09-25, in English — see `ROLE-DESCRIPTIONS.md` and
+[[feedback_no_dutch_default_english]]): who checks that Fullstack Developer's actual test
+code faithfully implements QA's scenarios/strategy, not just that it exists and passes?**
+Overlap 1 only resolved *who writes* the test; nothing resolved who verifies it matches
+intent. Extends Overlap 2's structural/semantic split to test code specifically: Reviewer
+judges this, since it's the same kind of judgment `check-traceability.sh` can't make, and
+Reviewer is the only role positioned after Fullstack Developer in the standard path (there is
+nowhere else for this check to live).
+
 Samenhang: Product bepaalt *wat*; Architect bepaalt *hoe*; Fullstack Developer voert uit; QA verifieert dat het werkt zoals bedoeld; Reviewer bevestigt onafhankelijk de hele keten vóór release.
 
 **Conflict is verwacht, geen fout van het model.** Een andere vraag per rol voorkomt *overbodige* herverificatie, niet legitiem conflict (bijv. Architect's ontwerp vs. Product's requirement, of QA die een ontwerpfout vindt). Zulke conflicten escaleren via het al besloten enkele pad — rol-agent → orchestrator → Ties — zie de Escalation Triggers in `MULTI-AGENT-WORKFLOW.md` (categorieën 1 en 2 daar). **Bij escalatie van een conflict tussen twee rollen presenteert de orchestrator beide rollen' eigen bevindingen naast elkaar** (besloten, `ARCHITECTURE-MULTI-AGENT-WIP.md` Decision 4) — geen samengevoegde samenvatting, geen alleen-de-laatste-rol-aan-het-woord — zodat Ties zelf vanuit beide posities beoordeelt, niet via orchestrator-interpretatie.

@@ -98,6 +98,12 @@ assessment.
 QA's test strategy/scenarios (red-before-green, see `tdd-seams`); write maintainable code;
 manage code quality and technical debt; deliver working software.
 
+**Implement within Architect's decomposition, per `vendor/codebase-design/SKILL.md`** (see
+Architect, above — same vocabulary, don't work from a paraphrase). Respect the seams and
+module boundaries Architect already decided; don't introduce a new shallow module of your own
+to avoid touching an existing one. Internal seams — private to your own implementation, used
+by your own tests — are yours to add freely; the external seam is Architect's call.
+
 **Evidence / gates it produces:** implementation, red/green tests, documentation, pull
 request.
 
@@ -116,6 +122,13 @@ distinct role, never merged into QA or Fullstack Developer. Does not re-run test
 checks CI's actual result (the independent, mechanical re-execution) and judges whether the
 test *strategy* was adequate, same principle as QA's entry above and this repo's own
 `pre-merge-review`, which reviews evidence rather than re-executing it.
+
+**Verifies the actual test code faithfully implements QA's scenarios/strategy** — not just
+that tests exist and pass. Extends the already-decided Overlap 2 split (`check-traceability.sh`
+verifies structurally that a scenario/functionality link exists; Reviewer judges semantically
+whether it's the *right* one) to test code specifically: the same kind of judgment a
+mechanical check can't make. Reviewer is the only role positioned after Fullstack Developer
+in the standard path, so this check has nowhere else to live.
 
 **Evidence / gates it produces:** pull-request review, technical findings, approval or
 rejection.
