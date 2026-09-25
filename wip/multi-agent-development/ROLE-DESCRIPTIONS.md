@@ -73,13 +73,17 @@ own established convention (see `MULTI-AGENT-WORKFLOW.md`'s Workflow Execution S
 
 ## QA
 
-*Answers: what needs to be tested, in what way, and does the implementation behave according
-to those tests?*
+*Answers: what needs to be tested, in what way, and does the implementation behave as
+expected by the tests?*
 
 **Responsibilities:** determine test strategy (which kind of test fits —
-unit/integration/end-to-end/penetration/etc.) and work out test scenarios/seams; execute
-them; identify/report defects; verify functional and non-functional requirements; guard
-quality gates before release.
+unit/integration/end-to-end/penetration/performance/load/etc.) and work out test
+scenarios/seams. Does not execute tests itself — Fullstack Developer writes and runs them
+(red-before-green, see `tdd-seams`), CI re-runs them independently. QA verifies results
+against its own scenarios, identifies/reports defects, verifies functional and
+non-functional requirements, and guards quality gates before release — matching the
+existing evidence-based model (PRD §3.3), not a fresh execution step of its own. See the
+Reviewer entry below for the same principle applied to the final gate.
 
 **Evidence / gates it produces:** test strategy, test scenarios/seams, test results, QA
 assessment.
@@ -108,7 +112,10 @@ abstractions, reuse, and verbosity/efficiency.*
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
 traceability — same scope as this repo's own `pre-merge-review`/`code-review`. Stays a
-distinct role, never merged into QA or Fullstack Developer.
+distinct role, never merged into QA or Fullstack Developer. Does not re-run tests itself —
+checks CI's actual result (the independent, mechanical re-execution) and judges whether the
+test *strategy* was adequate, same principle as QA's entry above and this repo's own
+`pre-merge-review`, which reviews evidence rather than re-executing it.
 
 **Evidence / gates it produces:** pull-request review, technical findings, approval or
 rejection.
