@@ -124,6 +124,15 @@ missing one. It also compares Implementation's and Review's recorded
 a finding (#244 AC2) — the contradiction this resolved is otherwise just
 as unenforced as it was before.
 
+**Self-declared in the artifact itself, too.** When a stage's own output
+is a written artifact a later stage or a human reads directly (a report,
+a findings comment, a review) — not only a code change — that artifact
+opens with a one-line self-declaration of its own model/effort, in
+addition to the marker above. Found missing during epic #65's first
+co-thinking-session pilot: the record existed only on the orchestrator's
+side, not inside the artifact itself, which is the one place a later role
+or Ties actually reads.
+
 ## No behavior change to single-agent-per-stage practice
 
 This skill documents the principle ahead of #65's actual multi-agent

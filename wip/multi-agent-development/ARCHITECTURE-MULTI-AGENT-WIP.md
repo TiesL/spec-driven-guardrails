@@ -211,6 +211,21 @@ between the roles' own artifacts and Ties' decision. Cost: a longer escalation c
 a summary would be — accepted, since brevity isn't the goal here, an undistorted decision
 is.
 
+### Addendum (2026-09-25) — scope extended to role-authored disagreement sections
+
+The pilot run of Decision 5's co-thinking session surfaced a gap: this decision's text names
+the *orchestrator's* escalation mechanism, but a genuine disagreement can also surface
+inside a role's own report (e.g. an Architect report's own section responding to a Product
+report), which this decision never covered. All three retrospectives on that pilot
+(`CO-THINKING-PILOT-RETRO-PRODUCT.md`, `-ARCHITECT.md`, `-ORCHESTRATOR.md`) independently
+flagged the same failure mode: a role paraphrasing another role's position, inside its own
+artifact, is structurally the rejected Option 1 (an interpretation layer between the two
+positions and Ties), just relocated from the orchestrator to a role.
+
+**Extended scope, decided 2026-09-25:** Decision 4 applies whenever two roles' assessments
+conflict, regardless of which artifact the conflict is first noticed in — not only
+orchestrator mid-work escalations. See A7 for the concrete mechanism.
+
 ---
 
 ## Decision 5 — Pre-decision elaboration runs as a reduced Product+Architect "co-thinking session", not the full five-role pipeline
@@ -299,6 +314,17 @@ Enforced via a skill-based contract (not OS sandboxing) that states which paths 
 read/write before it acts. Violated if a role's session is handed unrestricted repository
 access "for convenience."
 
+**Clarified 2026-09-25 (pilot finding):** this governs *write/action* scope — what a role
+may change or treat as authoritative for its own output — not read access to ground-truth
+reference material needed to verify a claim. A role's dispatch instructions state explicitly
+whether its named scoped input is a hard ceiling or a floor; when it's a floor (the default,
+unless a role's task is narrow enough that a fixed file list is genuinely complete), the
+role's report must declare any file read beyond the named set and why. The pilot's Architect
+role read `adopt.sh` unprompted to answer a question its own task required — the right call,
+but the prompt gave no signal it was permitted, which only worked because that run happened
+to take the initiative. Violated if a role either reads outside its write/action scope to
+*act* on what it finds there, or silently relies on an unnamed source without declaring it.
+
 ### A5 — `role:<name>` label tracks the currently active phase
 The orchestrator updates this label as work moves between phases; it is the traceability
 record of "who acted," not an execution mechanism. Violated if the label is left stale
@@ -316,6 +342,36 @@ folder itself is kept afterward by default, as historical record — same preced
 #65's own folder — not deleted, unless Ties says otherwise for that specific case. Violated
 if elaboration content is written directly into the accepted docs before acceptance, or if a
 `wip/<slug>/` folder is deleted on promotion without Ties saying so.
+
+### A7 — A role's report never characterizes another role's disagreement without verbatim quotation (decided 2026-09-25, closes the Decision 4 gap above)
+When a role's own report states that it disagrees with a prior role's position, it quotes
+that role's own words directly rather than paraphrasing or compressing them — the same
+"verbatim, side by side" discipline Decision 4 already requires of an orchestrator
+escalation, now stated as a rule for any artifact, not only that one. In addition, whenever
+the orchestrator hands a report containing such a section to Ties, it explicitly points Ties
+to the other role's corresponding section before treating the disagreement as settled —
+belt-and-suspenders, since quoting alone can still compress tone or emphasis even when the
+words are exact. Violated if a report states "Role X's position is..." in its own words
+without a direct quote, or if the orchestrator relays a report containing a disagreement
+section without naming where to find the other side.
+
+### A8 — Scoped input for a role is explicitly a floor or a ceiling, never left unstated
+Every role-dispatch prompt states which of the two applies to its named file list. Default
+is floor: a role may read further, project-internal, ground-truth material (e.g. the actual
+implementation a proposal describes) when its assigned question can't be answered rigorously
+from the named files alone, provided the report declares what it read beyond the named set
+and why. A ceiling is reserved for cases where the fixed list is deliberately and genuinely
+complete for the question asked. See A4's 2026-09-25 clarification for the write/action-scope
+boundary this doesn't touch. Violated if a prompt is silent on which applies, or if a role
+reads beyond a stated ceiling, or reads beyond a floor without declaring it.
+
+### A9 — The orchestrator checks a role's report for completeness before advancing it
+Before dispatching the next role (or presenting a report to Ties as final), the orchestrator
+briefly verifies the report actually addresses what its own task prompt asked for — this is
+the concrete form §6's existing "verify required evidence, or have it verified"
+responsibility takes at a role handoff, not a new orchestrator duty. Violated if a gap in one
+role's report (a skipped section, an unaddressed question) is discovered only downstream,
+after it has already been built on.
 
 ---
 

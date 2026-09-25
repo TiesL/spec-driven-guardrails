@@ -124,6 +124,25 @@ Epic issue; the `wip/<slug>/` folder itself is kept afterward as historical reco
 default, not deleted — same precedent as this very epic's own `wip/multi-agent-development/`
 folder.
 
+**Pilot findings incorporated (2026-09-25).** The pattern above ran for the first time
+against `wip/claude-code-plugin/` (Product then Architect, sequential, each a fresh sub-agent
+producing a durable report). A blameless retrospective — one fresh reviewer per role plus the
+orchestrator's own self-assessment, kept as three separate, unmerged artifacts
+(`CO-THINKING-PILOT-RETRO-PRODUCT.md`, `-ARCHITECT.md`, `-ORCHESTRATOR.md`) — surfaced process
+gaps now closed in `ARCHITECTURE-MULTI-AGENT-WIP.md` (A7, A8, A9, and the Decision 4
+addendum). Two further rules for whoever runs the orchestrator role, not rising to
+architecture invariants but load-bearing for every future co-thinking session:
+
+- **Never ask a second-or-later role in the chain for a "final" decomposition/output while
+  also asking it to flag disagreements with the prior role.** Those two asks pull against
+  each other — "final" nudges toward treating that role's framing as the resolved account,
+  undercutting the disagreement-flagging asked for in the same breath. Ask instead for "a
+  proposed [output], with every deviation from the prior role's [output] marked and
+  reasoned."
+- **Every role's report opens with a one-line model/effort declaration** (e.g. "Model/effort:
+  Claude Opus, [role] role") — self-declared in the artifact itself, not only recorded
+  orchestrator-side, per the `model-choice` skill's "record every stage, always" principle.
+
 ## 4. Rollen en verantwoordelijkheden
 
 De onderstaande rollen zijn kernrollen in het beoogde model. Dit zijn verantwoordelijkheden; de toewijzing aan concrete agents is **TBD**.
