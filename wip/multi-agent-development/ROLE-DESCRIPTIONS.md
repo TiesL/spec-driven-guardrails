@@ -26,6 +26,15 @@ minimum; QA/Fullstack Developer where relevant), never by Product itself, using 
 prioritization framework (method TBD — e.g. an impact/effort matrix or WSJF, undecided as of
 2026-09-25). Make trade-off and scope decisions.
 
+**Elicit requirements from Ties per `vendor/grilling/SKILL.md`** (vendored verbatim from
+[`mattpocock/skills`](https://github.com/mattpocock/skills), MIT — read it directly, don't
+work from a paraphrase). Map open questions as a design tree, work the frontier in numbered
+rounds with a recommended answer per question, recompute after each round, stop only when the
+frontier is empty. Applies whenever Product is gathering requirements for a co-thinking
+session or a work item, not only in the interviewing skill's original standalone-command
+form. See A10 in `ARCHITECTURE-MULTI-AGENT-WIP.md` for the fact-vs-decision split this
+implies for every role, not just Product.
+
 **Evidence / gates it produces:** requirements, acceptance criteria, business case, product
 validation (may use e.g. a value proposition canvas or a goal-oriented roadmap as optional
 tools to arrive at these — not a required artifact type of its own; the actual artifact per

@@ -373,6 +373,19 @@ responsibility takes at a role handoff, not a new orchestrator duty. Violated if
 role's report (a skipped section, an unaddressed question) is discovered only downstream,
 after it has already been built on.
 
+### A10 — Finding facts is a role's own job; only real decisions go to Ties (decided 2026-09-25, from `vendor/grilling/SKILL.md`)
+When a role hits an open question, it first asks whether the answer is a **fact** (something
+discoverable from the codebase, docs, or other artifacts) or a **decision** (something only
+Ties can settle — a preference, a trade-off, a judgment call). Facts get looked up — by the
+role itself or a dispatched sub-agent — never asked of Ties. Only genuine decisions go to
+Ties, and when several are open at once, they're batched per `vendor/grilling/SKILL.md`'s
+round/frontier method rather than trickled out one at a time or asked before their
+prerequisites are settled. This generalizes the practice `vendor/grilling/SKILL.md` was
+vendored for Product's requirement elicitation (see `ROLE-DESCRIPTIONS.md`) into a standing
+rule for every role and for the orchestrator itself. Violated if a role asks Ties something
+it could have found out itself, or asks a question one round before its prerequisite is
+actually settled.
+
 ---
 
 ## System boundaries and ownership
