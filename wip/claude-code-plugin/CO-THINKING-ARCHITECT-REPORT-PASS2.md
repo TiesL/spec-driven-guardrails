@@ -768,3 +768,244 @@ docs:
 
 Everything else is a matter of sequencing, and on sequencing Product and I
 mostly agree: E1 and E2, then evidence, then decide about the rest.
+
+---
+---
+
+# Follow-up A — 2026-09-25: hook scoping, properly solved
+
+*Appended as a separate, dated follow-up. It supersedes the "adoption
+guard" remedy proposed in §1.4 and §2.1 above; those sections are left
+unedited so the change of position is visible rather than silent. The
+problem statement in §1.4 stands unchanged — only the fix changes.*
+
+**Verdict: (a). A genuine native scoping mechanism exists, and it is a
+close structural match to what `adopt.sh` does today.** Ties is right that
+the marker-based adoption guard was a workaround; I was wrong to propose
+it. The guard is demoted to unnecessary for scoping, and survives only as a
+narrow backstop for one case named in A.5.
+
+One correction to the premise I was given: **`hall-of-automata-cli` has not
+solved this problem.** It is an example of the hazard, not of the remedy —
+see A.1. I would rather say that plainly than let a false precedent carry
+the decision.
+
+## A.1 — What `hall-of-automata-cli` actually does
+
+Installed at `~/.claude/plugins/cache/mockasort/hall-of-automata-cli/1.4.0/`,
+enabled at user scope in `~/.claude/settings.json`
+(`"hall-of-automata-cli@mockasort": true`).
+
+It has exactly one hook, `hooks/hooks.json`:
+
+```json
+{ "hooks": { "PreToolUse": [ { "matcher": "Write|Edit|MultiEdit",
+  "hooks": [ { "type": "command",
+    "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/guard-writes.sh",
+    "timeout": 10 } ] } ] } }
+```
+
+`guard-writes.sh` is 28 lines. Its comment states its intent: "PreToolUse
+hook: block writes outside `~/.hall/`." There is **no project scoping of
+any kind** — no `CLAUDE_PROJECT_DIR` reference, no marker file, no session
+mode check (I grepped the whole plugin for those). It is registered
+user-wide and attempts to police *every* Write/Edit in *every* project on
+this machine, which is precisely the failure mode §1.4 warns about, applied
+to a much broader matcher than anything `spec-driven-guardrails` proposes.
+
+Taken literally, that hook would block every file edit in every repository
+Ties opens. It does not, for three independent reasons — all of them bugs:
+
+1. **It reads the wrong field.** It parses `d.get('tool', '')`, but the
+   PreToolUse payload's field is `tool_name`. (`hooks/git-guardrails` in
+   this repo documents the right contract: "JSON on stdin with `tool_name`
+   and `tool_input.command`".) `TOOL` is therefore always empty, the
+   `case` falls to `*) exit 0`, and the guard allows everything. Verified
+   empirically: with a real `{"tool_name":"Write",…}` payload it exits 0;
+   only with a fabricated `{"tool":"Write",…}` payload does it block.
+2. **It uses the wrong exit code.** Even when it does fire it `exit 1`, and
+   the hooks reference is explicit: "Claude Code treats exit code 1 as a
+   non-blocking error and proceeds with the action, even though 1 is the
+   conventional Unix failure code. If your hook is meant to enforce a
+   policy, use `exit 2`."
+3. **It uses a GNU flag that macOS does not have.** `realpath -m` →
+   `realpath: illegal option -- m` on this machine. The path comparison
+   silently degrades to empty strings.
+
+So the precedent points the other way: a competent third-party plugin put a
+user-scope enforcement hook in front of every session, and the only thing
+standing between Ties and a machine where Claude cannot edit any file is a
+typo. That is the strongest possible argument for solving this
+structurally rather than by convention inside a script.
+
+**Unrelated but found while investigating, and worth acting on:**
+`~/.claude/settings.json` carries a GitHub token in plaintext under `env`
+(`GITHUB_PERSONAL_ACCESS_TOKEN`, a `gho_…` value). `env` entries are
+exported into the environment of every hook process, so **every user-scope
+plugin hook on this machine already receives that token** —
+`guard-writes.sh` among them. That is the same scoping problem with a
+credential attached. I'd rotate the token and move it to `gh auth` /
+a credential helper rather than settings `env`.
+
+## A.2 — The native mechanism: install scope
+
+Plugins have three install scopes, documented under *Choose an install
+scope*:
+
+> * **User scope**: the plugin is enabled for you in every project on this
+>   machine. The entry goes in `enabledPlugins` in `~/.claude/settings.json`.
+> * **Project scope**: the plugin is enabled for everyone who works in this
+>   repository. The entry goes in `.claude/settings.json`, which you commit.
+> * **Local scope**: the plugin is enabled for you in this repository only.
+>   The entry goes in `.claude/settings.local.json`.
+
+And the resolution order, from *Find where a plugin is enabled* (lowest to
+highest precedence): `--add-dir`, `user`, `project`, `local`, `flag`,
+`managed` — "For each plugin id, the value that applies is the one from the
+highest-precedence source that mentions the id."
+
+This is not an approximation of today's mechanism; it is the same
+mechanism. Today, scoping is "there is a `.claude/settings.json` in this
+project, and it is a symlink to `settings/session-hooks.json`." Tomorrow it
+is "there is an `enabledPlugins` entry for the guardrails plugin in this
+project's `.claude/settings.local.json`." Same file, same per-project
+confinement, same gitignore posture — except Claude Code owns the
+bookkeeping instead of `adopt.sh`.
+
+Two further facts that decide the design:
+
+**Local scope also triggers the fetch.** From *Enabled in project settings
+but not installed*: "Claude Code fetches a plugin with an external source
+only when one of these sources sets it to `true`: Your user settings; A
+`.claude/settings.local.json` that git doesn't track; The `--settings`
+flag; Managed settings." So a local-scope install both downloads the plugin
+and confines it. Project scope alone does not fetch — "When a plugin's only
+`true` is in the project's `.claude/settings.json`, Claude Code doesn't
+fetch it onto a machine where it isn't installed" — which matters for the
+collaborator case (A.5).
+
+**Local scope carries no trust restrictions.** Project-scope plugins load
+"only after the same trust check that applies to project allow rules", with
+MCP servers and background monitors further restricted; "Personal-scope
+plugins have none of these restrictions."
+
+## A.3 — The resulting architecture: two plugins, split by scope
+
+The split is not invented for the plugin — it already exists in the repo,
+between `USER-CLAUDE.md` + the `adopt-workflow` skill (user level, must
+work in *not-yet-adopted* projects) and `WORKFLOW.md` + `session-hooks.json`
++ the nine other skills (project level, only where adopted). The two
+plugins are that same line, drawn where Claude Code can enforce it.
+
+| | `spec-driven-guardrails-adopt` | `spec-driven-guardrails` |
+|---|---|---|
+| Scope | **user** — every project | **local** (or project) — adopted repos only |
+| Carries | the `/adopt` command, the `adopt-workflow` and `adoption-registry` skills | the other eight skills, `hooks/hooks.json` (git-guardrails, push-after-commit, SessionStart fetch + pending-changes, SessionEnd push), the primitives and scripts |
+| Hooks | **none** | all of them |
+| Risk in a client repo | none — it can only be invoked | never loaded there |
+
+`/adopt`'s job, in the target repository, becomes: run the placement steps
+(§2.8's three file classes), then
+`claude plugin install spec-driven-guardrails@<marketplace> --scope local`.
+De-adoption is `claude plugin uninstall … --scope local` plus removing the
+placed files — which also answers Q8 far better than "document a manual
+procedure."
+
+```mermaid
+flowchart LR
+    subgraph user["User scope — every project"]
+        A["spec-driven-guardrails-adopt<br/>/adopt command<br/>adopt-workflow skill<br/><b>no hooks</b>"]
+    end
+    subgraph adopted["Adopted repo A"]
+        SL1[".claude/settings.local.json<br/>enabledPlugins: guardrails=true"]
+        G1["guardrails plugin LOADS<br/>hooks fire"]
+    end
+    subgraph client["Client repo B (never adopted)"]
+        SL2["no enabledPlugins entry"]
+        G2["guardrails plugin<br/><b>not loaded — no hooks</b>"]
+    end
+    A -->|"/adopt writes it"| SL1
+    SL1 --> G1
+    A -.->|"offers, user declines"| SL2
+    SL2 --> G2
+    style G2 fill:#efe,stroke:#3a3
+    style G1 fill:#eef4ff
+```
+
+The scoping property is now **structural**: a hook that is not loaded
+cannot fire, and nothing inside the hook has to be correct for that to
+hold. Contrast A.1, where the property depended on a script parsing JSON
+correctly.
+
+## A.4 — Weighing the alternative the coordinator proposed
+
+The proposed alternative — plugin carries only skills and the command, and
+`/adopt` writes *project-local hook files* the way `adopt.sh` does today —
+also eliminates the scoping problem by construction. It is a reasonable
+design and I considered it seriously. I prefer A.3, for four reasons:
+
+1. **It re-creates the propagation problem the plugin was meant to solve.**
+   Project-local hook JSON pointing at scripts is exactly today's
+   arrangement, with its `readlink`-the-symlink resolution (§1.2) and its
+   dangling-path failure (§1.3). A.3 lets the hooks keep
+   `${CLAUDE_PLUGIN_ROOT}`, which is the one part of the plugin mechanism
+   that is unambiguously better than what exists.
+2. **The trade it asks for is real but lands on the wrong side.** For
+   *hooks specifically*, auto-update is more valuable than for skills, not
+   less: `git-guardrails` is a guard whose bug fixes must reach every
+   adopted project (its own comment: "a false positive blocks work in four
+   projects at once and reaches them without a re-adoption, because the
+   hook configuration is symlinked"). A stale copy of a guard is a guard
+   that is wrong everywhere until someone re-runs adoption.
+3. **It gives up the uninstall story.** Plugin-carried hooks have a native
+   removal path; hand-written hook files in `.claude/settings.json` do not.
+4. **It does not actually avoid the split.** You still need something at
+   user scope to offer adoption in a non-adopted project. So it is the same
+   two-artifact design, with the second artifact hand-rolled.
+
+The one thing it does better: it works without a marketplace at all. If
+distribution ever has to run through "copy this folder", the alternative is
+the fallback — worth one line in the PRD, not the primary design.
+
+## A.5 — What remains, honestly
+
+Local scope is not a total answer; three residues, all small and all
+nameable:
+
+1. **The collaborator case.** Project scope (`.claude/settings.json`,
+   committed) reaches everyone who clones — but per A.2 it does not fetch
+   on a machine where the plugin isn't installed; the collaborator sees
+   `Plugin "<name>" is enabled in project settings but isn't installed
+   here`. Given this repo's README ("a personal workflow, not a team
+   tool, as shipped"), local scope is the right default, and project scope
+   is a deliberate later choice with a documented prerequisite.
+2. **Multi-root sessions.** `--add-dir` can bring a second repository into
+   a session whose primary directory is adopted. The hooks load from the
+   primary directory's scope and will see commands aimed at the added
+   directory. For `git-guardrails` that is arguably correct (it guards the
+   command, not the repo). For the **SessionEnd auto-push**, which runs
+   `git -C "${CLAUDE_PROJECT_DIR:-.}" push`, it is already scoped to the
+   project dir and stays correct. No action needed; worth one test
+   scenario.
+3. **The backstop.** I would keep a *single* cheap assertion — the
+   SessionEnd push hook verifying that `$CLAUDE_PROJECT_DIR` is the repo it
+   thinks it is — not as the scoping mechanism, but as defence in depth on
+   the one hook with an irreversible side effect. That is one line, not an
+   "adoption guard" in every hook.
+
+## A.6 — Changes to the decomposition in §3
+
+- **E2's scope changes, and shrinks.** "Adoption guard" is struck. In its
+  place: split the plugin in two (A.3) and have `/adopt` perform a
+  local-scope install. Net: less code than §3 assumed, and a structural
+  guarantee instead of a conventional one.
+- **§2.1's conclusion is amended.** I wrote there that the deleted
+  functions "were carrying the scoping property for free" and that
+  replacing it was new code. Half right: the property does have to be
+  re-established, but by a `--scope local` flag rather than by code.
+- **Q8 (de-adoption) gets easier** and should be re-answered: uninstall is
+  native for the plugin half, and the three file classes (§2.8) already say
+  what to remove for the rest.
+- **The §5 summary's point 2 stands as a *risk*, and is now *solved*.**
+  Left in place above so the reasoning chain is readable; this follow-up is
+  the resolution.
