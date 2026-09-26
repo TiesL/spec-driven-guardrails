@@ -375,6 +375,7 @@ Status per vraag: **besloten**/**deels besloten** verwijst naar een concreet bes
 8. Welke taken van de orchestrator worden geautomatiseerd, welke vragen menselijk besluit en hoe worden uitzonderingen vastgelegd? — **besloten**: zie "Orchestrator: besloten model", §6.
 9. Hoe wordt compliance gerapporteerd zonder dat de workflow onnodig traag of bureaucratisch wordt? — **besloten** (21-09-2026): zie §6, "Compliance-rapportage: patroon en uitgewerkt voorbeeld" — het `WORKFLOW-ADOPTION.md`-patroon, plus een uitgewerkt voorbeeld tegen een echt, afgerond work item (#265/PR #279) dat bevestigt dat het patroon de juiste evidence-links draagt.
 10. Hoe sluit dit ontwerp aan op bestaande workflowdocumentatie, bestaande repositories en hun eigen conventies? — **besloten**: hergebruikt bestaande skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) ongewijzigd; de nieuwe rol-/orchestratielaag komt in een eigen skill, geen vervanging.
+11. **OQ11 — Which release does this land in?** (added 2026-09-26, in English — the header table's "Beoogde release: TBD" field, referenced elsewhere in this document but never previously registered here) — **open, Ties' explicit call**: stays open until the multi-agent workflow has run end-to-end on one real work item and the result is good enough to kick off implementation/integration into `main` — see issue #294.
 
 ## 10. Voorgestelde vervolgscope
 

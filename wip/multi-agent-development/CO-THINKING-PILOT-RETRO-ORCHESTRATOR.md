@@ -1,5 +1,7 @@
 # Retrospective: Orchestrator's own conduct (co-thinking pilot, epic #65)
 
+Model/effort: Claude Sonnet 5 (this session's own model, medium effort).
+
 Written by the Orchestrator itself (this session), not a spawned sub-agent — same continuity as the actual pilot run, so this is a direct self-assessment, not a reconstruction from artifacts.
 
 Scope: process only, not output correctness/quality.

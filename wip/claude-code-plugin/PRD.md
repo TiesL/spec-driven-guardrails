@@ -282,6 +282,8 @@ Ordered by recommended sequence. Effort is a relative design/architecture-share 
 | E7 | Portability of the *installed payload* (Bash/python3 guardrails) — WSL/Git-Bash declared prerequisite, tested | 7 | Conditional | L |
 | E9 | Generic core extraction — explicitly not v1 | Deferred | No | — |
 
+**E8 does not exist.** An earlier draft had it as "`gh` detection/auth, Claude Code version floor" — folded into E2 once F0-F2 moved there (see "Why E2 includes F0/F1/F2/F7" below); the epic numbering was never compacted afterward, so E7 jumps straight to E9 deliberately, not by omission.
+
 **Why E2 includes F0/F1/F2/F7 (corrected 2026-09-26, independent review finding):** the Usability success criterion below — a clean machine reaching a fully adopted, *verified* project without a terminal command — cannot hold if repository/identity bootstrap (F0), prerequisite handling (F1/F2), or verification (F7) are deferred to a conditional epic. They're funded as part of E2's direct implementation; only their later *extraction into tested primitives* (E4) and *aggregate preview UI* (E5) are conditional.
 
 **Not gated on a real-user experiment (decided 2026-09-26):** both roles in the co-thinking session recommended watching one real target-profile person use the workflow for an hour before funding past E2. Ties declined this gate — E3 onward proceed on the sequencing above without that checkpoint.

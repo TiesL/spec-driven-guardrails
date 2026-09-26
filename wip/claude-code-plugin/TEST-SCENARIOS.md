@@ -23,14 +23,14 @@ to the plugins' own embedded configuration for v1, not an external file.
 ## Plugin scope and hook confinement
 
 ### S-scope — A hook installed for one project never fires in another
-**Covers:** (architectural invariant A7, not a numbered F-item — cross-cutting)
+**Covers:** N/A — cross-cutting architectural invariant (ARCHITECTURE.md A7), not a PRD.md F-item
 - Given: `spec-driven-guardrails-workflow` (the local-scope, hook-carrying plugin) is installed in project A only; `spec-driven-guardrails` (the user-scope command plugin) is installed once, machine-wide
 - When: the user opens an unrelated project B in the same Claude Code session and commits or pushes there
 - Then: no hook from `spec-driven-guardrails-workflow` fires in project B — confinement is structural (local-scope install, `.claude/settings.local.json`), not a per-hook self-check
 - And: the `/spec-driven-guardrails:adopt` command remains available in project B (it's user-scope), but invoking it there only ever affects project B if the user explicitly confirms adopting it, per F0-F4
 
 ### S-scope-b — A collaborator clones an already-adopted project
-**Covers:** (A7, residue named in `ARCHITECTURE.md`'s "Build order decided")
+**Covers:** N/A — same as S-scope above (ARCHITECTURE.md A7)
 - Given: project A was adopted (has `spec-driven-guardrails-workflow` installed at local scope, recorded in its own `.claude/settings.local.json`) and the collaborator has never installed either plugin themselves
 - When: the collaborator clones project A and opens it in their own Claude Code session
 - Then: the collaborator's session does not automatically fetch or run `spec-driven-guardrails-workflow` — local scope confines *installation*, it doesn't auto-propagate to a new machine

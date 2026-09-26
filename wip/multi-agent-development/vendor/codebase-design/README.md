@@ -11,3 +11,9 @@ here.
 
 Files: `SKILL.md` (glossary and principles), `DEEPENING.md` (dependency categories, seam
 discipline), `DESIGN-IT-TWICE.md` (parallel sub-agent interface exploration).
+
+**Also promoted to `skills/codebase-design/` (issue #291)** as a real, invokable skill for
+any session in this repo — not gated on the multi-agent pipeline being built. This copy stays
+here as the multi-agent design docs' own reference; the two are byte-identical copies of the
+same upstream commit, not independently maintained. Update both, or neither, if either ever
+changes.
