@@ -51,6 +51,8 @@ This file holds what every session needs. For everything else: the table below r
 | Diagnosing a bug: reproduction → hypotheses → regression test → fix | `diagnose-bug` |
 | Which model/reasoning effort to use for a pipeline stage | `model-choice` |
 | Setting up a new (related) project | `adopt-workflow` (user-level) |
+| Relentless, round-based requirement elicitation from Ties | `grilling` |
+| Decomposing a system into deep modules, not shallow components | `codebase-design` |
 
 ## Why
 
