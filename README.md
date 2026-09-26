@@ -35,6 +35,13 @@ It is not:
   projects; nothing here assumes a second human reviewer, and it isn't
   adopted into shared team/work repos (see `USER-CLAUDE.md`).
 
+**In progress, not yet shipped (epic #282):** a Claude Code plugin
+conversion aims to extend this to non-engineer users too — people who'd
+delegate the whole setup to Claude Code rather than clone a repo and run
+a shell script. Design work is in `wip/claude-code-plugin/`; this section
+describes what's true *today*, and gets updated once that plugin actually
+ships, not before.
+
 There's also a second reader this repo is useful to even without adopting
 it: a **business analyst, product owner, or product manager** working with
 a development team. In practice: given a feature branch's pull request,
@@ -212,7 +219,7 @@ below, without needing anything above this point.
 | `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
 | `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
 | `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/baseline/` (the frozen baseline, see `LEESMIJ.md` there). |
-| `PRD-MULTI-AGENT-WIP.md` | **WIP** — exploratory PRD for multi-agent software development in a later release, linked to epic [#65](https://github.com/TiesL/claude-workflow/issues/65). Not part of the shared workflow machinery above, and not approved: directional, with open design questions deliberately marked as **TBD**. |
+| `wip/<slug>/` | **WIP** — home for pre-decision elaboration of a new product or a new release/epic (a "co-thinking session": Orchestrator + Product + Architect only, no QA/Fullstack Developer/Reviewer, since there's nothing yet to test/implement/review — see epic #65's `ARCHITECTURE-MULTI-AGENT-WIP.md`, Decision 5/A6). Not part of the shared workflow machinery above, and not approved by itself: directional, with open design questions marked **TBD** until Ties explicitly accepts the output. Once accepted, content is promoted into a real Epic issue and tracked work items; the folder itself is kept afterward as historical record, not deleted, by default. Two live instances: `wip/multi-agent-development/` (epic [#65](https://github.com/TiesL/spec-driven-guardrails/issues/65) itself — direction confirmed, full promotion awaits the end-to-end five-role pilot run, issue #294) and `wip/claude-code-plugin/` (the plugin-conversion proposal produced by a co-thinking session under #65 — accepted and already promoted into its own epic, [#282](https://github.com/TiesL/spec-driven-guardrails/issues/282)). |
 
 ## Why local symlinks instead of committed symlinks
 
