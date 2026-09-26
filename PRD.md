@@ -1071,6 +1071,33 @@ its root copy the same way as `check-traceability.sh` (#230's own
 pattern, extended here). `WORKFLOW.md`'s merge step now directs its use
 directly instead of describing the interval only as prose.
 
+### F34 — `compliance-evidence.sh` collects pre-existing OQ9 evidence for one work item (issue #296)
+
+Read-only script: given a PR number, gathers pre-existing evidence for
+each of the six decided compliance gates (OQ9, `PRD-MULTI-AGENT-WIP.md`
+§6) and renders the Gate/Status/Evidence table to stdout. Implements the
+decided OQ9 report shape; does not reopen it. No posting, no judgment, no
+new dependencies — same category as `check-traceability.sh`/
+`wait-for-ci.sh`.
+
+`compliance-evidence.sh` at repo root (dogfood-only — not under `skills/`
+or `templates/`, no propagation to adopted projects for this epic; not
+invoked by `./check`, only its tests are, since it needs `gh`/network and
+`./check` must stay usable with no GitHub credentials). Status vocabulary
+is closed to four values — `evidenced`, `not-evidenced`,
+`unverifiable-from-artifacts`, `indeterminate` — with `indeterminate`
+reserved for an artifact that was found but can't be interpreted
+(malformed marker, unknown CI bucket, a failed sub-lookup), kept
+distinct from `not-evidenced` (no artifact at all) because the reader's
+next action differs.
+
+This single heading exists as the narrow, stated exception to normally
+not touching `PRD.md` mid-epic (issue #296's non-goals; origin:
+`ARCHITECT-REPORT.md` D3 option (a), accepted by Product) — it's routine
+traceability wiring for real new functionality, not premature promotion
+of the WIP design: `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S150` can't resolve without an `F34` heading here.
+
 ---
 
 ## Non-functional characteristics
@@ -1331,6 +1358,7 @@ epics still apply, detached from the execution history in which they arose.
 | F21's `check_stray_closes_guard` trusts the PR's own `closingIssuesReferences` as ground truth for what it *intends* to close — but that field is itself populated by scanning the PR's title/body text for closing keywords, with no understanding of quoting or context. PR #224 (the PR that built F21) demonstrated this directly: its own description quoted the historical incident text `"Closes #218"`, and GitHub added #218 to `closingIssuesReferences` for real, on a PR that had nothing to do with #218 — found live during that PR's own pre-merge-review, before merge, by re-querying its `closingIssuesReferences` after the fix and seeing it (briefly, until cache caught up) still there. Fixed for that specific PR by rewording its description; F21's check has no general defense against the same mistake in a future PR/issue body | This is the same class of bug F21 exists to catch, one layer up (PR body/title instead of commit message) — genuinely hard to guard against mechanically, since a legitimate reference to another issue in prose is indistinguishable from a real closing intent by keyword-matching alone. Rare in practice: it requires prose that both names a closing keyword and an issue number adjacently, which most PR descriptions don't do outside of exactly this repo's own meta-discussions about the mechanism itself | If this recurs on a future PR — especially one *not* about this mechanism, where it would be far less likely to be caught by the author's own awareness of the pattern |
 | `check_ci_guard`, `check_stray_closes_guard`, and now `check_merge_guard`'s marker check (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper. Now three call sites — found during PR #224's pre-merge-review (round 3) at two, found again during PR #227's (round 1) at three. An extraction was attempted during PR #227 and reverted the same session after it (indirectly) caused a real incident: see the row below | Extracting a shared helper is still worth doing, but not attempted again casually — the revert wasn't about the extraction's design, it was about the incident it took down with it | Next time this pattern needs touching — with the apostrophe-in-single-quoted-heredoc risk (row below) fixed first, or checked for explicitly, before editing near either python block again |
 | Writing prose with an apostrophe (`it's`, `doesn't`, `#227's`) inside a bash *single-quoted* `python3 -c '...'` block silently and catastrophically breaks the script: bash single quotes have no escape mechanism, so the apostrophe ends the string early and everything after is reparsed as bash code — with no error until a syntax mismatch surfaces somewhere later in the file, at an unrelated line. Concretely: a comment reading "found during PR #227's own pre-merge-review" inside `check_merge_guard`'s marker-parsing python block took down `hooks/git-guardrails` entirely — and since this repo adopts itself, every `Bash` tool call in the session broke immediately (the `PreToolUse` hook execs this same file to vet every command), discovered only by working blind through `Read`/`Edit` until the apostrophe was found by manual quote-counting | Caught and fixed within the same session, but only by disabling all git/gh command execution until found — a real, high-blast-radius incident, not a near miss | Add a `check-no-...` script (matching `check-no-sigpipe-race.sh`'s F22 pattern) that scans every `python3 -c '...'`-shaped single-quoted block for a bare apostrophe — tracked as its own issue rather than built under this incident's own time pressure |
+| `compliance-evidence.sh`'s `normalize_model()` (F34, issue #296) is a verbatim copy of `skills/pre-merge-review/model-record-gate.sh`'s function of the same name (#268), not a shared import — two copies of the same model-string-comparison logic now exist. Deliberate (D5, Architect's implementation plan): extracting a shared lib would cross the dogfood-only boundary, since `skills/` is what `adopt.sh` propagates to adopted projects and this collector is dogfood-only | A reimplementation that drifted from `model-record-gate.sh`'s comparison rules would make the collector silently disagree with the gate it reports on — worse than the duplication itself; the two are kept in sync by comment (each names the other as origin/copy) | Unify if/when this collector is ever propagated beyond this repo, or if the two copies are ever found to have drifted |
 
 ---
 
