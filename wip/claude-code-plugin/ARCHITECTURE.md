@@ -231,12 +231,15 @@ the hook has to be correct for that to hold.
 between `USER-CLAUDE.md`/`adopt-workflow` (must work in *not-yet-adopted*
 projects) and `WORKFLOW.md`/`session-hooks.json`/the other skills:
 
-- **`spec-driven-guardrails-adopt`** (user scope): the
+- **`spec-driven-guardrails`** (user scope): the
   `/spec-driven-guardrails:adopt` command and the adoption-time skills.
   **No hooks.** Harmless in a client repo, because it does nothing until
-  explicitly invoked there.
-- **`spec-driven-guardrails`** (local scope): the other skills plus all
-  hooks. Installed by the adopt command running
+  explicitly invoked there. Named plainly, not suffixed — Claude Code
+  namespaces a plugin's commands by the plugin's own name, so this is the
+  plugin the command has to live in for `/spec-driven-guardrails:adopt` to
+  actually be its invocation.
+- **`spec-driven-guardrails-workflow`** (local scope): the other skills
+  plus all hooks. Installed by the adopt command running
   `claude plugin install --scope local`, inside the target repo the user
   already confirmed (`PRD.md` F3) — never anywhere else.
 
@@ -322,7 +325,7 @@ plugin, and the orphaned-symlink-cleanup logic exists only because
 symlinking skills into a live clone could orphan them — that failure class
 disappears entirely once skills are plugin-carried. This is a genuine
 **scope widening**, not parity: today skills are installed per project; a
-user-scope-carried skill set (via `spec-driven-guardrails-adopt`) makes
+user-scope-carried skill set (via `spec-driven-guardrails`) makes
 all of them available in every project, namespaced. Mostly welcome on its
 own, and exactly why the hook-scoping problem above needed a real fix
 rather than an afterthought — the same mechanism that deletes four
@@ -447,8 +450,8 @@ under A2, not from an assumption that they could audit the code
 themselves. `run_approved_command` is the sole seam through which any
 command execution happens (see "The decision" above); a shell invocation
 anywhere outside it is the violation signal, and is intended to become a
-mechanical CI check (`ARCHITECTURE.md`'s "Still open," `check`-script
-genre) once there is code to check.
+mechanical CI check (see "Still open after this document" below,
+`check`-script genre) once there is code to check.
 
 ### A5 — Cross-platform prerequisite handling, narrowed 2026-09-26
 Prerequisite detection and resolution (`PRD.md` F0-F2) must work
@@ -493,14 +496,15 @@ distinct from A6's boundary because none of those three assume
 responsibility for installing or authenticating Claude Code itself.
 
 ### A7 — Local-scope install structurally confines hooks (decided 2026-09-26)
-The `spec-driven-guardrails` plugin (hooks + remaining skills) installs at
-**local scope**, inside the target repository the user already confirmed
-(`PRD.md` F3), never at user scope. `spec-driven-guardrails-adopt` (the
-`/spec-driven-guardrails:adopt` command + adoption-time skills) installs
-at **user scope** and carries **no hooks** — it is harmless in any project
-because it does nothing until explicitly invoked there. No hook-scoping
-self-check ("adoption guard") is part of this design; confinement is
-structural, not conventional. Violation signal: any hook shipped in the
+The `spec-driven-guardrails-workflow` plugin (hooks + remaining skills)
+installs at **local scope**, inside the target repository the user already
+confirmed (`PRD.md` F3), never at user scope. `spec-driven-guardrails`
+(the `/spec-driven-guardrails:adopt` command + adoption-time skills)
+installs at **user scope** and carries **no hooks** — it is harmless in
+any project because it does nothing until explicitly invoked there. No
+hook-scoping self-check ("adoption guard") is part of this design;
+confinement is structural, not conventional. Violation signal: any hook
+shipped in the
 user-scope plugin, or the local-scope plugin installed anywhere other
 than the confirmed target repository.
 
@@ -601,7 +605,8 @@ A7's local-scope confinement and `PRD.md` F8's native uninstall.
 
 ## Still open after this document
 
-- **Resolved 2026-09-20: hybrid-core-first vs. single-project-plugin-first.**
+- **Resolved 2026-09-20, plugin count revised 2026-09-26: hybrid-core-first
+  vs. single-project-plugin-first.**
   See "Build order decided" above — v1 builds `spec-driven-guardrails` as
   two Claude Code plugins, generic/specific split enforced internally
   within each, core extraction deferred to a second project. No longer open.

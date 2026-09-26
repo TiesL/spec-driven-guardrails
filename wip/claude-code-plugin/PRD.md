@@ -14,9 +14,9 @@
 
 **v1 scope, decided 2026-09-20, revised 2026-09-26:** rather than building a generic, N-project installer core speculatively ahead of any real consumer, v1 turns `spec-driven-guardrails` into **two Claude Code plugins, split by install scope** — not one, as originally scoped (see "Architecture" below for why). Together they close the adoption gap for this one project first: asking questions and explaining actions in plain language, detecting and helping resolve prerequisites, establishing a workable repository context, running the adoption steps `adopt.sh` runs today but without requiring the user to hand-export an environment variable, already be comfortable in a shell, or already have a repository and identity configured. The plugins' internal structure keeps a generic side (no `spec-driven-guardrails` specifics) separate from a `spec-driven-guardrails`-specific side, so that generalizing to `portfolio-mgt-agents` and future projects is a later, cheaper step once a second real consumer needs it, not a redesign.
 
-**Propagation model, decided 2026-09-26:** `adopt.sh`'s symlink model (workflow content always tracks the current `spec-driven-guardrails` checkout) is retired in favor of one copy-based mechanism, used everywhere including Ties' own machines — not two mechanisms running side by side. `adopt.sh` is marked author-only legacy, retired once the plugin passes the parity criterion (§F7/Out of scope) on all four of Ties' currently-adopted projects. See `ARCHITECTURE.md`'s propagation decision for why this is forced by the plugin mechanism itself, not only by Windows support.
+**Propagation model, decided 2026-09-26:** `adopt.sh`'s symlink model (workflow content always tracks the current `spec-driven-guardrails` checkout) is retired in favor of one copy-based mechanism, used everywhere including Ties' own machines — not two mechanisms running side by side. `adopt.sh` is marked author-only legacy, retired once the plugin passes the parity criterion (§F7) on all four of Ties' currently-adopted projects. See `ARCHITECTURE.md`'s propagation decision for why this is forced by the plugin mechanism itself, not only by Windows support.
 
-**Funding decision, decided 2026-09-26:** only E1 (bootstrap admission manual) and E2 (the two plugins, no execution engine) are funded now. E3′ onward (primitive extraction, preview/verification, cross-platform execution, prerequisites, re-adoption) are priced and sequenced (see Epics below) but conditional, not committed.
+**Funding decision, decided 2026-09-26, scope corrected 2026-09-26 (independent review):** only E1 (bootstrap admission manual) and E2 are funded now. **E2's scope is the two plugins plus a complete, direct (no primitive abstraction, no preview) implementation of F0-F4 and F7** — establishing repository context, detecting/guiding prerequisites, collecting answers, running the steps, and verifying the result — because the Usability success criterion below (a clean machine reaching a fully adopted, verified project) requires all of that to be funded, not deferred. What stays conditional: primitive extraction (E4), the aggregate preview UI (E5), full cross-platform hardening (E6/E7), and re-adoption (E3) — none of which the funded criterion depends on. See Epics below for the corrected table.
 
 ---
 
@@ -26,8 +26,8 @@ See `ARCHITECTURE.md` for the full decision record. Target shape: the system eve
 
 **For v1**, both live inside **two `spec-driven-guardrails` plugins, split by Claude Code's own install scope** (decided 2026-09-26, resolving a hook-scoping hazard found after the original one-plugin design):
 
-- **`spec-driven-guardrails-adopt`** (user scope): the `/spec-driven-guardrails:adopt` command and the adoption-time skills only. **No hooks.** Harmless to have installed in any project, including client/work repos, because it does nothing until explicitly invoked.
-- **`spec-driven-guardrails`** (local scope, installed by the adopt command running `claude plugin install --scope local` *inside the confirmed target repo*): the other skills plus all hooks (`git-guardrails`, `push-after-commit`, session hooks). Local-scope install both fetches and structurally confines the plugin to that one directory via `.claude/settings.local.json` — a hook that isn't loaded in a project cannot fire there, by construction. No "adoption guard" self-check is needed; the earlier design considered one and it is not part of this document.
+- **`spec-driven-guardrails`** (user scope): the `/spec-driven-guardrails:adopt` command and the adoption-time skills only. **No hooks.** Harmless to have installed in any project, including client/work repos, because it does nothing until explicitly invoked. Named plainly (not suffixed) since Claude Code namespaces a plugin's commands by the plugin's own name — this is the plugin the command must live in for `/spec-driven-guardrails:adopt` to actually be its invocation.
+- **`spec-driven-guardrails-workflow`** (local scope, installed by the adopt command running `claude plugin install --scope local` *inside the confirmed target repo*): the other skills plus all hooks (`git-guardrails`, `push-after-commit`, session hooks). Local-scope install both fetches and structurally confines the plugin to that one directory via `.claude/settings.local.json` — a hook that isn't loaded in a project cannot fire there, by construction. No "adoption guard" self-check is needed; the earlier design considered one and it is not part of this document.
 
 The generic/specific split is still enforced internally within each plugin (own files — a `spec-driven-guardrails` literal in the generic side's files is the violation signal, per `ARCHITECTURE.md`'s "System boundaries and ownership") rather than as separately distributed artifacts. Claude Code is the runtime that runs the plugins' scripts/skills, in conversation with the user.
 
@@ -45,7 +45,7 @@ N/A. The plugins read local, per-run state — their own resume/progress marker 
 **Added 2026-09-26.** Before F1, confirm four things: a repository exists at the target path (or offer `git init`), a remote exists (or offer `gh repo create`), git identity is configured (`git config user.name`/`user.email` — the plugin asks, never silently assumes an identity for the user), and `gh` is authenticated (`gh auth login`'s browser flow, already specified under Security below). All four use `run_approved_command` (`ARCHITECTURE.md`'s A4 seam): confirmable, and reversible by simply not confirming. `adopt_project()`'s current hard-exit on a missing `.git` becomes F0's first branch rather than a dead end. Creating the GitHub *account* itself, and choosing the git identity's actual values, stay outside the plugin's reach — bootstrap-manual territory (A6), not this function.
 
 ### F1 — Prerequisite detection (`detect_prerequisites`)
-Check which of `spec-driven-guardrails`' prerequisites (`gh`, a specific Claude Code version) are present, which are missing, and which are present but below a required version. `git` is not checked here: installing either plugin from a git-hosted marketplace already requires `git`, so a machine that got this far already has it — `git` belongs in the bootstrap manual (A6), not F1. **Windows/Linux (decided 2026-09-26):** the guardrails this plugin installs (`git-guardrails`, the git hooks, the traceability checks) are Bash-and-`python3`, not portable by virtue of the installer being portable. F1 detects and declares WSL or Git Bash as a required prerequisite on Windows, rather than silently assuming a POSIX shell exists. Reports findings in plain language before proposing any action. **For v1**, the prerequisite list is embedded in the plugin; the "declared prerequisites" abstraction is deferred until a second project's plugin needs to express a different list.
+Check which of `spec-driven-guardrails`' prerequisites (`gh`, Claude Code itself) are present, which are missing, and which are present but below a required version. **Version floor (decided 2026-09-26):** declared as whatever version E2 is actually built and tested against — not a lower, unverified guess — and checked mechanically by parsing `claude --version`. `git` is not checked here: installing either plugin from a git-hosted marketplace already requires `git`, so a machine that got this far already has it — `git` belongs in the bootstrap manual (A6), not F1. **Windows/Linux (decided 2026-09-26):** the guardrails this plugin installs (`git-guardrails`, the git hooks, the traceability checks) are Bash-and-`python3`, not portable by virtue of the installer being portable. F1 detects and declares WSL or Git Bash as a required prerequisite on Windows, rather than silently assuming a POSIX shell exists. Reports findings in plain language before proposing any action. **For v1**, the prerequisite list is embedded in the plugin; the "declared prerequisites" abstraction is deferred until a second project's plugin needs to express a different list.
 
 ### F2 — Guided prerequisite resolution (`resolve_prerequisite`)
 For each missing or outdated prerequisite, explain in layman's terms why it's needed, propose the standard installation path for the user's detected OS (linking the official installer page), ask for confirmation, and only then act. **Detects and guides; does not drive package-manager installs itself** (decided 2026-09-26) — actually running Homebrew/winget/apt across three OSes is the riskiest, least testable code available and isn't v1's job. `gh auth login` is the one exception and stays automated to the browser flow, since it's a trusted, well-defined OAuth handoff, not an arbitrary package install.
@@ -149,8 +149,8 @@ many machines at once, which is explicitly not this design's target.
 <!-- nfr: spec-deployability -->
 There is no "environment" in the traditional sense (no server, no
 pre-production/production split) — "deploying" this project means making
-`spec-driven-guardrails-adopt` reachable by a non-engineer's Claude
-Code session in the first place. `ARCHITECTURE.md` A6 narrows that
+`spec-driven-guardrails` (the user-scope plugin) reachable by a
+non-engineer's Claude Code session in the first place. `ARCHITECTURE.md` A6 narrows that
 precondition to installing and signing into the Claude Desktop app
 (verified: it bundles Claude Code); the literal step-by-step bootstrap
 manual is E1 (see Epics), funded and next. **Correction (2026-09-20): declining a step is not
@@ -274,14 +274,15 @@ Ordered by recommended sequence. Effort is a relative design/architecture-share 
 | # | Epic | Priority | Funded | Effort |
 |---|---|---|---|---|
 | E1 | Bootstrap admission manual, tested against one real person | 1 | **Yes** | S |
-| E2 | Two plugins (`spec-driven-guardrails-adopt` + `spec-driven-guardrails`), no execution engine | 2 | **Yes** | L |
-| E3 | Repository/identity bootstrap + step classification for re-adoption (F0, F9) | 3 | Conditional | S |
-| E4 | Four primitives (`check_tool`, `install_package`, `write_managed_block`, `run_approved_command`), each execute/plan/verify | 4 | Conditional | M |
-| E5 | Aggregate preview + verification report (F5/F7, user-facing) | 5 | Conditional | S |
-| E6 | Windows/Linux execution of the installer itself | 6 | Conditional | M |
-| E7 | Portability of the *installed payload* (Bash/python3 guardrails) — WSL/Git-Bash declared prerequisite | 7 | Conditional | L |
-| E8 | `gh` detection/auth, Claude Code version floor | 8 | Conditional | S |
+| E2 | Two plugins (`spec-driven-guardrails` + `spec-driven-guardrails-workflow`), direct (non-primitive) implementation of **F0, F1, F2, F3, F4, F7** — a complete, verified, working adoption flow, no preview, no re-adoption, no cross-platform hardening beyond F1's WSL/Git-Bash detection | 2 | **Yes** | L |
+| E3 | Step classification for re-adoption (F9) | 3 | Conditional | S |
+| E4 | Four primitives (`check_tool`, `install_package` — pending Q8's detect-and-guide-only scope, `write_managed_block`, `run_approved_command`), each execute/plan/verify, extracted from E2's direct implementation | 4 | Conditional | M |
+| E5 | Aggregate preview report (F5, user-facing) | 5 | Conditional | S |
+| E6 | Windows/Linux execution hardening of the installer itself, beyond E2's basic detection | 6 | Conditional | M |
+| E7 | Portability of the *installed payload* (Bash/python3 guardrails) — WSL/Git-Bash declared prerequisite, tested | 7 | Conditional | L |
 | E9 | Generic core extraction — explicitly not v1 | Deferred | No | — |
+
+**Why E2 includes F0/F1/F2/F7 (corrected 2026-09-26, independent review finding):** the Usability success criterion below — a clean machine reaching a fully adopted, *verified* project without a terminal command — cannot hold if repository/identity bootstrap (F0), prerequisite handling (F1/F2), or verification (F7) are deferred to a conditional epic. They're funded as part of E2's direct implementation; only their later *extraction into tested primitives* (E4) and *aggregate preview UI* (E5) are conditional.
 
 **Not gated on a real-user experiment (decided 2026-09-26):** both roles in the co-thinking session recommended watching one real target-profile person use the workflow for an hour before funding past E2. Ties declined this gate — E3 onward proceed on the sequencing above without that checkpoint.
 
@@ -317,7 +318,7 @@ findings land here too. See *Complexity, technical debt, refactoring* in
 | No manifest format is fixed yet — F0/F1/F3/F4 describe embedded, plugin-internal behavior, not an external schema | v1 is deliberately single-project (`ARCHITECTURE.md`'s "Build order decided"); fixing an external format before a second real consumer exists risks guessing wrong | Once a second project (e.g. `portfolio-mgt-agents`) needs its specifics expressed outside the `spec-driven-guardrails` plugins |
 | The generic/specific split inside the plugins is a design intent, not yet a proven abstraction — only one real consumer exists | Can't be proven any other way than building a second consumer against it | Once a second project's plugin reuses the generic side unmodified (or fails to, revealing what the split got wrong) |
 | The bootstrap manual (literal step-by-step for a non-engineer, from "nothing installed" to the plugin running) doesn't exist yet | It's E1, funded and next, but not yet written/tested | Before either plugin ships to a real non-engineer user; blocks that, not this document |
-| E4's primitive extraction, E6/E7's cross-platform work, and E3/E8 are priced but not committed | Funding decision (2026-09-26): only E1+E2 are funded now | Ties decides to fund further, per the Epics table above |
+| E3's re-adoption, E4's primitive extraction, E5's preview UI, and E6/E7's cross-platform hardening are priced but not committed | Funding decision (2026-09-26): only E1+E2 are funded now | Ties decides to fund further, per the Epics table above |
 
 ---
 
@@ -327,3 +328,4 @@ findings land here too. See *Complexity, technical debt, refactoring* in
 |---|---|
 | `PRD.md` | This document — what the plugins must do and why. |
 | `ARCHITECTURE.md` | The core/manifest split decision, the two-plugin-by-scope architecture, its requirements, and open questions. |
+| `TEST-SCENARIOS.md` | Given/When/Then scenarios per functionality item, `Covers:`-linked to `PRD.md`'s F-numbers. |
