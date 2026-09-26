@@ -124,6 +124,10 @@ Epic issue; the `wip/<slug>/` folder itself is kept afterward as historical reco
 default, not deleted — same precedent as this very epic's own `wip/multi-agent-development/`
 folder.
 
+**Second run (2026-09-26): rolling out this very epic.** The same pattern ran again, this time
+against making epic #65's own design executable — output in
+[`wip/multi-agent-rollout/`](../multi-agent-rollout/PRODUCT-REPORT.md), promoted to epic #295.
+
 **Pilot findings incorporated (2026-09-25).** The pattern above ran for the first time
 against `wip/claude-code-plugin/` (Product then Architect, sequential, each a fresh sub-agent
 producing a durable report). A blameless retrospective — one fresh reviewer per role plus the
