@@ -65,14 +65,15 @@ while IFS='|' read -r name has_pkg content has_check expected_ci expected_deploy
     fi
   done
 
-  # And the total: 23 entries always apply, plus every applicable
+  # And the total: 24 entries always apply, plus every applicable
   # predicate entry. `has-check-command` (#248) now contributes five -
   # `ci-convention` (what the workflow does), `ci-on-pr-and-main` (when it
   # runs), `ci-link-3-hard-block` (PR without issue),
   # `ci-detects-main-outside-pr` (commit on main without PR), and
-  # `ci-wait-for-cadence` (#265: how merging waits for it). Catches
-  # seed logic that is bulk-wrong.
-  expected_count=23
+  # `ci-wait-for-cadence` (#265: how merging waits for it).
+  # `process-grilling-codebase-design-skills` (#291) bumped this from 23.
+  # Catches seed logic that is bulk-wrong.
+  expected_count=24
   [ "$expected_ci" = "ja" ] && expected_count=$((expected_count + 5))
   [ "$expected_deploy" = "ja" ] && expected_count=$((expected_count + 1))
   seeded_count="$(grep -c . "$seeded")"

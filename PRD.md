@@ -1269,7 +1269,10 @@ epics still apply, detached from the execution history in which they arose.
   no duplication problem.
 - **Adopting `mattpocock/skills`' grilling/to-spec template.** The grilling
   *technique* as a method for filling in NFR sections remains a separate
-  exploration.
+  exploration. *(Revised: the `grilling` technique itself was adopted as a
+  real skill, issue #291 — but for general requirement elicitation, not
+  this specific NFR-section-filling template use case, which stays
+  unexplored.)*
 - **A pinnable version for consumers.** *(Revised: picked up after all in
   W37 (#79), see `CHANGELOG.md`, "Decided in W29 (#53)", decision 5 — this
   exclusion held for epic #11, no longer for epic #52.)*
@@ -1385,7 +1388,7 @@ epics still apply, detached from the execution history in which they arose.
 | `check` | Its own test command: syntax, JSON validation, shellcheck, test suite (F1, new) |
 | `test/` | Test harness and `fixtures/baseline/` (F1, F2, new) |
 | `hooks/` | Guard scripts for the `PreToolUse` hooks (F7, F8, new) |
-| `skills/*/SKILL.md` | The nine skills (F10, new) |
+| `skills/*/SKILL.md` | The skills — count changes as adopted; see `WORKFLOW.md`'s routing table for the current list (F10, new) |
 | `settings/session-hooks.json` | Hook configuration; symlinked as `.claude/settings.json` |
 | `templates/` | Templates for adopted projects (PRD, test scenarios, architecture, CI, issues) |
 | `PRD.md` | This document |

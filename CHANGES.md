@@ -424,6 +424,21 @@ the shared parser warns if it has no `Applies if`.
   used, always — see the `model-choice` skill.
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/236
 
+## process-grilling-codebase-design-skills
+
+- **Question:** Does this project want the `grilling` (relentless,
+  round-based requirement elicitation) and `codebase-design` (deep-module
+  decomposition vocabulary) skills?
+- **Default:** yes
+- **Applies if:** always
+- **Yes means:** `adopt.sh`'s `install_skills()` globs `skills/`, so these
+  two general-purpose method skills get symlinked into the project the
+  same way every other skill does, no separate mechanism. Vendored
+  verbatim from `mattpocock/skills` (MIT, static copy, not a live
+  dependency) — see `skills/grilling/README.md` and
+  `skills/codebase-design/README.md` for the pinned upstream commits.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/292
+
 ---
 
 ### Non-functional characteristics (NFRs)

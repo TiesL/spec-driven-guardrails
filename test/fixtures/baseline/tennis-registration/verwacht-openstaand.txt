@@ -2,6 +2,7 @@ architecture-document
 ci-gate-on-merge
 process-context-document
 process-diagnose-bug
+process-grilling-codebase-design-skills
 process-issue-tracking
 process-model-choice
 process-prd

@@ -10,26 +10,26 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# Given: a freshly adopted project with 23 seeded rows carrying "requires
+# Given: a freshly adopted project with 24 seeded rows carrying "requires
 # substantiation".
 project="$(fresh_project target-project)"
 adopt "$project"
 
 rows="$(grep -c 'requires substantiation' "$project/WORKFLOW-ADOPTION.md")"
-[ "$rows" -eq 23 ] || fail "S7 — $rows rows with 'requires substantiation', 23 expected"
+[ "$rows" -eq 24 ] || fail "S7 — $rows rows with 'requires substantiation', 24 expected"
 
 # When: pending-changes.sh runs.
 output="$SANDBOX/output.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$output" 2>/dev/null
 
 # Then: a message appears with the count.
-grep -q '23 row(s)' "$output" || {
+grep -q '24 row(s)' "$output" || {
   fail "S7 — no message with the count of pending substantiations"
   cat "$output" >&2
 }
 grep -qi 'substantiation' "$output" || fail "S7 — the message does not mention 'substantiation'"
 
-# And the count moves along: substantiating one row makes it twenty-two.
+# And the count moves along: substantiating one row makes it twenty-three.
 # Substantiate one row. Not with `sed '0,/re/'`: that address range is a GNU
 # extension that BSD sed on macOS does not know, and the substitution then
 # silently does not take.
@@ -41,7 +41,7 @@ mv "$SANDBOX/table.tmp" "$project/WORKFLOW-ADOPTION.md"
 
 after="$SANDBOX/after.txt"
 "$TEST_REPO_ROOT/pending-changes.sh" "$project" > "$after" 2>/dev/null
-grep -q '22 row(s)' "$after" || {
+grep -q '23 row(s)' "$after" || {
   fail "S7 — the count does not move along after substantiating one row"
   grep -i 'row(s)' "$after" >&2
 }
