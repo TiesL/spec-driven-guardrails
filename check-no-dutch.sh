@@ -65,7 +65,7 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 # own personal instruction file (not part of the shared product surface).
 # check-no-dutch.sh itself is excluded: its own marker-word list is a
 # necessary literal, not untranslated prose.
-permanent_excluded='./CHANGELOG.md ./CHANGES-ARCHIEF.md ./PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh'
+permanent_excluded='./CHANGELOG.md ./CHANGES-ARCHIEF.md ./wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh ./wip/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT-PASS2.md'
 
 # Pending exclusions — real translation gaps, tracked in an open issue.
 # Add a line the moment a new gap is found; remove it the moment that
