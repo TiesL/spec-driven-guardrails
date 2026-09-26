@@ -19,3 +19,8 @@ work specifically: "the public boundary a test may act on." Same root
 concept (Feathers), different altitude — this skill is about deciding where
 to put a seam when designing a module; `tdd-seams` is about using an
 already-agreed seam to write a test. Read both if you're doing both jobs.
+
+**Also vendored at `wip/multi-agent-development/vendor/codebase-design/`** —
+that copy predates this one (epic #65's own multi-agent design docs
+reference it directly) and stays as their reference. Byte-identical, same
+upstream commit; update both, or neither, if either ever changes.

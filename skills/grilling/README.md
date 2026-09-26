@@ -9,3 +9,8 @@ changes to that repo never reach this one without a deliberate edit here.
 
 `agents/openai.yaml` (OpenAI-harness display metadata, not relevant here)
 was not vendored — only `SKILL.md`, the actual method.
+
+**Also vendored at `wip/multi-agent-development/vendor/grilling/`** — that
+copy predates this one (epic #65's own multi-agent design docs reference it
+directly) and stays as their reference. Byte-identical, same upstream
+commit; update both, or neither, if either ever changes.
