@@ -1,4 +1,4 @@
-# Test scenarios — agentic-workflow-installer (v1: spec-driven-guardrails plugins)
+# Test scenarios — `spec-driven-guardrails` Claude Code plugin (v1: two plugins by scope)
 
 Purpose: these scenarios describe the intended/observed behavior (see
 `PRD.md`). They're independent of the chosen technical solution and
@@ -22,15 +22,15 @@ to the plugins' own embedded configuration for v1, not an external file.
 
 ## Plugin scope and hook confinement
 
-### S-scope — A hook installed for one project never fires in another
-**Covers:** N/A — cross-cutting architectural invariant (ARCHITECTURE.md A7), not a PRD.md F-item
+### A7 — A hook installed for one project never fires in another
+**Covers:** A7 — this scenario tests the architecture invariant directly (`ARCHITECTURE.md`), not a `PRD.md` F-item; the heading reuses A7's own ID rather than inventing a separate, unresolvable one
 - Given: `spec-driven-guardrails-workflow` (the local-scope, hook-carrying plugin) is installed in project A only; `spec-driven-guardrails` (the user-scope command plugin) is installed once, machine-wide
 - When: the user opens an unrelated project B in the same Claude Code session and commits or pushes there
 - Then: no hook from `spec-driven-guardrails-workflow` fires in project B — confinement is structural (local-scope install, `.claude/settings.local.json`), not a per-hook self-check
 - And: the `/spec-driven-guardrails:adopt` command remains available in project B (it's user-scope), but invoking it there only ever affects project B if the user explicitly confirms adopting it, per F0-F4
 
-### S-scope-b — A collaborator clones an already-adopted project
-**Covers:** N/A — same as S-scope above (ARCHITECTURE.md A7)
+### A7b — A collaborator clones an already-adopted project
+**Covers:** A7 — same invariant as A7 above
 - Given: project A was adopted (has `spec-driven-guardrails-workflow` installed at local scope, recorded in its own `.claude/settings.local.json`) and the collaborator has never installed either plugin themselves
 - When: the collaborator clones project A and opens it in their own Claude Code session
 - Then: the collaborator's session does not automatically fetch or run `spec-driven-guardrails-workflow` — local scope confines *installation*, it doesn't auto-propagate to a new machine
@@ -114,8 +114,8 @@ to the plugins' own embedded configuration for v1, not an external file.
 ### S4 — Adoption steps run and narrate their outcome
 **Covers:** F4
 - Given: F3 has collected valid answers (target directory, project scope)
-- When: F4 executes the embedded adoption steps (place skill files, install git hooks, symlink `CLAUDE.md`, seed the adoption table)
-- Then: each step's purpose and outcome is narrated in plain language as it runs, and the target directory ends up in the same state `adopt.sh` would produce today
+- When: F4 executes the embedded adoption steps (install `spec-driven-guardrails-workflow` at local scope, copy `CLAUDE.md` and the attribution setting, write the managed `.gitignore` block, seed the adoption table)
+- Then: each step's purpose and outcome is narrated in plain language as it runs, and the target directory matches F7's enumerated expected-tree criterion — not literal parity with `adopt.sh`'s output, since plugin-carried skills and copies-instead-of-symlinks are intended, listed deviations
 
 ### S4b — A step fails partway through execution
 **Covers:** F4

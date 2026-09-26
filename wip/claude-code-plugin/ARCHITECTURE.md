@@ -200,7 +200,11 @@ The original one-plugin design had a hazard, found only by reading the
 actual mechanism rather than the docs describing it: **a plugin's hooks
 don't wait for one of its skills or commands to be used — Claude Code
 registers them when a session loads the plugin, and they fire on their
-events from then on, in every project the session touches.** A user-scope
+events from then on, in every project the session touches.** (Verified
+against the official Claude Code plugin docs, `plugins-reference` and
+`plugins/components`, 2026-09-26 — quoted, not inferred. See "Platform
+facts, cited" at the end of this section for the full list and the
+re-verification trigger.) A user-scope
 `spec-driven-guardrails` plugin would mean `git-guardrails`,
 `push-after-commit`, and the SessionEnd auto-push fire in *every* project
 Ties opens, not only ones actually adopted — including work/client repos
@@ -265,6 +269,44 @@ reaches the local-scope plugin's configuration but does not auto-fetch it
 (`--add-dir`) needs no special handling. One cheap assertion is kept on
 the SessionEnd push hook specifically — the only hook with an irreversible
 side effect — as defense in depth, not as the scoping mechanism itself.
+
+### Platform facts, cited (added 2026-09-26, independent-review finding)
+
+This whole design rests on seven claims about Claude Code's own plugin
+system. Each was verified against the official docs (`plugins-reference`,
+`plugins/components`, `plugins/create-marketplace`, `plugins/host-marketplace`
+at `code.claude.com/docs/en`) during the co-thinking session's investigation,
+not inferred or assumed — listed together here since no single "when we
+would revisit" trigger previously covered "a platform fact turned out to be
+wrong or changed":
+
+1. **Hooks fire on every event once a session loads the plugin**, not
+   gated on a skill/command being used — the reason two plugins split by
+   scope exist at all (above).
+2. **Local install scope both fetches and confines a plugin** to the
+   directory it was installed in, via `.claude/settings.local.json` — the
+   structural fix A7 relies on.
+3. **`${CLAUDE_PLUGIN_ROOT}` changes when the plugin updates** — the reason
+   a `.git/hooks` symlink into it would dangle, forcing copies (below).
+4. **Plugin `settings.json` only honors `agent` and `subagentStatusLine`** —
+   every other key is dropped, which is why `attribution.commit` stays a
+   real project-local file, not plugin-carried.
+5. **Claude Code doesn't load a `CLAUDE.md` at a plugin's root as project
+   context** — the reason `CLAUDE.md` → `WORKFLOW.md` and the
+   `~/.claude/CLAUDE.md` trigger both stay real file placements, not
+   plugin content.
+6. **Background plugin auto-update is off by default** — the reason F6's
+   state model keeps a plugin-version field and the propagation decision
+   below narrates staleness explicitly rather than assuming freshness.
+7. **The Claude Desktop app bundles Claude Code** — A6's admission-gate
+   boundary.
+
+**Revisit trigger, added alongside the existing four below:** any of these
+seven facts changing (a Claude Code release altering hook registration,
+install-scope confinement, `settings.json`'s honored keys, `CLAUDE.md`
+loading, or auto-update defaults) reopens the affected decision above,
+specifically — not a reason to distrust the whole document, since each
+claim is cited independently and can be re-checked on its own.
 
 ### The propagation decision: one mechanism, copies everywhere (decided 2026-09-26)
 
@@ -600,6 +642,9 @@ A7's local-scope confinement and `PRD.md` F8's native uninstall.
 - The declared WSL/Git-Bash prerequisite (A5) proves insufficient once a
   real Windows user is tested against it — would reopen whether the
   guardrails themselves need reimplementing cross-platform.
+- **Added 2026-09-26:** any of the seven cited platform facts ("Platform
+  facts, cited" above) changes in a future Claude Code release — reopens
+  only the specific decision that fact supports, not the whole document.
 
 ---
 

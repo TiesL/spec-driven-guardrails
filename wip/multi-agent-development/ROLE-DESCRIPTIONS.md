@@ -7,6 +7,13 @@ or human, co-thinking session or full pipeline. Source of truth for the content 
 per rol") — this file is a reformatting for dispatch-time use, not a new decision. If the two
 ever disagree, PRD.md wins and this file is stale.
 
+**That source document is still entirely Dutch** (issue #237 tracks translating it; deferred
+as part of completing epic #65, not forgotten). This file's own English content is a faithful
+translation/reformatting of
+that source, not an independent English original — a discrepancy between the two should be
+resolved by re-reading the Dutch source directly, not by trusting this file's phrasing as
+more authoritative just because it's in English.
+
 Per A8: each role's actual task prompt still names its own scoped input files and states
 whether that list is a floor or a ceiling — this file only supplies the role/responsibilities
 framing common to every dispatch of that role, not the task-specific file list or deliverable

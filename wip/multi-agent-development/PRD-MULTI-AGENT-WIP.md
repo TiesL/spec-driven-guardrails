@@ -405,7 +405,7 @@ Elk vervolgvoorstel moet eerst worden getoetst aan de ontwerpprincipes in dit do
 Bijgewerkt 2026-09-21: acceptatie geldt voor dit PRD **samen met**
 [`ARCHITECTURE-MULTI-AGENT-WIP.md`](ARCHITECTURE-MULTI-AGENT-WIP.md) en
 [`MULTI-AGENT-WORKFLOW.md`](MULTI-AGENT-WORKFLOW.md) — niet alleen dit document. De
-architectuurbesluiten en -invarianten (A1-A5) staan inmiddels grotendeels in die twee
+architectuurbesluiten en -invarianten (A1-A11, per 2026-09-25) staan inmiddels grotendeels in die twee
 bestanden, niet hier; acceptatie van dit PRD alleen zou ze niet dekken.
 
 Dit documentendrietal is gereed om als attachment of referentie bij een GitHub Epic te dienen wanneer stakeholders bevestigen dat het:
