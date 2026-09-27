@@ -1664,3 +1664,38 @@ something new is being added.
   rendered table pasted into the PR changes no status; and the six-row
   shape, the four-status vocabulary and the absence of any write path
   are unchanged
+
+### S152 — role-label-staleness.sh detects role:<name> label staleness for one issue
+**Covers:** F35
+- Given: a `fake_gh_bin` recording of an issue's `gh api graphql`
+  answer (labels, body/comments, and every PR
+  `closedByPullRequestsReferences` names) and, for each named PR, that
+  PR's `gh pr view` body/comments — variants of it per subcase
+- When: `role-label-staleness.sh <issue-number>` runs with that fake
+  `gh` ahead of `PATH`
+- Then: it prints exactly one verdict line,
+  `role-label-staleness: issue #<n> — <status> (<detail>)`, with
+  `<status>` one of `not-started`, `in-sync`, `stale`, `indeterminate`; a
+  label matching the latest evidenced stage, or one with zero markers
+  evidenced anywhere, is `in-sync`; a label naming an earlier stage than
+  the latest evidence is `stale`, naming both the label present and the
+  label the evidenced stage implies; no label and no marker anywhere is
+  `not-started`, distinctly from no label with at least one marker
+  (`stale`); zero linked PRs computes a normal verdict from issue-only
+  evidence, never `indeterminate` on its own; two-or-more `role:<name>`
+  labels at once is `indeterminate`, naming every one found, and an
+  unrelated label alongside a single one is never counted as multiple; a
+  live marker matched by the anchor but with no recognized `stage=`
+  value, on the issue or any linked PR, forces `indeterminate` for the
+  whole run even when another linked PR's marker is well-formed; markers
+  split across multiple linked PRs combine by union/max, order-
+  independent of which PR is named first; a marker merely quoted in a
+  fenced block, code span or blockquote is not counted as live evidence;
+  a failed lookup on one of several linked PRs degrades the verdict to
+  `indeterminate` only when the evidence read so far doesn't already
+  rule out what the missing PR could reveal (a verdict already `stale`,
+  or already `in-sync` at the last stage, from what WAS read, is never
+  degraded); a failed issue lookup exits 4 with nothing on stdout, while
+  a failed PR lookup never changes the exit code; with no `gh` on `PATH`
+  it exits 3; the run makes no `gh` write call and the script's source
+  contains none
