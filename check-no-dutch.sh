@@ -61,7 +61,7 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 
 # Permanent exclusions — layer C (this repo's own self-adopted, frozen
 # copies, same treatment as the three external projects' equivalent
-# files), historical records, the separate epic #65 WIP track, and TiesL's
+# files), historical records, and TiesL's
 # own personal instruction file (not part of the shared product surface).
 # check-no-dutch.sh itself is excluded: its own marker-word list is a
 # necessary literal, not untranslated prose.
@@ -74,7 +74,7 @@ markers='wordt niet geen moet dus eigen worden bijvoorbeeld toch zoals vanuit ge
 # by line range); if that granularity mismatch ever hides a real gap in a
 # future file this broad, split the check instead of widening this list
 # further.
-permanent_excluded='./CHANGELOG.md ./CHANGES-ARCHIEF.md ./wip/multi-agent-development/PRD-MULTI-AGENT-WIP.md ./USER-CLAUDE.md ./check-no-dutch.sh ./wip/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT-PASS2.md'
+permanent_excluded='./CHANGELOG.md ./CHANGES-ARCHIEF.md ./USER-CLAUDE.md ./check-no-dutch.sh ./wip/claude-code-plugin/CO-THINKING-ARCHITECT-REPORT-PASS2.md'
 
 # Pending exclusions — real translation gaps, tracked in an open issue.
 # Add a line the moment a new gap is found; remove it the moment that
