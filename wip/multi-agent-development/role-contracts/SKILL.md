@@ -8,14 +8,16 @@ description: >
   prompt; not auto-loaded (see ARCHITECTURE-MULTI-AGENT-WIP.md A4/A8).
 ---
 
-# Role descriptions
+# Role descriptions and contracts
 
 Job descriptions for the five roles in the multi-agent workflow (epic #65), meant to be
 quoted verbatim into a role's dispatch prompt when it's spawned — orchestrator (`Agent` tool)
-or human, co-thinking session or full pipeline. Source of truth for the content itself is
-`PRD-MULTI-AGENT-WIP.md` §4 ("Roles and responsibilities" / "Core responsibilities
-per role") — this file is a reformatting for dispatch-time use, not a new decision. If the two
-ever disagree, PRD.md wins and this file is stale.
+or human, co-thinking session or full pipeline. Source of truth for the responsibilities
+content is `PRD-MULTI-AGENT-WIP.md` §4 ("Roles and responsibilities" / "Core responsibilities
+per role") — this file is a reformatting for dispatch-time use, not a new decision. The A4
+write/action scope and A8 floor-or-ceiling input scope below are sourced the same way from
+`ARCHITECTURE-MULTI-AGENT-WIP.md`'s own A4/A8 decisions. If this file and either source
+document ever disagree, the source document wins and this file is stale.
 
 **That source document has since been translated to English (issue #237).** This file's own
 content is a faithful translation/reformatting of that source, not an independent English
@@ -41,7 +43,10 @@ reserved for that case, not the default. Whichever applies, the role's dispatch 
 so **explicitly**, never leave it silent; a role that reads beyond a stated ceiling, or beyond a
 floor without declaring what and why, violates A8 the same way the architecture document itself
 defines the violation. Each role's section below carries a one-line pointer restating that this
-principle applies to it — the substance lives once, here, not paraphrased five times.
+principle applies to it — the substance lives once, here, not paraphrased five times. This file
+itself only supplies the role/responsibilities framing common to every dispatch of that
+role — never the task-specific file list or deliverable structure, both of which remain the
+dispatching prompt's own job to state.
 
 ---
 
@@ -205,8 +210,8 @@ artifacts; writes only its own PR review/findings comment — never edits code. 
 stronger sandboxing guarantee — `pre-merge-review`'s own `allowed-tools` still includes `Bash`,
 so the parity is in intent, not in enforcement).
 
-**Security review triggers (AC4):** when a change touches one of the six categories below,
-invoke this repo's `security-review` skill. Risk-driven, not always-on — no separate Security
+**Security review triggers:** when a change touches one of the six categories below,
+invoke the existing `security-review` skill. Risk-driven, not always-on — no separate Security
 agent by default (one is justified only when a trigger applies *and* the stakes are high: real
 user credentials, payment data, a publicly accessible production environment). POLP (Principle
 of Least Privilege) is the organizing premise for every row: is this limited to the minimum
