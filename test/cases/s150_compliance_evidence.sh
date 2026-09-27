@@ -510,6 +510,18 @@ output_ac8c="$(PATH="$fakebin_ac8c:$PATH" "$script" 279)"
 assert_table_shape "S150 AC8c" "$output_ac8c"
 [ "$(row_status "$output_ac8c" 3)" = "not-evidenced" ] || fail "S150 AC8c — expected gate 3 not-evidenced for a stale (sha-mismatched) marker, got '$(row_status "$output_ac8c" 3)'"
 
+# --- Arm E (AC3a, issue #299): the non-degraded branch of P3 loses its
+# stray ` -->` too, and otherwise stays byte-for-byte as today (including
+# "it doesn't match"). This is the exact gap D1 warned about: a fix that
+# drops ` -->` in the degraded branch only, while leaving this one
+# untouched, must fail here.
+# shellcheck disable=SC2016
+expected_ac8c_evidence='only a stale `pre-merge-review:done sha=472bc8f574c4aea3fc58161d1924b7b05329172f` marker on PR #279; it doesn'"'"'t match `headRefOid` (6e00a8c38bf18f19cd53084b5c77ae476c1e74e6)'
+[ "$(row_evidence "$output_ac8c" 3)" = "$expected_ac8c_evidence" ] || fail "S150 AC3a — gate 3 (non-degraded) evidence text doesn't match: '$(row_evidence "$output_ac8c" 3)'"
+case "$(row_evidence "$output_ac8c" 3)" in
+  *"-->"*) fail "S150 AC3a — the stray '-->' is still present in the non-degraded gate-3 evidence cell" ;;
+esac
+
 # AC8d (finding (c), highest-value gap) — a red CI check is not-evidenced,
 # never evidenced. The single most likely wrong implementation
 # ("checks parsed -> evidenced") reports a red build as compliant; this
@@ -784,6 +796,198 @@ rm -f /tmp/s150_stderr_callc.$$
 assert_table_shape "S150 call-C-fails" "$output_callc_fails"
 [ "$(row_status "$output_callc_fails" 1)" = "indeterminate" ] || fail "S150 call-C-fails — expected gate 1 indeterminate (not not-evidenced) when a closing issue lookup fails and Discovery then looks missing, got '$(row_status "$output_callc_fails" 1)'"
 assert_contains "S150 call-C-fails — a warning appears on stderr" "warning" "$stderr_callc_fails"
+
+# --- AC1/AC2 (issue #299): this fixture already puts gate 2 in P1 (no
+# stage=Review marker at all) and gate 3 in P2 (no pre-merge-review:done
+# text of any shape) while the issue lookup has failed — both defective
+# paths already execute here today, unasserted. Assert they degrade to
+# indeterminate rather than asserting absence, with the exact evidence
+# text AC1/AC2 specify (not a substring: a fix that names the wrong PR,
+# drops a marker name, or merges the two gates' messages must fail here).
+[ "$(row_status "$output_callc_fails" 2)" = "indeterminate" ] || fail "S150 AC1 — expected gate 2 indeterminate (not not-evidenced) when a closing issue lookup fails and stage=Review looks missing, got '$(row_status "$output_callc_fails" 2)'"
+[ "$(row_status "$output_callc_fails" 3)" = "indeterminate" ] || fail "S150 AC2 — expected gate 3 indeterminate (not not-evidenced) when a closing issue lookup fails and no pre-merge-review:done marker is found, got '$(row_status "$output_callc_fails" 3)'"
+# shellcheck disable=SC2016
+expected_ac1_evidence='no `stage=Review` and/or `stage=Implementation` model-record marker found on PR #279, but a closing issue lookup failed, so absence can'"'"'t be confirmed'
+[ "$(row_evidence "$output_callc_fails" 2)" = "$expected_ac1_evidence" ] || fail "S150 AC1 — gate 2 evidence text doesn't match the spec'd template: $(row_evidence "$output_callc_fails" 2)"
+# shellcheck disable=SC2016
+expected_ac2_evidence='no `pre-merge-review:done` marker found on PR #279, but a closing issue lookup failed, so absence can'"'"'t be confirmed'
+[ "$(row_evidence "$output_callc_fails" 3)" = "$expected_ac2_evidence" ] || fail "S150 AC2 — gate 3 evidence text doesn't match the spec'd template: $(row_evidence "$output_callc_fails" 3)"
+
+# --- AC7 (issue #299), a.k.a. Arm F: the stderr warning must name every
+# affected gate, not just gate 1, and must still be the place the failing
+# issue number is disclosed (AC4: the table itself never names it).
+assert_contains "S150 AC7 — the warning names every affected gate" "gates that search its comments" "$stderr_callc_fails"
+case "$stderr_callc_fails" in
+  *"stage evidence involving it"*)
+    fail "S150 AC7 — the warning still carries the old gate-1-only wording" ;;
+esac
+assert_contains "S150 AC7 — the warning names the issue" "#265" "$stderr_callc_fails"
+# AC4: the table's own cells must not name the failing issue (the
+# careful negative: #279 legitimately appears in every cell, so this
+# checks for the issue number specifically, not any '#').
+for n in 1 2 3; do
+  case "$(row_evidence "$output_callc_fails" "$n")" in
+    *"#265"*) fail "S150 AC4 — row $n names the failing issue #265 in the table; that belongs on stderr only" ;;
+  esac
+done
+
+# =========================================================================
+# Arm B (AC3/AC3a, issue #299): gate 3's P3 (stale sha, no match) must
+# degrade to indeterminate when the issue lookup fails, and the evidence
+# text must keep reporting BOTH shas — a fix that degrades the status by
+# discarding the sha detail must fail here.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- pre-merge-review:done sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    echo "gh: could not resolve to an Issue" >&2
+    exit 1 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac3="$(cat "$FAKEGH_OUT")"
+output_ac3="$(PATH="$fakebin_ac3:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac3")"
+status_ac3=$?
+[ "$status_ac3" -eq 0 ] || fail "S150 AC3 — expected exit 0, got $status_ac3"
+assert_table_shape "S150 AC3" "$output_ac3"
+[ "$(row_status "$output_ac3" 3)" = "indeterminate" ] || fail "S150 AC3 — expected gate 3 indeterminate for a stale marker under a failed issue lookup, got '$(row_status "$output_ac3" 3)'"
+# shellcheck disable=SC2016
+expected_ac3_evidence='only a stale `pre-merge-review:done sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` marker on PR #279, which doesn'"'"'t match `headRefOid` (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), and a closing issue lookup failed, so a matching marker can'"'"'t be ruled out'
+[ "$(row_evidence "$output_ac3" 3)" = "$expected_ac3_evidence" ] || fail "S150 AC3 — gate 3 evidence text doesn't match the spec'd template: $(row_evidence "$output_ac3" 3)"
+case "$(row_evidence "$output_ac3" 3)" in
+  *"-->"*) fail "S150 AC3a — the stray '-->' is still present in the degraded gate-3 evidence cell" ;;
+esac
+
+# =========================================================================
+# Arm C (AC5, issue #299): two closing issues, one fetch succeeding and
+# one failing. Gate 1 must reflect the marker that came from the
+# successful fetch (evidenced), while gates 2 and 3 — which found no
+# marker at all in the corpus they COULD read — must be indeterminate,
+# not not-evidenced. Only this pairing distinguishes "one of two failed"
+# from "both failed" (Arm A already covers "both/none succeeded"). If this
+# arm needs a line of production code beyond AC1-AC3's guards, the fix is
+# wrong.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tdddddddddddddddddddddddddddddddddddddddd\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    echo "gh: could not resolve to an Issue" >&2
+    exit 1 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac5="$(cat "$FAKEGH_OUT")"
+output_ac5="$(PATH="$fakebin_ac5:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac5_partial")"
+status_ac5=$?
+[ "$status_ac5" -eq 0 ] || fail "S150 AC5 — expected exit 0, got $status_ac5"
+assert_table_shape "S150 AC5" "$output_ac5"
+[ "$(row_status "$output_ac5" 1)" = "evidenced" ] || fail "S150 AC5 — expected gate 1 evidenced (Discovery came from the successful fetch), got '$(row_status "$output_ac5" 1)'"
+[ "$(row_status "$output_ac5" 2)" = "indeterminate" ] || fail "S150 AC5 — expected gate 2 indeterminate when one of two closing-issue fetches failed, got '$(row_status "$output_ac5" 2)'"
+[ "$(row_status "$output_ac5" 3)" = "indeterminate" ] || fail "S150 AC5 — expected gate 3 indeterminate when one of two closing-issue fetches failed, got '$(row_status "$output_ac5" 3)'"
+
+# =========================================================================
+# Arm D (AC6 guard, issue #299 — Architect's Arm D / Product's D3 ruling).
+# This is the arm that can actually fail against an over-broad fix (one
+# that flips every not-evidenced to indeterminate whenever the flag is
+# set, or a blanket rule at the row()/render seam): it constructs the one
+# corpus where a SOUND not-evidenced (gate 2's same-model verdict, gate
+# 4's zero-checks verdict) coexists with a failed issue lookup. Neither
+# may change status. Row 3's indeterminate assertion is a positive
+# control: if a "fix" swallows call C's failure instead of degrading
+# gates 2/3, rows 2/4 would stay not-evidenced for the wrong reason and
+# this arm would pass vacuously without it.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\teeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    echo "no checks reported on the given branch" >&2
+    exit 1 ;;
+  __CALL_C265__)
+    echo "gh: could not resolve to an Issue" >&2
+    exit 1 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac6_guard="$(cat "$FAKEGH_OUT")"
+output_ac6_guard="$(PATH="$fakebin_ac6_guard:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac6guard")"
+status_ac6_guard=$?
+[ "$status_ac6_guard" -eq 0 ] || fail "S150 AC6-guard — expected exit 0, got $status_ac6_guard"
+assert_table_shape "S150 AC6-guard" "$output_ac6_guard"
+[ "$(row_status "$output_ac6_guard" 2)" = "not-evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 2's same-model verdict must stay not-evidenced under a failed issue lookup (both markers were actually read), got '$(row_status "$output_ac6_guard" 2)'"
+[ "$(row_status "$output_ac6_guard" 4)" = "not-evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 4's zero-checks verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_ac6_guard" 4)'"
+[ "$(row_status "$output_ac6_guard" 3)" = "indeterminate" ] || fail "S150 AC6-guard — positive control: gate 3 (no marker at all) must still degrade to indeterminate in this same arm, got '$(row_status "$output_ac6_guard" 3)'"
+# shellcheck disable=SC2016
+expected_ac6_g2_evidence='`stage=Review` and `stage=Implementation` markers on PR #279 both record `claude-sonnet-5` with no `same-model-exception`'
+[ "$(row_evidence "$output_ac6_guard" 2)" = "$expected_ac6_g2_evidence" ] || fail "S150 AC6-guard — gate 2's evidence text must not change either (a degradation clause appended to the message would still be a fix that touched a sound path): '$(row_evidence "$output_ac6_guard" 2)'"
+
+# =========================================================================
+# Presence arm (Product's original AC9 arm, retained as a cheap extra —
+# NOT the AC6 guard, per D3: an over-broad fix leaves evidenced paths
+# untouched, so this arm cannot catch it. It catches a different mistake
+# instead: a guard placed above the branch it belongs in, e.g. at the top
+# of gate_review_marker()/gate_review_model() rather than before the
+# specific defective branch, which would flip a matching-sha or
+# differs-model evidenced row to indeterminate. Also folds in the
+# cheap gate-4 bucket=fail non-regression under flag=1 (Architect §3.5).
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- pre-merge-review:done sha=cccccccccccccccccccccccccccccccccccccccc -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tFAILURE\tfail\n'
+    exit 1 ;;
+  __CALL_C265__)
+    echo "gh: could not resolve to an Issue" >&2
+    exit 1 ;;
+esac
+exit 1
+GHEOF
+fakebin_presence="$(cat "$FAKEGH_OUT")"
+output_presence="$(PATH="$fakebin_presence:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_presence")"
+status_presence=$?
+[ "$status_presence" -eq 0 ] || fail "S150 presence-arm — expected exit 0, got $status_presence"
+assert_table_shape "S150 presence-arm" "$output_presence"
+[ "$(row_status "$output_presence" 2)" = "evidenced" ] || fail "S150 presence-arm — gate 2 (models differ) must stay evidenced under a failed issue lookup, got '$(row_status "$output_presence" 2)'"
+[ "$(row_status "$output_presence" 3)" = "evidenced" ] || fail "S150 presence-arm — gate 3 (matching sha) must stay evidenced under a failed issue lookup, got '$(row_status "$output_presence" 3)'"
+[ "$(row_status "$output_presence" 4)" = "not-evidenced" ] || fail "S150 presence-arm — gate 4's bucket=fail verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_presence" 4)'"
 
 # Call A fails entirely: no honest table is possible -> exit 4, nothing
 # on stdout, a message on stderr.
