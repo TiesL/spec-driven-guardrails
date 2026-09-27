@@ -331,7 +331,9 @@ unreviewed. But the attribution needs care: only the test-gap defect is cleanly 
 miss; the #253 regression is Architect-shaped (re-deriving an existing design precedent
 correctly), and Architect was also skipped here, not just QA. So this instance does not
 show "skip Product/Architect safely, never skip QA" — it shows the hatch costing one extra
-review round while skipping two roles at once, with defects traceable to both. Whether a
+review round while narrowing three roles at once (Product skipped, Architect skipped, QA
+folded into Fullstack Developer), with defects traceable to two of them (Architect, QA).
+Whether a
 narrower hatch (skip only Product, or only Architect) would fare differently is untested.
 One instance can't settle this; revisit after the hatch has been used again, ideally with
 only one role skipped at a time so attribution is cleaner.
