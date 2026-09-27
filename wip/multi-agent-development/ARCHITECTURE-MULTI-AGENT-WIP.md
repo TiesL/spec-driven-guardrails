@@ -309,6 +309,28 @@ authorization and record, or if any future exception-path definition lists CI,
 `pre-merge-review`, or `deploy-guards` as skippable — those three stay absolute, same as
 A2, since they're mechanically enforced gates, not a role's own self-applied judgment.
 
+**First real use of the hatch, and its result (2026-09-27, work item #302).** Ties
+authorized skipping Product and Architect for a small, already-fully-diagnosed bug fix
+(root cause and ACs came directly from an independent meta-review, nothing left to
+discover) — recorded on the issue per the hatch's requirement. Fullstack Developer did
+implementation and QA's test-design job in one pass; Reviewer stayed full-strength,
+unshortened.
+
+Result: Reviewer's first pass found two real defects that a dedicated QA phase would
+plausibly have caught before Fullstack Developer ever wrote code — a regression against
+an existing, unrelated precedent (issue #253's PR-vs-issue marker precedence, silently
+undone by the fix), and a test suite that didn't actually pin the fix (all new tests still
+passed against a deliberately wrong "always indeterminate" implementation). Both were
+fixed in a second round; Reviewer approved after independently reproducing each fix.
+
+**Reading, not yet a rule change:** the hatch worked exactly as designed — nothing shipped
+unreviewed, Reviewer caught what the skipped roles would have, at the cost of one extra
+review round instead of a dedicated QA pass. Whether that trade is worth it in general, or
+whether QA specifically should be the one role this hatch should never cover (unlike
+Product/Architect, whose skip caused no findings here), is a real open question this one
+data point can inform but not settle — one instance isn't enough to turn into a standing
+rule. Revisit after the hatch has been used again.
+
 ### A4 — Each role session gets only the file/directory scope its phase needs
 Enforced via a skill-based contract (not OS sandboxing) that states which paths a role may
 read/write before it acts. Violated if a role's session is handed unrestricted repository
