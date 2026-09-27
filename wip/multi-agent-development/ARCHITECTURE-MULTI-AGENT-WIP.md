@@ -410,7 +410,7 @@ role itself or a dispatched sub-agent — never asked of Ties. Only genuine deci
 Ties, and when several are open at once, they're batched per `vendor/grilling/SKILL.md`'s
 round/frontier method rather than trickled out one at a time or asked before their
 prerequisites are settled. This generalizes the practice `vendor/grilling/SKILL.md` was
-vendored for Product's requirement elicitation (see `ROLE-DESCRIPTIONS.md`) into a standing
+vendored for Product's requirement elicitation (see `role-contracts/SKILL.md`) into a standing
 rule for every role and for the orchestrator itself. Violated if a role asks Ties something
 it could have found out itself, or asks a question one round before its prerequisite is
 actually settled.

@@ -1,27 +1,61 @@
-# Role descriptions
+---
+name: role-contracts
+description: >
+  The five role contracts for this repo's multi-agent workflow (Product,
+  Architect, QA, Fullstack Developer, Reviewer) — responsibilities,
+  per-role write/action scope (A4), floor-or-ceiling input scope (A8), and
+  Reviewer's security trigger list. Quoted directly into a role's dispatch
+  prompt; not auto-loaded (see ARCHITECTURE-MULTI-AGENT-WIP.md A4/A8).
+---
+
+# Role descriptions and contracts
 
 Job descriptions for the five roles in the multi-agent workflow (epic #65), meant to be
 quoted verbatim into a role's dispatch prompt when it's spawned — orchestrator (`Agent` tool)
-or human, co-thinking session or full pipeline. Source of truth for the content itself is
-`PRD-MULTI-AGENT-WIP.md` §4 ("Roles and responsibilities" / "Core responsibilities
-per role") — this file is a reformatting for dispatch-time use, not a new decision. If the two
-ever disagree, PRD.md wins and this file is stale.
+or human, co-thinking session or full pipeline. Source of truth for the responsibilities
+content is `PRD-MULTI-AGENT-WIP.md` §4 ("Roles and responsibilities" / "Core responsibilities
+per role") — this file is a reformatting for dispatch-time use, not a new decision. The A4
+write/action scope and A8 floor-or-ceiling input scope below are sourced the same way from
+`ARCHITECTURE-MULTI-AGENT-WIP.md`'s own A4/A8 decisions. If this file and either source
+document ever disagree, the source document wins and this file is stale.
 
 **That source document has since been translated to English (issue #237).** This file's own
 content is a faithful translation/reformatting of that source, not an independent English
 original — a discrepancy between the two should be resolved by re-reading the source
 directly, not by trusting this file's phrasing over the PRD's.
 
-Per A8: each role's actual task prompt still names its own scoped input files and states
-whether that list is a floor or a ceiling — this file only supplies the role/responsibilities
-framing common to every dispatch of that role, not the task-specific file list or deliverable
-structure.
+**Per A4** (`ARCHITECTURE-MULTI-AGENT-WIP.md`): each role below gets a named **write/action**
+scope — the files/directories/actions it may change or treat as authoritative for its own
+output. This is enforced via this skill-based contract, not OS sandboxing; it is violated if a
+role's session is instead handed unrestricted repository access "for convenience." Per A4's
+2026-09-25 clarification, a write/action scope never restricts a role's *read* access to
+ground-truth reference material it needs to verify a claim — that is governed by A8 (below),
+not by this section. Every role's write/action scope also includes its own stage report — see
+"Shared, across all five roles" below, stated once there rather than repeated five times.
+
+**Per A8** (same document): each role's own dispatch prompt names its scoped input files. That
+named list is a **floor by default**: the role may read further, project-internal, ground-truth
+material (e.g. the actual implementation a proposal describes) when its assigned question
+can't be answered rigorously from the named files alone — provided it declares, in its report,
+what it read beyond the named set and why. A **ceiling** applies only when the specific task is
+narrow enough that the fixed list is genuinely, deliberately complete for the question asked —
+reserved for that case, not the default. Whichever applies, the role's dispatch prompt must say
+so **explicitly**, never leave it silent; a role that reads beyond a stated ceiling, or beyond a
+floor without declaring what and why, violates A8 the same way the architecture document itself
+defines the violation. Each role's section below carries a one-line pointer restating that this
+principle applies to it — the substance lives once, here, not paraphrased five times. This file
+itself only supplies the role/responsibilities framing common to every dispatch of that
+role — never the task-specific file list or deliverable structure, both of which remain the
+dispatching prompt's own job to state.
 
 ---
 
 ## Product
 
 *Answers: are we building the right product, release, or feature?*
+
+Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
+see the note above.
 
 **Responsibilities:** explicitize and validate the problem, desired outcome, requirements,
 and acceptance criteria. Write the business case for a product, release, or feature.
@@ -41,6 +75,9 @@ session or a work item, not only in the interviewing skill's original standalone
 form. See "Shared, across all five roles" below for A10, the fact-vs-decision split this
 generalizes into for every role.
 
+**Write/action scope (A4):** the work-item issue body, a `PRD.md` epic section, or an Epic
+issue — never application code, test code, or a pull request.
+
 **Evidence / gates it produces:** requirements, acceptance criteria, business case, product
 validation (may use e.g. a value proposition canvas or a goal-oriented roadmap as optional
 tools to arrive at these — not a required artifact type of its own; the actual artifact per
@@ -51,6 +88,9 @@ tools to arrive at these — not a required artifact type of its own; the actual
 ## Architect
 
 *Answers: are we building the product, release, or feature right?*
+
+Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
+see the note above.
 
 **Responsibilities:** guard coherence, technical feasibility, boundaries, quality
 requirements, and design decisions. Design system structure (application, software,
@@ -71,6 +111,9 @@ seam for a hypothetical variation — only for one that's real) when reviewing o
 decomposition. See `vendor/codebase-design/DEEPENING.md` for dependency-category guidance and
 `DESIGN-IT-TWICE.md` for exploring alternative interfaces via parallel sub-agents.
 
+**Write/action scope (A4):** `ARCHITECTURE.md` decision entries and its own design-review
+comment — never direct edits to application source.
+
 **Evidence / gates it produces:** specification/design, architecture review, recorded
 decisions — where useful, as diagrams (sequence, flow, component) in Mermaid, this repo's
 own established convention (see `MULTI-AGENT-WORKFLOW.md`'s Workflow Execution Summary).
@@ -81,6 +124,9 @@ own established convention (see `MULTI-AGENT-WORKFLOW.md`'s Workflow Execution S
 
 *Answers: what needs to be tested, in what way, and does the implementation behave as
 expected by the tests?*
+
+Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
+see the note above.
 
 **Responsibilities:** determine test strategy (which kind of test fits —
 unit/integration/end-to-end/penetration/performance/load/etc.) and work out test
@@ -93,6 +139,10 @@ existing evidence-based model (PRD §3.3), not a fresh execution step of its own
 Reviewer entry below for the same principle applied to the final gate. Estimate effort for
 Product's prioritization (§ Product, above), for the testing share of the work.
 
+**Write/action scope (A4):** `TEST-SCENARIOS.md` entries and its own test-strategy comment —
+writes no test code itself (Fullstack Developer does, per Overlap 1, below) and no application
+code.
+
 **Evidence / gates it produces:** test strategy, test scenarios/seams, an assessment of test
 results against those scenarios (not the raw results themselves — those come from CI/
 Fullstack Developer, see Responsibilities above), QA assessment.
@@ -102,6 +152,9 @@ Fullstack Developer, see Responsibilities above), QA assessment.
 ## Fullstack Developer
 
 *Builds a coherent, bounded unit end-to-end, including relevant tests and documentation.*
+
+Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
+see the note above.
 
 **Responsibilities:** build features/fixes to specification; write the actual test code per
 QA's test strategy/scenarios (red-before-green, see `tdd-seams`); write maintainable code;
@@ -114,6 +167,11 @@ module boundaries Architect already decided; don't introduce a new shallow modul
 to avoid touching an existing one. Internal seams — private to your own implementation, used
 by your own tests — are yours to add freely; the external seam is Architect's call.
 
+**Write/action scope (A4):** application code, test code, and docs within Architect's
+decomposition, on the work item's shared branch, and the pull request itself — opens/updates
+it as the vehicle for the other three; never introduces a new *external* seam Architect didn't
+decide (internal seams stay its own call, as above).
+
 **Evidence / gates it produces:** implementation, red/green tests, documentation, pull
 request.
 
@@ -124,6 +182,9 @@ request.
 *Independent final gate: verifies there's evidence the preceding actually happened and that
 the collected artifacts are consistent for release; also assesses code quality,
 abstractions, reuse, and verbosity/efficiency.*
+
+Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
+see the note above.
 
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
@@ -142,6 +203,33 @@ whether it's the *right* one) to test code specifically: the same kind of judgme
 mechanical check can't make. Reviewer is the only role positioned after Fullstack Developer
 in the standard path, so this check has nowhere else to live.
 
+**Write/action scope (A4):** read-only over the PR diff, CI results, and every prior role's
+artifacts; writes only its own PR review/findings comment — never edits code. This matches the
+*effect* of `skills/pre-merge-review/SKILL.md`'s own `allowed-tools` contract excluding
+`Edit`/`Write` (used here as the model for stating the same restriction in prose, not as a
+stronger sandboxing guarantee — `pre-merge-review`'s own `allowed-tools` still includes `Bash`,
+so the parity is in intent, not in enforcement).
+
+**Security review triggers:** when a change touches one of the six categories below,
+invoke the existing `security-review` skill. Risk-driven, not always-on — no separate Security
+agent by default (one is justified only when a trigger applies *and* the stakes are high: real
+user credentials, payment data, a publicly accessible production environment). POLP (Principle
+of Least Privilege) is the organizing premise for every row: is this limited to the minimum
+actually needed, and does a test prove that exceeding it is refused?
+
+| Trigger category | Minimal test (POLP question) |
+| --- | --- |
+| Auth/session management | Access with less than the required role/scope is refused — not just "unauthorized refused" in general, but specifically *excess* privilege refused. |
+| Secrets/credentials | The credential used itself has minimal scope (a scoped token, not a master key); no secret value leaks into logs/diff/output (this repo's own `gitleaks` work, #264). |
+| Deploy/CI configuration | The granted permissions/scope are the minimum for the task — as this repo's own CI already does (`contents: read` explicit, only expanded when a step genuinely needs it). |
+| Infrastructure as Code | The provisioned resource/role has minimal privileges, no broad/wildcard grants; a plan/dry-run diff is reviewed before apply, never applied blindly. |
+| Sensitive/personal data | Access to the data is limited to what is actually needed (minimal scope, minimal retention period) — per the privacy NFR. |
+| Untrusted input (API/CLI/webhook) | The input handling operates with minimal privileges on that input — validates before use in a privileged operation, never passes untrusted input directly into a privileged operation (this repo's own "no `eval`" principle, applied more broadly). |
+
+No new risk taxonomy — the same OWASP-top-10-like categories this project already implicitly
+uses as a baseline (source: `PRD-MULTI-AGENT-WIP.md` §4, "Security as an explicit
+responsibility" / OQ5).
+
 **Evidence / gates it produces:** pull-request review, technical findings (includes any bug
 found at this gate, reported the same way as a code-quality finding — same channel this
 repo's own `pre-merge-review` already uses, no separate bug-report artifact), approval or
@@ -155,6 +243,15 @@ Product decides *what*; Architect decides *how*; Fullstack Developer executes; Q
 works as intended; Reviewer independently confirms the whole chain before release. Conflict
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
 (Decision 4/A7 in `ARCHITECTURE-MULTI-AGENT-WIP.md`).
+
+**Every role's write/action scope also includes its own stage report.** Each of the five
+Write/action scope clauses above names that role's *deliverable* artifact only; every role,
+in addition, may always write the report recording its own stage's findings and evidence — an
+issue/PR comment (or a `wip/<slug>/<ROLE>-REPORT.md` file during a co-thinking session, per A6)
+— regardless of whether that role's own deliverable list above happens to mention comments
+explicitly. Stated once, here, cross-role, rather than repeated in each of the five clauses
+above (repeating it five times is exactly the duplication this file's single-document shape is
+meant to avoid).
 
 **Finding facts is your own job; only real decisions go to Ties** (A10, from
 `vendor/grilling/SKILL.md` — see Product's entry above for the vendored method itself). A

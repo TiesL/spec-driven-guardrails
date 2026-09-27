@@ -170,17 +170,17 @@ In addition to the roles table above, per role the core responsibilities and whi
 - **Reviewer**: independent final gate — verifies there is evidence that the preceding work actually happened and that the collection of artifacts is consistent for release; also assesses code quality, abstractions, reuse, and verbosity/efficiency (the same scope as this repo's own `pre-merge-review`/`code-review`). Remains its own role (not merged with QA/Fullstack Developer) — this repo's own `pre-merge-review` (F11) exists specifically because, across four projects and 27 merged PRs (`PRD.md`), not one of them had review; self-checking by the same role does not solve that problem.
 
 **Additional role responsibilities (decided 2026-09-25, in English — full text in
-`ROLE-DESCRIPTIONS.md`, which this paragraph mirrors so it isn't the sole record):**
+`role-contracts/SKILL.md`, which this paragraph mirrors so it isn't the sole record):**
 
 - **Product** also writes the business case for a product, release, or feature, and
   prioritizes on business/user value weighed against effort — effort is estimated by
   Architect, QA, Fullstack Developer, and Reviewer, each for their own share of the work,
   never by Product itself. Prioritization framework method is TBD (e.g. an impact/effort
   matrix or WSJF). Product elicits requirements from Ties using the vendored `grilling`
-  skill's design-tree/frontier/rounds method (`ROLE-DESCRIPTIONS.md`, `vendor/grilling/`).
+  skill's design-tree/frontier/rounds method (`role-contracts/SKILL.md`, `vendor/grilling/`).
 - **Architect** also decomposes the system per the vendored `codebase-design` skill's deep-
   module vocabulary (Module, Interface, Seam, Depth, Leverage, Locality —
-  `ROLE-DESCRIPTIONS.md`, `vendor/codebase-design/`), and estimates implementation effort for
+  `role-contracts/SKILL.md`, `vendor/codebase-design/`), and estimates implementation effort for
   Product's prioritization.
 - **QA** and **Fullstack Developer** and **Reviewer** each also estimate effort for their own
   share of the work, for Product's prioritization.
@@ -195,13 +195,13 @@ In addition to the roles table above, per role the core responsibilities and whi
   closed further below).
 - A defect or finding (QA, Reviewer) uses a minimal content structure: summary, failure
   scenario (evidence, not assertion), location (file:line or scenario ID), category, and a
-  `CONFIRMED`/`PLAUSIBLE` verdict — full detail in `ROLE-DESCRIPTIONS.md`.
+  `CONFIRMED`/`PLAUSIBLE` verdict — full detail in `role-contracts/SKILL.md`.
 
 **Overlap 1 — who writes the failing test (QA vs. Fullstack Developer)?** (decided, resolves §9 OQ6) No overlap once the question is split: QA determines *what* needs to be tested and *which kind of test* fits it (the strategy/the seam) — that is QA's existing "determine test strategy" responsibility, now explicitly including the choice of test kind. Fullstack Developer writes the *actual test code*, red-before-green, as part of implementation — that is exactly what `tdd-seams`' own red-before-green discipline already describes (the seam is agreed in advance, the red test belongs to the implementation step). No new rule, just the existing division of roles made explicit.
 
 **Overlap 2 — who verifies traceability (Reviewer vs. `check-traceability.sh`)?** (decided, resolves §9 OQ6) Also no overlap: `check-traceability.sh` verifies *structurally* (link 1, offline, mechanical) — does *a* scenario exist per functionality, do `Covers:` tokens resolve. That's something the script can establish, it isn't a judgment. Reviewer verifies *semantically* — is it the *right* scenario for the *right* functionality, does it actually cover the behavior the requirement asks for. That is precisely the kind of judgment a mechanical check cannot make. Different question, not duplicate work.
 
-**Gap closed (decided 2026-09-25, in English — see `ROLE-DESCRIPTIONS.md`): who checks that
+**Gap closed (decided 2026-09-25, in English — see `role-contracts/SKILL.md`): who checks that
 Fullstack Developer's actual test code faithfully implements QA's scenarios/strategy, not
 just that it exists and passes?** Overlap 1 only resolved *who writes* the test; nothing
 resolved who verifies it matches intent. Extends Overlap 2's structural/semantic split to
@@ -210,7 +210,7 @@ test code specifically: Reviewer judges this, since it's the same kind of judgme
 Developer in the standard path (there is nowhere else for this check to live).
 
 **Defect/finding content structure (decided 2026-09-25, in English — see
-`ROLE-DESCRIPTIONS.md`'s "Shared, across all five roles" section for the full template).**
+`role-contracts/SKILL.md`'s "Shared, across all five roles" section for the full template).**
 Neither QA's "identifying/reporting defects" nor Reviewer's technical findings had a
 defined content shape before this — closed rather than left implied. Minimal fields:
 summary, failure scenario (evidence, not assertion), location (file:line or scenario ID),
