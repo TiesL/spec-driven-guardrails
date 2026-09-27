@@ -40,7 +40,7 @@ Without an explicit collaboration and governance model, multiple agents can:
 - follow the agreed development workflow only partially;
 - record knowledge and decisions only in chat hand-offs, leaving traceability absent.
 
-The desired solution is therefore not a collection of loosely steered agents, but a development system in which work, decisions, checks, and hand-offs can be found in shared artifacts and demonstrable gates.
+The desired solution is therefore not a collection of individually directed agents, but a development system in which work, decisions, checks, and hand-offs can be found in shared artifacts and demonstrable gates.
 
 ### Desired outcome
 
@@ -111,7 +111,7 @@ is in [`ARCHITECTURE-MULTI-AGENT-WIP.md`](ARCHITECTURE-MULTI-AGENT-WIP.md), Deci
 A6.
 
 This does not conflict with issue #281's "no phase-skipping in v1" decision (§6,
-"Orchestrator: besloten model" above; A3 in `ARCHITECTURE-MULTI-AGENT-WIP.md`) — that
+"Orchestrator: decided model" above; A3 in `ARCHITECTURE-MULTI-AGENT-WIP.md`) — that
 decision governs Level 3 execution, where a work item already exists and all five roles
 fully engage on it. A co-thinking session is an earlier, separate layer: there is no work
 item yet, so there is nothing for QA/Fullstack Developer/Reviewer to engage with.
@@ -211,7 +211,7 @@ Developer in the standard path (there is nowhere else for this check to live).
 
 **Defect/finding content structure (decided 2026-09-25, in English — see
 `ROLE-DESCRIPTIONS.md`'s "Shared, across all five roles" section for the full template).**
-Neither QA's "defecten identificeren/rapporteren" nor Reviewer's technical findings had a
+Neither QA's "identifying/reporting defects" nor Reviewer's technical findings had a
 defined content shape before this — closed rather than left implied. Minimal fields:
 summary, failure scenario (evidence, not assertion), location (file:line or scenario ID),
 category, and a `CONFIRMED`/`PLAUSIBLE` verdict. No new tooling — the same shape this
@@ -346,8 +346,8 @@ These terms must be used consistently in follow-up design. A choice of tooling m
 ## 8. Out of scope for this WIP
 
 Updated 2026-09-21: five of the original seven points have now been (partially) decided
-elsewhere in this document or in `ARCHITECTURE-MULTI-AGENT-WIP.md` — what's noted at the
-bottom is where. What still remains fully open:
+elsewhere in this document or in `ARCHITECTURE-MULTI-AGENT-WIP.md` — the end of this section
+says where. What still remains fully open:
 
 - a concrete implementation stack, model choice, or vendor choice;
 - a fixed frontend/backend or other technical team split;
@@ -379,7 +379,7 @@ Status per question: **decided**/**partially decided** refers to a concrete deci
 8. Which orchestrator tasks are automated, which require human decision, and how are exceptions recorded? — **decided**: see "Orchestrator: decided model", §6.
 9. How is compliance reported without the workflow becoming unnecessarily slow or bureaucratic? — **decided** (21-09-2026): see §6, "Compliance reporting: pattern and worked example" — the `WORKFLOW-ADOPTION.md` pattern, plus a worked example against a real, completed work item (#265/PR #279) that confirms the pattern carries the right evidence links.
 10. How does this design connect to existing workflow documentation, existing repositories, and their own conventions? — **decided**: reuses existing skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) unchanged; the new role/orchestration layer comes in its own skill, not a replacement.
-11. **OQ11 — Which release does this land in?** (added 2026-09-26, in English — the header table's "Beoogde release: TBD" field, referenced elsewhere in this document but never previously registered here) — **open, Ties' explicit call**: stays open until the multi-agent workflow has run end-to-end on one real work item and the result is good enough to kick off implementation/integration into `main` — see issue #294.
+11. **OQ11 — Which release does this land in?** (added 2026-09-26, in English — the header table's "Target release: TBD" field, referenced elsewhere in this document but never previously registered here) — **open, Ties' explicit call**: stays open until the multi-agent workflow has run end-to-end on one real work item and the result is good enough to kick off implementation/integration into `main` — see issue #294.
 
 ## 10. Proposed follow-up scope
 

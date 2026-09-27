@@ -10,8 +10,7 @@ ever disagree, PRD.md wins and this file is stale.
 **That source document has since been translated to English (issue #237).** This file's own
 content is a faithful translation/reformatting of that source, not an independent English
 original — a discrepancy between the two should be resolved by re-reading the source
-directly, not by trusting this file's phrasing as more authoritative just because it was
-translated first.
+directly, not by trusting this file's phrasing over the PRD's.
 
 Per A8: each role's actual task prompt still names its own scoped input files and states
 whether that list is a floor or a ceiling — this file only supplies the role/responsibilities

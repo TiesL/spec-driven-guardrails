@@ -499,7 +499,7 @@ None new. Uses only what this project already has: Claude Code sub-agent dispatc
 
 ## Still open after this document
 
-None. As of 2026-09-21, all of `PRD-MULTI-AGENT-WIP.md` §9's originally **deels besloten**
+None. As of 2026-09-21, all of `PRD-MULTI-AGENT-WIP.md` §9's originally **partially decided**
 questions (OQ4, OQ5, OQ6, OQ9) are fully decided:
 
 - OQ4 — fully decided: a bounded-context change is a normal architecture decision (§
@@ -509,9 +509,9 @@ questions (OQ4, OQ5, OQ6, OQ9) are fully decided:
 - OQ5 — fully decided: no separate Security agent by default; risk-based trigger list
   (auth, secrets, deploy/CI config, IaC, sensitive data, untrusted input) embedded in
   Reviewer's role contract, plus a POLP-organized minimal test per trigger category (PRD
-  §4, "Security als expliciete verantwoordelijkheid").
-- OQ6 — fully decided: each role verifies a different question (§4's "Kernverantwoordelijkheden
-  per rol"); legitimate conflict escalates, doesn't get suppressed. Both concrete overlaps
+  §4, "Security as an explicit responsibility").
+- OQ6 — fully decided: each role verifies a different question (§4's "Core responsibilities
+  per role"); legitimate conflict escalates, doesn't get suppressed. Both concrete overlaps
   resolved (PRD §4, "Overlap 1"/"Overlap 2"): QA sets test strategy + scenario, Fullstack
   Developer authors the actual failing test; `check-traceability.sh` verifies structural
   completeness, Reviewer verifies semantic correctness.
