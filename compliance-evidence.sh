@@ -125,13 +125,58 @@ collect() {
   # Soundness rule for every gate that reads BUNDLE_TEXT: when this flag
   # is 1 the corpus is provably incomplete, so no gate may return
   # `not-evidenced` on the strength of having found nothing — that
-  # verdict must degrade to `indeterminate` (issue #299). It does not
-  # apply to a `not-evidenced` reached from data actually in hand: gate
-  # 2's same-model verdict (both markers were read) and gate 4's
-  # CI verdicts (a separate call with its own degradation) stay as they
-  # are. Consulted by: gate_stage_models, gate_review_model,
-  # gate_review_marker.
+  # verdict must degrade to `indeterminate` (issue #299). Gate 4's CI
+  # verdicts are a separate call with their own degradation and stay as
+  # they are.
+  #
+  # Corrected invariant (issue #302 — the wording that used to live here
+  # claimed gate 2's same-model `not-evidenced` never needed this guard
+  # because "both markers were read". That holds only when at most one
+  # closing issue is involved. `collect()` used to accumulate every named
+  # issue's text into one shared blob, in `BUNDLE_ISSUES` order, before
+  # prepending it to the PR text — so with >=2 closing issues, a *later*
+  # issue's marker could silently outrank an *earlier* one (or a PR-side
+  # one) purely by accumulation position, in either direction, including
+  # a marker in an issue this flag says was never successfully fetched.
+  # That's what P2-1 (META-REVIEW-PILOT-2.md) reproduced: the exact same
+  # "both markers were read" corpus rendered `not-evidenced` or
+  # `evidenced` depending only on whether a *second*, unread issue's
+  # content happened to differ.
+  #
+  # Fixed two ways, per source (PR text, and each closing issue's own
+  # text, kept apart in PR_TEXT/ISSUE_TEXTS/ISSUE_NUMS below) rather than
+  # by accumulation order:
+  #   1. gate_review_model (gate 2) resolves each stage's marker
+  #      per-source and, when two or more sources actually disagree
+  #      after reading them all, reports `indeterminate` — a detected
+  #      conflict, not a coin flip decided by which source happened to
+  #      be listed first.
+  #   2. gate_review_model additionally degrades its same-model
+  #      `not-evidenced` verdict to `indeterminate` when this flag is set
+  #      AND more than one closing issue is named: an unread issue could
+  #      still have supplied a marker that would have created exactly
+  #      the kind of conflict (1) now catches.
+  # Consulted by: gate_stage_models, gate_review_model, gate_review_marker.
+  #
+  # gate_review_marker (gate 3) never needed either fix: it already
+  # resolves "which marker counts" by matching each candidate's `sha=`
+  # against `headRefOid` across the whole corpus (R-B, #296's Architect
+  # report) rather than by `tail -1` position, so accumulation order
+  # never changes its answer, lookup failure or not. gate_review_model
+  # (gate 2) has no such anchor available — `model-record` markers carry
+  # no `sha=` to compare against `headRefOid` — so accumulation order
+  # stayed a real risk there until fixed above.
   BUNDLE_ISSUE_LOOKUP_FAILED=0
+  # Per-source text, kept apart precisely so gate_review_model never has
+  # to trust accumulation order to know "which marker counts" (see the
+  # comment above). PR_TEXT is the PR's own body+comments, already in
+  # true chronological order (that part was never the bug). ISSUE_TEXTS/
+  # ISSUE_NUMS are parallel arrays, one entry per successfully-fetched
+  # closing issue, in the order fetched — an order gate_review_model must
+  # not, and does not, treat as a recency signal.
+  PR_TEXT=""
+  ISSUE_TEXTS=()
+  ISSUE_NUMS=()
 
   local tag rest
   while IFS=$'\t' read -r tag rest; do
@@ -154,11 +199,17 @@ $rest"
         ;;
     esac
   done <<<"$pr_out"
+  PR_TEXT="$BUNDLE_TEXT"
 
   # Closing-issue comments, gathered ahead of the PR's own text (order:
   # issue, then PR body/comments — model-record-gate.sh's PR #253 round 2
   # fix, inherited rather than re-earned: issue text ordered last let a
   # stray older marker outrank a genuinely newer one under `tail -1`).
+  # BUNDLE_TEXT (built here) stays a flat, order-dependent blob — still
+  # fine for gate_stage_models/gate_review_marker/gate_traceability,
+  # which don't compare disagreeing per-source values the way gate 2
+  # does. ISSUE_TEXTS/ISSUE_NUMS below are gate 2's own, order-safe view
+  # of the same data.
   local issue_text="" issue_num issue_out issue_status
   if [ -n "$BUNDLE_ISSUES" ]; then
     while IFS= read -r issue_num; do
@@ -171,11 +222,16 @@ $rest"
         BUNDLE_ISSUE_LOOKUP_FAILED=1
         continue
       fi
+      local one_issue_text=""
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
         issue_text="$issue_text
 $rest"
+        one_issue_text="$one_issue_text
+$rest"
       done <<<"$issue_out"
+      ISSUE_TEXTS+=("$one_issue_text")
+      ISSUE_NUMS+=("$issue_num")
     done <<<"$BUNDLE_ISSUES"
   fi
   BUNDLE_TEXT="$issue_text
@@ -273,12 +329,103 @@ gate_stage_models() {
   fi
 }
 
-gate_review_model() {
-  local impl_line review_line impl_model review_model impl_norm review_norm exception_val
-  impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$BUNDLE_TEXT" | tail -1)"
-  review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$BUNDLE_TEXT" | tail -1)"
+# resolve_stage_marker() — issue #302 (R-B generalized: don't trust
+# accumulation order, use a real signal). Finds the `model-record`
+# marker for stage $1 independently in PR_TEXT and in each of
+# ISSUE_TEXTS (order within each source is genuine chronology, from
+# gh's own comment ordering — that part was never the bug), then asks
+# whether the sources that found anything actually agree, rather than
+# flattening them into one blob and taking whichever comes last.
+#
+# Prints one tab-separated line on stdout:
+#   none      <empty>                     — no source has this stage's marker
+#   single    <the winning marker line>   — every source that matched agrees
+#                                            (after normalize_model), or only
+#                                            one source matched at all
+#   conflict  <"source: `model`; ..." >   — two+ sources matched with
+#                                            genuinely different models
+resolve_stage_marker() {
+  local stage="$1"
+  local -a labels=() lines=() models=()
+  local line model src_num i
 
-  if [ -z "$impl_line" ] || [ -z "$review_line" ]; then
+  line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$PR_TEXT" | tail -1)"
+  if [ -n "$line" ]; then
+    model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
+    labels+=("PR #$pr_number")
+    lines+=("$line")
+    models+=("$model")
+  fi
+
+  for i in "${!ISSUE_TEXTS[@]}"; do
+    line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"${ISSUE_TEXTS[$i]}" | tail -1)"
+    if [ -n "$line" ]; then
+      src_num="${ISSUE_NUMS[$i]}"
+      model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
+      labels+=("issue #$src_num")
+      lines+=("$line")
+      models+=("$model")
+    fi
+  done
+
+  if [ "${#lines[@]}" -eq 0 ]; then
+    printf '%s\t%s\n' "none" ""
+    return
+  fi
+
+  local first_norm="" norm all_same=1
+  for i in "${!models[@]}"; do
+    norm="$(normalize_model "${models[$i]}")"
+    [ -n "$norm" ] || continue
+    if [ -z "$first_norm" ]; then
+      first_norm="$norm"
+    elif [ "$norm" != "$first_norm" ]; then
+      all_same=0
+    fi
+  done
+
+  if [ "$all_same" -eq 1 ] || [ "${#lines[@]}" -eq 1 ]; then
+    printf '%s\t%s\n' "single" "${lines[0]}"
+    return
+  fi
+
+  local detail="" sep=""
+  for i in "${!lines[@]}"; do
+    detail="${detail}${sep}${labels[$i]}: \`${models[$i]:-<malformed>}\`"
+    sep="; "
+  done
+  printf '%s\t%s\n' "conflict" "$detail"
+}
+
+gate_review_model() {
+  local impl_status impl_line review_status review_line
+  local impl_model review_model impl_norm review_norm exception_val
+  local total_issues=0
+
+  IFS=$'\t' read -r impl_status impl_line <<<"$(resolve_stage_marker Implementation)"
+  IFS=$'\t' read -r review_status review_line <<<"$(resolve_stage_marker Review)"
+
+  if [ "$impl_status" = "conflict" ] || [ "$review_status" = "conflict" ]; then
+    local which detail
+    if [ "$impl_status" = "conflict" ] && [ "$review_status" = "conflict" ]; then
+      which="stage=Implementation and stage=Review"
+      detail="Implementation — $impl_line; Review — $review_line"
+    elif [ "$impl_status" = "conflict" ]; then
+      which="stage=Implementation"
+      detail="$impl_line"
+    else
+      which="stage=Review"
+      detail="$review_line"
+    fi
+    printf '%s\t%s\n' "indeterminate" "conflicting \`$which\` model-record markers found on PR #$pr_number across sources ($detail) — read in full, but with no ordering signal between sources, which one is authoritative can't be told"
+    return
+  fi
+
+  if [ -n "$BUNDLE_ISSUES" ]; then
+    total_issues="$(printf '%s\n' "$BUNDLE_ISSUES" | grep -c '.')"
+  fi
+
+  if [ "$impl_status" = "none" ] || [ "$review_status" = "none" ]; then
     if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
       printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
       return
@@ -306,6 +453,18 @@ gate_review_model() {
   exception_val="$(grep -oE 'same-model-exception="[^"]*"' <<<"$review_line" | head -1 | sed 's/^same-model-exception="//; s/"$//')"
   if [ -n "$exception_val" ]; then
     printf '%s\t%s\n' "evidenced" "latest \`stage=Review\` marker on PR #$pr_number carries \`same-model-exception=\"$exception_val\"\`"
+    return
+  fi
+
+  # issue #302: unlike the checks above, this branch used to fire
+  # unconditionally on "both markers found" — sound for <=1 closing
+  # issue (nothing else could have contributed a marker), unsound for
+  # >=2: an unread issue (BUNDLE_ISSUE_LOOKUP_FAILED=1) could have
+  # supplied a marker resolve_stage_marker never saw, which — had it
+  # been read — might have created exactly the kind of conflict caught
+  # above instead of this same-model match.
+  if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; then
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but PR #$pr_number names more than one closing issue and at least one couldn't be read, so a superseding marker there can't be ruled out"
     return
   fi
 

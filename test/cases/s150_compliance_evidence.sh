@@ -952,6 +952,129 @@ expected_ac6_g2_evidence='`stage=Review` and `stage=Implementation` markers on P
 [ "$(row_evidence "$output_ac6_guard" 2)" = "$expected_ac6_g2_evidence" ] || fail "S150 AC6-guard — gate 2's evidence text must not change either (a degradation clause appended to the message would still be a fix that touched a sound path): '$(row_evidence "$output_ac6_guard" 2)'"
 
 # =========================================================================
+# Arm G (issue #302 / P2-1, half 1): naive `tail -1` over the flat
+# accumulated corpus makes gate 2's verdict depend on `BUNDLE_ISSUES`
+# order, not on any real recency signal — with BOTH closing-issue
+# fetches succeeding, so this is not the "corpus incomplete" failure
+# mode Arm D/AC6 guards against. Two closing issues, no lookup failure:
+# PR body records Implementation=`claude-sonnet-5`; issue #265 records
+# Review=`claude-sonnet-5` (same model, would be not-evidenced alone);
+# issue #266 records Review=`claude-opus-5` (differs, would be evidenced
+# alone). Both markers were actually read — this is genuinely
+# conflicting evidence, not a gap — so the correct answer is
+# `indeterminate`, and it must come back the same way regardless of
+# which issue GitHub happens to list first in `closingIssuesReferences`.
+# A naive `tail -1` implementation instead flips between `evidenced` and
+# `not-evidenced` purely based on issue order — this is the arm that
+# must fail red against that implementation. A "fix" that just makes gate
+# 2 always evidenced/not-evidenced regardless of order (rather than
+# actually detecting the conflict) is caught by the two sub-cases run
+# below with the issue order swapped: both must render the SAME status,
+# and it must be `indeterminate`, not silently picking a side.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_order1="$(cat "$FAKEGH_OUT")"
+output_ac302_order1="$(PATH="$fakebin_ac302_order1:$PATH" "$script" 279)"
+status_ac302_order1=$?
+[ "$status_ac302_order1" -eq 0 ] || fail "S150 issue #302 Arm G (order 1) — expected exit 0, got $status_ac302_order1"
+assert_table_shape "S150 issue #302 Arm G (order 1)" "$output_ac302_order1"
+[ "$(row_status "$output_ac302_order1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm G (order 1) — expected gate 2 indeterminate for genuinely conflicting Review markers across two closing issues, got '$(row_status "$output_ac302_order1" 2)'"
+
+# Same data, swapped issue order (#266 read before #265, mirroring the
+# fact closingIssuesReferences order isn't a promise). The verdict must
+# not flip.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t266\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_order2="$(cat "$FAKEGH_OUT")"
+output_ac302_order2="$(PATH="$fakebin_ac302_order2:$PATH" "$script" 279)"
+status_ac302_order2=$?
+[ "$status_ac302_order2" -eq 0 ] || fail "S150 issue #302 Arm G (order 2) — expected exit 0, got $status_ac302_order2"
+assert_table_shape "S150 issue #302 Arm G (order 2)" "$output_ac302_order2"
+[ "$(row_status "$output_ac302_order2" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm G (order 2) — expected gate 2 indeterminate for genuinely conflicting Review markers across two closing issues (swapped order), got '$(row_status "$output_ac302_order2" 2)'"
+[ "$(row_status "$output_ac302_order1" 2)" = "$(row_status "$output_ac302_order2" 2)" ] || fail "S150 issue #302 Arm G — gate 2's status must not depend on closing-issue order: order1='$(row_status "$output_ac302_order1" 2)' order2='$(row_status "$output_ac302_order2" 2)'"
+
+# =========================================================================
+# Arm H (issue #302 / P2-1, half 2 — the exact meta-review repro): TWO
+# closing issues, one succeeds (supplying BOTH the Implementation and
+# Review markers, same model, no exception), the other's lookup fails.
+# Gate 2's old terminal `not-evidenced` branch was unguarded by
+# BUNDLE_ISSUE_LOOKUP_FAILED, on the theory that "both markers were read
+# so the verdict rests on data in hand" — true for a single closing
+# issue, false here: the unread second issue could have carried a
+# superseding `stage=Review` marker (as META-REVIEW-PILOT-2.md's P2-1
+# demonstrated by flipping call C266 from failing to succeeding with a
+# different model, which flipped the verdict from not-evidenced to
+# evidenced). With >=2 closing issues and a failed lookup, gate 2 must
+# now degrade to indeterminate too, same as gates 1 and 3 already do.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    echo "gh: could not resolve to an Issue" >&2
+    exit 1 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_partial="$(cat "$FAKEGH_OUT")"
+output_ac302_partial="$(PATH="$fakebin_ac302_partial:$PATH" "$script" 279)"
+status_ac302_partial=$?
+[ "$status_ac302_partial" -eq 0 ] || fail "S150 issue #302 Arm H — expected exit 0, got $status_ac302_partial"
+assert_table_shape "S150 issue #302 Arm H" "$output_ac302_partial"
+[ "$(row_status "$output_ac302_partial" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm H — expected gate 2 indeterminate: both markers read came from one of two closing issues, and the other's fetch failed (a superseding marker there can't be ruled out), got '$(row_status "$output_ac302_partial" 2)'"
+
+# =========================================================================
 # Presence arm (Product's original AC9 arm, retained as a cheap extra —
 # NOT the AC6 guard, per D3: an over-broad fix leaves evidenced paths
 # untouched, so this arm cannot catch it. It catches a different mistake
