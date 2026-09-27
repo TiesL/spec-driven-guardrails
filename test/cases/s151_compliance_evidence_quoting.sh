@@ -35,8 +35,6 @@ trap sandbox_destroy EXIT
 # source) — not repeated per arm here, same call S150 already made for
 # its own many arms.
 
-HEAD_SHA="6e00a8c38bf18f19cd53084b5c77ae476c1e74e6"
-
 # =========================================================================
 # AC1 — quoted occurrences are not evidence (red before the fix).
 # =========================================================================
@@ -203,12 +201,23 @@ assert_table_shape "S151 Q13c" "$output_q13c"
 # Q5 — two runs off one base fixture; run 2 adds a TEXT line containing
 # run 1's exact rendered table. Outputs must be byte-identical: diffed,
 # never a hand-written expectation.
+#
+# Base fixture is deliberately marker-less (D11/F4, review round 1): a
+# base that already carries a real, live marker is `evidenced` in run 1
+# regardless of whether the fix helps, so pasting the table back can only
+# leave it `evidenced` too — the arm can never discriminate. The real
+# self-echo vector is the opposite base: NO real marker anywhere, so run
+# 1 is `not-evidenced`, and run 1's own rendered Evidence cell for gate 3
+# ("no `pre-merge-review:done` marker found on PR #279…") mentions the
+# marker text itself, backticked, purely as part of that sentence — never
+# a real HTML comment. Pasting that sentence into run 2's body is what
+# actually exercises whether quoted, marker-shaped prose can fake its way
+# to a different verdict on the next run.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
-    printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -219,7 +228,7 @@ GHEOF
 fakebin_q5_1="$(cat "$FAKEGH_OUT")"
 output_q5_1="$(PATH="$fakebin_q5_1:$PATH" "$script" 279)"
 assert_table_shape "S151 Q5 run1" "$output_q5_1"
-[ "$(row_status "$output_q5_1" 3)" = "evidenced" ] || fail "S151 Q5 run1 — expected gate 3 evidenced as the base for the self-echo, got '$(row_status "$output_q5_1" 3)'"
+[ "$(row_status "$output_q5_1" 3)" = "not-evidenced" ] || fail "S151 Q5 run1 — expected gate 3 not-evidenced for the marker-less base, got '$(row_status "$output_q5_1" 3)'"
 
 # Sentinel-encode run 1's own rendered output and hand it to run 2's fake
 # gh via a fixture file (never embedded as a shell-quoted literal — the
@@ -232,7 +241,6 @@ case "\$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
-    printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     printf 'TEXT\t'
     cat "$q5_echo_file"
     printf '\n'
@@ -246,6 +254,7 @@ GHEOF2
 fakebin_q5_2="$(cat "$FAKEGH_OUT")"
 output_q5_2="$(PATH="$fakebin_q5_2:$PATH" "$script" 279)"
 assert_table_shape "S151 Q5 run2" "$output_q5_2"
+[ "$(row_status "$output_q5_2" 3)" = "not-evidenced" ] || fail "S151 Q5 run2 (AC2 self-echo) — pasting run 1's own rendered Evidence text (a quoted mention of the marker, never a real one) into the PR body must not flip gate 3 away from not-evidenced, got '$(row_status "$output_q5_2" 3)'"
 [ "$output_q5_1" = "$output_q5_2" ] || {
   fail "S151 Q5 (AC2 self-echo) — pasting run 1's own rendered table into the PR changed run 2's output:"
   diff <(printf '%s\n' "$output_q5_1") <(printf '%s\n' "$output_q5_2") >&2 || true
@@ -427,7 +436,16 @@ assert_table_shape "S151 Q15" "$output_q15"
 [ "$(row_status "$output_q15" 1)" = "not-evidenced" ] || fail "S151 Q15 (D8 guard) — expected gate 1 not-evidenced for bare prose, got '$(row_status "$output_q15" 1)'"
 evidence_q15="$(row_evidence "$output_q15" 1)"
 case "$evidence_q15" in
-  *"quoted illustration"*|*"not counted as live evidence"*)
+  # Same prefix Q14 asserts on (not the "quoted illustration"/"not counted
+  # as live evidence" tail wording): the fixture's 300-char cell()
+  # truncation always removes that tail, so asserting its absence here
+  # would be vacuous — it can never appear regardless of whether D8's
+  # anchoring bug is present. The prefix below is what quoted_suffix()
+  # emits from an UNANCHORED ere (D8's exact failure mode: a loose,
+  # non-"<!--"-anchored ERE matches this bare-prose corpus and wrongly
+  # appends the suffix), so asserting its absence is what actually
+  # exercises the anchoring fix.
+  *"marker-shaped text matching this gate does appear on PR #279"*)
     fail "S151 Q15 (D8 guard) — gate 1's Evidence cell wrongly claims quoted text was seen, but the corpus has none (bare prose only, no delimiters): $evidence_q15" ;;
 esac
 
@@ -599,7 +617,12 @@ assert_table_shape "S151 Q20" "$output_q20"
 # =========================================================================
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "S151 — jq not installed; skipping Q21-Q23 (transport-level checks)" >&2
+  # Loud, per s44's convention (a comment on that arm calls this out
+  # explicitly): a silent skip would mean the only coverage of the
+  # sentinel transport disappears behind one easily-missed stderr line on
+  # any runner without jq, with the suite still reporting green. Fail
+  # instead, naming exactly what's missing and why.
+  fail "S151 — jq not installed; cannot run Q21-Q23 (transport-level checks against the real CALL_A_JQ expression and live_text())"
 else
   call_a_jq_line="$(grep '^CALL_A_JQ=' "$script")"
   eval "$call_a_jq_line"
