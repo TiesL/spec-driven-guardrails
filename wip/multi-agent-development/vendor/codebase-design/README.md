@@ -6,7 +6,7 @@ Source: [`mattpocock/skills`](https://github.com/mattpocock/skills), path
 
 Copied verbatim, not paraphrased or summarized, so the Architect role uses the actual source
 vocabulary (Module, Interface, Seam, Depth, Leverage, Locality) rather than this project's
-lossy retelling of it. See `ROLE-DESCRIPTIONS.md`'s Architect section for how it's applied
+lossy retelling of it. See `../../role-contracts/SKILL.md`'s Architect section for how it's applied
 here.
 
 Files: `SKILL.md` (glossary and principles), `DEEPENING.md` (dependency categories, seam
