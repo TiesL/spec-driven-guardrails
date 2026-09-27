@@ -855,7 +855,7 @@ esac
 exit 1
 GHEOF
 fakebin_ac3="$(cat "$FAKEGH_OUT")"
-output_ac3="$(PATH="$fakebin_ac3:$PATH" "$script" 279)"
+output_ac3="$(PATH="$fakebin_ac3:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac3")"
 status_ac3=$?
 [ "$status_ac3" -eq 0 ] || fail "S150 AC3 — expected exit 0, got $status_ac3"
 assert_table_shape "S150 AC3" "$output_ac3"
@@ -873,7 +873,9 @@ esac
 # successful fetch (evidenced), while gates 2 and 3 — which found no
 # marker at all in the corpus they COULD read — must be indeterminate,
 # not not-evidenced. Only this pairing distinguishes "one of two failed"
-# from "both failed" (Arm A already covers "both/none succeeded").
+# from "both failed" (Arm A already covers "both/none succeeded"). If this
+# arm needs a line of production code beyond AC1-AC3's guards, the fix is
+# wrong.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -899,7 +901,7 @@ esac
 exit 1
 GHEOF
 fakebin_ac5="$(cat "$FAKEGH_OUT")"
-output_ac5="$(PATH="$fakebin_ac5:$PATH" "$script" 279)"
+output_ac5="$(PATH="$fakebin_ac5:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac5_partial")"
 status_ac5=$?
 [ "$status_ac5" -eq 0 ] || fail "S150 AC5 — expected exit 0, got $status_ac5"
 assert_table_shape "S150 AC5" "$output_ac5"
@@ -938,7 +940,7 @@ esac
 exit 1
 GHEOF
 fakebin_ac6_guard="$(cat "$FAKEGH_OUT")"
-output_ac6_guard="$(PATH="$fakebin_ac6_guard:$PATH" "$script" 279)"
+output_ac6_guard="$(PATH="$fakebin_ac6_guard:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac6guard")"
 status_ac6_guard=$?
 [ "$status_ac6_guard" -eq 0 ] || fail "S150 AC6-guard — expected exit 0, got $status_ac6_guard"
 assert_table_shape "S150 AC6-guard" "$output_ac6_guard"
@@ -979,7 +981,7 @@ esac
 exit 1
 GHEOF
 fakebin_presence="$(cat "$FAKEGH_OUT")"
-output_presence="$(PATH="$fakebin_presence:$PATH" "$script" 279)"
+output_presence="$(PATH="$fakebin_presence:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_presence")"
 status_presence=$?
 [ "$status_presence" -eq 0 ] || fail "S150 presence-arm — expected exit 0, got $status_presence"
 assert_table_shape "S150 presence-arm" "$output_presence"

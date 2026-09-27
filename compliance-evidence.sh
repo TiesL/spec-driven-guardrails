@@ -167,7 +167,7 @@ $rest"
         --jq "$CALL_C_JQ" 2>/dev/null)"
       issue_status=$?
       if [ "$issue_status" -ne 0 ]; then
-        echo "warning: compliance-evidence couldn't consult issue #$issue_num (no network or no access) — gates that search its comments render as indeterminate rather than not-evidenced." >&2
+        echo "warning: compliance-evidence couldn't consult issue #$issue_num (no network or no access) — gates that search its comments may render as indeterminate rather than not-evidenced." >&2
         BUNDLE_ISSUE_LOOKUP_FAILED=1
         continue
       fi
