@@ -122,6 +122,15 @@ collect() {
   BUNDLE_MERGED_AT=""
   BUNDLE_MERGED_BY=""
   BUNDLE_ISSUES=""
+  # Soundness rule for every gate that reads BUNDLE_TEXT: when this flag
+  # is 1 the corpus is provably incomplete, so no gate may return
+  # `not-evidenced` on the strength of having found nothing — that
+  # verdict must degrade to `indeterminate` (issue #299). It does not
+  # apply to a `not-evidenced` reached from data actually in hand: gate
+  # 2's same-model verdict (both markers were read) and gate 4's
+  # CI verdicts (a separate call with its own degradation) stay as they
+  # are. Consulted by: gate_stage_models, gate_review_model,
+  # gate_review_marker.
   BUNDLE_ISSUE_LOOKUP_FAILED=0
 
   local tag rest
@@ -158,7 +167,7 @@ $rest"
         --jq "$CALL_C_JQ" 2>/dev/null)"
       issue_status=$?
       if [ "$issue_status" -ne 0 ]; then
-        echo "warning: compliance-evidence couldn't consult issue #$issue_num (no network or no access) — stage evidence involving it may render as indeterminate rather than not-evidenced." >&2
+        echo "warning: compliance-evidence couldn't consult issue #$issue_num (no network or no access) — gates that search its comments render as indeterminate rather than not-evidenced." >&2
         BUNDLE_ISSUE_LOOKUP_FAILED=1
         continue
       fi
@@ -270,6 +279,10 @@ gate_review_model() {
   review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$BUNDLE_TEXT" | tail -1)"
 
   if [ -z "$impl_line" ] || [ -z "$review_line" ]; then
+    if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
+      printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
+      return
+    fi
     printf '%s\t%s\n' "not-evidenced" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number"
     return
   fi
@@ -328,12 +341,21 @@ gate_review_marker() {
 
     local first_sha
     first_sha="$(grep -oE 'sha=[0-9a-fA-F]{40}' <<<"$strict_matches" | sed 's/^sha=//' | head -1)"
-    printf '%s\t%s\n' "not-evidenced" "only a stale \`pre-merge-review:done sha=$first_sha -->\` marker on PR #$pr_number; it doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA)"
+    if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
+      printf '%s\t%s\n' "indeterminate" "only a stale \`pre-merge-review:done sha=$first_sha\` marker on PR #$pr_number, which doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA), and a closing issue lookup failed, so a matching marker can't be ruled out"
+      return
+    fi
+    printf '%s\t%s\n' "not-evidenced" "only a stale \`pre-merge-review:done sha=$first_sha\` marker on PR #$pr_number; it doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA)"
     return
   fi
 
   if [ "$loose_present" -eq 1 ]; then
     printf '%s\t%s\n' "indeterminate" "a \`pre-merge-review:done\` marker exists on PR #$pr_number but not in the recognized \`sha=<40-hex>\` shape"
+    return
+  fi
+
+  if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
+    printf '%s\t%s\n' "indeterminate" "no \`pre-merge-review:done\` marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
     return
   fi
 
