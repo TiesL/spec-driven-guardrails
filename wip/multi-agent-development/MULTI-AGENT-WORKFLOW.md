@@ -79,7 +79,7 @@ Serve as the intelligent workflow manager and active decision-maker. The Orchest
   - Clear assessment mandate and success criteria
   - Prior assessments, findings, and flagged risks
   - Routing decision (standard path, or loop-back for rework)
-  - A file/directory scope contract limiting which paths this phase's session may read or write — skill-based, not OS-level sandboxing (`PRD-MULTI-AGENT-WIP.md` §4, "Rol-naar-agent toewijzing")
+  - A file/directory scope contract limiting which paths this phase's session may read or write — skill-based, not OS-level sandboxing (`PRD-MULTI-AGENT-WIP.md` §4, "Role-to-agent assignment")
 
 - Orchestrator receives from each sub-agent:
   - Assessment findings and recommendations

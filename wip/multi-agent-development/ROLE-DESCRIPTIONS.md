@@ -3,16 +3,15 @@
 Job descriptions for the five roles in the multi-agent workflow (epic #65), meant to be
 quoted verbatim into a role's dispatch prompt when it's spawned — orchestrator (`Agent` tool)
 or human, co-thinking session or full pipeline. Source of truth for the content itself is
-`PRD-MULTI-AGENT-WIP.md` §4 ("Rollen en verantwoordelijkheden" / "Kernverantwoordelijkheden
-per rol") — this file is a reformatting for dispatch-time use, not a new decision. If the two
+`PRD-MULTI-AGENT-WIP.md` §4 ("Roles and responsibilities" / "Core responsibilities
+per role") — this file is a reformatting for dispatch-time use, not a new decision. If the two
 ever disagree, PRD.md wins and this file is stale.
 
-**That source document is still entirely Dutch** (issue #237 tracks translating it; deferred
-as part of completing epic #65, not forgotten). This file's own English content is a faithful
-translation/reformatting of
-that source, not an independent English original — a discrepancy between the two should be
-resolved by re-reading the Dutch source directly, not by trusting this file's phrasing as
-more authoritative just because it's in English.
+**That source document has since been translated to English (issue #237).** This file's own
+content is a faithful translation/reformatting of that source, not an independent English
+original — a discrepancy between the two should be resolved by re-reading the source
+directly, not by trusting this file's phrasing as more authoritative just because it was
+translated first.
 
 Per A8: each role's actual task prompt still names its own scoped input files and states
 whether that list is a floor or a ceiling — this file only supplies the role/responsibilities
@@ -166,7 +165,7 @@ trade-off, a judgment call only Ties can make) goes to him, and several open dec
 batched in one round rather than trickled out one at a time.
 
 **Commit and push per logical step on the work item's shared branch, without asking** (A11).
-One branch per work item, not per role — §4's "Rol-naar-agent toewijzing" already decided
+One branch per work item, not per role — §4's "Role-to-agent assignment" already decided
 roles work sequentially on the same branch, no worktree-per-role. Never merge, release,
 force-push, or run a destructive git operation — that stays unconditionally human-only (A2),
 no exception.

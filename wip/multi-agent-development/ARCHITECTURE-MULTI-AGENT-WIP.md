@@ -181,7 +181,7 @@ synthesis, and never only the later role's recommendation.**
 | Criterion | Why it counts |
 |---|---|
 | Decision 1 (artifact-based context, no hidden state) | An orchestrator-authored summary of a disagreement is itself an unwritten interpretation layer — exactly the "shared context object" Decision 1 already rejected, just applied to escalation instead of routing. |
-| Legitimate conflict escalates, doesn't get suppressed (PRD §4, "Kernverantwoordelijkheden per rol") | A merged summary or last-role-only view lets the orchestrator's phrasing quietly resolve the disagreement before Ties ever sees it — the opposite of "escalates." |
+| Legitimate conflict escalates, doesn't get suppressed (PRD §4, "Core responsibilities per role") | A merged summary or last-role-only view lets the orchestrator's phrasing quietly resolve the disagreement before Ties ever sees it — the opposite of "escalates." |
 | Decision authority stays with Ties, not the orchestrator (Decision 2) | Ties judging from a synthesis means judging the orchestrator's read of the conflict, not the conflict itself. |
 
 ### Options weighed
