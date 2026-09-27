@@ -316,20 +316,25 @@ discover) — recorded on the issue per the hatch's requirement. Fullstack Devel
 implementation and QA's test-design job in one pass; Reviewer stayed full-strength,
 unshortened.
 
-Result: Reviewer's first pass found two real defects that a dedicated QA phase would
-plausibly have caught before Fullstack Developer ever wrote code — a regression against
-an existing, unrelated precedent (issue #253's PR-vs-issue marker precedence, silently
-undone by the fix), and a test suite that didn't actually pin the fix (all new tests still
-passed against a deliberately wrong "always indeterminate" implementation). Both were
-fixed in a second round; Reviewer approved after independently reproducing each fix.
+Result: Reviewer's round-1 pass did not approve as-is — four real code defects plus a
+shellcheck regression. Two were blocking: a regression against issue #253's existing
+PR-vs-issue marker precedence rule (the same logic this fix touches, not an unrelated one),
+found by running the collector against live PR data, not by test design; and a test suite
+that didn't actually pin the fix (new tests still passed against a deliberately wrong
+implementation that rendered `indeterminate` whenever ≥2 closing issues existed). The other
+two (order-dependent handling of `same-model-exception=` and of a malformed marker) were
+non-blocking but real. All fixed in a second round; Reviewer approved after independently
+reproducing each fix.
 
 **Reading, not yet a rule change:** the hatch worked exactly as designed — nothing shipped
-unreviewed, Reviewer caught what the skipped roles would have, at the cost of one extra
-review round instead of a dedicated QA pass. Whether that trade is worth it in general, or
-whether QA specifically should be the one role this hatch should never cover (unlike
-Product/Architect, whose skip caused no findings here), is a real open question this one
-data point can inform but not settle — one instance isn't enough to turn into a standing
-rule. Revisit after the hatch has been used again.
+unreviewed. But the attribution needs care: only the test-gap defect is cleanly a QA-shaped
+miss; the #253 regression is Architect-shaped (re-deriving an existing design precedent
+correctly), and Architect was also skipped here, not just QA. So this instance does not
+show "skip Product/Architect safely, never skip QA" — it shows the hatch costing one extra
+review round while skipping two roles at once, with defects traceable to both. Whether a
+narrower hatch (skip only Product, or only Architect) would fare differently is untested.
+One instance can't settle this; revisit after the hatch has been used again, ideally with
+only one role skipped at a time so attribution is cleaner.
 
 ### A4 — Each role session gets only the file/directory scope its phase needs
 Enforced via a skill-based contract (not OS sandboxing) that states which paths a role may
