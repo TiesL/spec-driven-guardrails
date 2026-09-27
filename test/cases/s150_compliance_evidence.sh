@@ -180,6 +180,62 @@ output_ac1_again="$(PATH="$fakebin_ac1:$PATH" "$script" 279)"
 [ "$output_ac1" = "$output_ac1_again" ] || fail "S150 AC6 — two runs against the same fixture produced different output (not deterministic)"
 
 # =========================================================================
+# A3 (meta-review, epic #295) — gate 1's non-uniform-model branch, which
+# every fixture above skips (all nineteen original arms use one model
+# across all four stages). This is not a hypothetical: every real
+# multi-agent pipeline PR — including this very PR — records Opus for
+# Discovery/Planning/Test and Sonnet for Implementation, so the
+# "else" branch of gate_stage_models() (per-stage summary, as opposed to
+# "all `<model>`") is the branch every future pipeline PR actually takes.
+# It previously rendered with a stray leading space right after the "("
+# (`summary` accumulates as " Discovery=`...`,  Planning=`...`, ..." and
+# only its trailing comma was ever trimmed) — asserted here as an exact
+# string match on the Evidence cell, not just a non-empty check, so a
+# regression of that space is caught.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
+    printf 'STATE\tMERGED\n'
+    printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
+    printf 'MERGEDBY\tTiesL\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-opus-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-opus-5" effort="high" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Test model="claude-opus-5" effort="high" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="high" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="high" -->\n'
+    printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_mixedmodel="$(cat "$FAKEGH_OUT")"
+output_mixedmodel="$(PATH="$fakebin_mixedmodel:$PATH" "$script" 279)"
+status_mixedmodel=$?
+[ "$status_mixedmodel" -eq 0 ] || fail "S150 A3 mixed-model — expected exit 0, got $status_mixedmodel"
+assert_table_shape "S150 A3 mixed-model" "$output_mixedmodel"
+[ "$(row_status "$output_mixedmodel" 1)" = "evidenced" ] || fail "S150 A3 mixed-model — expected gate 1 evidenced with all four stages present but differing models, got '$(row_status "$output_mixedmodel" 1)'"
+# shellcheck disable=SC2016  # backticks are literal Markdown, not command substitution
+expected_evidence_mixedmodel='`model-record` markers on PR #279 for Discovery, Planning, Test, Implementation (Discovery=`claude-opus-5`, Planning=`claude-opus-5`, Test=`claude-opus-5`, Implementation=`claude-sonnet-5`)'
+evidence_mixedmodel="$(row_evidence "$output_mixedmodel" 1)"
+[ "$evidence_mixedmodel" = "$expected_evidence_mixedmodel" ] || {
+  fail "S150 A3 mixed-model — gate 1 evidence cell wrong (stray leading space regression?):"
+  printf 'expected: %s\n' "$expected_evidence_mixedmodel" >&2
+  printf 'got:      %s\n' "$evidence_mixedmodel" >&2
+}
+case "$evidence_mixedmodel" in
+  *"( Discovery="*) fail "S150 A3 mixed-model — evidence cell has the stray leading space after '(' (regression of the A3 rendering bug): $evidence_mixedmodel" ;;
+esac
+
+# =========================================================================
 # AC3 — a missing gate renders as missing, run does not abort.
 # =========================================================================
 

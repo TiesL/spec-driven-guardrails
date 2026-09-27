@@ -100,6 +100,22 @@ collect() {
     return 1
   fi
 
+  # Known limitation / technical debt (F34, issue #296; PRD.md's Technical
+  # debt table has the full writeup). BUNDLE_TEXT below is a flat
+  # concatenation of the PR body, every PR/issue comment, and closing-issue
+  # text, with no distinction between a marker that *is* live evidence and
+  # the identical marker shape merely quoted in running prose, a fenced
+  # code block, or a Markdown blockquote. Every gate_* predicate greps this
+  # blob directly, so a quoted marker reads exactly like a real one. This
+  # is not theoretical: PR #298's own description quotes a prior run's
+  # output verbatim, including a real sha, and the collector prints a false
+  # statement about it as a result. The dangerous direction: gate 3 (and
+  # gates 1/2 the same way) can render "evidenced" purely because this
+  # collector's own prior output was pasted into the very PR being
+  # evaluated — an echo evidencing a review that never happened. This is
+  # exactly the shape W4 (epic #295) is being built to produce routinely,
+  # so the risk is real and growing, not a limited-damage edge case.
+  # NOT fixed here — deliberately out of scope for issue #296.
   BUNDLE_TEXT=""
   BUNDLE_HEAD_SHA=""
   BUNDLE_STATE=""
@@ -225,6 +241,7 @@ gate_stage_models() {
 
   malformed="${malformed# }"
   missing="${missing# }"
+  summary="${summary# }"
 
   if [ -n "$malformed" ]; then
     printf '%s\t%s\n' "indeterminate" "model-record marker(s) for stage(s) $malformed on PR #$pr_number matched but carry no quoted \`model=\"...\"\` (unquoted/malformed form)"
