@@ -1075,6 +1075,243 @@ assert_table_shape "S150 issue #302 Arm H" "$output_ac302_partial"
 [ "$(row_status "$output_ac302_partial" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm H — expected gate 2 indeterminate: both markers read came from one of two closing issues, and the other's fetch failed (a superseding marker there can't be ruled out), got '$(row_status "$output_ac302_partial" 2)'"
 
 # =========================================================================
+# Arm I (issue #302 review round 1, R-1 — the PR #301 live-data
+# regression). PR-side and issue-side markers for the SAME stage
+# disagree: the PR's own `stage=Review` marker records what actually
+# ran (`claude-opus-5`); the single closing issue #265 carries a
+# `stage=Review` marker recording an earlier PLAN (`claude-sonnet-5`,
+# e.g. from Planning). This is precisely the #299/#301 shape Reviewer
+# found live. Per issue #253's precedent (inherited, not re-earned):
+# the PR-side marker wins — this is not a conflict, and gate 2 must
+# render a definite verdict (`evidenced`, since opus != the
+# `stage=Implementation` sonnet), never `indeterminate`.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\teeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_pr_wins="$(cat "$FAKEGH_OUT")"
+output_ac302_pr_wins="$(PATH="$fakebin_ac302_pr_wins:$PATH" "$script" 279)"
+status_ac302_pr_wins=$?
+[ "$status_ac302_pr_wins" -eq 0 ] || fail "S150 issue #302 Arm I — expected exit 0, got $status_ac302_pr_wins"
+assert_table_shape "S150 issue #302 Arm I" "$output_ac302_pr_wins"
+[ "$(row_status "$output_ac302_pr_wins" 2)" = "evidenced" ] || fail "S150 issue #302 Arm I — expected gate 2 evidenced: the PR's own stage=Review marker (claude-opus-5) must win over the issue's planned one (claude-sonnet-5), got '$(row_status "$output_ac302_pr_wins" 2)'"
+
+# =========================================================================
+# Arm J (issue #302 review round 1, R-2 — the missing positive multi-
+# issue arm). Reviewer showed a four-line straw man ("gate 2 is always
+# `indeterminate` whenever the PR names >= 2 closing issues") passes
+# every existing arm, Arms G/H included. This arm closes that gap: TWO
+# closing issues, BOTH fetches succeed, and the sources actually agree
+# — issue #266 has no markers at all, so the only Review marker is
+# issue #265's, uncontested. The correct verdict is a DEFINITE
+# `evidenced` (opus != the PR's Implementation sonnet), which the
+# straw man cannot produce (it always renders `indeterminate` here).
+# Run both issue orders: gate 2 must be `evidenced` either way.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tabababababababababababababababababababab\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_positive1="$(cat "$FAKEGH_OUT")"
+output_ac302_positive1="$(PATH="$fakebin_ac302_positive1:$PATH" "$script" 279)"
+status_ac302_positive1=$?
+[ "$status_ac302_positive1" -eq 0 ] || fail "S150 issue #302 Arm J (order 1) — expected exit 0, got $status_ac302_positive1"
+assert_table_shape "S150 issue #302 Arm J (order 1)" "$output_ac302_positive1"
+[ "$(row_status "$output_ac302_positive1" 2)" = "evidenced" ] || fail "S150 issue #302 Arm J (order 1) — expected a DEFINITE gate 2 evidenced with two closing issues read and sources agreeing (uncontested), got '$(row_status "$output_ac302_positive1" 2)' — a naive 'always indeterminate at >=2 issues' implementation would fail this"
+
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tabababababababababababababababababababab\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t266\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_positive2="$(cat "$FAKEGH_OUT")"
+output_ac302_positive2="$(PATH="$fakebin_ac302_positive2:$PATH" "$script" 279)"
+status_ac302_positive2=$?
+[ "$status_ac302_positive2" -eq 0 ] || fail "S150 issue #302 Arm J (order 2) — expected exit 0, got $status_ac302_positive2"
+assert_table_shape "S150 issue #302 Arm J (order 2)" "$output_ac302_positive2"
+[ "$(row_status "$output_ac302_positive2" 2)" = "evidenced" ] || fail "S150 issue #302 Arm J (order 2) — expected the same DEFINITE gate 2 evidenced with issue order swapped, got '$(row_status "$output_ac302_positive2" 2)'"
+
+# =========================================================================
+# Arm K (issue #302 review round 1, R-3 — same model, differing
+# same-model-exception). Both closing issues carry a `stage=Review`
+# marker with the SAME model (`claude-opus-5`, matching the PR's own
+# `stage=Implementation`), but issue #265 carries a
+# `same-model-exception=` attribute and issue #266 doesn't. That is
+# itself a genuine inter-issue disagreement (R-3), and it must render
+# `indeterminate` the same way regardless of issue order.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" same-model-exception="only model available" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_exc1="$(cat "$FAKEGH_OUT")"
+output_ac302_exc1="$(PATH="$fakebin_ac302_exc1:$PATH" "$script" 279)"
+status_ac302_exc1=$?
+[ "$status_ac302_exc1" -eq 0 ] || fail "S150 issue #302 Arm K (order 1) — expected exit 0, got $status_ac302_exc1"
+assert_table_shape "S150 issue #302 Arm K (order 1)" "$output_ac302_exc1"
+[ "$(row_status "$output_ac302_exc1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm K (order 1) — expected gate 2 indeterminate: same model but disagreeing same-model-exception across two closing issues, got '$(row_status "$output_ac302_exc1" 2)'"
+
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t266\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" same-model-exception="only model available" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_exc2="$(cat "$FAKEGH_OUT")"
+output_ac302_exc2="$(PATH="$fakebin_ac302_exc2:$PATH" "$script" 279)"
+status_ac302_exc2=$?
+[ "$status_ac302_exc2" -eq 0 ] || fail "S150 issue #302 Arm K (order 2) — expected exit 0, got $status_ac302_exc2"
+assert_table_shape "S150 issue #302 Arm K (order 2)" "$output_ac302_exc2"
+[ "$(row_status "$output_ac302_exc2" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm K (order 2) — expected the same gate 2 indeterminate with issue order swapped, got '$(row_status "$output_ac302_exc2" 2)'"
+[ "$(row_status "$output_ac302_exc1" 2)" = "$(row_status "$output_ac302_exc2" 2)" ] || fail "S150 issue #302 Arm K — gate 2 must not depend on closing-issue order: order1='$(row_status "$output_ac302_exc1" 2)' order2='$(row_status "$output_ac302_exc2" 2)'"
+
+# =========================================================================
+# Arm L (issue #302 review round 1, R-4 — malformed marker in one
+# issue vs. well-formed in another). Issue #265's `stage=Review`
+# marker has no quoted `model="..."` at all (malformed but still
+# recognized); issue #266's is well-formed. A position-based pick
+# (`lines[0]`) previously let whichever issue was fetched first decide
+# between `indeterminate` ("no quoted model=") and a definite verdict.
+# Must now render `indeterminate` regardless of order.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tefefefefefefefefefefefefefefefefefefefef\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t265\n'
+    printf 'ISSUE\t266\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review effort="high" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_malf1="$(cat "$FAKEGH_OUT")"
+output_ac302_malf1="$(PATH="$fakebin_ac302_malf1:$PATH" "$script" 279)"
+status_ac302_malf1=$?
+[ "$status_ac302_malf1" -eq 0 ] || fail "S150 issue #302 Arm L (order 1) — expected exit 0, got $status_ac302_malf1"
+assert_table_shape "S150 issue #302 Arm L (order 1)" "$output_ac302_malf1"
+[ "$(row_status "$output_ac302_malf1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm L (order 1) — expected gate 2 indeterminate: a malformed stage=Review marker on one closing issue vs. a well-formed one on another, got '$(row_status "$output_ac302_malf1" 2)'"
+
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\tefefefefefefefefefefefefefefefefefefefef\n'
+    printf 'STATE\tOPEN\n'
+    printf 'ISSUE\t266\n'
+    printf 'ISSUE\t265\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Review effort="high" -->\n'
+    exit 0 ;;
+  __CALL_C266__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_ac302_malf2="$(cat "$FAKEGH_OUT")"
+output_ac302_malf2="$(PATH="$fakebin_ac302_malf2:$PATH" "$script" 279)"
+status_ac302_malf2=$?
+[ "$status_ac302_malf2" -eq 0 ] || fail "S150 issue #302 Arm L (order 2) — expected exit 0, got $status_ac302_malf2"
+assert_table_shape "S150 issue #302 Arm L (order 2)" "$output_ac302_malf2"
+[ "$(row_status "$output_ac302_malf2" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm L (order 2) — expected the same gate 2 indeterminate with issue order swapped, got '$(row_status "$output_ac302_malf2" 2)'"
+[ "$(row_status "$output_ac302_malf1" 2)" = "$(row_status "$output_ac302_malf2" 2)" ] || fail "S150 issue #302 Arm L — gate 2 must not depend on closing-issue order: order1='$(row_status "$output_ac302_malf1" 2)' order2='$(row_status "$output_ac302_malf2" 2)'"
+
+# =========================================================================
 # Presence arm (Product's original AC9 arm, retained as a cheap extra —
 # NOT the AC6 guard, per D3: an over-broad fix leaves evidenced paths
 # untouched, so this arm cannot catch it. It catches a different mistake

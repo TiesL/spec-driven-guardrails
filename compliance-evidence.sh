@@ -147,9 +147,13 @@ collect() {
   # text, kept apart in PR_TEXT/ISSUE_TEXTS/ISSUE_NUMS below) rather than
   # by accumulation order:
   #   1. gate_review_model (gate 2) resolves each stage's marker
-  #      per-source and, when two or more sources actually disagree
-  #      after reading them all, reports `indeterminate` — a detected
-  #      conflict, not a coin flip decided by which source happened to
+  #      per-source. The PR-side marker, when present, always wins over
+  #      a disagreeing issue-side one (issue #253 precedent: the PR
+  #      records what actually happened, an issue can record an earlier
+  #      plan) — that is not a conflict. Only disagreement BETWEEN two
+  #      or more issues (the PR silent or absent) is a genuine,
+  #      unresolvable conflict, reported `indeterminate` — a detected
+  #      conflict, not a coin flip decided by which issue happened to
   #      be listed first.
   #   2. gate_review_model additionally degrades its same-model
   #      `not-evidenced` verdict to `indeterminate` when this flag is set
@@ -329,72 +333,107 @@ gate_stage_models() {
   fi
 }
 
-# resolve_stage_marker() — issue #302 (R-B generalized: don't trust
-# accumulation order, use a real signal). Finds the `model-record`
-# marker for stage $1 independently in PR_TEXT and in each of
-# ISSUE_TEXTS (order within each source is genuine chronology, from
-# gh's own comment ordering — that part was never the bug), then asks
-# whether the sources that found anything actually agree, rather than
-# flattening them into one blob and taking whichever comes last.
+# resolve_stage_marker() — issue #302 (R-B generalized, then corrected
+# under R-1/R-3/R-4). Finds the `model-record` marker for stage $1
+# independently in PR_TEXT and in each of ISSUE_TEXTS (order within
+# each source is genuine chronology, from gh's own comment ordering —
+# that part was never the bug), then decides which marker is
+# authoritative using a real signal instead of accumulation order:
+#
+#   - The PR-side marker, when present, always wins over an issue-side
+#     one it disagrees with. A PR marker records what actually
+#     happened (e.g. which model actually ran the review); an
+#     issue-side marker can be a plan recorded earlier (e.g. at
+#     Planning time) that the PR then superseded — precedent from
+#     issue #253. So PR-vs-issue disagreement is not a conflict.
+#   - Disagreement BETWEEN two or more issues (the PR silent or absent
+#     from this comparison) IS a genuine, unresolvable conflict —
+#     neither issue is "the" outcome.
+#   - "Disagreement" covers the normalized `model=`, the
+#     `same-model-exception=` attribute, and well-formed-vs-malformed
+#     (a marker that matched but has no quoted `model="..."`) alike —
+#     not just the model field (R-3/R-4).
+#   - When more than one issue-side marker exists and they agree, the
+#     representative line is picked by sorting on issue number, not on
+#     fetch order, so the result can't flip depending on which issue
+#     `gh` happened to list first in `closingIssuesReferences`.
 #
 # Prints one tab-separated line on stdout:
 #   none      <empty>                     — no source has this stage's marker
-#   single    <the winning marker line>   — every source that matched agrees
-#                                            (after normalize_model), or only
-#                                            one source matched at all
-#   conflict  <"source: `model`; ..." >   — two+ sources matched with
-#                                            genuinely different models
+#   single    <the winning marker line>   — PR wins, or issue sources agree,
+#                                            or only one source matched at all
+#   conflict  <"source: `model`; ..." >   — two+ ISSUE sources matched with
+#                                            genuinely different markers
 resolve_stage_marker() {
   local stage="$1"
-  local -a labels=() lines=() models=()
-  local line model src_num i
+  local pr_line="" line model src_num i
 
   line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$PR_TEXT" | tail -1)"
-  if [ -n "$line" ]; then
-    model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
-    labels+=("PR #$pr_number")
-    lines+=("$line")
-    models+=("$model")
-  fi
+  [ -n "$line" ] && pr_line="$line"
 
+  # Note on order: unlike the old `tail -1`-over-the-flat-corpus code,
+  # nothing below needs the issues visited in a particular order.
+  # Conflict detection only asks whether the SET of issue-side values
+  # agrees (order can't change that answer), and once they agree any
+  # one of them is an equally valid representative to return — so no
+  # sort-by-issue-number step is needed here (an earlier version tried
+  # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
+  local -a marker_labels=() marker_lines=() marker_models=() marker_exceptions=()
   for i in "${!ISSUE_TEXTS[@]}"; do
     line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"${ISSUE_TEXTS[$i]}" | tail -1)"
     if [ -n "$line" ]; then
       src_num="${ISSUE_NUMS[$i]}"
       model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
-      labels+=("issue #$src_num")
-      lines+=("$line")
-      models+=("$model")
+      marker_labels+=("issue #$src_num")
+      marker_lines+=("$line")
+      marker_models+=("$model")
+      marker_exceptions+=("$(grep -oE 'same-model-exception="[^"]*"' <<<"$line" | head -1)")
     fi
   done
 
-  if [ "${#lines[@]}" -eq 0 ]; then
+  if [ -z "$pr_line" ] && [ "${#marker_lines[@]}" -eq 0 ]; then
     printf '%s\t%s\n' "none" ""
     return
   fi
 
-  local first_norm="" norm all_same=1
-  for i in "${!models[@]}"; do
-    norm="$(normalize_model "${models[$i]}")"
-    [ -n "$norm" ] || continue
-    if [ -z "$first_norm" ]; then
-      first_norm="$norm"
-    elif [ "$norm" != "$first_norm" ]; then
-      all_same=0
-    fi
-  done
+  # Inter-issue conflict check only — the PR is deliberately excluded
+  # (R-1): PR-vs-issue disagreement is resolved by PR precedence below,
+  # never treated as a conflict.
+  local issues_conflict=0
+  if [ "${#marker_lines[@]}" -gt 1 ]; then
+    local first_norm first_exc norm exc
+    first_norm="$(normalize_model "${marker_models[0]}")"
+    first_exc="${marker_exceptions[0]}"
+    for i in "${!marker_models[@]}"; do
+      norm="$(normalize_model "${marker_models[$i]}")"
+      exc="${marker_exceptions[$i]}"
+      if [ "$norm" != "$first_norm" ] || [ "$exc" != "$first_exc" ]; then
+        issues_conflict=1
+      fi
+    done
+  fi
 
-  if [ "$all_same" -eq 1 ] || [ "${#lines[@]}" -eq 1 ]; then
-    printf '%s\t%s\n' "single" "${lines[0]}"
+  if [ "$issues_conflict" -eq 1 ]; then
+    local detail="" sep=""
+    if [ -n "$pr_line" ]; then
+      model="$(grep -oE 'model="[^"]*"' <<<"$pr_line" | head -1 | sed 's/^model="//; s/"$//')"
+      detail="PR #$pr_number: \`${model:-<malformed>}\`"
+      sep="; "
+    fi
+    for i in "${!marker_lines[@]}"; do
+      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\`"
+      sep="; "
+    done
+    printf '%s\t%s\n' "conflict" "$detail"
     return
   fi
 
-  local detail="" sep=""
-  for i in "${!lines[@]}"; do
-    detail="${detail}${sep}${labels[$i]}: \`${models[$i]:-<malformed>}\`"
-    sep="; "
-  done
-  printf '%s\t%s\n' "conflict" "$detail"
+  if [ -n "$pr_line" ]; then
+    printf '%s\t%s\n' "single" "$pr_line"
+    return
+  fi
+
+  printf '%s\t%s\n' "single" "${marker_lines[0]}"
 }
 
 gate_review_model() {
@@ -536,11 +575,11 @@ gate_ci() {
   local fail_name="" fail_state="" fail_bucket=""
   local pending_name="" pending_state=""
   local unknown_name="" unknown_bucket=""
-  local lines="" sep=""
+  local check_lines="" sep=""
 
   while IFS=$'\t' read -r name state bucket; do
     [ -n "$name" ] || continue
-    lines="${lines}${sep}\`$name\`: \`bucket=$bucket\`, \`state=$state\`"
+    check_lines="${check_lines}${sep}\`$name\`: \`bucket=$bucket\`, \`state=$state\`"
     sep="; "
     case "$bucket" in
       fail|cancel)
@@ -569,7 +608,7 @@ gate_ci() {
     return
   fi
 
-  printf '%s\t%s\n' "evidenced" "check $lines"
+  printf '%s\t%s\n' "evidenced" "check $check_lines"
 }
 
 gate_traceability() {
