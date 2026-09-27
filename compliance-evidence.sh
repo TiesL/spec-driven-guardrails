@@ -34,6 +34,8 @@
 #
 # Exit codes:
 #   0 — a table was produced, including an all-not-evidenced one (AC3)
+#   1 — internal error: a gate predicate returned a status outside the
+#       closed vocabulary (never expected to trigger; see valid_status())
 #   2 — usage error (no PR number given)
 #   3 — gh not found on PATH
 #   4 — the PR itself could not be read (gh pr view failed); no honest
@@ -399,13 +401,24 @@ gate_merge_confirmation() {
 # 5): escape backslashes first, then pipes (order matters — reversed, the
 # second substitution would double-escape what the first just added),
 # then flatten whitespace, then truncate. This is copied verbatim from
-# Architect's interface contract.
+# Architect's interface contract, with one correction (PR #298 review F2):
+# the contract's own §3.6 prose says truncation appends an ellipsis; the
+# literal code block it also gave omitted it. The prose governs (a
+# truncated cell with no marker silently misleads a reader of a
+# compliance table) — an ellipsis is appended whenever `cut` actually
+# shortened the string, never when the string already fit.
 cell() {
-  printf '%s' "$1" \
+  local escaped truncated
+  escaped="$(printf '%s' "$1" \
     | sed 's/\\/\\\\/g; s/|/\\|/g' \
     | tr '\n\r\t' '   ' \
-    | sed -E 's/  +/ /g; s/^ +| +$//g' \
-    | cut -c1-300
+    | sed -E 's/  +/ /g; s/^ +| +$//g')"
+  truncated="$(printf '%s' "$escaped" | cut -c1-300)"
+  if [ "${#truncated}" -lt "${#escaped}" ]; then
+    printf '%s…' "$truncated"
+  else
+    printf '%s' "$truncated"
+  fi
 }
 
 valid_status() {

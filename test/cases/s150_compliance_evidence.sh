@@ -155,6 +155,7 @@ exit 1
 GHEOF
 fakebin_ac1="$(cat "$FAKEGH_OUT")"
 
+# shellcheck disable=SC2016  # the backticks below are literal Markdown, not command substitution — single-quoted deliberately
 expected_ac1='| Gate | Status | Evidence |
 | --- | --- | --- |
 | Per-stage model/effort recorded (Discovery, Planning, Test, Implementation) | evidenced | `model-record` markers on PR #279 for Discovery, Planning, Test, Implementation (all `claude-sonnet-5`) |
@@ -301,6 +302,7 @@ exit 1
 GHEOF
 fakebin_ac4c="$(cat "$FAKEGH_OUT")"
 output_ac4c="$(PATH="$fakebin_ac4c:$PATH" "$script" 279)"
+assert_table_shape "S150 AC4c" "$output_ac4c"
 [ "$(row_status "$output_ac4c" 6)" = "unverifiable-from-artifacts" ] || fail "S150 AC4c — gate 6 must be unverifiable-from-artifacts on an open PR too, got '$(row_status "$output_ac4c" 6)'"
 
 # =========================================================================
@@ -408,6 +410,7 @@ exit 1
 GHEOF
 fakebin_ac8a="$(cat "$FAKEGH_OUT")"
 output_ac8a="$(PATH="$fakebin_ac8a:$PATH" "$script" 279)"
+assert_table_shape "S150 AC8a" "$output_ac8a"
 [ "$(row_status "$output_ac8a" 3)" = "indeterminate" ] || fail "S150 AC8a — expected gate 3 indeterminate for a malformed sha, got '$(row_status "$output_ac8a" 3)'"
 evidence_ac8a="$(row_evidence "$output_ac8a" 3)"
 [ -n "$(printf '%s' "$evidence_ac8a" | sed -E 's/^ +| +$//g')" ] || fail "S150 AC8a — Evidence cell for the indeterminate row must not be empty (AC2)"
@@ -427,6 +430,7 @@ exit 1
 GHEOF
 fakebin_ac8b="$(cat "$FAKEGH_OUT")"
 output_ac8b="$(PATH="$fakebin_ac8b:$PATH" "$script" 279)"
+assert_table_shape "S150 AC8b" "$output_ac8b"
 [ "$(row_status "$output_ac8b" 4)" = "indeterminate" ] || fail "S150 AC8b — expected gate 4 indeterminate for an unrecognized bucket, got '$(row_status "$output_ac8b" 4)'"
 
 # AC8c — a stale review marker (sha != headRefOid) is not-evidenced, NOT
@@ -447,6 +451,7 @@ exit 1
 GHEOF
 fakebin_ac8c="$(cat "$FAKEGH_OUT")"
 output_ac8c="$(PATH="$fakebin_ac8c:$PATH" "$script" 279)"
+assert_table_shape "S150 AC8c" "$output_ac8c"
 [ "$(row_status "$output_ac8c" 3)" = "not-evidenced" ] || fail "S150 AC8c — expected gate 3 not-evidenced for a stale (sha-mismatched) marker, got '$(row_status "$output_ac8c" 3)'"
 
 # AC8d (finding (c), highest-value gap) — a red CI check is not-evidenced,
@@ -469,6 +474,7 @@ fakebin_ac8d="$(cat "$FAKEGH_OUT")"
 output_ac8d="$(PATH="$fakebin_ac8d:$PATH" "$script" 279)"
 status_ac8d=$?
 [ "$status_ac8d" -eq 0 ] || fail "S150 AC8d — expected exit 0 with a red CI check, got $status_ac8d"
+assert_table_shape "S150 AC8d" "$output_ac8d"
 [ "$(row_status "$output_ac8d" 4)" = "not-evidenced" ] || fail "S150 AC8d — expected gate 4 not-evidenced for a red (bucket=fail) check, got '$(row_status "$output_ac8d" 4)'"
 case "$(row_evidence "$output_ac8d" 4)" in
   *check*) : ;;
@@ -491,6 +497,7 @@ exit 1
 GHEOF
 fakebin_ac8e="$(cat "$FAKEGH_OUT")"
 output_ac8e="$(PATH="$fakebin_ac8e:$PATH" "$script" 279)"
+assert_table_shape "S150 AC8e" "$output_ac8e"
 [ "$(row_status "$output_ac8e" 4)" = "indeterminate" ] || fail "S150 AC8e — expected gate 4 indeterminate for bucket=pending, got '$(row_status "$output_ac8e" 4)'"
 
 # AC8f (finding (d)) — zero CI checks at all is not-evidenced: nothing
@@ -513,6 +520,7 @@ fakebin_ac8f="$(cat "$FAKEGH_OUT")"
 output_ac8f="$(PATH="$fakebin_ac8f:$PATH" "$script" 279)"
 status_ac8f=$?
 [ "$status_ac8f" -eq 0 ] || fail "S150 AC8f — expected exit 0 with zero CI checks, got $status_ac8f"
+assert_table_shape "S150 AC8f" "$output_ac8f"
 [ "$(row_status "$output_ac8f" 4)" = "not-evidenced" ] || fail "S150 AC8f — expected gate 4 not-evidenced with zero checks, got '$(row_status "$output_ac8f" 4)'"
 
 # AC8g — a stage=Test marker matching tolerantly but written unquoted
@@ -542,6 +550,7 @@ exit 1
 GHEOF
 fakebin_ac8g="$(cat "$FAKEGH_OUT")"
 output_ac8g="$(PATH="$fakebin_ac8g:$PATH" "$script" 279)"
+assert_table_shape "S150 AC8g" "$output_ac8g"
 [ "$(row_status "$output_ac8g" 1)" = "indeterminate" ] || fail "S150 AC8g — expected gate 1 indeterminate for an unquoted (malformed) stage marker, got '$(row_status "$output_ac8g" 1)'"
 
 # --- Gate 2 negatives (finding (e)): Architect's only gate-2 exercise
@@ -566,6 +575,7 @@ exit 1
 GHEOF
 fakebin_g2_same="$(cat "$FAKEGH_OUT")"
 output_g2_same="$(PATH="$fakebin_g2_same:$PATH" "$script" 279)"
+assert_table_shape "S150 gate2-negative (same model, no exception)" "$output_g2_same"
 [ "$(row_status "$output_g2_same" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — same model with no exception must be not-evidenced, got '$(row_status "$output_g2_same" 2)'"
 
 # Same model, empty-reason exception (same-model-exception="") — an
@@ -586,6 +596,7 @@ exit 1
 GHEOF
 fakebin_g2_empty="$(cat "$FAKEGH_OUT")"
 output_g2_empty="$(PATH="$fakebin_g2_empty:$PATH" "$script" 279)"
+assert_table_shape "S150 gate2-negative (empty-reason exception)" "$output_g2_empty"
 [ "$(row_status "$output_g2_empty" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — an empty-reason same-model-exception must still be not-evidenced, got '$(row_status "$output_g2_empty" 2)'"
 
 # Genuinely the same model under different label styles ("claude-sonnet-5"
@@ -608,6 +619,7 @@ exit 1
 GHEOF
 fakebin_g2_label="$(cat "$FAKEGH_OUT")"
 output_g2_label="$(PATH="$fakebin_g2_label:$PATH" "$script" 279)"
+assert_table_shape "S150 gate2-negative (label normalization)" "$output_g2_label"
 [ "$(row_status "$output_g2_label" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — 'claude-sonnet-5' vs 'Sonnet 5' must normalize equal and be not-evidenced, got '$(row_status "$output_g2_label" 2)'"
 
 # =========================================================================
@@ -640,6 +652,7 @@ exit 1
 GHEOF
 fakebin_twoissues="$(cat "$FAKEGH_OUT")"
 output_twoissues="$(PATH="$fakebin_twoissues:$PATH" "$script" 279)"
+assert_table_shape "S150 two-issues" "$output_twoissues"
 [ "$(row_status "$output_twoissues" 1)" = "evidenced" ] || fail "S150 two-issues — expected gate 1 evidenced only if BOTH closing issues are read (Discovery lives on the second), got '$(row_status "$output_twoissues" 1)'"
 
 # =========================================================================
@@ -675,6 +688,7 @@ fakebin_callb_fails="$(cat "$FAKEGH_OUT")"
 output_callb_fails="$(PATH="$fakebin_callb_fails:$PATH" "$script" 279)"
 status_callb_fails=$?
 [ "$status_callb_fails" -eq 0 ] || fail "S150 call-B-fails — expected exit 0, got $status_callb_fails"
+assert_table_shape "S150 call-B-fails" "$output_callb_fails"
 [ "$(row_status "$output_callb_fails" 4)" = "indeterminate" ] || fail "S150 call-B-fails — expected gate 4 indeterminate on a genuine call-B failure, got '$(row_status "$output_callb_fails" 4)'"
 [ "$(row_status "$output_callb_fails" 1)" = "evidenced" ] || fail "S150 call-B-fails — the other gates must be unaffected by a call-B failure"
 case "$output_callb_fails" in
@@ -711,6 +725,7 @@ status_callc_fails=$?
 stderr_callc_fails="$(cat /tmp/s150_stderr_callc.$$ 2>/dev/null)"
 rm -f /tmp/s150_stderr_callc.$$
 [ "$status_callc_fails" -eq 0 ] || fail "S150 call-C-fails — expected exit 0, got $status_callc_fails"
+assert_table_shape "S150 call-C-fails" "$output_callc_fails"
 [ "$(row_status "$output_callc_fails" 1)" = "indeterminate" ] || fail "S150 call-C-fails — expected gate 1 indeterminate (not not-evidenced) when a closing issue lookup fails and Discovery then looks missing, got '$(row_status "$output_callc_fails" 1)'"
 assert_contains "S150 call-C-fails — a warning appears on stderr" "warning" "$stderr_callc_fails"
 
@@ -732,5 +747,50 @@ rm -f /tmp/s150_stderr_calla.$$
 [ "$status_calla_fails" -eq 4 ] || fail "S150 call-A-fails — expected exit 4 when the PR itself can't be read, got $status_calla_fails"
 [ -z "$output_calla_fails" ] || fail "S150 call-A-fails — expected no table on stdout when call A fails, got: $output_calla_fails"
 [ -n "$stderr_calla_fails" ] || fail "S150 call-A-fails — expected a message on stderr"
+
+# =========================================================================
+# PR #298 review F2 — a cell that genuinely exceeds the 300-char budget
+# (Architect's §3.6 prose: an ellipsis must mark the cut, matching the
+# already-observed real-world shape — PR #279's gate-2 cell quoting a
+# 118-char exception reason is already ~190 chars, and a longer exception
+# or a multi-check gate-4 cell pushes past 300 on real input). Built with
+# an over-long same-model-exception on gate 2.
+# =========================================================================
+long_reason="the fork session inherits its parent model and no other model was made available for this particular review round so this same-model exception documents that limitation in exhaustive detail for the record, repeated once more to push well past the three hundred character budget for this evidence cell"
+run_build_fake_gh > "$FAKEGH_OUT" <<GHEOF
+case "\$*" in
+  __CALL_A__)
+    printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
+    printf 'STATE\tOPEN\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="$long_reason" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_longcell="$(cat "$FAKEGH_OUT")"
+output_longcell="$(PATH="$fakebin_longcell:$PATH" "$script" 279)"
+assert_table_shape "S150 F2 long-cell" "$output_longcell"
+evidence_longcell="$(row_evidence "$output_longcell" 2)"
+[ "${#evidence_longcell}" -le 301 ] || fail "S150 F2 long-cell — evidence cell exceeds the 300-char budget plus ellipsis: ${#evidence_longcell} chars"
+case "$evidence_longcell" in
+  *…) : ;;
+  *) fail "S150 F2 long-cell — a cell actually over 300 chars must render with a visible truncation marker (…), got: $evidence_longcell" ;;
+esac
+
+# =========================================================================
+# PR #298 review F5 — bad usage (no PR number) exits 2, with nothing on
+# stdout and a message on stderr.
+# =========================================================================
+output_badusage="$("$script" 2>/tmp/s150_stderr_badusage.$$)"
+status_badusage=$?
+stderr_badusage="$(cat /tmp/s150_stderr_badusage.$$ 2>/dev/null)"
+rm -f /tmp/s150_stderr_badusage.$$
+[ "$status_badusage" -eq 2 ] || fail "S150 F5 — expected exit 2 with no PR number given, got $status_badusage"
+[ -z "$output_badusage" ] || fail "S150 F5 — expected empty stdout on bad usage, got: $output_badusage"
+[ -n "$stderr_badusage" ] || fail "S150 F5 — expected a usage message on stderr"
 
 test_done
