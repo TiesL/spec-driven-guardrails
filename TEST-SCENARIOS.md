@@ -1623,3 +1623,24 @@ something new is being added.
   success; a PR with zero checks at all is reported as inconclusive
   (non-zero), not as "all checks passed" — there's nothing to have
   passed
+
+### S150 — The compliance-evidence collector reports what the artifacts actually show
+**Covers:** F34
+- Given: a `fake_gh_bin` recording of PR #279's real `gh pr view` / `gh pr
+  checks` / `gh issue view` answers as of 2026-09-26, and variants of it
+  per subcase
+- When: `compliance-evidence.sh <pr-number>` runs with that fake `gh`
+  ahead of `PATH`
+- Then: it prints the six decided gates as a three-column Markdown table,
+  in the fixed order, one row per gate, always six rows and never fewer;
+  every Status cell is exactly one of `evidenced`, `not-evidenced`,
+  `unverifiable-from-artifacts`, `indeterminate`; every Evidence cell
+  names an artifact; the merge-confirmation row is
+  `unverifiable-from-artifacts` whether the PR is merged or open; a red,
+  pending, unknown-bucket or absent CI check is never `evidenced`; a
+  stale review marker is `not-evidenced` while an unparseable one is
+  `indeterminate`; a failed checks or issue-comments lookup degrades its
+  own row to `indeterminate` and exits 0, while a failed PR lookup exits
+  4 with no table; with no `gh` on `PATH` it exits 3 with nothing on
+  stdout; the run makes no `gh` write call and the script's source
+  contains none
