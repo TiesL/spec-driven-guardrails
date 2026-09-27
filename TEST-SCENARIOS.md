@@ -1644,3 +1644,23 @@ something new is being added.
   4 with no table; with no `gh` on `PATH` it exits 3 with nothing on
   stdout; the run makes no `gh` write call and the script's source
   contains none
+
+### S151 — Marker-shaped text that is quoted, or isn't a real HTML comment, is not evidence
+**Covers:** F34
+- Given: a `fake_gh_bin` recording where marker-shaped text appears
+  inside a fenced code block, an inline code span or a `>` blockquote, or
+  as bare prose with no `<!--`/`-->` delimiters, in the PR body, a PR
+  comment or a closing issue's comments
+- When: `compliance-evidence.sh <pr-number>` runs with that fake `gh`
+  ahead of `PATH`
+- Then: no gate counts such an occurrence as live evidence; a gate whose
+  only matches were quoted reports `not-evidenced` and says in words that
+  quoted occurrences were seen and ignored; bare marker-shaped prose
+  reports `not-evidenced` rather than `indeterminate`, while a malformed
+  marker inside real delimiters still reports `indeterminate`; a real
+  marker posted inline on a line that also carries prose, backticked
+  text, table pipes or a stray unmatched backtick keeps evidencing;
+  fence state never crosses a body boundary; the collector's own
+  rendered table pasted into the PR changes no status; and the six-row
+  shape, the four-status vocabulary and the absence of any write path
+  are unchanged
