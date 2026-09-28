@@ -1730,20 +1730,30 @@ something new is being added.
 - Given: the real, shipped `live_text()` function re-extracted verbatim
   at test time from both `compliance-evidence.sh` and
   `role-label-staleness.sh` (the same no-stale-copy technique
-  S151's Q21-Q23 already use), run under mawk specifically — not gawk,
-  which is this repo's usual local/CI `awk` and doesn't exhibit either
-  failure mode below
+  S151's Q21-Q23 already use, with the extraction itself asserted
+  non-empty and the two files' bodies asserted byte-identical before any
+  golden case runs, so a bad extraction or a drifted copy can't silently
+  make the test re-check the wrong function), run under mawk
+  specifically — not gawk, which is this repo's usual local/CI `awk` and
+  does not exhibit any of the failure modes below
 - When: a simple 3-character fence, a 5-character wrapper fence around
   an inner line that itself contains 3 backticks, a shorter (3-character)
   closing run that must not close a longer (5-character) opening run
-  (D5/D6), and a real `model-record` marker after a closed fence, are
-  each run through it
+  (D5/D6), a real `model-record` marker after a closed fence, a line
+  starting with a 1-backtick inline-code run followed by a real marker,
+  and a real backtick fence-line nested inside an already-open tilde
+  fence, are each run through it
 - Then: every case matches the same output gawk already produces — a
   panic in mawk's regex compiler on the original grouped-alternation
-  form (`^ {0,3}(`{3,}|~{3,})`), and mawk's `{n,}` matching exactly `n`
+  form (`^ {0,3}(`{3,}|~{3,})`), mawk's `{n,}` matching exactly `n`
   rather than greedily (silently truncating a longer fence run and
   corrupting the recorded fence length even where it doesn't panic —
-  distinct from the panic and not caught by fixing that alone), are both
-  fixed by two top-level alternatives using `+` plus an explicit
-  length check, not merely worked around per caller; skips loudly,
-  naming why, if mawk isn't installed to run this exact check with
+  distinct from the panic and not caught by fixing that alone), and,
+  independently, an older mawk build (1.3.4 20200120, the default `awk`
+  on Ubuntu 22.04) not parsing the bounded interval `{0,3}` at all and
+  so never detecting a fence — are all three fixed, the third by
+  replacing `{0,3}` with the brace-free `? ? ?`, verified end to end
+  under both mawk builds and gawk, with the guard against a 1- or
+  2-character run wrongly opening a fence (and swallowing every later
+  marker) covered explicitly; fails loudly, naming why, if mawk isn't
+  installed to run this exact check with
