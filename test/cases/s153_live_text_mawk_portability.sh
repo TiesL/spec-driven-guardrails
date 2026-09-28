@@ -60,6 +60,21 @@ body_b="$(awk '/^live_text\(\) \{/,/^}/' "$TEST_REPO_ROOT/role-label-staleness.s
 [ -n "$body_b" ] || fail "S153 — extracting live_text() from role-label-staleness.sh produced nothing"
 [ "$body_a" = "$body_b" ] || fail "S153 — live_text() has drifted between compliance-evidence.sh and role-label-staleness.sh (must be copied verbatim)"
 
+# Static guard against a regression back to brace-interval syntax
+# (`{0,3}`, `{3,}`) in the fence regex, found during PR #325's own
+# review round 2: CI's own mawk (1.3.4 20240123) parses brace intervals
+# just fine, so a revert of the `? ? ?` fix back to `{0,3}` would still
+# pass every golden case below on CI, and would only fail on the older
+# mawk build (1.3.4 20200120, e.g. Ubuntu 22.04's default `awk`) that
+# CI doesn't run on — exactly the silent, environment-dependent gap
+# issue #319 exists to close. This check is unconditional (not run
+# under mawk specifically) precisely because it must catch the
+# regression on every runner, including this container's own newer mawk
+# and gawk, neither of which would otherwise notice.
+if grep -qE 'match\(line, /\^[^/]*\{[0-9]+,' <<<"$body_a$body_b"; then
+  fail "S153 — live_text()'s fence regex has regressed to brace-interval syntax (\`{n,m}\`); replace with \`? ? ?\` (issue #319) — this would NOT be caught by the golden cases alone on a runner whose mawk happens to support brace intervals"
+fi
+
 # Golden fence scenarios, each run through the REAL, extracted live_text()
 # from the given script, under a PATH where `awk` resolves to mawk. Every
 # expected output already matches gawk's behavior (spot-checked by hand
@@ -117,7 +132,7 @@ run_golden_cases() {
   g4_out="$(PATH="$mawk_shim:$PATH" live_text "$g4_in")"
   grep -q 'model-record' <<<"$g4_out" || fail "S153 G4 ($label) — a real marker after a closed fence must stay live under mawk"
 
-  # G5 — the `length(m) >= 3` guard (issue #319, review round 2): a line
+  # G5 — the `length(m) >= 3` guard (issue #319, review round 1): a line
   # that starts with a 1- or 2-backtick inline-code run is not a fence
   # (CommonMark fences need >= 3). Without the guard, `+` alone matches
   # that short run too, opens a fence that never closes, and blanks

@@ -231,13 +231,18 @@
 # No eval: issue/PR body and comment text is not under this script's own
 # control.
 #
-# awk requirement (issue #319): `live_text()` below needs an awk whose
-# regex engine greedily matches an unbounded-lower-bound interval
-# (`{n,}`) and tolerates alternation grouped with one. Both mawk's
-# REcompile() panic on the original grouped form and its separate
-# non-greedy `{n,}` (matches exactly n, not "n or more") are worked
-# around; verified correct under both mawk and gawk (test/cases/
-# s153_live_text_mawk_portability.sh).
+# awk requirement (issue #319): `live_text()` below has no special awk
+# requirement left — every awk it has been run under (mawk 1.3.4
+# 20200120, mawk 1.3.4 20240123, gawk) parses and executes its fence
+# regex the same way. Getting there dodged two independent, unrelated
+# mawk defects rather than working around either in an mawk-specific
+# code path: mawk's REcompile() panics on a grouped alternation combined
+# with an unbounded-lower-bound interval (`(`{3,}|~{3,})`), and,
+# separately, mawk 1.3.4 20200120 and earlier (Ubuntu 22.04's default
+# `awk`, among others) doesn't parse a bounded interval (`{0,3}`) at all
+# — it reads the four characters literally instead of as "0 to 3". See
+# the copy of this function's own inline comment for the mechanism, and
+# test/cases/s153_live_text_mawk_portability.sh.
 
 set -uo pipefail
 
