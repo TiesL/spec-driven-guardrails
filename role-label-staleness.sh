@@ -250,6 +250,19 @@ if [ $# -lt 1 ] || [ -z "${1:-}" ]; then
   echo "usage: role-label-staleness.sh <issue-number>" >&2
   exit 2
 fi
+# issue #317 F-4: a non-numeric argument used to reach collect()'s own
+# gh call, fail there, and exit 4 (internal-error-shaped) — a bad
+# argument is a usage error (exit 2), the same shape as the empty-
+# argument case just above, not an internal error. `0` is rejected too
+# (round 1 review nit): GitHub issue numbers start at 1, so `0` is
+# exactly as invalid as a non-digit argument, not a legitimate edge case
+# worth accepting.
+case "$1" in
+  *[!0-9]*|0)
+    echo "usage: role-label-staleness.sh <issue-number> (must be a positive integer)" >&2
+    exit 2
+    ;;
+esac
 issue_number="$1"
 
 require_gh() {
@@ -482,12 +495,43 @@ $live_body"
     done <<<"$comments_out"
   fi
 
+  # issue #317 F-8: a cross-referenced event's `source.issue` can belong
+  # to a DIFFERENT repository (someone in another repo writing
+  # "owner/repo#N" pulls up a cross-reference here, with its own
+  # `.source.issue.number` — a bare number that can coincidentally
+  # collide with a real PR number in THIS repo). Confirmed live against
+  # this repo's own issue #319 timeline: every cross-referenced event's
+  # `.source.issue.repository.full_name` is populated (same-repo events
+  # included, not just cross-repo ones), so filtering on it is reliable
+  # rather than a guess from field-name intuition. `{owner}/{repo}`
+  # (gh's own magic placeholder, resolved from cwd) isn't echoed back by
+  # the timeline endpoint itself, so this repo's own identity is fetched
+  # once via a separate, lightweight call and spliced into the timeline
+  # jq filter as a literal string — safe because GitHub repository names
+  # are constrained to `[A-Za-z0-9_.-]`, never a quote or backslash that
+  # could break out of the jq string literal. Fails open exactly like
+  # every other call here: if the identity lookup itself fails, the
+  # candidate list stays unfiltered (over-inclusive, same residual
+  # exposure as before this fix, not a new failure mode) rather than
+  # risk silently under-including on a run that can't tell same-repo
+  # from cross-repo at all.
+  local repo_full_name repo_full_name_status timeline_jq
+  repo_full_name="$(gh api "repos/{owner}/{repo}" --jq '.full_name' 2>/dev/null)"
+  repo_full_name_status=$?
+  if [ "$repo_full_name_status" -eq 0 ] && [ -n "$repo_full_name" ]; then
+    timeline_jq=".[] | select(.event==\"cross-referenced\" and .source.issue.pull_request != null and .source.issue.repository.full_name == \"$repo_full_name\") | \"PR\\t\"+(.source.issue.number|tostring)"
+  else
+    echo "warning: role-label-staleness couldn't confirm this repository's own identity — cross-repository timeline events won't be filtered out this run (over-inclusive, not under)." >&2
+    timeline_jq="$TIMELINE_JQ"
+  fi
+
   # Call 3 — PR discovery via the timeline (paginated). Deliberately
-  # over-includes (every cross-referencing PR, not only closing ones —
-  # see the header's step 1) — the keyword filter below is what narrows
-  # this to real closing references.
+  # over-includes beyond the repo filter above (every SAME-REPO cross-
+  # referencing PR, not only closing ones — see the header's step 1) —
+  # the keyword filter below is what narrows this to real closing
+  # references.
   local timeline_out timeline_status candidate_prs=""
-  timeline_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number/timeline" --paginate --jq "$TIMELINE_JQ" 2>/dev/null)"
+  timeline_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number/timeline" --paginate --jq "$timeline_jq" 2>/dev/null)"
   timeline_status=$?
   if [ "$timeline_status" -ne 0 ]; then
     echo "warning: role-label-staleness couldn't discover linked PRs for issue #$issue_number (the timeline lookup failed) — this means PRs might exist and weren't found, never that there are none; a verdict resting on that absence will degrade to indeterminate." >&2
@@ -515,7 +559,8 @@ $rest"
   # Call 4 (per candidate, filter) + Call 5/6 (per kept PR, evidence:
   # comments and reviews).
   if [ -n "$candidate_prs" ]; then
-    local closing_ere pr pr_out pr_status pr_title_raw pr_body_raw combined_raw
+    local closing_ere pr pr_out pr_status pr_title_raw pr_body_raw
+    local live_title combined_live
     local pr_comments_out pr_comments_status pr_reviews_out pr_reviews_status
 
     # GitHub's own closing-keyword grammar (issue #315 PR #316 round-2
@@ -548,24 +593,33 @@ $rest"
         esac
       done <<<"$pr_out"
 
-      # The keyword check runs against the RAW title+body (matching a
-      # real "Closes #<n>", quoted or not, is not this step's concern —
-      # live_text() applies only to marker extraction below, once a PR
-      # is already kept — accepted debt, same as the round-1 header's
-      # non-goal-1-style residues). Checked against BOTH fields because
-      # this repo's own release-branch work-item PRs put the keyword in
-      # the title only (round-2 finding 1b) while a main-targeting PR
-      # typically puts it in the body — GitHub itself accepts either.
-      # A candidate that matches neither is discarded silently: cross-
-      # referencing an issue in prose is common and not a failure of
-      # anything.
-      combined_raw="$pr_title_raw
-$pr_body_raw"
-      if ! grep -qiE "$closing_ere" <<<"$combined_raw"; then
+      # issue #317 F-7: the keyword check now runs against LIVE title+
+      # body (each through live_text() before the grep), not raw — a PR
+      # description that merely QUOTES "Closes #N" as an illustration
+      # (inside a fenced block, inline code span, or blockquote — the
+      # same shape compliance-evidence.sh's own live_text() exists to
+      # discriminate for marker extraction) must not be counted as a
+      # real closing reference on the strength of the quote alone. This
+      # was accepted debt before (round-1 header's non-goal-1-style
+      # residue); PR #316's own description hit it directly, quoting an
+      # earlier round's "Closes #400" test-output snippet in a code
+      # span, discovered ironically during that same PR's own review.
+      # live_body is computed once here and reused below (was already
+      # computed after the keyword check; moving it earlier costs
+      # nothing extra). Checked against BOTH fields because this repo's
+      # own release-branch work-item PRs put the keyword in the title
+      # only (round-2 finding 1b) while a main-targeting PR typically
+      # puts it in the body — GitHub itself accepts either. A candidate
+      # that matches neither is discarded silently: cross-referencing an
+      # issue in prose is common and not a failure of anything.
+      live_title="$(live_text "$pr_title_raw")"
+      live_body="$(live_text "$pr_body_raw")"
+      combined_live="$live_title
+$live_body"
+      if ! grep -qiE "$closing_ere" <<<"$combined_live"; then
         continue
       fi
 
-      live_body="$(live_text "$pr_body_raw")"
       CORPUS_TEXT="$CORPUS_TEXT
 $live_body"
 
@@ -651,7 +705,19 @@ scan_markers() {
   [ -n "$marker_lines" ] || return 0
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    token="$(grep -oE 'stage=[^[:space:]>]+' <<<"$line" | head -1 | sed 's/^stage=//')"
+    # issue #317 F-5: excludes `-` too, not just whitespace/`>` — a
+    # marker closed with no space before the delimiter (`stage=Review-->`,
+    # no space) used to swallow the `--` into the token itself
+    # ("Review--"), which then failed stage_rank() and was misread as
+    # malformed. No recognized stage name contains a hyphen, so this
+    # never mis-rejects a real one. It does mean a token that has a
+    # hyphen for some OTHER reason (a hypothetical `stage=Review-draft`,
+    # nothing in this repo ever writes one) now truncates to plain
+    # "Review" and is accepted, rather than being flagged as an
+    # unrecognized/malformed value the way it would be with no hyphen
+    # in the token at all (`stage=Reviewdraft`) — a narrow, deliberate
+    # tradeoff for this one fix, not a general guarantee.
+    token="$(grep -oE 'stage=[^[:space:]>-]+' <<<"$line" | head -1 | sed 's/^stage=//')"
     if [ -n "$token" ] && rank="$(stage_rank "$token" 2>/dev/null)"; then
       if [ "$rank" -gt "$KNOWN_MAX_RANK" ]; then
         KNOWN_MAX_RANK="$rank"
