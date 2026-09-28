@@ -54,6 +54,12 @@ CALL_ISSUE_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/400/comments --paginat
 # into its timeline jq expression.
 CALL_REPO_IDENTITY_ARGS='api repos/{owner}/{repo} --jq .full_name'
 CALL_TIMELINE_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null and .source.issue.repository.full_name == "owner/repo") | "PR\t"+(.source.issue.number|tostring)'
+# The fallback shape the script sends when the repo-identity call
+# itself fails (fail-open per F-8's own design): the ORIGINAL,
+# unfiltered timeline jq expression, with no repository clause at all
+# — captured the same way, by observing the real script's argv against
+# a recording fake gh with only the identity call answered to fail.
+CALL_TIMELINE_UNFILTERED_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
 CALL_PR501_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/501 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
 CALL_PR501_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/501/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 CALL_PR501_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/501/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
@@ -65,6 +71,7 @@ pattern_issue="'$CALL_ISSUE_ARGS'"
 pattern_issue_comments="'$CALL_ISSUE_COMMENTS_ARGS'"
 pattern_repo_identity="'$CALL_REPO_IDENTITY_ARGS'"
 pattern_timeline="'$CALL_TIMELINE_ARGS'"
+pattern_timeline_unfiltered="'$CALL_TIMELINE_UNFILTERED_ARGS'"
 pattern_pr501_titlebody="'$CALL_PR501_TITLEBODY_ARGS'"
 pattern_pr501_comments="'$CALL_PR501_COMMENTS_ARGS'"
 pattern_pr501_reviews="'$CALL_PR501_REVIEWS_ARGS'"
@@ -107,6 +114,7 @@ run_build_fake_gh() {
   arms="${arms//__CALL_ISSUE__/$pattern_issue}"
   arms="${arms//__CALL_ISSUE_COMMENTS__/$pattern_issue_comments}"
   arms="${arms//__CALL_REPO_IDENTITY__/$pattern_repo_identity}"
+  arms="${arms//__CALL_TIMELINE_UNFILTERED__/$pattern_timeline_unfiltered}"
   arms="${arms//__CALL_TIMELINE__/$pattern_timeline}"
   arms="${arms//__CALL_PR501_TITLEBODY__/$pattern_pr501_titlebody}"
   arms="${arms//__CALL_PR501_COMMENTS__/$pattern_pr501_comments}"
@@ -418,6 +426,41 @@ fakebin_plf_comments="$(cat "$FAKEGH_OUT")"
 output_plf_comments="$(PATH="$fakebin_plf_comments:$PATH" "$script" 400 2>/dev/null)"; status_plf_comments=$?
 [ "$status_plf_comments" -eq 0 ] || fail "S152 (PR_LOOKUP_FAILED, comments) — expected exit 0, got $status_plf_comments"
 [ "$(assert_verdict_shape 'S152 (PR_LOOKUP_FAILED, comments)' "$output_plf_comments")" = "indeterminate" ] || fail "S152 (PR_LOOKUP_FAILED, comments) — expected indeterminate (kept PR's comments unread), got: $output_plf_comments"
+
+# issue #317 AC6 (F-10, round 1 review's own correction): the ORIGINAL
+# finding was specifically that a KEPT PR's comments call failing must
+# never skip that same PR's reviews call — not the issue's own comments
+# call (a different case, already covered above as its own AC6 test).
+# Same fixture shape as (PR_LOOKUP_FAILED, comments) directly above,
+# except this time the reviews call that "succeeds empty" there instead
+# succeeds with real evidence reaching the ceiling stage. If a future
+# regression re-adds an early `continue`/skip right after the comments
+# failure branch (matching this repo's own precedent for exactly that
+# mistake, PR #316's F-10 finding), this PR's reviews evidence would
+# never be read and the verdict would wrongly stay indeterminate
+# instead of resolving to stale at the ceiling stage.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_REPO_IDENTITY__)
+  printf 'owner/repo\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_TITLEBODY__)
+  printf 'TITLE\t\nBODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_REVIEWS__)
+  printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+GHEOF
+fakebin_f10b="$(cat "$FAKEGH_OUT")"
+output_f10b="$(PATH="$fakebin_f10b:$PATH" "$script" 400 2>/dev/null)"; status_f10b=$?
+[ "$status_f10b" -eq 0 ] || fail "S152 F-10b — expected exit 0, got $status_f10b"
+[ "$(assert_verdict_shape 'S152 F-10b' "$output_f10b")" = "stale" ] || fail "S152 F-10b — PR #501's own comments call failing must not skip its reviews call: expected stale (no label, Review evidence at the ceiling stage), got: $output_f10b"
 
 # (PR_LOOKUP_FAILED, sub-arm: kept PR's REVIEWS fetch fails, comments
 # succeeds empty) — isolates a reviews-only failure (F-6's own new
@@ -1045,13 +1088,22 @@ fi
 # 2), not an internal error (exit 4) — matching the empty-argument
 # case just above it in the script, not the "issue itself unreadable"
 # case. No gh call at all should be made: a bad argument is caught
-# before require_gh/collect ever run.
-output_f4="$("$script" abc 2>/tmp/s152_f4_stderr.$$)"; status_f4=$?
-stderr_f4="$(cat /tmp/s152_f4_stderr.$$ 2>/dev/null)"
-rm -f /tmp/s152_f4_stderr.$$
-[ "$status_f4" -eq 2 ] || fail "S152 F-4 — expected exit 2 for a non-numeric argument, got $status_f4"
-[ -z "$output_f4" ] || fail "S152 F-4 — expected nothing on stdout for a bad argument, got: $output_f4"
-[ -n "$stderr_f4" ] || fail "S152 F-4 — expected a usage message on stderr"
+# before require_gh/collect ever run. Verified directly (round 1
+# review nit), not just inferred from the exit code: a fake gh that
+# records any invocation at all sits on PATH, and the run must leave it
+# untouched. `0` is checked alongside a genuinely non-numeric arm,
+# since GitHub issue numbers start at 1 (round 1 review nit).
+f4_witness="$SANDBOX/f4-witness"
+: > "$f4_witness"
+f4_fakebin="$(fake_gh_bin "printf 'UNEXPECTED CALL: %s\n' \"\$*\" >> '$f4_witness'; exit 1")"
+for f4_arg in abc 0; do
+  output_f4="$(PATH="$f4_fakebin:$PATH" "$script" "$f4_arg" 2>"$SANDBOX/f4-stderr")"; status_f4=$?
+  stderr_f4="$(cat "$SANDBOX/f4-stderr" 2>/dev/null)"
+  [ "$status_f4" -eq 2 ] || fail "S152 F-4 — expected exit 2 for argument '$f4_arg', got $status_f4"
+  [ -z "$output_f4" ] || fail "S152 F-4 — expected nothing on stdout for argument '$f4_arg', got: $output_f4"
+  [ -n "$stderr_f4" ] || fail "S152 F-4 — expected a usage message on stderr for argument '$f4_arg'"
+done
+[ -s "$f4_witness" ] && fail "S152 F-4 — a bad argument must never reach gh at all: $(cat "$f4_witness")"
 
 # issue #317 AC2 (F-5) — a model-record marker closed with no space
 # before the delimiter (`stage=Review-->`) must still be recognized as
@@ -1137,6 +1189,45 @@ JSONEOF
 else
   fail "S152 F-8 — jq not installed; cannot directly verify the timeline cross-repo filter"
 fi
+
+# issue #317 F-8's fail-open branch (round 1 review, should-fix): every
+# fixture above answers the repo-identity call, so the branch that
+# falls back to the OLD, unfiltered timeline query when that call
+# itself fails was never actually exercised end to end — a regression
+# that dropped every candidate on identity-lookup failure (rather than
+# correctly staying over-inclusive) would have gone unnoticed. No
+# __CALL_REPO_IDENTITY__ arm here at all (falls through, simulating
+# that call failing); __CALL_TIMELINE_UNFILTERED__ answers the
+# fallback shape the script sends once it can't confirm its own
+# identity — captured the same way every other pattern in this file
+# was, by observing the real script's argv against a recording fake gh.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE_UNFILTERED__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_TITLEBODY__)
+  printf 'TITLE\t\nBODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_PR501_REVIEWS__)
+  exit 0 ;;
+GHEOF
+fakebin_f8fo="$(cat "$FAKEGH_OUT")"
+output_f8fo="$(PATH="$fakebin_f8fo:$PATH" "$script" 400 2>/tmp/s152_f8fo_stderr.$$)"; status_f8fo=$?
+stderr_f8fo="$(cat /tmp/s152_f8fo_stderr.$$ 2>/dev/null)"
+rm -f /tmp/s152_f8fo_stderr.$$
+[ "$status_f8fo" -eq 0 ] || fail "S152 F-8 fail-open — expected exit 0, got $status_f8fo"
+[ "$(assert_verdict_shape 'S152 F-8 fail-open' "$output_f8fo")" = "stale" ] || fail "S152 F-8 fail-open — a failed repo-identity lookup must fall back to the unfiltered timeline query, still finding PR #501's evidence: expected stale, got: $output_f8fo"
+case "$stderr_f8fo" in
+  *"won't be filtered out"*) : ;;
+  *) fail "S152 F-8 fail-open — expected a warning naming the skipped cross-repo filtering on stderr, got: $stderr_f8fo" ;;
+esac
 
 # issue #317 AC6 (F-10) — the issue's own comments fetch fails, but a
 # real closing PR's reviews fetch succeeds and supplies evidence all

@@ -253,9 +253,12 @@ fi
 # issue #317 F-4: a non-numeric argument used to reach collect()'s own
 # gh call, fail there, and exit 4 (internal-error-shaped) — a bad
 # argument is a usage error (exit 2), the same shape as the empty-
-# argument case just above, not an internal error.
+# argument case just above, not an internal error. `0` is rejected too
+# (round 1 review nit): GitHub issue numbers start at 1, so `0` is
+# exactly as invalid as a non-digit argument, not a legitimate edge case
+# worth accepting.
 case "$1" in
-  *[!0-9]*)
+  *[!0-9]*|0)
     echo "usage: role-label-staleness.sh <issue-number> (must be a positive integer)" >&2
     exit 2
     ;;
@@ -706,8 +709,14 @@ scan_markers() {
     # marker closed with no space before the delimiter (`stage=Review-->`,
     # no space) used to swallow the `--` into the token itself
     # ("Review--"), which then failed stage_rank() and was misread as
-    # malformed. No recognized stage name contains a hyphen, so
-    # excluding it is unconditionally safe, not merely safe-for-now.
+    # malformed. No recognized stage name contains a hyphen, so this
+    # never mis-rejects a real one. It does mean a token that has a
+    # hyphen for some OTHER reason (a hypothetical `stage=Review-draft`,
+    # nothing in this repo ever writes one) now truncates to plain
+    # "Review" and is accepted, rather than being flagged as an
+    # unrecognized/malformed value the way it would be with no hyphen
+    # in the token at all (`stage=Reviewdraft`) — a narrow, deliberate
+    # tradeoff for this one fix, not a general guarantee.
     token="$(grep -oE 'stage=[^[:space:]>-]+' <<<"$line" | head -1 | sed 's/^stage=//')"
     if [ -n "$token" ] && rank="$(stage_rank "$token" 2>/dev/null)"; then
       if [ "$rank" -gt "$KNOWN_MAX_RANK" ]; then
