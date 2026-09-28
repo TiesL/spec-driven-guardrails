@@ -20,6 +20,28 @@
 # structure — no epic issue, no AC<n>, no Covers: field — and nothing
 # checked for it.
 #
+# REST-only (issue #323, reusing model-record-gate.sh's/
+# compliance-evidence.sh's already-reviewed design rather than
+# re-deriving it independently — see issue #318 for the original
+# investigation): the old `gh pr view --json closingIssuesReferences`/
+# `gh issue view --json ...` calls this script used to make are
+# GraphQL-backed under the hood and 403 from inside a Claude Code
+# session — confirmed live for the sibling scripts in #318. This script's
+# own fail-open design meant that never crashed, just silently skipped
+# link 4 on every single run rather than performing it. Separately,
+# `closingIssuesReferences` is only populated by GitHub for a PR whose
+# base is the repository's default branch, so even outside the 403 it
+# silently missed every closing issue on a release-branch PR — exactly
+# the shape that would let a structurally broken work item merge onto
+# `release/295-multi-agent-workflow-v1` unnoticed.
+#
+# Every call below is `gh api repos/{owner}/{repo}/...` against an
+# explicit REST endpoint. Closing-issue discovery replaces
+# `closingIssuesReferences` with the same closing-keyword scan against
+# the PR's own title+body that model-record-gate.sh/
+# compliance-evidence.sh use (title included — this repo's own
+# release-branch PRs carry the keyword only there).
+#
 # Fail-open without gh or network: warn, don't block — same ground rule
 # as every other gate here.
 #
@@ -40,39 +62,44 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
-issue_numbers="$(gh pr view "$pr_number" --json closingIssuesReferences --jq '.closingIssuesReferences[].number' 2>&1)"
+pr_json_part="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq '(.title//"")+"\u0001"+(.body//"")' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
-  echo "warning: issue-structure-gate couldn't consult PR #$pr_number's closing issues (no network or no access) and is skipping link 4." >&2
-  echo "$issue_numbers" >&2
+  echo "warning: issue-structure-gate couldn't consult PR #$pr_number's title/body (no network or no access) and is skipping link 4." >&2
+  echo "$pr_json_part" >&2
   exit 0
 fi
+pr_title_part="${pr_json_part%%$'\001'*}"
+pr_body_part="${pr_json_part#*$'\001'}"
+
+# Same closing-keyword vocabulary as model-record-gate.sh/
+# compliance-evidence.sh: close/closes/closed, fix/fixes/fixed,
+# resolve/resolves/resolved, optionally followed by ":", required
+# whitespace, then "#<issue-number>". Case-insensitive, same as GitHub's
+# own parser.
+closing_keyword_ere='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
+issue_numbers="$(printf '%s\n%s\n' "$pr_title_part" "$pr_body_part" \
+  | grep -oiE "$closing_keyword_ere" | grep -oE '[0-9]+' | sort -un)"
 
 [ -n "$issue_numbers" ] || exit 0
 
 while IFS= read -r issue_num; do
   [ -n "$issue_num" ] || continue
 
-  labels="$(gh issue view "$issue_num" --json labels --jq '.labels[].name' 2>&1)"
-  label_status=$?
-  if [ "$label_status" -ne 0 ]; then
-    echo "warning: issue-structure-gate couldn't consult issue #$issue_num's labels (no network or no access) and is skipping it." >&2
-    echo "$labels" >&2
+  issue_json_part="$(gh api "repos/{owner}/{repo}/issues/$issue_num" --jq '[(.labels|map(.name)|join(",")), (.body//"")] | join("\u0001")' 2>&1)"
+  issue_status=$?
+  if [ "$issue_status" -ne 0 ]; then
+    echo "warning: issue-structure-gate couldn't consult issue #$issue_num (no network or no access) and is skipping it." >&2
+    echo "$issue_json_part" >&2
     continue
   fi
-
-  body="$(gh issue view "$issue_num" --json body --jq '.body' 2>&1)"
-  body_status=$?
-  if [ "$body_status" -ne 0 ]; then
-    echo "warning: issue-structure-gate couldn't consult issue #$issue_num's body (no network or no access) and is skipping it." >&2
-    echo "$body" >&2
-    continue
-  fi
+  labels="${issue_json_part%%$'\001'*}"
+  body="${issue_json_part#*$'\001'}"
 
   is_epic=0
-  # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
-  # race, see issue #218 and check-no-sigpipe-race.sh.
-  grep -qxF "epic" <<<"$labels" && is_epic=1
+  case ",$labels," in
+    *,epic,*) is_epic=1 ;;
+  esac
 
   if [ "$is_epic" -eq 1 ]; then
     if ! grep -qE '^- \[[ x]\] #[0-9]+' <<<"$body"; then
