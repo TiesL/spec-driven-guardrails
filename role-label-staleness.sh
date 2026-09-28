@@ -116,22 +116,36 @@
 #      intent at all, e.g. epic #295's own umbrella issue turning up as a
 #      cross-reference on every one of its W-items) — only step 1's job
 #      is "don't miss a candidate", never "pick the right one".
-#   2. Filter — fetch each candidate's *current* body
+#   2. Filter — fetch each candidate's *current* title AND body
 #      (`GET .../pulls/<pr>`, never the timeline event's own cached
 #      snapshot, which can predate a later edit that added or removed the
-#      closing keyword) and keep only the ones whose body matches the
-#      closing-keyword ERE against this issue's number. A candidate that
-#      fails this check is discarded silently — not a failure, just not a
-#      closing PR — and never gets a comments call (cheap: one single-
-#      object REST call per candidate before any paginated one).
-#   3. Evidence — for each *kept* PR, `GET .../issues/<pr>/comments`
-#      (PR conversation comments live on the issues endpoint, since a PR
-#      *is* an issue under the hood; the separate `/pulls/<pr>/comments`
-#      endpoint is inline *review* comments, never where a model-record
-#      marker gets posted). The body already fetched in step 2 is reused
-#      — no second body fetch for a kept PR.
+#      closing keyword) and keep only the ones where the closing-keyword
+#      ERE matches against this issue's number in EITHER field. Both
+#      fields matter in practice, not just in principle: PR #316's own
+#      round-2 review found that this repo's release-branch work-item
+#      PRs (e.g. #314 "Closes #313: ...") carry the closing keyword only
+#      in the PR *title*, never the body — reading the body alone missed
+#      exactly the PRs this script exists to find. GitHub's own
+#      auto-close mechanism accepts the keyword in either field, so
+#      matching both isn't a heuristic broadening, it's parity with what
+#      GitHub itself does. A candidate that matches neither field is
+#      discarded silently — not a failure, just not a closing PR — and
+#      never gets a comments/reviews call (cheap: one single-object REST
+#      call per candidate before any paginated one).
+#   3. Evidence — for each *kept* PR, two more calls:
+#      `GET .../issues/<pr>/comments` (PR conversation comments live on
+#      the issues endpoint, since a PR *is* an issue under the hood) and
+#      `GET .../pulls/<pr>/reviews` (this pipeline's Review stage posts
+#      its model-record marker as a PR *review*'s own body — GitHub's
+#      review mechanism, distinct from both a plain comment and from
+#      `/pulls/<pr>/comments`'s inline per-line review comments, which
+#      is a third, still-unread endpoint no marker is ever posted to).
+#      Missing the reviews call was round-2's F-6 finding: without it,
+#      every Review-stage marker posted the way this pipeline actually
+#      posts it was invisible. The title/body already fetched in step 2
+#      is reused for the body's evidence — no second body fetch.
 #   4. Every collected body (issue body, issue comments, each kept PR's
-#      body, each kept PR's comments) runs through live_text() before any
+#      body, comments, and reviews) runs through live_text() before any
 #      marker match, unchanged from the original design.
 #
 # Lookup failures — three independent flags, split because REST breaks
@@ -147,10 +161,14 @@
 #     different claim than "confirmed there are none" (AC3's zero-PRs
 #     case, still legitimate and un-degraded when the timeline call
 #     genuinely succeeds with nothing in it).
-#   - PR_LOOKUP_FAILED — a *kept* candidate's body fetch (step 2) or
-#     comments fetch (step 3) failed. When the body fetch itself fails,
-#     whether that PR even closes this issue is unknown, not "no" — it is
-#     never silently dropped as a non-match.
+#   - PR_LOOKUP_FAILED — a *kept* candidate's title/body fetch (step 2),
+#     comments fetch, or reviews fetch (step 3) failed. When the
+#     title/body fetch itself fails, whether that PR even closes this
+#     issue is unknown, not "no" — it is never silently dropped as a
+#     non-match. A PR can fail one of its two evidence calls
+#     (comments/reviews) while the other succeeds; each is independent,
+#     and the PR is named at most once in the detail message either way
+#     (mark_pr_failed()'s dedup).
 #
 # Degradation rule (unchanged in spirit from the original single-flag
 # design, mechanically identical once any of the three flags above is
@@ -341,7 +359,15 @@ label_rank() {
 ISSUE_JQ='("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
 COMMENTS_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 TIMELINE_JQ='.[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
-PR_BODY_JQ='"BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+# Emits BOTH the title and the body (issue #315 PR #316 round-2 review,
+# 1b): this repo's own release-branch work-item PRs (#314, #316) carry
+# their closing keyword only in the PR TITLE ("Closes #313: ..."), never
+# the body — GitHub only needs the keyword in either place to populate
+# its own closing-reference connection, but the original filter read
+# only .body and so silently missed exactly the PRs this script exists
+# to find. One extra field on the same already-budgeted call, no new
+# request.
+PR_TITLE_BODY_JQ='("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
 
 # --- collect(): fills these globals. Returns 1 only when the issue-body
 # call fails — the one failure that makes an honest verdict impossible.
@@ -439,38 +465,56 @@ $rest"
     fi
   fi
 
-  # Call 4 (per candidate, filter) + Call 5 (per kept PR, evidence).
+  # Call 4 (per candidate, filter) + Call 5/6 (per kept PR, evidence:
+  # comments and reviews).
   if [ -n "$candidate_prs" ]; then
-    local closing_ere pr pr_body_out pr_body_status pr_body_raw
-    local pr_comments_out pr_comments_status
-    closing_ere="\\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\\b[^0-9#]{0,20}#${issue_number}\\b"
+    local closing_ere pr pr_out pr_status pr_title_raw pr_body_raw combined_raw
+    local pr_comments_out pr_comments_status pr_reviews_out pr_reviews_status
+
+    # GitHub's own closing-keyword grammar (issue #315 PR #316 round-2
+    # review, 1b): keyword, an OPTIONAL colon directly after it, then
+    # required whitespace, then #<issue>. Tightened from the original's
+    # loose "any 0-20 chars in between" gap, which let unrelated prose
+    # ("resolved against issue #315") pass as a closing reference — this
+    # form only matches "Closes #N"/"Closes: #N"/"Fixes #N"/etc., never
+    # a sentence that merely mentions the number later.
+    closing_ere="\\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#${issue_number}\\b"
 
     while IFS= read -r pr; do
       [ -n "$pr" ] || continue
 
-      pr_body_out="$(gh api "repos/{owner}/{repo}/pulls/$pr" --jq "$PR_BODY_JQ" 2>/dev/null)"
-      pr_body_status=$?
-      if [ "$pr_body_status" -ne 0 ]; then
-        echo "warning: role-label-staleness couldn't read PR #$pr's body (no network or no access) — whether it closes issue #$issue_number, and any evidence on it, is now unknown, not absent." >&2
+      pr_out="$(gh api "repos/{owner}/{repo}/pulls/$pr" --jq "$PR_TITLE_BODY_JQ" 2>/dev/null)"
+      pr_status=$?
+      if [ "$pr_status" -ne 0 ]; then
+        echo "warning: role-label-staleness couldn't read PR #$pr's title/body (no network or no access) — whether it closes issue #$issue_number, and any evidence on it, is now unknown, not absent." >&2
         PR_LOOKUP_FAILED=1
-        if [ -z "$FAILED_PRS" ]; then FAILED_PRS="$pr"; else FAILED_PRS="$FAILED_PRS
-$pr"; fi
+        mark_pr_failed "$pr"
         continue
       fi
 
+      pr_title_raw=""
       pr_body_raw=""
       while IFS=$'\t' read -r tag rest; do
-        [ "$tag" = "BODY" ] || continue
-        pr_body_raw="$(printf '%s' "$rest" | tr '\001' '\n')"
-      done <<<"$pr_body_out"
+        case "$tag" in
+          TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
+          BODY) pr_body_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
+        esac
+      done <<<"$pr_out"
 
-      # The keyword check runs against the RAW body (matching a real
-      # "Closes #<n>" line, quoted or not, is not this step's concern —
+      # The keyword check runs against the RAW title+body (matching a
+      # real "Closes #<n>", quoted or not, is not this step's concern —
       # live_text() applies only to marker extraction below, once a PR
-      # is already kept). A candidate that doesn't match is discarded
-      # silently: cross-referencing an issue in prose is common and not
-      # a failure of anything.
-      if ! grep -qiE "$closing_ere" <<<"$pr_body_raw"; then
+      # is already kept — accepted debt, same as the round-1 header's
+      # non-goal-1-style residues). Checked against BOTH fields because
+      # this repo's own release-branch work-item PRs put the keyword in
+      # the title only (round-2 finding 1b) while a main-targeting PR
+      # typically puts it in the body — GitHub itself accepts either.
+      # A candidate that matches neither is discarded silently: cross-
+      # referencing an issue in prose is common and not a failure of
+      # anything.
+      combined_raw="$pr_title_raw
+$pr_body_raw"
+      if ! grep -qiE "$closing_ere" <<<"$combined_raw"; then
         continue
       fi
 
@@ -483,8 +527,33 @@ $live_body"
       if [ "$pr_comments_status" -ne 0 ]; then
         echo "warning: role-label-staleness couldn't read PR #$pr's comments (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
         PR_LOOKUP_FAILED=1
-        if [ -z "$FAILED_PRS" ]; then FAILED_PRS="$pr"; else FAILED_PRS="$FAILED_PRS
-$pr"; fi
+        mark_pr_failed "$pr"
+      else
+        while IFS=$'\t' read -r tag rest; do
+          [ "$tag" = "TEXT" ] || continue
+          raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+          live_body="$(live_text "$raw_body")"
+          CORPUS_TEXT="$CORPUS_TEXT
+$live_body"
+        done <<<"$pr_comments_out"
+      fi
+
+      # Call 6 — the kept PR's reviews (paginated). Round-2 review
+      # finding F-6: this pipeline posts the Review-stage marker as a PR
+      # REVIEW's body (GitHub's own review mechanism), never a plain
+      # issue-style comment — a PR review's JSON shape is the same flat
+      # array-of-objects-with-.body as issue comments, so COMMENTS_JQ is
+      # reused unchanged; only the endpoint differs. Independent of
+      # whether the comments call above succeeded — a PR can have its
+      # comments read fine while its reviews call fails, or vice versa,
+      # so this is its own call with its own failure handling, not
+      # gated behind the comments call's outcome.
+      pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
+      pr_reviews_status=$?
+      if [ "$pr_reviews_status" -ne 0 ]; then
+        echo "warning: role-label-staleness couldn't read PR #$pr's reviews (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
+        PR_LOOKUP_FAILED=1
+        mark_pr_failed "$pr"
         continue
       fi
       while IFS=$'\t' read -r tag rest; do
@@ -493,7 +562,7 @@ $pr"; fi
         live_body="$(live_text "$raw_body")"
         CORPUS_TEXT="$CORPUS_TEXT
 $live_body"
-      done <<<"$pr_comments_out"
+      done <<<"$pr_reviews_out"
     done <<<"$candidate_prs"
   fi
 
@@ -547,6 +616,19 @@ scan_markers() {
       fi
     fi
   done <<<"$marker_lines"
+}
+
+# Appends $1 (a PR number) to FAILED_PRS exactly once, even if more than
+# one of that PR's calls fails (comments AND reviews, say) — a dedup
+# guard so the detail message never names the same PR twice.
+mark_pr_failed() {
+  local pr="$1"
+  if [ -z "$FAILED_PRS" ]; then
+    FAILED_PRS="$pr"
+  elif ! grep -qxF "$pr" <<<"$FAILED_PRS"; then
+    FAILED_PRS="$FAILED_PRS
+$pr"
+  fi
 }
 
 valid_status() {
