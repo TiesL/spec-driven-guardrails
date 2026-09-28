@@ -22,27 +22,32 @@
 #
 # Non-default-base PRs (issue #320, surfaced by the release-branch workflow
 # tier, issue #309): GitHub only populates `closingIssuesReferences` from a
-# closing keyword ("Closes #N" etc., wherever it appears in the PR's title
-# or body) when the PR's base is the repository's *default* branch — this
-# is documented GitHub behavior, not a bug in the field. A PR into any
-# other branch reports zero closing references even when it plainly says
-# "Closes #N" (confirmed on this repo's own #311/#312/#314/#316, all based
-# on a release/* branch). A *manually* linked issue (via the PR's
-# Development sidebar) populates the same field regardless of base branch
-# and needs no fallback — but there's no public API to create that link
-# programmatically, so it can't be this script's primary remedy for a PR an
-# orchestrating session opens itself.
+# closing keyword ("Closes #N" etc.) in the PR body or a commit message
+# when the PR's base is the repository's *default* branch — documented
+# GitHub behavior, not a bug in the field. A PR into any other branch
+# reports zero closing references even when its body plainly says
+# "Closes #N".
+#
+# A *manually* linked issue (via the PR's Development sidebar) populates
+# the same field regardless of base branch and needs no fallback — but
+# there's no public API to create that link programmatically, so it can't
+# be this script's primary remedy for a PR an orchestrating session opens
+# itself.
 #
 # The fix: `closingIssuesReferences` stays the fast path — it already
 # covers the default-branch case and any non-default-branch PR that
 # happens to have a manual sidebar link. Only when that's empty AND the
-# PR's base isn't the default branch do we fall back to a direct
-# keyword match against the PR's own title+body: the same text GitHub's
-# own parser would have read had the PR targeted the default branch. A
-# default-branch PR with zero closing references still fails exactly as
-# before — no keyword-fallback logic runs for the case GitHub already
-# handles, so there's no risk of this script being laxer than GitHub's own
-# behavior for the common case.
+# PR's base isn't the default branch do we fall back to a direct keyword
+# match against the PR's own title+body. Scanning the *title* too is a
+# deliberate broadening beyond GitHub's own documented default-branch
+# scope (which names the body/commit messages, not the title) — this
+# repo's own release-branch PRs consistently put "Closes #N" only in the
+# title (#311/#312/#314/#316), so a fallback that only read the body would
+# still miss the exact shape it exists to catch. A default-branch PR with
+# zero closing references still fails exactly as before — no
+# keyword-fallback logic runs for the case GitHub already handles, so
+# there's no risk of this script being laxer than GitHub's own behavior
+# for the common case.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
@@ -63,12 +68,6 @@ fast_path="$(gh pr view "$pr_number" \
   --json closingIssuesReferences,baseRefName \
   --jq '[(.closingIssuesReferences | length | tostring), .baseRefName] | join("\t")' \
   2>/dev/null)"
-
-if [ -z "$fast_path" ]; then
-  echo "check-pr-issue-link: couldn't consult PR #$pr_number." >&2
-  exit 1
-fi
-
 IFS=$'\t' read -r count base_ref <<<"$fast_path"
 
 # Anything other than a clean non-negative number counts as "couldn't

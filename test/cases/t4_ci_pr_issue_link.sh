@@ -49,8 +49,14 @@ printf 'main' > "$fixtures/default_branch"
 # --- Default-branch behavior, unchanged (AC3) ---
 
 # AC2 — a PR without a linked issue, on the default branch, fails, with
-# the PR number in the message.
+# the PR number in the message. Its title+body *does* carry a closing
+# keyword (issue #1) — this is the AC3 regression guard: if the
+# default-branch short-circuit were ever accidentally removed or
+# bypassed, the fallback would find this keyword and wrongly pass, so
+# this fixture actually pins "no fallback runs for the default branch",
+# not just "PR 42 happens to have no keyword anywhere".
 printf '0\tmain' > "$fixtures/42.count_base"
+printf 'Closes #1: unrelated title\n\nSome body mentioning Closes #1 too' > "$fixtures/42.title_body"
 output="$(PATH="$fakebin:$PATH" "$script" 42 2>&1)"; status=$?
 [ "$status" -ne 0 ] || fail "T4/AC2 — PR without a linked issue gave exit 0"
 assert_contains "T4/AC2 — the PR number is in the message" "42" "$output"
