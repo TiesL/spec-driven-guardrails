@@ -390,17 +390,32 @@ collect() {
   # no `sha=` to compare against `headRefOid` — so accumulation order
   # stayed a real risk there until fixed above.
   BUNDLE_ISSUE_LOOKUP_FAILED=0
+  # PR-side lookup failure, kept apart from BUNDLE_ISSUE_LOOKUP_FAILED
+  # (issue #336 round 2): gate_review_model's same-model branch only
+  # degrades on an issue-lookup failure when more than one closing issue
+  # is named, because a single unread issue's marker can never outrank
+  # the PR's own (PR-side always wins over exactly one disagreeing
+  # issue-side marker — see the comment below). That reasoning does not
+  # apply when the *PR's own* comments or reviews failed to fetch: a
+  # comment or review this run never saw is PR-side too, and a later
+  # one there replaces an earlier one same as always, regardless of how
+  # many closing issues exist, including zero. Set only by a PR
+  # comments/reviews fetch failure below, read only by that one branch.
+  BUNDLE_PR_LOOKUP_FAILED=0
   # Per-source text, kept apart precisely so gate_review_model never has
   # to trust accumulation order to know "which marker counts" (see the
   # comment above). PR_TEXT is the PR's own body+comments+reviews,
   # appended in that fixed order (body, then every comment, then every
   # review) — NOT true chronological order despite that once having
-  # been true here (issue #336 round 1: reviews are a newer source than
-  # this comment predates, and a review can genuinely postdate a later
-  # comment; PRD.md's Technical debt table has the row). ISSUE_TEXTS/
-  # ISSUE_NUMS are parallel arrays, one entry per successfully-fetched
-  # closing issue, in the order fetched — an order gate_review_model must
-  # not, and does not, treat as a recency signal.
+  # been true here (issue #336 round 1: reviews are appended after
+  # every comment regardless of actual timing, so a comment that is
+  # genuinely newer than an existing review can still lose to that
+  # review's marker under tail-1, which only ever looks at append
+  # position, not real time; PRD.md's Technical debt table has the
+  # row). ISSUE_TEXTS/ISSUE_NUMS are parallel arrays, one entry per
+  # successfully-fetched closing issue, in the order fetched — an order
+  # gate_review_model must not, and does not, treat as a recency
+  # signal.
   PR_TEXT=""
   ISSUE_TEXTS=()
   ISSUE_NUMS=()
@@ -467,6 +482,7 @@ $raw_body"
   if [ "$pr_comments_status" -ne 0 ]; then
     echo "warning: compliance-evidence couldn't consult PR #$pr_number's comments (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
     BUNDLE_ISSUE_LOOKUP_FAILED=1
+    BUNDLE_PR_LOOKUP_FAILED=1
     pr_comments_out=""
   fi
   pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate \
@@ -475,6 +491,7 @@ $raw_body"
   if [ "$pr_reviews_status" -ne 0 ]; then
     echo "warning: compliance-evidence couldn't consult PR #$pr_number's reviews (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
     BUNDLE_ISSUE_LOOKUP_FAILED=1
+    BUNDLE_PR_LOOKUP_FAILED=1
     pr_reviews_out=""
   fi
   while IFS=$'\t' read -r tag rest; do
@@ -606,7 +623,7 @@ gate_stage_models() {
       printf '%s\t%s\n' "indeterminate" "stage(s) $missing appear to have no model-record marker on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
       return
     fi
-    printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments and its closing issue(s)$(quoted_suffix "$missing_ere")"
+    printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments/reviews and its closing issue(s)$(quoted_suffix "$missing_ere")"
     return
   fi
 
@@ -793,13 +810,21 @@ gate_review_model() {
   # issue #302: unlike the checks above, this branch used to fire
   # unconditionally on "both markers found" — sound for <=1 closing
   # issue (nothing else could have contributed a marker), unsound for
-  # >=2: an unread issue, OR (issue #336 round 1) a PR comments/reviews
-  # fetch failure — either sets BUNDLE_ISSUE_LOOKUP_FAILED=1 now — could
-  # have supplied a marker resolve_stage_marker never saw, which — had
-  # it been read — might have created exactly the kind of conflict
-  # caught above instead of this same-model match.
-  if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but PR #$pr_number names more than one closing issue and an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
+  # >=2: an unread issue could have supplied a marker resolve_stage_marker
+  # never saw, which — had it been read — might have created exactly
+  # the kind of conflict caught above instead of this same-model match.
+  # The >=2 guard is right for BUNDLE_ISSUE_LOOKUP_FAILED alone (a
+  # single unread issue's marker can never outrank the PR's own — see
+  # the per-source resolution comment above), but issue #336 round 2
+  # found it wrongly carried over to BUNDLE_PR_LOOKUP_FAILED too: a
+  # failed PR comments/reviews fetch is PR-side, not issue-side, and a
+  # later PR comment or review always replaces an earlier one
+  # regardless of how many closing issues exist, including zero or one.
+  # Round 1's fix set both flags together on a PR-side failure without
+  # updating this condition, so it still silently returned
+  # `not-evidenced` in exactly the case it was meant to guard against.
+  if [ "$BUNDLE_PR_LOOKUP_FAILED" -eq 1 ] || { [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; }; then
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
     return
   fi
 
@@ -1009,7 +1034,7 @@ render() {
 require_gh
 
 if ! collect; then
-  echo "compliance-evidence: could not read PR #$pr_number via 'gh pr view' (no network, no access, or the PR doesn't exist) — no table can be produced." >&2
+  echo "compliance-evidence: could not read PR #$pr_number via the GitHub API (no network, no access, or the PR doesn't exist) — no table can be produced." >&2
   exit 4
 fi
 

@@ -497,7 +497,7 @@ case "$evidence_q14" in
   *"marker-shaped text matching this gate does appear on PR #279"*) : ;;
   *) fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell doesn't say quoted occurrences were seen and ignored: $evidence_q14" ;;
 esac
-bare_q14='no model-record marker found for stage(s) Discovery, Planning, Test, Implementation, searched in PR #279'"'"'s body/comments and its closing issue(s)'
+bare_q14='no model-record marker found for stage(s) Discovery, Planning, Test, Implementation, searched in PR #279'"'"'s body/comments/reviews and its closing issue(s)'
 [ "$evidence_q14" != "$bare_q14" ] || fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell reads as a bare 'no marker found', with no mention of the quoted occurrences that do exist"
 
 # =========================================================================

@@ -1553,12 +1553,16 @@ esac
 
 # =========================================================================
 # PR #336 round-1 review, finding 1 — a failed PR-comments fetch must
-# degrade gates 1-3 to `indeterminate`, never a confident
-# `not-evidenced`/`evidenced` (issue #299's rule). Before the fix, this
-# call's exit status was silently discarded (`2>/dev/null`, no check at
-# all) and every marker below — living only in comments — vanished
-# without a trace: this exact fixture reproduced gates 1-3 all coming
-# back `not-evidenced` with a clean exit 0 and nothing on stderr.
+# degrade gates 1-3 to `indeterminate` rather than a confident
+# `not-evidenced` (issue #299's own rule, which is specifically about
+# a false `not-evidenced`; a false `evidenced` from the same missing-
+# comments situation is a real, separate risk this fixture doesn't
+# rule out — see the dedicated case below for that one). Before the
+# fix, this call's exit status was silently discarded (`2>/dev/null`,
+# no check at all) and every marker below — living only in comments —
+# vanished without a trace: this exact fixture reproduced gates 1-3 all
+# coming back `not-evidenced` with a clean exit 0 and nothing on
+# stderr.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -1599,6 +1603,119 @@ done
 case "$stderr_commentsfail" in
   *"couldn't consult PR #279's comments"*) : ;;
   *) fail "S150 comments-fail — expected a warning naming the failed comments fetch on stderr, got: $stderr_commentsfail" ;;
+esac
+
+# =========================================================================
+# PR #336 round-2 review, blocking finding — gate 2's same-model branch
+# only degraded to `indeterminate` on a corpus-lookup failure when it
+# also involved more than one closing issue (`total_issues -gt 1`).
+# That guard is right for an unread ISSUE (a single disagreeing issue
+# marker can never outrank the PR's own — see the per-source resolution
+# comment in collect()), but round 1's fix set the SAME flag for a
+# failed PR comments/reviews fetch too, which is PR-side and always
+# can outrank an issue-side marker, however many issues exist,
+# including exactly one (this fixture) or zero. Reproduced exactly as
+# round 2 found it: one closing issue records the "planned" models,
+# including Review, all matching Implementation with no exception —
+# on its own a genuine, correct `not-evidenced` same-model verdict.
+# But the PR's own comments — which would have recorded the *actual*
+# Review model, genuinely different — fail to fetch. Before this fix,
+# gate 2 still confidently said `not-evidenced`, exit 0, nothing on
+# stderr: the same false negative issue #299 forbids, just reached via
+# a path round 1's fix didn't close.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
+    printf 'STATE\tOPEN\n'
+    printf 'MERGEDAT\t\n'
+    printf 'MERGEDBY\t\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    echo "simulated failure" >&2
+    exit 1 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_samemodelprfail="$(cat "$FAKEGH_OUT")"
+output_samemodelprfail="$(PATH="$fakebin_samemodelprfail:$PATH" "$script" 279 2>/dev/null)"
+status_samemodelprfail=$?
+[ "$status_samemodelprfail" -eq 0 ] || fail "S150 same-model-pr-fail — expected exit 0, got $status_samemodelprfail"
+assert_table_shape "S150 same-model-pr-fail" "$output_samemodelprfail"
+status2_samemodelprfail="$(row_status "$output_samemodelprfail" 2)"
+[ "$status2_samemodelprfail" = "indeterminate" ] || fail "S150 same-model-pr-fail — gate 2 must degrade to indeterminate: a failed PR-comments fetch could hide the real, differing Review marker, regardless of the single closing issue's own same-model markers; got $status2_samemodelprfail"
+
+# =========================================================================
+# The reviews-fetch-failure path gets the identical treatment as the
+# comments-fetch-failure case above (issue #336 round 2 — the reviews
+# path was otherwise never independently exercised as a failure, only
+# as a success returning empty).
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
+    printf 'STATE\tOPEN\n'
+    printf 'MERGEDAT\t\n'
+    printf 'MERGEDBY\t\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    echo "simulated failure" >&2
+    exit 1 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_reviewsfail="$(cat "$FAKEGH_OUT")"
+output_reviewsfail="$(PATH="$fakebin_reviewsfail:$PATH" "$script" 279 2>/tmp/s150_reviewsfail_stderr.$$)"
+status_reviewsfail=$?
+stderr_reviewsfail="$(cat /tmp/s150_reviewsfail_stderr.$$ 2>/dev/null)"
+rm -f /tmp/s150_reviewsfail_stderr.$$
+[ "$status_reviewsfail" -eq 0 ] || fail "S150 reviews-fail — expected exit 0, got $status_reviewsfail"
+assert_table_shape "S150 reviews-fail" "$output_reviewsfail"
+# Gate 1 only needs Discovery/Planning/Test/Implementation, all of
+# which this fixture supplies via comments (which succeed) — a failed
+# reviews fetch correctly leaves gate 1 alone; only gates 2 and 3 could
+# plausibly have needed the Review-stage or pre-merge-review marker a
+# review body carries.
+status1_reviewsfail="$(row_status "$output_reviewsfail" 1)"
+[ "$status1_reviewsfail" = "evidenced" ] || fail "S150 reviews-fail — gate 1 doesn't depend on the reviews source in this fixture (Discovery/Planning/Test/Implementation are all in comments); expected evidenced, got $status1_reviewsfail"
+for n in 2 3; do
+  st="$(row_status "$output_reviewsfail" "$n")"
+  [ "$st" = "indeterminate" ] || fail "S150 reviews-fail — gate $n must degrade to indeterminate when the PR-reviews fetch fails (Review marker could live only there); got $st"
+done
+case "$stderr_reviewsfail" in
+  *"couldn't consult PR #279's reviews"*) : ;;
+  *) fail "S150 reviews-fail — expected a warning naming the failed reviews fetch on stderr, got: $stderr_reviewsfail" ;;
 esac
 
 # =========================================================================
