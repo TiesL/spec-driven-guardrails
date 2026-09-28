@@ -1667,10 +1667,16 @@ something new is being added.
 
 ### S152 — role-label-staleness.sh detects role:<name> label staleness for one issue
 **Covers:** F35
-- Given: a `fake_gh_bin` recording of an issue's `gh api graphql`
-  answer (labels, body/comments, and every PR
-  `closedByPullRequestsReferences` names) and, for each named PR, that
-  PR's `gh pr view` body/comments — variants of it per subcase
+- Given: a `fake_gh_bin` recording of REST-only `gh api` answers — the
+  issue's own body/labels, the issue's comments, the issue's timeline
+  (candidate PRs via `cross-referenced` events), each candidate PR's
+  current body (for the closing-keyword filter), and each kept PR's
+  comments; no `gh api graphql`, `gh issue view` or `gh pr view` call
+  anywhere (both GraphQL-backed and blocked in Claude Code sessions,
+  and `closedByPullRequestsReferences`/`closingIssuesReferences` are
+  empty for any PR targeting a non-default branch, silently missing
+  every epic #295 work-item PR — the redesign this scenario now covers,
+  issue #315's Architect comment of 2026-09-28)
 - When: `role-label-staleness.sh <issue-number>` runs with that fake
   `gh` ahead of `PATH`
 - Then: it prints exactly one verdict line,
@@ -1681,21 +1687,31 @@ something new is being added.
   the latest evidence is `stale`, naming both the label present and the
   label the evidenced stage implies; no label and no marker anywhere is
   `not-started`, distinctly from no label with at least one marker
-  (`stale`); zero linked PRs computes a normal verdict from issue-only
-  evidence, never `indeterminate` on its own; two-or-more `role:<name>`
-  labels at once is `indeterminate`, naming every one found, and an
-  unrelated label alongside a single one is never counted as multiple; a
-  live marker matched by the anchor but with no recognized `stage=`
-  value, on the issue or any linked PR, forces `indeterminate` for the
-  whole run even when another linked PR's marker is well-formed; markers
-  split across multiple linked PRs combine by union/max, order-
-  independent of which PR is named first; a marker merely quoted in a
-  fenced block, code span or blockquote is not counted as live evidence;
-  a failed lookup on one of several linked PRs degrades the verdict to
+  (`stale`); a timeline that succeeds with zero candidate PRs computes a
+  normal verdict from issue-only evidence, never `indeterminate` on its
+  own — distinct from the timeline call itself failing, which must never
+  be read as "zero linked PRs"; a PR that cross-references the issue
+  without a real closing keyword (`close(s|d)`/`fix(es|ed)`/
+  `resolve(s|d)` followed by `#<issue>`, case-insensitive) is excluded
+  and never even gets a comments call; two-or-more `role:<name>` labels
+  at once is `indeterminate`, naming every one found, and an unrelated
+  label alongside a single one is never counted as multiple; a live
+  marker matched by the anchor but with no recognized `stage=` value, on
+  the issue or any kept PR, forces `indeterminate` for the whole run
+  even when another kept PR's marker is well-formed; markers split
+  across multiple kept PRs combine by union/max, order-independent of
+  which PR the timeline names first; a marker merely quoted in a fenced
+  block, code span or blockquote is not counted as live evidence; a
+  failed lookup — the issue's own comments, the timeline itself, or a
+  candidate/kept PR's body or comments — degrades the verdict to
   `indeterminate` only when the evidence read so far doesn't already
-  rule out what the missing PR could reveal (a verdict already `stale`,
-  or already `in-sync` at the last stage, from what WAS read, is never
-  degraded); a failed issue lookup exits 4 with nothing on stdout, while
-  a failed PR lookup never changes the exit code; with no `gh` on `PATH`
-  it exits 3; the run makes no `gh` write call and the script's source
-  contains none
+  rule out what the failed lookup could reveal (a verdict already
+  `stale`, or already `in-sync` at the last stage, from what WAS read,
+  is never degraded); a failed issue-body lookup exits 4 with nothing on
+  stdout, while every other failed lookup only sets its own flag and
+  never changes the exit code; with no `gh` on `PATH` it exits 3; the
+  run makes no `gh` write call and the script's source contains none —
+  verified as a conjunction with a `fake_gh_bin` fallthrough witness
+  that is actually reachable (proved by a positive control that calls
+  the fake `gh` directly with an unanswered argv and confirms the
+  witness fires), not merely a source grep alone

@@ -1125,10 +1125,11 @@ ahead of the latest evidenced stage is `in-sync`, never `stale` — the
 label tracks the active phase, not the last completed one.
 
 This single heading exists as the same narrow, stated exception `F34`
-above already used (issue #296's non-goals; origin: `ARCHITECT-REPORT.md`
-D3 option (a), accepted by Product) — real new functionality, not
-premature promotion of the WIP design: `check-traceability.sh` enforces
-`Covers:` bidirectionally, so `S152` can't resolve without this heading.
+above already used (that exception's origin is issue #296's non-goals
+and `ARCHITECT-REPORT.md` D3 option (a), accepted by Product for `F34`
+itself; applied here to real new functionality again, not premature
+promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S152` can't resolve without this heading.
 
 ---
 
