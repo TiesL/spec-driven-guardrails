@@ -48,41 +48,122 @@
 #                     whole run, the same blunt/conservative reading
 #                     compliance-evidence.sh already prefers over a
 #                     narrower "only if it could flip the verdict" rule);
-#                     or a PR lookup failed while the verdict computed
-#                     from what WAS read still rests on an absence claim
-#                     that missing PR could have contradicted (see
-#                     "PR-lookup failure" below)
+#                     or a lookup failed while the verdict computed from
+#                     what WAS read still rests on an absence claim that
+#                     lookup could have contradicted (see "Lookup
+#                     failures" below)
 #
-# PR-lookup failure (the one structurally new failure surface here vs.
-# compliance-evidence.sh, which runs PR-then-issues; this runs
-# issue-then-PRs):
-#   - The issue lookup itself failing is fatal (exit 4) — no honest
-#     verdict is possible without the issue.
-#   - The issue lookup succeeding with zero linked PRs is NOT a failure —
-#     an issue in Discovery with no PR yet is a normal, common state; the
-#     verdict is computed from issue-only evidence.
-#   - A `gh pr view` failing for one of the linked PRs sets
-#     PR_LOOKUP_FAILED and keeps going. That flag degrades the verdict to
-#     `indeterminate` ONLY when the verdict computed from the sources
-#     that WERE read still rests on an absence claim the missing PR could
-#     contradict: label present and at-or-ahead of the known evidence
-#     (in-sync) while not already at the last possible stage (Review) —
-#     a missing PR could push the true latest stage past the label,
-#     which would flip in-sync into stale; or no label and no evidence
-#     read at all (not-started) — a missing PR could supply evidence,
-#     which would flip it into stale (AC4). A verdict that is already
-#     `stale` from the sources that WERE read is NEVER degraded: evidence
-#     is only ever additive (a missing PR can push the true latest stage
-#     later, never earlier), so an already-stale verdict can only stay
-#     stale or become "more stale" — it can never be undone into
-#     in-sync by evidence nobody has read yet. Likewise a label already
-#     at role:reviewer (Review, the last stage) can never be pushed past
-#     it by anything a missing PR might reveal, so that in-sync verdict
-#     never needs to degrade either. This is the same asymmetric-
-#     degradation discipline compliance-evidence.sh's
-#     BUNDLE_ISSUE_LOOKUP_FAILED already applies, mirrored in the
-#     opposite direction (there: issues off a PR; here: PRs off an
-#     issue).
+# --- REST-only design (issue #315's Architect redesign comment,
+# 2026-09-28, superseding the original Planning comment's GraphQL-based
+# §1/§3) ---
+#
+# There is NO `gh api graphql` call anywhere in this file, and no
+# `gh issue view`/`gh pr view` either (both are GraphQL-backed under the
+# hood on this gh CLI version). Every call is `gh api` against an
+# explicit REST endpoint. Two independent reasons forced this, both found
+# by Reviewer on the first version of this script (PR #316):
+#
+#   1. From *inside a Claude Code session*, the network egress proxy
+#      rejects every GraphQL-backed call outright — not only a bespoke
+#      `gh api graphql` query, but `gh issue view`/`gh pr view` too, with
+#      or without an exotic field. Reviewer reproduced this directly:
+#      `gh issue view <n> --json labels,body` (no unusual field at all)
+#      403s the same way `gh api graphql -f query='{ viewer { login } }'`
+#      does. Any design that kept either command anywhere would still be
+#      unusable from the very environment this script's own orchestrator
+#      runs in. (This is a policy restriction of that specific runtime,
+#      not a defect in the calls themselves — a human's own `gh` and a
+#      GitHub Actions run both reach GraphQL normally, and it has no
+#      effect on this script's own tests, AC8, which replace the whole
+#      `gh` binary and never make a real network call. It also turns out
+#      to affect compliance-evidence.sh and model-record-gate.sh the same
+#      way — a real, separate, epic-level finding, out of this issue's
+#      scope to fix; tracked as a follow-up rather than fixed here.)
+#   2. Independent of the proxy, `closedByPullRequestsReferences` (and
+#      its reverse, `closingIssuesReferences`) is *empty* for a PR that
+#      doesn't target the repository's default branch — GitHub requires
+#      merging into the default branch before it will materialize the
+#      auto-close connection at all. Every epic #295 work-item PR targets
+#      `release/295-multi-agent-workflow-v1`, never `main` — so the
+#      original design silently found zero linked PRs for every issue it
+#      was built to serve, with no failure and nothing to degrade (the
+#      wrong answer was indistinguishable from AC3's "genuinely
+#      not-started"/"zero PRs is normal" case). This was a correctness
+#      defect independent of the proxy: it reproduces even where GraphQL
+#      itself works fine.
+#
+# Both defects share one fix: what `closedByPullRequestsReferences`
+# *materializes* — "this PR closes that issue" — is just GitHub
+# recognizing a closing keyword (`close(s|d)`, `fix(es|ed)`,
+# `resolve(s|d)`) followed by `#<issue-number>` in a PR's body, same
+# repo. That's true regardless of target branch; the connection
+# under-delivers only because GitHub additionally requires the
+# *default-branch-merge* precondition before it will auto-close — a
+# merge-time gate on top of the same keyword mechanism, not a different,
+# weaker signal. So this script re-derives the keyword match directly
+# over REST, without that gate: not a heuristic approximation, the actual
+# same mechanism, minus the restriction that was hiding real PRs from it.
+# (Same-repo only — a cross-repo `owner/repo#N` closing reference is
+# accepted debt for v1, same spirit as live_text()'s own documented
+# non-goal-1 residues, not silently unhandled: every other reference this
+# repo's tooling resolves is same-repo too.)
+#
+# Algorithm:
+#   1. Candidates — every PR that cross-references the issue at all
+#      (`GET .../issues/<issue>/timeline`, `cross-referenced` events whose
+#      `source.issue.pull_request` is set). This step deliberately
+#      over-includes (a PR can mention an issue in prose with no closing
+#      intent at all, e.g. epic #295's own umbrella issue turning up as a
+#      cross-reference on every one of its W-items) — only step 1's job
+#      is "don't miss a candidate", never "pick the right one".
+#   2. Filter — fetch each candidate's *current* body
+#      (`GET .../pulls/<pr>`, never the timeline event's own cached
+#      snapshot, which can predate a later edit that added or removed the
+#      closing keyword) and keep only the ones whose body matches the
+#      closing-keyword ERE against this issue's number. A candidate that
+#      fails this check is discarded silently — not a failure, just not a
+#      closing PR — and never gets a comments call (cheap: one single-
+#      object REST call per candidate before any paginated one).
+#   3. Evidence — for each *kept* PR, `GET .../issues/<pr>/comments`
+#      (PR conversation comments live on the issues endpoint, since a PR
+#      *is* an issue under the hood; the separate `/pulls/<pr>/comments`
+#      endpoint is inline *review* comments, never where a model-record
+#      marker gets posted). The body already fetched in step 2 is reused
+#      — no second body fetch for a kept PR.
+#   4. Every collected body (issue body, issue comments, each kept PR's
+#      body, each kept PR's comments) runs through live_text() before any
+#      marker match, unchanged from the original design.
+#
+# Lookup failures — three independent flags, split because REST breaks
+# the original single-call shape into several independently-failing
+# calls (this script's structurally new failure surface relative to
+# compliance-evidence.sh, same as the original design, just split
+# three ways now):
+#   - ISSUE_COMMENTS_FAILED — the issue's own comments call failed. The
+#     issue body/labels (a separate, non-paginated call) are still known.
+#   - PR_DISCOVERY_FAILED — the timeline call itself failed. This must
+#     NEVER be read as "zero linked PRs" — a timeline failure means PRs
+#     might exist and this run couldn't find out, which is a materially
+#     different claim than "confirmed there are none" (AC3's zero-PRs
+#     case, still legitimate and un-degraded when the timeline call
+#     genuinely succeeds with nothing in it).
+#   - PR_LOOKUP_FAILED — a *kept* candidate's body fetch (step 2) or
+#     comments fetch (step 3) failed. When the body fetch itself fails,
+#     whether that PR even closes this issue is unknown, not "no" — it is
+#     never silently dropped as a non-match.
+#
+# Degradation rule (unchanged in spirit from the original single-flag
+# design, mechanically identical once any of the three flags above is
+# set): any verdict that would otherwise be `not-started`, or a
+# `stale`/`in-sync` call resting on "this is the latest evidence there
+# is" while not already at the ceiling stage, degrades to
+# `indeterminate`. A verdict that is already `stale` from evidence
+# already in hand is NEVER weakened by a failure elsewhere — evidence is
+# only ever additive (a missing lookup can push the true latest stage
+# later, never earlier), so an already-stale verdict can only stay stale
+# or become "more stale", never get undone into in-sync by evidence
+# nobody read. Same asymmetric-degradation discipline
+# compliance-evidence.sh's BUNDLE_ISSUE_LOOKUP_FAILED already applies.
 #
 # Exit codes, same numbers/meanings as compliance-evidence.sh's own scheme:
 #   0 — a verdict was produced, including `indeterminate` (a finding, not
@@ -91,17 +172,20 @@
 #       four-value vocabulary (never expected; see valid_status())
 #   2 — usage error (no issue number given)
 #   3 — gh not found on PATH
-#   4 — the issue itself couldn't be read (`gh api graphql` failed) — no
-#       honest verdict is possible without it. A PR lookup failing never
-#       changes the exit code; it degrades its own verdict per the rule
-#       above and the run still exits 0.
+#   4 — the issue itself couldn't be read (the non-paginated issue-body
+#       call failed) — no honest verdict is possible without it. Every
+#       other call failing only sets its own flag and degrades its own
+#       verdict per the rule above; the run still exits 0.
 #
 # It is read-only: no gh write subcommand anywhere in this file (no
 # `issue edit`, `issue comment`, `pr edit`, `pr comment`, `pr merge`, any
 # `gh ... label` subcommand, `gh api -X`/`gh api --method`) — verified the
 # same two ways compliance-evidence.sh's AC5/AC7 already established: a
-# `fake_gh_bin` fallthrough witness, and a source-level grep assertion
-# (test/cases/s152_role_label_staleness.sh).
+# `fake_gh_bin` fallthrough witness that is actually reachable (issue
+# #315 PR #316's Reviewer found the first version's witness dead code —
+# fixed in the test file, with a positive control proving it now fires),
+# and a source-level grep assertion (test/cases/s152_role_label_
+# staleness.sh).
 #
 # Named without a `check-` prefix and placed at the repo root, alongside
 # compliance-evidence.sh (issue #315 AC9 — same reasoning
@@ -112,58 +196,19 @@
 # inside `./check`; only its tests do (test/run.sh, offline against
 # fake_gh_bin fixtures — AC8).
 #
-# --- Empirical finding recorded here per issue #315's own Technical
-# notes ("check for gh CLI support before inventing a bespoke GraphQL
-# call") ---
-#
-# `gh issue view --json closedByPullRequestsReferences` is NOT a
-# supported field on the gh CLI version this was written against and
-# tested empirically against this repo (gh 2.45.0 — checked live against
-# issues #313 and #237, both closed by real, merged PRs: gh rejects the
-# field with "Unknown JSON field"). The same is true of
-# `gh pr view --json closingIssuesReferences` on that same gh version —
-# a pre-existing fact about compliance-evidence.sh's own Call A that
-# predates this script and is out of this issue's scope to fix, but is
-# recorded here since it was discovered while empirically resolving this
-# exact question.
-#
-# This makes the choice a build-time one, not a runtime fallback: this
-# script always uses a single `gh api graphql` query for the
-# `closedByPullRequestsReferences` connection (same connection, same
-# "no new dependency" shape Architect's Planning comment anticipated),
-# never a `gh issue view --json closedByPullRequestsReferences` call that
-# would only fail on this CLI version anyway. Because it's a fixed
-# write-time choice and not a two-path runtime branch, there is no
-# separate "unsupported field -> fallback fires" test arm (the QA Test
-# comment flagged this exact distinction as the thing to confirm before
-# finalizing that arm) — every test in test/cases/s152_role_label_
-# staleness.sh exercises the one graphql-based call this script actually
-# makes.
-#
-# One more environment-specific fact worth recording for whoever next
-# touches this: from *inside a Claude Code session* (this one included),
-# the network egress proxy rejects `gh api graphql` outright regardless
-# of query content (confirmed with a trivial `{ viewer { login } }`
-# query — HTTP 403, "GitHub GraphQL is not available from Claude Code
-# sessions"). That is a policy restriction of that specific runtime, not
-# a defect in this script or in the GraphQL query it sends: a real GitHub
-# Actions run or a human's own `gh` both reach the GraphQL endpoint
-# normally. It also does not affect this script's own tests (AC8): they
-# replace the whole `gh` binary with `fake_gh_bin`, so no real network
-# call — graphql or otherwise — is ever made while testing.
-#
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}. Every
-# multi-value collection here (linked PR numbers, role labels found,
-# failed PR numbers) is a plain newline-delimited string, never a bash
-# array — the same choice compliance-evidence.sh's BUNDLE_ISSUES already
-# made, and for the same reason: iterating `"${arr[@]}"` on a possibly-
-# EMPTY array trips a real bash-3.2 `set -u` "unbound variable" bug (hit
-# and reverted once already in compliance-evidence.sh's own history, see
-# resolve_stage_marker()'s comment) — a plain string with `[ -n "$x" ]`
-# guarding a `while read` loop never can. The two fixed 5-element arrays
-# below (STAGES, ROLE_LABELS) are the only bash arrays in this file, and
-# are only ever indexed by a literal numeral 0-4, never expanded with
-# `[@]` — safe under `set -u` unconditionally, empty-array bug or not.
+# multi-value collection here (candidate/kept PR numbers, role labels
+# found, failed PR numbers) is a plain newline-delimited string, never a
+# bash array — the same choice compliance-evidence.sh's BUNDLE_ISSUES
+# already made, and for the same reason: iterating `"${arr[@]}"` on a
+# possibly-EMPTY array trips a real bash-3.2 `set -u` "unbound variable"
+# bug (hit and reverted once already in compliance-evidence.sh's own
+# history, see resolve_stage_marker()'s comment) — a plain string with
+# `[ -n "$x" ]` guarding a `while read` loop never can. The two fixed
+# 5-element arrays below (STAGES, ROLE_LABELS) are the only bash arrays
+# in this file, and are only ever indexed by a literal numeral 0-4, never
+# expanded with `[@]` — safe under `set -u` unconditionally, empty-array
+# bug or not.
 #
 # No eval: issue/PR body and comment text is not under this script's own
 # control.
@@ -273,55 +318,51 @@ label_rank() {
   return 1
 }
 
-# --- The two gh calls. Sentinel transport (issue #308's D9, reused
-# verbatim in shape): each body's real newlines are folded into \u0001 on
-# the way out (after neutralising any literal \u0001 the body might
-# already contain, and dropping \r — GitHub bodies are CRLF, and a
-# trailing \r would defeat live_text()'s fence-close info-string check)
-# so the TSV framing survives the round trip; collect() below folds it
-# back with `tr '\001' '\n'` once per body, before live_text() ever sees
-# it.
+# --- The gh calls. All REST (`gh api` against an explicit endpoint,
+# never `gh api graphql`/`gh issue view`/`gh pr view` — see the header's
+# REST-only design note for why). `{owner}`/`{repo}` are gh's own magic
+# placeholders in the endpoint path itself, filled in from the repository
+# of the current directory (gh's documented behavior) — no new argument,
+# no hardcoded repo name, the same implicit-repo convention every other
+# script in this repo already relies on.
 #
-# Call 1 (always, exactly one call): a single `gh api graphql` query for
-# everything issue-side in one round trip — labels, body/comment text,
-# and the linked PR number(s) — the GraphQL connection
-# `closedByPullRequestsReferences` mirrors `closingIssuesReferences` in
-# reverse. See the empirical-finding note above for why this is a
-# graphql call and not `gh issue view --json closedByPullRequestsReferences`.
-# `{owner}`/`{repo}` are gh's own magic placeholders, filled in from the
-# repository of the current directory (gh's documented behavior for
-# `-f`/`-F` field values) — the same as every other script in this repo
-# lets `gh` resolve the repo implicitly rather than hardcoding
-# TiesL/spec-driven-guardrails.
-ISSUE_GRAPHQL_QUERY='query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){issue(number:$number){labels(first:20){nodes{name}}body comments(first:100){nodes{body}}closedByPullRequestsReferences(first:20){nodes{number}}}}}'
-ISSUE_JQ='.data.repository.issue | (.labels.nodes[]? | "LABEL\t"+.name),(.closedByPullRequestsReferences.nodes[]? | "PR\t"+(.number|tostring)),("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments.nodes[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
+# Sentinel transport (issue #308's D9, reused verbatim in shape): each
+# body's real newlines are folded into \u0001 on the way out (after
+# neutralising any literal \u0001 the body might already contain, and
+# dropping \r — GitHub bodies are CRLF, and a trailing \r would defeat
+# live_text()'s fence-close info-string check) so the TSV framing
+# survives the round trip; collect() below folds it back with
+# `tr '\001' '\n'` once per body, before live_text() ever sees it. The
+# --jq expressions themselves are written fresh against REST's flat-JSON
+# shapes (`.[] | .body`, `.labels[].name`, a `select()` on the timeline's
+# event type) — different enough from compliance-evidence.sh's
+# GraphQL-nested ones (`.comments[]?`, `.closingIssuesReferences[]?`)
+# that this isn't a port, just the same convention re-applied.
+ISSUE_JQ='("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
+COMMENTS_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+TIMELINE_JQ='.[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
+PR_BODY_JQ='"BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 
-# Call 2 (zero or more, one per PR number Call 1 returned): plain fields,
-# both supported on the gh CLI version this was checked against (unlike
-# closingIssuesReferences — not needed here; this detector never compares
-# which PR closes which issue, only marker text).
-PR_JQ='("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-
-# --- collect(): fills these globals. Returns 1 only when Call 1 (the
-# issue lookup) fails — the one failure that makes an honest verdict
-# impossible. A Call 2 failure never makes collect() itself fail; it
-# only sets PR_LOOKUP_FAILED and records which PR (FAILED_PRS), same
-# shape as compliance-evidence.sh's BUNDLE_ISSUE_LOOKUP_FAILED.
-ROLE_LABELS_FOUND=""   # clean list (no leading blank line) — one role:<name> label per line, as found on the issue
-PR_NUMS=""             # clean list — one PR number per line, as Call 1 returned them (order never matters — see scan_markers below)
-FAILED_PRS=""          # clean list — one PR number per line, for PRs whose Call 2 failed
-CORPUS_TEXT=""         # every live-text()-processed body (issue + every successfully-fetched PR), concatenated
+# --- collect(): fills these globals. Returns 1 only when the issue-body
+# call fails — the one failure that makes an honest verdict impossible.
+# Every other call failure only sets its own flag (see the header's
+# "Lookup failures" note) and keeps going.
+ROLE_LABELS_FOUND=""       # clean list — one role:<name> label per line, as found on the issue
+CORPUS_TEXT=""             # every live-text()-processed body/comment set in scope, concatenated
+ISSUE_COMMENTS_FAILED=0
+PR_DISCOVERY_FAILED=0
 PR_LOOKUP_FAILED=0
+FAILED_PRS=""              # clean list — candidate/kept PR numbers whose Call 4 or Call 5 failed
 
 collect() {
-  local issue_out issue_status
-  issue_out="$(gh api graphql -f query="$ISSUE_GRAPHQL_QUERY" -F owner='{owner}' -F repo='{repo}' -F number="$issue_number" --jq "$ISSUE_JQ" 2>/dev/null)"
+  local issue_out issue_status tag rest raw_body live_body
+
+  issue_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number" --jq "$ISSUE_JQ" 2>/dev/null)"
   issue_status=$?
   if [ "$issue_status" -ne 0 ]; then
     return 1
   fi
 
-  local tag rest raw_body live_body
   while IFS=$'\t' read -r tag rest; do
     case "$tag" in
       LABEL)
@@ -340,15 +381,7 @@ $rest"
           # comment, not a blanket "matches role:" prefix scan.
         esac
         ;;
-      PR)
-        if [ -z "$PR_NUMS" ]; then
-          PR_NUMS="$rest"
-        else
-          PR_NUMS="$PR_NUMS
-$rest"
-        fi
-        ;;
-      TEXT)
+      BODY)
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
         live_body="$(live_text "$raw_body")"
         CORPUS_TEXT="$CORPUS_TEXT
@@ -357,21 +390,101 @@ $live_body"
     esac
   done <<<"$issue_out"
 
-  if [ -n "$PR_NUMS" ]; then
-    local pr pr_out pr_status
+  # Call 2 — the issue's own comments (paginated: REST defaults to
+  # 30/page, and a marker sitting past page 1 must never be silently
+  # dropped).
+  local comments_out comments_status
+  comments_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number/comments" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
+  comments_status=$?
+  if [ "$comments_status" -ne 0 ]; then
+    echo "warning: role-label-staleness couldn't read issue #$issue_number's own comments (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
+    ISSUE_COMMENTS_FAILED=1
+  else
+    while IFS=$'\t' read -r tag rest; do
+      [ "$tag" = "TEXT" ] || continue
+      raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+      live_body="$(live_text "$raw_body")"
+      CORPUS_TEXT="$CORPUS_TEXT
+$live_body"
+    done <<<"$comments_out"
+  fi
+
+  # Call 3 — PR discovery via the timeline (paginated). Deliberately
+  # over-includes (every cross-referencing PR, not only closing ones —
+  # see the header's step 1) — the keyword filter below is what narrows
+  # this to real closing references.
+  local timeline_out timeline_status candidate_prs=""
+  timeline_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number/timeline" --paginate --jq "$TIMELINE_JQ" 2>/dev/null)"
+  timeline_status=$?
+  if [ "$timeline_status" -ne 0 ]; then
+    echo "warning: role-label-staleness couldn't discover linked PRs for issue #$issue_number (the timeline lookup failed) — this means PRs might exist and weren't found, never that there are none; a verdict resting on that absence will degrade to indeterminate." >&2
+    PR_DISCOVERY_FAILED=1
+  else
+    while IFS=$'\t' read -r tag rest; do
+      [ "$tag" = "PR" ] || continue
+      [ -n "$rest" ] || continue
+      if [ -z "$candidate_prs" ]; then
+        candidate_prs="$rest"
+      else
+        candidate_prs="$candidate_prs
+$rest"
+      fi
+    done <<<"$timeline_out"
+    # Dedupe — the same PR can generate more than one cross-reference
+    # event on a busy issue. Numeric sort: harmless either way, since the
+    # verdict computation is order-independent by construction (union/max
+    # over stage presence — see scan_markers below).
+    if [ -n "$candidate_prs" ]; then
+      candidate_prs="$(printf '%s\n' "$candidate_prs" | grep '.' | sort -un)"
+    fi
+  fi
+
+  # Call 4 (per candidate, filter) + Call 5 (per kept PR, evidence).
+  if [ -n "$candidate_prs" ]; then
+    local closing_ere pr pr_body_out pr_body_status pr_body_raw
+    local pr_comments_out pr_comments_status
+    closing_ere="\\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\\b[^0-9#]{0,20}#${issue_number}\\b"
+
     while IFS= read -r pr; do
       [ -n "$pr" ] || continue
-      pr_out="$(gh pr view "$pr" --json body,comments --jq "$PR_JQ" 2>/dev/null)"
-      pr_status=$?
-      if [ "$pr_status" -ne 0 ]; then
-        echo "warning: role-label-staleness couldn't consult PR #$pr (no network or no access) — a verdict resting on an absence claim that PR could have contradicted will degrade to indeterminate." >&2
+
+      pr_body_out="$(gh api "repos/{owner}/{repo}/pulls/$pr" --jq "$PR_BODY_JQ" 2>/dev/null)"
+      pr_body_status=$?
+      if [ "$pr_body_status" -ne 0 ]; then
+        echo "warning: role-label-staleness couldn't read PR #$pr's body (no network or no access) — whether it closes issue #$issue_number, and any evidence on it, is now unknown, not absent." >&2
         PR_LOOKUP_FAILED=1
-        if [ -z "$FAILED_PRS" ]; then
-          FAILED_PRS="$pr"
-        else
-          FAILED_PRS="$FAILED_PRS
-$pr"
-        fi
+        if [ -z "$FAILED_PRS" ]; then FAILED_PRS="$pr"; else FAILED_PRS="$FAILED_PRS
+$pr"; fi
+        continue
+      fi
+
+      pr_body_raw=""
+      while IFS=$'\t' read -r tag rest; do
+        [ "$tag" = "BODY" ] || continue
+        pr_body_raw="$(printf '%s' "$rest" | tr '\001' '\n')"
+      done <<<"$pr_body_out"
+
+      # The keyword check runs against the RAW body (matching a real
+      # "Closes #<n>" line, quoted or not, is not this step's concern —
+      # live_text() applies only to marker extraction below, once a PR
+      # is already kept). A candidate that doesn't match is discarded
+      # silently: cross-referencing an issue in prose is common and not
+      # a failure of anything.
+      if ! grep -qiE "$closing_ere" <<<"$pr_body_raw"; then
+        continue
+      fi
+
+      live_body="$(live_text "$pr_body_raw")"
+      CORPUS_TEXT="$CORPUS_TEXT
+$live_body"
+
+      pr_comments_out="$(gh api "repos/{owner}/{repo}/issues/$pr/comments" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
+      pr_comments_status=$?
+      if [ "$pr_comments_status" -ne 0 ]; then
+        echo "warning: role-label-staleness couldn't read PR #$pr's comments (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
+        PR_LOOKUP_FAILED=1
+        if [ -z "$FAILED_PRS" ]; then FAILED_PRS="$pr"; else FAILED_PRS="$FAILED_PRS
+$pr"; fi
         continue
       fi
       while IFS=$'\t' read -r tag rest; do
@@ -380,8 +493,8 @@ $pr"
         live_body="$(live_text "$raw_body")"
         CORPUS_TEXT="$CORPUS_TEXT
 $live_body"
-      done <<<"$pr_out"
-    done <<<"$PR_NUMS"
+      done <<<"$pr_comments_out"
+    done <<<"$candidate_prs"
   fi
 
   return 0
@@ -467,7 +580,7 @@ joined_list() {
 require_gh
 
 if ! collect; then
-  echo "role-label-staleness: could not read issue #$issue_number (gh api graphql failed — no network, no access, or the issue doesn't exist) — no verdict can be produced." >&2
+  echo "role-label-staleness: could not read issue #$issue_number (no network, no access, or the issue doesn't exist) — no verdict can be produced." >&2
   exit 4
 fi
 
@@ -503,15 +616,23 @@ else
       label_r="$(label_rank "$single_label")"
     fi
 
-    # PR-lookup-failure degrade — see the header comment for the full
-    # asymmetric-degradation rule this implements. Only the two verdicts
-    # that rest on "nothing more exists beyond what was read" are
-    # vulnerable: in-sync (label at/ahead of known evidence) while not
-    # already at the ceiling stage, or not-started (nothing at all).
-    # A verdict that is already stale from what WAS read never degrades
-    # — more evidence can only deepen staleness, never undo it.
+    # Lookup-failure degrade — see the header comment's "Lookup
+    # failures" note for the full asymmetric-degradation rule this
+    # implements, now over three independent flags instead of one (REST
+    # broke the original single-call shape into several independently-
+    # failing calls). Only the two verdicts that rest on "nothing more
+    # exists beyond what was read" are vulnerable: in-sync (label
+    # at/ahead of known evidence) while not already at the ceiling
+    # stage, or not-started (nothing at all). A verdict that is already
+    # stale from what WAS read never degrades — more evidence can only
+    # deepen staleness, never undo it.
+    lookup_incomplete=0
+    if [ "$ISSUE_COMMENTS_FAILED" -eq 1 ] || [ "$PR_DISCOVERY_FAILED" -eq 1 ] || [ "$PR_LOOKUP_FAILED" -eq 1 ]; then
+      lookup_incomplete=1
+    fi
+
     vulnerable=0
-    if [ "$PR_LOOKUP_FAILED" -eq 1 ]; then
+    if [ "$lookup_incomplete" -eq 1 ]; then
       if [ "$label_r" -eq -1 ] && [ "$KNOWN_MAX_RANK" -eq -1 ]; then
         vulnerable=1
       elif [ "$label_r" -ge 0 ] && [ "$label_r" -ge "$KNOWN_MAX_RANK" ] && [ "$label_r" -lt "$LAST_RANK" ]; then
@@ -520,9 +641,27 @@ else
     fi
 
     if [ "$vulnerable" -eq 1 ]; then
-      failed_list="$(joined_list '#%s' "$FAILED_PRS")"
+      degrade_reasons=""
+      if [ "$ISSUE_COMMENTS_FAILED" -eq 1 ]; then
+        degrade_reasons="issue #$issue_number's own comments couldn't be read"
+      fi
+      if [ "$PR_DISCOVERY_FAILED" -eq 1 ]; then
+        if [ -z "$degrade_reasons" ]; then
+          degrade_reasons="the PR-discovery timeline lookup failed (linked PRs, if any, are unknown)"
+        else
+          degrade_reasons="$degrade_reasons; the PR-discovery timeline lookup failed (linked PRs, if any, are unknown)"
+        fi
+      fi
+      if [ "$PR_LOOKUP_FAILED" -eq 1 ]; then
+        failed_list="$(joined_list '#%s' "$FAILED_PRS")"
+        if [ -z "$degrade_reasons" ]; then
+          degrade_reasons="lookup failed for PR $failed_list"
+        else
+          degrade_reasons="$degrade_reasons; lookup failed for PR $failed_list"
+        fi
+      fi
       verdict="indeterminate"
-      detail="PR lookup failed for $failed_list on issue #$issue_number, and the evidence read so far doesn't rule out a later stage there that would make the current label stale"
+      detail="issue #$issue_number's evidence is incomplete ($degrade_reasons), and what WAS read doesn't rule out a later stage that would make the current label stale"
     elif [ "$label_r" -eq -1 ] && [ "$KNOWN_MAX_RANK" -eq -1 ]; then
       # AC3 — a conjunction: no label AND no marker anywhere in scope.
       verdict="not-started"
