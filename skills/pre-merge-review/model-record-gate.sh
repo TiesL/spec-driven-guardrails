@@ -23,6 +23,28 @@
 # Fail-open without gh or network: warn, don't block — same ground rule
 # as every other gate here (scenario-gate.sh, check-pr-issue-link.sh).
 #
+# REST-only (issue #318, reusing role-label-staleness.sh's/
+# compliance-evidence.sh's already-reviewed design rather than
+# re-deriving it independently): every `gh pr view --json ...`/`gh issue
+# view --json ...` call this script used to make is GraphQL-backed under
+# the hood and 403s from inside a Claude Code session — confirmed live,
+# where this gate's own fail-open design meant it never crashed, just
+# silently skipped the check on every single run rather than performing
+# it (a correctness gap distinct from, and worse in a different way
+# than, an outright failure). `closingIssuesReferences` has a second,
+# separate defect even outside that block: GitHub only populates it for
+# a PR whose base is the repository's default branch, so it silently
+# missed every closing issue on a release-branch PR — exactly the shape
+# that would make this gate wrongly report "no Discovery record found"
+# when Discovery's marker sits on the issue this gate never looked at.
+#
+# Every call below is `gh api repos/{owner}/{repo}/...` against an
+# explicit REST endpoint, confirmed working from inside a Claude Code
+# session. Closing-issue discovery replaces `closingIssuesReferences`
+# with the same closing-keyword scan against the PR's own title+body
+# compliance-evidence.sh uses (title included — this repo's own
+# release-branch PRs carry the keyword only there).
+#
 # Output on stdout: one line per missing stage:
 #   "model-record: no record found for stage <Stage> (missing model-choice marker)"
 # plus, when Review and Implementation both have a marker (#244 AC2):
@@ -40,11 +62,23 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
-comments_part="$(gh pr view "$pr_number" --json comments --jq '.comments[].body' 2>&1)"
+comments_part="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq '.[].body' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
   echo "warning: model-record-gate couldn't consult PR #$pr_number's comments (no network or no access) and is skipping the model-record check." >&2
   echo "$comments_part" >&2
+  exit 0
+fi
+
+# PR reviews (issue #318, folding in the same fix role-label-staleness.sh
+# needed as its own F-6 finding): this pipeline posts the Review stage's
+# marker as a PR review's own body, not a plain conversation comment —
+# a source this gate never read either, under the old call or the new.
+reviews_part="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate --jq '.[].body' 2>&1)"
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "warning: model-record-gate couldn't consult PR #$pr_number's reviews (no network or no access) and is skipping the model-record check." >&2
+  echo "$reviews_part" >&2
   exit 0
 fi
 
@@ -53,27 +87,27 @@ fi
 # Implementation markers are added at PR-creation time, before any
 # comment exists) was invisible to this gate — it only ever scanned
 # comments. The description is as durable an artifact as a comment.
-description_part="$(gh pr view "$pr_number" --json body --jq '.body' 2>&1)"
+# Fetched together with the title (needed for closing-issue discovery
+# below) in one call.
+pr_json_part="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq '(.title//"")+"\u0001"+(.body//"")' 2>&1)"
 status=$?
 if [ "$status" -ne 0 ]; then
   echo "warning: model-record-gate couldn't consult PR #$pr_number's description (no network or no access) and is skipping the model-record check." >&2
-  echo "$description_part" >&2
+  echo "$pr_json_part" >&2
   exit 0
 fi
+pr_title_part="${pr_json_part%%$'\001'*}"
+description_part="${pr_json_part#*$'\001'}"
 
-issue_numbers="$(gh pr view "$pr_number" --json closingIssuesReferences --jq '.closingIssuesReferences[].number' 2>&1)"
-status=$?
-if [ "$status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't consult PR #$pr_number's closing issues (no network or no access) and is skipping the model-record check." >&2
-  echo "$issue_numbers" >&2
-  exit 0
-fi
+closing_keyword_ere='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
+issue_numbers="$(printf '%s\n%s\n' "$pr_title_part" "$description_part" \
+  | grep -oiE "$closing_keyword_ere" | grep -oE '[0-9]+' | sort -un)"
 
 issue_text=""
 if [ -n "$issue_numbers" ]; then
   while IFS= read -r issue_num; do
     [ -n "$issue_num" ] || continue
-    issue_body="$(gh issue view "$issue_num" --json comments --jq '.comments[].body' 2>&1)"
+    issue_body="$(gh api "repos/{owner}/{repo}/issues/$issue_num/comments" --paginate --jq '.[].body' 2>&1)"
     issue_status=$?
     if [ "$issue_status" -ne 0 ]; then
       # Found during PR #249's pre-merge-review (round 2): silently
@@ -90,20 +124,21 @@ $issue_body"
   done <<<"$issue_numbers"
 fi
 
-# Ordered issue -> description -> comments: a heuristic match to the
-# typical stage lifecycle (Discovery on the issue first, then the PR
-# opens with its description, then PR comments accumulate through
-# Planning/Test/Implementation/Review), not a true global timestamp sort
-# — gh's comment JSON does carry createdAt, but nothing here reads it yet.
-# Found during PR #253's pre-merge-review (round 2): the previous order
-# (comments, then description, then issue) put issue comments *last*,
-# so `tail -1` could prefer a stray older marker on the issue over a
-# genuinely newer one on the PR — backwards from the typical case this
-# reorders toward. Recorded as Technical debt (PRD.md) rather than chasing
-# full generality here.
+# Ordered issue -> description -> comments -> reviews: a heuristic match
+# to the typical stage lifecycle (Discovery on the issue first, then the
+# PR opens with its description, then PR comments/reviews accumulate
+# through Planning/Test/Implementation/Review), not a true global
+# timestamp sort — gh's comment JSON does carry createdAt, but nothing
+# here reads it yet. Found during PR #253's pre-merge-review (round 2):
+# the previous order (comments, then description, then issue) put issue
+# comments *last*, so `tail -1` could prefer a stray older marker on the
+# issue over a genuinely newer one on the PR — backwards from the
+# typical case this reorders toward. Recorded as Technical debt (PRD.md)
+# rather than chasing full generality here.
 all_text="$issue_text
 $description_part
-$comments_part"
+$comments_part
+$reviews_part"
 
 for stage in Discovery Planning Test Implementation Review; do
   # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
