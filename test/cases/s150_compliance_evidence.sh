@@ -44,8 +44,10 @@ case "$*" in
     printf 'STATE\tMERGED\n'
     printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
     printf 'MERGEDBY\tTiesL\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
@@ -53,6 +55,9 @@ case "$*" in
     printf 'TEXT\t<!-- pre-merge-review:done sha=472bc8f574c4aea3fc58161d1924b7b05329172f -->\n'
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="fork/agent invocation for this review round runs on the same model as Implementation; no other model was made available for this review" -->\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -72,7 +77,7 @@ expected_ac1='| Gate | Status | Evidence |
 | Review used a different or at-least-as-capable model, or carries an explicit exception | evidenced | latest `stage=Review` marker on PR #279 carries `same-model-exception="fork/agent invocation for this review round runs on the same model as Implementation; no other model was made available for this review"` |
 | Quality review before merge, with findings in the PR | evidenced | `<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->` on PR #279, sha equals `headRefOid` (an earlier marker for `472bc8f574c4aea3fc58161d1924b7b05329172f` is stale) |
 | CI green | evidenced | check `check`: `bucket=pass`, `state=SUCCESS` |
-| Traceability link 3 (PR ↔ issue) | evidenced | `closingIssuesReferences` on PR #279 = [#265] |
+| Traceability link 3 (PR ↔ issue) | evidenced | closing-keyword reference(s) on PR #279 = [#265] |
 | Ties'"'"' explicit merge confirmation | unverifiable-from-artifacts | not derivable from artifacts; A2 confirmation is conversational (PR merged by @TiesL at 2026-09-20T17:31:36Z, which is not the confirmation) |'
 
 output_ac1="$(PATH="$fakebin_ac1:$PATH" "$script" 279)"
@@ -110,13 +115,18 @@ case "$*" in
     printf 'STATE\tMERGED\n'
     printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
     printf 'MERGEDBY\tTiesL\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-opus-5" effort="high" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-opus-5" effort="high" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="high" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="high" -->\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -157,12 +167,17 @@ case "$*" in
     printf 'STATE\tMERGED\n'
     printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
     printf 'MERGEDBY\tTiesL\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="fork/agent invocation for this review round runs on the same model as Implementation; no other model was made available for this review" -->\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -196,9 +211,14 @@ case "$*" in
     printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
     printf 'MERGEDBY\tTiesL\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -227,17 +247,24 @@ assert_table_shape "S150 AC3b" "$output_ac3b"
 # Fixture B: every other gate not-evidenced (no markers, zero checks, no
 # closing issue) — gate 6 must still be unverifiable-from-artifacts and
 # textually distinct from the other five rows' not-evidenced.
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n'
     printf 'STATE\tMERGED\n'
     printf 'MERGEDAT\t2026-01-01T00:00:00Z\n'
     printf 'MERGEDBY\tsomeone\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
-    echo "no checks reported on the given branch" >&2
-    exit 1 ;;
+    printf ''
+    exit 0 ;;
 esac
 exit 1
 GHEOF
@@ -252,13 +279,20 @@ done
 [ "$(row_status "$output_ac4b" 6)" = "unverifiable-from-artifacts" ] || fail "S150 AC4b — gate 6 must stay unverifiable-from-artifacts even when everything else is not-evidenced (must not collapse into AC3), got '$(row_status "$output_ac4b" 6)'"
 
 # Fixture C: an open (unmerged) PR — gate 6 must not flip either way.
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n'
     printf 'STATE\tOPEN\n'
     printf 'MERGEDAT\t\n'
     printf 'MERGEDBY\t\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -284,13 +318,18 @@ case "$*" in
     printf 'STATE\tMERGED\n'
     printf 'MERGEDAT\t2026-09-20T17:31:36Z\n'
     printf 'MERGEDBY\tTiesL\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="fork/agent invocation for this review round runs on the same model as Implementation; no other model was made available for this review" -->\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -368,6 +407,12 @@ case "$*" in
     printf 'STATE\tMERGED\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=abc123 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -387,6 +432,13 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tWEIRD\tsomething-new\n'
@@ -408,6 +460,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=472bc8f574c4aea3fc58161d1924b7b05329172f -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -441,10 +499,17 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tFAILURE\tfail\n'
-    exit 1 ;;
+    exit 0 ;;
 esac
 exit 1
 GHEOF
@@ -466,10 +531,17 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tPENDING\tpending\n'
-    exit 8 ;;
+    exit 0 ;;
 esac
 exit 1
 GHEOF
@@ -487,10 +559,17 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
-    echo "no checks reported on the given branch" >&2
-    exit 1 ;;
+    printf ''
+    exit 0 ;;
 esac
 exit 1
 GHEOF
@@ -511,11 +590,16 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model=Sonnet effort=medium -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -537,13 +621,18 @@ assert_table_shape "S150 AC8g" "$output_ac8g"
 # without these.
 
 # Same model, no exception at all.
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -558,13 +647,18 @@ assert_table_shape "S150 gate2-negative (same model, no exception)" "$output_g2_
 
 # Same model, empty-reason exception (same-model-exception="") — an
 # empty reason must not satisfy (PR #253's trap).
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -581,13 +675,18 @@ assert_table_shape "S150 gate2-negative (empty-reason exception)" "$output_g2_em
 # vs "Sonnet 5") must still be flagged (#268's normalize_model, D5's
 # verbatim-copy decision — if reimplemented differently the collector
 # silently disagrees with the gate it reports on).
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="Sonnet 5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -605,16 +704,20 @@ assert_table_shape "S150 gate2-negative (label normalization)" "$output_g2_label
 # C must be made for both; an implementation reading only the first would
 # wrongly report Discovery missing.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "dddddddddddddddddddddddddddddddddddddddd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tdddddddddddddddddddddddddddddddddddddddd\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -647,11 +750,16 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     echo "gh: a transient network problem occurred" >&2
@@ -683,10 +791,15 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tMERGED\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -747,13 +860,19 @@ done
 # text must keep reporting BOTH shas — a fix that degrades the status by
 # discarding the sha detail must fail here.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -787,16 +906,20 @@ esac
 # arm needs a line of production code beyond AC1-AC3's guards, the fix is
 # wrong.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "dddddddddddddddddddddddddddddddddddddddd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tdddddddddddddddddddddddddddddddddddddddd\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -831,18 +954,23 @@ assert_table_shape "S150 AC5" "$output_ac5"
 # gates 2/3, rows 2/4 would stay not-evidenced for the wrong reason and
 # this arm would pass vacuously without it.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\teeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
-    echo "no checks reported on the given branch" >&2
-    exit 1 ;;
+    printf ''
+    exit 0 ;;
   __CALL_C265__)
     echo "gh: could not resolve to an Issue" >&2
     exit 1 ;;
@@ -882,14 +1010,19 @@ expected_ac6_g2_evidence='`stage=Review` and `stage=Implementation` markers on P
 # below with the issue order swapped: both must render the SAME status,
 # and it must be `indeterminate`, not silently picking a side.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "ffffffffffffffffffffffffffffffffffffffff" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -913,14 +1046,19 @@ assert_table_shape "S150 issue #302 Arm G (order 1)" "$output_ac302_order1"
 # Same data, swapped issue order (#266 read before #265, mirroring the
 # fact closingIssuesReferences order isn't a promise). The verdict must
 # not flip.
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "ffffffffffffffffffffffffffffffffffffffff" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t266\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #266, closes #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -956,13 +1094,19 @@ assert_table_shape "S150 issue #302 Arm G (order 2)" "$output_ac302_order2"
 # evidenced). With >=2 closing issues and a failed lookup, gate 2 must
 # now degrade to indeterminate too, same as gates 1 and 3 already do.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "ffffffffffffffffffffffffffffffffffffffff" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tffffffffffffffffffffffffffffffffffffffff\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -996,14 +1140,19 @@ assert_table_shape "S150 issue #302 Arm H" "$output_ac302_partial"
 # render a definite verdict (`evidenced`, since opus != the
 # `stage=Implementation` sonnet), never `indeterminate`.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\teeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1033,14 +1182,19 @@ assert_table_shape "S150 issue #302 Arm I" "$output_ac302_pr_wins"
 # straw man cannot produce (it always renders `indeterminate` here).
 # Run both issue orders: gate 2 must be `evidenced` either way.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "abababababababababababababababababababab" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tabababababababababababababababababababab\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1061,14 +1215,19 @@ status_ac302_positive1=$?
 assert_table_shape "S150 issue #302 Arm J (order 1)" "$output_ac302_positive1"
 [ "$(row_status "$output_ac302_positive1" 2)" = "evidenced" ] || fail "S150 issue #302 Arm J (order 1) — expected a DEFINITE gate 2 evidenced with two closing issues read and sources agreeing (uncontested), got '$(row_status "$output_ac302_positive1" 2)' — a naive 'always indeterminate at >=2 issues' implementation would fail this"
 
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "abababababababababababababababababababab" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tabababababababababababababababababababab\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t266\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #266, closes #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1098,14 +1257,19 @@ assert_table_shape "S150 issue #302 Arm J (order 2)" "$output_ac302_positive2"
 # itself a genuine inter-issue disagreement (R-3), and it must render
 # `indeterminate` the same way regardless of issue order.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1126,14 +1290,19 @@ status_ac302_exc1=$?
 assert_table_shape "S150 issue #302 Arm K (order 1)" "$output_ac302_exc1"
 [ "$(row_status "$output_ac302_exc1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm K (order 1) — expected gate 2 indeterminate: same model but disagreeing same-model-exception across two closing issues, got '$(row_status "$output_ac302_exc1" 2)'"
 
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t266\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #266, closes #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1164,14 +1333,19 @@ assert_table_shape "S150 issue #302 Arm K (order 2)" "$output_ac302_exc2"
 # between `indeterminate` ("no quoted model=") and a definite verdict.
 # Must now render `indeterminate` regardless of order.
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "efefefefefefefefefefefefefefefefefefefef" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tefefefefefefefefefefefefefefefefefefefef\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
-    printf 'ISSUE\t266\n'
+    printf 'TITLE\tCloses #265, closes #266\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1192,14 +1366,19 @@ status_ac302_malf1=$?
 assert_table_shape "S150 issue #302 Arm L (order 1)" "$output_ac302_malf1"
 [ "$(row_status "$output_ac302_malf1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm L (order 1) — expected gate 2 indeterminate: a malformed stage=Review marker on one closing issue vs. a well-formed one on another, got '$(row_status "$output_ac302_malf1" 2)'"
 
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "efefefefefefefefefefefefefefefefefefefef" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tefefefefefefefefefefefefefefefefefefefef\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t266\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #266, closes #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-opus-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -1231,19 +1410,24 @@ assert_table_shape "S150 issue #302 Arm L (order 2)" "$output_ac302_malf2"
 # differs-model evidenced row to indeterminate. Also folds in the
 # cheap gate-4 bucket=fail non-regression under flag=1 (Architect §3.5).
 # =========================================================================
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
     printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
     printf 'TEXT\t<!-- pre-merge-review:done sha=cccccccccccccccccccccccccccccccccccccccc -->\n'
     exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tFAILURE\tfail\n'
-    exit 1 ;;
+    exit 0 ;;
   __CALL_C265__)
     echo "gh: could not resolve to an Issue" >&2
     exit 1 ;;
@@ -1287,13 +1471,18 @@ rm -f /tmp/s150_stderr_calla.$$
 # an over-long same-model-exception on gate 2.
 # =========================================================================
 long_reason="the fork session inherits its parent model and no other model was made available for this particular review round so this same-model exception documents that limitation in exhaustive detail for the record, repeated once more to push well past the three hundred character budget for this evidence cell"
-run_build_fake_gh > "$FAKEGH_OUT" <<GHEOF
+run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<GHEOF
 case "\$*" in
   __CALL_A__)
     printf 'HEAD\tcccccccccccccccccccccccccccccccccccccccc\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="$long_reason" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
