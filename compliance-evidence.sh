@@ -19,6 +19,19 @@
 # No `eval`: PR/issue comment text is not under this script's control.
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 #
+# awk requirement (issue #319): `live_text()` below has no special awk
+# requirement left — every awk it has been run under (mawk 1.3.4
+# 20200120, mawk 1.3.4 20240123, gawk) parses and executes its fence
+# regex the same way. Getting there dodged two independent, unrelated
+# mawk defects rather than working around either in an mawk-specific
+# code path: mawk's REcompile() panics on a grouped alternation combined
+# with an unbounded-lower-bound interval (`(`{3,}|~{3,})`), and,
+# separately, mawk 1.3.4 20200120 and earlier (Ubuntu 22.04's default
+# `awk`, among others) doesn't parse a bounded interval (`{0,3}`) at all
+# — it reads the four characters literally instead of as "0 to 3". See
+# the fence-tracking bullets below and test/cases/
+# s153_live_text_mawk_portability.sh.
+#
 # Status vocabulary (closed, exactly these four, AC8):
 #   evidenced                    — an artifact was found that shows the
 #                                   gate actually held
@@ -107,12 +120,14 @@ normalize_model() {
 #     the run (D10: without this, a bare ``` opener followed by a
 #     ```text-tagged line reads as a close and leaks the marker after
 #     it). An OPENING fence may carry any info string.
-#   - Indent is capped at 3 spaces (`^ {0,3}`), CommonMark's own cap —
-#     4+ is an indented code block, not a fence (non-goal 1, fails open:
-#     D7). Deliberately `{0,3}` spaces, never `[ \t]*`: a tab counts as 4
-#     columns of indentation in CommonMark, so a tab-indented fence-ish
-#     line is the same indented-code-block case and must not be treated
-#     as a fence. Do not "restore" \t here.
+#   - Indent is capped at 3 spaces (`^ ? ? ?`, three independently-
+#     optional literal spaces — not the brace-interval `{0,3}`, which an
+#     older mawk build doesn't parse at all; see the #319 note below),
+#     CommonMark's own cap — 4+ is an indented code block, not a fence
+#     (non-goal 1, fails open: D7). Deliberately literal spaces, never
+#     `[ \t]*`: a tab counts as 4 columns of indentation in CommonMark, so
+#     a tab-indented fence-ish line is the same indented-code-block case
+#     and must not be treated as a fence. Do not "restore" \t here.
 # Fence state is per-body (this function is called once per body) — an
 # unclosed fence in one PR comment must never swallow a marker in the
 # next one (AC3 fence isolation).
@@ -139,14 +154,48 @@ live_text() {
     /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
     {
       line = $0
-      if (match(line, /^ {0,3}(`{3,}|~{3,})/)) {
+      # Issue #319, two independent mawk defects, neither worked around
+      # with an mawk-specific code path:
+      #
+      # (1) the mawk regex compiler panics on an unbounded-lower-bound
+      # interval `{n,}` combined with alternation in a group
+      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy
+      # under mawk (it matches exactly n, not "n or more") — silently
+      # truncating a longer fence run and corrupting flen. Two top-level
+      # alternatives using `+` (which every awk, mawk included, matches
+      # greedily) dodge both. `+` alone would now also match a 1- or
+      # 2-character run the original `{3,}`-anchored regex never did
+      # (CommonMark fences need >= 3), so the `length(m) >= 3` guard
+      # below is load-bearing, not defensive: without it, an inline code
+      # span opening a line (e.g. `` `x` is code ``) would itself open an
+      # unclosed fence and blank every line after it, including a real
+      # marker (test/cases/s153_live_text_mawk_portability.sh G5). For a
+      # run already >= 3, RSTART/RLENGTH match the original regex under
+      # gawk exactly (verified: a 5-character fence run no longer
+      # truncates to 3).
+      #
+      # (2) found afterward: the leading `{0,3}` itself does not parse at
+      # all on an older mawk build (1.3.4 20200120, the default `awk` on
+      # Ubuntu 22.04, among others) — that mawk build has no
+      # brace-interval support and reads `{0,3}` as four literal
+      # characters, so it never matches a real fence line and every
+      # fence silently goes undetected. `? ? ?` (three
+      # independently-optional literal spaces) is the brace-free
+      # equivalent of "0 to 3 spaces", parses identically on every awk
+      # this script has been run under (mawk 1.3.4 20200120, mawk 1.3.4
+      # 20240123, gawk), and was verified against 800 randomized
+      # fence-line inputs with zero differences from the original
+      # `{0,3}` behavior under gawk.
+      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
         m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        ch = substr(m, 1, 1); len = length(m)
-        rest = substr(line, RSTART + RLENGTH)
-        if (fch == "") {                                  # open: any info string allowed
-          fch = ch; flen = len; print ""; next
-        } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-          fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
+        if (length(m) >= 3) {
+          ch = substr(m, 1, 1); len = length(m)
+          rest = substr(line, RSTART + RLENGTH)
+          if (fch == "") {                                  # open: any info string allowed
+            fch = ch; flen = len; print ""; next
+          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
+            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
+          }
         }
       }
       if (fch != "") { print ""; next }
