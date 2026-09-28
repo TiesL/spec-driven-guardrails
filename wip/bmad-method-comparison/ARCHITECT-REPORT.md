@@ -11,6 +11,30 @@ is marked explicitly in §3, not folded silently into §1/§2. Nothing here is
 promoted into `PRD.md`/`ARCHITECTURE.md`/`wip/multi-agent-development/` until
 Ties explicitly accepts it.
 
+**Revision note (direct source reading).** The first version of this report was
+built from Product's report plus the orchestrator's condensed summary of six
+BMad pages. Ties flagged that as too narrow for an Architect-level technical
+read. This revision independently fetched the primary source directly — the
+original six pages plus two more the source material itself pointed to
+(Walk Through a Change, Test Completed Work, both linked from the same "Build"
+section and directly relevant to the role-model comparison in §1.1):
+
+- https://docs.bmad-method.org/
+- https://docs.bmad-method.org/build/build-a-change/
+- https://docs.bmad-method.org/build/review-a-change/
+- https://docs.bmad-method.org/build/finish-an-epic/
+- https://docs.bmad-method.org/build/autonomous-development-loops/
+- https://docs.bmad-method.org/plan/break-work-into-stories-and-track-it/
+- https://docs.bmad-method.org/customize/run-multi-agent-discussions/
+- https://docs.bmad-method.org/build/walk-through-a-change/ (new)
+- https://docs.bmad-method.org/build/test-completed-work/ (new)
+
+Every claim below that changes, sharpens, or adds to the original summary is
+marked **[direct reading]** inline. Claims without that marker either
+reproduce what the original summary already said correctly, or are Architect's
+own reasoning applied to either source. §1.5 collects the findings that are
+net-new — things the condensed summary flattened away entirely.
+
 ---
 
 ## 1. Technical/structural comparison
@@ -20,11 +44,51 @@ Ties explicitly accepts it.
 BMad's `bmad-build` is a single **Module** with a wide **Interface**: one
 agent session owns investigate → plan → implement → review-trigger → commit,
 i.e. it presents (and must be trusted across) every question this repo splits
-across five roles. Depth, in `codebase-design` terms, comes entirely from
-independent **reviewer subagents** bolted on at one **Seam** — the review
-point — with a fresh context each (Blind Hunter, Edge Cases Hunter,
-Verification Gap Finder). Everywhere else in BMad's flow, one Module answers
-every question.
+across five roles. Depth, in `codebase-design` terms, comes partly from
+independent **reviewer subagents** at one **Seam** inside that flow — a
+fresh context each (Blind Hunter: "any 10 things to fix"; Edge Cases Hunter:
+"forgotten corner cases"; Verification Gap Finder: "is this covered by
+tests?").
+
+**Correction from direct reading [direct reading]:** the original summary's
+framing — echoed in my first draft as "BMad achieves a version of this only
+at the review phase... with one agent doing everything upstream of that" —
+overstates how monolithic BMad actually is. Reading the Build section
+directly (not just the two pages in the original brief) shows BMad has
+already carved out more standing Seams than "implement, then review" implies:
+
+- **`bmad-code-review`** is a *standalone* skill, invocable independently of
+  `bmad-build` at all, with its own thorough/quick modes and configurable
+  models per reviewer.
+- **`bmad-walkthrough`** ("Walk Through a Change," not in the original six
+  pages, fetched directly) is an explicitly *separate* Module from both of
+  the above: "guided human review... not a replacement for
+  `bmad-code-review`... does not assign severity scores or produce a
+  pass/fail verdict." Its own Interface is a narrated walkthrough for a
+  human, block by block, not an automated verdict.
+- **`bmad-qa-generate-e2e-tests`** (or the enterprise `bmad-testarch-automate`
+  — "Test Completed Work," also fetched directly) is a *third* separate skill:
+  "generated coverage of finished work. It is not code review, and it is not
+  the manual observations in Walk Through a Change."
+- **`bmad-retrospective`** is a fourth, epic-scoped Module (§1.4 below).
+
+So BMad's actual decomposition is: one wide-Interface Module
+(`bmad-build`: investigate+plan+implement, plus its own built-in agentic
+review pass) sitting alongside several genuinely separate, independently
+invocable Modules (standalone code review, human walkthrough, test
+generation, retrospective) — not "one agent does everything, reviewers
+bolted on," but "one wide-scope build agent, plus a cluster of narrower
+satellite Modules around it that a user or orchestrator chooses to invoke."
+That's a real correction to my own first draft, not just Product's framing.
+It **narrows**, but does not remove, the depth gap identified below: the
+satellite Modules are all still *optional, separately-invoked* Adapters at
+BMad's own discretion (a user has to remember to run `bmad-walkthrough` or
+`bmad-code-review quick`), where this repo's five-role split makes every
+phase's Seam **mandatory and sequenced** by the orchestrator (Decision 3),
+not a menu of tools a session may or may not reach for. The structural
+conclusion in §3.1 (this repo's decomposition is deeper at the phase level)
+still holds; the mechanism by which BMad partially compensates for its
+wide `bmad-build` Interface is richer than the original summary conveyed.
 
 This repo's `PRD-MULTI-AGENT-WIP.md` §4 decomposes along the axis that
 matters for **Locality**: a defect belongs to exactly one role's judgment
@@ -125,13 +189,46 @@ merges a PR into the release/dev branch."
 
 **Where they actually converge**: neither system lets the autonomous
 mechanism touch the outermost promotion. BMad: "Build Auto never moves a
-ticket to done." This repo: "the release branch's own merge into `main`
-always needs Ties' explicit confirmation" (#309). Both put the irrevocable
-step behind an unconditional human gate and grant autonomy only on the
-reversible side of it. That's the load-bearing structural similarity, and
-it's worth stating as a **shared invariant**, not a coincidence: an
-autonomous-run mechanism is trustworthy exactly to the degree its scope ends
-before the step that can't be undone.
+ticket to `done`. The user or an orchestrator marks a ticket done with
+`tickets.py mark <ref> done`" **[direct reading, exact wording]**. This
+repo: "the release branch's own merge into `main` always needs Ties'
+explicit confirmation" (#309). Both put the irrevocable step behind an
+unconditional human gate and grant autonomy only on the reversible side of
+it. That's the load-bearing structural similarity, and it's worth stating as
+a **shared invariant**, not a coincidence: an autonomous-run mechanism is
+trustworthy exactly to the degree its scope ends before the step that can't
+be undone.
+
+**A second, sharper convergence, visible only in the source's exact wording
+[direct reading]:** `bmad-build-auto`'s own docs state its ownership split
+almost identically to this repo's Decision 2/3: the workflow "owns only its
+implementation run and the plan it creates or resumes. A human or an
+orchestrator, such as an AI coding session or `bmad-loop`, owns backlog
+policy and dispatch." That is the same Module/Interface split as this
+repo's role sub-agents (own producing one phase's artifact, torn down after
+handoff, no persistent state — `ARCHITECTURE-MULTI-AGENT-WIP.md` "System
+boundaries and ownership") vs. the orchestrator (owns routing, dispatch,
+escalation). Independent convergence on the same shape is a real data point
+that this repo's Decision 2/3 split isn't an arbitrary choice — a comparable
+system reached the same ownership boundary from a different design history.
+
+**A genuinely new mechanism the original summary dropped entirely
+[direct reading]:** on an intent-gap halt *during review* (not planning),
+`bmad-build-auto` doesn't just abandon the attempted work — "the working
+tree is reverted as usual, but the attempted change is first saved as a
+patch file beside the plan," explicitly "as concrete evidence for repairing
+the intent." If the intent gap turns out to have been a misreading rather
+than a real gap, the orchestrator can `git apply` the patch and resume
+review on it "instead of re-running from scratch." This is a distinct
+safety pattern from anything in this repo's current guardrail set: A2/A3
+govern *whether* an agent may proceed, but this repo has no equivalent
+"preserve the attempted diff as a durable artifact when a run halts
+partway" mechanism — a halted or aborted role session today just leaves
+whatever's on the branch (or nothing, if it never committed). See candidate
+2.7 below — this is new scope neither Product's report nor my own first
+draft covered, surfaced only by reading `autonomous-development-loops/`
+directly rather than trusting the condensed summary's "halts blocked"
+one-liner.
 
 **Where #309 is currently weaker than `bmad-build-auto`, structurally, not
 just "undocumented":** BMad's guardrail is *self-limiting by construction*
@@ -148,18 +245,37 @@ structural finding, not present in Product's report — see §2.2.
 
 ### 1.4 Review/retrospective mechanics
 
-BMad's finding-severity taxonomy (Patch / Defer / Decision needed) is a
-three-way **Interface contract** for what a reviewer Adapter may return —
-narrow, unambiguous, and machine-actionable (Patch = auto-apply). This
-repo's Reviewer/QA finding format (summary, failure scenario, location,
-category, CONFIRMED/PLAUSIBLE) is a different Interface, oriented around
-*evidentiary weight* (is this reproduced or suspected) rather than
-*disposition* (what happens to it next). The two are complementary, not
-competing: CONFIRMED/PLAUSIBLE answers "how sure are we," BMad's taxonomy
-answers "what do we do about it." Product's 2.2 candidate (deferred-finding
-disposition) is exactly filling this gap, and I agree it's small — it's
-adding one more field to an already-decided struct, not a new mechanism
-(§3 below, no deviation).
+**Correction from direct reading [direct reading]:** the original summary
+(and my own first draft, which repeated it) described BMad's finding
+handling as a flat three-way taxonomy (Patch/Defer/Decision needed). Reading
+`review-a-change/` directly shows it's actually **two independent axes**,
+not one taxonomy:
+
+1. **Severity** — every surviving finding, after triage ("verify the claimed
+   consequence... reading past the diff hunk far enough to tell whether that
+   consequence actually occurs," then "dismiss noise, refuted claims, and
+   unsubstantiated claims, with a recorded reason — never silently"), gets
+   assigned `low`/`medium`/`high`.
+2. **Disposition** — separately, survivors route to Patch / Defer / Decision
+   needed. And a real nuance the summary dropped: **"Decision needed" only
+   exists when a plan already exists** — "only used when a plan exists;
+   otherwise routes to patch/defer." Without a plan artifact to attach an
+   ambiguous choice to, BMad's process has nowhere durable to park it, so it
+   forces a patch-or-defer call instead.
+
+This is a different, and honestly better-specified, Interface than either
+this repo's finding format *or* my own first draft gave it credit for. This
+repo's CONFIRMED/PLAUSIBLE is evidentiary weight (am I sure this is real);
+BMad's severity axis (low/medium/high) is *impact*, a third, orthogonal
+question this repo's finding format doesn't ask at all today. That's a gap
+in this repo's own finding format that neither Product's report nor my
+first draft named — see the added candidate in §2.6 below (revised).
+
+Product's 2.2 candidate (deferred-finding disposition) is exactly filling
+the *disposition* axis, and I agree it's small — adding one field to an
+already-decided struct, not a new mechanism (§3 below, no deviation on that
+part). But BMad's actual practice suggests this repo is missing the
+*severity* axis too, which Product's report didn't surface (§2.6).
 
 The sharper structural point is `bmad-retrospective` vs. issue #322. BMad's
 retrospective is a **Module with real depth**: it reads an epic's entire
@@ -185,6 +301,90 @@ pile-up. Two real occurrences of the same underlying gap, in different
 guises, is enough to justify a real seam, not a one-off fix. I agree with
 Product's 2.3 and consider it the highest-leverage candidate in this report
 (§2 below).
+
+**Two more findings only visible from the source itself [direct reading],
+both strengthening 2.3's case:**
+
+- `bmad-retrospective`'s six analysis categories include a step the
+  condensed summary compressed into "architectural drift/duplication":
+  reading directly, it's actually "passes the epic's complete diff to
+  `bmad-review`, emphasizing **seams between tickets**." That's BMad's own
+  documentation independently reaching for this repo's own vendored
+  `codebase-design` vocabulary (Seam) to describe exactly the
+  cross-work-item drift #322 exists to catch by hand — unprompted
+  convergence on the same concept from a different design lineage, which is
+  a stronger argument for 2.3's shape than anything either report stated
+  first-hand.
+- The retrospective's evidence sources explicitly include "initiative
+  requirements (via ticket `covers` fields)." BMad's `covers` field and this
+  repo's `Covers:` token convention (`write-spec`, `check-traceability.sh`)
+  are independently-arrived-at answers to the identical traceability
+  problem — reproducing a requirement-to-implementation link as a
+  structured, greppable field rather than prose. Neither report noticed
+  this the first time through the condensed summary because the summary
+  never mentioned BMad's `covers` field at all. No action follows from
+  this — it's confirming evidence that this repo's own `Covers:` convention
+  is a sound design, arrived at independently, not a correction to
+  anything decided.
+
+Interface detail the condensed summary also omitted, useful for sizing 2.3:
+retrospective output is one file, `epic-<slug>-retrospective.md`, and BMad
+supports an unattended, verdict-only invocation (`bmad-retrospective -H
+<epic>`) alongside the interactive default. See revised effort note in §2.3.
+
+### 1.5 Findings only visible from direct source reading, not otherwise covered above
+
+Collected here rather than forced into §1.1-1.4 above because they don't map
+cleanly onto one of the four comparison axes this session was scoped to, but
+are load-bearing for §2's candidates.
+
+**The same classifier shape appears twice in BMad, independently
+[direct reading].** `bmad-build`'s own entry point already runs a
+size/risk-style classifier before deciding how much process to apply: three
+"Design Assessment Dimensions" (intent gaps, irreversible actions,
+footprint) determine whether a change takes the "light path" (minimal plan,
+same-session implementation) or requires a full written plan with
+pre-implementation approval. `bmad-code-review` runs a structurally
+identical classifier at a different Seam (thorough vs. quick review depth).
+Neither the original summary nor Product's report noticed these are the
+*same pattern* applied twice within BMad itself. That's a second, direct
+data point (beyond BMad's own review-depth split) that candidate 2.4's
+shape — a classifier gating "how much process" — isn't a one-off idea, it's
+BMad's own recurring solution to "don't apply full ceremony uniformly."
+Strengthens 2.4's case; doesn't change its sizing.
+
+**BMad's own default Party-mode setting undercuts its own stated design
+principle [direct reading] — worth naming before this repo considers
+candidate 2.5.** The page states the reasoning for independent agents
+clearly: "One model voicing five personas tends to make them agree. Separate
+agents keep their reasoning independent, which is the point of a review
+panel or a focus group." But reading the actual mode table shows **`session`
+— one model voicing all personas inline — is the *default* mode**, not
+`subagent` (a separate agent per persona per round) or `agent-team`
+(persistent team, "Claude Code only"). BMad ships the mode its own
+documentation argues against as the out-of-the-box behavior, and only
+escalates to genuine independence in `auto` mode "when needed" or when a
+user explicitly requests `subagent`/`agent-team`. If this repo ever builds
+something in candidate 2.5's shape, it should not reproduce BMad's default —
+this repo's own Decision 3 (fresh, stateless sub-agent per role, no
+long-lived shared-context agent) is already closer to BMad's own stated
+*principle* than BMad's own *default* is. Worth stating plainly since it's
+an instance of "don't copy the popular default, copy the reasoning" — and
+notably, `agent-team` mode is explicitly "Claude Code only," which is this
+repo's own runtime, so the more-independent mode is directly available if
+2.5 is ever picked up, not a hypothetical future capability.
+
+**BMad has a named escape valve for small standalone work that doesn't
+need an epic [direct reading], not covered in the original summary at
+all:** "Standalone tracked stories/bugs reside in `backlog/` without
+requiring an invented epic," and separately, "one small story or bug can go
+straight to Build without ticketing." This is structurally close to this
+repo's own `fix/<issue>-<name>` branches for small fixes that don't warrant
+a full Epic — a convergence worth naming (no gap, no candidate — this repo
+already has the equivalent via GitHub Issues without an Epic parent) but
+useful as confirming evidence that this repo's existing "not everything
+needs an epic" practice matches BMad's considered design, not just informal
+habit.
 
 ---
 
@@ -214,6 +414,19 @@ but is currently unnamed.
 Product's 2.6 effort-shape ("small"); I'd go one notch lower (trivial, not
 small) because there is genuinely nothing to design — the Seam already
 exists, this only names it.
+
+**Refinement from direct reading [direct reading]:** BMad's actual built/done
+split is not binary — the plan-file `status` field is a full lifecycle,
+`draft` → `ready-for-dev` → `in-progress` → `in-review` → `built` →
+optionally `done`, with `blocked`/`dropped` as side-exits at any point. The
+condensed summary flattened this to just "built vs. done." Recommendation:
+this repo should still adopt only the two endpoint terms (built, done), not
+BMad's full six-state machine — at this project's actual scale (sequential
+roles, one branch at a time, Decision 3) the intermediate states are already
+implicitly carried by the `role:<name>` label (A5) and the PR's own review
+state, so importing a parallel state field would duplicate what A5 already
+tracks. This is a scope-boundary judgment call I'm resolving now, not
+deferring to Ties — see §4.
 
 ### 2.2 Self-limiting scope for release-branch standing authorization (small-medium)
 
@@ -305,6 +518,19 @@ on (i) vs. (ii) above before real estimation — flagging that as the next
 open question for whoever picks this up, not resolving it here.
 **Deviation from Product's effort-shape — see §3.3.**
 
+**Interface detail from direct reading, narrows the design space [direct
+reading]:** BMad's own retrospective produces exactly one output file
+(`epic-<slug>-retrospective.md`) and supports both an interactive default
+and an unattended, verdict-only invocation (`-H <epic>`). That maps cleanly
+onto this repo's existing "one issue comment per work item" OQ9 pattern —
+confirms Product's instinct to reuse that pattern (rather than a new
+artifact type) is the right call, and additionally suggests this repo's own
+version should likewise support a lighter "verdict only" mode from day one
+(skip the full narrative, just the accepted/accepted-with-open-items/
+rejected line plus evidence links) for the case where Ties wants a quick
+answer without reading a full retrospective narrative — a small addition to
+the Interface, not a reason to raise the estimate further.
+
 ### 2.4 Named review-depth tiers (small — matches Product, mechanism specified further)
 
 **What, technically:** agree with Product's 2.4 in shape. The concrete
@@ -331,6 +557,15 @@ conflates a small implementation cost with a real usage-cost question
 (dispatching 2-3 reviewer instances on every "thorough" PR *does* add
 ceremony) — those are separable, see §3.4.
 
+**Additional confidence from direct reading [direct reading]:** BMad
+doesn't only use a quick/thorough split at the review Seam — as §1.5 notes,
+`bmad-build`'s own entry point runs the identical classifier-shape decision
+(light path vs. full plan) before implementation even starts. Seeing the
+same shape twice in the source itself, not just once, raises my confidence
+that this is a genuinely reusable pattern rather than a one-off feature of
+BMad's review skill specifically — doesn't change the estimate, strengthens
+the case for building it.
+
 ### 2.5 A3 escape-hatch formalization (small — matches Product)
 
 Agree with Product's 2.1 in shape and effort. One clarification worth
@@ -351,6 +586,68 @@ Agree fully with Product's 2.2, no technical deviation. This is a one-field
 addition to an already-decided struct (`ROLE-DESCRIPTIONS.md`'s finding
 format); there is no architecture decision here beyond naming the field.
 
+### 2.7 Severity field on findings (trivial — new candidate, direct-reading only)
+
+**What, technically:** add a `low`/`medium`/`high` severity field to this
+repo's existing finding format (`ROLE-DESCRIPTIONS.md`'s "Shared, across all
+five roles" section: summary, failure scenario, location, category,
+CONFIRMED/PLAUSIBLE), alongside the disposition field Product's 2.2 already
+proposes. Per §1.4 above, BMad's actual finding taxonomy is two independent
+axes — severity and disposition — and this repo's format currently
+expresses neither disposition nor severity, only evidentiary confidence.
+Product's 2.2 fills the disposition gap; this fills the severity gap. Both
+are additive to the same struct, not competing designs.
+
+**Why it matters:** this repo's Reviewer/QA findings today have no
+standard way to say "this is real and confirmed, but low-stakes" vs. "this
+is real, confirmed, and release-blocking" other than prose judgment buried
+in the summary sentence. Issue #322's own worked example
+(`role-label-staleness.sh`'s F-4/F-5/F-7/F-8, explicitly called out as
+"non-blocking... by the reviewing Reviewer's own judgment at merge time")
+is exactly a severity call being made informally, per finding, with no
+field to record *why* it was judged non-blocking beyond prose in the issue
+body. A severity field would make that judgment a structured, greppable
+part of the finding itself.
+
+**Effort: trivial.** Same shape as 2.6 — one more field on an already-
+decided struct, no new mechanism, no new skill logic. This candidate did
+not appear in Product's report at all; it's visible only from reading
+`review-a-change/` closely enough to notice BMad's taxonomy is two axes,
+not one — flagged here as new scope from direct source reading, not a
+disagreement with anything Product said.
+
+### 2.8 Preserve attempted work as a patch artifact when an autonomous run halts (small — new candidate, direct-reading only)
+
+**What, technically:** if this repo ever builds an autonomous or
+semi-autonomous run mode (nothing currently proposed does — see §3.3's
+non-adoption, unchanged by this revision), borrow `bmad-build-auto`'s
+halt-preservation mechanism (§1.3 above): on a halt partway through work
+(an intent gap, a blocked gate, an unresolvable ambiguity), revert the
+working branch to its last-known-good state as usual, but first save the
+attempted diff as a patch file alongside whatever plan/tracking artifact
+exists, so the work isn't silently lost and a human (or a resumed session)
+can inspect, discard, or reapply it.
+
+**Why it matters:** none of this repo's current guardrails (A2, A3) address
+*what happens to in-progress work* when a role halts mid-task for a reason
+that isn't a clean rejection — today that's undefined; a halted session's
+uncommitted changes are just whatever's on disk when the session ends. This
+is a small, cheap safety net that costs nothing when unused and matters
+exactly once, the first time a halt would otherwise silently discard real
+work. Distinct from A11 (commit/push per logical step is already
+pre-authorized) — A11 covers the *successful* path; this covers the *halted*
+path, which A11 doesn't address at all.
+
+**Effort: small.** No new orchestration model — just a convention (patch
+file location and naming, e.g. beside whatever the halting role's own
+artifact is) plus a one-line addition to the halt-handling text wherever
+A3's escape hatch or a future autonomous mode's guardrails get written up.
+**Not urgent** — this repo has no autonomous-run mode today (§3.3), so this
+is a "worth remembering when one is eventually proposed" note, not
+something to build now. Flagged here so it isn't lost between now and
+whenever that proposal happens, since it would otherwise need
+rediscovering from the same source material again.
+
 ---
 
 ## 3. Deviations from Product's report
@@ -358,6 +655,20 @@ format); there is no architecture decision here beyond naming the field.
 Per this session's instruction, every point of agreement-and-extension,
 disagreement, or added scope is marked here explicitly, quoting Product's
 specific claim.
+
+### 3.0 Self-correction from direct source reading (not a deviation from Product — a deviation from this report's own first draft)
+
+Product's report was itself built without independent source reading (per
+its own method note, it worked from the orchestrator's summary, same as my
+first draft). So the §1.1 correction above — BMad already has standalone
+`bmad-code-review`, `bmad-walkthrough`, and `bmad-qa-generate-e2e-tests`
+skills, not just "one agent, reviewers bolted on" — is a correction shared
+by both reports equally, not a disagreement between them. Recorded here for
+traceability rather than silently folded into §1.1, per Ties' instruction
+that this revision be explicit about what changed and why. It does not
+change either report's bottom-line conclusion (this repo's five-role split
+is still deeper *and mandatory* where BMad's satellite skills are optional
+and separately invoked) — it changes the *reasoning*, not the verdict.
 
 ### 3.1 Agreement, extended: single-agent-build non-adoption (§3.1 of this report)
 
@@ -494,6 +805,15 @@ sound. Noted for completeness, not a substantive deviation.
   requirement, not a soft preference**, when 2.1 (Product's escape-hatch
   formalization) is written up. Directly evidenced by A3's own pilot-finding
   paragraph; not a judgment call, a lesson already paid for once.
+- **2.1's built/done vocabulary adopts only BMad's two endpoint terms, not
+  its full six-state lifecycle** (§2.1's direct-reading refinement) — this
+  repo's `role:<name>` label (A5) and PR review state already carry what
+  BMad's intermediate states track; adding a parallel state field would
+  duplicate A5, not extend it.
+- **2.7 (severity field) and 2.6 (disposition field) are both additive
+  fields on the same existing struct, not alternatives** — no ordering
+  dependency between them, both can be added in the same small change per
+  whoever picks up `ROLE-DESCRIPTIONS.md`'s finding-format section next.
 
 ### Still needs Ties
 
@@ -519,3 +839,10 @@ sound. Noted for completeness, not a substantive deviation.
   report doesn't re-litigate those; §2's effort estimates are additional
   input for Ties' and Product's prioritization decision, not a resolution
   of Product's open questions themselves.
+- **§2.8 (patch-preservation on halt): whether this is worth recording now
+  as a standing design note, or left undocumented until an autonomous-run
+  mode is actually proposed.** I lean toward recording it now (cheap, and
+  the source material that surfaced it won't be re-read next time by
+  default) but this is a documentation-effort-vs-clutter judgment, not a
+  technical one — Ties' call on whether `ARCHITECTURE-MULTI-AGENT-WIP.md`
+  should carry a forward-looking note for a capability not yet in scope.
