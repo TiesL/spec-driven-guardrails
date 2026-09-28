@@ -4,21 +4,25 @@
 # Covers: F35
 #
 # Single-file, S130-style inline fixtures (QA's own call in issue #315's
-# Test comment: this script has one call shape — issue + N PRs — and one
-# output line, not compliance-evidence.sh's six gates/three call shapes,
-# so a separate shared *-fixture.sh file (S150/S151's own reason for
-# splitting one out) buys nothing here).
+# Test comment: this script has one call shape family — issue + N
+# candidate PRs — and one output line, not compliance-evidence.sh's six
+# gates/three call shapes, so a separate shared *-fixture.sh file
+# doesn't buy anything here).
+#
+# Rewritten for the REST-only redesign (Architect's issue #315 comment,
+# 2026-09-28, after Reviewer's PR #316 findings): no `gh api graphql`,
+# `gh issue view`, or `gh pr view` anywhere — every call is `gh api`
+# against an explicit REST endpoint (issue body+labels, issue comments,
+# the issue's timeline for candidate PRs, each candidate's current PR
+# body for the closing-keyword filter, and each kept PR's comments).
 #
 # Every fixture below fixes the issue number at #400 (never a real issue
-# in this repo) and varies only the fake gh's returned data — mirrors
-# compliance-evidence-fixture.sh's own CALL_A_ARGS convention of a fixed
-# PR number (#279) with varying fixture bodies. The exact argv strings
-# (CALL_ISSUE_ARGS / CALL_PR5nn_ARGS below) were captured by observing
-# role-label-staleness.sh's own real argv against a recording fake gh,
-# never retyped from the source by hand (Architect's fixture-hygiene
-# rule, #296/#302) — a drift in the script's graphql query or --jq
-# expression shows up here as a fallthrough (h) failure, not a silent
-# false pass.
+# in this repo) and candidate PR numbers at #501/#502. The exact argv
+# strings (CALL_*_ARGS below) were captured by observing role-label-
+# staleness.sh's own real argv against a recording fake gh, never
+# retyped from the source by hand (Architect's fixture-hygiene rule,
+# #296/#302) — a drift in the script's endpoints or --jq expressions
+# shows up here as a fallthrough failure, not a silent false pass.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -32,51 +36,72 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # --- Fixed argv patterns (captured, not retyped — see header). Every
-# case arm below is single-quoted so the literal `$owner`/`$repo`/
-# `$number` GraphQL variable syntax inside the query text is never
-# mistaken by bash for a real variable expansion when the fake gh script
-# itself is parsed and run.
-CALL_ISSUE_ARGS='api graphql -f query=query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){issue(number:$number){labels(first:20){nodes{name}}body comments(first:100){nodes{body}}closedByPullRequestsReferences(first:20){nodes{number}}}}} -F owner={owner} -F repo={repo} -F number=400 --jq .data.repository.issue | (.labels.nodes[]? | "LABEL\t"+.name),(.closedByPullRequestsReferences.nodes[]? | "PR\t"+(.number|tostring)),("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments.nodes[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR501_ARGS='pr view 501 --json body,comments --jq ("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR502_ARGS='pr view 502 --json body,comments --jq ("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR503_ARGS='pr view 503 --json body,comments --jq ("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR504_ARGS='pr view 504 --json body,comments --jq ("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
+# case arm below is single-quoted defensively (none of these actually
+# contain a literal `$`, unlike the old GraphQL-based design, but the
+# convention costs nothing and keeps every future edit to this file
+# safe by construction if one ever does).
+CALL_ISSUE_ARGS='api repos/{owner}/{repo}/issues/400 --jq ("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
+CALL_ISSUE_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/400/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_TIMELINE_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
+CALL_PR501_BODY_ARGS='api repos/{owner}/{repo}/pulls/501 --jq "BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR501_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/501/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR502_BODY_ARGS='api repos/{owner}/{repo}/pulls/502 --jq "BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR502_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/502/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 
 pattern_issue="'$CALL_ISSUE_ARGS'"
-pattern_pr501="'$CALL_PR501_ARGS'"
-pattern_pr502="'$CALL_PR502_ARGS'"
-pattern_pr503="'$CALL_PR503_ARGS'"
-pattern_pr504="'$CALL_PR504_ARGS'"
+pattern_issue_comments="'$CALL_ISSUE_COMMENTS_ARGS'"
+pattern_timeline="'$CALL_TIMELINE_ARGS'"
+pattern_pr501_body="'$CALL_PR501_BODY_ARGS'"
+pattern_pr501_comments="'$CALL_PR501_COMMENTS_ARGS'"
+pattern_pr502_body="'$CALL_PR502_BODY_ARGS'"
+pattern_pr502_comments="'$CALL_PR502_COMMENTS_ARGS'"
 
-# Reads a heredoc-style fake-gh script body from stdin (never wrapped in
-# $(...) at the call site — same parser hazard compliance-evidence-
-# fixture.sh's own run_build_fake_gh avoids: a literal ')' inside the
-# heredoc, unavoidable in case-arm syntax and this script's own --jq
-# expressions, would otherwise close the surrounding command
-# substitution before the heredoc terminator is ever reached).
-# __CALL_ISSUE__/__CALL_PR501__/__CALL_PR502__/__CALL_PR503__/
-# __CALL_PR504__ are replaced with the exact argv patterns above via
-# plain substring replacement — also quote-safe, since heredoc content
-# is never re-parsed as shell syntax at substitution time.
-#
-# Every fixture also gets a fallthrough arm that appends the unexpected
-# argv to a witness file and exits 1 — (h)'s read-only verification,
-# built into every arm rather than opted into per-case, so a stray
-# unexpected `gh` call anywhere always fails loudly instead of silently
-# returning gh's own default exit-1-with-nothing-on-stdout.
 FAKEGH_OUT="$SANDBOX/fakegh-out"
 WITNESS="$SANDBOX/witness"
+
+# Reads a heredoc-style list of case ARMS (not a full case statement) from
+# stdin — never wrapped in $(...) at the call site (a literal ')' inside
+# the heredoc, unavoidable in case-arm syntax and this script's own --jq
+# expressions, would otherwise close the surrounding command substitution
+# before the heredoc terminator is ever reached). __CALL_ISSUE__ etc. are
+# replaced with the exact argv patterns above via plain substring
+# replacement — quote-safe, since heredoc content is never re-parsed as
+# shell syntax at substitution time.
+#
+# F-2 fix (PR #316 Reviewer): the ONE `case "$*" in ... esac` and the
+# witness-plus-exit-1 fallthrough are supplied ONCE, here, centrally —
+# never per-fixture. A fixture below supplies only the arms it wants to
+# answer; any call it has no arm for correctly falls through to the
+# witness line and exit 1 (a fixture's own missing arm is how a call is
+# made to "fail" for that test, same as every other fake_gh_bin fixture
+# in this repo). The previous version had each fixture supply its own
+# trailing `esac; exit 1` *after* which the witness line was appended —
+# unreachable, since a case statement's own `exit 1` inside the fixture
+# already terminated the process first. This version's witness line
+# sits *inside* the one case statement's fallthrough, so it's reached by
+# construction whenever no arm matches, and never otherwise (a matched
+# arm's own `exit 0 ;;` always exits the script before the fallthrough
+# is reached, since a case arm's `exit` ends the whole process, not the
+# case statement).
 run_build_fake_gh() {
-  local body
-  body="$(cat)"
-  body="${body//__CALL_ISSUE__/$pattern_issue}"
-  body="${body//__CALL_PR501__/$pattern_pr501}"
-  body="${body//__CALL_PR502__/$pattern_pr502}"
-  body="${body//__CALL_PR503__/$pattern_pr503}"
-  body="${body//__CALL_PR504__/$pattern_pr504}"
+  local arms body
+  arms="$(cat)"
+  arms="${arms//__CALL_ISSUE__/$pattern_issue}"
+  arms="${arms//__CALL_ISSUE_COMMENTS__/$pattern_issue_comments}"
+  arms="${arms//__CALL_TIMELINE__/$pattern_timeline}"
+  arms="${arms//__CALL_PR501_BODY__/$pattern_pr501_body}"
+  arms="${arms//__CALL_PR501_COMMENTS__/$pattern_pr501_comments}"
+  arms="${arms//__CALL_PR502_BODY__/$pattern_pr502_body}"
+  arms="${arms//__CALL_PR502_COMMENTS__/$pattern_pr502_comments}"
+
+  body='case "$*" in'
   body="$body
-echo \"UNEXPECTED: \$*\" >> '$WITNESS'
+$arms
+esac
+printf 'UNEXPECTED: %s\n' \"\$*\" >> '$WITNESS'
 exit 1"
+
+  : > "$WITNESS"
   fake_gh_bin "$body" > "$FAKEGH_OUT"
 }
 
@@ -105,18 +130,24 @@ assert_verdict_shape() {
 
 # =========================================================================
 # (a) AC2 — label matches the latest evidenced stage exactly -> in-sync.
+# Full success: every call the script makes is answered, so the witness
+# must stay empty.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:qa\n'
-    printf 'PR\t501\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_a="$(cat "$FAKEGH_OUT")"
 output_a="$(PATH="$fakebin_a:$PATH" "$script" 400)"; status_a=$?
@@ -129,18 +160,21 @@ output_a="$(PATH="$fakebin_a:$PATH" "$script" 400)"; status_a=$?
 # stale, naming both the label present and the label the evidenced stage
 # implies (AC1's own worked phrasing).
 # =========================================================================
-: > "$WITNESS"
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:architect\n'
-    printf 'PR\t501\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_b="$(cat "$FAKEGH_OUT")"
 output_b="$(PATH="$fakebin_b:$PATH" "$script" 400)"; status_b=$?
@@ -158,14 +192,14 @@ got:      $output_b"
 # out by name: a fresh label with no evidence at all is the normal
 # starting state.
 # =========================================================================
-: > "$WITNESS"
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:product\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_c="$(cat "$FAKEGH_OUT")"
 output_c="$(PATH="$fakebin_c:$PATH" "$script" 400)"; status_c=$?
@@ -177,30 +211,33 @@ output_c="$(PATH="$fakebin_c:$PATH" "$script" 400)"; status_c=$?
 # (d) AC3/AC4 — no label at all: two distinct cases, plus the direct
 # boundary between them (one marker appears).
 # =========================================================================
-: > "$WITNESS"
 # (d1) AC3 — no label, no marker anywhere -> not-started, not stale.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_d1="$(cat "$FAKEGH_OUT")"
 output_d1="$(PATH="$fakebin_d1:$PATH" "$script" 400)"; status_d1=$?
 [ "$status_d1" -eq 0 ] || fail "S152 (d1) — expected exit 0, got $status_d1"
 [ "$(assert_verdict_shape 'S152 (d1)' "$output_d1")" = "not-started" ] || fail "S152 (d1) — expected not-started (no label, no marker), got: $output_d1"
+[ -s "$WITNESS" ] && fail "S152 (d1) — unexpected gh call(s): $(cat "$WITNESS")"
 
-# (d2) AC4 — no label, but at least one live marker exists -> stale, not
-# not-started. Directly exercises the AC3/AC4 boundary (one marker
-# appears) rather than trusting it falls out of (d1)/(b) for free.
+# (d2) AC4 — no label, but at least one live marker exists (on the issue
+# body itself) -> stale, not not-started. Directly exercises the
+# AC3/AC4 boundary (one marker appears) rather than trusting it falls
+# out of (d1)/(b) for free.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'BODY\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_d2="$(cat "$FAKEGH_OUT")"
 output_d2="$(PATH="$fakebin_d2:$PATH" "$script" 400)"; status_d2=$?
@@ -210,35 +247,36 @@ expected_d2='role-label-staleness: issue #400 — stale (issue #400 carries no r
 [ "$output_d2" = "$expected_d2" ] || fail "S152 (d2) — exact detail text wrong:
 expected: $expected_d2
 got:      $output_d2"
-[ -s "$WITNESS" ] && fail "S152 (d) — unexpected gh call(s): $(cat "$WITNESS")"
+[ -s "$WITNESS" ] && fail "S152 (d2) — unexpected gh call(s): $(cat "$WITNESS")"
 
 # =========================================================================
-# (e) — label present, zero linked PRs -> a normal verdict from
-# issue-only evidence, never indeterminate on its own. Distinct from
-# (e3) below: this is Call 1 succeeding with an empty PR list, not a
-# lookup failure.
+# (e) — label present, timeline succeeds with zero candidate PRs -> a
+# normal verdict from issue-only evidence, never indeterminate on its
+# own. Distinct from PR_DISCOVERY_FAILED below: this is the timeline
+# call succeeding with an empty result, not the call failing.
 # =========================================================================
-: > "$WITNESS"
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:dev\n'
-    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:dev\nBODY\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_e="$(cat "$FAKEGH_OUT")"
 output_e="$(PATH="$fakebin_e:$PATH" "$script" 400)"; status_e=$?
 [ "$status_e" -eq 0 ] || fail "S152 (e) — expected exit 0, got $status_e"
-[ "$(assert_verdict_shape 'S152 (e)' "$output_e")" = "in-sync" ] || fail "S152 (e) — expected in-sync from issue-only evidence with zero linked PRs, got: $output_e"
-[ -s "$WITNESS" ] && fail "S152 (e) — unexpected gh call(s) — zero PRs must mean no Call 2 at all: $(cat "$WITNESS")"
+[ "$(assert_verdict_shape 'S152 (e)' "$output_e")" = "in-sync" ] || fail "S152 (e) — expected in-sync from issue-only evidence with zero candidate PRs, got: $output_e"
+[ -s "$WITNESS" ] && fail "S152 (e) — unexpected gh call(s) — zero PRs means no pulls/<n> call at all: $(cat "$WITNESS")"
 
 # =========================================================================
-# (e2) — Call 1 (the issue lookup) itself fails -> fatal, exit 4, no
-# verdict on stdout.
+# (e2) — the issue-body call itself fails -> fatal, exit 4, no verdict
+# on stdout. No arm for __CALL_ISSUE__ at all, so it correctly falls
+# through (this fixture's designed failure — the witness IS expected to
+# record this call, since that's exactly how a missing arm simulates a
+# failure in this harness; not asserted empty here).
 # =========================================================================
-: > "$WITNESS"
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
 GHEOF
 fakebin_e2="$(cat "$FAKEGH_OUT")"
@@ -247,118 +285,223 @@ output_e2="$(PATH="$fakebin_e2:$PATH" "$script" 400 2>/dev/null)"; status_e2=$?
 [ -z "$output_e2" ] || fail "S152 (e2) — expected nothing on stdout when the issue lookup fails, got: $output_e2"
 
 # =========================================================================
-# (e3) — a PR lookup failure. Two sub-arms, kept explicitly separate
-# (QA's Test comment): the degrade case, and its required positive
-# control (a sound verdict from what WAS read must not be dragged into
-# indeterminate just because a lookup somewhere failed).
+# New failure semantics — three independent flags (Architect's redesign,
+# 2026-09-28). Each is exercised on its own, plus the required positive
+# controls proving no over-broad blanket degrade.
 # =========================================================================
-: > "$WITNESS"
-# (e3a) — the only linked PR's lookup fails while issue-side evidence
-# already places the label in-sync from what was read; a missing PR
-# could still reveal a later stage, so this must degrade.
-run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:architect\n'
-    printf 'PR\t501\n'
-    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
-GHEOF
-fakebin_e3a="$(cat "$FAKEGH_OUT")"
-output_e3a="$(PATH="$fakebin_e3a:$PATH" "$script" 400 2>/dev/null)"; status_e3a=$?
-[ "$status_e3a" -eq 0 ] || fail "S152 (e3a) — expected exit 0 (a degrade, not a fatal error), got $status_e3a"
-[ "$(assert_verdict_shape 'S152 (e3a)' "$output_e3a")" = "indeterminate" ] || fail "S152 (e3a) — expected indeterminate (only linked PR's lookup failed, label in-sync from issue-only evidence, could flip to stale), got: $output_e3a"
 
-# (e3b) positive control — two linked PRs, one's lookup fails, but the
-# other's evidence alone already settles the verdict at the ceiling
-# stage (role:reviewer/Review — nothing a missing PR could reveal can
-# ever place the true latest stage past Review), so PR_LOOKUP_FAILED
-# must NOT drag this into indeterminate.
+# (ISSUE_COMMENTS_FAILED) — the issue's own comments call fails; a label
+# in-sync from what WAS read (issue body only) must degrade, since a
+# missing comment could carry a later marker.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:reviewer\n'
-    printf 'PR\t501\n'
-    printf 'PR\t502\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
-fakebin_e3b="$(cat "$FAKEGH_OUT")"
-output_e3b="$(PATH="$fakebin_e3b:$PATH" "$script" 400 2>/dev/null)"; status_e3b=$?
-[ "$status_e3b" -eq 0 ] || fail "S152 (e3b) — expected exit 0, got $status_e3b"
-[ "$(assert_verdict_shape 'S152 (e3b)' "$output_e3b")" = "in-sync" ] || fail "S152 (e3b) positive control — expected in-sync (label already at the ceiling stage from the PR that WAS read; PR #502's failure can't change that), got: $output_e3b"
+fakebin_icf="$(cat "$FAKEGH_OUT")"
+output_icf="$(PATH="$fakebin_icf:$PATH" "$script" 400 2>/dev/null)"; status_icf=$?
+[ "$status_icf" -eq 0 ] || fail "S152 (ISSUE_COMMENTS_FAILED) — expected exit 0, got $status_icf"
+[ "$(assert_verdict_shape 'S152 (ISSUE_COMMENTS_FAILED)' "$output_icf")" = "indeterminate" ] || fail "S152 (ISSUE_COMMENTS_FAILED) — expected indeterminate (issue comments unread, label in-sync from body alone), got: $output_icf"
+assert_contains "S152 (ISSUE_COMMENTS_FAILED) — names the failure" "comments couldn't be read" "$output_icf"
 
-# (e3c) second positive control — a verdict already correctly `stale`
-# from evidence that WAS read must not degrade either: absence is only
-# ever additive (a missing PR can push the true latest stage later,
-# never earlier), so an already-stale verdict can only stay stale, never
-# get undone into in-sync, by evidence nobody has read yet.
+# (PR_DISCOVERY_FAILED) — the timeline call itself fails. This must
+# NEVER be read as "zero linked PRs" (case (e) above) — it means PRs
+# might exist and weren't found.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:architect\n'
-    printf 'PR\t501\n'
-    printf 'PR\t502\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
 GHEOF
-fakebin_e3c="$(cat "$FAKEGH_OUT")"
-output_e3c="$(PATH="$fakebin_e3c:$PATH" "$script" 400 2>/dev/null)"; status_e3c=$?
-[ "$status_e3c" -eq 0 ] || fail "S152 (e3c) — expected exit 0, got $status_e3c"
-[ "$(assert_verdict_shape 'S152 (e3c)' "$output_e3c")" = "stale" ] || fail "S152 (e3c) second positive control — expected stale (already behind from evidence read; PR #502's failure can only deepen that, never undo it), got: $output_e3c"
+fakebin_pdf="$(cat "$FAKEGH_OUT")"
+output_pdf="$(PATH="$fakebin_pdf:$PATH" "$script" 400 2>/dev/null)"; status_pdf=$?
+[ "$status_pdf" -eq 0 ] || fail "S152 (PR_DISCOVERY_FAILED) — expected exit 0, got $status_pdf"
+[ "$(assert_verdict_shape 'S152 (PR_DISCOVERY_FAILED)' "$output_pdf")" = "indeterminate" ] || fail "S152 (PR_DISCOVERY_FAILED) — expected indeterminate (timeline lookup failed, must not read as zero PRs), got: $output_pdf"
+assert_contains "S152 (PR_DISCOVERY_FAILED) — names the failure" "timeline lookup failed" "$output_pdf"
+
+# (PR_LOOKUP_FAILED, sub-arm: candidate body fetch fails) — the only
+# candidate's pulls/<pr> call fails; whether it even closes the issue is
+# now unknown, not "no match".
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+GHEOF
+fakebin_plf_body="$(cat "$FAKEGH_OUT")"
+output_plf_body="$(PATH="$fakebin_plf_body:$PATH" "$script" 400 2>/dev/null)"; status_plf_body=$?
+[ "$status_plf_body" -eq 0 ] || fail "S152 (PR_LOOKUP_FAILED, body) — expected exit 0, got $status_plf_body"
+[ "$(assert_verdict_shape 'S152 (PR_LOOKUP_FAILED, body)' "$output_plf_body")" = "indeterminate" ] || fail "S152 (PR_LOOKUP_FAILED, body) — expected indeterminate (the only candidate's body fetch failed, label in-sync from issue-only evidence), got: $output_plf_body"
+
+# (PR_LOOKUP_FAILED, sub-arm: kept PR's comments fetch fails) — the body
+# fetch succeeds and matches the closing keyword (so it's kept), but its
+# comments call fails.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+GHEOF
+fakebin_plf_comments="$(cat "$FAKEGH_OUT")"
+output_plf_comments="$(PATH="$fakebin_plf_comments:$PATH" "$script" 400 2>/dev/null)"; status_plf_comments=$?
+[ "$status_plf_comments" -eq 0 ] || fail "S152 (PR_LOOKUP_FAILED, comments) — expected exit 0, got $status_plf_comments"
+[ "$(assert_verdict_shape 'S152 (PR_LOOKUP_FAILED, comments)' "$output_plf_comments")" = "indeterminate" ] || fail "S152 (PR_LOOKUP_FAILED, comments) — expected indeterminate (kept PR's comments unread), got: $output_plf_comments"
+
+# Positive control 1 — label already at the ceiling stage (role:reviewer
+# /Review) from evidence that WAS read; a PR-discovery failure changes
+# nothing, since nothing a missing PR could reveal can ever place the
+# true latest stage past Review.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  printf 'LABEL\trole:reviewer\nBODY\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+GHEOF
+fakebin_pc1="$(cat "$FAKEGH_OUT")"
+output_pc1="$(PATH="$fakebin_pc1:$PATH" "$script" 400 2>/dev/null)"; status_pc1=$?
+[ "$status_pc1" -eq 0 ] || fail "S152 positive control 1 — expected exit 0, got $status_pc1"
+[ "$(assert_verdict_shape 'S152 positive control 1' "$output_pc1")" = "in-sync" ] || fail "S152 positive control 1 — expected in-sync (label already at the ceiling stage from evidence read; PR-discovery failure can't change that), got: $output_pc1"
+
+# Positive control 2 — a verdict already correctly `stale` from evidence
+# that WAS read must not degrade either: absence is only ever additive.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\nBODY\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+GHEOF
+fakebin_pc2="$(cat "$FAKEGH_OUT")"
+output_pc2="$(PATH="$fakebin_pc2:$PATH" "$script" 400 2>/dev/null)"; status_pc2=$?
+[ "$status_pc2" -eq 0 ] || fail "S152 positive control 2 — expected exit 0, got $status_pc2"
+[ "$(assert_verdict_shape 'S152 positive control 2' "$output_pc2")" = "stale" ] || fail "S152 positive control 2 — expected stale (already behind from evidence read; issue-comments AND timeline both failing can only deepen that, never undo it), got: $output_pc2"
+
+# =========================================================================
+# Closing-keyword filter — the timeline over-includes by design
+# (Architect's redesign): a cross-referencing PR that mentions the issue
+# in prose, without a real closing keyword, must be excluded, and never
+# even get a comments call (no arm for PR #502's comments below — if the
+# implementation wrongly fetched them anyway, the fallthrough witness
+# would catch it).
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\nPR\t502\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_PR502_BODY__)
+  printf 'BODY\tSee also #400 for related context; unrelated work otherwise.\n'
+  exit 0 ;;
+GHEOF
+fakebin_kw="$(cat "$FAKEGH_OUT")"
+output_kw="$(PATH="$fakebin_kw:$PATH" "$script" 400)"; status_kw=$?
+[ "$status_kw" -eq 0 ] || fail "S152 (keyword filter) — expected exit 0, got $status_kw"
+[ "$(assert_verdict_shape 'S152 (keyword filter)' "$output_kw")" = "in-sync" ] || fail "S152 (keyword filter) — expected in-sync (PR #502 merely mentions the issue, must be excluded), got: $output_kw"
+[ -s "$WITNESS" ] && fail "S152 (keyword filter) — PR #502 must never get a comments call once excluded by the keyword filter: $(cat "$WITNESS")"
+
+# Case-insensitivity + a non-standard-but-valid keyword ("fixes"), and a
+# same-repo `owner/repo#N` form must NOT be mistaken for a bare `#N` —
+# not in scope for v1 (accepted debt, same repo only), but confirms the
+# ERE doesn't accidentally match the wrong issue.
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+__CALL_ISSUE__)
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tFIXES #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+GHEOF
+fakebin_kw2="$(cat "$FAKEGH_OUT")"
+output_kw2="$(PATH="$fakebin_kw2:$PATH" "$script" 400)"; status_kw2=$?
+[ "$status_kw2" -eq 0 ] || fail "S152 (keyword case-insensitive) — expected exit 0, got $status_kw2"
+[ "$(assert_verdict_shape 'S152 (keyword case-insensitive)' "$output_kw2")" = "stale" ] || fail "S152 (keyword case-insensitive) — expected stale (uppercase FIXES #400 must still match, evidencing stage=Discovery with no label), got: $output_kw2"
 
 # =========================================================================
 # (f) — multiple linked PRs, markers split across them -> union/max,
-# order-independent. Run twice with the two PR lines swapped in Call 1's
-# output and assert byte-identical results (direct analogue of S150's
-# Arm G order-independence check).
+# order-independent. Run twice with the two PR lines swapped in the
+# timeline's output and assert byte-identical results (direct analogue
+# of S150's Arm G order-independence check).
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:qa\n'
-    printf 'PR\t501\n'
-    printf 'PR\t502\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-  __CALL_PR502__)
-    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\nPR\t502\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_PR502_BODY__)
+  printf 'BODY\tFixes #400\n'
+  exit 0 ;;
+__CALL_PR502_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_f1="$(cat "$FAKEGH_OUT")"
 output_f1="$(PATH="$fakebin_f1:$PATH" "$script" 400)"; status_f1=$?
 [ "$status_f1" -eq 0 ] || fail "S152 (f, order A) — expected exit 0, got $status_f1"
 [ "$(assert_verdict_shape 'S152 (f, order A)' "$output_f1")" = "stale" ] || fail "S152 (f, order A) — expected stale (role:qa behind the union max, stage=Implementation from PR #502), got: $output_f1"
+[ -s "$WITNESS" ] && fail "S152 (f, order A) — unexpected gh call(s): $(cat "$WITNESS")"
 
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:qa\n'
-    printf 'PR\t502\n'
-    printf 'PR\t501\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-  __CALL_PR502__)
-    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t502\nPR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_PR502_BODY__)
+  printf 'BODY\tFixes #400\n'
+  exit 0 ;;
+__CALL_PR502_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_f2="$(cat "$FAKEGH_OUT")"
 output_f2="$(PATH="$fakebin_f2:$PATH" "$script" 400)"; status_f2=$?
@@ -370,19 +513,17 @@ order B: $output_f2"
 # =========================================================================
 # (g1) — live_text() reuse: a marker inside a fenced code block on the
 # issue body must not count as live evidence (mirrors S151's own fixture
-# shape — a marker-shaped occurrence, quoted, next to an unrelated live
-# label). Label alone with the quoted marker stripped must render
+# shape). Label alone with the quoted marker stripped must render
 # in-sync (case (c)'s shape), not in-sync-with-Test-evidenced.
 # =========================================================================
-: > "$WITNESS"
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:product\n'
-    printf 'TEXT\t```\001<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\001```\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\nBODY\t```\001<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\001```\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_g1="$(cat "$FAKEGH_OUT")"
 output_g1="$(PATH="$fakebin_g1:$PATH" "$script" 400)"; status_g1=$?
@@ -391,39 +532,40 @@ output_g1="$(PATH="$fakebin_g1:$PATH" "$script" 400)"; status_g1=$?
 case "$output_g1" in
   *"stage=Test"*) fail "S152 (g1) — the quoted/fenced marker leaked through as live evidence: $output_g1" ;;
 esac
+[ -s "$WITNESS" ] && fail "S152 (g1) — unexpected gh call(s): $(cat "$WITNESS")"
 
 # =========================================================================
 # (g2) — the new stage-extraction logic's own correctness: a LIVE
 # (non-quoted) marker whose stage= value isn't one of the fixed five
 # must render indeterminate (AC6), never silently treated as absent and
-# never coerced into the nearest recognized stage. Distinct from (g1):
-# this exercises the new extraction code, not the borrowed live_text()
-# guard.
+# never coerced into the nearest recognized stage.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:qa\n'
-    printf 'TEXT\t<!-- model-record: stage=discovery model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\nBODY\t<!-- model-record: stage=discovery model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_g2="$(cat "$FAKEGH_OUT")"
 output_g2="$(PATH="$fakebin_g2:$PATH" "$script" 400)"; status_g2=$?
 [ "$status_g2" -eq 0 ] || fail "S152 (g2) — expected exit 0, got $status_g2"
 [ "$(assert_verdict_shape 'S152 (g2)' "$output_g2")" = "indeterminate" ] || fail "S152 (g2) — expected indeterminate (live marker with unrecognized stage=discovery, wrong case), got: $output_g2"
+[ -s "$WITNESS" ] && fail "S152 (g2) — unexpected gh call(s): $(cat "$WITNESS")"
 
 # (g2b) — a marker matched by the anchor but with no stage= token at
 # all (AC6's other half: "no parseable stage") must also render
 # indeterminate, not silently invisible.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'TEXT\t<!-- model-record: model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'BODY\t<!-- model-record: model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_g2b="$(cat "$FAKEGH_OUT")"
 output_g2b="$(PATH="$fakebin_g2b:$PATH" "$script" 400)"; status_g2b=$?
@@ -434,24 +576,29 @@ output_g2b="$(PATH="$fakebin_g2b:$PATH" "$script" 400)"; status_g2b=$?
 # (g3) — one linked PR carries a malformed marker, another linked PR
 # carries a well-formed marker for a later stage: overall verdict must
 # still be indeterminate (the malformed sighting always wins), not
-# stale/in-sync computed from the well-formed one alone — Architect's
-# blunt/conservative reading.
+# stale/in-sync computed from the well-formed one alone.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:architect\n'
-    printf 'PR\t501\n'
-    printf 'PR\t502\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=QA model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-  __CALL_PR502__)
-    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\nPR\t502\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=QA model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_PR502_BODY__)
+  printf 'BODY\tFixes #400\n'
+  exit 0 ;;
+__CALL_PR502_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_g3="$(cat "$FAKEGH_OUT")"
 output_g3="$(PATH="$fakebin_g3:$PATH" "$script" 400)"; status_g3=$?
@@ -460,19 +607,20 @@ output_g3="$(PATH="$fakebin_g3:$PATH" "$script" 400)"; status_g3=$?
 case "$output_g3" in
   *"stage=Implementation"*'expected role:dev'*) fail "S152 (g3) — computed stale from the well-formed PR alone instead of forcing indeterminate: $output_g3" ;;
 esac
+[ -s "$WITNESS" ] && fail "S152 (g3) — unexpected gh call(s): $(cat "$WITNESS")"
 
 # =========================================================================
 # AC5 — two-or-more role:<name> labels at once -> indeterminate, naming
 # every one found. Tested with exactly two and with three.
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:product\n'
-    printf 'LABEL\trole:qa\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\nLABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_ac5a="$(cat "$FAKEGH_OUT")"
 output_ac5a="$(PATH="$fakebin_ac5a:$PATH" "$script" 400)"; status_ac5a=$?
@@ -480,16 +628,16 @@ output_ac5a="$(PATH="$fakebin_ac5a:$PATH" "$script" 400)"; status_ac5a=$?
 [ "$(assert_verdict_shape 'S152 AC5 (two)' "$output_ac5a")" = "indeterminate" ] || fail "S152 AC5 (two labels) — expected indeterminate, got: $output_ac5a"
 assert_contains "S152 AC5 (two labels) — names role:product" "role:product" "$output_ac5a"
 assert_contains "S152 AC5 (two labels) — names role:qa" "role:qa" "$output_ac5a"
+[ -s "$WITNESS" ] && fail "S152 AC5 (two labels) — unexpected gh call(s): $(cat "$WITNESS")"
 
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:product\n'
-    printf 'LABEL\trole:architect\n'
-    printf 'LABEL\trole:reviewer\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:product\nLABEL\trole:architect\nLABEL\trole:reviewer\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_ac5b="$(cat "$FAKEGH_OUT")"
 output_ac5b="$(PATH="$fakebin_ac5b:$PATH" "$script" 400)"; status_ac5b=$?
@@ -505,20 +653,19 @@ assert_contains "S152 AC5 (three labels) — names role:reviewer" "role:reviewer
 # known names, not a blanket "matches role:" scan).
 # =========================================================================
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\tbug\n'
-    printf 'LABEL\tpriority:high\n'
-    printf 'LABEL\trole:qa\n'
-    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\tbug\nLABEL\tpriority:high\nLABEL\trole:qa\nBODY\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  exit 0 ;;
 GHEOF
 fakebin_filter="$(cat "$FAKEGH_OUT")"
 output_filter="$(PATH="$fakebin_filter:$PATH" "$script" 400)"; status_filter=$?
 [ "$status_filter" -eq 0 ] || fail "S152 (label filtering) — expected exit 0, got $status_filter"
 [ "$(assert_verdict_shape 'S152 (label filtering)' "$output_filter")" = "in-sync" ] || fail "S152 (label filtering) — unrelated labels (bug, priority:high) alongside role:qa must not read as multiple role labels, got: $output_filter"
+[ -s "$WITNESS" ] && fail "S152 (label filtering) — unexpected gh call(s): $(cat "$WITNESS")"
 
 # =========================================================================
 # No `gh` on PATH -> exit 3, nothing on stdout (mirrors S130's own
@@ -536,23 +683,23 @@ output_nogh="$(PATH="$nogh_bin" "$script" 400 2>/dev/null)"; status_nogh=$?
 # all").
 # =========================================================================
 
-# (h) — fake_gh_bin fallthrough fails loudly (recorded to a witness
-# file) on any unexpected gh call. Deliberately calls with a fake gh that
-# has NO matching case arm at all for either call, so if the script ever
-# tried an unanticipated gh invocation shape it would hit the
-# fallthrough and get witnessed.
-: > "$WITNESS"
+# (h) — the fallthrough witness stays empty across a full, successful
+# run that answers every call the script actually makes.
 run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
-case "$*" in
-  __CALL_ISSUE__)
-    printf 'LABEL\trole:qa\n'
-    printf 'PR\t501\n'
-    exit 0 ;;
-  __CALL_PR501__)
-    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
-    exit 0 ;;
-esac
-exit 1
+__CALL_ISSUE__)
+  printf 'LABEL\trole:qa\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_BODY__)
+  printf 'BODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+  exit 0 ;;
 GHEOF
 fakebin_h="$(cat "$FAKEGH_OUT")"
 output_h="$(PATH="$fakebin_h:$PATH" "$script" 400)"; status_h=$?
@@ -569,6 +716,24 @@ if [ "$h_witness_empty" -eq 1 ] && [ "$h_exit_ok" -eq 1 ] && [ "$h_shape_ok" -eq
 else
   fail "S152 (h) — read-only witness check failed (witness_empty=$h_witness_empty exit_ok=$h_exit_ok shape_ok=$h_shape_ok, witness: $(cat "$WITNESS" 2>/dev/null))"
 fi
+
+# (h, positive control) — proves the witness mechanism itself actually
+# fires, rather than being structurally unreachable (PR #316 Reviewer's
+# F-2 finding: the first version's witness line sat after each
+# fixture's own `esac; exit 1`, so it could never run — confirmed by a
+# mutation probe that injected a write call and watched S152 stay
+# green). This calls the fake `gh` binary DIRECTLY (not through
+# role-label-staleness.sh) with an argv no arm above answers, which is
+# exactly what an unanticipated call from the real script would look
+# like to this harness — proving the fallthrough-plus-witness plumbing
+# in run_build_fake_gh works, independently of whether the shipped
+# script happens to make such a call today.
+: > "$WITNESS"
+"$fakebin_h/gh" issue close 400 --comment "unexpected write" >/dev/null 2>&1
+probe_status=$?
+[ "$probe_status" -eq 1 ] || fail "S152 (h, positive control) — the fake gh's own fallthrough should exit 1 for an unanswered call, got $probe_status"
+[ -s "$WITNESS" ] || fail "S152 (h, positive control) — the witness did NOT fire for a genuinely unexpected call: the fallthrough-plus-witness mechanism itself is broken, which would make every other (h)-style empty-witness assertion in this file vacuous"
+assert_contains "S152 (h, positive control) — witness records the unexpected call" "issue close 400" "$(cat "$WITNESS" 2>/dev/null)"
 
 # (i) — source-level grep assertion: the script contains no gh write
 # subcommand. Comment lines are stripped first (S150's own trap: a
@@ -589,6 +754,14 @@ fi
 if grep -qE '\bgh[[:space:]]+label\b' <<<"$source_no_comments"; then
   i_clean=0
   fail "S152 (i) — source contains a 'gh label' subcommand shape"
+fi
+if grep -qE '\bgraphql\b' <<<"$source_no_comments"; then
+  i_clean=0
+  fail "S152 (i) — source contains 'gh api graphql' — the REST-only redesign must not reintroduce it"
+fi
+if grep -qE '\b(gh issue view|gh pr view)\b' <<<"$source_no_comments"; then
+  i_clean=0
+  fail "S152 (i) — source contains 'gh issue view'/'gh pr view' — both are GraphQL-backed and blocked in Claude Code sessions per the redesign"
 fi
 
 # The conjunction itself — neither (h) alone nor (i) alone is allowed to
