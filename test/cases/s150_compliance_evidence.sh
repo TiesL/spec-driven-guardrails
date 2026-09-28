@@ -830,10 +830,10 @@ assert_contains "S150 call-C-fails — a warning appears on stderr" "warning" "$
 [ "$(row_status "$output_callc_fails" 2)" = "indeterminate" ] || fail "S150 AC1 — expected gate 2 indeterminate (not not-evidenced) when a closing issue lookup fails and stage=Review looks missing, got '$(row_status "$output_callc_fails" 2)'"
 [ "$(row_status "$output_callc_fails" 3)" = "indeterminate" ] || fail "S150 AC2 — expected gate 3 indeterminate (not not-evidenced) when a closing issue lookup fails and no pre-merge-review:done marker is found, got '$(row_status "$output_callc_fails" 3)'"
 # shellcheck disable=SC2016
-expected_ac1_evidence='no `stage=Review` and/or `stage=Implementation` model-record marker found on PR #279, but a closing issue lookup failed, so absence can'"'"'t be confirmed'
+expected_ac1_evidence='no `stage=Review` and/or `stage=Implementation` model-record marker found on PR #279, but an evidence-corpus lookup failed, so absence can'"'"'t be confirmed'
 [ "$(row_evidence "$output_callc_fails" 2)" = "$expected_ac1_evidence" ] || fail "S150 AC1 — gate 2 evidence text doesn't match the spec'd template: $(row_evidence "$output_callc_fails" 2)"
 # shellcheck disable=SC2016
-expected_ac2_evidence='no `pre-merge-review:done` marker found on PR #279, but a closing issue lookup failed, so absence can'"'"'t be confirmed'
+expected_ac2_evidence='no `pre-merge-review:done` marker found on PR #279, but an evidence-corpus lookup failed, so absence can'"'"'t be confirmed'
 [ "$(row_evidence "$output_callc_fails" 3)" = "$expected_ac2_evidence" ] || fail "S150 AC2 — gate 3 evidence text doesn't match the spec'd template: $(row_evidence "$output_callc_fails" 3)"
 
 # --- AC7 (issue #299), a.k.a. Arm F: the stderr warning must name every
@@ -890,7 +890,7 @@ status_ac3=$?
 assert_table_shape "S150 AC3" "$output_ac3"
 [ "$(row_status "$output_ac3" 3)" = "indeterminate" ] || fail "S150 AC3 — expected gate 3 indeterminate for a stale marker under a failed issue lookup, got '$(row_status "$output_ac3" 3)'"
 # shellcheck disable=SC2016
-expected_ac3_evidence='only a stale `pre-merge-review:done sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` marker on PR #279, which doesn'"'"'t match `headRefOid` (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), and a closing issue lookup failed, so a matching marker can'"'"'t be ruled out'
+expected_ac3_evidence='only a stale `pre-merge-review:done sha=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` marker on PR #279, which doesn'"'"'t match `headRefOid` (aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), and an evidence-corpus lookup failed, so a matching marker can'"'"'t be ruled out'
 [ "$(row_evidence "$output_ac3" 3)" = "$expected_ac3_evidence" ] || fail "S150 AC3 — gate 3 evidence text doesn't match the spec'd template: $(row_evidence "$output_ac3" 3)"
 case "$(row_evidence "$output_ac3" 3)" in
   *"-->"*) fail "S150 AC3a — the stray '-->' is still present in the degraded gate-3 evidence cell" ;;
@@ -1498,6 +1498,107 @@ evidence_longcell="$(row_evidence "$output_longcell" 2)"
 case "$evidence_longcell" in
   *…) : ;;
   *) fail "S150 F2 long-cell — a cell actually over 300 chars must render with a visible truncation marker (…), got: $evidence_longcell" ;;
+esac
+
+# =========================================================================
+# PR #336 round-1 review, finding 2 — the PR-reviews source
+# (__CALL_A_REVIEWS__) is otherwise never exercised anywhere in this
+# file: every other case above returns empty for it. Confirmed during
+# that review: disabling review-reading in compliance-evidence.sh
+# entirely left every existing case in this file green. This case puts
+# the Review-stage marker ONLY in a PR review body (Discovery/Planning/
+# Test/Implementation stay in comments, as elsewhere) and a genuinely
+# different model than Implementation, so gate 2 must read it to
+# evidence — a regression that silently stops reading reviews turns
+# this from `evidenced` to `not-evidenced`.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
+    printf 'STATE\tOPEN\n'
+    printf 'MERGEDAT\t\n'
+    printf 'MERGEDBY\t\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf 'TEXT\t<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5-5" effort="high" -->\n'
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_reviewonly="$(cat "$FAKEGH_OUT")"
+output_reviewonly="$(PATH="$fakebin_reviewonly:$PATH" "$script" 279)"
+assert_table_shape "S150 review-source" "$output_reviewonly"
+status_reviewonly="$(row_status "$output_reviewonly" 2)"
+[ "$status_reviewonly" = "evidenced" ] || fail "S150 review-source — gate 2 must read the PR-reviews source: expected evidenced, got $status_reviewonly (output: $output_reviewonly)"
+evidence_reviewonly="$(row_evidence "$output_reviewonly" 2)"
+case "$evidence_reviewonly" in
+  *'claude-opus-5-5'*) : ;;
+  *) fail "S150 review-source — evidence should cite the review-only Review marker's model: $evidence_reviewonly" ;;
+esac
+
+# =========================================================================
+# PR #336 round-1 review, finding 1 — a failed PR-comments fetch must
+# degrade gates 1-3 to `indeterminate`, never a confident
+# `not-evidenced`/`evidenced` (issue #299's rule). Before the fix, this
+# call's exit status was silently discarded (`2>/dev/null`, no check at
+# all) and every marker below — living only in comments — vanished
+# without a trace: this exact fixture reproduced gates 1-3 all coming
+# back `not-evidenced` with a clean exit 0 and nothing on stderr.
+# =========================================================================
+run_build_fake_gh > "$FAKEGH_OUT" <<'GHEOF'
+case "$*" in
+  __CALL_A__)
+    printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
+    printf 'STATE\tOPEN\n'
+    printf 'MERGEDAT\t\n'
+    printf 'MERGEDBY\t\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    echo "simulated failure" >&2
+    exit 1 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
+  __CALL_B__)
+    printf 'check\tSUCCESS\tpass\n'
+    exit 0 ;;
+  __CALL_C265__)
+    printf ''
+    exit 0 ;;
+esac
+exit 1
+GHEOF
+fakebin_commentsfail="$(cat "$FAKEGH_OUT")"
+output_commentsfail="$(PATH="$fakebin_commentsfail:$PATH" "$script" 279 2>/tmp/s150_commentsfail_stderr.$$)"
+status_commentsfail=$?
+stderr_commentsfail="$(cat /tmp/s150_commentsfail_stderr.$$ 2>/dev/null)"
+rm -f /tmp/s150_commentsfail_stderr.$$
+[ "$status_commentsfail" -eq 0 ] || fail "S150 comments-fail — expected exit 0 (report still renders) even with a failed comments fetch, got $status_commentsfail"
+assert_table_shape "S150 comments-fail" "$output_commentsfail"
+for n in 1 2 3; do
+  st="$(row_status "$output_commentsfail" "$n")"
+  [ "$st" = "indeterminate" ] || fail "S150 comments-fail — gate $n must degrade to indeterminate when the PR-comments fetch fails (every marker lives only there); got $st"
+done
+case "$stderr_commentsfail" in
+  *"couldn't consult PR #279's comments"*) : ;;
+  *) fail "S150 comments-fail — expected a warning naming the failed comments fetch on stderr, got: $stderr_commentsfail" ;;
 esac
 
 # =========================================================================

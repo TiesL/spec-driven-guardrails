@@ -392,8 +392,12 @@ collect() {
   BUNDLE_ISSUE_LOOKUP_FAILED=0
   # Per-source text, kept apart precisely so gate_review_model never has
   # to trust accumulation order to know "which marker counts" (see the
-  # comment above). PR_TEXT is the PR's own body+comments, already in
-  # true chronological order (that part was never the bug). ISSUE_TEXTS/
+  # comment above). PR_TEXT is the PR's own body+comments+reviews,
+  # appended in that fixed order (body, then every comment, then every
+  # review) — NOT true chronological order despite that once having
+  # been true here (issue #336 round 1: reviews are a newer source than
+  # this comment predates, and a review can genuinely postdate a later
+  # comment; PRD.md's Technical debt table has the row). ISSUE_TEXTS/
   # ISSUE_NUMS are parallel arrays, one entry per successfully-fetched
   # closing issue, in the order fetched — an order gate_review_model must
   # not, and does not, treat as a recency signal.
@@ -439,11 +443,40 @@ $raw_body"
   # exemption issue #302's comment above already documents for this
   # corpus (gate_review_model resolves per-source via
   # resolve_stage_marker(), not via this blob's tail-1 position).
-  local pr_comments_out pr_reviews_out
+  #
+  # Found during PR #336's own pre-merge-review (round 1): a failure of
+  # either call here used to go straight to `/dev/null` with no exit-
+  # status check and no flag set at all — unlike every other `gh` call
+  # in this function. Before this REST rewrite, PR comments were part
+  # of the same single `gh pr view` call as the PR body, so a failure
+  # there already hit Call A's own `return 1`; splitting comments and
+  # reviews into separate calls introduced a failure mode this function
+  # had never had to handle before, and initially didn't. Reproduced:
+  # with every model-record marker living only in PR comments, a comments
+  # fetch failure made gates 1-3 confidently report `not-evidenced`
+  # instead of degrading — precisely the false-negative issue #299
+  # exists to forbid. Fixed the same way a closing-issue comments
+  # failure already was: warn on stderr and set
+  # BUNDLE_ISSUE_LOOKUP_FAILED, the same corpus-incompleteness flag
+  # every gate below already respects (it was never PR-issue-lookup-
+  # specific in what it means, only in what set it until now).
+  local pr_comments_out pr_reviews_out pr_comments_status pr_reviews_status
   pr_comments_out="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate \
     --jq "$CALL_A_COMMENTS_JQ" 2>/dev/null)"
+  pr_comments_status=$?
+  if [ "$pr_comments_status" -ne 0 ]; then
+    echo "warning: compliance-evidence couldn't consult PR #$pr_number's comments (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
+    BUNDLE_ISSUE_LOOKUP_FAILED=1
+    pr_comments_out=""
+  fi
   pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate \
     --jq "$CALL_A_REVIEWS_JQ" 2>/dev/null)"
+  pr_reviews_status=$?
+  if [ "$pr_reviews_status" -ne 0 ]; then
+    echo "warning: compliance-evidence couldn't consult PR #$pr_number's reviews (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
+    BUNDLE_ISSUE_LOOKUP_FAILED=1
+    pr_reviews_out=""
+  fi
   while IFS=$'\t' read -r tag rest; do
     [ "$tag" = "TEXT" ] || continue
     raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
@@ -570,7 +603,7 @@ gate_stage_models() {
 
   if [ -n "$missing" ]; then
     if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
-      printf '%s\t%s\n' "indeterminate" "stage(s) $missing appear to have no model-record marker on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
+      printf '%s\t%s\n' "indeterminate" "stage(s) $missing appear to have no model-record marker on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
       return
     fi
     printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments and its closing issue(s)$(quoted_suffix "$missing_ere")"
@@ -717,7 +750,7 @@ gate_review_model() {
 
   if [ "$impl_status" = "none" ] || [ "$review_status" = "none" ]; then
     if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
-      printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
+      printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
       return
     fi
     local none_ere=""
@@ -760,12 +793,13 @@ gate_review_model() {
   # issue #302: unlike the checks above, this branch used to fire
   # unconditionally on "both markers found" — sound for <=1 closing
   # issue (nothing else could have contributed a marker), unsound for
-  # >=2: an unread issue (BUNDLE_ISSUE_LOOKUP_FAILED=1) could have
-  # supplied a marker resolve_stage_marker never saw, which — had it
-  # been read — might have created exactly the kind of conflict caught
-  # above instead of this same-model match.
+  # >=2: an unread issue, OR (issue #336 round 1) a PR comments/reviews
+  # fetch failure — either sets BUNDLE_ISSUE_LOOKUP_FAILED=1 now — could
+  # have supplied a marker resolve_stage_marker never saw, which — had
+  # it been read — might have created exactly the kind of conflict
+  # caught above instead of this same-model match.
   if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but PR #$pr_number names more than one closing issue and at least one couldn't be read, so a superseding marker there can't be ruled out"
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but PR #$pr_number names more than one closing issue and an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
     return
   fi
 
@@ -806,7 +840,7 @@ gate_review_marker() {
     local first_sha
     first_sha="$(grep -oE 'sha=[0-9a-fA-F]{40}' <<<"$strict_matches" | sed 's/^sha=//' | head -1)"
     if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
-      printf '%s\t%s\n' "indeterminate" "only a stale \`pre-merge-review:done sha=$first_sha\` marker on PR #$pr_number, which doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA), and a closing issue lookup failed, so a matching marker can't be ruled out"
+      printf '%s\t%s\n' "indeterminate" "only a stale \`pre-merge-review:done sha=$first_sha\` marker on PR #$pr_number, which doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA), and an evidence-corpus lookup failed, so a matching marker can't be ruled out"
       return
     fi
     printf '%s\t%s\n' "not-evidenced" "only a stale \`pre-merge-review:done sha=$first_sha\` marker on PR #$pr_number; it doesn't match \`headRefOid\` ($BUNDLE_HEAD_SHA)"
@@ -819,7 +853,7 @@ gate_review_marker() {
   fi
 
   if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
-    printf '%s\t%s\n' "indeterminate" "no \`pre-merge-review:done\` marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
+    printf '%s\t%s\n' "indeterminate" "no \`pre-merge-review:done\` marker found on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
     return
   fi
 
@@ -828,7 +862,7 @@ gate_review_marker() {
 
 gate_ci() {
   if [ "$BUNDLE_CHECKS_OK" -eq 0 ]; then
-    printf '%s\t%s\n' "indeterminate" "\`gh pr checks\` for PR #$pr_number returned no parseable output (call failed)"
+    printf '%s\t%s\n' "indeterminate" "check-runs lookup for PR #$pr_number returned no parseable output (call failed)"
     return
   fi
 
