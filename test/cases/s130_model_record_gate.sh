@@ -7,6 +7,19 @@
 # recorded a model in practice — Discovery/Planning/Test/Implementation
 # never did, and CHANGES.md's process-model-choice row had no way to
 # check for that mechanically.
+#
+# REST-only fixtures (issue #318): every `gh pr view --json ...`/`gh
+# issue view --json ...` call this gate used to make is GraphQL-backed
+# and 403s from inside a Claude Code session; `closingIssuesReferences`
+# additionally misses every release-branch PR even where it isn't
+# blocked. Fixtures below mock the REST replacement: one combined
+# `pulls/<pr>` call for title+body (title carries "Closes #239" in
+# place of the old direct closingIssuesReferences=239 fixture —
+# matching this repo's own release-branch PR convention, title-only),
+# `issues/<pr>/comments` for PR comments, `pulls/<pr>/reviews` for PR
+# reviews (a new source this gate never read before either — see
+# model-record-gate.sh's own comment), and `issues/239/comments` for
+# the closing issue.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -23,19 +36,19 @@ trap sandbox_destroy EXIT
 # closes carries Discovery's. All five present -> no findings.
 fakebin_complete="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Opus\" effort=\"high\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -50,16 +63,16 @@ output_complete="$(PATH="$fakebin_complete:$PATH" "$script" 246)"
 # Implementation are missing from the PR).
 fakebin_partial="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
 esac
@@ -84,21 +97,35 @@ output_nogh="$(PATH="$path_without_gh" "$script" 246 2>&1)"; status_nogh=$?
 [ "$status_nogh" -eq 0 ] || fail "S130 — without gh the gate gave exit $status_nogh instead of 0"
 assert_contains "S130 — a warning appears without gh" "warning" "$output_nogh"
 
+# The PR comments lookup failing (transient) must warn and skip the
+# whole check, same as before — this is the first call the gate makes.
+fakebin_comments_fail="$(fake_gh_bin '
+case "$*" in
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+    echo "gh: could not resolve to a PullRequest" >&2
+    exit 1 ;;
+esac
+exit 1
+')"
+output_comments_fail="$(PATH="$fakebin_comments_fail:$PATH" "$script" 246 2>&1)"; status_comments_fail=$?
+[ "$status_comments_fail" -eq 0 ] || fail "S130 — a failed PR-comments lookup gave exit $status_comments_fail instead of 0"
+assert_contains "S130 — a warning appears when the PR-comments lookup fails" "warning" "$output_comments_fail"
+
 # The per-issue lookup failing (transient, not "issue has no records")
 # must warn, not silently misreport Discovery as missing — found during
 # PR #249's pre-merge-review, round 2.
 fakebin_issue_fails="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     echo "gh: could not resolve to an Issue" >&2
     exit 1 ;;
 esac
@@ -113,18 +140,19 @@ assert_contains "S130 — a warning appears when the issue lookup fails" "warnin
 # only ever scanned comments, missing markers added at PR-creation time.
 fakebin_body_marker="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001%s\n%s\n%s" \
+      "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->" \
+      "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->" \
+      "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
-    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+    printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -134,23 +162,50 @@ exit 1
 output_body_marker="$(PATH="$fakebin_body_marker:$PATH" "$script" 246)"
 [ -z "$output_body_marker" ] || fail "S130 — expected no findings when markers live in the PR description, got: $output_body_marker"
 
+# A marker posted as a PR review's own body (issue #318, the same F-6
+# class finding role-label-staleness.sh's review already surfaced) must
+# also be found — a source this gate never read under the old design
+# either.
+fakebin_review_marker="$(fake_gh_bin '
+case "$*" in
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+    printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+
+output_review_marker="$(PATH="$fakebin_review_marker:$PATH" "$script" 246)"
+[ -z "$output_review_marker" ] || fail "S130 — expected no findings when the Review marker lives in a PR review body, got: $output_review_marker"
+
 # #244 AC2: Review and Implementation recording the same model with no
 # same-model-exception is a finding.
 fakebin_same_model="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -166,19 +221,19 @@ esac
 # finding.
 fakebin_same_model_excepted="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"only one model available\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -195,18 +250,18 @@ output_excepted="$(PATH="$fakebin_same_model_excepted:$PATH" "$script" 246)"
 # in the text.
 fakebin_latest_wins="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -225,17 +280,17 @@ esac
 # comparison is skipped, not guessed at.
 fakebin_unquoted="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=Sonnet effort=medium -->"
     printf "%s\n" "<!-- model-record: stage=Review model=Sonnet effort=medium -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -253,17 +308,17 @@ esac
 # it's a same-model marker in all but name.
 fakebin_empty_exception="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -281,17 +336,17 @@ esac
 # model spelled differently, still a violation.
 fakebin_case_insensitive="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Claude Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"claude sonnet 5\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -313,17 +368,17 @@ esac
 # actually reflects this PR's real review and must be what's checked.
 fakebin_issue_marker_stale="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -345,17 +400,17 @@ esac
 # equate those either, only normalize_model's structural fold does).
 fakebin_label_mismatch="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet 5\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -374,17 +429,17 @@ esac
 # model identity, away.
 fakebin_different_models_different_labels="$(fake_gh_bin '
 case "$*" in
-  "pr view 246 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239\001"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus 5\" effort=\"medium\" -->"
     exit 0 ;;
-  "pr view 246 --json body --jq .body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
     printf "%s" ""
     exit 0 ;;
-  "pr view 246 --json closingIssuesReferences --jq .closingIssuesReferences[].number")
-    printf "%s\n" "239"
-    exit 0 ;;
-  "issue view 239 --json comments --jq .comments[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -397,5 +452,33 @@ case "$output_different_models" in
   *"same model"*) fail "S130 — genuinely different models under different label styles were wrongly flagged as the same, got: $output_different_models" ;;
   *) : ;;
 esac
+
+# Issue #318 regression guard: the closing-issue reference now comes from
+# a closing keyword in the PR's title (this repo's own release-branch PR
+# convention — #311/#312/#314/#316 all carry it there, never in the
+# body), not from a direct closingIssuesReferences fixture. Confirm a
+# title-only reference is actually followed to the issue.
+fakebin_title_only_reference="$(fake_gh_bin '
+case "$*" in
+  "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
+    printf "Closes #239: some change\001some unrelated body text"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+    printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+    printf "%s" ""
+    exit 0 ;;
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+    printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
+    printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
+    exit 0 ;;
+esac
+exit 1
+')"
+output_title_only="$(PATH="$fakebin_title_only_reference:$PATH" "$script" 246)"
+[ -z "$output_title_only" ] || fail "S130 — expected a title-only closing-keyword reference to be followed to issue #239, got: $output_title_only"
 
 test_done
