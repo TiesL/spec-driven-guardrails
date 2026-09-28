@@ -1724,3 +1724,26 @@ something new is being added.
   that is actually reachable (proved by a positive control that calls
   the fake `gh` directly with an unanswered argv and confirms the
   witness fires), not merely a source grep alone
+
+### S153 — live_text()'s fence-detection regex is mawk-portable
+**Covers:** F34, F35
+- Given: the real, shipped `live_text()` function re-extracted verbatim
+  at test time from both `compliance-evidence.sh` and
+  `role-label-staleness.sh` (the same no-stale-copy technique
+  S151's Q21-Q23 already use), run under mawk specifically — not gawk,
+  which is this repo's usual local/CI `awk` and doesn't exhibit either
+  failure mode below
+- When: a simple 3-character fence, a 5-character wrapper fence around
+  an inner line that itself contains 3 backticks, a shorter (3-character)
+  closing run that must not close a longer (5-character) opening run
+  (D5/D6), and a real `model-record` marker after a closed fence, are
+  each run through it
+- Then: every case matches the same output gawk already produces — a
+  panic in mawk's regex compiler on the original grouped-alternation
+  form (`^ {0,3}(`{3,}|~{3,})`), and mawk's `{n,}` matching exactly `n`
+  rather than greedily (silently truncating a longer fence run and
+  corrupting the recorded fence length even where it doesn't panic —
+  distinct from the panic and not caught by fixing that alone), are both
+  fixed by two top-level alternatives using `+` plus an explicit
+  length check, not merely worked around per caller; skips loudly,
+  naming why, if mawk isn't installed to run this exact check with

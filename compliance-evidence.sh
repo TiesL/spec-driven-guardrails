@@ -19,6 +19,14 @@
 # No `eval`: PR/issue comment text is not under this script's control.
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 #
+# awk requirement (issue #319): `live_text()` below needs an awk whose
+# regex engine greedily matches an unbounded-lower-bound interval
+# (`{n,}`) and tolerates alternation grouped with one. Both mawk's
+# REcompile() panic on the original grouped form and its separate
+# non-greedy `{n,}` (matches exactly n, not "n or more") are worked
+# around; verified correct under both mawk and gawk (test/cases/
+# s153_live_text_mawk_portability.sh).
+#
 # Status vocabulary (closed, exactly these four, AC8):
 #   evidenced                    — an artifact was found that shows the
 #                                   gate actually held
@@ -139,14 +147,26 @@ live_text() {
     /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
     {
       line = $0
-      if (match(line, /^ {0,3}(`{3,}|~{3,})/)) {
+      # Issue #319: mawk'"'"'s regex compiler panics on an unbounded-lower-
+      # bound interval `{n,}` combined with alternation in a group
+      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy under
+      # mawk (it matches exactly n, not "n or more") — silently truncating
+      # a longer fence run and corrupting flen. Two top-level alternatives
+      # using `+` (which mawk greedily matches, like every other awk) plus
+      # an explicit length check below dodge both: the match, RSTART, and
+      # RLENGTH are byte-identical to the original regex under gawk, and
+      # now also correct under mawk (verified: a 5-character fence run no
+      # longer truncates to 3).
+      if (match(line, /^ {0,3}`+/) || match(line, /^ {0,3}~+/)) {
         m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        ch = substr(m, 1, 1); len = length(m)
-        rest = substr(line, RSTART + RLENGTH)
-        if (fch == "") {                                  # open: any info string allowed
-          fch = ch; flen = len; print ""; next
-        } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-          fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
+        if (length(m) >= 3) {
+          ch = substr(m, 1, 1); len = length(m)
+          rest = substr(line, RSTART + RLENGTH)
+          if (fch == "") {                                  # open: any info string allowed
+            fch = ch; flen = len; print ""; next
+          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
+            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
+          }
         }
       }
       if (fch != "") { print ""; next }
