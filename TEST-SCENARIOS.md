@@ -1696,34 +1696,52 @@ something new is being added.
   normal verdict from issue-only evidence, never `indeterminate` on its
   own — distinct from the timeline call itself failing, which must never
   be read as "zero linked PRs"; a PR that cross-references the issue
-  without a real closing keyword in either its title or body
+  without a real closing keyword in either its LIVE title or body
   (`close(s|d)`/`fix(es|ed)`/`resolve(s|d)`, an optional `:`, then
   whitespace, then `#<issue>`, case-insensitive) is excluded and never
   even gets a comments or reviews call — including a prose near-miss
   that merely mentions the issue number later in a sentence, which the
-  keyword's own grammar rejects; two-or-more `role:<name>` labels
-  at once is `indeterminate`, naming every one found, and an unrelated
-  label alongside a single one is never counted as multiple; a live
-  marker matched by the anchor but with no recognized `stage=` value, on
-  the issue or any kept PR, forces `indeterminate` for the whole run
-  even when another kept PR's marker is well-formed; markers split
-  across multiple kept PRs combine by union/max, order-independent of
-  which PR the timeline names first; a marker merely quoted in a fenced
-  block, code span or blockquote is not counted as live evidence; a
-  failed lookup — the issue's own comments, the timeline itself, or a
-  candidate/kept PR's title/body, comments, or reviews — degrades the
-  verdict to
+  keyword's own grammar rejects, and including a title/body that only
+  quotes the keyword shape inside a fenced block, inline code span, or
+  blockquote (issue #317 F-7: the filter runs against `live_text()`-
+  stripped title+body, not the raw text, so a merely-illustrative quote
+  never counts as a real closing reference); a cross-referenced timeline
+  event whose own source PR belongs to a different repository — even
+  one that happens to share a same-numbered PR in this repo — is
+  excluded from PR discovery entirely (issue #317 F-8, verified against
+  the real `gh api .../timeline`-shaped JSON, since a mocked `gh` can't
+  exercise jq's own server-side filtering); two-or-more `role:<name>`
+  labels at once is `indeterminate`, naming every one found, and an
+  unrelated label alongside a single one is never counted as multiple; a
+  live marker matched by the anchor but with no recognized `stage=`
+  value, on the issue or any kept PR, forces `indeterminate` for the
+  whole run even when another kept PR's marker is well-formed, including
+  one closed with no whitespace before its own `-->` delimiter (issue
+  #317 F-5: `stage=Review-->` must still parse as `Review`, not as a
+  malformed `Review--` token); markers split across multiple kept PRs
+  combine by union/max, order-independent of which PR the timeline names
+  first; a marker merely quoted in a fenced block, code span or
+  blockquote is not counted as live evidence; a failed lookup — the
+  issue's own comments, the timeline itself, or a candidate/kept PR's
+  title/body, comments, or reviews — degrades the verdict to
   `indeterminate` only when the evidence read so far doesn't already
   rule out what the failed lookup could reveal (a verdict already
   `stale`, or already `in-sync` at the last stage, from what WAS read,
-  is never degraded); a failed issue-body lookup exits 4 with nothing on
-  stdout, while every other failed lookup only sets its own flag and
-  never changes the exit code; with no `gh` on `PATH` it exits 3; the
-  run makes no `gh` write call and the script's source contains none —
-  verified as a conjunction with a `fake_gh_bin` fallthrough witness
-  that is actually reachable (proved by a positive control that calls
-  the fake `gh` directly with an unanswered argv and confirms the
-  witness fires), not merely a source grep alone
+  is never degraded — including specifically when the issue's own
+  comments fail but a kept PR's reviews call still succeeds and supplies
+  evidence all the way to the ceiling stage, issue #317 F-10, closing a
+  mutation-testing gap an earlier review round found unpinned); a failed
+  issue-body lookup exits 4 with nothing on stdout, while every other
+  failed lookup only sets its own flag and never changes the exit code;
+  a non-numeric issue-number argument is a usage error (exit 2), not an
+  internal error (exit 4, issue #317 F-4 — matching the empty-argument
+  case, not the issue-unreadable case, and making no `gh` call at all);
+  with no `gh` on `PATH` it exits 3; the run makes no `gh` write call and
+  the script's source contains none — verified as a conjunction with a
+  `fake_gh_bin` fallthrough witness that is actually reachable (proved
+  by a positive control that calls the fake `gh` directly with an
+  unanswered argv and confirms the witness fires), not merely a source
+  grep alone
 
 ### S153 — live_text()'s fence-detection regex is mawk-portable
 **Covers:** F34, F35
