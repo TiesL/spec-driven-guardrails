@@ -81,13 +81,117 @@ normalize_model() {
     | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
 }
 
+# live_text() — issue #308. Blanks quoted spans (fenced code blocks,
+# inline code spans, blockquoted lines) out of a single body so every
+# existing gate_* predicate can keep greping "the text" unchanged. The
+# discriminator is enclosure, not line position: a real marker sitting at
+# the end of a prose line is never touched (AC3), while the identical
+# shape wrapped in backticks, a fence, or a leading `>` is (AC1). Content
+# is blanked rather than the line deleted — nothing downstream depends on
+# line counts, and blanking can't glue two tokens together across a
+# removed line.
+#
+# Order is load-bearing: blockquote first (a `> ```` ` line must never be
+# read as toggling fence state), then fence tracking, then code-span
+# stripping on whatever's left. Bash 3.2-clean, no eval, one awk pass.
+#
+# Fence tracking (issue #308 Planning correction, D5/D6/D7/D10 — the
+# original design's parity toggle ignored CommonMark's actual closing
+# rule and leaked/false-negatived accordingly):
+#   - Track the OPENING fence's character (` or ~) and run length.
+#   - A fence only closes on a later line whose run is the SAME
+#     character with length >= the opener's (D5/D6: a longer wrapper
+#     around a shorter demo fence must not "close" on the inner one).
+#   - CommonMark forbids an info string on a CLOSING fence — a fence-ish
+#     line that closes must have nothing but trailing whitespace after
+#     the run (D10: without this, a bare ``` opener followed by a
+#     ```text-tagged line reads as a close and leaks the marker after
+#     it). An OPENING fence may carry any info string.
+#   - Indent is capped at 3 spaces (`^ {0,3}`), CommonMark's own cap —
+#     4+ is an indented code block, not a fence (non-goal 1, fails open:
+#     D7). Deliberately `{0,3}` spaces, never `[ \t]*`: a tab counts as 4
+#     columns of indentation in CommonMark, so a tab-indented fence-ish
+#     line is the same indented-code-block case and must not be treated
+#     as a fence. Do not "restore" \t here.
+# Fence state is per-body (this function is called once per body) — an
+# unclosed fence in one PR comment must never swallow a marker in the
+# next one (AC3 fence isolation).
+live_text() {
+  printf '%s\n' "$1" | awk '
+    function drop_spans(s,   out, n, tick, after, p, q, r) {
+      out = ""
+      while (match(s, /`+/)) {
+        n = RLENGTH; tick = substr(s, RSTART, n)
+        out = out substr(s, 1, RSTART - 1)
+        after = substr(s, RSTART + n)
+        # first backtick run in "after" of length exactly n
+        p = 0; r = after; q = 0
+        while (match(r, /`+/)) {
+          if (RLENGTH == n) { p = q + RSTART; break }
+          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
+        }
+        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
+        else        { out = out " ";  s = substr(after, p + n) }
+      }
+      return out s
+    }
+    BEGIN { fch = ""; flen = 0 }
+    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
+    {
+      line = $0
+      if (match(line, /^ {0,3}(`{3,}|~{3,})/)) {
+        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
+        ch = substr(m, 1, 1); len = length(m)
+        rest = substr(line, RSTART + RLENGTH)
+        if (fch == "") {                                  # open: any info string allowed
+          fch = ch; flen = len; print ""; next
+        } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
+          fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
+        }
+      }
+      if (fch != "") { print ""; next }
+      print drop_spans(line)
+    }
+  '
+}
+
+# quoted_suffix() — issue #308, AC4/AC7/D8. Called only from a gate's
+# negative (not-evidenced) branch, to say, truthfully, that marker-shaped
+# text was seen but only in quoted form, rather than leaving a reader to
+# misread "nothing found" as "nothing was ever written". $1 MUST be the
+# exact same delimiter-anchored ERE ("<!--[[:space:]]*<token>...") the
+# caller just greped the LIVE corpus with for this same check — never a
+# looser, unanchored token (D8). That constraint is what makes the
+# wording sound rather than merely safe: in a negative branch the live
+# grep has already failed, so a hit on the anchored ERE in
+# BUNDLE_TEXT_RAW but not in the live corpus can only mean live_text()
+# removed it, i.e. it really was enclosed — never bare prose (AC7),
+# which this same anchored ERE never matches in the first place.
+quoted_suffix() {
+  local ere="$1"
+  grep -qE "$ere" <<<"$BUNDLE_TEXT_RAW" \
+    && printf '%s' " — marker-shaped text matching this gate does appear on PR #$pr_number, but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence"
+}
+
 # --- collect(): the three gh calls; interpretation-free, fills a fixed
 # set of globals. Returns 1 only when call A (gh pr view) failed — the
 # one failure that makes an honest table impossible.
 
-CALL_A_JQ='"HEAD\t"+(.headRefOid//""),"STATE\t"+(.state//""),"MERGEDAT\t"+(.mergedAt//""),"MERGEDBY\t"+((.mergedBy.login)//""),(.closingIssuesReferences[]? | "ISSUE\t"+(.number|tostring)),("TEXT\t"+((.body//"")|gsub("\n";" "))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\n";" ")))'
+# Sentinel transport (issue #308, D9): a body's internal line structure
+# has to survive the TSV hop intact — blockquote detection needs to know
+# which line a `>` starts, which `gsub("\n";" ")` used to destroy. Each
+# body is put through three gsubs, in order: neutralise any literal
+# U+0001 the body might already contain (so a body can never forge a
+# line break downstream — belt and braces, also keeps the sentinel
+# round-trip total), drop `\r` (GitHub bodies are CRLF; a trailing `\r`
+# would defeat fence-close matching in live_text()'s info-string check),
+# then fold real newlines into U+0001. `collect()` below turns the
+# sentinel back into real newlines once per body (`tr '\001' '\n'`)
+# before handing it to live_text(). The one-body-per-TSV-line framing
+# (IFS=$'\t' read) is untouched.
+CALL_A_JQ='"HEAD\t"+(.headRefOid//""),"STATE\t"+(.state//""),"MERGEDAT\t"+(.mergedAt//""),"MERGEDBY\t"+((.mergedBy.login)//""),(.closingIssuesReferences[]? | "ISSUE\t"+(.number|tostring)),("TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
 CALL_B_JQ='.[] | .name+"\t"+.state+"\t"+.bucket'
-CALL_C_JQ='.comments[]? | "TEXT\t"+((.body//"")|gsub("\n";" "))'
+CALL_C_JQ='.comments[]? | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 
 collect() {
   local pr_out pr_status
@@ -100,23 +204,35 @@ collect() {
     return 1
   fi
 
-  # Known limitation / technical debt (F34, issue #296; PRD.md's Technical
-  # debt table has the full writeup). BUNDLE_TEXT below is a flat
-  # concatenation of the PR body, every PR/issue comment, and closing-issue
-  # text, with no distinction between a marker that *is* live evidence and
-  # the identical marker shape merely quoted in running prose, a fenced
-  # code block, or a Markdown blockquote. Every gate_* predicate greps this
-  # blob directly, so a quoted marker reads exactly like a real one. This
-  # is not theoretical: PR #298's own description quotes a prior run's
-  # output verbatim, including a real sha, and the collector prints a false
-  # statement about it as a result. The dangerous direction: gate 3 (and
-  # gates 1/2 the same way) can render "evidenced" purely because this
-  # collector's own prior output was pasted into the very PR being
-  # evaluated — an echo evidencing a review that never happened. This is
-  # exactly the shape W4 (epic #295) is being built to produce routinely,
-  # so the risk is real and growing, not a limited-damage edge case.
-  # NOT fixed here — deliberately out of scope for issue #296.
+  # Quoting-aware collection (issue #308, fixing F34's debt entry from
+  # #296). BUNDLE_TEXT below is now LIVE text only: every body passes
+  # through live_text() first, which blanks fenced code blocks, inline
+  # code spans and blockquoted lines before the text is ever appended.
+  # Every existing gate_* predicate keeps greping this exactly as before
+  # — the discriminator is enclosure (fence/span/blockquote), never line
+  # position, so a real marker posted inline next to prose still
+  # evidences (AC3), while the same marker shape merely quoted for
+  # illustration no longer does (AC1). See live_text() below for the
+  # mechanism and its known fail-open residue (PRD.md Technical debt).
+  #
+  # BUNDLE_TEXT_RAW is the unstripped counterpart: every body's text
+  # before live_text() runs, concatenated with no per-source split. It
+  # exists only so a gate's negative branch can say, truthfully, "this
+  # was seen but only in quoted form" (AC4) via quoted_suffix() below,
+  # rather than the plain "nothing found" a reader would otherwise
+  # misread as "no marker was ever written". D8b (Architect, #308):
+  # this soundness argument depends on BUNDLE_TEXT_RAW's scope matching
+  # every gate that consults it — today every gate greps bundle-wide
+  # BUNDLE_TEXT (or PR_TEXT/ISSUE_TEXTS via resolve_stage_marker(), also
+  # bundle-wide in aggregate), and BUNDLE_TEXT_RAW is bundle-wide too, so
+  # the elimination argument ("a RAW hit with no live hit means
+  # live_text() removed it, i.e. it was genuinely enclosed") holds. A
+  # future gate scoped to a narrower corpus (e.g. PR_TEXT alone) paired
+  # with this bundle-wide RAW would wrongly call a marker "quoted" when
+  # it's actually live elsewhere in the bundle — keep the scopes matched
+  # if that ever changes.
   BUNDLE_TEXT=""
+  BUNDLE_TEXT_RAW=""
   BUNDLE_HEAD_SHA=""
   BUNDLE_STATE=""
   BUNDLE_MERGED_AT=""
@@ -182,7 +298,7 @@ collect() {
   ISSUE_TEXTS=()
   ISSUE_NUMS=()
 
-  local tag rest
+  local tag rest raw_body live_body
   while IFS=$'\t' read -r tag rest; do
     case "$tag" in
       HEAD) BUNDLE_HEAD_SHA="$rest" ;;
@@ -198,8 +314,12 @@ $rest"
         fi
         ;;
       TEXT)
+        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        live_body="$(live_text "$raw_body")"
         BUNDLE_TEXT="$BUNDLE_TEXT
-$rest"
+$live_body"
+        BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
+$raw_body"
         ;;
     esac
   done <<<"$pr_out"
@@ -226,13 +346,17 @@ $rest"
         BUNDLE_ISSUE_LOOKUP_FAILED=1
         continue
       fi
-      local one_issue_text=""
+      local one_issue_text="" raw_body live_body
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
+        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        live_body="$(live_text "$raw_body")"
         issue_text="$issue_text
-$rest"
+$live_body"
         one_issue_text="$one_issue_text
-$rest"
+$live_body"
+        BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
+$raw_body"
       done <<<"$issue_out"
       ISSUE_TEXTS+=("$one_issue_text")
       ISSUE_NUMS+=("$issue_num")
@@ -287,8 +411,13 @@ $BUNDLE_TEXT"
 
 gate_stage_models() {
   local stage missing="" malformed="" summary="" first_model="" any_model=0 all_same=1
+  local missing_ere=""
   for stage in Discovery Planning Test Implementation; do
-    if grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
+    # AC7 (issue #308, D4): anchored to a real HTML-comment opener. Bare
+    # prose mentioning "model-record: stage=X" with no `<!--` is not a
+    # marker at all and must read as not-evidenced, not indeterminate —
+    # unreachable by quote-stripping since there's nothing to strip.
+    if grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
       local line model
       line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$BUNDLE_TEXT" | tail -1)"
       model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
@@ -305,6 +434,11 @@ gate_stage_models() {
       fi
     else
       missing="$missing $stage"
+      if [ -z "$missing_ere" ]; then
+        missing_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b"
+      else
+        missing_ere="$missing_ere|<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b"
+      fi
     fi
   done
 
@@ -322,7 +456,7 @@ gate_stage_models() {
       printf '%s\t%s\n' "indeterminate" "stage(s) $missing appear to have no model-record marker on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
       return
     fi
-    printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments and its closing issue(s)"
+    printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments and its closing issue(s)$(quoted_suffix "$missing_ere")"
     return
   fi
 
@@ -469,7 +603,18 @@ gate_review_model() {
       printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but a closing issue lookup failed, so absence can't be confirmed"
       return
     fi
-    printf '%s\t%s\n' "not-evidenced" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number"
+    local none_ere=""
+    if [ "$impl_status" = "none" ]; then
+      none_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation\\b"
+    fi
+    if [ "$review_status" = "none" ]; then
+      if [ -z "$none_ere" ]; then
+        none_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=Review\\b"
+      else
+        none_ere="$none_ere|<!--[[:space:]]*model-record:[[:space:]]*stage=Review\\b"
+      fi
+    fi
+    printf '%s\t%s\n' "not-evidenced" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number$(quoted_suffix "$none_ere")"
     return
   fi
 
@@ -512,9 +657,13 @@ gate_review_model() {
 
 gate_review_marker() {
   local strict_matches loose_present=0
+  # AC7 (issue #308, D4): anchored to a real HTML-comment opener — same
+  # reasoning as gate_stage_models above. loose_ere is reused below by
+  # quoted_suffix() (D8: must be the identical ERE the live grep used).
+  local loose_ere='<!--[[:space:]]*pre-merge-review:done'
   strict_matches="$(grep -oE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$BUNDLE_TEXT")"
 
-  if grep -q 'pre-merge-review:done' <<<"$BUNDLE_TEXT"; then
+  if grep -qE "$loose_ere" <<<"$BUNDLE_TEXT"; then
     loose_present=1
   fi
 
@@ -557,7 +706,7 @@ gate_review_marker() {
     return
   fi
 
-  printf '%s\t%s\n' "not-evidenced" "no \`pre-merge-review:done\` marker found on PR #$pr_number"
+  printf '%s\t%s\n' "not-evidenced" "no \`pre-merge-review:done\` marker found on PR #$pr_number$(quoted_suffix "$loose_ere")"
 }
 
 gate_ci() {
