@@ -1098,6 +1098,39 @@ traceability wiring for real new functionality, not premature promotion
 of the WIP design: `check-traceability.sh` enforces `Covers:`
 bidirectionally, so `S150` can't resolve without an `F34` heading here.
 
+### F35 — `role-label-staleness.sh` detects `role:<name>` label staleness for one issue (issue #315)
+
+Read-only script: given an issue number, finds the issue's current
+`role:<name>` label (if any) and every PR that closes it, extracts each
+source's `model-record` stage markers (skills/model-choice/SKILL.md), and
+reports whether the label is stale relative to the latest evidenced
+stage — Discovery < Planning < Test < Implementation < Review, the same
+fixed order that skill's own "Per-stage floors" table already fixes. A5
+(`ARCHITECTURE-MULTI-AGENT-WIP.md`) decided the label is a traceability
+record the orchestrator updates by hand, never state an execution
+mechanism reads back; this script only ever informs a reader when that
+record has fallen behind, never blocks or edits anything.
+
+`role-label-staleness.sh` at repo root (same dogfood-only placement as
+`compliance-evidence.sh` — not under `skills/` or `templates/`, no
+propagation to adopted projects for this epic; not invoked by `./check`,
+only its tests are, since it needs `gh`/network and `./check` must stay
+usable with no GitHub credentials). Status vocabulary is closed to four
+values — `not-started`, `in-sync`, `stale`, `indeterminate` — with
+`indeterminate` reserved for two-or-more `role:<name>` labels at once, a
+`model-record` marker that matched but carries no recognized `stage=`
+value, or a PR lookup failure that leaves the evidence set provably
+incomplete in a way that could still change the verdict; a label at or
+ahead of the latest evidenced stage is `in-sync`, never `stale` — the
+label tracks the active phase, not the last completed one.
+
+This single heading exists as the same narrow, stated exception `F34`
+above already used (that exception's origin is issue #296's non-goals
+and `ARCHITECT-REPORT.md` D3 option (a), accepted by Product for `F34`
+itself; applied here to real new functionality again, not premature
+promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S152` can't resolve without this heading.
+
 ---
 
 ## Non-functional characteristics

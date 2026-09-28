@@ -1664,3 +1664,63 @@ something new is being added.
   rendered table pasted into the PR changes no status; and the six-row
   shape, the four-status vocabulary and the absence of any write path
   are unchanged
+
+### S152 — role-label-staleness.sh detects role:<name> label staleness for one issue
+**Covers:** F35
+- Given: a `fake_gh_bin` recording of REST-only `gh api` answers — the
+  issue's own body/labels, the issue's comments, the issue's timeline
+  (candidate PRs via `cross-referenced` events), each candidate PR's
+  current title AND body (for the closing-keyword filter — this repo's
+  own release-branch PRs carry the keyword only in the title, never the
+  body), and each kept PR's comments AND reviews (a PR review's own
+  body, not just a plain comment, is where this pipeline's Review-stage
+  marker actually gets posted); no `gh api graphql`, `gh issue view` or
+  `gh pr view` call anywhere (both GraphQL-backed and blocked in Claude
+  Code sessions, and `closedByPullRequestsReferences`/
+  `closingIssuesReferences` are empty for any PR targeting a non-default
+  branch, silently missing every epic #295 work-item PR — the redesign
+  this scenario now covers, issue #315's Architect comment of
+  2026-09-28, with two round-2 review corrections: matching the PR
+  title as well as the body, and reading PR reviews)
+- When: `role-label-staleness.sh <issue-number>` runs with that fake
+  `gh` ahead of `PATH`
+- Then: it prints exactly one verdict line,
+  `role-label-staleness: issue #<n> — <status> (<detail>)`, with
+  `<status>` one of `not-started`, `in-sync`, `stale`, `indeterminate`; a
+  label matching the latest evidenced stage, or one with zero markers
+  evidenced anywhere, is `in-sync`; a label naming an earlier stage than
+  the latest evidence is `stale`, naming both the label present and the
+  label the evidenced stage implies; no label and no marker anywhere is
+  `not-started`, distinctly from no label with at least one marker
+  (`stale`); a timeline that succeeds with zero candidate PRs computes a
+  normal verdict from issue-only evidence, never `indeterminate` on its
+  own — distinct from the timeline call itself failing, which must never
+  be read as "zero linked PRs"; a PR that cross-references the issue
+  without a real closing keyword in either its title or body
+  (`close(s|d)`/`fix(es|ed)`/`resolve(s|d)`, an optional `:`, then
+  whitespace, then `#<issue>`, case-insensitive) is excluded and never
+  even gets a comments or reviews call — including a prose near-miss
+  that merely mentions the issue number later in a sentence, which the
+  keyword's own grammar rejects; two-or-more `role:<name>` labels
+  at once is `indeterminate`, naming every one found, and an unrelated
+  label alongside a single one is never counted as multiple; a live
+  marker matched by the anchor but with no recognized `stage=` value, on
+  the issue or any kept PR, forces `indeterminate` for the whole run
+  even when another kept PR's marker is well-formed; markers split
+  across multiple kept PRs combine by union/max, order-independent of
+  which PR the timeline names first; a marker merely quoted in a fenced
+  block, code span or blockquote is not counted as live evidence; a
+  failed lookup — the issue's own comments, the timeline itself, or a
+  candidate/kept PR's title/body, comments, or reviews — degrades the
+  verdict to
+  `indeterminate` only when the evidence read so far doesn't already
+  rule out what the failed lookup could reveal (a verdict already
+  `stale`, or already `in-sync` at the last stage, from what WAS read,
+  is never degraded); a failed issue-body lookup exits 4 with nothing on
+  stdout, while every other failed lookup only sets its own flag and
+  never changes the exit code; with no `gh` on `PATH` it exits 3; the
+  run makes no `gh` write call and the script's source contains none —
+  verified as a conjunction with a `fake_gh_bin` fallthrough witness
+  that is actually reachable (proved by a positive control that calls
+  the fake `gh` directly with an unanswered argv and confirms the
+  witness fires), not merely a source grep alone
