@@ -445,14 +445,28 @@ on disk when the session ends, with no guarantee anyone looks at them before the
 reset or abandoned.
 
 **The rule:** on any halt mid-task, before reverting the working branch to its last
-committed state, save the full attempted diff as a patch file
-(`git diff > <work-item-slug>-halt-<timestamp>.patch` or equivalent) in the work item's own
-branch-local working directory — never committed, never pushed (that would violate A11's own
-"only commit real, reviewed progress" spirit) — alongside whatever plan/tracking artifact
-already exists for that work item, so a human or a resumed session can find it, inspect it,
-and decide to discard or reapply it. The orchestrator names the patch file's location and the
-halt reason explicitly in whatever it reports to Ties for that halt (same channel as any
-other escalation, A10).
+committed state, save the full attempted diff as a patch file at exactly
+`<repo-root>/.halt-patches/<branch-name>-<UTC-ISO-8601-timestamp>.patch`
+(`git diff > .halt-patches/<branch-name>-<timestamp>.patch`) — a single, fixed, gitignored
+directory at the repo root, not a role- or tool-specific location, so a human or a resumed
+session always knows where to look without being told. Never committed, never pushed (that
+would violate A11's own "only commit real, reviewed progress" spirit) — `.gitignore` carries
+`.halt-patches/` for exactly this reason. The orchestrator names the specific patch file
+path and the halt reason explicitly in whatever it reports to Ties for that halt (same
+channel as any other escalation, A10), rather than relying on the fixed directory alone to
+be discovered.
+
+**Learned the hard way (2026-09-29, before this decision even existed as a written rule):**
+concurrent, unisolated git operations against the *same* working directory — several full
+test-suite runs plus a `git worktree add` sharing one repo's object/ref store at once — let a
+sandboxed test fixture's throwaway commits leak into the real repo's `refs/heads/main` and
+push three junk branches to GitHub. Recovered fully (nothing pushed to `main`/the release
+branch was affected), but it's a concrete instance of exactly the failure category A12
+exists to contain: uncoordinated concurrent work against shared git state, with no single
+place either a human or a resumed session could look to understand what happened. A fixed,
+well-known patch location doesn't prevent a git-state collision by itself, but it does mean
+recovery has one obvious starting point instead of requiring the kind of live forensic
+`.git` inspection this incident actually needed.
 
 **Why now, with no autonomous run mode yet built:** two real triggers already exist without
 one. First, a genuine cross-role dispute that reaches Decision 4/A7's escalation path (still
