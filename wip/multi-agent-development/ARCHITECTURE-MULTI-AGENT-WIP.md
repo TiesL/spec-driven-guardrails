@@ -434,6 +434,64 @@ A2's concern), or if "pre-authorized" is stretched to cover anything A2 forbids.
 
 ---
 
+### A12 — A halt mid-task saves the attempted diff as a patch artifact before reverting (decided 2026-09-29, from the BMad Method co-thinking session, issue #324, candidate 2.8)
+
+A11 covers the successful path: commit and push per logical step, no exception needed. It
+says nothing about the halted path — what happens to real, uncommitted work at the exact
+moment a role stops mid-task for a reason that isn't a clean pass/fail (an unresolved
+cross-role dispute per Decision 4/A7, a blocked gate, an ambiguity nothing in scope can
+settle). Today that's undefined: a halted session's uncommitted changes are just whatever's
+on disk when the session ends, with no guarantee anyone looks at them before the branch is
+reset or abandoned.
+
+**The rule:** on any halt mid-task, before reverting the working branch to its last
+committed state, save the full attempted diff as a patch file at exactly
+`<repo-root>/.halt-patches/<sanitized-branch-name>-<UTC-ISO-8601-timestamp>.patch`, where
+`<sanitized-branch-name>` replaces every `/` in the branch name with `-` (this repo's own
+branch-naming convention, `feature/<n>-<desc>`/`fix/<n>-<desc>`, contains a `/`, and an
+un-sanitized name would produce a nested subdirectory per branch instead of the single flat
+directory this rule intends — `git diff` also can't create that missing subdirectory itself,
+so an un-sanitized path would fail outright on the exact branch names this repo actually
+uses). Concretely: `git diff > .halt-patches/${BRANCH//\//-}-$(date -u +%Y%m%dT%H%M%SZ).patch`.
+A single, fixed, gitignored directory at the repo root, not a role- or tool-specific
+location, so a human or a resumed session always knows where to look without being told.
+Never committed, never pushed (that would violate A11's own "only commit real, reviewed
+progress" spirit) — `.gitignore` carries `.halt-patches/` for exactly this reason. The
+orchestrator names the specific patch file path and the halt reason explicitly in whatever
+it reports to Ties for that halt (same channel as any other escalation, A10), rather than
+relying on the fixed directory alone to
+be discovered.
+
+**Learned the hard way (2026-09-29, before this decision even existed as a written rule):**
+concurrent, unisolated git operations against the *same* working directory — several full
+test-suite runs plus a `git worktree add` sharing one repo's object/ref store at once — let a
+sandboxed test fixture's throwaway commits leak into the real repo's `refs/heads/main` and
+push three junk branches to GitHub. Recovered fully (nothing pushed to `main`/the release
+branch was affected), but it's a concrete instance of exactly the failure category A12
+exists to contain: uncoordinated concurrent work against shared git state, with no single
+place either a human or a resumed session could look to understand what happened. A fixed,
+well-known patch location doesn't prevent a git-state collision by itself, but it does mean
+recovery has one obvious starting point instead of requiring the kind of live forensic
+`.git` inspection this incident actually needed.
+
+**Why now, with no autonomous run mode yet built:** two real triggers already exist without
+one. First, a genuine cross-role dispute that reaches Decision 4/A7's escalation path (still
+unfired after three pilots per issue #307, but designed to happen) is exactly this shape of
+stop — real, in-progress work with nowhere defined to go. Second, and longer-term: Ties'
+stated direction is toward more agent autonomy over time, eventually including production
+agents monitoring his own company's operational software and resolving defects
+semi-autonomously — at that point, losing in-progress work on an unattended halt stops being
+a minor inconvenience and becomes a real, silent loss. Documenting the pattern now, before
+either kind of halt actually needs it, costs nothing (no live trigger, no new infrastructure)
+and closes the gap before it's ever hit for real.
+
+**Scope, explicitly:** this decision does not itself build or authorize any autonomous run
+mode (§3.3 of the BMad co-thinking session's non-adoptions still stands unchanged — no
+`bmad-build-auto`-style unattended loop exists or is proposed here). It only says what happens
+to in-progress work *whenever* a halt occurs, autonomous or not.
+
+---
+
 ## System boundaries and ownership
 
 - **Orchestrator** (persistent session): owns routing, phase-readiness assessment,
