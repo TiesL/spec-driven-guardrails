@@ -446,14 +446,20 @@ reset or abandoned.
 
 **The rule:** on any halt mid-task, before reverting the working branch to its last
 committed state, save the full attempted diff as a patch file at exactly
-`<repo-root>/.halt-patches/<branch-name>-<UTC-ISO-8601-timestamp>.patch`
-(`git diff > .halt-patches/<branch-name>-<timestamp>.patch`) — a single, fixed, gitignored
-directory at the repo root, not a role- or tool-specific location, so a human or a resumed
-session always knows where to look without being told. Never committed, never pushed (that
-would violate A11's own "only commit real, reviewed progress" spirit) — `.gitignore` carries
-`.halt-patches/` for exactly this reason. The orchestrator names the specific patch file
-path and the halt reason explicitly in whatever it reports to Ties for that halt (same
-channel as any other escalation, A10), rather than relying on the fixed directory alone to
+`<repo-root>/.halt-patches/<sanitized-branch-name>-<UTC-ISO-8601-timestamp>.patch`, where
+`<sanitized-branch-name>` replaces every `/` in the branch name with `-` (this repo's own
+branch-naming convention, `feature/<n>-<desc>`/`fix/<n>-<desc>`, contains a `/`, and an
+un-sanitized name would produce a nested subdirectory per branch instead of the single flat
+directory this rule intends — `git diff` also can't create that missing subdirectory itself,
+so an un-sanitized path would fail outright on the exact branch names this repo actually
+uses). Concretely: `git diff > .halt-patches/${BRANCH//\//-}-$(date -u +%Y%m%dT%H%M%SZ).patch`.
+A single, fixed, gitignored directory at the repo root, not a role- or tool-specific
+location, so a human or a resumed session always knows where to look without being told.
+Never committed, never pushed (that would violate A11's own "only commit real, reviewed
+progress" spirit) — `.gitignore` carries `.halt-patches/` for exactly this reason. The
+orchestrator names the specific patch file path and the halt reason explicitly in whatever
+it reports to Ties for that halt (same channel as any other escalation, A10), rather than
+relying on the fixed directory alone to
 be discovered.
 
 **Learned the hard way (2026-09-29, before this decision even existed as a written rule):**
