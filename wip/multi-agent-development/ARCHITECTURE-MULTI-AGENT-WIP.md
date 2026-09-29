@@ -492,6 +492,63 @@ to in-progress work *whenever* a halt occurs, autonomous or not.
 
 ---
 
+### A13 — Review-depth classifier: trigger-category-only, generic lens-Adapters, manual override (decided 2026-09-29, issue #328, from the BMad Method co-thinking session, issue #324, candidate 2.4)
+
+Extends Reviewer's existing gate (`pre-merge-review`, `role-contracts/SKILL.md`'s Reviewer
+entry) with a quick/thorough split: a classifier decides which mode a PR's review runs in,
+without adding a new role or a new risk taxonomy.
+
+**Classifier basis: Reviewer's existing six trigger categories only, no size/files-touched
+dimension.** Architect's own earlier informal sketch (`wip/bmad-method-comparison/
+ARCHITECT-REPORT.md` §2.4) named files-touched as a second input alongside trigger-category
+match; issue #328's actual scope and Ties' ruling (`wip/bmad-method-comparison/DECISIONS.md`
+Q3(a)) both narrow this to trigger-category match alone, and that narrowing is confirmed here
+deliberately, not silently. Reasoning: a size threshold would be a genuinely new, ungrounded
+number (no existing anchor anywhere in this repo, unlike the six categories, which are already
+Reviewer's own decided list) and answers a different question than what "thorough" mode is
+for. Extra lens-Adapters exist to give a security-relevant change more independent eyes; a
+large mechanical diff (a rename across 40 files) is not more security-relevant for being large,
+and a one-line auth bypass is not less so for being small. Trigger-category match is the
+correct, precise signal for that question; a size dimension would reintroduce exactly the
+threshold-tuning bikeshed the trigger-category-only design avoids. A complexity- or
+size-driven review trigger may be worth having someday, but as its own candidate under #307's
+ceremony-cost thread — not folded into this classifier's basis.
+
+**Manual override: a `--force-thorough` flag / env var, so the mechanism produces real usage
+evidence before #307 decides on default-on.** As scoped, AC2's dispatch path has no caller on
+a real PR until #307 later decides when "thorough" is the default for a given PR shape —
+until then it would only ever run in unit tests. A minimal, explicit per-PR override (not a new
+default, and not a decision about defaults at all) lets Ties or a session opt a specific real
+PR into thorough mode now. This is orthogonal to the deferred default-on question: an override
+is an explicit, one-off choice at invocation time, never a standing trigger rule. Low cost (one
+flag read in the classifier's interface), and it generates the actual dogfooded usage evidence
+#307 will want when it eventually rules on defaults.
+
+**Module/Interface/Seam:** one Module, the classifier (`classify-review-depth.sh`, repo root —
+same placement and shape as `role-label-staleness.sh`/`compliance-evidence.sh`: read-only,
+single PR-number argument, Bash 3.2-compatible, no `eval`, no write/post/label path of any
+kind). Interface: takes a PR reference (and, on the manual-override path, an explicit
+force-thorough input); reads the PR's changed-file list and description; returns `quick` or
+`thorough` on stdout, plus which trigger category(ies) matched, if any, as evidence for the
+dispatch prompt. The classify → dispatch handoff *is* a real Seam (two Adapters genuinely
+differ here: quick-dispatch is the existing single-Reviewer fork, unchanged; thorough-dispatch
+is Reviewer plus N fresh lens-Adapter forks) — but that Seam does not need its own script or
+Module. Deleting a separate "dispatch" script would not make the looping-and-forking logic
+reappear elsewhere as new complexity; it is trivially inline branching already at home in
+`pre-merge-review`'s own skill instructions, which already own forking Reviewer. Confirmed: the
+N lens-Adapters are generic, undifferentiated fresh-context copies of Reviewer's own review
+scope — never named personas, and never one adapter per matched trigger category (that would
+smuggle category-specific personas back in through the count instead of the name, the same
+drift `wip/bmad-method-comparison/PRODUCT-REPORT.md` §3.2 already rejected). N stays a small
+fixed constant decided once (2, not open-ended, not derived from how many categories matched),
+to keep the ceremony-cost concern #307 owns from being quietly pre-empted by this issue.
+
+**Scope, explicitly:** this decision does not resolve when "thorough" becomes the default for
+a given PR shape — that stays #307's call, unchanged from Ties' Q3(b) ruling. It only fixes the
+classifier's basis, the override mechanism, and the module shape for building AC1/AC2 now.
+
+---
+
 ## System boundaries and ownership
 
 - **Orchestrator** (persistent session): owns routing, phase-readiness assessment,
