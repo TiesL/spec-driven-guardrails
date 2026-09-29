@@ -1131,6 +1131,53 @@ itself; applied here to real new functionality again, not premature
 promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
 bidirectionally, so `S152` can't resolve without this heading.
 
+### F36 — `classify-review-depth.sh` classifies a PR quick/thorough by Reviewer's six trigger categories (issue #328)
+
+Read-only script: given a PR number, reads its changed-file paths and its
+own title+body text, matches both against Reviewer's existing six
+security-review trigger categories (`wip/multi-agent-development/
+role-contracts/SKILL.md`'s "Security review triggers" table — Auth/
+session, Secrets/credentials, Deploy/CI configuration, Infrastructure as
+Code, Sensitive/personal data, Untrusted input), and prints `review-depth:
+quick` or `review-depth: thorough (<matched categories>)` — no new risk
+taxonomy, no size/files-touched dimension (A13 in
+`ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly rejected the latter). An
+optional `--force-thorough` flag classifies `thorough` even with zero
+category matches, evidenced as `(forced)` rather than a false category
+claim, so the mechanism has a real, dogfoodable caller before issue #307
+decides on any default-on rule; on a real match, the override is strictly
+additive and never masks the genuine matched category names.
+
+A REST call failure (changed-files or title/body lookup) fails open
+toward `thorough`, not `quick` — the inverted direction from every other
+gate in this repo, since this classifier's only purpose is triggering
+*extra* scrutiny and an unreadable diff/description is exactly the case
+with the least evidence to rule a category out. `gh` missing from `PATH`
+entirely is a harder, distinct failure (non-zero exit, nothing on
+stdout), never folded into that same fail-open behavior, so a caller can
+tell "no answer" apart from "got an answer, chose caution."
+
+`classify-review-depth.sh` at repo root (same dogfood-only placement as
+`compliance-evidence.sh`/`role-label-staleness.sh` — not under `skills/`
+or `templates/`, no propagation to adopted projects for this epic; not
+invoked by `./check`, only its tests are, since it needs `gh`/network and
+`./check` must stay usable with no GitHub credentials). The script also
+defines and exposes (`--lens-adapter-count`) `LENS_ADAPTER_COUNT`, the
+fixed number of generic lens-Adapter forks `skills/pre-merge-review/
+SKILL.md`'s thorough-mode dispatch prose adds on top of Reviewer when the
+verdict is `thorough` (A13) — a single named, testable seam for that
+constant, so a future prose edit that lets the two numbers drift apart is
+a test failure, not a silent mismatch. The classifier's own stdout never
+prints this constant, or any other count/multiplier, on a `thorough`
+verdict — only matched category names (or `forced`/`lookup-failed`).
+
+This single heading exists as the same narrow, stated exception `F34` and
+`F35` above already used (origin: issue #296's non-goals and
+`ARCHITECT-REPORT.md` D3 option (a), accepted by Product for `F34`
+itself; applied here again to real new functionality, not premature
+promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S154` can't resolve without this heading.
+
 ---
 
 ## Non-functional characteristics
