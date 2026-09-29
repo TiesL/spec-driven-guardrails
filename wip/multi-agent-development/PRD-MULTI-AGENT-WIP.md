@@ -194,8 +194,10 @@ In addition to the roles table above, per role the core responsibilities and whi
   QA's scenarios (extends Overlap 2's structural/semantic split to test code — see the gap
   closed further below).
 - A defect or finding (QA, Reviewer) uses a minimal content structure: summary, failure
-  scenario (evidence, not assertion), location (file:line or scenario ID), category, and a
-  `CONFIRMED`/`PLAUSIBLE` verdict — full detail in `role-contracts/SKILL.md`.
+  scenario (evidence, not assertion), location (file:line or scenario ID), category, a
+  `CONFIRMED`/`PLAUSIBLE` verdict, a `low`/`medium`/`high` severity, and a disposition
+  (issue/holding-pen/dismissed, for a finding outside the current change's scope) — full
+  detail in `role-contracts/SKILL.md`.
 
 **Overlap 1 — who writes the failing test (QA vs. Fullstack Developer)?** (decided, resolves §9 OQ6) No overlap once the question is split: QA determines *what* needs to be tested and *which kind of test* fits it (the strategy/the seam) — that is QA's existing "determine test strategy" responsibility, now explicitly including the choice of test kind. Fullstack Developer writes the *actual test code*, red-before-green, as part of implementation — that is exactly what `tdd-seams`' own red-before-green discipline already describes (the seam is agreed in advance, the red test belongs to the implementation step). No new rule, just the existing division of roles made explicit.
 
@@ -210,11 +212,12 @@ test code specifically: Reviewer judges this, since it's the same kind of judgme
 Developer in the standard path (there is nowhere else for this check to live).
 
 **Defect/finding content structure (decided 2026-09-25, in English — see
-`role-contracts/SKILL.md`'s "Shared, across all five roles" section for the full template).**
-Neither QA's "identifying/reporting defects" nor Reviewer's technical findings had a
-defined content shape before this — closed rather than left implied. Minimal fields:
-summary, failure scenario (evidence, not assertion), location (file:line or scenario ID),
-category, and a `CONFIRMED`/`PLAUSIBLE` verdict. No new tooling — the same shape this
+`role-contracts/SKILL.md`'s "Shared, across all five roles" section for the full template;
+severity/disposition fields added 2026-09-29, issue #331).** Neither QA's
+"identifying/reporting defects" nor Reviewer's technical findings had a defined content
+shape before this — closed rather than left implied. Minimal fields: summary, failure
+scenario (evidence, not assertion), location (file:line or scenario ID), category, a
+`CONFIRMED`/`PLAUSIBLE` verdict, severity, and disposition. No new tooling — the same shape this
 project's own review-finding conventions already produce, written down explicitly.
 
 Coherence: Product determines *what*; Architect determines *how*; Fullstack Developer executes; QA verifies that it works as intended; Reviewer independently confirms the whole chain before release.
