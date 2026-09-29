@@ -105,38 +105,114 @@ on being honest about where it doesn't hold:
 ## Software development practices this project enforces
 
 Each of these is backed by a concrete mechanism in this repo, not asserted
-on its own:
+on its own. Ordered by where each one sits in the workflow, not
+alphabetically — as of `v0.1.0` (see `CHANGELOG.md`).
+
+**1. Discovery and elicitation**
+
+- **Structured requirement interviews** — the `grilling` skill: open
+  questions mapped as a design tree, worked in numbered rounds with a
+  recommended answer per question, stopping only when the frontier is
+  empty. Replaces an unstructured back-and-forth with a repeatable method.
+
+**2. Specification**
 
 - **Specification-Driven Development (SDD)** — `PRD.md` as the normative
   spec, broken down into epic/work-item GitHub issues before
-  implementation starts.
+  implementation starts; the `write-spec` skill governs how issues,
+  `PRD.md` sections, and `TEST-SCENARIOS.md` entries stay in sync, and the
+  `Covers:` token convention that links a scenario to the functionality it
+  tests.
+- **Non-functional requirements specification** — the `nfr/` register: one
+  file per attribute (security, data integrity, failure modes, cost
+  management, observability, portability, privacy, …), the single source
+  for the NFR sections in every adopted `PRD.md`.
+
+**3. Architecture and design**
+
 - **Architecture Decision Records** — `ARCHITECTURE.md` records structural
   decisions, alternatives considered, and the trigger to revisit them.
-- **Non-functional requirements specification** — the `nfr/` register: one
-  file per attribute (security, data integrity, failure modes, …), the
-  single source for the NFR sections in every adopted `PRD.md`.
-- **Test-Driven Development, red-before-green** — see the `tdd-seams`
-  skill.
+- **Deep-module design** — the `codebase-design` skill: a shared
+  vocabulary (Module, Interface, Seam, Depth, Leverage, Locality) plus two
+  concrete tests (the deletion test, the two-adapters rule) for deciding
+  where a seam belongs and whether a decomposition is actually deep or
+  just many shallow moving parts.
+
+**4. Implementation**
+
 - **Trunk-based branching (GitHub Flow)** — short-lived branches off
-  `main`, no long-lived parallel branches.
+  `main`, no long-lived parallel branches; a branch can't even be created
+  without the issue number it implements (`git-guardrails`, below).
+- **Test-Driven Development, red-before-green** — see the `tdd-seams`
+  skill: agree the seam before the test, not after, and three named
+  anti-patterns to avoid (implementation-coupled, tautological, horizontal
+  slicing).
+- **Disciplined bug diagnosis** — reproduction, hypotheses, a regression
+  test, then the fix, in that mandatory order; see the `diagnose-bug`
+  skill.
+- **Named refactoring triggers** — three concrete triggers for paying down
+  complexity now instead of drifting (design contradicted, code touched
+  that carries a debt entry, a register that keeps growing); see the
+  `refactoring-triggers` skill.
+
+**5. Testing**
+
 - **Automated testing** — unit tests, BDD-style Given/When/Then scenarios
-  in `TEST-SCENARIOS.md`, and frozen-baseline regression tests (`test/fixtures/baseline/`).
-- **Continuous Integration** — `check` runs identically locally and in CI;
-  a merge is blocked while it's red.
-- **Mandatory quality review before merge** — the `pre-merge-review` skill,
-  enforced by the merge guard.
-- **Requirements traceability** — an enforced chain from `PRD.md` to a test
-  scenario to a GitHub issue to the merging PR (see `check-traceability.sh`).
+  in `TEST-SCENARIOS.md`, and frozen-baseline regression tests
+  (`test/fixtures/baseline/`).
+
+**6. Continuous Integration**
+
+- **CI parity** — `check` runs identically locally and in CI; a merge is
+  blocked while it's red. Enforced by a fixed, platform-neutral `check`/
+  `deploy` naming convention (the `check-convention` skill) so CI never
+  invents its own checks per project.
+- **Commit-time enforcement** — `./check` wired into `pre-commit`,
+  blocking a bad commit before it ever reaches a branch.
+- **Secret scanning** — `gitleaks` in `pre-push` (blocking) with a CI
+  backstop, so a bypassed hook still gets caught.
+
+**7. Review**
+
+- **Mandatory quality review before merge** — the `pre-merge-review`
+  skill: fresh context (`context: fork`), a model at least as skilled as
+  whoever wrote the code, scope proportional to the PR, findings posted in
+  the PR itself with a machine-readable marker — enforced by the merge
+  guard, not left to memory.
+- **Capability/cost-aware model selection** — the `model-choice` skill:
+  which model/reasoning effort fits each stage of a work item's pipeline
+  (not only review), with a machine-readable `model-record` marker per
+  stage.
+
+**8. Merge governance**
+
+- **Destructive-command and merge guards** — the `git-guardrails` hook:
+  blocks a direct push/commit to `main`, blocks a branch that doesn't name
+  the issue it implements, blocks a merge with no review marker or with
+  CI still red, and blocks a stray commit-level `Closes #N` the PR's own
+  title/body doesn't share.
+- **Requirements traceability** — four enforced links: `PRD.md` → test
+  scenario (`check-traceability.sh`), scenario → GitHub issue
+  (`scenario-gate.sh`), PR → issue (`check-pr-issue-link.sh`), and issue →
+  acceptance-criteria structure (`issue-structure-gate.sh`) — a full chain
+  from spec to merged PR, not just spec-to-code.
+
+**9. Deployment**
+
+- **Continuous Deployment is deliberately not practiced.** `deploy` stays
+  a manual, guarded command (the `deploy-guards` skill) — it requires a
+  clean working tree, green CI, and runs against production only from
+  `main` — by design, not because it was never built.
+
+**10. Ongoing maintenance and cross-project governance**
+
 - **Explicit technical debt tracking** — `PRD.md`'s technical debt table:
   what's accepted, why, and the trigger to address it.
-- **Named refactoring triggers** — see the `refactoring-triggers` skill.
-- **Disciplined bug diagnosis** — reproduction, hypotheses, a regression
-  test, then the fix; see the `diagnose-bug` skill.
-
-**Continuous Deployment is deliberately not practiced.** `deploy` stays a
-manual, guarded command — it requires a clean working tree, green CI, and
-runs against production only from `main` — by design, not because it was
-never built.
+- **Verifiable adoption, not self-asserted** — the `adoption-registry`
+  skill: a project's `WORKFLOW-ADOPTION.md` answers are checked
+  mechanically where possible, a pending row blocks (not just notifies),
+  and a "yes" answer that isn't backed by a real mechanism gets flagged
+  for substantiation.
 
 ## The workflow, visually
 
@@ -244,6 +320,11 @@ multi-machine use. If you want a specific, pinned version instead
 (see below), that setup replaces steps 1-2 above.
 
 ## Installing a pinned version (for a user other than TiesL)
+
+Releases are tagged with [Semantic Versioning](https://semver.org/)
+(`v0.1.0`, `v0.2.0`, ...) starting from `v0.1.0` — see `CHANGELOG.md` for
+what changed release to release and why `0.y.z`, not `1.0.0`, is the
+deliberate starting point.
 
 If you don't want to get every change on `main` live, but instead stay on a
 specific, tagged release until you decide to upgrade:
