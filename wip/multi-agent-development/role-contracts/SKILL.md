@@ -279,6 +279,17 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   test-coverage, code-quality).
 - **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
   never asserted as certain without naming which of the two it is.
+- **Severity** — `low`, `medium`, or `high` (added 2026-09-29, BMad co-thinking session #324,
+  candidate 2.7). Independent of Verdict: a finding can be `CONFIRMED` and still `low` (real,
+  but not release-blocking), or `PLAUSIBLE` and `high` (suspected, but severe enough to chase
+  down before merge). Neither axis substitutes for the other.
+- **Disposition** — how a finding outside the current change's own scope gets handled (added
+  2026-09-29, same source, candidate 2.2): **issue** (turned into its own issue immediately,
+  if actionable and small), **holding-pen** (appended to a recognized backlog epic, e.g.
+  #307), or **dismissed** (explicitly, with reasoning recorded). Never silently dropped, and
+  never fixed inline without a scope-expansion decision. A finding within the current change's
+  own scope (i.e. it gets fixed in this same PR) doesn't need this field — Disposition only
+  applies once a finding is judged out of scope for the work at hand.
 
 No new tooling: this is the same shape already produced by this project's own
 review-finding conventions, written down as a standing content requirement instead of only
