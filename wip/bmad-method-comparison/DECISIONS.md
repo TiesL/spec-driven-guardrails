@@ -2,7 +2,8 @@
 
 Answers to `PRODUCT-REPORT.md` §4's five open questions, given directly in conversation with
 the orchestrator (not a live `grilling` round — Product's report already did the frontier
-framing; these are Ties' rulings on it, with one adjustment against Architect's sizing on Q3).
+framing; these are Ties' rulings on it, with one adjustment against Product's own recommendation on
+Q3, following Architect's split instead).
 Per this repo's `wip/<slug>/` convention, this file records the decisions; it does not itself
 edit `PRD.md`/`ARCHITECTURE.md`/`ROLE-DESCRIPTIONS.md`/`MULTI-AGENT-WORKFLOW.md` — items below
 marked **[needs issue]** require their own work-item issue before any tracked file changes,

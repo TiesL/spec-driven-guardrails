@@ -159,7 +159,8 @@ attribution of which skip caused which defect was muddled," and the backlog
 explicitly wants "a cleaner v2 data point: use the hatch again with exactly one
 role narrowed at a time." This candidate *is* that data-point-generating
 mechanism, formalized rather than left to happen accidentally on the next pilot.
-It also directly answers the round-trip-cost finding in #307 (~10.5h for W1) by
+It also directly answers the round-trip-cost finding in #307 (~10.5h for the
+#296 pilot) by
 giving small changes a cheaper path without abandoning full engagement for
 changes that need it.
 
@@ -341,8 +342,9 @@ other's blind spots or self-certify. BMad achieves a version of this only at the
 review phase (independent reviewer subagents), with one agent doing everything
 upstream of that. Collapsing v1 back toward a single build agent would undo the
 entire premise of epic #65, which is itself grounded in this repo's own dogfooded
-evidence (`PRD.md`: "over four projects and 27 merged PRs, none of them had
-review" — self-review by the same actor that built the thing is the exact failure
+evidence (`PRD.md`: "across four projects and 27 merged PRs: **zero** PRs
+reference an issue, **zero** have a review, **zero** scenarios have a coverage
+field" — self-review by the same actor that built the thing is the exact failure
 mode this repo was built to prevent, generalized). Not a rejection of BMad's
 craft; a rejection of importing its unit of work when this repo has already
 decided, with evidence, that the unit of work should be smaller and more

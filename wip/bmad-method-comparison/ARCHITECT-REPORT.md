@@ -225,7 +225,7 @@ govern *whether* an agent may proceed, but this repo has no equivalent
 "preserve the attempted diff as a durable artifact when a run halts
 partway" mechanism — a halted or aborted role session today just leaves
 whatever's on the branch (or nothing, if it never committed). See candidate
-2.7 below — this is new scope neither Product's report nor my own first
+2.8 below — this is new scope neither Product's report nor my own first
 draft covered, surfaced only by reading `autonomous-development-loops/`
 directly rather than trusting the condensed summary's "halts blocked"
 one-liner.
@@ -269,13 +269,13 @@ repo's CONFIRMED/PLAUSIBLE is evidentiary weight (am I sure this is real);
 BMad's severity axis (low/medium/high) is *impact*, a third, orthogonal
 question this repo's finding format doesn't ask at all today. That's a gap
 in this repo's own finding format that neither Product's report nor my
-first draft named — see the added candidate in §2.6 below (revised).
+first draft named — see the added candidate in §2.7 below (revised).
 
 Product's 2.2 candidate (deferred-finding disposition) is exactly filling
 the *disposition* axis, and I agree it's small — adding one field to an
 already-decided struct, not a new mechanism (§3 below, no deviation on that
 part). But BMad's actual practice suggests this repo is missing the
-*severity* axis too, which Product's report didn't surface (§2.6).
+*severity* axis too, which Product's report didn't surface (§2.7).
 
 The sharper structural point is `bmad-retrospective` vs. issue #322. BMad's
 retrospective is a **Module with real depth**: it reads an epic's entire
@@ -531,7 +531,7 @@ rejected line plus evidence links) for the case where Ties wants a quick
 answer without reading a full retrospective narrative — a small addition to
 the Interface, not a reason to raise the estimate further.
 
-### 2.4 Named review-depth tiers (small — matches Product, mechanism specified further)
+### 2.4 Named review-depth tiers (small — one tier below Product's small-medium, mechanism specified further)
 
 **What, technically:** agree with Product's 2.4 in shape. The concrete
 Module: a size/risk classifier (files touched, whether the PR touches any
@@ -580,7 +580,7 @@ This is a small addition to Product's candidate, not a deviation in kind —
 noted here rather than in §3 since it sharpens rather than contests
 Product's framing.
 
-### 2.6 Deferred-finding disposition field (trivial — matches Product)
+### 2.6 Deferred-finding disposition field (trivial — one tier below Product's small)
 
 Agree fully with Product's 2.2, no technical deviation. This is a one-field
 addition to an already-decided struct (`ROLE-DESCRIPTIONS.md`'s finding
@@ -753,18 +753,20 @@ finding Product's report doesn't reach**: the comparison in §1.3 above shows
 solving the same problem in the same shape — they're two different answers
 to "how much autonomy before the irrevocable step," and #309's answer
 currently has a real self-limiting-scope gap `bmad-build-auto`'s design
-doesn't have (§1.3, §2.2). Product's report treats #309 only as "BMad's
-epic tier maps loosely" (§1.6) and doesn't examine #309's own guardrail
+doesn't have (§1.3, §2.2). Product's report treats #309 only through the
+vocabulary lens ("BMad's ticket hierarchy... maps loosely onto this repo's Epic
+→ Work item structure," §1.6) and doesn't examine #309's own guardrail
 shape against `bmad-build-auto`'s guardrail shape directly — that
 comparison is what surfaces 2.2 as a candidate, which is new scope, not
 present anywhere in Product's report.
 
 ### 3.6 Added scope: self-limiting authorization for release branches (2.2)
 
-Not addressed in Product's report at all. Product's §1.6 notes #309 as an
-"informal... release-branch tier" gap adjacent to BMad's ticket hierarchy,
-but frames it purely as a vocabulary/tiering gap (resolved by borrowing
-built/done language, Product's 2.6). My read of #309 against
+Not addressed in Product's report at all. Product's §1.6 notes that BMad's ticket
+hierarchy "maps loosely onto this repo's Epic → Work item structure," and treats #309
+as a vocabulary/tiering gap that its own 2.6 candidate explicitly does *not* resolve
+("This candidate doesn't solve #309... it hands whoever scopes #309 a precise,
+already-battle-tested distinction to reuse instead"). My read of #309 against
 `bmad-build-auto`'s actual guardrail *mechanism* (not just its vocabulary)
 surfaces a distinct, more concrete gap: the standing authorization itself
 has no scope-limiting property once granted (§1.3, §2.2 above). This is
