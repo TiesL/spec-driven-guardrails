@@ -37,6 +37,59 @@ working tree with an editor tool. `Bash` *is* allowed (needed for
 not a technically enforced write ban — use it only to read and to post the
 comment, never to change files. This skill delivers findings, not fixes.
 
+## Review depth: quick vs thorough
+
+Every PR gets at least the single-Reviewer fork above (`context: fork`) —
+"quick" mode, unchanged. On top of that, run:
+
+```
+./classify-review-depth.sh <pr-number>
+```
+
+That prints exactly one line: `review-depth: quick`, or `review-depth:
+thorough (<matched categories, or "forced"/"lookup-failed">)`. It
+classifies by matching the PR's changed-file paths and its own title+body
+against Reviewer's existing six security-review trigger categories
+(above) — no new taxonomy, no size/files-touched dimension (A13 in
+`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly
+rejected the latter). Pass `--force-thorough` to opt a specific real PR
+into thorough mode regardless of what the categories say — a manual
+override for dogfooding this mechanism before issue #307 decides on any
+default-on rule, never a standing default itself.
+
+**When the verdict is `thorough`:** fork Reviewer as usual, **plus
+exactly `LENS_ADAPTER_COUNT` additional lens-Adapter forks** — fresh,
+isolated `context: fork` instances, generic and undifferentiated copies
+of Reviewer's own review scope (same prompt, same finding format, same
+`allowed-tools`), never named personas (no "Blind Hunter", no "Edge Cases
+Hunter"), and never one adapter per matched trigger category — the count
+is a small fixed constant, not derived from how many categories matched.
+Read the actual number by running:
+
+```
+./classify-review-depth.sh --lens-adapter-count
+```
+
+rather than restating the literal number here — `classify-review-depth.sh`
+defines `LENS_ADAPTER_COUNT` in exactly one place, and this prose reads it
+from there so a future edit to either side that lets the two drift apart
+shows up as a mismatch (a lens-Adapter dispatch count that no longer
+matches what the script reports), not a silent one. Every lens-Adapter's
+findings go into the same PR findings comment as Reviewer's own, under
+the same machine-readable disposition convention ("What happens with it"
+below) — a second or third set of eyes, not a second gate with its own
+marker.
+
+**When the verdict is `quick`:** nothing changes — the single-Reviewer
+fork above is the whole review, same as before this classifier existed.
+
+Both `classify-review-depth.sh` and `--lens-adapter-count` fail open the
+same way every other `gh`-dependent check in this skill does when `gh` or
+network isn't available — see the script's own header for the exact
+fail-open direction (toward `thorough`, the inverse of this repo's usual
+default, since under-reviewing a security-shaped change on missing
+evidence is the wrong way to guess).
+
 ## Model choice
 
 See the `model-choice` skill for the canonical principle (floor + cost,
