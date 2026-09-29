@@ -266,6 +266,11 @@ roles work sequentially on the same branch, no worktree-per-role. Never merge, r
 force-push, or run a destructive git operation — that stays unconditionally human-only (A2),
 no exception.
 
+**On a halt mid-task, save the attempted diff as a patch artifact before reverting** (A12,
+added 2026-09-29) — never committed or pushed, alongside the work item's own tracking
+artifact, so a human or resumed session can find and act on it. Covers the halted path A11
+doesn't: an unresolved dispute, a blocked gate, or an ambiguity nothing in scope can settle.
+
 **Reporting a defect or finding (QA, Reviewer): minimal content structure, decided
 2026-09-25.** Neither role had one specified before this — closing that gap now rather than
 implying more rigor than existed. Whether posted as a PR comment or an issue comment, use:

@@ -434,6 +434,44 @@ A2's concern), or if "pre-authorized" is stretched to cover anything A2 forbids.
 
 ---
 
+### A12 — A halt mid-task saves the attempted diff as a patch artifact before reverting (decided 2026-09-29, from the BMad Method co-thinking session, issue #324, candidate 2.8)
+
+A11 covers the successful path: commit and push per logical step, no exception needed. It
+says nothing about the halted path — what happens to real, uncommitted work at the exact
+moment a role stops mid-task for a reason that isn't a clean pass/fail (an unresolved
+cross-role dispute per Decision 4/A7, a blocked gate, an ambiguity nothing in scope can
+settle). Today that's undefined: a halted session's uncommitted changes are just whatever's
+on disk when the session ends, with no guarantee anyone looks at them before the branch is
+reset or abandoned.
+
+**The rule:** on any halt mid-task, before reverting the working branch to its last
+committed state, save the full attempted diff as a patch file
+(`git diff > <work-item-slug>-halt-<timestamp>.patch` or equivalent) in the work item's own
+branch-local working directory — never committed, never pushed (that would violate A11's own
+"only commit real, reviewed progress" spirit) — alongside whatever plan/tracking artifact
+already exists for that work item, so a human or a resumed session can find it, inspect it,
+and decide to discard or reapply it. The orchestrator names the patch file's location and the
+halt reason explicitly in whatever it reports to Ties for that halt (same channel as any
+other escalation, A10).
+
+**Why now, with no autonomous run mode yet built:** two real triggers already exist without
+one. First, a genuine cross-role dispute that reaches Decision 4/A7's escalation path (still
+unfired after three pilots per issue #307, but designed to happen) is exactly this shape of
+stop — real, in-progress work with nowhere defined to go. Second, and longer-term: Ties'
+stated direction is toward more agent autonomy over time, eventually including production
+agents monitoring his own company's operational software and resolving defects
+semi-autonomously — at that point, losing in-progress work on an unattended halt stops being
+a minor inconvenience and becomes a real, silent loss. Documenting the pattern now, before
+either kind of halt actually needs it, costs nothing (no live trigger, no new infrastructure)
+and closes the gap before it's ever hit for real.
+
+**Scope, explicitly:** this decision does not itself build or authorize any autonomous run
+mode (§3.3 of the BMad co-thinking session's non-adoptions still stands unchanged — no
+`bmad-build-auto`-style unattended loop exists or is proposed here). It only says what happens
+to in-progress work *whenever* a halt occurs, autonomous or not.
+
+---
+
 ## System boundaries and ownership
 
 - **Orchestrator** (persistent session): owns routing, phase-readiness assessment,
