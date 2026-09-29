@@ -489,6 +489,19 @@ for item in data:
 # exception. The escape hatch (AC6/merge_guard_off) is likewise inherited
 # from the caller, not re-checked here.
 #
+# Issue #341: `closingIssuesReferences` is only populated by GitHub for a
+# PR whose base is the repository's *default* branch (same root cause as
+# #320/#318/#323) — so for a PR into a release branch, it's always empty,
+# and every legitimate commit-level `Closes #N` was wrongly flagged as
+# "stray", even when the PR's own title/body says the exact same thing.
+# Fix: also scan the PR's own title+body with the same closing-keyword
+# regex and treat any issue number found there as declared-by-the-PR too,
+# same fallback pattern check-pr-issue-link.sh/model-record-gate.sh/
+# issue-structure-gate.sh already established. This is a pure superset for
+# the default-branch case (closingIssuesReferences already agrees with
+# what the title/body says there, so the added numbers are the same ones)
+# and the actual fix for the release-branch case.
+#
 # $1 is the same optional target (number/url/branch) as the other checks.
 check_stray_closes_guard() {
   local target="$1"
@@ -500,9 +513,9 @@ check_stray_closes_guard() {
 
   local call output status
   if [ -n "$target" ]; then
-    call=(gh pr view "$target" --json closingIssuesReferences,commits)
+    call=(gh pr view "$target" --json closingIssuesReferences,commits,title,body)
   else
-    call=(gh pr view --json closingIssuesReferences,commits)
+    call=(gh pr view --json closingIssuesReferences,commits,title,body)
   fi
 
   # stdout and stderr kept separate, not merged: a routine stderr line from
@@ -533,10 +546,13 @@ check_stray_closes_guard() {
   # fixed, resolve/resolves/resolved, case-insensitive, keyword followed by
   # either a colon — GitHub also accepts "Fixes: #123" — or plain
   # whitespace before the #) applied to every commit's headline+body,
-  # compared against the PR's own closingIssuesReferences — the same field
-  # link 3 already treats as authoritative for what this PR itself intends
-  # to close. The colon form was missing from the first version of this
-  # check — found during this very PR's own pre-merge-review (round 3).
+  # compared against what the PR itself declares it closes: its own
+  # closingIssuesReferences (authoritative for a default-branch PR) UNIONed
+  # with the same keyword scan applied to the PR's own title+body (#341 —
+  # closingIssuesReferences is empty for any non-default-branch PR, even
+  # one whose title/body genuinely closes the right issue). The colon form
+  # was missing from the first version of this check — found during this
+  # very PR's own pre-merge-review (round 3).
   local stray parse_status
   stray="$(printf '%s' "$output" | python3 -c '
 import json, re, sys
@@ -546,13 +562,17 @@ try:
 except Exception:
     sys.exit(1)
 
+keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?::\s*|\s+)#(\d+)", re.IGNORECASE)
+
 closing = set()
 for ref in (data.get("closingIssuesReferences") or []):
     n = ref.get("number")
     if n is not None:
         closing.add(int(n))
 
-keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?::\s*|\s+)#(\d+)", re.IGNORECASE)
+pr_text = (data.get("title") or "") + "\n" + (data.get("body") or "")
+for m in keyword.finditer(pr_text):
+    closing.add(int(m.group(1)))
 
 seen = set()
 for commit in (data.get("commits") or []):
