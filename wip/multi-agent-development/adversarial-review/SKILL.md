@@ -10,10 +10,11 @@ description: >
 
 # Adversarial review
 
-From the BMad Method co-thinking session (issue #324, PR #326) — Product's candidate 2.5,
-Architect's §1.5 correction. Decided by Ties 2026-09-28
-(`wip/bmad-method-comparison/DECISIONS.md`, Q4): scoped and written now, not invoked as part
-of closing issue #329 — the first real use is a separate, future event.
+From the BMad Method co-thinking session (issue #324, PR #326 — merges into `main`, so its
+own `wip/bmad-method-comparison/` reports aren't reachable from this release branch yet;
+summarized here rather than cited by path) — Product's candidate 2.5, Architect's correction.
+Decided by Ties 2026-09-28: scoped and written now, not invoked as part of closing issue #329
+— the first real use is a separate, future event.
 
 ## Why this exists
 
@@ -24,9 +25,9 @@ unmerged artifacts. That pattern worked and produced real process fixes (A7, A8,
 Party mode is a more general, reusable version of the same instinct: a small number of
 independent personas reviewing a draft, disagreeing productively, with the human steering.
 
-**BMad's own irony, worth stating plainly (Architect's finding, §1.5 of the co-thinking
-session's ARCHITECT-REPORT.md):** BMad's own Party-mode *default* is `session` mode — one
-model voicing every persona — which contradicts BMad's own stated design principle ("one
+**BMad's own irony, worth stating plainly (Architect's finding, from the co-thinking
+session's direct source-reading of BMad's own docs):** BMad's own Party-mode *default* is
+`session` mode — one model voicing every persona — which contradicts BMad's own stated design principle ("one
 model voicing five personas tends to make them agree... separate agents keep their reasoning
 independent, which is the point"). This repo's existing fresh-subagent-per-role dispatch
 (Decision 3 in `ARCHITECTURE-MULTI-AGENT-WIP.md`) is already closer to BMad's *stated*
@@ -107,7 +108,7 @@ vote that outnumbers the author.
 
 ## What this is not
 
-- Not a new standing role — no persona here has a permanent seat in `ROLE-DESCRIPTIONS.md`/
+- Not a new standing role — no persona here has a permanent seat among
   `role-contracts/SKILL.md`'s five roles.
 - Not a replacement for `pre-merge-review`'s review-depth tiers (candidate 2.4, issue #328) —
   that's a PR-scoped code-review mechanism; this is a pre-decision, draft-scoped pattern for
