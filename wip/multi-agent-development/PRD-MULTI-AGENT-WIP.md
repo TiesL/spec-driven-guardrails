@@ -340,6 +340,8 @@ To keep design decisions sharp, the following terms are distinguished:
 | Orchestrator | The coordinating responsibility that guards work, dependencies, gates, and compliance. |
 | Tooling | The technical means that enable or enforce the workflow, such as GitHub, CI, test frameworks, and deployment or IaC tooling. |
 | Co-thinking session (English term, decided 2026-09-23) | A reduced-role elaboration/elicitation step (Orchestrator + Product + Architect only) for a new product or a new release/epic, before deciding to build — see §3.5. |
+| Built (English term, decided 2026-09-28, from the BMad Method co-thinking session, issue #324) | A work item's PR has merged onto its release branch (`MULTI-AGENT-WORKFLOW.md`'s Workflow Execution Summary's "Release" node) — the pipeline's own output, not yet a decision about shipping it. |
+| Done (English term, decided 2026-09-28, same source as Built) | The release branch itself has merged into `main` — a separate, later, always-human decision (never automatic, same as every merge-to-`main` gate this repo already has). A work item can be Built without the release it belongs to being Done. Only the two endpoint terms are adopted; BMad's own intermediate lifecycle states (ready-for-dev, in-progress, in-review, etc.) are deliberately not imported — the `role:<name>` label (A5 in `ARCHITECTURE-MULTI-AGENT-WIP.md`) already tracks that granularity, and a second mechanism for the same information would duplicate it, not add to it. Reuse this vocabulary when issue #309 (release-branch-as-workflow-tier) is scoped — this row doesn't resolve #309 itself. |
 
 These terms must be used consistently in follow-up design. A choice of tooling must not silently determine the governance or role division.
 

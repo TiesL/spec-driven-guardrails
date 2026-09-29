@@ -922,6 +922,11 @@ scenarios below, numbered to match.
 3. Reviewer identifies significant issues → back to whichever phase the
    issue actually belongs to, for rework.
 
+**"Release" here means Built, not Done** (PRD-MULTI-AGENT-WIP.md's terminology table,
+decided 2026-09-28): this diagram's terminal node is the work item's PR merging onto its
+release branch. The release branch's own later merge into `main` — Done — is a separate,
+always-human decision, not part of this per-work-item path.
+
 ---
 
 ## Differences from Portfolio Management Workflow
