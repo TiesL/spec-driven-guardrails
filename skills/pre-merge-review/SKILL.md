@@ -112,16 +112,27 @@ is named by no issue in its `**Covers:**` field. Only that field counts —
 an ID that happens to appear in a sentence (e.g. "we've already tested
 some s1 variants") is not a reference. Every reported line is a finding.
 
-**Link 3 — does *this* PR reference an issue?** One call:
+**Link 3 — does *this* PR reference an issue?** Run the actual script CI
+uses (#323 — don't hand-roll a `gh pr view --json closingIssuesReferences`
+one-liner: that call is GraphQL-backed and 403s from inside a Claude Code
+session, and even outside that block, `closingIssuesReferences` is only
+populated by GitHub when the PR's base is the repository's *default*
+branch, so it's silently empty for every PR into a release branch):
 
 ```
-gh pr view --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+templates/check-pr-issue-link.sh <pr-number>
 ```
 
-If that's `0`, that's a finding: the PR is missing `Closes #<issue>` or a
-linked issue. The same check exists as a hard block in CI (W19b,
-`check-pr-issue-link.sh`) — this skill additionally runs it before the
-merge, with the finding in the PR itself.
+It checks two paths, in order: `closingIssuesReferences` first (covers
+the default-branch case, and any non-default-branch PR with a manually
+linked issue in its Development sidebar), then — only when that's empty
+and the base isn't the default branch — a direct closing-keyword scan
+against the PR's own title+body. A finding is exit `1` with a message on
+stderr (the script has no fail-open path of its own: an infra failure
+that stops it from consulting the PR is itself reported as the finding,
+same as a genuinely missing reference). The same check exists as a hard
+block in CI (W19b) — this skill additionally runs it before the merge,
+with the finding in the PR itself.
 
 **Link 4 — does the issue itself have the structure the other three links
 assume (#242)?** Run:
