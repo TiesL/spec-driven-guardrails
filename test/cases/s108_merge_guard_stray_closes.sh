@@ -30,9 +30,10 @@ through_guard() {
 }
 
 # A shared fake gh: marker + green CI always present (so only the new
-# stray-Closes check is under test), plus the new `pr view
-# --json closingIssuesReferences,commits` call reading from $view_data —
-# or, if that file is absent, failing (for the fail-open case).
+# stray-Closes check is under test), plus the `pr view --json
+# closingIssuesReferences,commits,title,body` call reading from
+# $view_data — or, if that file is absent, failing (for the fail-open
+# case). title/body added for #341 (see AC5/AC6 below).
 fakebin="$(fake_gh_bin '
 case "$*" in
   "pr view --json comments,headRefOid")
@@ -41,7 +42,7 @@ case "$*" in
   "pr checks --json bucket,name")
     printf "%s" "[{\"name\":\"check\",\"bucket\":\"pass\"}]"
     exit 0 ;;
-  "pr view --json closingIssuesReferences,commits")
+  "pr view --json closingIssuesReferences,commits,title,body")
     if [ -f "'"$view_data"'" ]; then
       cat "'"$view_data"'"
       exit 0
@@ -149,5 +150,42 @@ output="$(printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s",
   | PATH="$fakebin:$PATH" "$guard" 2>&1)"
 status=$?
 [ "$status" -ne 2 ] || fail "S108/AC4 — the escape hatch did not bypass the stray-Closes check: $output"
+
+# AC5 (issue #341): a release-branch PR, where GitHub never populates
+# closingIssuesReferences at all — a commit-level Closes matching what the
+# PR's own title says must NOT be treated as stray. Title carries the
+# keyword, body doesn't — same shape as this repo's own release-branch PRs
+# (#311/#312/#314/#316/#340).
+cat > "$view_data" <<'EOF'
+{
+  "closingIssuesReferences": [],
+  "title": "Fix #10: some change",
+  "body": "No closing keyword in the body, only the title.",
+  "commits": [
+    {"oid": "aaaaaaa1111111", "messageHeadline": "First commit", "messageBody": "Closes #10"}
+  ]
+}
+EOF
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" != "2" ] || fail "S108/AC5 — a commit-level Closes matching the PR title (empty closingIssuesReferences) was wrongly blocked as stray: $output"
+
+# AC6 (issue #341): same release-branch shape, but this time a commit
+# really does close an unrelated issue the PR's own title/body never
+# mentions — still blocked. Proves AC5's fix doesn't just disable the
+# check for non-default-branch PRs.
+cat > "$view_data" <<'EOF'
+{
+  "closingIssuesReferences": [],
+  "title": "Fix #10: some change",
+  "body": "No closing keyword in the body, only the title.",
+  "commits": [
+    {"oid": "aaaaaaa1111111", "messageHeadline": "First commit", "messageBody": "Closes #10"},
+    {"oid": "bbbbbbb2222222", "messageHeadline": "Second commit", "messageBody": "Closes #999"}
+  ]
+}
+EOF
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" = "2" ] || fail "S108/AC6 — a genuinely stray Closes #999 on a release-branch PR (empty closingIssuesReferences) was not blocked (status $status): $output"
+assert_contains "S108/AC6 — names the stray issue" "#999" "$output"
 
 test_done
