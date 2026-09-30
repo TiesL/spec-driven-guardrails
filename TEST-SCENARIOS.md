@@ -1775,3 +1775,98 @@ something new is being added.
   2-character run wrongly opening a fence (and swallowing every later
   marker) covered explicitly; fails loudly, naming why, if mawk isn't
   installed to run this exact check with
+
+### S154 — classify-review-depth.sh classifies a PR quick/thorough by Reviewer's six trigger categories
+**Covers:** F36
+- Given: `fake_gh_bin` recordings of REST-only `gh api` answers — a PR's changed-file path
+  list and its description/body text — captured by actually running a draft/prototype of
+  `classify-review-depth.sh` against a recording fake `gh` (this repo's own fixture-hygiene
+  convention, same technique S150-S153 already use), never hand-retyped; no `gh api graphql`,
+  `gh pr view` or `gh issue view` call anywhere, matching `role-label-staleness.sh`'s own
+  REST-only precedent and the defect history (#318/#320/#323/#341) that motivates it; variants
+  of this recording per subcase below
+- When: `classify-review-depth.sh <pr-number>` runs with each fake `gh` ahead of `PATH`, with
+  and without `--force-thorough`
+- Then:
+  1. **Quick, no trigger match:** a PR whose changed-file paths and description touch none of
+     the six categories (Auth/session, Secrets/credentials, Deploy/CI configuration,
+     Infrastructure as Code, Sensitive/personal data, Untrusted input) — e.g. a
+     `docs/README.md`-only change with no category-shaped language in the description —
+     classifies `quick`, and the printed evidence names zero matched categories explicitly
+     (not merely omits them).
+  2. **Real trigger match, Secrets/credentials:** a PR whose changed-file paths include a
+     file plausibly carrying a credential shape (e.g. `.github/workflows/deploy.yml` adding a
+     new `secrets.`-referencing step, or a path containing `credentials`/`.env`) classifies
+     `thorough`, and the printed evidence names `Secrets/credentials` as a matched category.
+  3. **Real trigger match, Untrusted input:** a PR whose description text describes handling
+     external/webhook/API input (independent of file path shape, to prove the classifier
+     reads description text and not only paths) classifies `thorough`, naming
+     `Untrusted input` as the matched category.
+  4. **Multiple categories matched, evidence lists all of them:** a PR shaped to match both
+     Secrets/credentials and Deploy/CI configuration classifies `thorough` and the evidence
+     names both categories, not just the first one found — proves category matching doesn't
+     short-circuit after the first hit (needed for scenario 6 below to be meaningful).
+  5. **`--force-thorough` overrides a zero-match PR:** the same zero-trigger PR from scenario 1,
+     run with `--force-thorough`, classifies `thorough`; the printed evidence states the
+     override was the reason (zero categories matched, override forced the mode) rather than
+     falsely implying a category match — a caller reading the evidence later must be able to
+     tell "forced" apart from "actually matched," since #307 will eventually want to use real
+     trigger-match data, not override noise, as its ceremony-cost evidence.
+  6. **`--force-thorough` is a strict superset, never a substitute:** the same multi-category
+     PR from scenario 4, run with `--force-thorough`, still classifies `thorough` and still
+     names the real matched categories (not just "forced") — the override adds, it doesn't
+     paper over/replace genuine evidence.
+  7. **Evidence surface stays match-only, never emits a dispatch count:** across every
+     `thorough` case above (1, 3, or however many of the six categories matched), the
+     classifier's stdout never prints or implies a number of lens-Adapters, a fork count, or
+     any per-category multiplier — only the category name(s). This is the one piece of the
+     fixed-N=2-not-category-derived property (A13) that is actually this script's own
+     contract to hold: `classify-review-depth.sh` supplies evidence, never a count, so nothing
+     in its own interface can regress toward "N grows with match count" even before dispatch
+     wiring exists. (The dispatch side of that property — that `pre-merge-review`'s inline
+     branching always forks exactly Reviewer+2 lens-Adapters regardless of how many categories
+     this script's evidence names — is flagged as a separate, harder-to-mechanically-test gap
+     in QA's issue comment; A13 deliberately keeps that branching as prose in
+     `pre-merge-review/SKILL.md` rather than its own script, which is exactly what makes it
+     not unit-testable the way this scenario tests the classifier itself.)
+  8. **REST lookup failure fails open toward `thorough`, not `quick`:** `gh` present on
+     `PATH` but the changed-files or description lookup itself fails (non-zero exit from the
+     underlying `gh api` call, simulated via the fake `gh`) still prints a verdict —
+     `thorough` — rather than erroring out or defaulting to `quick`; the evidence states the
+     lookup failed and that the mode was chosen conservatively, not that a category actually
+     matched. (See QA's issue comment for why `thorough`, not `quick`, is the right fail-open
+     direction — a real call, not obvious either way, made explicit here rather than left to
+     Fullstack Developer to guess at implementation time.)
+  9. **No `gh` on `PATH` is a harder failure than a lookup failure:** with `gh` entirely
+     absent from `PATH`, the script exits non-zero (matching `role-label-staleness.sh`'s own
+     "no `gh` on `PATH`" exit-3 precedent) with nothing on stdout — distinct from scenario 8's
+     "gh present, one call failed" case, which still produces a verdict. A caller (the
+     `pre-merge-review` dispatch instructions) must be able to tell "no usable answer at all"
+     apart from "got an answer, chose thorough out of caution" — collapsing the two into the
+     same behavior would hide a broken environment behind a plausible-looking verdict.
+  10. **No write path:** the run makes no `gh` write call (no label, no comment, no edit,
+      no merge) under any subcase above, and the script's own source contains none — same
+      read-only conjunction S150/S152 already verify for their own scripts, checked here with
+      a `fake_gh_bin` fallthrough witness that is actually reachable (a positive control
+      confirms the witness fires on an unanswered argv), not a source grep alone.
+  11. **`--lens-adapter-count` prints `LENS_ADAPTER_COUNT`:** `classify-review-depth.sh
+      --lens-adapter-count` (no `gh` on `PATH` required — the flag short-circuits before any
+      `gh` lookup) prints `2` and exits 0. Added post-review (PR #353, Reviewer's F1): the
+      seam existed and was manually verified but had zero automated coverage, directly
+      contradicting the PR's own stated rationale ("a future drift shows up as a test
+      failure, not a silent mismatch") — a typo'd constant or a broken flag check would have
+      stayed CI-green.
+  12. **Real trigger match, Auth/session (file-path signal):** a PR whose changed-file paths
+      include a path segment naming `auth` (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Auth/session` as the matched category.
+  13. **Real trigger match, Infrastructure as Code (file-path signal):** a PR whose
+      changed-file paths include a `.tf` file (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Infrastructure as Code` as the matched
+      category.
+  14. **Real trigger match, Sensitive/personal data (description-text signal):** a PR whose
+      description text names GDPR/personal-data handling (independent of file path shape)
+      classifies `thorough`, naming `Sensitive/personal data` as the matched category.
+      Scenarios 12-14 added post-review (PR #353, Reviewer's F2): only 3 of the six categories
+      (Secrets/credentials, Deploy/CI configuration, Untrusted input) had a real-match fixture
+      before; a future regex edit breaking Auth/session, Infrastructure as Code, or
+      Sensitive/personal data would have gone uncaught.
