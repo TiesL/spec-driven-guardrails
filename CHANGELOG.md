@@ -6,6 +6,72 @@ isn't a pinnable version — see "Why local symlinks instead of committed
 symlinks" in `README.md`. For the ongoing list of adoptable changes per
 project: `CHANGES.md`.
 
+**Versioning:** [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), starting at
+`v0.1.0` (2026-09-29) — see that entry for why `0.y.z`, not `1.0.0`, is the deliberate starting
+point.
+
+## v0.2.0 — multi-agent development workflow (2026-09-30)
+
+Epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295): the multi-agent
+development workflow (epic #65's design, accepted 2026-09-21) becomes **executable** — real
+scripts and role contracts a fresh session can actually run, not prose an orchestrator
+hand-derives from a design document each time. A MINOR bump from `v0.1.0`, not a MAJOR one:
+deliberately not `v1.0.0`/`v2.0.0` — the latter would collide with epic #307's own internal
+name ("multi-agent workflow v2," the next round of improvements this release's own dogfooding
+already surfaced).
+
+### What shipped
+
+- **Compliance-evidence collector** (`compliance-evidence.sh`, W1) — given a PR, renders the
+  OQ9 gate/status/evidence table from pre-existing artifacts (model-record markers,
+  `pre-merge-review` markers, CI, PR↔issue links). Read-only, no posting, no judgment.
+- **Role-contracts skill** (`role-contracts/SKILL.md`, W2) — the five role contracts (Product,
+  Architect, QA, Fullstack Developer, Reviewer) as a real, quotable skill: per-role write/action
+  scope (A4), floor-or-ceiling input scope (A8), Reviewer's security-trigger table. Supersedes
+  the earlier `ROLE-DESCRIPTIONS.md` prose file.
+- **Role-label staleness detector** (`role-label-staleness.sh`, W3) — catches a `role:<name>`
+  GitHub label that's fallen behind the latest evidenced pipeline stage.
+- **Review-depth classifier** (`classify-review-depth.sh`, W4/#328) — decides `quick` vs.
+  `thorough` review for a PR, reusing Reviewer's existing six-category security-trigger list;
+  `thorough` dispatches Reviewer plus a fixed 2 independent lens-Adapters. The first work item
+  this epic ran through the complete five-role pipeline end to end (Product → Architect → QA →
+  Fullstack Developer → Reviewer, two review rounds) — the run that resolved OQ11 (below).
+- **OQ11 resolved** (issue #294): the multi-agent workflow has now run end-to-end on a real
+  work item, with genuine, independently-verified findings surfaced and fixed at every stage.
+  Target release: this one.
+
+### BMad Method comparison (methodology credit)
+
+A co-thinking session (issue #324) compared this repo against the
+[BMad Method](https://docs.bmad-method.org/) — not adopted wholesale, but directly responsible
+for several mechanisms in this release: the `--force-thorough` override and fixed lens-Adapter
+count on the review-depth classifier (candidate 2.4), the `adversarial-review` pattern for
+co-thinking sessions (candidate 2.5), "built" vs. "done" vocabulary (candidate 2.6), severity
+and disposition fields on the finding format (candidates 2.2/2.7), and the halt-preservation
+patch-artifact pattern, A12 (candidate 2.8). Explicit non-adoptions are recorded too (BMad's
+single-agent build model, standing reviewer personas, `tickets.toml` tracking) — see
+`wip/bmad-method-comparison/` for the full reports and decisions.
+
+### Defects found and fixed while dogfooding this epic's own construction
+
+Real correctness gaps, not hypothetical — each found by running the mechanism live, not by
+reading the source: a marker merely quoted in prose faking real compliance evidence (#308); a
+mawk-specific regex panic silently producing wrong verdicts, not just a crash (#319); GraphQL
+`gh` calls blocking entirely from inside a Claude Code session, and separately being blind to
+every non-default-branch PR — fixed across four scripts (#318/#320/#323) plus a fifth,
+`hooks/git-guardrails`'s own merge guard (#355), found only in this release's own pre-merge
+holistic audit. The Reviewer role now posts its own `pre-merge-review:done` marker on approval
+(#357), closing a redundant-review-pass gap the pipeline's own dogfooding surfaced.
+
+### Known, deliberately deferred
+
+Filed as debt, not blocking this release: `compliance-evidence.sh`'s test-fixture diversity
+(#300), a residual false-`evidenced` edge case in the same script (#338), the same
+quoted-marker-as-evidence defect class in two more scripts (#310), a non-deterministic
+conflict-message ordering (#304's AC1), shared boilerplate across three scripts with no
+common lib (#356), and `finding-carryforward-gate.sh`'s own quoted-string false-positive
+(#347). All tracked under epic #307 (v2 backlog).
+
 ## personal-workflow-to-shareable-product — 2026-09-13
 
 Epic [#52](https://github.com/TiesL/spec-driven-guardrails/issues/52): from
