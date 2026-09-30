@@ -502,7 +502,80 @@ for item in data:
 # what the title/body says there, so the added numbers are the same ones)
 # and the actual fix for the release-branch case.
 #
+# Issue #355: `gh pr view --json closingIssuesReferences,commits,title,body`
+# is the one call in this epic's #318 defect class (GraphQL-backed, 403s
+# from inside a Claude Code session in at least one confirmed run —
+# wip/multi-agent-rollout/META-REVIEW-PILOT-3.md — even though a different
+# session's own live calls here succeeded; the two sessions' `gh`
+# versions/token scopes weren't distinguishable from this session alone,
+# so the variance itself stays unexplained, same open question #355
+# leaves on record) that was never migrated when its four siblings
+# (compliance-evidence.sh, role-label-staleness.sh, model-record-gate.sh,
+# issue-structure-gate.sh) all were. Rewritten REST-only, reusing
+# model-record-gate.sh's own `gh api repos/{owner}/{repo}/...` pattern
+# rather than re-deriving it. `closingIssuesReferences` itself is dropped
+# instead of fetched via a separate REST call: the #341 comment above
+# already established the title/body keyword scan as a pure superset of
+# it (closingIssuesReferences never carried a number the title/body scan
+# wouldn't also find), so there's nothing left it uniquely contributes.
+#
+# REST has no equivalent of `gh pr view <target>`'s own number/url/branch
+# resolution, since `gh api repos/{owner}/{repo}/pulls/<n>` needs a plain
+# PR number. `resolve_stray_closes_pr_number` below covers the two shapes
+# that matter in practice (no target -> current branch's open PR; a plain
+# PR number or a `.../pull/<n>` URL passed straight through) with a REST
+# list-and-filter call; a bare non-current branch name as an explicit
+# `gh pr merge <branch>` target is a shape neither this project's own
+# workflow (CLAUDE.md never passes one) nor the existing test coverage
+# uses, so it isn't specially resolved — it falls through to the same
+# fail-open "couldn't consult the PR" warning as any other lookup failure,
+# consistent with this guard's ground rule (when in doubt, allow).
+#
 # $1 is the same optional target (number/url/branch) as the other checks.
+resolve_stray_closes_pr_number() {
+  local target="$1" branch
+
+  case "$target" in
+    '')
+      branch="$(git -C "$workdir" symbolic-ref --quiet --short HEAD 2>/dev/null)"
+      [ -n "$branch" ] || return 1
+      ;;
+    *[!0-9]*)
+      case "$target" in
+        */pull/*)
+          local number="${target##*/pull/}"
+          number="${number%%/*}"
+          number="${number%%\?*}"
+          case "$number" in
+            ''|*[!0-9]*) return 1 ;;
+            *) printf '%s' "$number"; return 0 ;;
+          esac
+          ;;
+        *)
+          return 1 ;;
+      esac
+      ;;
+    *)
+      printf '%s' "$target"
+      return 0 ;;
+  esac
+
+  local list_part status
+  list_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls" --paginate --jq '.[] | (.number|tostring) + "\t" + .head.ref' 2>/dev/null)"
+  status=$?
+  [ "$status" -eq 0 ] || return 1
+
+  local num ref
+  while IFS=$'\t' read -r num ref; do
+    if [ "$ref" = "$branch" ]; then
+      printf '%s' "$num"
+      return 0
+    fi
+  done <<<"$list_part"
+
+  return 1
+}
+
 check_stray_closes_guard() {
   local target="$1"
 
@@ -511,27 +584,53 @@ check_stray_closes_guard() {
     return 0
   fi
 
-  local call output status
-  if [ -n "$target" ]; then
-    call=(gh pr view "$target" --json closingIssuesReferences,commits,title,body)
-  else
-    call=(gh pr view --json closingIssuesReferences,commits,title,body)
+  local pr_number
+  pr_number="$(resolve_stray_closes_pr_number "$target")"
+  if [ -z "$pr_number" ]; then
+    echo "warning: merge-guard couldn't consult the PR's commits (no network or no access) and skips the stray-Closes check." >&2
+    return 0
   fi
 
-  # stdout and stderr kept separate, not merged: a routine stderr line from
-  # gh (an update notice, a deprecation warning) would otherwise contaminate
-  # the JSON on stdout and silently fail this check open — the exact
+  # Two REST calls, kept separate rather than one combined lookup: title/
+  # body (a single object, `gh api repos/{owner}/{repo}/pulls/<n>`) and
+  # commits (a paginated list, `.../pulls/<n>/commits`) are different REST
+  # shapes. `\x01` separates fields within a record and `\x03` separates
+  # the title/body header from the commits that follow (model-record-
+  # gate.sh's own separator convention, reused); `\x02` closes each commit
+  # record. stdout/stderr kept separate, not merged: a routine stderr line
+  # from gh (an update notice, a deprecation warning) would otherwise
+  # contaminate stdout and silently fail this check open — the same
   # stream-contamination bug check_ci_guard above was hardened against for
-  # issue #81. Found during this check's own pre-merge-review (PR #224).
-  local error_file error_text
+  # issue #81, and this check for PR #224's own review.
+  local error_file
   error_file="$(mktemp)" 2>/dev/null || error_file=""
+
+  local pr_part status error_text
   if [ -n "$error_file" ]; then
-    output="$(cd "$workdir" && "${call[@]}" 2>"$error_file")"
+    pr_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq '(.title // "") + "\u0001" + (.body // "") + "\u0003"' 2>"$error_file")"
+    status=$?
+    error_text="$(cat "$error_file" 2>/dev/null)"
+  else
+    pr_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq '(.title // "") + "\u0001" + (.body // "") + "\u0003"' 2>/dev/null)"
+    status=$?
+    error_text=""
+  fi
+
+  if [ "$status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't consult the PR's commits (no network or no access) and skips the stray-Closes check." >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
+    [ -n "$error_file" ] && rm -f "$error_file"
+    return 0
+  fi
+
+  local commits_part
+  if [ -n "$error_file" ]; then
+    commits_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls/$pr_number/commits" --paginate --jq '.[] | (.sha // "") + "\u0001" + (.commit.message // "") + "\u0002"' 2>"$error_file")"
     status=$?
     error_text="$(cat "$error_file" 2>/dev/null)"
     rm -f "$error_file"
   else
-    output="$(cd "$workdir" && "${call[@]}" 2>/dev/null)"
+    commits_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls/$pr_number/commits" --paginate --jq '.[] | (.sha // "") + "\u0001" + (.commit.message // "") + "\u0002"' 2>/dev/null)"
     status=$?
     error_text=""
   fi
@@ -542,42 +641,50 @@ check_stray_closes_guard() {
     return 0
   fi
 
+  local output="$pr_part$commits_part"
+
   # GitHub's own closing-keyword grammar (close/closes/closed, fix/fixes/
   # fixed, resolve/resolves/resolved, case-insensitive, keyword followed by
   # either a colon — GitHub also accepts "Fixes: #123" — or plain
-  # whitespace before the #) applied to every commit's headline+body,
-  # compared against what the PR itself declares it closes: its own
-  # closingIssuesReferences (authoritative for a default-branch PR) UNIONed
-  # with the same keyword scan applied to the PR's own title+body (#341 —
-  # closingIssuesReferences is empty for any non-default-branch PR, even
-  # one whose title/body genuinely closes the right issue). The colon form
-  # was missing from the first version of this check — found during this
-  # very PR's own pre-merge-review (round 3).
+  # whitespace before the #) applied to every commit's message, compared
+  # against what the PR itself declares it closes via the same keyword
+  # scan applied to the PR's own title+body (#341/#355 — this is the only
+  # source used now; see the comment above this function for why
+  # closingIssuesReferences was dropped rather than fetched separately).
+  # The colon form was missing from the first version of this check —
+  # found during this very check's own pre-merge-review (round 3).
   local stray parse_status
   stray="$(printf '%s' "$output" | python3 -c '
-import json, re, sys
+import re, sys
 
-try:
-    data = json.load(sys.stdin)
-except Exception:
+raw = sys.stdin.read()
+HEADER_SEP = "\x03"
+if HEADER_SEP not in raw:
     sys.exit(1)
+header, commits_blob = raw.split(HEADER_SEP, 1)
+
+FIELD_SEP = "\x01"
+if FIELD_SEP not in header:
+    sys.exit(1)
+title, body = header.split(FIELD_SEP, 1)
 
 keyword = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)(?::\s*|\s+)#(\d+)", re.IGNORECASE)
 
 closing = set()
-for ref in (data.get("closingIssuesReferences") or []):
-    n = ref.get("number")
-    if n is not None:
-        closing.add(int(n))
-
-pr_text = (data.get("title") or "") + "\n" + (data.get("body") or "")
+pr_text = title + "\n" + body
 for m in keyword.finditer(pr_text):
     closing.add(int(m.group(1)))
 
 seen = set()
-for commit in (data.get("commits") or []):
-    text = (commit.get("messageHeadline") or "") + "\n" + (commit.get("messageBody") or "")
-    sha = (commit.get("oid") or "")[:7]
+RECORD_SEP = "\x02"
+for rec in commits_blob.split(RECORD_SEP):
+    rec = rec.strip("\n")
+    if not rec:
+        continue
+    if FIELD_SEP not in rec:
+        continue
+    sha, text = rec.split(FIELD_SEP, 1)
+    sha = sha[:7]
     for m in keyword.finditer(text):
         n = int(m.group(1))
         if n not in closing and (n, sha) not in seen:
@@ -587,7 +694,7 @@ for commit in (data.get("commits") or []):
   parse_status=$?
 
   if [ "$parse_status" -ne 0 ]; then
-    echo "warning: merge-guard couldn't interpret the PR's commits (unexpected output from gh pr view) and skips the stray-Closes check." >&2
+    echo "warning: merge-guard couldn't interpret the PR's commits (unexpected output from gh api) and skips the stray-Closes check." >&2
     return 0
   fi
 
