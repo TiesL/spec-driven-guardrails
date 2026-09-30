@@ -384,7 +384,7 @@ Status per question: **decided**/**partially decided** refers to a concrete deci
 8. Which orchestrator tasks are automated, which require human decision, and how are exceptions recorded? — **decided**: see "Orchestrator: decided model", §6.
 9. How is compliance reported without the workflow becoming unnecessarily slow or bureaucratic? — **decided** (21-09-2026): see §6, "Compliance reporting: pattern and worked example" — the `WORKFLOW-ADOPTION.md` pattern, plus a worked example against a real, completed work item (#265/PR #279) that confirms the pattern carries the right evidence links.
 10. How does this design connect to existing workflow documentation, existing repositories, and their own conventions? — **decided**: reuses existing skills/hooks (`WORKFLOW.md`, `write-spec`, `pre-merge-review`, `deploy-guards`, `tdd-seams`, `check-traceability.sh`) unchanged; the new role/orchestration layer comes in its own skill, not a replacement.
-11. **OQ11 — Which release does this land in?** (added 2026-09-26, in English — the header table's "Target release: TBD" field, referenced elsewhere in this document but never previously registered here) — **open, Ties' explicit call**: stays open until the multi-agent workflow has run end-to-end on one real work item and the result is good enough to kick off implementation/integration into `main` — see issue #294.
+11. **OQ11 — Which release does this land in?** (added 2026-09-26, in English — the header table's "Target release: TBD" field, referenced elsewhere in this document but never previously registered here) — **decided 2026-09-30, Ties' explicit call**: the multi-agent workflow has now run end-to-end, full five-role pipeline (Product/Architect/QA/Fullstack Developer/Reviewer), on a real work item — issue #328 (`classify-review-depth.sh`, merged PR #353) — with genuine, independently-verified findings surfaced and resolved at every stage (Architect's two design rulings, QA's two structural findings, Reviewer's three non-blocking findings across two rounds). Combined with W1-W3's own prior evidence (#296/#313/#315, each producing real Reviewer-caught defects, including #315's full architectural redesign loop-back), this satisfies OQ11's gate. Target release: **v0.2.0** — see issue #294 for the full resolution record and issue #349 for the release itself.
 
 ## 10. Proposed follow-up scope
 
@@ -425,9 +425,8 @@ This trio of documents is ready to serve as an attachment or reference for a Git
 - records every implementation/architecture choice as an explicit, dated decision — no choice is made silently (this is sharper than "introduces no choices": a worked-out architecture document does contain choices, the requirement is that all of them are traceably decided, not that there are none);
 - offers a sufficient basis to formulate separate, traceable follow-up work items.
 
-**Current status (updated 2026-09-23).** Ties confirmed acceptance on 2026-09-21 — see `wip/multi-agent-development/
-DIRECTION-CHECK-SUMMARY.md`. OQ11 (target release timing) stays deliberately open,
-resolved only once the process has run end-to-end on one real work item. Follow-up work
-items are now being drafted (§3.5's co-thinking session, applied first to the plugin
-conversion initiative in `wip/claude-code-plugin/`), consistent with that acceptance.
+**Current status (updated 2026-09-30).** Ties confirmed acceptance on 2026-09-21 — see `wip/multi-agent-development/
+DIRECTION-CHECK-SUMMARY.md`. OQ11 (target release timing) is now **decided** — see §9's
+OQ11 entry above — resolved after the process ran end-to-end on a real work item (#328).
+Target release: v0.2.0 (issue #349).
 
