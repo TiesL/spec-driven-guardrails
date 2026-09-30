@@ -138,6 +138,45 @@ manual, guarded command — it requires a clean working tree, green CI, and
 runs against production only from `main` — by design, not because it was
 never built.
 
+## The multi-agent development workflow (dogfood-only)
+
+This repo is also developing its own **five-role pipeline** for building
+itself: **Product** (is this the right thing to build?), **Architect** (is
+it being built right?), **QA** (what needs testing, does the
+implementation behave as expected?), **Fullstack Developer** (builds the
+bounded unit end-to-end, including tests and docs), and **Reviewer**
+(independent final gate before merge). Product decides *what*, Architect
+decides *how*, Fullstack Developer executes, QA verifies, Reviewer
+confirms the whole chain — conflict between roles escalates rather than
+getting suppressed.
+
+As of v0.2.0, three of this workflow's mechanisms are real, runnable
+scripts, not just design prose an orchestrator would otherwise have to
+hand-derive each time:
+
+- **`compliance-evidence.sh`** — given a PR number, renders a read-only
+  gate/status/evidence table from pre-existing artifacts (model-record
+  markers, review markers, CI, PR↔issue links); it posts, labels, or
+  judges nothing.
+- **`role-label-staleness.sh`** — flags when an issue's `role:<name>`
+  label has fallen behind the pipeline stage its evidence actually shows.
+- **`classify-review-depth.sh`** — classifies a PR as `quick` or
+  `thorough` review, reusing Reviewer's own security-trigger categories.
+
+Alongside them, `wip/multi-agent-development/role-contracts/SKILL.md`
+gives each of the five roles a quotable contract: its responsibilities,
+its write/action scope, and (for Reviewer) the security-review trigger
+table. The full design record — requirements, architecture decisions, and
+the resolved open questions, including OQ11 (the pilot run that proved the
+pipeline end-to-end) — lives in `wip/multi-agent-development/`.
+
+**This is dogfood-only.** Per epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295)'s
+own explicit scope: "nothing here ships to adopted projects (no `skills/`,
+no `templates/` twin, no `CHANGES.md` row) until the epic has a real run to
+substantiate propagation." That run has now happened (v0.2.0), but
+propagation to adopted projects is a separate, not-yet-taken step — an
+adopted project does not get this workflow today.
+
 ## The workflow, visually
 
 ```mermaid
@@ -219,7 +258,7 @@ below, without needing anything above this point.
 | `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
 | `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
 | `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/baseline/` (the frozen baseline, see `LEESMIJ.md` there). |
-| `wip/<slug>/` | **WIP** — home for pre-decision elaboration of a new product or a new release/epic (a "co-thinking session": Orchestrator + Product + Architect only, no QA/Fullstack Developer/Reviewer, since there's nothing yet to test/implement/review — see epic #65's `ARCHITECTURE-MULTI-AGENT-WIP.md`, Decision 5/A6). Not part of the shared workflow machinery above, and not approved by itself: directional, with open design questions marked **TBD** until Ties explicitly accepts the output. Once accepted, content is promoted into a real Epic issue and tracked work items; the folder itself is kept afterward as historical record, not deleted, by default. Two live instances: `wip/multi-agent-development/` (epic [#65](https://github.com/TiesL/spec-driven-guardrails/issues/65) itself — direction confirmed, full promotion awaits the end-to-end five-role pilot run, issue #294) and `wip/claude-code-plugin/` (the plugin-conversion proposal produced by a co-thinking session under #65 — accepted and already promoted into its own epic, [#282](https://github.com/TiesL/spec-driven-guardrails/issues/282)). |
+| `wip/<slug>/` | **WIP** — home for pre-decision elaboration of a new product or a new release/epic (a "co-thinking session": Orchestrator + Product + Architect only, no QA/Fullstack Developer/Reviewer, since there's nothing yet to test/implement/review — see epic #65's `ARCHITECTURE-MULTI-AGENT-WIP.md`, Decision 5/A6). Not part of the shared workflow machinery above, and not approved by itself: directional, with open design questions marked **TBD** until Ties explicitly accepts the output. Once accepted, content is promoted into a real Epic issue and tracked work items; the folder itself is kept afterward as historical record, not deleted, by default. Two live instances: `wip/multi-agent-development/` (epic [#65](https://github.com/TiesL/spec-driven-guardrails/issues/65) itself — direction confirmed, and now promoted: the end-to-end five-role pilot run resolved issue #294/OQ11 on 2026-09-30, target release v0.2.0 — see "The multi-agent development workflow (dogfood-only)" below) and `wip/claude-code-plugin/` (the plugin-conversion proposal produced by a co-thinking session under #65 — accepted and already promoted into its own epic, [#282](https://github.com/TiesL/spec-driven-guardrails/issues/282)). |
 
 ## Why local symlinks instead of committed symlinks
 
