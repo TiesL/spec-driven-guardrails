@@ -214,4 +214,31 @@ if grep -qE "gh (issue|pr) (edit|comment|merge)|gh api .*(-X|--method)|gh .* lab
   fail "S154.10 — classify-review-depth.sh's own source contains a write-shaped gh invocation"
 fi
 
+echo "S154.11: --lens-adapter-count prints LENS_ADAPTER_COUNT (2), no gh call needed"
+out="$("$script" --lens-adapter-count 2>/dev/null)"
+status=$?
+[ "$status" -eq 0 ] || fail "S154.11 — exit code $status, expected 0"
+[ "$out" = "2" ] || fail "S154.11 — output was '$out', expected '2' (Reviewer's F1: this seam had zero automated coverage)"
+
+echo "S154.12: real trigger match, Auth/session (file-path signal)"
+build_fake_gh 905 'src/auth/handler.py' 'Refactor request handler' 'Cleans up the request-dispatch handler.'
+out="$(PATH="$(cat "$FAKEGH_OUT"):$PATH" "$script" 905 2>/dev/null)"
+status=$?
+[ "$status" -eq 0 ] || fail "S154.12 — exit code $status, expected 0"
+[ "$out" = "review-depth: thorough (Auth/session)" ] || fail "S154.12 — output was '$out'"
+
+echo "S154.13: real trigger match, Infrastructure as Code (file-path signal)"
+build_fake_gh 906 'infra/main.tf' 'Update staging config' 'Updates the staging environment definition.'
+out="$(PATH="$(cat "$FAKEGH_OUT"):$PATH" "$script" 906 2>/dev/null)"
+status=$?
+[ "$status" -eq 0 ] || fail "S154.13 — exit code $status, expected 0"
+[ "$out" = "review-depth: thorough (Infrastructure as Code)" ] || fail "S154.13 — output was '$out'"
+
+echo "S154.14: real trigger match, Sensitive/personal data (description-text signal)"
+build_fake_gh 907 'src/users/export.py' 'Add GDPR export endpoint' 'Adds a GDPR data export feature for user personal data requests.'
+out="$(PATH="$(cat "$FAKEGH_OUT"):$PATH" "$script" 907 2>/dev/null)"
+status=$?
+[ "$status" -eq 0 ] || fail "S154.14 — exit code $status, expected 0"
+[ "$out" = "review-depth: thorough (Sensitive/personal data)" ] || fail "S154.14 — output was '$out'"
+
 test_done

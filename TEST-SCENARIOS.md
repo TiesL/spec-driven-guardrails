@@ -1849,3 +1849,24 @@ something new is being added.
       read-only conjunction S150/S152 already verify for their own scripts, checked here with
       a `fake_gh_bin` fallthrough witness that is actually reachable (a positive control
       confirms the witness fires on an unanswered argv), not a source grep alone.
+  11. **`--lens-adapter-count` prints `LENS_ADAPTER_COUNT`:** `classify-review-depth.sh
+      --lens-adapter-count` (no `gh` on `PATH` required — the flag short-circuits before any
+      `gh` lookup) prints `2` and exits 0. Added post-review (PR #353, Reviewer's F1): the
+      seam existed and was manually verified but had zero automated coverage, directly
+      contradicting the PR's own stated rationale ("a future drift shows up as a test
+      failure, not a silent mismatch") — a typo'd constant or a broken flag check would have
+      stayed CI-green.
+  12. **Real trigger match, Auth/session (file-path signal):** a PR whose changed-file paths
+      include a path segment naming `auth` (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Auth/session` as the matched category.
+  13. **Real trigger match, Infrastructure as Code (file-path signal):** a PR whose
+      changed-file paths include a `.tf` file (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Infrastructure as Code` as the matched
+      category.
+  14. **Real trigger match, Sensitive/personal data (description-text signal):** a PR whose
+      description text names GDPR/personal-data handling (independent of file path shape)
+      classifies `thorough`, naming `Sensitive/personal data` as the matched category.
+      Scenarios 12-14 added post-review (PR #353, Reviewer's F2): only 3 of the six categories
+      (Secrets/credentials, Deploy/CI configuration, Untrusted input) had a real-match fixture
+      before; a future regex edit breaking Auth/session, Infrastructure as Code, or
+      Sensitive/personal data would have gone uncaught.
