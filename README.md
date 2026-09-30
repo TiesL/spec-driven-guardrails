@@ -1,183 +1,23 @@
 # spec-driven-guardrails
 
-## What problem this solves
+Guardrails for an AI coding agent working past toy-project size: what was decided stays
+written down, and nothing merges without a traceable link back to a reviewed requirement.
+Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
 
-When you work with an AI coding agent past toy-project size, two things
-tend to go wrong: it forgets what was decided and why, and it merges
-things nobody reviewed. This repo is one person's (TiesL's) answer to both —
-git/GitHub conventions plus scripts and skills that enforce them:
+**v0.2.0** (see `CHANGELOG.md`): this repo now builds itself with a five-role multi-agent
+pipeline. That pipeline isn't part of what an adopted project gets yet — see
+[How this repo builds itself](#how-this-repo-builds-itself).
 
-- **What was decided, and why, is written down before code exists** — a
-  PRD as the normative spec, test scenarios that trace back to it, and an
-  architecture doc for structural decisions — not left to chat history the
-  next session won't have.
-- **Nothing merges without a traceable link back to a scenario and a
-  review** — mechanically checked, not just agreed on and then forgotten.
+## The problem, and the shape of the fix
 
-It's a personal workflow, not a product: the four projects using it today
-(this repo included) are TiesL's own, shared here because duplicating
-`CLAUDE.md` + `.claude/settings.json` per project caused them to drift.
+Two things go wrong once an AI agent works on a project long enough to matter: it forgets
+what was decided and why, and it merges things nobody reviewed. `PRD.md` plus
+`TEST-SCENARIOS.md` fix the first — nothing is "decided" until it's a spec entry a test
+scenario traces back to. A mechanical merge guard fixes the second — `gh pr merge` is blocked
+without a review marker pinned to the current commit and green CI. Both are enforced by
+scripts, not by the agent remembering to follow a convention.
 
-## Who it's for, and who it's not
-
-This is for **solo developers using an AI coding agent** who want the
-agent's decisions to stay traceable and its merges to stay reviewed,
-without hand-writing that discipline into every new project.
-
-It is not:
-- **An agent framework.** It doesn't run or orchestrate an agent — it's
-  conventions plus guardrail scripts an agent (Claude Code, specifically)
-  is instructed to follow.
-- **A replacement for your own process.** If your team already reviews and
-  specifies work, this doesn't sit alongside that — it targets the gap
-  that shows up when there isn't one, which is normal for a solo project.
-- **A team tool, as shipped.** Built and adopted for TiesL's own solo
-  projects; nothing here assumes a second human reviewer, and it isn't
-  adopted into shared team/work repos (see `USER-CLAUDE.md`).
-
-**In progress, not yet shipped (epic #282):** a Claude Code plugin
-conversion aims to extend this to non-engineer users too — people who'd
-delegate the whole setup to Claude Code rather than clone a repo and run
-a shell script. Design work is in `wip/claude-code-plugin/`; this section
-describes what's true *today*, and gets updated once that plugin actually
-ships, not before.
-
-There's also a second reader this repo is useful to even without adopting
-it: a **business analyst, product owner, or product manager** working with
-a development team. In practice: given a feature branch's pull request,
-they can trace backward through the enforced chain — the PR names the
-GitHub issue it closes, that issue names the test scenarios it covers, and
-each scenario is a Given/When/Then they can run directly as user
-acceptance testing — without reading code, and without the surrounding
-git/bash mechanics being the point.
-
-## What you get if you adopt it
-
-- A `CLAUDE.md` (this repo's `WORKFLOW.md`) that tells the agent the
-  branch/PR/review discipline to follow every session, instead of you
-  repeating it or the agent drifting.
-- A `PRD.md` and `TEST-SCENARIOS.md` scaffold with fifteen non-functional
-  questions already asked, so "what happens on failure" or "who can see
-  this data" gets answered once, in writing, instead of being discovered
-  later.
-- A `pre-merge-review` skill and a merge guard that blocks `gh pr merge`
-  without review evidence or green CI.
-- A registry (`CHANGES.md`) of workflow changes a project can adopt or
-  decline, one closed question at a time, instead of a big-bang migration.
-- Guardrails sharpened by dogfooding: issue-first branch naming (no branch
-  without an issue number), automatic epic close-out once every work item
-  under it is closed, review running in parallel with CI instead of after
-  it, and a parallelized test suite (`TEST_JOBS`) for faster feedback.
-
-## What it costs
-
-Adopting this doesn't make the discipline free — it makes it checked:
-
-- You still own the decisions: a PRD entry, a test scenario, or a
-  non-functional answer can be agent-drafted, but nothing is accepted
-  without your review and explicit approval — this repo checks the
-  discipline, it doesn't remove you from the loop.
-- You still request the merge and confirm it explicitly — this repo never
-  merges on its own (see "Known limitations" below for why that isn't
-  stronger).
-- You still need `git` and the GitHub CLI (`gh`) installed and
-  authenticated against your account before any of this works.
-
-## Known limitations
-
-Stated up front, not buried at the bottom — the value of this repo depends
-on being honest about where it doesn't hold:
-
-- **No server-side enforcement.** Branch protection on a private GitHub
-  repo requires a paid plan, so nothing stops a direct push to `main` at
-  the platform level — it's a workflow agreement the agent follows, not a
-  technical block.
-- **The guardrails are machine-local.** The `PreToolUse` hook and the merge
-  guard only exist on a machine after `adopt.sh` has run there — a fresh
-  clone doesn't have them until you set it up.
-- **It's bash, and it's tied to Claude Code.** Scripts assume Bash 3.2;
-  skills are Claude Code skills specifically — not provider-agnostic today
-  (see `PRD.md`'s technical debt table for the deliberate boundary).
-- **Review quality has a ceiling.** `pre-merge-review` raises the floor,
-  but it's model-based — it doesn't rule out a blind spot a human sharing
-  the same training assumptions might also miss.
-
-## Software development practices this project enforces
-
-Each of these is backed by a concrete mechanism in this repo, not asserted
-on its own:
-
-- **Specification-Driven Development (SDD)** — `PRD.md` as the normative
-  spec, broken down into epic/work-item GitHub issues before
-  implementation starts.
-- **Architecture Decision Records** — `ARCHITECTURE.md` records structural
-  decisions, alternatives considered, and the trigger to revisit them.
-- **Non-functional requirements specification** — the `nfr/` register: one
-  file per attribute (security, data integrity, failure modes, …), the
-  single source for the NFR sections in every adopted `PRD.md`.
-- **Test-Driven Development, red-before-green** — see the `tdd-seams`
-  skill.
-- **Trunk-based branching (GitHub Flow)** — short-lived branches off
-  `main`, no long-lived parallel branches.
-- **Automated testing** — unit tests, BDD-style Given/When/Then scenarios
-  in `TEST-SCENARIOS.md`, and frozen-baseline regression tests (`test/fixtures/baseline/`).
-- **Continuous Integration** — `check` runs identically locally and in CI;
-  a merge is blocked while it's red.
-- **Mandatory quality review before merge** — the `pre-merge-review` skill,
-  enforced by the merge guard.
-- **Requirements traceability** — an enforced chain from `PRD.md` to a test
-  scenario to a GitHub issue to the merging PR (see `check-traceability.sh`).
-- **Explicit technical debt tracking** — `PRD.md`'s technical debt table:
-  what's accepted, why, and the trigger to address it.
-- **Named refactoring triggers** — see the `refactoring-triggers` skill.
-- **Disciplined bug diagnosis** — reproduction, hypotheses, a regression
-  test, then the fix; see the `diagnose-bug` skill.
-
-**Continuous Deployment is deliberately not practiced.** `deploy` stays a
-manual, guarded command — it requires a clean working tree, green CI, and
-runs against production only from `main` — by design, not because it was
-never built.
-
-## The multi-agent development workflow (dogfood-only)
-
-This repo is also developing its own **five-role pipeline** for building
-itself: **Product** (is this the right thing to build?), **Architect** (is
-it being built right?), **QA** (what needs testing, does the
-implementation behave as expected?), **Fullstack Developer** (builds the
-bounded unit end-to-end, including tests and docs), and **Reviewer**
-(independent final gate before merge). Product decides *what*, Architect
-decides *how*, Fullstack Developer executes, QA verifies, Reviewer
-confirms the whole chain — conflict between roles escalates rather than
-getting suppressed.
-
-As of v0.2.0, three of this workflow's mechanisms are real, runnable
-scripts, not just design prose an orchestrator would otherwise have to
-hand-derive each time:
-
-- **`compliance-evidence.sh`** — given a PR number, renders a read-only
-  gate/status/evidence table from pre-existing artifacts (model-record
-  markers, review markers, CI, PR↔issue links); it posts, labels, or
-  judges nothing.
-- **`role-label-staleness.sh`** — flags when an issue's `role:<name>`
-  label has fallen behind the pipeline stage its evidence actually shows.
-- **`classify-review-depth.sh`** — classifies a PR as `quick` or
-  `thorough` review, reusing Reviewer's own security-trigger categories.
-
-Alongside them, `wip/multi-agent-development/role-contracts/SKILL.md`
-gives each of the five roles a quotable contract: its responsibilities,
-its write/action scope, and (for Reviewer) the security-review trigger
-table. The full design record — requirements, architecture decisions, and
-the resolved open questions, including OQ11 (the pilot run that proved the
-pipeline end-to-end) — lives in `wip/multi-agent-development/`.
-
-**This is dogfood-only.** Per epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295)'s
-own explicit scope: "nothing here ships to adopted projects (no `skills/`,
-no `templates/` twin, no `CHANGES.md` row) until the epic has a real run to
-substantiate propagation." That run has now happened (v0.2.0), but
-propagation to adopted projects is a separate, not-yet-taken step — an
-adopted project does not get this workflow today.
-
-## The workflow, visually
+## How work actually moves
 
 ```mermaid
 flowchart TD
@@ -210,158 +50,209 @@ flowchart TD
     S["BA/PO/PM: read the PR"] -.-> H
 ```
 
-Dashed lines: the traceability chain read backward from a PR — the path a
-BA/PO/PM walks for the UAT use case above. Review runs the moment the PR
-opens, in parallel with CI, not after it — a push after review (a fixup, or
-a fix for red CI) invalidates the marker by SHA, so nothing merges unreviewed.
+Review runs the moment the PR opens, in parallel with CI, not after it — a push after review
+invalidates the marker by SHA, so nothing merges unreviewed. The dashed lines are the same
+chain read backward: given a PR, a business analyst, product owner, or product manager can
+trace it to the issue it closes, the scenario that issue covers, and the requirement that
+scenario tests — a UAT trail, without reading code.
+
+Each stage of that diagram is backed by a concrete practice:
+
+| Stage | Practice | Mechanism |
+|---|---|---|
+| Spec | Specification-Driven Development | `PRD.md`, broken into epic/work-item issues before code |
+| Design | Architecture Decision Records | `ARCHITECTURE.md` — decisions, alternatives, revisit trigger |
+| Design | Non-functional requirements | `nfr/` register — fifteen non-functional questions, one file per attribute, the source for every adopted `PRD.md` |
+| Build | Test-first, red-before-green | `tdd-seams` skill |
+| Build | Trunk-based branching (GitHub Flow) | short-lived `feature/`/`fix/` branches off `main`, issue number required in the name |
+| Test | Automated testing | unit tests, `TEST-SCENARIOS.md`'s Given/When/Then, frozen-baseline regressions |
+| CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge |
+| Review | Mandatory quality review | `pre-merge-review` skill, enforced by the merge guard |
+| Merge | Requirements traceability | PRD → scenario → issue → PR: `check-traceability.sh` checks the first link offline; CI's `check-pr-issue-link.sh` refuses a PR that names no issue; `pre-merge-review` judges whether the links are the right ones |
+| Maintain | Technical debt tracking | `PRD.md`'s debt table — accepted, why, and the trigger to fix it |
+| Maintain | Named refactoring triggers | `refactoring-triggers` skill |
+| Maintain | Disciplined bug diagnosis | reproduce → hypothesize → regression test → fix; `diagnose-bug` skill |
+| Deploy | *Not* continuous | `deploy` stays manual and guarded — a deliberate choice, not a gap |
+
+## Who it's for
+
+Solo developers using an AI coding agent who want its decisions traceable and its merges
+reviewed, without hand-writing that discipline into every new project. Also useful, without
+adopting anything, to a BA/PO/PM who wants the UAT trail described above.
+
+Not a replacement for a team's existing review process, and not a team tool as shipped — it
+was built for the author's own solo projects (see `USER-CLAUDE.md`). A Claude Code plugin
+conversion aimed at non-engineer adoption is in progress (epic #282, `wip/claude-code-plugin/`)
+but not shipped.
+
+## What it costs, and where it doesn't hold
+
+Adopting this enforces the discipline; it doesn't take you out of the loop. A PRD entry or
+test scenario can be agent-drafted, but nothing is accepted without your review, and every
+merge into `main` waits for your explicit confirmation — nothing reaches `main` on its own.
+
+Stated up front rather than discovered later:
+
+- **No server-side enforcement on a free private repo.** GitHub branch protection needs a paid
+  plan for a private repository, so in a typical adopted project a direct push to `main` is
+  stopped only on your own machine — by the `git-guardrails` hook and the native
+  `pre-commit`/`pre-push` hooks — and caught after the fact by CI's `check-main-via-pr.sh`.
+  This repo is the exception: it's public, and `main` has real branch protection (PRs
+  required, `check` must pass, administrators included).
+- **Guardrails are machine-local** until `adopt.sh` runs there — a fresh clone doesn't have
+  them yet.
+- **Bash 3.2 and Claude Code specifically** — not provider-agnostic today (see `PRD.md`'s
+  technical debt table).
+- **Review has a ceiling.** `pre-merge-review` raises the floor; it's still model-based and
+  can share a blind spot with the model that wrote the change.
 
 ## Getting started
 
-The rest of this document is the complete developer reference — it's
-self-contained: everything needed to install and adopt this workflow is
-below, without needing anything above this point.
+Prerequisites: `git`, and the GitHub CLI (`gh`) installed and authenticated
+(`gh auth login`) — scripts call `gh` directly and fail partway through, not up front, if it
+isn't.
 
-## Prerequisites
-
-- `git`, installed and configured.
-- The GitHub CLI (`gh`), installed and authenticated (`gh auth login`) —
-  this repo's scripts and hooks call `gh` directly (e.g. to check PR
-  status), so an unauthenticated `gh` will cause them to fail partway
-  through rather than at the start.
-
-## Contents
-
-| File | Purpose |
-|---|---|
-| `WORKFLOW.md` | The workflow text itself (GitHub Flow, branch+PR, session steps, specification process) plus a routing table that points every moved topic to its skill. Symlinked as `CLAUDE.md` in adopted projects. |
-| `settings/session-hooks.json` | `SessionStart`/`SessionEnd` hooks + `attribution.commit` setting. Symlinked as `.claude/settings.json`. |
-| `hooks/` | `git-guardrails` — the `PreToolUse` guard against destructive git commands, and (W10b) the merge guard on `gh pr merge` without a review marker or with non-green CI. Always fails open (no `gh`/network, missing tool) — a broken guard must never block work. Invoked from `settings/session-hooks.json`. |
-| `skills/` | The Claude Code skills — see the routing table in `WORKFLOW.md` for the current list and what each one covers, rather than a second, easily-stale enumeration here. `adopt.sh` symlinks each of them into `.claude/skills/` of every adopted project. |
-| `USER-CLAUDE.md` | Short trigger instruction for the automatic adoption prompt on new projects. Symlinked as `~/.claude/CLAUDE.md`. |
-| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTURE.md` | Generic templates for specifying a project (see the `write-spec` skill). The PRD requires answering fifteen non-functional questions and separates *Known limitations* from *Technical debt*; the test scenarios ask for failure paths alongside happy paths; `ARCHITECTURE.md` records structural decisions and their revisit trigger. **Copied** on adoption, but only if the file doesn't already exist there — a filled-in copy is never overwritten. |
-| `templates/ISSUE_TEMPLATE/` | GitHub issue templates (`epic.md`, `work-item.md`, `config.yml`), with notation aligned to `PRD.md`/`TEST-SCENARIOS.md`. **Copied** (refreshed) into `.github/ISSUE_TEMPLATE/` of the project on every adoption. |
-| `templates/CONTEXT.md` | Optional glossary (project jargon → meaning), separate from `ARCHITECTURE.md`, which covers structural decisions. Only scaffolded if the project answered `yes` to the `process-context-document` question (defined in `CHANGES.md`, answered in the project's own `WORKFLOW-ADOPTION.md`). |
-| `templates/ci.yml` | Generic GitHub Actions CI that only calls `npm run check` (see the `check-convention` skill). Scaffolded on adoption, but only if the project has a `package.json`. |
-| `CHANGES.md` | List of adoptable changes: per PR-sized change, a closed question, an "applies if" condition, and what "yes" means as a product default (not TiesL's personal preference — see W37/#79). Projects record their answer in their own `WORKFLOW-ADOPTION.md` (or its pre-migration name, `WORKFLOW-ADOPTIE.md` — see W42/#114). |
-| `CHANGES-ARCHIEF.md` | Retired `CHANGES.md` entries, with their ID unchanged so a project that once answered can still find where that row came from. |
-| `nfr/` | The NFR registry: one file per non-functional attribute (security, data integrity, failure modes, …). The sole source for both the `spec-*` questions in `CHANGES.md` and the filled-in subsections in `templates/PRD.md` — neither is tracked separately anymore. |
-| `lib/` | Shared bash libraries: `changes.sh` (the `CHANGES.md` parser and predicates, used by both `adopt.sh` and `pending-changes.sh`) and `nfr.sh` (reads/validates the `nfr/` registry). |
-| `pending-changes.sh` | Determines which changes from `CHANGES.md` and `nfr/` apply to a project and are still unanswered. Invoked by the `SessionStart` hook. |
-| `adopt.sh` | Script that creates/refreshes the symlinks and copies above locally, and seeds the adoption table of a new project. |
-| `install.sh` | Pins a clone of this repo to a tagged release, for a consumer who doesn't want TiesL's own always-follow-`main` usage (W37/#79). Run once after cloning; see "Installing a pinned version" below. |
-| `check` | The only command this repo's own CI invokes: bash syntax, JSON validation, NFR registry drift, PR linkbacks, shellcheck (non-blocking), then the test suite. The same `check`/`deploy` naming convention this repo requires of adopted projects, applied here to itself. |
-| `check-no-dutch.sh` | This repo's own translation-completeness check (W43/#115): scans for a curated list of untranslated-Dutch marker words outside the deliberate layer-C exclusions. |
-| `check-traceability.sh` | The root copy of `templates/check-traceability.sh`, run directly against this repo's own `PRD.md`/`TEST-SCENARIOS.md` (this repo verifies its own traceability chain differently than adopted projects do — see `PRD.md`'s technical debt table). |
-| `find-shared-vocabulary.sh` | Generates candidates for layer B (the shared-vocabulary tokens matched literally across the four adopted projects) — surfaces candidates, doesn't replace human curation. |
-| `generate-prd-block` | Regenerates the NFR block inside `templates/PRD.md` from `nfr/`, so the two can't silently drift; `check` fails if the checked-in block doesn't match. |
-| `ARCHITECTURE.md` | This repo's own architecture-decision record, same purpose as `templates/ARCHITECTURE.md` produces for an adopted project. |
-| `CHANGELOG.md` | Release points: moments where a tag fixes the merge point as a human reference (see "Installing a pinned version" below). |
-| `PRD.md`, `TEST-SCENARIOS.md`, `WORKFLOW-ADOPTION.md` | This repo's own filled-in copies of the templates above — self-adoption (#98/#102): this repo follows the same workflow it defines. |
-| `test/` | This repo's own test suite: `run.sh` (runs everything under `cases/`), `lib.sh` (sandbox and assert helper functions), and `fixtures/baseline/` (the frozen baseline, see `LEESMIJ.md` there). |
-| `wip/<slug>/` | **WIP** — home for pre-decision elaboration of a new product or a new release/epic (a "co-thinking session": Orchestrator + Product + Architect only, no QA/Fullstack Developer/Reviewer, since there's nothing yet to test/implement/review — see epic #65's `ARCHITECTURE-MULTI-AGENT-WIP.md`, Decision 5/A6). Not part of the shared workflow machinery above, and not approved by itself: directional, with open design questions marked **TBD** until Ties explicitly accepts the output. Once accepted, content is promoted into a real Epic issue and tracked work items; the folder itself is kept afterward as historical record, not deleted, by default. Two live instances: `wip/multi-agent-development/` (epic [#65](https://github.com/TiesL/spec-driven-guardrails/issues/65) itself — direction confirmed, and now promoted: the end-to-end five-role pilot run resolved issue #294/OQ11 on 2026-09-30, target release v0.2.0 — see "The multi-agent development workflow (dogfood-only)" below) and `wip/claude-code-plugin/` (the plugin-conversion proposal produced by a co-thinking session under #65 — accepted and already promoted into its own epic, [#282](https://github.com/TiesL/spec-driven-guardrails/issues/282)). |
-
-## Why local symlinks instead of committed symlinks
-
-Project directories aren't in the same place on every computer (e.g. `~/Projects` on one, `~/Documents/ClaudeCodeZandbak` on the other). A symlink you commit to git (relative or absolute) can therefore never be correct on both machines at once. That's why the symlinks are **not committed**: `adopt.sh` creates them locally, with a path that's correct per machine via the `SPEC_DRIVEN_GUARDRAILS_DIR` environment variable.
-
-## One-time setup per machine (TiesL's own use: always follow `main`)
-
-1. Clone this repo anywhere you like on the machine.
-2. Set once in your shell profile (`~/.zshrc` or `~/.bashrc`):
-   ```bash
-   export SPEC_DRIVEN_GUARDRAILS_DIR="/full/path/to/spec-driven-guardrails"
-   ```
-   Restart your shell (or `source ~/.zshrc`) so the variable is active.
-3. Set up the user-wide adoption-prompt trigger:
-   ```bash
-   "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --user
-   ```
-   From now on, Claude Code will automatically ask, when starting a session in a not-yet-adopted git project, whether that project should use this workflow.
-
-This checkout keeps following `main` — this is TiesL's own, ongoing
-multi-machine use. If you want a specific, pinned version instead
-(see below), that setup replaces steps 1-2 above.
-
-## Installing a pinned version (for a user other than TiesL)
-
-If you don't want to get every change on `main` live, but instead stay on a
-specific, tagged release until you decide to upgrade:
-
-1. Clone this repo (as above, step 1).
-2. Run from that clone:
-   ```bash
-   ./install.sh          # pins to the latest tag
-   ./install.sh <tag>     # pins to a specific tag
-   ```
-   `install.sh` refuses to run on a dirty working tree (uncommitted
-   changes), and clearly reports which tag it picked or why a
-   given tag doesn't exist.
-3. Follow the instruction `install.sh` prints at the end: set
-   `SPEC_DRIVEN_GUARDRAILS_DIR` to this clone in your shell profile (step 2
-   above, unchanged), and optionally set the user-wide trigger (step 3
-   above).
-
-Upgrading to a newer release: run `install.sh <new-tag>` again
-in the same clone. This is functionally equivalent to TiesL's own setup — both
-result in a checkout that `adopt.sh` works against the same way —
-only this clone never follows `main` automatically.
-
-## Adopting a project
-
-Existing project:
+**Pin a specific release** (recommended unless you want to follow `main` as it changes):
 
 ```bash
-cd /path/to/project
+git clone <this repo>
+cd spec-driven-guardrails
+./install.sh              # pins to the latest tag
+```
+
+Then set `SPEC_DRIVEN_GUARDRAILS_DIR` to that clone's path in your shell profile, and adopt a
+project:
+
+```bash
+cd /path/to/your/project
 "$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh"
 ```
 
-New project: first `gh repo create <name> --private --source=. --remote=origin`
-(see the `adopt-workflow` skill for the `git init` variant), then the same
-`adopt.sh` step.
+This symlinks `CLAUDE.md`, `.claude/settings.json` and the skills into the project, installs
+the native git hooks, and scaffolds `PRD.md`/`TEST-SCENARIOS.md`/issue templates if they don't
+already exist. The symlinks are created locally and never committed: a project lives at a
+different path on each machine, so no committed symlink, relative or absolute, could be right
+on all of them. Re-run `adopt.sh` any time to refresh; it's idempotent.
 
-This sets `CLAUDE.md` and `.claude/settings.json` as local symlinks, and adds them to that project's `.gitignore` (they're machine-specific references, not project artifacts). Existing files at those paths — if they aren't symlinks — are renamed to `*.bak` instead of overwritten.
+Upgrading later: `./install.sh <new-tag>` in the same clone. To follow `main` live instead of
+a pinned tag (the author's own setup, across multiple machines), skip `install.sh` and set
+`SPEC_DRIVEN_GUARDRAILS_DIR` to a plain clone instead.
 
-### Known pitfall: branches older than the adoption
+**Known pitfall:** checking out a branch that predates a project's adoption silently replaces
+the local symlinks with tracked files of the same name. Fix it by merging `main` into that
+branch once (permanent), or just re-run `adopt.sh` (idempotent, no risk either way).
 
-Git overwrites a local (untracked) symlink without warning as soon as you switch to a branch that still has `CLAUDE.md`/`.claude/settings.json` as a regular, tracked file (e.g. a feature branch created before this project was adopted). After switching back to such a branch, the symlinks are gone. Solutions:
-- **Preferred:** merge/rebase `main` into that branch once this project is adopted — after that, the conflict disappears permanently for that branch.
-- **Alternative:** run `adopt.sh` again every time this happens (idempotent, no risk).
+**Tracking what a project has and hasn't adopted:** `WORKFLOW-ADOPTION.md` in that project
+records its answer to each entry in this repo's `CHANGES.md`; a `SessionStart` hook reports
+what's still open. See the `adoption-registry` skill for the full mechanism.
 
-## Templates: copy instead of symlink
+## How this repo builds itself
 
-Unlike `CLAUDE.md`/`.claude/settings.json` (local symlinks,
-never committed), the files under `templates/` are **copied** into
-each adopted project, with two different behaviors:
+Everything above is what an adopted project gets: one agent session carrying a change through
+every stage of the diagram, with a human at the approval points. This repo follows that
+workflow too, and adds two practices of its own on top. Neither is part of the adoptable
+workflow yet.
 
-- **`PRD.md`/`TEST-SCENARIOS.md`** — scaffold: only created if the
-  file doesn't already exist in the project. These are project-owned,
-  fillable documents; a filled-in copy is never overwritten.
-- **`ISSUE_TEMPLATE/*`** — always refreshed on every `adopt.sh` run. This is
-  meta-configuration (GitHub issue forms), not fillable content.
+### Five roles instead of one session
 
-A symlink wouldn't work here anyway for the issue templates: GitHub renders
-them server-side from the repo content itself, not via local
-filesystem symlinks. Consequence of "copy": after a change to a
-canonical template in this repo, `adopt.sh` must be run again in every
-project to refresh the issue-template copy there (idempotent, no
-risk — the same kind of agreement as the known pitfall above).
+Since v0.2.0 (epic #295), a change to this repo is carried by five separately dispatched
+agent roles rather than one session doing everything: **Product** (are we building the right
+thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
+works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
+final gate). Each role gets a quotable contract — responsibilities, what it may write, and
+Reviewer's security triggers — in `wip/multi-agent-development/role-contracts/SKILL.md`. When
+roles disagree, the conflict escalates to a human instead of being settled by whichever role
+spoke last.
 
-## Adoption registry
+The dispatching itself is done by an orchestrating Claude Code session (or by hand), so the
+"not an agent framework" line at the top still holds: this repo supplies contracts and
+evidence, not an orchestrator. Three read-only scripts provide the evidence:
 
-Every adopted project tracks in `WORKFLOW-ADOPTION.md` which changes from
-`CHANGES.md` it applies. A `SessionStart` hook reports what's still open;
-Claude poses those as closed yes/no choices and records the answer.
-See the `adoption-registry` skill (reachable via the routing table in `WORKFLOW.md`) for the full story.
+- **`compliance-evidence.sh`** — renders an evidence table for a PR from what already exists
+  (model-record markers, review markers, CI, PR↔issue links).
+- **`role-label-staleness.sh`** — flags an issue's `role:<name>` label once it's fallen behind
+  the pipeline stage its own evidence shows.
+- **`classify-review-depth.sh`** — classifies a PR as needing a `quick` or `thorough` review,
+  reusing Reviewer's own security-trigger categories rather than inventing a second taxonomy.
 
-Manual checking is also possible:
+Which release this would land in was deliberately left as an open question in the design,
+not to be answered until the pipeline had run end-to-end on a real work item. That run
+happened on 2026-09-30 (#328, all five roles, with genuine findings caught and fixed at every
+stage) and settled it: v0.2.0. The full design record lives in
+`wip/multi-agent-development/`.
 
-```bash
-"$SPEC_DRIVEN_GUARDRAILS_DIR/pending-changes.sh" /path/to/project
-```
+None of this reaches an adopted project yet: the role contracts aren't installed as a skill,
+and `CHANGES.md` has no entry for a project to adopt. Taking it outward is a separate step
+that hasn't been taken.
 
-The hook locates this repo via the symlink
-(`readlink .claude/settings.json`), not via an environment variable — a
-non-interactive shell doesn't load your `~/.zshrc`, so a hook can't
-rely on that. If that symlink points to a directory that no longer exists (e.g. after a
-rename before re-adoption), the `SessionStart` hook reports that explicitly
-instead of silently running no hooks.
+### A release branch between work items and `main`
+
+In the diagram, a feature/fix branch merges straight into `main`. For an epic spanning several
+work items, this repo adds an optional middle tier: a **release branch**
+(`release/<epic-number>-<slug>`, forked from `main`). Each work item's branch targets the
+release branch, and the release branch merges into `main` in one step once the whole epic is
+ready. v0.2.0 was built this way, on `release/295-multi-agent-workflow-v1`.
+
+The two merges are confirmed differently, on purpose:
+
+- **Work item → release branch** merges on the executing session's own judgment once review
+  is clean and CI is green, with no separate human confirmation per work item.
+- **Release branch → `main`** always waits for the maintainer's explicit confirmation, like every other
+  merge into `main`, however many work items merged cleanly underneath it.
+
+Individual work items land quickly, while the one decision that matters — is this epic ready
+to ship? — stays a single, deliberate act rather than an accumulation of smaller ones nobody
+signed off on as a whole. The convention is informal so far: issue #309 tracks writing it
+into `WORKFLOW.md`, and until then an adopted project doesn't get it.
+
+## Reference
+
+<details>
+<summary>Where everything lives (expand if you need it — most people don't)</summary>
+
+**What adoption installs into a project** — symlinked, so it stays current:
+
+| File | Purpose |
+|---|---|
+| `WORKFLOW.md` | The workflow text (branch/PR/session steps, spec process) plus a routing table to every skill. Symlinked as `CLAUDE.md`. |
+| `settings/session-hooks.json` | `SessionStart`/`SessionEnd` hooks, `attribution.commit`. Symlinked as `.claude/settings.json`. |
+| `hooks/` | `git-guardrails` (the `PreToolUse` guard against destructive git commands, plus the merge guard; fails open on a broken environment), `push-after-commit`, and the native git hooks `pre-commit`/`pre-push`/`commit-msg`, which cover commits and pushes made outside Claude Code. |
+| `skills/` | Claude Code skills — see `WORKFLOW.md`'s routing table for the current list. Symlinked into `.claude/skills/`. |
+| `USER-CLAUDE.md` | Trigger for the per-machine adoption prompt. Symlinked as `~/.claude/CLAUDE.md`. |
+
+**What adoption scaffolds into a project** — copied once, never overwritten once filled in:
+
+| File | Purpose |
+|---|---|
+| `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTURE.md` | Spec scaffolds (`write-spec` skill). |
+| `templates/check-traceability.sh` | Link 1 of the traceability chain: every requirement has a scenario, every `Covers:` reference resolves. Offline. |
+| `templates/ci.yml` | Generic GitHub Actions CI that runs the project's own `check` (`check-convention` skill), plus a secret scan; npm setup only if a `package.json` exists. Scaffolded only once the project has an executable `check`. |
+| `templates/check-pr-issue-link.sh`, `templates/check-main-via-pr.sh`, `templates/wait-for-ci.sh` | Scaffolded alongside `ci.yml`: fail a PR that names no issue; detect a commit on `main` that didn't come through a PR; wait for CI at a fixed cadence instead of polling by hand. |
+| `templates/CONTEXT.md` | Optional project-jargon glossary, only if the project opts in. |
+| `templates/ISSUE_TEMPLATE/` | GitHub issue templates — the exception: refreshed on every `adopt.sh` run (GitHub renders them server-side, so they can't be symlinked). |
+
+**The machinery behind adoption:**
+
+| File | Purpose |
+|---|---|
+| `adopt.sh` / `install.sh` | Create/refresh a project's local symlinks and scaffolds; pin a clone to a tagged release. |
+| `CHANGES.md` / `CHANGES-ARCHIEF.md` | Adoptable workflow changes as closed yes/no questions, and their retired predecessors. |
+| `nfr/` | Non-functional requirement registry — one file per attribute, source for `CHANGES.md`'s `spec-*` rows and every adopted `PRD.md`. |
+| `lib/` | Shared bash: `changes.sh` (parser/predicates), `nfr.sh` (registry reader). |
+| `pending-changes.sh` | What from `CHANGES.md`/`nfr/` still needs an answer in a given project. |
+
+**This repo's own internals** — not installed anywhere else:
+
+| File | Purpose |
+|---|---|
+| `check` | This repo's own CI entrypoint — syntax, JSON, NFR drift, PR linkbacks, shellcheck, tests. |
+| `check-traceability.sh`, `wait-for-ci.sh` | This repo's own copies of the templates above. |
+| `check-no-dutch.sh`, `check-no-quote-break.sh`, `check-no-sigpipe-race.sh`, `check-scenario-file-sync.sh` | Hygiene checks run from `check`, each guarding against a specific defect that happened here once. |
+| `find-shared-vocabulary.sh`, `generate-prd-block` | Generators: shared-vocabulary candidates across adopted projects; the NFR block in `templates/PRD.md` from `nfr/`. |
+| `epic-auto-close.sh` | Closes an epic from CI once every issue naming it is closed. |
+| `compliance-evidence.sh`, `role-label-staleness.sh`, `classify-review-depth.sh` | The multi-agent evidence scripts described in [How this repo builds itself](#how-this-repo-builds-itself). |
+| `ARCHITECTURE.md`, `PRD.md`, `TEST-SCENARIOS.md`, `CONTEXT.md`, `WORKFLOW-ADOPTION.md`, `CHANGELOG.md` | This repo's own filled-in copies — it adopts the workflow it defines. |
+| `test/` | This repo's own test suite (`run.sh`, `lib.sh`, `cases/`, `fixtures/`). |
+| `wip/<slug>/` | Thinking done before a decision, for a new product or release (a "co-thinking session": Orchestrator + Product + Architect only). Directional until explicitly accepted, then promoted into a real epic; kept afterward as a record. Examples: `wip/multi-agent-development/` (epics #65/#295, released as v0.2.0) and `wip/claude-code-plugin/` (epic #282). |
+
+</details>

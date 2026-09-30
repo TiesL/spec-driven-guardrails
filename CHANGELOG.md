@@ -1,10 +1,11 @@
 # Changelog
 
 Release points: moments where a tag records the merge point as a human
-reference point. Adopted projects follow `main` live via symlink, so this
-isn't a pinnable version — see "Why local symlinks instead of committed
-symlinks" in `README.md`. For the ongoing list of adoptable changes per
-project: `CHANGES.md`.
+reference point. An adopted project either follows `main` live via symlink
+or pins one of these tags with `install.sh` — see "Getting started" in
+`README.md`, which also explains why those symlinks are local rather than
+committed. For the ongoing list of adoptable changes per project:
+`CHANGES.md`.
 
 **Versioning:** [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), starting at
 `v0.1.0` (2026-09-29) — see that entry for why `0.y.z`, not `1.0.0`, is the deliberate starting
