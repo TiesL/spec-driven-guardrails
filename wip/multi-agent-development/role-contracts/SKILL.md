@@ -235,6 +235,22 @@ found at this gate, reported the same way as a code-quality finding — same cha
 repo's own `pre-merge-review` already uses, no separate bug-report artifact), approval or
 rejection.
 
+**On approval, posts the merge marker itself.** When the verdict is approval, include, on its
+own line in that same approval comment:
+
+```
+<!-- pre-merge-review:done sha=<current-head-sha> -->
+```
+
+using the PR's actual current HEAD commit SHA (full 40 hex characters) — the exact string
+`hooks/git-guardrails`'s merge guard already scans for (any comment, from anyone, carrying this
+marker pinned to the PR's current HEAD satisfies it; no new convention, same string the generic
+`pre-merge-review` skill posts). This makes Reviewer's own approval sufficient to pass the merge
+guard — no redundant second, generic `pre-merge-review` dispatch needed just to produce the
+marker a rigorous Reviewer pass already earned. A **request-changes** verdict never posts this
+marker — same semantics as `pre-merge-review`'s own marker: it means "reviewed and cleared," not
+merely "reviewed."
+
 ---
 
 ## Shared, across all five roles
