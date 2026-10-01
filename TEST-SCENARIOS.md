@@ -2178,3 +2178,122 @@ something new is being added.
   name `check-commit` and no longer say the hook runs, clears for or
   skips `./check`; A19's "Violated when" no longer speaks of the
   `./check` child
+
+### S176 — answered_yes is one shared rule for "this row is answered yes"
+**Covers:** F37
+- Given: projects whose WORKFLOW-ADOPTION.md (or the pre-migration
+  WORKFLOW-ADOPTIE.md) holds a row for an id with answer yes, ja, no, nee,
+  a yes only in the Notes column, a similar-looking id, a renamed id, or no
+  file at all (issue #371, A16, AC3)
+- When: `answered_yes <project> <id>` in `lib/changes.sh` is asked
+- Then: it succeeds only for yes/ja in the Answer column of the exact id
+  (new file before old; pre-rename ids honoured) and fails otherwise;
+  `adopt.sh` no longer carries its own hard-coded copy of the rule
+
+### S177 — session-context.sh prints a session-context file only for a yes row
+**Covers:** F37
+- Given: a clone whose entries declare `session-context: <path>` values
+  (alone or in a comma list with a gate value), and projects with mixed
+  yes/no/unanswered rows, `ja` in the old file, similar ids, a declared
+  file that does not exist, no adoption file, and a nonexistent project
+  (issue #371, A16, AC1, AC3)
+- When: `session-context.sh <project>` runs
+- Then: it prints exactly the files of the entries answered yes, each once;
+  nothing for no/unanswered/gate-only/none entries; it exits 0 in every case,
+  and a later version of a file is what the next run prints
+
+### S178 — the SessionStart chain delivers the rules, reaches the project without re-adoption, and warns on a broken CLAUDE.md link
+**Covers:** F37
+- Given: a real adoption from a copy of this clone, with the row answered
+  yes, no, and never (issue #371, A16, AC1, AC3, AC11)
+- When: every SessionStart command from the project's `.claude/settings.json`
+  runs the way Claude Code runs it
+- Then: only the yes project's output carries `ORCHESTRATOR.md`, and a
+  later `ORCHESTRATOR.md` in the clone shows up on the next run with no
+  `adopt.sh` and no new answer; the unanswered row is still reported by
+  pending-changes; a missing, regular-file or wrongly linked `CLAUDE.md`
+  yields a warning that names it and says to run `adopt.sh`, a correct link
+  none, and the rules are delivered regardless; the session-context command
+  finds the clone by `readlink`, hard-coding no path
+
+### S179 — this repo answers its own row yes and gets the rules at session start
+**Covers:** F37
+- Given: this repo's own WORKFLOW-ADOPTION.md and tree (issue #371, AC2)
+- When: `answered_yes` is asked for `process-multi-agent-roles`, and
+  `session-context.sh` runs on this repo, and on a project answering no
+- Then: the row is a reasoned yes (not the provisional stamp); the repo's
+  run prints all of `ORCHESTRATOR.md`; the no project's run prints none of
+  it; no repo-specific special case
+
+### S180 — ORCHESTRATOR.md states the run rules once, short, with the recursion guard first
+**Covers:** F37
+- Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #371, A16/A18, AC1,
+  AC4-AC8; the mechanical proxy for model behaviour that cannot be asserted)
+- When: it is read
+- Then: a `ROLE SESSION:` guard is within its first five non-blank lines;
+  it says roles are fresh agents, never forks; it names the announce step,
+  `role:product` first, all five labels paired with their stage values; it
+  separates work items from questions, research, co-thinking and adoption;
+  it defines the `pipeline-override` record with decided-by, scope and
+  reason and says shortcuts are never self-granted, trivial included; it
+  says to stop and ask when dispatch is unavailable; it says how to resume
+  (with `role-label-staleness.sh`); `SKILL.md` points to it; it stays short
+
+### S181 — ./check rejects a CHANGES.md entry with no declared session path
+**Covers:** F37
+- Given: a copy of this repo whose `process-multi-agent-roles` entry has the
+  Reaches session field missing, only in prose, empty, outside the
+  vocabulary, pointing at a missing file, pointing at a file no test names,
+  or in a list with one bad value (issue #371, A17, AC10)
+- When: `check --no-tests` runs on it
+- Then: it fails and names the entry, the field and the culprit; it passes
+  for the unmodified repo, for `none`, for a valid comma list, for
+  `always-loaded: WORKFLOW.md`, and for a hook path once a test case names it
+
+### S182 — every CHANGES.md entry declares how it reaches a session
+**Covers:** F37
+- Given: this repo's CHANGES.md (issue #371, AC10, human decision 4)
+- When: its entries are read
+- Then: every entry has a non-empty Reaches session value; the preamble
+  documents the field and its five keywords; `process-multi-agent-roles`
+  declares `session-context: skills/role-contracts/ORCHESTRATOR.md` and
+  `gate: skills/pre-merge-review/model-record-gate.sh`, and carries no
+  Meaning version
+
+### S183 — the model-record gate flags a role-played run in opted-in projects only
+**Covers:** F37
+- Given: PR and issue data from a data-driven fake `gh`: a dispatched run
+  (one marker per comment), all five markers in one comment, two stages in
+  the PR body, two in one review body, one stage twice in one text,
+  markers quoted in a fence or blockquote, a missing stage, valid and
+  invalid or quoted override records, and gh failing; projects that
+  answer the row yes, ja (old file), no, never, or have no adoption file
+  (issue #371, A18, AC3, AC6, AC9)
+- When: `model-record-gate.sh <pr>` runs with the project as cwd
+- Then: a run with live markers of two different stages in one text, or
+  with a stage missing, gets a finding with the word "role-played" in
+  opted-in projects only; a dispatched run, a repeated single stage and
+  quoted markers get none; a valid override (decided-by, scope, reason; not
+  quoted) removes the finding, an empty-reason, who-less or quoted one does
+  not; with gh failing or absent it exits 0 and invents no finding; the
+  gate exits 0 whenever it runs
+
+### S184 — no installed or always-loaded text says one session doing every stage is the norm
+**Covers:** F37
+- Given: `model-choice`, the gate header, the README and the
+  `process-multi-agent-roles` entry (issue #371, AC12, Reviewer note on
+  PR #385)
+- When: they are read
+- Then: the "No behavior change" section and the single-session licence are
+  gone, `model-choice` points to `process-multi-agent-roles` and
+  `role-contracts`; the README and the entry no longer say nothing starts
+  the pipeline or that automatic activation is a separate work item, and
+  name `ORCHESTRATOR.md` and session start
+
+### S185 — the pre-merge-review skill says a role-played run blocks the merge
+**Covers:** F37
+- Given: `skills/pre-merge-review/SKILL.md` (issue #371, AC9, human
+  decision 3)
+- When: the paragraph about a role-played run is read
+- Then: it says the finding blocks (not non-blocking), mentions the
+  `pipeline-override` record and that without `gh` the check passes
