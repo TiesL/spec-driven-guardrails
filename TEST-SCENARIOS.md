@@ -1870,3 +1870,74 @@ something new is being added.
       (Secrets/credentials, Deploy/CI configuration, Untrusted input) had a real-match fixture
       before; a future regex edit breaking Auth/session, Infrastructure as Code, or
       Sensitive/personal data would have gone uncaught.
+
+### S165 — test/lib.sh isolates fixture git commands from an inherited git repo environment
+**Covers:** F1
+- Given: a decoy git repo inside the test's own sandbox, and every
+  variable `git rev-parse --local-env-vars` prints exported to point at
+  it, the way a hook, `git rebase --exec` or a git alias exports them for
+  the launching repo (issue #377, AC4; never pointed at the real repo or
+  `TEST_REPO_ROOT`)
+- When: a child process sources `test/lib.sh` and runs `sandbox_create`,
+  `fresh_project`, a fixture commit, `git tag`, `git init --bare`,
+  `git remote add` and `git push -u` (the command shapes of S57, S84 and
+  S144)
+- Then: none of those variables is still set after sourcing; the decoy's
+  refs, `HEAD`, worktree list, config, index and stash are unchanged; the
+  fixture commit lands in the fixture itself
+- And: `sandbox_guard` refuses, naming the variable, when any one of them
+  is exported again after sourcing (the same loud refusal as for `HOME`,
+  S3)
+- And: the git identity, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM`,
+  `GIT_TERMINAL_PROMPT`, `GIT_EDITOR` and `CLAUDE_WORKFLOW_GUARDRAILS_OFF`
+  survive sourcing unchanged
+
+### S166 — hooks/pre-commit runs ./check without git's repo-local variables, from any worktree and commit form
+**Covers:** F17
+- Given: a sandbox project with the real `hooks/pre-commit` installed as a
+  symlink, a linked worktree, and a `./check` that records its
+  environment and working directory and then does fixture git work
+  (`init`, `commit`, `tag`, `init --bare`) in a temp directory (issue
+  #377, AC1, AC2, AC5)
+- When: a commit is made from the linked worktree and from the main
+  worktree, each as a plain commit, a partial commit
+  (`git commit -- <path>`) and `git commit -a`
+- Then: every commit succeeds; `./check` sees none of the variables
+  `git rev-parse --local-env-vars` prints; the `./check` that ran is the
+  committing worktree's own, run at that worktree's root; the git
+  identity, `GIT_CONFIG_NOSYSTEM` and `GIT_TERMINAL_PROMPT` still reach it
+- And: the project's refs (other than the committing branch), worktree
+  list, shared config, stash and the other worktree's `HEAD` and index are
+  unchanged; the new commit holds exactly the intended paths; after a
+  partial commit the other staged path is still staged
+
+### S167 — hooks/pre-commit warns and skips ./check when lib/git-env.sh is missing
+**Covers:** F17
+- Given: a copy of this repo without `lib/git-env.sh`, its
+  `hooks/pre-commit` installed as a symlink in a sandbox project, and a
+  `./check` that leaves a marker when it runs (issue #377, human decision
+  on the Architect report)
+- When: a commit is made on a feature branch
+- Then: the commit proceeds; a warning names `git-env.sh`; `./check` did
+  not run
+- And: a commit on `main` is still blocked (the branch guard does not
+  depend on the library)
+
+### S168 — lib/git-env.sh clears git's own repo-local list plus a fixed floor, and nothing else
+**Covers:** F1
+- Given: `lib/git-env.sh` (issue #377, Architect decision A19)
+- When: `git_local_env_vars`, `git_local_env_clear` and
+  `git_local_env_assert_clear` are called, with the real `git`, with a
+  `git` that fails, with one that lists fewer names, and with one that
+  lists a name newer than today's git
+- Then: the list always contains every name today's
+  `git rev-parse --local-env-vars` prints, plus any newer name `git`
+  reports; it never contains the git identity, `GIT_CONFIG_GLOBAL`,
+  `GIT_CONFIG_NOSYSTEM`, `GIT_CONFIG_SYSTEM`, `GIT_EXEC_PATH`, `GIT_SSH*`,
+  `GIT_TERMINAL_PROMPT`, `GIT_TRACE`, `GIT_EDITOR`, `GIT_ALLOW_PROTOCOL`,
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF`, `HOME` or `PATH`
+- And: `git_local_env_clear` unsets every listed variable and keeps the
+  identity and the guardrails override; `git_local_env_assert_clear`
+  passes after a clear, and fails naming `GIT_INDEX_FILE` when it is set
+- And: no hook, `lib/` file, `test/lib.sh`, `test/run.sh` or `check`
+  other than `lib/git-env.sh` holds a second copy of the list
