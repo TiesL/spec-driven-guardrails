@@ -455,6 +455,26 @@ the shared parser warns if it has no `Applies if`.
   `skills/codebase-design/README.md` for the pinned upstream commits.
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/292
 
+## process-multi-agent-roles
+
+- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
+- **Default:** question
+- **Applies if:** always
+- **Yes means:** each work item's stages are dispatched to the roles in the
+  `role-contracts` skill, each with its own write/action scope and input
+  scope, by an orchestrating Claude Code session or by hand. Role conflicts
+  escalate to a human instead of being settled by whichever role spoke last.
+  Reviewer's security triggers decide the review depth. The three read-only
+  evidence scripts (`compliance-evidence.sh`, `role-label-staleness.sh`,
+  `classify-review-depth.sh`) run from the guardrails clone and need `gh`.
+  Costs more agent sessions per work item; worth it once a change is large
+  enough that one session's blind spots matter. No orchestrator software
+  ships: the contracts and the evidence scripts are the whole offer. The
+  `role-contracts` skill symlinks into every adopted project by `adopt.sh`
+  either way (it globs `skills/`); only the answer records whether this
+  project follows it.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/370
+
 ---
 
 ### Non-functional characteristics (NFRs)
