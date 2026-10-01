@@ -111,6 +111,13 @@ CI-adoption predicates key on that executable, not on `package.json`) —
 exactly the "different stack" case the `check-convention` skill already
 describes.
 
+As of issue #377, `test/lib.sh` also clears git's repo-local variables
+(`git rev-parse --local-env-vars` plus a fixed floor, from `lib/git-env.sh`)
+when it is sourced, and `sandbox_guard` refuses if one is set again. A
+hook, `git rebase --exec` or git alias exports them (`GIT_DIR`,
+`GIT_INDEX_FILE`, ...), and without this a fixture `git -C <fixture> ...`
+acted on the repo the suite was launched from (S165, S168).
+
 ### F2 — Recorded baseline as fixtures
 
 The current outcome for all **four** adopters, frozen in
@@ -622,6 +629,13 @@ coverage has to come from three local-and-CI-based layers:
 
 The three layers are deliberately not interchangeable. W24 and W26 prevent,
 W27 catches what slips through.
+
+As of issue #377, the `pre-commit` hook runs `./check` without git's
+repo-local variables (cleared for that child process only, via
+`lib/git-env.sh`), so a `./check` that makes fixture git repos can't act on
+the committing repo; git's own commit flow keeps them. If `lib/git-env.sh`
+is missing, the hook warns and skips `./check` rather than run it
+unisolated (S166, S167).
 
 ### F18 — Securing work without relying on the session end
 

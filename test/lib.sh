@@ -16,6 +16,20 @@ export TEST_REAL_HOME
 TEST_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export TEST_REPO_ROOT
 
+# Isolation from the launching repo's git environment (#377, A19). A hook,
+# `git rebase --exec` or a git alias exports GIT_DIR, GIT_INDEX_FILE, ...
+# to everything it starts; a fixture `git -C <fixture> ...` would then act
+# on the launching repo. Cleared here, at source time, because every test
+# case sources this file before its first git call, including a single
+# case run by hand. sandbox_guard refuses if one is set again later.
+if [ ! -r "$TEST_REPO_ROOT/lib/git-env.sh" ]; then
+  echo "ABORTED: lib/git-env.sh is missing — fixture git commands can't be isolated from the launching repo." >&2
+  exit 1
+fi
+# shellcheck source=lib/git-env.sh
+. "$TEST_REPO_ROOT/lib/git-env.sh"
+git_local_env_clear
+
 # The four frozen baseline projects, in the fixed order they're named
 # throughout this test suite (R9, S4, S66, S67) — one place instead of
 # retyping the list per test.
@@ -40,6 +54,14 @@ sandbox_guard() {
   fi
   if [ -z "${HOME:-}" ]; then
     echo "ABORTED: HOME is empty after sandbox setup." >&2
+    return 1
+  fi
+  # Same refusal for git's repo-local variables (#377): one still set
+  # points fixture git commands at another repo.
+  local git_env_problem
+  if ! git_env_problem="$(git_local_env_assert_clear 2>&1)"; then
+    echo "ABORTED: a repo-local git variable is set: $git_env_problem." >&2
+    echo "A test must never act on the repo it was launched from." >&2
     return 1
   fi
   return 0
