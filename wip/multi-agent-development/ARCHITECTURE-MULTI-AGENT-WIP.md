@@ -181,7 +181,7 @@ synthesis, and never only the later role's recommendation.**
 | Criterion | Why it counts |
 |---|---|
 | Decision 1 (artifact-based context, no hidden state) | An orchestrator-authored summary of a disagreement is itself an unwritten interpretation layer — exactly the "shared context object" Decision 1 already rejected, just applied to escalation instead of routing. |
-| Legitimate conflict escalates, doesn't get suppressed (PRD §4, "Kernverantwoordelijkheden per rol") | A merged summary or last-role-only view lets the orchestrator's phrasing quietly resolve the disagreement before Ties ever sees it — the opposite of "escalates." |
+| Legitimate conflict escalates, doesn't get suppressed (PRD §4, "Core responsibilities per role") | A merged summary or last-role-only view lets the orchestrator's phrasing quietly resolve the disagreement before Ties ever sees it — the opposite of "escalates." |
 | Decision authority stays with Ties, not the orchestrator (Decision 2) | Ties judging from a synthesis means judging the orchestrator's read of the conflict, not the conflict itself. |
 
 ### Options weighed
@@ -410,7 +410,7 @@ role itself or a dispatched sub-agent — never asked of Ties. Only genuine deci
 Ties, and when several are open at once, they're batched per `vendor/grilling/SKILL.md`'s
 round/frontier method rather than trickled out one at a time or asked before their
 prerequisites are settled. This generalizes the practice `vendor/grilling/SKILL.md` was
-vendored for Product's requirement elicitation (see `ROLE-DESCRIPTIONS.md`) into a standing
+vendored for Product's requirement elicitation (see `role-contracts/SKILL.md`) into a standing
 rule for every role and for the orchestrator itself. Violated if a role asks Ties something
 it could have found out itself, or asks a question one round before its prerequisite is
 actually settled.
@@ -431,6 +431,121 @@ work, never for merge, release, force-push, or any destructive git operation —
 exactly as unconditional and human-only as A2 already requires. Violated if a role asks for
 confirmation before an ordinary commit/push (needless friction, the opposite failure from
 A2's concern), or if "pre-authorized" is stretched to cover anything A2 forbids.
+
+---
+
+### A12 — A halt mid-task saves the attempted diff as a patch artifact before reverting (decided 2026-09-29, from the BMad Method co-thinking session, issue #324, candidate 2.8)
+
+A11 covers the successful path: commit and push per logical step, no exception needed. It
+says nothing about the halted path — what happens to real, uncommitted work at the exact
+moment a role stops mid-task for a reason that isn't a clean pass/fail (an unresolved
+cross-role dispute per Decision 4/A7, a blocked gate, an ambiguity nothing in scope can
+settle). Today that's undefined: a halted session's uncommitted changes are just whatever's
+on disk when the session ends, with no guarantee anyone looks at them before the branch is
+reset or abandoned.
+
+**The rule:** on any halt mid-task, before reverting the working branch to its last
+committed state, save the full attempted diff as a patch file at exactly
+`<repo-root>/.halt-patches/<sanitized-branch-name>-<UTC-ISO-8601-timestamp>.patch`, where
+`<sanitized-branch-name>` replaces every `/` in the branch name with `-` (this repo's own
+branch-naming convention, `feature/<n>-<desc>`/`fix/<n>-<desc>`, contains a `/`, and an
+un-sanitized name would produce a nested subdirectory per branch instead of the single flat
+directory this rule intends — `git diff` also can't create that missing subdirectory itself,
+so an un-sanitized path would fail outright on the exact branch names this repo actually
+uses). Concretely: `git diff > .halt-patches/${BRANCH//\//-}-$(date -u +%Y%m%dT%H%M%SZ).patch`.
+A single, fixed, gitignored directory at the repo root, not a role- or tool-specific
+location, so a human or a resumed session always knows where to look without being told.
+Never committed, never pushed (that would violate A11's own "only commit real, reviewed
+progress" spirit) — `.gitignore` carries `.halt-patches/` for exactly this reason. The
+orchestrator names the specific patch file path and the halt reason explicitly in whatever
+it reports to Ties for that halt (same channel as any other escalation, A10), rather than
+relying on the fixed directory alone to
+be discovered.
+
+**Learned the hard way (2026-09-29, before this decision even existed as a written rule):**
+concurrent, unisolated git operations against the *same* working directory — several full
+test-suite runs plus a `git worktree add` sharing one repo's object/ref store at once — let a
+sandboxed test fixture's throwaway commits leak into the real repo's `refs/heads/main` and
+push three junk branches to GitHub. Recovered fully (nothing pushed to `main`/the release
+branch was affected), but it's a concrete instance of exactly the failure category A12
+exists to contain: uncoordinated concurrent work against shared git state, with no single
+place either a human or a resumed session could look to understand what happened. A fixed,
+well-known patch location doesn't prevent a git-state collision by itself, but it does mean
+recovery has one obvious starting point instead of requiring the kind of live forensic
+`.git` inspection this incident actually needed.
+
+**Why now, with no autonomous run mode yet built:** two real triggers already exist without
+one. First, a genuine cross-role dispute that reaches Decision 4/A7's escalation path (still
+unfired after three pilots per issue #307, but designed to happen) is exactly this shape of
+stop — real, in-progress work with nowhere defined to go. Second, and longer-term: Ties'
+stated direction is toward more agent autonomy over time, eventually including production
+agents monitoring his own company's operational software and resolving defects
+semi-autonomously — at that point, losing in-progress work on an unattended halt stops being
+a minor inconvenience and becomes a real, silent loss. Documenting the pattern now, before
+either kind of halt actually needs it, costs nothing (no live trigger, no new infrastructure)
+and closes the gap before it's ever hit for real.
+
+**Scope, explicitly:** this decision does not itself build or authorize any autonomous run
+mode (§3.3 of the BMad co-thinking session's non-adoptions still stands unchanged — no
+`bmad-build-auto`-style unattended loop exists or is proposed here). It only says what happens
+to in-progress work *whenever* a halt occurs, autonomous or not.
+
+---
+
+### A13 — Review-depth classifier: trigger-category-only, generic lens-Adapters, manual override (decided 2026-09-29, issue #328, from the BMad Method co-thinking session, issue #324, candidate 2.4)
+
+Extends Reviewer's existing gate (`pre-merge-review`, `role-contracts/SKILL.md`'s Reviewer
+entry) with a quick/thorough split: a classifier decides which mode a PR's review runs in,
+without adding a new role or a new risk taxonomy.
+
+**Classifier basis: Reviewer's existing six trigger categories only, no size/files-touched
+dimension.** Architect's own earlier informal sketch (`wip/bmad-method-comparison/
+ARCHITECT-REPORT.md` §2.4) named files-touched as a second input alongside trigger-category
+match; issue #328's actual scope and Ties' ruling (`wip/bmad-method-comparison/DECISIONS.md`
+Q3(a)) both narrow this to trigger-category match alone, and that narrowing is confirmed here
+deliberately, not silently. Reasoning: a size threshold would be a genuinely new, ungrounded
+number (no existing anchor anywhere in this repo, unlike the six categories, which are already
+Reviewer's own decided list) and answers a different question than what "thorough" mode is
+for. Extra lens-Adapters exist to give a security-relevant change more independent eyes; a
+large mechanical diff (a rename across 40 files) is not more security-relevant for being large,
+and a one-line auth bypass is not less so for being small. Trigger-category match is the
+correct, precise signal for that question; a size dimension would reintroduce exactly the
+threshold-tuning bikeshed the trigger-category-only design avoids. A complexity- or
+size-driven review trigger may be worth having someday, but as its own candidate under #307's
+ceremony-cost thread — not folded into this classifier's basis.
+
+**Manual override: a `--force-thorough` flag / env var, so the mechanism produces real usage
+evidence before #307 decides on default-on.** As scoped, AC2's dispatch path has no caller on
+a real PR until #307 later decides when "thorough" is the default for a given PR shape —
+until then it would only ever run in unit tests. A minimal, explicit per-PR override (not a new
+default, and not a decision about defaults at all) lets Ties or a session opt a specific real
+PR into thorough mode now. This is orthogonal to the deferred default-on question: an override
+is an explicit, one-off choice at invocation time, never a standing trigger rule. Low cost (one
+flag read in the classifier's interface), and it generates the actual dogfooded usage evidence
+#307 will want when it eventually rules on defaults.
+
+**Module/Interface/Seam:** one Module, the classifier (`classify-review-depth.sh`, repo root —
+same placement and shape as `role-label-staleness.sh`/`compliance-evidence.sh`: read-only,
+single PR-number argument, Bash 3.2-compatible, no `eval`, no write/post/label path of any
+kind). Interface: takes a PR reference (and, on the manual-override path, an explicit
+force-thorough input); reads the PR's changed-file list and description; returns `quick` or
+`thorough` on stdout, plus which trigger category(ies) matched, if any, as evidence for the
+dispatch prompt. The classify → dispatch handoff *is* a real Seam (two Adapters genuinely
+differ here: quick-dispatch is the existing single-Reviewer fork, unchanged; thorough-dispatch
+is Reviewer plus N fresh lens-Adapter forks) — but that Seam does not need its own script or
+Module. Deleting a separate "dispatch" script would not make the looping-and-forking logic
+reappear elsewhere as new complexity; it is trivially inline branching already at home in
+`pre-merge-review`'s own skill instructions, which already own forking Reviewer. Confirmed: the
+N lens-Adapters are generic, undifferentiated fresh-context copies of Reviewer's own review
+scope — never named personas, and never one adapter per matched trigger category (that would
+smuggle category-specific personas back in through the count instead of the name, the same
+drift `wip/bmad-method-comparison/PRODUCT-REPORT.md` §3.2 already rejected). N stays a small
+fixed constant decided once (2, not open-ended, not derived from how many categories matched),
+to keep the ceremony-cost concern #307 owns from being quietly pre-empted by this issue.
+
+**Scope, explicitly:** this decision does not resolve when "thorough" becomes the default for
+a given PR shape — that stays #307's call, unchanged from Ties' Q3(b) ruling. It only fixes the
+classifier's basis, the override mechanism, and the module shape for building AC1/AC2 now.
 
 ---
 
@@ -499,7 +614,7 @@ None new. Uses only what this project already has: Claude Code sub-agent dispatc
 
 ## Still open after this document
 
-None. As of 2026-09-21, all of `PRD-MULTI-AGENT-WIP.md` §9's originally **deels besloten**
+None. As of 2026-09-21, all of `PRD-MULTI-AGENT-WIP.md` §9's originally **partially decided**
 questions (OQ4, OQ5, OQ6, OQ9) are fully decided:
 
 - OQ4 — fully decided: a bounded-context change is a normal architecture decision (§
@@ -509,9 +624,9 @@ questions (OQ4, OQ5, OQ6, OQ9) are fully decided:
 - OQ5 — fully decided: no separate Security agent by default; risk-based trigger list
   (auth, secrets, deploy/CI config, IaC, sensitive data, untrusted input) embedded in
   Reviewer's role contract, plus a POLP-organized minimal test per trigger category (PRD
-  §4, "Security als expliciete verantwoordelijkheid").
-- OQ6 — fully decided: each role verifies a different question (§4's "Kernverantwoordelijkheden
-  per rol"); legitimate conflict escalates, doesn't get suppressed. Both concrete overlaps
+  §4, "Security as an explicit responsibility").
+- OQ6 — fully decided: each role verifies a different question (§4's "Core responsibilities
+  per role"); legitimate conflict escalates, doesn't get suppressed. Both concrete overlaps
   resolved (PRD §4, "Overlap 1"/"Overlap 2"): QA sets test strategy + scenario, Fullstack
   Developer authors the actual failing test; `check-traceability.sh` verifies structural
   completeness, Reviewer verifies semantic correctness.

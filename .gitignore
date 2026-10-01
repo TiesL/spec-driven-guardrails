@@ -5,3 +5,7 @@ CLAUDE.md
 # claude-workflow: end
 
 .DS_Store
+
+# A12 (ARCHITECTURE-MULTI-AGENT-WIP.md): halt-mid-task patch artifacts —
+# never committed, gitignored as a second guard alongside the rule itself.
+.halt-patches/

@@ -1098,6 +1098,86 @@ traceability wiring for real new functionality, not premature promotion
 of the WIP design: `check-traceability.sh` enforces `Covers:`
 bidirectionally, so `S150` can't resolve without an `F34` heading here.
 
+### F35 — `role-label-staleness.sh` detects `role:<name>` label staleness for one issue (issue #315)
+
+Read-only script: given an issue number, finds the issue's current
+`role:<name>` label (if any) and every PR that closes it, extracts each
+source's `model-record` stage markers (skills/model-choice/SKILL.md), and
+reports whether the label is stale relative to the latest evidenced
+stage — Discovery < Planning < Test < Implementation < Review, the same
+fixed order that skill's own "Per-stage floors" table already fixes. A5
+(`ARCHITECTURE-MULTI-AGENT-WIP.md`) decided the label is a traceability
+record the orchestrator updates by hand, never state an execution
+mechanism reads back; this script only ever informs a reader when that
+record has fallen behind, never blocks or edits anything.
+
+`role-label-staleness.sh` at repo root (same dogfood-only placement as
+`compliance-evidence.sh` — not under `skills/` or `templates/`, no
+propagation to adopted projects for this epic; not invoked by `./check`,
+only its tests are, since it needs `gh`/network and `./check` must stay
+usable with no GitHub credentials). Status vocabulary is closed to four
+values — `not-started`, `in-sync`, `stale`, `indeterminate` — with
+`indeterminate` reserved for two-or-more `role:<name>` labels at once, a
+`model-record` marker that matched but carries no recognized `stage=`
+value, or a PR lookup failure that leaves the evidence set provably
+incomplete in a way that could still change the verdict; a label at or
+ahead of the latest evidenced stage is `in-sync`, never `stale` — the
+label tracks the active phase, not the last completed one.
+
+This single heading exists as the same narrow, stated exception `F34`
+above already used (that exception's origin is issue #296's non-goals
+and `ARCHITECT-REPORT.md` D3 option (a), accepted by Product for `F34`
+itself; applied here to real new functionality again, not premature
+promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S152` can't resolve without this heading.
+
+### F36 — `classify-review-depth.sh` classifies a PR quick/thorough by Reviewer's six trigger categories (issue #328)
+
+Read-only script: given a PR number, reads its changed-file paths and its
+own title+body text, matches both against Reviewer's existing six
+security-review trigger categories (`wip/multi-agent-development/
+role-contracts/SKILL.md`'s "Security review triggers" table — Auth/
+session, Secrets/credentials, Deploy/CI configuration, Infrastructure as
+Code, Sensitive/personal data, Untrusted input), and prints `review-depth:
+quick` or `review-depth: thorough (<matched categories>)` — no new risk
+taxonomy, no size/files-touched dimension (A13 in
+`ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly rejected the latter). An
+optional `--force-thorough` flag classifies `thorough` even with zero
+category matches, evidenced as `(forced)` rather than a false category
+claim, so the mechanism has a real, dogfoodable caller before issue #307
+decides on any default-on rule; on a real match, the override is strictly
+additive and never masks the genuine matched category names.
+
+A REST call failure (changed-files or title/body lookup) fails open
+toward `thorough`, not `quick` — the inverted direction from every other
+gate in this repo, since this classifier's only purpose is triggering
+*extra* scrutiny and an unreadable diff/description is exactly the case
+with the least evidence to rule a category out. `gh` missing from `PATH`
+entirely is a harder, distinct failure (non-zero exit, nothing on
+stdout), never folded into that same fail-open behavior, so a caller can
+tell "no answer" apart from "got an answer, chose caution."
+
+`classify-review-depth.sh` at repo root (same dogfood-only placement as
+`compliance-evidence.sh`/`role-label-staleness.sh` — not under `skills/`
+or `templates/`, no propagation to adopted projects for this epic; not
+invoked by `./check`, only its tests are, since it needs `gh`/network and
+`./check` must stay usable with no GitHub credentials). The script also
+defines and exposes (`--lens-adapter-count`) `LENS_ADAPTER_COUNT`, the
+fixed number of generic lens-Adapter forks `skills/pre-merge-review/
+SKILL.md`'s thorough-mode dispatch prose adds on top of Reviewer when the
+verdict is `thorough` (A13) — a single named, testable seam for that
+constant, so a future prose edit that lets the two numbers drift apart is
+a test failure, not a silent mismatch. The classifier's own stdout never
+prints this constant, or any other count/multiplier, on a `thorough`
+verdict — only matched category names (or `forced`/`lookup-failed`).
+
+This single heading exists as the same narrow, stated exception `F34` and
+`F35` above already used (origin: issue #296's non-goals and
+`ARCHITECT-REPORT.md` D3 option (a), accepted by Product for `F34`
+itself; applied here again to real new functionality, not premature
+promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
+bidirectionally, so `S154` can't resolve without this heading.
+
 ---
 
 ## Non-functional characteristics
@@ -1360,6 +1440,8 @@ epics still apply, detached from the execution history in which they arose.
 | Writing prose with an apostrophe (`it's`, `doesn't`, `#227's`) inside a bash *single-quoted* `python3 -c '...'` block silently and catastrophically breaks the script: bash single quotes have no escape mechanism, so the apostrophe ends the string early and everything after is reparsed as bash code — with no error until a syntax mismatch surfaces somewhere later in the file, at an unrelated line. Concretely: a comment reading "found during PR #227's own pre-merge-review" inside `check_merge_guard`'s marker-parsing python block took down `hooks/git-guardrails` entirely — and since this repo adopts itself, every `Bash` tool call in the session broke immediately (the `PreToolUse` hook execs this same file to vet every command), discovered only by working blind through `Read`/`Edit` until the apostrophe was found by manual quote-counting | Caught and fixed within the same session, but only by disabling all git/gh command execution until found — a real, high-blast-radius incident, not a near miss | Add a `check-no-...` script (matching `check-no-sigpipe-race.sh`'s F22 pattern) that scans every `python3 -c '...'`-shaped single-quoted block for a bare apostrophe — tracked as its own issue rather than built under this incident's own time pressure |
 | `compliance-evidence.sh`'s `normalize_model()` (F34, issue #296) is a verbatim copy of `skills/pre-merge-review/model-record-gate.sh`'s function of the same name (#268), not a shared import — two copies of the same model-string-comparison logic now exist. Deliberate (D5, Architect's implementation plan): extracting a shared lib would cross the dogfood-only boundary, since `skills/` is what `adopt.sh` propagates to adopted projects and this collector is dogfood-only | A reimplementation that drifted from `model-record-gate.sh`'s comparison rules would make the collector silently disagree with the gate it reports on — worse than the duplication itself; the two are kept in sync by comment (each names the other as origin/copy) | Unify if/when this collector is ever propagated beyond this repo, or if the two copies are ever found to have drifted |
 | `compliance-evidence.sh` (F34, issue #308, fixing the #296 debt row this replaces) now discriminates a live marker from the same shape merely quoted in a fenced code block, an inline code span, or a Markdown blockquote — `live_text()` strips those enclosures (by CommonMark's own fence-closing rule: opening char + run length, no info string on a close, 3-space indent cap) before any `gate_*` predicate greps the result, and a real marker inline with prose keeps evidencing (AC3). This is a bounded heuristic, not a full CommonMark parser, and by design (non-goal 1, Product's ruling on D2) it **fails open** — counts as live, not flagged as quoted — for shapes it doesn't attempt: a 4-space-indented (or tab-indented) code block, an HTML `<pre>`/`<code>` block, a marker nested inside another HTML comment, backticks inside a link title, a blockquote's lazy-continuation line, and a backtick-fence opener whose own info string contains a backtick (this last one is the sole fail-*closed* residue — over-stripped, not under-stripped). `test/cases/s151_compliance_evidence_quoting.sh` pins two of these (Q18, Q18b) as accepted debt on purpose, precisely so a later half-fix is a visible, reviewed status change rather than a silent one | Closing every one of these needs a real CommonMark-aware parser, which is out of proportion to a dogfood-only compliance reporter; the fail-open direction is the honest one to ship rather than overclaim full coverage (Product's D2 ruling) | If any of these shapes is ever seen quoted in a real PR/issue in a way that produces a false `evidenced` — delete the corresponding S151 arm (Q18/Q18b) and move this row, rather than leaving the debt undocumented once the gap closes |
+| Every caller of `live_text()` (`compliance-evidence.sh`, `role-label-staleness.sh`) captures its output without checking awk's own exit status — an awk failure (a future regex-engine defect on some other awk build, say) would turn a body into `''` and produce a confident `not-evidenced`/`stale` verdict, the exact same failure shape issue #319 itself went unnoticed as until someone happened to run the real test suite under mawk. #319's fix removes the two known triggers (the panic, and the two mawk portability defects) but doesn't change this: a *third*, still-undiscovered awk defect would reproduce #319's original symptom precisely. Found during PR #325's own pre-merge-review (round 2) | #319's fix closes every known trigger; propagating awk's exit status through `live_text()` and degrading callers to `indeterminate` on failure (the same discipline `collect()` already applies to a failed `gh` call) is a real fix but a separate, non-trivial one — not worth bundling into #319's own scope | If a future awk defect (a different build, a different bug) reproduces #319's silent-empty-output symptom again — propagate `live_text()`'s exit status and have every caller degrade to `indeterminate` rather than treating empty output as "nothing was there" |
+| `compliance-evidence.sh` and `model-record-gate.sh` (F34, issue #318) both append PR review bodies (`pulls/<pr>/reviews`) strictly after every PR comment when building their flat text corpus, not merged in true chronological order. This is harmless when a review genuinely is the newest event (it correctly lands last in append order too) — the real risk is the opposite: a comment posted *after* an existing review is still appended *before* every review in the fixed body→comments→reviews order, so that older review's `model-record` marker can still win under `tail -1` over a comment that's actually newer (e.g. a round-2 comment correcting a round-1 review's recorded model would lose to that stale review). The same class of ordering flaw #253 already fixed once for issue-text-vs-PR-text ordering, now reappearing between two PR-side sources instead of two different bundle sources. Found during PR #336's own pre-merge-review (round 1; the direction was initially misdescribed here and in this file's own code comment, corrected during round 2) | Both scripts' comment JSON and review JSON carry `created_at`/`submitted_at`, but neither script reads it — merging by real timestamp is a bigger, separate change than #318's own REST-transport scope, and reviews are a source neither script read at all before this PR, so this is a new, narrower version of an already-accepted risk class, not a regression this PR introduced from a previously-safe state | The first real PR where a `model-record` marker in a review body is superseded by a later, disagreeing marker in a plain PR comment, and gate 2 (or model-record-gate.sh's own same-model check) gives the stale review's verdict instead — sort PR_TEXT's sources by their own `created_at`/`submitted_at` instead of a fixed body→comments→reviews append order |
 
 ---
 

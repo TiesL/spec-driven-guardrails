@@ -37,6 +37,59 @@ working tree with an editor tool. `Bash` *is* allowed (needed for
 not a technically enforced write ban — use it only to read and to post the
 comment, never to change files. This skill delivers findings, not fixes.
 
+## Review depth: quick vs thorough
+
+Every PR gets at least the single-Reviewer fork above (`context: fork`) —
+"quick" mode, unchanged. On top of that, run:
+
+```
+./classify-review-depth.sh <pr-number>
+```
+
+That prints exactly one line: `review-depth: quick`, or `review-depth:
+thorough (<matched categories, or "forced"/"lookup-failed">)`. It
+classifies by matching the PR's changed-file paths and its own title+body
+against Reviewer's existing six security-review trigger categories
+(above) — no new taxonomy, no size/files-touched dimension (A13 in
+`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md` explicitly
+rejected the latter). Pass `--force-thorough` to opt a specific real PR
+into thorough mode regardless of what the categories say — a manual
+override for dogfooding this mechanism before issue #307 decides on any
+default-on rule, never a standing default itself.
+
+**When the verdict is `thorough`:** fork Reviewer as usual, **plus
+exactly `LENS_ADAPTER_COUNT` additional lens-Adapter forks** — fresh,
+isolated `context: fork` instances, generic and undifferentiated copies
+of Reviewer's own review scope (same prompt, same finding format, same
+`allowed-tools`), never named personas (no "Blind Hunter", no "Edge Cases
+Hunter"), and never one adapter per matched trigger category — the count
+is a small fixed constant, not derived from how many categories matched.
+Read the actual number by running:
+
+```
+./classify-review-depth.sh --lens-adapter-count
+```
+
+rather than restating the literal number here — `classify-review-depth.sh`
+defines `LENS_ADAPTER_COUNT` in exactly one place, and this prose reads it
+from there so a future edit to either side that lets the two drift apart
+shows up as a mismatch (a lens-Adapter dispatch count that no longer
+matches what the script reports), not a silent one. Every lens-Adapter's
+findings go into the same PR findings comment as Reviewer's own, under
+the same machine-readable disposition convention ("What happens with it"
+below) — a second or third set of eyes, not a second gate with its own
+marker.
+
+**When the verdict is `quick`:** nothing changes — the single-Reviewer
+fork above is the whole review, same as before this classifier existed.
+
+Both `classify-review-depth.sh` and `--lens-adapter-count` fail open the
+same way every other `gh`-dependent check in this skill does when `gh` or
+network isn't available — see the script's own header for the exact
+fail-open direction (toward `thorough`, the inverse of this repo's usual
+default, since under-reviewing a security-shaped change on missing
+evidence is the wrong way to guess).
+
 ## Model choice
 
 See the `model-choice` skill for the canonical principle (floor + cost,
@@ -112,16 +165,27 @@ is named by no issue in its `**Covers:**` field. Only that field counts —
 an ID that happens to appear in a sentence (e.g. "we've already tested
 some s1 variants") is not a reference. Every reported line is a finding.
 
-**Link 3 — does *this* PR reference an issue?** One call:
+**Link 3 — does *this* PR reference an issue?** Run the actual script CI
+uses (#323 — don't hand-roll a `gh pr view --json closingIssuesReferences`
+one-liner: that call is GraphQL-backed and 403s from inside a Claude Code
+session, and even outside that block, `closingIssuesReferences` is only
+populated by GitHub when the PR's base is the repository's *default*
+branch, so it's silently empty for every PR into a release branch):
 
 ```
-gh pr view --json closingIssuesReferences --jq '.closingIssuesReferences | length'
+templates/check-pr-issue-link.sh <pr-number>
 ```
 
-If that's `0`, that's a finding: the PR is missing `Closes #<issue>` or a
-linked issue. The same check exists as a hard block in CI (W19b,
-`check-pr-issue-link.sh`) — this skill additionally runs it before the
-merge, with the finding in the PR itself.
+It checks two paths, in order: `closingIssuesReferences` first (covers
+the default-branch case, and any non-default-branch PR with a manually
+linked issue in its Development sidebar), then — only when that's empty
+and the base isn't the default branch — a direct closing-keyword scan
+against the PR's own title+body. A finding is exit `1` with a message on
+stderr (the script has no fail-open path of its own: an infra failure
+that stops it from consulting the PR is itself reported as the finding,
+same as a genuinely missing reference). The same check exists as a hard
+block in CI (W19b) — this skill additionally runs it before the merge,
+with the finding in the PR itself.
 
 **Link 4 — does the issue itself have the structure the other three links
 assume (#242)?** Run:

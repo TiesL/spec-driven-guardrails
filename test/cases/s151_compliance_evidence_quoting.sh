@@ -49,6 +49,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\tConvention: `<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->` `<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->` `<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->` `<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->` and `<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->` are the five markers this workflow uses.\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -71,6 +77,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t```\001<!-- model-record: stage=Discovery model="claude-sonnet-5" effort="medium" -->\001<!-- model-record: stage=Planning model="claude-sonnet-5" effort="medium" -->\001<!-- model-record: stage=Test model="claude-sonnet-5" effort="medium" -->\001<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\001```\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -91,7 +103,14 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -114,7 +133,14 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -140,6 +166,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t````\001```\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\001```\001````\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -158,6 +190,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t~~~\001```\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\001```\001~~~\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -182,6 +220,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t```\001```text\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\001```\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -218,6 +262,13 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
+    printf 'TEXT\t\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -244,6 +295,12 @@ case "\$*" in
     printf 'TEXT\t'
     cat "$q5_echo_file"
     printf '\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -275,6 +332,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\tRan on `claude-opus-5` at `high` effort using `sha=` conventions and `gsub("\\n";" ")`; recorded here: <!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -296,6 +359,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t` Ran on `claude-opus-5` at `high` effort using `sha=` conventions and `gsub("\\n";" ")`; recorded here: <!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -315,6 +384,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t| `claude-opus-5` | <!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 --> |\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -336,7 +411,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t```\001never closes in this body\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
     printf 'TEXT\t<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -358,6 +438,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t````\001```\001````\001some text\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -378,6 +464,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t    ```\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -405,7 +497,7 @@ case "$evidence_q14" in
   *"marker-shaped text matching this gate does appear on PR #279"*) : ;;
   *) fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell doesn't say quoted occurrences were seen and ignored: $evidence_q14" ;;
 esac
-bare_q14='no model-record marker found for stage(s) Discovery, Planning, Test, Implementation, searched in PR #279'"'"'s body/comments and its closing issue(s)'
+bare_q14='no model-record marker found for stage(s) Discovery, Planning, Test, Implementation, searched in PR #279'"'"'s body/comments/reviews and its closing issue(s)'
 [ "$evidence_q14" != "$bare_q14" ] || fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell reads as a bare 'no marker found', with no mention of the quoted occurrences that do exist"
 
 # =========================================================================
@@ -423,6 +515,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\twe should add a model-record: stage=Test marker\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -462,6 +560,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t```\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -480,8 +584,14 @@ case "$*" in
   __CALL_A__)
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
-    printf 'ISSUE\t265\n'
+    printf 'TITLE\tCloses #265\n'
     printf 'TEXT\t`<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->`\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -511,6 +621,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t    <!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -529,6 +645,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<pre><code>\001<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\001</code></pre>\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -555,6 +677,12 @@ case "$*" in
     printf 'STATE\tOPEN\n'
     printf 'TEXT\twe should add a model-record: stage=Test marker\n'
     exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
+    exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
@@ -574,6 +702,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\twe already ran pre-merge-review:done on this PR\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'
@@ -596,6 +730,12 @@ case "$*" in
     printf 'HEAD\t6e00a8c38bf18f19cd53084b5c77ae476c1e74e6\n'
     printf 'STATE\tOPEN\n'
     printf 'TEXT\t<!-- model-record: stage=Test model=sonnet -->\n'
+    exit 0 ;;
+  __CALL_A_COMMENTS__)
+    printf ''
+    exit 0 ;;
+  __CALL_A_REVIEWS__)
+    printf ''
     exit 0 ;;
   __CALL_B__)
     printf 'check\tSUCCESS\tpass\n'

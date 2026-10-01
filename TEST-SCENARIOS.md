@@ -1664,3 +1664,209 @@ something new is being added.
   rendered table pasted into the PR changes no status; and the six-row
   shape, the four-status vocabulary and the absence of any write path
   are unchanged
+
+### S152 — role-label-staleness.sh detects role:<name> label staleness for one issue
+**Covers:** F35
+- Given: a `fake_gh_bin` recording of REST-only `gh api` answers — the
+  issue's own body/labels, the issue's comments, the issue's timeline
+  (candidate PRs via `cross-referenced` events), each candidate PR's
+  current title AND body (for the closing-keyword filter — this repo's
+  own release-branch PRs carry the keyword only in the title, never the
+  body), and each kept PR's comments AND reviews (a PR review's own
+  body, not just a plain comment, is where this pipeline's Review-stage
+  marker actually gets posted); no `gh api graphql`, `gh issue view` or
+  `gh pr view` call anywhere (both GraphQL-backed and blocked in Claude
+  Code sessions, and `closedByPullRequestsReferences`/
+  `closingIssuesReferences` are empty for any PR targeting a non-default
+  branch, silently missing every epic #295 work-item PR — the redesign
+  this scenario now covers, issue #315's Architect comment of
+  2026-09-28, with two round-2 review corrections: matching the PR
+  title as well as the body, and reading PR reviews)
+- When: `role-label-staleness.sh <issue-number>` runs with that fake
+  `gh` ahead of `PATH`
+- Then: it prints exactly one verdict line,
+  `role-label-staleness: issue #<n> — <status> (<detail>)`, with
+  `<status>` one of `not-started`, `in-sync`, `stale`, `indeterminate`; a
+  label matching the latest evidenced stage, or one with zero markers
+  evidenced anywhere, is `in-sync`; a label naming an earlier stage than
+  the latest evidence is `stale`, naming both the label present and the
+  label the evidenced stage implies; no label and no marker anywhere is
+  `not-started`, distinctly from no label with at least one marker
+  (`stale`); a timeline that succeeds with zero candidate PRs computes a
+  normal verdict from issue-only evidence, never `indeterminate` on its
+  own — distinct from the timeline call itself failing, which must never
+  be read as "zero linked PRs"; a PR that cross-references the issue
+  without a real closing keyword in either its LIVE title or body
+  (`close(s|d)`/`fix(es|ed)`/`resolve(s|d)`, an optional `:`, then
+  whitespace, then `#<issue>`, case-insensitive) is excluded and never
+  even gets a comments or reviews call — including a prose near-miss
+  that merely mentions the issue number later in a sentence, which the
+  keyword's own grammar rejects, and including a title/body that only
+  quotes the keyword shape inside a fenced block, inline code span, or
+  blockquote (issue #317 F-7: the filter runs against `live_text()`-
+  stripped title+body, not the raw text, so a merely-illustrative quote
+  never counts as a real closing reference); a cross-referenced timeline
+  event whose own source PR belongs to a different repository — even
+  one that happens to share a same-numbered PR in this repo — is
+  excluded from PR discovery entirely (issue #317 F-8, verified against
+  the real `gh api .../timeline`-shaped JSON, since a mocked `gh` can't
+  exercise jq's own server-side filtering); two-or-more `role:<name>`
+  labels at once is `indeterminate`, naming every one found, and an
+  unrelated label alongside a single one is never counted as multiple; a
+  live marker matched by the anchor but with no recognized `stage=`
+  value, on the issue or any kept PR, forces `indeterminate` for the
+  whole run even when another kept PR's marker is well-formed, including
+  one closed with no whitespace before its own `-->` delimiter (issue
+  #317 F-5: `stage=Review-->` must still parse as `Review`, not as a
+  malformed `Review--` token); markers split across multiple kept PRs
+  combine by union/max, order-independent of which PR the timeline names
+  first; a marker merely quoted in a fenced block, code span or
+  blockquote is not counted as live evidence; a failed lookup — the
+  issue's own comments, the timeline itself, or a candidate/kept PR's
+  title/body, comments, or reviews — degrades the verdict to
+  `indeterminate` only when the evidence read so far doesn't already
+  rule out what the failed lookup could reveal (a verdict already
+  `stale`, or already `in-sync` at the last stage, from what WAS read,
+  is never degraded — including specifically when the issue's own
+  comments fail but a kept PR's reviews call still succeeds and supplies
+  evidence all the way to the ceiling stage, issue #317 F-10, closing a
+  mutation-testing gap an earlier review round found unpinned); a failed
+  issue-body lookup exits 4 with nothing on stdout, while every other
+  failed lookup only sets its own flag and never changes the exit code;
+  a non-numeric issue-number argument is a usage error (exit 2), not an
+  internal error (exit 4, issue #317 F-4 — matching the empty-argument
+  case, not the issue-unreadable case, and making no `gh` call at all);
+  with no `gh` on `PATH` it exits 3; the run makes no `gh` write call and
+  the script's source contains none — verified as a conjunction with a
+  `fake_gh_bin` fallthrough witness that is actually reachable (proved
+  by a positive control that calls the fake `gh` directly with an
+  unanswered argv and confirms the witness fires), not merely a source
+  grep alone
+
+### S153 — live_text()'s fence-detection regex is mawk-portable
+**Covers:** F34, F35
+- Given: the real, shipped `live_text()` function re-extracted verbatim
+  at test time from both `compliance-evidence.sh` and
+  `role-label-staleness.sh` (the same no-stale-copy technique
+  S151's Q21-Q23 already use, with the extraction itself asserted
+  non-empty and the two files' bodies asserted byte-identical before any
+  golden case runs, so a bad extraction or a drifted copy can't silently
+  make the test re-check the wrong function), run under mawk
+  specifically — not gawk, which is this repo's usual local/CI `awk` and
+  does not exhibit any of the failure modes below
+- When: a simple 3-character fence, a 5-character wrapper fence around
+  an inner line that itself contains 3 backticks, a shorter (3-character)
+  closing run that must not close a longer (5-character) opening run
+  (D5/D6), a real `model-record` marker after a closed fence, a line
+  starting with a 1-backtick inline-code run followed by a real marker,
+  and a real backtick fence-line nested inside an already-open tilde
+  fence, are each run through it
+- Then: every case matches the same output gawk already produces — a
+  panic in mawk's regex compiler on the original grouped-alternation
+  form (`^ {0,3}(`{3,}|~{3,})`), mawk's `{n,}` matching exactly `n`
+  rather than greedily (silently truncating a longer fence run and
+  corrupting the recorded fence length even where it doesn't panic —
+  distinct from the panic and not caught by fixing that alone), and,
+  independently, an older mawk build (1.3.4 20200120, the default `awk`
+  on Ubuntu 22.04) not parsing the bounded interval `{0,3}` at all and
+  so never detecting a fence — are all three fixed, the third by
+  replacing `{0,3}` with the brace-free `? ? ?`, verified end to end
+  under both mawk builds and gawk, with the guard against a 1- or
+  2-character run wrongly opening a fence (and swallowing every later
+  marker) covered explicitly; fails loudly, naming why, if mawk isn't
+  installed to run this exact check with
+
+### S154 — classify-review-depth.sh classifies a PR quick/thorough by Reviewer's six trigger categories
+**Covers:** F36
+- Given: `fake_gh_bin` recordings of REST-only `gh api` answers — a PR's changed-file path
+  list and its description/body text — captured by actually running a draft/prototype of
+  `classify-review-depth.sh` against a recording fake `gh` (this repo's own fixture-hygiene
+  convention, same technique S150-S153 already use), never hand-retyped; no `gh api graphql`,
+  `gh pr view` or `gh issue view` call anywhere, matching `role-label-staleness.sh`'s own
+  REST-only precedent and the defect history (#318/#320/#323/#341) that motivates it; variants
+  of this recording per subcase below
+- When: `classify-review-depth.sh <pr-number>` runs with each fake `gh` ahead of `PATH`, with
+  and without `--force-thorough`
+- Then:
+  1. **Quick, no trigger match:** a PR whose changed-file paths and description touch none of
+     the six categories (Auth/session, Secrets/credentials, Deploy/CI configuration,
+     Infrastructure as Code, Sensitive/personal data, Untrusted input) — e.g. a
+     `docs/README.md`-only change with no category-shaped language in the description —
+     classifies `quick`, and the printed evidence names zero matched categories explicitly
+     (not merely omits them).
+  2. **Real trigger match, Secrets/credentials:** a PR whose changed-file paths include a
+     file plausibly carrying a credential shape (e.g. `.github/workflows/deploy.yml` adding a
+     new `secrets.`-referencing step, or a path containing `credentials`/`.env`) classifies
+     `thorough`, and the printed evidence names `Secrets/credentials` as a matched category.
+  3. **Real trigger match, Untrusted input:** a PR whose description text describes handling
+     external/webhook/API input (independent of file path shape, to prove the classifier
+     reads description text and not only paths) classifies `thorough`, naming
+     `Untrusted input` as the matched category.
+  4. **Multiple categories matched, evidence lists all of them:** a PR shaped to match both
+     Secrets/credentials and Deploy/CI configuration classifies `thorough` and the evidence
+     names both categories, not just the first one found — proves category matching doesn't
+     short-circuit after the first hit (needed for scenario 6 below to be meaningful).
+  5. **`--force-thorough` overrides a zero-match PR:** the same zero-trigger PR from scenario 1,
+     run with `--force-thorough`, classifies `thorough`; the printed evidence states the
+     override was the reason (zero categories matched, override forced the mode) rather than
+     falsely implying a category match — a caller reading the evidence later must be able to
+     tell "forced" apart from "actually matched," since #307 will eventually want to use real
+     trigger-match data, not override noise, as its ceremony-cost evidence.
+  6. **`--force-thorough` is a strict superset, never a substitute:** the same multi-category
+     PR from scenario 4, run with `--force-thorough`, still classifies `thorough` and still
+     names the real matched categories (not just "forced") — the override adds, it doesn't
+     paper over/replace genuine evidence.
+  7. **Evidence surface stays match-only, never emits a dispatch count:** across every
+     `thorough` case above (1, 3, or however many of the six categories matched), the
+     classifier's stdout never prints or implies a number of lens-Adapters, a fork count, or
+     any per-category multiplier — only the category name(s). This is the one piece of the
+     fixed-N=2-not-category-derived property (A13) that is actually this script's own
+     contract to hold: `classify-review-depth.sh` supplies evidence, never a count, so nothing
+     in its own interface can regress toward "N grows with match count" even before dispatch
+     wiring exists. (The dispatch side of that property — that `pre-merge-review`'s inline
+     branching always forks exactly Reviewer+2 lens-Adapters regardless of how many categories
+     this script's evidence names — is flagged as a separate, harder-to-mechanically-test gap
+     in QA's issue comment; A13 deliberately keeps that branching as prose in
+     `pre-merge-review/SKILL.md` rather than its own script, which is exactly what makes it
+     not unit-testable the way this scenario tests the classifier itself.)
+  8. **REST lookup failure fails open toward `thorough`, not `quick`:** `gh` present on
+     `PATH` but the changed-files or description lookup itself fails (non-zero exit from the
+     underlying `gh api` call, simulated via the fake `gh`) still prints a verdict —
+     `thorough` — rather than erroring out or defaulting to `quick`; the evidence states the
+     lookup failed and that the mode was chosen conservatively, not that a category actually
+     matched. (See QA's issue comment for why `thorough`, not `quick`, is the right fail-open
+     direction — a real call, not obvious either way, made explicit here rather than left to
+     Fullstack Developer to guess at implementation time.)
+  9. **No `gh` on `PATH` is a harder failure than a lookup failure:** with `gh` entirely
+     absent from `PATH`, the script exits non-zero (matching `role-label-staleness.sh`'s own
+     "no `gh` on `PATH`" exit-3 precedent) with nothing on stdout — distinct from scenario 8's
+     "gh present, one call failed" case, which still produces a verdict. A caller (the
+     `pre-merge-review` dispatch instructions) must be able to tell "no usable answer at all"
+     apart from "got an answer, chose thorough out of caution" — collapsing the two into the
+     same behavior would hide a broken environment behind a plausible-looking verdict.
+  10. **No write path:** the run makes no `gh` write call (no label, no comment, no edit,
+      no merge) under any subcase above, and the script's own source contains none — same
+      read-only conjunction S150/S152 already verify for their own scripts, checked here with
+      a `fake_gh_bin` fallthrough witness that is actually reachable (a positive control
+      confirms the witness fires on an unanswered argv), not a source grep alone.
+  11. **`--lens-adapter-count` prints `LENS_ADAPTER_COUNT`:** `classify-review-depth.sh
+      --lens-adapter-count` (no `gh` on `PATH` required — the flag short-circuits before any
+      `gh` lookup) prints `2` and exits 0. Added post-review (PR #353, Reviewer's F1): the
+      seam existed and was manually verified but had zero automated coverage, directly
+      contradicting the PR's own stated rationale ("a future drift shows up as a test
+      failure, not a silent mismatch") — a typo'd constant or a broken flag check would have
+      stayed CI-green.
+  12. **Real trigger match, Auth/session (file-path signal):** a PR whose changed-file paths
+      include a path segment naming `auth` (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Auth/session` as the matched category.
+  13. **Real trigger match, Infrastructure as Code (file-path signal):** a PR whose
+      changed-file paths include a `.tf` file (with no other category-shaped language in its
+      description) classifies `thorough`, naming `Infrastructure as Code` as the matched
+      category.
+  14. **Real trigger match, Sensitive/personal data (description-text signal):** a PR whose
+      description text names GDPR/personal-data handling (independent of file path shape)
+      classifies `thorough`, naming `Sensitive/personal data` as the matched category.
+      Scenarios 12-14 added post-review (PR #353, Reviewer's F2): only 3 of the six categories
+      (Secrets/credentials, Deploy/CI configuration, Untrusted input) had a real-match fixture
+      before; a future regex edit breaking Auth/session, Infrastructure as Code, or
+      Sensitive/personal data would have gone uncaught.
