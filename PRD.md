@@ -622,8 +622,10 @@ coverage has to come from three local-and-CI-based layers:
   limitation as the existing hooks, and F6's outdated-adoption notice makes
   it visible. `pre-commit` does not run the full `./check` (#378): a project
   opts in by having an executable `check-commit` at its root, the fast static
-  subset, which the hook runs under a 30 s budget. A static failure blocks, a
-  timeout lets the commit through with a warning, red tests never block, and
+  subset, which the hook runs under a 30 s budget (`COMMIT_CHECK_BUDGET`, a
+  positive integer; anything else is rejected, never read as a timeout). A
+  static failure blocks, a timeout (TERM, a short grace, then KILL to the
+  whole process group) lets the commit through with a warning, red tests never block, and
   the full suite runs in CI (`CHANGES.md` `ci-commit-check`).
 - **CI detects commits on `main` that don't come from a PR** (W27). This is
   detection rather than prevention — the command has already run by then —
@@ -634,11 +636,11 @@ coverage has to come from three local-and-CI-based layers:
 The three layers are deliberately not interchangeable. W24 and W26 prevent,
 W27 catches what slips through.
 
-As of issue #377, the `pre-commit` hook runs `./check` without git's
-repo-local variables (cleared for that child process only, via
-`lib/git-env.sh`), so a `./check` that makes fixture git repos can't act on
+As of issue #377, the `pre-commit` hook runs the declared `check-commit`
+without git's repo-local variables (cleared for that child process only,
+via `lib/git-env.sh`), so a check that makes fixture git repos can't act on
 the committing repo; git's own commit flow keeps them. If `lib/git-env.sh`
-is missing, the hook warns and skips `./check` rather than run it
+is missing, the hook warns and skips `check-commit` rather than run it
 unisolated (S166, S167).
 
 ### F18 — Securing work without relying on the session end

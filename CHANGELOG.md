@@ -13,7 +13,7 @@ point.
 
 ## Unreleased
 
-- **Fix #378: `pre-commit` no longer runs the full `./check`.** It runs the project's declared `check-commit` within a 30 s budget: a static failure blocks, a timeout warns, and the test suite never runs at commit time. A project without `check-commit` gets one warning line, and the full `./check` runs in CI as before. Adopters with a `check`: see `CHANGES.md` `ci-commit-check`.
+- **Fix #378: `pre-commit` no longer runs the full `./check`.** It runs the project's declared `check-commit` within a 30 s budget: a static failure blocks, a timeout (TERM, 2 s grace, then KILL to the whole process group) warns, a non-integer `COMMIT_CHECK_BUDGET` is rejected, and the test suite never runs at commit time. A project without `check-commit` gets one warning line, and the full `./check` runs in CI as before. Adopters with a `check`: see `CHANGES.md` `ci-commit-check`.
 
 - **Fix #377: `./check` and the test suite are isolated from git's repo-local environment.**
   git exports `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_PREFIX` and similar variables to hooks; a

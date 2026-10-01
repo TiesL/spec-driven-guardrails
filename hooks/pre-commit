@@ -88,7 +88,9 @@ fi
 # Fail-closed on a real failure within the budget; fail-open when the check
 # can't run (no lib/git-env.sh) or exceeds COMMIT_CHECK_BUDGET seconds:
 # "couldn't verify" is not "verified and red". The budget is enforced by a
-# plain-bash watchdog (no GNU timeout on stock macOS).
+# plain-bash watchdog (no GNU timeout on stock macOS): TERM to the check's
+# process group, a short grace, then KILL. COMMIT_CHECK_BUDGET must be a
+# positive integer; anything else is rejected, never read as a timeout.
 #
 # #377 (A19): git exports repo-local variables (GIT_DIR, GIT_INDEX_FILE,
 # GIT_PREFIX, ...) to this hook. They are cleared for the check-commit child
@@ -96,9 +98,14 @@ fi
 # lib/git-env.sh it is skipped rather than run uncleared.
 project_dir="$(git rev-parse --show-toplevel 2>/dev/null)"
 git_env_lib="$own_dir/../lib/git-env.sh"
-COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET:-30}"
+COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET-30}"
 if [ -n "$project_dir" ] && [ -x "$project_dir/check-commit" ] && [ ! -r "$git_env_lib" ]; then
   echo "warning: git hooks couldn't find lib/git-env.sh — check-commit skipped (it can't run isolated from this repo's git environment)." >&2
+elif [ -n "$project_dir" ] && [ -x "$project_dir/check-commit" ] \
+  && ! grep -qE '^[1-9][0-9]*$' <<<"$COMMIT_CHECK_BUDGET"; then
+  echo "Blocked by the git hook: COMMIT_CHECK_BUDGET must be a positive integer (seconds), got '${COMMIT_CHECK_BUDGET}'." >&2
+  echo "Fix or unset COMMIT_CHECK_BUDGET (default 30); check-commit was not run." >&2
+  exit 1
 elif [ -n "$project_dir" ] && [ -x "$project_dir/check-commit" ]; then
   # shellcheck source=lib/git-env.sh
   . "$git_env_lib"
@@ -113,10 +120,16 @@ elif [ -n "$project_dir" ] && [ -x "$project_dir/check-commit" ]; then
   set -m
   ( git_local_env_clear; cd "$project_dir" && exec "$project_dir/check-commit" ) >"$cc_out" 2>&1 &
   cc_pid=$!
-  ( sleep "$COMMIT_CHECK_BUDGET"; : >"$cc_flag"; kill -TERM -- "-$cc_pid" ) >/dev/null 2>&1 &
+  # Watchdog: TERM, 2 s grace, KILL, all to the check's group.
+  ( sleep "$COMMIT_CHECK_BUDGET"; : >"$cc_flag"; kill -TERM -- "-$cc_pid"
+    sleep 2; kill -KILL -- "-$cc_pid" ) >/dev/null 2>&1 &
   cc_watchdog=$!
   wait "$cc_pid" 2>/dev/null
   cc_status=$?
+  # The leader may have died on TERM while a grandchild that ignores TERM
+  # lives on in the group (and the watchdog is about to be stopped below):
+  # after a timeout, KILL whatever is left in the group.
+  [ -e "$cc_flag" ] && kill -KILL -- "-$cc_pid" >/dev/null 2>&1
   kill -TERM -- "-$cc_watchdog" >/dev/null 2>&1
   wait "$cc_watchdog" 2>/dev/null
   set +m

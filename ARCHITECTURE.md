@@ -166,14 +166,14 @@ references stay valid.
   - `git_local_env_assert_clear` returns non-zero, naming the first one
     still set.
 - **Callers:**
-  1. `hooks/pre-commit` clears the list only for the `./check` child,
+  1. `hooks/pre-commit` clears the list only for the `check-commit` child,
      inside the command substitution. git's own commit flow (including a
      partial commit's temporary index) and the hook's branch and issue
      checks keep the real values; `project_dir` is computed before the
-     clear, so the committing worktree's own `./check` runs. If
-     `lib/git-env.sh` is missing, the hook warns and **skips** `./check`
+     clear, so the committing worktree's own `check-commit` runs. If
+     `lib/git-env.sh` is missing, the hook warns and **skips** `check-commit`
      (the commit itself fails open, like a missing `rules.sh`): running
-     `./check` unisolated is the hazard itself.
+     it unisolated is the hazard itself.
   2. `test/lib.sh` clears the list when sourced, so a single case run by
      hand is covered too, and `sandbox_guard` refuses loudly if one is set
      again, the same way it refuses a real `HOME`.
@@ -183,13 +183,13 @@ references stay valid.
   `GIT_EDITOR`, `CLAUDE_WORKFLOW_GUARDRAILS_OFF`. `GIT_CONFIG_PARAMETERS`
   and `GIT_CONFIG_COUNT` *are* cleared: they carry the outer command's
   `git -c` settings, which belong to the outer repo.
-- **Accepted cost:** a `./check` that inspects *staged* content during a
+- **Accepted cost:** a `check-commit` that inspects *staged* content during a
   partial or `-a` commit sees the real index, not git's temporary one. No
-  known `./check` does this; a deliberately named variable can carry the
+  known `check-commit` does this; a deliberately named variable can carry the
   path if one ever needs to.
 - **Violated when:** a second copy of the list appears (in the hook, the
   test library or a test case; S168 checks this), or the hook clears the
-  variables in its own process instead of the `./check` child's.
+  variables in its own process instead of the `check-commit` child's.
 - **Rejected:** a static list only (misses future git variables); a runtime
   list only (degrades silently if the command fails); clearing in
   `test/run.sh` (misses a single case run by hand); clearing in `check`
@@ -246,7 +246,7 @@ blocked indefinitely. Numbering continues after A19/A20.
   or passes arguments to `check-commit`.
 
 ### A22 — A 30 s budget, enforced portably, where a timeout fails open
-- **Constant:** `COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET:-30}"` in
+- **Constant:** `COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET-30}"` (default only when unset: an empty value is rejected) in
   `hooks/pre-commit`, overridable from the environment for tests.
 - **Mechanism (bash 3.2, no `timeout`/`perl`):** `set -m` so each background
   job has its own process group; `check-commit` runs in one, a watchdog
@@ -254,6 +254,15 @@ blocked indefinitely. Numbering continues after A19/A20.
   `wait`s, then kills the watchdog's group (so the orphaned `sleep` dies
   too). The flag file tells a timeout apart from a real failure. The group
   kill reaches `check-commit`'s children and grandchildren.
+- **KILL fallback:** the watchdog sends TERM, waits a 2 s grace, then KILL to
+  the group, so a check that ignores TERM cannot hang the commit. Because
+  the watchdog is stopped as soon as the leader dies, the hook also KILLs
+  the group after the `wait` whenever the flag is set: a grandchild that
+  ignores TERM outlives its leader otherwise.
+- **Budget validation:** `COMMIT_CHECK_BUDGET` must match `^[1-9][0-9]*$`.
+  Anything else (empty, 0, negative, non-numeric) blocks the commit with a
+  message naming the variable, before `check-commit` runs: a bad value would
+  otherwise make `sleep` fail at once and read a real failure as a timeout.
 - **On timeout:** the commit goes through with one warning naming the budget
   and CI. "Couldn't verify" is not "verified red" (the same distinction the
   hook makes for a missing `rules.sh`). The warning on every commit is the
