@@ -28,6 +28,11 @@ point.
   git's temporary one. No `CHANGES.md` entry: there is no choice to make (ARCHITECTURE.md
   A20).
 
+- **Multi-agent workflow is adoptable** (#369): `role-contracts` moved from `wip/` to
+  `skills/`, so `adopt.sh` installs it; new opt-in `CHANGES.md` entry
+  `process-multi-agent-roles` (default `question`). v0.2.0's "not adoptable yet" caveat in the
+  README no longer applies.
+
 ## v0.2.0 — multi-agent development workflow (2026-09-30)
 
 Epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295): the multi-agent

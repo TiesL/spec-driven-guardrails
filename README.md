@@ -4,8 +4,8 @@ Guardrails for an AI coding agent working past toy-project size: what was decide
 written down, and nothing merges without a traceable link back to a reviewed requirement.
 Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
 
-**v0.2.0** (see `CHANGELOG.md`): this repo now builds itself with a five-role multi-agent
-pipeline. That pipeline isn't part of what an adopted project gets yet — see
+**v0.2.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
+pipeline, and an adopted project can opt into it — see
 [How this repo builds itself](#how-this-repo-builds-itself).
 
 ## The problem, and the shape of the fix
@@ -155,8 +155,8 @@ what's still open. See the `adoption-registry` skill for the full mechanism.
 
 Everything above is what an adopted project gets: one agent session carrying a change through
 every stage of the diagram, with a human at the approval points. This repo follows that
-workflow too, and adds two practices of its own on top. Neither is part of the adoptable
-workflow yet.
+workflow too, and adds two practices of its own on top. The five-role pipeline is adoptable
+(an opt-in `CHANGES.md` question); the release-branch tier is not.
 
 ### Five roles instead of one session
 
@@ -165,7 +165,7 @@ agent roles rather than one session doing everything: **Product** (are we buildi
 thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
 works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
 final gate). Each role gets a quotable contract — responsibilities, what it may write, and
-Reviewer's security triggers — in `wip/multi-agent-development/role-contracts/SKILL.md`. When
+Reviewer's security triggers — in the `role-contracts` skill (`skills/role-contracts/SKILL.md`). When
 roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
@@ -186,9 +186,12 @@ happened on 2026-09-30 (#328, all five roles, with genuine findings caught and f
 stage) and settled it: v0.2.0. The full design record lives in
 `wip/multi-agent-development/`.
 
-None of this reaches an adopted project yet: the role contracts aren't installed as a skill,
-and `CHANGES.md` has no entry for a project to adopt. Taking it outward is a separate step
-that hasn't been taken.
+**Adopting it.** `adopt.sh` symlinks the `role-contracts` skill into every adopted project
+like any other skill. Whether the project actually follows the pipeline is the opt-in
+`process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
+preference); `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
+The three evidence scripts run from the guardrails clone and need `gh`.
+contracts this way is tracked in #369.
 
 ### A release branch between work items and `main`
 

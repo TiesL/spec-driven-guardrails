@@ -1,11 +1,12 @@
 ---
 name: role-contracts
 description: >
-  The five role contracts for this repo's multi-agent workflow (Product,
+  The five role contracts for the multi-agent workflow (Product,
   Architect, QA, Fullstack Developer, Reviewer) — responsibilities,
   per-role write/action scope (A4), floor-or-ceiling input scope (A8), and
   Reviewer's security trigger list. Quoted directly into a role's dispatch
-  prompt; not auto-loaded (see ARCHITECTURE-MULTI-AGENT-WIP.md A4/A8).
+  prompt, by an orchestrating session or by hand. Use when dispatching or
+  reviewing a Product, Architect, QA, Fullstack Developer, or Reviewer role.
 ---
 
 # Role descriptions and contracts
@@ -18,6 +19,13 @@ per role") — this file is a reformatting for dispatch-time use, not a new deci
 write/action scope and A8 floor-or-ceiling input scope below are sourced the same way from
 `ARCHITECTURE-MULTI-AGENT-WIP.md`'s own A4/A8 decisions. If this file and either source
 document ever disagree, the source document wins and this file is stale.
+
+**Where those source documents live.** `PRD-MULTI-AGENT-WIP.md` and
+`ARCHITECTURE-MULTI-AGENT-WIP.md`, and every `wip/` path named below, are paths in the
+`spec-driven-guardrails` repo under `wip/multi-agent-development/`, not in your project. In an
+adopted project, read them from the clone `SPEC_DRIVEN_GUARDRAILS_DIR` points at. The contracts
+below are complete enough to dispatch a role without them; the sources only settle a dispute
+about what a contract is meant to say.
 
 **That source document has since been translated to English (issue #237).** This file's own
 content is a faithful translation/reformatting of that source, not an independent English

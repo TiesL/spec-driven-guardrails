@@ -1155,7 +1155,7 @@ bidirectionally, so `S152` can't resolve without this heading.
 
 Read-only script: given a PR number, reads its changed-file paths and its
 own title+body text, matches both against Reviewer's existing six
-security-review trigger categories (`wip/multi-agent-development/
+security-review trigger categories (`skills/
 role-contracts/SKILL.md`'s "Security review triggers" table — Auth/
 session, Secrets/credentials, Deploy/CI configuration, Infrastructure as
 Code, Sensitive/personal data, Untrusted input), and prints `review-depth:
@@ -1197,6 +1197,53 @@ This single heading exists as the same narrow, stated exception `F34` and
 itself; applied here again to real new functionality, not premature
 promotion of the WIP design): `check-traceability.sh` enforces `Covers:`
 bidirectionally, so `S154` can't resolve without this heading.
+
+### F37 — The multi-agent workflow is adoptable, opt-in (issue #369)
+
+v0.2.0 shipped the five-role pipeline as something only this repo used:
+the role contracts lived under `wip/`, which `adopt.sh` doesn't install,
+and `CHANGES.md` had no entry, so `pending-changes.sh` asked an adopted
+project nothing. An adopting project that tried to take up v0.2.0 found
+it "not adoptable yet". This feature closes that gap without adding an
+orchestrator: the offer stays contracts plus read-only evidence.
+
+What an adopted project can do afterwards:
+
+- **Be asked.** One `CHANGES.md` entry, `process-multi-agent-roles`,
+  `Default: question` (no general preference: it multiplies agent
+  sessions per work item and has only been run on this repo), `Applies
+  if: always`. Every adopted project sees it as pending at its next
+  session; `question` rows never seed at adoption.
+- **Dispatch the five roles from its own checkout.** `role-contracts`
+  lives under `skills/`, so `adopt.sh` symlinks it like every other
+  skill. Every pointer in it resolves from an adopted project: methods it
+  relies on are named as installed skills (`grilling`,
+  `codebase-design`, `model-choice`, `tdd-seams`, `pre-merge-review`),
+  not as paths into this repo's `wip/.../vendor/`; anything that does
+  stay in this repo (the WIP design sources, used only to settle a
+  dispute about a contract's intent) is named as living in the clone
+  `SPEC_DRIVEN_GUARDRAILS_DIR` points at. The human who receives
+  escalations and decisions is named by role (the project's human
+  decision-maker), not by person.
+- **Know what the run needs.** The skill states the fixed stage order
+  (Discovery, Planning, Test, Implementation, Review), the
+  `model-record` marker each stage leaves (`model-choice`), the five
+  `role:<name>` labels (`role:product`, `role:architect`, `role:qa`,
+  `role:dev`, `role:reviewer`) the project must create in its own
+  GitHub repo if it wants `role-label-staleness.sh` to say anything, and
+  that every role takes part in every change (no phase skipping in v1).
+- **Optionally read the evidence.** `compliance-evidence.sh`,
+  `role-label-staleness.sh` and `classify-review-depth.sh` stay at this
+  repo's root (not copied, not run by any `check`), and are invoked by
+  path from the clone with the adopted project's checkout as working
+  directory; they address `repos/{owner}/{repo}` from that directory's
+  remote, need `gh`, and never write. This narrows the "no propagation to
+  adopted projects" clause in `F34`-`F36` to "not installed or wired";
+  invoking them from the clone is supported.
+
+Not part of this feature: an orchestrator, the release-branch tier
+(still this repo's own practice), and shortening the pipeline per change
+type.
 
 ---
 

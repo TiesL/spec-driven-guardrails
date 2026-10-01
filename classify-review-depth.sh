@@ -14,7 +14,7 @@
 #
 # Classifier basis (A13, deliberately narrow — no size/files-touched
 # dimension, Architect explicitly rejected it): Reviewer's own six
-# trigger categories (wip/multi-agent-development/role-contracts/
+# trigger categories (skills/role-contracts/
 # SKILL.md's "Security review triggers" table) — Auth/session, Secrets/
 # credentials, Deploy/CI configuration, Infrastructure as Code,
 # Sensitive/personal data, Untrusted input. Matched against the PR's own
@@ -144,8 +144,8 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 3
 fi
 
-# --- Fixed six-category basis, Reviewer's own list, verbatim (wip/
-# multi-agent-development/role-contracts/SKILL.md's "Security review
+# --- Fixed six-category basis, Reviewer's own list, verbatim (skills/
+# role-contracts/SKILL.md's "Security review
 # triggers" table). Indexed 0-5 only, never `[@]` (see the bash-3.2 note
 # above). Each pattern is a case-insensitive extended regex checked
 # against BOTH the changed-file-path corpus and the title+body corpus —
