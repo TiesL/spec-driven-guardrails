@@ -2003,3 +2003,37 @@ something new is being added.
   `ci-commit-check`; `check-commit` is defined by `check-convention`; S144
   describes `check-commit`; the root `check-commit` is executable and runs
   the static part of `check`
+
+### S173 — a check-commit that ignores TERM cannot hang the commit: the watchdog escalates to KILL
+**Covers:** F17
+- Given: an adopted project on a feature branch whose `check-commit`
+  runs for 25 s while ignoring TERM, in one fixture itself and in the
+  other through a grandchild that ignores TERM (issue #378, review
+  finding 1 and 2)
+- When: a commit is attempted with `COMMIT_CHECK_BUDGET=2`
+- Then: after the budget the watchdog sends TERM, then after a short
+  grace period KILL, to the process group; the commit goes through well
+  before the 25 s are over, with a warning that mentions the budget
+- And: no process of `check-commit` survives, including the grandchild
+  that ignored TERM
+
+### S174 — COMMIT_CHECK_BUDGET must be a positive integer; a bad value is rejected, never read as a timeout
+**Covers:** F17
+- Given: an adopted project on a feature branch whose `check-commit`
+  really fails (exit 1 after one second, printing a marker line) (issue
+  #378, review finding 3)
+- When: a commit is attempted with `COMMIT_CHECK_BUDGET` set to `abc`,
+  empty, `0`, `-3`, `1.5` or `10s`
+- Then: the value is rejected with a message that names
+  `COMMIT_CHECK_BUDGET`; the real failure is not waved through, so no
+  commit lands, and nothing says the check "exceeded" a budget
+
+### S175 — PRD and ARCHITECTURE no longer say the pre-commit hook runs ./check
+**Covers:** F17
+- Given: the PRD paragraph that starts "As of issue #377, the `pre-commit`
+  hook" and the ARCHITECTURE A19 section (issue #378, review finding 4, AC10)
+- When: they are read
+- Then: the PRD paragraph and A19's first caller (`hooks/pre-commit`)
+  name `check-commit` and no longer say the hook runs, clears for or
+  skips `./check`; A19's "Violated when" no longer speaks of the
+  `./check` child
