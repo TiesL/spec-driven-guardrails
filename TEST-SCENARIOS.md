@@ -1887,6 +1887,147 @@ something new is being added.
       before; a future regex edit breaking Auth/session, Infrastructure as Code, or
       Sensitive/personal data would have gone uncaught.
 
+### S155 — adopt.sh installs role-contracts as a skill, with no wip/ file needed
+**Covers:** F37
+- Given: a guardrails clone with its `wip/` directory removed, and a fresh
+  git project (issue #369, AC1)
+- When: `adopt.sh` runs on the project from that clone
+- Then: `.claude/skills/role-contracts` is a symlink to the clone's
+  `skills/role-contracts`, and the `SKILL.md` it resolves to is readable
+  and declares `name: role-contracts`
+
+### S156 — process-multi-agent-roles is asked, never seeded
+**Covers:** F37
+- Given: a fresh project right after adoption, and a copy of a frozen,
+  already-adopted project (`tennis-invoicing` baseline) with no row for
+  `process-multi-agent-roles` (issue #369, AC2)
+- When: `adopt.sh` seeds the fresh project and `pending-changes.sh` runs
+  against both
+- Then: `adopt.sh` seeds no row for it (`Default: question`), and
+  `pending-changes.sh` lists it as pending for both projects
+
+### S157 — The process-multi-agent-roles CHANGES.md entry is well-formed
+**Covers:** F37
+- Given: `CHANGES.md` (issue #369, AC3 and the `CHANGES.md` half of AC7)
+- When: the shared parser (`lib/changes.sh`'s `iterate_entries`) and
+  `./check`'s PR-linkback validation (`pr_links_missing`) read it
+- Then: exactly one `## process-multi-agent-roles` entry exists; the
+  parser reads `Default: question` and `Applies if: always` with no
+  warning; the PR-linkback validation does not flag it; its Question is a
+  single line ending in `?` that opens with a yes/no auxiliary verb; its
+  `PR` field is a full `https://github.com/<owner>/<repo>/pull/<n>` URL
+- And: its "Yes means" names `$SPEC_DRIVEN_GUARDRAILS_DIR/` and all three
+  evidence scripts (`compliance-evidence.sh`, `role-label-staleness.sh`,
+  `classify-review-depth.sh`), and the `role:` labels the project creates
+- Not checked offline: that the PR number is the PR that actually
+  delivers #369. Reviewer verifies that by REST at review time.
+
+### S158 — Every pointer in the installed role-contracts skill resolves from an adopted project
+**Covers:** F37
+- Given: a fresh project adopted from a sandbox clone, and its installed
+  `.claude/skills/role-contracts/SKILL.md` (issue #369, AC4; Architect
+  decision A14(a))
+- When: the skill's file references are checked against what exists in
+  that project
+- Then: no `vendor/` path remains; any paragraph naming a document that
+  exists only in the clone (`PRD-MULTI-AGENT-WIP.md`,
+  `ARCHITECTURE-MULTI-AGENT-WIP.md`, `MULTI-AGENT-WORKFLOW.md`,
+  `wip/multi-agent-development`) says it lives in the clone
+  `SPEC_DRIVEN_GUARDRAILS_DIR` points at; every other backticked `.md` or
+  `.sh` path resolves in the adopted project (at its root, under
+  `.claude/`, or as a file of an installed skill), placeholders like
+  `<slug>` excepted; and no bare `#<n>` issue reference remains, since
+  GitHub would link it to the adopting project's own issue with that number
+
+### S159 — The installed role-contracts skill names the decision-maker by role, not by person
+**Covers:** F37
+- Given: the installed `role-contracts` skill in an adopted project
+  (issue #369, AC5)
+- When: its words are checked
+- Then: the repo owner's first name appears nowhere (checked by SHA-256,
+  so the name itself is never written into this public repo); the
+  owner's GitHub handle appears only as a repository qualifier
+  (`<handle>/<repo>`); no gendered personal pronoun stands in for a
+  specific person; and the skill names "the project's human
+  decision-maker" (or a phrase with `decision-maker`) as who receives
+  decisions and escalations
+
+### S160 — The installed role-contracts skill says how to run the pipeline without the WIP docs
+**Covers:** F37
+- Given: the installed `role-contracts` skill in an adopted project, and
+  the stage order and `role:<name>` labels as `role-label-staleness.sh`
+  defines them (issue #369, AC6; Architect decision A14(b)/(c))
+- When: the skill's tables and text are read
+- Then: one table row per stage, in pipeline order (Discovery, Planning,
+  Test, Implementation, Review), names the stage as its own cell together
+  with that stage's label (`role:product`, `role:architect`, `role:qa`,
+  `role:dev`, `role:reviewer`), so the skill agrees with what the script
+  checks; the `model-record` marker is named and `model-choice` is
+  pointed to for its format, with no literal `<!-- model-record` copy in
+  the skill; the `gh label create` command for the project's own repo is
+  given and `role-label-staleness.sh` is named as what reads the labels;
+  and one paragraph states that every role takes part in every change
+
+### S161 — The evidence scripts, run by path from the clone, address the adopted project's repo
+**Covers:** F37
+- Given: a clone whose own `origin` is spec-driven-guardrails, a project
+  adopted from it whose `origin` is a different repository, and a
+  recording fake `gh` (issue #369, AC7; Architect decision A15)
+- When: `"$SPEC_DRIVEN_GUARDRAILS_DIR/compliance-evidence.sh" 7`,
+  `role-label-staleness.sh 7` and `classify-review-depth.sh 7` each run
+  with the adopted project's checkout as working directory
+- Then: each script makes at least one `gh` call; every call runs from
+  the adopted project's checkout, with no `GH_REPO` override, no `-R` /
+  `--repo` flag and no argument naming spec-driven-guardrails; and every
+  REST path is either `repos/{owner}/{repo}/...` (resolved by `gh` from
+  the working directory's remote) or the adopted project's own
+  `owner/repo`
+- Not checked by this test: that the real `gh` resolves `{owner}/{repo}`
+  from the working directory's remote. QA verified that by hand for #369
+  against a real adopted project (recorded in QA's issue comment)
+
+### S162 — Every script an installed skill tells the agent to run exists where the skill says
+**Covers:** F37
+- Given: a fresh project adopted from a sandbox clone, and every
+  installed skill's `SKILL.md` (issue #369: the human decision that
+  `pre-merge-review`'s `./classify-review-depth.sh` path is fixed here,
+  Architect finding V4)
+- When: each `./<name>.sh` and `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh`
+  invocation in those skills is resolved
+- Then: every `./<name>.sh` exists, executable, at the adopted project's
+  root; every `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh` exists, executable,
+  in the clone; and `pre-merge-review` still runs the classifier, as
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`
+
+### S163 — The README says the multi-agent workflow is adoptable, and what adopting it takes
+**Covers:** F37
+- Given: `README.md` (issue #369, AC8 and the README half of AC7)
+- When: it is read
+- Then: none of v0.2.0's three "not adoptable yet" sentences remain; it
+  names the `role-contracts` skill and the opt-in
+  `process-multi-agent-roles` question; it says what an adopter does not
+  get (an orchestrator, the release-branch tier, and, in the same
+  paragraph as the evidence scripts, that they are not installed); it
+  states the prerequisites (`gh`, `SPEC_DRIVEN_GUARDRAILS_DIR`, and
+  creating the `role:` labels) and the `gh repo set-default` caveat for
+  several remotes; it does not claim the skill points "only" at installed
+  skills (it also names built-in ones); it shows
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/compliance-evidence.sh` run from an
+  adopted project
+- And: no orphan fragment remains: no line starts lower-case right after
+  a line that ended a sentence
+
+### S164 — No live reference to role-contracts' old wip/ location remains in this repo
+**Covers:** F37
+- Given: a copy of this repo's working tree (issue #369, AC9)
+- When: every file except the historical records (`CHANGELOG.md`,
+  `CHANGES-ARCHIEF.md`) is searched
+- Then: none names the old `wip/` location of `role-contracts`; every
+  relative path to `role-contracts/SKILL.md` (`../...`) resolves from the
+  file containing it; and `skills/role-contracts/SKILL.md` exists
+- And: AC9's "`./check` passes" is what S5, S39, S40, S92, S93, S112,
+  S121 and S124 already assert
+
 ### S165 — test/lib.sh isolates fixture git commands from an inherited git repo environment
 **Covers:** F1
 - Given: a decoy git repo inside the test's own sandbox, and every

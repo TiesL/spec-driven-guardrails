@@ -43,7 +43,7 @@ Every PR gets at least the single-Reviewer fork above (`context: fork`) —
 "quick" mode, unchanged. On top of that, run:
 
 ```
-./classify-review-depth.sh <pr-number>
+"$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh" <pr-number>
 ```
 
 That prints exactly one line: `review-depth: quick`, or `review-depth:
@@ -67,7 +67,7 @@ is a small fixed constant, not derived from how many categories matched.
 Read the actual number by running:
 
 ```
-./classify-review-depth.sh --lens-adapter-count
+"$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh" --lens-adapter-count
 ```
 
 rather than restating the literal number here — `classify-review-depth.sh`

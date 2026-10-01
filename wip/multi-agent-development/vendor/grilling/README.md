@@ -9,7 +9,7 @@ only `SKILL.md`, the actual method.
 
 Copied verbatim, not paraphrased, per the same reasoning as `../codebase-design/`: use the
 actual design-tree/frontier/rounds method, not a lossy retelling of it. See
-`../../role-contracts/SKILL.md`'s Product section and `ARCHITECTURE-MULTI-AGENT-WIP.md`'s A10 for how
+`../../../../skills/role-contracts/SKILL.md`'s Product section and `ARCHITECTURE-MULTI-AGENT-WIP.md`'s A10 for how
 it's applied here.
 
 **Also promoted to `skills/grilling/` (issue #291)** as a real, invokable skill for any

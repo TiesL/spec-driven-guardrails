@@ -152,7 +152,7 @@ fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
 A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
-A14-A18 taken by #371), not this file's own A1-A3, so the issue's
+A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
 ### A19 — One seam for git-environment isolation, with two real callers
@@ -283,3 +283,76 @@ blocked indefinitely. Numbering continues after A19/A20.
 The adopter entry is `CHANGES.md` `ci-commit-check` (Default `question`,
 `Applies if: has-check-command`), plus a `CHANGELOG.md` line. This repo
 answers it `yes` in its own `WORKFLOW-ADOPTION.md`.
+
+---
+
+# Architecture decision — Multi-agent workflow adoptability (#369)
+
+**Decided on 2026-10-01.** The five-role pipeline (v0.2.0) was only usable
+inside this repo: the role contracts lived under `wip/`, which `adopt.sh`
+does not install, and `CHANGES.md` had no entry to ask adopters. The
+decisions below make it adoptable as an opt-in.
+
+**Numbering.** A14 and A15 are #369's, continuing the multi-agent series
+(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
+the two fill the A14-A18 range reserved in the #377 section above; nothing
+collides and nothing is renumbered.
+
+### A14 — The `role-contracts` skill is the pipeline's sole adopter-facing Interface; the WIP documents are provenance, not dependencies
+- **Module / Interface:** `skills/role-contracts/SKILL.md` is the Module; its
+  Interface is the text a dispatcher quotes. It must be complete with only
+  installed skills behind it (Locality: an adopter never opens the clone to
+  run a role) and must not re-implement what another installed Module owns
+  (Depth: one definition per fact).
+- **(a) Pointers.** `vendor/grilling/...` and `vendor/codebase-design/...`
+  become the installed skill names (`grilling`, `codebase-design`).
+  Every pointer to the WIP design documents collapses into one Provenance
+  paragraph: decisions are cited by id, and their sources live in the clone
+  `SPEC_DRIVEN_GUARDRAILS_DIR` points at. Guardrails issue numbers are
+  written `TiesL/spec-driven-guardrails#n` or dropped, because a bare `#n`
+  links to the adopter's own issue.
+- **(b) Single definition.** The skill does not restate the merge marker or
+  the `model-record` marker; it names the obligation and points to
+  `pre-merge-review` and `model-choice`. This is also what keeps S28 (the
+  merge marker is defined in exactly one skill) true now that the skill is
+  under `skills/`.
+- **(c) "Running the pipeline."** One short section: a stage / role / label /
+  `stage=` table (the same order and labels `role-label-staleness.sh` checks,
+  asserted by S160), that every role takes part in every change, and the
+  idempotent `gh label create` command for the five `role:*` labels.
+- **(d) Opt-in guard** in the skill's `description` and first line: apply it
+  only when the project's `WORKFLOW-ADOPTION.md` answers
+  `process-multi-agent-roles` yes.
+- **(e) Decision-maker by role** ("the project's human decision-maker"), not
+  by person.
+- **`adopt.sh` stays offline.** Creating labels needs `gh`, credentials and
+  network, so it is part of what answering *yes* means (as with
+  `process-issue-tracking`), not something `adopt.sh` does.
+- **Violated when:** a pointer in the skill resolves only inside this repo (a
+  `vendor/` or `wip/` path, or a bare `#n`), or the skill carries a second
+  literal copy of a marker another skill defines (S158, S160, S28).
+- **Revisit when:** a second adopter runs the pipeline and reports a step the
+  skill does not cover; then promote that step from the WIP documents. Do not
+  copy more beforehand.
+
+### A15 — The three evidence scripts' clone-root paths are a supported, read-only Interface for adopters
+- **Decision (the human accepted option A on #369):**
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/{compliance-evidence,role-label-staleness,classify-review-depth}.sh`
+  are invoked with the adopted project's checkout as the working directory.
+  They stay at the clone root: not copied, not installed, not wired into any
+  `check` or CI. All three address `repos/{owner}/{repo}` through `gh`'s own
+  placeholder, resolved from the working directory's remotes, so they report
+  on the adopter's repo (S161).
+- **Consequence:** moving or renaming them is now a breaking change for
+  adopters. `pre-merge-review` already sent every adopter to
+  `./classify-review-depth.sh`, a path that did not exist; it now uses
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh` (S162).
+  This narrows `F34`-`F36`'s "this repo only" placement.
+- **Violated when:** a script starts resolving its target repo from its own
+  location, or gains a write path.
+- **Revisit when:** `SPEC_DRIVEN_GUARDRAILS_DIR` being unset proves a real
+  failure source; then move the scripts into a skill directory (precedent:
+  `skills/pre-merge-review/model-record-gate.sh`).
+- **Known limit:** with several git remotes `gh` may need `gh repo set-default`;
+  the README, the `role-contracts` skill and the `CHANGES.md` entry say so.

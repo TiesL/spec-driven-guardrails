@@ -18,11 +18,13 @@ adopt "$project"
 actual="$SANDBOX/actual.txt"
 pending_ids "$project" > "$actual"
 
-# Then: exactly these 8 IDs, in any order.
+# Then: exactly these 9 IDs, in any order. process-multi-agent-roles
+# joined in #369 (F37): a `question` default, so pending, never seeded.
 expected="$SANDBOX/expected.txt"
 cat > "$expected" <<'IDS'
 process-context-document
 process-issue-tracking
+process-multi-agent-roles
 spec-compliance
 spec-cost-management
 spec-performance-scale

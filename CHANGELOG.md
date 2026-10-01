@@ -28,6 +28,17 @@ point.
   git's temporary one. No `CHANGES.md` entry: there is no choice to make (ARCHITECTURE.md
   A20).
 
+- **Multi-agent workflow is adoptable, opt-in** (#369, PR #385): `role-contracts` moved
+  from `wip/` to `skills/`, so `adopt.sh` installs it, and was rewritten to be self-contained
+  (installed skill names instead of `vendor/` paths, a "Running the pipeline" stage/label
+  table, the decision-maker named by role). New `CHANGES.md` entry `process-multi-agent-roles`
+  (default `question`, applies always): every adopted project is asked it at its next session.
+  The three evidence scripts are offered by path from the clone
+  (`$SPEC_DRIVEN_GUARDRAILS_DIR/<script>`, run from the adopted project's checkout); they are
+  not installed. `pre-merge-review` now runs `classify-review-depth.sh` by that path too: it
+  said `./classify-review-depth.sh`, which no adopted project has. README no longer says the
+  pipeline is not adoptable. Nothing applies the pipeline automatically (that is #371).
+
 ## v0.2.0 — multi-agent development workflow (2026-09-30)
 
 Epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295): the multi-agent

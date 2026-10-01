@@ -455,6 +455,32 @@ the shared parser warns if it has no `Applies if`.
   `skills/codebase-design/README.md` for the pinned upstream commits.
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/292
 
+## process-multi-agent-roles
+
+- **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
+- **Default:** question
+- **Applies if:** always
+- **Yes means:** each work item's stages are dispatched to the roles in the
+  `role-contracts` skill, in its fixed order, each with its own write/action
+  scope and input scope, by an orchestrating Claude Code session or by hand.
+  Role conflicts escalate to the project's human decision-maker instead of
+  being settled by whichever role spoke last. Create the five `role:*` labels
+  (`role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`)
+  once in this project's own GitHub repo; the skill has the command. The three
+  read-only evidence scripts (`compliance-evidence.sh`,
+  `role-label-staleness.sh`, `classify-review-depth.sh`) are not installed:
+  run them by path from the guardrails clone, as
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/<script>` with this project's checkout as the
+  working directory, and they report on this project's repo. They need `gh`
+  (with several git remotes, run `gh repo set-default` first).
+  Costs more agent sessions per work item; worth it once a change is large
+  enough that one session's blind spots matter. No orchestrator ships, and
+  nothing applies the pipeline automatically: the contracts and the evidence
+  scripts are the whole offer. `adopt.sh` symlinks the `role-contracts` skill
+  into every adopted project either way (it globs `skills/`); only the answer
+  records whether this project follows it.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
+
 ---
 
 ### Non-functional characteristics (NFRs)
