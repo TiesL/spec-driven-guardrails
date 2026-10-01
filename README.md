@@ -156,7 +156,7 @@ what's still open. See the `adoption-registry` skill for the full mechanism.
 Everything above is what an adopted project gets: one agent session carrying a change through
 every stage of the diagram, with a human at the approval points. This repo follows that
 workflow too, and adds two practices of its own on top. The five-role pipeline is adoptable
-(an opt-in `CHANGES.md` question); the release-branch tier is not.
+as an opt-in (see "Adopting it" below); the release-branch tier is not.
 
 ### Five roles instead of one session
 
@@ -165,8 +165,8 @@ agent roles rather than one session doing everything: **Product** (are we buildi
 thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
 works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
 final gate). Each role gets a quotable contract — responsibilities, what it may write, and
-Reviewer's security triggers — in the `role-contracts` skill (`skills/role-contracts/SKILL.md`). When
-roles disagree, the conflict escalates to a human instead of being settled by whichever role
+Reviewer's security triggers — in the `role-contracts` skill (`skills/role-contracts/SKILL.md`).
+When roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
 The dispatching itself is done by an orchestrating Claude Code session (or by hand), so the
@@ -189,9 +189,36 @@ stage) and settled it: v0.2.0. The full design record lives in
 **Adopting it.** `adopt.sh` symlinks the `role-contracts` skill into every adopted project
 like any other skill. Whether the project actually follows the pipeline is the opt-in
 `process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
-preference); `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
-The three evidence scripts run from the guardrails clone and need `gh`.
-contracts this way is tracked in #369.
+preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
+The skill is self-contained: it names the stage order, the `role:<name>` labels and the
+`model-record` markers, and points only at skills `adopt.sh` installs. Nothing starts the
+pipeline for you: a person dispatches the roles, by hand or from an orchestrating session.
+Making a session apply it automatically is a separate work item
+(`TiesL/spec-driven-guardrails#371`) and not part of this offer.
+
+What an adopted project **gets**: the `role-contracts` skill, the opt-in question, and
+permission to run the three evidence scripts against its own repo. What it does **not** get: an
+orchestrator (the contracts are quoted into role sessions by hand or by your own orchestrating
+session), the release-branch tier below (this repo's own practice), and any installed copy of
+the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
+the project and not wired into its `check` or CI, and they are read-only. Run them by path from
+the guardrails clone, with the adopted
+project's checkout as the working directory, so they address that project's repo:
+
+```bash
+"$SPEC_DRIVEN_GUARDRAILS_DIR/compliance-evidence.sh" <pr-number>
+"$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh" <issue-number>
+"$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh" <pr-number>
+```
+
+The gates assume this repo's conventions (`model-record` markers, the `pre-merge-review`
+marker, `Covers:` links), so a project that did not adopt the related entries sees
+`not-evidenced` rows. That is a correct report, not an error.
+
+Prerequisites: the GitHub CLI (`gh`) installed and authenticated, `SPEC_DRIVEN_GUARDRAILS_DIR`
+set to the clone (as for `adopt.sh`), and, if you want `role-label-staleness.sh` to say
+anything, the five `role:<name>` labels created once in the project's own repo. The
+`role-contracts` skill has the command to create the labels.
 
 ### A release branch between work items and `main`
 
