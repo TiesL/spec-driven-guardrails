@@ -60,18 +60,23 @@ Each stage of that diagram is backed by a concrete practice:
 
 | Stage | Practice | Mechanism |
 |---|---|---|
-| Spec | Specification-Driven Development | `PRD.md`, broken into epic/work-item issues before code |
+| Discovery | Structured requirement interviews | `grilling` skill — open questions as a design tree, numbered rounds, a recommended answer per question, stops only when the frontier is empty |
+| Spec | Specification-Driven Development | `PRD.md`, broken into epic/work-item issues before code; the `write-spec` skill's `Covers:` token keeps a scenario linked to the requirement it tests |
 | Design | Architecture Decision Records | `ARCHITECTURE.md` — decisions, alternatives, revisit trigger |
 | Design | Non-functional requirements | `nfr/` register — fifteen non-functional questions, one file per attribute, the source for every adopted `PRD.md` |
+| Design | Deep-module design | `codebase-design` skill — a shared vocabulary (Module, Interface, Seam, Depth, Leverage, Locality) plus two concrete tests (the deletion test, the two-adapters rule) for whether a decomposition is actually deep |
 | Build | Test-first, red-before-green | `tdd-seams` skill |
 | Build | Trunk-based branching (GitHub Flow) | short-lived `feature/`/`fix/` branches off `main`, issue number required in the name |
 | Test | Automated testing | unit tests, `TEST-SCENARIOS.md`'s Given/When/Then, frozen-baseline regressions |
-| CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge |
+| CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge; also wired into `pre-commit`, so a bad commit is caught before it reaches a branch |
+| CI | Secret scanning | `gitleaks` in `pre-push` (blocking), with a CI backstop so a bypassed hook still gets caught |
 | Review | Mandatory quality review | `pre-merge-review` skill, enforced by the merge guard |
+| Review | Capability/cost-aware model selection | `model-choice` skill — which model/reasoning effort fits each pipeline stage, with a machine-readable `model-record` marker per stage |
 | Merge | Requirements traceability | PRD → scenario → issue → PR: `check-traceability.sh` checks the first link offline; CI's `check-pr-issue-link.sh` refuses a PR that names no issue; `pre-merge-review` judges whether the links are the right ones |
 | Maintain | Technical debt tracking | `PRD.md`'s debt table — accepted, why, and the trigger to fix it |
 | Maintain | Named refactoring triggers | `refactoring-triggers` skill |
 | Maintain | Disciplined bug diagnosis | reproduce → hypothesize → regression test → fix; `diagnose-bug` skill |
+| Maintain | Verifiable adoption, not self-asserted | `adoption-registry` skill — a project's `WORKFLOW-ADOPTION.md` answers are checked mechanically where possible; a pending row blocks, and an unsubstantiated "yes" gets flagged |
 | Deploy | *Not* continuous | `deploy` stays manual and guarded — a deliberate choice, not a gap |
 
 ## Who it's for

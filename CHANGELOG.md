@@ -73,6 +73,50 @@ conflict-message ordering (#304's AC1), shared boilerplate across three scripts 
 common lib (#356), and `finding-carryforward-gate.sh`'s own quoted-string false-positive
 (#347). All tracked under epic #307 (v2 backlog).
 
+**Versioning (decided 2026-09-29, issue #348):** releases from this point on are tagged with
+[Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), a genuinely new convention
+— the two named-slug tags below (`personal-workflow-to-shareable-product`,
+`van-proza-naar-mechanisme`) predate it and were never treated as a numbered release scheme.
+Starting deliberately at `v0.1.0`, not `v1.0.0`: SemVer's own `0.y.z` range means "initial
+development, anything may change," which is honest about where this project actually is
+rather than presumptuous about a stability promise it hasn't made. `1.0.0` is a future,
+deliberate decision, not something to back into by accident. Each named-slug era below gets
+folded into whichever numbered release first covers it once this scheme starts; older
+entries keep their original slug names as the historical record they already are.
+
+## v0.1.0 — 2026-09-29
+
+Everything on `main` up to this point, retroactively version-tagged as the starting line for
+SemVer going forward — not a new epic of its own, but the first point this repo commits to a
+numbered release identity. Encompasses both prior named releases below in full, plus
+everything since `personal-workflow-to-shareable-product` (2026-09-13):
+
+- **Full Dutch→English translation completed** (W40-W43, issues #118-#207): every script,
+  skill, hook, test file, and identifier this repo's own code touches — not just prose. What
+  `personal-workflow-to-shareable-product`'s decision 3 scoped (layers A and B) is now fully
+  executed, not just decided.
+- **This repo adopts its own workflow** (#102): the self-adoption exception that used to
+  exclude `spec-driven-guardrails` itself from `adopt.sh` is gone — this repo now follows the
+  same rules it enforces on adopted projects.
+- **Traceability hardened**: the 4th link (issue → acceptance-criteria structure, #251),
+  drift guards between `check-traceability.sh` and `templates/` (#232), heading-correspondence
+  enforcement between `test/cases/` and `TEST-SCENARIOS.md` (#273), and machine-readable
+  model-record/finding-carryforward gates (#249) that make `pre-merge-review`'s own process
+  mechanically checkable instead of resting on an agent remembering to follow it.
+- **CI and commit-time enforcement tightened**: `./check` wired into `pre-commit`, blocking a
+  bad commit before it lands (#269); `gitleaks` secret-scanning in `pre-push` with a CI
+  backstop (#270); the merge guard extended to block a stray commit-level `Closes #N` the
+  PR's own title/body doesn't share (#224); `wait-for-ci.sh` encoding the 5-minute-then-1-
+  minute polling cadence as a script instead of a norm an agent has to remember (#279).
+- **`model-choice` skill added** (#236): capability/cost-aware model selection guidance at
+  every stage of a work item's pipeline, not just review.
+- **Epic #65 (multi-agent development) begins as design work**: direction accepted, a
+  co-thinking session on turning `spec-driven-guardrails` into a Claude Code plugin, and W1
+  (the compliance-evidence collector, #296/#298) as the epic's first concrete artifact — still
+  exploratory at this point (`wip/multi-agent-development/`, directional, explicitly marked
+  **TBD**), not yet an executable, dogfooded pipeline. That's `v0.2.0`'s scope (issue #349),
+  not this one's.
+
 ## personal-workflow-to-shareable-product — 2026-09-13
 
 Epic [#52](https://github.com/TiesL/spec-driven-guardrails/issues/52): from
