@@ -139,3 +139,70 @@ checkout of this repo.
   tag, with notes, therefore stays open until the last work items under
   #52 (W33-W35) land — only then is there something a second user should
   actually want to pin.
+
+---
+
+# Architecture decision — Git-environment isolation for `./check` and the test suite (#377)
+
+**Decided on 2026-10-01.** git exports repo-local variables (`GIT_DIR`,
+`GIT_INDEX_FILE`, `GIT_PREFIX`, ...) to every hook, `git rebase --exec`
+command and `!` alias. A `./check` or test case that inherits them and
+runs `git -C <fixture> ...` acts on the launching repo instead of the
+fixture: a commit from a linked worktree moved the real `main`, added a
+tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
+written into git's temporary index. Numbering follows the project-wide
+A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
+A14-A18 taken by #371), not this file's own A1-A3, so the issue's
+references stay valid.
+
+### A19 — One seam for git-environment isolation, with two real callers
+- **Module:** `lib/git-env.sh` (source, don't execute; bash 3.2), the only
+  copy of the variable list:
+  - `git_local_env_vars` prints the union of `git rev-parse
+    --local-env-vars` (read at runtime) and a fixed floor of the 15 names
+    git 2.50 prints. A newer git that adds a name is covered; a git that
+    fails or lists fewer never clears less.
+  - `git_local_env_clear` unsets every name in that list.
+  - `git_local_env_assert_clear` returns non-zero, naming the first one
+    still set.
+- **Callers:**
+  1. `hooks/pre-commit` clears the list only for the `./check` child,
+     inside the command substitution. git's own commit flow (including a
+     partial commit's temporary index) and the hook's branch and issue
+     checks keep the real values; `project_dir` is computed before the
+     clear, so the committing worktree's own `./check` runs. If
+     `lib/git-env.sh` is missing, the hook warns and **skips** `./check`
+     (the commit itself fails open, like a missing `rules.sh`): running
+     `./check` unisolated is the hazard itself.
+  2. `test/lib.sh` clears the list when sourced, so a single case run by
+     hand is covered too, and `sandbox_guard` refuses loudly if one is set
+     again, the same way it refuses a real `HOME`.
+- **Never cleared:** anything outside the list: the git identity
+  (`GIT_AUTHOR_*`/`GIT_COMMITTER_*`), `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_NOSYSTEM`,
+  `GIT_EXEC_PATH`, `GIT_SSH*`, `GIT_TERMINAL_PROMPT`, `GIT_TRACE*`,
+  `GIT_EDITOR`, `CLAUDE_WORKFLOW_GUARDRAILS_OFF`. `GIT_CONFIG_PARAMETERS`
+  and `GIT_CONFIG_COUNT` *are* cleared: they carry the outer command's
+  `git -c` settings, which belong to the outer repo.
+- **Accepted cost:** a `./check` that inspects *staged* content during a
+  partial or `-a` commit sees the real index, not git's temporary one. No
+  known `./check` does this; a deliberately named variable can carry the
+  path if one ever needs to.
+- **Violated when:** a second copy of the list appears (in the hook, the
+  test library or a test case; S168 checks this), or the hook clears the
+  variables in its own process instead of the `./check` child's.
+- **Rejected:** a static list only (misses future git variables); a runtime
+  list only (degrades silently if the command fails); clearing in
+  `test/run.sh` (misses a single case run by hand); clearing in `check`
+  (doesn't reach an adopter's own `./check`); putting the functions in
+  `hooks/rules.sh` (that file holds guard rules and messages, not test
+  isolation).
+
+### A20 — The hook change is recorded in `CHANGELOG.md`, not `CHANGES.md`
+Adopters get the fix with no action of their own: `hooks/pre-commit` is a
+symlink into the shared checkout, and `lib/git-env.sh` sits next to it.
+`CHANGES.md` is for "something a project must make its own choice about",
+and its grammar has no entry shape that asks nothing (an entry without a
+question is either pending for every adopter or seeded as `yes`). The
+precedent for an automatic hook change (#263, `./check` wired into
+`pre-commit`) is a `CHANGELOG.md` line. Exception: a project that kept its
+own pre-existing `pre-commit` hook (S51) does not get the fix.

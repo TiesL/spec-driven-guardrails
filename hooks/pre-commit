@@ -91,9 +91,23 @@ fi
 # all (missing, not executable): "couldn't verify" is not the same as
 # "verified and red" — same distinction the missing-rules.sh case above
 # already makes.
+#
+# #377 (A19): git exports repo-local variables (GIT_DIR, GIT_INDEX_FILE,
+# GIT_PREFIX, ...) to this hook. A ./check that inherits them and runs
+# `git -C <fixture> ...` acts on this repo instead of the fixture. So they
+# are cleared for the ./check child only, inside the command substitution:
+# git itself and the checks above keep the real values, and project_dir
+# (computed here with them) is still the committing worktree's own root.
+# Without lib/git-env.sh, ./check is skipped rather than run uncleared:
+# running it unisolated *is* the hazard.
 project_dir="$(git rev-parse --show-toplevel 2>/dev/null)"
-if [ -n "$project_dir" ] && [ -x "$project_dir/check" ]; then
-  check_output="$("$project_dir/check" 2>&1)"
+git_env_lib="$own_dir/../lib/git-env.sh"
+if [ -n "$project_dir" ] && [ -x "$project_dir/check" ] && [ ! -r "$git_env_lib" ]; then
+  echo "warning: git hooks couldn't find lib/git-env.sh — ./check skipped (it can't run isolated from this repo's git environment)." >&2
+elif [ -n "$project_dir" ] && [ -x "$project_dir/check" ]; then
+  # shellcheck source=lib/git-env.sh
+  . "$git_env_lib"
+  check_output="$(git_local_env_clear; "$project_dir/check" 2>&1)"
   check_status=$?
   if [ "$check_status" -ne 0 ]; then
     echo "Blocked by the git hook: ./check failed." >&2

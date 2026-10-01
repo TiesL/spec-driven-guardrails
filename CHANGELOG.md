@@ -11,6 +11,21 @@ committed. For the ongoing list of adoptable changes per project:
 `v0.1.0` (2026-09-29) — see that entry for why `0.y.z`, not `1.0.0`, is the deliberate starting
 point.
 
+## Unreleased
+
+- **Fix #377: `./check` and the test suite are isolated from git's repo-local environment.**
+  git exports `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_PREFIX` and similar variables to hooks; a
+  `./check` that ran fixture git commands from the `pre-commit` hook acted on the real repo
+  (moved branches, added tags, set `core.bare=true`, rewrote the index of a partial commit).
+  `hooks/pre-commit` now clears git's repo-local variables (`lib/git-env.sh`) for the
+  `./check` child only, and skips `./check` with a warning if that library is missing;
+  `test/lib.sh` clears them on load and `sandbox_guard` refuses if one is set again. Adopted
+  projects get this with no action of their own, through the existing `pre-commit` symlink
+  (not a project that kept its own pre-existing hook). Accepted cost: a `./check` that
+  inspects *staged* content during a partial or `-a` commit now sees the real index, not
+  git's temporary one. No `CHANGES.md` entry: there is no choice to make (ARCHITECTURE.md
+  A20).
+
 ## v0.2.0 — multi-agent development workflow (2026-09-30)
 
 Epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295): the multi-agent
