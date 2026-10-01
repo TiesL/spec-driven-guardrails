@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# check-commit — the fast, static subset of ./check that the shared pre-commit
+# hook runs within its 30 s budget (#378, A21): no test suite, and no
+# shellcheck (warn-only, ~25 s alone, so it has no gating value here).
+CHECK_SKIP_SHELLCHECK=1 exec "$(dirname "${BASH_SOURCE[0]}")/check" --no-tests

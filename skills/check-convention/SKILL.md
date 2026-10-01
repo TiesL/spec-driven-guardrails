@@ -9,7 +9,7 @@ description: >
 ## Automating testing and deployment
 
 For projects with buildable/testable code, two fixed, platform-neutral
-command names apply:
+command names apply (plus an optional third, `check-commit`, below):
 
 1. **`check`** — everything that decides whether a change is good
    (typecheck, lint, tests, build), exposed as an executable `check` at
@@ -25,6 +25,16 @@ command names apply:
    happens after TiesL's explicit confirmation (see "Wrapping up" in
    `WORKFLOW.md`). See the `deploy-guards` skill for the conditions under
    which `deploy` may run.
+
+Optional third name: **`check-commit`** (an executable at the project
+root) — the fast, static subset of `check`, with no tests, run by
+`pre-commit` within 30 s. `check` stays the full gate, and CI calls only
+`check`. A static failure blocks the commit, a timeout lets it through with
+a warning, and a project without `check-commit` gets no commit-time check
+(one line says the full `./check` runs in CI). `adopt.sh` does not scaffold
+it: that would turn an opt-in into a default. The `pre-commit` hook passes
+it no arguments, so what "static" means is the project's own business (see
+`CHANGES.md` `ci-commit-check`).
 
 Project-specific checks (a custom lint rule, a domain-specific validation)
 belong in the project's own `check` script, not in `spec-driven-guardrails`.

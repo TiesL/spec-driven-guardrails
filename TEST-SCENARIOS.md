@@ -1551,15 +1551,31 @@ something new is being added.
   through the existing "meaning has changed" path instead, not this one;
   re-confirming with the current version marker quiets it, same as S141
 
-### S144 — hooks/pre-commit runs ./check, blocking on a real failure
+### S144 — hooks/pre-commit runs the declared check-commit within a budget, and never ./check
 **Covers:** F17
-- Given: an adopted project with an executable `check` at its root
-- When: a commit is attempted (not on `main`)
-- Then: a green `./check` doesn't block; a red `./check` blocks the
-  commit and shows `./check`'s own output; no executable `check` at all
-  fails open, with a loud warning that the commit-time check was
-  skipped; the existing `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch
-  also covers this guard, not only the branch guard
+- Given: an adopted project on a feature branch, whose `./check` (when
+  present) exits 1 and writes a marker, so any run of it at commit time
+  is visible (issue #378, A21-A23; originally #263)
+- When: a commit is attempted
+- Then: with an executable `check-commit` that exits 0, the commit goes
+  through and the full `./check` did not run; with one that exits 1
+  within the budget (also after a delay), the commit is blocked, the
+  block names `check-commit` and shows its own output, and the full
+  `./check` did not run
+- And: with only `./check` (no executable `check-commit`, including a
+  `check-commit` that is not executable), the commit goes through, exactly
+  one line says the full `./check` runs in CI and names `ci-commit-check`,
+  and `./check` was not invoked
+- And: with neither file, the existing warning about no executable
+  `./check` appears and no CI line does
+- And: the `CLAUDE_WORKFLOW_GUARDRAILS_OFF` escape hatch also covers this
+  guard, and `check-commit` is then not run
+- And: with `COMMIT_CHECK_BUDGET=2` and a `check-commit` that sleeps (with
+  a child and a grandchild process), the commit goes through within a few
+  seconds with a warning that mentions the budget and CI, the full
+  `./check` did not run, and no process of `check-commit` survives
+- And: `check-commit` receives no arguments, runs at the project root and
+  sees none of git's repo-local environment variables
 
 ### S145 — hooks/pre-push runs gitleaks, blocking on a real finding
 **Covers:** F17
@@ -1892,18 +1908,18 @@ something new is being added.
   `GIT_TERMINAL_PROMPT`, `GIT_EDITOR` and `CLAUDE_WORKFLOW_GUARDRAILS_OFF`
   survive sourcing unchanged
 
-### S166 — hooks/pre-commit runs ./check without git's repo-local variables, from any worktree and commit form
+### S166 — hooks/pre-commit runs check-commit without git's repo-local variables, from any worktree and commit form
 **Covers:** F17
 - Given: a sandbox project with the real `hooks/pre-commit` installed as a
-  symlink, a linked worktree, and a `./check` that records its
+  symlink, a linked worktree, and a `check-commit` that records its
   environment and working directory and then does fixture git work
   (`init`, `commit`, `tag`, `init --bare`) in a temp directory (issue
   #377, AC1, AC2, AC5)
 - When: a commit is made from the linked worktree and from the main
   worktree, each as a plain commit, a partial commit
   (`git commit -- <path>`) and `git commit -a`
-- Then: every commit succeeds; `./check` sees none of the variables
-  `git rev-parse --local-env-vars` prints; the `./check` that ran is the
+- Then: every commit succeeds; `check-commit` sees none of the variables
+  `git rev-parse --local-env-vars` prints; the `check-commit` that ran is the
   committing worktree's own, run at that worktree's root; the git
   identity, `GIT_CONFIG_NOSYSTEM` and `GIT_TERMINAL_PROMPT` still reach it
 - And: the project's refs (other than the committing branch), worktree
@@ -1911,14 +1927,14 @@ something new is being added.
   unchanged; the new commit holds exactly the intended paths; after a
   partial commit the other staged path is still staged
 
-### S167 — hooks/pre-commit warns and skips ./check when lib/git-env.sh is missing
+### S167 — hooks/pre-commit warns and skips check-commit when lib/git-env.sh is missing
 **Covers:** F17
 - Given: a copy of this repo without `lib/git-env.sh`, its
   `hooks/pre-commit` installed as a symlink in a sandbox project, and a
-  `./check` that leaves a marker when it runs (issue #377, human decision
+  `check-commit` that leaves a marker when it runs (issue #377, human decision
   on the Architect report)
 - When: a commit is made on a feature branch
-- Then: the commit proceeds; a warning names `git-env.sh`; `./check` did
+- Then: the commit proceeds; a warning names `git-env.sh`; `check-commit` did
   not run
 - And: a commit on `main` is still blocked (the branch guard does not
   depend on the library)
@@ -1941,3 +1957,83 @@ something new is being added.
   passes after a clear, and fails naming `GIT_INDEX_FILE` when it is set
 - And: no hook, `lib/` file, `test/lib.sh`, `test/run.sh` or `check`
   other than `lib/git-env.sh` holds a second copy of the list
+
+### S169 — ci-commit-check is pending only for projects with a check, and is never auto-seeded
+**Covers:** F2, F17
+- Given: `CHANGES.md` with the `ci-commit-check` entry (Default `question`,
+  Applies if `has-check-command`), and two adopted projects, one with an
+  executable `check` and one without (issue #378, AC11)
+- When: `pending-changes.sh` runs for each, and `adopt.sh` has run
+- Then: the entry is pending for the project with a `check` and not for
+  the one without; `adopt.sh` did not seed it; the entry names
+  `check-commit`
+- And: once the project answers the row, the entry is no longer pending
+
+### S170 — this repo's check-commit lets a red test commit through and blocks on a static failure
+**Covers:** F17
+- Given: a throwaway copy of this repo, made a git project with the real
+  `hooks/pre-commit` installed, and a `test/run.sh` stub that leaves a
+  marker (issue #378, AC1, AC2)
+- When: a new failing test case with its `TEST-SCENARIOS.md` heading is
+  committed on a `feature/` branch
+- Then: the commit succeeds and the suite did not run
+- And: a commit that adds a script with a syntax error is refused and
+  names the script; a commit that adds a scenario heading without a test
+  file is refused and names the heading; neither ran the suite
+
+### S171 — hooks/pre-push runs no check, and still refuses a push to main
+**Covers:** F17
+- Given: an adopted project whose `./check` and `check-commit` are both
+  red and leave a marker when they run, and a feature branch with a
+  commit on it (issue #378, AC7, R3)
+- When: the branch is pushed to a bare remote, and then `HEAD:main` is
+  pushed
+- Then: the branch push succeeds and neither `./check` nor `check-commit`
+  ran; the push to `main` is refused
+
+### S172 — the docs describe the commit-time split and no longer say pre-commit runs the suite
+**Covers:** F17
+- Given: this repo's README, PRD, CHANGELOG, `check-convention` skill,
+  `TEST-SCENARIOS.md` and root `check-commit` (issue #378, AC10, R6)
+- When: they are read
+- Then: the README no longer says a bad commit is caught before it
+  reaches a branch and mentions `check-commit`; the PRD no longer lists
+  the untimed `./check` call as debt and mentions `check-commit`; the
+  CHANGELOG Unreleased section has a #378 line naming `check-commit` and
+  `ci-commit-check`; `check-commit` is defined by `check-convention`; S144
+  describes `check-commit`; the root `check-commit` is executable and runs
+  the static part of `check`
+
+### S173 — a check-commit that ignores TERM cannot hang the commit: the watchdog escalates to KILL
+**Covers:** F17
+- Given: an adopted project on a feature branch whose `check-commit`
+  runs for 25 s while ignoring TERM, in one fixture itself and in the
+  other through a grandchild that ignores TERM (issue #378, review
+  finding 1 and 2)
+- When: a commit is attempted with `COMMIT_CHECK_BUDGET=2`
+- Then: after the budget the watchdog sends TERM, then after a short
+  grace period KILL, to the process group; the commit goes through well
+  before the 25 s are over, with a warning that mentions the budget
+- And: no process of `check-commit` survives, including the grandchild
+  that ignored TERM
+
+### S174 — COMMIT_CHECK_BUDGET must be a positive integer; a bad value is rejected, never read as a timeout
+**Covers:** F17
+- Given: an adopted project on a feature branch whose `check-commit`
+  really fails (exit 1 after one second, printing a marker line) (issue
+  #378, review finding 3)
+- When: a commit is attempted with `COMMIT_CHECK_BUDGET` set to `abc`,
+  empty, `0`, `-3`, `1.5` or `10s`
+- Then: the value is rejected with a message that names
+  `COMMIT_CHECK_BUDGET`; the real failure is not waved through, so no
+  commit lands, and nothing says the check "exceeded" a budget
+
+### S175 — PRD and ARCHITECTURE no longer say the pre-commit hook runs ./check
+**Covers:** F17
+- Given: the PRD paragraph that starts "As of issue #377, the `pre-commit`
+  hook" and the ARCHITECTURE A19 section (issue #378, review finding 4, AC10)
+- When: they are read
+- Then: the PRD paragraph and A19's first caller (`hooks/pre-commit`)
+  name `check-commit` and no longer say the hook runs, clears for or
+  skips `./check`; A19's "Violated when" no longer speaks of the
+  `./check` child

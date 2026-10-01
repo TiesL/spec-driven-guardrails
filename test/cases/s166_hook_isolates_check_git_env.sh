@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S166 — hooks/pre-commit runs ./check without git's repo-local variables, from any worktree and commit form.
+# S166 — hooks/pre-commit runs check-commit without git's repo-local variables, from any worktree and commit form.
 # Covers: F17
 #
 # Issue #377 (AC1, AC2, AC5). git exports repo-local variables to the
@@ -8,7 +8,7 @@
 # temporary GIT_INDEX_FILE for `git commit -- <path>` / `-a` (verified by
 # QA's probe on #377). A ./check that makes fixture git repos then wrote
 # into the committing repo. Here a fixture project gets the real hook as a
-# symlink (the installed form) and a ./check that records its environment
+# symlink (the installed form) and a check-commit that records its environment
 # and does fixture git work; every commit form must leave the project
 # unchanged apart from the commit itself.
 
@@ -35,7 +35,7 @@ git init -q -b main "$project"
 mkdir -p "$project/.git/hooks"
 ln -s "$TEST_REPO_ROOT/hooks/pre-commit" "$project/.git/hooks/pre-commit"
 
-cat > "$project/check" <<EOF
+cat > "$project/check-commit" <<EOF
 #!/usr/bin/env bash
 {
   echo "check_dir=\$(cd "\$(dirname "\$0")" && pwd -P)"
@@ -51,9 +51,9 @@ git -C "\$fx/repo" tag fixture-tag
 git init -q --bare "\$fx/remote.git"
 exit 0
 EOF
-chmod +x "$project/check"
+chmod +x "$project/check-commit"
 echo base > "$project/tracked.txt"
-git -C "$project" add check tracked.txt
+git -C "$project" add check-commit tracked.txt
 CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git -C "$project" commit -q -m "base"
 git -C "$project" checkout -q -b feature/1-main
 linked="$SANDBOX/linked"
@@ -94,7 +94,7 @@ commit_and_check() {
   after="$(snap_except "$wt")"
 
   [ "$status" -eq 0 ] || fail "S166 [$label] — the commit failed: $out"
-  [ -f "$SANDBOX/check-env.out" ] || { fail "S166 [$label] — ./check did not run"; return; }
+  [ -f "$SANDBOX/check-env.out" ] || { fail "S166 [$label] — check-commit did not run"; return; }
   env_seen="$(cat "$SANDBOX/check-env.out")"
 
   for name in $local_vars; do

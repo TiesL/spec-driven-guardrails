@@ -204,6 +204,22 @@ the shared parser warns if it has no `Applies if`.
   `ci-detects-main-outside-pr` make their own scripts visible.
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/279
 
+## ci-commit-check
+
+- **Question:** Does this project declare a fast commit-time check (an executable `check-commit` at its root), so static checks still block a commit while the full `./check` runs in CI?
+- **Default:** question
+- **Applies if:** has-check-command
+- **Yes means:** add an executable `check-commit` at the project root that runs only
+  the fast, static part of `./check` (lint, typecheck, format; never the test suite)
+  and finishes within 30 s. The shared `pre-commit` hook runs it with git's
+  repo-local environment cleared, blocks the commit when it exits non-zero, and
+  stops it with a warning (commit allowed) past 30 s. Example for an npm project:
+  `#!/usr/bin/env bash` / `set -euo pipefail` / `npm run lint`. On *no*, or with no
+  `check-commit`, commit time runs no check and prints one line saying the full
+  `./check` runs in CI, which the merge guard requires to be green. Either way, red
+  tests never block a commit or a push.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/382
+
 ## traceability-link-1
 
 - **Question:** Must this project offline-check that every functionality in `PRD.md` is covered by at least one scenario in `TEST-SCENARIOS.md`?

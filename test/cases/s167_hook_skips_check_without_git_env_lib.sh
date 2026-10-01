@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S167 — hooks/pre-commit warns and skips ./check when lib/git-env.sh is missing.
+# S167 — hooks/pre-commit warns and skips check-commit when lib/git-env.sh is missing.
 # Covers: F17
 #
 # Issue #377, human decision on the Architect report: running ./check
@@ -19,7 +19,7 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # Given: a copy of this repo without lib/git-env.sh, its hook installed as a
-# symlink, and a ./check that leaves a marker when it runs.
+# symlink, and a check-commit that leaves a marker when it runs.
 repo="$(sandbox_copy_repo)"
 rm -f "$repo/lib/git-env.sh"
 
@@ -27,13 +27,13 @@ project="$SANDBOX/project"
 git init -q -b main "$project"
 mkdir -p "$project/.git/hooks"
 ln -s "$repo/hooks/pre-commit" "$project/.git/hooks/pre-commit"
-cat > "$project/check" <<EOF
+cat > "$project/check-commit" <<EOF
 #!/usr/bin/env bash
 touch "$SANDBOX/check-ran"
 exit 0
 EOF
-chmod +x "$project/check"
-git -C "$project" add check
+chmod +x "$project/check-commit"
+git -C "$project" add check-commit
 CLAUDE_WORKFLOW_GUARDRAILS_OFF=1 git -C "$project" commit -q -m "base"
 git -C "$project" checkout -q -b feature/1-something
 
