@@ -471,7 +471,8 @@ the shared parser warns if it has no `Applies if`.
   `role-label-staleness.sh`, `classify-review-depth.sh`) are not installed:
   run them by path from the guardrails clone, as
   `$SPEC_DRIVEN_GUARDRAILS_DIR/<script>` with this project's checkout as the
-  working directory, and they report on this project's repo. They need `gh`.
+  working directory, and they report on this project's repo. They need `gh`
+  (with several git remotes, run `gh repo set-default` first).
   Costs more agent sessions per work item; worth it once a change is large
   enough that one session's blind spots matter. No orchestrator ships, and
   nothing applies the pipeline automatically: the contracts and the evidence

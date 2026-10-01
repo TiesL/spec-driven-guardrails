@@ -191,7 +191,8 @@ like any other skill. Whether the project actually follows the pipeline is the o
 `process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
 preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
 The skill is self-contained: it names the stage order, the `role:<name>` labels and the
-`model-record` markers, and points only at skills `adopt.sh` installs. Nothing starts the
+`model-record` markers, and points only at installed skills or built-in Claude Code skills
+(`security-review`, `code-review`). Nothing starts the
 pipeline for you: a person dispatches the roles, by hand or from an orchestrating session.
 Making a session apply it automatically is a separate work item
 (`TiesL/spec-driven-guardrails#371`) and not part of this offer.
@@ -218,7 +219,9 @@ marker, `Covers:` links), so a project that did not adopt the related entries se
 Prerequisites: the GitHub CLI (`gh`) installed and authenticated, `SPEC_DRIVEN_GUARDRAILS_DIR`
 set to the clone (as for `adopt.sh`), and, if you want `role-label-staleness.sh` to say
 anything, the five `role:<name>` labels created once in the project's own repo. The
-`role-contracts` skill has the command to create the labels.
+`role-contracts` skill has the command to create the labels. In a checkout with several git
+remotes (for example a fork plus `upstream`), run `gh repo set-default` first, or the scripts
+may report on a different repo than you expect.
 
 ### A release branch between work items and `main`
 

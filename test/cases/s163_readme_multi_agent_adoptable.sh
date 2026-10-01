@@ -41,9 +41,18 @@ grep -qi 'orchestrator' "$readme" \
   || fail "S163 — README does not say an adopter gets no orchestrator"
 grep -qiE 'release[- ]branch' "$readme" \
   || fail "S163 — README does not mention the release-branch tier"
-awk -v RS= '/compliance-evidence\.sh/ && tolower($0) ~ /install/ { found = 1 } END { exit !found }' "$readme" \
+awk -v RS= '/compliance-evidence\.sh/ && tolower($0) ~ /not installed/ { found = 1 } END { exit !found }' "$readme" \
   || fail "S163 — README never says, next to the evidence scripts, that they are not installed into an adopted project"
 
+# And: the README does not overstate what the skill depends on. It also
+# sends Reviewer to Claude Code built-ins (security-review, code-review),
+# which adopt.sh does not install, so "only installed skills" is false.
+if grep -E 'only (at|to) (the )?(installed )?skills|only installed skills' "$readme" | grep -qvi 'built-in'; then
+  fail "S163 — README says the skill points only at installed skills; it also names built-in Claude Code skills"
+fi
+# And: the several-remotes caveat is where an adopter reads it.
+grep -qF 'gh repo set-default' "$readme" \
+  || fail "S163 — README does not mention 'gh repo set-default' for a checkout with several remotes"
 # And: the prerequisites — gh, SPEC_DRIVEN_GUARDRAILS_DIR, and creating the
 # role:<name> labels in the project's own repo.
 # shellcheck disable=SC2016  # literal backticks, not a command substitution

@@ -152,7 +152,7 @@ fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
 A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
-A14-A18 taken by #371), not this file's own A1-A3, so the issue's
+A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
 ### A19 — One seam for git-environment isolation, with two real callers
@@ -293,16 +293,11 @@ inside this repo: the role contracts lived under `wip/`, which `adopt.sh`
 does not install, and `CHANGES.md` had no entry to ask adopters. The
 decisions below make it adoptable as an opt-in.
 
-**Numbering.** The Architect's report on #369 numbered these A14 and A15,
-continuing the multi-agent series (A4-A13 in
-`wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`) rather than
-this file's own A1-A3. That report was written before the #377 section above
-recorded "A14-A18 taken by #371" and used A19-A23. So the ids A14 and A15
-here **collide with #371's A14-A18** once both reach `main` (they ship together
-through one release branch). They are kept as the Architect numbered them,
-because the issue, its report and the tests cite them. Whoever merges the
-release branch renumbers one side and keeps both documents' citations
-consistent; cosmetic, since ids are always cited together with their document.
+**Numbering.** A14 and A15 are #369's, continuing the multi-agent series
+(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
+the two fill the A14-A18 range reserved in the #377 section above; nothing
+collides and nothing is renumbered.
 
 ### A14 — The `role-contracts` skill is the pipeline's sole adopter-facing Interface; the WIP documents are provenance, not dependencies
 - **Module / Interface:** `skills/role-contracts/SKILL.md` is the Module; its
@@ -359,4 +354,5 @@ consistent; cosmetic, since ids are always cited together with their document.
 - **Revisit when:** `SPEC_DRIVEN_GUARDRAILS_DIR` being unset proves a real
   failure source; then move the scripts into a skill directory (precedent:
   `skills/pre-merge-review/model-record-gate.sh`).
-- **Known limit:** with several git remotes `gh` may need `gh repo set-default`.
+- **Known limit:** with several git remotes `gh` may need `gh repo set-default`;
+  the README, the `role-contracts` skill and the `CHANGES.md` entry say so.

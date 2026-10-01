@@ -2009,7 +2009,9 @@ something new is being added.
   get (an orchestrator, the release-branch tier, and, in the same
   paragraph as the evidence scripts, that they are not installed); it
   states the prerequisites (`gh`, `SPEC_DRIVEN_GUARDRAILS_DIR`, and
-  creating the `role:` labels); it shows
+  creating the `role:` labels) and the `gh repo set-default` caveat for
+  several remotes; it does not claim the skill points "only" at installed
+  skills (it also names built-in ones); it shows
   `$SPEC_DRIVEN_GUARDRAILS_DIR/compliance-evidence.sh` run from an
   adopted project
 - And: no orphan fragment remains: no line starts lower-case right after

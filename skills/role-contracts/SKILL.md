@@ -21,7 +21,7 @@ one session carries the change, as the rest of the workflow describes.
 Job descriptions for the five roles in the multi-agent workflow, meant to be quoted verbatim
 into a role's dispatch prompt when it's spawned: by an orchestrating session (`Agent` tool) or
 by hand, co-thinking session or full pipeline. The decisions behind it are cited below by ID
-only (A3, A4, A5, A7, A8, A10, A11, A12); this file is a reformatting for dispatch-time use,
+only (A2 to A12); this file is a reformatting for dispatch-time use,
 not a new decision.
 
 **Provenance.** The design sources for these contracts (the multi-agent PRD and architecture
@@ -87,7 +87,8 @@ done
 evidence scripts. They are not installed into your project: run them by path from the
 guardrails clone (`$SPEC_DRIVEN_GUARDRAILS_DIR`), with your project's checkout as the working
 directory, as `"$SPEC_DRIVEN_GUARDRAILS_DIR/<script>" <number>`. They address your project's
-repo, need `gh`, and never write.
+repo, need `gh`, and never write. In a checkout with several git remotes, run
+`gh repo set-default` first, or they may report on a different repo.
 
 ---
 
@@ -121,8 +122,8 @@ issue — never application code, test code, or a pull request.
 
 **Evidence / gates it produces:** requirements, acceptance criteria, business case, product
 validation (may use e.g. a value proposition canvas or a goal-oriented roadmap as optional
-tools to arrive at these — not a required artifact type of its own; the actual artifact per
-§3.4 stays `PRD.md`/an Epic issue/a work-item issue, depending on level).
+tools to arrive at these — not a required artifact type of its own; the actual artifact stays
+the project's spec document, an Epic issue or a work-item issue, depending on level).
 
 ---
 
@@ -156,8 +157,7 @@ decomposition. See `DEEPENING.md` in the `codebase-design` skill for dependency-
 comment — never direct edits to application source.
 
 **Evidence / gates it produces:** specification/design, architecture review, recorded
-decisions — where useful, as diagrams (sequence, flow, component) in Mermaid, this repo's
-own established convention.
+decisions — where useful, as diagrams (sequence, flow, component) in Mermaid.
 
 ---
 
@@ -229,11 +229,11 @@ see the note above.
 
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
-traceability — same scope as this repo's own `pre-merge-review`/`code-review`. Stays a
+traceability — same scope as the `pre-merge-review` and `code-review` skills. Stays a
 distinct role, never merged into QA or Fullstack Developer. Does not re-run tests itself —
 checks CI's actual result (the independent, mechanical re-execution) and judges whether the
-test *strategy* was adequate, same principle as QA's entry above and this repo's own
-`pre-merge-review`, which reviews evidence rather than re-executing it. Estimate effort for
+test *strategy* was adequate, same principle as QA's entry above and the
+`pre-merge-review` skill, which reviews evidence rather than re-executing it. Estimate effort for
 Product's prioritization (§ Product, above), for the review share of the work — the gate
 itself takes time and belongs in the total, same as every other role's share.
 
@@ -262,14 +262,14 @@ actually needed, and does a test prove that exceeding it is refused?
 | --- | --- |
 | Auth/session management | Access with less than the required role/scope is refused — not just "unauthorized refused" in general, but specifically *excess* privilege refused. |
 | Secrets/credentials | The credential used itself has minimal scope (a scoped token, not a master key); no secret value leaks into logs/diff/output (e.g. a secret scan such as `gitleaks`). |
-| Deploy/CI configuration | The granted permissions/scope are the minimum for the task — as this repo's own CI already does (`contents: read` explicit, only expanded when a step genuinely needs it). |
+| Deploy/CI configuration | The granted permissions/scope are the minimum for the task — e.g. CI workflow permissions explicit and read-only, only expanded when a step genuinely needs it. |
 | Infrastructure as Code | The provisioned resource/role has minimal privileges, no broad/wildcard grants; a plan/dry-run diff is reviewed before apply, never applied blindly. |
 | Sensitive/personal data | Access to the data is limited to what is actually needed (minimal scope, minimal retention period) — per the privacy NFR. |
-| Untrusted input (API/CLI/webhook) | The input handling operates with minimal privileges on that input — validates before use in a privileged operation, never passes untrusted input directly into a privileged operation (this repo's own "no `eval`" principle, applied more broadly). |
+| Untrusted input (API/CLI/webhook) | The input handling operates with minimal privileges on that input — validates before use in a privileged operation, never passes untrusted input directly into a privileged operation (the "no `eval`" principle, applied more broadly). |
 
 No new risk taxonomy — the same OWASP-top-10-like categories this project already implicitly
-uses as a baseline (decision OQ5, "Security as an explicit
-responsibility"; sources: see Provenance above).
+uses as a baseline (security as an explicit responsibility
+of the Reviewer, not a separate taxonomy).
 
 **Evidence / gates it produces:** pull-request review, technical findings (includes any bug
 found at this gate, reported the same way as a code-quality finding — same channel the
@@ -292,7 +292,7 @@ pass already earned. A **request-changes** verdict never posts the marker, same 
 Product decides *what*; Architect decides *how*; Fullstack Developer executes; QA verifies it
 works as intended; Reviewer independently confirms the whole chain before release. Conflict
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
-(Decision 4/A7). It escalates to the project's human decision-maker.
+(A7). It escalates to the project's human decision-maker.
 
 **Every role's write/action scope also includes its own stage report.** Each of the five
 Write/action scope clauses above names that role's *deliverable* artifact only; every role,
@@ -333,12 +333,11 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   test-coverage, code-quality).
 - **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
   never asserted as certain without naming which of the two it is.
-- **Severity** — `low`, `medium`, or `high` (added 2026-09-29, BMad co-thinking session,
-  candidate 2.7). Independent of Verdict: a finding can be `CONFIRMED` and still `low`
+- **Severity** — `low`, `medium`, or `high` (added 2026-09-29). Independent of Verdict: a finding can be `CONFIRMED` and still `low`
   (real, but not release-blocking), or `PLAUSIBLE` and `high` (suspected, but severe enough to chase
   down before merge). Neither axis substitutes for the other.
 - **Disposition** — how a finding outside the current change's own scope gets handled (added
-  2026-09-29, same source, candidate 2.2): **issue** (turned into its own issue immediately,
+  2026-09-29): **issue** (turned into its own issue immediately,
   if actionable and small), **holding-pen** (appended to a backlog epic the project
   recognizes), or **dismissed** (explicitly, with reasoning recorded). Never silently dropped,
   and never fixed inline without a scope-expansion decision. A finding within the current
