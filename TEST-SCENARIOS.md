@@ -1908,18 +1908,18 @@ something new is being added.
   `GIT_TERMINAL_PROMPT`, `GIT_EDITOR` and `CLAUDE_WORKFLOW_GUARDRAILS_OFF`
   survive sourcing unchanged
 
-### S166 — hooks/pre-commit runs ./check without git's repo-local variables, from any worktree and commit form
+### S166 — hooks/pre-commit runs check-commit without git's repo-local variables, from any worktree and commit form
 **Covers:** F17
 - Given: a sandbox project with the real `hooks/pre-commit` installed as a
-  symlink, a linked worktree, and a `./check` that records its
+  symlink, a linked worktree, and a `check-commit` that records its
   environment and working directory and then does fixture git work
   (`init`, `commit`, `tag`, `init --bare`) in a temp directory (issue
   #377, AC1, AC2, AC5)
 - When: a commit is made from the linked worktree and from the main
   worktree, each as a plain commit, a partial commit
   (`git commit -- <path>`) and `git commit -a`
-- Then: every commit succeeds; `./check` sees none of the variables
-  `git rev-parse --local-env-vars` prints; the `./check` that ran is the
+- Then: every commit succeeds; `check-commit` sees none of the variables
+  `git rev-parse --local-env-vars` prints; the `check-commit` that ran is the
   committing worktree's own, run at that worktree's root; the git
   identity, `GIT_CONFIG_NOSYSTEM` and `GIT_TERMINAL_PROMPT` still reach it
 - And: the project's refs (other than the committing branch), worktree
@@ -1927,14 +1927,14 @@ something new is being added.
   unchanged; the new commit holds exactly the intended paths; after a
   partial commit the other staged path is still staged
 
-### S167 — hooks/pre-commit warns and skips ./check when lib/git-env.sh is missing
+### S167 — hooks/pre-commit warns and skips check-commit when lib/git-env.sh is missing
 **Covers:** F17
 - Given: a copy of this repo without `lib/git-env.sh`, its
   `hooks/pre-commit` installed as a symlink in a sandbox project, and a
-  `./check` that leaves a marker when it runs (issue #377, human decision
+  `check-commit` that leaves a marker when it runs (issue #377, human decision
   on the Architect report)
 - When: a commit is made on a feature branch
-- Then: the commit proceeds; a warning names `git-env.sh`; `./check` did
+- Then: the commit proceeds; a warning names `git-env.sh`; `check-commit` did
   not run
 - And: a commit on `main` is still blocked (the branch guard does not
   depend on the library)

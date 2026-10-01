@@ -68,7 +68,7 @@ Each stage of that diagram is backed by a concrete practice:
 | Build | Test-first, red-before-green | `tdd-seams` skill |
 | Build | Trunk-based branching (GitHub Flow) | short-lived `feature/`/`fix/` branches off `main`, issue number required in the name |
 | Test | Automated testing | unit tests, `TEST-SCENARIOS.md`'s Given/When/Then, frozen-baseline regressions |
-| CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge; also wired into `pre-commit`, so a bad commit is caught before it reaches a branch |
+| CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge; the full gate; `pre-commit` runs only the project's declared, static `check-commit` (opt-in, 30 s budget, never the tests) |
 | CI | Secret scanning | `gitleaks` in `pre-push` (blocking), with a CI backstop so a bypassed hook still gets caught |
 | Review | Mandatory quality review | `pre-merge-review` skill, enforced by the merge guard |
 | Review | Capability/cost-aware model selection | `model-choice` skill — which model/reasoning effort fits each pipeline stage, with a machine-readable `model-record` marker per stage |

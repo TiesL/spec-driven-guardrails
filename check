@@ -5,6 +5,9 @@
 # this repo itself. CI only ever calls this script and doesn't invent
 # separate steps — one source of truth, no drift between local and CI.
 #
+# Environment: CHECK_SKIP_SHELLCHECK=1 skips the warn-only shellcheck step (used
+# by check-commit to stay inside the commit-time budget).
+#
 # Usage:
 #   ./check                    # static checks + test suite
 #   ./check --no-tests [dir]   # only the static checks, optionally on a
@@ -296,7 +299,9 @@ fi
 # --- 4. shellcheck -----------------------------------------------------------
 # Warning, not requiring: not every machine has it, and a missing linter
 # must not turn a green build red.
-if command -v shellcheck >/dev/null 2>&1; then
+if [ -n "${CHECK_SKIP_SHELLCHECK:-}" ]; then
+  echo "check: shellcheck skipped (CHECK_SKIP_SHELLCHECK, used by check-commit)"
+elif command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do
     if ! error_message="$(shellcheck -s bash -x "$script" 2>&1)"; then
