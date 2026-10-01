@@ -17,6 +17,12 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
+# The real check-commit takes about 30 s on a developer machine because of
+# shellcheck, and a timeout lets the commit through (A22). With the default
+# budget, a loaded machine would turn the "must block" cases below into
+# false greens, so the budget is raised here; S144 owns the timeout itself.
+export COMMIT_CHECK_BUDGET=600
+
 repo="$(sandbox_copy_repo)"
 [ -x "$repo/check-commit" ] || fail "S170 — this repo has no executable check-commit at its root"
 marker="$SANDBOX/suite-ran"
@@ -38,6 +44,7 @@ git -C "$repo" add -A
 out="$(cd "$repo" && git commit -q -m "red-first" 2>&1)"; st=$?
 [ "$st" -eq 0 ] || fail "S170 AC1 — a red-first commit was refused: $out"
 [ ! -e "$marker" ] || fail "S170 AC1 — the test suite ran at commit time"
+case "$out" in *budget*) fail "S170 AC1 — check-commit timed out: $out" ;; esac
 
 # AC2a: a script with a syntax error blocks, showing the failing check's output.
 printf '#!/usr/bin/env bash\nif then\n' > "$repo/broken.sh"
