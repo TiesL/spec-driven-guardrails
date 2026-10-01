@@ -47,7 +47,8 @@ awk -v RS= '/compliance-evidence\.sh/ && tolower($0) ~ /not installed/ { found =
 # And: the README does not overstate what the skill depends on. It also
 # sends Reviewer to Claude Code built-ins (security-review, code-review),
 # which adopt.sh does not install, so "only installed skills" is false.
-if grep -E 'only (at|to) (the )?(installed )?skills|only installed skills' "$readme" | grep -qvi 'built-in'; then
+overstated="$(grep -E 'only (at|to) (the )?(installed )?skills|only installed skills' "$readme" | grep -vi 'built-in')"
+if [ -n "$overstated" ]; then
   fail "S163 — README says the skill points only at installed skills; it also names built-in Claude Code skills"
 fi
 # And: the several-remotes caveat is where an adopter reads it.
