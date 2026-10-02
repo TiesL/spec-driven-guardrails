@@ -31,6 +31,12 @@ script="$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
+# #371: the gate now reads the working directory's WORKFLOW-ADOPTION.md
+# (role-play detection, opted-in projects only, S183). These fixtures put
+# several stages in one text on purpose and pin the not-opted-in call
+# shapes, so run from the sandbox, not from whatever checkout launched the
+# suite (this repo answers process-multi-agent-roles yes).
+cd "$SANDBOX" || exit 1
 
 # PR carries Review, Planning, Test, Implementation markers; the issue it
 # closes carries Discovery's. All five present -> no findings.
