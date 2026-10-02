@@ -1404,7 +1404,9 @@ something new is being added.
 ### S130 — Every pipeline stage's model choice is machine-checkable, not just Review
 **Covers:** F27
 - Given: a PR and the issue(s) it closes, each carrying zero or more
-  `<!-- model-record: stage=... -->` markers across their comments
+  `<!-- model-record: stage=... -->` markers across their comments, in a
+  project that does not answer `process-multi-agent-roles` yes (the
+  opted-in additions are S183)
 - When: `model-record-gate.sh <pr-number>` runs
 - Then: a missing stage among Discovery/Planning/Test/Implementation/Review
   is reported, one line per stage; nothing is reported once all five are
@@ -1762,10 +1764,10 @@ something new is being added.
 ### S153 — live_text()'s fence-detection regex is mawk-portable
 **Covers:** F34, F35
 - Given: the real, shipped `live_text()` function re-extracted verbatim
-  at test time from both `compliance-evidence.sh` and
-  `role-label-staleness.sh` (the same no-stale-copy technique
+  at test time from `compliance-evidence.sh`,
+  `role-label-staleness.sh` and (since #371) `model-record-gate.sh` (the same no-stale-copy technique
   S151's Q21-Q23 already use, with the extraction itself asserted
-  non-empty and the two files' bodies asserted byte-identical before any
+  non-empty and the copies asserted byte-identical before any
   golden case runs, so a bad extraction or a drifted copy can't silently
   make the test re-check the wrong function), run under mawk
   specifically — not gawk, which is this repo's usual local/CI `awk` and
@@ -1957,7 +1959,9 @@ something new is being added.
 - Given: the installed `role-contracts` skill in an adopted project, and
   the stage order and `role:<name>` labels as `role-label-staleness.sh`
   defines them (issue #369, AC6; Architect decision A14(b)/(c))
-- When: the skill's tables and text are read
+- When: the skill's tables and text are read (the stage table in the
+  skill's `ORCHESTRATOR.md`, its single home since #371 A16, which
+  `SKILL.md` must point to)
 - Then: one table row per stage, in pipeline order (Discovery, Planning,
   Test, Implementation, Review), names the stage as its own cell together
   with that stage's label (`role:product`, `role:architect`, `role:qa`,

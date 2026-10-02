@@ -321,6 +321,8 @@ collides and nothing is renumbered.
   `stage=` table (the same order and labels `role-label-staleness.sh` checks,
   asserted by S160), that every role takes part in every change, and the
   idempotent `gh label create` command for the five `role:*` labels.
+  *Amended by A16 (#371):* the table moved to the skill's `ORCHESTRATOR.md`,
+  the single home of the run rules; this section points to it.
 - **(d) Opt-in guard** in the skill's `description` and first line: apply it
   only when the project's `WORKFLOW-ADOPTION.md` answers
   `process-multi-agent-roles` yes.
@@ -356,3 +358,118 @@ collides and nothing is renumbered.
   `skills/pre-merge-review/model-record-gate.sh`).
 - **Known limit:** with several git remotes `gh` may need `gh repo set-default`;
   the README, the `role-contracts` skill and the `CHANGES.md` entry say so.
+
+---
+
+# Architecture decision — Sessions apply the multi-agent pipeline automatically (#371)
+
+**Decided on 2026-10-01, amended 2026-10-02.** #369 made the pipeline
+adoptable, but nothing a session loaded told it to *run* the pipeline: a
+session in this repo did a whole work item alone, playing every role. A
+process that rests on an agent remembering prose doesn't happen (#238/#241).
+The decisions below make activation conditional and mechanical, make a
+role-played run detectable before merge, and stop future workflow changes
+from shipping as prose no session loads. Continues A14/A15 (#369).
+
+### A16 — Activation is a conditional SessionStart injection with a single source
+- **Source of truth:** `skills/role-contracts/ORCHESTRATOR.md` (about 30
+  lines) is the only place the run rules are stated: work item vs. not, the
+  announce / `role:product` / dispatch-Product start, the stage → role →
+  label → `model-record` table, fresh (never `fork`) dispatch with every
+  prompt starting `ROLE SESSION: <role>`, the human override record, "can't
+  dispatch: stop and ask", and resume from the latest evidenced stage
+  (`role-label-staleness.sh`). Its first line tells a role session the file
+  does not apply to it. `SKILL.md` points to it (A14(c) amended).
+- **Channel:** the clone-root `session-context.sh <project>`, a third
+  `SessionStart` command resolved through the project's
+  `.claude/settings.json` symlink (`readlink`), like `pending-changes.sh`. For
+  every `CHANGES.md` entry the project answers yes whose `Reaches session`
+  field declares `session-context: <path>` (A17), it prints that file
+  verbatim. A no, unanswered or not-applicable row prints nothing (AC3 by
+  construction). The file is read from the clone on every run, so a later
+  release reaches the next session without re-adoption (AC11). A missing
+  declared file warns on stderr; the script always exits 0.
+- **One yes rule:** `answered_yes <project> <id>` in `lib/changes.sh`
+  (Answer column only, `WORKFLOW-ADOPTION.md` before `WORKFLOW-ADOPTIE.md`,
+  `yes`/`ja`, pre-rename ids) replaces `adopt.sh`'s hard-coded
+  `issue_tracking_answered_yes`. Callers: `adopt.sh`, `session-context.sh`,
+  `model-record-gate.sh` and the merge guard.
+- **`CLAUDE.md` drift:** `session-context.sh` (not the hook JSON, which stays
+  a thin dispatcher) warns when the project's `CLAUDE.md` is not a symlink to
+  the clone's `WORKFLOW.md`, with "run adopt.sh again".
+- **This repo:** no special case (AC2); it answers its own row yes.
+- **Platform facts (probed once, Claude Code 2.1.287, headless `-p`):**
+  `SessionStart` output reached the top-level session and not a fresh
+  `general-purpose` subagent it dispatched; the hook fired again with
+  `source` `resume` (and the new text reached the resumed session) and with
+  `source` `compact`. Not probed: interactive mode, a `fork` dispatch, and
+  whether the post-compaction context keeps the text.
+- **Rejected:** text in `WORKFLOW.md`/`CLAUDE.md` (unconditional, loads into
+  role sessions too), a `UserPromptSubmit` hook (fires on every prompt, can't
+  tell a work item from a question), a skill-description trigger
+  (probabilistic, the failure itself), user-level text (per user, not per
+  project), a `PreToolUse` `Edit|Write` block until Product is evidenced
+  (needs `gh` on every edit, fires inside role sessions; held as the revisit
+  trigger below).
+- **Violated when:** the run rules appear in a second file, or the injection
+  fires for a row that isn't yes (S177-S180).
+- **Revisit when:** A18 flags two or more role-played runs without an
+  override after #371 ships; then consider the `PreToolUse` block.
+
+### A17 — Every `CHANGES.md` entry declares how it reaches a session
+- **Field:** a required `**Reaches session:**` on every entry, one or more
+  comma-separated values from a closed vocabulary (`none`,
+  `always-loaded: <path>`, `session-context: <path>`, `hook: <path>`,
+  `gate: <path>`). The vocabulary is documented once, in `CHANGES.md`'s
+  preamble; `reaches_session_values`/`reaches_session_invalid` in
+  `lib/changes.sh` read and enforce it (`session-context.sh` uses the same
+  parser).
+- **Machine-checked by `./check`** (§3a2): the field is present, each value
+  is in the vocabulary (`none` stands alone), each path exists, and each path
+  is named in at least one `test/cases/*.sh`. Failures name the entry, the
+  field and the culprit.
+- **Reviewer judgment, deliberately not mechanised:** whether `none` is
+  honest for a given *Yes means*. No prose grep of *Yes means*.
+- **Not a meaning change:** no **Meaning version** bump. All existing
+  entries were backfilled at once, no exempt list (human decision).
+- **Violated when:** an entry ships without the field, or a declared path
+  isn't exercised by a test (S181, S182).
+
+### A18 — Role-session guard and role-play detection, enforced at merge
+- **Recursion (AC5):** three layers: the injection reaches only the
+  top-level session (A16's probe), roles are dispatched fresh and never
+  forked, and `ORCHESTRATOR.md`'s first line excludes any prompt starting
+  `ROLE SESSION:`. No `SubagentStart` hook.
+- **Override record (AC6):**
+  `<!-- pipeline-override: decided-by="..." scope="single-session|skip=<Stage>" reason="..." -->`,
+  live text (not fenced, not a code span, not a blockquote, same `live_text`
+  rule as `compliance-evidence.sh`, copied verbatim and kept identical by
+  S153), every field non-empty, `scope` from that closed list. Searched in
+  the same sources as the markers. `single-session` waives every finding;
+  `skip=<Stage>` waives only that stage's absence.
+- **Detection (AC9):** `model-record-gate.sh`, only when `answered_yes`
+  holds for the project it runs in, prints one line per finding starting
+  `role-played: `: several different stages' live markers in one text
+  (comment, review or PR description), or any of the five stages missing.
+  The existing output is unchanged; exit stays 0. Opted in, the comment and
+  review calls frame each body (U+001E) so one text can be told from the
+  next; not opted in, the calls are exactly as before. A closing issue that
+  can't be read skips the role-play check (a missing Discovery could be a
+  lookup failure).
+- **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
+  `check_merge_guard` in `hooks/git-guardrails` gains a last step,
+  `check_role_play_guard`: only when the project answers yes, it runs the
+  clone's `skills/pre-merge-review/model-record-gate.sh` on the PR and
+  refuses `gh pr merge` on any `role-played: ` line. One owner: the gate
+  computes the rule, the guard reads the prefix. Fails open without `gh`,
+  network, a resolvable PR number, or the lib/gate in the clone. Same gate
+  as the review-marker check: the same `no` on `quality-review-before-merge`
+  and `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` turn it off (S186).
+- **AC12:** `model-choice`'s "No behavior change" section is rewritten
+  (single session is the norm only where the row isn't yes), and the gate's
+  header no longer claims one session may do every stage (S184).
+- **Accepted limit:** a session that deliberately forges five separate stage
+  comments is not detected. Same non-adversarial trust model as every gate.
+- **Violated when:** a role-played run without a valid override merges in an
+  opted-in project with `gh` available, or a project that didn't answer yes
+  sees a new finding or block (S183, S186).

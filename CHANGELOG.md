@@ -13,6 +13,23 @@ point.
 
 ## Unreleased
 
+- **Fix #371: sessions in opted-in projects apply the multi-agent pipeline automatically.**
+  In a project whose `WORKFLOW-ADOPTION.md` answers `process-multi-agent-roles` yes (this
+  repo now included), a new `SessionStart` command runs `session-context.sh`, which prints the
+  `role-contracts` skill's new `ORCHESTRATOR.md` (the single home of the run rules: work item
+  definition, stage table, fresh non-fork dispatch, human override record, stop-and-ask,
+  resume) into every session; a no or unanswered row prints nothing. It also warns when the
+  project's `CLAUDE.md` is no longer the link to `WORKFLOW.md`. `model-record-gate.sh` flags a
+  role-played run (several stages' markers in one text, or a stage missing) with a
+  `role-played: ` line, opted-in projects only, unless a valid `pipeline-override` record is
+  present; the merge guard refuses `gh pr merge` on it (opted-in projects only, fail-open
+  without `gh`/network). One shared `answered_yes` rule in `lib/changes.sh` replaces
+  `adopt.sh`'s hard-coded helper. Every `CHANGES.md` entry now carries a required
+  `Reaches session:` field (vocabulary in the `CHANGES.md` preamble), checked by `./check`.
+  `model-choice` no longer says one session doing every stage is fine regardless of the row.
+  Adopted projects get all of this through the existing symlinks; the behaviour itself
+  (whether a session follows the rules it is given) needs a human dry run.
+
 - **Fix #378: `pre-commit` no longer runs the full `./check`.** It runs the project's declared `check-commit` within a 30 s budget: a static failure blocks, a timeout (TERM, 2 s grace, then KILL to the whole process group) warns, a non-integer `COMMIT_CHECK_BUDGET` is rejected, and the test suite never runs at commit time. A project without `check-commit` gets one warning line, and the full `./check` runs in CI as before. Adopters with a `check`: see `CHANGES.md` `ci-commit-check`.
 
 - **Fix #377: `./check` and the test suite are isolated from git's repo-local environment.**
@@ -37,7 +54,7 @@ point.
   (`$SPEC_DRIVEN_GUARDRAILS_DIR/<script>`, run from the adopted project's checkout); they are
   not installed. `pre-merge-review` now runs `classify-review-depth.sh` by that path too: it
   said `./classify-review-depth.sh`, which no adopted project has. README no longer says the
-  pipeline is not adoptable. Nothing applies the pipeline automatically (that is #371).
+  pipeline is not adoptable. Automatic activation followed in #371 (above).
 
 ## v0.2.0 — multi-agent development workflow (2026-09-30)
 

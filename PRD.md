@@ -1251,7 +1251,9 @@ F37 made the multi-agent workflow adoptable, but nothing makes a session
 apply it. Verified failure (2026-10-01, while working on #369): a session
 in this repo did the whole change itself, playing every role, and only
 started the pipeline after the human asked why. Nothing it loaded told it
-to: this repo has no `CLAUDE.md`, `SessionStart` reports only unanswered
+to: this repo's local `CLAUDE.md` link had gone missing (machine-local
+drift that nothing reported; `WORKFLOW.md` said nothing conditional on a
+yes row anyway), `SessionStart` reports only unanswered
 rows, `role-contracts` isn't auto-loaded, `model-choice` says a single
 session per stage is fine, and the evidence can't tell a dispatched
 pipeline from one session playing five roles. This feature states the
@@ -1293,8 +1295,13 @@ AC1 and AC4-AC8 (starting the pipeline, declining it for non-work-items,
 never nesting, stopping when it cannot dispatch, resuming at the right
 stage) can only be shown by a human dry run in a real session. Scenarios
 cover the loaded text and hooks that are supposed to cause that
-behaviour, not the behaviour. The merge-time block in AC9 is likewise
-checked only as documented text (S185), not by a live merge refusal.
+behaviour, not the behaviour. The merge-time block in AC9 is mechanical:
+the merge guard refuses `gh pr merge` on the gate's `role-played:`
+finding in an opted-in project (S183, S186); S185 checks the review
+procedure says the same. Delivery depends on two platform facts, probed
+once (Claude Code 2.1.287, headless): `SessionStart` output reaches the
+top-level session but not a freshly dispatched subagent, and the hook
+fires again on resume and after compaction.
 
 Not part of this feature: orchestrator software, per-change-type phase
 shortening (#281), changing the role contracts' content (#369), and
