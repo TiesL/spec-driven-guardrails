@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S182 — Every CHANGES.md entry carries Reaches session; the new entry's
 # values are the decided ones.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, AC10 + human decision 4 (all existing entries now, no exempt
 # list). Seam: this repo's own CHANGES.md. Structure only; the per-value

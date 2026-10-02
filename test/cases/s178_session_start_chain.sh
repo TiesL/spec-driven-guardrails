@@ -2,7 +2,7 @@
 # S178 — The SessionStart hook chain delivers the orchestrator rules to an
 # opted-in project, reaches it without re-adoption, and warns when CLAUDE.md
 # is not linked.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A16, AC1/AC3/AC11. Seam: the SessionStart commands exactly as
 # a project's .claude/settings.json symlink exposes them, run the way Claude
@@ -100,6 +100,9 @@ else
   case "$session_cmd" in
     *'readlink'*) ;;
     *) fail "S178/7 — the session-context command does not resolve the clone through readlink" ;;
+  esac
+  case "$session_cmd" in
+    *CLAUDE.md*) fail "S178/7 — the CLAUDE.md warning must live in session-context.sh, not in the hook JSON" ;;
   esac
   case "$session_cmd" in
     */Users/*|*/home/*|*SPEC_DRIVEN_GUARDRAILS_DIR*) fail "S178/7 — the session-context command hard-codes a path or relies on an env var" ;;

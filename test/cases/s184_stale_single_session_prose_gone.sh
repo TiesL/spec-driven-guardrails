@@ -2,7 +2,7 @@
 # S184 — No installed or always-loaded text tells an opted-in session that
 # one session doing every stage is the norm, or that nothing applies the
 # pipeline automatically.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, AC12 plus the Reviewer's note on PR #385 (README sentence and
 # the entry's "Yes means" go stale once activation is automatic). Seam: the

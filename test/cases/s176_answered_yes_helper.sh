@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S176 — answered_yes: one shared "is this row answered yes" rule.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A16 (the helper replaces adopt.sh's hard-coded
 # issue_tracking_answered_yes). Seam: lib/changes.sh `answered_yes

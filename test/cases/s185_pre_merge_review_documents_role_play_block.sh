@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # S185 — The pre-merge-review skill says a role-played run blocks the merge.
-# Covers: F37
+# Covers: F38
 #
-# Issue #371, AC9 and human decision 3. The gate itself only prints
-# findings and exits 0 (S183); blocking is the review verdict withholding
-# its approval marker, so the mechanical proxy is that the procedure the
-# reviewer follows says so, including the override record and the
-# fail-open case. Whether a reviewer follows it is Reviewer behaviour.
+# Issue #371, AC9 and human decision 3. The mechanical block is the merge
+# guard (S186); the gate itself only prints findings (S183). This checks the
+# review procedure tells the Reviewer the same thing, including the override
+# record and the fail-open case, so the two do not contradict each other.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

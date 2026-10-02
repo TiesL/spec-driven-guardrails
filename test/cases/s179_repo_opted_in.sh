@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S179 — This repo answers process-multi-agent-roles yes and gets the
 # orchestrator rules at session start like any other opted-in project.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, AC2 (and human decision 2). Seam: this repo's own
 # WORKFLOW-ADOPTION.md and session-context.sh run against this repo's own

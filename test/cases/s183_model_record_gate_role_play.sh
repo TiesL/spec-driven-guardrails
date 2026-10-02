@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # S183 — model-record-gate.sh flags a role-played run, in opted-in projects
 # only, unless a valid override is recorded.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A18, AC3, AC6, AC9 and human decision 3. Seam: the installed
 # gate script, run with the project as cwd, against a data-driven fake `gh`
 # (fixtures/pipeline-371-helpers.sh), so the gate's own call shapes are not
 # pinned. A "role-played run" is: one comment (or the PR body) carrying live
 # markers of two or more different stages, or any of the five stages
-# missing. Output contract asserted: a finding contains the word
-# "role-played" (stdout); with a valid override the gate may print a note
-# but it must not use that word (QA's contract, to keep the two states
-# unambiguous: a note says e.g. "pipeline-override recorded"). The existing "no record found for stage" lines are
+# missing. Output contract (ratified by the Architect): each finding is a
+# stdout line starting "role-played: "; with a valid override (scope
+# single-session or skip=<Stage>) there is no such line (a note may be
+# printed, never with that prefix). The existing "no record found for stage" lines are
 # S130's and stay as they are.
 #
 # Not asserted here: that a finding BLOCKS the merge (the pre-merge review
@@ -50,7 +50,7 @@ write_adoption "$old_p/WORKFLOW-ADOPTIE.md" "$id" ja
 # data <pr-body> <issue-239-comments...>: resets PR 246 / issue 239 data.
 # Callers then set PR comments / reviews themselves.
 reset_data() {
-  rm -f "$FAKE_GH_DATA"/*.json
+  rm -f "${FAKE_GH_DATA:?}"/*.json
   json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "${1:-Closes #239}"
   json_comments "$FAKE_GH_DATA/reviews-246.json"
   json_comments "$FAKE_GH_DATA/comments-246.json"
@@ -61,7 +61,7 @@ gate() { # project -> stdout in $out, status in $status
   out="$(cd "$1" && PATH="$fakebin:$PATH" "$script" 246 2>/dev/null)"
   status=$?
 }
-flagged() { grep -qi 'role-played' <<<"$out"; }
+flagged() { grep -q '^role-played: ' <<<"$out"; }
 
 dispatched() { # the shape of a real pipeline: Discovery on the issue, one comment per stage
   reset_data
@@ -173,6 +173,17 @@ json_comments "$FAKE_GH_DATA/comments-239.json" \
   '<!-- pipeline-override: scope="single-session" reason="because" -->'
 gate "$yes_p"
 flagged || fail "S183/9 — an override without decided-by silenced the finding"
+
+# 9b. scope must come from the closed vocabulary.
+all_in_one
+for bad_scope in whenever skip=Bogus skip= single-sessions; do
+  json_comments "$FAKE_GH_DATA/comments-239.json" "$(override_marker human "$bad_scope" "because")"
+  gate "$yes_p"
+  flagged || fail "S183/9b — an override with scope=\"$bad_scope\" silenced the finding"
+done
+json_comments "$FAKE_GH_DATA/comments-239.json" "$(override_marker human single-session "because")"
+gate "$yes_p"
+flagged && fail "S183/9b — a valid single-session override did not silence the finding"
 
 # 10. An override quoted for illustration is not a record.
 all_in_one

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S177 — session-context.sh prints a change's session-context file only for
 # a project that answered that change's row yes.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A16, AC1/AC3/AC4-by-construction. Seam: the clone-root script
 # `session-context.sh <project>`. The mechanism is generic (every CHANGES.md
@@ -58,6 +58,8 @@ ENTRY
 } > "$wf/CHANGES.md"
 
 run() { # project -> stdout in $out, status in $status
+  # a correctly linked CLAUDE.md, so only the session-context text can show
+  [ -d "$1" ] && [ ! -e "$1/CLAUDE.md" ] && ln -s "$wf/WORKFLOW.md" "$1/CLAUDE.md"
   out="$("$wf/session-context.sh" "$1" 2>/dev/null)"
   status=$?
 }
@@ -125,6 +127,37 @@ run "$p"
 [ "$status" -eq 0 ] && [ -z "$out" ] || fail "S177/8 — no adoption file: expected silent exit 0, got status $status, output: $out"
 run "$SANDBOX/does-not-exist"
 [ "$status" -eq 0 ] || fail "S177/8 — nonexistent project: exit $status"
+
+# 6b. a missing declared file warns on stderr only, prints nothing for it.
+p="$(fresh_project ghost2)"
+write_adoption "$p/WORKFLOW-ADOPTION.md" ghost-feature yes
+run "$p"
+[ -z "$out" ] || fail "S177/6b — a missing declared file produced stdout: $out"
+err="$("$wf/session-context.sh" "$p" 2>&1 >/dev/null)"
+[ -n "$err" ] || fail "S177/6b — expected a warning on stderr for the missing declared file"
+
+# 10. CLAUDE.md link drift warning lives in session-context.sh (Architect's
+# ruling): silent when CLAUDE.md links to the clone's WORKFLOW.md, a warning
+# naming CLAUDE.md and adopt.sh when it is missing, a regular file, or
+# links elsewhere; the declared-yes text is still printed with it.
+p="$(fresh_project drift)"
+write_adoption "$p/WORKFLOW-ADOPTION.md" alpha-feature yes
+mkdir -p "$p/.claude"
+ln -s "$wf/settings/session-hooks.json" "$p/.claude/settings.json"
+ln -s "$wf/WORKFLOW.md" "$p/CLAUDE.md"
+run "$p"
+case "$out" in *CLAUDE.md*) fail "S177/10 — a correct CLAUDE.md link produced a warning: $out" ;; esac
+rm -f "$p/CLAUDE.md"
+out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
+assert_contains "S177/10 — missing link: warning names CLAUDE.md" "CLAUDE.md" "$out"
+assert_contains "S177/10 — missing link: warning says to run adopt.sh" "adopt.sh" "$out"
+assert_contains "S177/10 — the session-context text is still printed" "ALPHA-SENTINEL-371" "$out"
+printf 'own notes\n' > "$p/CLAUDE.md"
+out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
+assert_contains "S177/10 — regular file instead of the link" "CLAUDE.md" "$out"
+rm -f "$p/CLAUDE.md"; ln -s "$SANDBOX/elsewhere.md" "$p/CLAUDE.md"
+out="$("$wf/session-context.sh" "$p" 2>/dev/null)"
+assert_contains "S177/10 — link to the wrong file" "CLAUDE.md" "$out"
 
 # 9. the script reads the clone it lives in, not a path baked in: a changed
 # session-context file shows up on the next run (AC11 at script level).

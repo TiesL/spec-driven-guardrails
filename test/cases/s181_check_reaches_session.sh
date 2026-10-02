@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S181 — ./check rejects a CHANGES.md entry with no declared session path.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A17, AC10. Seam: `check --no-tests` on a sandbox copy of this
 # repo whose CHANGES.md is edited per case. The structural rule only: the

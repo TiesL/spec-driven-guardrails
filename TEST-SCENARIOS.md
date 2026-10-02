@@ -2180,7 +2180,7 @@ something new is being added.
   `./check` child
 
 ### S176 — answered_yes is one shared rule for "this row is answered yes"
-**Covers:** F37
+**Covers:** F38
 - Given: projects whose WORKFLOW-ADOPTION.md (or the pre-migration
   WORKFLOW-ADOPTIE.md) holds a row for an id with answer yes, ja, no, nee,
   a yes only in the Notes column, a similar-looking id, a renamed id, or no
@@ -2191,7 +2191,7 @@ something new is being added.
   `adopt.sh` no longer carries its own hard-coded copy of the rule
 
 ### S177 — session-context.sh prints a session-context file only for a yes row
-**Covers:** F37
+**Covers:** F38
 - Given: a clone whose entries declare `session-context: <path>` values
   (alone or in a comma list with a gate value), and projects with mixed
   yes/no/unanswered rows, `ja` in the old file, similar ids, a declared
@@ -2200,10 +2200,14 @@ something new is being added.
 - When: `session-context.sh <project>` runs
 - Then: it prints exactly the files of the entries answered yes, each once;
   nothing for no/unanswered/gate-only/none entries; it exits 0 in every case,
-  and a later version of a file is what the next run prints
+  and a missing declared file only warns on stderr, and a later version of a
+  file is what the next run prints; for a project whose `CLAUDE.md` is
+  missing, a regular file or linked elsewhere it also prints a warning that
+  names `CLAUDE.md` and `adopt.sh` (silent when linked to the clone's
+  `WORKFLOW.md`)
 
 ### S178 — the SessionStart chain delivers the rules, reaches the project without re-adoption, and warns on a broken CLAUDE.md link
-**Covers:** F37
+**Covers:** F38
 - Given: a real adoption from a copy of this clone, with the row answered
   yes, no, and never (issue #371, A16, AC1, AC3, AC11)
 - When: every SessionStart command from the project's `.claude/settings.json`
@@ -2214,10 +2218,11 @@ something new is being added.
   pending-changes; a missing, regular-file or wrongly linked `CLAUDE.md`
   yields a warning that names it and says to run `adopt.sh`, a correct link
   none, and the rules are delivered regardless; the session-context command
-  finds the clone by `readlink`, hard-coding no path
+  finds the clone by `readlink`, hard-coding no path, and carries no
+  `CLAUDE.md` warning logic itself (that lives in `session-context.sh`)
 
 ### S179 — this repo answers its own row yes and gets the rules at session start
-**Covers:** F37
+**Covers:** F38
 - Given: this repo's own WORKFLOW-ADOPTION.md and tree (issue #371, AC2)
 - When: `answered_yes` is asked for `process-multi-agent-roles`, and
   `session-context.sh` runs on this repo, and on a project answering no
@@ -2226,7 +2231,7 @@ something new is being added.
   it; no repo-specific special case
 
 ### S180 — ORCHESTRATOR.md states the run rules once, short, with the recursion guard first
-**Covers:** F37
+**Covers:** F38
 - Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #371, A16/A18, AC1,
   AC4-AC8; the mechanical proxy for model behaviour that cannot be asserted)
 - When: it is read
@@ -2240,7 +2245,7 @@ something new is being added.
   (with `role-label-staleness.sh`); `SKILL.md` points to it; it stays short
 
 ### S181 — ./check rejects a CHANGES.md entry with no declared session path
-**Covers:** F37
+**Covers:** F38
 - Given: a copy of this repo whose `process-multi-agent-roles` entry has the
   Reaches session field missing, only in prose, empty, outside the
   vocabulary, pointing at a missing file, pointing at a file no test names,
@@ -2251,7 +2256,7 @@ something new is being added.
   `always-loaded: WORKFLOW.md`, and for a hook path once a test case names it
 
 ### S182 — every CHANGES.md entry declares how it reaches a session
-**Covers:** F37
+**Covers:** F38
 - Given: this repo's CHANGES.md (issue #371, AC10, human decision 4)
 - When: its entries are read
 - Then: every entry has a non-empty Reaches session value; the preamble
@@ -2261,7 +2266,7 @@ something new is being added.
   Meaning version
 
 ### S183 — the model-record gate flags a role-played run in opted-in projects only
-**Covers:** F37
+**Covers:** F38
 - Given: PR and issue data from a data-driven fake `gh`: a dispatched run
   (one marker per comment), all five markers in one comment, two stages in
   the PR body, two in one review body, one stage twice in one text,
@@ -2271,15 +2276,15 @@ something new is being added.
   (issue #371, A18, AC3, AC6, AC9)
 - When: `model-record-gate.sh <pr>` runs with the project as cwd
 - Then: a run with live markers of two different stages in one text, or
-  with a stage missing, gets a finding with the word "role-played" in
+  with a stage missing, gets a finding line starting `role-played: ` in
   opted-in projects only; a dispatched run, a repeated single stage and
-  quoted markers get none; a valid override (decided-by, scope, reason; not
-  quoted) removes the finding, an empty-reason, who-less or quoted one does
-  not; with gh failing or absent it exits 0 and invents no finding; the
+  quoted markers get none; a valid override (decided-by, reason, and a scope of
+  `single-session` or `skip=<Stage>`; not quoted) removes the finding, an
+  empty-reason, who-less, unknown-scope or quoted one does not; with gh failing or absent it exits 0 and invents no finding; the
   gate exits 0 whenever it runs
 
 ### S184 — no installed or always-loaded text says one session doing every stage is the norm
-**Covers:** F37
+**Covers:** F38
 - Given: `model-choice`, the gate header, the README and the
   `process-multi-agent-roles` entry (issue #371, AC12, Reviewer note on
   PR #385)
@@ -2290,10 +2295,24 @@ something new is being added.
   the pipeline or that automatic activation is a separate work item, and
   name `ORCHESTRATOR.md` and session start
 
-### S185 — the pre-merge-review skill says a role-played run blocks the merge
-**Covers:** F37
+### S185 — the pre-merge-review skill says a role-played run blocks the merge (the block itself is S186)
+**Covers:** F38
 - Given: `skills/pre-merge-review/SKILL.md` (issue #371, AC9, human
   decision 3)
 - When: the paragraph about a role-played run is read
 - Then: it says the finding blocks (not non-blocking), mentions the
   `pipeline-override` record and that without `gh` the check passes
+
+### S186 — the merge guard refuses `gh pr merge` on a role-played run, in opted-in projects only
+**Covers:** F38
+- Given: a fake `gh` that passes the existing review-marker check, PR data
+  for a dispatched run, for all five markers in one comment, and for the
+  same with a valid override; projects that answer `process-multi-agent-roles`
+  yes, no, never, or an opted-in project with the REST calls failing or no
+  `gh` (issue #371, AC9, A18 amendment)
+- When: `hooks/git-guardrails` receives `gh pr merge 246`
+- Then: the opted-in role-played run is refused (exit 2) with a message that
+  says role-played; the dispatched run and the validly overridden run go
+  through; no/never projects are unaffected; failing or absent gh fails open;
+  a missing review marker still blocks as before; the explicit
+  `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through

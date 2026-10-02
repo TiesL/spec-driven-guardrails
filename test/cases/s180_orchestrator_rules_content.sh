@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S180 — ORCHESTRATOR.md states the run rules, once, in the one place that
 # session-context.sh injects.
-# Covers: F37
+# Covers: F38
 #
 # Issue #371, A16/A18, AC1, AC4-AC8. What a session DOES with these rules
 # (starts the pipeline unprompted, declines for a question, never nests,

@@ -148,3 +148,28 @@ GHEOF
   chmod +x "$bin/gh"
   echo "$bin"
 }
+
+# fake_gh_merge_rest <data-dir>: fake_gh_rest plus the two calls the merge
+# guard itself makes: `gh pr view --json comments,headRefOid` answers with a
+# review marker matching HEAD (so the existing review check passes and only
+# the role-play step can decide), any other `gh pr ...` call fails (the CI
+# check then fails open, as in the other merge-guard tests). Echoes the bin dir.
+# A second argument "nomarker" makes the PR carry no review marker.
+fake_gh_merge_rest() {
+  local rest bin="$SANDBOX/fakegh-merge-${2:-marker}" sha="1111111111111111111111111111111111111111" body
+  body="<!-- pre-merge-review:done sha=$sha -->"
+  [ "${2:-}" = "nomarker" ] && body="no review yet"
+  rest="$(fake_gh_rest "$1")"
+  mkdir -p "$bin"
+  cat > "$bin/gh" <<GHEOF
+#!/usr/bin/env bash
+if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s' '{"headRefOid":"$sha","comments":[{"body":"$body"}]}'
+  exit 0
+fi
+[ "\${1:-}" = "pr" ] && exit 1
+exec "$rest/gh" "\$@"
+GHEOF
+  chmod +x "$bin/gh"
+  echo "$bin"
+}
