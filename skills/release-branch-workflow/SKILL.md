@@ -113,6 +113,17 @@ above is clean and CI is green:
   bump proposal in one step — don't make this two separate round-trips.
 - After merging, tag the release per the project's own tagging convention.
 
+## GitHub won't auto-close issues for you here
+
+GitHub's own auto-close-on-merge (the "Closes #N" behavior) only fires for a PR
+whose base is the repo's **default** branch. A work-item PR merged into a
+release branch (not `main`) will not auto-close the issue it declares — the
+same way issue #308 had to be closed by hand. This is a GitHub server
+limitation, not something `hooks/git-guardrails` or this skill can fix.
+Whoever merges a work-item PR into a release branch is responsible for
+explicitly closing the issue(s) it declares (`gh issue close <n>`), the same
+moment they'd otherwise have relied on GitHub to do it automatically.
+
 ## What this skill does not cover
 
 This skill is procedural guidance, not a script — nothing here is
