@@ -576,6 +576,16 @@ resolve_stray_closes_pr_number() {
   return 1
 }
 
+# Known, separate limitation this guard does NOT fix (issue #373/A15):
+# GitHub's own auto-close-on-merge only fires for a PR whose base is the
+# repo's default branch. A work-item PR merged into a release branch
+# (not `main`) will not auto-close the issue it declares, the same way
+# issue #308 had to be closed by hand. This guard's own closed-issue
+# lookup (below) is unrelated — it stops an already-closed issue from
+# being wrongly flagged as stray, it doesn't make GitHub close anything.
+# See the `release-branch-workflow` skill for the operational guidance
+# (closing the issue explicitly is the merger's own responsibility for a
+# release-branch-base PR) until/unless this gets its own mechanism.
 check_stray_closes_guard() {
   local target="$1"
 
@@ -724,7 +734,7 @@ for rec in commits_blob.split(RECORD_SEP):
       fi
     done
     if [ "$found" -eq 0 ]; then
-      issue_state="$(gh issue view "$n" --json state --jq .state 2>/dev/null)"
+      issue_state="$(cd "$workdir" && gh issue view "$n" --json state --jq .state 2>/dev/null)"
       checked_nums+=("$n")
       checked_states+=("$issue_state")
     fi
