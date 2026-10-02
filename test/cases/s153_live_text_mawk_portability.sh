@@ -59,6 +59,10 @@ body_b="$(awk '/^live_text\(\) \{/,/^}/' "$TEST_REPO_ROOT/role-label-staleness.s
 [ -n "$body_a" ] || fail "S153 — extracting live_text() from compliance-evidence.sh produced nothing"
 [ -n "$body_b" ] || fail "S153 — extracting live_text() from role-label-staleness.sh produced nothing"
 [ "$body_a" = "$body_b" ] || fail "S153 — live_text() has drifted between compliance-evidence.sh and role-label-staleness.sh (must be copied verbatim)"
+# #371: model-record-gate.sh (installed in adopted projects) carries a
+# third copy for its role-play check; same rule, same byte-identity.
+body_c="$(awk '/^live_text\(\) \{/,/^}/' "$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh")"
+[ "$body_a" = "$body_c" ] || fail "S153 — live_text() has drifted between compliance-evidence.sh and skills/pre-merge-review/model-record-gate.sh (must be copied verbatim)"
 
 # Static guard against a regression back to brace-interval syntax
 # (`{0,3}`, `{3,}`) in the fence regex, found during PR #325's own
@@ -71,7 +75,7 @@ body_b="$(awk '/^live_text\(\) \{/,/^}/' "$TEST_REPO_ROOT/role-label-staleness.s
 # under mawk specifically) precisely because it must catch the
 # regression on every runner, including this container's own newer mawk
 # and gawk, neither of which would otherwise notice.
-if grep -qE 'match\(line, /\^[^/]*\{[0-9]+,' <<<"$body_a$body_b"; then
+if grep -qE 'match\(line, /\^[^/]*\{[0-9]+,' <<<"$body_a$body_b$body_c"; then
   fail "S153 — live_text()'s fence regex has regressed to brace-interval syntax (\`{n,m}\`); replace with \`? ? ?\` (issue #319) — this would NOT be caught by the golden cases alone on a runner whose mawk happens to support brace intervals"
 fi
 

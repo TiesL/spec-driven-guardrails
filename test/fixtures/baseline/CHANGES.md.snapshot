@@ -27,6 +27,26 @@ Per entry:
   with the code. The condition is re-evaluated every session, so a change
   still surfaces once it becomes relevant for a project.
 - **Yes means** — what concretely happens on a `yes`.
+- **Reaches session** — required (#371, A17): how the behaviour that *Yes
+  means* asks of a session actually reaches an opted-in session. Prose that
+  no session loads doesn't happen (#238/#241/#371). One or more values,
+  comma-separated, from this closed list (this bullet is the one place the
+  list is documented; `reaches_session_invalid` in `lib/changes.sh` enforces
+  it):
+  - `none` — *Yes means* asks nothing of a session (CI configuration, a
+    project file, a script that runs on its own). Stands alone.
+  - `always-loaded: <path>` — text every session loads (`WORKFLOW.md`, the
+    `CLAUDE.md` link target, including its routing table).
+  - `session-context: <path>` — printed at session start by
+    `session-context.sh`, only in a project that answered this entry `yes`.
+  - `hook: <path>` — a Claude Code or git hook that enforces it.
+  - `gate: <path>` — a pre-merge gate script that detects it.
+
+  `./check` verifies that the field is present, every value is from this
+  list, every path exists, and every path is named in at least one
+  `test/cases/*.sh` (the test that exercises it). Whether `none` is honest
+  for a given *Yes means* is the reviewer's judgment, not checked. Adding or
+  changing this field is not a meaning change: no **Meaning version** bump.
 - **PR** — the linkback (W21, F15): the PR that establishes this. That's the
   PR that actually delivers the underlying capability, not necessarily the
   PR that last touched this row. On a later rewrite, rename, or split (like
@@ -83,6 +103,7 @@ the shared parser warns if it has no `Applies if`.
   `adopt.sh` scaffolds `templates/ci.yml` if there's no workflow yet; a
   custom, more elaborate workflow is fine, as long as it follows the
   convention.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/2
 
 ## deploy-guards
@@ -93,6 +114,7 @@ the shared parser warns if it has no `Applies if`.
 - **Yes means:** the deploy script refuses to run from an unverified state,
   with the conditions per target environment from the `deploy-guards`
   skill. If that's not yet the case, make it a work item.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/3
 
 ## ci-on-pr-and-main
@@ -121,6 +143,7 @@ the shared parser warns if it has no `Applies if`.
   early. Second, this question inherits the scope of `has-check-command`
   (#248): a project with a CI workflow but no executable `check` doesn't
   get it, same as `ci-convention`.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/50
 
 ## ci-link-3-hard-block
@@ -153,6 +176,7 @@ the shared parser warns if it has no `Applies if`.
   `issues: read` — check that both `pull-requests: read` and `issues: read`
   apply to the `check` job (job- or workflow-level) — and must otherwise
   add it by hand or re-scaffold.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/75
 
 ## ci-detects-main-outside-pr
@@ -184,6 +208,7 @@ the shared parser warns if it has no `Applies if`.
   scaffolded before that fix is missing the block — check whether
   `pull-requests: read` applies anywhere to the `check` job (job- or
   workflow-level) — and must otherwise add it by hand or re-scaffold.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/76
 
 ## ci-wait-for-cadence
@@ -202,6 +227,7 @@ the shared parser warns if it has no `Applies if`.
   script's existence visible to a project that adopted before it
   shipped (#265), the same way `ci-link-3-hard-block`/
   `ci-detects-main-outside-pr` make their own scripts visible.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/279
 
 ## ci-commit-check
@@ -218,6 +244,7 @@ the shared parser warns if it has no `Applies if`.
   `check-commit`, commit time runs no check and prints one line saying the full
   `./check` runs in CI, which the merge guard requires to be green. Either way, red
   tests never block a commit or a push.
+- **Reaches session:** hook: hooks/pre-commit
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/382
 
 ## traceability-link-1
@@ -251,6 +278,7 @@ the shared parser warns if it has no `Applies if`.
   The prefix isn't fixed: `F`/`S` is customary, but a project that numbers
   its scenarios `R`/`A`/`B`/`P` works unchanged. Only the field counts — an
   ID in running text is not a reference.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/63
 
 ---
@@ -263,6 +291,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** `PRD.md` exists and is kept current (as-built or design) — see `templates/PRD.md`.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## architecture-document
@@ -271,6 +300,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** structural choices (platform, layers, data ownership, substantial dependencies) are recorded with criteria, weighed options, the decision, the architecture requirements that follow from it, and when the choice should be revisited. `adopt.sh` scaffolds the template.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## process-context-document
@@ -282,6 +312,7 @@ the shared parser warns if it has no `Applies if`.
   term arises or changes meaning, not attempted complete in one go.
   Separate from `ARCHITECTURE.md`, which is about structural decisions, not
   language. `adopt.sh` scaffolds the template once this row is `yes`.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## process-issue-tracking
@@ -290,6 +321,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** question
 - **Applies if:** always
 - **Yes means:** `adopt.sh` refreshes `.github/ISSUE_TEMPLATE/`, and work gets split from the PRD into an `Epic` issue with `Work item` issues — see `templates/ISSUE_TEMPLATE/`.
+- **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-unit
@@ -298,6 +330,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** the core logic (ideally a domain layer with no external dependencies — see `spec-testability`) has unit tests, and `check` runs them.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## test-feature-gwt
@@ -306,6 +339,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** `TEST-SCENARIOS.md` exists and covers every functionality item from the PRD with at least one Given/When/Then scenario for the expected behavior — see `templates/TEST-SCENARIOS.md`. The failure scenarios alongside those fall under `spec-failure-modes`.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/1
 
 ## test-tdd-seams
@@ -319,6 +353,7 @@ the shared parser warns if it has no `Applies if`.
   tautological, horizontal slicing) — see the `tdd-seams` skill. On top of
   `test-unit`/`test-feature-gwt`, which only ask *whether* there are tests,
   not how.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## test-integration
@@ -327,6 +362,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** question
 - **Applies if:** always
 - **Yes means:** besides unit tests, there are tests verifying the collaboration between components (or with an external platform), and `check` runs them — or an explicit reason why that isn't proportionate for this project.
+- **Reaches session:** none
 - **PR:** https://github.com/TiesL/claude-workflow/pull/6
 
 ## quality-review-before-merge
@@ -350,6 +386,7 @@ the shared parser warns if it has no `Applies if`.
   NFRs whose corresponding `spec-*` question this project answered "yes"
   to. Findings go into the PR; every finding is either resolved or
   recorded under *Technical debt* in the PRD.
+- **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## ci-gate-on-merge
@@ -377,6 +414,7 @@ the shared parser warns if it has no `Applies if`.
   identical either way. `skills/pre-merge-review/adoption-postcondition-gate.sh`
   (#239) is the mechanical backstop for a project that answers `yes`
   anyway without a real CI workflow.
+- **Reaches session:** hook: hooks/git-guardrails
 - **PR:** https://github.com/TiesL/claude-workflow/pull/82
 
 ## stray-closes-guard
@@ -393,6 +431,7 @@ the shared parser warns if it has no `Applies if`.
   for real (issue #223). Fails open without `gh` or network. The same
   `no` on `quality-review-before-merge` disables this check too — same
   gate, same rule as `ci-gate-on-merge` above.
+- **Reaches session:** hook: hooks/git-guardrails
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/224
 
 ## process-technical-debt-register
@@ -401,6 +440,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** `PRD.md` separates *Known limitations* (stays that way) from *Technical debt* (per line: why acceptable for now, and the trigger to address it) — both subsections are already in the template.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## process-refactoring-triggers
@@ -409,6 +449,7 @@ the shared parser warns if it has no `Applies if`.
 - **Default:** yes
 - **Applies if:** always
 - **Yes means:** a work item that would violate the recorded design doesn't get built anyway through a workaround — that's the signal for its own redesign work item. See the `refactoring-triggers` skill. The first trigger presupposes a recorded design; if this project has no `ARCHITECTURE.md` (see `architecture-document`), only the second and third trigger apply.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## process-diagnose-bug
@@ -420,6 +461,7 @@ the shared parser warns if it has no `Applies if`.
   falsifiable hypotheses, shown before they're tested; then a regression
   test that's red on the reproduction; only then the fix — see the
   `diagnose-bug` skill. A fix with no prior failing test proves nothing.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/claude-workflow/pull/72
 
 ## process-model-choice
@@ -438,6 +480,7 @@ the shared parser warns if it has no `Applies if`.
   worked this way); Discovery, having no predecessor, floors directly on
   the task's own demands. Every stage records which model/effort was
   used, always — see the `model-choice` skill.
+- **Reaches session:** always-loaded: WORKFLOW.md, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/236
 
 ## process-grilling-codebase-design-skills
@@ -453,6 +496,7 @@ the shared parser warns if it has no `Applies if`.
   verbatim from `mattpocock/skills` (MIT, static copy, not a live
   dependency) — see `skills/grilling/README.md` and
   `skills/codebase-design/README.md` for the pinned upstream commits.
+- **Reaches session:** always-loaded: WORKFLOW.md
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/292
 
 ## process-multi-agent-roles
@@ -462,8 +506,15 @@ the shared parser warns if it has no `Applies if`.
 - **Applies if:** always
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, each with its own write/action
-  scope and input scope, by an orchestrating Claude Code session or by hand.
-  Role conflicts escalate to the project's human decision-maker instead of
+  scope and input scope, by the orchestrating Claude Code session. At session
+  start, the `SessionStart` hook prints the skill's `ORCHESTRATOR.md` (the run
+  rules: what is a work item, stage order, fresh dispatch, human override,
+  stop-and-ask, resume) into every session of this project, so the first
+  work-item request starts the pipeline without being asked; a `no` or
+  unanswered row prints nothing. A run where one session played every role,
+  without a recorded human override (`pipeline-override`), is flagged by
+  `model-record-gate.sh` and refused by the merge guard (`gh pr merge`);
+  without `gh` or network both let it through. Role conflicts escalate to the project's human decision-maker instead of
   being settled by whichever role spoke last. Create the five `role:*` labels
   (`role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`)
   once in this project's own GitHub repo; the skill has the command. The three
@@ -473,12 +524,12 @@ the shared parser warns if it has no `Applies if`.
   `$SPEC_DRIVEN_GUARDRAILS_DIR/<script>` with this project's checkout as the
   working directory, and they report on this project's repo. They need `gh`
   (with several git remotes, run `gh repo set-default` first).
-  Costs more agent sessions per work item; worth it once a change is large
-  enough that one session's blind spots matter. No orchestrator ships, and
-  nothing applies the pipeline automatically: the contracts and the evidence
-  scripts are the whole offer. `adopt.sh` symlinks the `role-contracts` skill
+  Costs more agent sessions per work item, on every work item, trivial ones
+  included; worth it once a change is large enough that one session's blind
+  spots matter. `adopt.sh` symlinks the `role-contracts` skill
   into every adopted project either way (it globs `skills/`); only the answer
   records whether this project follows it.
+- **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
 ---

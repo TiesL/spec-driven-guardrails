@@ -59,17 +59,13 @@ the dispatching prompt's own job to state.
 ## Running the pipeline
 
 Every role takes part in every change: there is no phase skipping in v1 (A3). Roles work
-sequentially on one shared branch per work item, in this fixed order. Each stage leaves a
-`model-record` marker in its report, with the `stage=` value below; its format and the model
-choice behind it are defined once, in the `model-choice` skill.
-
-| Stage | Role | Label | `stage=` value |
-| --- | --- | --- | --- |
-| Discovery | Product | `role:product` | Discovery |
-| Planning | Architect | `role:architect` | Planning |
-| Test | QA | `role:qa` | Test |
-| Implementation | Fullstack Developer | `role:dev` | Implementation |
-| Review | Reviewer | `role:reviewer` | Review |
+sequentially on one shared branch per work item. The run rules live in one file,
+[`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
+with each stage's label and `model-record` `stage=` value, fresh (never forked) dispatch, the
+human override record, what to do when dispatch isn't available, and how to resume. In a
+project that answers `process-multi-agent-roles` yes, the `SessionStart` hook prints that file
+into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
+the `model-choice` skill.
 
 The `role:<name>` labels are a hand-maintained traceability record (A5): put the label of the
 role now holding the work on the issue. They do not exist in your repo until you create them.

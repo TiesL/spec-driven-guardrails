@@ -113,6 +113,19 @@ non-blocking shape as every other gate here. The gate also flags Review
 and Implementation recording the identical model with no
 `same-model-exception` field.
 
+In a project that answers `process-multi-agent-roles` yes, the gate also
+prints a `role-played: ` line when one session played the pipeline's roles
+instead of dispatching them: one comment, review or PR description carries
+markers for two or more different stages, or a stage has no marker at all.
+That finding blocks: give a request-changes verdict, and the merge guard
+refuses `gh pr merge` on it by itself, so posting the approval marker
+doesn't get it through. Only a human decision recorded on the issue or PR
+as a live `pipeline-override` marker (`scope="single-session"` or
+`scope="skip=<Stage>"`, with `decided-by` and `reason`; see the
+`role-contracts` skill's `ORCHESTRATOR.md`) waives it. Without `gh` or
+network the gate and the guard let the merge through, as every gate here
+does.
+
 The rest of this procedure (isolated context, `scope.sh`,
 `scenario-gate.sh`, the marker) doesn't change with the model choice:
 that's a separate knob, not a package deal — a different model choice is

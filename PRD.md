@@ -1245,6 +1245,69 @@ Not part of this feature: an orchestrator, the release-branch tier
 (still this repo's own practice), and shortening the pipeline per change
 type.
 
+### F38 — A session in an opted-in project runs the five-role pipeline without being prompted (issue #371)
+
+F37 made the multi-agent workflow adoptable, but nothing makes a session
+apply it. Verified failure (2026-10-01, while working on #369): a session
+in this repo did the whole change itself, playing every role, and only
+started the pipeline after the human asked why. Nothing it loaded told it
+to: this repo's local `CLAUDE.md` link had gone missing (machine-local
+drift that nothing reported; `WORKFLOW.md` said nothing conditional on a
+yes row anyway), `SessionStart` reports only unanswered
+rows, `role-contracts` isn't auto-loaded, `model-choice` says a single
+session per stage is fine, and the evidence can't tell a dispatched
+pipeline from one session playing five roles. This feature states the
+requirement; the Architect designs the mechanism.
+
+Requirement: in any project whose `WORKFLOW-ADOPTION.md` answers
+`process-multi-agent-roles` yes, this repo included, a session that
+starts a work item (a request that produces a commit intended for a PR)
+acts as orchestrator and dispatches the five roles as separate role
+sessions, from the first work item, unprompted. A session that doesn't is
+detectable from the work item's own evidence before merge. The same
+guarantee covers future workflow changes: a change that alters what a
+session must do can't ship as prose no session loads.
+
+Acceptance criteria (full text in issue #371):
+
+- **AC1-AC2** activation in an opted-in project and in this repo (no
+  special case); **AC3** no activation without a yes; **AC4** none for
+  non-work-items (questions, research, reviewing an existing PR, adoption
+  questions, git/ops on reviewed work, co-thinking).
+- **AC5** role sessions never nest a pipeline; **AC6** a human override
+  is explicit and leaves a machine-readable record, never self-granted
+  ("trivial"); **AC7** if the session can't dispatch, it says so and asks
+  rather than role-playing; **AC8** a new session resumes at the next
+  unevidenced stage.
+- **AC9** a run where one session played every role, with no override
+  record, is distinguishable from a dispatched pipeline and flagged before
+  merge, fail-open without `gh`/network.
+- **AC10** a `CHANGES.md` entry whose *Yes means* changes what a session
+  must do fails `./check` unless it declares how it reaches the session
+  (always-loaded context, hook, or gate), and that path is tested.
+- **AC11** updates reach opted-in projects through the existing symlinks;
+  **AC12** no always-loaded or installed text calls a single session
+  doing every stage the norm (`model-choice`'s "No behavior change"
+  section is reconciled).
+
+What is honestly not mechanically testable: the session's own behaviour.
+AC1 and AC4-AC8 (starting the pipeline, declining it for non-work-items,
+never nesting, stopping when it cannot dispatch, resuming at the right
+stage) can only be shown by a human dry run in a real session. Scenarios
+cover the loaded text and hooks that are supposed to cause that
+behaviour, not the behaviour. The merge-time block in AC9 is mechanical:
+the merge guard refuses `gh pr merge` on the gate's `role-played:`
+finding in an opted-in project (S183, S186); S185 checks the review
+procedure says the same. Delivery depends on two platform facts, probed
+once (Claude Code 2.1.287, headless): `SessionStart` output reaches the
+top-level session but not a freshly dispatched subagent, and the hook
+fires again on resume and after compaction.
+
+Not part of this feature: orchestrator software, per-change-type phase
+shortening (#281), changing the role contracts' content (#369), and
+verifying the role sessions' quality (AC9 covers only that they were
+separate dispatches).
+
 ---
 
 ## Non-functional characteristics

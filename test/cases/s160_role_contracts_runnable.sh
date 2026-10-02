@@ -37,8 +37,13 @@ if [ "${#stage_list[@]}" -ne 5 ] || [ "${#label_list[@]}" -ne 5 ]; then
 fi
 
 # Then: one table row per stage, in pipeline order, each naming the stage
-# as a cell of its own and carrying that stage's role:<name> label.
-grep -n '^|' "$skill" > "$SANDBOX/rows.txt"
+# as a cell of its own and carrying that stage's role:<name> label. Since
+# #371 (A16) the stage table lives in the same installed skill's
+# ORCHESTRATOR.md, the one home of the run rules, which SKILL.md points to.
+orch="$project/.claude/skills/role-contracts/ORCHESTRATOR.md"
+grep -q 'ORCHESTRATOR.md' "$skill" || fail "S160 — SKILL.md does not point to ORCHESTRATOR.md for the run rules"
+grep -n '^|' "$orch" > "$SANDBOX/rows.txt" 2>/dev/null \
+  || fail "S160 — no stage table in the installed skill's ORCHESTRATOR.md"
 prev=0
 i=0
 while [ "$i" -lt 5 ]; do
@@ -68,7 +73,7 @@ done
 # place its format is defined (A14(b): no second literal copy here).
 grep -q 'model-record' "$skill" || fail "S160 — the skill never mentions the model-record marker"
 grep -q 'model-choice' "$skill" || fail "S160 — the skill does not point to model-choice for the marker format"
-if grep -n '<!-- model-record' "$skill" > "$SANDBOX/marker.txt"; then
+if grep -n '<!-- model-record' "$skill" "$orch" > "$SANDBOX/marker.txt" 2>/dev/null; then
   fail "S160 — the skill restates the model-record marker literally instead of pointing to model-choice:"
   cat "$SANDBOX/marker.txt" >&2
 fi

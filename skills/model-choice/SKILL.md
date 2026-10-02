@@ -133,13 +133,20 @@ co-thinking-session pilot: the record existed only on the orchestrator's
 side, not inside the artifact itself, which is the one place a later role
 or Ties actually reads.
 
-## No behavior change to single-agent-per-stage practice
+## One session or five: depends on `process-multi-agent-roles`
 
-This skill documents the principle ahead of #65's actual multi-agent
-orchestration. It doesn't require running each stage as a separate
-agent/session today — a single session moving through Discovery, Planning,
-Test authoring, and Implementation in sequence still makes (and records)
-one model-choice decision per stage it produces an artifact for.
+In a project whose `WORKFLOW-ADOPTION.md` answers `process-multi-agent-roles`
+yes, each stage runs as its own dispatched role session; see the
+`role-contracts` skill and its `ORCHESTRATOR.md`, which the `SessionStart`
+hook prints into every session there. One session doing every stage is then
+a role-played run: `model-record-gate.sh` flags it and the merge guard
+refuses it, unless the human recorded an override. Each role session makes
+and records the model choice for its own stage.
+
+Where that row is no or unanswered, a single session moving through
+Discovery, Planning, Test authoring, and Implementation in sequence is the
+norm, and it still makes (and records) one model-choice decision per stage
+it produces an artifact for.
 
 ## Who references this skill
 

@@ -169,9 +169,9 @@ Reviewer's security triggers — in the `role-contracts` skill (`skills/role-con
 When roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
-The dispatching itself is done by an orchestrating Claude Code session (or by hand), so the
-"not an agent framework" line at the top still holds: this repo supplies contracts and
-evidence, not an orchestrator. Three read-only scripts provide the evidence:
+The dispatching itself is done by an orchestrating Claude Code session, so the "not an agent
+framework" line at the top still holds: this repo supplies contracts, run rules and evidence,
+not orchestrator software. Three read-only scripts provide the evidence:
 
 - **`compliance-evidence.sh`** — renders an evidence table for a PR from what already exists
   (model-record markers, review markers, CI, PR↔issue links).
@@ -190,17 +190,37 @@ stage) and settled it: v0.2.0. The full design record lives in
 like any other skill. Whether the project actually follows the pipeline is the opt-in
 `process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
 preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
-The skill is self-contained: it names the stage order, the `role:<name>` labels and the
-`model-record` markers, and points only at installed skills or built-in Claude Code skills
-(`security-review`, `code-review`). Nothing starts the
-pipeline for you: a person dispatches the roles, by hand or from an orchestrating session.
-Making a session apply it automatically is a separate work item
-(`TiesL/spec-driven-guardrails#371`) and not part of this offer.
+The skill is self-contained: it names the `role:<name>` labels and the `model-record` markers,
+and points only at installed skills or built-in Claude Code skills (`security-review`,
+`code-review`).
 
-What an adopted project **gets**: the `role-contracts` skill, the opt-in question, and
-permission to run the three evidence scripts against its own repo. What it does **not** get: an
-orchestrator (the contracts are quoted into role sessions by hand or by your own orchestrating
-session), the release-branch tier below (this repo's own practice), and any installed copy of
+**Automatic from the first work item.** Once the row says yes, the `SessionStart` hook runs
+`session-context.sh`, which prints the skill's `ORCHESTRATOR.md` into every session of that
+project: what counts as a work item, the stage order with labels and markers, dispatching each
+role as a fresh agent (never a fork), the human override record, what to do when dispatch
+isn't available, and how to resume. So a session that gets a work-item request starts the
+pipeline without being asked. A `no` or unanswered row prints nothing. This repo answers its
+own row yes, with no special case. `session-context.sh` also warns when the project's
+`CLAUDE.md` is no longer the link to `WORKFLOW.md`. Before merge, `model-record-gate.sh` flags a
+run where one session played every role (several stages' markers in one text, or a stage
+missing), and the merge guard refuses `gh pr merge` on it unless the human recorded a
+`pipeline-override`. Without `gh` or network, both let the merge through.
+
+What is mechanical and what isn't: the hook delivering the rules, the gate's finding and the
+merge guard's refusal are tested. Whether a live session then *follows* the rules (starts the
+pipeline unprompted, leaves a question alone, never nests a pipeline inside a role session,
+stops and asks when it can't dispatch, resumes at the right stage) is model behaviour; only a
+human dry run checks it, ideally followed by `model-record-gate.sh` on the dry run's PR. Checked
+once on Claude Code 2.1.287 in headless mode (#371): `SessionStart` output reaches the
+top-level session but not a freshly dispatched subagent, and the hook fires again on resume
+and after compaction. A session that deliberately forges five separate stage comments is not
+detected.
+
+What an adopted project **gets**: the `role-contracts` skill, the opt-in question, the
+session-start rules and the merge-time check once it answers yes, and permission to run the
+three evidence scripts against its own repo. What it does **not** get: orchestrator software
+(the orchestrating session is an ordinary Claude Code session following `ORCHESTRATOR.md`),
+the release-branch tier below (this repo's own practice), and any installed copy of
 the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
 the project and not wired into its `check` or CI, and they are read-only. Run them by path from
 the guardrails clone, with the adopted
@@ -278,6 +298,7 @@ into `WORKFLOW.md`, and until then an adopted project doesn't get it.
 | `nfr/` | Non-functional requirement registry — one file per attribute, source for `CHANGES.md`'s `spec-*` rows and every adopted `PRD.md`. |
 | `lib/` | Shared bash: `changes.sh` (parser/predicates), `nfr.sh` (registry reader). |
 | `pending-changes.sh` | What from `CHANGES.md`/`nfr/` still needs an answer in a given project. |
+| `session-context.sh` | At session start: prints the session-context files (today `ORCHESTRATOR.md`) of entries a project answered yes, and warns when its `CLAUDE.md` link is gone. |
 
 **This repo's own internals** — not installed anywhere else:
 
