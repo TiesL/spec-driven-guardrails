@@ -193,22 +193,25 @@ that hasn't been taken.
 ### A release branch between work items and `main`
 
 In the diagram, a feature/fix branch merges straight into `main`. For an epic spanning several
-work items, this repo adds an optional middle tier: a **release branch**
-(`release/<epic-number>-<slug>`, forked from `main`). Each work item's branch targets the
-release branch, and the release branch merges into `main` in one step once the whole epic is
-ready. v0.2.0 was built this way, on `release/295-multi-agent-workflow-v1`.
+work items, this repo — and, unlike the five-role pipeline above, every adopted project too —
+can add an optional middle tier: a **release branch** (`release/<epic-number>-<slug>`, forked
+from `main`). Each work item's branch targets the release branch, and the release branch
+merges into `main` in one step once the whole epic is ready.
 
-The two merges are confirmed differently, on purpose:
+The full mechanism — when to open one, who may merge what into it, the frozen membership set,
+the mandatory holistic review before the release branch can go to the maintainer, and the
+version-bump proposal that merge carries — lives in the `release-branch-workflow` skill, not
+repeated here. In short: the two merges are confirmed differently, on purpose. A work item
+merges into the release branch on the executing session's own judgment once review is clean
+and CI is green; the release branch merges into `main` only on the maintainer's explicit
+confirmation, like every other merge into `main`, however many work items merged cleanly
+underneath it. Individual work items land quickly, while the one decision that matters — is
+this epic ready to ship? — stays a single, deliberate act.
 
-- **Work item → release branch** merges on the executing session's own judgment once review
-  is clean and CI is green, with no separate human confirmation per work item.
-- **Release branch → `main`** always waits for the maintainer's explicit confirmation, like every other
-  merge into `main`, however many work items merged cleanly underneath it.
-
-Individual work items land quickly, while the one decision that matters — is this epic ready
-to ship? — stays a single, deliberate act rather than an accumulation of smaller ones nobody
-signed off on as a whole. The convention is informal so far: issue #309 tracks writing it
-into `WORKFLOW.md`, and until then an adopted project doesn't get it.
+`release/295-multi-agent-workflow-v1` (→ v0.2.0) ran this as an informal precedent (issue
+#309) before the mechanism itself had a name or a skill. Epic #370 formalized it into what's
+described above — and ran on its own release branch, `release/370-release-branch-workflow`,
+dogfooding the mechanism it specifies.
 
 ## Reference
 
