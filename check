@@ -156,6 +156,19 @@ if [ -f "$target/CHANGES.md" ] && [ -r "$target/lib/changes.sh" ]; then
       printf '%s\n' "$missing" | sed 's/^/    - /' >&2
     fi
   done
+
+  # --- 3a2. Reaches session (#371, A17, AC10) ---------------------------------
+  # Every CHANGES.md entry declares how its *Yes means* reaches a session;
+  # a behaviour no session loads doesn't happen. Structure only (field
+  # present, closed vocabulary, path exists, a test names the path); the
+  # vocabulary is documented in CHANGES.md's preamble. Not applied to
+  # CHANGES-ARCHIEF.md: a retired entry reaches no session by definition.
+  echo "check: Reaches session"
+  invalid="$(reaches_session_invalid "$target/CHANGES.md" "$target")"
+  if [ -n "$invalid" ]; then
+    report_error "CHANGES.md has an invalid **Reaches session:** field at:"
+    printf '%s\n' "$invalid" | sed 's/^/    - /' >&2
+  fi
 fi
 
 # --- 3b. Python syntax -------------------------------------------------------
