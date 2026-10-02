@@ -12,7 +12,7 @@ This project is developed from multiple computers. Follow this workflow in every
 
 ## When starting a session
 
-1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`).
+1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`). The same hook prints what this project opted into that must be in every session's context (`session-context.sh`), such as the multi-agent run rules; when it does, those rules apply to this session.
 2. Check whether you're continuing existing work (existing feature branch) or starting something new.
    - Existing work: `git checkout <branch> && git pull origin <branch>`.
    - New work: create the issue first — `gh issue create` with the epic or work-item template (`templates/ISSUE_TEMPLATE/`, see `write-spec`) — then branch from its number: `git checkout main && git pull origin main && git checkout -b feature/<issue-number>-<name>` (or `fix/<issue-number>-<name>`).
