@@ -53,6 +53,7 @@ This file holds what every session needs. For everything else: the table below r
 | Setting up a new (related) project | `adopt-workflow` (user-level) |
 | Relentless, round-based requirement elicitation from Ties | `grilling` |
 | Decomposing a system into deep modules, not shallow components | `codebase-design` |
+| Release branch between work items and `main`: when, who merges what, completion review | `release-branch-workflow` |
 
 ## Why
 
