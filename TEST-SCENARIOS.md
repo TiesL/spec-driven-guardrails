@@ -2586,7 +2586,10 @@ something new is being added.
   example and a missing marker (its existing "no record found" line only) give
   no new finding; the collector stays `indeterminate` for the unreadable model
   (gate 1 for the four earlier stages, gate 2 for Implementation) and
-  `evidenced` for a well-formed run
+  `evidenced` for a well-formed run; a hand-typed `stage="Planning"` marker is
+  reported as malformed next to the stage's "no record found" line (A26
+  amended); an effort that is missing or unquoted on the latest Implementation
+  or Review marker is one finding saying so (S189's former silent arms)
 
 ### S203 — the orchestrator hands each role its marker line from the one template
 **Covers:** F40
@@ -2595,14 +2598,40 @@ something new is being added.
   whether the orchestrator really pastes the line and the role posts it
   unchanged is model behaviour, shown by the scratch-repo re-run)
 - When: they are read, paragraph by paragraph
-- Then: one paragraph of `ORCHESTRATOR.md` tells the orchestrator to put the
-  role's marker line, taken from `model-choice`'s "Machine-readable form", into
-  the dispatch prompt, fill in the stage and the effort (`unknown` when it
-  cannot find it out), leave `model` for the role to fill with its own exact id,
-  have the role post it completed as the first line of its report, and name the
-  requested model; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
+- Then: one paragraph of `ORCHESTRATOR.md` (A26 amended: nobody types a
+  marker) gives each role the `model-record-emit.sh` command in its dispatch
+  prompt, found through `SPEC_DRIVEN_GUARDRAILS_DIR` or the installed skill, with
+  `--stage` and `--effort` filled in (`unknown` when it cannot find the effort
+  out), names the requested model, has the role add `--model` with its own
+  exact id (the Reviewer also `--floor-basis`) and paste the output unchanged
+  as the first line of its report; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
   example, no spelled-out marker line, no effort values, no quoting rule);
   `model-choice` keeps the two templates as the single copy and no skill shows a
-  quoted stage; `role-contracts` says a report's first line is the marker from
-  the dispatch prompt, that a role whose prompt lacks it writes it from the
-  template and says so, and that it does not refuse to work over it
+  quoted stage and no second template exists outside `model-choice` and
+  `pre-merge-review`; `model-choice` and `pre-merge-review` say the line is
+  produced with the wrapper and never typed; `role-contracts` says a report's
+  first line is the wrapper's output, never typed, and that a role whose prompt
+  has no command runs the wrapper itself and says so
+
+### S204 — model-record-emit.sh prints the one valid marker line, or nothing
+**Covers:** F40
+- Given: `skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model
+  <id> --effort <low|medium|high|unknown> [--floor-basis <sentence>]` and
+  `marker_emit` in `lib/model-record.sh`; a matrix of valid inputs (all five
+  stages, all four efforts, ids with dots, dashes, colons, slashes and digits,
+  a Review floor-basis with `>`, `<`, `--`, an apostrophe, `model=x` text and
+  non-ASCII); a matrix of invalid ones; macOS `/bin/bash` 3.2 under `LC_ALL=C`
+  and a UTF-8 locale; the real path and a symlinked `.claude/skills` (issue
+  #402, A26 amended, the maintainer's acceptance test)
+- When: the wrapper runs
+- Then: for every valid input the output is exactly one line with a bare
+  stage that `marker_find` returns, `marker_attr` reads back byte for byte and
+  `marker_scan` calls ok, and five emitted lines give the gate no finding;
+  every invalid input (a quoted, lower-case, empty or unknown stage; a bad
+  effort; an empty, over-long or quote/space/newline/tab/`=`/`-->`/`$(...)`
+  model; a Review floor-basis that is missing, blank, over 500 bytes or holds a
+  quote, newline, tab, U+001E or another control byte; a floor-basis on another
+  stage; unknown, missing, repeated or value-less flags, a positional
+  argument) prints nothing on stdout, a reason on stderr and exits 2; a
+  floor-basis with `-->` or `<!--` is refused or round-trips exactly, never a
+  malformed line; without the lib the exit status is 3 with empty stdout

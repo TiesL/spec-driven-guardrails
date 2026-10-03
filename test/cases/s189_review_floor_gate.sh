@@ -57,6 +57,20 @@ one_finding() {
   ! grep -q '^role-played: ' <<<"$rf_out" || fail "S189 — $label: a #392 finding must never use the role-played: prefix (the merge guard blocks on it)"
 }
 
+# #402 (A26): an effort that is missing or unquoted on the latest marker gives
+# no effort COMPARISON, and now exactly one finding saying the effort cannot be
+# read (never a "lower effort" claim). effort="unknown" stays silent (above).
+effort_unreadable() { # label impl review
+  local label="$1"
+  shift
+  rf_data "$@"
+  rf_gate
+  [ "$rf_status" -eq 0 ] || fail "S189 — $label: gate exited $rf_status"
+  [ "$(rf_findings)" -eq 1 ] || fail "S189 — $label: expected exactly the unreadable-effort finding, got: '$rf_out'"
+  grep -qi 'effort' <<<"$rf_out" || fail "S189 — $label: the finding must name the effort, got: '$rf_out'"
+  grep -qi 'lower effort' <<<"$rf_out" && fail "S189 — $label: no comparison may be claimed, got: '$rf_out'"
+}
+
 # ===== AC3: same model -> effort is compared ===============================
 one_finding "same model, Review lower (low < high)" 'low.*high|high.*low' \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")"
@@ -102,10 +116,10 @@ silent "Review effort session-default" "$(marker Implementation Sonnet high)" "$
 silent "Review effort unknown" "$(marker Implementation Sonnet high)" "$(marker Review Sonnet unknown "$FB")"
 silent "Implementation effort unknown" "$(marker Implementation Sonnet unknown)" "$(marker Review Sonnet low "$FB")"
 silent "effort outside low|medium|high (max)" "$(marker Implementation Sonnet max)" "$(marker Review Sonnet low "$FB")"
-silent "Review effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"high\" -->" "<!-- model-record: stage=Review model=\"Sonnet\" $FB -->"
-silent "Implementation effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" -->" "$(marker Review Sonnet low "$FB")"
-silent "Review effort unquoted" "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" effort=low $FB -->"
-silent "Implementation effort unquoted" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=high -->" "$(marker Review Sonnet low "$FB")"
+effort_unreadable "Review effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"high\" -->" "<!-- model-record: stage=Review model=\"Sonnet\" $FB -->"
+effort_unreadable "Implementation effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" -->" "$(marker Review Sonnet low "$FB")"
+effort_unreadable "Review effort unquoted" "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" effort=low $FB -->"
+effort_unreadable "Implementation effort unquoted" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=high -->" "$(marker Review Sonnet low "$FB")"
 
 # ===== Attribute extraction is word-anchored (A25, V5) =====================
 one_finding "reviewer-model before model must not be read as model" 'low.*high|high.*low' \

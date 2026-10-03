@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# S203 — the orchestrator hands each role its marker line from the one
-# template, and the grammar has one owner.
+# S203 — the orchestrator hands each role the emit command (never a typed
+# marker), and the grammar has one owner.
 # Covers: F40
 #
 # Issue #402, R1/R2, AC1/AC2, A26. What the orchestrating session then
@@ -30,24 +30,32 @@ for f in "$orch" "$rc" "$mc" "$pmr"; do
   [ -f "$f" ] || { fail "S203 — ${f#"$TEST_REPO_ROOT"/} is missing"; test_done; }
 done
 
-# --- AC1: the dispatch instruction -----------------------------------------
-# one paragraph: marker line, from the model-choice template ("Machine-readable
-# form"), in the dispatch prompt, per stage; orchestrator fills stage and
-# effort (unknown when it cannot tell); the role fills model with its own id;
-# the role posts the line, completed, first and otherwise unchanged
-para_has_all "$orch" 'marker line' 'model-choice' 'Machine-readable form' '(dispatch )?prompt' \
-  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md tells the orchestrator to put the marker line, taken from model-choice's 'Machine-readable form', into the dispatch prompt"
-para_has_all "$orch" 'marker line' '(each|every|per|its) stage|stage=' 'effort' 'unknown' \
-  || fail "S203/AC1 — ORCHESTRATOR.md must say the orchestrator fills in the stage and the effort (unknown when it cannot find it out)"
-para_has_all "$orch" 'marker line' '(role|it) (fills|writes|puts|records|completes)[^.]*model|model[^.]*(role.s own|its own|the role fills)' '(own|exact) (model )?id|exact model' \
-  || fail "S203/AC1 — ORCHESTRATOR.md must say the ROLE fills in model with its own exact model id (the dispatch tool only takes an alias)"
-para_has_all "$orch" 'marker line' 'first line' '(unchanged|nothing else|changing nothing|without changing)' \
-  || fail "S203/AC1 — ORCHESTRATOR.md must tell the role to post the line, completed, as the first line of its report, changing nothing else"
-para_has_all "$orch" 'marker line' '(requested|chose|chosen|asked for)' 'model' '(alias|differs|differ|own id)' \
-  || fail "S203/AC1 — ORCHESTRATOR.md must say to name the requested model in the prompt so the role can say so if its own id differs"
-# the instruction replaces the old bare "state the model and effort" sentence:
-if grep -qE 'so the role records them in its .model-record. marker' "$orch" && ! para_has_all "$orch" 'marker line'; then
-  fail "S203/AC1 — only the old 'state model and effort' sentence is there, no marker line"
+# --- AC1 (A26 amended): the orchestrator hands the role a COMMAND, not a line ---
+# one paragraph: the wrapper `model-record-emit.sh`, found through
+# $SPEC_DRIVEN_GUARDRAILS_DIR or the project's installed skill, with --stage and
+# --effort filled in (unknown when it cannot find the effort out); the role adds
+# --model with its own exact id (the Reviewer also --floor-basis) and pastes
+# the output unchanged as the first line of its report; the requested model is
+# named; nobody types a marker by hand
+para_has_all "$orch" 'model-record-emit\.sh' '--stage' '--effort' '(dispatch )?prompt' \
+  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md gives the role the model-record-emit.sh command with --stage and --effort in the dispatch prompt"
+para_has_all "$orch" 'model-record-emit\.sh' 'SPEC_DRIVEN_GUARDRAILS_DIR|\.claude/skills/pre-merge-review' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say how to find the wrapper (SPEC_DRIVEN_GUARDRAILS_DIR, or the project's installed skill)"
+para_has_all "$orch" 'model-record-emit\.sh' 'effort' 'unknown' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say to fill --effort with unknown when the effort cannot be set or found out"
+para_has_all "$orch" 'model-record-emit\.sh' '--model' '(role|it)[^.]*(adds|add|fills|supplies|passes)|(adds|add|fills|supplies|passes)[^.]*--model|own (exact )?(model )?id' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say the ROLE adds --model with its own exact model id"
+para_has_all "$orch" 'model-record-emit\.sh' '--floor-basis' 'Review' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say the Reviewer also adds --floor-basis"
+para_has_all "$orch" 'model-record-emit\.sh' 'first line' '(unchanged|verbatim|as is|nothing else)' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must tell the role to paste the output, unchanged, as the first line of its report"
+para_has_all "$orch" 'model-record-emit\.sh' '(requested|chose|chosen|asked for)' 'model' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say to name the requested model in the prompt"
+para_has_all "$orch" 'model-record-emit\.sh' '(never|not|nobody|no one)[^.]*(typ|hand|write)' \
+  || fail "S203/AC1 — ORCHESTRATOR.md must say a marker is never typed by hand"
+# the bare "state the model and effort" sentence alone is not enough
+if grep -qE 'so the role records them in its .model-record. marker' "$orch" && ! grep -q 'model-record-emit' "$orch"; then
+  fail "S203/AC1 — only the old 'state model and effort' sentence is there, no wrapper command"
 fi
 
 # --- AC2: no second copy of the grammar in ORCHESTRATOR.md -------------------
@@ -79,12 +87,22 @@ done
 # the pointer names the owning section, and it exists
 grep -q 'Machine-readable form' "$mc" || fail "S203/AC2 — model-choice has no 'Machine-readable form' section to point to"
 
-# --- a role with no line in its prompt (role-contracts, shared section) ----------
-para_has_all "$rc" 'dispatch prompt' 'model-record' 'model-choice' 'first line' \
-  || fail "S203/AC1 — role-contracts' shared section must say a report's first line is the model-record marker from the dispatch prompt, completed"
-para_has_all "$rc" 'dispatch prompt' 'model-record' '(no line|none|lacks?|lacked|missing|without|has no)' '(template|model-choice)' '(say|says|state|states|note|notes|report)' \
-  || fail "S203/AC1 — role-contracts must say that a role whose prompt has no marker line writes it from the model-choice template and says so in its report"
-para_has_all "$rc" 'model-record' '(not|never|must not)[^.]*(refuse|stop|block)|still (post|write|do)|rather than (refus|stop)' \
-  || fail "S203/AC1 — role-contracts must say the role does not refuse to work when the line is missing"
+# --- the other texts ---------------------------------------------------------------
+para_has_all "$mc" 'model-record-emit\.sh' '(never|not)[^.]*(typ|hand)' \
+  || fail "S203/A26 — model-choice's 'Machine-readable form' must open with: produce the line with model-record-emit.sh, never type it"
+para_has_all "$pmr" 'model-record-emit\.sh' \
+  || fail "S203/A26 — pre-merge-review's marker grammar text must say the Reviewer produces its marker with model-record-emit.sh"
+para_has_all "$rc" 'model-record-emit\.sh' 'first line' '(never|not)[^.]*(typ|hand)' \
+  || fail "S203/A26 — role-contracts' shared section must say the report's first line is the output of the model-record-emit.sh command in the prompt, never typed by hand"
+para_has_all "$rc" 'model-record-emit\.sh' '(no command|has no command|without a command|lacks? (the|a) command|missing)' '(run|use)' '(say|says|state|states|report)' \
+  || fail "S203/A26 — role-contracts must say a role whose prompt has no command runs the wrapper itself and says so in its report"
+# the grammar's one home: no other document carries a marker template
+for f in "$TEST_REPO_ROOT"/WORKFLOW.md "$TEST_REPO_ROOT"/README.md "$TEST_REPO_ROOT"/skills/*/SKILL.md "$TEST_REPO_ROOT"/skills/role-contracts/*.md; do
+  [ -f "$f" ] || continue
+  case "$f" in "$mc" | "$pmr") continue ;; esac
+  if grep -qE 'model="<model>"|model-record: stage=<' "$f"; then
+    fail "S203/AC2 — ${f#"$TEST_REPO_ROOT"/} carries a second copy of the marker template; the owner is model-choice"
+  fi
+done
 
 test_done

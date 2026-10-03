@@ -190,6 +190,22 @@ for proj in "$optin" "$optout" "$RF_PLAIN"; do
   no_role_played "project ${proj##*/}"
 done
 
+# ---- a hand-typed quoted stage (stage="Planning") is malformed and said so ----
+# (A26 amended: the malformed-marker finding covers any stage token, also an
+# empty one; before, such a marker vanished silently and the stage just looked
+# missing)
+typed='<!-- model-record: stage="Planning" model="claude-haiku-4-5" effort="low" -->'
+for _once in 1; do
+  data_with Planning "$typed"
+  run
+  [ "$rf_status" -eq 0 ] || fail "S202 typed stage — exit $rf_status (non-blocking)"
+  grep -q '^model-record:.*malformed' <<<"$rf_out" \
+    || fail "S202 typed stage — a marker with a quoted or empty stage is malformed: the gate must say so (naming the real cause), got: '$rf_out'"
+  grep -q 'no record found for stage Planning' <<<"$rf_out" \
+    || fail "S202 typed stage — and Planning has no valid record, so the existing 'no record found' line stays, got: '$rf_out'"
+  no_role_played "typed stage"
+done
+
 # ---- the collector says indeterminate for the same input (control) ----------------
 mkr() { # stage form-or-good
   if [ "$2" = good ]; then good "$1"; else bad "$1" "$2"; fi
