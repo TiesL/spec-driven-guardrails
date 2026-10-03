@@ -455,6 +455,33 @@ the shared parser warns if it has no `Applies if`.
   `skills/codebase-design/README.md` for the pinned upstream commits.
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/292
 
+## release-branch-workflow
+
+- **Question:** Does this project use a release branch between work-item
+  branches and `main` for epics whose work items ship together?
+- **Default:** question
+- **Applies if:** always
+- **Yes means:** an epic that Product+Architect explicitly judge to warrant
+  it (recorded on the epic issue, no numeric threshold) gets a
+  `release/<epic#>-<slug>` branch forked from `main`. Work-item PRs merge
+  into it on CI-green + tests-pass, same low-ceremony path as any other PR.
+  Membership (which issues belong) freezes at branch-creation time. Once
+  every member issue is merged, a fresh, always-thorough QA+Reviewer pass
+  reviews the whole branch before the maintainer's explicit confirmation —
+  which also decides the SemVer bump — merges it into `main`. The
+  `release-branch-workflow` skill symlinks into every adopted project by
+  `adopt.sh`; the `hooks/git-guardrails` merge-guard fix for release-branch
+  PRs (treating any already-closed issue as never-stray) ships
+  unconditionally via the same symlinked hook, independent of this answer.
+- **Reaches session:** hook (the mechanically-enforced part — the
+  stray-closes fix — is always active via `hooks/git-guardrails`,
+  regardless of this answer; the skill itself is procedural guidance a
+  role reads when deciding, not loaded automatically). Provisional: epic
+  #371 (in progress elsewhere) is making this field required project-wide
+  with its own fixed vocabulary — revisit this value against that
+  vocabulary once #371 lands, don't treat this as final.
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/388
+
 ---
 
 ### Non-functional characteristics (NFRs)
