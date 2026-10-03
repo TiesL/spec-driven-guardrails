@@ -26,6 +26,15 @@ point.
   dispatch, resume mid-pipeline) can only be confirmed by a human dry run in a real opted-in
   project; no script here can observe them.
 
+- **Fix #402: markers are produced by one command, never typed.** `marker_emit` in
+  `lib/model-record.sh` and its wrapper `skills/pre-merge-review/model-record-emit.sh --stage
+  --model --effort [--floor-basis]` print the one valid `model-record` line, checked by parsing it
+  back, or nothing (exit 2). `ORCHESTRATOR.md` hands each role that command with `--stage` and
+  `--effort` filled in; the role adds its own model id and pastes the output as the first line of
+  its report. `model-record-gate.sh` now reports, for the latest marker of each of the five
+  stages, an unquoted, empty or missing `model` or `effort`, and a malformed marker of any stage
+  (a hand-typed `stage="Planning"` included). The marker grammar is written down only in
+  `model-choice`. Findings stay `model-record:`, never `role-played:`; the merge guard is unchanged.
 - **Fix #392: Review must be at least as capable as Implementation, not a different model.**
   Review's model and effort, taken together, must clear Implementation's, the cheapest
   combination that does; a different model is no longer required and `same-model-exception`
