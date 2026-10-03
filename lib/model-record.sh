@@ -14,6 +14,11 @@
 #   marker_scan <text>           every `model-record` marker, well-formed or
 #                                malformed, with its stage token
 #   marker_attr <marker> <name>  the quoted value of one attribute
+#   marker_emit <Stage> <model> <effort> [<floor-basis>]
+#                                THE way to produce a marker line (#402,
+#                                A26; wrapper: skills/pre-merge-review/
+#                                model-record-emit.sh): the one valid line,
+#                                checked by parsing it back, or nothing
 #
 # The grammar and what happens to a malformed marker are documented once,
 # above _MARKER_SCAN_AWK below. The three parser functions run awk under
@@ -256,5 +261,99 @@ marker_scan() {
     return "$rc"
   fi
   [ -z "$out" ] || printf '%s\n' "$out"
+  return 0
+}
+
+# marker_emit <Stage> <model> <effort> [<floor-basis>] (#402, A26): THE way
+# to produce a marker line; nobody types one. Prints exactly one line,
+#   <!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->
+# or prints nothing, gives a one-line reason on stderr and returns 2.
+# Refused: a stage other than the five names (it is emitted bare); a model
+# that is empty, over 200 characters or not one token of [A-Za-z0-9._:@/+-]
+# (a model id; no space, quote, `=` or control byte); an effort other than
+# low|medium|high|unknown; a floor-basis missing or blank on Review or given
+# on any other stage (A24); a floor-basis with a double quote (it would end
+# the value) or a control byte (newline, tab, U+001E, ...), or over 500
+# bytes. Nothing else: `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII text
+# are allowed in a floor-basis, because the grammar reads them as text (the
+# maintainer's #392 decision; GitHub may show what follows a `-->` as text,
+# but the marker still reads back). Safety net: before printing, the line is
+# parsed back with marker_find, marker_scan and marker_attr; a line that
+# does not read back exactly is refused, never printed.
+marker_emit() {
+  local LC_ALL=C
+  local stage="${1-}" model="${2-}" effort="${3-}" fb="${4-}" have_fb=0 line got tab=$'\t'
+  [ "$#" -ge 4 ] && have_fb=1
+  if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+    echo "marker_emit: usage: marker_emit <Stage> <model> <effort> [<floor-basis>]" >&2
+    return 2
+  fi
+  case "$stage" in
+    Discovery | Planning | Test | Implementation | Review) : ;;
+    *)
+      echo "marker_emit: stage must be one of Discovery Planning Test Implementation Review (got '$stage')" >&2
+      return 2
+      ;;
+  esac
+  if [ -z "$model" ] || [ "${#model}" -gt 200 ]; then
+    echo "marker_emit: model must be 1-200 characters (your exact model id)" >&2
+    return 2
+  fi
+  case "$model" in
+    *[!A-Za-z0-9._:@/+-]*)
+      echo "marker_emit: model must be one token of letters, digits and . _ : @ / + - (your exact model id), got '$model'" >&2
+      return 2
+      ;;
+  esac
+  case "$effort" in
+    low | medium | high | unknown) : ;;
+    *)
+      echo "marker_emit: effort must be low, medium, high or unknown (got '$effort')" >&2
+      return 2
+      ;;
+  esac
+  if [ "$stage" = Review ]; then
+    if [ "$have_fb" -eq 0 ]; then
+      echo "marker_emit: a Review marker needs a floor-basis: one sentence on why this model and effort clear Implementation's" >&2
+      return 2
+    fi
+    case "$fb" in
+      *[![:space:]]*) : ;;
+      *)
+        echo "marker_emit: the floor-basis is empty" >&2
+        return 2
+        ;;
+    esac
+    case "$fb" in
+      *\"*)
+        echo "marker_emit: the floor-basis may not contain a double quote (it would end the value)" >&2
+        return 2
+        ;;
+      *[[:cntrl:]]*)
+        echo "marker_emit: the floor-basis may not contain a newline, tab or other control character" >&2
+        return 2
+        ;;
+    esac
+    if [ "${#fb}" -gt 500 ]; then
+      echo "marker_emit: the floor-basis is over 500 bytes; one sentence is enough" >&2
+      return 2
+    fi
+  elif [ "$have_fb" -eq 1 ]; then
+    echo "marker_emit: only a Review marker carries a floor-basis (stage is $stage)" >&2
+    return 2
+  fi
+  line="<!-- model-record: stage=$stage model=\"$model\" effort=\"$effort\""
+  [ "$have_fb" -eq 1 ] && line="$line floor-basis=\"$fb\""
+  line="$line -->"
+  # the round trip: never print a line the parser cannot read back
+  got="$(marker_find "$stage" "$line$MARKER_SEP")" && [ "$got" = "$line" ] \
+    && got="$(marker_scan "$line$MARKER_SEP")" && [ "$got" = "ok${tab}$stage${tab}$line" ] \
+    && got="$(marker_attr "$line" model)" && [ "$got" = "$model" ] \
+    && got="$(marker_attr "$line" effort)" && [ "$got" = "$effort" ] \
+    && got="$(marker_attr "$line" floor-basis)" && [ "$got" = "$fb" ] || {
+    echo "marker_emit: the line would not read back through lib/model-record.sh unchanged, so it is not printed" >&2
+    return 2
+  }
+  printf '%s\n' "$line"
   return 0
 }

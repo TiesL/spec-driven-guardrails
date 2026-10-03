@@ -97,11 +97,18 @@ with "never name a model in the floor" above — a floor is an instruction
 that has to keep working after new models ship; a record is a fact about
 one past invocation, and doesn't need to age well.
 
-**Machine-readable form (#241).** Prose alone made this unenforceable in
-practice: only the Review stage ever actually got a model recorded
-(`portfolio-mgt-agents`, #238). Every stage's record is now also a marker,
-in whichever comment (issue, for Discovery; PR, for the rest) that stage
-already writes:
+**Machine-readable form (#241).** Produce the marker line with
+`skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
+--effort <e> [--floor-basis '<sentence>']` and paste its output unchanged as
+the first line of your report; never type a marker by hand (#402: hand-typed
+lines with an unquoted value or a quoted stage were unreadable). The
+command prints the one valid line, after parsing it back, or nothing and a
+reason. This section is the one place the format is written down; the
+templates below are what the command prints. Prose alone made this
+unenforceable in practice: only the Review stage ever actually got a model
+recorded (`portfolio-mgt-agents`, #238). Every stage's record is now also a
+marker, in whichever comment (issue, for Discovery; PR, for the rest) that
+stage already writes:
 
 ```
 <!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" effort="<low|medium|high>" -->
@@ -119,8 +126,8 @@ this model and effort clear Implementation's, for example "same model as
 Implementation at higher effort" or "stronger model than Implementation's
 at equal effort; the diff is a mechanical rename". A human weighs that
 sentence; the gate never verifies it, only that it is present. Any
-character is fine in it except a double quote (see "Marker grammar" in
-`pre-merge-review`). The
+character is fine in it except a double quote and a control character
+such as a newline (see "Marker grammar" below). The
 Review report's one-line self-declaration (below) repeats it in prose.
 `same-model-exception` is legacy: no script reads it, and it does not
 stand in for `floor-basis`.
@@ -135,6 +142,23 @@ Record the full model id exactly as the platform reports it (for example
 alias and the full id of the same model count as different models, since
 no script holds a model table, so the effort comparison is skipped for
 that pair (recorded as debt in the PRD).
+
+**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
+`stage=<Stage>` (a bare name, never quoted), then `name="value"`
+attributes, then `-->`. A value may contain any character except a double
+quote: `>`, `<`, `--` and even `-->` are plain text, so write `floor-basis`
+as an ordinary sentence (the command also refuses a newline or another
+control character in it). The marker ends at the first `-->` outside
+quotes. All three scripts (`model-record-gate.sh`,
+`compliance-evidence.sh`, `role-label-staleness.sh`) read markers through
+`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker,
+and none counts a marker quoted in a code span, a fence or a blockquote:
+that is an example, not a record. A malformed marker (a stray or
+unbalanced quote, a quoted stage, no closing `-->`, a `<!--` inside it) is
+ignored, never read, and never hides a later marker; the gate names it as
+a finding. So does an unquoted, empty or missing `model` or `effort` on the
+latest marker of any stage (#402): produce a corrected marker with the
+command.
 
 `skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
 five stages have at least one marker, searched across both the PR's

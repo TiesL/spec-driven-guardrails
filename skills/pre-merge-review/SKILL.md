@@ -101,26 +101,15 @@ is not required, and a legacy `same-model-exception` is ignored. Within
 that floor, the cheapest combination: the same model at higher effort, or
 a stronger model, whichever clears it. Record which model and effort
 reviewed, always, not only when it deviates from what's obvious, as a
-`<!-- model-record: stage=Review model="..." effort="..." floor-basis="..." -->`
-marker (`effort` is `low`, `medium`, `high`, or `unknown` when you don't
-know it; use the full model id as the platform reports it). `floor-basis`
-is required on every Review marker: one sentence on why this pair clears
-Implementation's (see `model-choice`'s "Machine-readable form"). The
-gate checks that it is present, never what it says.
-
-**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
-`stage=<Stage>`, then `name="value"` attributes, then `-->`. A value may
-contain any character except a double quote: `>`, `<`, `--` and even a
-newline are plain text, so write `floor-basis` as an ordinary sentence. A
-quote ends the value, so don't use one inside it. The marker ends at the
-first `-->` outside quotes. All three scripts (the gate below,
-`compliance-evidence.sh`, `role-label-staleness.sh`) read markers through
-`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker,
-and none counts a marker quoted in a code span, a fence or a blockquote:
-that is an example, not a record.
-A malformed marker (a stray or unbalanced quote, no closing `-->`, a
-`<!--` inside it) is ignored, never read, and never hides a later marker;
-the gate names it as a finding, so post a corrected marker.
+Review marker with `floor-basis`. Produce it with
+`skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
+exact model id> --effort <e> --floor-basis '<sentence>'` (`effort` is
+`unknown` when you don't know it) and paste the output unchanged; never
+type a marker by hand. `floor-basis` is required on every Review marker:
+one sentence on why this pair clears Implementation's. The format and its
+grammar are owned by `model-choice` ("Machine-readable form", "Marker
+grammar"). The gate checks that `floor-basis` is present, never what it
+says.
 
 Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
