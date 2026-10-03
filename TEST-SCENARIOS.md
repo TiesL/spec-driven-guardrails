@@ -2519,3 +2519,31 @@ something new is being added.
 - When: `role-label-staleness.sh` runs against a fake `gh` (S152's recording)
 - Then: the verdict is `stale` (the marker's stage is detected, not
   malformed), and a label at the evidenced stage is `in-sync`
+
+### S199 — an unclosed quote stays in its own comment
+**Covers:** F39
+- Given: a marker whose quote is never closed (Review, Implementation or Test,
+  also inside a code fence, with prose around it, several in a row, or in the
+  last comment) in comment N, and a well-formed Review or Implementation
+  marker in another comment whose first quoted value starts with a space,
+  with `-->`, or with a letter (issue #392, round 4 of the PR #397 review and
+  the human decision to contain a malformed marker to its own comment)
+- When: `model-record-gate.sh`, `compliance-evidence.sh` and
+  `role-label-staleness.sh` run against fake `gh`
+- Then: the well-formed marker is found with its own values (the gate's
+  lower-effort finding, gate 2 `not-evidenced` naming its efforts, a stale
+  or indeterminate label verdict, never in-sync); a malformed marker is a
+  visible finding or ignored and never wins, also when it is the latest
+  Review marker
+
+### S200 — the comment-boundary byte in a comment body cannot forge a boundary
+**Covers:** F39
+- Given: comment bodies containing the boundary byte U+001E themselves, next to
+  an unclosed marker or inside a marker, and one comment carrying all five
+  stage markers separated by that byte, in an opted-in project (issue #392,
+  round 4 of the PR #397 review)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: safe outcome: the byte inside a body is removed or ignored, so a
+  well-formed marker in the NEXT comment is still found with its own values
+  and one comment stays one comment (five markers in one comment are still
+  reported as role-played; five separate comments are not)
