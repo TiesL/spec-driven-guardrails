@@ -1385,6 +1385,54 @@ Not part of this feature: a model-capability table, verifying `floor-basis`
 text, a hard merge block (findings use the existing non-blocking
 `model-record:` prefix), and changing the markers of the other four stages.
 
+### F40 — Dispatched roles write well-formed `model-record` markers, and the gate says when one is unreadable (issue #402)
+
+A rerun of the bounded full-pipeline dry run (release head fa1beae) showed
+two gaps in the multi-agent pipeline. The Product, Architect, QA and
+Developer roles wrote their markers unquoted
+(`model=claude-haiku-4-5 effort=low`), so `compliance-evidence.sh`
+reported gates 1 and 2 `indeterminate`; only the Reviewer, which read
+`pre-merge-review`, wrote the documented quoted form. And
+`model-record-gate.sh` printed nothing for a PR whose Implementation
+marker had no parseable quoted `model=`, while the collector said
+`indeterminate`: the same unreadable marker was visible in one tool and
+silent in the other.
+
+Requirement: (1) the orchestrator puts the exact `model-record` marker
+line, with quoted attributes, for the stage into every dispatch prompt, so
+a role writes a well-formed marker without having to read any skill. The
+marker grammar stays owned by one place (`model-choice` /
+`pre-merge-review`); `ORCHESTRATOR.md` points to it or quotes it from
+there and never carries a second copy of the grammar. (2) When an
+Implementation or Review marker is present but its `model=` cannot be
+parsed, `model-record-gate.sh` prints a visible finding with the existing
+`model-record:` prefix. The finding is non-blocking, consistent with the
+collector's `indeterminate`, and never uses the `role-played:` prefix that
+the merge guard keys on.
+
+Decision (maintainer, 2026-10-03): fix before the release PR that carries
+#369, #371 and #392. The scratch repo is kept for a re-run that validates
+the fix.
+
+Acceptance criteria: full text in issue #402.
+
+What is mechanically verified: that `ORCHESTRATOR.md` tells the
+orchestrator to pass the exact quoted marker line per stage and contains
+no second copy of the grammar; that the gate prints a `model-record:`
+finding for a present but unparseable Implementation or Review marker and
+stays silent for a well-formed one, a stage that is missing (already a
+separate finding), a `stage=...` placeholder (not a real marker) and a
+project that did not opt in where applicable. What stays judgment and is
+not checked: whether the orchestrator in a real session actually pastes
+the marker line (model behaviour, shown only by a re-run on the scratch
+repo); whether the model name a role records is the model it really ran
+on (a pasted marker can carry a made-up name); and whether every role
+session follows the instruction.
+
+Not part of this feature: the role-played-in-fence issue (#400), the
+dispatch tool having no effort argument (A25), interactive-mode and fork
+dispatch coverage, and verifying marker contents beyond parseability.
+
 ---
 
 ## Non-functional characteristics
