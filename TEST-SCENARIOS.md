@@ -2547,3 +2547,22 @@ something new is being added.
   well-formed marker in the NEXT comment is still found with its own values
   and one comment stays one comment (five markers in one comment are still
   reported as role-played; five separate comments are not)
+
+### S201 — quoted marker-shaped text is not evidence in the model-record gate either
+**Covers:** F39
+- Given: a real Implementation marker (effort high) and a real Review marker
+  (same model, effort low) in separate comments, and another comment that
+  quotes an example Implementation or Review marker in a fenced block (backtick
+  or tilde), inline backticks or a blockquote, before, after or in the same
+  comment as the real markers; the same inputs through the collector and
+  `role-label-staleness.sh`; an indented code block (issue #392, round 5 of the
+  PR #397 review: the gate read raw bodies, so a quoted example hid a real
+  lower-effort Review; out of scope: five markers inside one fence, issue #400)
+- When: `model-record-gate.sh`, `compliance-evidence.sh` and
+  `role-label-staleness.sh` run against fake `gh`
+- Then: the gate still gives the lower-effort finding from the real markers; a
+  quoted Review example never replaces the real latest Review, and a Review
+  marker that exists only in a fence is a missing stage, as for the
+  collector; gate 2 stays `not-evidenced` and the label verdict `in-sync`; for
+  an indented code block (not stripped by `live_text`, accepted debt) the
+  gate and the collector must give the same outcome
