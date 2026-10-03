@@ -95,23 +95,40 @@ evidence is the wrong way to guess).
 See the `model-choice` skill for the canonical principle (floor + cost,
 stated qualitatively, never a model name) and how it applies across every
 pipeline stage. This review is that skill's Review-stage instance: choose
-a model **different from, and at least as skilled as, the model that
-wrote the reviewed change** — same model only when no other capable model
-is available (#244; `CHANGES.md`'s `quality-review-before-merge` and this
-skill used to disagree on this exact point, resolved in favor of the
-stricter rule). Within that floor, the most cost-effective. Record which
-model reviewed — always, not only when it deviates from what's obvious —
-as a `<!-- model-record: stage=Review model="..." effort="..." -->`
-marker, adding `same-model-exception="<reason>"` on that same marker only
-when the exception genuinely applies (see `model-choice`'s
-"Machine-readable form"), not just prose.
+a model and effort that, taken together, are **at least as capable as
+the model and effort that did Implementation** (#392). A different model
+is not required, and a legacy `same-model-exception` is ignored. Within
+that floor, the cheapest combination: the same model at higher effort, or
+a stronger model, whichever clears it. Record which model and effort
+reviewed, always, not only when it deviates from what's obvious, as a
+`<!-- model-record: stage=Review model="..." effort="..." floor-basis="..." -->`
+marker (`effort` is `low`, `medium`, `high`, or `unknown` when you don't
+know it; use the full model id as the platform reports it). `floor-basis`
+is required on every Review marker: one sentence on why this pair clears
+Implementation's (see `model-choice`'s "Machine-readable form"). The
+gate checks that it is present, never what it says.
+
+**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
+`stage=<Stage>`, then `name="value"` attributes, then `-->`. A value may
+contain any character except a double quote: `>`, `<`, `--` and even a
+newline are plain text, so write `floor-basis` as an ordinary sentence. A
+quote ends the value, so don't use one inside it. The marker ends at the
+first `-->` outside quotes. All three scripts (the gate below,
+`compliance-evidence.sh`, `role-label-staleness.sh`) read markers through
+`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker,
+and none counts a marker quoted in a code span, a fence or a blockquote:
+that is an example, not a record.
+A malformed marker (a stray or unbalanced quote, no closing `-->`, a
+`<!--` inside it) is ignored, never read, and never hides a later marker;
+the gate names it as a finding, so post a corrected marker.
 
 Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
 the PR or the issue(s) it closes. A missing stage is a finding, the same
-non-blocking shape as every other gate here. The gate also flags Review
-and Implementation recording the identical model with no
-`same-model-exception` field.
+non-blocking shape as every other gate here. The gate also flags a
+Review on the same model recorded at lower effort than Implementation, and a
+Review marker without `floor-basis`. It can't rank two different models,
+so for those the capability ordering stays your recorded judgment.
 
 In a project that answers `process-multi-agent-roles` yes, the gate also
 prints a `role-played: ` line when one session played the pipeline's roles

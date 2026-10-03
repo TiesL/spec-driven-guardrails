@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor
 # per model-choice and to set model and effort per stage.
-# Covers: F38
+# Covers: F39
 #
 # Issue #392, R5/AC8 and Architect A24 (the #371 dry-run finding: one model
 # and one effort everywhere). What the orchestrating session then actually

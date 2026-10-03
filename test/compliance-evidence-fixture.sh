@@ -93,7 +93,7 @@ run_build_fake_gh() {
 # Evidence cells (AC2 — which Architect's own fixture contract had no
 # arm for at all).
 GATE1="Per-stage model/effort recorded (Discovery, Planning, Test, Implementation)"
-GATE2="Review used a different or at-least-as-capable model, or carries an explicit exception"
+GATE2="Review at least as capable as Implementation (same model: effort not lower; different models: recorded judgment, not machine-checked)"
 GATE3="Quality review before merge, with findings in the PR"
 GATE4="CI green"
 GATE5="Traceability link 3 (PR ↔ issue)"

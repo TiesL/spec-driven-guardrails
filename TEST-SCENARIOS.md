@@ -1411,9 +1411,11 @@ something new is being added.
 - Then: a missing stage among Discovery/Planning/Test/Implementation/Review
   is reported, one line per stage; nothing is reported once all five are
   present; without `gh` the gate fails open with a warning, not a block
-- And (#244 AC2): Review and Implementation recording the identical model
-  with no `same-model-exception` field on Review's marker is reported;
-  the identical pairing with that field present is not
+- And (#392, which reversed #244 AC2): Review and Implementation recording
+  the identical model at a LOWER Review effort is reported, at equal or
+  higher effort it is not; a legacy `same-model-exception` field on
+  Review's marker neither waives that finding nor is required (the
+  attribute is ignored); the new floor rule itself is S189
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
 **Covers:** F28
@@ -1523,6 +1525,11 @@ something new is being added.
   old and new version; re-confirming with the current version marker
   quiets it; a row whose entry was never touched by a version bump never
   resurfaces, regardless of how it was answered
+- And (#392, `quality-review-before-merge` now at meaning v3): a row
+  answered with no marker reports "answered under meaning v1, now v3", a
+  row re-confirmed at `(meaning v2)` reports "answered under meaning v2,
+  now v3" in the "meaning has changed" block (not in the never-answered
+  list), and only a `(meaning v3)` row is quiet
 
 ### S142 — changes_meaning_version's field extraction, edge cases
 **Covers:** F3
@@ -2322,7 +2329,7 @@ something new is being added.
   `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through
 
 ### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and set model and effort per stage
-**Covers:** F38
+**Covers:** F39
 - Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #392, R5/AC8, group 1;
   what the session then actually chooses is model behaviour, checked by a
   human dry run on the scratch repo, not here)
@@ -2336,3 +2343,226 @@ something new is being added.
   dispatch prompt for the role's `model-record` marker; the file names no
   model or tier and carries no different-model rule (the phrase may only
   appear in a sentence saying it is not required)
+
+### S188 — lib/model-record.sh: normalize_model, effort_rank and marker_attr
+**Covers:** F39
+- Given: the sourced `lib/model-record.sh` (issue #392, A25), shared by the
+  model-record gate and the compliance collector
+- When: `normalize_model`, `effort_rank` and `marker_attr` are called
+- Then: `normalize_model` behaves as before (label styles, case and an
+  8-digit snapshot date fold together; different models and a short alias
+  vs its full id stay different); `effort_rank` prints 0, 1, 2 for low,
+  medium, high (case-insensitive) and nothing for any other value;
+  `marker_attr <line> <name>` prints the quoted value of exactly that
+  attribute, never one whose name merely ends in `model` or `effort`
+  (in either attribute order), and nothing for an absent, unquoted or
+  differently-prefixed attribute
+- And (review of PR #397): attribute text inside a value (`floor-basis="beats
+  model="`, `>`, `<`, `--`, `-->`) is never read as another attribute and
+  never breaks the value
+
+### S189 — the model-record gate checks the Review floor it can check
+**Covers:** F39
+- Given: PR 246 closing issue 239 against a data-driven fake `gh`, with
+  Implementation and Review markers varied per case (issue #392, AC3/AC4/
+  AC5/AC9, A24/A25); a plain project and an opted-in one
+- When: `model-record-gate.sh 246` runs
+- Then: for the same model after normalization, a Review effort lower than
+  Implementation's gives one `model-record:` finding naming the model and
+  both efforts, equal or higher gives none (label style, snapshot date and
+  effort case do not matter); different models give no capability finding
+  at all, including a short alias vs its full id (a known false pass); a
+  missing, unknown, unquoted or out-of-scale effort gives no claim; the
+  latest marker per stage wins; every Review marker needs a non-empty
+  quoted `floor-basis` (a missing, empty or unquoted one is a finding, a
+  present one is never verified, and the other stages need none); a legacy
+  `same-model-exception` is ignored completely, so it neither waives
+  anything nor stands in for `floor-basis`; findings never start with
+  `role-played:` and the exit status stays 0; attribute extraction is
+  word-anchored; a missing stage stays its existing line; the gate works
+  when run through a symlinked `skills/` directory
+
+### S190 — compliance gate 2 reports the Review floor honestly
+**Covers:** F39
+- Given: a recording fake `gh` for PR 279 with Implementation and Review
+  markers on the PR, on one or two closing issues, or unreadable (issue
+  #392, AC4/AC5/AC6, A24/A25)
+- When: `compliance-evidence.sh 279` runs
+- Then: for the same model, Review effort not lower than Implementation's is
+  `evidenced` and lower is `not-evidenced`, both naming the efforts;
+  different models are `unverifiable-from-artifacts`, the evidence saying the
+  models differ and their capability ordering is not machine-checked, quoting
+  the `floor-basis` or saying none was recorded, and a short alias vs its full
+  id counts as different; an unknown, missing or unquoted effort on the same
+  model is `indeterminate`; a legacy `same-model-exception` changes no
+  verdict and is not printed; two closing issues disagreeing on the
+  normalized model OR on the effort are a conflict (`indeterminate`), while
+  agreeing ones, or differing only in a legacy exception, are not; the
+  #302/#336 lookup-failure guard still degrades a same-model verdict that
+  depends on a possibly unread marker to `indeterminate`, for lower and for
+  equal effort, and leaves sound verdicts alone
+
+### S191 — quality-review-before-merge is at meaning v3 and the specs follow
+**Covers:** F9, F39
+- Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, `ARCHITECTURE.md`,
+  `PRD.md` (issue #392, AC7/AC10)
+- When: the `quality-review-before-merge` entry and the documents are read
+- Then: the entry is at Meaning version 3 and cites #392; "Yes means" states
+  the new floor (at least as capable as Implementation, model and effort,
+  `floor-basis`, a different model not required, what the gate cannot rank),
+  keeps the unchanged parts (fresh context, complexity, dependencies,
+  `spec-*` NFRs, findings in the PR), and Reaches session names the gate
+  script; this repo's own row ends with `(meaning v3)`; `ARCHITECTURE.md` has
+  A24 (floor-basis) and A25 (`lib/model-record.sh`, `low < medium < high`);
+  `PRD.md`'s Technical debt register has a row on short model aliases; the
+  adopter-facing re-surfacing is S141 and the snapshot sync is S90
+
+### S192 — no live text demands a different Review model, and the old exception attribute is legacy only
+**Covers:** F39
+- Given: every markdown file except history (`wip/`, `CHANGES-ARCHIEF.md`,
+  `CHANGELOG.md`, tests), the frozen `CHANGES.md` snapshot, and the two
+  verification scripts and the lib (issue #392, R1/R6, AC2/AC5)
+- When: they are scanned
+- Then: no paragraph, list item or table row states the old requirement
+  ("a different model from/than", "genuinely different", "must use a
+  different model") or mentions `same-model-exception` without saying it is
+  history or legacy; the scripts mention `same-model-exception` only in
+  comments (they do not parse or print it) and call it legacy or ignored;
+  the old gate-2 row label is gone
+
+### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis
+**Covers:** F39
+- Given: `skills/model-choice/SKILL.md` and `skills/pre-merge-review/SKILL.md`
+  (issue #392, R1/AC1/AC9, human decisions 1-4)
+- When: their Review-stage text is read, paragraph by paragraph
+- Then: the Review row and the pre-merge-review "Model choice" paragraph say
+  at least as capable as Implementation, model and effort together, with no
+  different-model requirement; the "Resolved contradiction (#244)" paragraph
+  survives as history saying #392 reversed it; the Review marker format shows
+  `floor-basis` (one sentence, required on every Review marker, present-checked
+  but never verified) and no longer offers `same-model-exception`; both skills
+  say the gate flags a same-model Review at lower effort and a missing
+  `floor-basis`; model-choice says two different models have no ordering a
+  script can check, documents the effort values (including `unknown`) and the
+  full model id as the platform reports it, and that a short alias and its
+  full id count as different models; the correlated-blind-spots caveat stays
+
+### S194 — free text in a Review marker never hides the marker from either script
+**Covers:** F39
+- Given: Review markers whose `floor-basis` value contains `>`, `<`, `--`,
+  `-->`, `<!--` or a newline, or whose other attributes contain `>`, on a fake
+  `gh` for the gate and for the collector (issue #392, review of PR #397:
+  the first `>` used to end the marker and hide it; human decision: fix the
+  parser, so such values are tolerated, quotes remain the only forbidden
+  character)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: a same-model Review at lower effort still gives the gate's
+  lower-effort finding (and no missing-`floor-basis` finding) and gate 2
+  `not-evidenced`, equal effort is silent / `evidenced`, different models are
+  silent / `unverifiable-from-artifacts`, the latest round still wins, a
+  marker with `>` in another attribute and no `floor-basis` gives exactly the
+  `floor-basis` finding; gate 2's evidence never claims a quoted illustration
+  or an absent marker for a marker it read; under a lookup failure the
+  verdict is `indeterminate` for the guard's reason
+
+### S195 — the collector shares the anchored extraction, says what an effort conflict is, and names its lib
+**Covers:** F39
+- Given: markers with a lookalike attribute (`xmodel=`, text ending in
+  ` model=`) before the real `model=`; two closing issues whose Review markers
+  differ only in effort; the collector run without `lib/model-record.sh`
+  (issue #392, review of PR #397, low findings that contradict A25)
+- When: `compliance-evidence.sh` runs
+- Then: gate 1 reads the real model (never the lookalike) and treats a marker
+  with no real `model=` as malformed; the effort-only conflict evidence says
+  the effort differs and shows both efforts and both issues, a model conflict
+  still shows both models; the header's exit-code-3 entry and the runtime
+  message name `lib/model-record.sh`
+
+### S196 — the marker parser works under a UTF-8 locale and never fails silently
+**Covers:** F39
+- Given: comment text with non-ASCII right after `stage=` (the placeholder
+  prose `stage=…`, bare or backticked, in its own comment or in the marker's
+  comment) and inside or outside the quotes of a real marker; a UTF-8 locale
+  found with `locale -a` (en_US.UTF-8, nl_NL.UTF-8, C.UTF-8) exported by the
+  test, as well as `LC_ALL=C`; a fake `awk` that fails only the parser's
+  programs (issue #392, round 3 of the PR #397 review, high finding). Only
+  macOS (BWK) awk aborts on a multibyte fragment, so the UTF-8 half proves the
+  fix on macOS and the fake awk proves the failure path everywhere; with no
+  UTF-8 locale installed the test says so and checks that the parser pins
+  `LC_ALL=C`
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: in both locales a same-model lower-effort Review after the
+  placeholder still gives the gate's lower-effort finding and gate 2
+  `not-evidenced`, and gate 1 still sees all four stages; when the parser's
+  awk fails the gate prints a `model-record:` finding (or exits non-zero) and
+  gate 2 is `indeterminate` (or the run non-zero), never "no findings" or a
+  definite verdict
+
+### S197 — a malformed marker never swallows a later well-formed one
+**Covers:** F39
+- Given: Review markers with an odd number of quotes, with no closing `-->`
+  (also with another model) or with a nested `<!--`, followed by a
+  well-formed marker in the same comment, in a later comment, or before
+  further text with a stray quote and `-->`; and a malformed marker AFTER a
+  good one (issue #392, round 3 of the PR #397 review, medium finding)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: the later well-formed marker is found with its own values (the
+  lower-effort finding; gate 2 `not-evidenced` naming its efforts); a
+  malformed marker may produce a finding or be ignored but never wins and
+  never gives the lower-effort verdict from its own attributes
+
+### S198 — role-label-staleness.sh detects a marker whose value contains `>`
+**Covers:** F35, F39
+- Given: a stale `role:architect` label and a Review marker on the linked PR
+  whose `floor-basis` contains `>`, `-->`, `<!--` or `<` (issue #392, round 3
+  of the PR #397 review, low finding)
+- When: `role-label-staleness.sh` runs against a fake `gh` (S152's recording)
+- Then: the verdict is `stale` (the marker's stage is detected, not
+  malformed), and a label at the evidenced stage is `in-sync`
+
+### S199 — an unclosed quote stays in its own comment
+**Covers:** F39
+- Given: a marker whose quote is never closed (Review, Implementation or Test,
+  also inside a code fence, with prose around it, several in a row, or in the
+  last comment) in comment N, and a well-formed Review or Implementation
+  marker in another comment whose first quoted value starts with a space,
+  with `-->`, or with a letter (issue #392, round 4 of the PR #397 review and
+  the human decision to contain a malformed marker to its own comment)
+- When: `model-record-gate.sh`, `compliance-evidence.sh` and
+  `role-label-staleness.sh` run against fake `gh`
+- Then: the well-formed marker is found with its own values (the gate's
+  lower-effort finding, gate 2 `not-evidenced` naming its efforts, a stale
+  or indeterminate label verdict, never in-sync); a malformed marker is a
+  visible finding or ignored and never wins, also when it is the latest
+  Review marker
+
+### S200 — the comment-boundary byte in a comment body cannot forge a boundary
+**Covers:** F39
+- Given: comment bodies containing the boundary byte U+001E themselves, next to
+  an unclosed marker or inside a marker, and one comment carrying all five
+  stage markers separated by that byte, in an opted-in project (issue #392,
+  round 4 of the PR #397 review)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: safe outcome: the byte inside a body is removed or ignored, so a
+  well-formed marker in the NEXT comment is still found with its own values
+  and one comment stays one comment (five markers in one comment are still
+  reported as role-played; five separate comments are not)
+
+### S201 — quoted marker-shaped text is not evidence in the model-record gate either
+**Covers:** F39
+- Given: a real Implementation marker (effort high) and a real Review marker
+  (same model, effort low) in separate comments, and another comment that
+  quotes an example Implementation or Review marker in a fenced block (backtick
+  or tilde), inline backticks or a blockquote, before, after or in the same
+  comment as the real markers; the same inputs through the collector and
+  `role-label-staleness.sh`; an indented code block (issue #392, round 5 of the
+  PR #397 review: the gate read raw bodies, so a quoted example hid a real
+  lower-effort Review; out of scope: five markers inside one fence, issue #400)
+- When: `model-record-gate.sh`, `compliance-evidence.sh` and
+  `role-label-staleness.sh` run against fake `gh`
+- Then: the gate still gives the lower-effort finding from the real markers; a
+  quoted Review example never replaces the real latest Review, and a Review
+  marker that exists only in a fence is a missing stage, as for the
+  collector; gate 2 stays `not-evidenced` and the label verdict `in-sync`; for
+  an indented code block (not stripped by `live_text`, accepted debt) the
+  gate and the collector must give the same outcome

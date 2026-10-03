@@ -451,9 +451,12 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
   holds for the project it runs in, prints one line per finding starting
   `role-played: `: several different stages' live markers in one text
   (comment, review or PR description), or any of the five stages missing.
-  The existing output is unchanged; exit stays 0. Opted in, the comment and
-  review calls frame each body (U+001E) so one text can be told from the
-  next; not opted in, the calls are exactly as before. A closing issue that
+  The existing output is unchanged; exit stays 0. The comment and review
+  calls frame each body with U+001E, after removing that byte from the body
+  (so a body cannot forge a boundary and split one role-played text into
+  several), so one text can be told from the next. Since #392 (round 4 of
+  the PR #397 review) this framing applies in every project, because the
+  marker parser needs it too (A24). A closing issue that
   can't be read skips the role-play check (a missing Discovery could be a
   lookup failure).
 - **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
@@ -473,3 +476,110 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
 - **Violated when:** a role-played run without a valid override merges in an
   opted-in project with `gh` available, or a project that didn't answer yes
   sees a new finding or block (S183, S186).
+
+---
+
+# Architecture decision — Review at least as capable as Implementation (#392)
+
+**Decided on 2026-10-03.** #244's different-model requirement for the Review
+stage is reversed (human decisions on #392): the floor is Review's model and
+effort, together, at least as capable as Implementation's. A24 and A25 are
+the next free numbers after A23.
+
+### A24 — The Review floor and its recorded judgment, `floor-basis`
+- **Rule:** Review's model and effort, taken together, are at least as
+  capable as Implementation's recorded model and effort. Among the
+  combinations that clear that, pick the cheapest. A different model is not
+  required. No model or tier is named anywhere.
+- **Attribute:** `floor-basis="<one sentence>"` on the Review `model-record`
+  marker, required on **every** Review marker, not only same-model ones:
+  same-model detection inherits false "different" verdicts from short
+  aliases (see the PRD debt row), so a conditional rule would skip exactly
+  the reviews that were wrongly classified. Free text, not an enumeration:
+  for the same model an enumeration would repeat what the gate computes; for
+  different models it would be a bare claim with no reason. The only
+  forbidden character is a double quote, which ends a value; `>`, `<`, `--`,
+  even `-->` and a newline inside a quoted value are text, and the marker
+  ends at the first `-->` outside quotes (the review of PR #397 found that
+  the old `[^>]*-->` grammar made a `>` in `floor-basis` hide the whole
+  marker from both scripts). A **malformed** marker (a quote anywhere but
+  right after `name=`, text glued to a closing quote, a value not closed in
+  its own comment, a `<!--` outside a value, or no closing `-->` in its own
+  comment) is never read and
+  never swallows a later marker: there is no fallback to the first `-->`,
+  and the scan resumes right after its own `<!--`. The gate names it
+  (`model-record: a stage=<Stage> marker is malformed and was ignored`);
+  in the collector it is ignored when a well-formed marker of that stage
+  exists and makes the gate `indeterminate` when none does; in
+  `role-label-staleness.sh` it is a malformed marker (`indeterminate`, its
+  AC6 rule). **Comment boundaries are respected:** all three callers pass
+  the parser each comment, review, issue comment and description followed
+  by U+001E, after removing that byte from the body itself (sanitised, not
+  rejected: rejecting a body would hide its markers, and removing a
+  non-printing control byte changes no Markdown meaning). Reaching that byte
+  before the closing `-->` makes a marker malformed, so an unclosed quote or
+  a missing `-->` stays in its own comment however the next comment starts
+  (round 4 of the PR #397 review). The name does not
+  end in `model=` or `effort=`, which the field extraction would otherwise
+  capture.
+- **What the gate does (`model-record-gate.sh`):** it reads live text only
+  for its stage-presence and Review-floor checks: each body goes through
+  its own copy of `live_text()` first, like the collector and
+  `role-label-staleness.sh`, so a marker quoted in a code span, a fence or
+  a blockquote is not a record (a Review marker only inside a fence is a
+  missing stage); an indented code block is not stripped, in any of the
+  three (PRD debt row). If `live_text()` fails, the gate prints a
+  `model-record:` finding and skips these checks. The role-play check
+  (A18) is unchanged (#400). The #244 same-model
+  finding is removed. A missing, empty or unquoted `floor-basis` on the
+  **latest** Review marker gives `model-record: stage=Review marker has no
+  floor-basis ... (#392)`; when present, the text is never checked. The
+  finding uses the `model-record:` prefix, never `role-played: `, so the merge
+  guard (A18) is unaffected.
+- **`compliance-evidence.sh` gate 2:** different models are
+  `unverifiable-from-artifacts` (the capability ordering is not machine-
+  checked; the `floor-basis` is quoted for a human to weigh); the same model
+  with both efforts known is `evidenced` when Review >= Implementation and
+  `not-evidenced` when lower; an unknown effort is `indeterminate`. Both
+  same-model verdicts sit behind the #302/#336 lookup-failure guard (an
+  unread marker can overturn either; Architect ruling on AC6). The
+  inter-issue conflict key is the normalized model plus the effort.
+- **`same-model-exception`:** ignored completely by both scripts, and it does
+  not stand in for `floor-basis`. The documentation keeps one "legacy,
+  ignored" mention for one release, then it goes.
+- **Violated when:** a script ranks two different models, a script verifies
+  the `floor-basis` text, or a #392 finding uses the `role-played: ` prefix.
+
+### A25 — Effort scale and the shared model-record module
+- **Scale:** low < medium < high, case-insensitive on the quoted
+  `effort="..."` value: exactly the values in use. Compared only when both
+  models normalize equal and both efforts are known. A missing, unquoted or
+  unknown value (`unknown`, `session-default`) makes no claim: no finding in
+  the gate, `indeterminate` in the collector. A role that does not know its
+  effort records `effort="unknown"`. A short alias and its full id normalize
+  as different models: no effort comparison, gate 2 reports
+  `unverifiable-from-artifacts`, never a pass.
+- **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
+  collector and `role-label-staleness.sh`:
+  `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
+  `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
+  (the quoted value; the marker is tokenized, so text inside another value
+  such as `beats model=` or a lookalike name such as `reviewer-model` is
+  never read as an attribute), `marker_find <Stage> <text>` (every
+  well-formed marker of a stage, the one marker grammar: quote-aware end at
+  the closing `-->`) and `marker_scan <text>` (every marker, well-formed or
+  malformed, with its stage token). All three scripts, and gate 1 of the
+  collector, read markers only through these. The parser's awk programs run
+  under `LC_ALL=C` (every delimiter is ASCII; under a UTF-8 locale macOS awk
+  aborted on a multibyte character right after `stage=`), and a failure is
+  never silent: the function prints nothing, says so on stderr and returns
+  non-zero; the gate then prints a `model-record:` finding, the collector's
+  gates 1 and 2 go `indeterminate`, `role-label-staleness.sh` goes
+  `indeterminate`. The gate sources it via
+  its symlink-resolved clone path, like `lib/changes.sh`; it fails open
+  without it. The collector, at the repo root, sources `lib/` next to itself.
+- **Meaning version 3** of `quality-review-before-merge` (`CHANGES.md`), with
+  the gate named in `Reaches session:`; adopters who answered yes are asked to
+  re-confirm.
+- **Violated when:** either script carries its own copy of `normalize_model`
+  or its own attribute extraction.

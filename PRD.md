@@ -411,12 +411,14 @@ you won't notice.
 ### F11 — `pre-merge-review` as an executable skill
 
 The strongest post. `WORKFLOW.md` *asks in prose* for a review "with fresh
-context and on a different model." Frontmatter expresses part of that
+context and on a different model" (reversed by #392, F39: at least as
+capable, not necessarily different). Frontmatter expresses part of that
 literally: `context: fork` gives the fresh, isolated context;
 `allowed-tools` keeps it read-only. The model itself is deliberately
 *not* pinned in frontmatter — a stale prior description here said it was —
-`model-choice`'s qualitative floor (#244: a different, at-least-as-capable
-model, exception-only-with-record) governs the choice instead, so the
+`model-choice`'s qualitative floor (#392, F39: model and effort at least as
+capable as Implementation's, with a recorded `floor-basis`; #244's
+different-model rule is reversed) governs the choice instead, so the
 rule survives new model releases without editing this skill.
 
 The skill reads `WORKFLOW-ADOPTION.md` → `yes`-answered `spec-*` → the anchor in
@@ -982,8 +984,9 @@ instruction had no mechanical check behind it. Each stage now carries a
 `model-record-gate.sh <pr-number>` checks a PR's own comments/description
 and the comments of every issue it closes for all five stages, reporting
 whichever are missing. Fails open (a warning, not a block) without `gh`.
-Same mechanism also catches Review recording the identical model as
-Implementation with no `same-model-exception` (#244 AC2) — see the
+Same mechanism also catches a same-model Review recorded at lower
+effort than Implementation, and a Review marker without `floor-basis`
+(#392 replaced #244 AC2's different-model finding; see F39) — see the
 Technical debt entries on this gate's own known gaps (spelling-mismatch
 false negatives, comment-ordering heuristic).
 
@@ -1308,6 +1311,80 @@ shortening (#281), changing the role contracts' content (#369), and
 verifying the role sessions' quality (AC9 covers only that they were
 separate dispatches).
 
+### F39 — Review is at least as capable as Implementation, not necessarily a different model (issue #392)
+
+#244 resolved a contradiction between `CHANGES.md` and `pre-merge-review`
+in favour of the stricter rule: a genuinely different Review model,
+same-model only as a recorded `same-model-exception`. A bounded dry run of
+the pipeline (#371) showed the cost: the orchestrator chose one model and
+one low effort for every stage, and the gate flagged Review. The
+maintainer reversed the choice (2026-10-03).
+
+Requirement: Review's model and effort, taken together, are at least as
+capable as the Implementation stage's, and among the combinations that
+clear that, the cheapest is chosen (the `model-choice` principle applied
+to Review). A different model is not required. No text or script names a
+model or tier.
+
+Decisions (maintainer, 2026-10-03):
+
+- On the same model, a Review at lower effort than Implementation is a
+  gate finding. For two different models no capability finding is raised:
+  there is no ordering a script can check without a model table, and a
+  table would break the rule that floors never name a model.
+- `quality-review-before-merge` moves to meaning version 3, so adopters
+  that answered at v1 or v2 are re-surfaced to re-confirm.
+  `same-model-exception` is retired: ignored completely for one release
+  (not counted as a substitute for anything), not repurposed.
+- Every Review `model-record` marker carries `floor-basis="<one
+  sentence>"`, the Reviewer's stated reason why its model and effort clear
+  Implementation's. A missing or empty one is a non-blocking finding; the
+  text is never verified.
+- `compliance-evidence.sh` reports two different models as
+  `unverifiable-from-artifacts`, never `evidenced`.
+- Documentation names the full model id as the platform reports it, but
+  does not require it. A short alias and its full id then count as
+  different models: gate 2 reports `unverifiable-from-artifacts` (the script
+  cannot tell an alias from a different model), never a pass. `normalize_model` stays generic (no model table).
+- The orchestrator assesses each stage's floor per `model-choice` and
+  sets model and effort per stage, not one pair for the whole run.
+
+Acceptance criteria (full text in issue #392): **AC1-AC2** the rule is
+stated one way and no live text demands a different model; **AC3** same
+model: effort compared; **AC4** different models: no mechanical verdict,
+stated as such; **AC5** a legacy `same-model-exception` is ignored;
+**AC6** gate 2 keeps its lookup-failure degradation to `indeterminate`;
+**AC7** the meaning-version bump and its fixtures; **AC8** the
+orchestrator wording; **AC9** the recorded judgment (`floor-basis`);
+**AC10** specs and scenarios follow.
+
+What is mechanically verified: that Review and Implementation markers
+exist; that on an equal normalized model Review effort is not lower (known
+effort values `low < medium < high` only); that `floor-basis` is present
+and non-empty; that the orchestrator text states the per-stage rule; that
+no live text demands a different model. What stays judgment and is only
+recorded, never checked: whether `floor-basis` is true; whether a
+different model clears Implementation's capability; whether an effort that
+is equal and low was adequate for both stages; and whether the
+orchestrator in a real session actually chooses efforts per stage (model
+behaviour, shown only by a human dry run). An unknown or missing effort gives
+no claim in the gate and `indeterminate` in gate 2; a short model alias that
+doesn't normalize equal to its full id counts as a different model, so gate 2
+reports `unverifiable-from-artifacts`, never a pass.
+
+Delivery: two PRs in the same release as #369/#371, before its release PR
+opens, so the gate never blocks a Review the new rule allows. PR 1 changes
+only `skills/role-contracts/ORCHESTRATOR.md`. PR 2 is the rest: the shared
+`lib/model-record.sh`, both scripts, `model-choice` and `pre-merge-review`,
+the `CHANGES.md` v3 entry, this repo's adoption row, and the specs and
+tests. The dispatch tool takes a model but not an effort, so the
+orchestrator may not control effort; its wording covers that by choosing a
+more capable model instead.
+
+Not part of this feature: a model-capability table, verifying `floor-basis`
+text, a hard merge block (findings use the existing non-blocking
+`model-record:` prefix), and changing the markers of the other four stages.
+
 ---
 
 ## Non-functional characteristics
@@ -1549,6 +1626,8 @@ epics still apply, detached from the execution history in which they arose.
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
 | `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
+| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so the same-model effort check (F39, #392) is skipped for a Review recorded under an alias; gate 2 reports `unverifiable-from-artifacts`, never a pass, and `model-record-gate.sh` raises no effort finding. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
+| The shared marker parser (`lib/model-record.sh`, F39, #392) is slow on huge input under macOS awk (BWK), whose `substr` costs time proportional to the whole text: before round 3 of the PR #397 review a single 1 MB quoted value took about 20 s; the parser now jumps over a quoted value with `index()` (1 MB: 0.15 s), but about 500 KB of unquoted words inside one marker still takes about 20 s (mawk: 0.2 s). Correctness is unaffected | No real marker comes near this size (a `floor-basis` is one sentence); the cost is time, never a wrong answer, and fixing it means restructuring the parser around `match()`/`split()` for one platform's awk | A real comment makes a gate or `role-label-staleness.sh` noticeably slow, or a marker-scanning caller starts reading untrusted bulk text |
 | `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
 | Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |
@@ -1568,7 +1647,7 @@ epics still apply, detached from the execution history in which they arose.
 | `check_ci_guard`, `check_stray_closes_guard`, and now `check_merge_guard`'s marker check (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper. Now three call sites — found during PR #224's pre-merge-review (round 3) at two, found again during PR #227's (round 1) at three. An extraction was attempted during PR #227 and reverted the same session after it (indirectly) caused a real incident: see the row below | Extracting a shared helper is still worth doing, but not attempted again casually — the revert wasn't about the extraction's design, it was about the incident it took down with it | Next time this pattern needs touching — with the apostrophe-in-single-quoted-heredoc risk (row below) fixed first, or checked for explicitly, before editing near either python block again |
 | Writing prose with an apostrophe (`it's`, `doesn't`, `#227's`) inside a bash *single-quoted* `python3 -c '...'` block silently and catastrophically breaks the script: bash single quotes have no escape mechanism, so the apostrophe ends the string early and everything after is reparsed as bash code — with no error until a syntax mismatch surfaces somewhere later in the file, at an unrelated line. Concretely: a comment reading "found during PR #227's own pre-merge-review" inside `check_merge_guard`'s marker-parsing python block took down `hooks/git-guardrails` entirely — and since this repo adopts itself, every `Bash` tool call in the session broke immediately (the `PreToolUse` hook execs this same file to vet every command), discovered only by working blind through `Read`/`Edit` until the apostrophe was found by manual quote-counting | Caught and fixed within the same session, but only by disabling all git/gh command execution until found — a real, high-blast-radius incident, not a near miss | Add a `check-no-...` script (matching `check-no-sigpipe-race.sh`'s F22 pattern) that scans every `python3 -c '...'`-shaped single-quoted block for a bare apostrophe — tracked as its own issue rather than built under this incident's own time pressure |
 | `compliance-evidence.sh`'s `normalize_model()` (F34, issue #296) is a verbatim copy of `skills/pre-merge-review/model-record-gate.sh`'s function of the same name (#268), not a shared import — two copies of the same model-string-comparison logic now exist. Deliberate (D5, Architect's implementation plan): extracting a shared lib would cross the dogfood-only boundary, since `skills/` is what `adopt.sh` propagates to adopted projects and this collector is dogfood-only | A reimplementation that drifted from `model-record-gate.sh`'s comparison rules would make the collector silently disagree with the gate it reports on — worse than the duplication itself; the two are kept in sync by comment (each names the other as origin/copy) | Unify if/when this collector is ever propagated beyond this repo, or if the two copies are ever found to have drifted |
-| `compliance-evidence.sh` (F34, issue #308, fixing the #296 debt row this replaces) now discriminates a live marker from the same shape merely quoted in a fenced code block, an inline code span, or a Markdown blockquote — `live_text()` strips those enclosures (by CommonMark's own fence-closing rule: opening char + run length, no info string on a close, 3-space indent cap) before any `gate_*` predicate greps the result, and a real marker inline with prose keeps evidencing (AC3). This is a bounded heuristic, not a full CommonMark parser, and by design (non-goal 1, Product's ruling on D2) it **fails open** — counts as live, not flagged as quoted — for shapes it doesn't attempt: a 4-space-indented (or tab-indented) code block, an HTML `<pre>`/`<code>` block, a marker nested inside another HTML comment, backticks inside a link title, a blockquote's lazy-continuation line, and a backtick-fence opener whose own info string contains a backtick (this last one is the sole fail-*closed* residue — over-stripped, not under-stripped). `test/cases/s151_compliance_evidence_quoting.sh` pins two of these (Q18, Q18b) as accepted debt on purpose, precisely so a later half-fix is a visible, reviewed status change rather than a silent one | Closing every one of these needs a real CommonMark-aware parser, which is out of proportion to a dogfood-only compliance reporter; the fail-open direction is the honest one to ship rather than overclaim full coverage (Product's D2 ruling) | If any of these shapes is ever seen quoted in a real PR/issue in a way that produces a false `evidenced` — delete the corresponding S151 arm (Q18/Q18b) and move this row, rather than leaving the debt undocumented once the gap closes |
+| `compliance-evidence.sh` (F34, issue #308, fixing the #296 debt row this replaces) now discriminates a live marker from the same shape merely quoted in a fenced code block, an inline code span, or a Markdown blockquote — `live_text()` strips those enclosures (by CommonMark's own fence-closing rule: opening char + run length, no info string on a close, 3-space indent cap) before any `gate_*` predicate greps the result, and a real marker inline with prose keeps evidencing (AC3). This is a bounded heuristic, not a full CommonMark parser, and by design (non-goal 1, Product's ruling on D2) it **fails open** — counts as live, not flagged as quoted — for shapes it doesn't attempt: a 4-space-indented (or tab-indented) code block, an HTML `<pre>`/`<code>` block, a marker nested inside another HTML comment, backticks inside a link title, a blockquote's lazy-continuation line, and a backtick-fence opener whose own info string contains a backtick (this last one is the sole fail-*closed* residue — over-stripped, not under-stripped). The same `live_text()` copy also filters `role-label-staleness.sh` and, since #392 (round 5 of the PR #397 review), `model-record-gate.sh`'s stage-presence and Review-floor checks, so the three agree on these shapes (S201 checks the indented case). `test/cases/s151_compliance_evidence_quoting.sh` pins two of these (Q18, Q18b) as accepted debt on purpose, precisely so a later half-fix is a visible, reviewed status change rather than a silent one | Closing every one of these needs a real CommonMark-aware parser, which is out of proportion to a dogfood-only compliance reporter; the fail-open direction is the honest one to ship rather than overclaim full coverage (Product's D2 ruling) | If any of these shapes is ever seen quoted in a real PR/issue in a way that produces a false `evidenced` — delete the corresponding S151 arm (Q18/Q18b) and move this row, rather than leaving the debt undocumented once the gap closes |
 | Every caller of `live_text()` (`compliance-evidence.sh`, `role-label-staleness.sh`) captures its output without checking awk's own exit status — an awk failure (a future regex-engine defect on some other awk build, say) would turn a body into `''` and produce a confident `not-evidenced`/`stale` verdict, the exact same failure shape issue #319 itself went unnoticed as until someone happened to run the real test suite under mawk. #319's fix removes the two known triggers (the panic, and the two mawk portability defects) but doesn't change this: a *third*, still-undiscovered awk defect would reproduce #319's original symptom precisely. Found during PR #325's own pre-merge-review (round 2) | #319's fix closes every known trigger; propagating awk's exit status through `live_text()` and degrading callers to `indeterminate` on failure (the same discipline `collect()` already applies to a failed `gh` call) is a real fix but a separate, non-trivial one — not worth bundling into #319's own scope | If a future awk defect (a different build, a different bug) reproduces #319's silent-empty-output symptom again — propagate `live_text()`'s exit status and have every caller degrade to `indeterminate` rather than treating empty output as "nothing was there" |
 | `compliance-evidence.sh` and `model-record-gate.sh` (F34, issue #318) both append PR review bodies (`pulls/<pr>/reviews`) strictly after every PR comment when building their flat text corpus, not merged in true chronological order. This is harmless when a review genuinely is the newest event (it correctly lands last in append order too) — the real risk is the opposite: a comment posted *after* an existing review is still appended *before* every review in the fixed body→comments→reviews order, so that older review's `model-record` marker can still win under `tail -1` over a comment that's actually newer (e.g. a round-2 comment correcting a round-1 review's recorded model would lose to that stale review). The same class of ordering flaw #253 already fixed once for issue-text-vs-PR-text ordering, now reappearing between two PR-side sources instead of two different bundle sources. Found during PR #336's own pre-merge-review (round 1; the direction was initially misdescribed here and in this file's own code comment, corrected during round 2) | Both scripts' comment JSON and review JSON carry `created_at`/`submitted_at`, but neither script reads it — merging by real timestamp is a bigger, separate change than #318's own REST-transport scope, and reviews are a source neither script read at all before this PR, so this is a new, narrower version of an already-accepted risk class, not a regression this PR introduced from a previously-safe state | The first real PR where a `model-record` marker in a review body is superseded by a later, disagreeing marker in a plain PR comment, and gate 2 (or model-record-gate.sh's own same-model check) gives the stale review's verdict instead — sort PR_TEXT's sources by their own `created_at`/`submitted_at` instead of a fixed body→comments→reviews append order |
 
