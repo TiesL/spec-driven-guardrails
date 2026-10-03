@@ -1308,6 +1308,77 @@ shortening (#281), changing the role contracts' content (#369), and
 verifying the role sessions' quality (AC9 covers only that they were
 separate dispatches).
 
+### F39 — Review is at least as capable as Implementation, not necessarily a different model (issue #392)
+
+#244 resolved a contradiction between `CHANGES.md` and `pre-merge-review`
+in favour of the stricter rule: a genuinely different Review model,
+same-model only as a recorded `same-model-exception`. A bounded dry run of
+the pipeline (#371) showed the cost: the orchestrator chose one model and
+one low effort for every stage, and the gate flagged Review. The
+maintainer reversed the choice (2026-10-03).
+
+Requirement: Review's model and effort, taken together, are at least as
+capable as the Implementation stage's, and among the combinations that
+clear that, the cheapest is chosen (the `model-choice` principle applied
+to Review). A different model is not required. No text or script names a
+model or tier.
+
+Decisions (maintainer, 2026-10-03):
+
+- On the same model, a Review at lower effort than Implementation is a
+  gate finding. For two different models no capability finding is raised:
+  there is no ordering a script can check without a model table, and a
+  table would break the rule that floors never name a model.
+- `quality-review-before-merge` moves to meaning version 3, so adopters
+  that answered at v1 or v2 are re-surfaced to re-confirm.
+  `same-model-exception` is retired: ignored completely for one release
+  (not counted as a substitute for anything), not repurposed.
+- Every Review `model-record` marker carries `floor-basis="<one
+  sentence>"`, the Reviewer's stated reason why its model and effort clear
+  Implementation's. A missing or empty one is a non-blocking finding; the
+  text is never verified.
+- `compliance-evidence.sh` reports two different models as
+  `unverifiable-from-artifacts`, never `evidenced`.
+- Documentation names the full model id as the platform reports it, but
+  does not require it. `normalize_model` stays generic (no model table).
+- The orchestrator assesses each stage's floor per `model-choice` and
+  sets model and effort per stage, not one pair for the whole run.
+
+Acceptance criteria (full text in issue #392): **AC1-AC2** the rule is
+stated one way and no live text demands a different model; **AC3** same
+model: effort compared; **AC4** different models: no mechanical verdict,
+stated as such; **AC5** a legacy `same-model-exception` is ignored;
+**AC6** gate 2 keeps its lookup-failure degradation to `indeterminate`;
+**AC7** the meaning-version bump and its fixtures; **AC8** the
+orchestrator wording; **AC9** the recorded judgment (`floor-basis`);
+**AC10** specs and scenarios follow.
+
+What is mechanically verified: that Review and Implementation markers
+exist; that on an equal normalized model Review effort is not lower (known
+effort values `low < medium < high` only); that `floor-basis` is present
+and non-empty; that the orchestrator text states the per-stage rule; that
+no live text demands a different model. What stays judgment and is only
+recorded, never checked: whether `floor-basis` is true; whether a
+different model clears Implementation's capability; whether an effort that
+is equal and low was adequate for both stages; and whether the
+orchestrator in a real session actually chooses efforts per stage (model
+behaviour, shown only by a human dry run). An unknown or missing effort,
+or a short model alias that doesn't normalize equal to its full id, gives
+no claim (or `indeterminate` in gate 2), never a pass.
+
+Delivery: two PRs in the same release as #369/#371, before its release PR
+opens, so the gate never blocks a Review the new rule allows. PR 1 changes
+only `skills/role-contracts/ORCHESTRATOR.md`. PR 2 is the rest: the shared
+`lib/model-record.sh`, both scripts, `model-choice` and `pre-merge-review`,
+the `CHANGES.md` v3 entry, this repo's adoption row, and the specs and
+tests. The dispatch tool takes a model but not an effort, so the
+orchestrator may not control effort; its wording covers that by choosing a
+more capable model instead.
+
+Not part of this feature: a model-capability table, verifying `floor-basis`
+text, a hard merge block (findings use the existing non-blocking
+`model-record:` prefix), and changing the markers of the other four stages.
+
 ---
 
 ## Non-functional characteristics
@@ -1549,6 +1620,7 @@ epics still apply, detached from the execution history in which they arose.
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
 | `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
+| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so the same-model effort check (F39) is skipped for a Review recorded under an alias; gate 2 reports `indeterminate`, never a pass. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
 | `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
 | Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |
