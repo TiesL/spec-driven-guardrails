@@ -2357,6 +2357,9 @@ something new is being added.
   attribute, never one whose name merely ends in `model` or `effort`
   (in either attribute order), and nothing for an absent, unquoted or
   differently-prefixed attribute
+- And (review of PR #397): attribute text inside a value (`floor-basis="beats
+  model="`, `>`, `<`, `--`, `-->`) is never read as another attribute and
+  never breaks the value
 
 ### S189 — the model-record gate checks the Review floor it can check
 **Covers:** F39
@@ -2443,3 +2446,34 @@ something new is being added.
   script can check, documents the effort values (including `unknown`) and the
   full model id as the platform reports it, and that a short alias and its
   full id count as different models; the correlated-blind-spots caveat stays
+
+### S194 — free text in a Review marker never hides the marker from either script
+**Covers:** F39
+- Given: Review markers whose `floor-basis` value contains `>`, `<`, `--`,
+  `-->`, `<!--` or a newline, or whose other attributes contain `>`, on a fake
+  `gh` for the gate and for the collector (issue #392, review of PR #397:
+  the first `>` used to end the marker and hide it; human decision: fix the
+  parser, so such values are tolerated, quotes remain the only forbidden
+  character)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: a same-model Review at lower effort still gives the gate's
+  lower-effort finding (and no missing-`floor-basis` finding) and gate 2
+  `not-evidenced`, equal effort is silent / `evidenced`, different models are
+  silent / `unverifiable-from-artifacts`, the latest round still wins, a
+  marker with `>` in another attribute and no `floor-basis` gives exactly the
+  `floor-basis` finding; gate 2's evidence never claims a quoted illustration
+  or an absent marker for a marker it read; under a lookup failure the
+  verdict is `indeterminate` for the guard's reason
+
+### S195 — the collector shares the anchored extraction, says what an effort conflict is, and names its lib
+**Covers:** F39
+- Given: markers with a lookalike attribute (`xmodel=`, text ending in
+  ` model=`) before the real `model=`; two closing issues whose Review markers
+  differ only in effort; the collector run without `lib/model-record.sh`
+  (issue #392, review of PR #397, low findings that contradict A25)
+- When: `compliance-evidence.sh` runs
+- Then: gate 1 reads the real model (never the lookalike) and treats a marker
+  with no real `model=` as malformed; the effort-only conflict evidence says
+  the effort differs and shows both efforts and both issues, a model conflict
+  still shows both models; the header's exit-code-3 entry and the runtime
+  message name `lib/model-record.sh`
