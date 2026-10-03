@@ -2477,3 +2477,45 @@ something new is being added.
   the effort differs and shows both efforts and both issues, a model conflict
   still shows both models; the header's exit-code-3 entry and the runtime
   message name `lib/model-record.sh`
+
+### S196 — the marker parser works under a UTF-8 locale and never fails silently
+**Covers:** F39
+- Given: comment text with non-ASCII right after `stage=` (the placeholder
+  prose `stage=…`, bare or backticked, in its own comment or in the marker's
+  comment) and inside or outside the quotes of a real marker; a UTF-8 locale
+  found with `locale -a` (en_US.UTF-8, nl_NL.UTF-8, C.UTF-8) exported by the
+  test, as well as `LC_ALL=C`; a fake `awk` that fails only the parser's
+  programs (issue #392, round 3 of the PR #397 review, high finding). Only
+  macOS (BWK) awk aborts on a multibyte fragment, so the UTF-8 half proves the
+  fix on macOS and the fake awk proves the failure path everywhere; with no
+  UTF-8 locale installed the test says so and checks that the parser pins
+  `LC_ALL=C`
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: in both locales a same-model lower-effort Review after the
+  placeholder still gives the gate's lower-effort finding and gate 2
+  `not-evidenced`, and gate 1 still sees all four stages; when the parser's
+  awk fails the gate prints a `model-record:` finding (or exits non-zero) and
+  gate 2 is `indeterminate` (or the run non-zero), never "no findings" or a
+  definite verdict
+
+### S197 — a malformed marker never swallows a later well-formed one
+**Covers:** F39
+- Given: Review markers with an odd number of quotes, with no closing `-->`
+  (also with another model) or with a nested `<!--`, followed by a
+  well-formed marker in the same comment, in a later comment, or before
+  further text with a stray quote and `-->`; and a malformed marker AFTER a
+  good one (issue #392, round 3 of the PR #397 review, medium finding)
+- When: `model-record-gate.sh` and `compliance-evidence.sh` run
+- Then: the later well-formed marker is found with its own values (the
+  lower-effort finding; gate 2 `not-evidenced` naming its efforts); a
+  malformed marker may produce a finding or be ignored but never wins and
+  never gives the lower-effort verdict from its own attributes
+
+### S198 — role-label-staleness.sh detects a marker whose value contains `>`
+**Covers:** F35, F39
+- Given: a stale `role:architect` label and a Review marker on the linked PR
+  whose `floor-basis` contains `>`, `-->`, `<!--` or `<` (issue #392, round 3
+  of the PR #397 review, low finding)
+- When: `role-label-staleness.sh` runs against a fake `gh` (S152's recording)
+- Then: the verdict is `stale` (the marker's stage is detected, not
+  malformed), and a label at the evidenced stage is `in-sync`
