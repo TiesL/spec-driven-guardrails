@@ -115,6 +115,9 @@ newline are plain text, so write `floor-basis` as an ordinary sentence. A
 quote ends the value, so don't use one inside it. The marker ends at the
 first `-->` outside quotes. Both scripts read markers through
 `lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker.
+A malformed marker (a stray or unbalanced quote, no closing `-->`, a
+`<!--` inside it) is ignored, never read, and never hides a later marker;
+the gate names it as a finding, so post a corrected marker.
 
 Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in

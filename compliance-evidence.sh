@@ -584,8 +584,13 @@ gate_stage_models() {
     # unreachable by quote-stripping since there's nothing to strip.
     if grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
       local line model
-      line="$(marker_find "$stage" "$BUNDLE_TEXT" | tail -1)"
-      model="$(marker_attr "$line" model)"
+      # A parser failure (lib/model-record.sh returns non-zero) means the
+      # markers were not read: indeterminate, never a verdict (#392).
+      if ! line="$(marker_find "$stage" "$BUNDLE_TEXT" | tail -1)" \
+        || ! model="$(marker_attr "$line" model)"; then
+        printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the stage markers could not be read"
+        return
+      fi
       if [ -z "$model" ]; then
         malformed="$malformed $stage"
       else
@@ -666,11 +671,21 @@ gate_stage_models() {
 #                                            or only one source matched at all
 #   conflict  <"source: `model`; ..." >   — two+ ISSUE sources matched with
 #                                            genuinely different markers
+#   malformed <reason: text>              — no source has a well-formed
+#                                            marker for this stage, but one
+#                                            has a malformed one (#392: it is
+#                                            never read, and "none" would be
+#                                            a false absence)
+#   parsefail <empty>                     — lib/model-record.sh failed: the
+#                                            markers were not read (#392)
 resolve_stage_marker() {
   local stage="$1"
-  local pr_line="" line model src_num i
+  local pr_line="" line model eff src_num i
 
-  line="$(marker_find "$stage" "$PR_TEXT" | tail -1)"
+  if ! line="$(marker_find "$stage" "$PR_TEXT" | tail -1)"; then
+    printf '%s\t%s\n' "parsefail" ""
+    return
+  fi
   [ -n "$line" ] && pr_line="$line"
 
   # Note on order: unlike the old `tail -1`-over-the-flat-corpus code,
@@ -682,18 +697,39 @@ resolve_stage_marker() {
   # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
   local -a marker_labels=() marker_lines=() marker_models=() marker_efforts=()
   for i in "${!ISSUE_TEXTS[@]}"; do
-    line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"
+    if ! line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"; then
+      printf '%s\t%s\n' "parsefail" ""
+      return
+    fi
     if [ -n "$line" ]; then
       src_num="${ISSUE_NUMS[$i]}"
-      model="$(marker_attr "$line" model)"
+      if ! model="$(marker_attr "$line" model)" || ! eff="$(marker_attr "$line" effort)"; then
+        printf '%s\t%s\n' "parsefail" ""
+        return
+      fi
       marker_labels+=("issue #$src_num")
       marker_lines+=("$line")
       marker_models+=("$model")
-      marker_efforts+=("$(marker_attr "$line" effort | tr '[:upper:]' '[:lower:]')")
+      marker_efforts+=("$(printf '%s' "$eff" | tr '[:upper:]' '[:lower:]')")
     fi
   done
 
   if [ -z "$pr_line" ] && [ "${#marker_lines[@]}" -eq 0 ]; then
+    local scan_out bad="" scan_status scan_stage scan_rest
+    if ! scan_out="$(marker_scan "$BUNDLE_TEXT")"; then
+      printf '%s\t%s\n' "parsefail" ""
+      return
+    fi
+    while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
+      if [ "$scan_status" = "malformed" ] && [ "$scan_stage" = "$stage" ]; then
+        bad="$scan_rest"
+        break
+      fi
+    done <<<"$scan_out"
+    if [ -n "$bad" ]; then
+      printf '%s\t%s\n' "malformed" "$bad"
+      return
+    fi
     printf '%s\t%s\n' "none" ""
     return
   fi
@@ -718,7 +754,10 @@ resolve_stage_marker() {
   if [ "$issues_conflict" -eq 1 ]; then
     local detail="" sep=""
     if [ -n "$pr_line" ]; then
-      model="$(marker_attr "$pr_line" model)"
+      if ! model="$(marker_attr "$pr_line" model)"; then
+        printf '%s\t%s\n' "parsefail" ""
+        return
+      fi
       detail="PR #$pr_number: \`${model:-<malformed>}\`"
       sep="; "
     fi
@@ -746,6 +785,23 @@ gate_review_model() {
 
   IFS=$'\t' read -r impl_status impl_line <<<"$(resolve_stage_marker Implementation)"
   IFS=$'\t' read -r review_status review_line <<<"$(resolve_stage_marker Review)"
+
+  # #392 (round 3 of the PR #397 review): a parser failure or a stage whose
+  # only markers are malformed is indeterminate, never "none"/a verdict.
+  if [ "$impl_status" = "parsefail" ] || [ "$review_status" = "parsefail" ]; then
+    printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
+    return
+  fi
+  if [ "$impl_status" = "malformed" ] || [ "$review_status" = "malformed" ]; then
+    local bad_detail=""
+    [ "$impl_status" = "malformed" ] && bad_detail="Implementation — $impl_line"
+    if [ "$review_status" = "malformed" ]; then
+      [ -n "$bad_detail" ] && bad_detail="$bad_detail; "
+      bad_detail="${bad_detail}Review — $review_line"
+    fi
+    printf '%s\t%s\n' "indeterminate" "the only \`stage=Implementation\`/\`stage=Review\` model-record marker found on PR #$pr_number for a stage is malformed and was not read ($bad_detail)"
+    return
+  fi
 
   if [ "$impl_status" = "conflict" ] || [ "$review_status" = "conflict" ]; then
     local which detail
@@ -787,8 +843,16 @@ gate_review_model() {
     return
   fi
 
-  impl_model="$(marker_attr "$impl_line" model)"
-  review_model="$(marker_attr "$review_line" model)"
+  local attrs_ok=1 fb=""
+  impl_model="$(marker_attr "$impl_line" model)" || attrs_ok=0
+  review_model="$(marker_attr "$review_line" model)" || attrs_ok=0
+  impl_effort="$(marker_attr "$impl_line" effort)" || attrs_ok=0
+  review_effort="$(marker_attr "$review_line" effort)" || attrs_ok=0
+  fb="$(marker_attr "$review_line" floor-basis)" || attrs_ok=0
+  if [ "$attrs_ok" -eq 0 ]; then
+    printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
+    return
+  fi
 
   if [ -z "$impl_model" ] || [ -z "$review_model" ]; then
     printf '%s\t%s\n' "indeterminate" "the \`stage=Review\` or \`stage=Implementation\` marker on PR #$pr_number has no quoted \`model=\"...\"\` to compare"
@@ -802,8 +866,7 @@ gate_review_model() {
   # so the verdict is structural, not a lookup question: nothing an unread
   # marker could say would change what this collector can claim.
   if [ "$impl_norm" != "$review_norm" ]; then
-    local fb fb_text
-    fb="$(marker_attr "$review_line" floor-basis)"
+    local fb_text
     if [ -n "$fb" ]; then
       fb_text="floor-basis: \"$fb\""
     else
@@ -813,8 +876,6 @@ gate_review_model() {
     return
   fi
 
-  impl_effort="$(marker_attr "$impl_line" effort)"
-  review_effort="$(marker_attr "$review_line" effort)"
   impl_rank="$(effort_rank "$impl_effort")"
   review_rank="$(effort_rank "$review_effort")"
   if [ -z "$impl_rank" ] || [ -z "$review_rank" ]; then

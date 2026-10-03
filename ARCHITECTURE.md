@@ -499,7 +499,19 @@ the next free numbers after A23.
   even `-->` and a newline inside a quoted value are text, and the marker
   ends at the first `-->` outside quotes (the review of PR #397 found that
   the old `[^>]*-->` grammar made a `>` in `floor-basis` hide the whole
-  marker from both scripts). The name does not
+  marker from both scripts). A **malformed** marker (a quote anywhere but
+  right after `name=`, text glued to a closing quote, an unterminated
+  value, a `<!--` outside a value, or no closing `-->`) is never read and
+  never swallows a later marker: there is no fallback to the first `-->`,
+  and the scan resumes right after its own `<!--`. The gate names it
+  (`model-record: a stage=<Stage> marker is malformed and was ignored`);
+  in the collector it is ignored when a well-formed marker of that stage
+  exists and makes the gate `indeterminate` when none does; in
+  `role-label-staleness.sh` it is a malformed marker (`indeterminate`, its
+  AC6 rule). The parser sees the comments joined, not their boundaries:
+  a value whose quote is closed only in a later comment is read as one
+  marker if everything after it parses as attributes, which a later
+  well-formed marker never does (round 3 of the PR #397 review). The name does not
   end in `model=` or `effort=`, which the field extraction would otherwise
   capture.
 - **What the gate does (`model-record-gate.sh`):** the #244 same-model
@@ -531,15 +543,23 @@ the next free numbers after A23.
   effort records `effort="unknown"`. A short alias and its full id normalize
   as different models: no effort comparison, gate 2 reports
   `unverifiable-from-artifacts`, never a pass.
-- **`lib/model-record.sh`** (sourced, bash 3.2), used by both scripts:
+- **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
+  collector and `role-label-staleness.sh`:
   `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
   `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
   (the quoted value; the marker is tokenized, so text inside another value
   such as `beats model=` or a lookalike name such as `reviewer-model` is
-  never read as an attribute) and `marker_find <Stage> <text>` (every marker
-  of a stage, the one marker grammar: quote-aware end at the closing `-->`).
-  Both scripts, and gate 1 of the collector, read markers only through
-  these. The gate sources it via
+  never read as an attribute), `marker_find <Stage> <text>` (every
+  well-formed marker of a stage, the one marker grammar: quote-aware end at
+  the closing `-->`) and `marker_scan <text>` (every marker, well-formed or
+  malformed, with its stage token). All three scripts, and gate 1 of the
+  collector, read markers only through these. The parser's awk programs run
+  under `LC_ALL=C` (every delimiter is ASCII; under a UTF-8 locale macOS awk
+  aborted on a multibyte character right after `stage=`), and a failure is
+  never silent: the function prints nothing, says so on stderr and returns
+  non-zero; the gate then prints a `model-record:` finding, the collector's
+  gates 1 and 2 go `indeterminate`, `role-label-staleness.sh` goes
+  `indeterminate`. The gate sources it via
   its symlink-resolved clone path, like `lib/changes.sh`; it fails open
   without it. The collector, at the repo root, sources `lib/` next to itself.
 - **Meaning version 3** of `quality-review-before-merge` (`CHANGES.md`), with

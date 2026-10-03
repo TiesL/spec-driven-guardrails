@@ -64,6 +64,13 @@
 # plus, when Review and Implementation both have a marker (#392):
 #   "model-record: Review recorded lower effort (\"<r>\") than Implementation (\"<i>\") on the same model (\"<m>\") (#392)"
 #   "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
+# plus, for each malformed Implementation or Review marker (an unbalanced
+# quote, no closing -->, a <!-- inside it; lib/model-record.sh), which is
+# ignored, never read:
+#   "model-record: a stage=<Stage> marker is malformed and was ignored (<reason>: <text>) (#392)"
+# and, when the marker parser itself fails (lib/model-record.sh returns
+# non-zero), instead of the floor checks:
+#   "model-record: the marker parser (lib/model-record.sh) failed, ... (#392)"
 # plus, opted in only (#371), one line per role-play finding:
 #   "role-played: stages in one text: <Stage>, <Stage> (<source>)"
 #   "role-played: stages missing: <Stage>, ..."
@@ -215,30 +222,55 @@ done
 # so the merge guard is unaffected. No lib, no comparison: fail open.
 impl_line=""
 review_line=""
+parser_failed=0
 if [ -r "$own_dir/../../lib/model-record.sh" ]; then
   # shellcheck source=../../lib/model-record.sh
   . "$own_dir/../../lib/model-record.sh"
   # marker_find: the one marker grammar (a quoted value may hold `>`, `<`,
   # `--`, a newline; only a quote ends a value), shared with the collector.
-  impl_line="$(marker_find Implementation "$all_text" | tail -1)"
-  review_line="$(marker_find Review "$all_text" | tail -1)"
+  # A malformed marker is never read (it would otherwise win or hide a later
+  # one); marker_scan names it here instead (round 3 of the PR #397 review).
+  # A parser failure is a finding, never a silent "no marker".
+  impl_line="$(marker_find Implementation "$all_text" | tail -1)" || parser_failed=1
+  review_line="$(marker_find Review "$all_text" | tail -1)" || parser_failed=1
+  scan_out="$(marker_scan "$all_text")" || parser_failed=1
+  if [ "$parser_failed" -eq 0 ]; then
+    while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
+      [ "$scan_status" = "malformed" ] || continue
+      case "$scan_stage" in
+        Implementation | Review)
+          echo "model-record: a stage=$scan_stage marker is malformed and was ignored ($scan_rest) (#392)"
+          ;;
+      esac
+    done <<<"$scan_out"
+  fi
+fi
+if [ "$parser_failed" -eq 1 ]; then
+  echo "model-record: the marker parser (lib/model-record.sh) failed, so the Implementation and Review markers were not read and the Review floor was not checked (#392)"
+  impl_line=""
+  review_line=""
 fi
 if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
-  impl_model="$(marker_attr "$impl_line" model)"
-  review_model="$(marker_attr "$review_line" model)"
-  impl_model_norm="$(normalize_model "$impl_model")"
-  review_model_norm="$(normalize_model "$review_model")"
-  if [ -n "$impl_model_norm" ] && [ "$impl_model_norm" = "$review_model_norm" ]; then
-    impl_effort="$(marker_attr "$impl_line" effort)"
-    review_effort="$(marker_attr "$review_line" effort)"
-    impl_rank="$(effort_rank "$impl_effort")"
-    review_rank="$(effort_rank "$review_effort")"
-    if [ -n "$impl_rank" ] && [ -n "$review_rank" ] && [ "$review_rank" -lt "$impl_rank" ]; then
-      echo "model-record: Review recorded lower effort (\"$review_effort\") than Implementation (\"$impl_effort\") on the same model (\"$review_model\") (#392)"
+  impl_model="$(marker_attr "$impl_line" model)" || parser_failed=1
+  review_model="$(marker_attr "$review_line" model)" || parser_failed=1
+  impl_effort="$(marker_attr "$impl_line" effort)" || parser_failed=1
+  review_effort="$(marker_attr "$review_line" effort)" || parser_failed=1
+  review_fb="$(marker_attr "$review_line" floor-basis)" || parser_failed=1
+  if [ "$parser_failed" -eq 1 ]; then
+    echo "model-record: the marker parser (lib/model-record.sh) failed, so the Implementation and Review markers were not read and the Review floor was not checked (#392)"
+  else
+    impl_model_norm="$(normalize_model "$impl_model")"
+    review_model_norm="$(normalize_model "$review_model")"
+    if [ -n "$impl_model_norm" ] && [ "$impl_model_norm" = "$review_model_norm" ]; then
+      impl_rank="$(effort_rank "$impl_effort")"
+      review_rank="$(effort_rank "$review_effort")"
+      if [ -n "$impl_rank" ] && [ -n "$review_rank" ] && [ "$review_rank" -lt "$impl_rank" ]; then
+        echo "model-record: Review recorded lower effort (\"$review_effort\") than Implementation (\"$impl_effort\") on the same model (\"$review_model\") (#392)"
+      fi
     fi
-  fi
-  if [ -z "$(marker_attr "$review_line" floor-basis)" ]; then
-    echo "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
+    if [ -z "$review_fb" ]; then
+      echo "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
+    fi
   fi
 fi
 

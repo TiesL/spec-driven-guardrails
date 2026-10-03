@@ -189,7 +189,8 @@
 #   1 — internal error: the computed verdict fell outside the closed
 #       four-value vocabulary (never expected; see valid_status())
 #   2 — usage error (no issue number given)
-#   3 — gh not found on PATH
+#   3 — gh not found on PATH, or lib/model-record.sh (next to this
+#       script) is missing
 #   4 — the issue itself couldn't be read (the non-paginated issue-body
 #       call failed) — no honest verdict is possible without it. Every
 #       other call failing only sets its own flag and degrades its own
@@ -271,6 +272,21 @@ require_gh() {
     exit 3
   fi
 }
+
+# marker_scan — the one model-record marker grammar, shared with
+# compliance-evidence.sh and skills/pre-merge-review/model-record-gate.sh
+# through lib/model-record.sh (#392, round 3 of the PR #397 review: the
+# private `[^>]*-->` pattern this script used made a marker with a `>` in a
+# quoted value invisible). Like compliance-evidence.sh, this script lives at
+# the repo root next to lib/ and is dogfood-only, so sourcing the lib
+# crosses no adoption boundary.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if [ ! -r "$script_dir/lib/model-record.sh" ]; then
+  echo "role-label-staleness: lib/model-record.sh not found next to this script — cannot read model-record markers." >&2
+  exit 3
+fi
+# shellcheck source=lib/model-record.sh
+. "$script_dir/lib/model-record.sh"
 
 # live_text() — copied verbatim from compliance-evidence.sh (issue #308),
 # not sourced/imported: a shared lib would cross the dogfood-only
@@ -698,37 +714,36 @@ $live_body"
 KNOWN_MAX_RANK=-1
 MALFORMED_FOUND=0
 MALFORMED_LINE=""
+PARSER_FAILED=0
 
 scan_markers() {
-  local text="$1" marker_lines line token rank
-  marker_lines="$(grep -oE '<!--[[:space:]]*model-record:[^>]*-->' <<<"$text")"
-  [ -n "$marker_lines" ] || return 0
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    # issue #317 F-5: excludes `-` too, not just whitespace/`>` — a
-    # marker closed with no space before the delimiter (`stage=Review-->`,
-    # no space) used to swallow the `--` into the token itself
-    # ("Review--"), which then failed stage_rank() and was misread as
-    # malformed. No recognized stage name contains a hyphen, so this
-    # never mis-rejects a real one. It does mean a token that has a
-    # hyphen for some OTHER reason (a hypothetical `stage=Review-draft`,
-    # nothing in this repo ever writes one) now truncates to plain
-    # "Review" and is accepted, rather than being flagged as an
-    # unrecognized/malformed value the way it would be with no hyphen
-    # in the token at all (`stage=Reviewdraft`) — a narrow, deliberate
-    # tradeoff for this one fix, not a general guarantee.
-    token="$(grep -oE 'stage=[^[:space:]>-]+' <<<"$line" | head -1 | sed 's/^stage=//')"
-    if [ -n "$token" ] && rank="$(stage_rank "$token" 2>/dev/null)"; then
+  local text="$1" scan_out status token rest rank
+  # marker_scan (lib/model-record.sh): every `<!-- model-record:` marker,
+  # one per line, `ok|malformed<TAB><stage token><TAB><text>`. The stage
+  # token is the [A-Za-z0-9_] run after `stage=` (issue #317 F-5's
+  # `stage=Review-->` still reads as Review, and `stage=Review-draft` as
+  # Review, the same narrow tradeoff as before). A grammar-malformed marker
+  # (an unbalanced quote, no closing `-->`, a `<!--` inside it) is never
+  # read for its stage; it counts as malformed here (AC6: never silently
+  # dropped). A parser failure means nothing was read: PARSER_FAILED.
+  if ! scan_out="$(marker_scan "$text")"; then
+    PARSER_FAILED=1
+    return 0
+  fi
+  [ -n "$scan_out" ] || return 0
+  while IFS=$'\t' read -r status token rest; do
+    [ -n "$status" ] || continue
+    if [ "$status" = "ok" ] && [ -n "$token" ] && rank="$(stage_rank "$token" 2>/dev/null)"; then
       if [ "$rank" -gt "$KNOWN_MAX_RANK" ]; then
         KNOWN_MAX_RANK="$rank"
       fi
     else
       MALFORMED_FOUND=1
       if [ -z "$MALFORMED_LINE" ]; then
-        MALFORMED_LINE="$line"
+        MALFORMED_LINE="$rest"
       fi
     fi
-  done <<<"$marker_lines"
+  done <<<"$scan_out"
 }
 
 # Appends $1 (a PR number) to FAILED_PRS exactly once, even if more than
@@ -795,14 +810,19 @@ if [ "$role_label_count" -gt 1 ]; then
 else
   scan_markers "$CORPUS_TEXT"
 
-  if [ "$MALFORMED_FOUND" -eq 1 ]; then
+  if [ "$PARSER_FAILED" -eq 1 ]; then
+    # #392: the marker parser failed, so no marker was read; any verdict
+    # would rest on an absence nobody checked.
+    verdict="indeterminate"
+    detail="the model-record marker parser (lib/model-record.sh) failed, so no marker on issue #$issue_number or a linked PR could be read"
+  elif [ "$MALFORMED_FOUND" -eq 1 ]; then
     # AC6 — one sighting anywhere in scope forces this for the whole
     # run (the blunt, conservative reading Architect's Planning comment
     # recommended over a narrower "only if it could flip the verdict"
     # rule) — g3 depends on this taking priority over a well-formed,
     # later marker found elsewhere in the same corpus.
     verdict="indeterminate"
-    detail="a model-record marker on issue #$issue_number or a linked PR matched but has no recognized stage=<Discovery|Planning|Test|Implementation|Review> value: $MALFORMED_LINE"
+    detail="a model-record marker on issue #$issue_number or a linked PR matched but is malformed or has no recognized stage=<Discovery|Planning|Test|Implementation|Review> value: $MALFORMED_LINE"
   else
     label_r=-1
     single_label=""
