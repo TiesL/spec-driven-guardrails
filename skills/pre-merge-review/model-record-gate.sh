@@ -213,11 +213,17 @@ done
 #   same-model-exception is ignored completely and does not stand in for it.
 # Both are findings with the `model-record:` prefix, never `role-played: `,
 # so the merge guard is unaffected. No lib, no comparison: fail open.
-impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | tail -1)"
-review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | tail -1)"
-if [ -n "$impl_line" ] && [ -n "$review_line" ] && [ -r "$own_dir/../../lib/model-record.sh" ]; then
+impl_line=""
+review_line=""
+if [ -r "$own_dir/../../lib/model-record.sh" ]; then
   # shellcheck source=../../lib/model-record.sh
   . "$own_dir/../../lib/model-record.sh"
+  # marker_find: the one marker grammar (a quoted value may hold `>`, `<`,
+  # `--`, a newline; only a quote ends a value), shared with the collector.
+  impl_line="$(marker_find Implementation "$all_text" | tail -1)"
+  review_line="$(marker_find Review "$all_text" | tail -1)"
+fi
+if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
   impl_model="$(marker_attr "$impl_line" model)"
   review_model="$(marker_attr "$review_line" model)"
   impl_model_norm="$(normalize_model "$impl_model")"

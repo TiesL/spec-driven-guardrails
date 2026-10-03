@@ -494,8 +494,12 @@ the next free numbers after A23.
   aliases (see the PRD debt row), so a conditional rule would skip exactly
   the reviews that were wrongly classified. Free text, not an enumeration:
   for the same model an enumeration would repeat what the gate computes; for
-  different models it would be a bare claim with no reason. It must not
-  contain `"` or `>` (the marker grammar ends at either). The name does not
+  different models it would be a bare claim with no reason. The only
+  forbidden character is a double quote, which ends a value; `>`, `<`, `--`,
+  even `-->` and a newline inside a quoted value are text, and the marker
+  ends at the first `-->` outside quotes (the review of PR #397 found that
+  the old `[^>]*-->` grammar made a `>` in `floor-basis` hide the whole
+  marker from both scripts). The name does not
   end in `model=` or `effort=`, which the field extraction would otherwise
   capture.
 - **What the gate does (`model-record-gate.sh`):** the #244 same-model
@@ -524,12 +528,18 @@ the next free numbers after A23.
   models normalize equal and both efforts are known. A missing, unquoted or
   unknown value (`unknown`, `session-default`) makes no claim: no finding in
   the gate, `indeterminate` in the collector. A role that does not know its
-  effort records `effort="unknown"`.
+  effort records `effort="unknown"`. A short alias and its full id normalize
+  as different models: no effort comparison, gate 2 reports
+  `unverifiable-from-artifacts`, never a pass.
 - **`lib/model-record.sh`** (sourced, bash 3.2), used by both scripts:
   `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
-  `effort_rank <value>` (0, 1, 2, or nothing) and `marker_attr <line> <name>`
-  (the quoted value, anchored at a line start or whitespace so `model` never
-  matches inside `floor-basis` or `reviewer-model`). The gate sources it via
+  `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
+  (the quoted value; the marker is tokenized, so text inside another value
+  such as `beats model=` or a lookalike name such as `reviewer-model` is
+  never read as an attribute) and `marker_find <Stage> <text>` (every marker
+  of a stage, the one marker grammar: quote-aware end at the closing `-->`).
+  Both scripts, and gate 1 of the collector, read markers only through
+  these. The gate sources it via
   its symlink-resolved clone path, like `lib/changes.sh`; it fails open
   without it. The collector, at the repo root, sources `lib/` next to itself.
 - **Meaning version 3** of `quality-review-before-merge` (`CHANGES.md`), with

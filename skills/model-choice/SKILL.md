@@ -114,11 +114,13 @@ Review marker, one sentence of free text (#392):
 <!-- model-record: stage=Review model="<model>" effort="<low|medium|high|unknown>" floor-basis="<one sentence>" -->
 ```
 
-`floor-basis` is one sentence of free text (no `"` or `>` in it) on why
+`floor-basis` is one sentence of free text on why
 this model and effort clear Implementation's, for example "same model as
 Implementation at higher effort" or "stronger model than Implementation's
 at equal effort; the diff is a mechanical rename". A human weighs that
-sentence; the gate never verifies it, only that it is present. The
+sentence; the gate never verifies it, only that it is present. Any
+character is fine in it except a double quote (see "Marker grammar" in
+`pre-merge-review`). The
 Review report's one-line self-declaration (below) repeats it in prose.
 `same-model-exception` is legacy: no script reads it, and it does not
 stand in for `floor-basis`.

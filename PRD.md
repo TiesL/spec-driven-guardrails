@@ -1343,7 +1343,9 @@ Decisions (maintainer, 2026-10-03):
 - `compliance-evidence.sh` reports two different models as
   `unverifiable-from-artifacts`, never `evidenced`.
 - Documentation names the full model id as the platform reports it, but
-  does not require it. `normalize_model` stays generic (no model table).
+  does not require it. A short alias and its full id then count as
+  different models: gate 2 reports `unverifiable-from-artifacts` (the script
+  cannot tell an alias from a different model), never a pass. `normalize_model` stays generic (no model table).
 - The orchestrator assesses each stage's floor per `model-choice` and
   sets model and effort per stage, not one pair for the whole run.
 
@@ -1365,9 +1367,10 @@ recorded, never checked: whether `floor-basis` is true; whether a
 different model clears Implementation's capability; whether an effort that
 is equal and low was adequate for both stages; and whether the
 orchestrator in a real session actually chooses efforts per stage (model
-behaviour, shown only by a human dry run). An unknown or missing effort,
-or a short model alias that doesn't normalize equal to its full id, gives
-no claim (or `indeterminate` in gate 2), never a pass.
+behaviour, shown only by a human dry run). An unknown or missing effort gives
+no claim in the gate and `indeterminate` in gate 2; a short model alias that
+doesn't normalize equal to its full id counts as a different model, so gate 2
+reports `unverifiable-from-artifacts`, never a pass.
 
 Delivery: two PRs in the same release as #369/#371, before its release PR
 opens, so the gate never blocks a Review the new rule allows. PR 1 changes

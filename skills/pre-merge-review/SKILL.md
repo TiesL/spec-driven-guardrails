@@ -108,6 +108,14 @@ is required on every Review marker: one sentence on why this pair clears
 Implementation's (see `model-choice`'s "Machine-readable form"). The
 gate checks that it is present, never what it says.
 
+**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
+`stage=<Stage>`, then `name="value"` attributes, then `-->`. A value may
+contain any character except a double quote: `>`, `<`, `--` and even a
+newline are plain text, so write `floor-basis` as an ordinary sentence. A
+quote ends the value, so don't use one inside it. The marker ends at the
+first `-->` outside quotes. Both scripts read markers through
+`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker.
+
 Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
 the PR or the issue(s) it closes. A missing stage is a finding, the same

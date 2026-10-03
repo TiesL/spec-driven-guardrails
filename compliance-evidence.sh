@@ -50,7 +50,8 @@
 #   1 — internal error: a gate predicate returned a status outside the
 #       closed vocabulary (never expected to trigger; see valid_status())
 #   2 — usage error (no PR number given)
-#   3 — gh not found on PATH
+#   3 — gh not found on PATH, or lib/model-record.sh (next to this script)
+#       is missing
 #   4 — the PR itself could not be read (call A failed); no honest table
 #       is possible without it
 # Every other gh call's failure (PR comments/reviews, the CI check-runs
@@ -583,8 +584,8 @@ gate_stage_models() {
     # unreachable by quote-stripping since there's nothing to strip.
     if grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
       local line model
-      line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$BUNDLE_TEXT" | tail -1)"
-      model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
+      line="$(marker_find "$stage" "$BUNDLE_TEXT" | tail -1)"
+      model="$(marker_attr "$line" model)"
       if [ -z "$model" ]; then
         malformed="$malformed $stage"
       else
@@ -669,7 +670,7 @@ resolve_stage_marker() {
   local stage="$1"
   local pr_line="" line model src_num i
 
-  line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$PR_TEXT" | tail -1)"
+  line="$(marker_find "$stage" "$PR_TEXT" | tail -1)"
   [ -n "$line" ] && pr_line="$line"
 
   # Note on order: unlike the old `tail -1`-over-the-flat-corpus code,
@@ -681,7 +682,7 @@ resolve_stage_marker() {
   # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
   local -a marker_labels=() marker_lines=() marker_models=() marker_efforts=()
   for i in "${!ISSUE_TEXTS[@]}"; do
-    line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"${ISSUE_TEXTS[$i]}" | tail -1)"
+    line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"
     if [ -n "$line" ]; then
       src_num="${ISSUE_NUMS[$i]}"
       model="$(marker_attr "$line" model)"
@@ -722,7 +723,7 @@ resolve_stage_marker() {
       sep="; "
     fi
     for i in "${!marker_lines[@]}"; do
-      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\`"
+      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\` (effort \`${marker_efforts[$i]:-none}\`)"
       sep="; "
     done
     printf '%s\t%s\n' "conflict" "$detail"
