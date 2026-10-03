@@ -37,6 +37,16 @@ This project is developed from multiple computers. Follow this workflow in every
 4. **Wait for TiesL's explicit confirmation** that the test succeeded and there's no regression, before merging. Never merge automatically without that confirmation.
 5. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
+## Issue labels
+
+Three independent axes, applied to every issue going forward (issue #398 — before this, the tracker carried almost no labels at all, making two concurrent sessions' work illegible from the outside):
+
+- **Type** — `bug`, `documentation`, `enhancement` (GitHub's own defaults), or `process` for an architecture/workflow-process change that doesn't fit the other three. Orthogonal to `epic`: an epic can carry both `epic` and a type label (e.g. `process`+`epic`).
+- **Status** — `status:backlog` (scoped, not started), `status:in-progress` (actively being worked, by this session or another), `status:blocked` (can't proceed — state the blocker in the issue body). Not a replacement for GitHub's own open/closed state; "done" is just closed, there's no `status:done` label.
+- **Role** — `role:product`/`role:architect`/`role:dev`/`role:qa`/`role:reviewer`, tracking which of the five multi-agent-workflow phases (`role-contracts` skill) is currently active on an issue/PR. Hand-maintained by the orchestrator, same as `status:*` — neither axis is set or cleared by a script; `role-label-staleness.sh` only *flags* a role label that's fallen behind the evidence, it doesn't fix it.
+
+Both `status:*` and `role:*` are deliberately hand-maintained, not mechanized — issue #371 may later change how pipeline-phase state gets set, and that's a separate decision from this convention existing. This-repo-only for now (not yet offered via `CHANGES.md`/`adopt.sh` to adopted projects) — validate the convention here first.
+
 ## Routing table
 
 This file holds what every session needs. For everything else: the table below resolves every moved topic in a single jump.
