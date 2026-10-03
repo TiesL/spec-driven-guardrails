@@ -61,8 +61,9 @@
 #
 # Output on stdout: one line per missing stage:
 #   "model-record: no record found for stage <Stage> (missing model-choice marker)"
-# plus, when Review and Implementation both have a marker (#244 AC2):
-#   "model-record: Review and Implementation recorded the same model (\"<model>\") with no same-model-exception (#244)"
+# plus, when Review and Implementation both have a marker (#392):
+#   "model-record: Review recorded lower effort (\"<r>\") than Implementation (\"<i>\") on the same model (\"<m>\") (#392)"
+#   "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
 # plus, opted in only (#371), one line per role-play finding:
 #   "role-played: stages in one text: <Stage>, <Stage> (<source>)"
 #   "role-played: stages missing: <Stage>, ..."
@@ -197,57 +198,41 @@ for stage in Discovery Planning Test Implementation Review; do
   fi
 done
 
-# #244 AC2: Review must use a different model than Implementation unless
-# an explicit same-model-exception is recorded — the contradiction #244
-# resolved between CHANGES.md and this skill is otherwise just as
-# unenforced as it was before. Only checked when both markers are present
-# (the loop above already reports either one missing).
-#
-# Found during PR #253's pre-merge-review (Opus, genuinely different
-# model from Implementation):
-# - `tail -1`, not `head -1` — a later review round's marker must win;
-#   `head -1` let a round-1 different-model marker mask a round-2
-#   same-model violation, and could never clear a round-1 same-model
-#   flag no matter what a later round recorded.
-# - Extraction only trusts the quoted `model="..."` form. An unquoted
-#   marker (`model=Sonnet`) previously made the old sed silently return
-#   the *whole line* unchanged (its pattern simply didn't match) — two
-#   malformed markers could then spuriously compare "equal" on garbage,
-#   or two different garbage lines could wrongly compare "different".
-#   Now: no quoted match -> empty model, comparison skipped entirely
-#   (silence, not a false claim either way) — malformed input is a
-#   distinct failure mode from "same model", not folded into it.
-# - `same-model-exception="..."` must have a non-empty reason;
-#   `same-model-exception=""` no longer satisfies the exception.
-# - Comparison uses normalize_model (#268, replacing a plain case-fold
-#   found insufficient during PR #267's pre-merge-review, round 2:
-#   "Sonnet 5" vs. "claude-sonnet-5" — same model, different label style
-#   — case-folding alone didn't equate those either). Structural, not a
-#   per-model alias table: strips the vendor-prefix word and a trailing
-#   8-digit snapshot-date suffix, then folds every remaining separator
-#   and case difference away. Exact-modulo-format, not exact-modulo-
-#   spelling — an abbreviated name still wouldn't match — but it covers
-#   the display-name-vs-API-id mismatch actually seen in practice without
-#   ever hardcoding a model name.
-normalize_model() {
-  printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/^[[:space:]]*claude[- ]*//' \
-    | sed -E 's/-[0-9]{8}$//' \
-    | sed -E 's/[^a-z0-9]+/ /g' \
-    | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
-}
+# #392 (A24/A25), replacing #244's different-model rule: Review's model and
+# effort, together, are at least as capable as Implementation's. Two checks
+# on the LATEST Review marker (`tail -1`, as before: a later review round's
+# marker must win), each only when both markers are present (the loop above
+# already reports either one missing):
+# - the same model (normalize_model, lib/model-record.sh) at a lower Review
+#   effort than Implementation's is a finding. Different models are never
+#   ranked here (no model table): that stays the Reviewer's recorded
+#   judgment. An effort that is missing, unquoted or not low|medium|high
+#   makes no claim: silence, not a false one. Same for an unquoted model.
+# - the marker must carry a non-empty quoted floor-basis (one sentence on
+#   why the pair clears the floor); its text is never verified. A legacy
+#   same-model-exception is ignored completely and does not stand in for it.
+# Both are findings with the `model-record:` prefix, never `role-played: `,
+# so the merge guard is unaffected. No lib, no comparison: fail open.
 impl_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation[^>]*-->' <<<"$all_text" | tail -1)"
 review_line="$(grep -oE '<!--[[:space:]]*model-record:[[:space:]]*stage=Review[^>]*-->' <<<"$all_text" | tail -1)"
-if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
-  impl_model="$(grep -oE 'model="[^"]*"' <<<"$impl_line" | head -1 | sed 's/^model="//; s/"$//')"
-  review_model="$(grep -oE 'model="[^"]*"' <<<"$review_line" | head -1 | sed 's/^model="//; s/"$//')"
+if [ -n "$impl_line" ] && [ -n "$review_line" ] && [ -r "$own_dir/../../lib/model-record.sh" ]; then
+  # shellcheck source=../../lib/model-record.sh
+  . "$own_dir/../../lib/model-record.sh"
+  impl_model="$(marker_attr "$impl_line" model)"
+  review_model="$(marker_attr "$review_line" model)"
   impl_model_norm="$(normalize_model "$impl_model")"
   review_model_norm="$(normalize_model "$review_model")"
-  if [ -n "$impl_model_norm" ] && [ -n "$review_model_norm" ] \
-    && [ "$impl_model_norm" = "$review_model_norm" ] \
-    && ! grep -qE 'same-model-exception="[^"]+"' <<<"$review_line"; then
-    echo "model-record: Review and Implementation recorded the same model (\"$review_model\") with no same-model-exception (#244)"
+  if [ -n "$impl_model_norm" ] && [ "$impl_model_norm" = "$review_model_norm" ]; then
+    impl_effort="$(marker_attr "$impl_line" effort)"
+    review_effort="$(marker_attr "$review_line" effort)"
+    impl_rank="$(effort_rank "$impl_effort")"
+    review_rank="$(effort_rank "$review_effort")"
+    if [ -n "$impl_rank" ] && [ -n "$review_rank" ] && [ "$review_rank" -lt "$impl_rank" ]; then
+      echo "model-record: Review recorded lower effort (\"$review_effort\") than Implementation (\"$impl_effort\") on the same model (\"$review_model\") (#392)"
+    fi
+  fi
+  if [ -z "$(marker_attr "$review_line" floor-basis)" ]; then
+    echo "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
   fi
 fi
 

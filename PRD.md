@@ -411,12 +411,14 @@ you won't notice.
 ### F11 — `pre-merge-review` as an executable skill
 
 The strongest post. `WORKFLOW.md` *asks in prose* for a review "with fresh
-context and on a different model." Frontmatter expresses part of that
+context and on a different model" (reversed by #392, F39: at least as
+capable, not necessarily different). Frontmatter expresses part of that
 literally: `context: fork` gives the fresh, isolated context;
 `allowed-tools` keeps it read-only. The model itself is deliberately
 *not* pinned in frontmatter — a stale prior description here said it was —
-`model-choice`'s qualitative floor (#244: a different, at-least-as-capable
-model, exception-only-with-record) governs the choice instead, so the
+`model-choice`'s qualitative floor (#392, F39: model and effort at least as
+capable as Implementation's, with a recorded `floor-basis`; #244's
+different-model rule is reversed) governs the choice instead, so the
 rule survives new model releases without editing this skill.
 
 The skill reads `WORKFLOW-ADOPTION.md` → `yes`-answered `spec-*` → the anchor in
@@ -982,8 +984,9 @@ instruction had no mechanical check behind it. Each stage now carries a
 `model-record-gate.sh <pr-number>` checks a PR's own comments/description
 and the comments of every issue it closes for all five stages, reporting
 whichever are missing. Fails open (a warning, not a block) without `gh`.
-Same mechanism also catches Review recording the identical model as
-Implementation with no `same-model-exception` (#244 AC2) — see the
+Same mechanism also catches a same-model Review recorded at lower
+effort than Implementation, and a Review marker without `floor-basis`
+(#392 replaced #244 AC2's different-model finding; see F39) — see the
 Technical debt entries on this gate's own known gaps (spelling-mismatch
 false negatives, comment-ordering heuristic).
 
@@ -1620,7 +1623,7 @@ epics still apply, detached from the execution history in which they arose.
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
 | `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
-| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so the same-model effort check (F39) is skipped for a Review recorded under an alias; gate 2 reports `indeterminate`, never a pass. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
+| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so the same-model effort check (F39, #392) is skipped for a Review recorded under an alias; gate 2 reports `unverifiable-from-artifacts`, never a pass, and `model-record-gate.sh` raises no effort finding. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
 | `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
 | Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |

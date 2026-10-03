@@ -48,7 +48,7 @@ pmr="$TEST_REPO_ROOT/skills/pre-merge-review/SKILL.md"
 model_choice_section="$(awk '/^## Model choice/{p=1; print; next} p && /^## /{exit} p' "$pmr")"
 [ -n "$model_choice_section" ] || fail "S129 — pre-merge-review/SKILL.md has no 'Model choice' section"
 assert_contains "S129 — refers to the model-choice skill" "model-choice" "$model_choice_section"
-assert_contains "S129 — states the reviewer floor" "different from" "$model_choice_section"
+assert_contains "S129 — states the reviewer floor (#392: at least as capable as Implementation, not a different model)" "at least as capable" "$model_choice_section"
 assert_contains "S129 — states the always-record requirement" "not only when" "$model_choice_section"
 
 test_done

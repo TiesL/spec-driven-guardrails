@@ -473,3 +473,67 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
 - **Violated when:** a role-played run without a valid override merges in an
   opted-in project with `gh` available, or a project that didn't answer yes
   sees a new finding or block (S183, S186).
+
+---
+
+# Architecture decision — Review at least as capable as Implementation (#392)
+
+**Decided on 2026-10-03.** #244's different-model requirement for the Review
+stage is reversed (human decisions on #392): the floor is Review's model and
+effort, together, at least as capable as Implementation's. A24 and A25 are
+the next free numbers after A23.
+
+### A24 — The Review floor and its recorded judgment, `floor-basis`
+- **Rule:** Review's model and effort, taken together, are at least as
+  capable as Implementation's recorded model and effort. Among the
+  combinations that clear that, pick the cheapest. A different model is not
+  required. No model or tier is named anywhere.
+- **Attribute:** `floor-basis="<one sentence>"` on the Review `model-record`
+  marker, required on **every** Review marker, not only same-model ones:
+  same-model detection inherits false "different" verdicts from short
+  aliases (see the PRD debt row), so a conditional rule would skip exactly
+  the reviews that were wrongly classified. Free text, not an enumeration:
+  for the same model an enumeration would repeat what the gate computes; for
+  different models it would be a bare claim with no reason. It must not
+  contain `"` or `>` (the marker grammar ends at either). The name does not
+  end in `model=` or `effort=`, which the field extraction would otherwise
+  capture.
+- **What the gate does (`model-record-gate.sh`):** the #244 same-model
+  finding is removed. A missing, empty or unquoted `floor-basis` on the
+  **latest** Review marker gives `model-record: stage=Review marker has no
+  floor-basis ... (#392)`; when present, the text is never checked. The
+  finding uses the `model-record:` prefix, never `role-played: `, so the merge
+  guard (A18) is unaffected.
+- **`compliance-evidence.sh` gate 2:** different models are
+  `unverifiable-from-artifacts` (the capability ordering is not machine-
+  checked; the `floor-basis` is quoted for a human to weigh); the same model
+  with both efforts known is `evidenced` when Review >= Implementation and
+  `not-evidenced` when lower; an unknown effort is `indeterminate`. Both
+  same-model verdicts sit behind the #302/#336 lookup-failure guard (an
+  unread marker can overturn either; Architect ruling on AC6). The
+  inter-issue conflict key is the normalized model plus the effort.
+- **`same-model-exception`:** ignored completely by both scripts, and it does
+  not stand in for `floor-basis`. The documentation keeps one "legacy,
+  ignored" mention for one release, then it goes.
+- **Violated when:** a script ranks two different models, a script verifies
+  the `floor-basis` text, or a #392 finding uses the `role-played: ` prefix.
+
+### A25 — Effort scale and the shared model-record module
+- **Scale:** low < medium < high, case-insensitive on the quoted
+  `effort="..."` value: exactly the values in use. Compared only when both
+  models normalize equal and both efforts are known. A missing, unquoted or
+  unknown value (`unknown`, `session-default`) makes no claim: no finding in
+  the gate, `indeterminate` in the collector. A role that does not know its
+  effort records `effort="unknown"`.
+- **`lib/model-record.sh`** (sourced, bash 3.2), used by both scripts:
+  `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
+  `effort_rank <value>` (0, 1, 2, or nothing) and `marker_attr <line> <name>`
+  (the quoted value, anchored at a line start or whitespace so `model` never
+  matches inside `floor-basis` or `reviewer-model`). The gate sources it via
+  its symlink-resolved clone path, like `lib/changes.sh`; it fails open
+  without it. The collector, at the repo root, sources `lib/` next to itself.
+- **Meaning version 3** of `quality-review-before-merge` (`CHANGES.md`), with
+  the gate named in `Reaches session:`; adopters who answered yes are asked to
+  re-confirm.
+- **Violated when:** either script carries its own copy of `normalize_model`
+  or its own attribute extraction.

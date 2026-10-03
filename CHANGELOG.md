@@ -13,6 +13,19 @@ point.
 
 ## Unreleased
 
+- **Fix #392: Review must be at least as capable as Implementation, not a different model.**
+  Review's model and effort, taken together, must clear Implementation's, the cheapest
+  combination that does; a different model is no longer required and `same-model-exception`
+  is retired (ignored by every script). Every Review `model-record` marker now carries
+  `floor-basis="<one sentence>"` on why; `model-record-gate.sh` flags a same-model Review at
+  lower effort and a missing `floor-basis` (non-blocking, never `role-played: `), and
+  `compliance-evidence.sh` gate 2 reports different models as `unverifiable-from-artifacts`
+  and compares effort for the same model. Shared parsing moved to `lib/model-record.sh`.
+  `ORCHESTRATOR.md` has the orchestrator assess each stage's floor (#396). `CHANGES.md`
+  `quality-review-before-merge` is now meaning version 3: adopters that answered yes are
+  re-surfaced to re-confirm. What the `floor-basis` says, and which of two different models
+  is more capable, stays the Reviewer's judgment.
+
 - **Fix #371: sessions in opted-in projects apply the multi-agent pipeline automatically.**
   In a project whose `WORKFLOW-ADOPTION.md` answers `process-multi-agent-roles` yes (this
   repo now included), a new `SessionStart` command runs `session-context.sh`, which prints the
