@@ -85,12 +85,17 @@ run_session_start() {
 
 # --- Data-driven fake `gh` for the model-record gate -----------------------
 
-# mr <Stage>: one model-record marker for a stage (Review on a different
-# model than Implementation, so #244's same-model finding stays out of the way).
+# mr <Stage>: one model-record marker for a stage. Review is on a different
+# model than Implementation and carries a floor-basis (#392: required on every
+# Review marker), so neither the model/effort finding nor the missing-floor-basis
+# finding gets in the way of the role-play assertions in S183/S186.
 mr() {
-  local model=sonnet
-  [ "$1" = Review ] && model=opus
-  printf '<!-- model-record: stage=%s model="%s" effort="high" -->' "$1" "$model"
+  local model=sonnet extra=""
+  if [ "$1" = Review ]; then
+    model=opus
+    extra=' floor-basis="stronger model than Implementation at equal effort"'
+  fi
+  printf '<!-- model-record: stage=%s model="%s" effort="high"%s -->' "$1" "$model" "$extra"
 }
 
 # json_comments <outfile> <body> [<body> ...]: a JSON array of comment

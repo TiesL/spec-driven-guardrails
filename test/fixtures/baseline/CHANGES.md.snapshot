@@ -370,23 +370,24 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Must every PR in this project get a quality review before the merge, with findings in the PR?
 - **Default:** yes
 - **Applies if:** always
-- **Meaning version:** 2 — #244 added the different-model requirement (see
-  "Yes means" below); a project that answered `yes` before that (v1: "at
-  least as skilled," same model permitted) is re-surfaced by
-  `pending-changes.sh` for re-confirmation (#254), not silently carried
-  over under the old, looser meaning.
-- **Yes means:** before the merge, a review runs with fresh context and on
-  a different model than the one that wrote the code — same model only
-  when no other capable model is genuinely available, and then recorded
-  as an explicit exception (`same-model-exception`), never silently
-  treated as satisfying this (#244; resolves a prior contradiction with
-  `pre-merge-review`'s own wording, which used to say only "at least as
-  skilled," permitting same-model review by omission). The review always
-  checks complexity and dependencies (basic hygiene), plus exactly the
-  NFRs whose corresponding `spec-*` question this project answered "yes"
-  to. Findings go into the PR; every finding is either resolved or
+- **Meaning version:** 3 — #392 replaced the different-model
+  requirement: Review is at least as capable as Implementation, model and
+  effort together, the cheapest combination that clears it; same model at
+  lower Review effort is a finding; the Review marker records why in
+  `floor-basis`; `same-model-exception` is retired. A project that
+  answered at v2 (or v1) is re-surfaced to re-confirm (#254).
+- **Yes means:** before the merge, a review runs with fresh context, on a
+  model and effort at least as capable as the Implementation stage's,
+  judged together and weighed against cost (a different model is not
+  required). Its `model-record` marker carries `floor-basis="..."`: one
+  sentence on why. `model-record-gate.sh` flags a same-model review at
+  lower effort and a missing `floor-basis`. It can't rank two different
+  models, so that stays the Reviewer's recorded judgment. The review
+  always checks complexity and dependencies (basic hygiene), plus exactly
+  the NFRs whose corresponding `spec-*` question this project answered
+  "yes" to. Findings go into the PR; every finding is either resolved or
   recorded under *Technical debt* in the PRD.
-- **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails
+- **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
 ## ci-gate-on-merge

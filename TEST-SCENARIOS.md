@@ -1411,9 +1411,11 @@ something new is being added.
 - Then: a missing stage among Discovery/Planning/Test/Implementation/Review
   is reported, one line per stage; nothing is reported once all five are
   present; without `gh` the gate fails open with a warning, not a block
-- And (#244 AC2): Review and Implementation recording the identical model
-  with no `same-model-exception` field on Review's marker is reported;
-  the identical pairing with that field present is not
+- And (#392, which reversed #244 AC2): Review and Implementation recording
+  the identical model at a LOWER Review effort is reported, at equal or
+  higher effort it is not; a legacy `same-model-exception` field on
+  Review's marker neither waives that finding nor is required (the
+  attribute is ignored); the new floor rule itself is S189
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
 **Covers:** F28
@@ -1523,6 +1525,11 @@ something new is being added.
   old and new version; re-confirming with the current version marker
   quiets it; a row whose entry was never touched by a version bump never
   resurfaces, regardless of how it was answered
+- And (#392, `quality-review-before-merge` now at meaning v3): a row
+  answered with no marker reports "answered under meaning v1, now v3", a
+  row re-confirmed at `(meaning v2)` reports "answered under meaning v2,
+  now v3" in the "meaning has changed" block (not in the never-answered
+  list), and only a `(meaning v3)` row is quiet
 
 ### S142 — changes_meaning_version's field extraction, edge cases
 **Covers:** F3
@@ -2322,7 +2329,7 @@ something new is being added.
   `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through
 
 ### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and set model and effort per stage
-**Covers:** F38
+**Covers:** F39
 - Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #392, R5/AC8, group 1;
   what the session then actually chooses is model behaviour, checked by a
   human dry run on the scratch repo, not here)
@@ -2336,3 +2343,103 @@ something new is being added.
   dispatch prompt for the role's `model-record` marker; the file names no
   model or tier and carries no different-model rule (the phrase may only
   appear in a sentence saying it is not required)
+
+### S188 — lib/model-record.sh: normalize_model, effort_rank and marker_attr
+**Covers:** F39
+- Given: the sourced `lib/model-record.sh` (issue #392, A25), shared by the
+  model-record gate and the compliance collector
+- When: `normalize_model`, `effort_rank` and `marker_attr` are called
+- Then: `normalize_model` behaves as before (label styles, case and an
+  8-digit snapshot date fold together; different models and a short alias
+  vs its full id stay different); `effort_rank` prints 0, 1, 2 for low,
+  medium, high (case-insensitive) and nothing for any other value;
+  `marker_attr <line> <name>` prints the quoted value of exactly that
+  attribute, never one whose name merely ends in `model` or `effort`
+  (in either attribute order), and nothing for an absent, unquoted or
+  differently-prefixed attribute
+
+### S189 — the model-record gate checks the Review floor it can check
+**Covers:** F39
+- Given: PR 246 closing issue 239 against a data-driven fake `gh`, with
+  Implementation and Review markers varied per case (issue #392, AC3/AC4/
+  AC5/AC9, A24/A25); a plain project and an opted-in one
+- When: `model-record-gate.sh 246` runs
+- Then: for the same model after normalization, a Review effort lower than
+  Implementation's gives one `model-record:` finding naming the model and
+  both efforts, equal or higher gives none (label style, snapshot date and
+  effort case do not matter); different models give no capability finding
+  at all, including a short alias vs its full id (a known false pass); a
+  missing, unknown, unquoted or out-of-scale effort gives no claim; the
+  latest marker per stage wins; every Review marker needs a non-empty
+  quoted `floor-basis` (a missing, empty or unquoted one is a finding, a
+  present one is never verified, and the other stages need none); a legacy
+  `same-model-exception` is ignored completely, so it neither waives
+  anything nor stands in for `floor-basis`; findings never start with
+  `role-played:` and the exit status stays 0; attribute extraction is
+  word-anchored; a missing stage stays its existing line; the gate works
+  when run through a symlinked `skills/` directory
+
+### S190 — compliance gate 2 reports the Review floor honestly
+**Covers:** F39
+- Given: a recording fake `gh` for PR 279 with Implementation and Review
+  markers on the PR, on one or two closing issues, or unreadable (issue
+  #392, AC4/AC5/AC6, A24/A25)
+- When: `compliance-evidence.sh 279` runs
+- Then: for the same model, Review effort not lower than Implementation's is
+  `evidenced` and lower is `not-evidenced`, both naming the efforts;
+  different models are `unverifiable-from-artifacts`, the evidence saying the
+  models differ and their capability ordering is not machine-checked, quoting
+  the `floor-basis` or saying none was recorded, and a short alias vs its full
+  id counts as different; an unknown, missing or unquoted effort on the same
+  model is `indeterminate`; a legacy `same-model-exception` changes no
+  verdict and is not printed; two closing issues disagreeing on the
+  normalized model OR on the effort are a conflict (`indeterminate`), while
+  agreeing ones, or differing only in a legacy exception, are not; the
+  #302/#336 lookup-failure guard still degrades a same-model verdict that
+  depends on a possibly unread marker to `indeterminate`, for lower and for
+  equal effort, and leaves sound verdicts alone
+
+### S191 — quality-review-before-merge is at meaning v3 and the specs follow
+**Covers:** F9, F39
+- Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, `ARCHITECTURE.md`,
+  `PRD.md` (issue #392, AC7/AC10)
+- When: the `quality-review-before-merge` entry and the documents are read
+- Then: the entry is at Meaning version 3 and cites #392; "Yes means" states
+  the new floor (at least as capable as Implementation, model and effort,
+  `floor-basis`, a different model not required, what the gate cannot rank),
+  keeps the unchanged parts (fresh context, complexity, dependencies,
+  `spec-*` NFRs, findings in the PR), and Reaches session names the gate
+  script; this repo's own row ends with `(meaning v3)`; `ARCHITECTURE.md` has
+  A24 (floor-basis) and A25 (`lib/model-record.sh`, `low < medium < high`);
+  `PRD.md`'s Technical debt register has a row on short model aliases; the
+  adopter-facing re-surfacing is S141 and the snapshot sync is S90
+
+### S192 — no live text demands a different Review model, and the old exception attribute is legacy only
+**Covers:** F39
+- Given: every markdown file except history (`wip/`, `CHANGES-ARCHIEF.md`,
+  `CHANGELOG.md`, tests), the frozen `CHANGES.md` snapshot, and the two
+  verification scripts and the lib (issue #392, R1/R6, AC2/AC5)
+- When: they are scanned
+- Then: no paragraph, list item or table row states the old requirement
+  ("a different model from/than", "genuinely different", "must use a
+  different model") or mentions `same-model-exception` without saying it is
+  history or legacy; the scripts mention `same-model-exception` only in
+  comments (they do not parse or print it) and call it legacy or ignored;
+  the old gate-2 row label is gone
+
+### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis
+**Covers:** F39
+- Given: `skills/model-choice/SKILL.md` and `skills/pre-merge-review/SKILL.md`
+  (issue #392, R1/AC1/AC9, human decisions 1-4)
+- When: their Review-stage text is read, paragraph by paragraph
+- Then: the Review row and the pre-merge-review "Model choice" paragraph say
+  at least as capable as Implementation, model and effort together, with no
+  different-model requirement; the "Resolved contradiction (#244)" paragraph
+  survives as history saying #392 reversed it; the Review marker format shows
+  `floor-basis` (one sentence, required on every Review marker, present-checked
+  but never verified) and no longer offers `same-model-exception`; both skills
+  say the gate flags a same-model Review at lower effort and a missing
+  `floor-basis`; model-choice says two different models have no ordering a
+  script can check, documents the effort values (including `unknown`) and the
+  full model id as the platform reports it, and that a short alias and its
+  full id count as different models; the correlated-blind-spots caveat stays
