@@ -2566,3 +2566,43 @@ something new is being added.
   collector; gate 2 stays `not-evidenced` and the label verdict `in-sync`; for
   an indented code block (not stripped by `live_text`, accepted debt) the
   gate and the collector must give the same outcome
+
+### S202 — the gate reports a latest marker whose model or effort cannot be read, for every stage
+**Covers:** F40
+- Given: PR 246 and its closing issue on a data-driven fake `gh`, with the
+  latest marker of one of the five stages having an unquoted, empty or missing
+  `model` or `effort` (the dry-run shape `model=claude-haiku-4-5 effort=low`
+  included), or a placeholder, a quoted example in a fence, a code span or a
+  blockquote, a missing marker, an earlier bad marker superseded by a later
+  good one; plain, opted-in and not-opted-in projects (issue #402, R3/R4,
+  AC3-AC6, A26 and the human decisions of 2026-10-03)
+- When: `model-record-gate.sh 246` runs, and `compliance-evidence.sh` on the
+  same input
+- Then: the gate prints one `model-record:` finding per stage and field,
+  naming the stage and the field, exit 0, never a `role-played:` line, in every
+  kind of project; Implementation and Review unreadable together are two lines;
+  only the latest marker of a stage counts; a quoted marker (also
+  `effort="unknown"`), an unrelated unquoted attribute, a placeholder, a quoted
+  example and a missing marker (its existing "no record found" line only) give
+  no new finding; the collector stays `indeterminate` for the unreadable model
+  (gate 1 for the four earlier stages, gate 2 for Implementation) and
+  `evidenced` for a well-formed run
+
+### S203 — the orchestrator hands each role its marker line from the one template
+**Covers:** F40
+- Given: `skills/role-contracts/ORCHESTRATOR.md`, `skills/role-contracts/SKILL.md`,
+  `model-choice` and `pre-merge-review` (issue #402, R1/R2, AC1/AC2, A26;
+  whether the orchestrator really pastes the line and the role posts it
+  unchanged is model behaviour, shown by the scratch-repo re-run)
+- When: they are read, paragraph by paragraph
+- Then: one paragraph of `ORCHESTRATOR.md` tells the orchestrator to put the
+  role's marker line, taken from `model-choice`'s "Machine-readable form", into
+  the dispatch prompt, fill in the stage and the effort (`unknown` when it
+  cannot find it out), leave `model` for the role to fill with its own exact id,
+  have the role post it completed as the first line of its report, and name the
+  requested model; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
+  example, no spelled-out marker line, no effort values, no quoting rule);
+  `model-choice` keeps the two templates as the single copy and no skill shows a
+  quoted stage; `role-contracts` says a report's first line is the marker from
+  the dispatch prompt, that a role whose prompt lacks it writes it from the
+  template and says so, and that it does not refuse to work over it
