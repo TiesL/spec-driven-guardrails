@@ -18,11 +18,12 @@ adopt "$project"
 actual="$SANDBOX/actual.txt"
 pending_ids "$project" > "$actual"
 
-# Then: exactly these 8 IDs, in any order.
+# Then: exactly these 9 IDs, in any order.
 expected="$SANDBOX/expected.txt"
 cat > "$expected" <<'IDS'
 process-context-document
 process-issue-tracking
+release-branch-workflow
 spec-compliance
 spec-cost-management
 spec-performance-scale
