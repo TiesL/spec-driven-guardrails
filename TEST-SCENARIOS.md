@@ -2320,3 +2320,19 @@ something new is being added.
   through; no/never projects are unaffected; failing or absent gh fails open;
   a missing review marker still blocks as before; the explicit
   `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through
+
+### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and set model and effort per stage
+**Covers:** F38
+- Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #392, R5/AC8, group 1;
+  what the session then actually chooses is model behaviour, checked by a
+  human dry run on the scratch repo, not here)
+- When: it is read, paragraph by paragraph
+- Then: one paragraph points at `model-choice`, has the orchestrator assess
+  each stage's floor and choose model AND effort separately per stage (never
+  one pair for the whole run), requires Review to be at least as capable as
+  Implementation, says what to do when the dispatch tool can set a model but
+  not an effort (choose a more capable model if the effort the role will run
+  at is below the floor), and has the chosen model and effort stated in the
+  dispatch prompt for the role's `model-record` marker; the file names no
+  model or tier and carries no different-model rule (the phrase may only
+  appear in a sentence saying it is not required)
