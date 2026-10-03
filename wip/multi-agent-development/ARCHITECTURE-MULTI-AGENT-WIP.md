@@ -549,6 +549,153 @@ classifier's basis, the override mechanism, and the module shape for building AC
 
 ---
 
+### A14 — Release-branch trigger is a judgment call; promotion retargets in-flight PRs; membership freezes at creation (decided 2026-10-01, formalizing issue #309's informal precedent)
+
+Issue #309 recorded one real exercise (`release/295-multi-agent-workflow-v1`, merged as v0.2.0,
+2026-10-01) ad hoc, with no documented rule for when a release branch is warranted, what
+happens to work already in flight when one gets created mid-epic, or which issues count as
+"in" the release. This decision answers all three, generalizing the one-off into a repeatable
+mechanism.
+
+**Trigger: no numeric threshold.** Whether an epic warrants a release branch is a judgment
+call Product and Architect make together and record explicitly on the epic issue itself, each
+time it comes up — not a files-touched or issue-count number. Same reasoning A13 already used
+to reject a size dimension for review depth: a threshold here would be an invented, ungrounded
+number with no existing anchor, answering "how big" instead of the real question, "does this
+batch of work need a deliberate, separate promotion decision."
+
+**Promotion retargets, rather than splitting.** If an epic starts on the normal
+work-item-PRs-straight-to-`main` path and only later grows into needing a release branch, every
+currently-open work-item PR gets retargeted (`gh pr edit --base release/<n>-<slug>`) onto the
+new branch. The alternative — leaving already-open PRs targeting `main` while new ones target
+the release branch — would split one epic's work across two merge destinations with no single
+place that holds "the whole release," defeating the reason a release branch exists in the first
+place.
+
+**Membership freezes at release-branch creation (or at the promotion moment).** Which issues
+belong to a release is fixed at that moment. An issue discovered afterward gets the epic's label
+for tracking, same as any other issue, but does not block that release unless someone
+explicitly pulls it in — matching A6's "promotion is a deliberate act, not an automatic
+sweep" precedent and `WORKFLOW-ADOPTION.md`'s own "never rewrite what's already answered"
+principle, applied here to release scope instead of adoption rows.
+
+---
+
+### A15 — Stray-closes guard drops its base-branch condition; `closingIssuesReferences` empty-on-non-default-base is a shared root cause, fixed once (decided 2026-10-01, from PR #368's merge friction)
+
+Merging PR #368 (the v0.2.0 release) hit a concrete failure: 34 issues already closed on the
+release branch were flagged as "stray" by `check_stray_closes_guard` in `hooks/git-guardrails`,
+because the release PR's own body didn't redeclare them — forcing a classifier-blocked escape
+hatch to get through. Investigating why surfaced the actual root cause, already named in issue
+#309's own comment thread: GitHub's `closingIssuesReferences` GraphQL field is empty for any PR
+whose base isn't the repo's default branch. That's not a stray-closes-only bug — it silently
+breaks three separate mechanisms that all read that field or infer from its absence:
+
+1. `check_stray_closes_guard` (the symptom PR #368 actually hit).
+2. `check-pr-issue-link.sh`'s link-3 traceability check.
+3. `model-record-gate.sh`'s per-issue lookup.
+4. GitHub's own auto-close-on-merge, for every release-branch-base work-item PR.
+
+**Decision: fix all four from the one root cause, not just the symptom.** `check_stray_closes_guard`
+drops its base-branch condition entirely — an already-closed issue is never "stray," regardless
+of which branch the PR targets. The other three call sites get the equivalent fix (falling back
+to a REST-based, non-`closingIssuesReferences` discovery path, the same pattern W3/#315 already
+used for the GraphQL-blocked-from-inside-Claude-Code-session problem it hit — see epic #295's
+own scope note). Rationale: W3's own retrospective already flagged that `compliance-evidence.sh`
+and `model-record-gate.sh` likely share this exposure, unconfirmed at the time — this epic is
+where that confirmation and fix actually happens, once, instead of as four separate
+whack-a-mole patches each time a new call site trips over the same empty field.
+
+---
+
+### A16 — A release branch gets one freshly dispatched, unconditionally thorough holistic review before going to Ties (decided 2026-10-01)
+
+Per-work-item PRs onto a release branch already get their own per-PR review (A3's five-role
+pipeline, unchanged). That reviews each item in isolation; nothing reviews the release branch's
+accumulated diff against `main` as a whole before the merge-to-`main` decision reaches Ties.
+
+**Decision:** once a release's membership is frozen (A14) and every member work item has
+merged, a holistic review runs — the same QA and Reviewer roles, freshly dispatched (matching
+Decision 3's standing "fresh context per phase" precedent, not a continuation of any work
+item's own review session), scoped to the release branch's entire diff against `main`. This is
+additive to, not a replacement for, each work item's own review.
+
+**Depth is unconditionally thorough — A13's classifier is not called for this gate.** A13's
+quick/thorough split exists to right-size review cost against an individual PR's own risk
+category. A release gate is categorically different: it's the last check before `main` for a
+whole batch of already-individually-reviewed work, which makes it high-stakes by construction,
+independent of what any one work item in the batch would classify as on its own. Running the
+classifier here would answer the wrong question — not "is this release risky" but "was any one
+item in it individually risky," which the per-item reviews already answered.
+
+---
+
+### A17 — Release branches stay unprotected in this repo, matching the existing low-ceremony merge path (decided 2026-10-01)
+
+This repo already decided (epic #295/#309's working precedent) that work-item PRs onto a
+release branch merge on the executing session's own judgment once CI is green and a review
+marker is present — no per-item human confirmation, the same low-ceremony path work items take
+onto `main` directly. Adding GitHub branch-protection rules to release branches would introduce
+a stricter gate for the release branch than `main` itself enforces for individual work items,
+contradicting a path already decided rather than genuinely raising safety. Decision: release
+branches get no branch-protection rules. (This repo's reason is a deliberate choice — see A20
+below for why a typical *adopted* project's release branches are also unprotected, but for an
+unrelated reason.)
+
+---
+
+### A18 — The release→`main` SemVer bump is proposed from the release branch's own CHANGELOG entries and confirmed in the same merge decision, not a separate round-trip (decided 2026-10-01)
+
+Under the existing SemVer rules (#348/#350), Product/the orchestrator proposes the bump type
+(patch/minor/major) by reading the release branch's accumulated `CHANGELOG.md` entries once
+membership is frozen (A14) and the holistic review (A16) has passed. Ties confirms the proposed
+bump as part of the same release→`main` merge confirmation A2 already requires unconditionally
+— not a second, separate approval step. Folding it into the existing confirmation avoids adding
+a round-trip for a decision that's naturally part of the same "merge this to `main`" moment.
+
+**This epic's own release:** confirmed as staying within the `0.2.x` line (`v0.2.y`); the exact
+patch number is determined at completion, from whatever `CHANGELOG.md` entries this epic's own
+work items actually accumulate.
+
+---
+
+### A19 — Ships as a procedural skill, propagated through the existing unconditional skill-install path, with no new adoption scaffolding (decided 2026-10-01, overriding round 1's dogfood-only draft — Ties explicitly required this mechanism reach adopted projects)
+
+Unlike epic #295 (explicitly dogfood-only until its pilot substantiated propagation), this
+mechanism ships to adopted projects from the start. Nothing here needs mechanical enforcement
+beyond A15's guard/root-cause fix, which is already propagated (next point) — the rest is pure
+process text.
+
+- **Deliverable:** a new `skills/release-branch-workflow/SKILL.md` — procedural text describing
+  the trigger judgment call (A14), promotion, membership freeze, holistic review (A16), and
+  merge/version-bump confirmation (A18/A2). No new script.
+- **Propagation:** symlinked like every other skill, through `adopt.sh`'s existing
+  unconditional `install_skills()` glob — no templated/conditional scaffolding step, matching
+  the `process-multi-agent-roles`/`role-contracts` precedent (PR #370) exactly.
+- **`CHANGES.md` entry:** a new `## release-branch-workflow` section, `Default: question`,
+  `Applies if: always`, mirroring `process-multi-agent-roles`'s own entry shape. "Yes" means:
+  epics in that project that a Product+Architect judgment call (A14) flags as warranting a
+  release branch follow this skill's promotion/freeze/review/merge steps.
+- **`WORKFLOW-ADOPTION.md` row:** a new row, self-asserted rather than mechanically checkable —
+  the same handling `adoption-registry` already prescribes for any `Default: question` row.
+- **A15's fix needs no separate adoptability packaging.** `hooks/git-guardrails` is already
+  symlinked into every adopted project via `.claude/settings.json`; once A15's fix merges here,
+  it's live everywhere immediately — no re-run of `adopt.sh`, no new `CHANGES.md` row for it.
+
+---
+
+### A20 — An adopted project's release branches are also unprotected, but for a different reason than this repo's own — stated explicitly so silence isn't mistaken for a decision (decided 2026-10-01)
+
+A17 is this repo's own deliberate choice. A typical adopted project is usually private on a free
+GitHub plan, where branch protection isn't available at all regardless of what the project would
+otherwise choose — a structurally different reason reaching the same outcome. The new
+`skills/release-branch-workflow/SKILL.md` (A19) states this distinction in one explicit
+sentence, so a reader on a paid plan or a public repo (where branch protection *is* available)
+doesn't read the skill's silence on the subject as "evaluated and rejected" when, for most
+adopters, it was never evaluated at all.
+
+---
+
 ## System boundaries and ownership
 
 - **Orchestrator** (persistent session): owns routing, phase-readiness assessment,

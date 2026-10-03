@@ -13,6 +13,19 @@ point.
 
 ## Unreleased
 
+- **Epic #369: the multi-agent workflow is adoptable, and applies itself in opted-in projects.**
+  Summary of what ships (details in the two entries below and in `CHANGES.md`): `role-contracts`
+  moved from `wip/` to `skills/` (#369), so `adopt.sh` symlinks it; the opt-in `CHANGES.md` question
+  `process-multi-agent-roles` (`Default: question`, never seeded); automatic activation through
+  `session-context.sh` printing `ORCHESTRATOR.md` in opted-in projects, and the merge guard
+  refusing a role-played run there (#371); the Review model rule (at least as capable as
+  Implementation, effort compared when the model is the same) with a recorded `floor-basis`, and
+  the shared marker parser `lib/model-record.sh` (#392); the required `Reaches session:` field on
+  every `CHANGES.md` entry. Still open: the behavioural acceptance criteria of #371 (does a live
+  session actually start the pipeline, ignore non-work-items, stop and ask when it cannot
+  dispatch, resume mid-pipeline) can only be confirmed by a human dry run in a real opted-in
+  project; no script here can observe them.
+
 - **Fix #392: Review must be at least as capable as Implementation, not a different model.**
   Review's model and effort, taken together, must clear Implementation's, the cheapest
   combination that does; a different model is no longer required and `same-model-exception`
@@ -42,6 +55,29 @@ point.
   `model-choice` no longer says one session doing every stage is fine regardless of the row.
   Adopted projects get all of this through the existing symlinks; the behaviour itself
   (whether a session follows the rules it is given) needs a human dry run.
+
+- **Epic #370: formalize the release-branch workflow.** Issue #309's informal
+  precedent (one real exercise: `release/295-multi-agent-workflow-v1` →
+  v0.2.0) is now a real, adoptable mechanism. New `skills/release-branch-workflow/SKILL.md`
+  (#372): when to open a release branch (a recorded Product+Architect judgment
+  call, no numeric threshold, either at design time or promoted mid-flight),
+  membership freeze at creation time, work-item merges on the executing
+  session's own judgment once CI-green + tests-pass, a mandatory always-thorough
+  QA+Reviewer holistic review before the maintainer's merge decision, and a
+  version-bump proposal folded into that same confirmation. Adoptable from day
+  one — symlinked like every other skill, a new `CHANGES.md` question
+  (`release-branch-workflow`) and `WORKFLOW-ADOPTION.md` row. `hooks/git-guardrails`
+  fix (#373): `check_stray_closes_guard` now treats any already-closed issue
+  as never-stray regardless of base branch — the exact friction hit merging
+  PR #368 (34 already-closed issues flagged stray, forcing a classifier-blocked
+  escape hatch) — and documents, alongside the skill, that GitHub's own
+  auto-close-on-merge doesn't fire for a non-default-branch-base PR (closing
+  such an issue is the merger's own responsibility). Documentation (#374):
+  README.md's release-branch section now points at the skill as source of
+  truth and states the mechanism is adoptable; `WORKFLOW.md` (symlinked as
+  `CLAUDE.md` into every adopted project) gained a pointer and a clarification
+  that the merge-confirmation requirement is specifically for a `main`-bound
+  merge.
 
 - **Fix #378: `pre-commit` no longer runs the full `./check`.** It runs the project's declared `check-commit` within a 30 s budget: a static failure blocks, a timeout (TERM, 2 s grace, then KILL to the whole process group) warns, a non-integer `COMMIT_CHECK_BUDGET` is rejected, and the test suite never runs at commit time. A project without `check-commit` gets one warning line, and the full `./check` runs in CI as before. Adopters with a `check`: see `CHANGES.md` `ci-commit-check`.
 

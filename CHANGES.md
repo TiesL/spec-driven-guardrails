@@ -533,6 +533,27 @@ the shared parser warns if it has no `Applies if`.
 - **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
+## release-branch-workflow
+
+- **Question:** Does this project use a release branch between work-item
+  branches and `main` for epics whose work items ship together?
+- **Default:** question
+- **Applies if:** always
+- **Yes means:** an epic that Product+Architect explicitly judge to warrant
+  it (recorded on the epic issue, no numeric threshold) gets a
+  `release/<epic#>-<slug>` branch forked from `main`. Work-item PRs merge
+  into it on CI-green + tests-pass, same low-ceremony path as any other PR.
+  Membership (which issues belong) freezes at branch-creation time. Once
+  every member issue is merged, a fresh, always-thorough QA+Reviewer pass
+  reviews the whole branch before the maintainer's explicit confirmation —
+  which also decides the SemVer bump — merges it into `main`. The
+  `release-branch-workflow` skill symlinks into every adopted project by
+  `adopt.sh`; the `hooks/git-guardrails` merge-guard fix for release-branch
+  PRs (treating any already-closed issue as never-stray) ships
+  unconditionally via the same symlinked hook, independent of this answer.
+- **Reaches session:** always-loaded: WORKFLOW.md
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/388
+
 ---
 
 ### Non-functional characteristics (NFRs)

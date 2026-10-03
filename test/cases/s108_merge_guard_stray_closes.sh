@@ -63,6 +63,16 @@ write_commits_fixture() {
   done
 }
 
+# Issue numbers (any number of args) that `gh issue view <n> --json state
+# --jq .state` should report as CLOSED (issue #370/A15) — everything else
+# reports OPEN. Call with no args to reset to "everything OPEN".
+closed_issues="$fixtures/closed_issues.dat"
+write_closed_issues_fixture() {
+  : > "$closed_issues"
+  printf '%s\n' "$@" >> "$closed_issues"
+}
+write_closed_issues_fixture
+
 through_guard() {
   local extra_path="${1:-}"
   printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":"%s","tool_input":{"command":"gh pr merge"}}' \
@@ -99,6 +109,14 @@ case "$*" in
       exit 0
     fi
     exit 1 ;;
+  "issue view "*" --json state --jq .state")
+    n="$3"
+    if [ -f "'"$closed_issues"'" ] && grep -qx "$n" "'"$closed_issues"'"; then
+      printf "CLOSED"
+    else
+      printf "OPEN"
+    fi
+    exit 0 ;;
 esac
 exit 1
 ')"
@@ -204,5 +222,52 @@ Closes #999"
 output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
 [ "$status" = "2" ] || fail "S108/AC6 — a genuinely stray Closes #999 was not blocked (status $status): $output"
 assert_contains "S108/AC6 — names the stray issue" "#999" "$output"
+
+# AC7 (issue #370/A15): a commit-level Closes referencing an issue that's
+# already CLOSED (closed by its own earlier merge, the shape hit on PR #368
+# merging release/295 into main — 34 already-closed issues, none redeclared
+# in the release PR's own body) is never stray, regardless of what the PR's
+# own title/body declares.
+write_pr_fixture "Closes #10: some change" ""
+write_closed_issues_fixture 999
+write_commits_fixture \
+  "aaaaaaa1111111" "First commit
+Closes #10" \
+  "bbbbbbb2222222" "Second commit
+Closes #999"
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" != "2" ] || fail "S108/AC7 — a commit-level Closes for an already-CLOSED issue was wrongly blocked: $output"
+write_closed_issues_fixture
+
+# AC8 — mutation boundary for AC7: the same shape, but #999 is still OPEN.
+# Proves AC7's fix narrows what counts as stray; it doesn't disable the
+# check outright.
+write_pr_fixture "Closes #10: some change" ""
+write_commits_fixture \
+  "aaaaaaa1111111" "First commit
+Closes #10" \
+  "bbbbbbb2222222" "Second commit
+Closes #999"
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" = "2" ] || fail "S108/AC8 — a genuinely stray Closes #999 (still OPEN) was not blocked (status $status): $output"
+assert_contains "S108/AC8 — names the stray issue" "#999" "$output"
+
+# AC9 — a mix: one stray reference to an already-CLOSED issue (never
+# blocking) alongside one genuinely stray reference to an OPEN issue (still
+# blocking) — the summary names only the real one.
+write_pr_fixture "Closes #10: some change" ""
+write_closed_issues_fixture 998
+write_commits_fixture \
+  "aaaaaaa1111111" "First commit
+Closes #998" \
+  "bbbbbbb2222222" "Second commit
+Closes #999"
+output="$(PATH="$fakebin:$PATH" through_guard)"; status=$?
+[ "$status" = "2" ] || fail "S108/AC9 — a genuinely stray Closes #999 was not blocked alongside a closed #998 (status $status): $output"
+assert_contains "S108/AC9 — names the real stray issue" "#999" "$output"
+case "$output" in
+  *"#998"*) fail "S108/AC9 — the already-closed #998 was wrongly included in the block message: $output" ;;
+esac
+write_closed_issues_fixture
 
 test_done

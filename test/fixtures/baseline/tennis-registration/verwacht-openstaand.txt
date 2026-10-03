@@ -10,6 +10,7 @@ process-prd
 process-refactoring-triggers
 process-technical-debt-register
 quality-review-before-merge
+release-branch-workflow
 spec-backup-recovery
 spec-compliance
 spec-cost-management
