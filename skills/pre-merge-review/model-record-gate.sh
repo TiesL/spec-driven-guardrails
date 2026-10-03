@@ -103,12 +103,14 @@ if [ -r "$own_dir/../../lib/changes.sh" ]; then
   answered_yes "$project_root" process-multi-agent-roles && opted_in=1
 fi
 
-# Opted in, each comment/review body is framed with U+001E so the
-# role-play check can tell one text from the next; the existing checks
-# below read the same text with the separators removed. Not opted in, the
-# calls are exactly what they were.
-body_jq='.[].body'
-[ "$opted_in" -eq 1 ] && body_jq='.[] | (.body // "") + "\u001e"'
+# Each comment/review body is framed with U+001E, after that byte is
+# removed from the body itself (a body can neither forge nor hide a
+# boundary: #392, round 4 of the PR #397 review). The marker parser
+# (lib/model-record.sh) keeps a malformed marker inside its own comment by
+# it, and the role-play check (#371, opted in only) tells one text from the
+# next by it. The grep-based checks below read the same text with the
+# separators removed.
+body_jq='.[] | (.body // "" | gsub("\u001e"; "")) + "\u001e"'
 
 comments_part="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq "$body_jq" 2>&1)"
 status=$?
@@ -146,6 +148,7 @@ if [ "$status" -ne 0 ]; then
 fi
 pr_title_part="${pr_json_part%%$'\001'*}"
 description_part="${pr_json_part#*$'\001'}"
+description_part="${description_part//$'\036'/}"
 
 closing_keyword_ere='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
 issue_numbers="$(printf '%s\n%s\n' "$pr_title_part" "$description_part" \
@@ -196,6 +199,12 @@ all_text="$issue_text
 $description_part
 $comments_part
 $reviews_part"
+# The same text with every body followed by U+001E, for the marker parser.
+body_sep=$'\036'
+marker_text="$framed_issue_text
+$description_part$body_sep
+$framed_comments_part
+$framed_reviews_part"
 
 for stage in Discovery Planning Test Implementation Review; do
   # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
@@ -231,9 +240,9 @@ if [ -r "$own_dir/../../lib/model-record.sh" ]; then
   # A malformed marker is never read (it would otherwise win or hide a later
   # one); marker_scan names it here instead (round 3 of the PR #397 review).
   # A parser failure is a finding, never a silent "no marker".
-  impl_line="$(marker_find Implementation "$all_text" | tail -1)" || parser_failed=1
-  review_line="$(marker_find Review "$all_text" | tail -1)" || parser_failed=1
-  scan_out="$(marker_scan "$all_text")" || parser_failed=1
+  impl_line="$(marker_find Implementation "$marker_text" | tail -1)" || parser_failed=1
+  review_line="$(marker_find Review "$marker_text" | tail -1)" || parser_failed=1
+  scan_out="$(marker_scan "$marker_text")" || parser_failed=1
   if [ "$parser_failed" -eq 0 ]; then
     while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
       [ "$scan_status" = "malformed" ] || continue

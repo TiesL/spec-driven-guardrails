@@ -21,6 +21,11 @@
 # awk fails: a caller must treat that as "markers not read", never as "no
 # marker".
 #
+# Comment boundaries: the <text> given to marker_find and marker_scan has
+# every comment, review or description followed by MARKER_SEP (U+001E),
+# with that byte removed from the body first; a marker never crosses it.
+# See "Comment boundaries" above _MARKER_SCAN_AWK.
+#
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 # Structural, not a per-model alias table (#268): strips the vendor-prefix
@@ -60,6 +65,11 @@ effort_rank() {
 # `model-record:` finding, the collector's gates go indeterminate,
 # role-label-staleness.sh goes indeterminate).
 
+# The comment-boundary byte. A caller frames one body as
+#   "${body//$MARKER_SEP/}$MARKER_SEP"
+# (model-record-gate.sh does the same inside its `--jq`).
+MARKER_SEP=$'\036'
+
 _marker_fail() { # <function> <awk exit status>
   echo "lib/model-record.sh: $1: the marker parser (awk) failed with exit $2; markers were NOT read" >&2
 }
@@ -74,25 +84,33 @@ _marker_fail() { # <function> <awk exit status>
 #     quote comes whitespace or `-->`;
 #   - name=bare: an unquoted value runs to whitespace or `-->`;
 #   - any other word or character is tolerated and skipped;
-#   - the marker ends at the first `-->` outside a quoted value.
+#   - the marker ends at the first `-->` outside a quoted value;
+#   - a marker never crosses a comment boundary (below).
 # MALFORMED, and never read: a quote anywhere but right after `name=`, text
-# glued to a closing quote, an unterminated quoted value, a `<!--` outside a
-# quoted value, or no closing `-->`. Scanning then resumes right after the
-# malformed marker's own `<!--`, so it can never swallow a later marker:
-# there is no fallback to "the first `-->`" (that fallback let a malformed
-# marker's attributes count). A malformed marker's value can only reach
-# across a later well-formed marker if that marker's text parses as the
-# value plus attributes, and it cannot: its first quoted value would close
-# the runaway value and leave the next word glued to a quote.
+# glued to a closing quote, a quoted value not closed in its own comment, a
+# `<!--` outside a quoted value, or no closing `-->` in its own comment.
+# Scanning then resumes right after the malformed marker's own `<!--`, so it
+# can never swallow a later marker: there is no fallback to "the first
+# `-->`" (that fallback let a malformed marker's attributes count).
+#
+# Comment boundaries (round 4 of the PR #397 review): every caller passes
+# its comments, reviews and descriptions each followed by the byte U+001E
+# (record separator), after removing that byte from the body itself (so a
+# body can neither forge nor hide a boundary). The byte is not whitespace,
+# not a name character and not allowed in a value: reaching it before the
+# closing `-->` makes the marker malformed. So an unclosed quote or a
+# missing `-->` in one comment stays in that comment, however the next one
+# starts. Text without the byte is read as one comment.
 _MARKER_SCAN_AWK='
 function ws(c) { return c == " " || c == "\t" || c == "\n" || c == "\r" }
 function namec(c) { return c ~ /[A-Za-z0-9_-]/ }
 function stagec(c) { return c ~ /[A-Za-z0-9_]/ }
-function flat(t) { gsub(/[\t\n\r]/, " ", t); return t }
+function flat(t) { gsub(/[\t\n\r]/, " ", t); gsub(SEP, " ", t); return t }
 function walk(k,   c, j, q) {
   while (1) {
     if (k > n) { BAD_AT = n + 1; WHY = "no closing -->"; return 0 }
     c = substr(s, k, 1)
+    if (c == SEP) { BAD_AT = k; WHY = "no closing --> in its own comment"; return 0 }
     if (ws(c)) { k++; continue }
     if (substr(s, k, 3) == "-->") { END_AT = k + 3; return 1 }
     if (substr(s, k, 4) == "<!--") { BAD_AT = k; WHY = "a <!-- inside it"; return 0 }
@@ -105,20 +123,22 @@ function walk(k,   c, j, q) {
     k++
     if (substr(s, k, 1) == "\"") {
       q = index(substr(s, k + 1), "\"")
-      if (q == 0) { BAD_AT = k; WHY = "an unterminated quoted value"; return 0 }
+      if (q == 0 || index(substr(s, k + 1, q - 1), SEP) > 0) { BAD_AT = k; WHY = "a quoted value not closed in its own comment"; return 0 }
       k = k + q + 1
-      if (k <= n && !ws(substr(s, k, 1)) && substr(s, k, 3) != "-->") { BAD_AT = k; WHY = "text glued to a closing quote"; return 0 }
+      if (k <= n && !ws(substr(s, k, 1)) && substr(s, k, 3) != "-->") { BAD_AT = k; WHY = (substr(s, k, 1) == SEP) ? "no closing --> in its own comment" : "text glued to a closing quote"; return 0 }
       continue
     }
     while (k <= n) {
       c = substr(s, k, 1)
       if (ws(c) || substr(s, k, 3) == "-->") break
       if (c == "\"") { BAD_AT = k; WHY = "a quote inside an unquoted value"; return 0 }
+      if (c == SEP) { BAD_AT = k; WHY = "no closing --> in its own comment"; return 0 }
       if (substr(s, k, 4) == "<!--") { BAD_AT = k; WHY = "a <!-- inside it"; return 0 }
       k++
     }
   }
 }
+BEGIN { SEP = sprintf("%c", 30) }
 { all = all $0 "\n" }
 END {
   s = all; n = length(s); pos = 1

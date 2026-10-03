@@ -428,9 +428,10 @@ collect() {
       TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
       TEXT)
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body"
+$live_body$MARKER_SEP"
         BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
         ;;
@@ -495,9 +496,10 @@ $raw_body"
   while IFS=$'\t' read -r tag rest; do
     [ "$tag" = "TEXT" ] || continue
     raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+    raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
     live_body="$(live_text "$raw_body")"
     BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body"
+$live_body$MARKER_SEP"
     BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
   done <<<"$pr_comments_out
@@ -529,11 +531,12 @@ $pr_reviews_out"
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         issue_text="$issue_text
-$live_body"
+$live_body$MARKER_SEP"
         one_issue_text="$one_issue_text
-$live_body"
+$live_body$MARKER_SEP"
         BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
       done <<<"$issue_out"

@@ -485,9 +485,10 @@ $rest"
         ;;
       BODY)
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         CORPUS_TEXT="$CORPUS_TEXT
-$live_body"
+$live_body$MARKER_SEP"
         ;;
     esac
   done <<<"$issue_out"
@@ -505,9 +506,10 @@ $live_body"
     while IFS=$'\t' read -r tag rest; do
       [ "$tag" = "TEXT" ] || continue
       raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+      raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
       live_body="$(live_text "$raw_body")"
       CORPUS_TEXT="$CORPUS_TEXT
-$live_body"
+$live_body$MARKER_SEP"
     done <<<"$comments_out"
   fi
 
@@ -628,6 +630,7 @@ $rest"
       # puts it in the body — GitHub itself accepts either. A candidate
       # that matches neither is discarded silently: cross-referencing an
       # issue in prose is common and not a failure of anything.
+      pr_body_raw="${pr_body_raw//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
       live_title="$(live_text "$pr_title_raw")"
       live_body="$(live_text "$pr_body_raw")"
       combined_live="$live_title
@@ -637,7 +640,7 @@ $live_body"
       fi
 
       CORPUS_TEXT="$CORPUS_TEXT
-$live_body"
+$live_body$MARKER_SEP"
 
       pr_comments_out="$(gh api "repos/{owner}/{repo}/issues/$pr/comments" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
       pr_comments_status=$?
@@ -649,9 +652,10 @@ $live_body"
         while IFS=$'\t' read -r tag rest; do
           [ "$tag" = "TEXT" ] || continue
           raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+          raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
           live_body="$(live_text "$raw_body")"
           CORPUS_TEXT="$CORPUS_TEXT
-$live_body"
+$live_body$MARKER_SEP"
         done <<<"$pr_comments_out"
       fi
 
@@ -676,9 +680,10 @@ $live_body"
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         CORPUS_TEXT="$CORPUS_TEXT
-$live_body"
+$live_body$MARKER_SEP"
       done <<<"$pr_reviews_out"
     done <<<"$candidate_prs"
   fi

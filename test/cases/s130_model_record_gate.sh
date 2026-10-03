@@ -21,6 +21,13 @@
 # model-record-gate.sh's own comment), and `issues/239/comments` for
 # the closing issue.
 #
+# Issue #392, round 4 of the PR #397 review: the gate now frames every
+# comment/review body with U+001E for all projects (after removing that byte
+# from the body), so the marker parser keeps a malformed marker inside its
+# own comment. The `--jq` in the arms below is that framing expression; what
+# this test pins is unchanged: REST endpoints only, `--paginate`, the exact
+# call set (any other call falls through to `exit 1`).
+#
 # Issue #392: the same-model arms below now exercise the effort rule (Review at
 # LOWER effort than Implementation is the finding; a legacy same-model-exception
 # neither waives it nor is required) and every Review marker carries a
@@ -51,16 +58,16 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Opus\" effort=\"high\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -78,13 +85,13 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
 esac
@@ -113,7 +120,7 @@ assert_contains "S130 — a warning appears without gh" "warning" "$output_nogh"
 # whole check, same as before — this is the first call the gate makes.
 fakebin_comments_fail="$(fake_gh_bin '
 case "$*" in
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     echo "gh: could not resolve to a PullRequest" >&2
     exit 1 ;;
 esac
@@ -131,13 +138,13 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     echo "gh: could not resolve to an Issue" >&2
     exit 1 ;;
 esac
@@ -158,13 +165,13 @@ case "$*" in
       "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->" \
       "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -183,15 +190,15 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -209,16 +216,16 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -240,16 +247,16 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" same-model-exception=\"only one model available\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -272,15 +279,15 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -302,14 +309,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=Sonnet effort=medium -->"
     printf "%s\n" "<!-- model-record: stage=Review model=Sonnet effort=medium -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -331,14 +338,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -356,14 +363,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Claude Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"claude sonnet 5\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -388,14 +395,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -420,14 +427,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet 5\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -449,14 +456,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus 5\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -480,14 +487,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239: some change\001some unrelated body text"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"

@@ -451,9 +451,12 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
   holds for the project it runs in, prints one line per finding starting
   `role-played: `: several different stages' live markers in one text
   (comment, review or PR description), or any of the five stages missing.
-  The existing output is unchanged; exit stays 0. Opted in, the comment and
-  review calls frame each body (U+001E) so one text can be told from the
-  next; not opted in, the calls are exactly as before. A closing issue that
+  The existing output is unchanged; exit stays 0. The comment and review
+  calls frame each body with U+001E, after removing that byte from the body
+  (so a body cannot forge a boundary and split one role-played text into
+  several), so one text can be told from the next. Since #392 (round 4 of
+  the PR #397 review) this framing applies in every project, because the
+  marker parser needs it too (A24). A closing issue that
   can't be read skips the role-play check (a missing Discovery could be a
   lookup failure).
 - **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
@@ -500,18 +503,23 @@ the next free numbers after A23.
   ends at the first `-->` outside quotes (the review of PR #397 found that
   the old `[^>]*-->` grammar made a `>` in `floor-basis` hide the whole
   marker from both scripts). A **malformed** marker (a quote anywhere but
-  right after `name=`, text glued to a closing quote, an unterminated
-  value, a `<!--` outside a value, or no closing `-->`) is never read and
+  right after `name=`, text glued to a closing quote, a value not closed in
+  its own comment, a `<!--` outside a value, or no closing `-->` in its own
+  comment) is never read and
   never swallows a later marker: there is no fallback to the first `-->`,
   and the scan resumes right after its own `<!--`. The gate names it
   (`model-record: a stage=<Stage> marker is malformed and was ignored`);
   in the collector it is ignored when a well-formed marker of that stage
   exists and makes the gate `indeterminate` when none does; in
   `role-label-staleness.sh` it is a malformed marker (`indeterminate`, its
-  AC6 rule). The parser sees the comments joined, not their boundaries:
-  a value whose quote is closed only in a later comment is read as one
-  marker if everything after it parses as attributes, which a later
-  well-formed marker never does (round 3 of the PR #397 review). The name does not
+  AC6 rule). **Comment boundaries are respected:** all three callers pass
+  the parser each comment, review, issue comment and description followed
+  by U+001E, after removing that byte from the body itself (sanitised, not
+  rejected: rejecting a body would hide its markers, and removing a
+  non-printing control byte changes no Markdown meaning). Reaching that byte
+  before the closing `-->` makes a marker malformed, so an unclosed quote or
+  a missing `-->` stays in its own comment however the next comment starts
+  (round 4 of the PR #397 review). The name does not
   end in `model=` or `effort=`, which the field extraction would otherwise
   capture.
 - **What the gate does (`model-record-gate.sh`):** the #244 same-model
