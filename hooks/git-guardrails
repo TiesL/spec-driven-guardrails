@@ -633,6 +633,16 @@ resolve_stray_closes_pr_number() {
   return 1
 }
 
+# Known, separate limitation this guard does NOT fix (issue #373/A15):
+# GitHub's own auto-close-on-merge only fires for a PR whose base is the
+# repo's default branch. A work-item PR merged into a release branch
+# (not `main`) will not auto-close the issue it declares, the same way
+# issue #308 had to be closed by hand. This guard's own closed-issue
+# lookup (below) is unrelated — it stops an already-closed issue from
+# being wrongly flagged as stray, it doesn't make GitHub close anything.
+# See the `release-branch-workflow` skill for the operational guidance
+# (closing the issue explicitly is the merger's own responsibility for a
+# release-branch-base PR) until/unless this gets its own mechanism.
 check_stray_closes_guard() {
   local target="$1"
 
@@ -757,13 +767,44 @@ for rec in commits_blob.split(RECORD_SEP):
 
   [ -n "$stray" ] || return 0
 
+  # A candidate stray that's already CLOSED can't be an unintended close —
+  # that's the whole thing this check guards against (issue #370/A15). Cache
+  # each issue number's state in two parallel lists (bash 3.2 has no
+  # associative arrays) so a PR with several commits referencing the same
+  # already-closed issue costs one `gh` call, not one per commit. On a
+  # lookup failure (no network, issue deleted), keep the candidate flagged —
+  # the opposite fail-open direction from the rest of this guard, deliberate
+  # here: silently dropping a real stray reference defeats the check's own
+  # purpose, so "can't confirm closed" stays conservative, not permissive.
+  local checked_nums=() checked_states=() n sha issue_state i found
   local summary line
   summary=""
   while IFS=' ' read -r n sha; do
     [ -n "$n" ] || continue
+
+    found=0
+    for ((i = 0; i < ${#checked_nums[@]}; i++)); do
+      if [ "${checked_nums[$i]}" = "$n" ]; then
+        issue_state="${checked_states[$i]}"
+        found=1
+        break
+      fi
+    done
+    if [ "$found" -eq 0 ]; then
+      issue_state="$(cd "$workdir" && gh issue view "$n" --json state --jq .state 2>/dev/null)"
+      checked_nums+=("$n")
+      checked_states+=("$issue_state")
+    fi
+
+    [ "$issue_state" = "CLOSED" ] && continue
+
     summary="$summary
        #$n (commit $sha)"
   done <<<"$stray"
+
+  # Every candidate turned out already-closed (or $stray was non-empty only
+  # by its trailing newline) — nothing left to block on.
+  [ -n "$summary" ] || return 0
 
   block "gh pr merge with a stray commit-level Closes" \
 "one or more commits on this PR reference an issue with a closing keyword
