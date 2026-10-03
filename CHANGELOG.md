@@ -13,6 +13,29 @@ point.
 
 ## Unreleased
 
+- **Epic #370: formalize the release-branch workflow.** Issue #309's informal
+  precedent (one real exercise: `release/295-multi-agent-workflow-v1` →
+  v0.2.0) is now a real, adoptable mechanism. New `skills/release-branch-workflow/SKILL.md`
+  (#372): when to open a release branch (a recorded Product+Architect judgment
+  call, no numeric threshold, either at design time or promoted mid-flight),
+  membership freeze at creation time, work-item merges on the executing
+  session's own judgment once CI-green + tests-pass, a mandatory always-thorough
+  QA+Reviewer holistic review before the maintainer's merge decision, and a
+  version-bump proposal folded into that same confirmation. Adoptable from day
+  one — symlinked like every other skill, a new `CHANGES.md` question
+  (`release-branch-workflow`) and `WORKFLOW-ADOPTION.md` row. `hooks/git-guardrails`
+  fix (#373): `check_stray_closes_guard` now treats any already-closed issue
+  as never-stray regardless of base branch — the exact friction hit merging
+  PR #368 (34 already-closed issues flagged stray, forcing a classifier-blocked
+  escape hatch) — and documents, alongside the skill, that GitHub's own
+  auto-close-on-merge doesn't fire for a non-default-branch-base PR (closing
+  such an issue is the merger's own responsibility). Documentation (#374):
+  README.md's release-branch section now points at the skill as source of
+  truth and states the mechanism is adoptable; `WORKFLOW.md` (symlinked as
+  `CLAUDE.md` into every adopted project) gained a pointer and a clarification
+  that the merge-confirmation requirement is specifically for a `main`-bound
+  merge.
+
 - **Fix #378: `pre-commit` no longer runs the full `./check`.** It runs the project's declared `check-commit` within a 30 s budget: a static failure blocks, a timeout (TERM, 2 s grace, then KILL to the whole process group) warns, a non-integer `COMMIT_CHECK_BUDGET` is rejected, and the test suite never runs at commit time. A project without `check-commit` gets one warning line, and the full `./check` runs in CI as before. Adopters with a `check`: see `CHANGES.md` `ci-commit-check`.
 
 - **Fix #377: `./check` and the test suite are isolated from git's repo-local environment.**
