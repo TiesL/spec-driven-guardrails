@@ -3,7 +3,7 @@
 # same model compares effort; different models are unverifiable-from-
 # artifacts; unknown effort is indeterminate; a legacy same-model-exception
 # no longer matters.
-# Covers: F34
+# Covers: F39
 #
 # Issue #392, R2/R3, AC4/AC5/AC6, A24/A25 and the human decisions of
 # 2026-10-03. Seam: the collector's table (gate 2's row: status + evidence

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S188 — lib/model-record.sh: one shared normalize_model, effort_rank and
 # marker_attr for the model-record gate and the compliance collector.
-# Covers: F27
+# Covers: F39
 #
 # Issue #392, A25. Seam: the three functions of the sourced lib
 # (normalize_model <label>, effort_rank <value>, marker_attr <marker-line>

@@ -2329,7 +2329,7 @@ something new is being added.
   `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through
 
 ### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and set model and effort per stage
-**Covers:** F38
+**Covers:** F39
 - Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #392, R5/AC8, group 1;
   what the session then actually chooses is model behaviour, checked by a
   human dry run on the scratch repo, not here)
@@ -2345,7 +2345,7 @@ something new is being added.
   appear in a sentence saying it is not required)
 
 ### S188 — lib/model-record.sh: normalize_model, effort_rank and marker_attr
-**Covers:** F27
+**Covers:** F39
 - Given: the sourced `lib/model-record.sh` (issue #392, A25), shared by the
   model-record gate and the compliance collector
 - When: `normalize_model`, `effort_rank` and `marker_attr` are called
@@ -2359,7 +2359,7 @@ something new is being added.
   differently-prefixed attribute
 
 ### S189 — the model-record gate checks the Review floor it can check
-**Covers:** F27
+**Covers:** F39
 - Given: PR 246 closing issue 239 against a data-driven fake `gh`, with
   Implementation and Review markers varied per case (issue #392, AC3/AC4/
   AC5/AC9, A24/A25); a plain project and an opted-in one
@@ -2380,7 +2380,7 @@ something new is being added.
   when run through a symlinked `skills/` directory
 
 ### S190 — compliance gate 2 reports the Review floor honestly
-**Covers:** F34
+**Covers:** F39
 - Given: a recording fake `gh` for PR 279 with Implementation and Review
   markers on the PR, on one or two closing issues, or unreadable (issue
   #392, AC4/AC5/AC6, A24/A25)
@@ -2400,7 +2400,7 @@ something new is being added.
   equal effort, and leaves sound verdicts alone
 
 ### S191 — quality-review-before-merge is at meaning v3 and the specs follow
-**Covers:** F9
+**Covers:** F9, F39
 - Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, `ARCHITECTURE.md`,
   `PRD.md` (issue #392, AC7/AC10)
 - When: the `quality-review-before-merge` entry and the documents are read
@@ -2415,7 +2415,7 @@ something new is being added.
   adopter-facing re-surfacing is S141 and the snapshot sync is S90
 
 ### S192 — no live text demands a different Review model, and the old exception attribute is legacy only
-**Covers:** F11
+**Covers:** F39
 - Given: every markdown file except history (`wip/`, `CHANGES-ARCHIEF.md`,
   `CHANGELOG.md`, tests), the frozen `CHANGES.md` snapshot, and the two
   verification scripts and the lib (issue #392, R1/R6, AC2/AC5)
@@ -2428,7 +2428,7 @@ something new is being added.
   the old gate-2 row label is gone
 
 ### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis
-**Covers:** F11
+**Covers:** F39
 - Given: `skills/model-choice/SKILL.md` and `skills/pre-merge-review/SKILL.md`
   (issue #392, R1/AC1/AC9, human decisions 1-4)
 - When: their Review-stage text is read, paragraph by paragraph

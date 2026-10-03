@@ -2,7 +2,7 @@
 # S189 — model-record-gate.sh checks the Review floor it CAN check: same
 # model compares effort; every Review marker carries a floor-basis; a legacy
 # same-model-exception is ignored.
-# Covers: F27
+# Covers: F39
 #
 # Issue #392, R2/R3/R6, AC3/AC4/AC5/AC9, A24/A25 and the human decisions of
 # 2026-10-03. Seam: the installed gate script run for PR 246 against a

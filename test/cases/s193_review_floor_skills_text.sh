@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S193 — model-choice and pre-merge-review state the Review floor one way
 # and document the floor-basis attribute.
-# Covers: F11
+# Covers: F39
 #
 # Issue #392, R1/AC1/AC9, A24/A25 and human decisions 1-4. Seam: the two
 # skills' text, read by paragraph (so an unrelated mention elsewhere cannot

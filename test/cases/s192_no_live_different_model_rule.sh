@@ -2,7 +2,7 @@
 # S192 — no live text still demands a different Review model or a
 # same-model-exception; the old rule survives only as history or as
 # legacy-marker handling.
-# Covers: F11
+# Covers: F39
 #
 # Issue #392, R1/R6, AC2/AC5. Seam: the repo's documents and scripts, read
 # as text. Markdown: a unit (paragraph, list item or table row) that states the old requirement ("a

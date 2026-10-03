@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S191 — quality-review-before-merge is at meaning version 3 with the new
 # floor, and the specs, registry row and architecture follow.
-# Covers: F9
+# Covers: F9, F39
 #
 # Issue #392, R4/R6, AC7/AC10, A24/A25. Seam: the CHANGES.md entry and the
 # documents themselves, read as text; the adopter-facing re-surfacing is
