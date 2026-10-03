@@ -522,7 +522,15 @@ the next free numbers after A23.
   (round 4 of the PR #397 review). The name does not
   end in `model=` or `effort=`, which the field extraction would otherwise
   capture.
-- **What the gate does (`model-record-gate.sh`):** the #244 same-model
+- **What the gate does (`model-record-gate.sh`):** it reads live text only
+  for its stage-presence and Review-floor checks: each body goes through
+  its own copy of `live_text()` first, like the collector and
+  `role-label-staleness.sh`, so a marker quoted in a code span, a fence or
+  a blockquote is not a record (a Review marker only inside a fence is a
+  missing stage); an indented code block is not stripped, in any of the
+  three (PRD debt row). If `live_text()` fails, the gate prints a
+  `model-record:` finding and skips these checks. The role-play check
+  (A18) is unchanged (#400). The #244 same-model
   finding is removed. A missing, empty or unquoted `floor-basis` on the
   **latest** Review marker gives `model-record: stage=Review marker has no
   floor-basis ... (#392)`; when present, the text is never checked. The
