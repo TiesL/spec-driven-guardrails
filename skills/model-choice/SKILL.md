@@ -98,8 +98,10 @@ that has to keep working after new models ship; a record is a fact about
 one past invocation, and doesn't need to age well.
 
 **Machine-readable form (#241).** Produce the marker line with
-`skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
---effort <e> [--floor-basis '<sentence>']` and paste its output unchanged as
+`.claude/skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
+--effort <e> [--floor-basis '<sentence>']`, run from the project root (the
+project's installed skill; the guardrails repo installs its own the same
+way), and paste its output unchanged as
 the first line of your report; never type a marker by hand (#402: hand-typed
 lines with an unquoted value or a quoted stage were unreadable). The
 command prints the one valid line, after parsing it back, or nothing and a
@@ -135,7 +137,10 @@ stand in for `floor-basis`.
 `effort` is one of `low`, `medium`, `high`, ordered `low < medium < high`.
 A role that does not know the effort it ran at records `effort="unknown"`
 (not `session-default`): that is honest, and the gate then makes no effort
-claim.
+claim. The `effort` in a marker is self-reported and unverified unless the
+platform itself set it; the dispatch tool has no effort argument (A25), so
+`unknown` is the honest value for a dispatched role, and a `floor-basis` may
+claim "higher effort" only when that effort was actually set.
 
 Record the full model id exactly as the platform reports it (for example
 `claude-opus-5`, not `opus`). This is documented, not enforced: a short

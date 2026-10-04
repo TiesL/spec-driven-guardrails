@@ -280,11 +280,6 @@ issue_text="${issue_text//$'\036'/}"
 comments_part="${comments_part//$'\036'/}"
 reviews_part="${reviews_part//$'\036'/}"
 
-all_text="$issue_text
-$description_part
-$comments_part
-$reviews_part"
-
 # #392, round 5 of the PR #397 review: the stage-presence and Review-floor
 # checks read LIVE text only, like compliance-evidence.sh and
 # role-label-staleness.sh: every body goes through live_text() on its own
@@ -294,8 +289,8 @@ $reviews_part"
 # the same reason as the marker parser), and its failure is visible: the
 # checks below are skipped with a `model-record:` finding instead of
 # reporting stages missing. marker_text keeps each live body followed by
-# U+001E for the marker parser (round 4). all_text (raw) is left for the
-# role-play check below, whose behaviour this does not change (#400).
+# U+001E for the marker parser (round 4). The role-play check's "stages
+# missing" test reads the same live text (release holistic review, B2).
 body_sep=$'\036'
 live_failed=0
 live_frame() { # framed text -> each body through live_text, re-framed
@@ -428,6 +423,13 @@ if [ "$issue_fetch_failed" -eq 1 ]; then
   echo "warning: model-record-gate couldn't read every closing issue and is skipping the role-play check (a missing Discovery marker could be a lookup failure)." >&2
   exit 0
 fi
+# The "stages missing" test below reads live text; when dropping quoted text
+# failed (already a model-record: finding above), every stage would look
+# missing, a false block: skip the check instead, as for a failed lookup.
+if [ "$live_failed" -eq 1 ]; then
+  echo "warning: model-record-gate couldn't drop quoted text and is skipping the role-play check." >&2
+  exit 0
+fi
 
 
 all_stages="Discovery Planning Test Implementation Review"
@@ -484,7 +486,10 @@ done < <(grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bod
 missing=""
 waived=""
 for stage in $all_stages; do
-  grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$all_text" && continue
+  # Live text only (B2 of the release holistic review on #369): a marker or
+  # a stage name quoted in a code span, a fence or a blockquote is not a
+  # present stage, the same rule as the stage check above and check_text.
+  grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
   case "$skipped" in
     *" $stage "*) waived="$waived skip=$stage" ;;
     *) missing="$missing${missing:+, }$stage" ;;

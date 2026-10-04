@@ -102,10 +102,12 @@ that floor, the cheapest combination: the same model at higher effort, or
 a stronger model, whichever clears it. Record which model and effort
 reviewed, always, not only when it deviates from what's obvious, as a
 Review marker with `floor-basis`. Produce it with
-`skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
+`.claude/skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
 exact model id> --effort <e> --floor-basis '<sentence>'` (`effort` is
 `unknown` when you don't know it) and paste the output unchanged; never
-type a marker by hand. `floor-basis` is required on every Review marker:
+type a marker by hand. Run it from the project root: the path goes through
+the project's installed skill (the guardrails repo installs its own skills
+the same way). `floor-basis` is required on every Review marker:
 one sentence on why this pair clears Implementation's. The format and its
 grammar are owned by `model-choice` ("Machine-readable form", "Marker
 grammar"). The gate checks that `floor-basis` is present, never what it

@@ -2635,3 +2635,62 @@ something new is being added.
   argument) prints nothing on stdout, a reason on stderr and exits 2; a
   floor-basis with `-->` or `<!--` is refused or round-trips exactly, never a
   malformed line; without the lib the exit status is 3 with empty stdout
+
+### S205 — the role-play check's "stages missing" test ignores quoted text
+**Covers:** F38
+- Given: an opted-in project, a PR whose Planning, Test and Implementation
+  markers are real and whose Review stage is only named in quoted text: a
+  code span, a backtick or tilde fence, a blockquote, report prose quoting the
+  gate's finding and the marker form, the PR description (issue #369, holistic
+  review finding B2); a real Review marker as the control; three stages in one
+  comment plus a quoted Review mention
+- When: `model-record-gate.sh 246` runs on a fake `gh`
+- Then: `role-played: stages missing: Review` is printed for every quoted
+  form (a quoted mention is not a present stage), a real Review marker gives a
+  clean run, the one-comment run is still reported, and a project that did not
+  opt in sees no `role-played:` line and the existing "no record found" line.
+  Five markers inside one fence (issue #400) is not asserted: it is reported as
+  stages missing by the same one-line change, whichever way #400 is decided
+
+### S206 — the script paths named in finding B5 resolve from an adopted project
+**Covers:** F37, F40
+- Given: a freshly adopted project (`adopt.sh`), and `pre-merge-review`,
+  `model-choice` and `ORCHESTRATOR.md` read through its `.claude/skills/`
+  symlinks (issue #369, holistic review finding B5; scope narrowed by the
+  maintainer's orchestrating session to the paths B5 names: the gate-script
+  paths in `pre-merge-review` stay with the open issue #387)
+- When: the paths in their run instructions are resolved from the project root
+  and the emit wrapper is executed
+- Then: the emit wrapper path as written in `pre-merge-review` and
+  `model-choice` exits 0 (not 127) and neither names the bare
+  `skills/pre-merge-review/model-record-emit.sh`, every "Run `<path>`" command
+  path in ORCHESTRATOR.md resolves (`.claude/skills/...`,
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/...` or `./name.sh`), and
+  ORCHESTRATOR.md names `role-label-staleness.sh` by
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh` and says to run it with
+  the project's checkout as the working directory, not "from the guardrails
+  clone"
+
+### S207 — merging is human-only only for main, and the text says so once
+**Covers:** F38
+- Given: `ORCHESTRATOR.md` and `role-contracts/SKILL.md`, loaded into the same
+  session as `WORKFLOW.md` and `release-branch-workflow` (issue #369, holistic
+  review finding B3)
+- When: every unit that states the human-only merge rule is read
+- Then: each also names `main` and the release-branch exception
+  (`release-branch-workflow`); `ORCHESTRATOR.md` states the rule once (roles
+  never merge, merges into `main` wait for the human, a work-item PR into a
+  release branch follows the skill); `WORKFLOW.md` and the skill keep their
+  side (controls)
+
+### S208 — the README says the release-branch tier is adoptable, and model-choice says the effort is self-reported
+**Covers:** F37, F39
+- Given: `README.md`, `model-choice`, and the registry facts (`adopt.sh`
+  installs `release-branch-workflow`, `pending-changes.sh` asks its question)
+  (issue #369, holistic review finding B4 and the effort-honesty note)
+- When: they are read
+- Then: the README no longer says the tier is not adoptable, no longer lists
+  it under what an adopted project does not get and no longer contrasts it as
+  "unlike" the five-role pipeline; it says an adopted project is asked about it
+  and gets the skill; `model-choice` says in one sentence that the effort in a
+  marker is self-reported and unverified unless the platform set it

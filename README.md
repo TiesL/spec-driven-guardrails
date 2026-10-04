@@ -155,8 +155,9 @@ what's still open. See the `adoption-registry` skill for the full mechanism.
 
 Everything above is what an adopted project gets: one agent session carrying a change through
 every stage of the diagram, with a human at the approval points. This repo follows that
-workflow too, and adds two practices of its own on top. The five-role pipeline is adoptable
-as an opt-in (see "Adopting it" below); the release-branch tier is not.
+workflow too, and adds two practices on top. Both are opt-ins an adopted project is asked
+about as well: the five-role pipeline (see "Adopting it" below) and the release-branch tier
+(see "A release branch between work items and `main`" below).
 
 ### Five roles instead of one session
 
@@ -219,9 +220,8 @@ detected.
 What an adopted project **gets**: the `role-contracts` skill, the opt-in question, the
 session-start rules and the merge-time check once it answers yes, and permission to run the
 three evidence scripts against its own repo. What it does **not** get: orchestrator software
-(the orchestrating session is an ordinary Claude Code session following `ORCHESTRATOR.md`),
-the release-branch tier below (this repo's own practice), and any installed copy of
-the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
+(the orchestrating session is an ordinary Claude Code session following `ORCHESTRATOR.md`)
+and any installed copy of the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
 the project and not wired into its `check` or CI, and they are read-only. Run them by path from
 the guardrails clone, with the adopted
 project's checkout as the working directory, so they address that project's repo:
@@ -246,9 +246,8 @@ may report on a different repo than you expect.
 ### A release branch between work items and `main`
 
 In the diagram, a feature/fix branch merges straight into `main`. For an epic spanning several
-work items, this repo — and, unlike the five-role pipeline above, every adopted project too —
-can add an optional middle tier: a **release branch** (`release/<epic-number>-<slug>`, forked
-from `main`). Each work item's branch targets the release branch, and the release branch
+work items, this repo and every adopted project can add an optional middle tier: a **release
+branch** (`release/<epic-number>-<slug>`, forked from `main`). Each work item's branch targets the release branch, and the release branch
 merges into `main` in one step once the whole epic is ready.
 
 The full mechanism — when to open one, who may merge what into it, the frozen membership set,
@@ -259,7 +258,9 @@ merges into the release branch on the executing session's own judgment once revi
 and CI is green; the release branch merges into `main` only on the maintainer's explicit
 confirmation, like every other merge into `main`, however many work items merged cleanly
 underneath it. Individual work items land quickly, while the one decision that matters — is
-this epic ready to ship? — stays a single, deliberate act.
+this epic ready to ship? — stays a single, deliberate act. An adopted project is asked about
+this tier (the `release-branch-workflow` question; its answer goes in `WORKFLOW-ADOPTION.md`)
+and gets the `release-branch-workflow` skill installed.
 
 `release/295-multi-agent-workflow-v1` (→ v0.2.0) ran this as an informal precedent (issue
 #309) before the mechanism itself had a name or a skill. Epic #370 formalized it into what's
