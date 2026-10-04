@@ -1,11 +1,12 @@
-# claude-workflow: begin — managed block, do not edit by hand
-CLAUDE.md
-.claude/settings.json
-.claude/skills/
-# claude-workflow: end
 
 .DS_Store
 
 # A12 (ARCHITECTURE-MULTI-AGENT-WIP.md): halt-mid-task patch artifacts —
 # never committed, gitignored as a second guard alongside the rule itself.
 .halt-patches/
+
+# claude-workflow: begin — managed block, do not edit by hand
+CLAUDE.md
+.claude/settings.json
+.claude/skills/
+# claude-workflow: end
