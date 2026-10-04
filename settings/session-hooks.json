@@ -36,6 +36,11 @@
             "type": "command",
             "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ ! -d \"$wf\" ]; then echo \"Warning: .claude/settings.json points to a directory that doesn't exist ($wf) — run adopt.sh again from the current checkout. Until then, no hooks/guardrails run.\"; exit 0; fi; if [ -x \"$wf/pending-changes.sh\" ]; then \"$wf/pending-changes.sh\" \"$p\" 2>/dev/null; fi; exit 0",
             "statusMessage": "pending workflow changes"
+          },
+          {
+            "type": "command",
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ -x \"$wf/session-context.sh\" ]; then \"$wf/session-context.sh\" \"$p\" 2>/dev/null; fi; exit 0",
+            "statusMessage": "session context for opted-in workflow changes"
           }
         ]
       }

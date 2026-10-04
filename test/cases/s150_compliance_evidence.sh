@@ -74,7 +74,7 @@ fakebin_ac1="$(cat "$FAKEGH_OUT")"
 expected_ac1='| Gate | Status | Evidence |
 | --- | --- | --- |
 | Per-stage model/effort recorded (Discovery, Planning, Test, Implementation) | evidenced | `model-record` markers on PR #279 for Discovery, Planning, Test, Implementation (all `claude-sonnet-5`) |
-| Review used a different or at-least-as-capable model, or carries an explicit exception | evidenced | latest `stage=Review` marker on PR #279 carries `same-model-exception="fork/agent invocation for this review round runs on the same model as Implementation; no other model was made available for this review"` |
+| Review at least as capable as Implementation (same model: effort not lower; different models: recorded judgment, not machine-checked) | evidenced | same model `claude-sonnet-5`; Review effort `medium` ≥ Implementation effort `medium` |
 | Quality review before merge, with findings in the PR | evidenced | `<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->` on PR #279, sha equals `headRefOid` (an earlier marker for `472bc8f574c4aea3fc58161d1924b7b05329172f` is stale) |
 | CI green | evidenced | check `check`: `bucket=pass`, `state=SUCCESS` |
 | Traceability link 3 (PR ↔ issue) | evidenced | closing-keyword reference(s) on PR #279 = [#265] |
@@ -615,12 +615,13 @@ output_ac8g="$(PATH="$fakebin_ac8g:$PATH" "$script" 279)"
 assert_table_shape "S150 AC8g" "$output_ac8g"
 [ "$(row_status "$output_ac8g" 1)" = "indeterminate" ] || fail "S150 AC8g — expected gate 1 indeterminate for an unquoted (malformed) stage marker, got '$(row_status "$output_ac8g" 1)'"
 
-# --- Gate 2 negatives (finding (e)): Architect's only gate-2 exercise
-# was AC1's positive (a non-empty same-model-exception). "A stage=Review
-# marker exists -> evidenced" would pass the whole contracted suite
-# without these.
+# --- Gate 2 negatives (finding (e)): "A stage=Review marker exists ->
+# evidenced" would pass the whole contracted suite without these.
+# Issue #392: the rule is now "same model: Review effort not lower than
+# Implementation's", so the negatives use a LOWER Review effort (low vs.
+# medium); equal effort is the positive in AC1 above and in S190.
 
-# Same model, no exception at all.
+# Same model, Review at lower effort, no exception at all.
 run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
@@ -629,7 +630,7 @@ case "$*" in
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
   __CALL_A_COMMENTS__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" -->\n'
     exit 0 ;;
   __CALL_A_REVIEWS__)
     printf ''
@@ -643,10 +644,11 @@ GHEOF
 fakebin_g2_same="$(cat "$FAKEGH_OUT")"
 output_g2_same="$(PATH="$fakebin_g2_same:$PATH" "$script" 279)"
 assert_table_shape "S150 gate2-negative (same model, no exception)" "$output_g2_same"
-[ "$(row_status "$output_g2_same" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — same model with no exception must be not-evidenced, got '$(row_status "$output_g2_same" 2)'"
+[ "$(row_status "$output_g2_same" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — same model, Review effort lower, must be not-evidenced, got '$(row_status "$output_g2_same" 2)'"
 
-# Same model, empty-reason exception (same-model-exception="") — an
-# empty reason must not satisfy (PR #253's trap).
+# Same model, lower Review effort, empty-reason legacy exception
+# (same-model-exception="") — ignored attribute (#392 AC5), still the
+# effort verdict (PR #253's trap, now merely a legacy marker).
 run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
   __CALL_A__)
@@ -655,7 +657,7 @@ case "$*" in
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
   __CALL_A_COMMENTS__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" same-model-exception="" -->\n'
     exit 0 ;;
   __CALL_A_REVIEWS__)
     printf ''
@@ -669,10 +671,10 @@ GHEOF
 fakebin_g2_empty="$(cat "$FAKEGH_OUT")"
 output_g2_empty="$(PATH="$fakebin_g2_empty:$PATH" "$script" 279)"
 assert_table_shape "S150 gate2-negative (empty-reason exception)" "$output_g2_empty"
-[ "$(row_status "$output_g2_empty" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — an empty-reason same-model-exception must still be not-evidenced, got '$(row_status "$output_g2_empty" 2)'"
+[ "$(row_status "$output_g2_empty" 2)" = "not-evidenced" ] || fail "S150 gate2-negative — an empty-reason legacy same-model-exception must not change the effort verdict (not-evidenced), got '$(row_status "$output_g2_empty" 2)'"
 
 # Genuinely the same model under different label styles ("claude-sonnet-5"
-# vs "Sonnet 5") must still be flagged (#268's normalize_model, D5's
+# vs "Sonnet 5") must still be compared on effort (lower here) (#268's normalize_model, D5's
 # verbatim-copy decision — if reimplemented differently the collector
 # silently disagrees with the gate it reports on).
 run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
@@ -683,7 +685,7 @@ case "$*" in
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
   __CALL_A_COMMENTS__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="Sonnet 5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="Sonnet 5" effort="low" -->\n'
     exit 0 ;;
   __CALL_A_REVIEWS__)
     printf ''
@@ -948,7 +950,8 @@ assert_table_shape "S150 AC5" "$output_ac5"
 # that flips every not-evidenced to indeterminate whenever the flag is
 # set, or a blanket rule at the row()/render seam): it constructs the one
 # corpus where a SOUND not-evidenced (gate 2's same-model verdict, gate
-# 4's zero-checks verdict) coexists with a failed issue lookup. Neither
+# 4's zero-checks verdict) coexists with a failed issue lookup. (#392: gate 2's sound
+# same-model not-evidenced is now "Review effort lower than Implementation's".) Neither
 # may change status. Row 3's indeterminate assertion is a positive
 # control: if a "fix" swallows call C's failure instead of degrading
 # gates 2/3, rows 2/4 would stay not-evidenced for the wrong reason and
@@ -963,7 +966,7 @@ case "$*" in
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
   __CALL_A_COMMENTS__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" -->\n'
     exit 0 ;;
   __CALL_A_REVIEWS__)
     printf ''
@@ -985,9 +988,17 @@ assert_table_shape "S150 AC6-guard" "$output_ac6_guard"
 [ "$(row_status "$output_ac6_guard" 2)" = "not-evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 2's same-model verdict must stay not-evidenced under a failed issue lookup (both markers were actually read), got '$(row_status "$output_ac6_guard" 2)'"
 [ "$(row_status "$output_ac6_guard" 4)" = "not-evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 4's zero-checks verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_ac6_guard" 4)'"
 [ "$(row_status "$output_ac6_guard" 3)" = "indeterminate" ] || fail "S150 AC6-guard — positive control: gate 3 (no marker at all) must still degrade to indeterminate in this same arm, got '$(row_status "$output_ac6_guard" 3)'"
-# shellcheck disable=SC2016
-expected_ac6_g2_evidence='`stage=Review` and `stage=Implementation` markers on PR #279 both record `claude-sonnet-5` with no `same-model-exception`'
-[ "$(row_evidence "$output_ac6_guard" 2)" = "$expected_ac6_g2_evidence" ] || fail "S150 AC6-guard — gate 2's evidence text must not change either (a degradation clause appended to the message would still be a fix that touched a sound path): '$(row_evidence "$output_ac6_guard" 2)'"
+# Issue #392: the evidence text is no longer pinned byte for byte (the same-model
+# wording is the Architect's, A25); what the guard still needs is that it names
+# the model and BOTH efforts and gained no degradation clause.
+ev_ac6_g2="$(row_evidence "$output_ac6_guard" 2)"
+case "$ev_ac6_g2" in
+  *claude-sonnet-5*low*medium* | *claude-sonnet-5*medium*low*) : ;;
+  *) fail "S150 AC6-guard — gate 2's evidence must name the model and both efforts (low, medium), got: $ev_ac6_g2" ;;
+esac
+case "$ev_ac6_g2" in
+  *lookup* | *failed* | *"can't be ruled out"*) fail "S150 AC6-guard — gate 2's evidence text must not gain a degradation clause on a sound path, got: $ev_ac6_g2" ;;
+esac
 
 # =========================================================================
 # Arm G (issue #302 / P2-1, half 1): naive `tail -1` over the flat
@@ -1028,7 +1039,7 @@ case "$*" in
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
   __CALL_C265__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" -->\n'
     exit 0 ;;
   __CALL_C266__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
@@ -1064,7 +1075,7 @@ case "$*" in
     printf 'check\tSUCCESS\tpass\n'
     exit 0 ;;
   __CALL_C265__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" -->\n'
     exit 0 ;;
   __CALL_C266__)
     printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5" effort="medium" -->\n'
@@ -1113,7 +1124,7 @@ case "$*" in
     exit 0 ;;
   __CALL_C265__)
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="low" -->\n'
     exit 0 ;;
   __CALL_C266__)
     echo "gh: could not resolve to an Issue" >&2
@@ -1168,7 +1179,7 @@ output_ac302_pr_wins="$(PATH="$fakebin_ac302_pr_wins:$PATH" "$script" 279)"
 status_ac302_pr_wins=$?
 [ "$status_ac302_pr_wins" -eq 0 ] || fail "S150 issue #302 Arm I — expected exit 0, got $status_ac302_pr_wins"
 assert_table_shape "S150 issue #302 Arm I" "$output_ac302_pr_wins"
-[ "$(row_status "$output_ac302_pr_wins" 2)" = "evidenced" ] || fail "S150 issue #302 Arm I — expected gate 2 evidenced: the PR's own stage=Review marker (claude-opus-5) must win over the issue's planned one (claude-sonnet-5), got '$(row_status "$output_ac302_pr_wins" 2)'"
+[ "$(row_status "$output_ac302_pr_wins" 2)" = "unverifiable-from-artifacts" ] || fail "S150 issue #302 Arm I — expected gate 2 unverifiable-from-artifacts (#392: different models, so no machine verdict; but a definite one, not indeterminate): the PR's own stage=Review marker (claude-opus-5) must win over the issue's planned one (claude-sonnet-5), got '$(row_status "$output_ac302_pr_wins" 2)'"
 
 # =========================================================================
 # Arm J (issue #302 review round 1, R-2 — the missing positive multi-
@@ -1213,7 +1224,7 @@ output_ac302_positive1="$(PATH="$fakebin_ac302_positive1:$PATH" "$script" 279)"
 status_ac302_positive1=$?
 [ "$status_ac302_positive1" -eq 0 ] || fail "S150 issue #302 Arm J (order 1) — expected exit 0, got $status_ac302_positive1"
 assert_table_shape "S150 issue #302 Arm J (order 1)" "$output_ac302_positive1"
-[ "$(row_status "$output_ac302_positive1" 2)" = "evidenced" ] || fail "S150 issue #302 Arm J (order 1) — expected a DEFINITE gate 2 evidenced with two closing issues read and sources agreeing (uncontested), got '$(row_status "$output_ac302_positive1" 2)' — a naive 'always indeterminate at >=2 issues' implementation would fail this"
+[ "$(row_status "$output_ac302_positive1" 2)" = "unverifiable-from-artifacts" ] || fail "S150 issue #302 Arm J (order 1) — expected a DEFINITE gate 2 unverifiable-from-artifacts (#392: different models) with two closing issues read and sources agreeing (uncontested), got '$(row_status "$output_ac302_positive1" 2)' — a naive 'always indeterminate at >=2 issues' implementation would fail this"
 
 run_build_fake_gh "abababababababababababababababababababab" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -1246,16 +1257,17 @@ output_ac302_positive2="$(PATH="$fakebin_ac302_positive2:$PATH" "$script" 279)"
 status_ac302_positive2=$?
 [ "$status_ac302_positive2" -eq 0 ] || fail "S150 issue #302 Arm J (order 2) — expected exit 0, got $status_ac302_positive2"
 assert_table_shape "S150 issue #302 Arm J (order 2)" "$output_ac302_positive2"
-[ "$(row_status "$output_ac302_positive2" 2)" = "evidenced" ] || fail "S150 issue #302 Arm J (order 2) — expected the same DEFINITE gate 2 evidenced with issue order swapped, got '$(row_status "$output_ac302_positive2" 2)'"
+[ "$(row_status "$output_ac302_positive2" 2)" = "unverifiable-from-artifacts" ] || fail "S150 issue #302 Arm J (order 2) — expected the same DEFINITE gate 2 unverifiable-from-artifacts with issue order swapped, got '$(row_status "$output_ac302_positive2" 2)'"
 
 # =========================================================================
-# Arm K (issue #302 review round 1, R-3 — same model, differing
-# same-model-exception). Both closing issues carry a `stage=Review`
-# marker with the SAME model (`claude-opus-5`, matching the PR's own
-# `stage=Implementation`), but issue #265 carries a
-# `same-model-exception=` attribute and issue #266 doesn't. That is
-# itself a genuine inter-issue disagreement (R-3), and it must render
-# `indeterminate` the same way regardless of issue order.
+# Arm K (issue #302 review round 1, R-3; reversed by #392 AC5 — same
+# model, differing LEGACY same-model-exception). Both closing issues carry
+# a `stage=Review` marker with the SAME model and the SAME effort
+# (`claude-opus-5`, `medium`, matching the PR's own `stage=Implementation`),
+# but issue #265 carries a legacy `same-model-exception=` attribute and
+# issue #266 doesn't. The attribute is ignored completely now, so this is
+# NO disagreement: same model, Review effort not lower -> `evidenced`,
+# regardless of issue order. (A disagreement on effort IS one: S190.)
 # =========================================================================
 run_build_fake_gh "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -1288,7 +1300,7 @@ output_ac302_exc1="$(PATH="$fakebin_ac302_exc1:$PATH" "$script" 279)"
 status_ac302_exc1=$?
 [ "$status_ac302_exc1" -eq 0 ] || fail "S150 issue #302 Arm K (order 1) — expected exit 0, got $status_ac302_exc1"
 assert_table_shape "S150 issue #302 Arm K (order 1)" "$output_ac302_exc1"
-[ "$(row_status "$output_ac302_exc1" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm K (order 1) — expected gate 2 indeterminate: same model but disagreeing same-model-exception across two closing issues, got '$(row_status "$output_ac302_exc1" 2)'"
+[ "$(row_status "$output_ac302_exc1" 2)" = "evidenced" ] || fail "S150 issue #302 Arm K (order 1) — expected gate 2 evidenced: a disagreeing legacy same-model-exception is ignored (#392 AC5), no conflict, got '$(row_status "$output_ac302_exc1" 2)'"
 
 run_build_fake_gh "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -1321,7 +1333,7 @@ output_ac302_exc2="$(PATH="$fakebin_ac302_exc2:$PATH" "$script" 279)"
 status_ac302_exc2=$?
 [ "$status_ac302_exc2" -eq 0 ] || fail "S150 issue #302 Arm K (order 2) — expected exit 0, got $status_ac302_exc2"
 assert_table_shape "S150 issue #302 Arm K (order 2)" "$output_ac302_exc2"
-[ "$(row_status "$output_ac302_exc2" 2)" = "indeterminate" ] || fail "S150 issue #302 Arm K (order 2) — expected the same gate 2 indeterminate with issue order swapped, got '$(row_status "$output_ac302_exc2" 2)'"
+[ "$(row_status "$output_ac302_exc2" 2)" = "evidenced" ] || fail "S150 issue #302 Arm K (order 2) — expected the same gate 2 evidenced with issue order swapped, got '$(row_status "$output_ac302_exc2" 2)'"
 [ "$(row_status "$output_ac302_exc1" 2)" = "$(row_status "$output_ac302_exc2" 2)" ] || fail "S150 issue #302 Arm K — gate 2 must not depend on closing-issue order: order1='$(row_status "$output_ac302_exc1" 2)' order2='$(row_status "$output_ac302_exc2" 2)'"
 
 # =========================================================================
@@ -1439,7 +1451,7 @@ output_presence="$(PATH="$fakebin_presence:$PATH" "$script" 279 2>"$SANDBOX/s150
 status_presence=$?
 [ "$status_presence" -eq 0 ] || fail "S150 presence-arm — expected exit 0, got $status_presence"
 assert_table_shape "S150 presence-arm" "$output_presence"
-[ "$(row_status "$output_presence" 2)" = "evidenced" ] || fail "S150 presence-arm — gate 2 (models differ) must stay evidenced under a failed issue lookup, got '$(row_status "$output_presence" 2)'"
+[ "$(row_status "$output_presence" 2)" = "unverifiable-from-artifacts" ] || fail "S150 presence-arm — gate 2 (models differ) must stay unverifiable-from-artifacts (#392; not degraded to indeterminate) under a failed issue lookup, got '$(row_status "$output_presence" 2)'"
 [ "$(row_status "$output_presence" 3)" = "evidenced" ] || fail "S150 presence-arm — gate 3 (matching sha) must stay evidenced under a failed issue lookup, got '$(row_status "$output_presence" 3)'"
 [ "$(row_status "$output_presence" 4)" = "not-evidenced" ] || fail "S150 presence-arm — gate 4's bucket=fail verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_presence" 4)'"
 
@@ -1468,9 +1480,10 @@ rm -f /tmp/s150_stderr_calla.$$
 # already-observed real-world shape — PR #279's gate-2 cell quoting a
 # 118-char exception reason is already ~190 chars, and a longer exception
 # or a multi-check gate-4 cell pushes past 300 on real input). Built with
-# an over-long same-model-exception on gate 2.
+# an over-long floor-basis on gate 2 (#392: the legacy same-model-exception
+# no longer reaches the table; floor-basis is quoted for different models).
 # =========================================================================
-long_reason="the fork session inherits its parent model and no other model was made available for this particular review round so this same-model exception documents that limitation in exhaustive detail for the record, repeated once more to push well past the three hundred character budget for this evidence cell"
+long_reason="the review runs on a stronger model than Implementation and the diff is a mechanical rename so this floor-basis sentence documents that judgment in exhaustive detail for the record, repeated once more to push well past the three hundred character budget for this evidence cell"
 run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<GHEOF
 case "\$*" in
   __CALL_A__)
@@ -1479,7 +1492,7 @@ case "\$*" in
     printf 'TEXT\t<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="medium" -->\n'
     exit 0 ;;
   __CALL_A_COMMENTS__)
-    printf 'TEXT\t<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" same-model-exception="$long_reason" -->\n'
+    printf 'TEXT\t<!-- model-record: stage=Review model="claude-opus-5-5" effort="medium" floor-basis="$long_reason" -->\n'
     exit 0 ;;
   __CALL_A_REVIEWS__)
     printf ''
@@ -1544,7 +1557,7 @@ fakebin_reviewonly="$(cat "$FAKEGH_OUT")"
 output_reviewonly="$(PATH="$fakebin_reviewonly:$PATH" "$script" 279)"
 assert_table_shape "S150 review-source" "$output_reviewonly"
 status_reviewonly="$(row_status "$output_reviewonly" 2)"
-[ "$status_reviewonly" = "evidenced" ] || fail "S150 review-source — gate 2 must read the PR-reviews source: expected evidenced, got $status_reviewonly (output: $output_reviewonly)"
+[ "$status_reviewonly" = "unverifiable-from-artifacts" ] || fail "S150 review-source — gate 2 must read the PR-reviews source: expected unverifiable-from-artifacts (#392: different models; a regression that stops reading reviews gives not-evidenced), got $status_reviewonly (output: $output_reviewonly)"
 evidence_reviewonly="$(row_evidence "$output_reviewonly" 2)"
 case "$evidence_reviewonly" in
   *'claude-opus-5-5'*) : ;;

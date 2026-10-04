@@ -13,7 +13,7 @@ This project is developed from multiple computers. Follow this workflow in every
 
 ## When starting a session
 
-1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`).
+1. `git fetch origin` (also happens automatically via a `SessionStart` hook, see `settings/session-hooks.json`). The same hook prints what this project opted into that must be in every session's context (`session-context.sh`), such as the multi-agent run rules; when it does, those rules apply to this session.
 2. Check whether you're continuing existing work (existing feature branch) or starting something new.
    - Existing work: `git checkout <branch> && git pull origin <branch>`.
    - New work: create the issue first — `gh issue create` with the epic or work-item template (`templates/ISSUE_TEMPLATE/`, see `write-spec`) — then branch from its number: `git checkout main && git pull origin main && git checkout -b feature/<issue-number>-<name>` (or `fix/<issue-number>-<name>`).
@@ -43,9 +43,9 @@ Three independent axes, applied to every issue going forward (issue #398 — bef
 
 - **Type** — `bug`, `documentation`, `enhancement` (GitHub's own defaults), or `process` for an architecture/workflow-process change that doesn't fit the other three. Orthogonal to `epic`: an epic can carry both `epic` and a type label (e.g. `process`+`epic`).
 - **Status** — `status:backlog` (scoped, not started), `status:in-progress` (actively being worked, by this session or another), `status:blocked` (can't proceed — state the blocker in the issue body). Not a replacement for GitHub's own open/closed state; "done" is just closed, there's no `status:done` label.
-- **Role** — `role:product`/`role:architect`/`role:qa`/`role:dev`/`role:reviewer` (canonical stage order per `skills/model-choice/SKILL.md`'s per-stage floors, QA before Dev — Test before Implementation), tracking which of the five multi-agent-workflow phases (`wip/multi-agent-development/role-contracts/SKILL.md` — not yet promoted to `skills/`, see README.md/CHANGELOG.md for the full path) is currently active on an issue/PR. Hand-maintained by the orchestrator, same as `status:*` — neither axis is set or cleared by a script; `role-label-staleness.sh` only *flags* a role label that's fallen behind the evidence, it doesn't fix it.
+- **Role** — `role:product`/`role:architect`/`role:qa`/`role:dev`/`role:reviewer` (canonical stage order per `skills/model-choice/SKILL.md`'s per-stage floors, QA before Dev — Test before Implementation), tracking which of the five multi-agent-workflow phases (`skills/role-contracts/SKILL.md`) is currently active on an issue/PR. Hand-maintained by the orchestrator, same as `status:*` — neither axis is set or cleared by a script; `role-label-staleness.sh` only *flags* a role label that's fallen behind the evidence, it doesn't fix it.
 
-Both `status:*` and `role:*` are deliberately hand-maintained, not mechanized — issue #371 may later change how pipeline-phase state gets set, and that's a separate decision from this convention existing. This-repo-only for now (not yet offered via `CHANGES.md`/`adopt.sh` to adopted projects) — validate the convention here first.
+Both `status:*` and `role:*` are deliberately hand-maintained, not mechanized — issue #371 (automatic activation of the pipeline, in this release) leaves pipeline-phase state hand-maintained by the orchestrator, and any mechanization would be a separate decision from this convention existing. This-repo-only for now (not yet offered via `CHANGES.md`/`adopt.sh` to adopted projects) — validate the convention here first.
 
 ## Routing table
 
@@ -63,6 +63,7 @@ This file holds what every session needs. For everything else: the table below r
 | Test-first work: seams, red-before-green, anti-patterns | `tdd-seams` |
 | Diagnosing a bug: reproduction → hypotheses → regression test → fix | `diagnose-bug` |
 | Which model/reasoning effort to use for a pipeline stage | `model-choice` |
+| Dispatching or reviewing a Product / Architect / QA / Fullstack Developer / Reviewer role (opt-in, `process-multi-agent-roles`) | `role-contracts` |
 | Setting up a new (related) project | `adopt-workflow` (user-level) |
 | Relentless, round-based requirement elicitation from Ties | `grilling` |
 | Decomposing a system into deep modules, not shallow components | `codebase-design` |

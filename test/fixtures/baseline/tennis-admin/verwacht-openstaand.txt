@@ -5,6 +5,7 @@ process-diagnose-bug
 process-grilling-codebase-design-skills
 process-issue-tracking
 process-model-choice
+process-multi-agent-roles
 process-prd
 process-refactoring-triggers
 process-technical-debt-register

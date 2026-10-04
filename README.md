@@ -4,8 +4,8 @@ Guardrails for an AI coding agent working past toy-project size: what was decide
 written down, and nothing merges without a traceable link back to a reviewed requirement.
 Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
 
-**v0.2.0** (see `CHANGELOG.md`): this repo now builds itself with a five-role multi-agent
-pipeline. That pipeline isn't part of what an adopted project gets yet — see
+**v0.2.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
+pipeline, and an adopted project can opt into it — see
 [How this repo builds itself](#how-this-repo-builds-itself).
 
 ## The problem, and the shape of the fix
@@ -155,8 +155,9 @@ what's still open. See the `adoption-registry` skill for the full mechanism.
 
 Everything above is what an adopted project gets: one agent session carrying a change through
 every stage of the diagram, with a human at the approval points. This repo follows that
-workflow too, and adds two practices of its own on top. Neither is part of the adoptable
-workflow yet.
+workflow too, and adds two practices on top. Both are opt-ins an adopted project is asked
+about as well: the five-role pipeline (see "Adopting it" below) and the release-branch tier
+(see "A release branch between work items and `main`" below).
 
 ### Five roles instead of one session
 
@@ -165,13 +166,13 @@ agent roles rather than one session doing everything: **Product** (are we buildi
 thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
 works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
 final gate). Each role gets a quotable contract — responsibilities, what it may write, and
-Reviewer's security triggers — in `wip/multi-agent-development/role-contracts/SKILL.md`. When
-roles disagree, the conflict escalates to a human instead of being settled by whichever role
+Reviewer's security triggers — in the `role-contracts` skill (`skills/role-contracts/SKILL.md`).
+When roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
-The dispatching itself is done by an orchestrating Claude Code session (or by hand), so the
-"not an agent framework" line at the top still holds: this repo supplies contracts and
-evidence, not an orchestrator. Three read-only scripts provide the evidence:
+The dispatching itself is done by an orchestrating Claude Code session, so the "not an agent
+framework" line at the top still holds: this repo supplies contracts, run rules and evidence,
+not orchestrator software. Three read-only scripts provide the evidence:
 
 - **`compliance-evidence.sh`** — renders an evidence table for a PR from what already exists
   (model-record markers, review markers, CI, PR↔issue links).
@@ -186,16 +187,67 @@ happened on 2026-09-30 (#328, all five roles, with genuine findings caught and f
 stage) and settled it: v0.2.0. The full design record lives in
 `wip/multi-agent-development/`.
 
-None of this reaches an adopted project yet: the role contracts aren't installed as a skill,
-and `CHANGES.md` has no entry for a project to adopt. Taking it outward is a separate step
-that hasn't been taken.
+**Adopting it.** `adopt.sh` symlinks the `role-contracts` skill into every adopted project
+like any other skill. Whether the project actually follows the pipeline is the opt-in
+`process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
+preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
+The skill is self-contained: it names the `role:<name>` labels and the `model-record` markers,
+and points only at installed skills or built-in Claude Code skills (`security-review`,
+`code-review`).
+
+**Automatic from the first work item.** Once the row says yes, the `SessionStart` hook runs
+`session-context.sh`, which prints the skill's `ORCHESTRATOR.md` into every session of that
+project: what counts as a work item, the stage order with labels and markers, dispatching each
+role as a fresh agent (never a fork), the human override record, what to do when dispatch
+isn't available, and how to resume. So a session that gets a work-item request starts the
+pipeline without being asked. A `no` or unanswered row prints nothing. This repo answers its
+own row yes, with no special case. `session-context.sh` also warns when the project's
+`CLAUDE.md` is no longer the link to `WORKFLOW.md`. Before merge, `model-record-gate.sh` flags a
+run where one session played every role (several stages' markers in one text, or a stage
+missing), and the merge guard refuses `gh pr merge` on it unless the human recorded a
+`pipeline-override`. Without `gh` or network, both let the merge through.
+
+What is mechanical and what isn't: the hook delivering the rules, the gate's finding and the
+merge guard's refusal are tested. Whether a live session then *follows* the rules (starts the
+pipeline unprompted, leaves a question alone, never nests a pipeline inside a role session,
+stops and asks when it can't dispatch, resumes at the right stage) is model behaviour; only a
+human dry run checks it, ideally followed by `model-record-gate.sh` on the dry run's PR. Checked
+once on Claude Code 2.1.287 in headless mode (#371): `SessionStart` output reaches the
+top-level session but not a freshly dispatched subagent, and the hook fires again on resume
+and after compaction. A session that deliberately forges five separate stage comments is not
+detected.
+
+What an adopted project **gets**: the `role-contracts` skill, the opt-in question, the
+session-start rules and the merge-time check once it answers yes, and permission to run the
+three evidence scripts against its own repo. What it does **not** get: orchestrator software
+(the orchestrating session is an ordinary Claude Code session following `ORCHESTRATOR.md`)
+and any installed copy of the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
+the project and not wired into its `check` or CI, and they are read-only. Run them by path from
+the guardrails clone, with the adopted
+project's checkout as the working directory, so they address that project's repo:
+
+```bash
+"$SPEC_DRIVEN_GUARDRAILS_DIR/compliance-evidence.sh" <pr-number>
+"$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh" <issue-number>
+"$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh" <pr-number>
+```
+
+The gates assume this repo's conventions (`model-record` markers, the `pre-merge-review`
+marker, `Covers:` links), so a project that did not adopt the related entries sees
+`not-evidenced` rows. That is a correct report, not an error.
+
+Prerequisites: the GitHub CLI (`gh`) installed and authenticated, `SPEC_DRIVEN_GUARDRAILS_DIR`
+set to the clone (as for `adopt.sh`), and, if you want `role-label-staleness.sh` to say
+anything, the five `role:<name>` labels created once in the project's own repo. The
+`role-contracts` skill has the command to create the labels. In a checkout with several git
+remotes (for example a fork plus `upstream`), run `gh repo set-default` first, or the scripts
+may report on a different repo than you expect.
 
 ### A release branch between work items and `main`
 
 In the diagram, a feature/fix branch merges straight into `main`. For an epic spanning several
-work items, this repo — and, unlike the five-role pipeline above, every adopted project too —
-can add an optional middle tier: a **release branch** (`release/<epic-number>-<slug>`, forked
-from `main`). Each work item's branch targets the release branch, and the release branch
+work items, this repo and every adopted project can add an optional middle tier: a **release
+branch** (`release/<epic-number>-<slug>`, forked from `main`). Each work item's branch targets the release branch, and the release branch
 merges into `main` in one step once the whole epic is ready.
 
 The full mechanism — when to open one, who may merge what into it, the frozen membership set,
@@ -206,7 +258,9 @@ merges into the release branch on the executing session's own judgment once revi
 and CI is green; the release branch merges into `main` only on the maintainer's explicit
 confirmation, like every other merge into `main`, however many work items merged cleanly
 underneath it. Individual work items land quickly, while the one decision that matters — is
-this epic ready to ship? — stays a single, deliberate act.
+this epic ready to ship? — stays a single, deliberate act. An adopted project is asked about
+this tier (the `release-branch-workflow` question; its answer goes in `WORKFLOW-ADOPTION.md`)
+and gets the `release-branch-workflow` skill installed.
 
 `release/295-multi-agent-workflow-v1` (→ v0.2.0) ran this as an informal precedent (issue
 #309) before the mechanism itself had a name or a skill. Epic #370 formalized it into what's
@@ -248,6 +302,7 @@ dogfooding the mechanism it specifies.
 | `nfr/` | Non-functional requirement registry — one file per attribute, source for `CHANGES.md`'s `spec-*` rows and every adopted `PRD.md`. |
 | `lib/` | Shared bash: `changes.sh` (parser/predicates), `nfr.sh` (registry reader). |
 | `pending-changes.sh` | What from `CHANGES.md`/`nfr/` still needs an answer in a given project. |
+| `session-context.sh` | At session start: prints the session-context files (today `ORCHESTRATOR.md`) of entries a project answered yes, and warns when its `CLAUDE.md` link is gone. |
 
 **This repo's own internals** — not installed anywhere else:
 

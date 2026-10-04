@@ -20,6 +20,19 @@
 # reviews (a new source this gate never read before either — see
 # model-record-gate.sh's own comment), and `issues/239/comments` for
 # the closing issue.
+#
+# Issue #392, round 4 of the PR #397 review: the gate now frames every
+# comment/review body with U+001E for all projects (after removing that byte
+# from the body), so the marker parser keeps a malformed marker inside its
+# own comment. The `--jq` in the arms below is that framing expression; what
+# this test pins is unchanged: REST endpoints only, `--paginate`, the exact
+# call set (any other call falls through to `exit 1`).
+#
+# Issue #392: the same-model arms below now exercise the effort rule (Review at
+# LOWER effort than Implementation is the finding; a legacy same-model-exception
+# neither waives it nor is required) and every Review marker carries a
+# floor-basis. The full floor rule (floor-basis presence, unknown efforts,
+# different models) is S189.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -31,6 +44,12 @@ script="$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
+# #371: the gate now reads the working directory's WORKFLOW-ADOPTION.md
+# (role-play detection, opted-in projects only, S183). These fixtures put
+# several stages in one text on purpose and pin the not-opted-in call
+# shapes, so run from the sandbox, not from whatever checkout launched the
+# suite (this repo answers process-multi-agent-roles yes).
+cd "$SANDBOX" || exit 1
 
 # PR carries Review, Planning, Test, Implementation markers; the issue it
 # closes carries Discovery's. All five present -> no findings.
@@ -39,16 +58,16 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Opus\" effort=\"high\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -66,13 +85,13 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
-    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
 esac
@@ -101,7 +120,7 @@ assert_contains "S130 — a warning appears without gh" "warning" "$output_nogh"
 # whole check, same as before — this is the first call the gate makes.
 fakebin_comments_fail="$(fake_gh_bin '
 case "$*" in
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     echo "gh: could not resolve to a PullRequest" >&2
     exit 1 ;;
 esac
@@ -119,13 +138,13 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     echo "gh: could not resolve to an Issue" >&2
     exit 1 ;;
 esac
@@ -146,13 +165,13 @@ case "$*" in
       "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->" \
       "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
-    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -171,15 +190,15 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
-    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" -->"
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
+    printf "%s" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -189,23 +208,24 @@ exit 1
 output_review_marker="$(PATH="$fakebin_review_marker:$PATH" "$script" 246)"
 [ -z "$output_review_marker" ] || fail "S130 — expected no findings when the Review marker lives in a PR review body, got: $output_review_marker"
 
-# #244 AC2: Review and Implementation recording the same model with no
-# same-model-exception is a finding.
+# #392 (replaces #244 AC2): Review and Implementation recording the same
+# model, with Review at LOWER effort (low vs. medium), is a finding that
+# names the model and no longer mentions same-model-exception.
 fakebin_same_model="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
@@ -213,34 +233,40 @@ exit 1
 ')"
 output_same_model="$(PATH="$fakebin_same_model:$PATH" "$script" 246)"
 case "$output_same_model" in
-  *"same model"*"Sonnet"*"same-model-exception"*) : ;;
-  *) fail "S130 — expected a same-model finding, got: $output_same_model" ;;
+  *"same model"*"Sonnet"*) : ;;
+  *) fail "S130 — expected a same-model lower-effort finding, got: $output_same_model" ;;
+esac
+case "$output_same_model" in
+  *same-model-exception*) fail "S130 — the finding must not ask for a same-model-exception any more (#392), got: $output_same_model" ;;
 esac
 
-# ...but the same pairing with an explicit same-model-exception is not a
-# finding.
+# ...and a legacy same-model-exception on that lower-effort Review is NOT a
+# waiver any more (#392 AC5: the attribute is ignored completely).
 fakebin_same_model_excepted="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"only one model available\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" same-model-exception=\"only one model available\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
 esac
 exit 1
 ')"
 output_excepted="$(PATH="$fakebin_same_model_excepted:$PATH" "$script" 246)"
-[ -z "$output_excepted" ] || fail "S130 — expected no findings when the same-model pairing carries an exception, got: $output_excepted"
+case "$output_excepted" in
+  *"same model"*"Sonnet"*) : ;;
+  *) fail "S130 — a legacy same-model-exception must not waive a lower-effort same-model Review, got: $output_excepted" ;;
+esac
 
 # Found during PR #253's pre-merge-review: the latest marker per stage
 # must win, not the first. Round 1 recorded a genuine different-model
@@ -253,15 +279,15 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -283,14 +309,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=Sonnet effort=medium -->"
     printf "%s\n" "<!-- model-record: stage=Review model=Sonnet effort=medium -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -304,21 +330,22 @@ case "$output_unquoted" in
   *) : ;;
 esac
 
-# An empty-reason exception (same-model-exception="") must not satisfy —
-# it's a same-model marker in all but name.
+# A legacy empty-reason exception (same-model-exception="") is ignored
+# (#392 AC5): same model at EQUAL effort with a floor-basis is no finding,
+# and the attribute does not break anything.
 fakebin_empty_exception="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" same-model-exception=\"\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -327,26 +354,23 @@ esac
 exit 1
 ')"
 output_empty_exception="$(PATH="$fakebin_empty_exception:$PATH" "$script" 246)"
-case "$output_empty_exception" in
-  *"same model"*) : ;;
-  *) fail "S130 — expected an empty-reason exception to still be flagged, got: $output_empty_exception" ;;
-esac
+[ -z "$output_empty_exception" ] || fail "S130 — a legacy empty same-model-exception must be ignored (same model, equal effort, floor-basis present: no finding), got: $output_empty_exception"
 
 # Case-insensitive: "Claude Sonnet 5" and "claude sonnet 5" are the same
-# model spelled differently, still a violation.
+# model spelled differently, still compared (Review effort lower: a finding).
 fakebin_case_insensitive="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Claude Sonnet 5\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"claude sonnet 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"claude sonnet 5\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
@@ -371,18 +395,18 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
 esac
 exit 1
@@ -394,7 +418,7 @@ case "$output_issue_marker_stale" in
 esac
 
 # #268: a display-name label and an API model-id label for the same
-# underlying model must still be flagged — the exact failure case found
+# underlying model must still be compared on effort (low vs. medium: flagged) — the exact failure case found
 # during PR #267's pre-merge-review, round 2 (Review recorded "Sonnet 5",
 # Implementation recorded "claude-sonnet-5" — plain case-folding didn't
 # equate those either, only normalize_model's structural fold does).
@@ -403,14 +427,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet 5\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -432,14 +456,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239\001"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus 5\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus 5\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet 5\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet 5\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet 5\" effort=\"medium\" -->"
@@ -463,14 +487,14 @@ case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
     printf "Closes #239: some change\001some unrelated body text"
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
     exit 0 ;;
-  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
     exit 0 ;;
-  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[].body")
+  "api repos/{owner}/{repo}/issues/239/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"

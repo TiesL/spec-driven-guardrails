@@ -366,6 +366,63 @@ print("STALE")
 
   check_ci_guard "$target"
   check_stray_closes_guard "$target"
+  check_role_play_guard "$target"
+}
+
+# #371 (A18 amendment): in a project that answers process-multi-agent-roles
+# yes, a run where one session played every role, with no recorded human
+# override, must not merge. The review-marker check above can't catch it:
+# in exactly that failure the same session is also the Reviewer and can
+# post the marker itself. One owner for the rule: the installed
+# model-record-gate.sh computes it; this step only reads its
+# `role-played: ` prefix. Opt-in only (the shared answered_yes rule), so a
+# project that didn't answer yes sees no change. Fails open on everything
+# uncertain — no lib or gate in this clone, an unresolvable PR, no gh or
+# network (the gate itself exits 0 with no finding then) — same ground rule
+# as the checks above. Part of the same gate: the same `no` on
+# quality-review-before-merge and the same escape hatch turn it off.
+# $1 is the same optional target (number/url/branch) as the other checks.
+check_role_play_guard() {
+  local target="$1"
+  local lib="$own_dir/../lib/changes.sh"
+  local gate="$own_dir/../skills/pre-merge-review/model-record-gate.sh"
+  [ -r "$lib" ] && [ -x "$gate" ] || return 0
+
+  local project_root
+  project_root="$(git -C "$workdir" rev-parse --show-toplevel 2>/dev/null)"
+  [ -n "$project_root" ] || project_root="$workdir"
+  # shellcheck source=../lib/changes.sh
+  . "$lib"
+  answered_yes "$project_root" process-multi-agent-roles || return 0
+
+  local number
+  if ! number="$(resolve_stray_closes_pr_number "$target")"; then
+    echo "warning: merge-guard couldn't determine the PR number and skips the role-play check." >&2
+    return 0
+  fi
+
+  local findings
+  findings="$(cd "$workdir" && "$gate" "$number" 2>/dev/null | grep '^role-played: ')"
+  [ -n "$findings" ] || return 0
+
+  block "gh pr merge on a role-played run" \
+"this project answers process-multi-agent-roles yes, and
+       model-record-gate.sh finds that one session played the pipeline's
+       roles instead of dispatching them:
+
+$(printf '%s\n' "$findings" | sed 's/^/       /')
+
+       Dispatch each stage as its own role session, or, if the
+       human decided otherwise, record that decision on the issue (live
+       text, not quoted):
+
+         <!-- pipeline-override: decided-by=\"human\" scope=\"single-session\" reason=\"...\" -->
+
+       (or scope=\"skip=<Stage>\"; see the role-contracts skill's
+       ORCHESTRATOR.md). Is this deliberate, use the explicit escape hatch —
+       and report which check is being skipped:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
 }
 
 # Found while reviewing PR #80 (issue #81): CI had been systematically

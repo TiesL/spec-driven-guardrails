@@ -39,23 +39,22 @@ is stale the moment a new model ships. A qualitative description of the
 task's demands doesn't age the same way.
 
 This is the mechanism `pre-merge-review` already used for its reviewer
-floor before this skill existed: "a different model from, and at least as
-skilled as, the model that wrote the reviewed change" names no model,
-only a relation.
+floor before this skill existed: "at least as capable as the model that
+did Implementation" names no model, only a relation.
 
-**Resolved contradiction (#244):** `CHANGES.md`'s `quality-review-before-merge`
-entry required "a different model than the one that wrote the code";
-this skill's own floor said only "at least as skilled," permitting the
-same model. `portfolio-mgt-agents` used the same model for both and cited
-this skill — satisfying one text while violating the other. Resolved in
-favor of the stricter rule, since same-model review is exactly the
-correlated-blind-spot risk "Its limits" already warns about: a genuinely
-different model is required whenever more than one capable model is
-available. When only one model is actually available (a single-model
-environment), the same model may review, but the record must say so
-explicitly (`same-model-exception="<reason>"` on the Review marker, see
-"Machine-readable form" below) — never silently treated as satisfying the
-floor.
+**Resolved contradiction (#244), reversed by #392:** `CHANGES.md`'s
+`quality-review-before-merge` entry required "a different model than the
+one that wrote the code"; this skill's own floor said only "at least as
+skilled," permitting the same model. #244 resolved it in favor of the
+stricter rule (a genuinely different model whenever more than one capable
+model is available, else a recorded `same-model-exception`). #392
+reversed that: the floor is the Review stage's model and effort, taken
+together, being at least as capable as Implementation's, the cheapest
+combination that clears it. A different model is not required, and
+`same-model-exception` is retired (legacy: ignored by every script). The
+same-model correlated-blind-spot risk "Its limits" warns about is
+addressed by choosing a more capable pair, not by a rule about model
+identity.
 
 ## Per-stage floors
 
@@ -67,7 +66,7 @@ Mapped onto the role table from issue #196 / the multi-agent epic (#65):
 | Planning | Architect | Can produce a sound technical approach: right decomposition, right risks surfaced, right sequencing |
 | Test/scenario authoring | QA | Can write a test that actually falsifies a wrong implementation — not a tautology, not one that passes by coincidence (see `tdd-seams`) |
 | Implementation | Developer | Can satisfy the plan and the test correctly, idiomatically, without over- or under-building |
-| Review | Reviewer | A different model from, and at least as capable as, the model that did Implementation — same model only when no other capable model is available, and then flagged as such (#244) |
+| Review | Reviewer | At least as capable as what did Implementation, model and effort taken together (same model at higher effort, or a stronger model, whichever clears it more cheaply); a different model is not required, and the reason it clears the floor is recorded as `floor-basis` (#392) |
 
 Each floor is assessed independently on that stage's own task — a trivial
 fix might need little for Planning, but Review's floor still tracks
@@ -98,31 +97,87 @@ with "never name a model in the floor" above — a floor is an instruction
 that has to keep working after new models ship; a record is a fact about
 one past invocation, and doesn't need to age well.
 
-**Machine-readable form (#241).** Prose alone made this unenforceable in
-practice: only the Review stage ever actually got a model recorded
-(`portfolio-mgt-agents`, #238). Every stage's record is now also a marker,
-in whichever comment (issue, for Discovery; PR, for the rest) that stage
-already writes:
+**Machine-readable form (#241).** Produce the marker line with
+`.claude/skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
+--effort <e> [--floor-basis '<sentence>']`, run from the project root (the
+project's installed skill; the guardrails repo installs its own the same
+way), and paste its output unchanged as
+the first line of your report; never type a marker by hand (#402: hand-typed
+lines with an unquoted value or a quoted stage were unreadable). The
+command prints the one valid line, after parsing it back, or nothing and a
+reason. This section is the one place the format is written down; the
+templates below are what the command prints. Prose alone made this
+unenforceable in practice: only the Review stage ever actually got a model
+recorded (`portfolio-mgt-agents`, #238). Every stage's record is now also a
+marker, in whichever comment (issue, for Discovery; PR, for the rest) that
+stage already writes:
 
 ```
 <!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" effort="<low|medium|high>" -->
 ```
 
-Review's marker takes one more, optional field, only when the same-model
-exception above genuinely applies:
+Review's marker takes one more field, `floor-basis`: required on every
+Review marker, one sentence of free text (#392):
 
 ```
-<!-- model-record: stage=Review model="<model>" effort="<...>" same-model-exception="<reason>" -->
+<!-- model-record: stage=Review model="<model>" effort="<low|medium|high|unknown>" floor-basis="<one sentence>" -->
 ```
+
+`floor-basis` is one sentence of free text on why
+this model and effort clear Implementation's, for example "same model as
+Implementation at higher effort" or "stronger model than Implementation's
+at equal effort; the diff is a mechanical rename". A human weighs that
+sentence; the gate never verifies it, only that it is present. Any
+character is fine in it except a double quote and a control character
+such as a newline (see "Marker grammar" below). The
+Review report's one-line self-declaration (below) repeats it in prose.
+`same-model-exception` is legacy: no script reads it, and it does not
+stand in for `floor-basis`.
+
+`effort` is one of `low`, `medium`, `high`, ordered `low < medium < high`.
+A role that does not know the effort it ran at records `effort="unknown"`
+(not `session-default`): that is honest, and the gate then makes no effort
+claim. The `effort` in a marker is self-reported and unverified unless the
+platform itself set it; the dispatch tool has no effort argument (A25), so
+`unknown` is the honest value for a dispatched role, and a `floor-basis` may
+claim "higher effort" only when that effort was actually set.
+
+Record the full model id exactly as the platform reports it (for example
+`claude-opus-5`, not `opus`). This is documented, not enforced: a short
+alias and the full id of the same model count as different models, since
+no script holds a model table, so the effort comparison is skipped for
+that pair (recorded as debt in the PRD).
+
+**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
+`stage=<Stage>` (a bare name, never quoted), then `name="value"`
+attributes, then `-->`. A value may contain any character except a double
+quote: `>`, `<`, `--` and even `-->` are plain text, so write `floor-basis`
+as an ordinary sentence (the command also refuses a newline or another
+control character in it). The marker ends at the first `-->` outside
+quotes. All three scripts (`model-record-gate.sh`,
+`compliance-evidence.sh`, `role-label-staleness.sh`) read markers through
+`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker,
+and none counts a marker quoted in a code span, a fence or a blockquote:
+that is an example, not a record. A malformed marker (a stray or
+unbalanced quote, a quoted stage, no closing `-->`, a `<!--` inside it) is
+ignored, never read, and never hides a later marker; the gate names it as
+a finding. So does an unquoted, empty or missing `model` or `effort` on the
+latest marker of any stage (#402): produce a corrected marker with the
+command.
 
 `skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
 five stages have at least one marker, searched across both the PR's
 comments and the comments of every issue it closes — a finding, same
 non-blocking shape as every other `pre-merge-review` gate, for any stage
-missing one. It also compares Implementation's and Review's recorded
-`model=` values: identical with no `same-model-exception` field is itself
-a finding (#244 AC2) — the contradiction this resolved is otherwise just
-as unenforced as it was before.
+missing one. It also compares Implementation's and Review's latest
+markers: the same model with Review's effort lower than Implementation's
+is a finding, and so is a Review marker without `floor-basis`.
+
+When the two markers record different models, no script can say which is
+more capable: there is no ordering to check, so that comparison is not
+machine-checked and rests on the Reviewer's recorded `floor-basis`
+judgment. `compliance-evidence.sh` reports that case as
+`unverifiable-from-artifacts`.
 
 **Self-declared in the artifact itself, too.** When a stage's own output
 is a written artifact a later stage or a human reads directly (a report,
@@ -133,13 +188,20 @@ co-thinking-session pilot: the record existed only on the orchestrator's
 side, not inside the artifact itself, which is the one place a later role
 or Ties actually reads.
 
-## No behavior change to single-agent-per-stage practice
+## One session or five: depends on `process-multi-agent-roles`
 
-This skill documents the principle ahead of #65's actual multi-agent
-orchestration. It doesn't require running each stage as a separate
-agent/session today — a single session moving through Discovery, Planning,
-Test authoring, and Implementation in sequence still makes (and records)
-one model-choice decision per stage it produces an artifact for.
+In a project whose `WORKFLOW-ADOPTION.md` answers `process-multi-agent-roles`
+yes, each stage runs as its own dispatched role session; see the
+`role-contracts` skill and its `ORCHESTRATOR.md`, which the `SessionStart`
+hook prints into every session there. One session doing every stage is then
+a role-played run: `model-record-gate.sh` flags it and the merge guard
+refuses it, unless the human recorded an override. Each role session makes
+and records the model choice for its own stage.
+
+Where that row is no or unanswered, a single session moving through
+Discovery, Planning, Test authoring, and Implementation in sequence is the
+norm, and it still makes (and records) one model-choice decision per stage
+it produces an artifact for.
 
 ## Who references this skill
 

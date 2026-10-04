@@ -194,6 +194,96 @@ pr_links_missing() {
   fi
 }
 
+# #371 A17: the `**Reaches session:**` field. The vocabulary is documented
+# once, in CHANGES.md's preamble; this is the code that reads and enforces
+# it.
+#
+# reaches_session_values <source>: one line per value, "<id>|<value>|",
+# values split on commas and trimmed. An entry whose field is present but
+# empty yields one line with an empty value; an entry with no field yields
+# "<id>||-", so callers can tell "missing" from "empty". `|` and not a tab:
+# bash's read collapses consecutive tabs (whitespace IFS), which would
+# shift an empty value into the next column. Only a line that starts with
+# "- **Reaches session:**" is the field: a mention in prose is not.
+reaches_session_values() {
+  local source="$1"
+  [ -f "$source" ] || return 0
+  awk '
+    function flush() { if (cur != "" && !seen) printf "%s||-\n", cur }
+    /^## / { flush(); cur = substr($0, 4); seen = 0; next }
+    /^### / { flush(); cur = ""; next }
+    cur != "" && /^- \*\*Reaches session:\*\*/ {
+      seen = 1
+      v = $0
+      sub(/^- \*\*Reaches session:\*\*[ \t]*/, "", v)
+      n = split(v, parts, ",")
+      if (n == 0) { printf "%s||\n", cur; next }
+      for (i = 1; i <= n; i++) {
+        p = parts[i]
+        gsub(/^[ \t]+|[ \t]+$/, "", p)
+        printf "%s|%s|\n", cur, p
+      }
+    }
+    END { flush() }
+  ' "$source"
+}
+
+# reaches_session_invalid <source> <root>: one problem per line, each
+# naming the entry id, the field and the culprit; empty when every entry is
+# valid. <root> is the directory paths are relative to, and whose
+# test/cases/*.sh must name every path (the structural "exercised by a
+# test", the same kind of link check as Covers:).
+reaches_session_invalid() {
+  local source="$1" root="$2" id value marker kind rpath count
+  [ -f "$source" ] || return 0
+  local listing
+  listing="$(reaches_session_values "$source")"
+  [ -n "$listing" ] || return 0
+
+  # How many values each entry has: `none` must stand alone.
+  while IFS='|' read -r id value marker; do
+    if [ "$marker" = "-" ]; then
+      echo "$id: no '- **Reaches session:**' field"
+      continue
+    fi
+    if [ -z "$value" ]; then
+      echo "$id: Reaches session has an empty value"
+      continue
+    fi
+    if [ "$value" = "none" ]; then
+      count="$(printf '%s\n' "$listing" | awk -F'|' -v id="$id" '$1 == id' | wc -l | tr -d ' ')"
+      [ "$count" -eq 1 ] || echo "$id: Reaches session 'none' must stand alone"
+      continue
+    fi
+    case "$value" in
+      *:*)
+        kind="${value%%:*}"
+        rpath="${value#*:}"
+        rpath="$(printf '%s' "$rpath" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')" ;;
+      *)
+        echo "$id: Reaches session value '$value' has no keyword (none, always-loaded, session-context, hook, gate)"
+        continue ;;
+    esac
+    case "$kind" in
+      always-loaded|session-context|hook|gate) ;;
+      *)
+        echo "$id: Reaches session keyword '$kind' is not one of none, always-loaded, session-context, hook, gate"
+        continue ;;
+    esac
+    if [ -z "$rpath" ]; then
+      echo "$id: Reaches session '$kind:' names no path"
+      continue
+    fi
+    if [ ! -e "$root/$rpath" ]; then
+      echo "$id: Reaches session path '$rpath' does not exist"
+      continue
+    fi
+    if ! grep -qF -- "$rpath" "$root"/test/cases/*.sh 2>/dev/null; then
+      echo "$id: Reaches session path '$rpath' is named in no test/cases/*.sh"
+    fi
+  done <<<"$listing"
+}
+
 # Walks *both* sources: the entries in CHANGES.md and the NFR register in
 # nfr/. Since W5, the fifteen non-functional characteristics no longer live
 # as spec-* entries in CHANGES.md but in their own register — this function
@@ -238,6 +328,41 @@ changes_current_id() {
     proces-diagnose-bug) echo process-diagnose-bug ;;
     *) echo "$1" ;;
   esac
+}
+
+# answered_yes <project-dir> <id> — #371 A16: the one rule for "this
+# project answered this CHANGES.md row yes". Exit 0 for yes, 1 otherwise
+# (no, never answered, no answer file). Three callers: adopt.sh (issue
+# templates), session-context.sh (session-start text) and
+# model-record-gate.sh (role-play detection, also reached through the
+# merge guard). Replaces adopt.sh's hard-coded
+# issue_tracking_answered_yes.
+#
+# - Only the Answer column (the second) counts, never the Notes.
+# - WORKFLOW-ADOPTION.md takes priority; WORKFLOW-ADOPTIE.md is read only
+#   when the new file is absent (W42/#114), and `ja` counts as yes there.
+# - A row under a pre-rename id (changes_old_id) counts for the current id
+#   (#175). Id and value are checked independently, not paired: a partial
+#   manual migration could leave the current id with the Dutch value or
+#   vice versa (found during PR #247's pre-merge-review, round 2).
+# - The id must match the whole cell: `x<id>` or `<id>-extra` is a
+#   different row.
+answered_yes() {
+  local project_dir="$1" id="$2" answers raw_id raw_answer row_id answer
+  answers="$project_dir/WORKFLOW-ADOPTION.md"
+  [ -f "$answers" ] || answers="$project_dir/WORKFLOW-ADOPTIE.md"
+  [ -f "$answers" ] || return 1
+
+  while IFS='|' read -r _ raw_id raw_answer _; do
+    row_id="$(printf '%s' "$raw_id" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [ -n "$row_id" ] || continue
+    [ "$(changes_current_id "$row_id")" = "$id" ] || continue
+    answer="$(printf '%s' "$raw_answer" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    if [ "$answer" = "yes" ] || [ "$answer" = "ja" ]; then
+      return 0
+    fi
+  done < "$answers"
+  return 1
 }
 
 # Given a *current* ID, the pre-rename ID it used to have — empty if it

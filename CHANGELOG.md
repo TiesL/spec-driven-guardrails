@@ -13,6 +13,58 @@ point.
 
 ## Unreleased
 
+- **Epic #369: the multi-agent workflow is adoptable, and applies itself in opted-in projects.**
+  Summary of what ships (details in the two entries below and in `CHANGES.md`): `role-contracts`
+  moved from `wip/` to `skills/` (#369), so `adopt.sh` symlinks it; the opt-in `CHANGES.md` question
+  `process-multi-agent-roles` (`Default: question`, never seeded); automatic activation through
+  `session-context.sh` printing `ORCHESTRATOR.md` in opted-in projects, and the merge guard
+  refusing a role-played run there (#371); the Review model rule (at least as capable as
+  Implementation, effort compared when the model is the same) with a recorded `floor-basis`, and
+  the shared marker parser `lib/model-record.sh` (#392); the required `Reaches session:` field on
+  every `CHANGES.md` entry. Still open: the behavioural acceptance criteria of #371 (does a live
+  session actually start the pipeline, ignore non-work-items, stop and ask when it cannot
+  dispatch, resume mid-pipeline) can only be confirmed by a human dry run in a real opted-in
+  project; no script here can observe them.
+
+- **Fix #402: markers are produced by one command, never typed.** `marker_emit` in
+  `lib/model-record.sh` and its wrapper `skills/pre-merge-review/model-record-emit.sh --stage
+  --model --effort [--floor-basis]` print the one valid `model-record` line, checked by parsing it
+  back, or nothing (exit 2). `ORCHESTRATOR.md` hands each role that command with `--stage` and
+  `--effort` filled in; the role adds its own model id and pastes the output as the first line of
+  its report. `model-record-gate.sh` now reports, for the latest marker of each of the five
+  stages, an unquoted, empty or missing `model` or `effort`, and a malformed marker of any stage
+  (a hand-typed `stage="Planning"` included). The marker grammar is written down only in
+  `model-choice`. Findings stay `model-record:`, never `role-played:`; the merge guard is unchanged.
+- **Fix #392: Review must be at least as capable as Implementation, not a different model.**
+  Review's model and effort, taken together, must clear Implementation's, the cheapest
+  combination that does; a different model is no longer required and `same-model-exception`
+  is retired (ignored by every script). Every Review `model-record` marker now carries
+  `floor-basis="<one sentence>"` on why; `model-record-gate.sh` flags a same-model Review at
+  lower effort and a missing `floor-basis` (non-blocking, never `role-played: `), and
+  `compliance-evidence.sh` gate 2 reports different models as `unverifiable-from-artifacts`
+  and compares effort for the same model. Shared parsing moved to `lib/model-record.sh`.
+  `ORCHESTRATOR.md` has the orchestrator assess each stage's floor (#396). `CHANGES.md`
+  `quality-review-before-merge` is now meaning version 3: adopters that answered yes are
+  re-surfaced to re-confirm. What the `floor-basis` says, and which of two different models
+  is more capable, stays the Reviewer's judgment.
+
+- **Fix #371: sessions in opted-in projects apply the multi-agent pipeline automatically.**
+  In a project whose `WORKFLOW-ADOPTION.md` answers `process-multi-agent-roles` yes (this
+  repo now included), a new `SessionStart` command runs `session-context.sh`, which prints the
+  `role-contracts` skill's new `ORCHESTRATOR.md` (the single home of the run rules: work item
+  definition, stage table, fresh non-fork dispatch, human override record, stop-and-ask,
+  resume) into every session; a no or unanswered row prints nothing. It also warns when the
+  project's `CLAUDE.md` is no longer the link to `WORKFLOW.md`. `model-record-gate.sh` flags a
+  role-played run (several stages' markers in one text, or a stage missing) with a
+  `role-played: ` line, opted-in projects only, unless a valid `pipeline-override` record is
+  present; the merge guard refuses `gh pr merge` on it (opted-in projects only, fail-open
+  without `gh`/network). One shared `answered_yes` rule in `lib/changes.sh` replaces
+  `adopt.sh`'s hard-coded helper. Every `CHANGES.md` entry now carries a required
+  `Reaches session:` field (vocabulary in the `CHANGES.md` preamble), checked by `./check`.
+  `model-choice` no longer says one session doing every stage is fine regardless of the row.
+  Adopted projects get all of this through the existing symlinks; the behaviour itself
+  (whether a session follows the rules it is given) needs a human dry run.
+
 - **Epic #370: formalize the release-branch workflow.** Issue #309's informal
   precedent (one real exercise: `release/295-multi-agent-workflow-v1` →
   v0.2.0) is now a real, adoptable mechanism. New `skills/release-branch-workflow/SKILL.md`
@@ -50,6 +102,17 @@ point.
   inspects *staged* content during a partial or `-a` commit now sees the real index, not
   git's temporary one. No `CHANGES.md` entry: there is no choice to make (ARCHITECTURE.md
   A20).
+
+- **Multi-agent workflow is adoptable, opt-in** (#369, PR #385): `role-contracts` moved
+  from `wip/` to `skills/`, so `adopt.sh` installs it, and was rewritten to be self-contained
+  (installed skill names instead of `vendor/` paths, a "Running the pipeline" stage/label
+  table, the decision-maker named by role). New `CHANGES.md` entry `process-multi-agent-roles`
+  (default `question`, applies always): every adopted project is asked it at its next session.
+  The three evidence scripts are offered by path from the clone
+  (`$SPEC_DRIVEN_GUARDRAILS_DIR/<script>`, run from the adopted project's checkout); they are
+  not installed. `pre-merge-review` now runs `classify-review-depth.sh` by that path too: it
+  said `./classify-review-depth.sh`, which no adopted project has. README no longer says the
+  pipeline is not adoptable. Automatic activation followed in #371 (above).
 
 ## v0.2.0 — multi-agent development workflow (2026-09-30)
 

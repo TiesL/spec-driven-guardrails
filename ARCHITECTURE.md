@@ -152,7 +152,7 @@ fixture: a commit from a linked worktree moved the real `main`, added a
 tag and set `core.bare=true`; a partial or `-a` commit had fixture entries
 written into git's temporary index. Numbering follows the project-wide
 A-series (A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`,
-A14-A18 taken by #371), not this file's own A1-A3, so the issue's
+A14-A18 taken by #369/#371), not this file's own A1-A3, so the issue's
 references stay valid.
 
 ### A19 — One seam for git-environment isolation, with two real callers
@@ -283,3 +283,353 @@ blocked indefinitely. Numbering continues after A19/A20.
 The adopter entry is `CHANGES.md` `ci-commit-check` (Default `question`,
 `Applies if: has-check-command`), plus a `CHANGELOG.md` line. This repo
 answers it `yes` in its own `WORKFLOW-ADOPTION.md`.
+
+---
+
+# Architecture decision — Multi-agent workflow adoptability (#369)
+
+**Decided on 2026-10-01.** The five-role pipeline (v0.2.0) was only usable
+inside this repo: the role contracts lived under `wip/`, which `adopt.sh`
+does not install, and `CHANGES.md` had no entry to ask adopters. The
+decisions below make it adoptable as an opt-in.
+
+**Numbering.** A14 and A15 are #369's, continuing the multi-agent series
+(A4-A13 in `wip/multi-agent-development/ARCHITECTURE-MULTI-AGENT-WIP.md`)
+rather than this file's own A1-A3. #371's decisions follow as A16-A18. Together
+the two fill the A14-A18 range reserved in the #377 section above; nothing
+collides and nothing is renumbered.
+
+### A14 — The `role-contracts` skill is the pipeline's sole adopter-facing Interface; the WIP documents are provenance, not dependencies
+- **Module / Interface:** `skills/role-contracts/SKILL.md` is the Module; its
+  Interface is the text a dispatcher quotes. It must be complete with only
+  installed skills behind it (Locality: an adopter never opens the clone to
+  run a role) and must not re-implement what another installed Module owns
+  (Depth: one definition per fact).
+- **(a) Pointers.** `vendor/grilling/...` and `vendor/codebase-design/...`
+  become the installed skill names (`grilling`, `codebase-design`).
+  Every pointer to the WIP design documents collapses into one Provenance
+  paragraph: decisions are cited by id, and their sources live in the clone
+  `SPEC_DRIVEN_GUARDRAILS_DIR` points at. Guardrails issue numbers are
+  written `TiesL/spec-driven-guardrails#n` or dropped, because a bare `#n`
+  links to the adopter's own issue.
+- **(b) Single definition.** The skill does not restate the merge marker or
+  the `model-record` marker; it names the obligation and points to
+  `pre-merge-review` and `model-choice`. This is also what keeps S28 (the
+  merge marker is defined in exactly one skill) true now that the skill is
+  under `skills/`.
+- **(c) "Running the pipeline."** One short section: a stage / role / label /
+  `stage=` table (the same order and labels `role-label-staleness.sh` checks,
+  asserted by S160), that every role takes part in every change, and the
+  idempotent `gh label create` command for the five `role:*` labels.
+  *Amended by A16 (#371):* the table moved to the skill's `ORCHESTRATOR.md`,
+  the single home of the run rules; this section points to it.
+- **(d) Opt-in guard** in the skill's `description` and first line: apply it
+  only when the project's `WORKFLOW-ADOPTION.md` answers
+  `process-multi-agent-roles` yes.
+- **(e) Decision-maker by role** ("the project's human decision-maker"), not
+  by person.
+- **`adopt.sh` stays offline.** Creating labels needs `gh`, credentials and
+  network, so it is part of what answering *yes* means (as with
+  `process-issue-tracking`), not something `adopt.sh` does.
+- **Violated when:** a pointer in the skill resolves only inside this repo (a
+  `vendor/` or `wip/` path, or a bare `#n`), or the skill carries a second
+  literal copy of a marker another skill defines (S158, S160, S28).
+- **Revisit when:** a second adopter runs the pipeline and reports a step the
+  skill does not cover; then promote that step from the WIP documents. Do not
+  copy more beforehand.
+
+### A15 — The three evidence scripts' clone-root paths are a supported, read-only Interface for adopters
+- **Decision (the human accepted option A on #369):**
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/{compliance-evidence,role-label-staleness,classify-review-depth}.sh`
+  are invoked with the adopted project's checkout as the working directory.
+  They stay at the clone root: not copied, not installed, not wired into any
+  `check` or CI. All three address `repos/{owner}/{repo}` through `gh`'s own
+  placeholder, resolved from the working directory's remotes, so they report
+  on the adopter's repo (S161).
+- **Consequence:** moving or renaming them is now a breaking change for
+  adopters. `pre-merge-review` already sent every adopter to
+  `./classify-review-depth.sh`, a path that did not exist; it now uses
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh` (S162).
+  This narrows `F34`-`F36`'s "this repo only" placement.
+- **Violated when:** a script starts resolving its target repo from its own
+  location, or gains a write path.
+- **Revisit when:** `SPEC_DRIVEN_GUARDRAILS_DIR` being unset proves a real
+  failure source; then move the scripts into a skill directory (precedent:
+  `skills/pre-merge-review/model-record-gate.sh`).
+- **Known limit:** with several git remotes `gh` may need `gh repo set-default`;
+  the README, the `role-contracts` skill and the `CHANGES.md` entry say so.
+
+---
+
+# Architecture decision — Sessions apply the multi-agent pipeline automatically (#371)
+
+**Decided on 2026-10-01, amended 2026-10-02.** #369 made the pipeline
+adoptable, but nothing a session loaded told it to *run* the pipeline: a
+session in this repo did a whole work item alone, playing every role. A
+process that rests on an agent remembering prose doesn't happen (#238/#241).
+The decisions below make activation conditional and mechanical, make a
+role-played run detectable before merge, and stop future workflow changes
+from shipping as prose no session loads. Continues A14/A15 (#369).
+
+### A16 — Activation is a conditional SessionStart injection with a single source
+- **Source of truth:** `skills/role-contracts/ORCHESTRATOR.md` (about 30
+  lines) is the only place the run rules are stated: work item vs. not, the
+  announce / `role:product` / dispatch-Product start, the stage → role →
+  label → `model-record` table, fresh (never `fork`) dispatch with every
+  prompt starting `ROLE SESSION: <role>`, the human override record, "can't
+  dispatch: stop and ask", and resume from the latest evidenced stage
+  (`role-label-staleness.sh`). Its first line tells a role session the file
+  does not apply to it. `SKILL.md` points to it (A14(c) amended).
+- **Channel:** the clone-root `session-context.sh <project>`, a third
+  `SessionStart` command resolved through the project's
+  `.claude/settings.json` symlink (`readlink`), like `pending-changes.sh`. For
+  every `CHANGES.md` entry the project answers yes whose `Reaches session`
+  field declares `session-context: <path>` (A17), it prints that file
+  verbatim. A no, unanswered or not-applicable row prints nothing (AC3 by
+  construction). The file is read from the clone on every run, so a later
+  release reaches the next session without re-adoption (AC11). A missing
+  declared file warns on stderr; the script always exits 0.
+- **One yes rule:** `answered_yes <project> <id>` in `lib/changes.sh`
+  (Answer column only, `WORKFLOW-ADOPTION.md` before `WORKFLOW-ADOPTIE.md`,
+  `yes`/`ja`, pre-rename ids) replaces `adopt.sh`'s hard-coded
+  `issue_tracking_answered_yes`. Callers: `adopt.sh`, `session-context.sh`,
+  `model-record-gate.sh` and the merge guard.
+- **`CLAUDE.md` drift:** `session-context.sh` (not the hook JSON, which stays
+  a thin dispatcher) warns when the project's `CLAUDE.md` is not a symlink to
+  the clone's `WORKFLOW.md`, with "run adopt.sh again".
+- **This repo:** no special case (AC2); it answers its own row yes.
+- **Platform facts (probed once, Claude Code 2.1.287, headless `-p`):**
+  `SessionStart` output reached the top-level session and not a fresh
+  `general-purpose` subagent it dispatched; the hook fired again with
+  `source` `resume` (and the new text reached the resumed session) and with
+  `source` `compact`. Not probed: interactive mode, a `fork` dispatch, and
+  whether the post-compaction context keeps the text.
+- **Rejected:** text in `WORKFLOW.md`/`CLAUDE.md` (unconditional, loads into
+  role sessions too), a `UserPromptSubmit` hook (fires on every prompt, can't
+  tell a work item from a question), a skill-description trigger
+  (probabilistic, the failure itself), user-level text (per user, not per
+  project), a `PreToolUse` `Edit|Write` block until Product is evidenced
+  (needs `gh` on every edit, fires inside role sessions; held as the revisit
+  trigger below).
+- **Violated when:** the run rules appear in a second file, or the injection
+  fires for a row that isn't yes (S177-S180).
+- **Revisit when:** A18 flags two or more role-played runs without an
+  override after #371 ships; then consider the `PreToolUse` block.
+
+### A17 — Every `CHANGES.md` entry declares how it reaches a session
+- **Field:** a required `**Reaches session:**` on every entry, one or more
+  comma-separated values from a closed vocabulary (`none`,
+  `always-loaded: <path>`, `session-context: <path>`, `hook: <path>`,
+  `gate: <path>`). The vocabulary is documented once, in `CHANGES.md`'s
+  preamble; `reaches_session_values`/`reaches_session_invalid` in
+  `lib/changes.sh` read and enforce it (`session-context.sh` uses the same
+  parser).
+- **Machine-checked by `./check`** (§3a2): the field is present, each value
+  is in the vocabulary (`none` stands alone), each path exists, and each path
+  is named in at least one `test/cases/*.sh`. Failures name the entry, the
+  field and the culprit.
+- **Reviewer judgment, deliberately not mechanised:** whether `none` is
+  honest for a given *Yes means*. No prose grep of *Yes means*.
+- **Not a meaning change:** no **Meaning version** bump. All existing
+  entries were backfilled at once, no exempt list (human decision).
+- **Violated when:** an entry ships without the field, or a declared path
+  isn't exercised by a test (S181, S182).
+
+### A18 — Role-session guard and role-play detection, enforced at merge
+- **Recursion (AC5):** three layers: the injection reaches only the
+  top-level session (A16's probe), roles are dispatched fresh and never
+  forked, and `ORCHESTRATOR.md`'s first line excludes any prompt starting
+  `ROLE SESSION:`. No `SubagentStart` hook.
+- **Override record (AC6):**
+  `<!-- pipeline-override: decided-by="..." scope="single-session|skip=<Stage>" reason="..." -->`,
+  live text (not fenced, not a code span, not a blockquote, same `live_text`
+  rule as `compliance-evidence.sh`, copied verbatim and kept identical by
+  S153), every field non-empty, `scope` from that closed list. Searched in
+  the same sources as the markers. `single-session` waives every finding;
+  `skip=<Stage>` waives only that stage's absence.
+- **Detection (AC9):** `model-record-gate.sh`, only when `answered_yes`
+  holds for the project it runs in, prints one line per finding starting
+  `role-played: `: several different stages' live markers in one text
+  (comment, review or PR description), or any of the five stages missing.
+  The existing output is unchanged; exit stays 0. The comment and review
+  calls frame each body with U+001E, after removing that byte from the body
+  (so a body cannot forge a boundary and split one role-played text into
+  several), so one text can be told from the next. Since #392 (round 4 of
+  the PR #397 review) this framing applies in every project, because the
+  marker parser needs it too (A24). A closing issue that
+  can't be read skips the role-play check (a missing Discovery could be a
+  lookup failure).
+- **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
+  `check_merge_guard` in `hooks/git-guardrails` gains a last step,
+  `check_role_play_guard`: only when the project answers yes, it runs the
+  clone's `skills/pre-merge-review/model-record-gate.sh` on the PR and
+  refuses `gh pr merge` on any `role-played: ` line. One owner: the gate
+  computes the rule, the guard reads the prefix. Fails open without `gh`,
+  network, a resolvable PR number, or the lib/gate in the clone. Same gate
+  as the review-marker check: the same `no` on `quality-review-before-merge`
+  and `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` turn it off (S186).
+- **AC12:** `model-choice`'s "No behavior change" section is rewritten
+  (single session is the norm only where the row isn't yes), and the gate's
+  header no longer claims one session may do every stage (S184).
+- **Accepted limit:** a session that deliberately forges five separate stage
+  comments is not detected. Same non-adversarial trust model as every gate.
+- **Violated when:** a role-played run without a valid override merges in an
+  opted-in project with `gh` available, or a project that didn't answer yes
+  sees a new finding or block (S183, S186).
+
+---
+
+# Architecture decision — Review at least as capable as Implementation (#392)
+
+**Decided on 2026-10-03.** #244's different-model requirement for the Review
+stage is reversed (human decisions on #392): the floor is Review's model and
+effort, together, at least as capable as Implementation's. A24 and A25 are
+the next free numbers after A23.
+
+### A24 — The Review floor and its recorded judgment, `floor-basis`
+- **Rule:** Review's model and effort, taken together, are at least as
+  capable as Implementation's recorded model and effort. Among the
+  combinations that clear that, pick the cheapest. A different model is not
+  required. No model or tier is named anywhere.
+- **Attribute:** `floor-basis="<one sentence>"` on the Review `model-record`
+  marker, required on **every** Review marker, not only same-model ones:
+  same-model detection inherits false "different" verdicts from short
+  aliases (see the PRD debt row), so a conditional rule would skip exactly
+  the reviews that were wrongly classified. Free text, not an enumeration:
+  for the same model an enumeration would repeat what the gate computes; for
+  different models it would be a bare claim with no reason. The only
+  forbidden character is a double quote, which ends a value; `>`, `<`, `--`,
+  even `-->` and a newline inside a quoted value are text, and the marker
+  ends at the first `-->` outside quotes (the review of PR #397 found that
+  the old `[^>]*-->` grammar made a `>` in `floor-basis` hide the whole
+  marker from both scripts). A **malformed** marker (a quote anywhere but
+  right after `name=`, text glued to a closing quote, a value not closed in
+  its own comment, a `<!--` outside a value, or no closing `-->` in its own
+  comment) is never read and
+  never swallows a later marker: there is no fallback to the first `-->`,
+  and the scan resumes right after its own `<!--`. The gate names it
+  (`model-record: a stage=<Stage> marker is malformed and was ignored`);
+  in the collector it is ignored when a well-formed marker of that stage
+  exists and makes the gate `indeterminate` when none does; in
+  `role-label-staleness.sh` it is a malformed marker (`indeterminate`, its
+  AC6 rule). **Comment boundaries are respected:** all three callers pass
+  the parser each comment, review, issue comment and description followed
+  by U+001E, after removing that byte from the body itself (sanitised, not
+  rejected: rejecting a body would hide its markers, and removing a
+  non-printing control byte changes no Markdown meaning). Reaching that byte
+  before the closing `-->` makes a marker malformed, so an unclosed quote or
+  a missing `-->` stays in its own comment however the next comment starts
+  (round 4 of the PR #397 review). The name does not
+  end in `model=` or `effort=`, which the field extraction would otherwise
+  capture.
+- **What the gate does (`model-record-gate.sh`):** it reads live text only
+  for its stage-presence and Review-floor checks: each body goes through
+  its own copy of `live_text()` first, like the collector and
+  `role-label-staleness.sh`, so a marker quoted in a code span, a fence or
+  a blockquote is not a record (a Review marker only inside a fence is a
+  missing stage); an indented code block is not stripped, in any of the
+  three (PRD debt row). If `live_text()` fails, the gate prints a
+  `model-record:` finding and skips these checks. The role-play check
+  (A18) is unchanged (#400). The #244 same-model
+  finding is removed. A missing, empty or unquoted `floor-basis` on the
+  **latest** Review marker gives `model-record: stage=Review marker has no
+  floor-basis ... (#392)`; when present, the text is never checked. The
+  finding uses the `model-record:` prefix, never `role-played: `, so the merge
+  guard (A18) is unaffected.
+- **`compliance-evidence.sh` gate 2:** different models are
+  `unverifiable-from-artifacts` (the capability ordering is not machine-
+  checked; the `floor-basis` is quoted for a human to weigh); the same model
+  with both efforts known is `evidenced` when Review >= Implementation and
+  `not-evidenced` when lower; an unknown effort is `indeterminate`. Both
+  same-model verdicts sit behind the #302/#336 lookup-failure guard (an
+  unread marker can overturn either; Architect ruling on AC6). The
+  inter-issue conflict key is the normalized model plus the effort.
+- **`same-model-exception`:** ignored completely by both scripts, and it does
+  not stand in for `floor-basis`. The documentation keeps one "legacy,
+  ignored" mention for one release, then it goes.
+- **Violated when:** a script ranks two different models, a script verifies
+  the `floor-basis` text, or a #392 finding uses the `role-played: ` prefix.
+
+### A25 — Effort scale and the shared model-record module
+- **Scale:** low < medium < high, case-insensitive on the quoted
+  `effort="..."` value: exactly the values in use. Compared only when both
+  models normalize equal and both efforts are known. A missing, unquoted or
+  unknown value (`unknown`, `session-default`) makes no claim: no finding in
+  the gate, `indeterminate` in the collector. A role that does not know its
+  effort records `effort="unknown"`. A short alias and its full id normalize
+  as different models: no effort comparison, gate 2 reports
+  `unverifiable-from-artifacts`, never a pass.
+- **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
+  collector and `role-label-staleness.sh`:
+  `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
+  `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
+  (the quoted value; the marker is tokenized, so text inside another value
+  such as `beats model=` or a lookalike name such as `reviewer-model` is
+  never read as an attribute), `marker_find <Stage> <text>` (every
+  well-formed marker of a stage, the one marker grammar: quote-aware end at
+  the closing `-->`) and `marker_scan <text>` (every marker, well-formed or
+  malformed, with its stage token). All three scripts, and gate 1 of the
+  collector, read markers only through these. The parser's awk programs run
+  under `LC_ALL=C` (every delimiter is ASCII; under a UTF-8 locale macOS awk
+  aborted on a multibyte character right after `stage=`), and a failure is
+  never silent: the function prints nothing, says so on stderr and returns
+  non-zero; the gate then prints a `model-record:` finding, the collector's
+  gates 1 and 2 go `indeterminate`, `role-label-staleness.sh` goes
+  `indeterminate`. The gate sources it via
+  its symlink-resolved clone path, like `lib/changes.sh`; it fails open
+  without it. The collector, at the repo root, sources `lib/` next to itself.
+- **Meaning version 3** of `quality-review-before-merge` (`CHANGES.md`), with
+  the gate named in `Reaches session:`; adopters who answered yes are asked to
+  re-confirm.
+- **Violated when:** either script carries its own copy of `normalize_model`
+  or its own attribute extraction.
+
+### A26 — Markers are produced by one command; an unreadable field is a finding (#402)
+- **Why:** the dry run on a scratch repo (release head fa1beae) showed
+  dispatched roles writing unquoted markers and an orchestrator typing a
+  quoted `stage="..."`; both are unreadable, and the gate was silent.
+- **`marker_emit <Stage> <model> <effort> [<floor-basis>]`**
+  (`lib/model-record.sh`, bash with `local LC_ALL=C`): prints exactly one
+  line, `<!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->`,
+  or prints nothing, gives a reason on stderr and returns 2. It refuses: a
+  stage other than the five names (emitted bare); a model that is empty,
+  over 200 characters or not one token of `[A-Za-z0-9._:@/+-]` (a model id:
+  no space, quote, `=` or control byte); an effort other than `low`,
+  `medium`, `high`, `unknown`; a floor-basis missing or blank on Review or
+  present on another stage (A24); a floor-basis with a double quote or a
+  control byte (newline, tab, U+001E, ...) or over 500 bytes. Nothing else:
+  `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII are text in a quoted
+  value (the maintainer's #392 decision), so the emitter is never stricter
+  than the grammar for a floor-basis. This replaces the first A26 draft,
+  which also refused `-->` and `<!--` there (GitHub may then show the text
+  after a `-->` in the rendered comment; the marker still reads back).
+- **Safety: the round trip.** Before printing, `marker_emit` parses its own
+  line with `marker_find`, `marker_scan` and `marker_attr`; unless the line
+  reads back as exactly one well-formed marker of that stage with the same
+  model, effort and floor-basis, it is refused, never printed.
+- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
+  --model <id> --effort <e> [--floor-basis <sentence>]`, next to the gate.
+  It only parses flags (unknown, missing, repeated or value-less flag, or a
+  positional argument: exit 2); the rules live in `marker_emit`. It finds
+  the lib from its own real directory (`pwd -P`), so it works through an
+  adopted project's symlinked `.claude/skills`; without the lib, exit 3.
+- **Who fills what:** the orchestrator gives the command in each dispatch
+  prompt with `--stage` and `--effort` (`unknown` when it can't set or find
+  out the effort) and names the model it requested; the role adds `--model`
+  with its own exact id (the Reviewer also `--floor-basis`) and pastes the
+  output unchanged as the first line of its report (human decision on
+  #402). A role whose prompt has no command runs the wrapper itself and
+  says so (`role-contracts`, "Shared").
+- **One owner of the format:** `model-choice` ("Machine-readable form",
+  "Marker grammar") holds the templates and the grammar; `ORCHESTRATOR.md`
+  restates no grammar, `pre-merge-review` points to `model-choice`.
+- **The gate (safety net for hand-typed lines):** for the latest marker of
+  each of the five stages, an unquoted, empty or missing `model` or
+  `effort` is one `model-record:` finding per stage and field
+  (`effort="unknown"` is quoted: no finding); a malformed marker of any
+  stage, including an empty or quoted stage (shown as `stage=?`), is named.
+  Exit stays 0, the prefix is never `role-played:`, so the merge guard and
+  A18 are unchanged; the collector already said `indeterminate` here.
+- **Violated when:** a skill or the orchestrator carries a second copy of
+  the marker template or grammar, the emitter prints a line the parser
+  does not read back, or a #402 finding uses the `role-played:` prefix.

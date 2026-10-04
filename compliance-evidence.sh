@@ -50,7 +50,8 @@
 #   1 — internal error: a gate predicate returned a status outside the
 #       closed vocabulary (never expected to trigger; see valid_status())
 #   2 — usage error (no PR number given)
-#   3 — gh not found on PATH
+#   3 — gh not found on PATH, or lib/model-record.sh (next to this script)
+#       is missing
 #   4 — the PR itself could not be read (call A failed); no honest table
 #       is possible without it
 # Every other gh call's failure (PR comments/reviews, the CI check-runs
@@ -86,20 +87,17 @@ require_gh() {
   fi
 }
 
-# normalize_model() — copied verbatim from
-# skills/pre-merge-review/model-record-gate.sh (#268), not sourced/
-# imported: a shared lib would cross the dogfood-only boundary (skills/
-# ships to adopted projects via adopt.sh; this collector doesn't).
-# Accepted debt, recorded in PRD.md's Technical debt register — unify if/
-# when this collector is ever propagated.
-normalize_model() {
-  printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/^[[:space:]]*claude[- ]*//' \
-    | sed -E 's/-[0-9]{8}$//' \
-    | sed -E 's/[^a-z0-9]+/ /g' \
-    | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
-}
+# normalize_model, effort_rank, marker_attr — shared with
+# skills/pre-merge-review/model-record-gate.sh through lib/model-record.sh
+# (A25, #392; the verbatim copy of normalize_model that used to sit here
+# is gone). The collector lives at the repo root, next to lib/.
+collector_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+if [ ! -r "$collector_dir/lib/model-record.sh" ]; then
+  echo "compliance-evidence: lib/model-record.sh not found next to the collector — cannot collect evidence." >&2
+  exit 3
+fi
+# shellcheck source=lib/model-record.sh
+. "$collector_dir/lib/model-record.sh"
 
 # live_text() — issue #308. Blanks quoted spans (fenced code blocks,
 # inline code spans, blockquoted lines) out of a single body so every
@@ -430,9 +428,10 @@ collect() {
       TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
       TEXT)
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body"
+$live_body$MARKER_SEP"
         BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
         ;;
@@ -497,9 +496,10 @@ $raw_body"
   while IFS=$'\t' read -r tag rest; do
     [ "$tag" = "TEXT" ] || continue
     raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+    raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
     live_body="$(live_text "$raw_body")"
     BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body"
+$live_body$MARKER_SEP"
     BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
   done <<<"$pr_comments_out
@@ -531,11 +531,12 @@ $pr_reviews_out"
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
         raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
         live_body="$(live_text "$raw_body")"
         issue_text="$issue_text
-$live_body"
+$live_body$MARKER_SEP"
         one_issue_text="$one_issue_text
-$live_body"
+$live_body$MARKER_SEP"
         BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
 $raw_body"
       done <<<"$issue_out"
@@ -586,8 +587,13 @@ gate_stage_models() {
     # unreachable by quote-stripping since there's nothing to strip.
     if grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
       local line model
-      line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$BUNDLE_TEXT" | tail -1)"
-      model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
+      # A parser failure (lib/model-record.sh returns non-zero) means the
+      # markers were not read: indeterminate, never a verdict (#392).
+      if ! line="$(marker_find "$stage" "$BUNDLE_TEXT" | tail -1)" \
+        || ! model="$(marker_attr "$line" model)"; then
+        printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the stage markers could not be read"
+        return
+      fi
       if [ -z "$model" ]; then
         malformed="$malformed $stage"
       else
@@ -650,8 +656,11 @@ gate_stage_models() {
 #   - Disagreement BETWEEN two or more issues (the PR silent or absent
 #     from this comparison) IS a genuine, unresolvable conflict —
 #     neither issue is "the" outcome.
-#   - "Disagreement" covers the normalized `model=`, the
-#     `same-model-exception=` attribute, and well-formed-vs-malformed
+#   - "Disagreement" covers the normalized `model=`, the `effort=` value
+#     (case-folded; #392: both feed the Review-floor verdict, so two
+#     issues agreeing on the model but not the effort are a conflict; the
+#     `same-model-exception=` attribute no longer counts, #392 AC5), and
+#     well-formed-vs-malformed
 #     (a marker that matched but has no quoted `model="..."`) alike —
 #     not just the model field (R-3/R-4).
 #   - When more than one issue-side marker exists and they agree, the
@@ -665,11 +674,21 @@ gate_stage_models() {
 #                                            or only one source matched at all
 #   conflict  <"source: `model`; ..." >   — two+ ISSUE sources matched with
 #                                            genuinely different markers
+#   malformed <reason: text>              — no source has a well-formed
+#                                            marker for this stage, but one
+#                                            has a malformed one (#392: it is
+#                                            never read, and "none" would be
+#                                            a false absence)
+#   parsefail <empty>                     — lib/model-record.sh failed: the
+#                                            markers were not read (#392)
 resolve_stage_marker() {
   local stage="$1"
-  local pr_line="" line model src_num i
+  local pr_line="" line model eff src_num i
 
-  line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"$PR_TEXT" | tail -1)"
+  if ! line="$(marker_find "$stage" "$PR_TEXT" | tail -1)"; then
+    printf '%s\t%s\n' "parsefail" ""
+    return
+  fi
   [ -n "$line" ] && pr_line="$line"
 
   # Note on order: unlike the old `tail -1`-over-the-flat-corpus code,
@@ -679,20 +698,41 @@ resolve_stage_marker() {
   # one of them is an equally valid representative to return — so no
   # sort-by-issue-number step is needed here (an earlier version tried
   # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
-  local -a marker_labels=() marker_lines=() marker_models=() marker_exceptions=()
+  local -a marker_labels=() marker_lines=() marker_models=() marker_efforts=()
   for i in "${!ISSUE_TEXTS[@]}"; do
-    line="$(grep -oE "<!--[[:space:]]*model-record:[[:space:]]*stage=${stage}[^>]*-->" <<<"${ISSUE_TEXTS[$i]}" | tail -1)"
+    if ! line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"; then
+      printf '%s\t%s\n' "parsefail" ""
+      return
+    fi
     if [ -n "$line" ]; then
       src_num="${ISSUE_NUMS[$i]}"
-      model="$(grep -oE 'model="[^"]*"' <<<"$line" | head -1 | sed 's/^model="//; s/"$//')"
+      if ! model="$(marker_attr "$line" model)" || ! eff="$(marker_attr "$line" effort)"; then
+        printf '%s\t%s\n' "parsefail" ""
+        return
+      fi
       marker_labels+=("issue #$src_num")
       marker_lines+=("$line")
       marker_models+=("$model")
-      marker_exceptions+=("$(grep -oE 'same-model-exception="[^"]*"' <<<"$line" | head -1)")
+      marker_efforts+=("$(printf '%s' "$eff" | tr '[:upper:]' '[:lower:]')")
     fi
   done
 
   if [ -z "$pr_line" ] && [ "${#marker_lines[@]}" -eq 0 ]; then
+    local scan_out bad="" scan_status scan_stage scan_rest
+    if ! scan_out="$(marker_scan "$BUNDLE_TEXT")"; then
+      printf '%s\t%s\n' "parsefail" ""
+      return
+    fi
+    while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
+      if [ "$scan_status" = "malformed" ] && [ "$scan_stage" = "$stage" ]; then
+        bad="$scan_rest"
+        break
+      fi
+    done <<<"$scan_out"
+    if [ -n "$bad" ]; then
+      printf '%s\t%s\n' "malformed" "$bad"
+      return
+    fi
     printf '%s\t%s\n' "none" ""
     return
   fi
@@ -702,13 +742,13 @@ resolve_stage_marker() {
   # never treated as a conflict.
   local issues_conflict=0
   if [ "${#marker_lines[@]}" -gt 1 ]; then
-    local first_norm first_exc norm exc
+    local first_norm first_eff norm eff
     first_norm="$(normalize_model "${marker_models[0]}")"
-    first_exc="${marker_exceptions[0]}"
+    first_eff="${marker_efforts[0]}"
     for i in "${!marker_models[@]}"; do
       norm="$(normalize_model "${marker_models[$i]}")"
-      exc="${marker_exceptions[$i]}"
-      if [ "$norm" != "$first_norm" ] || [ "$exc" != "$first_exc" ]; then
+      eff="${marker_efforts[$i]}"
+      if [ "$norm" != "$first_norm" ] || [ "$eff" != "$first_eff" ]; then
         issues_conflict=1
       fi
     done
@@ -717,12 +757,15 @@ resolve_stage_marker() {
   if [ "$issues_conflict" -eq 1 ]; then
     local detail="" sep=""
     if [ -n "$pr_line" ]; then
-      model="$(grep -oE 'model="[^"]*"' <<<"$pr_line" | head -1 | sed 's/^model="//; s/"$//')"
+      if ! model="$(marker_attr "$pr_line" model)"; then
+        printf '%s\t%s\n' "parsefail" ""
+        return
+      fi
       detail="PR #$pr_number: \`${model:-<malformed>}\`"
       sep="; "
     fi
     for i in "${!marker_lines[@]}"; do
-      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\`"
+      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\` (effort \`${marker_efforts[$i]:-none}\`)"
       sep="; "
     done
     printf '%s\t%s\n' "conflict" "$detail"
@@ -739,11 +782,29 @@ resolve_stage_marker() {
 
 gate_review_model() {
   local impl_status impl_line review_status review_line
-  local impl_model review_model impl_norm review_norm exception_val
+  local impl_model review_model impl_norm review_norm
+  local impl_effort review_effort impl_rank review_rank
   local total_issues=0
 
   IFS=$'\t' read -r impl_status impl_line <<<"$(resolve_stage_marker Implementation)"
   IFS=$'\t' read -r review_status review_line <<<"$(resolve_stage_marker Review)"
+
+  # #392 (round 3 of the PR #397 review): a parser failure or a stage whose
+  # only markers are malformed is indeterminate, never "none"/a verdict.
+  if [ "$impl_status" = "parsefail" ] || [ "$review_status" = "parsefail" ]; then
+    printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
+    return
+  fi
+  if [ "$impl_status" = "malformed" ] || [ "$review_status" = "malformed" ]; then
+    local bad_detail=""
+    [ "$impl_status" = "malformed" ] && bad_detail="Implementation — $impl_line"
+    if [ "$review_status" = "malformed" ]; then
+      [ -n "$bad_detail" ] && bad_detail="$bad_detail; "
+      bad_detail="${bad_detail}Review — $review_line"
+    fi
+    printf '%s\t%s\n' "indeterminate" "the only \`stage=Implementation\`/\`stage=Review\` model-record marker found on PR #$pr_number for a stage is malformed and was not read ($bad_detail)"
+    return
+  fi
 
   if [ "$impl_status" = "conflict" ] || [ "$review_status" = "conflict" ]; then
     local which detail
@@ -785,8 +846,16 @@ gate_review_model() {
     return
   fi
 
-  impl_model="$(grep -oE 'model="[^"]*"' <<<"$impl_line" | head -1 | sed 's/^model="//; s/"$//')"
-  review_model="$(grep -oE 'model="[^"]*"' <<<"$review_line" | head -1 | sed 's/^model="//; s/"$//')"
+  local attrs_ok=1 fb=""
+  impl_model="$(marker_attr "$impl_line" model)" || attrs_ok=0
+  review_model="$(marker_attr "$review_line" model)" || attrs_ok=0
+  impl_effort="$(marker_attr "$impl_line" effort)" || attrs_ok=0
+  review_effort="$(marker_attr "$review_line" effort)" || attrs_ok=0
+  fb="$(marker_attr "$review_line" floor-basis)" || attrs_ok=0
+  if [ "$attrs_ok" -eq 0 ]; then
+    printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
+    return
+  fi
 
   if [ -z "$impl_model" ] || [ -z "$review_model" ]; then
     printf '%s\t%s\n' "indeterminate" "the \`stage=Review\` or \`stage=Implementation\` marker on PR #$pr_number has no quoted \`model=\"...\"\` to compare"
@@ -796,18 +865,28 @@ gate_review_model() {
   impl_norm="$(normalize_model "$impl_model")"
   review_norm="$(normalize_model "$review_model")"
 
+  # #392 (A24/A25): different models are never ranked here (no model table),
+  # so the verdict is structural, not a lookup question: nothing an unread
+  # marker could say would change what this collector can claim.
   if [ "$impl_norm" != "$review_norm" ]; then
-    printf '%s\t%s\n' "evidenced" "\`stage=Review\` marker (\`$review_model\`) on PR #$pr_number differs from \`stage=Implementation\` (\`$impl_model\`)"
+    local fb_text
+    if [ -n "$fb" ]; then
+      fb_text="floor-basis: \"$fb\""
+    else
+      fb_text="no floor-basis recorded"
+    fi
+    printf '%s\t%s\n' "unverifiable-from-artifacts" "Review (\`$review_model\`) and Implementation (\`$impl_model\`) on PR #$pr_number record different models; their capability ordering isn't machine-checked. $fb_text"
     return
   fi
 
-  exception_val="$(grep -oE 'same-model-exception="[^"]*"' <<<"$review_line" | head -1 | sed 's/^same-model-exception="//; s/"$//')"
-  if [ -n "$exception_val" ]; then
-    printf '%s\t%s\n' "evidenced" "latest \`stage=Review\` marker on PR #$pr_number carries \`same-model-exception=\"$exception_val\"\`"
+  impl_rank="$(effort_rank "$impl_effort")"
+  review_rank="$(effort_rank "$review_effort")"
+  if [ -z "$impl_rank" ] || [ -z "$review_rank" ]; then
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers on PR #$pr_number both record \`$review_model\`, but an effort is missing, unquoted or not low|medium|high (Review: \`${review_effort:-none}\`, Implementation: \`${impl_effort:-none}\`), so the two can't be compared"
     return
   fi
 
-  # issue #302: unlike the checks above, this branch used to fire
+  # issue #302: unlike the checks above, the same-model verdicts used to fire
   # unconditionally on "both markers found" — sound for <=1 closing
   # issue (nothing else could have contributed a marker), unsound for
   # >=2: an unread issue could have supplied a marker resolve_stage_marker
@@ -823,12 +902,21 @@ gate_review_model() {
   # Round 1's fix set both flags together on a PR-side failure without
   # updating this condition, so it still silently returned
   # `not-evidenced` in exactly the case it was meant to guard against.
+  # #392 (AC6 ruling): both same-model verdicts come from one comparison of
+  # the latest two markers, which an unread marker can overturn either way
+  # (a later review round recording a lower effort), so BOTH go behind this
+  # guard now, not only not-evidenced.
   if [ "$BUNDLE_PR_LOOKUP_FAILED" -eq 1 ] || { [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; }; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`, but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` (Review effort \`$review_effort\`, Implementation effort \`$impl_effort\`), but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
     return
   fi
 
-  printf '%s\t%s\n' "not-evidenced" "\`stage=Review\` and \`stage=Implementation\` markers on PR #$pr_number both record \`$review_model\` with no \`same-model-exception\`"
+  if [ "$review_rank" -ge "$impl_rank" ]; then
+    printf '%s\t%s\n' "evidenced" "same model \`$review_model\`; Review effort \`$review_effort\` ≥ Implementation effort \`$impl_effort\`"
+    return
+  fi
+
+  printf '%s\t%s\n' "not-evidenced" "same model \`$review_model\`; Review effort \`$review_effort\` < Implementation effort \`$impl_effort\`"
 }
 
 gate_review_marker() {
@@ -1009,7 +1097,7 @@ render() {
   row "Per-stage model/effort recorded (Discovery, Planning, Test, Implementation)" "$status" "$evidence"
 
   IFS=$'\t' read -r status evidence <<<"$(gate_review_model)"
-  row "Review used a different or at-least-as-capable model, or carries an explicit exception" "$status" "$evidence"
+  row "Review at least as capable as Implementation (same model: effort not lower; different models: recorded judgment, not machine-checked)" "$status" "$evidence"
 
   IFS=$'\t' read -r status evidence <<<"$(gate_review_marker)"
   row "Quality review before merge, with findings in the PR" "$status" "$evidence"
