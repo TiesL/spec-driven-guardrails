@@ -314,9 +314,10 @@ preference, a trade-off, a judgment call only that person can make) goes to them
 open decisions get batched in one round rather than trickled out one at a time.
 
 **Commit and push per logical step on the work item's shared branch, without asking** (A11).
-One branch per work item, not per role: roles already work sequentially on the same branch, no worktree-per-role. Never merge, release,
-force-push, or run a destructive git operation — that stays unconditionally human-only (A2),
-no exception.
+One branch per work item, not per role: roles already work sequentially on the same branch, no worktree-per-role. Never merge into
+`main`, release, force-push, or run a destructive git operation — that stays human-only (A2).
+Merging a work-item PR into a release branch follows the `release-branch-workflow` skill; in
+the five-role pipeline the orchestrating session does that, never a dispatched role.
 
 **On a halt mid-task, save the attempted diff as a patch artifact before reverting** (A12,
 added 2026-09-29) — never committed or pushed, alongside the work item's own tracking

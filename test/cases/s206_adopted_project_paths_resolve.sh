@@ -93,11 +93,16 @@ grep -qiE "(project|adopted)[^.]*(checkout|working directory|repo|directory)|(ch
   || fail "S206/B5 — ORCHESTRATOR.md must say the script runs with the PROJECT's checkout as the working directory, so it addresses the project's repo"
 [ -x "$clone/role-label-staleness.sh" ] || fail "S206 — role-label-staleness.sh is not at the clone root"
 
-# --- 3. every other COMMAND path with a slash resolves --------------------------
+# --- 3. every other COMMAND path with a slash in ORCHESTRATOR.md resolves ------
 # A command line is an inline code span that starts with a script path and
 # follows a verb of running ("Run `skills/x/y.sh <arg>`", "runs", "invoke",
 # "execute"); descriptive mentions (the lib's name, a template) are not commands.
-for f in "$pmr" "$mc" "$orch"; do
+# Scope (the maintainer's orchestrating session, release holistic review): only
+# the paths B5 names. The gate-script paths in pre-merge-review
+# (model-record-gate.sh, finding-carryforward-gate.sh) are the separate open
+# issue #387, so pre-merge-review and model-choice are checked above for the
+# emit wrapper only, and this generic scan covers ORCHESTRATOR.md.
+for f in "$orch"; do
   name="${f#"$project"/.claude/skills/}"
   flat="$(tr '\n' ' ' < "$f")"
   while IFS= read -r tok; do

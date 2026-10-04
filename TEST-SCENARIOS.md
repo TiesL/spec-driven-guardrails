@@ -2652,16 +2652,20 @@ something new is being added.
   Five markers inside one fence (issue #400) is not asserted: it is reported as
   stages missing by the same one-line change, whichever way #400 is decided
 
-### S206 — every script path a session-loaded text tells the agent to run resolves from an adopted project
+### S206 — the script paths named in finding B5 resolve from an adopted project
 **Covers:** F37, F40
 - Given: a freshly adopted project (`adopt.sh`), and `pre-merge-review`,
   `model-choice` and `ORCHESTRATOR.md` read through its `.claude/skills/`
-  symlinks (issue #369, holistic review finding B5, extending #387)
+  symlinks (issue #369, holistic review finding B5; scope narrowed by the
+  maintainer's orchestrating session to the paths B5 names: the gate-script
+  paths in `pre-merge-review` stay with the open issue #387)
 - When: the paths in their run instructions are resolved from the project root
   and the emit wrapper is executed
-- Then: the wrapper path as written exits 0 (not 127), no text names a bare
-  `skills/<dir>/<name>.sh`, every "Run `<path>`" command path resolves
-  (`.claude/skills/...`, `$SPEC_DRIVEN_GUARDRAILS_DIR/...` or `./name.sh`), and
+- Then: the emit wrapper path as written in `pre-merge-review` and
+  `model-choice` exits 0 (not 127) and neither names the bare
+  `skills/pre-merge-review/model-record-emit.sh`, every "Run `<path>`" command
+  path in ORCHESTRATOR.md resolves (`.claude/skills/...`,
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/...` or `./name.sh`), and
   ORCHESTRATOR.md names `role-label-staleness.sh` by
   `$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh` and says to run it with
   the project's checkout as the working directory, not "from the guardrails
