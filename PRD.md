@@ -1385,6 +1385,66 @@ Not part of this feature: a model-capability table, verifying `floor-basis`
 text, a hard merge block (findings use the existing non-blocking
 `model-record:` prefix), and changing the markers of the other four stages.
 
+### F40 — Dispatched roles write well-formed `model-record` markers, and the gate says when one is unreadable (issue #402)
+
+A rerun of the bounded full-pipeline dry run (release head fa1beae) showed
+two gaps in the multi-agent pipeline. The Product, Architect, QA and
+Developer roles wrote their markers unquoted
+(`model=claude-haiku-4-5 effort=low`), so `compliance-evidence.sh`
+reported gates 1 and 2 `indeterminate`; only the Reviewer, which read
+`pre-merge-review`, wrote the documented quoted form. And
+`model-record-gate.sh` printed nothing for a PR whose Implementation
+marker had no parseable quoted `model=`, while the collector said
+`indeterminate`: the same unreadable marker was visible in one tool and
+silent in the other.
+
+Requirement: (1) nobody types a marker. One command,
+`skills/pre-merge-review/model-record-emit.sh` (`marker_emit` in
+`lib/model-record.sh`, A26), prints the one valid line, checked by parsing
+it back, or nothing. The orchestrator puts that command into every
+dispatch prompt with the stage and effort filled in (`unknown` when it
+can't know the effort); the role adds its own exact model id (and, for
+Review, its `floor-basis`) and pastes the output unchanged as the first
+line of its report. The marker format and grammar are written down in one
+place, `model-choice`; `ORCHESTRATOR.md` carries no copy. (2) For the
+latest marker of each of the five stages, an unquoted, empty or missing
+`model` or `effort` makes `model-record-gate.sh` print a visible finding
+with the existing `model-record:` prefix, one per stage and field, and a
+malformed marker of any stage (a quoted `stage="..."` included) is named.
+The findings are non-blocking, consistent with the collector's
+`indeterminate`, and never use the `role-played:` prefix that the merge
+guard keys on.
+
+Decision (maintainer, 2026-10-03): fix before the release PR that carries
+#369, #371 and #392. The scratch repo is kept for a re-run that validates
+the fix. Further decisions on the Architect's design (A26): an unquoted
+marker is reported, not tolerated; the finding covers all five stages and
+both `model` and `effort`; the role fills in `model`. The emitter is never
+stricter than the grammar for a `floor-basis`: it refuses only a double
+quote, a control character (newline, U+001E, ...), a blank or over-long
+text, and a floor-basis on a stage other than Review.
+
+Acceptance criteria: full text in issue #402.
+
+What is mechanically verified: that `ORCHESTRATOR.md` tells the
+orchestrator to pass the emit command per stage and contains no second
+copy of the grammar; that every line the emitter prints reads back
+through the parser in both locales, and every refused input prints
+nothing; that the gate prints a `model-record:` finding for an unreadable
+`model` or `effort` on the latest marker of any stage and for a malformed
+marker, and stays silent for a well-formed one, a stage that is missing (already a
+separate finding), a `stage=...` placeholder (not a real marker) and a
+project that did not opt in where applicable. What stays judgment and is
+not checked: whether the orchestrator in a real session actually pastes
+the marker line (model behaviour, shown only by a re-run on the scratch
+repo); whether the model name a role records is the model it really ran
+on (a pasted marker can carry a made-up name); and whether every role
+session follows the instruction.
+
+Not part of this feature: the role-played-in-fence issue (#400), the
+dispatch tool having no effort argument (A25), interactive-mode and fork
+dispatch coverage, and verifying marker contents beyond parseability.
+
 ---
 
 ## Non-functional characteristics

@@ -64,10 +64,13 @@
 # plus, when Review and Implementation both have a marker (#392):
 #   "model-record: Review recorded lower effort (\"<r>\") than Implementation (\"<i>\") on the same model (\"<m>\") (#392)"
 #   "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
-# plus, for each malformed Implementation or Review marker (an unbalanced
-# quote, no closing -->, a <!-- inside it; lib/model-record.sh), which is
-# ignored, never read:
+# plus, for each malformed marker of any stage (an unbalanced quote, no
+# closing -->, a <!-- inside it, a quoted stage; lib/model-record.sh), which
+# is ignored, never read (an empty or quoted stage shows as `stage=?`, #402):
 #   "model-record: a stage=<Stage> marker is malformed and was ignored (<reason>: <text>) (#392)"
+# plus, for the latest marker of each of the five stages whose model or
+# effort is unquoted, empty or missing (#402, A26), one line per field:
+#   "model-record: the latest stage=<Stage> marker has no quoted <field>=\"...\" ... (#402)"
 # and, when live_text() fails on a body (no marker read, the stage and
 # floor checks skipped; markers are read from live text only, #392):
 #   "model-record: dropping quoted text (live_text) failed, ... (#392)"
@@ -337,7 +340,8 @@ fi
 #   effort than Implementation's is a finding. Different models are never
 #   ranked here (no model table): that stays the Reviewer's recorded
 #   judgment. An effort that is missing, unquoted or not low|medium|high
-#   makes no claim: silence, not a false one. Same for an unquoted model.
+#   makes no comparison claim, never a false one; an unquoted, empty or
+#   missing effort or model gets its own #402 line instead (below).
 # - the marker must carry a non-empty quoted floor-basis (one sentence on
 #   why the pair clears the floor); its text is never verified. A legacy
 #   same-model-exception is ignored completely and does not stand in for it.
@@ -358,14 +362,34 @@ if [ "$live_failed" -eq 0 ] && [ -r "$own_dir/../../lib/model-record.sh" ]; then
   review_line="$(marker_find Review "$marker_text" | tail -1)" || parser_failed=1
   scan_out="$(marker_scan "$marker_text")" || parser_failed=1
   if [ "$parser_failed" -eq 0 ]; then
-    while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
+    # #402 (A26): a malformed marker of ANY stage is named, including an
+    # empty or quoted stage (a hand-typed `stage="Planning"` reads as an
+    # empty stage, shown as `stage=?`). Split on the tabs by hand: `read`
+    # with a tab IFS would collapse an empty stage field.
+    tab=$'\t'
+    while IFS= read -r scan_line; do
+      scan_status="${scan_line%%"$tab"*}"
       [ "$scan_status" = "malformed" ] || continue
-      case "$scan_stage" in
-        Implementation | Review)
-          echo "model-record: a stage=$scan_stage marker is malformed and was ignored ($scan_rest) (#392)"
-          ;;
-      esac
+      scan_rest="${scan_line#*"$tab"}"
+      scan_stage="${scan_rest%%"$tab"*}"
+      scan_rest="${scan_rest#*"$tab"}"
+      echo "model-record: a stage=${scan_stage:-?} marker is malformed and was ignored ($scan_rest) (#392)"
     done <<<"$scan_out"
+    # #402 (A26): the latest marker of each stage must carry a readable
+    # (quoted, non-empty) model and effort. An unquoted, empty or missing
+    # one is one finding per stage and field; effort="unknown" is quoted
+    # and honest (A25), so it is no finding. A missing stage keeps only its
+    # "no record found" line above.
+    for stage in Discovery Planning Test Implementation Review; do
+      stage_line="$(marker_find "$stage" "$marker_text" | tail -1)" || { parser_failed=1; break; }
+      [ -n "$stage_line" ] || continue
+      for field in model effort; do
+        field_value="$(marker_attr "$stage_line" "$field")" || { parser_failed=1; break 2; }
+        if [ -z "$field_value" ]; then
+          echo "model-record: the latest stage=$stage marker has no quoted $field=\"...\" (unquoted, empty or missing), so it can't be read; produce a corrected marker with skills/pre-merge-review/model-record-emit.sh (#402)"
+        fi
+      done
+    done
   fi
 fi
 if [ "$parser_failed" -eq 1 ]; then

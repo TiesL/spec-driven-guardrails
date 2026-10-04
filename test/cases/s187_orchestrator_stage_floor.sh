@@ -46,9 +46,9 @@ para_has_all "$orch" 'effort' \
   'more capable' 'floor' \
   || fail "S187/AC8 — ORCHESTRATOR.md has no paragraph for an effort the dispatch cannot set (what to do: a more capable model, against the stage's floor)"
 
-# 4. The chosen model and effort reach the role's model-record marker via
+# 4. The chosen model and effort reach the role's model-record marker (#402: as a ready-made marker line) via
 #    the dispatch prompt (so the choice is recorded, R5).
-para_has_all "$orch" 'model-choice' '(dispatch )?prompt' 'model-record' 'effort' \
+para_has_all "$orch" 'model-choice' '(dispatch )?prompt' '(model-record|marker line)' 'effort' \
   || fail "S187/AC8 — ORCHESTRATOR.md does not tell the orchestrator to state the chosen model and effort in the dispatch prompt for the role's model-record marker"
 
 # 5. No model or tier name hardcoded (floors stay qualitative).

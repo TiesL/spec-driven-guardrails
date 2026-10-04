@@ -583,3 +583,53 @@ the next free numbers after A23.
   re-confirm.
 - **Violated when:** either script carries its own copy of `normalize_model`
   or its own attribute extraction.
+
+### A26 — Markers are produced by one command; an unreadable field is a finding (#402)
+- **Why:** the dry run on a scratch repo (release head fa1beae) showed
+  dispatched roles writing unquoted markers and an orchestrator typing a
+  quoted `stage="..."`; both are unreadable, and the gate was silent.
+- **`marker_emit <Stage> <model> <effort> [<floor-basis>]`**
+  (`lib/model-record.sh`, bash with `local LC_ALL=C`): prints exactly one
+  line, `<!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->`,
+  or prints nothing, gives a reason on stderr and returns 2. It refuses: a
+  stage other than the five names (emitted bare); a model that is empty,
+  over 200 characters or not one token of `[A-Za-z0-9._:@/+-]` (a model id:
+  no space, quote, `=` or control byte); an effort other than `low`,
+  `medium`, `high`, `unknown`; a floor-basis missing or blank on Review or
+  present on another stage (A24); a floor-basis with a double quote or a
+  control byte (newline, tab, U+001E, ...) or over 500 bytes. Nothing else:
+  `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII are text in a quoted
+  value (the maintainer's #392 decision), so the emitter is never stricter
+  than the grammar for a floor-basis. This replaces the first A26 draft,
+  which also refused `-->` and `<!--` there (GitHub may then show the text
+  after a `-->` in the rendered comment; the marker still reads back).
+- **Safety: the round trip.** Before printing, `marker_emit` parses its own
+  line with `marker_find`, `marker_scan` and `marker_attr`; unless the line
+  reads back as exactly one well-formed marker of that stage with the same
+  model, effort and floor-basis, it is refused, never printed.
+- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
+  --model <id> --effort <e> [--floor-basis <sentence>]`, next to the gate.
+  It only parses flags (unknown, missing, repeated or value-less flag, or a
+  positional argument: exit 2); the rules live in `marker_emit`. It finds
+  the lib from its own real directory (`pwd -P`), so it works through an
+  adopted project's symlinked `.claude/skills`; without the lib, exit 3.
+- **Who fills what:** the orchestrator gives the command in each dispatch
+  prompt with `--stage` and `--effort` (`unknown` when it can't set or find
+  out the effort) and names the model it requested; the role adds `--model`
+  with its own exact id (the Reviewer also `--floor-basis`) and pastes the
+  output unchanged as the first line of its report (human decision on
+  #402). A role whose prompt has no command runs the wrapper itself and
+  says so (`role-contracts`, "Shared").
+- **One owner of the format:** `model-choice` ("Machine-readable form",
+  "Marker grammar") holds the templates and the grammar; `ORCHESTRATOR.md`
+  restates no grammar, `pre-merge-review` points to `model-choice`.
+- **The gate (safety net for hand-typed lines):** for the latest marker of
+  each of the five stages, an unquoted, empty or missing `model` or
+  `effort` is one `model-record:` finding per stage and field
+  (`effort="unknown"` is quoted: no finding); a malformed marker of any
+  stage, including an empty or quoted stage (shown as `stage=?`), is named.
+  Exit stays 0, the prefix is never `role-played:`, so the merge guard and
+  A18 are unchanged; the collector already said `indeterminate` here.
+- **Violated when:** a skill or the orchestrator carries a second copy of
+  the marker template or grammar, the emitter prints a line the parser
+  does not read back, or a #402 finding uses the `role-played:` prefix.

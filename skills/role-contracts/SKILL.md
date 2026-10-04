@@ -299,6 +299,13 @@ explicitly. Stated once, here, cross-role, rather than repeated in each of the f
 above (repeating it five times is exactly the duplication this file's single-document shape is
 meant to avoid).
 
+**Your report's first line is your `model-record` marker, never typed by hand.** It is
+the output of the `model-record-emit.sh` command in your dispatch prompt, run with your own
+exact model id as `--model` (the Reviewer also adds `--floor-basis`), pasted unchanged. If your
+prompt has no command (it is missing), run the wrapper yourself
+(`skills/pre-merge-review/model-record-emit.sh` in the guardrails clone, flags as in the
+`model-choice` skill) and say in your report that the prompt lacked it; don't stop work over it.
+
 **Finding facts is your own job; only real decisions go to the project's human
 decision-maker** (A10, from the `grilling` skill; see Product's entry above for the method
 itself). A fact (discoverable from the codebase, docs, other artifacts) gets looked up, by you
