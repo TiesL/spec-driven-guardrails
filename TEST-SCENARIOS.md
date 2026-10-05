@@ -2826,29 +2826,41 @@ something new is being added.
   issue that names the rule overridden and follows the pushback and risk-note
   flow of #415 (A29) without defining a format of its own
 
-### S219 — the workflow has one macos-latest job whose suite step is exactly `/bin/bash test/run.sh`, with closed key sets
+### S219 — `.github/workflows/macos.yml` is pinned whole: its non-comment content is exactly the expected block
 **Covers:** F43
-- Given: `.github/workflows/ci.yml` (issue #422, AC1, A35a amended by A35b D3)
-- When: the `macos-latest` job and the workflow's top level are read
-- Then: there is exactly one such job; its keys are only `runs-on`,
-  `permissions`, `env`, `steps` and optionally `timeout-minutes`; the workflow
-  has no top-level `defaults:`; exactly one step mentions `test/run.sh` or
-  `./check`; that step has no key other than `name` and `run`; its script is
-  exactly the single line `/bin/bash test/run.sh`. Closed world: no list of
-  bad spellings is kept, so `echo`, `exit 0;`, `|| true`, `set +e`, a subset
-  argument, a trailing comment, a step `if:`/`shell:`/`env:`/`continue-on-error:`,
-  a job `if:`/`defaults:`/`strategy:`, a second suite step or a missing or
-  duplicated job are all red because they are not the pinned form. Changing
-  the pinned line is a deliberate spec change that also edits this scenario.
-  The tools and the locale are not judged here; S229 judges them at run time
+- Given: `.github/workflows/macos.yml`, the macOS leg's own workflow file (issue
+  #422, AC1, A35c D1/D2, which replaced A35b D3's reader of `ci.yml`)
+- When: the file is stripped of blank lines and full-line comments with exactly
+  `LC_ALL=C grep -vE '^[[:space:]]*(#|$)'` and compared byte for byte with the
+  block written inline in the case (`name: CI macOS`; triggers `pull_request`
+  and `push` to `main`; one job `macos` on `macos-latest` with
+  `permissions: contents: read`, `env` `LANG` and `LC_ALL` both
+  `en_US.UTF-8`, and the four steps checkout, platform tools first on PATH,
+  `brew install mawk`, and the suite step `run: /bin/bash test/run.sh`)
+- Then: the file exists and the two are identical; any other content is red
+  and the failure prints the diff. No YAML is parsed and no list of bad
+  spellings is kept: a skipped or swallowed suite (a `|| true` or `; exit 0`
+  continuation, quoted or `?` keys, `if`/`continue-on-error`, a top-level
+  `defaults`, a decoy job in a block scalar, an under-indented scalar), a
+  deleted or duplicated job, a step that rewrites `test/run.sh` or writes
+  `BASH_ENV`/PATH, a job `env:` that sets `S229_INNER` or
+  `PLATFORM_IDENTITY_UNDER_TEST`, a changed trigger, CRLF line endings, trailing
+  whitespace and tab indentation each change a non-comment byte. Comment-only
+  and blank-line-only edits are green. Changing the pinned block is a
+  deliberate spec change that also edits this scenario. The case reads
+  `CI_MACOS_YML_UNDER_TEST` when set (mutation proofs). The tools and the
+  locale are not judged here; S229 judges them at run time
 
 ### S222 — regression: the Linux job is unchanged
 **Covers:** F43
-- Given: `ci.yml`
+- Given: `ci.yml` (A35c D1: the macOS job moved out, `ci.yml` is back to its
+  content on `main`)
 - When: the `ubuntu-latest` job is read
 - Then: exactly one such job still runs `./check`, the gitleaks step, the link-3
   and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
-  permissions (green on arrival, labelled a regression scenario)
+  permissions, and `ci.yml` has no macOS job any more (a regression scenario;
+  it claims no closed world, so a new job or a new step in the Linux job does
+  not turn it red)
 
 ### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
 **Covers:** F43
@@ -2858,8 +2870,9 @@ something new is being added.
 - When: the script runs
 - Then: it exits non-zero, its `FAIL:` line names the mismatched tool, and the
   shim was invoked; a control run on the real macOS tools exits 0 and prints
-  one identity line each for awk, grep, bash and the locale charmap (macOS
-  host only)
+  one identity line each for awk, grep and bash plus a line starting with
+  `locale charmap:` (not merely the word `locale`, which the `locale:` line
+  already satisfies) (macOS host only)
 
 ### S225 — a bash that is not 3.2 fails `test/platform-identity.sh`, naming bash
 **Covers:** F43
@@ -2900,8 +2913,11 @@ something new is being added.
 - Then: both exit 0, `marker_scan`'s output reports the stage `Test`, and
   `marker_find`'s output is non-empty and contains the value carrying `\377`
   (an empty result is red); green today because each awk call carries the
-  `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is removed from one
-  call (gawk may not abort, so the macOS leg is where it bites)
+  `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is removed from the
+  `marker_scan` or the `marker_find` call (gawk may not abort, so the macOS leg
+  is where it bites). The case guards `marker_scan` and `marker_find` only;
+  `marker_attr` and `marker_emit` are not guarded, because removing their
+  `LC_ALL=C` does not abort on BWK awk (equivalent mutants)
 
 ### S229 — on the macOS CI leg the suite runs the platform identity check in its own environment
 **Covers:** F43
@@ -2915,8 +2931,14 @@ something new is being added.
   macOS CI leg)` and passes. Arms, run in a child with a controlled
   environment: (a) a GNU awk shim first on PATH with both CI variables set is
   red and names awk; (b) `RUNNER_OS=Linux` with the same shim is green and
-  prints the note. Limits: the gate cannot prove from inside the suite that it
-  fired in CI (the green macOS log showing the identity lines, not the note,
-  and a throwaway red run are the evidence); deliberate subversion outside the
-  suite step (`BASH_ENV`, an overridden `RUNNER_OS`, changed triggers) is not
-  caught
+  prints the note; (c) on a macOS host only (`uname -s` is Darwin, otherwise
+  the arm is skipped with a note), both CI variables set, the real tools and no
+  shim is green and its output has lines starting `awk:`, `grep:`, `bash` and
+  `locale charmap:`; (d) `RUNNER_OS=macOS` with `GITHUB_ACTIONS` unset and the
+  GNU awk shim is green, prints the note and never calls the shim; (e) both
+  variables unset with the same shim is the same. Limits: the gate cannot
+  prove from inside the suite that it fired in CI (the green macOS log showing
+  the identity lines, not the note, and a throwaway red run are the evidence);
+  subversion through `macos.yml` (`BASH_ENV`, an overridden `RUNNER_OS`, a job
+  `env:` setting `S229_INNER`, changed triggers) is red under S219, while the
+  suite's own files and settings outside the repository are trusted

@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# S219, S222 — The CI workflow has exactly one macos-latest job whose suite
-# step is pinned to one exact form, and the Linux job is as it was (#422,
-# slice V1 of #411, A35a amended by A35b D3, AC1).
+# S219, S222 — The macOS CI leg lives in its own workflow file, pinned whole,
+# and the Linux job in ci.yml is as it was (#422, slice V1 of #411, A35c D1-D3,
+# AC1).
 # Covers: F43
 #
-# Closed world on purpose (A35b): this test keeps NO list of bad spellings.
-# The suite step must be exactly `run: /bin/bash test/run.sh` with no other
-# key than name, and the job's and the workflow's key sets are closed, so any
-# other form is red. The environment half (tools, locale) is judged at run
-# time by S229, not here. A single command is the step's last command, so its
-# exit status is the step's status whatever shell flags apply.
-# CI_YML_UNDER_TEST points the same assertions at a scratch candidate
-# (mutation proofs).
+# S219 does not parse YAML (A35c D2). `.github/workflows/macos.yml`, stripped
+# of blank lines and full-line comments with exactly
+# `LC_ALL=C grep -vE '^[[:space:]]*(#|$)'`, must be byte-identical to the
+# block below. Every spelling of a skip, a swallowed exit status, a second
+# job, a changed trigger or a changed env changes a non-comment byte, so it is
+# red without this test knowing about it. Comment-only and blank-line-only
+# edits are green. Changing the pinned block is a deliberate spec change that
+# also edits TEST-SCENARIOS S219. The tools and the locale are judged at run
+# time by S229, not here.
+# CI_MACOS_YML_UNDER_TEST points S219 at a scratch candidate, CI_YML_UNDER_TEST
+# points S222 at one (mutation proofs).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -21,77 +24,54 @@ set -uo pipefail
 # shellcheck source=../ci-workflow-lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../ci-workflow-lib.sh"
 
-yml="$(ci_yml_path)"
-[ -f "$yml" ] || { fail "S219 — $yml is missing"; test_done; }
+sandbox_create
+trap sandbox_destroy EXIT
 
-pinned='/bin/bash test/run.sh'
-job_keys_allowed=" runs-on permissions env steps timeout-minutes "
-
-# --- S219: one macos-latest job, closed key set, pinned suite step ---------
-if [ "$(ci_job_count macos-latest)" != "1" ]; then
-  fail "S219 — expected exactly one job with runs-on: macos-latest, found $(ci_job_count macos-latest)"
-fi
-# Any other runs-on that mentions macOS (a quoted, list or other spelling)
-# is a second macOS job the count above cannot see.
-if [ "$(grep -v '^[[:space:]]*#' "$yml" | grep -ciE '^[[:space:]]+runs-on:.*macos')" != "1" ]; then
-  fail "S219 — expected exactly one runs-on that names macOS, in any spelling"
-fi
-if [ "$(ci_top_keys | tr ' ' '\n' | grep -c '^defaults$')" != "0" ]; then
-  fail "S219 — the workflow has a top-level defaults: (it would change the suite step's shell)"
-fi
-
-mac="$(ci_job_block macos-latest)"
-if [ -n "$mac" ] && [ "$(ci_job_count macos-latest)" = "1" ]; then
-  for k in $(printf '%s\n' "$mac" | ci_job_keys); do
-    case "$job_keys_allowed" in
-      *" $k "*) ;;
-      *) fail "S219 — the macOS job has the key '$k' (allowed: runs-on, permissions, env, steps, timeout-minutes)" ;;
-    esac
-  done
-  case " $(printf '%s\n' "$mac" | ci_job_keys) " in
-    *" steps "*) ;;
-    *) fail "S219 — the macOS job has no steps" ;;
-  esac
-
-  # Exactly one step mentions the suite; it is the pinned form.
-  total="$(printf '%s\n' "$mac" | ci_step_count || true)"
-  hits=0
-  suite_step=""
-  i=1
-  while [ "$i" -le "${total:-0}" ]; do
-    text="$(printf '%s\n' "$mac" | ci_step_text "$i")"
-    if grep -qE 'test/run\.sh|\./check' <<< "$text"; then
-      hits=$((hits + 1))
-      suite_step="$text"
-    fi
-    i=$((i + 1))
-  done
-  if [ "$hits" != "1" ]; then
-    fail "S219 — expected exactly one macOS step that mentions test/run.sh or ./check, found $hits"
-  fi
-  if [ -n "$suite_step" ]; then
-    keys="$(printf '%s\n' "$suite_step" | ci_step_keys)"
-    for k in $keys; do
-      case "$k" in
-        name|run) ;;
-        *) fail "S219 — the suite step has the key '$k' (only name and run are allowed): it could skip, filter or swallow the suite" ;;
-      esac
-    done
-    case " $keys " in
-      *" run "*) ;;
-      *) fail "S219 — the suite step has no run: key" ;;
-    esac
-    script="$(printf '%s\n' "$suite_step" | ci_step_script)"
-    [ "$script" = "$pinned" ] \
-      || fail "S219 — the suite step's script is not exactly '$pinned', it is: $script"
-  fi
+# --- S219: the whole of macos.yml is the pinned block -----------------------
+macos_yml="${CI_MACOS_YML_UNDER_TEST:-$TEST_REPO_ROOT/.github/workflows/macos.yml}"
+if [ ! -f "$macos_yml" ]; then
+  fail "S219 — $macos_yml does not exist: the macOS leg must live in its own workflow file"
 else
-  fail "S219 — no single job with runs-on: macos-latest in $yml"
+  cat > "$SANDBOX/expected.yml" <<'PINNED'
+name: CI macOS
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  macos:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    env:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Platform tools first on PATH
+        run: |
+          echo "/bin" >> "$GITHUB_PATH"
+          echo "/usr/bin" >> "$GITHUB_PATH"
+      - name: Install mawk (S153 only)
+        run: brew install mawk
+      - name: Full test suite (bash 3.2)
+        run: /bin/bash test/run.sh
+PINNED
+  LC_ALL=C grep -vE '^[[:space:]]*(#|$)' "$macos_yml" > "$SANDBOX/actual.yml" || true
+  if ! cmp -s "$SANDBOX/expected.yml" "$SANDBOX/actual.yml"; then
+    fail "S219 — the non-comment content of $macos_yml is not the pinned block (diff, expected then actual): $(diff "$SANDBOX/expected.yml" "$SANDBOX/actual.yml" | LC_ALL=C cat -A | head -20 | tr '\n' '~')"
+  fi
 fi
 
-# --- S222: regression, the Linux job is as it was --------------------------
+# --- S222: regression, the Linux job is as it was, and ci.yml has no macOS job
+yml="$(ci_yml_path)"
+[ -f "$yml" ] || { fail "S222 — $yml is missing"; test_done; }
+
 if [ "$(ci_job_count ubuntu-latest)" != "1" ]; then
   fail "S222 — expected exactly one job with runs-on: ubuntu-latest, found $(ci_job_count ubuntu-latest)"
+fi
+if [ "$(grep -v '^[[:space:]]*#' "$yml" | grep -ciE '^[[:space:]]+runs-on:.*macos' || true)" != "0" ]; then
+  fail "S222 — ci.yml still has a macOS job: it moved to macos.yml (A35c D1)"
 fi
 lin="$(ci_job_block ubuntu-latest)"
 case "$lin" in

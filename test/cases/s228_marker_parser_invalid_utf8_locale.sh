@@ -4,11 +4,14 @@
 # precondition; the locale class of #392/#397).
 # Covers: F43
 #
-# Regression scenario: green today because every awk call of
-# lib/model-record.sh carries the `LC_ALL=C` prefix. Without it, BWK awk
-# (macOS) aborts on `\377` inside a marker with "towc: multibyte conversion
-# failure" and marker_scan returns 2. On a Linux runner (gawk) the same
-# mutation can pass: the case that proves anything is the macOS leg.
+# Regression scenario: green today because the awk calls of marker_scan and
+# marker_find in lib/model-record.sh carry the `LC_ALL=C` prefix. Without it,
+# BWK awk (macOS) aborts on `\377` inside a marker with "towc: multibyte
+# conversion failure" and marker_scan returns 2. On a Linux runner (gawk) the
+# same mutation can pass: the case that proves anything is the macOS leg.
+# Guards marker_scan and marker_find only. marker_attr and marker_emit are NOT
+# guarded: removing their LC_ALL=C does not abort on BWK awk (equivalent
+# mutants), so no test of this kind can see it.
 # MODEL_RECORD_LIB points the test at a scratch copy (mutation proof).
 
 set -uo pipefail

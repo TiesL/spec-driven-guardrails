@@ -79,6 +79,9 @@ for tool in awk grep bash locale; do
     *) fail "S224 — on success the output has no identity line for $tool: $out" ;;
   esac
 done
+# The charmap line is pinned by its own prefix: the word "locale" alone is
+# already satisfied by the `locale:` line.
+grep -q '^locale charmap:' <<< "$out" || fail "S224 — on success the output has no line starting with 'locale charmap:': $out"
 
 # S224: awk is not BWK.
 rm -rf "$fake"; mkdir -p "$fake"
