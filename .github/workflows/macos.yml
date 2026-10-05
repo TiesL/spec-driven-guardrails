@@ -1,0 +1,31 @@
+# The full suite on the macOS platform tools (#422, slice V1 of #411,
+# A35b/A35c). Lives in its own file so S219 can pin the whole of it byte for
+# byte (comments and blank lines aside). The Linux job in ci.yml runs
+# GNU/mawk-flavoured tools; the defects of #397 only showed on BWK awk, BSD
+# grep and bash 3.2. The tool identity and the UTF-8 locale are judged inside
+# the suite (S229, test/platform-identity.sh), not here. Never
+# continue-on-error: a failure here must turn the job red.
+name: CI macOS
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  macos:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    env:
+      # The runner image sets LC_ALL, which overrides LANG, so both are set.
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Platform tools first on PATH
+        run: |
+          echo "/bin" >> "$GITHUB_PATH"
+          echo "/usr/bin" >> "$GITHUB_PATH"
+      - name: Install mawk (S153 only)
+        run: brew install mawk
+      - name: Full test suite (bash 3.2)
+        run: /bin/bash test/run.sh

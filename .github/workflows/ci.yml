@@ -74,38 +74,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./templates/check-main-via-pr.sh "${{ github.sha }}"
-
-  # The full suite on the macOS platform tools (#422, slice V1 of #411,
-  # A35a). The Linux job above runs GNU/mawk-flavoured tools; the defects of
-  # #397 only showed on BWK awk, BSD grep and bash 3.2, and CI never ran
-  # there. This job puts /usr/bin first so those tools win and installs mawk
-  # only for S153. The tool identity and the UTF-8 locale are checked inside
-  # the suite (S229, test/platform-identity.sh, A35b), in the suite's own
-  # environment; the suite step is pinned to one exact form so it can neither
-  # skip nor swallow the suite's exit status. Never continue-on-error: a
-  # failure here must turn the job red.
-  macos:
-    runs-on: macos-latest
-    permissions:
-      contents: read
-    env:
-      # Asked for here, then verified inside the suite: S229 checks the
-      # EFFECTIVE charmap (`locale charmap`) and fails unless it is UTF-8.
-      # The runner image sets LC_ALL, which overrides this LANG, so LC_ALL is
-      # set to the same value. If the runner lacks the locale the suite
-      # fails, it never skips.
-      LANG: en_US.UTF-8
-      LC_ALL: en_US.UTF-8
-    steps:
-      - uses: actions/checkout@v4
-      - name: Platform tools first on PATH
-        run: |
-          # GITHUB_PATH prepends, so the last line written ends up first.
-          echo "/bin" >> "$GITHUB_PATH"
-          echo "/usr/bin" >> "$GITHUB_PATH"
-      - name: Install mawk (S153 only)
-        # mawk only: no gawk, GNU grep or coreutils, so the suite still runs
-        # on the platform tools. S153 fails loudly without it.
-        run: brew install mawk
-      - name: Full test suite (bash 3.2)
-        run: /bin/bash test/run.sh
