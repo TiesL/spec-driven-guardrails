@@ -2826,41 +2826,60 @@ something new is being added.
   issue that names the rule overridden and follows the pushback and risk-note
   flow of #415 (A29) without defining a format of its own
 
-### S219 — `.github/workflows/macos.yml` is pinned whole: its non-comment content is exactly the expected block
+### S219 — `.github/workflows/macos.yml` is pinned whole: a closed byte alphabet, comments only in the header, the rest exactly the expected block
 **Covers:** F43
 - Given: `.github/workflows/macos.yml`, the macOS leg's own workflow file (issue
-  #422, AC1, A35c D1/D2, which replaced A35b D3's reader of `ci.yml`)
-- When: the file is stripped of blank lines and full-line comments with exactly
-  `LC_ALL=C grep -vE '^[[:space:]]*(#|$)'` and compared byte for byte with the
-  block written inline in the case (`name: CI macOS`; triggers `pull_request`
-  and `push` to `main`; one job `macos` on `macos-latest` with
-  `permissions: contents: read`, `env` `LANG` and `LC_ALL` both
-  `en_US.UTF-8`, and the four steps checkout, platform tools first on PATH,
-  `brew install mawk`, and the suite step `run: /bin/bash test/run.sh`)
-- Then: the file exists and the two are identical; any other content is red
-  and the failure prints the diff. No YAML is parsed and no list of bad
-  spellings is kept: a skipped or swallowed suite (a `|| true` or `; exit 0`
-  continuation, quoted or `?` keys, `if`/`continue-on-error`, a top-level
-  `defaults`, a decoy job in a block scalar, an under-indented scalar), a
-  deleted or duplicated job, a step that rewrites `test/run.sh` or writes
-  `BASH_ENV`/PATH, a job `env:` that sets `S229_INNER` or
-  `PLATFORM_IDENTITY_UNDER_TEST`, a changed trigger, CRLF line endings, trailing
-  whitespace and tab indentation each change a non-comment byte. Comment-only
-  and blank-line-only edits are green. Changing the pinned block is a
-  deliberate spec change that also edits this scenario. The case reads
+  #422, AC1, A35c D1/D2, hardened by A35d D1/D2, which replaced A35b D3's
+  reader of `ci.yml`)
+- When: two rules are applied in order. D1, byte alphabet, on the raw file
+  first: `LC_ALL=C grep -an '[^ -~]'` must find nothing, i.e. the file holds
+  only LF and printable ASCII (0x20-0x7E). D2, header-only comments: only the
+  leading run of blank and full-line-comment lines before `name:` is stripped,
+  with `LC_ALL=C awk 'started || !/^[[:space:]]*(#|$)/ { started = 1; print }'`,
+  and from `name: CI macOS` to the end the file is compared byte for byte with
+  the block written inline in the case (triggers `pull_request` and `push` to
+  `main`; one job `macos` on `macos-latest` with `permissions: contents:
+  read`, `env` `LANG` and `LC_ALL` both `en_US.UTF-8`, and the four steps
+  checkout, platform tools first on PATH, `brew install mawk`, and the suite
+  step `run: /bin/bash test/run.sh`)
+- Then: the file exists, passes D1, and the D2 comparison is identical; any
+  other content is red. A D1 failure prints the first three offending lines
+  through `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251` is
+  visible); a D2 failure prints the diff through the same `sed -n l` (POSIX,
+  so it shows the bytes on BSD and GNU alike; `cat -A` is not used). No YAML
+  is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
+  suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
+  `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
+  scalar, an under-indented scalar), a deleted or duplicated job, a step that
+  rewrites `test/run.sh` or writes `BASH_ENV`/PATH, a job `env:` that sets
+  `S229_INNER` or `PLATFORM_IDENTITY_UNDER_TEST`, a changed trigger, trailing
+  whitespace, tab indentation; every byte outside the alphabet (a lone CR
+  inside a header or body "comment" that hides a key such as `if: false`,
+  `continue-on-error: true`, `defaults:` or `env: BASH_ENV`; NEL and LS in the
+  same place; whole-file CRLF; a BOM; a tab; `é`; a form feed; a NUL); any
+  comment or blank line after `name:` (a comment as the first line of the
+  `run: |` block, an indent-8 comment between its two `echo` lines, a trailing
+  comment or blank line at the end of the file). Green: the unchanged file;
+  adding, editing or removing ASCII comment lines and blank lines in the
+  header; a missing final newline. Changing the pinned block is a deliberate
+  spec change that also edits this scenario. The case reads
   `CI_MACOS_YML_UNDER_TEST` when set (mutation proofs). The tools and the
   locale are not judged here; S229 judges them at run time
 
-### S222 — regression: the Linux job is unchanged
+### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
 **Covers:** F43
 - Given: `ci.yml` (A35c D1: the macOS job moved out, `ci.yml` is back to its
   content on `main`)
-- When: the `ubuntu-latest` job is read
+- When: the `ubuntu-latest` job is read and the non-comment lines of `ci.yml`
+  are searched case-insensitively for `macos`
 - Then: exactly one such job still runs `./check`, the gitleaks step, the link-3
   and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
-  permissions, and `ci.yml` has no macOS job any more (a regression scenario;
-  it claims no closed world, so a new job or a new step in the Linux job does
-  not turn it red)
+  permissions, and no non-comment line of `ci.yml` contains `macos` (a runs-on,
+  a matrix entry, a block-list label such as `macOS`, or a step name all turn
+  it red; a full-line comment that mentions it does not; a step that
+  legitimately names macOS later changes this one check). It is a regression
+  scenario that claims no closed world, so a new non-macOS job or a new step
+  in the Linux job does not turn it red
 
 ### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
 **Covers:** F43
