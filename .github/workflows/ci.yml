@@ -78,21 +78,22 @@ jobs:
   # The full suite on the macOS platform tools (#422, slice V1 of #411,
   # A35a). The Linux job above runs GNU/mawk-flavoured tools; the defects of
   # #397 only showed on BWK awk, BSD grep and bash 3.2, and CI never ran
-  # there. This job puts /usr/bin first so those tools win, installs mawk
-  # only for S153, and refuses to run the suite unless the tool identity and
-  # the UTF-8 locale are what the leg is named for. Never continue-on-error:
-  # a failure here must turn the job red.
+  # there. This job puts /usr/bin first so those tools win and installs mawk
+  # only for S153. The tool identity and the UTF-8 locale are checked inside
+  # the suite (S229, test/platform-identity.sh, A35b), in the suite's own
+  # environment; the suite step is pinned to one exact form so it can neither
+  # skip nor swallow the suite's exit status. Never continue-on-error: a
+  # failure here must turn the job red.
   macos:
     runs-on: macos-latest
     permissions:
       contents: read
     env:
-      # Asked for here, then verified: the identity step checks the
-      # EFFECTIVE charmap (`locale charmap`) and fails unless it is UTF-8,
-      # and that en_US.UTF-8 is installed. The runner image sets LC_ALL,
-      # which overrides this LANG, so LC_ALL is set to the same value; the
-      # suite step therefore runs with the UTF-8 locale in effect. If the
-      # runner lacks the locale the job fails, it never skips.
+      # Asked for here, then verified inside the suite: S229 checks the
+      # EFFECTIVE charmap (`locale charmap`) and fails unless it is UTF-8.
+      # The runner image sets LC_ALL, which overrides this LANG, so LC_ALL is
+      # set to the same value. If the runner lacks the locale the suite
+      # fails, it never skips.
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     steps:
@@ -106,45 +107,5 @@ jobs:
         # mawk only: no gawk, GNU grep or coreutils, so the suite still runs
         # on the platform tools. S153 fails loudly without it.
         run: brew install mawk
-      - name: Tool identity (BWK awk, BSD grep, bash 3.2, UTF-8 locale)
-        run: |
-          # Reads the banners through PATH, i.e. the tools the suite will
-          # resolve. Prints each identity to the job log; exits 1 naming
-          # the first mismatched tool.
-          awk_id="$(awk --version 2>&1)" || awk_id="awk --version failed"
-          grep_id="$(grep --version 2>&1)" || grep_id="grep --version failed"
-          bash_id="$(bash --version 2>&1)" || bash_id="bash --version failed"
-          locale_id="$(locale 2>&1)" || locale_id="locale failed"
-          charmap="$(locale charmap 2>&1)" || charmap="locale charmap failed"
-          locales="$(locale -a 2>&1)" || locales=""
-          echo "awk:    $(printf '%s\n' "$awk_id" | sed -n 1p)"
-          echo "grep:   $(printf '%s\n' "$grep_id" | sed -n 1p)"
-          echo "bash:   $(printf '%s\n' "$bash_id" | sed -n 1p) (running: $BASH_VERSION)"
-          echo "locale: $(printf '%s\n' "$locale_id" | tr '\n' ' ')"
-          echo "locale charmap: $charmap"
-          case "$awk_id" in
-            "awk version "*) ;;
-            *) echo "FAIL: awk is not BWK awk (expected 'awk version <date>')"; exit 1 ;;
-          esac
-          case "$grep_id" in
-            *"BSD grep"*) ;;
-            *) echo "FAIL: grep is not BSD grep"; exit 1 ;;
-          esac
-          case "$bash_id" in
-            *"version 3.2."*) ;;
-            *) echo "FAIL: bash on PATH is not bash 3.2"; exit 1 ;;
-          esac
-          case "$BASH_VERSION" in
-            3.2.*) ;;
-            *) echo "FAIL: the running bash is not bash 3.2 ($BASH_VERSION)"; exit 1 ;;
-          esac
-          case "$charmap" in
-            UTF-8) ;;
-            *) echo "FAIL: the UTF-8 locale is not in effect (locale charmap is '$charmap', not UTF-8)"; exit 1 ;;
-          esac
-          case "$locales" in
-            *en_US.UTF-8*) ;;
-            *) echo "FAIL: the en_US.UTF-8 locale is not installed on this runner"; exit 1 ;;
-          esac
       - name: Full test suite (bash 3.2)
         run: /bin/bash test/run.sh
