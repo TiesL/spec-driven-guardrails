@@ -2826,32 +2826,21 @@ something new is being added.
   issue that names the rule overridden and follows the pushback and risk-note
   flow of #415 (A29) without defining a format of its own
 
-### S219 — the workflow has one macos-latest job that runs the full suite under /bin/bash 3.2 with /usr/bin first on PATH
+### S219 — the workflow has one macos-latest job whose suite step is exactly `/bin/bash test/run.sh`, with closed key sets
 **Covers:** F43
-- Given: `.github/workflows/ci.yml` (issue #422, AC1, A35a)
-- When: the `macos-latest` job is read
-- Then: there is exactly one such job; a step runs `/bin/bash test/run.sh`
-  (or `/bin/bash ./check`) with no name-fragment argument; `/usr/bin` ends up
-  first on PATH (the last `$GITHUB_PATH` write is `/usr/bin`, since each
-  write is prepended); no `if:` anywhere in the job, so a skipped suite step
-  cannot leave it green; a step named for the tool identity exists so the log shows
-  the awk, grep and bash used
-
-### S220 — mawk is installed for S153 only and no platform tool is replaced
-**Covers:** F43
-- Given: the `macos-latest` job
-- When: its install steps and PATH are read
-- Then: `brew install mawk` is present; no GNU or Homebrew replacement for
-  awk, grep, bash or coreutils is installed; no Homebrew directory is the last
-  `$GITHUB_PATH` write or starts a `PATH=`, i.e. none ends up ahead of `/usr/bin`
-
-### S221 — a UTF-8 locale is in effect for the suite, and no failure is swallowed
-**Covers:** F43
-- Given: the `macos-latest` job
-- When: its environment and steps are read
-- Then: `LANG` or `LC_ALL` is a UTF-8 locale at job level or on the suite step
-  itself (not only on the identity step); nothing pins `LC_ALL` or `LC_CTYPE`
-  to C; there is no `continue-on-error` in any spelling
+- Given: `.github/workflows/ci.yml` (issue #422, AC1, A35a amended by A35b D3)
+- When: the `macos-latest` job and the workflow's top level are read
+- Then: there is exactly one such job; its keys are only `runs-on`,
+  `permissions`, `env`, `steps` and optionally `timeout-minutes`; the workflow
+  has no top-level `defaults:`; exactly one step mentions `test/run.sh` or
+  `./check`; that step has no key other than `name` and `run`; its script is
+  exactly the single line `/bin/bash test/run.sh`. Closed world: no list of
+  bad spellings is kept, so `echo`, `exit 0;`, `|| true`, `set +e`, a subset
+  argument, a trailing comment, a step `if:`/`shell:`/`env:`/`continue-on-error:`,
+  a job `if:`/`defaults:`/`strategy:`, a second suite step or a missing or
+  duplicated job are all red because they are not the pinned form. Changing
+  the pinned line is a deliberate spec change that also edits this scenario.
+  The tools and the locale are not judged here; S229 judges them at run time
 
 ### S222 — regression: the Linux job is unchanged
 **Covers:** F43
@@ -2861,55 +2850,73 @@ something new is being added.
   and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
   permissions (green on arrival, labelled a regression scenario)
 
-### S223 — the identity step exists, runs before the suite, names the expected tools and can fail
+### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
 **Covers:** F43
-- Given: the `macos-latest` job (issue #422, AC2)
-- When: its step whose name says "identity" is read
-- Then: it precedes the suite step; it looks at awk, grep, bash and the
-  locale; it names BWK, BSD and 3.2 as the expected identity; it has a
-  failing exit; it has no `|| true`, `continue-on-error` or `if:` that could
-  skip or swallow it
-
-### S224 — a non-BWK awk or non-BSD grep fails the identity step, naming the tool
-**Covers:** F43
-- Given: the identity step's script run on a macOS host, with a PATH shim
-  that reports GNU awk (or GNU grep) and records its invocation
+- Given: `bash test/platform-identity.sh` (no arguments) run on a macOS host
+  with a PATH shim that reports GNU awk (or GNU grep) and records its
+  invocation
 - When: the script runs
-- Then: it exits non-zero, the output names the mismatched tool, and the shim
-  was invoked; a control run on the real macOS tools exits 0 (macOS host only)
+- Then: it exits non-zero, its `FAIL:` line names the mismatched tool, and the
+  shim was invoked; a control run on the real macOS tools exits 0 and prints
+  one identity line each for awk, grep, bash and the locale charmap (macOS
+  host only)
 
-### S225 — a bash that is not 3.2 fails the identity step, naming bash
+### S225 — a bash that is not 3.2 fails `test/platform-identity.sh`, naming bash
 **Covers:** F43
-- Given: the identity step's script run on a macOS host under a bash 4 or
-  later, or with a PATH shim reporting bash 5
+- Given: the script run on a macOS host with a PATH shim reporting bash 5, and
+  with the running `$BASH_VERSION` not 3.2 (a startup-file override, and a real
+  bash 4 or later where one is installed)
 - When: the script runs
-- Then: it exits non-zero and names bash (macOS host only; not run where no
-  second bash exists and the step does not probe bash through PATH)
+- Then: it exits non-zero and its `FAIL:` line names bash (macOS host only; the
+  real bash 4 arm prints a note and is skipped where none is installed)
 
-### S226 — a missing UTF-8 locale fails the identity step and is never skipped
+### S226 — a locale that is not installed fails `test/platform-identity.sh` and is never skipped
 **Covers:** F43
-- Given: the identity step's script run on a macOS host with a PATH shim for
-  `locale` that lists only C and POSIX
+- Given: the script run on a macOS host with the real tools, `LANG` naming a
+  locale that is not installed (`xx_XX.UTF-8`) and `LC_ALL` unset; no
+  `locale` shim
 - When: the script runs
-- Then: it exits non-zero and names the locale; it does not exit 0 (macOS
-  host only). Limit: AC3 (the macOS job red and the Linux job green on a
-  real locale-class defect, a throwaway-branch run linked from the PR) is a
+- Then: it exits non-zero and its `FAIL:` line names the locale; it never exits
+  0 (macOS host only). A missing locale is covered by the `locale charmap`
+  check alone: a locale that is not installed does not give a UTF-8 charmap.
+  Limit: AC3 (the macOS job red and the Linux job green on a real
+  locale-class defect, a throwaway-branch run linked from the PR) is a
   human-visible hosted-runner result and cannot be a unit test
 
-### S227 — a locale that is installed but not in effect fails the identity step
+### S227 — a locale that is installed but not in effect fails `test/platform-identity.sh`
 **Covers:** F43
-- Given: the identity step's script run on a macOS host with the real tools and
-  the effective locale C: `LANG=en_US.UTF-8` with `LC_ALL=C`, with
-  `LC_CTYPE=C`, and with `LANG` empty
+- Given: the script run on a macOS host with the real tools and the effective
+  locale C: `LANG=en_US.UTF-8` with `LC_ALL=C`, with `LC_CTYPE=C`, and with
+  `LANG` empty
 - When: the script runs
-- Then: each run exits non-zero and names the locale (macOS host only; the
-  runner image's `LC_ALL` could otherwise drift to C unnoticed)
+- Then: each run exits non-zero and its `FAIL:` line names the locale (macOS
+  host only; the runner image's `LC_ALL` could otherwise drift to C unnoticed)
 
 ### S228 — regression: the marker parser reads a body with an invalid UTF-8 byte inside a marker under a UTF-8 LANG
 **Covers:** F43
 - Given: `lib/model-record.sh`, `LC_ALL` unset, `LANG=en_US.UTF-8`, a marker
   whose value holds the byte `\377` (issue #422, AC3's precondition)
 - When: `marker_scan` and `marker_find` read it
-- Then: both exit 0 and the marker is returned; green today because each awk
-  call carries the `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is
-  removed from one call (gawk may not abort, so the macOS leg is where it bites)
+- Then: both exit 0, `marker_scan`'s output reports the stage `Test`, and
+  `marker_find`'s output is non-empty and contains the value carrying `\377`
+  (an empty result is red); green today because each awk call carries the
+  `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is removed from one
+  call (gawk may not abort, so the macOS leg is where it bites)
+
+### S229 — on the macOS CI leg the suite runs the platform identity check in its own environment
+**Covers:** F43
+- Given: the suite case `test/cases/s229_platform_identity_in_suite.sh` (issue
+  #422, AC1, AC2, A35b D1); the gate is `GITHUB_ACTIONS=true` and
+  `RUNNER_OS=macOS`, both set by the runner
+- When: the case runs under the suite's own PATH, bash and locale
+- Then: with the gate open it runs `bash test/platform-identity.sh`, puts the
+  identity lines in its log, and is red naming the tool or locale on a
+  mismatch; otherwise it prints `note: platform identity not asserted (not the
+  macOS CI leg)` and passes. Arms, run in a child with a controlled
+  environment: (a) a GNU awk shim first on PATH with both CI variables set is
+  red and names awk; (b) `RUNNER_OS=Linux` with the same shim is green and
+  prints the note. Limits: the gate cannot prove from inside the suite that it
+  fired in CI (the green macOS log showing the identity lines, not the note,
+  and a throwaway red run are the evidence); deliberate subversion outside the
+  suite step (`BASH_ENV`, an overridden `RUNNER_OS`, changed triggers) is not
+  caught

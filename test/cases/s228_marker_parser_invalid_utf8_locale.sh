@@ -28,6 +28,10 @@ out="$(env -u LC_ALL -u LC_CTYPE LANG=en_US.UTF-8 bash -c '
   printf "scan_out=%s\n" "$scan"
   find_out="$(marker_find Test "$body")"; echo "find_rc=$?"
   printf "find_out=%s\n" "$find_out"
+  # Judged in the C locale: the value holds an invalid UTF-8 byte.
+  LC_ALL=C
+  case "$scan" in *"ok"*Test*) echo "scan_has_stage=1" ;; esac
+  case "$find_out" in *"x"$'"'"'\377'"'"'"y"*) echo "find_has_value=1" ;; esac
 ' _ "$lib" 2>&1)"
 
 case "$out" in
@@ -38,9 +42,17 @@ case "$out" in
   *"find_rc=0"*) ;;
   *) fail "S228 — marker_find failed on a marker holding \\377: $out" ;;
 esac
+# An empty result is red: `scan_out=` followed by a newline would satisfy a
+# bare "something follows" pattern, so the checks are on content. marker_scan
+# must report the marker's stage, marker_find must return the marker line
+# that carries the \377 value.
 case "$out" in
-  *"scan_out="?*) ;;
-  *) fail "S228 — marker_scan printed nothing for the marker (a vacuous pass): $out" ;;
+  *"scan_has_stage=1"*) ;;
+  *) fail "S228 — marker_scan's output does not report the marker's stage Test (empty or vacuous): $out" ;;
+esac
+case "$out" in
+  *"find_has_value=1"*) ;;
+  *) fail "S228 — marker_find's output is empty or lacks the value carrying \\377: $out" ;;
 esac
 
 test_done

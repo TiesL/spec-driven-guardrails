@@ -29,9 +29,7 @@ ci_job_count() {
   grep -c "^    runs-on:[[:space:]]*$1[[:space:]]*$" "$(ci_yml_path)"
 }
 
-# Steps of a job block on stdin: prints "<n><TAB><text>" per step with
-# newlines in the text replaced by U+0001-free "\n" markers is overkill;
-# instead steps are selected by index with ci_step_text.
+# Step number $1 (1-based) of a job block on stdin, as text.
 ci_step_text() {
   awk -v want="$1" '
     /^      - / { n++ }
@@ -42,20 +40,27 @@ ci_step_count() {
   grep -c '^      - '
 }
 
-# 1-based index of the first step whose text matches ERE $1 (case-
-# insensitive); with a second argument "name", only the step's name: line
-# is matched. Prints nothing when there is none.
-ci_step_find() {
-  awk -v pat="$1" -v mode="${2:-all}" '
-    function check() {
-      if (n > 0 && !done && match(tolower(text), pat)) { print n; done = 1 }
-    }
-    /^      - / { check(); n++; text = ""; nameline = "" }
-    {
-      if (mode == "name") { if ($0 ~ /^ +(- )?name:/ && nameline == "") { nameline = $0; text = $0 } }
-      else text = text "\n" $0
-    }
-    END { check() }'
+# The sorted, space-joined key set of a step on stdin: the key of its
+# "- key:" first line plus every key at the step's own indentation.
+ci_step_keys() {
+  awk '
+    /^      - [A-Za-z0-9_-]+:/ { k = $0; sub(/^      - /, "", k); sub(/:.*/, "", k); print k; next }
+    /^        [A-Za-z0-9_-]+:/ { k = $0; sub(/^        /, "", k); sub(/:.*/, "", k); print k }' \
+    | sort -u | tr '\n' ' ' | sed 's/ $//'
+}
+
+# The sorted, space-joined key set of a job block on stdin (its direct
+# children, not the steps' keys).
+ci_job_keys() {
+  awk '/^    [A-Za-z0-9_-]+:/ { k = $0; sub(/^    /, "", k); sub(/:.*/, "", k); print k }' \
+    | sort -u | tr '\n' ' ' | sed 's/ $//'
+}
+
+# The sorted, space-joined top-level keys of the workflow file.
+ci_top_keys() {
+  grep -v '^[[:space:]]*#' "$(ci_yml_path)" \
+    | awk '/^[A-Za-z_-]+:/ { k = $0; sub(/:.*/, "", k); print k }' \
+    | sort -u | tr '\n' ' ' | sed 's/ $//'
 }
 
 # The shell script of a step on stdin (its run: value), dedented.
