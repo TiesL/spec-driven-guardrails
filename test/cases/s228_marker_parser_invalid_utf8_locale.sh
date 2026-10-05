@@ -20,6 +20,7 @@ lib="${MODEL_RECORD_LIB:-$TEST_REPO_ROOT/lib/model-record.sh}"
 [ -f "$lib" ] || { fail "S228 — $lib is missing"; test_done; }
 
 # A fresh bash with LC_ALL unset and a UTF-8 LANG; bytes via printf octal.
+# shellcheck disable=SC2016
 out="$(env -u LC_ALL -u LC_CTYPE LANG=en_US.UTF-8 bash -c '
   . "$1"
   body="$(printf "<!-- model-record: stage=Test model=\"x\377y\" effort=\"low\" -->\n")"
