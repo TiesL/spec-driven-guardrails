@@ -2740,3 +2740,78 @@ something new is being added.
 - Then: apart from `context: fork` and "the dispatch tool's `fork` type", no
   "fork" remains, so no reader can take the single-Reviewer or lens-Adapter
   runs for the dispatch type the rule bans; they are named as runs
+
+### S213 — a finding names its class and a falsifying check, and a Reviewer never gives a fix
+**Covers:** F42
+- Given: `skills/role-contracts/SKILL.md` (finding structure) and
+  `skills/pre-merge-review/SKILL.md` (issue #410, AC1, A28)
+- When: the finding structure and the Reviewer rules are read
+- Then: the structure has a Class field with the four values `design`, `code`,
+  `test` and `spec`, and a Falsifying check field (the observable condition a
+  correct fix must meet); a finding names the defect, its class and a
+  falsifying check and never a fix, patch or code, the same for QA and the
+  Developer; there is no exception for a typo-level or trivial finding
+
+### S214 — each class is routed to the role that owns the fix, from any stage
+**Covers:** F42
+- Given: `skills/role-contracts/SKILL.md` and `ORCHESTRATOR.md` (issue #410,
+  AC2, A28; the fresh Reviewer is #414)
+- When: the loop-back route is read
+- Then: both give the route per class (`design`: Architect, QA, Developer,
+  fresh Reviewer; `code` and `test`: QA, Developer, fresh Reviewer; `spec`:
+  Product, then QA, Developer, fresh Reviewer); `ORCHESTRATOR.md` says the
+  orchestrator never relays a Reviewer's suggested fix as a decision, never
+  downgrades a class and dispatches the Architect when a design class is in
+  doubt or a finding has no class, and says a Developer or QA that finds a
+  design defect stops the change, saves the attempted patch and reports
+  class `design`
+
+### S215 — two consecutive rounds with a medium-or-worse finding force an Architect step, and the count resets
+**Covers:** F42
+- Given: `ORCHESTRATOR.md` (issue #410, AC3, A28)
+- When: the two-round trigger is read
+- Then: a round counts when it has at least one open medium-or-higher finding,
+  new or carried over; two consecutive counting rounds on one PR send the
+  orchestrator to the Architect before any Developer fix; the Architect posts a
+  PR comment with a Planning marker and may conclude no design change is
+  needed; the count starts again after that recorded step
+
+### S216 — review-rounds.sh counts Review rounds and reports Planning markers after each
+**Covers:** F42
+- Given: a PR (and its issue) whose comments and reviews carry `model-record`
+  markers, behind a fake `gh` (issue #410, AC4, A28)
+- When: `review-rounds.sh <pr> [<issue>]` runs
+- Then: it prints one `review-round: <n> at=<timestamp>` line per well-formed
+  Review marker in a PR comment or PR review, in time order, a
+  `planning-after: <n>` line for each round a Planning marker on the PR or the
+  issue follows (the latest round before it), the summary
+  `review-rounds: <N>` and a line saying severity is not machine-readable;
+  other stages, malformed markers and quoted example markers count for
+  nothing; zero rounds gives `review-rounds: 0`; it always exits 0
+
+### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
+**Covers:** F42
+- Given: `review-rounds.sh` behind a recording fake `gh` (issue #410, AC4,
+  A28, A37)
+- When: it runs, with a failing `gh`, a failing endpoint, no `gh`, no
+  argument or a malformed PR number
+- Then: every `gh` call is a plain `api` GET (no write verb, no GraphQL);
+  a failed fetch prints a warning on stderr, no `review-rounds:` summary, and
+  exits 0; a missing argument or malformed number prints usage and calls
+  nothing; markers are read only through `lib/model-record.sh`; the script uses
+  no bash 4 feature or GNU-only tool, runs under macOS `/bin/bash` 3.2, keeps
+  the round definition in one function (`rr_rounds`, A37) and is wired into no
+  hook, check or gate
+
+### S218 — the self-check lines, the stated limit and the override pointer to #415
+**Covers:** F42
+- Given: `ORCHESTRATOR.md`, its "Before asking for a merge" self-check (issue
+  #410, AC5, AC6, A28)
+- When: the self-check and the override text are read
+- Then: the self-check list says no design-class finding was fixed without an
+  Architect step and the two-round trigger either did not fire or its Architect
+  step is on the PR, and names `review-rounds.sh`; the text states the limit
+  (class and severity are judgments, a script can only check that the route
+  left evidence); overriding the route is a numbered human decision on the
+  issue that names the rule overridden and follows the pushback and risk-note
+  flow of #415 (A29) without defining a format of its own
