@@ -1502,9 +1502,10 @@ a script can only check that the route left evidence).
 
 CI ran only on Linux, so a defect that shows only on BWK awk, BSD grep or
 bash 3.2 (the locale class of #397) reached review unseen (#405 R8).
-Requirement: `.github/workflows/ci.yml` has one `macos-latest` job whose suite
-step is exactly `run: /bin/bash test/run.sh`, with no other keys, so the step
-can neither skip, filter, nor swallow the suite's exit status. `/usr/bin` is
+Requirement: `.github/workflows/macos.yml` holds the single `macos-latest`
+job; the file's non-comment content is pinned by S219, so its suite step
+`run: /bin/bash test/run.sh` can neither skip, filter nor swallow the suite's
+exit status. `ci.yml` is unchanged. `/usr/bin` is
 first on PATH, so BWK awk and BSD grep are the tools in use; mawk is installed
 for S153 only and replaces nothing. The job names a UTF-8 locale. The tool
 identity is checked inside the suite: on the macOS runner
@@ -1515,20 +1516,26 @@ are 3.2. It also checks that the **effective** locale is UTF-8 (`locale
 charmap`): `LC_ALL` or `LC_CTYPE` set to C, or a locale that is not installed,
 fails. A mismatch fails the suite, and so the job, with a message naming the
 tool or the locale, and never skips. The job log shows the identity the suite
-ran on. The Linux job is unchanged. Slice V1 of #411 (A35a, amended by A35b).
+ran on. The Linux job is unchanged. Slice V1 of #411 (A35a, amended by A35b and A35c).
 
 Acceptance criteria: AC1 and AC2 of issue #422. Mechanically verified: the
-suite step's pinned form and the job's closed key set (S219), and the
-identity script's behaviour against PATH shims and real locales on a macOS
-host (S224 to S227, S229). Not verified
-(AC3, a stated limit): that the leg is red on a real locale-class defect and
-the Linux job green. That is a human-visible CI run on a throwaway branch
-(the `LC_ALL=C` prefix removed from one awk call of the marker parser) that
-the PR links; it cannot be a unit test because it needs the hosted runners.
-Also not verified: drift in the runner image, that the identity script's
-banner wording matches a future BWK or BSD release, and deliberate
-subversion outside the suite step (`BASH_ENV`, an overridden `RUNNER_OS`,
-changed triggers).
+macOS workflow's pinned content (S219), and the identity script's behaviour
+against PATH shims and real locales on a macOS host (S224 to S227, S229). Not
+verified (AC3, a stated limit): that the leg is red on a real locale-class
+defect and the Linux job green. That is a human-visible CI run on a throwaway
+branch (the `LC_ALL=C` prefix removed from one awk call of the marker parser)
+that the PR links; it cannot be a unit test because it needs the hosted
+runners.
+
+Stated limits (A35c): the pin judges the file's text, not how GitHub
+interprets it. The suite's own files (`test/run.sh`, `test/lib.sh`,
+`test/platform-identity.sh`, the S229 case, and its test seams `S229_INNER`
+and `PLATFORM_IDENTITY_UNDER_TEST`) are trusted; a commit that weakens them is
+caught by review, not by a guard. Settings outside the repo are not seen:
+repository or organisation Actions settings, a disabled workflow, and
+required checks (not available on this plan). Runner image drift and future
+BWK or BSD banner wording are not tested. The gate variables are spelled by
+the runner.
 
 ---
 
