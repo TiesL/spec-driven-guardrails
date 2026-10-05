@@ -43,10 +43,22 @@ if [ -n "$mac" ]; then
   fi
 
   # /usr/bin first on PATH, so BWK awk (/usr/bin/awk) wins and
-  # `#!/usr/bin/env bash` test scripts resolve to /bin/bash.
-  # shellcheck disable=SC2016
-  grep -qE '(PATH[=:][[:space:]]*"?/usr/bin:|echo[[:space:]]+"?/usr/bin"?[[:space:]]*>>[[:space:]]*"?\$GITHUB_PATH)' <<< "$mac" \
-    || fail "S219 — the macOS job does not put /usr/bin first on PATH"
+  # `#!/usr/bin/env bash` test scripts resolve to /bin/bash. $GITHUB_PATH
+  # semantics: each write is PREPENDED, so the LAST write ends up first; an
+  # explicit PATH= assignment counts by its first element.
+  last_gp="$(grep -E '>>[[:space:]]*"?[$]GITHUB_PATH' <<< "$mac" | tail -n 1 || true)"
+  if [ -n "$last_gp" ]; then
+    grep -qE 'echo[[:space:]]+"?/usr/bin"?[[:space:]]*>>' <<< "$last_gp" \
+      || fail "S219 — the LAST write to \$GITHUB_PATH ends up first on PATH and is not /usr/bin: $last_gp"
+  else
+    grep -qE 'PATH[=:][[:space:]]*"?/usr/bin:' <<< "$mac" \
+      || fail "S219 — the macOS job does not put /usr/bin first on PATH"
+  fi
+  # No condition anywhere in the job: a skipped suite step leaves the job
+  # green (and the merge guard treats a skip as passing).
+  if grep -qE '^[[:space:]]*(- )?if:' <<< "$mac"; then
+    fail "S219 — the macOS job has an if: (job or step): a skipped step could leave the job green without running the suite"
+  fi
 
   # The job log shows the identity of awk, grep and bash it used.
   ident_idx="$(printf '%s\n' "$mac" | ci_step_find 'identity' name)"
@@ -63,21 +75,39 @@ if [ -n "$mac" ]; then
   if grep -qE 'brew[[:space:]]+install[^#]*(gawk|grep|coreutils|findutils|gnu-|bash)' <<< "$mac"; then
     fail "S220 — the macOS job installs a replacement for a platform tool (gawk, GNU grep, bash, coreutils): the leg would no longer run on BWK/BSD tools"
   fi
-  # No Homebrew prefix placed ahead of /usr/bin on PATH.
+  # No Homebrew prefix placed ahead of /usr/bin on PATH: not as the last
+  # $GITHUB_PATH write (which ends up first), not as a PATH= first element.
+  last_gp="$(grep -E '>>[[:space:]]*"?[$]GITHUB_PATH' <<< "$mac" | tail -n 1 || true)"
+  if grep -qE '(/opt/homebrew|/usr/local|homebrew)' <<< "$last_gp"; then
+    fail "S220 — a Homebrew directory is the last \$GITHUB_PATH write, so it ends up ahead of /usr/bin: $last_gp"
+  fi
   path_lines="$(grep -E 'PATH' <<< "$mac" || true)"
-  if grep -qE '(/opt/homebrew|/usr/local)[^[:space:]]*:[^[:space:]]*/usr/bin|GITHUB_PATH.*(homebrew|/usr/local)' <<< "$path_lines"; then
-    fail "S220 — a Homebrew directory is placed ahead of /usr/bin on PATH"
+  if grep -qE 'PATH[=:][[:space:]]*"?(/opt/homebrew|/usr/local)' <<< "$path_lines"; then
+    fail "S220 — a Homebrew directory starts PATH, ahead of /usr/bin"
   fi
 else
   fail "S220 — no macOS job, so no mawk install"
 fi
 
-# --- S221: a UTF-8 locale is named; it is never conditional ----------------
+# --- S221: a UTF-8 locale is in effect for the suite; no failure is swallowed -
 if [ -n "$mac" ]; then
-  grep -qE '(LANG|LC_ALL)[=:][[:space:]]*"?[A-Za-z]{2}_[A-Za-z]{2}\.UTF-8' <<< "$mac" \
-    || fail "S221 — the macOS job sets no UTF-8 locale (LANG or LC_ALL = en_US.UTF-8)"
-  if grep -qE 'continue-on-error:[[:space:]]*true' <<< "$mac"; then
-    fail "S221 — the macOS job (or a step) is continue-on-error: a failure would not turn the job red"
+  # In effect for the SUITE, not only for the identity step: set at job
+  # level or on the suite step itself.
+  loc_re='(LANG|LC_ALL)[=:][[:space:]]*"?[A-Za-z]{2}_[A-Za-z]{2}[.]UTF-8'
+  job_level="$(awk '/^    steps:/ { exit } { print }' <<< "$mac")"
+  suite_idx="$(ci_step_find '([.]/check|test/run[.]sh)' all <<< "$mac")"
+  suite_text=""
+  [ -n "$suite_idx" ] && suite_text="$(ci_step_text "$suite_idx" <<< "$mac")"
+  if ! grep -qE "$loc_re" <<< "$job_level" && ! grep -qE "$loc_re" <<< "$suite_text"; then
+    fail "S221 — no UTF-8 locale (LANG or LC_ALL = en_US.UTF-8) is set for the suite step: neither at job level nor on that step"
+  fi
+  # Nothing may pin the C locale for the job (LC_ALL or LC_CTYPE).
+  if grep -qE '(LC_ALL|LC_CTYPE)[=:][[:space:]]*"?(C|POSIX)("|[[:space:]]|$)' <<< "$mac"; then
+    fail "S221 — a step or the job pins LC_ALL or LC_CTYPE to C or POSIX"
+  fi
+  # Any continue-on-error, however spelled (true, ${{ true }}, an expression).
+  if grep -qE 'continue-on-error:' <<< "$mac"; then
+    fail "S221 — the macOS job (or a step) has continue-on-error: a failure would not turn the job red"
   fi
 else
   fail "S221 — no macOS job, so no UTF-8 locale named"

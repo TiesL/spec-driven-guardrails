@@ -2831,8 +2831,10 @@ something new is being added.
 - Given: `.github/workflows/ci.yml` (issue #422, AC1, A35a)
 - When: the `macos-latest` job is read
 - Then: there is exactly one such job; a step runs `/bin/bash test/run.sh`
-  (or `/bin/bash ./check`) with no name-fragment argument; `/usr/bin` is put
-  first on PATH; a step named for the tool identity exists so the log shows
+  (or `/bin/bash ./check`) with no name-fragment argument; `/usr/bin` ends up
+  first on PATH (the last `$GITHUB_PATH` write is `/usr/bin`, since each
+  write is prepended); no `if:` anywhere in the job, so a skipped suite step
+  cannot leave it green; a step named for the tool identity exists so the log shows
   the awk, grep and bash used
 
 ### S220 — mawk is installed for S153 only and no platform tool is replaced
@@ -2840,14 +2842,16 @@ something new is being added.
 - Given: the `macos-latest` job
 - When: its install steps and PATH are read
 - Then: `brew install mawk` is present; no GNU or Homebrew replacement for
-  awk, grep, bash or coreutils is installed; no Homebrew directory is placed
-  ahead of `/usr/bin`
+  awk, grep, bash or coreutils is installed; no Homebrew directory is the last
+  `$GITHUB_PATH` write or starts a `PATH=`, i.e. none ends up ahead of `/usr/bin`
 
-### S221 — the job names a UTF-8 locale and cannot turn a failure green
+### S221 — a UTF-8 locale is in effect for the suite, and no failure is swallowed
 **Covers:** F43
 - Given: the `macos-latest` job
 - When: its environment and steps are read
-- Then: a UTF-8 locale (`en_US.UTF-8`) is named; no `continue-on-error: true`
+- Then: `LANG` or `LC_ALL` is a UTF-8 locale at job level or on the suite step
+  itself (not only on the identity step); nothing pins `LC_ALL` or `LC_CTYPE`
+  to C; there is no `continue-on-error` in any spelling
 
 ### S222 — regression: the Linux job is unchanged
 **Covers:** F43
@@ -2891,3 +2895,21 @@ something new is being added.
   host only). Limit: AC3 (the macOS job red and the Linux job green on a
   real locale-class defect, a throwaway-branch run linked from the PR) is a
   human-visible hosted-runner result and cannot be a unit test
+
+### S227 — a locale that is installed but not in effect fails the identity step
+**Covers:** F43
+- Given: the identity step's script run on a macOS host with the real tools and
+  the effective locale C: `LANG=en_US.UTF-8` with `LC_ALL=C`, with
+  `LC_CTYPE=C`, and with `LANG` empty
+- When: the script runs
+- Then: each run exits non-zero and names the locale (macOS host only; the
+  runner image's `LC_ALL` could otherwise drift to C unnoticed)
+
+### S228 — regression: the marker parser reads a body with an invalid UTF-8 byte inside a marker under a UTF-8 LANG
+**Covers:** F43
+- Given: `lib/model-record.sh`, `LC_ALL` unset, `LANG=en_US.UTF-8`, a marker
+  whose value holds the byte `\377` (issue #422, AC3's precondition)
+- When: `marker_scan` and `marker_find` read it
+- Then: both exit 0 and the marker is returned; green today because each awk
+  call carries the `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is
+  removed from one call (gawk may not abort, so the macOS leg is where it bites)

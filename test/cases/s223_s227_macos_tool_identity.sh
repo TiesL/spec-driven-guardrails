@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S223-S226 — The macOS job starts with a tool-identity step that fails,
+# S223-S227 — The macOS job starts with a tool-identity step that fails,
 # naming the tool, when awk is not BWK, grep is not BSD, bash is not 3.2 or
 # the UTF-8 locale is missing; it never skips (#422, A35a, AC2).
 # Covers: F43
@@ -169,5 +169,24 @@ case "$lcout" in
   *) fail "S226 — the failure does not name the locale: $out" ;;
 esac
 [ -f "$fake/called.locale" ] || fail "S226 — the step never asked 'locale' through PATH (vacuous)"
+
+# S227: the locale is installed but not IN EFFECT. The step must judge the
+# effective locale, not just LANG or the installed list. Real tools, no shim.
+run_env() { # run_env <label> VAR=value...
+  local label="$1"; shift
+  local out lc
+  out="$(env -i HOME="$SANDBOX" PATH="$base_path" "$@" \
+    /bin/bash --noprofile --norc -eo pipefail "$script_file" 2>&1; echo "rc=$?")"
+  lc="$(printf '%s' "$out" | tr '[:upper:]' '[:lower:]')"
+  [ "${out##*rc=}" != "0" ] || fail "S227 — the identity step passed with the effective locale C ($label)"
+  case "$lc" in
+    *locale*|*utf-8*|*utf8*) ;;
+    *) fail "S227 — the failure does not name the locale ($label): $out" ;;
+  esac
+}
+rm -rf "$fake"; mkdir -p "$fake"
+run_env "LANG=en_US.UTF-8, LC_ALL=C" LANG=en_US.UTF-8 LC_ALL=C
+run_env "LANG=en_US.UTF-8, LC_CTYPE=C" LANG=en_US.UTF-8 LC_CTYPE=C
+run_env "LANG empty" LANG=
 
 test_done
