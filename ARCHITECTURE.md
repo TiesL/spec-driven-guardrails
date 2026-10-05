@@ -633,3 +633,61 @@ the next free numbers after A23.
 - **Violated when:** a skill or the orchestrator carries a second copy of
   the marker template or grammar, the emitter prints a line the parser
   does not read back, or a #402 finding uses the `role-played:` prefix.
+
+# Architecture decision — Process rules from the #405 meta review (epic #408)
+
+**Decided on 2026-10-04.** The meta review of the #369/#371/#392/#402 epic
+(#405) found a Reviewer agent continued through `SendMessage` across PR
+#397 rounds 3 to 5 and then for #403, while ORCHESTRATOR.md forbade only
+`fork`. A27 to A30 are the next free numbers after A26 (A27 #414, A28 #410,
+A29 #415, A30 #409); each is recorded in its own item's PR.
+
+### A27 — Every Review round is a fresh Reviewer dispatch, briefed from artifacts (#414)
+- **Review round:** one Reviewer dispatch that ends in exactly one findings
+  comment on the PR, for one head SHA, opening with a Review `model-record`
+  marker; verdict approve or request-changes. Lens-Adapters belong to the
+  round of the Reviewer that started them. #410 and #415 use this term.
+- **Fresh dispatch:** a new agent started by the dispatch tool with a type
+  other than `fork`. Not fresh: `SendMessage` to an existing agent, the
+  dispatch tool's `fork` type (inherits the orchestrator's context), or
+  continuing an agent that already posted a round. That `fork` is not
+  `pre-merge-review`'s `context: fork`, which means an isolated context;
+  rule text names "the dispatch tool's `fork` type" so the two are not
+  confused.
+- **Rule (three places):** the Reviewer contract (`role-contracts`
+  SKILL.md), ORCHESTRATOR.md's Dispatch paragraph and `pre-merge-review`
+  state that every Review round, a re-review after a fix commit included, is
+  a new dispatch of a fresh Reviewer, never continued by `SendMessage` or the
+  `fork` type. Nothing here decides whether other roles may be continued
+  (#412).
+- **Brief from artifacts:** the PR number, head SHA and diff command, the
+  work-item issue, a link to the previous findings comment with its open
+  `finding:` slugs, and the `finding-carryforward-gate.sh` command. Never the
+  earlier Reviewer's conversation, a summary of it, or the orchestrator's
+  paraphrase. Carried-forward findings are inputs the new Reviewer
+  re-checks against the new head, not memory; the carry-forward gate is
+  unchanged.
+- **Stated limit:** no GitHub artifact shows that two rounds came from
+  different agent instances. Every comment comes from the same account, two
+  rounds by one model carry identical markers, an agent id in a comment is
+  self-reported, and the platform transcripts that hold agent ids are local
+  to one machine. So freshness is not machine-checked and no check claims it.
+- **Fallback, recorded not verified:** the orchestrator's **Pipeline log**,
+  one comment per work-item issue that it writes and edits, never carrying a
+  `model-record` marker, with one line per dispatch written at dispatch time
+  (stage, round for Review, the agent id the dispatch tool returned, model
+  requested, effort observed afterwards; how effort is observed is #413's).
+  Before asking for a merge, the orchestrator runs a self-check, "every Review
+  round in the pipeline log has its own agent id, and no message went to an
+  earlier Reviewer", and records its result in that log. It is a recorded
+  self-check, not a pass. #410 and #415 add their lines to this one list.
+- **Rejected:** an agent-id field on the `model-record` marker (the marker
+  format is #411's, and a self-reported id there proves no more than in the
+  log); a script comparing the log's ids (it would check the orchestrator's
+  record against itself).
+- **Violated when:** a later round's Reviewer is reached by `SendMessage` or
+  the `fork` type, a brief carries an earlier Reviewer's conversation or a
+  paraphrase of it, or the pipeline log is missing an agent id for a Review
+  round.
+- **Revisit when:** the platform exposes an agent instance id in an artifact
+  CI can read; then the self-check can become a check.

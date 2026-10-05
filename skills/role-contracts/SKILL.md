@@ -61,7 +61,7 @@ the dispatching prompt's own job to state.
 Every role takes part in every change: there is no phase skipping in v1 (A3). Roles work
 sequentially on one shared branch per work item. The run rules live in one file,
 [`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
-with each stage's label and `model-record` `stage=` value, fresh (never forked) dispatch, the
+with each stage's label and `model-record` `stage=` value, fresh dispatch, and a fresh Reviewer for every Review round, the
 human override record, what to do when dispatch isn't available, and how to resume. In a
 project that answers `process-multi-agent-roles` yes, the `SessionStart` hook prints that file
 into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
@@ -222,6 +222,8 @@ abstractions, reuse, and verbosity/efficiency.*
 
 Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
 see the note above.
+
+**Fresh every round.** Each Review round is a new dispatch of a fresh Reviewer, never resumed or continued: not by `SendMessage`, and not by the dispatch tool's `fork` type. You have no memory of earlier rounds: earlier findings reach you only as a link to the previous findings comment and its `finding:` slugs, and you re-check each one against the new head.
 
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
