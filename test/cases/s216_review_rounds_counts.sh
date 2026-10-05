@@ -9,12 +9,17 @@
 # Assumption decided here (A28 does not spell it out): a Planning marker is
 # "after" the latest Review round that precedes it, so it is reported once,
 # against that round. Rounds are numbered in time order across PR comments
-# and PR reviews. One well-formed Review marker in a comment or review body
-# is one round.
+# and PR reviews. Round definition: A37 (the Architect's answer on #410): a
+# round is one BODY (PR comment or PR review), counted once, and only when its
+# FIRST live marker is a Review marker; a malformed Review marker still counts;
+# a body with only a pre-merge-review:done marker is a round; ties: comments
+# before reviews (not visible in the output, so not asserted).
 #
 # Mutations that turn this red (tag in the message):
 #  zero        make zero rounds print nothing, or exit 1
-#  count       count every model-record marker, not only Review; or count malformed Review markers
+#  count       count every model-record marker, not only Review
+#  body-rule   count a body whose first marker is another stage; count two Review markers in one body twice; ignore a malformed first Review marker; ignore a done-only body; count a Review marker plus a done marker twice
+#  tie         drop one of two rounds with equal timestamps
 #  time-order  number the rounds in file order, not time order (review earlier than comment)
 #  reviews     read PR comments only, not PR reviews
 #  planning    report Planning against every earlier round, or only on the issue, or drop the issue side
@@ -99,18 +104,34 @@ rr_run "$RR_PR"
   || fail "S216/planning — without the issue only the PR's Planning ($T5, after round 3) may be reported, got: $(rr_lines '^planning-after: ' | tr '\n' '|')"
 grep -q "issues/$RR_ISSUE/" "$RR_LOG" && fail "S216/planning — the issue's comments were fetched although no issue was given"
 
-# ---- only well-formed Review markers are rounds ------------------------------
+# ---- the round definition (A37): a round is a BODY, counted once, and only when
+#      its FIRST marker is a Review marker (a malformed one still counts); a
+#      legacy body with only a pre-merge-review:done marker is a round ---------
+T6=2026-10-06T10:00:00Z T7=2026-10-07T10:00:00Z
+done_m='<!-- pre-merge-review:done sha=1111111111111111111111111111111111111111 -->'
 rr_reset
 rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at \
   "$T1" "$(rr_stage Discovery)" \
-  "$T2" "$(rr_stage Implementation)" \
+  "$T2" "first marker is Implementation:${NL}$(rr_stage Implementation)${NL}${rev}" \
   "$T3" '<!-- model-record: stage=Review model="x" effort="high" floor-basis="no closing' \
-  "$T4" '<!-- model-record: stage="Review" model="x" effort="high" floor-basis="quoted stage" -->' \
-  "$T5" "the one real round${NL}${rev}"
+  "$T4" "two Review markers in one body:${NL}${rev}${NL}${rev}" \
+  "$T5" "Review marker and done marker:${NL}${rev}${NL}${done_m}" \
+  "$T6" "legacy round, no model-record:${NL}${done_m}" \
+  "$T7" "plain text, no marker"
 rr_run "$RR_PR" "$RR_ISSUE"
-[ "$(rr_lines '^review-rounds: ')" = "review-rounds: 1" ] \
-  || fail "S216/count — only the one well-formed Review marker is a round (other stages, an unclosed marker and a quoted stage= are not), got: $(rr_lines '^review-rounds?: ' | tr '\n' '|')"
-[ "$(rr_lines '^review-round: ')" = "review-round: 1 at=$T5" ] || fail "S216/count — round 1 is not the real marker's comment ($T5): $(rr_lines '^review-round: ')"
+[ "$(rr_lines '^review-round: ')" = "review-round: 1 at=$T3${NL}review-round: 2 at=$T4${NL}review-round: 3 at=$T5${NL}review-round: 4 at=$T6" ] \
+  || fail "S216/body-rule — expected exactly rounds at $T3 (malformed Review marker first: counts), $T4 (two Review markers: ONE round), $T5 (Review plus done marker: ONE round) and $T6 (legacy done marker only: a round); NOT $T1 (Discovery), $T2 (first marker is Implementation, a Review marker after it does not make a round) or $T7 (no marker), got: $(rr_lines '^review-round: ' | tr '\n' '|')"
+[ "$(rr_lines '^review-rounds: ')" = "review-rounds: 4" ] || fail "S216/body-rule — summary is not 'review-rounds: 4': $(rr_lines '^review-rounds: ')"
+
+# ---- equal timestamps: every body is still counted, numbered in turn (the
+#      comments-before-reviews tie order is not visible in the output, so it
+#      is checked by A37's own tests when the function moves to the lib) -------
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "c${NL}${rev}"
+rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T1" "r${NL}${rev}"
+rr_run "$RR_PR" "$RR_ISSUE"
+[ "$(rr_lines '^review-round: ')" = "review-round: 1 at=$T1${NL}review-round: 2 at=$T1" ] \
+  || fail "S216/tie — a comment and a review at the same time are two rounds, numbered 1 and 2, got: $(rr_lines '^review-round: ' | tr '\n' '|')"
 
 # ---- quoted example markers are not rounds and not Planning ------------------
 q_fence="Example:${NL}\`\`\`${NL}${rev}${NL}\`\`\`"
@@ -132,5 +153,16 @@ for form in fence tilde span block; do
   [ -z "$(rr_lines '^planning-after: ')" ] \
     || fail "S216/quoted — a quoted ($form) example Planning marker was reported as Planning after a round: $(rr_lines '^planning-after: ')"
 done
+
+# a quoted Review example does not make a body's first marker a Review marker:
+# here the first LIVE marker is Planning, so the body is not a round, and the
+# Planning marker is still reported
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at \
+  "$T1" "round${NL}${rev}" \
+  "$T2" "${q_fence}${NL}${pln}"
+rr_run "$RR_PR" "$RR_ISSUE"
+[ "$(rr_lines '^review-rounds: ')" = "review-rounds: 1" ] || fail "S216/quoted — a quoted Review example before a live Planning marker made a round: $(rr_lines '^review-rounds: ')"
+[ "$(rr_lines '^planning-after: ')" = "planning-after: 1" ] || fail "S216/quoted — the live Planning marker after a quoted Review example was not reported: $(rr_lines '^planning-after: ')"
 
 test_done

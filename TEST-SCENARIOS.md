@@ -2781,12 +2781,15 @@ something new is being added.
 - Given: a PR (and its issue) whose comments and reviews carry `model-record`
   markers, behind a fake `gh` (issue #410, AC4, A28)
 - When: `review-rounds.sh <pr> [<issue>]` runs
-- Then: it prints one `review-round: <n> at=<timestamp>` line per well-formed
-  Review marker in a PR comment or PR review, in time order, a
+- Then: it prints one `review-round: <n> at=<timestamp>` line per body (a PR
+  comment or PR review) whose first live marker is a Review marker (a
+  malformed one still counts; two Review markers in one body are one round; a
+  body that only has a `pre-merge-review:done` marker counts; a body whose
+  first marker is another stage does not), in time order (A37), a
   `planning-after: <n>` line for each round a Planning marker on the PR or the
   issue follows (the latest round before it), the summary
   `review-rounds: <N>` and a line saying severity is not machine-readable;
-  other stages, malformed markers and quoted example markers count for
+  bodies without such a first marker and quoted example markers count for
   nothing; zero rounds gives `review-rounds: 0`; it always exits 0
 
 ### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
