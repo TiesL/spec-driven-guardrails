@@ -1445,6 +1445,28 @@ Not part of this feature: the role-played-in-fence issue (#400), the
 dispatch tool having no effort argument (A25), interactive-mode and fork
 dispatch coverage, and verifying marker contents beyond parseability.
 
+### F41 — Every Review round is a fresh Reviewer dispatch (issue #414)
+
+The meta review (#405) found one Reviewer continued through `SendMessage`
+across rounds 3 to 5 of #397 and again for #403, so the later rounds
+inherited the earlier round's view. Requirement: every Review round is a
+new dispatch of a fresh agent, never a resumed or continued one (not via
+`SendMessage`, not via the dispatch tool's `fork` type); its brief is built
+from artifacts (PR head SHA and diff, the work-item issue, the previous
+round's findings), never from the earlier Reviewer's conversation; the
+previous round's findings are inputs the new Reviewer re-checks, not
+memory. Whether two rounds came from different agent instances cannot be
+checked from GitHub artifacts: the rule states that limit, and the
+fallback is a pipeline-log line per dispatch plus a self-check line before
+asking for a merge.
+
+Acceptance criteria: full text in issue #414. Mechanically verified: the
+rule text in the three files, the explicit Reviewer ban on `SendMessage`
+and `fork`, the brief inputs, the carry-forward wording, the stated limit
+and the log and self-check text. Not verified: that a real orchestrator
+follows the rule, and that two rounds were different instances (the
+stated limit, case (b) of AC5: not a pass).
+
 ---
 
 ## Non-functional characteristics
