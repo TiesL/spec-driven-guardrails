@@ -5,6 +5,8 @@
 # grep and bash 3.2. The tool identity and the UTF-8 locale are judged inside
 # the suite (S229, test/platform-identity.sh), not here. Never
 # continue-on-error: a failure here must turn the job red.
+# LANG and LC_ALL are both set below because the runner image sets LC_ALL,
+# which overrides LANG.
 name: CI macOS
 on:
   pull_request:
@@ -16,7 +18,6 @@ jobs:
     permissions:
       contents: read
     env:
-      # The runner image sets LC_ALL, which overrides LANG, so both are set.
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     steps:
