@@ -42,7 +42,7 @@ Never relay a Reviewer's suggested fix as a decision; the next role's brief link
 **Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. The same self-check also records:
 
 - No design-class finding was fixed without an Architect step before the fix commit.
-- The two-round trigger did not fire, or its Architect step is on the PR (count the rounds with `review-rounds.sh <pr> [<issue>]`, run by path from the guardrails clone).
+- The two-round trigger did not fire, or its Architect step is on the PR (count the rounds with `$SPEC_DRIVEN_GUARDRAILS_DIR/review-rounds.sh <pr> [<issue>]`, run with the project's checkout as the working directory; run inside the guardrails repo it would count that repo's PR with the same number).
 
 Limit: class and severity are judgments. A script can only check that the route left evidence.
 

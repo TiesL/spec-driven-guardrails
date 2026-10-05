@@ -14,9 +14,9 @@
 #
 # A round is A37's: one body (a PR comment or a PR review), counted once, only
 # when its FIRST live marker is a Review marker (well-formed or malformed); a
-# body with no model-record marker but a pre-merge-review:done marker is a
-# legacy round. Quoted examples (fenced, tilde-fenced, code span, blockquote)
-# never count. Order is created_at / submitted_at; ties: comments before reviews.
+# body with no model-record marker but a pre-merge-review:done marker (the
+# HTML-comment form with a 40-hex sha) is a legacy round. Quoted examples (fenced, tilde-fenced, code span, blockquote)
+# never count. Order is created_at / submitted_at; ties: issue comments, PR comments, PR reviews.
 #
 # Limit: severity is prose, not in any marker, so this cannot say whether a
 # round counts toward the two-round trigger. Class and severity are judgments;
@@ -117,12 +117,15 @@ rr_rounds() {
         Review) kind=R ;;
         Planning) kind=P ;;
       esac
-    elif grep -q 'pre-merge-review:done' <<<"$live"; then
+    elif grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
       kind=R
     fi
     [ -n "$kind" ] || continue
-    rank=0
-    [ "$src" = review ] && rank=1
+    case "$src" in
+      issue) rank=0 ;;
+      review) rank=2 ;;
+      *) rank=1 ;;
+    esac
     keyed="$keyed$(printf '%s\t%s\t%08d\t%s' "$ts" "$rank" "$seq" "$kind")"$'\n'
   done
   [ -n "$keyed" ] && keyed="$(printf '%s' "$keyed" | LC_ALL=C sort -t "$tab" -k1,1 -k2,2n -k3,3n)"

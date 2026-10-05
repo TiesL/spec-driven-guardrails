@@ -343,7 +343,7 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   Seam, a parsing approach, where a responsibility lives, a data shape), so a correct code fix
   would leave that decision in place. `code`: the implementation departs from a sound design.
   `test`: a test does not falsify what it claims. `spec`: an acceptance criterion or the PRD is
-  wrong, ambiguous or missing. The reporting role proposes the class; nobody downgrades it.
+  wrong, ambiguous or missing. The reporting role proposes the class; the orchestrator never downgrades a class, and the Architect may record that a finding is not a design defect and route it as code.
 - **Falsifying check** — the observable condition that a correct fix must meet, stated so that
   a test or a reader could show the defect gone. It replaces any "Fix:" line.
 - **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
