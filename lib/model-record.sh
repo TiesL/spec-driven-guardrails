@@ -254,7 +254,7 @@ marker_find() {
 # is the [A-Za-z0-9_] run after `stage=` (empty when there is none).
 marker_scan() {
   local out rc
-  out="$(LC_ALL=C awk -v want= -v mode=scan "$_MARKER_SCAN_AWK" <<<"$1")"
+  out="$(awk -v want= -v mode=scan "$_MARKER_SCAN_AWK" <<<"$1")"
   rc=$?
   if [ "$rc" -ne 0 ]; then
     _marker_fail marker_scan "$rc"
