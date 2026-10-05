@@ -11,7 +11,7 @@
 #  counts      change "medium or high" to "low or medium"; drop "new or carried over"
 #  architect   delete the sentence that the Architect posts a PR comment with a Planning marker
 #  may-conclude delete "may conclude no design change is needed"
-#  reset       change "starts again after that recorded step" to "never starts again", or "before"
+#  reset       change "The count starts again after that recorded step" to "The count never starts again, even after that recorded step" (adjacency: "count starts again" must stay together), or to "before"
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -41,7 +41,7 @@ lb_sentence_has_all "$LB_ORCH" 'Architect' '(may|can|is free to)[^.]*conclude' '
 
 # The reset: the count starts again AFTER the recorded step (without it the
 # next round would fire the trigger again).
-lb_sentence_has_all "$LB_ORCH" 'count' '(starts? again|resets?|restarts?|begins again)[^.]*after[^.]*(recorded|Architect|redesign)' \
+lb_sentence_has_all "$LB_ORCH" '\bcount (starts|restarts|begins) (again|over)[^.]*after[^.]*(recorded|Architect|redesign)|\bcount resets[^.]*after[^.]*(recorded|Architect|redesign)' \
   || fail "S215/reset — ORCHESTRATOR.md does not say the count starts again after the recorded Architect step"
 
 test_done

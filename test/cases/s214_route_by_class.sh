@@ -15,6 +15,7 @@
 #  route-spec     in either file, drop Product from the spec route, or put it after QA
 #  no-relay       change "never relays ... as a decision" to "relays ... as a decision"
 #  no-downgrade   delete the "never downgrades a class" sentence
+#  downgrade   put 'nobody downgrades it' back in the Class bullet, or drop the Architect's reclassification sentence from either file, or drop 'orchestrator ... never downgrades' from role-contracts
 #  doubt          delete the "no class or doubt: dispatch the Architect" sentence
 #  any-stage      delete the step "saves the attempted patch" from the Developer/QA paragraph, or "stops the change"
 
@@ -54,6 +55,21 @@ lb_sentence_has_all "$LB_ORCH" '(never|must not|not)[^.]*(downgrad|lower|reclass
   || fail "S214/no-downgrade — ORCHESTRATOR.md does not say the orchestrator never downgrades a finding's class"
 lb_sentence_has_all "$LB_ORCH" '(doubt|no class|without a class|lacks? a class|has no class|missing class)' '(dispatch|send|goes? to)[^.]*Architect' \
   || fail "S214/doubt — ORCHESTRATOR.md does not send a doubtful design class, or a finding with no class, to the Architect"
+
+# One consistent rule on who may change a class (round 1 finding
+# class-downgrade-nobody-vs-architect): the orchestrator never downgrades; the
+# Architect may record 'not a design defect, route as code'. 'Nobody
+# downgrades' contradicts the second half and must be gone from both files.
+for f in "$LB_ROLES" "$LB_ORCH"; do
+  n="${f#"$TEST_REPO_ROOT"/}"
+  if lb_sentence_has_all "$f" 'nobody|no one|no-one' '(downgrad|reclassif|lower)'; then
+    fail "S214/downgrade — $n says nobody downgrades a class, which contradicts the Architect's reclassification"
+  fi
+  lb_sentence_has_all "$f" 'Architect' '(may|can)' 'record' '(not a design defect|route (it )?as code|reclassif)' \
+    || fail "S214/downgrade — $n does not say the Architect may record that a finding is not a design defect and route it as code"
+done
+lb_sentence_has_all "$LB_ROLES" 'orchestrator' '(never|not)[^.]*(downgrad|reclassif|lower)' \
+  || fail "S214/downgrade — role-contracts does not say the orchestrator never downgrades a class"
 
 # From any stage: a Developer or QA that finds a design defect stops the
 # change, saves the attempted patch (A12) and reports class design; the

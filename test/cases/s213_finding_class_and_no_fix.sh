@@ -60,7 +60,7 @@ lb_sentence_has_all "$LB_ROLES" '\bQA\b' 'Developer' '(same|also|too|likewise|al
 # pre-merge-review: the Reviewer's own skill says it too.
 lb_sentence_has_all "$LB_PMR" 'class' 'falsifying check' \
   || fail "S213/pmr — pre-merge-review does not say a finding names its class and a falsifying check"
-lb_sentence_has_all "$LB_PMR" '(never|not|no)[^.]*\b(fix|fixes|patch)\b' 'finding|reviewer|class' 'class|falsifying|name' \
+lb_sentence_has_all "$LB_PMR" 'falsifying check[^.]*(never|not|no)[^.]*\b(fix|fixes|patch)\b' \
   || fail "S213/pmr — pre-merge-review does not say a finding gives no fix (it says findings, not fixes, but names no class or check)"
 
 test_done

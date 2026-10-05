@@ -2761,8 +2761,10 @@ something new is being added.
   fresh Reviewer; `code` and `test`: QA, Developer, fresh Reviewer; `spec`:
   Product, then QA, Developer, fresh Reviewer); `ORCHESTRATOR.md` says the
   orchestrator never relays a Reviewer's suggested fix as a decision, never
-  downgrades a class and dispatches the Architect when a design class is in
-  doubt or a finding has no class, and says a Developer or QA that finds a
+  downgrades a class (role-contracts says so too, and neither file says
+  "nobody downgrades": the Architect may record that a finding is not a design
+  defect and route it as code) and dispatches the Architect when a design class
+  is in doubt or a finding has no class, and says a Developer or QA that finds a
   design defect stops the change, saves the attempted patch and reports
   class `design`
 
@@ -2789,6 +2791,10 @@ something new is being added.
   `planning-after: <n>` line for each round a Planning marker on the PR or the
   issue follows (the latest round before it), the summary
   `review-rounds: <N>` and a line saying severity is not machine-readable;
+  a body that only mentions `pre-merge-review:done` in prose is not a legacy
+  round (only the marker form `<!-- pre-merge-review:done sha=<40 hex> -->`
+  is); on equal timestamps the order is issue comments, PR comments, PR reviews,
+  visible through where a Planning marker lands;
   bodies without such a first marker and quoted example markers count for
   nothing; zero rounds gives `review-rounds: 0`; it always exits 0
 
@@ -2813,7 +2819,8 @@ something new is being added.
 - When: the self-check and the override text are read
 - Then: the self-check list says no design-class finding was fixed without an
   Architect step and the two-round trigger either did not fire or its Architect
-  step is on the PR, and names `review-rounds.sh`; the text states the limit
+  step is on the PR, and names `review-rounds.sh` and says it runs with the
+  project's checkout as the working directory (it reads that repository); the text states the limit
   (class and severity are judgments, a script can only check that the route
   left evidence); overriding the route is a numbered human decision on the
   issue that names the rule overridden and follows the pushback and risk-note

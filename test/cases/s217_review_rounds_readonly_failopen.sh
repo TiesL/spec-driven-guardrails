@@ -145,8 +145,13 @@ if [ -z "$reader" ]; then
 elif ! grep -qE "^$reader\(\)" "$TEST_REPO_ROOT/lib/model-record.sh"; then
   fail "S217/one-owner — the script calls $reader, which lib/model-record.sh does not define"
 fi
-if grep -qE 'model-record:|stage=|<!--' <<<"$code"; then
-  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=, <!--): $(grep -nE 'model-record:|stage=|<!--' <<<"$code" | head -2)"
+if grep -qE 'model-record:|stage=' <<<"$code"; then
+  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=): $(grep -nE 'model-record:|stage=' <<<"$code" | head -2)"
+fi
+# the only HTML-comment text allowed is the legacy done marker (not a model-record marker)
+other="$(grep -E '<!--' <<<"$code" | grep -vE 'pre-merge-review:done' || true)"
+if [ -n "$other" ]; then
+  fail "S217/one-owner — the script carries an HTML-comment marker pattern other than the legacy pre-merge-review:done: $other"
 fi
 bad='declare -A|mapfile|readarray|\$\{[A-Za-z_]+(,,|\^\^)|grep -[a-zA-Z]*P|sed -[a-zA-Z]*i|sed -[a-zA-Z]*r|date -d|readlink -f|xargs -r|stat -c|\\b'
 if grep -qE "$bad" <<<"$code"; then

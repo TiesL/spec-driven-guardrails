@@ -15,6 +15,8 @@
 #  self-check-script  drop review-rounds.sh from the block
 #  limit              delete the limit sentence, or say a script CAN verify the class
 #  override           reverse "pushback" and "risk note" away, or drop "numbered human decision" or the rule it names
+#  cwd        say 'run in the guardrails clone' or drop the working-directory sentence for review-rounds.sh
+#  override-dir  "Architect pushes back once" -> "Architect never pushes back"; "before the fix commit" -> "after the fix commit"
 #  pointer            drop "#415" and "A29" from the override text
 #  no-own-format      add a risk-note "fields:" list or a loop-back marker to ORCHESTRATOR.md
 
@@ -29,7 +31,16 @@ lb_files
 [ -f "$LB_ORCH" ] || { fail "S218 — ORCHESTRATOR.md does not exist"; test_done; }
 blk='before asking for a merge'
 
-lb_block_has_all "$LB_ORCH" "$blk" 'no design[- ]class finding' '(fixed|fix)[^.]*without[^.]*Architect' \
+# Where the script runs (round 1 finding orch-review-rounds-wrong-repo-cwd): it
+# reads the repository of its working directory, so the text must say the
+# working directory is the PROJECT's checkout, not the guardrails clone.
+lb_sentence_has_all "$LB_ORCH" 'review-rounds\.sh' 'working directory' "(project.s|the project|your project)[^.]*checkout" \
+  || fail "S218/cwd — ORCHESTRATOR.md does not say review-rounds.sh runs with the project's checkout as the working directory"
+if lb_sentence_has_all "$LB_ORCH" 'review-rounds\.sh' 'guardrails clone' && ! lb_sentence_has_all "$LB_ORCH" 'review-rounds\.sh' 'working directory'; then
+  fail "S218/cwd — ORCHESTRATOR.md names the guardrails clone for review-rounds.sh without saying the working directory is the project's checkout"
+fi
+
+lb_block_has_all "$LB_ORCH" "$blk" 'no design[- ]class finding' '(fixed|fix)[^.]*without an? Architect step before' \
   || fail "S218/self-check-design — the 'Before asking for a merge' block has no line saying no design-class finding was fixed without an Architect step"
 lb_block_has_all "$LB_ORCH" "$blk" '(two-round|two consecutive)' 'did not fire' '(Architect|redesign)[^.]*(on the PR|recorded)' \
   || fail "S218/self-check-trigger — the 'Before asking for a merge' block has no line saying the two-round trigger did not fire or its Architect step is on the PR"
@@ -47,7 +58,7 @@ lb_sentence_has_all "$LB_ORCH" '(script|check)[^.]*(only|can only)[^.]*(route|ev
 # defect in code; that is a recorded human decision, with the pushback and risk
 # note of #415, not a format of its own.
 ov='(maintainer|human)[^.]*(override|waive|patch|instead of)|(override|waive)[^.]*(loop-back|route|rule)'
-lb_any_has_all "$LB_ORCH" "$ov" 'push ?back' 'risk note' \
+lb_any_has_all "$LB_ORCH" "$ov" 'Architect (pushes|push) back (once|first)' 'Architect writes (the|a) risk note' \
   || fail "S218/override — no unit of ORCHESTRATOR.md says an override of the loop-back route follows the pushback and the risk note"
 lb_any_has_all "$LB_ORCH" "$ov" 'numbered' 'human decision' '(names?|naming)[^.]*(rule|route)' \
   || fail "S218/override — ORCHESTRATOR.md does not say an override is a numbered human decision that names the rule overridden"

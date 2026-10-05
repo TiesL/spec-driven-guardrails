@@ -13,13 +13,15 @@
 # round is one BODY (PR comment or PR review), counted once, and only when its
 # FIRST live marker is a Review marker; a malformed Review marker still counts;
 # a body with only a pre-merge-review:done marker is a round; ties: comments
-# before reviews (not visible in the output, so not asserted).
+# before reviews; issue before both. Visible through where a tied Planning
+# marker lands (planning-after), asserted below.
 #
 # Mutations that turn this red (tag in the message):
 #  zero        make zero rounds print nothing, or exit 1
 #  count       count every model-record marker, not only Review
 #  body-rule   count a body whose first marker is another stage; count two Review markers in one body twice; ignore a malformed first Review marker; ignore a done-only body; count a Review marker plus a done marker twice
-#  tie         drop one of two rounds with equal timestamps
+#  tie         drop one of two rounds with equal timestamps; swap the comment/review rank, or the issue/comment rank
+#  legacy-anchor  detect the legacy round by a bare 'pre-merge-review:done' substring, or by 'done'
 #  time-order  number the rounds in file order, not time order (review earlier than comment)
 #  reviews     read PR comments only, not PR reviews
 #  planning    report Planning against every earlier round, or only on the issue, or drop the issue side
@@ -117,15 +119,34 @@ rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at \
   "$T4" "two Review markers in one body:${NL}${rev}${NL}${rev}" \
   "$T5" "Review marker and done marker:${NL}${rev}${NL}${done_m}" \
   "$T6" "legacy round, no model-record:${NL}${done_m}" \
-  "$T7" "plain text, no marker"
+  "$T7" "plain text, no marker" \
+  "2026-10-08T10:00:00Z" "No pre-merge-review:done marker yet, the Reviewer has not finished." \
+  "2026-10-09T10:00:00Z" "The words pre-merge-review:done in prose, and a decoy: <!-- pre-merge-review:done"
 rr_run "$RR_PR" "$RR_ISSUE"
 [ "$(rr_lines '^review-round: ')" = "review-round: 1 at=$T3${NL}review-round: 2 at=$T4${NL}review-round: 3 at=$T5${NL}review-round: 4 at=$T6" ] \
-  || fail "S216/body-rule — expected exactly rounds at $T3 (malformed Review marker first: counts), $T4 (two Review markers: ONE round), $T5 (Review plus done marker: ONE round) and $T6 (legacy done marker only: a round); NOT $T1 (Discovery), $T2 (first marker is Implementation, a Review marker after it does not make a round) or $T7 (no marker), got: $(rr_lines '^review-round: ' | tr '\n' '|')"
+  || fail "S216/body-rule — expected exactly rounds at $T3 (malformed Review marker first: counts), $T4 (two Review markers: ONE round), $T5 (Review plus done marker: ONE round) and $T6 (legacy done marker only: a round); NOT $T1 (Discovery), $T2 (first marker is Implementation, a Review marker after it does not make a round) or $T7 (no marker) or the two bodies that only MENTION pre-merge-review:done in prose (a legacy round is the marker form <!-- pre-merge-review:done sha=<40 hex> -->), got: $(rr_lines '^review-round: ' | tr '\n' '|')"
 [ "$(rr_lines '^review-rounds: ')" = "review-rounds: 4" ] || fail "S216/body-rule — summary is not 'review-rounds: 4': $(rr_lines '^review-rounds: ')"
 
-# ---- equal timestamps: every body is still counted, numbered in turn (the
-#      comments-before-reviews tie order is not visible in the output, so it
-#      is checked by A37's own tests when the function moves to the lib) -------
+# ---- equal timestamps (A37): ties go by source order, issue comments, then PR
+#      comments, then PR reviews. The order is visible through where a Planning
+#      marker lands relative to a round it is tied with. ----------------------------
+# (a) PR comment Planning tied with a PR REVIEW round: the comment sorts first,
+#     so the Planning marker follows round 1 (the earlier comment round)
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}${rev}" "$T2" "${pln}"
+rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T2" "r2${NL}${rev}"
+rr_run "$RR_PR" "$RR_ISSUE"
+[ "$(rr_lines '^review-round: ')" = "review-round: 1 at=$T1${NL}review-round: 2 at=$T2" ] || fail "S216/tie — expected two rounds at $T1 and $T2: $(rr_lines '^review-round: ' | tr '\n' '|')"
+[ "$(rr_lines '^planning-after: ')" = "planning-after: 1" ] \
+  || fail "S216/tie — a PR comment and a PR review at the same time: the comment comes first, so the Planning marker follows round 1, got: $(rr_lines '^planning-after: ' | tr '\n' '|')"
+# (b) ISSUE comment Planning tied with a PR COMMENT round: the issue sorts first
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}${rev}" "$T2" "r2${NL}${rev}"
+rr_json "$FAKE_GH_DATA/comments-$RR_ISSUE.json" created_at "$T2" "${pln}"
+rr_run "$RR_PR" "$RR_ISSUE"
+[ "$(rr_lines '^planning-after: ')" = "planning-after: 1" ] \
+  || fail "S216/tie — an issue comment and a PR comment at the same time: the issue comes first, so the Planning marker follows round 1, got: $(rr_lines '^planning-after: ' | tr '\n' '|')"
+# (c) two rounds tied, one comment one review: both counted, numbered in turn
 rr_reset
 rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "c${NL}${rev}"
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T1" "r${NL}${rev}"
