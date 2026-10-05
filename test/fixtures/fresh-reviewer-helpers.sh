@@ -2,6 +2,7 @@
 # test/fixtures/fresh-reviewer-helpers.sh — shared text helpers for the #414
 # scenarios (S209-S211): the fresh-Reviewer-per-round rule. Source after
 # test/lib.sh and test/fixtures/review-floor-helpers.sh (para_has_all).
+# shellcheck disable=SC2034  # FR_* are used by the sourcing tests
 # Not a test case. Bash 3.2: no declare -A, no mapfile.
 
 # sentences_of <file>: the file flattened and split into one sentence per
