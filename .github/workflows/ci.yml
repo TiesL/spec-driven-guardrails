@@ -107,5 +107,7 @@ jobs:
         # mawk only: no gawk, GNU grep or coreutils, so the suite still runs
         # on the platform tools. S153 fails loudly without it.
         run: brew install mawk
+      - name: H2 throwaway locale override
+        run: echo "LC_ALL=en_US.ISO8859-1" >> "$GITHUB_ENV"
       - name: Full test suite (bash 3.2)
         run: /bin/bash test/run.sh
