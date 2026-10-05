@@ -1502,25 +1502,33 @@ a script can only check that the route left evidence).
 
 CI ran only on Linux, so a defect that shows only on BWK awk, BSD grep or
 bash 3.2 (the locale class of #397) reached review unseen (#405 R8).
-Requirement: `.github/workflows/ci.yml` has a `macos-latest` job that runs the
-full suite (`test/run.sh`, no subset) under `/bin/bash` 3.2 with `/usr/bin`
-first on PATH, so BWK awk and BSD grep are the tools in use; mawk is
-installed for S153 only and replaces nothing. The job names a UTF-8 locale.
-Its first step is a tool-identity precondition: from the version banners it
-checks awk is BWK, grep is BSD and bash is 3.2, and that the UTF-8 locale
-exists; any mismatch fails the job with a message naming the tool, and a
-missing locale fails, never skips. The job log shows the identity it used.
-The Linux job is unchanged. Slice V1 of #411 (A35a).
+Requirement: `.github/workflows/ci.yml` has one `macos-latest` job whose suite
+step is exactly `run: /bin/bash test/run.sh`, with no other keys, so the step
+can neither skip, filter, nor swallow the suite's exit status. `/usr/bin` is
+first on PATH, so BWK awk and BSD grep are the tools in use; mawk is installed
+for S153 only and replaces nothing. The job names a UTF-8 locale. The tool
+identity is checked inside the suite: on the macOS runner
+(`GITHUB_ACTIONS=true`, `RUNNER_OS=macOS`), a suite case runs
+`test/platform-identity.sh` in the suite's own environment. That script checks
+that awk is BWK, grep is BSD, and both the bash on PATH and the running bash
+are 3.2. It also checks that the **effective** locale is UTF-8 (`locale
+charmap`): `LC_ALL` or `LC_CTYPE` set to C, or a locale that is not installed,
+fails. A mismatch fails the suite, and so the job, with a message naming the
+tool or the locale, and never skips. The job log shows the identity the suite
+ran on. The Linux job is unchanged. Slice V1 of #411 (A35a, amended by A35b).
 
 Acceptance criteria: AC1 and AC2 of issue #422. Mechanically verified: the
-workflow's content (job, bash and PATH, mawk, locale, identity step) and the
-identity step's behaviour against PATH shims on a macOS host. Not verified
+suite step's pinned form and the job's closed key set (S219), and the
+identity script's behaviour against PATH shims and real locales on a macOS
+host (S224 to S227, S229). Not verified
 (AC3, a stated limit): that the leg is red on a real locale-class defect and
 the Linux job green. That is a human-visible CI run on a throwaway branch
 (the `LC_ALL=C` prefix removed from one awk call of the marker parser) that
 the PR links; it cannot be a unit test because it needs the hosted runners.
-Also not verified: drift in the runner image, and that the identity step's
-banner wording matches a future BWK or BSD release.
+Also not verified: drift in the runner image, that the identity script's
+banner wording matches a future BWK or BSD release, and deliberate
+subversion outside the suite step (`BASH_ENV`, an overridden `RUNNER_OS`,
+changed triggers).
 
 ---
 
