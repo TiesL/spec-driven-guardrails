@@ -87,9 +87,14 @@ jobs:
     permissions:
       contents: read
     env:
-      # Named, not inherited: the runner must have it, else the identity
-      # step fails (never skips).
+      # Asked for here, then verified: the identity step checks the
+      # EFFECTIVE charmap (`locale charmap`) and fails unless it is UTF-8,
+      # and that en_US.UTF-8 is installed. The runner image sets LC_ALL,
+      # which overrides this LANG, so LC_ALL is set to the same value; the
+      # suite step therefore runs with the UTF-8 locale in effect. If the
+      # runner lacks the locale the job fails, it never skips.
       LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
     steps:
       - uses: actions/checkout@v4
       - name: Platform tools first on PATH
@@ -110,11 +115,13 @@ jobs:
           grep_id="$(grep --version 2>&1)" || grep_id="grep --version failed"
           bash_id="$(bash --version 2>&1)" || bash_id="bash --version failed"
           locale_id="$(locale 2>&1)" || locale_id="locale failed"
+          charmap="$(locale charmap 2>&1)" || charmap="locale charmap failed"
           locales="$(locale -a 2>&1)" || locales=""
           echo "awk:    $(printf '%s\n' "$awk_id" | sed -n 1p)"
           echo "grep:   $(printf '%s\n' "$grep_id" | sed -n 1p)"
           echo "bash:   $(printf '%s\n' "$bash_id" | sed -n 1p) (running: $BASH_VERSION)"
           echo "locale: $(printf '%s\n' "$locale_id" | tr '\n' ' ')"
+          echo "locale charmap: $charmap"
           case "$awk_id" in
             "awk version "*) ;;
             *) echo "FAIL: awk is not BWK awk (expected 'awk version <date>')"; exit 1 ;;
@@ -131,9 +138,9 @@ jobs:
             3.2.*) ;;
             *) echo "FAIL: the running bash is not bash 3.2 ($BASH_VERSION)"; exit 1 ;;
           esac
-          case "$locale_id" in
-            *UTF-8*) ;;
-            *) echo "FAIL: the UTF-8 locale is not in effect (locale reports no UTF-8)"; exit 1 ;;
+          case "$charmap" in
+            UTF-8) ;;
+            *) echo "FAIL: the UTF-8 locale is not in effect (locale charmap is '$charmap', not UTF-8)"; exit 1 ;;
           esac
           case "$locales" in
             *en_US.UTF-8*) ;;
