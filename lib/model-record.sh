@@ -238,7 +238,7 @@ marker_attr() {
 # skipped, never read; marker_scan reports it.
 marker_find() {
   local out rc
-  out="$(LC_ALL=C awk -v want="$1" -v mode=find "$_MARKER_SCAN_AWK" <<<"$2")"
+  out="$(awk -v want="$1" -v mode=find "$_MARKER_SCAN_AWK" <<<"$2")"
   rc=$?
   if [ "$rc" -ne 0 ]; then
     _marker_fail marker_find "$rc"
