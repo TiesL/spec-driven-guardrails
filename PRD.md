@@ -1467,6 +1467,35 @@ and the log and self-check text. Not verified: that a real orchestrator
 follows the rule, and that two rounds were different instances (the
 stated limit, case (b) of AC5: not a pass).
 
+### F42 — Design defects loop back to the Architect, and the orchestrator is held to it (issue #410)
+
+The meta review (#405) found the marker parser's six Reviewer rounds on one
+PR patched in code, often with the Reviewer's own suggested fix, never sent
+back to the Architect. Requirement: every finding carries a class (`design`,
+`code`, `test`, `spec`) that names the role whose step the fix starts at, and
+a falsifying check; a Reviewer (and QA, and the Developer) names the defect,
+its class and a falsifying check and never a fix, with no exception for a
+trivial finding. A `design` defect goes to the Architect, then QA, then the
+Developer, then a fresh Reviewer, from any stage; the orchestrator never
+relays a suggested fix as a decision and never downgrades a class. Two
+consecutive Review rounds on one PR that each have an open medium-or-worse
+finding force an Architect step before any further fix; the count starts
+again after that recorded step. The orchestrator is held to it by a
+self-check line before asking for a merge and by a read-only
+`review-rounds.sh` that counts Review rounds and reports the Planning
+markers after each; it is not a gate, because severity and class are not
+machine-readable. Overriding the route is a recorded human decision that
+follows the pushback and risk-note flow of #415, which this feature does not
+redefine.
+
+Acceptance criteria: full text in issue #410. Mechanically verified: the
+rule text in the role contracts, `ORCHESTRATOR.md` and `pre-merge-review`,
+and `review-rounds.sh` (round count, Planning markers, quoted markers not
+counted, read-only, REST only, warns and exits 0 on a failed fetch). Not
+verified: that a finding is classed correctly, that severity is as
+reported, and that a real orchestrator follows the route (the stated limit:
+a script can only check that the route left evidence).
+
 ---
 
 ## Non-functional characteristics

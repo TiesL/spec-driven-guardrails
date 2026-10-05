@@ -20,9 +20,31 @@ This project answers `process-multi-agent-roles` yes in `WORKFLOW-ADOPTION.md`, 
 
 **Review round brief.** Build every Review round's brief from artifacts only: the PR number, its head SHA and the diff command, the work-item issue, a link to the previous round's findings comment with its open `finding:` slugs, and the `finding-carryforward-gate.sh` command. Fix commits and the Developer's comments are artifacts and may be linked. The brief never includes the earlier Reviewer's conversation, a summary of it, or your paraphrase of its findings: carried-forward findings are inputs the new Reviewer re-checks against the new head, not memory.
 
+**Loop-back (A28).** Route every finding by its class, to the role that owns the fix, whichever stage found it (roles in order):
+
+| Class | Route |
+| --- | --- |
+| `design` | Architect, QA, Developer, fresh Reviewer |
+| `code` | QA (a red test for the defect), Developer, fresh Reviewer |
+| `test` | QA, Developer, fresh Reviewer |
+| `spec` | Product, then the Architect if the design is affected, QA, Developer, fresh Reviewer |
+
+Never relay a Reviewer's suggested fix as a decision; the next role's brief links the findings. You never downgrade a class. When a finding has no class, or you doubt a design class, dispatch the Architect, who may record that it is not a design defect and route it as code.
+
+**Any stage.** A Developer or QA that finds a design defect stops the change, saves the attempted patch (A12) and reports the finding with class `design`; you route it like any other finding.
+
+**Two-round trigger.** A Review round counts when it reports at least one open finding of severity medium or high, new or carried over. When two consecutive rounds on one PR count, dispatch the Architect for a redesign step before any Developer fix. The Architect records that step as a PR comment with a Planning marker, and may conclude that no design change is needed. The count starts again after that recorded Architect step.
+
+**Override.** If the maintainer tells you to patch a design defect in code instead of looping it back, that waives the loop-back route, so the A29 (#415) flow applies: the Architect pushes back once, the decision is a numbered human decision naming the rule overridden (the loop-back route, A28) and linking the pushback, and the Architect writes the risk note. The pushback and the risk note are defined in #415 (A29); this file defines no format and no marker for them.
+
 **Pipeline log.** Keep one comment per work-item issue, headed "Pipeline log", that you write and edit. It never carries a `model-record` marker. Write one line per dispatch when you dispatch: the stage, the round (for Review), the agent id the dispatch tool returned, the model requested, and the effort observed afterwards.
 
-**Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass.
+**Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. The same self-check also records:
+
+- No design-class finding was fixed without an Architect step before the fix commit.
+- The two-round trigger did not fire, or its Architect step is on the PR (count the rounds with `$SPEC_DRIVEN_GUARDRAILS_DIR/review-rounds.sh <pr> [<issue>]`, run with the project's checkout as the working directory; run inside the guardrails repo it would count that repo's PR with the same number).
+
+Limit: class and severity are judgments. A script can only check that the route left evidence.
 
 **Model and effort per stage.** Before each dispatch, assess that stage's floor on its own demands, per the `model-choice` skill: what would a model that is too weak get wrong here? Then choose the cheapest model and effort that clear it, separately for each stage, never one pair for the whole run. Review must be at least as capable as Implementation's recorded model and effort together. A different model is not required. Choose the model when you dispatch. If this environment doesn't let you set effort for a dispatch, find out the effort the role will actually run at, and if that is below the stage's floor, choose a more capable model instead. If you cannot find that effort out, state it as unknown and ask the human before dispatching a stage whose floor is demanding. Name the chosen model and effort in the dispatch prompt, and hand the role its marker line as the next paragraph says.
 

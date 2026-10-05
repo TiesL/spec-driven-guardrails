@@ -691,3 +691,84 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   round.
 - **Revisit when:** the platform exposes an agent instance id in an artifact
   CI can read; then the self-check can become a check.
+
+### A28 — Findings carry a class; design defects loop back to the Architect, then QA (#410)
+- **Why:** on PR #397 every Reviewer finding of a design defect (free text
+  inside a parsed marker) was patched in code, often with the Reviewer's own
+  suggested fix, over five rounds; none went back to the Architect (#405
+  W1, pilot-3 recommendation 6).
+- **Class, one per finding:** a new **Class** field in the shared finding
+  structure (`role-contracts` SKILL.md), next to Category (Category is the
+  kind of defect; Class is where the fix starts), with these routes:
+  - `design`: the cause is a decision about structure (a format, a contract
+    or Interface, a Seam, a parsing approach, where a responsibility lives,
+    a data shape); a correct code fix would leave that decision in place.
+    Architect, then QA, then Developer, then a fresh Reviewer (A27).
+  - `code`: the implementation departs from a sound design; the fix changes
+    no Interface or Seam the Architect decided. QA (a red test), Developer,
+    fresh Reviewer.
+  - `test`: a test does not falsify what it claims. QA, Developer, fresh
+    Reviewer.
+  - `spec`: an acceptance criterion or the PRD is wrong, ambiguous or
+    missing. Product, the Architect if the design is affected, QA,
+    Developer, fresh Reviewer.
+  Four classes because each maps onto the one role that owns the fix; with
+  only design and code, test and spec defects get patched as code. The class
+  is prose, not a `finding:` slug prefix (the slug belongs to the marker
+  design, A31-A37).
+- **Never a fix:** a finding names the defect, its class and a **Falsifying
+  check** (the observable condition a correct fix must meet), never a fix, a
+  patch or code. No exception for typo-level findings (maintainer default,
+  #408). The same applies to findings from QA and the Developer. The
+  orchestrator never relays a suggested fix text as a decision; the next
+  role's brief links the findings (A27).
+- **Who classifies:** the reporting role proposes; the orchestrator never
+  downgrades a class. A doubted or missing class goes to the Architect, who
+  may record "not a design defect, route as code".
+- **From any stage:** a Developer or QA that finds a design defect stops the
+  change, saves the attempted patch (A12) and reports it with class
+  `design`; it is routed like any other finding.
+- **Two-round trigger:** a Review round (A27, A37) counts when it reports at
+  least one open finding of severity medium or high, new or carried. Two
+  consecutive counting rounds on one PR, any component, make the
+  orchestrator dispatch the Architect for a redesign step before any
+  Developer fix. The Architect posts a comment with a Planning marker on the
+  PR and may conclude that no design change is needed. Counting starts again
+  after that recorded step.
+- **Override:** a maintainer instruction to patch a design defect in code
+  waives a contract rule, so A29 (#415) applies: one Architect pushback, a
+  numbered human decision naming this rule and linking the pushback, and an
+  Architect risk note in A29's format. No format or marker is defined here.
+- **Self-check lines** in A27's "Before asking for a merge" list: no
+  design-class finding was fixed without an Architect step before the fix
+  commit; the two-round trigger did not fire, or its Architect step is on
+  the PR.
+- **Stated limit:** class and severity are judgments. Severity is prose, not
+  in any marker, so no script can tell whether a round counts. A script can
+  only show that the route left evidence.
+- **`review-rounds.sh <pr> [<issue>]`** at the clone root, read-only, with
+  the evidence scripts' Interface (A15): run by path, needs `gh`, REST only,
+  never writes, never blocks. It prints `review-round: <n> at=<timestamp>`
+  per round in time order, `planning-after: <n>` for a round followed by a
+  Planning marker on the PR or the given issue (reported against the latest
+  round before it), `review-rounds: <N>`, and a fixed line that severity is
+  not machine-readable. A failed fetch prints a warning on stderr, no
+  `review-rounds:` line, exit 0. A round is A37's: one body (PR comment or PR
+  review) whose first marker candidate is `stage=Review`, well-formed or
+  malformed, plus legacy bodies with only `pre-merge-review:done`; "time
+  order" is `created_at`/`submitted_at`. The round logic is one function,
+  `rr_rounds`, so #426 can move it to `lib/review-rounds.sh` unchanged; it
+  reads markers only through `lib/model-record.sh` (A25), never `finding:`
+  slugs. It is not a gate and not wired into the merge guard: the trigger
+  turns on severity, which it cannot see. The orchestrator runs it in its
+  self-check.
+- **Rejected:** a `severity=` attribute on `finding:` markers (a marker
+  format change, #411's); a "same component" trigger (a component judgment
+  the orchestrator would make alone); wiring the round count as a gate (a
+  false block on rounds with only low findings).
+- **Violated when:** a finding carries a fix or has no class; a design-class
+  finding is fixed with no Architect step before the fix commit; a Developer
+  fix follows two consecutive counting rounds with no Architect step; a
+  second copy of the round logic appears outside `rr_rounds`.
+- **Revisit when:** finding severity becomes machine-readable; the trigger
+  can then be counted by `review-rounds.sh`.
