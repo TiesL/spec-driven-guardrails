@@ -2825,3 +2825,69 @@ something new is being added.
   left evidence); overriding the route is a numbered human decision on the
   issue that names the rule overridden and follows the pushback and risk-note
   flow of #415 (A29) without defining a format of its own
+
+### S219 — the workflow has one macos-latest job that runs the full suite under /bin/bash 3.2 with /usr/bin first on PATH
+**Covers:** F43
+- Given: `.github/workflows/ci.yml` (issue #422, AC1, A35a)
+- When: the `macos-latest` job is read
+- Then: there is exactly one such job; a step runs `/bin/bash test/run.sh`
+  (or `/bin/bash ./check`) with no name-fragment argument; `/usr/bin` is put
+  first on PATH; a step named for the tool identity exists so the log shows
+  the awk, grep and bash used
+
+### S220 — mawk is installed for S153 only and no platform tool is replaced
+**Covers:** F43
+- Given: the `macos-latest` job
+- When: its install steps and PATH are read
+- Then: `brew install mawk` is present; no GNU or Homebrew replacement for
+  awk, grep, bash or coreutils is installed; no Homebrew directory is placed
+  ahead of `/usr/bin`
+
+### S221 — the job names a UTF-8 locale and cannot turn a failure green
+**Covers:** F43
+- Given: the `macos-latest` job
+- When: its environment and steps are read
+- Then: a UTF-8 locale (`en_US.UTF-8`) is named; no `continue-on-error: true`
+
+### S222 — regression: the Linux job is unchanged
+**Covers:** F43
+- Given: `ci.yml`
+- When: the `ubuntu-latest` job is read
+- Then: exactly one such job still runs `./check`, the gitleaks step, the link-3
+  and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
+  permissions (green on arrival, labelled a regression scenario)
+
+### S223 — the identity step exists, runs before the suite, names the expected tools and can fail
+**Covers:** F43
+- Given: the `macos-latest` job (issue #422, AC2)
+- When: its step whose name says "identity" is read
+- Then: it precedes the suite step; it looks at awk, grep, bash and the
+  locale; it names BWK, BSD and 3.2 as the expected identity; it has a
+  failing exit; it has no `|| true`, `continue-on-error` or `if:` that could
+  skip or swallow it
+
+### S224 — a non-BWK awk or non-BSD grep fails the identity step, naming the tool
+**Covers:** F43
+- Given: the identity step's script run on a macOS host, with a PATH shim
+  that reports GNU awk (or GNU grep) and records its invocation
+- When: the script runs
+- Then: it exits non-zero, the output names the mismatched tool, and the shim
+  was invoked; a control run on the real macOS tools exits 0 (macOS host only)
+
+### S225 — a bash that is not 3.2 fails the identity step, naming bash
+**Covers:** F43
+- Given: the identity step's script run on a macOS host under a bash 4 or
+  later, or with a PATH shim reporting bash 5
+- When: the script runs
+- Then: it exits non-zero and names bash (macOS host only; not run where no
+  second bash exists and the step does not probe bash through PATH)
+
+### S226 — a missing UTF-8 locale fails the identity step and is never skipped
+**Covers:** F43
+- Given: the identity step's script run on a macOS host with a PATH shim for
+  `locale` that lists only C and POSIX
+- When: the script runs
+- Then: it exits non-zero and names the locale; it does not exit 0 (macOS
+  host only). Limit: AC3 (the macOS job red and the Linux job green on a
+  real locale-class defect, a throwaway-branch run linked from the PR) is a
+  human-visible hosted-runner result and cannot be a unit test

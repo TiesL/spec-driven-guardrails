@@ -1498,6 +1498,32 @@ a script can only check that the route left evidence).
 
 ---
 
+### F43 — CI also runs the full test suite on the macOS platform tools (issue #422)
+
+CI ran only on Linux, so a defect that shows only on BWK awk, BSD grep or
+bash 3.2 (the locale class of #397) reached review unseen (#405 R8).
+Requirement: `.github/workflows/ci.yml` has a `macos-latest` job that runs the
+full suite (`test/run.sh`, no subset) under `/bin/bash` 3.2 with `/usr/bin`
+first on PATH, so BWK awk and BSD grep are the tools in use; mawk is
+installed for S153 only and replaces nothing. The job names a UTF-8 locale.
+Its first step is a tool-identity precondition: from the version banners it
+checks awk is BWK, grep is BSD and bash is 3.2, and that the UTF-8 locale
+exists; any mismatch fails the job with a message naming the tool, and a
+missing locale fails, never skips. The job log shows the identity it used.
+The Linux job is unchanged. Slice V1 of #411 (A35a).
+
+Acceptance criteria: AC1 and AC2 of issue #422. Mechanically verified: the
+workflow's content (job, bash and PATH, mawk, locale, identity step) and the
+identity step's behaviour against PATH shims on a macOS host. Not verified
+(AC3, a stated limit): that the leg is red on a real locale-class defect and
+the Linux job green. That is a human-visible CI run on a throwaway branch
+(the `LC_ALL=C` prefix removed from one awk call of the marker parser) that
+the PR links; it cannot be a unit test because it needs the hosted runners.
+Also not verified: drift in the runner image, and that the identity step's
+banner wording matches a future BWK or BSD release.
+
+---
+
 ## Non-functional characteristics
 
 ### Security
