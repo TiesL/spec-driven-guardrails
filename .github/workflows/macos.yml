@@ -27,5 +27,7 @@ jobs:
           echo "/usr/bin" >> "$GITHUB_PATH"
       - name: Install mawk (S153 only)
         run: brew install mawk
+      - name: H2 mutation, locale to ISO8859-1
+        run: echo "LC_ALL=en_US.ISO8859-1" >> "$GITHUB_ENV"
       - name: Full test suite (bash 3.2)
         run: /bin/bash test/run.sh
