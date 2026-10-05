@@ -37,6 +37,8 @@ working tree with an editor tool. `Bash` *is* allowed (needed for
 not a technically enforced write ban — use it only to read and to post the
 comment, never to change files. This skill delivers findings, not fixes.
 
+Every Review round, including a re-review after a fix commit, is a new dispatch of a fresh Reviewer; a Reviewer is never continued, by `SendMessage` or by the dispatch tool's `fork` type (not the `context: fork` above).
+
 ## Review depth: quick vs thorough
 
 Every PR gets at least the single-Reviewer fork above (`context: fork`) —
@@ -308,6 +310,8 @@ marker, immediately after that finding's text:
 <!-- finding:<short-slug> status=open -->
 <!-- finding:<short-slug> status=resolved -->
 ```
+
+The previous round's findings are inputs the new Reviewer re-checks against the new head, not memory: each open slug is verified again, never assumed from a remembered conversation.
 
 On a second (or later) round, run
 `skills/pre-merge-review/finding-carryforward-gate.sh <pr-number>` before
