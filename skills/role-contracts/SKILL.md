@@ -223,7 +223,7 @@ abstractions, reuse, and verbosity/efficiency.*
 Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
 see the note above.
 
-**Fresh every round.** Each Review round is a new dispatch of a fresh Reviewer, never resumed or continued. You have no memory of earlier rounds: earlier findings reach you only as a link to the previous findings comment and its `finding:` slugs, and you re-check each one against the new head.
+**Fresh every round.** Each Review round is a new dispatch of a fresh Reviewer, never resumed or continued: not by `SendMessage`, and not by the dispatch tool's `fork` type. You have no memory of earlier rounds: earlier findings reach you only as a link to the previous findings comment and its `finding:` slugs, and you re-check each one against the new head.
 
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic

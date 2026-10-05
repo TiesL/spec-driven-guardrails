@@ -41,7 +41,7 @@ Every Review round, including a re-review after a fix commit, is a new dispatch 
 
 ## Review depth: quick vs thorough
 
-Every PR gets at least the single-Reviewer fork above (`context: fork`) —
+Every PR gets at least the single isolated Reviewer run above (`context: fork`) —
 "quick" mode, unchanged. On top of that, run:
 
 ```
@@ -59,8 +59,8 @@ into thorough mode regardless of what the categories say — a manual
 override for dogfooding this mechanism before issue #307 decides on any
 default-on rule, never a standing default itself.
 
-**When the verdict is `thorough`:** fork Reviewer as usual, **plus
-exactly `LENS_ADAPTER_COUNT` additional lens-Adapter forks** — fresh,
+**When the verdict is `thorough`:** run the Reviewer as usual, **plus
+exactly `LENS_ADAPTER_COUNT` additional lens-Adapter runs** — fresh,
 isolated `context: fork` instances, generic and undifferentiated copies
 of Reviewer's own review scope (same prompt, same finding format, same
 `allowed-tools`), never named personas (no "Blind Hunter", no "Edge Cases
@@ -82,8 +82,8 @@ the same machine-readable disposition convention ("What happens with it"
 below) — a second or third set of eyes, not a second gate with its own
 marker.
 
-**When the verdict is `quick`:** nothing changes — the single-Reviewer
-fork above is the whole review, same as before this classifier existed.
+**When the verdict is `quick`:** nothing changes — the single isolated
+Reviewer run above is the whole review, same as before this classifier existed.
 
 Both `classify-review-depth.sh` and `--lens-adapter-count` fail open the
 same way every other `gh`-dependent check in this skill does when `gh` or
