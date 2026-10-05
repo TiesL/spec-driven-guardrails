@@ -8,7 +8,8 @@
 # line per dispatch (agent id), never a model-record marker, and a
 # "Before asking for a merge" self-check line.
 #
-# Mutations that turn this red: delete the limit sentence, or turn it into
+# Mutations that turn this red: soften the self-check to 'optionally note:';
+# say 'record it' without naming the Pipeline log; delete the limit sentence, or turn it into
 # a claim that the rounds are verified ("checked", "proves"); delete the
 # self-check line or its "recorded self-check, not a pass" wording; drop the
 # agent id from the log; let the log carry a model-record marker.
@@ -40,5 +41,13 @@ para_has_all "$FR_ORCH" 'pipeline log' '(never|not|no)[^.]*model-record' \
 # Self-check list: the one line this item owns.
 para_has_all "$FR_ORCH" 'before asking for a merge' 'review round' 'agent id' 'SendMessage|message' \
   || fail "S211/AC5b — no ORCHESTRATOR.md 'Before asking for a merge' paragraph with the line: every Review round has its own agent id and no message went to an earlier Reviewer"
+
+# The self-check is mandatory (not 'optionally note') and its result goes in
+# one named place: a line in the issue's Pipeline log (decided wording,
+# Architect, #414 round 1, finding 6).
+para_has_all "$FR_ORCH" 'before asking for a merge' '(run|must|always) (this )?(self-check|check)' \
+  || fail "S211/AC5b — the 'Before asking for a merge' self-check is not mandatory in ORCHESTRATOR.md (expected 'run this self-check')"
+sentence_has_all "$FR_ORCH" 'self-check' 'record[^.:]*pipeline log' \
+  || fail "S211/AC5b — ORCHESTRATOR.md does not say to record the self-check result as a line in the issue's Pipeline log"
 
 test_done

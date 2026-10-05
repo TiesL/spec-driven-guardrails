@@ -2703,8 +2703,11 @@ something new is being added.
 - When: each is read for the rule on repeat Review rounds
 - Then: each states that every Review round is a new dispatch of a fresh agent
   and that a Reviewer is never continued or resumed; `ORCHESTRATOR.md` forbids
-  it for the Reviewer explicitly, by `SendMessage` and by the dispatch tool's
-  `fork` type, and imposes no `SendMessage` ban on other roles
+  it for the Reviewer explicitly, in one sentence naming both `SendMessage`
+  and the dispatch tool's `fork` type (also in the Reviewer contract and
+  `pre-merge-review`), says roles are started as a new agent never by that
+  `fork` type, imposes no `SendMessage` ban on other roles, and leaves
+  continuing another role for a later step to #412
 
 ### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
 **Covers:** F41
@@ -2722,8 +2725,18 @@ something new is being added.
 - Given: `ORCHESTRATOR.md` (issue #414, AC5 case b)
 - When: the pipeline log and the pre-merge self-check are read
 - Then: the pipeline log has one line per dispatch with the agent id, is never a
-  `model-record` marker, and the "Before asking for a merge" self-check has a
+  `model-record` marker, and the mandatory "Before asking for a merge"
+  self-check (its result recorded as a line in the issue's Pipeline log) has a
   line that every Review round has its own agent id and no message went to an
   earlier Reviewer; the text states plainly that GitHub artifacts cannot show
   whether two rounds came from different agent instances, so the line is a
   recorded self-check, not a pass
+
+### S212 — in pre-merge-review a bare "fork" means only `context: fork`
+**Covers:** F41
+- Given: `skills/pre-merge-review/SKILL.md` after the fresh-Reviewer rule
+  (issue #414, A27, round 1 finding 7)
+- When: it is read for the word "fork"
+- Then: apart from `context: fork` and "the dispatch tool's `fork` type", no
+  "fork" remains, so no reader can take the single-Reviewer or lens-Adapter
+  runs for the dispatch type the rule bans; they are named as runs
