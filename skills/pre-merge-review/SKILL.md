@@ -35,7 +35,7 @@ excludes `Edit`/`Write`/`NotebookEdit`: this skill cannot modify the
 working tree with an editor tool. `Bash` *is* allowed (needed for
 `scope.sh`, `gh pr diff`, posting the findings comment) and is therefore
 not a technically enforced write ban — use it only to read and to post the
-comment, never to change files. This skill delivers findings, not fixes.
+comment, never to change files. This skill delivers findings, not fixes: a finding names the defect, its class (`design`, `code`, `test` or `spec`) and a falsifying check, and never gives a fix or a patch (`role-contracts`, "Reporting a defect or finding").
 
 Every Review round, including a re-review after a fix commit, is a new dispatch of a fresh Reviewer; a Reviewer is never continued, by `SendMessage` or by the dispatch tool's `fork` type (not the `context: fork` above).
 

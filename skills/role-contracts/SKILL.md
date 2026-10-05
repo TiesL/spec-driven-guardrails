@@ -61,8 +61,8 @@ the dispatching prompt's own job to state.
 Every role takes part in every change: there is no phase skipping in v1 (A3). Roles work
 sequentially on one shared branch per work item. The run rules live in one file,
 [`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
-with each stage's label and `model-record` `stage=` value, fresh dispatch, and a fresh Reviewer for every Review round, the
-human override record, what to do when dispatch isn't available, and how to resume. In a
+with each stage's label and `model-record` `stage=` value, fresh dispatch (a fresh Reviewer for every Review round), the
+loop-back route for a finding by its class, the human override record, what to do when dispatch isn't available, and how to resume. In a
 project that answers `process-multi-agent-roles` yes, the `SessionStart` hook prints that file
 into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
 the `model-choice` skill.
@@ -337,6 +337,15 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   for a scenario/behavior-level defect without a specific line.
 - **Category** — short label for the kind of defect (e.g. correctness, regression,
   test-coverage, code-quality).
+- **Class** — `design`, `code`, `test` or `spec` (A28): where the fix starts. Category says what
+  kind of defect it is; Class names the role whose step the fix begins at, per the route table
+  below. `design`: the cause is a decision about structure (a format, a contract or Interface, a
+  Seam, a parsing approach, where a responsibility lives, a data shape), so a correct code fix
+  would leave that decision in place. `code`: the implementation departs from a sound design.
+  `test`: a test does not falsify what it claims. `spec`: an acceptance criterion or the PRD is
+  wrong, ambiguous or missing. The reporting role proposes the class; nobody downgrades it.
+- **Falsifying check** — the observable condition that a correct fix must meet, stated so that
+  a test or a reader could show the defect gone. It replaces any "Fix:" line.
 - **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
   never asserted as certain without naming which of the two it is.
 - **Severity** — `low`, `medium`, or `high` (added 2026-09-29). Independent of Verdict: a finding can be `CONFIRMED` and still `low`
@@ -349,6 +358,19 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   and never fixed inline without a scope-expansion decision. A finding within the current
   change's own scope (i.e. it gets fixed in this same PR) doesn't need this field — Disposition only
   applies once a finding is judged out of scope for the work at hand.
+
+A finding names the defect, its class and a falsifying check, and never gives a fix, a patch or
+code. There is no exception for a typo-level or one-line finding: its falsifying check is a single
+line anyway. The same rule holds for the findings of QA and the Developer. Each class is routed
+to the role that owns the fix (roles in order; the orchestrator runs the route, see
+[`ORCHESTRATOR.md`](ORCHESTRATOR.md)), from whichever stage found the defect:
+
+| Class | Route |
+| --- | --- |
+| `design` | Architect, QA, Developer, fresh Reviewer |
+| `code` | QA (a red test for the defect), Developer, fresh Reviewer |
+| `test` | QA, Developer, fresh Reviewer |
+| `spec` | Product, then the Architect if the design is affected, QA, Developer, fresh Reviewer |
 
 No new tooling: this is the same shape already produced by this project's own
 review-finding conventions, written down as a standing content requirement instead of only
