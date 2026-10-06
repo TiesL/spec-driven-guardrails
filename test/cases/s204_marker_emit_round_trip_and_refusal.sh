@@ -4,8 +4,8 @@
 #
 # Issue #402, Architect A26 (amended) and the maintainer's acceptance test:
 # nobody types a marker. `skills/pre-merge-review/model-record-emit.sh --stage
-# <Stage> --model <id> --effort <low|medium|high|unknown> [--floor-basis
-# <sentence>]` prints exactly one line the parser reads back unchanged, or
+# <Stage> --model <id> [--floor-basis <sentence>]` prints exactly one line
+# (no effort: #424, A33/A33a) the parser reads back unchanged, or
 # prints NOTHING on stdout, a reason on stderr and exits 2 (3 when the lib is
 # missing); never a malformed line. Seam: the wrapper's stdout, stderr and exit
 # status; the shared parser (marker_find, marker_scan, marker_attr) as the
@@ -16,6 +16,11 @@
 # empty or over-long text are refused; `-->` and `<!--` in a floor-basis are
 # refused (GitHub would end the comment early), but the test accepts either a
 # refusal or an exact round trip there, so only a malformed line fails.
+#
+# Issue #424 (V3): the emitter no longer writes `effort`; the old effort value
+# refusals and the "--effort is required" refusal are retired here. That it
+# still ACCEPTS `--effort <anything>` for one release, ignoring it with exactly
+# one stderr line, is S236.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -65,21 +70,26 @@ run() {
 # ---------------------------------------------------------------------------
 # (1) round trip
 # ---------------------------------------------------------------------------
-round_trip() { # label locale path stage model effort [floor-basis]
-  local label="$1" loc="$2" path="$3" stage="$4" model="$5" effort="$6" fb="${7-}" have=0 got
-  [ "$#" -ge 7 ] && have=1
+round_trip() { # label locale path stage model [floor-basis]
+  local label="$1" loc="$2" path="$3" stage="$4" model="$5" fb="${6-}" have=0 got want
+  [ "$#" -ge 6 ] && have=1
+  want="<!-- model-record: stage=$stage model=\"$model\""
   if [ "$have" -eq 1 ]; then
-    run "$loc" "$path" --stage "$stage" --model "$model" --effort "$effort" --floor-basis "$fb"
+    run "$loc" "$path" --stage "$stage" --model "$model" --floor-basis "$fb"
+    want="$want floor-basis=\"$fb\""
   else
-    run "$loc" "$path" --stage "$stage" --model "$model" --effort "$effort"
+    run "$loc" "$path" --stage "$stage" --model "$model"
   fi
+  want="$want -->"
   [ "$rc" -eq 0 ] || { fail "S204 round-trip/$label [$loc] — a valid input was refused (exit $rc): $err"; return; }
+  [ -z "$err" ] || fail "S204 round-trip/$label [$loc] — a valid call without --effort must print nothing on stderr, got: '$err'"
   [ "$(printf '%s\n' "$out" | grep -c .)" -eq 1 ] || { fail "S204 round-trip/$label [$loc] — expected exactly one line, got: '$out'"; return; }
-  case "$out" in "<!-- model-record: stage=$stage "*" -->") : ;; *) fail "S204 round-trip/$label [$loc] — not a model-record marker with a bare stage: '$out'"; return ;; esac
+  [ "$out" = "$want" ] || { fail "S204 round-trip/$label [$loc] — the line must be exactly '$want', got: '$out'"; return; }
+  case "$out" in *' effort="'*) fail "S204 round-trip/$label [$loc] — the line must carry no effort attribute (#424): '$out'" ;; esac
   got="$(marker_find "$stage" "$out$SEP")"
   [ "$got" = "$out" ] || fail "S204 round-trip/$label [$loc] — marker_find does not return the emitted line: '$got' vs '$out'"
   [ "$(marker_attr "$out" model)" = "$model" ] || fail "S204 round-trip/$label [$loc] — model came back as '$(marker_attr "$out" model)', want '$model'"
-  [ "$(marker_attr "$out" effort)" = "$effort" ] || fail "S204 round-trip/$label [$loc] — effort came back as '$(marker_attr "$out" effort)', want '$effort'"
+  [ -z "$(marker_attr "$out" effort)" ] || fail "S204 round-trip/$label [$loc] — an effort appeared from nowhere: '$(marker_attr "$out" effort)'"
   if [ "$have" -eq 1 ]; then
     [ "$(marker_attr "$out" floor-basis)" = "$fb" ] || fail "S204 round-trip/$label [$loc] — floor-basis came back as '$(marker_attr "$out" floor-basis)', want '$fb'"
   else
@@ -106,27 +116,23 @@ fbs=(
 )
 for loc in $locales; do
   for st in Discovery Planning Test Implementation; do
-    for ef in low medium high unknown; do
-      round_trip "$st/$ef" "$loc" "$emit" "$st" "claude-opus-5-5" "$ef"
-    done
+    round_trip "$st" "$loc" "$emit" "$st" "claude-opus-5-5"
   done
   for m in "${models[@]}" "$long_model"; do
-    round_trip "model ${m:0:30}" "$loc" "$emit" Planning "$m" medium
+    round_trip "model ${m:0:30}" "$loc" "$emit" Planning "$m"
   done
-  for ef in low medium high unknown; do
-    round_trip "Review/$ef" "$loc" "$emit" Review "claude-opus-5-5" "$ef" "same model, higher effort"
-  done
+  round_trip "Review" "$loc" "$emit" Review "claude-opus-5-5" "same model, higher effort"
   i=0
   for fb in "${fbs[@]}"; do
     i=$((i + 1))
-    round_trip "Review floor-basis #$i" "$loc" "$emit" Review "claude-opus-5-5" high "$fb"
+    round_trip "Review floor-basis #$i" "$loc" "$emit" Review "claude-opus-5-5" "$fb"
   done
 done
 
 # the ambiguous floor-basis texts: either refused, or an exact round trip
 for fb in "ends with --> inside" "has <!-- an opener"; do
   for loc in $locales; do
-    run "$loc" "$emit" --stage Review --model claude-opus-5-5 --effort high --floor-basis "$fb"
+    run "$loc" "$emit" --stage Review --model claude-opus-5-5 --floor-basis "$fb"
     if [ "$rc" -eq 0 ]; then
       [ "$(marker_attr "$out" floor-basis)" = "$fb" ] && [ "$(marker_scan "$out$SEP" | grep -c '^ok')" -eq 1 ] \
         || fail "S204 ambiguous/'$fb' [$loc] — emitted but the parser does not read it back: '$out'"
@@ -139,22 +145,26 @@ done
 # the library function agrees with the wrapper
 type marker_emit >/dev/null 2>&1 || fail "S204 — lib/model-record.sh defines no marker_emit"
 if type marker_emit >/dev/null 2>&1; then
-  lib_out="$(marker_emit Planning claude-opus-5-5 low 2>/dev/null)"
-  run C "$emit" --stage Planning --model claude-opus-5-5 --effort low
-  [ "$lib_out" = "$out" ] || fail "S204 — marker_emit and the wrapper disagree: '$lib_out' vs '$out'"
-  bad_out="$(marker_emit planning claude-opus-5-5 low 2>/dev/null)"
+  # marker_emit <Stage> <model> [<floor-basis>] (A33): no effort argument
+  lib_out="$(marker_emit Planning claude-opus-5-5 2>/dev/null)"
+  run C "$emit" --stage Planning --model claude-opus-5-5
+  [ -n "$lib_out" ] && [ "$lib_out" = "$out" ] || fail "S204 — marker_emit and the wrapper disagree: '$lib_out' vs '$out'"
+  lib_review="$(marker_emit Review claude-opus-5-5 'stronger model' 2>/dev/null)"
+  [ "$lib_review" = '<!-- model-record: stage=Review model="claude-opus-5-5" floor-basis="stronger model" -->' ] \
+    || fail "S204 — marker_emit Review <model> <floor-basis> must print the effort-free line, got: '$lib_review'"
+  bad_out="$(marker_emit planning claude-opus-5-5 2>/dev/null)"
   bad_rc=$?
   [ "$bad_rc" -ne 0 ] && [ -z "$bad_out" ] || fail "S204 — marker_emit must refuse a bad stage with a non-zero status and empty stdout (rc=$bad_rc out='$bad_out')"
 fi
 
 # five emitted lines make a gate run with no finding at all
-fiveline() { "$emit" --stage "$1" --model claude-opus-5-5 --effort "$2"; }
+fiveline() { "$emit" --stage "$1" --model claude-opus-5-5; }
 rm -f "${FAKE_GH_DATA:?}"/*.json
 json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: x" "Closes #239"
 json_comments "$FAKE_GH_DATA/reviews-246.json"
-json_comments "$FAKE_GH_DATA/comments-239.json" "$(fiveline Discovery high)"
-json_comments "$FAKE_GH_DATA/comments-246.json" "$(fiveline Planning high)" "$(fiveline Test medium)" "$(fiveline Implementation medium)" \
-  "$("$emit" --stage Review --model claude-opus-5-5 --effort high --floor-basis 'stronger > weaker; the diff is small -- mechanical')"
+json_comments "$FAKE_GH_DATA/comments-239.json" "$(fiveline Discovery)"
+json_comments "$FAKE_GH_DATA/comments-246.json" "$(fiveline Planning)" "$(fiveline Test)" "$(fiveline Implementation)" \
+  "$("$emit" --stage Review --model claude-opus-5-5 --floor-basis 'stronger > weaker; the diff is small -- mechanical')"
 for loc in $locales; do
   rf_out="$(cd "$RF_PLAIN" && PATH="$RF_BIN:$PATH" LC_ALL="$loc" LANG="$loc" "$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh" 246 2>/dev/null)"
   [ -z "$rf_out" ] || fail "S204 gate [$loc] — five emitted markers (Review with '>' and '--' in its floor-basis) must give no finding, got: '$rf_out'"
@@ -174,23 +184,20 @@ refuse() { # label, args...
     [ -n "$err" ] || fail "S204 refuse/$label [$loc] — a refusal must say why on stderr"
   done
 }
-base_ok=(--model claude-opus-5-5 --effort high)
+base_ok=(--model claude-opus-5-5)
 for st in planning Plan "" '"Planning"' 'Planning ' ' Planning' PLANNING 'Planning,Test'; do
   refuse "stage '$st'" --stage "$st" "${base_ok[@]}"
 done
-for ef in Low max "" 'high ' session-default '"low"' 1; do
-  refuse "effort '$ef'" --stage Planning --model claude-opus-5-5 --effort "$ef"
-done
-refuse "model empty" --stage Planning --model "" --effort low
-refuse "model with a quote" --stage Planning --model 'claude"x' --effort low
-refuse "model with a space" --stage Planning --model 'claude opus' --effort low
-refuse "model with a newline" --stage Planning --model $'claude\nopus' --effort low
-refuse "model with a tab" --stage Planning --model $'claude\topus' --effort low
-refuse "model with an equals sign" --stage Planning --model 'a=b' --effort low
-refuse "model with a closing arrow" --stage Planning --model 'a-->b' --effort low
-refuse "model with a command substitution" --stage Planning --model '$(touch pwned)' --effort low
+refuse "model empty" --stage Planning --model ""
+refuse "model with a quote" --stage Planning --model 'claude"x'
+refuse "model with a space" --stage Planning --model 'claude opus'
+refuse "model with a newline" --stage Planning --model $'claude\nopus'
+refuse "model with a tab" --stage Planning --model $'claude\topus'
+refuse "model with an equals sign" --stage Planning --model 'a=b'
+refuse "model with a closing arrow" --stage Planning --model 'a-->b'
+refuse "model with a command substitution" --stage Planning --model '$(touch pwned)'
 [ ! -e "$SANDBOX/pwned" ] && [ ! -e ./pwned ] || fail "S204 — a model value was executed"
-refuse "model over 200 characters" --stage Planning --model "${long_model}a" --effort low
+refuse "model over 200 characters" --stage Planning --model "${long_model}a"
 fb_ok="same model, higher effort"
 refuse "Review without a floor-basis" --stage Review "${base_ok[@]}"
 refuse "Review with an empty floor-basis" --stage Review "${base_ok[@]}" --floor-basis ""
@@ -209,16 +216,15 @@ done
 refuse "unknown flag" --stage Planning "${base_ok[@]}" --bogus x
 refuse "positional argument" --stage Planning "${base_ok[@]}" extra
 refuse "missing --stage" "${base_ok[@]}"
-refuse "missing --model" --stage Planning --effort low
-refuse "missing --effort" --stage Planning --model claude-opus-5-5
+refuse "missing --model" --stage Planning
 refuse "no arguments"
-refuse "repeated --model" --stage Planning --model a --model b --effort low
+refuse "repeated --model" --stage Planning --model a --model b
 refuse "repeated --stage" --stage Planning --stage Test "${base_ok[@]}"
-refuse "flag without a value" --stage Planning --model claude-opus-5-5 --effort
+refuse "flag without a value" --stage Planning --model
 refuse "a hand-typed quoted stage flag" '--stage="Planning"' "${base_ok[@]}"
 
 # a refusal never leaves a partial line
-run C "$emit" --stage Review --model 'x"y' --effort low --floor-basis ok
+run C "$emit" --stage Review --model 'x"y' --floor-basis ok
 [ -z "$out" ] || fail "S204 — partial output on refusal: '$out'"
 
 # ---------------------------------------------------------------------------
@@ -228,14 +234,14 @@ linked="$SANDBOX/proj"
 mkdir -p "$linked/.claude"
 ln -s "$TEST_REPO_ROOT/skills" "$linked/.claude/skills"
 for loc in $locales; do
-  run "$loc" "$linked/.claude/skills/pre-merge-review/model-record-emit.sh" --stage Review --model claude-opus-5-5 --effort unknown --floor-basis "weaker model, mechanical rename"
+  run "$loc" "$linked/.claude/skills/pre-merge-review/model-record-emit.sh" --stage Review --model claude-opus-5-5 --floor-basis "weaker model, mechanical rename"
   [ "$rc" -eq 0 ] && [ "$(marker_attr "$out" floor-basis)" = "weaker model, mechanical rename" ] \
     || fail "S204 symlink [$loc] — through .claude/skills (an adopted project) the wrapper must work, rc=$rc out='$out' err='$err'"
 done
 alone="$SANDBOX/alone/skills/pre-merge-review"
 mkdir -p "$alone"
 cp "$emit" "$alone/model-record-emit.sh"
-run C "$alone/model-record-emit.sh" --stage Planning --model claude-opus-5-5 --effort low
+run C "$alone/model-record-emit.sh" --stage Planning --model claude-opus-5-5
 [ "$rc" -eq 3 ] && [ -z "$out" ] || fail "S204 — without lib/model-record.sh: expected exit 3 and empty stdout, got rc=$rc out='$out'"
 grep -q 'model-record' <<<"$err" || fail "S204 — the missing-lib message must name lib/model-record.sh, got: '$err'"
 

@@ -14,6 +14,12 @@
 # comment carrying five stage markers separated by the byte is still ONE
 # comment, so the role-played finding is still raised in an opted-in project.
 # Seam: model-record-gate.sh and compliance-evidence.sh against fake gh.
+#
+# Issue #424: "found with its own values" is told apart without effort. Gate:
+# the well-formed Review marker has no floor-basis (a floor-basis finding
+# appears iff it was read; its first quoted value is a `note`). Gate 2: the
+# unclosed marker claims another model than Implementation's, so `evidenced`
+# appears iff the well-formed marker was read.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -42,13 +48,14 @@ ce_out=""
 RS=$'\036'
 NL=$'\n'
 impl_good="$(marker Implementation Sonnet high)"
-rev_sp='<!-- model-record: stage=Review floor-basis=" same model --> lower effort" model="Sonnet" effort="low" -->'
+rev_sp='<!-- model-record: stage=Review note=" same model --> lower effort" model="Sonnet" effort="low" -->'
 UNC='<!-- model-record: stage=Review model="Sonnet effort=high'
 
 expect_lower() {
   [ "$rf_status" -eq 0 ] || fail "S200 gate/$1 — exit $rf_status"
-  grep -qiE 'lower effort' <<<"$rf_out" \
-    || fail "S200 gate/$1 — the well-formed marker in the next comment must be found with its own values (lower-effort finding), got: '$rf_out'"
+  [ "$(grep -i 'floor-basis' <<<"$rf_out" | grep -vi 'malformed' | grep -c .)" -eq 1 ] \
+    || fail "S200 gate/$1 — the well-formed marker in the next comment (no floor-basis) must be found with its own values: the floor-basis finding, got: '$rf_out'"
+  ! grep -q 'no record found' <<<"$rf_out" || fail "S200 gate/$1 — a well-formed marker was lost ('no record found'), got: '$rf_out'"
 }
 case_run() { # label bodies...
   local label="$1"
@@ -70,11 +77,11 @@ case_run "separator after the good marker" "$impl_good" "$UNC" "${rev_sp}${RS}"
 case_run "separator in the Implementation comment" "x${RS}y${NL}$impl_good" "$UNC" "$rev_sp"
 
 # a separator in the middle of a well-formed marker must not corrupt the next one
-rf_data "$impl_good" "<!-- model-record: stage=Review model=\"Sonnet\"${RS} effort=\"low\" floor-basis=\"ok\" -->" "$(marker Review Sonnet high 'floor-basis="ok"')"
+rf_data "$impl_good" "<!-- model-record: stage=Review model=\"Sonnet\"${RS} effort=\"low\" -->" "$(marker Review Sonnet high 'floor-basis="ok"')"
 rf_gate
 [ "$rf_status" -eq 0 ] || fail "S200 gate — exit $rf_status with a separator inside a marker"
-# the latest round (high) wins; whatever happens to the split marker, no crash and no lower-effort claim from it
-grep -qiE 'lower effort' <<<"$rf_out" && fail "S200 gate — a later equal-effort round must win over an earlier marker that held a separator, got: '$rf_out'"
+# the latest round (with a floor-basis) wins; whatever happens to the split marker (it has none), no crash and no floor-basis claim from it
+grep -qi 'floor-basis' <<<"$rf_out" && fail "S200 gate — a later round must win over an earlier marker that held a separator, got: '$rf_out'"
 
 # (2) role-play: one comment carrying all five markers separated by the byte is ONE comment
 id="process-multi-agent-roles"
@@ -97,14 +104,14 @@ grep -q '^role-played: ' <<<"$rf_out" && fail "S200 gate control — a dispatche
 # compliance-evidence.sh: the same byte in a PR comment
 # ---------------------------------------------------------------------------
 impl_c="$(mk Implementation claude-sonnet-5 medium)"
-c_unc='<!-- model-record: stage=Review model="claude-sonnet-5 effort=high'
-c_rev_sp='<!-- model-record: stage=Review floor-basis=" same model --> lower effort" model="claude-sonnet-5" effort="low" -->'
+c_unc='<!-- model-record: stage=Review model="claude-opus-5 effort=high'
+c_rev_sp='<!-- model-record: stage=Review note=" same model --> lower effort" model="claude-sonnet-5" effort="low" -->'
 for variant in "${c_unc}${RS}" "${RS}${c_unc}" "${c_unc}${RS} x\" -->"; do
   ce "Closes #265" "$impl_c
 $variant
 $c_rev_sp" ""
   assert_table_shape "S200 gate2 separator in an unclosed comment" "$ce_out"
-  [ "$(row_status "$ce_out" 2)" = "not-evidenced" ] || fail "S200 gate2 — the separator byte in comment N must not change how comment N+1 is read, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S200 gate2 — the separator byte in comment N must not change how comment N+1 is read, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
 done
 
 test_done

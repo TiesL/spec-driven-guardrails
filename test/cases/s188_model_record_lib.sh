@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# S188 — lib/model-record.sh: one shared normalize_model, effort_rank and
-# marker_attr for the model-record gate and the compliance collector.
+# S188 — lib/model-record.sh: one shared normalize_model and marker_attr for
+# the model-record gate and the compliance collector. effort_rank is gone
+# (#424: effort is neither chosen nor checked).
 # Covers: F39
 #
 # Issue #392, A25. Seam: the three functions of the sourced lib
-# (normalize_model <label>, effort_rank <value>, marker_attr <marker-line>
-# <name>), by their documented output only. normalize_model's behaviour is
+# (normalize_model <label>, marker_attr <marker-line> <name>), by their
+# documented output only; marker_attr stays generic, so it still reads a
+# legacy `effort` attribute, which nothing interprets any more (#424). normalize_model's behaviour is
 # the pre-#392 one, moved unchanged (#268).
 
 set -uo pipefail
@@ -20,10 +22,13 @@ if [ ! -f "$lib" ]; then
 fi
 # shellcheck source=../../lib/model-record.sh disable=SC1091
 . "$lib"
-for fn in normalize_model effort_rank marker_attr; do
+for fn in normalize_model marker_attr; do
   type "$fn" >/dev/null 2>&1 || fail "S188 — lib/model-record.sh defines no $fn"
 done
-type marker_attr >/dev/null 2>&1 && type effort_rank >/dev/null 2>&1 && type normalize_model >/dev/null 2>&1 || test_done
+type marker_attr >/dev/null 2>&1 && type normalize_model >/dev/null 2>&1 || test_done
+# #424: effort_rank is deleted; nothing may be left to rank an effort
+! type effort_rank >/dev/null 2>&1 || fail "S188/#424 — lib/model-record.sh still defines effort_rank"
+! grep -qE '(^|[^A-Za-z_])effort_rank' "$lib" || fail "S188/#424 — lib/model-record.sh still mentions effort_rank"
 
 eq() { # label, got, want
   [ "$2" = "$3" ] || fail "S188 — $1: got '$2', want '$3'"
@@ -40,20 +45,10 @@ eq "multi-part version" "$(normalize_model 'claude-opus-5-5')" "opus 5 5"
 [ "$(normalize_model 'claude-sonnet-5')" != "$(normalize_model 'claude-opus-5')" ] \
   || fail "S188 — different models must normalize different"
 # A short alias is NOT the same model as its full id (human decision 4: no
-# model table; the effort check is skipped, recorded as debt).
+# model table; different models are a recorded judgment, #424).
 [ "$(normalize_model 'opus')" != "$(normalize_model 'claude-opus-5')" ] \
   || fail "S188 — a short alias must not normalize equal to its full id (no model table)"
 eq "empty stays empty" "$(normalize_model '')" ""
-
-# --- effort_rank: low < medium < high, as 0/1/2; unknown prints nothing.
-eq "low" "$(effort_rank low)" "0"
-eq "medium" "$(effort_rank medium)" "1"
-eq "high" "$(effort_rank high)" "2"
-eq "case-insensitive HIGH" "$(effort_rank HIGH)" "2"
-eq "case-insensitive Medium" "$(effort_rank Medium)" "1"
-for unknown in session-default unknown max xhigh "" " " "very high" "low,high" 1; do
-  eq "unknown effort '$unknown' prints nothing" "$(effort_rank "$unknown")" ""
-done
 
 # --- marker_attr <line> <name>: the quoted value of one attribute.
 m='<!-- model-record: stage=Review model="claude-sonnet-5" effort="high" floor-basis="same model, higher effort" -->'

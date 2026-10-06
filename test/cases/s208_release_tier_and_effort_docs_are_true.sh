@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # S208 — the README says the release-branch tier IS adoptable (asked, and
-# the skill installed), and model-choice says the recorded effort is
-# self-reported.
+# the skill installed), and model-choice says the recorded model is
+# self-reported (#424: effort is no longer recorded).
 # Covers: F37, F39
 #
 # Issue #369 (holistic review of the release): B4, README.md said "the
@@ -9,10 +9,12 @@
 # project does NOT get, while `pending-changes.sh` asks the
 # `release-branch-workflow` question and `adopt.sh` symlinks the skill, and a
 # later README paragraph says "every adopted project too ... unlike the
-# five-role pipeline above". Effort honesty: the effort in a `model-record`
-# marker is whatever the role or orchestrator says; the dispatch tool has no
-# effort setting, so unless the platform set it, the value is self-reported and
-# unverified. Seam: the text of README.md and model-choice, plus the registry
+# five-role pipeline above". Honesty: the model in a `model-record` marker is
+# whatever the role or orchestrator says, so it is self-reported and
+# unverified (A33a: "by the model-only floor, on self-reported model strings");
+# since #424 the dispatch tool's missing effort setting means effort is not
+# recorded at all, so the old "effort is self-reported unless the platform set
+# it" sentence is retired. Seam: the text of README.md and model-choice, plus the registry
 # facts the README must agree with (adopt.sh into a fresh project).
 
 set -uo pipefail
@@ -54,13 +56,18 @@ para_has_all "$readme" 'release-branch-workflow' '(adopted|adopt)' '(asked|quest
 para_has_all "$readme" 'Everything above is what an adopted project gets' '(opt-in|asked|opt in)' 'release-branch' \
   || fail "S208/B4 — the paragraph 'Everything above is what an adopted project gets' must note that the five-role pipeline and the release-branch tier are both opt-ins an adopter is asked about"
 
-# --- effort honesty ---------------------------------------------------------------------
-para_has_all "$mc" 'effort' '(self-reported|self-declared|unverified|not verified|can.t be verified|cannot be verified|nothing verifies)' '(platform|unless|not set|unset)' \
-  || fail "S208/effort — model-choice must say in one clear sentence that the effort in a marker is self-reported and unverified unless the platform set it (the dispatch tool has no effort setting)"
-if para_has_all "$mc" 'effort' '(self-reported|self-declared|unverified|not verified)' '(platform|unless|not set|unset)'; then
-  sent="$(tr '\n' ' ' < "$mc" | sed -E 's/\. +/.\
-/g' | grep -iE 'effort' | grep -iE 'self-reported|self-declared|unverified|not verified' | grep -iE 'platform|unless|not set|unset' | head -1)"
-  [ -n "$sent" ] || fail "S208/effort — the statement must be ONE sentence naming effort, that it is self-reported/unverified, and the platform exception"
+# --- honesty about what a marker proves ------------------------------------------------
+# #424: the effort sentence is gone; model-choice says, in one sentence, that the
+# model string in a marker is self-reported and unverified, so the model-only
+# floor rests on a claim.
+mc_sentences="$(tr '\n' ' ' < "$mc" | sed -E 's/\. +/.\
+/g')"
+# a sentence that names the model and says it is self-reported/unverified, and is not about effort
+sent="$(grep -iE 'model' <<<"$mc_sentences" | grep -iE 'self-reported|self-declared|unverified|not verified' | grep -viE 'effort' | head -1)"
+[ -n "$sent" ] || fail "S208/honesty — model-choice must say, in one sentence that is not about effort, that the model in a marker is self-reported and unverified"
+retired="$(grep -iE 'effort' <<<"$mc_sentences" | grep -iE 'self-reported|self-declared|unverified|not verified' | grep -iE 'platform|unless|not set|unset')"
+if [ -n "$retired" ]; then
+  fail "S208/#424 — model-choice still has the retired sentence that the effort in a marker is self-reported unless the platform set it"
 fi
 
 test_done

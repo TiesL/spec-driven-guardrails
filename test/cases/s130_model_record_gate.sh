@@ -28,11 +28,12 @@
 # this test pins is unchanged: REST endpoints only, `--paginate`, the exact
 # call set (any other call falls through to `exit 1`).
 #
-# Issue #392: the same-model arms below now exercise the effort rule (Review at
-# LOWER effort than Implementation is the finding; a legacy same-model-exception
-# neither waives it nor is required) and every Review marker carries a
-# floor-basis. The full floor rule (floor-basis presence, unknown efforts,
-# different models) is S189.
+# Issue #424 (V3, A33/A33a): the floor is judged on the model alone, so the
+# same-model arms below pin that a Review recorded at a LOWER legacy effort
+# than Implementation is NOT a finding (effort is neither chosen nor
+# checked; a legacy `effort` attribute is read and ignored), and every
+# Review marker still carries a floor-basis. The full floor rule
+# (floor-basis presence, legacy efforts, different models) is S189.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -208,9 +209,9 @@ exit 1
 output_review_marker="$(PATH="$fakebin_review_marker:$PATH" "$script" 246)"
 [ -z "$output_review_marker" ] || fail "S130 — expected no findings when the Review marker lives in a PR review body, got: $output_review_marker"
 
-# #392 (replaces #244 AC2): Review and Implementation recording the same
-# model, with Review at LOWER effort (low vs. medium), is a finding that
-# names the model and no longer mentions same-model-exception.
+# #424 (replaces #392's lower-effort arm): Review and Implementation recording
+# the same model, with Review at a LOWER legacy effort (low vs. medium), is no
+# finding at all: effort is not read.
 fakebin_same_model="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
@@ -232,16 +233,10 @@ esac
 exit 1
 ')"
 output_same_model="$(PATH="$fakebin_same_model:$PATH" "$script" 246)"
-case "$output_same_model" in
-  *"same model"*"Sonnet"*) : ;;
-  *) fail "S130 — expected a same-model lower-effort finding, got: $output_same_model" ;;
-esac
-case "$output_same_model" in
-  *same-model-exception*) fail "S130 — the finding must not ask for a same-model-exception any more (#392), got: $output_same_model" ;;
-esac
+[ -z "$output_same_model" ] || fail "S130 — a same-model Review at a lower legacy effort must produce no finding (#424: the floor is on the model alone), got: $output_same_model"
 
-# ...and a legacy same-model-exception on that lower-effort Review is NOT a
-# waiver any more (#392 AC5: the attribute is ignored completely).
+# ...and a legacy same-model-exception on that lower-effort Review is simply
+# ignored as well (#392 AC5, #424): still no finding.
 fakebin_same_model_excepted="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
@@ -263,16 +258,15 @@ esac
 exit 1
 ')"
 output_excepted="$(PATH="$fakebin_same_model_excepted:$PATH" "$script" 246)"
-case "$output_excepted" in
-  *"same model"*"Sonnet"*) : ;;
-  *) fail "S130 — a legacy same-model-exception must not waive a lower-effort same-model Review, got: $output_excepted" ;;
-esac
+[ -z "$output_excepted" ] || fail "S130 — a legacy same-model-exception plus a lower legacy effort must produce no finding (#424), got: $output_excepted"
 
 # Found during PR #253's pre-merge-review: the latest marker per stage
 # must win, not the first. Round 1 recorded a genuine different-model
 # Review; round 2's fixup re-recorded Review with the same model as
-# Implementation, no exception. The violation is in round 2 and must be
-# caught, even though round 1's marker (different model) appears earlier
+# Implementation and no floor-basis. Since #424 the floor is on the model
+# alone, so the thing round 2 can get wrong and the gate can see is the
+# missing floor-basis: it must be reported (round 2 is the one checked, not
+# round 1, which carries one), even though round 1's marker appears earlier
 # in the text.
 fakebin_latest_wins="$(fake_gh_bin '
 case "$*" in
@@ -282,7 +276,7 @@ case "$*" in
   "api repos/{owner}/{repo}/issues/246/comments --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s\n" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Review model=\"Opus\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" floor-basis=\"stronger model than Implementation\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" -->"
     exit 0 ;;
   "api repos/{owner}/{repo}/pulls/246/reviews --paginate --jq .[] | (.body // \"\" | gsub(\"\\u001e\"; \"\")) + \"\\u001e\"")
     printf "%s" ""
@@ -297,8 +291,8 @@ exit 1
 ')"
 output_latest_wins="$(PATH="$fakebin_latest_wins:$PATH" "$script" 246)"
 case "$output_latest_wins" in
-  *"same model"*) : ;;
-  *) fail "S130 — expected the latest (round-2) Review marker to be checked, not the first, got: $output_latest_wins" ;;
+  *"floor-basis"*) : ;;
+  *) fail "S130 — expected the latest (round-2) Review marker to be checked, not the first (its floor-basis is missing), got: $output_latest_wins" ;;
 esac
 
 # An unquoted marker (model=Sonnet, no quotes) must not be silently
@@ -357,7 +351,8 @@ output_empty_exception="$(PATH="$fakebin_empty_exception:$PATH" "$script" 246)"
 [ -z "$output_empty_exception" ] || fail "S130 — a legacy empty same-model-exception must be ignored (same model, equal effort, floor-basis present: no finding), got: $output_empty_exception"
 
 # Case-insensitive: "Claude Sonnet 5" and "claude sonnet 5" are the same
-# model spelled differently, still compared (Review effort lower: a finding).
+# model spelled differently; Review's legacy effort is lower, and that is no
+# finding (#424: effort is not read).
 fakebin_case_insensitive="$(fake_gh_bin '
 case "$*" in
   "api repos/{owner}/{repo}/pulls/246 --jq (.title//\"\")+\"\\u0001\"+(.body//\"\")")
@@ -379,10 +374,7 @@ esac
 exit 1
 ')"
 output_case_insensitive="$(PATH="$fakebin_case_insensitive:$PATH" "$script" 246)"
-case "$output_case_insensitive" in
-  *"same model"*) : ;;
-  *) fail "S130 — expected a case-only spelling difference to still be flagged as the same model, got: $output_case_insensitive" ;;
-esac
+[ -z "$output_case_insensitive" ] || fail "S130 — a case-only model spelling difference with a lower legacy effort must produce no finding (#424), got: $output_case_insensitive"
 
 # Found during PR #253's pre-merge-review (round 2): a stray, older
 # Review marker on the closing issue must not outrank a genuinely newer
@@ -406,19 +398,18 @@ case "$*" in
     printf "%s\n" "<!-- model-record: stage=Discovery model=\"Sonnet\" effort=\"low\" -->"
     printf "%s\n" "<!-- model-record: stage=Planning model=\"Sonnet\" effort=\"medium\" -->"
     printf "%s\n" "<!-- model-record: stage=Test model=\"Sonnet\" effort=\"medium\" -->"
-    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" floor-basis=\"stronger model than Implementation\" -->"
+    printf "%s\n" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"medium\" -->"
     exit 0 ;;
 esac
 exit 1
 ')"
 output_issue_marker_stale="$(PATH="$fakebin_issue_marker_stale:$PATH" "$script" 246)"
-case "$output_issue_marker_stale" in
-  *"same model"*) fail "S130 — a stray older Review marker on the issue wrongly outranked the PR's own, got: $output_issue_marker_stale" ;;
-  *) : ;;
-esac
+# #424: the stale issue-side Review marker carries no floor-basis and the PR's
+# own does, so a stale marker that outranked the PR's own would be reported.
+[ -z "$output_issue_marker_stale" ] || fail "S130 — a stray older Review marker on the issue wrongly outranked the PR's own (its missing floor-basis was reported), got: $output_issue_marker_stale"
 
 # #268: a display-name label and an API model-id label for the same
-# underlying model must still be compared on effort (low vs. medium: flagged) — the exact failure case found
+# underlying model are still the same model (normalize_model), and a lower legacy effort is no finding (#424) — the exact failure case found
 # during PR #267's pre-merge-review, round 2 (Review recorded "Sonnet 5",
 # Implementation recorded "claude-sonnet-5" — plain case-folding didn't
 # equate those either, only normalize_model's structural fold does).
@@ -443,10 +434,7 @@ esac
 exit 1
 ')"
 output_label_mismatch="$(PATH="$fakebin_label_mismatch:$PATH" "$script" 246)"
-case "$output_label_mismatch" in
-  *"same model"*) : ;;
-  *) fail "S130 — expected a display-name/API-id label mismatch for the same model to still be flagged, got: $output_label_mismatch" ;;
-esac
+[ -z "$output_label_mismatch" ] || fail "S130 — a display-name/API-id label mismatch for the same model with a lower legacy effort must produce no finding (#424), got: $output_label_mismatch"
 
 # ...but genuinely different models under different label styles (Opus
 # vs. Sonnet) must not be flagged — normalize_model folds format, not

@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# S189 — model-record-gate.sh checks the Review floor it CAN check: same
-# model compares effort; every Review marker carries a floor-basis; a legacy
-# same-model-exception is ignored.
+# S189 — model-record-gate.sh checks the Review floor it CAN check: the floor
+# is judged on the model alone (effort is neither chosen nor checked, #424);
+# every Review marker carries a floor-basis; legacy `effort` and
+# same-model-exception attributes are read without error and ignored.
 # Covers: F39
 #
 # Issue #392, R2/R3/R6, AC3/AC4/AC5/AC9, A24/A25 and the human decisions of
 # 2026-10-03. Seam: the installed gate script run for PR 246 against a
 # data-driven fake gh (fixtures/pipeline-371-helpers.sh), its stdout lines
-# and exit status. Finding text beyond "names the model/efforts" and the
-# `model-record:` prefix is deliberately not pinned. Different models: no
-# capability finding at all (no ordering a script can check).
+# and exit status. Finding text beyond the `model-record:` prefix and the
+# name of the missing thing is deliberately not pinned. Different models: no
+# capability finding at all (no ordering a script can check). Issue #424
+# (V3, A33/A33a) removed the same-model lower-effort finding and the
+# per-field effort check; the cases below that used to pin them now pin
+# silence, and a marker with no effort attribute is complete.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -57,92 +61,80 @@ one_finding() {
   ! grep -q '^role-played: ' <<<"$rf_out" || fail "S189 — $label: a #392 finding must never use the role-played: prefix (the merge guard blocks on it)"
 }
 
-# #402 (A26): an effort that is missing or unquoted on the latest marker gives
-# no effort COMPARISON, and now exactly one finding saying the effort cannot be
-# read (never a "lower effort" claim). effort="unknown" stays silent (above).
-effort_unreadable() { # label impl review
-  local label="$1"
-  shift
-  rf_data "$@"
-  rf_gate
-  [ "$rf_status" -eq 0 ] || fail "S189 — $label: gate exited $rf_status"
-  [ "$(rf_findings)" -eq 1 ] || fail "S189 — $label: expected exactly the unreadable-effort finding, got: '$rf_out'"
-  grep -qi 'effort' <<<"$rf_out" || fail "S189 — $label: the finding must name the effort, got: '$rf_out'"
-  grep -qi 'lower effort' <<<"$rf_out" && fail "S189 — $label: no comparison may be claimed, got: '$rf_out'"
-}
-
-# ===== AC3: same model -> effort is compared ===============================
-one_finding "same model, Review lower (low < high)" 'low.*high|high.*low' \
+# ===== #424 AC2: the floor is on the model alone; effort is never read =====
+# Same model, any legacy effort pair: no finding (effort is neither chosen nor
+# checked, A33/A33a). The old "Review recorded lower effort" finding is gone.
+silent "same model, Review lower (low < high)" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")"
-one_finding "same model, Review lower (medium < high)" 'medium.*high|high.*medium' \
+silent "same model, Review lower (medium < high)" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet medium "$FB")"
-one_finding "same model, Review lower (low < medium)" 'low.*medium|medium.*low' \
+silent "same model, Review lower (low < medium)" \
   "$(marker Implementation Sonnet medium)" "$(marker Review Sonnet low "$FB")"
 silent "same model, equal effort" "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high "$FB")"
-silent "same model, equal low effort (the dry-run pattern: passes, a documented false pass)" \
-  "$(marker Implementation Sonnet low)" "$(marker Review Sonnet low "$FB")"
 silent "same model, Review higher" "$(marker Implementation Sonnet medium)" "$(marker Review Sonnet high "$FB")"
-silent "same model, Review higher (low vs medium)" "$(marker Implementation Sonnet low)" "$(marker Review Sonnet medium "$FB")"
-
-# the finding names the model too
-one_finding "the finding names the model" 'sonnet' \
-  "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")"
-
-# label style / snapshot date: normalize_model first, then effort
-one_finding "label styles normalize equal, lower effort flagged" 'low.*high|high.*low' \
+silent "label styles normalize equal, lower legacy effort" \
   "$(marker Implementation claude-sonnet-5 high)" "$(marker Review 'Sonnet 5' low "$FB")"
-one_finding "snapshot date ignored, lower effort flagged" 'low.*high|high.*low' \
+silent "snapshot date ignored, lower legacy effort" \
   "$(marker Implementation claude-sonnet-5-20260101 high)" "$(marker Review claude-sonnet-5-20260301 low "$FB")"
-silent "label styles normalize equal, equal effort" \
-  "$(marker Implementation claude-sonnet-5 medium)" "$(marker Review 'Claude Sonnet 5' medium "$FB")"
-
-# effort values compare case-insensitively
-one_finding "effort case-insensitive (LOW < High)" 'low.*high|high.*low' \
+silent "effort values compare nothing (LOW < High)" \
   "$(marker Implementation Sonnet High)" "$(marker Review Sonnet LOW "$FB")"
+# no output at all may talk about effort
+rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")"
+rf_gate
+! grep -qi 'effort' <<<"$rf_out" || fail "S189 — the gate must print no effort line at all (#424), got: $rf_out"
 
-# ===== AC4: different models -> no capability finding ======================
-silent "different models, Review lower effort (no ordering a script can check)" \
+# ===== Different models: no capability finding either ======================
+silent "different models, Review lower legacy effort" \
   "$(marker Implementation Sonnet high)" "$(marker Review Opus low "$FB")"
-silent "different models, Review higher effort" \
-  "$(marker Implementation Sonnet low)" "$(marker Review Opus high "$FB")"
 silent "different models, Review is the lighter model (undetectable: a documented false pass)" \
   "$(marker Implementation Opus high)" "$(marker Review Sonnet high "$FB")"
-# the short alias vs its full id counts as different: no effort check
-silent "short alias vs full id is a different model: effort check skipped, no finding" \
+silent "short alias vs full id is a different model: no finding" \
   "$(marker Implementation claude-opus-5 high)" "$(marker Review opus low "$FB")"
 
-# ===== Unknown / missing / unquoted effort: no claim either way ============
+# ===== Legacy / odd / missing effort: read without error, never a finding ==
 silent "Review effort session-default" "$(marker Implementation Sonnet high)" "$(marker Review Sonnet session-default "$FB")"
 silent "Review effort unknown" "$(marker Implementation Sonnet high)" "$(marker Review Sonnet unknown "$FB")"
 silent "Implementation effort unknown" "$(marker Implementation Sonnet unknown)" "$(marker Review Sonnet low "$FB")"
 silent "effort outside low|medium|high (max)" "$(marker Implementation Sonnet max)" "$(marker Review Sonnet low "$FB")"
-effort_unreadable "Review effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=\"high\" -->" "<!-- model-record: stage=Review model=\"Sonnet\" $FB -->"
-effort_unreadable "Implementation effort missing" "<!-- model-record: stage=Implementation model=\"Sonnet\" -->" "$(marker Review Sonnet low "$FB")"
-effort_unreadable "Review effort unquoted" "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" effort=low $FB -->"
-effort_unreadable "Implementation effort unquoted" "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=high -->" "$(marker Review Sonnet low "$FB")"
+# a marker with NO effort attribute (what the emitter prints from now on) is
+# complete: the #402 "no quoted effort" finding is gone
+silent "no effort attribute on either marker (emitter output of #424)" \
+  "$(marker_ne Implementation Sonnet)" "$(marker_ne Review Sonnet "$FB")"
+silent "no effort attribute, different models" \
+  "$(marker_ne Implementation Sonnet)" "$(marker_ne Review Opus "$FB")"
+silent "Review effort missing, Implementation legacy" \
+  "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" $FB -->"
+silent "Implementation effort missing, Review legacy" \
+  "<!-- model-record: stage=Implementation model=\"Sonnet\" -->" "$(marker Review Sonnet low "$FB")"
+silent "Review effort unquoted (read and ignored, never a finding)" \
+  "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" effort=low $FB -->"
+silent "Implementation effort unquoted" \
+  "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=high -->" "$(marker Review Sonnet low "$FB")"
+# model is still checked: the #402 per-field check is reduced to model only
+one_finding "Implementation model unquoted is still one finding" 'model' \
+  "<!-- model-record: stage=Implementation model=Sonnet effort=\"high\" -->" "$(marker Review Opus high "$FB")"
 
 # ===== Attribute extraction is word-anchored (A25, V5) =====================
-one_finding "reviewer-model before model must not be read as model" 'low.*high|high.*low' \
+silent "reviewer-model before model must not be read as model (same model, lower legacy effort)" \
   "$(marker Implementation sonnet high)" \
   "<!-- model-record: stage=Review reviewer-model=\"opus\" model=\"sonnet\" effort=\"low\" $FB -->"
-one_finding "peak-effort before effort must not be read as effort" 'low.*high|high.*low' \
-  "$(marker Implementation sonnet high)" \
-  "<!-- model-record: stage=Review model=\"sonnet\" peak-effort=\"high\" effort=\"low\" $FB -->"
-silent "floor-basis text mentioning 'model' does not disturb model/effort extraction" \
+silent "floor-basis text mentioning 'model' does not disturb model extraction" \
   "$(marker Implementation sonnet medium)" \
   "<!-- model-record: stage=Review floor-basis=\"same model as Implementation, higher effort\" model=\"sonnet\" effort=\"high\" -->"
 
 # ===== Latest marker wins (tail -1), per stage =============================
-silent "a later Review round replaces an earlier lower-effort one" \
+silent "a later Review round replaces an earlier one" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")" "$(marker Review Sonnet high "$FB")"
-one_finding "a later lower-effort Review round is the one checked" 'low.*high|high.*low' \
+silent "a later lower-legacy-effort Review round is no finding either" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high "$FB")" "$(marker Review Sonnet low "$FB")"
 silent "the latest Implementation marker wins" \
   "$(marker Implementation Sonnet high)" "$(marker Implementation Sonnet low)" "$(marker Review Sonnet low "$FB")"
 
 # ===== AC9/A24: floor-basis on EVERY Review marker =========================
-one_finding "floor-basis missing, same model, equal effort" 'floor-basis' \
+one_finding "floor-basis missing, same model" 'floor-basis' \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high)"
+# #424 AC2: the floor-basis line is about the model; no finding line mentions effort
+! grep -qi 'effort' <<<"$rf_out" || fail "S189 — the floor-basis finding must not mention effort (the floor is on the model alone, #424), got: $rf_out"
 one_finding "floor-basis missing, different models" 'floor-basis' \
   "$(marker Implementation Sonnet high)" "$(marker Review Opus high)"
 one_finding "floor-basis empty" 'floor-basis' \
@@ -162,10 +154,11 @@ silent "Implementation needs no floor-basis" "$(marker Implementation Sonnet hig
 # both findings at once
 rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low)"
 rf_gate
-[ "$(rf_findings)" -eq 2 ] || fail "S189 — lower effort AND no floor-basis: expected two finding lines, got: $rf_out"
+[ "$(rf_findings)" -eq 1 ] || fail "S189 — lower legacy effort AND no floor-basis: expected only the floor-basis finding (effort gives none), got: $rf_out"
+grep -q 'floor-basis' <<<"$rf_out" || fail "S189 — the one finding must be the floor-basis one, got: $rf_out"
 
 # ===== AC5/R3: legacy same-model-exception is ignored completely ===========
-one_finding "legacy exception does not waive a lower-effort same-model Review" 'low.*high|high.*low' \
+silent "legacy exception plus lower legacy effort: ignored, no finding" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB same-model-exception=\"only one model available\"")"
 one_finding "legacy exception does not stand in for floor-basis" 'floor-basis' \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high 'same-model-exception="only one model available"')"
@@ -205,8 +198,8 @@ write_adoption "$optin/WORKFLOW-ADOPTION.md" "$id" yes
 rf_data "$(marker Implementation Sonnet high)"
 json_comments "$FAKE_GH_DATA/reviews-246.json" "$(marker Review Sonnet low)"
 rf_gate "$optin"
-grep -q 'floor-basis' <<<"$rf_out" || fail "S189 — opted-in project: the floor-basis finding is expected too, got: $rf_out"
-grep -qiE 'low.*high|high.*low' <<<"$rf_out" || fail "S189 — opted-in project: the lower-effort finding is expected too, got: $rf_out"
+grep -q 'floor-basis' <<<"$rf_out" || fail "S189 — opted-in project: the floor-basis finding is expected, got: $rf_out"
+! grep -qi 'lower effort' <<<"$rf_out" || fail "S189 — opted-in project: no lower-effort finding any more (#424), got: $rf_out"
 ! grep -q '^role-played: ' <<<"$rf_out" || fail "S189 — a dispatched run with only model-record findings must produce no role-played: line, got: $rf_out"
 
 # ===== The gate finds lib/model-record.sh through a symlinked skills dir ====
@@ -215,8 +208,8 @@ grep -qiE 'low.*high|high.*low' <<<"$rf_out" || fail "S189 — opted-in project:
 linked="$SANDBOX/linked-project"
 mkdir -p "$linked/.claude"
 ln -s "$TEST_REPO_ROOT/skills" "$linked/.claude/skills"
-rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")"
+rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low)"
 rf_gate "$RF_PLAIN" "$linked/.claude/skills/pre-merge-review/model-record-gate.sh"
-grep -qiE 'low.*high|high.*low' <<<"$rf_out" || fail "S189 — run through a symlinked skills dir, the effort finding is missing (lib not found?), got: $rf_out"
+grep -q 'floor-basis' <<<"$rf_out" || fail "S189 — run through a symlinked skills dir, the floor-basis finding is missing (lib not found?), got: $rf_out"
 
 test_done

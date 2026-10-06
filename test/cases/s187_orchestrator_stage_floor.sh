@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor
-# per model-choice and to set model and effort per stage.
+# per model-choice and to choose the model per stage. Effort is neither chosen
+# nor recorded (#424).
 # Covers: F39
 #
 # Issue #392, R5/AC8 and Architect A24 (the #371 dry-run finding: one model
@@ -8,8 +9,10 @@
 # CHOOSES is model behaviour and cannot be asserted here (human dry run on
 # the scratch repo); this is the mechanical proxy: the instruction exists as
 # one coherent paragraph (so unrelated text cannot satisfy it), names no
-# model or tier, carries no different-model rule, and says what to do when
-# the dispatch tool exposes no effort setting.
+# model or tier, carries no different-model rule, and says that the dispatch
+# tool takes no effort, so effort is neither chosen nor recorded in markers
+# (#424, A33: the sentences about finding out the effort and about asking
+# the human when it is unknown are gone; S238 searches every text for them).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -27,29 +30,36 @@ if [ ! -f "$orch" ]; then
 fi
 
 # 1. One paragraph carries the per-stage floor assessment: it points at
-#    model-choice, talks about the stage's floor, effort next to model,
-#    "each/per/separately" per stage, and the Review-vs-Implementation rule.
-para_has_all "$orch" 'model-choice' 'floor' 'effort' \
+#    model-choice, talks about the stage's floor, "each/per/separately" per
+#    stage, and the Review-vs-Implementation rule (on the model alone, #424).
+para_has_all "$orch" 'model-choice' 'floor' \
   '(each|per|every) stage|stage by stage|separately' \
   'at least as capable' 'Implementation' 'Review' \
-  || fail "S187/AC8 — no single paragraph of ORCHESTRATOR.md assesses each stage's floor per model-choice, with model AND effort, and Review at least as capable as Implementation"
+  || fail "S187/AC8 — no single paragraph of ORCHESTRATOR.md assesses each stage's floor per model-choice, per stage, and Review at least as capable as Implementation"
+# #424: that rule is on the model alone; the paragraph no longer pairs it with effort
+para_has_all "$orch" 'at least as capable' 'Implementation' 'Review' '(recorded )?model' \
+  && ! para_has_all "$orch" 'at least as capable' 'Implementation' 'model and effort' \
+  || fail "S187/#424 — the Review floor in ORCHESTRATOR.md must be on the model alone, not 'model and effort together'"
 
 # 2. Per stage, not one pair for the whole run (the dry-run finding).
 para_has_all "$orch" 'model-choice' \
   '(never|not|instead of|rather than)[^.]*(one|a single|the same) (model|pair|combination|setting|choice)' \
-  || fail "S187/AC8 — ORCHESTRATOR.md does not rule out choosing one model/effort pair for every stage"
+  || fail "S187/AC8 — ORCHESTRATOR.md does not rule out choosing one model for every stage"
 
-# 3. Effort the dispatch tool cannot set: said, and with a way out that
-#    stays within the floor (a more capable model), in the same paragraph.
-para_has_all "$orch" 'effort' \
-  "(can.t|cannot|can not|unable|does not (let|allow|expose)|doesn.t (let|allow|expose)|no way to set|not able to set|not settable|isn.t (settable|exposed))" \
-  'more capable' 'floor' \
-  || fail "S187/AC8 — ORCHESTRATOR.md has no paragraph for an effort the dispatch cannot set (what to do: a more capable model, against the stage's floor)"
+# 3. The dispatch tool takes no effort: said in the same paragraph as the
+#    model choice, with the consequence that effort is neither chosen nor
+#    recorded in markers (#424, A33). The way out is no longer "a more capable
+#    model against an effort floor": there is no effort floor.
+para_has_all "$orch" 'model-choice' \
+  '(dispatch|dispatching) tool' '(takes|has|exposes|accepts) no effort|no effort (parameter|argument|setting)' \
+  '(neither|not) chosen' 'recorded' \
+  || fail "S187/#424 — ORCHESTRATOR.md has no paragraph saying the dispatch tool takes no effort, so effort is neither chosen nor recorded in markers"
 
-# 4. The chosen model and effort reach the role's model-record marker (#402: as a ready-made marker line) via
-#    the dispatch prompt (so the choice is recorded, R5).
-para_has_all "$orch" 'model-choice' '(dispatch )?prompt' '(model-record|marker line)' 'effort' \
-  || fail "S187/AC8 — ORCHESTRATOR.md does not tell the orchestrator to state the chosen model and effort in the dispatch prompt for the role's model-record marker"
+# 4. The chosen model reaches the role through the dispatch prompt, with the
+#    ready-made marker line (#402), and that command has no --effort (#424).
+para_has_all "$orch" 'model-choice' '(dispatch )?prompt' '(model-record|marker line)' 'model' \
+  || fail "S187/AC8 — ORCHESTRATOR.md does not tell the orchestrator to name the chosen model in the dispatch prompt for the role's model-record marker"
+! grep -qE -- '--effort' "$orch" || fail "S187/#424 — ORCHESTRATOR.md still has --effort in a command: $(grep -n -- '--effort' "$orch" | head -2)"
 
 # 5. No model or tier name hardcoded (floors stay qualitative).
 if grep -qiE '\b(opus|sonnet|haiku|fable|gpt-?[0-9]|gemini|llama)\b|claude-[a-z]+-[0-9]' "$orch"; then

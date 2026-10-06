@@ -16,6 +16,15 @@
 # so there the three scripts must merely AGREE. Out of scope (issue #400): five
 # markers all inside one fence and the role-played check.
 # Seam: the real scripts against fake gh.
+#
+# Issue #424: the old proof ("the real lower-effort Review still gives the
+# lower-effort finding") is gone with the effort finding. Gate: the real
+# Review marker has no floor-basis, so exactly ONE finding (the floor-basis
+# one) appears iff only the real markers counted; a quoted Implementation
+# example with an unquoted model would add a second finding, a quoted Review
+# example with a floor-basis would remove the first. Gate 2: the quoted
+# examples claim another model, so `evidenced` appears iff only the real
+# markers counted.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -44,8 +53,8 @@ ce_out=""
 NL=$'\n'
 BT='`'
 impl_real="$(marker Implementation Sonnet high)"
-rev_real_low="$(marker Review Sonnet low 'floor-basis="ok"')"
-ex_impl_low='<!-- model-record: stage=Implementation model="Sonnet" effort="low" -->'
+rev_real_low="$(marker Review Sonnet low)"
+ex_impl_low='<!-- model-record: stage=Implementation model=Sonnet effort="low" -->'
 ex_rev_high='<!-- model-record: stage=Review model="Sonnet" effort="high" floor-basis="example" -->'
 
 # the four ways to quote an example marker (indented: handled separately)
@@ -54,7 +63,8 @@ quote_tilde() { printf 'Example:%s~~~%s%s%s~~~' "$NL" "$NL" "$1" "$NL"; }
 quote_span() { printf 'The format is %s%s%s, as in the skill.' "$BT" "$1" "$BT"; }
 quote_block() { printf '> Reviewer wrote:%s> %s' "$NL" "$1"; }
 
-lower() { grep -qiE 'lower effort' <<<"$rf_out"; }
+# exactly the one floor-basis finding of the real Review marker, nothing more
+lower() { [ "$(rf_findings)" -eq 1 ] && grep -qi 'floor-basis' <<<"$rf_out"; }
 
 # ---- (1) a later comment quotes an Implementation example (effort=low) -------
 for form in fence tilde span block; do
@@ -62,7 +72,7 @@ for form in fence tilde span block; do
   rf_data "$impl_real" "$rev_real_low" "$q"
   rf_gate
   [ "$rf_status" -eq 0 ] || fail "S201 gate/$form — exit $rf_status"
-  lower || fail "S201 gate/$form — a quoted ($form) example Implementation marker must not count: the real Review (low) vs the real Implementation (high) still gives the lower-effort finding, got: '$rf_out'"
+  lower || fail "S201 gate/$form — a quoted ($form) example Implementation marker must not count: the real Review (no floor-basis) still gives exactly the floor-basis finding, got: '$rf_out'"
 done
 
 # the quoted example in an EARLIER comment, and in the same comment as the real marker
@@ -99,8 +109,8 @@ lower || fail "S201 gate/real after span — got: '$rf_out'"
 # ---- the same inputs through compliance-evidence.sh gate 2 -------------------
 impl_c="$(mk Implementation claude-sonnet-5 medium)"
 rev_c_low="$(mk Review claude-sonnet-5 low 'floor-basis="ok"')"
-c_ex_impl_low='<!-- model-record: stage=Implementation model="claude-sonnet-5" effort="low" -->'
-c_ex_rev_high='<!-- model-record: stage=Review model="claude-sonnet-5" effort="high" floor-basis="example" -->'
+c_ex_impl_low='<!-- model-record: stage=Implementation model="claude-opus-5" effort="low" -->'
+c_ex_rev_high='<!-- model-record: stage=Review model="claude-opus-5" effort="high" floor-basis="example" -->'
 # one TEXT record per comment; a multi-line comment is sent with the \001 sentinel
 for form in fence tilde span block; do
   q="$("quote_$form" "$c_ex_impl_low")"
@@ -108,7 +118,7 @@ for form in fence tilde span block; do
   ce "Closes #265" "$impl_c
 $rev_c_low
 $q" ""
-  [ "$(row_status "$ce_out" 2)" = "not-evidenced" ] || fail "S201 gate2/$form — the quoted example must not count: real Review low < real Implementation medium is not-evidenced, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S201 gate2/$form — the quoted example (another model) must not count: the real Review is on Implementation's model, so evidenced, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
 done
 for form in fence span block; do
   q="$("quote_$form" "$c_ex_rev_high")"
@@ -116,7 +126,7 @@ for form in fence span block; do
   ce "Closes #265" "$impl_c
 $rev_c_low
 $q" ""
-  [ "$(row_status "$ce_out" 2)" = "not-evidenced" ] || fail "S201 gate2/review-$form — a quoted Review example must not replace the real one, got '$(row_status "$ce_out" 2)'"
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S201 gate2/review-$form — a quoted Review example must not replace the real one, got '$(row_status "$ce_out" 2)'"
 done
 
 # ---- an indented code block: live_text keeps it in every script (accepted
@@ -131,8 +141,8 @@ ce "Closes #265" "$impl_c
 $rev_c_low
 Indented example:${NL}${NL}$c_ind" ""
 case "$(row_status "$ce_out" 2)" in
-  not-evidenced) ce_says=finding ;;
-  evidenced) ce_says=silent ;;
+  evidenced) ce_says=finding ;; # the indented example was NOT counted: the real markers decide
+  unverifiable-from-artifacts) ce_says=silent ;; # the indented example (another model) WAS counted
   *) ce_says="other:$(row_status "$ce_out" 2)" ;;
 esac
 [ "$gate_says" = "$ce_says" ] \

@@ -18,7 +18,7 @@
 #       and must be above zero (a lint that scans nothing is red);
 #   L3  the lint is red on a scratch copy with one export removed from each
 #       script in turn, with the export weakened (a non-C value, an unset), and
-#       with one lib prefix removed (effort_rank's tr, normalize_model's first
+#       with one lib prefix removed (normalize_model's first
 #       sed, a markdown.sh awk, a parser awk).
 #
 # The lint lives in test/fixtures/locale-lint.sh (test code). Its own
@@ -206,8 +206,9 @@ fi
 real_sites="$(sites_of "$ROOT")"
 echo "    S235: the lint checked $real_sites external text-command sites in $LL_LIBS" >&2
 [ "$real_sites" -gt 0 ] || fail "S235 L2 — the lint checked 0 sites in the libs (a lint that scans nothing is red)"
-# the two libs have, together, at least the 11 sites known at head 5ea3a5b
-[ "$real_sites" -ge 11 ] || fail "S235 L2 — the lint checked only $real_sites sites; head 5ea3a5b has 11 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
+# the two libs have, together, at least the 10 sites left after #424 deleted
+# effort_rank (head 5ea3a5b had 11, effort_rank's tr being one of them)
+[ "$real_sites" -ge 10 ] || fail "S235 L2 — the lint checked only $real_sites sites; the head after #424 has 10 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
 
 # =========================================================================
 # 2. L3 on the REAL tree (needs a green real baseline)
@@ -220,8 +221,7 @@ else
     kill_mutant "$ROOT" "real:no-export:$f" "$f" "${NL}export LC_ALL=C" "${NL}:"
     kill_mutant "$ROOT" "real:non-C-export:$f" "$f" "${NL}export LC_ALL=C" "${NL}export LC_ALL=en_US.UTF-8"
   done
-  # effort_rank's tr (lib/model-record.sh:57, lib-normalize-locale round 2)
-  kill_mutant "$ROOT" "real:effort_rank-tr" lib/model-record.sh "\"\$1\" | LC_ALL=C tr '[:upper:]' '[:lower:]')\" in" "\"\$1\" | tr '[:upper:]' '[:lower:]')\" in"
+  # (effort_rank's tr was a mutant here until #424 deleted effort_rank)
   # normalize_model's first sed (normalize-sed1-untested, round 2)
   kill_mutant "$ROOT" "real:normalize_model-sed1" lib/model-record.sh "LC_ALL=C sed -E 's/^[[:space:]]*claude" "sed -E 's/^[[:space:]]*claude"
   kill_mutant "$ROOT" "real:normalize_model-tr" lib/model-record.sh "LC_ALL=C tr '[:upper:]' '[:lower:]' \\" "tr '[:upper:]' '[:lower:]' \\"
