@@ -343,3 +343,39 @@ marker_emit() {
   printf '%s\n' "$line"
   return 0
 }
+
+
+# --- Record grammar v2: the reader (#425, slice V4 of #411; A31, A31a, A32a) -
+#
+# RED STUBS from the QA commit (#425): the signatures the tests pin, nothing
+# else. Each one prints nothing on stdout, says so on stderr and returns 99, so
+# a red test is an assertion failure and never "command not found". The
+# Developer replaces the bodies; the contract is the issue's AC1 to AC6 and the
+# tests S242 to S249. Every external command in the real bodies carries the
+# per-command `LC_ALL=C` prefix (S235), and grep is `grep -a`.
+#
+#   rec_scan_bundle <kind> <bundle>
+#       kind: model-record | pipeline-override. bundle: bodies each followed by
+#       MARKER_SEP, that byte removed from each body first. One row per
+#       candidate line: <body-index> TAB <class> TAB <stage-or-?> TAB
+#       <line-or-reason>. class: ok | near-miss | quoted. Body indices count
+#       from 1. No field is empty.
+#   rec_scan <kind> <body>
+#       The same rows for one body (index 1).
+#   rec_field <line> <name>
+#       The value of the first attribute <name> on an ok line, read as a walk
+#       over the attributes, never a search.
+rec_scan_bundle() {
+  echo "rec_scan_bundle: not implemented (red stub, #425)" >&2
+  return 99
+}
+
+rec_scan() {
+  echo "rec_scan: not implemented (red stub, #425)" >&2
+  return 99
+}
+
+rec_field() {
+  echo "rec_field: not implemented (red stub, #425)" >&2
+  return 99
+}
