@@ -150,23 +150,8 @@ wraps=(
   "$(printf '<!-- model-record: stage=Review model="m1" floor-basis="a\377b" -->')"
 )
 for w in "${wraps[@]}"; do
-  longest=0
-  rest="$w"
-  while [ -n "$rest" ]; do
-    case "$rest" in
-      '`'*)
-        run=0
-        while [ "${rest#'`'}" != "$rest" ]; do
-          rest="${rest#'`'}"
-          run=$((run + 1))
-        done
-        [ "$run" -le "$longest" ] || longest="$run"
-        ;;
-      *) rest="${rest#?}" ;;
-    esac
-  done
-  fence="\`\`\`"
-  while [ "${#fence}" -le "$longest" ]; do fence="$fence\`"; done
+  rh_fence_for "$w"
+  fence="$RH_FENCE"
   check "wrapped in a $((${#fence}))-backtick fence: ${w:0:40}" "quoted" "${fence}${LF}${w}${LF}${fence}"
   tfence="~~~"
   check "wrapped in a tilde fence: ${w:0:40}" "quoted" "${tfence}${LF}${w}${LF}${tfence}"

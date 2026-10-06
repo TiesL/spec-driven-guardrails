@@ -104,6 +104,8 @@ for mode in $mode_list; do
     [ "$RH_RC" -eq 0 ] || fail "S247/grep exit 1 $fn [$mode] — grep's exit 1 (no match) on a body without a record is not a failure; got status $RH_RC (stderr: '$RH_ERR')"
     [ -z "$RH_OUT" ] || fail "S247/grep exit 1 $fn [$mode] — no record, no rows; got '$RH_OUT'"
     [ -z "$RH_ERR" ] || fail "S247/grep exit 1 $fn [$mode] — a clean 'no hit' says nothing on stderr; got '$RH_ERR'"
+    c="$(rh_count "$CNT")"
+    [ "$c" -gt 0 ] || fail "S247/grep exit 1 $fn [$mode] — the grep shim was never called on a record-less body (count $c): the reader must run its grep pass on every body, so this no-hit case proves nothing (a vacuous pass is red)"
   done
 done
 

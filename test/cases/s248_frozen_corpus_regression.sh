@@ -165,7 +165,7 @@ total="${#ROWS_ID[@]}"
 # Runs in one subshell per mode (the locale environment), printing one problem
 # per line, so the loop costs one process per mode and not one per row.
 k1_check() { # k1_check wrapped(0|1): prints problems, then COUNTS lines
-  local wrapped="$1" kind i idx body bundle="" line fence rest run longest
+  local wrapped="$1" kind i idx body bundle="" line fence rest
   local -a map=()
   for kind in model-record pipeline-override; do
     bundle=""
@@ -176,20 +176,8 @@ k1_check() { # k1_check wrapped(0|1): prints problems, then COUNTS lines
         line="${ROWS_LINE[$i]}"
         case "$line" in *"$RH_SEP"*) i=$((i + 1)); continue ;; esac   # U+001E rows run through rec_scan below
         if [ "$wrapped" = 1 ]; then
-          longest=0
-          rest="$line"
-          while [ -n "$rest" ]; do
-            case "$rest" in
-              '`'*)
-                run=0
-                while [ "${rest#'`'}" != "$rest" ]; do rest="${rest#'`'}"; run=$((run + 1)); done
-                [ "$run" -le "$longest" ] || longest="$run"
-                ;;
-              *) rest="${rest#?}" ;;
-            esac
-          done
-          fence='```'
-          while [ "${#fence}" -le "$longest" ]; do fence="$fence\`"; done
+          rh_fence_for "$line"
+          fence="$RH_FENCE"
           body="$fence$RH_LF$line$RH_LF$fence"
         else
           body="$line"

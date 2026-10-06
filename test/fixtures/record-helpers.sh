@@ -84,9 +84,12 @@ rh_rows() {
   RH_CLS=()
   RH_STG=()
   RH_TXT=()
+  RH_BCLS=()    # per body index: its classes, space separated (O(1) lookups: a bundle can hold thousands of rows)
+  RH_BFIRST=()  # per body index: the ordinal of its first row
+  RH_BCNT=()    # per body index: how many rows it has
   RH_BAD=""
   [ -n "$RH_OUT" ] || return 0
-  local row idx cls stg txt rest
+  local row idx cls stg txt rest prev=0
   while IFS= read -r row; do
     case "$row" in
       *"$RH_TAB"*"$RH_TAB"*"$RH_TAB"*) : ;;
@@ -118,6 +121,18 @@ rh_rows() {
       RH_BAD="an empty stage or line/reason field ('?' stands for unknown): '$row'"
       return 1
     fi
+    if [ "$idx" -lt "$prev" ]; then
+      RH_BAD="rows are not in body order (index $idx after $prev): '$row'"
+      return 1
+    fi
+    prev="$idx"
+    if [ -z "${RH_BCNT[$idx]-}" ]; then
+      RH_BFIRST[idx]="$RH_N"
+      RH_BCNT[idx]=0
+      RH_BCLS[idx]=""
+    fi
+    RH_BCNT[idx]=$((RH_BCNT[idx] + 1))
+    RH_BCLS[idx]="${RH_BCLS[$idx]}${RH_BCLS[$idx]:+ }$cls"
     RH_IDX[RH_N]="$idx"
     RH_CLS[RH_N]="$cls"
     RH_STG[RH_N]="$stg"
@@ -193,24 +208,20 @@ rh_join_bundle() {
   printf '%s' "$out"
 }
 
-# rh_rows_for <index>: prints the classes of the rows of one body index.
+# rh_classes_for <index>: the classes of the rows of one body index, in order.
 rh_classes_for() {
-  local want="$1" i out=""
-  i=0
-  while [ "$i" -lt "$RH_N" ]; do
-    [ "${RH_IDX[$i]}" = "$want" ] && out="$out${out:+ }${RH_CLS[$i]}"
-    i=$((i + 1))
-  done
-  printf '%s' "$out"
+  printf '%s' "${RH_BCLS[$1]-}"
 }
 
 # rh_text_for <index> <class> [n]: the fourth field of the n-th (default 1st)
-# row of that body index and class; prints nothing if there is none.
+# row of that body index and class; prints nothing and returns 1 if none.
 rh_text_for() {
-  local want="$1" cls="$2" nth="${3:-1}" i seen=0
-  i=0
-  while [ "$i" -lt "$RH_N" ]; do
-    if [ "${RH_IDX[$i]}" = "$want" ] && [ "${RH_CLS[$i]}" = "$cls" ]; then
+  local want="$1" cls="$2" nth="${3:-1}" i seen=0 last
+  [ -n "${RH_BCNT[$want]-}" ] || return 1
+  i="${RH_BFIRST[$want]}"
+  last=$((i + RH_BCNT[want]))
+  while [ "$i" -lt "$last" ]; do
+    if [ "${RH_CLS[$i]}" = "$cls" ]; then
       seen=$((seen + 1))
       if [ "$seen" -eq "$nth" ]; then
         printf '%s' "${RH_TXT[$i]}"
@@ -224,10 +235,12 @@ rh_text_for() {
 
 # rh_stage_for <index> <class> [n]: the stage field of that row.
 rh_stage_for() {
-  local want="$1" cls="$2" nth="${3:-1}" i seen=0
-  i=0
-  while [ "$i" -lt "$RH_N" ]; do
-    if [ "${RH_IDX[$i]}" = "$want" ] && [ "${RH_CLS[$i]}" = "$cls" ]; then
+  local want="$1" cls="$2" nth="${3:-1}" i seen=0 last
+  [ -n "${RH_BCNT[$want]-}" ] || return 1
+  i="${RH_BFIRST[$want]}"
+  last=$((i + RH_BCNT[want]))
+  while [ "$i" -lt "$last" ]; do
+    if [ "${RH_CLS[$i]}" = "$cls" ]; then
       seen=$((seen + 1))
       if [ "$seen" -eq "$nth" ]; then
         printf '%s' "${RH_STG[$i]}"
@@ -319,4 +332,18 @@ rh_rec() {
   local extra=""
   [ -z "${3-}" ] || extra=" $3"
   printf '<!-- model-record: stage=%s model="%s"%s -->' "$1" "$2" "$extra"
+}
+
+# rh_fence_for <string>: sets RH_FENCE to a backtick fence one character longer
+# than the longest backtick run in <string> (at least three): the wrap the issue
+# asks for, so no run in the line can close it.
+rh_fence_for() {
+  local rest="$1" run longest=0 ticks='`+'
+  while [[ $rest =~ ($ticks) ]]; do
+    run="${#BASH_REMATCH[1]}"
+    [ "$run" -le "$longest" ] || longest="$run"
+    rest="${rest#*"${BASH_REMATCH[0]}"}"
+  done
+  RH_FENCE='```'
+  while [ "${#RH_FENCE}" -le "$longest" ]; do RH_FENCE="$RH_FENCE\`"; done
 }

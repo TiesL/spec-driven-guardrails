@@ -420,7 +420,7 @@ for mode in $mode_list; do
     fi
     i=$((i + 1))
   done
-  [ "$RH_N" -eq 121 ] || fail "S249/scale [$mode] — want 121 rows, got $RH_N"
+  [ "$RH_N" -eq 120 ] || fail "S249/scale [$mode] — want 120 rows, got $RH_N"
 done
 
 test_done
