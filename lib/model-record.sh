@@ -54,7 +54,7 @@ normalize_model() {
 }
 
 effort_rank() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+  case "$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
     low) printf '0' ;;
     medium) printf '1' ;;
     high) printf '2' ;;

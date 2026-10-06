@@ -246,6 +246,7 @@
 # test/cases/s153_live_text_mawk_portability.sh.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 if [ $# -lt 1 ] || [ -z "${1:-}" ]; then
   echo "usage: role-label-staleness.sh <issue-number>" >&2

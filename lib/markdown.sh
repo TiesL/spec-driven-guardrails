@@ -45,16 +45,31 @@
 #     not expanded; keeping the fence open is the safe direction: it quotes
 #     too much, never hides less than GitHub does). Why: a marker GitHub shows
 #     as quoted must never read as live.
+#   - An ordered list item whose number is not 1 does not open a list-item
+#     fence when the previous line was top-level paragraph text (not blank,
+#     not a fence line, not a list-item line): CommonMark lets only "1." or
+#     "1)" interrupt a paragraph (A32c). Such a line is plain text, and the
+#     indent-3 run on it then opens a top-level fence, as on GitHub. The
+#     approximation can differ from CommonMark (for example after a lazy
+#     continuation inside an earlier item); it then opens fewer list fences,
+#     so later runs open top-level fences and quote more: the safe direction.
 #   - Accepted limits: nested list prefixes ("- - ```"), list items inside a
-#     blockquote, and tab expansion beyond the rule above. None of these can
-#     put a column-0 marker inside a fence.
+#     blockquote, tab expansion beyond the rule above, and a fence opened on
+#     the continuation line of a list item (not on its first line) and closed
+#     at column 0: its enclosing item's content column is not tracked across
+#     lines, so the column-0 closer is read as a closer and a marker after it
+#     can read as live where GitHub renders it inside the item
+#     (continuation-line-list-fence, follow-up #445). No other accepted limit
+#     is known to put a column-0 marker inside a fence.
 #   - Blockquote first in live_text: a `> ```` line never toggles fence state.
 #
 # Portability (the suite runs on macOS: BWK awk, BSD tools, bash 3.2): no
 # brace intervals in a regex (mawk 1.3.4 20200120 reads `{0,3}` as literal
 # text, and `{n,}` is not greedy under mawk; issue #319), so "0 to 3 spaces"
 # is written `? ? ?`, and a run is `+` with a length >= 3 guard. Every
-# external command is written with the per-command prefix `LC_ALL=C`: bash 3.2
+# external command is written with the per-command prefix `LC_ALL=C` (A32c: a
+# sourced lib cannot export it for its caller; the four scripts that read
+# GitHub text export `LC_ALL=C` themselves, and S235 enforces both): bash 3.2
 # ignores a `local LC_ALL` for a child when it is not exported, and BWK awk
 # aborts on an invalid UTF-8 byte (`\377`) in a UTF-8 locale. No bash 4+.
 
@@ -88,9 +103,9 @@ function fence_run(s,   m) {
   return ""
 }
 
-function handle(line,   run, ind, rest, p, islist) {
+function handle(line,   run, ind, rest, p, islist, num) {
   if (fch != "") {                                       # inside a fence
-    match(line, /^ */); ind = RLENGTH
+    prevpara = 0    match(line, /^ */); ind = RLENGTH
     # A list-item fence ends with its item: a non-blank line, no tab in its
     # indent, indented less than the content column lcc (A32b). Not blanked
     # and not a closer: it is read again as a top-level line.
@@ -106,26 +121,33 @@ function handle(line,   run, ind, rest, p, islist) {
     }
     print ""; return
   }
-  if (mode == "live" && line ~ /^[ \t]*>/) { print ""; return }   # blockquote
+  if (mode == "live" && line ~ /^[ \t]*>/) { prevpara = 1; print ""; return }   # blockquote
   # opener at top level (indent 0 to 3), else on a list-item line
   match(line, /^ ? ? ?/); p = RLENGTH
   run = fence_run(substr(line, p + 1)); islist = 0
   if (run == "" && match(line, /^ ? ? ?([-*+]|[0-9]+[.)])[ ] ? ? ?/)) {
-    p = RLENGTH; islist = 1
-    run = fence_run(substr(line, p + 1))
+    num = substr(line, 1, RLENGTH); sub(/^ */, "", num)
+    # An ordered item whose number is not 1 cannot interrupt a paragraph
+    # (CommonMark): after top-level paragraph text it is plain text, not an
+    # opener, and does not end the paragraph.
+    if (!(num ~ /^[0-9]/ && num + 0 != 1 && prevpara)) {
+      p = RLENGTH; islist = 1
+      run = fence_run(substr(line, p + 1))
+    }
   }
   if (run != "") {
     rest = substr(line, p + 1 + length(run))
     if (!(substr(run, 1, 1) == "`" && index(rest, "`") > 0)) {    # info string rule
       fch = substr(run, 1, 1); flen = length(run)
       maxind = islist ? p + 3 : 3; lcc = islist ? p : 0
-      print ""; return
+      prevpara = 0; print ""; return
     }
   }
+  prevpara = (islist || line !~ /[^ \t]/) ? 0 : 1
   if (mode == "live") print drop_spans(line); else print line
 }
 
-BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; CR = sprintf("%c", 13) }
+BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; prevpara = 0; CR = sprintf("%c", 13) }
 {
   line = $0
   sub(CR "$", "", line)                                  # CRLF is LF

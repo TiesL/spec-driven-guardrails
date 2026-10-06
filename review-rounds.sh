@@ -30,6 +30,7 @@
 # Needs gh; the --jq filtering is gh's own. Bash 3.2, BSD tools.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 usage() { echo "usage: review-rounds.sh <pr-number> [<issue-number>] (numbers must be positive integers)" >&2; exit 0; }
 [ $# -ge 1 ] && [ $# -le 2 ] || usage

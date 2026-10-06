@@ -572,7 +572,8 @@ the next free numbers after A23.
   malformed, with its stage token). All three scripts, and gate 1 of the
   collector, read markers only through these. The parser's awk programs run
   under `LC_ALL=C` (every delimiter is ASCII; under a UTF-8 locale macOS awk
-  aborted on a multibyte character right after `stage=`), and a failure is
+  aborted on a multibyte character right after `stage=`; the locale guarantee
+  as a whole is the structural rule of A32c, below), and a failure is
   never silent: the function prints nothing, says so on stderr and returns
   non-zero; the gate then prints a `model-record:` finding, the collector's
   gates 1 and 2 go `indeterminate`, `role-label-staleness.sh` goes
@@ -585,12 +586,37 @@ the next free numbers after A23.
 - **Violated when:** either script carries its own copy of `normalize_model`
   or its own attribute extraction.
 
+### A32c — The locale guard is structural (#423, round 3 of PR #443)
+- **Why:** review rounds 1 and 2 each found one more text command that ran in
+  the ambient locale on text from GitHub. A per-site rule without a single
+  oracle makes every round find the next unpinned site; `local LC_ALL=C` in a
+  bash 3.2 function does not reach a child process, so it is not the guarantee.
+- **Rule:** the four scripts that read text from GitHub
+  (`skills/pre-merge-review/model-record-gate.sh`, `compliance-evidence.sh`,
+  `role-label-staleness.sh`, `review-rounds.sh`) run `export LC_ALL=C` as their
+  first statement after the shebang, comments and `set`, so every command they
+  run, and bash's own matching, uses the C locale. The two text-reading libs
+  (`lib/markdown.sh`, `lib/model-record.sh`) are sourced, so they cannot set
+  process state (a subshell per function costs a fork per call on macOS).
+  Every external text command in them (awk, grep, sed, tr, cut, sort, uniq)
+  carries the per-command prefix `LC_ALL=C`, and grep is always called as
+  `grep -a`. The other libs (`changes.sh`, `git-env.sh`, `nfr.sh`) do not read
+  GitHub text and are outside this rule. Existing per-command prefixes in the
+  four scripts are redundant and stay; no new ones are added.
+- **Enforcement:** S235 is a static lint (L1 exports, L2 lib prefixes, L3
+  self-mutants). A class-L finding inside the guarded set is a lint defect, not
+  a site to patch. S230 stays the behavioural proof, one arm per script.
+- **Also decided (A32c):** an ordered list item whose number is not 1 after
+  top-level paragraph text is not a list-fence opener (`lib/markdown.sh`
+  `handle()`); a fence opened on a list item's continuation line and closed at
+  column 0 is an accepted limit (follow-up #445).
+
 ### A26 — Markers are produced by one command; an unreadable field is a finding (#402)
 - **Why:** the dry run on a scratch repo (release head fa1beae) showed
   dispatched roles writing unquoted markers and an orchestrator typing a
   quoted `stage="..."`; both are unreadable, and the gate was silent.
 - **`marker_emit <Stage> <model> <effort> [<floor-basis>]`**
-  (`lib/model-record.sh`, bash with `local LC_ALL=C`): prints exactly one
+  (`lib/model-record.sh`; locale per the A32c rule, section below): prints exactly one
   line, `<!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->`,
   or prints nothing, gives a reason on stderr and returns 2. It refuses: a
   stage other than the five names (emitted bare); a model that is empty,

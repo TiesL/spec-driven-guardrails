@@ -87,6 +87,7 @@
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 pr_number="${1:?usage: model-record-gate.sh <pr-number>}"
 
