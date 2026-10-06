@@ -5,7 +5,7 @@ description: >
   pipeline (Discovery, Planning, Test authoring, Implementation, Review),
   not only review. Floors are described qualitatively, never as a model
   name or tier, so the rule survives new model releases. Use this when
-  deciding which model/reasoning effort to use for a stage, or when
+  deciding which model to use for a stage, or when
   another skill needs to reference the model-choice principle instead of
   restating it.
 context: fork
@@ -17,14 +17,11 @@ allowed-tools: Read, Grep, Glob
 For every artifact-producing stage of a work item, make an explicit
 model-choice decision with two parts:
 
-1. **Floor** — the model (and reasoning effort/thinking budget) must be
-   capable enough for what *that specific stage* requires, assessed on
-   that stage's own merits — never automatically inherited from whichever
-   model handled a previous stage.
+1. **Floor** — the model must be capable enough for what *that specific
+   stage* requires, assessed on that stage's own merits — never
+   automatically inherited from whichever model handled a previous stage.
 2. **Above that floor, optimize for cost** — the least capable (cheapest)
-   model/reasoning-effort combination that still clears the floor. A task
-   might warrant a strong model at low effort, or a lighter model at high
-   effort — both dimensions matter, not just which model family.
+   model that still clears the floor.
 
 No fixed rubric. This is a per-task judgment call, the same as the
 existing review-stage rule always was — a simple task gets a light
@@ -48,12 +45,13 @@ one that wrote the code"; this skill's own floor said only "at least as
 skilled," permitting the same model. #244 resolved it in favor of the
 stricter rule (a genuinely different model whenever more than one capable
 model is available, else a recorded `same-model-exception`). #392
-reversed that: the floor is the Review stage's model and effort, taken
-together, being at least as capable as Implementation's, the cheapest
-combination that clears it. A different model is not required, and
+reversed that: the floor is the Review stage's model being at least as
+capable as Implementation's, the cheapest one that clears it (#424 later
+took effort out of that judgment, see "The limit" below). A different
+model is not required, and
 `same-model-exception` is retired (legacy: ignored by every script). The
 same-model correlated-blind-spot risk "Its limits" warns about is
-addressed by choosing a more capable pair, not by a rule about model
+addressed by choosing a more capable model, not by a rule about model
 identity.
 
 ## Per-stage floors
@@ -66,7 +64,7 @@ Mapped onto the role table from issue #196 / the multi-agent epic (#65):
 | Planning | Architect | Can produce a sound technical approach: right decomposition, right risks surfaced, right sequencing |
 | Test/scenario authoring | QA | Can write a test that actually falsifies a wrong implementation — not a tautology, not one that passes by coincidence (see `tdd-seams`) |
 | Implementation | Developer | Can satisfy the plan and the test correctly, idiomatically, without over- or under-building |
-| Review | Reviewer | At least as capable as what did Implementation, model and effort taken together (same model at higher effort, or a stronger model, whichever clears it more cheaply); a different model is not required, and the reason it clears the floor is recorded as `floor-basis` (#392) |
+| Review | Reviewer | At least as capable as what did Implementation, judged on the model alone (the same model meets it; effort is neither chosen nor checked, see "The limit"); a different model is not required, and the reason it clears the floor is recorded as `floor-basis` (#392) |
 
 Each floor is assessed independently on that stage's own task — a trivial
 fix might need little for Planning, but Review's floor still tracks
@@ -85,7 +83,7 @@ predecessor to lean on for this one stage.
 
 ## Recording the choice — always, not only when non-obvious
 
-Every stage records which model and reasoning effort handled it, in the
+Every stage records which model handled it, in the
 issue, PR, or findings comment — **always**, not only when the choice
 deviates from what's obvious. This is stricter than the old
 `pre-merge-review` clause it replaces ("if the chosen model deviates from
@@ -99,7 +97,7 @@ one past invocation, and doesn't need to age well.
 
 **Machine-readable form (#241).** Produce the marker line with
 `.claude/skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
---effort <e> [--floor-basis '<sentence>']`, run from the project root (the
+[--floor-basis '<sentence>']`, run from the project root (the
 project's installed skill; the guardrails repo installs its own the same
 way), and paste its output unchanged as
 the first line of your report; never type a marker by hand (#402: hand-typed
@@ -113,40 +111,40 @@ marker, in whichever comment (issue, for Discovery; PR, for the rest) that
 stage already writes:
 
 ```
-<!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" effort="<low|medium|high>" -->
+<!-- model-record: stage=<Discovery|Planning|Test|Implementation|Review> model="<model>" -->
 ```
 
 Review's marker takes one more field, `floor-basis`: required on every
 Review marker, one sentence of free text (#392):
 
 ```
-<!-- model-record: stage=Review model="<model>" effort="<low|medium|high|unknown>" floor-basis="<one sentence>" -->
+<!-- model-record: stage=Review model="<model>" floor-basis="<one sentence>" -->
 ```
 
-`floor-basis` is one sentence of free text on why
-this model and effort clear Implementation's, for example "same model as
-Implementation at higher effort" or "stronger model than Implementation's
-at equal effort; the diff is a mechanical rename". A human weighs that
-sentence; the gate never verifies it, only that it is present. Any
-character is fine in it except a double quote and a control character
-such as a newline (see "Marker grammar" below). The
-Review report's one-line self-declaration (below) repeats it in prose.
-`same-model-exception` is legacy: no script reads it, and it does not
-stand in for `floor-basis`.
+`floor-basis` is one sentence of free text on why this model clears
+Implementation's, for example "same model as Implementation" or "stronger
+model than Implementation's; the diff is a mechanical rename". A human
+weighs that sentence; the gate never verifies it, only that it is present.
+Any character is fine in it except a double quote and a control character
+such as a newline (see "Marker grammar" below). The Review report's
+one-line self-declaration (below) repeats it in prose. `same-model-exception`
+is legacy: no script reads it, and it does not stand in for `floor-basis`.
 
-`effort` is one of `low`, `medium`, `high`, ordered `low < medium < high`.
-A role that does not know the effort it ran at records `effort="unknown"`
-(not `session-default`): that is honest, and the gate then makes no effort
-claim. The `effort` in a marker is self-reported and unverified unless the
-platform itself set it; the dispatch tool has no effort argument (A25), so
-`unknown` is the honest value for a dispatched role, and a `floor-basis` may
-claim "higher effort" only when that effort was actually set.
+The model string in a marker is self-reported and unverified: a role writes
+the id it believes it runs on, and no script can confirm it.
+
+**The limit (A33, A33a, #424).** The floor is judged on the model: effort is
+neither chosen nor checked, because the dispatch tool takes no effort
+argument, so a marker no longer records one (a legacy `effort` attribute in
+an older marker is read and ignored). That means the same model at a lower
+effort meets the floor, even where a lower effort would be weaker. This is an
+accepted risk. Revisit when the dispatch tool gains an effort parameter.
 
 Record the full model id exactly as the platform reports it (for example
 `claude-opus-5`, not `opus`). This is documented, not enforced: a short
 alias and the full id of the same model count as different models, since
-no script holds a model table, so the effort comparison is skipped for
-that pair (recorded as debt in the PRD).
+no script holds a model table, so such a pair is never treated as the same
+model (recorded as debt in the PRD).
 
 **Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
 `stage=<Stage>` (a bare name, never quoted), then `name="value"`
@@ -161,7 +159,7 @@ and none counts a marker quoted in a code span, a fence or a blockquote:
 that is an example, not a record. A malformed marker (a stray or
 unbalanced quote, a quoted stage, no closing `-->`, a `<!--` inside it) is
 ignored, never read, and never hides a later marker; the gate names it as
-a finding. So does an unquoted, empty or missing `model` or `effort` on the
+a finding. So does an unquoted, empty or missing `model` on the
 latest marker of any stage (#402): produce a corrected marker with the
 command.
 
@@ -170,8 +168,9 @@ five stages have at least one marker, searched across both the PR's
 comments and the comments of every issue it closes — a finding, same
 non-blocking shape as every other `pre-merge-review` gate, for any stage
 missing one. It also compares Implementation's and Review's latest
-markers: the same model with Review's effort lower than Implementation's
-is a finding, and so is a Review marker without `floor-basis`.
+markers: a Review marker without `floor-basis` is a finding. The model
+itself is not compared: the same model meets the floor, different models are
+the Reviewer's recorded judgment (see "The limit").
 
 When the two markers record different models, no script can say which is
 more capable: there is no ordering to check, so that comparison is not
@@ -182,7 +181,7 @@ judgment. `compliance-evidence.sh` reports that case as
 **Self-declared in the artifact itself, too.** When a stage's own output
 is a written artifact a later stage or a human reads directly (a report,
 a findings comment, a review) — not only a code change — that artifact
-opens with a one-line self-declaration of its own model/effort, in
+opens with a one-line self-declaration of its own model, in
 addition to the marker above. Found missing during epic #65's first
 co-thinking-session pilot: the record existed only on the orchestrator's
 side, not inside the artifact itself, which is the one place a later role

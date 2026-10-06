@@ -88,7 +88,7 @@ require_gh() {
   fi
 }
 
-# normalize_model, effort_rank, marker_attr — shared with
+# normalize_model, marker_attr — shared with
 # skills/pre-merge-review/model-record-gate.sh through lib/model-record.sh
 # (A25, #392; the verbatim copy of normalize_model that used to sit here
 # is gone). The collector lives at the repo root, next to lib/.
@@ -563,13 +563,12 @@ gate_stage_models() {
 #   - Disagreement BETWEEN two or more issues (the PR silent or absent
 #     from this comparison) IS a genuine, unresolvable conflict —
 #     neither issue is "the" outcome.
-#   - "Disagreement" covers the normalized `model=`, the `effort=` value
-#     (case-folded; #392: both feed the Review-floor verdict, so two
-#     issues agreeing on the model but not the effort are a conflict; the
-#     legacy `same-model-exception=` attribute is ignored and no longer counts, #392 AC5), and
-#     well-formed-vs-malformed
-#     (a marker that matched but has no quoted `model="..."`) alike —
-#     not just the model field (R-3/R-4).
+#   - "Disagreement" covers the normalized `model=` and
+#     well-formed-vs-malformed (a marker that matched but has no quoted
+#     `model="..."`) alike (R-3/R-4). Effort is not part of the key (#424,
+#     A33): a legacy `effort=` attribute is ignored, so two issues agreeing
+#     on the model are no conflict whatever their efforts say; the legacy
+#     `same-model-exception=` attribute is ignored too (#392 AC5).
 #   - When more than one issue-side marker exists and they agree, the
 #     representative line is picked by sorting on issue number, not on
 #     fetch order, so the result can't flip depending on which issue
@@ -605,7 +604,7 @@ resolve_stage_marker() {
   # one of them is an equally valid representative to return — so no
   # sort-by-issue-number step is needed here (an earlier version tried
   # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
-  local -a marker_labels=() marker_lines=() marker_models=() marker_efforts=()
+  local -a marker_labels=() marker_lines=() marker_models=()
   for i in "${!ISSUE_TEXTS[@]}"; do
     if ! line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"; then
       printf '%s\t%s\n' "parsefail" ""
@@ -613,14 +612,13 @@ resolve_stage_marker() {
     fi
     if [ -n "$line" ]; then
       src_num="${ISSUE_NUMS[$i]}"
-      if ! model="$(marker_attr "$line" model)" || ! eff="$(marker_attr "$line" effort)"; then
+      if ! model="$(marker_attr "$line" model)"; then
         printf '%s\t%s\n' "parsefail" ""
         return
       fi
       marker_labels+=("issue #$src_num")
       marker_lines+=("$line")
       marker_models+=("$model")
-      marker_efforts+=("$(printf '%s' "$eff" | tr '[:upper:]' '[:lower:]')")
     fi
   done
 
@@ -649,13 +647,11 @@ resolve_stage_marker() {
   # never treated as a conflict.
   local issues_conflict=0
   if [ "${#marker_lines[@]}" -gt 1 ]; then
-    local first_norm first_eff norm eff
+    local first_norm norm
     first_norm="$(normalize_model "${marker_models[0]}")"
-    first_eff="${marker_efforts[0]}"
     for i in "${!marker_models[@]}"; do
       norm="$(normalize_model "${marker_models[$i]}")"
-      eff="${marker_efforts[$i]}"
-      if [ "$norm" != "$first_norm" ] || [ "$eff" != "$first_eff" ]; then
+      if [ "$norm" != "$first_norm" ]; then
         issues_conflict=1
       fi
     done
@@ -672,7 +668,7 @@ resolve_stage_marker() {
       sep="; "
     fi
     for i in "${!marker_lines[@]}"; do
-      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\` (effort \`${marker_efforts[$i]:-none}\`)"
+      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\`"
       sep="; "
     done
     printf '%s\t%s\n' "conflict" "$detail"
@@ -690,7 +686,6 @@ resolve_stage_marker() {
 gate_review_model() {
   local impl_status impl_line review_status review_line
   local impl_model review_model impl_norm review_norm
-  local impl_effort review_effort impl_rank review_rank
   local total_issues=0
 
   IFS=$'\t' read -r impl_status impl_line <<<"$(resolve_stage_marker Implementation)"
@@ -756,8 +751,6 @@ gate_review_model() {
   local attrs_ok=1 fb=""
   impl_model="$(marker_attr "$impl_line" model)" || attrs_ok=0
   review_model="$(marker_attr "$review_line" model)" || attrs_ok=0
-  impl_effort="$(marker_attr "$impl_line" effort)" || attrs_ok=0
-  review_effort="$(marker_attr "$review_line" effort)" || attrs_ok=0
   fb="$(marker_attr "$review_line" floor-basis)" || attrs_ok=0
   if [ "$attrs_ok" -eq 0 ]; then
     printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
@@ -786,13 +779,6 @@ gate_review_model() {
     return
   fi
 
-  impl_rank="$(effort_rank "$impl_effort")"
-  review_rank="$(effort_rank "$review_effort")"
-  if [ -z "$impl_rank" ] || [ -z "$review_rank" ]; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers on PR #$pr_number both record \`$review_model\`, but an effort is missing, unquoted or not low|medium|high (Review: \`${review_effort:-none}\`, Implementation: \`${impl_effort:-none}\`), so the two can't be compared"
-    return
-  fi
-
   # issue #302: unlike the checks above, the same-model verdicts used to fire
   # unconditionally on "both markers found" — sound for <=1 closing
   # issue (nothing else could have contributed a marker), unsound for
@@ -809,21 +795,15 @@ gate_review_model() {
   # Round 1's fix set both flags together on a PR-side failure without
   # updating this condition, so it still silently returned
   # `not-evidenced` in exactly the case it was meant to guard against.
-  # #392 (AC6 ruling): both same-model verdicts come from one comparison of
-  # the latest two markers, which an unread marker can overturn either way
-  # (a later review round recording a lower effort), so BOTH go behind this
-  # guard now, not only not-evidenced.
+  # #392 (AC6 ruling), narrowed by #424: the same-model verdict comes from the
+  # latest two markers, which an unread marker can overturn (a later review
+  # round on another model), so it goes behind this guard.
   if [ "$BUNDLE_PR_LOOKUP_FAILED" -eq 1 ] || { [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; }; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\` (Review effort \`$review_effort\`, Implementation effort \`$impl_effort\`), but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
+    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\`, but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
     return
   fi
 
-  if [ "$review_rank" -ge "$impl_rank" ]; then
-    printf '%s\t%s\n' "evidenced" "same model \`$review_model\`; Review effort \`$review_effort\` ≥ Implementation effort \`$impl_effort\`"
-    return
-  fi
-
-  printf '%s\t%s\n' "not-evidenced" "same model \`$review_model\`; Review effort \`$review_effort\` < Implementation effort \`$impl_effort\`"
+  printf '%s\t%s\n' "evidenced" "same model \`$review_model\`; the floor is judged on the model alone, on self-reported model strings (effort is not compared)"
 }
 
 gate_review_marker() {
@@ -1001,10 +981,10 @@ render() {
   local status evidence
 
   IFS=$'\t' read -r status evidence <<<"$(gate_stage_models)"
-  row "Per-stage model/effort recorded (Discovery, Planning, Test, Implementation)" "$status" "$evidence"
+  row "Per-stage model recorded (Discovery, Planning, Test, Implementation)" "$status" "$evidence"
 
   IFS=$'\t' read -r status evidence <<<"$(gate_review_model)"
-  row "Review at least as capable as Implementation (same model: effort not lower; different models: recorded judgment, not machine-checked)" "$status" "$evidence"
+  row "Review at least as capable as Implementation (same model: the floor is met on the model alone; different models: recorded judgment, not machine-checked)" "$status" "$evidence"
 
   IFS=$'\t' read -r status evidence <<<"$(gate_review_marker)"
   row "Quality review before merge, with findings in the PR" "$status" "$evidence"

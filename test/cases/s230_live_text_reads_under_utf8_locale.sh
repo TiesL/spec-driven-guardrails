@@ -154,27 +154,12 @@ for name in $byte_names; do
   done
 done
 
-# --- effort_rank (lib/model-record.sh:57), lib-normalize-locale round 2 -------
-# `effort_rank "low<bytes>"` prints nothing under LC_ALL=C (not a known
-# effort). Under a UTF-8 LANG an unprefixed BSD `tr` cuts the value at the byte
-# ("Illegal byte sequence" on stderr) and the rest reads as `low`: rank 0, a
-# false "Review recorded lower effort" finding. RED today on a macOS host.
-# Control: a plain `HIGH` ranks 2 (so the function is not a stub).
-# shellcheck disable=SC2016
-env LC_ALL=C bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "HIGH" > "$SANDBOX/er.out" 2>&1
-[ "$(cat "$SANDBOX/er.out")" = "2" ] || fail "S230 lib/effort_rank — control: HIGH should rank 2 under LC_ALL=C, got $(printf '%q' "$(cat "$SANDBOX/er.out")")"
-for name in $byte_names; do
-  b="$(bytes_of "$name")"
-  # shellcheck disable=SC2016
-  env LC_ALL=C bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "low${b}" > "$SANDBOX/er.c.out" 2> "$SANDBOX/er.c.err"
-  er_c="$(cat "$SANDBOX/er.c.out")"
-  [ -z "$er_c" ] || fail "S230 lib/effort_rank/$name — baseline under LC_ALL=C: low+bytes is not a known effort and must rank as nothing, got $(printf '%q' "$er_c")"
-  # shellcheck disable=SC2016
-  env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "low${b}" > "$SANDBOX/er.u.out" 2> "$SANDBOX/er.u.err"
-  er_u="$(cat "$SANDBOX/er.u.out")"
-  [ "$er_u" = "$er_c" ] || fail "S230 lib/effort_rank/$name — under LANG=$MD_UTF8 'low'+bytes ranks as $(printf '%q' "$er_u"), under LC_ALL=C as nothing (tr cut the value at the byte)"
-  [ ! -s "$SANDBOX/er.u.err" ] || fail "S230 lib/effort_rank/$name — stderr under LANG=$MD_UTF8 is not empty: $(LC_ALL=C head -c 200 "$SANDBOX/er.u.err")"
-done
+# --- effort_rank: retired (#424) ----------------------------------------------
+# effort_rank is deleted (no effort is ranked any more), so its two locale arms
+# (the lib function and the gate's lower-effort finding) are gone with it.
+# What remains of the class is that a LEGACY effort value holding a byte is read
+# without error and ignored identically in both locales: the gate arm and the
+# collector arm further down.
 
 # =========================================================================
 # 2. gate: main path and role-play path
@@ -348,11 +333,10 @@ for name in $byte_names; do
   done
 done
 
-# --- gate: effort_rank on the Review record (round 2, lib-normalize-locale) ---
-# The Reviewer's reproduction: Implementation `opus`/`high`, Review `opus`/`low<bytes>`.
-# Under LC_ALL=C `low<bytes>` is not a known effort and the gate prints nothing;
-# an unprefixed BSD tr turns it into `low` and the gate prints a false
-# "Review recorded lower effort" finding.
+# --- gate: a legacy effort holding a byte is ignored in both locales (#424) ---
+# Before #424 the Review effort `low<bytes>` went through effort_rank's tr. Now
+# no effort is read at all: Implementation `opus`/`high`, Review `opus`/`low<bytes>`
+# gives no finding and no stderr, the same under LC_ALL=C and a UTF-8 LANG.
 for name in $byte_names; do
   ph="$(placeholder_of "$name")"
   rm -f "${FAKE_GH_DATA:?}"/*.json
@@ -362,9 +346,9 @@ for name in $byte_names; do
   json_comments "$FAKE_GH_DATA/comments-246.json" "$(rec Planning sonnet)" "$(rec Test sonnet)" "$(rec Implementation opus)"
   gate_run C
   c_out="$GATE_OUT"
-  md_has "$c_out" "recorded lower effort" && fail "S230 gate effort/$name — baseline under LC_ALL=C: low+bytes is not a known effort, so no lower-effort finding is expected, got: $c_out"
+  md_has "$c_out" "model-record:" && fail "S230 gate effort/$name — a legacy effort low+bytes must produce no finding under LC_ALL=C (#424), got: $c_out"
   gate_run utf8
-  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate effort/$name — the Review effort low+bytes is read differently under LANG=$MD_UTF8 than under LC_ALL=C (effort_rank's tr ran without the C locale): '$GATE_OUT' vs '$c_out'"
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate effort/$name — a legacy Review effort low+bytes is read differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
 done
 
 # =========================================================================
@@ -418,21 +402,20 @@ $(mk Review claude-sonnet-5 medium "$FB")
   ce_compare "collector/$name"
 done
 
-# --- collector: issue-side efforts holding a byte (compliance-evidence.sh:622) -
-# Two closing issues each record a Review marker. The collector lower-cases
-# each issue-side effort with `tr` and calls the two issues in conflict when
-# they differ. BSD tr cuts `low<bytes>` to `low` under a UTF-8 LANG, so against
-# an issue that says plain `low` the conflict check sees agreement where
-# LC_ALL=C sees a conflict (the evidence then also shows a cut value). Pairs:
-# `low<bytes>` vs `low` (the verdict flips) and vs `high` (the conflict stays,
-# the effort text printed in the evidence differs). RED today on a macOS host.
+# --- collector: legacy efforts holding a byte are ignored (#424) -------------
+# Two closing issues each record a Review marker, one with effort `low<bytes>`,
+# the other plain `low` or `high`. Effort is not in the conflict key any more,
+# so there is NO conflict: row 2 is `evidenced` under LC_ALL=C (the baseline)
+# and the collector's full output and stderr are byte-identical under a UTF-8
+# LANG. (This replaces the effort-conflict arm, which was red on macOS because
+# BSD tr cut the value at the byte.)
 two="Closes #265, closes #266"
 for name in $byte_names; do
   b="$(bytes_of "$name")"
   for other in low high; do
     ce "$two" "$(mk Implementation claude-sonnet-5 medium)" "$(mk Review claude-sonnet-5 "low${b}" 'floor-basis="x"')" "$(mk Review claude-sonnet-5 "$other" 'floor-basis="x"')" >/dev/null 2>&1
     ce_run_to C "$SANDBOX/ce.c.out" "$SANDBOX/ce.c.err"
-    [ "$(ce_status_of "$SANDBOX/ce.c.out" 2)" = "indeterminate" ] || fail "S230 collector-effort/$name/$other — baseline under LC_ALL=C: 'low'+bytes against '$other' is an effort conflict (row 2 indeterminate), got '$(ce_status_of "$SANDBOX/ce.c.out" 2)' (a broken fixture)"
+    [ "$(ce_status_of "$SANDBOX/ce.c.out" 2)" = "evidenced" ] || fail "S230 collector-effort/$name/$other — baseline under LC_ALL=C: a legacy effort 'low'+bytes against '$other' is no conflict (#424), row 2 evidenced, got '$(ce_status_of "$SANDBOX/ce.c.out" 2)'"
     ce_compare "collector-effort/$name/$other"
   done
 done

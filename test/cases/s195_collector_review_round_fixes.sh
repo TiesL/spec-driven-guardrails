@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S195 — compliance-evidence.sh: gate 1 shares the anchored attribute
-# extraction, an effort-only conflict says so, and exit code 3 names the lib.
+# extraction, an effort-only difference between issues is NOT a conflict
+# (#424), and exit code 3 names the lib.
 # Covers: F39
 #
 # Issue #392, review of PR #397 (low findings that contradict the design).
@@ -61,19 +62,21 @@ case "$ev" in *"model="*) fail "S195 gate 1 — read text ending in ' model=' as
 # a marker with NO real model= but such text is malformed, not a model
 row1 "gate 1, no model= but 'model=' inside a value" indeterminate "$(disc 'x="y"')" "$(plan '')${nl}<!-- model-record: stage=Test note=\"beats model=\" effort=\"low\" -->${nl}$(impl '')"
 
-# ===== (4) two closing issues that differ only in effort =======================
+# ===== (4) two closing issues that differ only in legacy effort ===============
+# #424 (A33): effort is not part of the conflict key, so this is no conflict:
+# the same model on both issues is read as one Review marker (evidenced), and
+# no text about effort appears.
 two="Closes #265, closes #266"
 ce "$two" "$(mk Implementation claude-sonnet-5 medium)" "$(mk Review claude-sonnet-5 medium 'floor-basis="x"')" "$(mk Review claude-sonnet-5 high 'floor-basis="x"')"
-assert_table_shape "S195 effort-only conflict" "$ce_out"
-[ "$(row_status "$ce_out" 2)" = "indeterminate" ] || fail "S195 — an effort-only disagreement between issues must be indeterminate, got '$(row_status "$ce_out" 2)'"
+assert_table_shape "S195 effort-only difference" "$ce_out"
+[ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S195 — an effort-only difference between issues is no conflict (#424): gate 2 should be evidenced, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
 ev="$(row_evidence "$ce_out" 2)"
-grep -qi 'effort' <<<"$ev" || fail "S195 — the conflict text must say the EFFORT differs, got: $ev"
-grep -qi 'medium' <<<"$ev" && grep -qi 'high' <<<"$ev" || fail "S195 — the conflict text must show both efforts (medium, high), got: $ev"
-grep -q '#265' <<<"$ev" && grep -q '#266' <<<"$ev" || fail "S195 — the conflict text must name both issues, got: $ev"
-# a model-only conflict still shows both models
+grep -qi 'conflict' <<<"$ev" && fail "S195 — no conflict text for an effort-only difference, got: $ev"
+# a model conflict still shows both models, and no effort
 ce "$two" "$(mk Implementation claude-sonnet-5 medium)" "$(mk Review claude-sonnet-5 medium 'floor-basis="x"')" "$(mk Review claude-opus-5 medium 'floor-basis="x"')"
 ev="$(row_evidence "$ce_out" 2)"
 case "$ev" in *claude-sonnet-5*claude-opus-5* | *claude-opus-5*claude-sonnet-5*) : ;; *) fail "S195 — a model conflict must still show both models, got: $ev" ;; esac
+case "$ev" in *"(effort"*) fail "S195 — a model conflict must not quote the issues' efforts (#424), got: $ev" ;; esac
 
 # ===== (5) exit code 3: header and behaviour ===================================
 hdr="$(awk '/^# Exit codes:/ { f = 1 } f && /^# +3 / { g = 1; print; next } g && /^# +[0-9] / { exit } g && /^#( |$)/ && !/^# [A-Z]/ { print } g && /^# [A-Z]/ { exit }' "$script")"

@@ -92,8 +92,14 @@ run_build_fake_gh() {
 # the exact table shape, the closed status vocabulary, and non-empty
 # Evidence cells (AC2 — which Architect's own fixture contract had no
 # arm for at all).
-GATE1="Per-stage model/effort recorded (Discovery, Planning, Test, Implementation)"
-GATE2="Review at least as capable as Implementation (same model: effort not lower; different models: recorded judgment, not machine-checked)"
+# Issue #424: the two model rows no longer name effort. Their exact new
+# labels are pinned once (S150 AC1's worked example and S238); every other
+# case only checks the stable lead-in, so one label edit does not turn every
+# collector arm red.
+GATE1="Per-stage model recorded (Discovery, Planning, Test, Implementation)"
+GATE2="Review at least as capable as Implementation (same model: the floor is met on the model alone; different models: recorded judgment, not machine-checked)"
+GATE1_LEAD="Per-stage model"
+GATE2_LEAD="Review at least as capable as Implementation"
 GATE3="Quality review before merge, with findings in the PR"
 GATE4="CI green"
 GATE5="Traceability link 3 (PR ↔ issue)"
@@ -124,9 +130,21 @@ assert_table_shape() {
     status="$(printf '%s' "$row" | sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\2/')"
     evidence="$(printf '%s' "$row" | sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\3/')"
 
-    if [ "$gate" != "${expected[$i]}" ]; then
-      fail "$label — row $((i + 1)) gate label wrong: got '$gate', expected '${expected[$i]}'"
-    fi
+    case "$i" in
+      0 | 1)
+        local lead="$GATE1_LEAD"
+        [ "$i" -eq 1 ] && lead="$GATE2_LEAD"
+        case "$gate" in
+          "$lead"*) : ;;
+          *) fail "$label — row $((i + 1)) gate label wrong: got '$gate', expected it to start with '$lead'" ;;
+        esac
+        ;;
+      *)
+        if [ "$gate" != "${expected[$i]}" ]; then
+          fail "$label — row $((i + 1)) gate label wrong: got '$gate', expected '${expected[$i]}'"
+        fi
+        ;;
+    esac
     case "$status" in
       evidenced | not-evidenced | unverifiable-from-artifacts | indeterminate) : ;;
       *) fail "$label — row $((i + 1)) status '$status' is not one of the four closed-vocabulary values (AC8)" ;;

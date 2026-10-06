@@ -8,7 +8,7 @@
 #
 # Checks that all five pipeline stages (Discovery, Planning, Test,
 # Implementation, Review) have at least one machine-readable
-#   <!-- model-record: stage=<Stage> model="..." effort="..." -->
+#   <!-- model-record: stage=<Stage> model="..." -->
 # marker, searched across the PR's own comments, the PR's own description,
 # and the comments of every issue it closes (Discovery is typically
 # recorded on the issue, the other four on the PR — but this searches all
@@ -62,14 +62,13 @@
 # Output on stdout: one line per missing stage:
 #   "model-record: no record found for stage <Stage> (missing model-choice marker)"
 # plus, when Review and Implementation both have a marker (#392):
-#   "model-record: Review recorded lower effort (\"<r>\") than Implementation (\"<i>\") on the same model (\"<m>\") (#392)"
-#   "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
+#   "model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's) (#392)"
 # plus, for each malformed marker of any stage (an unbalanced quote, no
 # closing -->, a <!-- inside it, a quoted stage; lib/model-record.sh), which
 # is ignored, never read (an empty or quoted stage shows as `stage=?`, #402):
 #   "model-record: a stage=<Stage> marker is malformed and was ignored (<reason>: <text>) (#392)"
-# plus, for the latest marker of each of the five stages whose model or
-# effort is unquoted, empty or missing (#402, A26), one line per field:
+# plus, for the latest marker of each of the five stages whose model
+# is unquoted, empty or missing (#402, A26), one line:
 #   "model-record: the latest stage=<Stage> marker has no quoted <field>=\"...\" ... (#402)"
 # and, when live_text() fails on a body (no marker read, the stage and
 # floor checks skipped; markers are read from live text only, #392):
@@ -262,17 +261,12 @@ else
   done
 fi
 
-# #392 (A24/A25), replacing #244's different-model rule: Review's model and
-# effort, together, are at least as capable as Implementation's. Two checks
-# on the LATEST Review marker (`tail -1`, as before: a later review round's
-# marker must win), each only when both markers are present (the loop above
-# already reports either one missing):
-# - the same model (normalize_model, lib/model-record.sh) at a lower Review
-#   effort than Implementation's is a finding. Different models are never
-#   ranked here (no model table): that stays the Reviewer's recorded
-#   judgment. An effort that is missing, unquoted or not low|medium|high
-#   makes no comparison claim, never a false one; an unquoted, empty or
-#   missing effort or model gets its own #402 line instead (below).
+# #392 (A24), narrowed by #424 (A33/A33a): the floor is judged on the model
+# alone; effort is no longer recorded, and a legacy effort attribute is read
+# and ignored. One check on the LATEST Review marker (`tail -1`, as before: a
+# later review round's marker must win), only when both markers are present
+# (the loop above already reports either one missing). Models are never
+# ranked here (no model table): that stays the Reviewer's recorded judgment.
 # - the marker must carry a non-empty quoted floor-basis (one sentence on
 #   why the pair clears the floor); its text is never verified. A legacy
 #   same-model-exception is ignored completely and does not stand in for it.
@@ -305,14 +299,14 @@ if [ "$live_failed" -eq 0 ]; then
       echo "model-record: a stage=${scan_stage:-?} marker is malformed and was ignored ($scan_rest) (#392)"
     done <<<"$scan_out"
     # #402 (A26): the latest marker of each stage must carry a readable
-    # (quoted, non-empty) model and effort. An unquoted, empty or missing
-    # one is one finding per stage and field; effort="unknown" is quoted
-    # and honest (A25), so it is no finding. A missing stage keeps only its
+    # (quoted, non-empty) model. An unquoted, empty or missing one is one
+    # finding per stage; a legacy effort attribute is never a finding (#424).
+    # A missing stage keeps only its
     # "no record found" line above.
     for stage in Discovery Planning Test Implementation Review; do
       stage_line="$(marker_find "$stage" "$marker_text" | tail -1)" || { parser_failed=1; break; }
       [ -n "$stage_line" ] || continue
-      for field in model effort; do
+      for field in model; do
         field_value="$(marker_attr "$stage_line" "$field")" || { parser_failed=1; break 2; }
         if [ -z "$field_value" ]; then
           echo "model-record: the latest stage=$stage marker has no quoted $field=\"...\" (unquoted, empty or missing), so it can't be read; produce a corrected marker with skills/pre-merge-review/model-record-emit.sh (#402)"
@@ -327,25 +321,12 @@ if [ "$parser_failed" -eq 1 ]; then
   review_line=""
 fi
 if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
-  impl_model="$(marker_attr "$impl_line" model)" || parser_failed=1
-  review_model="$(marker_attr "$review_line" model)" || parser_failed=1
-  impl_effort="$(marker_attr "$impl_line" effort)" || parser_failed=1
-  review_effort="$(marker_attr "$review_line" effort)" || parser_failed=1
   review_fb="$(marker_attr "$review_line" floor-basis)" || parser_failed=1
   if [ "$parser_failed" -eq 1 ]; then
     echo "model-record: the marker parser (lib/model-record.sh) failed, so the Implementation and Review markers were not read and the Review floor was not checked (#392)"
   else
-    impl_model_norm="$(normalize_model "$impl_model")"
-    review_model_norm="$(normalize_model "$review_model")"
-    if [ -n "$impl_model_norm" ] && [ "$impl_model_norm" = "$review_model_norm" ]; then
-      impl_rank="$(effort_rank "$impl_effort")"
-      review_rank="$(effort_rank "$review_effort")"
-      if [ -n "$impl_rank" ] && [ -n "$review_rank" ] && [ "$review_rank" -lt "$impl_rank" ]; then
-        echo "model-record: Review recorded lower effort (\"$review_effort\") than Implementation (\"$impl_effort\") on the same model (\"$review_model\") (#392)"
-      fi
-    fi
     if [ -z "$review_fb" ]; then
-      echo "model-record: stage=Review marker has no floor-basis (why Review's model and effort clear Implementation's) (#392)"
+      echo "model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's) (#392)"
     fi
   fi
 fi

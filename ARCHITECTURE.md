@@ -487,9 +487,9 @@ effort, together, at least as capable as Implementation's. A24 and A25 are
 the next free numbers after A23.
 
 ### A24 — The Review floor and its recorded judgment, `floor-basis`
-- **Rule:** Review's model and effort, taken together, are at least as
-  capable as Implementation's recorded model and effort. Among the
-  combinations that clear that, pick the cheapest. A different model is not
+- **Rule (effort part superseded by A33, #424):** Review's model is at
+  least as capable as Implementation's recorded model; effort is no longer
+  compared or recorded. Among the models that clear that, pick the cheapest. A different model is not
   required. No model or tier is named anywhere.
 - **Attribute:** `floor-basis="<one sentence>"` on the Review `model-record`
   marker, required on **every** Review marker, not only same-model ones:
@@ -540,11 +540,11 @@ the next free numbers after A23.
 - **`compliance-evidence.sh` gate 2:** different models are
   `unverifiable-from-artifacts` (the capability ordering is not machine-
   checked; the `floor-basis` is quoted for a human to weigh); the same model
-  with both efforts known is `evidenced` when Review >= Implementation and
-  `not-evidenced` when lower; an unknown effort is `indeterminate`. Both
-  same-model verdicts sit behind the #302/#336 lookup-failure guard (an
-  unread marker can overturn either; Architect ruling on AC6). The
-  inter-issue conflict key is the normalized model plus the effort.
+  is `evidenced` (model-only, self-reported; as amended by A33/A33a, #424,
+  the former effort comparison is gone). That same-model verdict sits behind
+  the #302/#336 lookup-failure guard (an unread marker can overturn it;
+  Architect ruling on AC6). The inter-issue conflict key is the normalized
+  model alone (the effort part was removed by #424).
 - **`same-model-exception`:** ignored completely by both scripts, and it does
   not stand in for `floor-basis`. The documentation keeps one "legacy,
   ignored" mention for one release, then it goes.
@@ -552,6 +552,7 @@ the next free numbers after A23.
   the `floor-basis` text, or a #392 finding uses the `role-played: ` prefix.
 
 ### A25 — Effort scale and the shared model-record module
+- **Status: superseded by A33 (#424).** Effort left the marker and the floor; the scale, `effort_rank` and the effort comparisons below are history. The shared `lib/model-record.sh` module itself stays.
 - **Scale:** low < medium < high, case-insensitive on the quoted
   `effort="..."` value: exactly the values in use. Compared only when both
   models normalize equal and both efforts are known. A missing, unquoted or
@@ -563,7 +564,7 @@ the next free numbers after A23.
 - **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
   collector and `role-label-staleness.sh`:
   `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
-  `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
+  `marker_attr <marker> <name>`
   (the quoted value; the marker is tokenized, so text inside another value
   such as `beats model=` or a lookalike name such as `reviewer-model` is
   never read as an attribute), `marker_find <Stage> <text>` (every
@@ -633,7 +634,7 @@ the next free numbers after A23.
 - **Why:** the dry run on a scratch repo (release head fa1beae) showed
   dispatched roles writing unquoted markers and an orchestrator typing a
   quoted `stage="..."`; both are unreadable, and the gate was silent.
-- **`marker_emit <Stage> <model> <effort> [<floor-basis>]`**
+- **`marker_emit <Stage> <model> [<floor-basis>]`** (no effort since A33, #424; the line below shows the A26 form that carried one)
   (`lib/model-record.sh`; locale per the A32c rule, section below): prints exactly one
   line, `<!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->`,
   or prints nothing, gives a reason on stderr and returns 2. It refuses: a
@@ -653,14 +654,15 @@ the next free numbers after A23.
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
 - **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
-  --model <id> --effort <e> [--floor-basis <sentence>]`, next to the gate.
+  --model <id> [--floor-basis <sentence>]`, next to the gate (a legacy
+  `--effort` is accepted and ignored with one stderr line, A33, #424).
   It only parses flags (unknown, missing, repeated or value-less flag, or a
   positional argument: exit 2); the rules live in `marker_emit`. It finds
   the lib from its own real directory (`pwd -P`), so it works through an
   adopted project's symlinked `.claude/skills`; without the lib, exit 3.
 - **Who fills what:** the orchestrator gives the command in each dispatch
-  prompt with `--stage` and `--effort` (`unknown` when it can't set or find
-  out the effort) and names the model it requested; the role adds `--model`
+  prompt with `--stage` and names the model it requested (it no longer
+  passes `--effort`: removed by A33, #424); the role adds `--model`
   with its own exact id (the Reviewer also `--floor-basis`) and pastes the
   output unchanged as the first line of its report (human decision on
   #402). A role whose prompt has no command runs the wrapper itself and
@@ -669,9 +671,9 @@ the next free numbers after A23.
   "Marker grammar") holds the templates and the grammar; `ORCHESTRATOR.md`
   restates no grammar, `pre-merge-review` points to `model-choice`.
 - **The gate (safety net for hand-typed lines):** for the latest marker of
-  each of the five stages, an unquoted, empty or missing `model` or
-  `effort` is one `model-record:` finding per stage and field
-  (`effort="unknown"` is quoted: no finding); a malformed marker of any
+  each of the five stages, an unquoted, empty or missing `model` is one
+  `model-record:` finding per stage (the former per-field check on effort
+  was removed by A33, #424; a legacy effort attribute is ignored); a malformed marker of any
   stage, including an empty or quoted stage (shown as `stage=?`), is named.
   Exit stays 0, the prefix is never `role-played:`, so the merge guard and
   A18 are unchanged; the collector already said `indeterminate` here.
@@ -817,3 +819,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   second copy of the round logic appears outside `rr_rounds`.
 - **Revisit when:** finding severity becomes machine-readable; the trigger
   can then be counted by `review-rounds.sh`.
+
+### A33 — Effort is removed from the marker pipeline; the floor is judged on the model (#424, #413)
+- **Why:** the dispatch tool takes no effort argument, so effort was never set or verified: #405 W2 found that all 33 agents ran at medium whatever their markers said. A recorded effort was a claim nobody could check.
+- **Emitter:** `model-record-emit.sh` no longer writes `effort`. It accepts `--effort` and ignores it for one release, printing one stderr line, "effort is no longer recorded (#413); drop --effort from your prompt", so stale prompts in adopted projects keep working. The next release removes the flag (PRD debt row).
+- **Gate and collector:** the gate's lower-effort finding is gone and its per-field check covers `model` only. Collector gate 2 is `evidenced` on the same model and `unverifiable-from-artifacts` on different models; gate 1 and the inter-issue conflict key read the normalized model alone. `effort_rank` is deleted from `lib/model-record.sh`. A legacy `effort` attribute of any shape is still read without error and ignored.
+- **The limit (A33a):** the floor is judged on the model, and effort is neither chosen nor checked, so the same model at a lower effort meets the floor. This is an accepted risk. Revisit when the dispatch tool gains an effort parameter.
+- **Meaning versions:** `quality-review-before-merge` goes to 4 and `process-model-choice` to 2, once, in this slice.
+- **Violated when:** a script, skill or the orchestrator tells a role to pass `--effort`, or a finding or verdict reads an `effort` attribute.

@@ -33,16 +33,18 @@ done
 # --- AC1 (A26 amended): the orchestrator hands the role a COMMAND, not a line ---
 # one paragraph: the wrapper `model-record-emit.sh`, found through
 # $SPEC_DRIVEN_GUARDRAILS_DIR or the project's installed skill, with --stage and
-# --effort filled in (unknown when it cannot find the effort out); the role adds
+# --stage filled in (no --effort any more, #424); the role adds
 # --model with its own exact id (the Reviewer also --floor-basis) and pastes
 # the output unchanged as the first line of its report; the requested model is
 # named; nobody types a marker by hand
-para_has_all "$orch" 'model-record-emit\.sh' '--stage' '--effort' '(dispatch )?prompt' \
-  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md gives the role the model-record-emit.sh command with --stage and --effort in the dispatch prompt"
+para_has_all "$orch" 'model-record-emit\.sh' '--stage' '(dispatch )?prompt' \
+  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md gives the role the model-record-emit.sh command with --stage in the dispatch prompt"
+# #424: the command carries no --effort and nothing says to fill it
+! grep -qE -- '--effort' "$orch" \
+  || fail "S203/#424 — ORCHESTRATOR.md still tells the orchestrator to pass --effort: $(grep -n -- '--effort' "$orch" | head -2 | cut -c1-160)"
 para_has_all "$orch" 'model-record-emit\.sh' 'SPEC_DRIVEN_GUARDRAILS_DIR|\.claude/skills/pre-merge-review' \
   || fail "S203/AC1 — ORCHESTRATOR.md must say how to find the wrapper (SPEC_DRIVEN_GUARDRAILS_DIR, or the project's installed skill)"
-para_has_all "$orch" 'model-record-emit\.sh' 'effort' 'unknown' \
-  || fail "S203/AC1 — ORCHESTRATOR.md must say to fill --effort with unknown when the effort cannot be set or found out"
+# (retired by #424: the "fill --effort with unknown" statement is gone)
 para_has_all "$orch" 'model-record-emit\.sh' '--model' '(role|it)[^.]*(adds|add|fills|supplies|passes)|(adds|add|fills|supplies|passes)[^.]*--model|own (exact )?(model )?id' \
   || fail "S203/AC1 — ORCHESTRATOR.md must say the ROLE adds --model with its own exact model id"
 para_has_all "$orch" 'model-record-emit\.sh' '--floor-basis' 'Review' \
@@ -72,10 +74,10 @@ if grep -qiE 'low ?(\||,|/) ?medium ?(\||,|/) ?high|bare token|quoted attributes
 fi
 
 # --- the template is the one copy ------------------------------------------------
-grep -qE 'model-record: stage=<[^>]*> model="<model>" effort=' "$mc" \
-  || fail "S203/AC2 — model-choice must keep the marker template (the single owner of the line)"
-grep -qE 'model-record: stage=Review model="<model>" effort="[^"]*" floor-basis=' "$mc" \
-  || fail "S203/AC2 — model-choice must keep the Review template with floor-basis"
+grep -qE 'model-record: stage=<[^>]*> model="<model>" -->' "$mc" \
+  || fail "S203/AC2 — model-choice must keep the marker template, without effort (#424), as the single owner of the line"
+grep -qE 'model-record: stage=Review model="<model>" floor-basis="[^"]*" -->' "$mc" \
+  || fail "S203/AC2 — model-choice must keep the Review template with floor-basis and without effort (#424)"
 if grep -qE 'stage="' "$mc" "$pmr" "$orch" "$rc"; then
   fail "S203/AC2 — a skill shows a QUOTED stage (stage=\"...\"), which is malformed: the stage is a bare token"
 fi

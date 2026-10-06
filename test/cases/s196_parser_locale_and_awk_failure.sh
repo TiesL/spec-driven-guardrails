@@ -15,6 +15,11 @@
 # a fake awk checks the failure path on every platform.
 # Seam: model-record-gate.sh stdout and compliance-evidence.sh's rows,
 # against fake gh, with the locale exported by this test.
+#
+# Issue #424: "the marker was read" used to be proved by the same-model
+# lower-effort finding. With effort gone, a read marker pair gives NO output
+# (gate) or `evidenced` (gate 2), while a dropped marker gives "no record
+# found for stage ..." / not-evidenced. The proof is the absence of those.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -69,8 +74,8 @@ gate_case() { # label locale body...   (bodies = comments, in order)
   rf_out="$(cd "$RF_PLAIN" && PATH="$RF_BIN:$PATH" LC_ALL="$loc" LANG="$loc" "$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh" 246 2>/dev/null)"
   rf_status=$?
   [ "$rf_status" -eq 0 ] || fail "S196 gate/$label [$loc] — exit $rf_status"
-  [ "$(rf_findings)" -eq 1 ] && grep -qiE 'low.*high|high.*low' <<<"$rf_out" \
-    || fail "S196 gate/$label [$loc] — same model, Review low vs Implementation high: expected exactly the lower-effort finding, got: '$rf_out'"
+  [ -z "$rf_out" ] \
+    || fail "S196 gate/$label [$loc] — both markers must be read (no 'no record found', no finding at all), got: '$rf_out'"
 }
 for loc in $locales; do
   rev_low="$(marker Review Sonnet low 'floor-basis="ok"')"
@@ -96,15 +101,15 @@ ce_case() { # label locale
 for loc in $locales; do
   ce_case "gate2 placeholder before markers" "$loc" "$PH
 $impl_c
-$rev_c_low" not-evidenced
+$rev_c_low" evidenced
   case "$(row_evidence "$ce_out" 2)" in
-    *low*medium* | *medium*low*) : ;;
-    *) fail "S196 gate2 [$loc] — the lower-effort verdict must name both efforts, got: $(row_evidence "$ce_out" 2)" ;;
+    *claude-sonnet-5*) : ;;
+    *) fail "S196 gate2 [$loc] — the model-only verdict must name the model, got: $(row_evidence "$ce_out" 2)" ;;
   esac
   ce_case "gate2 non-ASCII in quoted value" "$loc" "$impl_c
-$(mk Review claude-sonnet-5 low 'floor-basis="stronger → weaker"')" not-evidenced
+$(mk Review claude-sonnet-5 low 'floor-basis="stronger → weaker"')" evidenced
   ce_case "gate2 non-ASCII outside quotes" "$loc" "$impl_c
-<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" not-evidenced
+<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" evidenced
   # gate 1: Planning after the placeholder
   export LC_ALL="$loc" LANG="$loc"
   ce "Closes #265" "$PH

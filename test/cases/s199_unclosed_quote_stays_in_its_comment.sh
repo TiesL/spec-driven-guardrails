@@ -14,6 +14,20 @@
 # with its own values; the malformed marker is a visible finding or ignored,
 # never wins. Seam: the real callers only (model-record-gate.sh,
 # compliance-evidence.sh gate 2, role-label-staleness.sh) against fake gh.
+#
+# Issue #424: with effort gone, "found with its own values" is told apart by
+# the floor-basis (gate: the well-formed Review marker has none, so a
+# floor-basis finding appears iff it was read; the first quoted value that
+# starts with a space or `-->` is now a `note`) and by the model (gate 2: an
+# unclosed marker claims another model than Implementation's, so `evidenced`
+# appears iff the well-formed one was read).
+#
+# Issue #424: with effort gone, "found with its own values" is told apart by
+# the floor-basis (gate: the well-formed Review marker has none, so a
+# floor-basis finding appears iff it was read; the first quoted value that
+# starts with a space or `-->` is now a `note`) and by the model (gate 2: an
+# unclosed marker claims another model than Implementation's, so `evidenced`
+# appears iff the well-formed one was read).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -46,19 +60,21 @@ UNC_IMPL='<!-- model-record: stage=Implementation model="Sonnet effort=high'
 UNC_TEST='<!-- model-record: stage=Test model="Sonnet effort=high'
 # well-formed markers whose FIRST quoted value starts with a space / with -->
 # (the case that slipped through) or with a letter (control: always caught)
-rev_sp='<!-- model-record: stage=Review floor-basis=" same model --> lower effort" model="Sonnet" effort="low" -->'
-rev_sp_plain='<!-- model-record: stage=Review floor-basis=" same model, lower effort" model="Sonnet" effort="low" -->'
-rev_ar='<!-- model-record: stage=Review floor-basis="--> same model, lower effort" model="Sonnet" effort="low" -->'
-rev_ab='<!-- model-record: stage=Review floor-basis="same model, lower effort" model="Sonnet" effort="low" -->'
-rev_sp_model='<!-- model-record: stage=Review model=" Sonnet" effort="low" floor-basis="ok" -->'
+rev_sp='<!-- model-record: stage=Review note=" same model --> lower effort" model="Sonnet" effort="low" -->'
+rev_sp_plain='<!-- model-record: stage=Review note=" same model, lower effort" model="Sonnet" effort="low" -->'
+rev_ar='<!-- model-record: stage=Review note="--> same model, lower effort" model="Sonnet" effort="low" -->'
+rev_ab='<!-- model-record: stage=Review note="same model, lower effort" model="Sonnet" effort="low" -->'
+rev_sp_model='<!-- model-record: stage=Review model=" Sonnet" effort="low" -->'
 impl_sp='<!-- model-record: stage=Implementation note=" first --> value starts with a space" model="Sonnet" effort="high" -->'
 impl_good="$(marker Implementation Sonnet high)"
-rev_good_low="$(marker Review Sonnet low 'floor-basis="ok"')"
+rev_good_low="$(marker Review Sonnet low)"
 
 expect_lower() { # label
   [ "$rf_status" -eq 0 ] || fail "S199 gate/$1 — exit $rf_status"
-  grep -qiE 'lower effort' <<<"$rf_out" \
-    || fail "S199 gate/$1 — the well-formed marker in the other comment must be found with its own values (same model, Review low vs Implementation high: lower-effort finding), got: '$rf_out'"
+  [ "$(grep -i 'floor-basis' <<<"$rf_out" | grep -vi 'malformed' | grep -c .)" -eq 1 ] \
+    || fail "S199 gate/$1 — the well-formed Review marker in the other comment (no floor-basis) must be found with its own values: the floor-basis finding, got: '$rf_out'"
+  ! grep -q 'no record found' <<<"$rf_out" \
+    || fail "S199 gate/$1 — a well-formed marker was lost ('no record found'), got: '$rf_out'"
 }
 gate_case() { # label, comment bodies...
   local label="$1"
@@ -94,27 +110,30 @@ gate_case "unclosed quote inside a code fence" "$impl_good" "Example:${NL}\`\`\`
 gate_case "N ends with an open value, N+1 starts with the closing text" "$impl_good" "$UNC_REVIEW" "$rev_sp"
 
 # the malformed marker itself: visible or ignored, never a verdict of its own.
-# Here it would be the latest Review marker and (if read) say effort=high:
-rf_data "$impl_good" "$rev_good_low" "$UNC_REVIEW"
+# Here it would be the latest Review marker and (if read) carry the floor-basis
+# that the earlier well-formed round lacks:
+rf_data "$impl_good" "$rev_good_low" '<!-- model-record: stage=Review floor-basis="ok" model="Sonnet effort=high'
 rf_gate
-grep -qiE 'lower effort' <<<"$rf_out" || fail "S199 gate — a malformed LATER marker must not win over the earlier well-formed round, got: '$rf_out'"
+[ "$(grep -i 'floor-basis' <<<"$rf_out" | grep -vi 'malformed' | grep -c .)" -eq 1 ] || fail "S199 gate — a malformed LATER marker must not win over the earlier well-formed round, got: '$rf_out'"
 
 # ---------------------------------------------------------------------------
 # compliance-evidence.sh gate 2
 # ---------------------------------------------------------------------------
 impl_c="$(mk Implementation claude-sonnet-5 medium)"
-c_unc_review='<!-- model-record: stage=Review model="claude-sonnet-5 effort=high'
-c_unc_impl='<!-- model-record: stage=Implementation model="claude-sonnet-5 effort=high'
-c_rev_sp='<!-- model-record: stage=Review floor-basis=" same model --> lower effort" model="claude-sonnet-5" effort="low" -->'
-c_rev_ar='<!-- model-record: stage=Review floor-basis="--> same model, lower effort" model="claude-sonnet-5" effort="low" -->'
+# an unclosed marker claims another model than Implementation's
+c_unc_review='<!-- model-record: stage=Review model="claude-opus-5 effort=high'
+c_unc_impl='<!-- model-record: stage=Implementation model="claude-opus-5 effort=high'
+c_rev_sp='<!-- model-record: stage=Review note=" same model --> lower effort" model="claude-sonnet-5" effort="low" -->'
+c_rev_ar='<!-- model-record: stage=Review note="--> same model, lower effort" model="claude-sonnet-5" effort="low" -->'
 c_impl_sp='<!-- model-record: stage=Implementation note=" starts --> with a space" model="claude-sonnet-5" effort="medium" -->'
 c_rev_low="$(mk Review claude-sonnet-5 low 'floor-basis="ok"')"
 
 gate2_lower() { # label ; uses ce_out
-  [ "$(row_status "$ce_out" 2)" = "not-evidenced" ] || fail "S199 gate2/$1 — gate 2 must see the well-formed Review marker (low) and say not-evidenced because of it, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S199 gate2/$1 — gate 2 must see the well-formed Review marker (Implementation's model) and say evidenced because of it, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
   case "$(row_evidence "$ce_out" 2)" in
-    *low*medium* | *medium*low*) : ;;
-    *) fail "S199 gate2/$1 — the verdict must come from the marker's own efforts (low, medium), got: $(row_evidence "$ce_out" 2)" ;;
+    *claude-opus-5*) fail "S199 gate2/$1 — the verdict must come from the well-formed marker's model, not an unclosed marker's, got: $(row_evidence "$ce_out" 2)" ;;
+    *claude-sonnet-5*) : ;;
+    *) fail "S199 gate2/$1 — the verdict must name the well-formed marker's model, got: $(row_evidence "$ce_out" 2)" ;;
   esac
 }
 for pair in "sp|$c_rev_sp" "arrow|$c_rev_ar"; do
@@ -150,7 +169,10 @@ gate2_lower "unclosed on the closing issue, good one on the PR"
 # the good marker on the closing issue, the unclosed one in the PR comments before it
 ce "Closes #265" "$impl_c
 $c_unc_review" "$c_rev_sp"
-[ "$(row_status "$ce_out" 2)" != "evidenced" ] || fail "S199 gate2 — an unclosed PR marker must not turn the verdict into evidenced, got: $(row_evidence "$ce_out" 2)"
+# #424: the unclosed PR marker (another model) is ignored, so the closing issue's
+# well-formed marker decides; the unclosed one must not win (unverifiable)
+[ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S199 gate2 — an unclosed PR marker must not win over the closing issue's well-formed one, got '$(row_status "$ce_out" 2)': $(row_evidence "$ce_out" 2)"
+case "$(row_evidence "$ce_out" 2)" in *claude-opus-5*) fail "S199 gate2 — the verdict must come from the well-formed marker's model, got: $(row_evidence "$ce_out" 2)" ;; esac
 
 # ---------------------------------------------------------------------------
 # role-label-staleness.sh (joins comments the same way)

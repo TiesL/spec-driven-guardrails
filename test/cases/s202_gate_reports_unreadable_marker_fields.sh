@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# S202 — model-record-gate.sh reports a latest marker whose `model` or `effort`
-# cannot be read, for each of the five stages.
+# S202 — model-record-gate.sh reports a latest marker whose `model` cannot be
+# read, for each of the five stages; an unreadable or absent `effort` is no
+# finding (#424).
 # Covers: F40
 #
 # Issue #402, R3/R4, AC3-AC6, Architect A26 and the human decisions of
 # 2026-10-03: an unquoted (but otherwise well-formed), empty or missing
-# `model` or `effort` on the LATEST marker of any of the five stages is a
+# `model` on the LATEST marker of any of the five stages is a
 # visible, non-blocking finding (prefix `model-record:`, never `role-played:`,
-# exit 0), one line per stage and field. Before this, the gate stayed silent
-# while the collector said `indeterminate`. Everything else is unchanged: a
-# quoted marker (also `effort="unknown"`), a placeholder, a quoted example in
+# exit 0), one line per stage. Before this, the gate stayed silent
+# while the collector said `indeterminate`. Issue #424 (V3, A33) reduced the
+# per-field check to `model` only: an effort that is unquoted, empty or
+# missing is read without error and gives no finding, because the emitter no
+# longer writes one. Everything else is unchanged: a
+# quoted marker (also a legacy `effort="unknown"`), a placeholder, a quoted example in
 # a fence, a missing marker (the existing "no record found" line only), and a
 # project that did not opt in sees the same findings.
 # Seam: the gate's stdout lines and exit status against a data-driven fake
@@ -97,10 +101,9 @@ data5 "$(good Discovery)" "$(good Planning)" "$(good Test)" "$(good Implementati
 run
 [ "$rf_status" -eq 0 ] && [ -z "$rf_out" ] || fail "S202 control — five well-formed quoted markers: expected no output and exit 0, got status $rf_status: '$rf_out'"
 
-# ---- each stage x each form: exactly one finding, naming stage and field -----
+# ---- each stage x each form: a model problem is one finding, an effort one is none
 for s in Discovery Planning Test Implementation Review; do
-  for form in unquoted-model empty-model missing-model unquoted-effort empty-effort missing-effort; do
-    field="${form#*-}"
+  for form in unquoted-model empty-model missing-model; do
     data_with "$s" "$(bad "$s" "$form")"
     run
     [ "$rf_status" -eq 0 ] || fail "S202 $s/$form — exit $rf_status (non-blocking)"
@@ -110,22 +113,27 @@ for s in Discovery Planning Test Implementation Review; do
       *) fail "S202 $s/$form — the finding must start with the model-record: prefix, got: '$rf_out'" ;;
     esac
     grep -q "$s" <<<"$rf_out" || fail "S202 $s/$form — the finding must name the stage $s, got: '$rf_out'"
-    grep -qiE "(^|[^a-z])$field([^a-z]|$)" <<<"$rf_out" || fail "S202 $s/$form — the finding must name the unreadable field ($field), got: '$rf_out'"
-    # the OTHER field must not be blamed
-    other=effort; [ "$field" = effort ] && other=model
-    grep -qE "no quoted $other" <<<"$rf_out" && fail "S202 $s/$form — only the $field is unreadable, got: '$rf_out'"
+    grep -qiE "(^|[^a-z])model([^a-z]|$)" <<<"$rf_out" || fail "S202 $s/$form — the finding must name the unreadable field (model), got: '$rf_out'"
+    ! grep -qi 'effort' <<<"$rf_out" || fail "S202 $s/$form — the finding must not mention effort (#424), got: '$rf_out'"
     no_role_played "$s/$form"
   done
-  # both fields unreadable: two lines, one per field
+  # an effort that is unquoted, empty or missing is NOT a finding any more
+  for form in unquoted-effort empty-effort missing-effort; do
+    data_with "$s" "$(bad "$s" "$form")"
+    run
+    [ "$rf_status" -eq 0 ] && [ -z "$rf_out" ] || fail "S202 $s/$form — an unreadable effort must give no finding (#424), got status $rf_status: '$rf_out'"
+  done
+  # model AND effort unreadable: one line, for the model only
   data_with "$s" "$(bad "$s" unquoted-both)"
   run
-  [ "$(rf_findings)" -eq 2 ] || fail "S202 $s/unquoted-both — one line per stage and field (two), got: '$rf_out'"
+  [ "$(rf_findings)" -eq 1 ] || fail "S202 $s/unquoted-both — one line (the model), got: '$rf_out'"
+  ! grep -qi 'effort' <<<"$rf_out" || fail "S202 $s/unquoted-both — the line must not mention effort (#424), got: '$rf_out'"
 done
 
 # ---- the dry-run example, verbatim shape -------------------------------------
 data_with Implementation '<!-- model-record: stage=Implementation model=claude-haiku-4-5 effort=low -->'
 run
-[ "$(rf_findings)" -eq 2 ] && grep -q 'Implementation' <<<"$rf_out" || fail "S202 dry-run example — unquoted Implementation marker must be reported, got: '$rf_out'"
+[ "$(rf_findings)" -eq 1 ] && grep -q 'Implementation' <<<"$rf_out" || fail "S202 dry-run example — unquoted Implementation marker must be reported once (model only), got: '$rf_out'"
 
 # ---- Review and Implementation unreadable together: separate lines ----------
 data5 "$(good Discovery)" "$(good Planning)" "$(good Test)" "$(bad Implementation unquoted-model)" "$(bad Review unquoted-model)"
@@ -134,15 +142,15 @@ run
 grep -q 'Implementation' <<<"$rf_out" && grep -q 'Review' <<<"$rf_out" || fail "S202 — each line must name its stage, got: '$rf_out'"
 [ "$(grep -c 'Implementation' <<<"$rf_out")" -eq 1 ] || fail "S202 — Implementation reported more than once: '$rf_out'"
 
-# ---- mixed: quoted model, unquoted effort -> only the effort -----------------
+# ---- mixed: quoted model, unquoted effort -> nothing (#424) ------------------
 data_with Planning '<!-- model-record: stage=Planning model="claude-haiku-4-5" effort=low -->'
 run
-[ "$(rf_findings)" -eq 1 ] && grep -qiE 'effort' <<<"$rf_out" || fail "S202 mixed — only the unquoted effort is reported, got: '$rf_out'"
+[ -z "$rf_out" ] || fail "S202 mixed — an unquoted effort beside a quoted model is no finding (#424), got: '$rf_out'"
 # a quoted marker with an unquoted OTHER attribute is fine for model
 data_with Implementation '<!-- model-record: stage=Implementation model="claude-haiku-4-5" effort="low" note=hello -->'
 run
 [ -z "$rf_out" ] || fail "S202 — an unrelated unquoted attribute is not a finding, got: '$rf_out'"
-# effort="unknown" is the documented honest value, not a finding
+# a legacy effort="unknown" is read and ignored, not a finding
 data_with Implementation '<!-- model-record: stage=Implementation model="claude-haiku-4-5" effort="unknown" -->'
 run
 [ -z "$rf_out" ] || fail "S202 — effort=\"unknown\" is quoted and honest: no finding, got: '$rf_out'"

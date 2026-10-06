@@ -5,9 +5,12 @@
 #
 # Issue #392, review of PR #397 (medium finding), human decision "fix the
 # parser": the marker grammar used to end a marker at the first `>`, so
-# floor-basis="x > y" made the whole Review marker invisible: a same-model,
-# lower-effort Review then got NO finding from the gate, and gate 2 said the
-# marker was only a "quoted illustration". Quotes are the one thing a value
+# floor-basis="x > y" made the whole Review marker invisible: the gate then
+# said "no record found for stage Review", and gate 2 said the marker was
+# only a "quoted illustration". Since #424 the floor is on the model alone, so
+# "the marker was seen" is proved by the ABSENCE of "no record found" (gate)
+# and by `evidenced` instead of `not-evidenced` (gate 2), and by a missing
+# floor-basis being reported on the latest round. Quotes are the one thing a value
 # cannot contain (A24); every other character is tolerated and the marker
 # parses as if the value were plain. Seam: model-record-gate.sh stdout and
 # compliance-evidence.sh gate 2's row, both against fake gh.
@@ -48,6 +51,7 @@ variants=(
 
 NL=$'\n'
 SOH=$'\001'
+BT='`'
 
 # ---------------------------------------------------------------------------
 # model-record-gate.sh
@@ -55,12 +59,13 @@ SOH=$'\001'
 gate_variant() { # label value
   local label="$1" v="$2" fb
   fb="floor-basis=\"$v\""
+  # same model, Review at a lower legacy effort: the marker is seen (no "no
+  # record found for stage Review"), its floor-basis is present, and effort
+  # gives no finding (#424): no output at all
   rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$fb")"
   rf_gate
   [ "$rf_status" -eq 0 ] || fail "S194 gate/$label — exit $rf_status"
-  [ "$(rf_findings)" -eq 1 ] || fail "S194 gate/$label — same model, Review low vs Implementation high: expected exactly the lower-effort finding (a marker with '$v' in floor-basis must still be seen), got: '$rf_out'"
-  grep -qiE 'low.*high|high.*low' <<<"$rf_out" || fail "S194 gate/$label — the finding must name both efforts, got: '$rf_out'"
-  grep -q 'floor-basis' <<<"$rf_out" && fail "S194 gate/$label — floor-basis IS present, no missing-floor-basis finding expected, got: '$rf_out'"
+  [ -z "$rf_out" ] || fail "S194 gate/$label — a Review marker with '$v' in floor-basis must be seen and give no finding, got: '$rf_out'"
 
   rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high "$fb")"
   rf_gate
@@ -69,6 +74,12 @@ gate_variant() { # label value
   rf_data "$(marker Implementation Sonnet high)" "$(marker Review Opus low "$fb")"
   rf_gate
   [ -z "$rf_out" ] || fail "S194 gate/$label — different models with '$v': expected no findings, got: '$rf_out'"
+
+  # the same marker is read as the LATEST round: a later Review without any
+  # floor-basis is the one whose missing floor-basis is reported
+  rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$fb")" "$(marker Review Sonnet low)"
+  rf_gate
+  [ "$(rf_findings)" -eq 1 ] && grep -q 'floor-basis' <<<"$rf_out" || fail "S194 gate/$label — a later Review without floor-basis must be the one reported, got: '$rf_out'"
 }
 for pair in "${variants[@]}"; do gate_variant "${pair%%|*}" "${pair#*|}"; done
 
@@ -79,8 +90,8 @@ gate_variant nl-gt "stronger >${NL}weaker"
 # a `>` in some OTHER attribute, on either marker
 rf_data "$(marker Implementation Sonnet high 'note="uses > here"')" "$(marker Review Sonnet low 'floor-basis="ok" note="a > b"')"
 rf_gate
-[ "$(rf_findings)" -eq 1 ] && grep -qiE 'low.*high|high.*low' <<<"$rf_out" \
-  || fail "S194 gate — a '>' in another attribute of either marker must not hide it, got: '$rf_out'"
+[ "$rf_status" -eq 0 ] && [ -z "$rf_out" ] \
+  || fail "S194 gate — a '>' in another attribute of either marker must not hide it (no 'no record found'), got: '$rf_out'"
 
 # a marker with '>' elsewhere and NO floor-basis is still a Review marker: the
 # missing-floor-basis finding appears (and not "no record found for stage Review")
@@ -93,7 +104,11 @@ grep -q 'no record found for stage Review' <<<"$rf_out" && fail "S194 gate — t
 # the latest round still wins when an earlier one carries free text
 rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low 'floor-basis="a > b"')" "$(marker Review Sonnet high 'floor-basis="c > d"')"
 rf_gate
-[ -z "$rf_out" ] || fail "S194 gate — a later, equal-effort round with '>' must replace the earlier lower-effort one, got: '$rf_out'"
+[ -z "$rf_out" ] || fail "S194 gate — a later round with '>' must replace the earlier one, got: '$rf_out'"
+# ...and the other way round: an earlier round with '>' and floor-basis, a later one without it
+rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high 'floor-basis="a > b"')" "$(marker Review Sonnet high)"
+rf_gate
+[ "$(rf_findings)" -eq 1 ] && grep -q 'floor-basis' <<<"$rf_out" || fail "S194 gate — the later Review without floor-basis must win over an earlier one with '>', got: '$rf_out'"
 
 # ---------------------------------------------------------------------------
 # compliance-evidence.sh gate 2
@@ -110,11 +125,10 @@ no_misleading() { # label
 ce_variant() { # label value
   local label="$1" v="$2" fb
   fb="floor-basis=\"$v\""
-  check "gate2/$label same model, lower effort" not-evidenced "$impl_m
+  check "gate2/$label same model, lower legacy effort" evidenced "$impl_m
 $(mk Review claude-sonnet-5 low "$fb")"
   case "$(row_evidence "$ce_out" 2)" in
-    *low*medium* | *medium*low*) : ;;
-    *) fail "S194 gate2/$label — the lower-effort verdict must name both efforts, got: $(row_evidence "$ce_out" 2)" ;;
+    *"${BT}low${BT}"* | *"${BT}medium${BT}"*) fail "S194 gate2/$label — the verdict is on the model alone and must quote no effort (#424), got: $(row_evidence "$ce_out" 2)" ;;
   esac
   no_misleading "$label"
   check "gate2/$label same model, equal effort" evidenced "$impl_m
@@ -136,7 +150,7 @@ check "gate2 lookup guard, PR comments fail, '>' in floor-basis" indeterminate F
 case "$(row_evidence "$ce_out" 2)" in
   *"no \`stage=Review\`"*) fail "S194 gate2 guard — the Review marker with '>' was read, so the guard text must not say it was not found, got: $(row_evidence "$ce_out" 2)" ;;
 esac
-check "gate2 sound verdict, one issue fails, markers on the PR, '>' in floor-basis" not-evidenced \
+check "gate2 sound verdict, one issue fails, markers on the PR, '>' in floor-basis" evidenced \
   "$impl_m
 $(mk Review claude-sonnet-5 low 'floor-basis="stronger > weaker"')" FAIL
 

@@ -62,15 +62,20 @@ for f in "$pmr" "$mc"; do
       fail "S206 — $name tells the Reviewer to run '$tok', which does not resolve from an adopted project (no such executable at '${target#"$project"/}')"
       continue
     fi
-    out="$(cd "$project" && SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$target" --stage Planning --model claude-opus-5-5 --effort low 2>&1)"
+    out="$(cd "$project" && SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$target" --stage Planning --model claude-opus-5-5 2>&1)"
     rc=$?
     [ "$rc" -eq 0 ] || fail "S206 — '$tok' from the adopted project exits $rc (127 = not found): $out"
+    [ "$out" = '<!-- model-record: stage=Planning model="claude-opus-5-5" -->' ] || fail "S206 — '$tok' from the adopted project must print the effort-free line (#424), got: $out"
   done <<<"$tokens"
 done
 
 # the documented way works from the project root, whatever the text says
-out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 --effort low 2>&1)"
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 2>&1)"
 [ $? -eq 0 ] || fail "S206 — .claude/skills/pre-merge-review/model-record-emit.sh must work from the project root: $out"
+[ "$out" = '<!-- model-record: stage=Planning model="claude-opus-5-5" -->' ] || fail "S206 — the documented way must print the effort-free line (#424), got: $out"
+# a stale prompt that still passes --effort keeps working from an adopted project (A33a), with its one stderr line
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 --effort low 2>&1 >/dev/null)"
+[ "$out" = 'effort is no longer recorded (#413); drop --effort from your prompt' ] || fail "S206 — a stale --effort must still work from an adopted project, with exactly one warning line, got: '$out'"
 # ...and the texts must name that way (or the clone variable), not a bare skills/ path
 for f in "$pmr" "$mc"; do
   name="${f#"$project"/.claude/skills/}"

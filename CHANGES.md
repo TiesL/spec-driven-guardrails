@@ -370,23 +370,28 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Must every PR in this project get a quality review before the merge, with findings in the PR?
 - **Default:** yes
 - **Applies if:** always
-- **Meaning version:** 3 — #392 replaced the different-model
-  requirement: Review is at least as capable as Implementation, model and
-  effort together, the cheapest combination that clears it; same model at
-  lower Review effort is a finding; the Review marker records why in
+- **Meaning version:** 4 — #424 (A33/A33a; effort removed, #413) moved the
+  floor onto the model alone: effort is neither chosen nor checked, so the
+  gate's lower-effort finding is gone and a legacy `effort` attribute is
+  read and ignored. v3 (#392) had replaced the different-model
+  requirement: Review is at least as capable as Implementation, the
+  cheapest option that clears it; the Review marker records why in
   `floor-basis`; `same-model-exception` is retired. A project that
-  answered at v2 (or v1) is re-surfaced to re-confirm (#254).
+  answered at v3, v2 or v1 is re-surfaced to re-confirm (#254).
 - **Yes means:** before the merge, a review runs with fresh context, on a
-  model and effort at least as capable as the Implementation stage's,
-  judged together and weighed against cost (a different model is not
-  required). Its `model-record` marker carries `floor-basis="..."`: one
-  sentence on why. `model-record-gate.sh` flags a same-model review at
-  lower effort and a missing `floor-basis`. It can't rank two different
-  models, so that stays the Reviewer's recorded judgment. The review
-  always checks complexity and dependencies (basic hygiene), plus exactly
-  the NFRs whose corresponding `spec-*` question this project answered
-  "yes" to. Findings go into the PR; every finding is either resolved or
-  recorded under *Technical debt* in the PRD.
+  model at least as capable as the Implementation stage's, weighed against
+  cost (a different model is not required). The floor is judged on the
+  model: effort is neither chosen nor checked, because the dispatch tool
+  takes no effort argument. The accepted risk: the same model at a lower
+  effort meets the floor, and nothing flags it. Revisit when the dispatch
+  tool gains an effort parameter. The Review `model-record` marker carries
+  `floor-basis="..."`: one sentence on why. `model-record-gate.sh` flags a
+  missing `floor-basis`. It can't rank two different models, so that stays
+  the Reviewer's recorded judgment. The review always checks complexity
+  and dependencies (basic hygiene), plus exactly the NFRs whose
+  corresponding `spec-*` question this project answered "yes" to.
+  Findings go into the PR; every finding is either resolved or recorded
+  under *Technical debt* in the PRD.
 - **Reaches session:** always-loaded: WORKFLOW.md, hook: hooks/git-guardrails, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/claude-workflow/pull/5
 
@@ -472,15 +477,21 @@ the shared parser warns if it has no `Applies if`.
   Planning, Test authoring, Implementation, Review) — not only at review?
 - **Default:** yes
 - **Applies if:** always
+- **Meaning version:** 2 — #424 (A33/A33a; #413): effort is no longer recorded.
+  The marker carries the model only; a project that answered under v1 is
+  re-surfaced to re-confirm (#254).
 - **Yes means:** each stage's floor is assessed on that stage's own
   demands, never inherited from a previous stage's model, and stated
   qualitatively — never a model name or tier — so the rule doesn't go
-  stale as new models ship. Above that floor, the cheapest model/effort
-  combination that clears it. Every stage after Discovery anchors its
-  floor to whichever model handled the stage before it (Review already
-  worked this way); Discovery, having no predecessor, floors directly on
-  the task's own demands. Every stage records which model/effort was
-  used, always — see the `model-choice` skill.
+  stale as new models ship. Above that floor, the cheapest model that
+  clears it. Every stage after Discovery anchors its floor to whichever
+  model handled the stage before it (Review already worked this way);
+  Discovery, having no predecessor, floors directly on the task's own
+  demands. Every stage records which model was used, always — see the
+  `model-choice` skill. The floor is judged on the model: effort is
+  neither chosen nor checked, because the dispatch tool takes no effort
+  argument. The accepted risk: the same model at a lower effort meets the
+  floor. Revisit when the dispatch tool gains an effort parameter.
 - **Reaches session:** always-loaded: WORKFLOW.md, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/236
 
