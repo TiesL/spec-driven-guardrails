@@ -443,8 +443,8 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
 - **Override record (AC6):**
   `<!-- pipeline-override: decided-by="..." scope="single-session|skip=<Stage>" reason="..." -->`,
   live text (not fenced, not a code span, not a blockquote, same `live_text`
-  rule as `compliance-evidence.sh`, copied verbatim and kept identical by
-  S153), every field non-empty, `scope` from that closed list. Searched in
+  rule as `compliance-evidence.sh`, one definition in `lib/markdown.sh`
+  since #423, S153), every field non-empty, `scope` from that closed list. Searched in
   the same sources as the markers. `single-session` waives every finding;
   `skip=<Stage>` waives only that stage's absence.
 - **Detection (AC9):** `model-record-gate.sh`, only when `answered_yes`
@@ -524,13 +524,14 @@ the next free numbers after A23.
   capture.
 - **What the gate does (`model-record-gate.sh`):** it reads live text only
   for its stage-presence and Review-floor checks: each body goes through
-  its own copy of `live_text()` first, like the collector and
-  `role-label-staleness.sh`, so a marker quoted in a code span, a fence or
+  `live_text()` (`lib/markdown.sh`, one definition since #423) first, like the
+  collector and `role-label-staleness.sh`, so a marker quoted in a code span, a fence or
   a blockquote is not a record (a Review marker only inside a fence is a
   missing stage); an indented code block is not stripped, in any of the
   three (PRD debt row). If `live_text()` fails, the gate prints a
-  `model-record:` finding and skips these checks. The role-play check
-  (A18) is unchanged (#400). The #244 same-model
+  `model-record:` finding and skips these checks; a failure on a role-play
+  body is a `model-record:` finding too (#423). The role-play check
+  (A18) is otherwise unchanged (#400). The #244 same-model
   finding is removed. A missing, empty or unquoted `floor-basis` on the
   **latest** Review marker gives `model-record: stage=Review marker has no
   floor-basis ... (#392)`; when present, the text is never checked. The

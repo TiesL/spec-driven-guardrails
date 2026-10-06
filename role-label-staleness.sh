@@ -288,92 +288,14 @@ fi
 # shellcheck source=lib/model-record.sh
 . "$script_dir/lib/model-record.sh"
 
-# live_text() — copied verbatim from compliance-evidence.sh (issue #308),
-# not sourced/imported: a shared lib would cross the dogfood-only
-# boundary the same way compliance-evidence.sh's own header already
-# explains for its copy of normalize_model() (skills/ ships to adopted
-# projects via adopt.sh; neither collector does). Strips quoted/fenced
-# spans (fenced code blocks, inline code spans, blockquoted lines) out of
-# a single body before any marker grep ever runs, so a marker merely
-# quoted for illustration in a PR/issue comment doesn't count as live
-# evidence — the same false-positive class issue #308 fixed for
-# compliance-evidence.sh, and exactly the class issue #315's Technical
-# notes call out by name. See compliance-evidence.sh's own copy for the
-# full mechanism notes (fence-open/close rule, blockquote-first ordering,
-# per-body fence isolation); unmodified here, so those notes still apply
-# verbatim.
-live_text() {
-  printf '%s\n' "$1" | awk '
-    function drop_spans(s,   out, n, tick, after, p, q, r) {
-      out = ""
-      while (match(s, /`+/)) {
-        n = RLENGTH; tick = substr(s, RSTART, n)
-        out = out substr(s, 1, RSTART - 1)
-        after = substr(s, RSTART + n)
-        # first backtick run in "after" of length exactly n
-        p = 0; r = after; q = 0
-        while (match(r, /`+/)) {
-          if (RLENGTH == n) { p = q + RSTART; break }
-          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
-        }
-        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
-        else        { out = out " ";  s = substr(after, p + n) }
-      }
-      return out s
-    }
-    BEGIN { fch = ""; flen = 0 }
-    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
-    {
-      line = $0
-      # Issue #319, two independent mawk defects, neither worked around
-      # with an mawk-specific code path:
-      #
-      # (1) the mawk regex compiler panics on an unbounded-lower-bound
-      # interval `{n,}` combined with alternation in a group
-      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy
-      # under mawk (it matches exactly n, not "n or more") — silently
-      # truncating a longer fence run and corrupting flen. Two top-level
-      # alternatives using `+` (which every awk, mawk included, matches
-      # greedily) dodge both. `+` alone would now also match a 1- or
-      # 2-character run the original `{3,}`-anchored regex never did
-      # (CommonMark fences need >= 3), so the `length(m) >= 3` guard
-      # below is load-bearing, not defensive: without it, an inline code
-      # span opening a line (e.g. `` `x` is code ``) would itself open an
-      # unclosed fence and blank every line after it, including a real
-      # marker (test/cases/s153_live_text_mawk_portability.sh G5). For a
-      # run already >= 3, RSTART/RLENGTH match the original regex under
-      # gawk exactly (verified: a 5-character fence run no longer
-      # truncates to 3).
-      #
-      # (2) found afterward: the leading `{0,3}` itself does not parse at
-      # all on an older mawk build (1.3.4 20200120, the default `awk` on
-      # Ubuntu 22.04, among others) — that mawk build has no
-      # brace-interval support and reads `{0,3}` as four literal
-      # characters, so it never matches a real fence line and every
-      # fence silently goes undetected. `? ? ?` (three
-      # independently-optional literal spaces) is the brace-free
-      # equivalent of "0 to 3 spaces", parses identically on every awk
-      # this script has been run under (mawk 1.3.4 20200120, mawk 1.3.4
-      # 20240123, gawk), and was verified against 800 randomized
-      # fence-line inputs with zero differences from the original
-      # `{0,3}` behavior under gawk.
-      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
-        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        if (length(m) >= 3) {
-          ch = substr(m, 1, 1); len = length(m)
-          rest = substr(line, RSTART + RLENGTH)
-          if (fch == "") {                                  # open: any info string allowed
-            fch = ch; flen = len; print ""; next
-          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
-          }
-        }
-      }
-      if (fch != "") { print ""; next }
-      print drop_spans(line)
-    }
-  '
-}
+# live_text() — one definition in lib/markdown.sh (#423, from issue #308),
+# sourced through lib/model-record.sh above. It strips quoted/fenced spans
+# (fenced code blocks, inline code spans, blockquoted lines) out of a single
+# body before any marker grep runs, so a marker merely quoted for
+# illustration does not count as live evidence (issue #315). A failure of it
+# means a body was not read: LIVE_FAILED, and the verdict is indeterminate,
+# never in-sync or not-started on an absence nobody checked.
+LIVE_FAILED=0
 
 # --- Stage <-> role-label mapping, fixed order. Indexed by literal 0-4
 # only, never `[@]` (see the bash-3.2 note above) — these two arrays are
@@ -426,7 +348,7 @@ label_rank() {
 # dropping \r — GitHub bodies are CRLF, and a trailing \r would defeat
 # live_text()'s fence-close info-string check) so the TSV framing
 # survives the round trip; collect() below folds it back with
-# `tr '\001' '\n'` once per body, before live_text() ever sees it. The
+# `LC_ALL=C tr '\001' '\n'` once per body, before live_text() ever sees it. The
 # --jq expressions themselves are written fresh against REST's flat-JSON
 # shapes (`.[] | .body`, `.labels[].name`, a `select()` on the timeline's
 # event type) — different enough from compliance-evidence.sh's
@@ -484,9 +406,9 @@ $rest"
         esac
         ;;
       BODY)
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
         raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
+        live_body="$(live_text "$raw_body")" || LIVE_FAILED=1
         CORPUS_TEXT="$CORPUS_TEXT
 $live_body$MARKER_SEP"
         ;;
@@ -505,9 +427,9 @@ $live_body$MARKER_SEP"
   else
     while IFS=$'\t' read -r tag rest; do
       [ "$tag" = "TEXT" ] || continue
-      raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+      raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
       raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-      live_body="$(live_text "$raw_body")"
+      live_body="$(live_text "$raw_body")" || LIVE_FAILED=1
       CORPUS_TEXT="$CORPUS_TEXT
 $live_body$MARKER_SEP"
     done <<<"$comments_out"
@@ -606,8 +528,8 @@ $rest"
       pr_body_raw=""
       while IFS=$'\t' read -r tag rest; do
         case "$tag" in
-          TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
-          BODY) pr_body_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
+          TITLE) pr_title_raw="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')" ;;
+          BODY) pr_body_raw="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')" ;;
         esac
       done <<<"$pr_out"
 
@@ -631,8 +553,8 @@ $rest"
       # that matches neither is discarded silently: cross-referencing an
       # issue in prose is common and not a failure of anything.
       pr_body_raw="${pr_body_raw//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-      live_title="$(live_text "$pr_title_raw")"
-      live_body="$(live_text "$pr_body_raw")"
+      live_title="$(live_text "$pr_title_raw")" || LIVE_FAILED=1
+      live_body="$(live_text "$pr_body_raw")" || LIVE_FAILED=1
       combined_live="$live_title
 $live_body"
       if ! grep -qiE "$closing_ere" <<<"$combined_live"; then
@@ -651,9 +573,9 @@ $live_body$MARKER_SEP"
       else
         while IFS=$'\t' read -r tag rest; do
           [ "$tag" = "TEXT" ] || continue
-          raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+          raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
           raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-          live_body="$(live_text "$raw_body")"
+          live_body="$(live_text "$raw_body")" || LIVE_FAILED=1
           CORPUS_TEXT="$CORPUS_TEXT
 $live_body$MARKER_SEP"
         done <<<"$pr_comments_out"
@@ -679,9 +601,9 @@ $live_body$MARKER_SEP"
       fi
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
         raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
+        live_body="$(live_text "$raw_body")" || LIVE_FAILED=1
         CORPUS_TEXT="$CORPUS_TEXT
 $live_body$MARKER_SEP"
       done <<<"$pr_reviews_out"
@@ -815,7 +737,13 @@ if [ "$role_label_count" -gt 1 ]; then
 else
   scan_markers "$CORPUS_TEXT"
 
-  if [ "$PARSER_FAILED" -eq 1 ]; then
+  if [ "$LIVE_FAILED" -eq 1 ]; then
+    # #423: dropping quoted text (live_text) failed on at least one body, so
+    # what was read is incomplete; any verdict would rest on an absence
+    # nobody checked.
+    verdict="indeterminate"
+    detail="reading the quoted text of a body on issue #$issue_number or a linked PR failed (live_text), so the model-record markers could not be read completely"
+  elif [ "$PARSER_FAILED" -eq 1 ]; then
     # #392: the marker parser failed, so no marker was read; any verdict
     # would rest on an absence nobody checked.
     verdict="indeterminate"

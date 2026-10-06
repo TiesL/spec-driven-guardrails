@@ -99,115 +99,10 @@ fi
 # shellcheck source=lib/model-record.sh
 . "$collector_dir/lib/model-record.sh"
 
-# live_text() — issue #308. Blanks quoted spans (fenced code blocks,
-# inline code spans, blockquoted lines) out of a single body so every
-# existing gate_* predicate can keep greping "the text" unchanged. The
-# discriminator is enclosure, not line position: a real marker sitting at
-# the end of a prose line is never touched (AC3), while the identical
-# shape wrapped in backticks, a fence, or a leading `>` is (AC1). Content
-# is blanked rather than the line deleted — nothing downstream depends on
-# line counts, and blanking can't glue two tokens together across a
-# removed line.
-#
-# Order is load-bearing: blockquote first (a `> ```` ` line must never be
-# read as toggling fence state), then fence tracking, then code-span
-# stripping on whatever's left. Bash 3.2-clean, no eval, one awk pass.
-#
-# Fence tracking (issue #308 Planning correction, D5/D6/D7/D10 — the
-# original design's parity toggle ignored CommonMark's actual closing
-# rule and leaked/false-negatived accordingly):
-#   - Track the OPENING fence's character (` or ~) and run length.
-#   - A fence only closes on a later line whose run is the SAME
-#     character with length >= the opener's (D5/D6: a longer wrapper
-#     around a shorter demo fence must not "close" on the inner one).
-#   - CommonMark forbids an info string on a CLOSING fence — a fence-ish
-#     line that closes must have nothing but trailing whitespace after
-#     the run (D10: without this, a bare ``` opener followed by a
-#     ```text-tagged line reads as a close and leaks the marker after
-#     it). An OPENING fence may carry any info string.
-#   - Indent is capped at 3 spaces (`^ ? ? ?`, three independently-
-#     optional literal spaces — not the brace-interval `{0,3}`, which an
-#     older mawk build doesn't parse at all; see the #319 note below),
-#     CommonMark's own cap — 4+ is an indented code block, not a fence
-#     (non-goal 1, fails open: D7). Deliberately literal spaces, never
-#     `[ \t]*`: a tab counts as 4 columns of indentation in CommonMark, so
-#     a tab-indented fence-ish line is the same indented-code-block case
-#     and must not be treated as a fence. Do not "restore" \t here.
-# Fence state is per-body (this function is called once per body) — an
-# unclosed fence in one PR comment must never swallow a marker in the
-# next one (AC3 fence isolation).
-live_text() {
-  printf '%s\n' "$1" | awk '
-    function drop_spans(s,   out, n, tick, after, p, q, r) {
-      out = ""
-      while (match(s, /`+/)) {
-        n = RLENGTH; tick = substr(s, RSTART, n)
-        out = out substr(s, 1, RSTART - 1)
-        after = substr(s, RSTART + n)
-        # first backtick run in "after" of length exactly n
-        p = 0; r = after; q = 0
-        while (match(r, /`+/)) {
-          if (RLENGTH == n) { p = q + RSTART; break }
-          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
-        }
-        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
-        else        { out = out " ";  s = substr(after, p + n) }
-      }
-      return out s
-    }
-    BEGIN { fch = ""; flen = 0 }
-    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
-    {
-      line = $0
-      # Issue #319, two independent mawk defects, neither worked around
-      # with an mawk-specific code path:
-      #
-      # (1) the mawk regex compiler panics on an unbounded-lower-bound
-      # interval `{n,}` combined with alternation in a group
-      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy
-      # under mawk (it matches exactly n, not "n or more") — silently
-      # truncating a longer fence run and corrupting flen. Two top-level
-      # alternatives using `+` (which every awk, mawk included, matches
-      # greedily) dodge both. `+` alone would now also match a 1- or
-      # 2-character run the original `{3,}`-anchored regex never did
-      # (CommonMark fences need >= 3), so the `length(m) >= 3` guard
-      # below is load-bearing, not defensive: without it, an inline code
-      # span opening a line (e.g. `` `x` is code ``) would itself open an
-      # unclosed fence and blank every line after it, including a real
-      # marker (test/cases/s153_live_text_mawk_portability.sh G5). For a
-      # run already >= 3, RSTART/RLENGTH match the original regex under
-      # gawk exactly (verified: a 5-character fence run no longer
-      # truncates to 3).
-      #
-      # (2) found afterward: the leading `{0,3}` itself does not parse at
-      # all on an older mawk build (1.3.4 20200120, the default `awk` on
-      # Ubuntu 22.04, among others) — that mawk build has no
-      # brace-interval support and reads `{0,3}` as four literal
-      # characters, so it never matches a real fence line and every
-      # fence silently goes undetected. `? ? ?` (three
-      # independently-optional literal spaces) is the brace-free
-      # equivalent of "0 to 3 spaces", parses identically on every awk
-      # this script has been run under (mawk 1.3.4 20200120, mawk 1.3.4
-      # 20240123, gawk), and was verified against 800 randomized
-      # fence-line inputs with zero differences from the original
-      # `{0,3}` behavior under gawk.
-      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
-        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        if (length(m) >= 3) {
-          ch = substr(m, 1, 1); len = length(m)
-          rest = substr(line, RSTART + RLENGTH)
-          if (fch == "") {                                  # open: any info string allowed
-            fch = ch; flen = len; print ""; next
-          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
-          }
-        }
-      }
-      if (fch != "") { print ""; next }
-      print drop_spans(line)
-    }
-  '
-}
+# live_text() — one definition in lib/markdown.sh (#423, from issue #308),
+# sourced through lib/model-record.sh above. A failure of it means a body
+# was not read: the call sites below set the corpus-incompleteness flags, so
+# the gates go indeterminate, never not-evidenced.
 
 # quoted_suffix() — issue #308, AC4/AC7/D8. Called only from a gate's
 # negative (not-evidenced) branch, to say, truthfully, that marker-shaped
@@ -275,7 +170,7 @@ CLOSING_KEYWORD_ERE='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]
 # round-trip total), drop `\r` (GitHub bodies are CRLF; a trailing `\r`
 # would defeat fence-close matching in live_text()'s info-string check),
 # then fold real newlines into U+0001. `collect()` below turns the
-# sentinel back into real newlines once per body (`tr '\001' '\n'`)
+# sentinel back into real newlines once per body (`LC_ALL=C tr '\001' '\n'`)
 # before handing it to live_text(). The one-body-per-TSV-line framing
 # (IFS=$'\t' read) is untouched.
 #
@@ -425,11 +320,15 @@ collect() {
       STATE) BUNDLE_STATE="$rest" ;;
       MERGEDAT) BUNDLE_MERGED_AT="$rest" ;;
       MERGEDBY) BUNDLE_MERGED_BY="$rest" ;;
-      TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
+      TITLE) pr_title_raw="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')" ;;
       TEXT)
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
         raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
+        live_body="$(live_text "$raw_body")" || {
+          echo "warning: compliance-evidence couldn't read a PR body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
+          BUNDLE_ISSUE_LOOKUP_FAILED=1
+          BUNDLE_PR_LOOKUP_FAILED=1
+        }
         BUNDLE_TEXT="$BUNDLE_TEXT
 $live_body$MARKER_SEP"
         BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
@@ -495,9 +394,13 @@ $raw_body"
   fi
   while IFS=$'\t' read -r tag rest; do
     [ "$tag" = "TEXT" ] || continue
-    raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+    raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
     raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-    live_body="$(live_text "$raw_body")"
+    live_body="$(live_text "$raw_body")" || {
+      echo "warning: compliance-evidence couldn't read a PR body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
+      BUNDLE_ISSUE_LOOKUP_FAILED=1
+      BUNDLE_PR_LOOKUP_FAILED=1
+    }
     BUNDLE_TEXT="$BUNDLE_TEXT
 $live_body$MARKER_SEP"
     BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
@@ -530,9 +433,12 @@ $pr_reviews_out"
       local one_issue_text="" raw_body live_body
       while IFS=$'\t' read -r tag rest; do
         [ "$tag" = "TEXT" ] || continue
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
+        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
         raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
+        live_body="$(live_text "$raw_body")" || {
+          echo "warning: compliance-evidence couldn't read an issue body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
+          BUNDLE_ISSUE_LOOKUP_FAILED=1
+        }
         issue_text="$issue_text
 $live_body$MARKER_SEP"
         one_issue_text="$one_issue_text
@@ -659,7 +565,7 @@ gate_stage_models() {
 #   - "Disagreement" covers the normalized `model=`, the `effort=` value
 #     (case-folded; #392: both feed the Review-floor verdict, so two
 #     issues agreeing on the model but not the effort are a conflict; the
-#     `same-model-exception=` attribute no longer counts, #392 AC5), and
+#     legacy `same-model-exception=` attribute is ignored and no longer counts, #392 AC5), and
 #     well-formed-vs-malformed
 #     (a marker that matched but has no quoted `model="..."`) alike —
 #     not just the model field (R-3/R-4).

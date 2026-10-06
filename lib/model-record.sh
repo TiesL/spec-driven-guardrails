@@ -33,6 +33,12 @@
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
+# live_text and md_strip_fences (one definition, #423) come from the sibling
+# lib/markdown.sh, so every script that sources this file reads quoted text
+# the same way.
+# shellcheck source=lib/markdown.sh
+. "$(dirname "${BASH_SOURCE[0]}")/markdown.sh"
+
 # Structural, not a per-model alias table (#268): strips the vendor-prefix
 # word and a trailing 8-digit snapshot-date suffix, then folds every
 # remaining separator and case difference away. Exact-modulo-format, not
