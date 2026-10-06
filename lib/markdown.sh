@@ -147,9 +147,20 @@ function handle(line,   run, ind, rest, p, islist) {
 }
 
 # What a line that is quoted away becomes: an empty line (strip, live), or,
-# for the record reader (mode rec, #425), a candidate row when it holds the
-# opener of a record. rec_cand() and rec_text() are defined by the program
-# that appends this one (lib/model-record.sh); strip and live never call them.
+# for the record reader (mode rec, #425, `-v kind=model-record|pipeline-
+# override`), a candidate row `<body-index> TAB <C|Q> TAB <raw line>` when it
+# holds the opener of a record: Q (quoted) for a fenced, blockquoted or
+# indented line, or one whose opener sits inside a code span; C (live) for the
+# rest, which lib/model-record.sh then classifies against the strict pattern.
+# (mawk needs every function defined, so the rec_* functions live here.)
+function rec_cand(line, flag) { if (line ~ OPEN) print bodyno "\t" flag "\t" line }
+function rec_text(line,   ws, sp) {
+  if (line !~ OPEN) return
+  match(line, /^[ \t]*/); ws = substr(line, 1, RLENGTH)
+  if (RLENGTH >= 4 || index(ws, "\t") > 0) { rec_cand(line, "Q"); return }   # indented code
+  sp = drop_spans(line)
+  print bodyno "\t" ((sp ~ OPEN) ? "C" : "Q") "\t" line
+}
 function fenced(line) { if (mode == "rec") rec_cand(line, "Q"); else print "" }
 function quoted(line) { if (mode == "rec") rec_cand(line, "Q"); else print "" }
 
@@ -164,7 +175,7 @@ function feed(line,   i) {
   handle(line)
 }
 
-BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; bodyno = 1; CR = sprintf("%c", 13); SEP = sprintf("%c", 30) }
+BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; bodyno = 1; CR = sprintf("%c", 13); SEP = sprintf("%c", 30); OPEN = "<!--[ \t]*" kind ":" }
 {
   line = $0
   if (bundle == 1) {                                     # U+001E ends a body

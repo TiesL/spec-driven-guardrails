@@ -388,24 +388,13 @@ _REC_STAGE_ERE='[[:blank:]]stage=(Discovery|Planning|Test|Implementation|Review)
 _REC_HEAD_ERE='^<!--[[:blank:]]*(model-record|pipeline-override):([[:blank:]]*stage=[A-Za-z0-9_]+)?'
 _REC_STEP_ERE='^[[:blank:]]+([a-z][a-z0-9-]*)="([^"]*)"'
 
-# The candidate scan, appended to lib/markdown.sh's program (mode rec): every
-# line that holds `<!--`, blanks and `<kind>:` becomes one row,
-# `<body-index> TAB <C|Q> TAB <raw line>`. Q: quoted (a fence, a blockquote,
-# an indented code block, or the opener sits inside a code span). C: live; the
-# strict pattern then decides ok or near-miss, in bash. The fence, blockquote
-# and span logic is the one markdown.sh owns, so a record is quoted exactly
-# where live_text would blank it.
-_REC_AWK='
-BEGIN { OPEN = "<!--[ \t]*" kind ":" }
-function rec_cand(line, flag) { if (line ~ OPEN) print bodyno "\t" flag "\t" line }
-function rec_text(line,   ws, sp) {
-  if (line !~ OPEN) return
-  match(line, /^[ \t]*/); ws = substr(line, 1, RLENGTH)
-  if (RLENGTH >= 4 || index(ws, "\t") > 0) { rec_cand(line, "Q"); return }   # indented code
-  sp = drop_spans(line)
-  print bodyno "\t" ((sp ~ OPEN) ? "C" : "Q") "\t" line
-}
-'
+# The candidate scan is mode rec of lib/markdown.sh's one awk program (the
+# fence, blockquote and span logic is the one markdown.sh owns, so a record is
+# quoted exactly where live_text would blank it). It prints one row per line
+# that holds `<!--`, blanks and `<kind>:`: `<body-index> TAB <C|Q> TAB <raw
+# line>`. Q: quoted (a fence, a blockquote, an indented code block, or the
+# opener sits inside a code span). C: live; the strict pattern then decides ok
+# or near-miss, in bash.
 
 _rec_fail() { # <function> <what> <status>
   echo "lib/model-record.sh: $1: $2 failed with exit $3; records were NOT read" >&2
@@ -476,7 +465,7 @@ _rec_scan() { # <bundle 0|1> <kind> <text>
     return "$rc"
   fi
   [ "$rc" -eq 0 ] || return 0                       # exit 1: no candidate, nothing to read
-  out="$(LC_ALL=C awk -v mode=rec -v bundle="$bundle" -v kind="$kind" "$_MD_AWK$_REC_AWK" <<<"$text")"
+  out="$(LC_ALL=C awk -v mode=rec -v bundle="$bundle" -v kind="$kind" "$_MD_AWK" <<<"$text")"
   rc=$?
   if [ "$rc" -ne 0 ]; then
     _rec_fail "$fn" awk "$rc"
