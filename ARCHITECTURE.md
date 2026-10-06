@@ -487,9 +487,9 @@ effort, together, at least as capable as Implementation's. A24 and A25 are
 the next free numbers after A23.
 
 ### A24 — The Review floor and its recorded judgment, `floor-basis`
-- **Rule:** Review's model and effort, taken together, are at least as
-  capable as Implementation's recorded model and effort. Among the
-  combinations that clear that, pick the cheapest. A different model is not
+- **Rule (effort part superseded by A33, #424):** Review's model is at
+  least as capable as Implementation's recorded model; effort is no longer
+  compared or recorded. Among the models that clear that, pick the cheapest. A different model is not
   required. No model or tier is named anywhere.
 - **Attribute:** `floor-basis="<one sentence>"` on the Review `model-record`
   marker, required on **every** Review marker, not only same-model ones:
@@ -540,11 +540,11 @@ the next free numbers after A23.
 - **`compliance-evidence.sh` gate 2:** different models are
   `unverifiable-from-artifacts` (the capability ordering is not machine-
   checked; the `floor-basis` is quoted for a human to weigh); the same model
-  with both efforts known is `evidenced` when Review >= Implementation and
-  `not-evidenced` when lower; an unknown effort is `indeterminate`. Both
-  same-model verdicts sit behind the #302/#336 lookup-failure guard (an
-  unread marker can overturn either; Architect ruling on AC6). The
-  inter-issue conflict key is the normalized model plus the effort.
+  is `evidenced` (model-only, self-reported; as amended by A33/A33a, #424,
+  the former effort comparison is gone). That same-model verdict sits behind
+  the #302/#336 lookup-failure guard (an unread marker can overturn it;
+  Architect ruling on AC6). The inter-issue conflict key is the normalized
+  model alone (the effort part was removed by #424).
 - **`same-model-exception`:** ignored completely by both scripts, and it does
   not stand in for `floor-basis`. The documentation keeps one "legacy,
   ignored" mention for one release, then it goes.
@@ -654,14 +654,15 @@ the next free numbers after A23.
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
 - **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
-  --model <id> --effort <e> [--floor-basis <sentence>]`, next to the gate.
+  --model <id> [--floor-basis <sentence>]`, next to the gate (a legacy
+  `--effort` is accepted and ignored with one stderr line, A33, #424).
   It only parses flags (unknown, missing, repeated or value-less flag, or a
   positional argument: exit 2); the rules live in `marker_emit`. It finds
   the lib from its own real directory (`pwd -P`), so it works through an
   adopted project's symlinked `.claude/skills`; without the lib, exit 3.
 - **Who fills what:** the orchestrator gives the command in each dispatch
-  prompt with `--stage` and `--effort` (`unknown` when it can't set or find
-  out the effort) and names the model it requested; the role adds `--model`
+  prompt with `--stage` and names the model it requested (it no longer
+  passes `--effort`: removed by A33, #424); the role adds `--model`
   with its own exact id (the Reviewer also `--floor-basis`) and pastes the
   output unchanged as the first line of its report (human decision on
   #402). A role whose prompt has no command runs the wrapper itself and
@@ -670,9 +671,9 @@ the next free numbers after A23.
   "Marker grammar") holds the templates and the grammar; `ORCHESTRATOR.md`
   restates no grammar, `pre-merge-review` points to `model-choice`.
 - **The gate (safety net for hand-typed lines):** for the latest marker of
-  each of the five stages, an unquoted, empty or missing `model` or
-  `effort` is one `model-record:` finding per stage and field
-  (`effort="unknown"` is quoted: no finding); a malformed marker of any
+  each of the five stages, an unquoted, empty or missing `model` is one
+  `model-record:` finding per stage (the former per-field check on effort
+  was removed by A33, #424; a legacy effort attribute is ignored); a malformed marker of any
   stage, including an empty or quoted stage (shown as `stage=?`), is named.
   Exit stays 0, the prefix is never `role-played:`, so the merge guard and
   A18 are unchanged; the collector already said `indeterminate` here.

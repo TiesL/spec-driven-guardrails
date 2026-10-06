@@ -37,7 +37,7 @@ Never relay a Reviewer's suggested fix as a decision; the next role's brief link
 
 **Override.** If the maintainer tells you to patch a design defect in code instead of looping it back, that waives the loop-back route, so the A29 (#415) flow applies: the Architect pushes back once, the decision is a numbered human decision naming the rule overridden (the loop-back route, A28) and linking the pushback, and the Architect writes the risk note. The pushback and the risk note are defined in #415 (A29); this file defines no format and no marker for them.
 
-**Pipeline log.** Keep one comment per work-item issue, headed "Pipeline log", that you write and edit. It never carries a `model-record` marker. Write one line per dispatch when you dispatch: the stage, the round (for Review), the agent id the dispatch tool returned, and the model requested.
+**Pipeline log.** Keep one comment per work-item issue, headed "Pipeline log", that you write and edit. It never carries a `model-record` marker. Write one line per dispatch when you dispatch: the stage, the round (for Review), the agent id the dispatch tool returned, and the model requested. The orchestrator may note the effort the platform transcript shows, in prose in its step comment, after the fact; it is a note for a human, not a marker attribute and not a check (A27, A33, A33a).
 
 **Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. The same self-check also records:
 

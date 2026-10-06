@@ -1339,8 +1339,8 @@ model or tier.
 
 Decisions (maintainer, 2026-10-03):
 
-- On the same model, a Review at lower effort than Implementation is a
-  gate finding. For two different models no capability finding is raised:
+- (Effort part superseded by A33/A33a, #424: the same-model lower-effort
+  gate finding was removed, an accepted risk.) For two different models no capability finding is raised:
   there is no ordering a script can check without a model table, and a
   table would break the rule that floors never name a model.
 - `quality-review-before-merge` moves to meaning version 3, so adopters
@@ -1348,8 +1348,8 @@ Decisions (maintainer, 2026-10-03):
   `same-model-exception` is retired: ignored completely for one release
   (not counted as a substitute for anything), not repurposed.
 - Every Review `model-record` marker carries `floor-basis="<one
-  sentence>"`, the Reviewer's stated reason why its model and effort clear
-  Implementation's. A missing or empty one is a non-blocking finding; the
+  sentence>"`, the Reviewer's stated reason why its model clears
+  Implementation's (effort part removed by #424). A missing or empty one is a non-blocking finding; the
   text is never verified.
 - `compliance-evidence.sh` reports two different models as
   `unverifiable-from-artifacts`, never `evidenced`.
@@ -1358,7 +1358,8 @@ Decisions (maintainer, 2026-10-03):
   different models: gate 2 reports `unverifiable-from-artifacts` (the script
   cannot tell an alias from a different model), never a pass. `normalize_model` stays generic (no model table).
 - The orchestrator assesses each stage's floor per `model-choice` and
-  sets model and effort per stage, not one pair for the whole run.
+  sets the model per stage, not one for the whole run (effort is neither
+  chosen nor recorded, as amended by #424, A33).
 
 Acceptance criteria (full text in issue #392): **AC1-AC2** the rule is
 stated one way and no live text demands a different model; **AC3** same
@@ -1370,16 +1371,14 @@ orchestrator wording; **AC9** the recorded judgment (`floor-basis`);
 **AC10** specs and scenarios follow.
 
 What is mechanically verified: that Review and Implementation markers
-exist; that on an equal normalized model Review effort is not lower (known
-effort values `low < medium < high` only); that `floor-basis` is present
+exist; that `floor-basis` is present
 and non-empty; that the orchestrator text states the per-stage rule; that
 no live text demands a different model. What stays judgment and is only
 recorded, never checked: whether `floor-basis` is true; whether a
-different model clears Implementation's capability; whether an effort that
-is equal and low was adequate for both stages; and whether the
-orchestrator in a real session actually chooses efforts per stage (model
-behaviour, shown only by a human dry run). An unknown or missing effort gives
-no claim in the gate and `indeterminate` in gate 2; a short model alias that
+different model clears Implementation's capability; whether the same model at a lower effort was adequate (an accepted risk,
+A33a, #424: effort is no longer recorded or checked); and whether the
+orchestrator in a real session actually chooses a model per stage (model
+behaviour, shown only by a human dry run). A short model alias that
 doesn't normalize equal to its full id counts as a different model, so gate 2
 reports `unverifiable-from-artifacts`, never a pass.
 
@@ -1413,14 +1412,14 @@ Requirement: (1) nobody types a marker. One command,
 `skills/pre-merge-review/model-record-emit.sh` (`marker_emit` in
 `lib/model-record.sh`, A26), prints the one valid line, checked by parsing
 it back, or nothing. The orchestrator puts that command into every
-dispatch prompt with the stage and effort filled in (`unknown` when it
-can't know the effort); the role adds its own exact model id (and, for
+dispatch prompt with the stage filled in (effort is no longer passed or
+recorded: removed by #424, A33); the role adds its own exact model id (and, for
 Review, its `floor-basis`) and pastes the output unchanged as the first
 line of its report. The marker format and grammar are written down in one
 place, `model-choice`; `ORCHESTRATOR.md` carries no copy. (2) For the
 latest marker of each of the five stages, an unquoted, empty or missing
-`model` or `effort` makes `model-record-gate.sh` print a visible finding
-with the existing `model-record:` prefix, one per stage and field, and a
+`model` makes `model-record-gate.sh` print a visible finding (the
+per-field check on effort was removed by #424, A33) with the existing `model-record:` prefix, one per stage and field, and a
 malformed marker of any stage (a quoted `stage="..."` included) is named.
 The findings are non-blocking, consistent with the collector's
 `indeterminate`, and never use the `role-played:` prefix that the merge
@@ -1430,7 +1429,7 @@ Decision (maintainer, 2026-10-03): fix before the release PR that carries
 #369, #371 and #392. The scratch repo is kept for a re-run that validates
 the fix. Further decisions on the Architect's design (A26): an unquoted
 marker is reported, not tolerated; the finding covers all five stages and
-both `model` and `effort`; the role fills in `model`. The emitter is never
+both `model` and `effort` (effort part superseded by A33, #424); the role fills in `model`. The emitter is never
 stricter than the grammar for a `floor-basis`: it refuses only a double
 quote, a control character (newline, U+001E, ...), a blank or over-long
 text, and a floor-basis on a stage other than Review.
@@ -1442,7 +1441,7 @@ orchestrator to pass the emit command per stage and contains no second
 copy of the grammar; that every line the emitter prints reads back
 through the parser in both locales, and every refused input prints
 nothing; that the gate prints a `model-record:` finding for an unreadable
-`model` or `effort` on the latest marker of any stage and for a malformed
+`model` (the effort check was removed by #424, A33) on the latest marker of any stage and for a malformed
 marker, and stays silent for a well-formed one, a stage that is missing (already a
 separate finding), a `stage=...` placeholder (not a real marker) and a
 project that did not opt in where applicable. What stays judgment and is

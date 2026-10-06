@@ -259,13 +259,13 @@ marker_scan() {
   return 0
 }
 
-# marker_emit <Stage> <model> [<floor-basis>] (#402, A26; no effort, #424): THE way
+# marker_emit <Stage> <model> [<floor-basis>] (#402, A26): THE way
 # to produce a marker line; nobody types one. Prints exactly one line,
 #   <!-- model-record: stage=<Stage> model="<model>"[ floor-basis="<sentence>"] -->
 # or prints nothing, gives a one-line reason on stderr and returns 2.
 # Refused: a stage other than the five names (it is emitted bare); a model
 # that is empty, over 200 characters or not one token of [A-Za-z0-9._:@/+-]
-# (a model id; no space, quote, `=` or control byte);; a floor-basis missing or blank on Review or given
+# (a model id; no space, quote, `=` or control byte); a floor-basis missing or blank on Review or given
 # on any other stage (A24); a floor-basis with a double quote (it would end
 # the value) or a control byte (newline, tab, U+001E, ...), or over 500
 # bytes. Nothing else: `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII text
