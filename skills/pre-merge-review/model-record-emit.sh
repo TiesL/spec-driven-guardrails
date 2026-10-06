@@ -61,6 +61,15 @@ while [ $# -gt 0 ]; do
   fi
   value="$2"
   shift 2
+  # a value that IS one of the wrapper's own flag names is a typo or a swallowed
+  # flag (`--model --floor-basis`), never a value (A33a, #404 item 3); a value
+  # that merely starts with `--` is allowed
+  case "$value" in
+    --stage | --model | --effort | --floor-basis)
+      echo "model-record-emit: $flag's value is '$value', which is one of this command's flags: a value is missing. $usage" >&2
+      exit 2
+      ;;
+  esac
   case "$flag" in
     --stage)
       [ "$have_stage" -eq 0 ] || { echo "model-record-emit: --stage given twice" >&2; exit 2; }

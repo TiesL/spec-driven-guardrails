@@ -265,15 +265,21 @@ marker_scan() {
 # or prints nothing, gives a one-line reason on stderr and returns 2.
 # Refused: a stage other than the five names (it is emitted bare); a model
 # that is empty, over 200 characters or not one token of [A-Za-z0-9._:@/+-]
-# (a model id; no space, quote, `=` or control byte); a floor-basis missing or blank on Review or given
-# on any other stage (A24); a floor-basis with a double quote (it would end
-# the value) or a control byte (newline, tab, U+001E, ...), or over 500
-# bytes. Nothing else: `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII text
-# are allowed in a floor-basis, because the grammar reads them as text (the
-# maintainer's #392 decision; GitHub may show what follows a `-->` as text,
-# but the marker still reads back). Safety net: before printing, the line is
-# parsed back with marker_find, marker_scan and marker_attr; a line that
-# does not read back exactly is refused, never printed.
+# (a model id; no space, quote, `=` or control byte); a floor-basis missing or
+# blank on Review or given on any other stage (A24); a floor-basis over 500
+# BYTES (the model: 200 bytes), or holding one of (A33a, a deny-list by design,
+# not a closed set; everything else is allowed, zero-width characters and
+# invalid UTF-8 included):
+#   `"`, `<` and `>`; the C0 controls and DEL (newline, tab, U+001E, ...);
+#   the C1 controls U+0080-U+009F (bytes C2 80-C2 9F); U+2028 and U+2029;
+#   the bidirectional controls U+202A-U+202E and U+2066-U+2069.
+# What it refuses is exactly what the reader (rec_scan, A31) would not read as
+# a record value, plus the characters that make a line misleading to a human.
+# Safety net: before printing, the line is read back with rec_scan and
+# rec_field (the grammar) and with today's marker_find, marker_scan and
+# marker_attr (the callers not yet moved, V6 to V8); a line that does not read
+# back exactly is refused, never printed. Lengths are bytes: the function runs
+# under LC_ALL=C, so ${#var} counts bytes, never characters.
 marker_emit() {
   local LC_ALL=C
   local stage="${1-}" model="${2-}" fb="${3-}" have_fb=0 line got tab=$'\t'
@@ -312,12 +318,20 @@ marker_emit() {
         ;;
     esac
     case "$fb" in
-      *\"*)
-        echo "marker_emit: the floor-basis may not contain a double quote (it would end the value)" >&2
+      *\"* | *[\<\>]*)
+        echo "marker_emit: the floor-basis may not contain a double quote, < or > (a record value never holds them)" >&2
         return 2
         ;;
       *[[:cntrl:]]*)
         echo "marker_emit: the floor-basis may not contain a newline, tab or other control character" >&2
+        return 2
+        ;;
+      *$'\302'[$'\200'-$'\237']*)
+        echo "marker_emit: the floor-basis may not contain a C1 control character (U+0080 to U+009F)" >&2
+        return 2
+        ;;
+      *$'\342\200'[$'\250'-$'\256']* | *$'\342\201'[$'\246'-$'\251']*)
+        echo "marker_emit: the floor-basis may not contain a line separator (U+2028, U+2029) or a bidirectional control (U+202A to U+202E, U+2066 to U+2069)" >&2
         return 2
         ;;
     esac
@@ -333,7 +347,10 @@ marker_emit() {
   [ "$have_fb" -eq 1 ] && line="$line floor-basis=\"$fb\""
   line="$line -->"
   # the round trip: never print a line the parser cannot read back
-  got="$(marker_find "$stage" "$line$MARKER_SEP")" && [ "$got" = "$line" ] \
+  got="$(rec_scan model-record "$line")" && [ "$got" = "1${tab}ok${tab}$stage${tab}$line" ] \
+    && got="$(rec_field "$line" model)" && [ "$got" = "$model" ] \
+    && got="$(rec_field "$line" floor-basis)" && [ "$got" = "$fb" ] \
+    && got="$(marker_find "$stage" "$line$MARKER_SEP")" && [ "$got" = "$line" ] \
     && got="$(marker_scan "$line$MARKER_SEP")" && [ "$got" = "ok${tab}$stage${tab}$line" ] \
     && got="$(marker_attr "$line" model)" && [ "$got" = "$model" ] \
     && got="$(marker_attr "$line" floor-basis)" && [ "$got" = "$fb" ] || {
