@@ -498,7 +498,10 @@ _rec_scan() { # <bundle 0|1> <kind> <text>
     if [ "$cls" = ok ]; then
       why="$raw"
     else
-      why="$reason: ${raw:0:200}"
+      # the text is quoted so that a row never ends in the middle of a UTF-8
+      # sequence: bash 5.2's `read` in a UTF-8 locale takes the newline after
+      # an incomplete sequence for part of it and glues the next row on
+      why="$reason: \"${raw:0:200}\""
       [ "${#raw}" -le 200 ] || why="$why..."
     fi
     res="$res$idx$tab$cls$tab$stage$tab$why"$'\n'
