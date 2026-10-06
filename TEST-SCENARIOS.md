@@ -1768,38 +1768,39 @@ something new is being added.
   unanswered argv and confirms the witness fires), not merely a source
   grep alone
 
-### S153 — live_text()'s fence-detection regex is mawk-portable
+### S153 — live_text() has one definition, and its fence detection is portable: the golden cases give the same answer under mawk and under /usr/bin/awk
 **Covers:** F34, F35
-- Given: the real, shipped `live_text()` function re-extracted verbatim
-  at test time from `compliance-evidence.sh`,
-  `role-label-staleness.sh` and (since #371) `model-record-gate.sh` (the same no-stale-copy technique
-  S151's Q21-Q23 already use, with the extraction itself asserted
-  non-empty and the copies asserted byte-identical before any
-  golden case runs, so a bad extraction or a drifted copy can't silently
-  make the test re-check the wrong function), run under mawk
-  specifically — not gawk, which is this repo's usual local/CI `awk` and
-  does not exhibit any of the failure modes below
-- When: a simple 3-character fence, a 5-character wrapper fence around
-  an inner line that itself contains 3 backticks, a shorter (3-character)
-  closing run that must not close a longer (5-character) opening run
-  (D5/D6), a real `model-record` marker after a closed fence, a line
-  starting with a 1-backtick inline-code run followed by a real marker,
-  and a real backtick fence-line nested inside an already-open tilde
-  fence, are each run through it
-- Then: every case matches the same output gawk already produces — a
-  panic in mawk's regex compiler on the original grouped-alternation
-  form (`^ {0,3}(`{3,}|~{3,})`), mawk's `{n,}` matching exactly `n`
-  rather than greedily (silently truncating a longer fence run and
-  corrupting the recorded fence length even where it doesn't panic —
-  distinct from the panic and not caught by fixing that alone), and,
-  independently, an older mawk build (1.3.4 20200120, the default `awk`
-  on Ubuntu 22.04) not parsing the bounded interval `{0,3}` at all and
-  so never detecting a fence — are all three fixed, the third by
-  replacing `{0,3}` with the brace-free `? ? ?`, verified end to end
-  under both mawk builds and gawk, with the guard against a 1- or
-  2-character run wrongly opening a fence (and swallowing every later
-  marker) covered explicitly; fails loudly, naming why, if mawk isn't
-  installed to run this exact check with
+- Given: the repository after #423 (V2 of #411), where `live_text()` and
+  `md_strip_fences()` live in `lib/markdown.sh` and nowhere else, and the
+  three callers (`compliance-evidence.sh`, `role-label-staleness.sh`,
+  `skills/pre-merge-review/model-record-gate.sh`) get them through
+  `lib/model-record.sh`; mawk installed (the macOS leg installs it for this
+  scenario only) and `/usr/bin/awk` (BWK awk on macOS) present
+- When: a search over every text file outside `.git`, `test/`, `wip/` and the
+  `.md` documents looks for a definition of either function; `lib/model-record.sh`
+  is sourced alone in a bash with `extdebug`; then the golden fence cases
+  G1-G9 run through the sourced `lib/markdown.sh` `live_text`, once with
+  `awk` resolving to mawk and once with `awk` resolving to `/usr/bin/awk`
+  named explicitly
+- Then: the only definition is `lib/markdown.sh` (which defines both; a
+  fourth copy in `review-rounds.sh`, added by #410 after #423 was written, is
+  also gone), and after sourcing `lib/model-record.sh` both functions are
+  defined from `markdown.sh`; the "copies are byte-identical" arm of the old
+  S153 is retired with the copies. G1-G6 are the old cases, unchanged: a
+  simple fence; a 5-tilde wrapper around an inner line that holds three
+  backticks; a shorter closing run that must not close a longer opener; a
+  marker after a closed fence stays live; a one-backtick run starting a line
+  opens nothing; a backtick fence line inside an open tilde fence is content.
+  G7-G9 are new and put the new awk code through both awks: a fence opened
+  on a list-item line closes at its own indented closing line; a backtick in
+  a backtick fence's info string makes the line a non-opener; a CRLF fence
+  and a lone CR are line endings. Every case gives the answer gawk gives. A
+  static guard keeps brace-interval syntax (`{n,m}`) out of the fence regex
+  (mawk 1.3.4 20200120 does not parse it, #319). Fails loudly, naming why, if
+  mawk or `/usr/bin/awk` is missing. Retires: the identical-copies arm.
+  Mutations (A35a): a second `live_text` definition in a script (copy back),
+  `{0,3}` back in the fence regex, the list-item prefix written with a brace
+  interval, CR splitting removed
 
 ### S154 — classify-review-depth.sh classifies a PR quick/thorough by Reviewer's six trigger categories
 **Covers:** F36
@@ -2977,3 +2978,116 @@ something new is being added.
   subversion through `macos.yml` (`BASH_ENV`, an overridden `RUNNER_OS`, a job
   `env:` setting `S229_INNER`, changed triggers) is red under S219, while the
   suite's own files and settings outside the repository are trusted
+
+### S230 — live_text reads a body with an invalid or truncated UTF-8 sequence the same under a UTF-8 LANG as under LC_ALL=C, in the lib and in all three callers
+**Covers:** F34, F35, F39
+- Given: `LC_ALL` unset (by the case itself) and `LANG=en_US.UTF-8`; three
+  bodies, one holding `\377` (an invalid UTF-8 byte), one a truncated
+  `\342\200`, one a valid multibyte character (the green control, `\342\200\224`);
+  each placed in a live marker value, in a fenced line, in a code span and in a
+  blockquote (lib arms), in the Review record's `floor-basis` (gate main
+  path), in a body holding two stage records (the gate's role-play path), in a
+  PR comment's Test record (collector), and in a Review record of a linked PR
+  (staleness script); the callers run against fake `gh`, the bytes reach the
+  gate through a placeholder swapped after `jq` (jq itself would turn the
+  byte into U+FFFD)
+- When: `md_strip_fences` and `live_text` of `lib/markdown.sh`; the gate (main
+  path, and role-play path in an opted-in project); the collector; and the
+  staleness script each read the body, once under `LC_ALL=C` and once under
+  the case's UTF-8 environment
+- Then: no reader aborts, and each result equals the `LC_ALL=C` result, which
+  is itself asserted non-trivial so a vacuous pass is red: the lib keeps the
+  marker line and blanks the fenced one; the gate main path prints no
+  `model-record:` finding for a complete run (and names the missing stage
+  when the Review record is removed); the role-play path prints `role-played:
+  stages in one text: Implementation, Review`; the collector's rows 1-3 are
+  `evidenced`; the staleness verdict is `stale`. The body bytes must also
+  survive the callers' own decoding of `\001` (their `tr`), not only
+  `live_text`. Red today on a macOS host (BWK awk, BSD tools): the role-play
+  arm, the collector arm and the staleness arm; regression arms (green on
+  arrival): the gate main path, the valid-multibyte control, every C-locale
+  baseline. Mutations (A35a K3): remove the `LC_ALL=C` prefix from the awk
+  call in `lib/markdown.sh`; remove it from the gate's role-play read; drop
+  the `LC_ALL=C` in a caller's `tr '\001' '\n'`. On a non-macOS runner the
+  awk-abort mutants can pass (gawk and mawk do not abort), so the macOS leg is
+  where this scenario bites
+
+### S231 — a live_text failure is visible: a model-record: finding in the gate, indeterminate in the collector and the staleness script
+**Covers:** F34, F35, F39
+- Given: a PATH shim named `awk` that counts its own invocations in a file and
+  exits 2 for the calls selected by the case (all calls, or exactly call k),
+  and otherwise runs the real awk; the gate in an opted-in project with all
+  five stages recorded, the collector with one record per reading site (the
+  PR body holds Planning and the done marker, a PR comment Test and Review, a
+  PR review Implementation, the closing issue's comment Discovery), and the
+  staleness script with `role:architect` behind a Review record that sits, in
+  turn, in the issue body, an issue comment, the PR description, a PR comment,
+  a PR review, and a PR comment of a PR whose closing keyword is only in its
+  title (as in release-branch PRs), each against fake `gh`
+- When: each script runs once with the shim passing everything through (the
+  baseline, which also gives the number T of awk calls it makes), once with
+  every awk call failing, and T more times with exactly one call k failing
+- Then: the baseline call count is above zero (a script that never reaches
+  awk makes the arms vacuous) and the verdict is the clean one (no
+  `model-record:` finding, rows 1-3 `evidenced`, `stale`); with every call
+  failing the gate prints a line starting `model-record:`, rows 1-3 of the
+  collector are all `indeterminate`, and the staleness verdict is
+  `indeterminate`; with call k failing alone the gate prints a
+  `model-record:` finding for every k, the collector's rows 1-3 are each
+  `evidenced` or `indeterminate` and never `not-evidenced` or
+  `unverifiable-from-artifacts`, and the staleness verdict is `stale` or
+  `indeterminate`, never `in-sync` or `not-started`; the shim's count is above
+  zero in every failing run. A failure is never read as "no record". The
+  sweep reaches the gate's role-play read (its last awk calls), which today
+  ignores a `live_text` failure, and each of the collector's and the staleness
+  script's several call sites without naming them. Closes the PRD debt row at
+  `PRD.md:1712`. Not asserted: the wording of a finding or evidence line.
+  Mutations (A35a R6, D10): the gate's role-play `check_text` ignores a
+  failure; the failure flag removed from any one of the collector's call
+  sites, or from any one of the staleness script's call sites (each site is
+  made decisive by the spread above, so each removal turns a row or the
+  verdict into an absence claim)
+
+### S232 — a fence opened on a list-item line is recognized, and a backtick fence whose info string holds a backtick is not an opener
+**Covers:** F34
+- Given: `lib/markdown.sh` under `LC_ALL=C`; a marker INSIDE (indented as list
+  content) and a marker AFTER (column 0, after the closing line); bodies with
+  a fence opened on a list-item line (`-`, `*`, `+` with a tilde fence, `1.`;
+  with an info string; a longer closing run; a second item; two list-item
+  fences in a row; a shorter run inside a longer fence), and bodies with a
+  backtick fence line whose info string holds a backtick (also indented 3
+  spaces, also four backticks)
+- When: `live_text` and `md_strip_fences` read each
+- Then: the output is exactly the body with the fenced lines (opener, content,
+  closing) blanked and the line count kept: INSIDE is quoted, the column-0
+  AFTER marker is live (as GitHub renders it: the closing line cannot open a
+  false fence that hides the later marker); a line `` ``` not `a fence ``
+  opens nothing, so the marker after it is live, and a later bare run opens
+  its own fence that runs to the end of the body (the INSIDE marker before it
+  is live, the AFTER marker after it is quoted); a tilde fence whose info
+  string holds a backtick still opens, a backtick fence whose info string
+  holds a tilde still opens, and a bullet line that merely mentions three
+  backticks opens nothing (regression arms). The PR records the
+  `gh api markdown` output for these shapes once, as evidence and not as a CI
+  oracle. Not tested (unspecified): an unclosed list-item fence, an indented
+  marker after the closing line, nested list prefixes, a closing fence at
+  column 0. Mutations: do not recognize the list-item prefix; treat a backtick
+  in the info string as an opener; require the closing line at column 0;
+  close on a shorter run
+
+### S233 — CRLF and a lone CR are line endings: the CRLF body reads as the same body with LF, and a lone CR is a line break
+**Covers:** F34
+- Given: `lib/markdown.sh` under `LC_ALL=C`; a body with CRLF line endings
+  around a fence and a marker, the same body with LF, a body with a lone CR
+  between two markers, a fence made of lone-CR lines, mixed endings with a CR at
+  the very end, a CR inside a marker value, a CRLF blockquote line
+- When: `live_text` and `md_strip_fences` read each
+- Then: the CRLF body gives exactly the LF body's output (the fence closes,
+  the marker after it is live) and the output holds no CR byte; the lone CR
+  between two markers gives two lines (never one glued line); the lone-CR
+  fence is a fence; mixed endings give one line per ending; a CR inside a
+  value splits the line (the later record reader names it a near-miss, never a
+  silently cleaned value); a body without any CR is unchanged (regression
+  arm). A31a: this replaces "remove every CR byte". Mutations: leave the CR
+  in; delete CR bytes instead of splitting; read only CRLF and not a lone CR;
+  strip CR after the fence logic instead of before
