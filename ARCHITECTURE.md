@@ -552,6 +552,7 @@ the next free numbers after A23.
   the `floor-basis` text, or a #392 finding uses the `role-played: ` prefix.
 
 ### A25 — Effort scale and the shared model-record module
+- **Status: superseded by A33 (#424).** Effort left the marker and the floor; the scale, `effort_rank` and the effort comparisons below are history. The shared `lib/model-record.sh` module itself stays.
 - **Scale:** low < medium < high, case-insensitive on the quoted
   `effort="..."` value: exactly the values in use. Compared only when both
   models normalize equal and both efforts are known. A missing, unquoted or
@@ -563,7 +564,7 @@ the next free numbers after A23.
 - **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
   collector and `role-label-staleness.sh`:
   `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
-  `effort_rank <value>` (0, 1, 2, or nothing), `marker_attr <marker> <name>`
+  `marker_attr <marker> <name>`
   (the quoted value; the marker is tokenized, so text inside another value
   such as `beats model=` or a lookalike name such as `reviewer-model` is
   never read as an attribute), `marker_find <Stage> <text>` (every
@@ -633,7 +634,7 @@ the next free numbers after A23.
 - **Why:** the dry run on a scratch repo (release head fa1beae) showed
   dispatched roles writing unquoted markers and an orchestrator typing a
   quoted `stage="..."`; both are unreadable, and the gate was silent.
-- **`marker_emit <Stage> <model> <effort> [<floor-basis>]`**
+- **`marker_emit <Stage> <model> [<floor-basis>]`** (no effort since A33, #424; the line below shows the A26 form that carried one)
   (`lib/model-record.sh`; locale per the A32c rule, section below): prints exactly one
   line, `<!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->`,
   or prints nothing, gives a reason on stderr and returns 2. It refuses: a
@@ -817,3 +818,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   second copy of the round logic appears outside `rr_rounds`.
 - **Revisit when:** finding severity becomes machine-readable; the trigger
   can then be counted by `review-rounds.sh`.
+
+### A33 — Effort is removed from the marker pipeline; the floor is judged on the model (#424, #413)
+- **Why:** the dispatch tool takes no effort argument, so effort was never set or verified: #405 W2 found that all 33 agents ran at medium whatever their markers said. A recorded effort was a claim nobody could check.
+- **Emitter:** `model-record-emit.sh` no longer writes `effort`. It accepts `--effort` and ignores it for one release, printing one stderr line, "effort is no longer recorded (#413); drop --effort from your prompt", so stale prompts in adopted projects keep working. The next release removes the flag (PRD debt row).
+- **Gate and collector:** the gate's lower-effort finding is gone and its per-field check covers `model` only. Collector gate 2 is `evidenced` on the same model and `unverifiable-from-artifacts` on different models; gate 1 and the inter-issue conflict key read the normalized model alone. `effort_rank` is deleted from `lib/model-record.sh`. A legacy `effort` attribute of any shape is still read without error and ignored.
+- **The limit (A33a):** the floor is judged on the model, and effort is neither chosen nor checked, so the same model at a lower effort meets the floor. This is an accepted risk. Revisit when the dispatch tool gains an effort parameter.
+- **Meaning versions:** `quality-review-before-merge` goes to 4 and `process-model-choice` to 2, once, in this slice.
+- **Violated when:** a script, skill or the orchestrator tells a role to pass `--effort`, or a finding or verdict reads an `effort` attribute.
