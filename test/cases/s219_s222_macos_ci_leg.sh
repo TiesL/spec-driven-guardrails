@@ -34,9 +34,17 @@ trap sandbox_destroy EXIT
 
 # --- S219: the whole of macos.yml is the pinned block -----------------------
 macos_yml="${CI_MACOS_YML_UNDER_TEST:-$TEST_REPO_ROOT/.github/workflows/macos.yml}"
-if [ ! -f "$macos_yml" ]; then
+# File kind first (A35d-2): -L before -f (-f follows links), before any read.
+if [ -L "$macos_yml" ] || { [ -e "$macos_yml" ] && [ ! -f "$macos_yml" ]; }; then
+  fail "S219 — $macos_yml is not a regular file (symlink, directory, FIFO or device): GitHub reads the committed regular blob"
+elif [ ! -f "$macos_yml" ]; then
   fail "S219 — $macos_yml does not exist: the macOS leg must live in its own workflow file"
 else
+  # Committed mode, only on the real file (the seam points at scratch copies).
+  if [ -z "${CI_MACOS_YML_UNDER_TEST:-}" ]; then
+    macos_mode="$(git -C "$TEST_REPO_ROOT" ls-files -s -- .github/workflows/macos.yml | cut -d' ' -f1)"
+    [ "$macos_mode" = "100644" ] || fail "S219 — committed mode of macos.yml is '$macos_mode', not 100644"
+  fi
   cat > "$SANDBOX/expected.yml" <<'PINNED'
 name: CI macOS
 on:
