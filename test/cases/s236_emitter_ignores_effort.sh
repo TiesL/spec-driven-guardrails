@@ -73,6 +73,35 @@ for loc in $locales; do
     || fail "S236 AC1 Review with a leading --effort [$loc] — rc=$rc out='$out' err='$err'"
   [ "$err" = "$warn" ] || fail "S236 AC1 Review with a leading --effort [$loc] — stderr must be exactly the one warning line, got: '$err'"
   [ "$(printf '%s\n' "$err" | grep -c .)" -eq 1 ] || fail "S236 AC1 [$loc] — the warning is one line"
+  # --effort in EVERY slot, after --floor-basis included (review round 1,
+  # pr447-s236-effort-after-floor-basis-unpinned): it must not reset, consume
+  # or reorder any other flag. Six orders of the three flags x four slots.
+  fbline='<!-- model-record: stage=Review model="m" floor-basis="stronger model" -->'
+  for order in "S M F" "S F M" "M S F" "M F S" "F S M" "F M S"; do
+    for slot in 0 1 2 3; do
+      set --
+      n=0
+      [ "$slot" -ne 0 ] || set -- --effort high
+      for k in $order; do
+        case "$k" in
+          S) set -- "$@" --stage Review ;;
+          M) set -- "$@" --model m ;;
+          F) set -- "$@" --floor-basis 'stronger model' ;;
+        esac
+        n=$((n + 1))
+        [ "$n" -ne "$slot" ] || set -- "$@" --effort high
+      done
+      run "$loc" "$emit" "$@"
+      [ "$rc" -eq 0 ] && [ "$out" = "$fbline" ] && [ "$err" = "$warn" ] \
+        || fail "S236 AC1 --effort in slot $slot of order '$order' [$loc] — expected the Review line with its floor-basis, exit 0 and the one warning; rc=$rc out='$out' err='$err'"
+    done
+  done
+  # --effort after --floor-basis must not forgive a floor-basis on another stage
+  run "$loc" "$emit" --stage Implementation --model m --floor-basis 'stronger model' --effort high
+  [ "$rc" -eq 2 ] && [ -z "$out" ] || fail "S236 AC1 [$loc] — a floor-basis on Implementation must still be refused when --effort follows it (exit 2, empty stdout), got rc=$rc out='$out'"
+  # ... nor excuse a Review without one, whatever the order
+  run "$loc" "$emit" --stage Review --model m --effort high
+  [ "$rc" -eq 2 ] && [ -z "$out" ] || fail "S236 AC1 [$loc] — a Review without a floor-basis must still be refused with --effort present (exit 2, empty stdout), got rc=$rc out='$out'"
   # no --effort: no warning (a clean prompt is silent)
   run "$loc" "$emit" --stage Planning --model m
   [ "$rc" -eq 0 ] && [ -z "$err" ] || fail "S236 AC1 [$loc] — without --effort stderr must be empty, got rc=$rc err='$err'"

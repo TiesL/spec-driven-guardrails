@@ -3325,7 +3325,12 @@ something new is being added.
   legacy-effort one without a finding; the usage text no longer advertises the
   flag (S238). Mutations the Developer's emitter must not survive (the QA
   kill table on the red commit): printing the effort, a different stderr text
-  or two lines, exit 2 for the flag, a warning on every call
+  or two lines, exit 2 for the flag, a warning on every call. Review round 1
+  of PR #447: `--effort` in every slot among `--stage`, `--model` and
+  `--floor-basis` (six orders x four slots) leaves the Review line and its
+  floor-basis intact, and does not excuse a floor-basis on Implementation or
+  a Review without one (kills a mutant that resets the floor-basis on
+  `--effort`)
 
 ### S237 — the gate and the collector judge the Review floor on the model alone: no effort finding, gate 2 is model-only, the conflict key is the model, gate 1 reads presence and model
 **Covers:** F39, F40
@@ -3398,3 +3403,36 @@ something new is being added.
   answered `process-model-choice` at v1 (no marker, or `(meaning v1)`) is
   reported in the "meaning has changed" block as "answered under meaning v1,
   now v2", not in the never-answered list, and a `(meaning v2)` row is quiet
+
+### S240 — the live design and spec text and the orchestrator's text state no effort rule as current behaviour, and the Pipeline log keeps its after-the-fact effort note
+**Covers:** F39, F40
+- Given: `ARCHITECTURE.md` sections A24 and A26, `PRD.md` sections F39 and F40,
+  and `skills/role-contracts/ORCHESTRATOR.md` (issue #424, review round 1 of
+  PR #447: findings `pr447-live-docs-still-state-effort-rules` and
+  `pr447-pipeline-log-observed-effort-dropped`; A27, A33, A33a). A25, A27, A33,
+  the debt register, `CHANGES*.md`, `wip/` and `test/` are out of scope
+- When: each document is cut into units (a list item with its continuation
+  lines and nested items, or a paragraph) and read
+- Then: a unit that states an effort rule (it compares, passes, checks, sets,
+  chooses or ranks an effort, or names an effort field or `--effort`) carries a
+  supersession mark (superseded, amended, A33, #424, no longer, history,
+  legacy, retired, removed, ignored, accepted risk, neither chosen nor, #413 or
+  S238's other allow words), a nested item inheriting its parent's mark; a bare
+  attribute name such as `effort=` in a code span and a passing word (the
+  dispatch tool has no effort argument) are not rules; deleting, rewording in
+  the past tense with a pointer to A33, or marking amended all pass; and the
+  `Pipeline log.` paragraph of `ORCHESTRATOR.md` still has one sentence saying
+  the orchestrator may note the effort the platform transcript shows, in
+  prose, after the fact, which is not a marker attribute, flag or check, while
+  A27 still lists the observed effort (the two documents agree). Red today:
+  five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
+  sentence
+
+### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
+**Covers:** F39, F40
+- Given: every `lib/*.sh` (issue #424, review round 1 of PR #447, finding
+  `pr447-lib-comment-typo-and-effort-word`; QA round 1 Developer note 2)
+- When: they are read as text
+- Then: none contains the word effort in any case (a comment included), and no
+  pure comment line contains `;;` (a case arm's own `;;` is code and is not
+  looked at). Red today: the `marker_emit` header comment in `lib/model-record.sh` (one effort word, one `;;`)
