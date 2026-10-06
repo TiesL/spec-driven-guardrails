@@ -2366,9 +2366,10 @@ something new is being added.
   unquoted or differently-prefixed attribute; it stays generic, so a legacy
   `effort` attribute is still readable though nothing interprets it; the lib
   defines no `effort_rank` and does not mention it
-- And (review of PR #397): attribute text inside a value (`floor-basis="beats
-  model="`, `>`, `<`, `--`, `-->`) is never read as another attribute and
-  never breaks the value
+- Moved to S246 (issue #425, R5): the attribute-hijack arms (review of PR #397:
+  attribute text inside a value, `floor-basis="beats model="`, `>`, `<`, `--`,
+  `-->`), now asserted on `rec_field` against strict lines; `marker_attr` keeps
+  its word-boundary arms here until its last caller moves
 
 ### S189 — the model-record gate checks the Review floor it can check, on the model alone
 **Covers:** F39
@@ -2648,32 +2649,54 @@ something new is being added.
   first line is the wrapper's output, never typed, and that a role whose prompt
   has no command runs the wrapper itself and says so
 
-### S204 — model-record-emit.sh prints the one valid marker line, or nothing
+### S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field (and today's parser reads too), or prints nothing (E1 and E2)
 **Covers:** F40
 - Given: `skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model
   <id> [--floor-basis <sentence>]` and `marker_emit <Stage> <model>
-  [<floor-basis>]` in `lib/model-record.sh` (issue #424: no effort); a matrix of
-  valid inputs (all five stages, ids with dots, dashes, colons, slashes and
-  digits, a Review floor-basis with `>`, `<`, `--`, an apostrophe, `model=x`
-  text and non-ASCII); a matrix of invalid ones; macOS `/bin/bash` 3.2 under
-  `LC_ALL=C` and a UTF-8 locale; the real path and a symlinked
-  `.claude/skills` (issue #402, A26 amended, the maintainer's acceptance test)
+  [<floor-basis>]` in `lib/model-record.sh` (issue #402, A26; no effort since
+  #424; rewritten on E1 and E2 by issue #425, slice V4 of #411, AC4, A33 as
+  amended by A33a); a matrix of valid inputs (all five stages; model ids with
+  dots, dashes, colons, slashes, digits, a leading dash, 200 bytes; a Review
+  floor-basis with `'`, `--`, `=`, ` model=` and ` floor-basis=` at its end,
+  `$`, a backtick, `*`, a leading `--`, non-ASCII; the code points the deny-list
+  lets through: NBSP, zero-width characters, U+200E, U+2027, U+202F, U+2065,
+  U+206A, U+FFFD, an emoji; invalid and truncated UTF-8; 500 bytes of ASCII,
+  166 em dashes, 498 ASCII bytes plus one two-byte letter, 250 two-byte
+  letters); a matrix of refused ones; three environments (`LC_ALL=C`, a UTF-8
+  `LC_ALL`, and `LC_ALL` unset with `LANG` UTF-8); the real path and a symlinked
+  `.claude/skills` (an adopted project)
 - When: the wrapper runs
-- Then: for every valid input the output is exactly the line `<!--
-  model-record: stage=<S> model="<M>"[ floor-basis="<F>"] -->` with a bare
-  stage and no `effort` attribute, nothing on stderr, that `marker_find`
-  returns, `marker_attr` reads back byte for byte and `marker_scan` calls ok,
-  and five emitted lines give the gate no finding; `marker_emit` agrees with
-  the wrapper; every invalid input (a quoted, lower-case, empty or unknown
-  stage; an empty, over-long or quote/space/newline/tab/`=`/`-->`/`$(...)`
-  model; a Review floor-basis that is missing, blank, over 500 bytes or holds a
-  quote, newline, tab, U+001E or another control byte; a floor-basis on another
-  stage; unknown, missing, repeated or value-less flags, a positional
-  argument) prints nothing on stdout, a reason on stderr and exits 2; a
-  floor-basis with `-->` or `<!--` is refused or round-trips exactly, never a
-  malformed line; without the lib the exit status is 3 with empty stdout; the
-  retired arms are the effort-value refusals and "`--effort` is required"; the
-  stale-`--effort` behaviour is S236
+- Then (E1): every valid input prints exactly the LITERAL line `<!--
+  model-record: stage=<S> model="<M>"[ floor-basis="<F>"] -->` (bare stage, no
+  effort attribute, nothing on stderr), which `rec_scan` reads as one ok row
+  for the stage holding the line verbatim, `rec_field` returns `model` and
+  `floor-basis` byte for byte (and nothing for effort), and today's
+  `marker_find`, `marker_scan` and `marker_attr` read too; `marker_emit` agrees
+  with the wrapper; a stale `--effort high` still gives the literal line; five
+  emitted lines give the gate no finding
+- Then (E2): every refused input prints nothing on stdout, a reason on stderr
+  and exits 2: a quoted, lower-case, empty or unknown stage; an empty, over-
+  long (201 bytes), non-ASCII or quote/space/newline/tab/`=`/`<`/`>`/`-->`/
+  `$(...)` model; a Review floor-basis that is missing, blank, over 500 BYTES
+  (501 ASCII bytes, 167 em dashes, 251 em dashes = 753 bytes, 499 ASCII bytes
+  plus a two-byte letter, 251 two-byte letters) or holds `"`, `<`, `>`, `-->`,
+  `<!--`, any of the 31 C0 controls (LF, CR and tab included), U+001E, DEL, any
+  of the 32 C1 controls U+0080 to U+009F as UTF-8 bytes, U+2028, U+2029,
+  U+202A to U+202E or U+2066 to U+2069; a floor-basis on another stage;
+  unknown, missing, repeated or value-less flags, a positional argument, and
+  a flag value equal to a flag name (`--model --floor-basis`, `--floor-basis
+  --stage`, ...) while a floor-basis that merely begins with `--` is accepted;
+  without the lib the exit status is 3 with empty stdout. Threat model:
+  accidental defects (characters versus bytes, a deny-list entry left out, a
+  locale-dependent control-class test); a typed strict line is byte-identical
+  to emitter output (stated limit). The emitter's own round trip is defence in
+  depth with no red-only test. Retired from the old S204: the old-parser-only
+  judgement and the arms that accepted `>`, `<`, `-->` or `<!--` (refusals now).
+  Red today on the red commit: the `<`, `>`, C1, separator, bidirectional,
+  byte-limit and flag-name refusals, and every `rec_scan` and `rec_field`
+  judgement (stubs). Kill table: drop `<` or `>`, count characters, drop one C1
+  or bidi or separator entry, a locale-dependent control test, drop or widen
+  the flag-name rule, change the literal line
 
 ### S205 — the role-play check's "stages missing" test ignores quoted text
 **Covers:** F38
@@ -3582,3 +3605,75 @@ something new is being added.
   match); no forger. Red today: stubs. Kill table: drop a `|| return`, treat
   grep 2 as 1, treat grep 1 as a failure, print rows before returning the
   failure, a reader that never calls grep
+
+### S248 — the frozen corpus: every row of test/fixtures/marker-corpus.jsonl gets its labelled class and fields from rec_scan, alone and wrapped in a fence; the counts match the fixture header; the fixture is self-consistent and clean (K1)
+**Covers:** F40
+- Given: `test/fixtures/marker-corpus.jsonl` (issue #425, AC1; A35a K1): a header
+  (the oracle commit 411699d, the snapshot date, the counts, the Phase 1a
+  floor, the intended-shifts list, the stated limits) and one JSON object per
+  row: 1290 corpus rows (every line of this public repo's issue and PR bodies,
+  comments and review bodies, 2026-10-06, that contains `model-record` or
+  `pipeline-override`; one line withheld for a personal name) and 74 synthetic
+  rows counted separately (one near-miss per A31a reason, `<` and `>` alone,
+  `--` alone, a CR in a value, NBSP and zero-width after `<!--`, `<!--
+  model-record-gate: x -->`, a value ending in ` floor-basis=`, invalid UTF-8);
+  each row has an expected class (ok, near-miss, quoted, text), the stage and
+  fields of an ok row, an oracle note, `v030` (what the v0.3.0 pipeline made of
+  the line alone) and a label-reason; the oracle for ok `model-record` rows is
+  the v0.3.0 parser (`marker_scan`, `marker_find`, `marker_attr` at 411699d), run
+  once and never regenerated from the new code; every other row is hand-labelled
+- When: the header and rows are checked, then `rec_scan_bundle` (one body per
+  row), `rec_scan` (every eighth corpus row and every synthetic row) and
+  `rec_field` read them, alone and with each line wrapped in a fence one
+  backtick longer than its longest backtick run
+- Then: the header counts equal the rows (corpus, synthetic, all, per class),
+  are at least the Phase 1a floor (965 lines, 396 ok), the oracle commit is
+  recorded, no ok model-record row's oracle disagrees, the intended-shifts list
+  equals the set of rows whose v0.3.0 class differs from their v2 class, and
+  the fixture holds no name the repo forbids (SHA-256 of the owner's first
+  name, as S159), no secret shape, no email address (gitleaks too when it is
+  installed); every row gets exactly its labelled class (a text row gives no
+  row), every ok row its stage, its line and every labelled attribute through
+  `rec_field` (and nothing for an absent one), every wrapped candidate row is
+  `quoted`, and the reader's aggregate counts equal the header. Threat model:
+  accidental regressions of a grammar change against everything this repo has
+  written; a regression scenario in its fixture part (green on arrival), red on
+  the stubs in its reader part. Kill table: any grammar change that shifts a
+  class, a wrong model or floor-basis out of `rec_field` for a legacy model
+  with spaces, a mislabelled indented or inline row
+
+### S249 — the property arm: every hostile byte or token at every position of a record, every byte class, a seeded generator with a fence oracle, and a scale case; every inserted record reads back exactly and nothing else is read (K2)
+**Covers:** F40
+- Given: a valid Review record with each of about 95 tokens inserted at 12
+  positions (the start, middle and end of the model, the floor-basis and a
+  legacy effort value; before and after the stage name; inside an attribute
+  name; between attributes; after the closing arrow): every C0 byte, DEL, `"`
+  `<` `>` `-->` `<!--`, tab, LF, CR, CRLF, `'` `\` backtick `$` `*` `?` `[` `%`
+  `=`, a value ending in ` name=`, a leading dash, NEL, LS, PS, NBSP, BOM,
+  zero-width, bidirectional controls, U+FFFD, an emoji, invalid, truncated,
+  overlong and surrogate UTF-8; every single byte 0x01 to 0xFF as a
+  floor-basis character; 150 generated bodies (a linear congruential
+  generator, seed 425, no `$RANDOM`) of valid records, hostile lines, noise
+  full of delimiters and fence lines, with a fence-state oracle; 60 bodies with
+  a 100 KB value and a 100 KB hostile line; `LC_ALL=C` and `LC_ALL` unset with
+  `LANG` UTF-8
+- When: `rec_scan_bundle`, `rec_scan` and `rec_field` read them, each
+  injected record with a valid sentinel record before and after it
+- Then: the expectation comes from a two-flag table of the grammar (value byte?
+  blank? ends the line?), never from the reader: a hostile token is exactly one
+  near-miss, a value byte is exactly one ok row holding the line verbatim
+  whose attributes read back, and the sentinel is always ok verbatim; every
+  byte but `"`, `<`, `>`, a C0 control and DEL is an ok floor-basis character;
+  the generated bodies' rows are exactly the oracle's (valid records outside
+  fences ok and in order, hostile lines near-miss, everything inside a fence
+  quoted, noise nothing); the 100 KB value reads back whole, the 100 KB
+  hostile line is a near-miss row of at most 400 bytes, the time is reported
+  and not failed. Threat model: accidental defects and the deliberate
+  injection shapes of #405 rounds 1 to 4; not a forger of a strict line (stated
+  limit); NUL cannot be carried in a bash argument (stated limit); the framing
+  layers of the gate (U+001E) and the collector (`\001`) get their own arm when
+  those callers move (V6 to V8). Red today: stubs. Kill table: drop one
+  injection arm (`<`, a control byte, DEL), forbid bytes 0x80 to 0xFF, let a
+  record run over a newline, abort on invalid UTF-8 under `LANG` (no
+  per-command `LC_ALL=C`), fail on a `~~~` or a longer closing fence, print the
+  whole 100 KB line
