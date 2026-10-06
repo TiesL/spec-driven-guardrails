@@ -347,35 +347,190 @@ marker_emit() {
 
 # --- Record grammar v2: the reader (#425, slice V4 of #411; A31, A31a, A32a) -
 #
-# RED STUBS from the QA commit (#425): the signatures the tests pin, nothing
-# else. Each one prints nothing on stdout, says so on stderr and returns 99, so
-# a red test is an assertion failure and never "command not found". The
-# Developer replaces the bodies; the contract is the issue's AC1 to AC6 and the
-# tests S242 to S249. Every external command in the real bodies carries the
-# per-command `LC_ALL=C` prefix (S235), and grep is `grep -a`.
+# ONE definition of what a `model-record` or `pipeline-override` record is,
+# read line by line. Today's parser above stays for the callers that have not
+# moved yet (slices V6 to V8); nothing here changes what they read.
 #
-#   rec_scan_bundle <kind> <bundle>
-#       kind: model-record | pipeline-override. bundle: bodies each followed by
-#       MARKER_SEP, that byte removed from each body first. One row per
-#       candidate line: <body-index> TAB <class> TAB <stage-or-?> TAB
-#       <line-or-reason>. class: ok | near-miss | quoted. Body indices count
-#       from 1. No field is empty.
-#   rec_scan <kind> <body>
-#       The same rows for one body (index 1).
-#   rec_field <line> <name>
-#       The value of the first attribute <name> on an ok line, read as a walk
-#       over the attributes, never a search.
-rec_scan_bundle() {
-  echo "rec_scan_bundle: not implemented (red stub, #425)" >&2
-  return 99
+# The grammar (A31 as amended by A31a). A record is ONE whole line, starting in
+# column 0, outside a fenced block, a code span, a blockquote and an indented
+# code block; every value byte is anything except `"`, `<`, `>` and a control
+# byte (0x00-0x1F, 0x7F), so a value can never hold `-->`, `<!--` or a quote
+# and the line itself ends the record: no tokenizer, no quote state. Bytes
+# 0x80-0xFF are values (UTF-8 text such as an em dash, and invalid UTF-8 too).
+# Matching runs on bytes (LC_ALL=C).
+_REC_V='[^"<>[:cntrl:]]'
+_REC_ATTR="[[:blank:]]+[a-z][a-z0-9-]*=\"${_REC_V}*\""
+MR_STRICT_ERE="^<!--[[:blank:]]*model-record:[[:blank:]]*stage=(Discovery|Planning|Test|Implementation|Review)[[:blank:]]+model=\"${_REC_V}*[^\"<>[:cntrl:][:blank:]]${_REC_V}*\"(${_REC_ATTR})*[[:blank:]]*-->[[:blank:]]*\$"
+MR_LOOSE_ERE='^<!--[[:blank:]]*model-record:'
+PO_STRICT_ERE="^<!--[[:blank:]]*pipeline-override:(${_REC_ATTR})+[[:blank:]]*-->[[:blank:]]*\$"
+PO_LOOSE_ERE='^<!--[[:blank:]]*pipeline-override:'
+
+# The reader's own helper patterns (not record grammar: they only name a stage
+# in a near-miss row, read an attribute step of rec_field, and say why).
+_REC_STAGE_ERE='[[:blank:]]stage=(Discovery|Planning|Test|Implementation|Review)([^A-Za-z0-9_]|$)'
+_REC_HEAD_ERE='^<!--[[:blank:]]*(model-record|pipeline-override):([[:blank:]]*stage=[A-Za-z0-9_]+)?'
+_REC_STEP_ERE='^[[:blank:]]+([a-z][a-z0-9-]*)="([^"]*)"'
+
+# The candidate scan, appended to lib/markdown.sh's program (mode rec): every
+# line that holds `<!--`, blanks and `<kind>:` becomes one row,
+# `<body-index> TAB <C|Q> TAB <raw line>`. Q: quoted (a fence, a blockquote,
+# an indented code block, or the opener sits inside a code span). C: live; the
+# strict pattern then decides ok or near-miss, in bash. The fence, blockquote
+# and span logic is the one markdown.sh owns, so a record is quoted exactly
+# where live_text would blank it.
+_REC_AWK='
+BEGIN { OPEN = "<!--[ \t]*" kind ":" }
+function rec_cand(line, flag) { if (line ~ OPEN) print bodyno "\t" flag "\t" line }
+function rec_text(line,   ws, sp) {
+  if (line !~ OPEN) return
+  match(line, /^[ \t]*/); ws = substr(line, 1, RLENGTH)
+  if (RLENGTH >= 4 || index(ws, "\t") > 0) { rec_cand(line, "Q"); return }   # indented code
+  sp = drop_spans(line)
+  print bodyno "\t" ((sp ~ OPEN) ? "C" : "Q") "\t" line
+}
+'
+
+_rec_fail() { # <function> <what> <status>
+  echo "lib/model-record.sh: $1: $2 failed with exit $3; records were NOT read" >&2
 }
 
-rec_scan() {
-  echo "rec_scan: not implemented (red stub, #425)" >&2
-  return 99
+# _rec_why <kind> <raw line>: the first rule that matches names why a live
+# candidate line is not a record. A message only: tests assert on the class.
+_rec_why() {
+  local kind="$1" raw="$2" loose
+  # patterns live in variables: bash 3.2 and 4 read an inline one differently
+  local p_end='-->[[:blank:]]*$'
+  local p_stage='^<!--[[:blank:]]*model-record:[[:blank:]]*stage=(Discovery|Planning|Test|Implementation|Review)[[:blank:]]'
+  local p_model='[[:blank:]]model="[^"]*[^[:blank:]"][^"]*"'
+  local p_bad='"[^"]*[<>[:cntrl:]]'
+  local p_cntrl='[[:cntrl:]]'
+  if [ "$kind" = model-record ]; then loose="$MR_LOOSE_ERE"; else loose="$PO_LOOSE_ERE"; fi
+  if ! [[ $raw =~ $loose ]]; then
+    printf 'not on a line of its own'
+  elif ! [[ $raw =~ $p_end ]]; then
+    printf 'text after the closing --> or no closing -->'
+  elif [ "$kind" = model-record ] && ! [[ $raw =~ $p_stage ]]; then
+    printf 'the stage is quoted, missing or not one of the five names'
+  elif [ "$kind" = model-record ] && ! [[ $raw =~ $p_model ]]; then
+    printf 'no quoted, non-blank model'
+  elif [[ $raw =~ $p_bad ]] || [[ $raw =~ $p_cntrl ]]; then
+    printf 'a value holds <, > or a control byte'
+  else
+    printf 'not in the record form'
+  fi
 }
 
+# rec_scan_bundle <kind> <bundle> (A32a): kind is model-record or
+# pipeline-override; the bundle is bodies each followed by MARKER_SEP, that
+# byte removed from each body first. One awk pass reads the whole bundle (fence
+# state reset at every separator); a grep pass first asks whether there is any
+# candidate at all. Prints one row per candidate line, in body order:
+#   <body-index> TAB <ok|near-miss|quoted> TAB <stage-or-?> TAB <line-or-reason>
+# Body indices count from 1. ok: the line itself; near-miss and quoted: a
+# reason and the first 200 bytes. No field is ever empty. A body without a
+# candidate gives no row. grep exit 1 is "no hit"; any tool failure (grep or
+# awk exit 2 or more, a `[[ =~ ]]` result of 2) prints NOTHING on stdout, one
+# line on stderr and returns non-zero: a caller treats that as "not read",
+# never as "no record".
+rec_scan_bundle() { _rec_scan 1 "$@"; }
+
+# rec_scan <kind> <body>: the same rows for one body (index 1). U+001E is not
+# a separator here: inside the body it is a control byte, so a record holding
+# one is a near-miss.
+rec_scan() { _rec_scan 0 "$@"; }
+
+_rec_scan() { # <bundle 0|1> <kind> <text>
+  local LC_ALL=C
+  local bundle="$1" kind="${2-}" text="${3-}" fn rc out hit res="" tab=$'\t'
+  local row idx rest flag raw cls stage reason strict why
+  if [ "$bundle" = 1 ]; then fn=rec_scan_bundle; else fn=rec_scan; fi
+  case "$kind" in
+    model-record) strict="$MR_STRICT_ERE" ;;
+    pipeline-override) strict="$PO_STRICT_ERE" ;;
+    *)
+      echo "lib/model-record.sh: $fn: kind must be model-record or pipeline-override (got '$kind')" >&2
+      return 2
+      ;;
+  esac
+  hit="$(LC_ALL=C grep -aEc "<!--[[:blank:]]*$kind:" <<<"$text")"
+  rc=$?
+  if [ "$rc" -ge 2 ]; then
+    _rec_fail "$fn" grep "$rc"
+    return "$rc"
+  fi
+  [ "$rc" -eq 0 ] || return 0                       # exit 1: no candidate, nothing to read
+  out="$(LC_ALL=C awk -v mode=rec -v bundle="$bundle" -v kind="$kind" "$_MD_AWK$_REC_AWK" <<<"$text")"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    _rec_fail "$fn" awk "$rc"
+    return "$rc"
+  fi
+  [ -n "$out" ] || return 0
+  while IFS= read -r row; do
+    idx="${row%%"$tab"*}"
+    rest="${row#*"$tab"}"
+    flag="${rest%%"$tab"*}"
+    raw="${rest#*"$tab"}"
+    stage='?'
+    if [ "$kind" = model-record ] && [[ $raw =~ $_REC_STAGE_ERE ]]; then stage="${BASH_REMATCH[1]}"; fi
+    if [ "$flag" = Q ]; then
+      cls=quoted
+      reason='quoted text'
+    elif [[ $raw =~ $strict ]]; then
+      rc=0
+      cls=ok
+      [ "$kind" != model-record ] || stage="${BASH_REMATCH[1]}"
+    else
+      rc=$?
+      if [ "$rc" -ge 2 ]; then
+        _rec_fail "$fn" "a pattern match" "$rc"
+        return "$rc"
+      fi
+      cls=near-miss
+      reason="$(_rec_why "$kind" "$raw")"
+    fi
+    if [ "$cls" = ok ]; then
+      why="$raw"
+    else
+      why="$reason: ${raw:0:200}"
+      [ "${#raw}" -le 200 ] || why="$why..."
+    fi
+    res="$res$idx$tab$cls$tab$stage$tab$why"$'\n'
+  done <<<"$out"
+  printf '%s' "$res"
+  return 0
+}
+
+# rec_field <line> <name>: the value of the first attribute <name> on a line
+# rec_scan returned as ok, or nothing (status 0) when there is none. A walk,
+# never a search (A31a): each step consumes exactly one `<blanks>name="value"`
+# from the front of what is left, quotes alternate, so a value that ends in
+# ` name=` is never taken for an attribute; the first occurrence of a name
+# wins. Pure bash, no external tool; a `[[ =~ ]]` result of 2 (the pattern did
+# not compile) prints nothing and returns 2.
 rec_field() {
-  echo "rec_field: not implemented (red stub, #425)" >&2
-  return 99
+  local LC_ALL=C
+  local line="${1-}" name="${2-}" rest rc
+  [[ $line =~ $_REC_HEAD_ERE ]]
+  rc=$?
+  if [ "$rc" -ge 2 ]; then
+    _rec_fail rec_field "a pattern match" "$rc"
+    return "$rc"
+  fi
+  [ "$rc" -eq 0 ] || return 0
+  rest="${line:${#BASH_REMATCH[0]}}"
+  while :; do
+    [[ $rest =~ $_REC_STEP_ERE ]]
+    rc=$?
+    if [ "$rc" -ge 2 ]; then
+      _rec_fail rec_field "a pattern match" "$rc"
+      return "$rc"
+    fi
+    [ "$rc" -eq 0 ] || return 0
+    if [ "${BASH_REMATCH[1]}" = "$name" ]; then
+      printf '%s' "${BASH_REMATCH[2]}"
+      return 0
+    fi
+    rest="${rest:${#BASH_REMATCH[0]}}"
+  done
 }
