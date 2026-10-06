@@ -2825,3 +2825,155 @@ something new is being added.
   left evidence); overriding the route is a numbered human decision on the
   issue that names the rule overridden and follows the pushback and risk-note
   flow of #415 (A29) without defining a format of its own
+
+### S219 — `.github/workflows/macos.yml` is pinned whole: a closed byte alphabet, comments only in the header, the rest exactly the expected block
+**Covers:** F43
+- Given: `.github/workflows/macos.yml`, the macOS leg's own workflow file (issue
+  #422, AC1, A35c D1/D2, hardened by A35d D1/D2, which replaced A35b D3's
+  reader of `ci.yml`)
+- When: two rules are applied in order. D1, byte alphabet, on the raw file
+  first: `LC_ALL=C grep -an '[^ -~]'` must find nothing, i.e. the file holds
+  only LF and printable ASCII (0x20-0x7E). D2, header-only comments: only the
+  leading run of blank and full-line-comment lines before `name:` is stripped,
+  with `LC_ALL=C awk 'started || !/^[[:space:]]*(#|$)/ { started = 1; print }'`,
+  and from `name: CI macOS` to the end the file is compared byte for byte with
+  the block written inline in the case (triggers `pull_request` and `push` to
+  `main`; one job `macos` on `macos-latest` with `permissions: contents:
+  read`, `env` `LANG` and `LC_ALL` both `en_US.UTF-8`, and the four steps
+  checkout, platform tools first on PATH, `brew install mawk`, and the suite
+  step `run: /bin/bash test/run.sh`)
+- Then: the file exists, passes D1, and the D2 comparison is identical; any
+  other content is red. A D1 failure prints the first three offending lines
+  through `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251` is
+  visible); a D2 failure prints the diff through the same `sed -n l` (POSIX,
+  so it shows the bytes on BSD and GNU alike; `cat -A` is not used). No YAML
+  is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
+  suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
+  `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
+  scalar, an under-indented scalar), a deleted or duplicated job, a step that
+  rewrites `test/run.sh` or writes `BASH_ENV`/PATH, a job `env:` that sets
+  `S229_INNER` or `PLATFORM_IDENTITY_UNDER_TEST`, a changed trigger, trailing
+  whitespace, tab indentation; every byte outside the alphabet (a lone CR
+  inside a header or body "comment" that hides a key such as `if: false`,
+  `continue-on-error: true`, `defaults:` or `env: BASH_ENV`; NEL and LS in the
+  same place; whole-file CRLF; a BOM; a tab; `é`; a form feed; a NUL); any
+  comment or blank line after `name:` (a comment as the first line of the
+  `run: |` block, an indent-8 comment between its two `echo` lines, a trailing
+  comment or blank line at the end of the file). Green: the unchanged file;
+  adding, editing or removing ASCII comment lines and blank lines in the
+  header; a missing final newline. Changing the pinned block is a deliberate
+  spec change that also edits this scenario. The case reads
+  `CI_MACOS_YML_UNDER_TEST` when set (mutation proofs). The tools and the
+  locale are not judged here; S229 judges them at run time
+- File kind (A35d-2, finding 25): the candidate must be a regular file, and
+  `-L` is tested before `-f` because `-f` follows links. In the working tree,
+  on every run including through the seam: `[ -L "$macos_yml" ]` is red, then
+  `[ ! -f "$macos_yml" ]` is red, both with the message "not a regular file".
+  Permanent arms, run through the seam in a child process, each red with that
+  message: a symlink to a byte-identical pinned copy (it passes D1 and D2, so
+  only the kind check kills it), a dangling symlink, a directory, a FIFO (the
+  arm is skipped, with a note, where `mkfifo` is unavailable); the unchanged
+  regular file stays green. Committed state, only when the seam is unset:
+  `git ls-files -s -- .github/workflows/macos.yml` must report mode `100644`;
+  `120000` (symlink), `160000` (gitlink), `100755` (executable) and empty
+  output (untracked, or not a git checkout) are red. That half has no
+  permanent arm; it was proven once in a throwaway clone and reported in the
+  PR. A hardlink needs no check (git has no hardlink mode; the blob is pinned
+  by content)
+
+### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
+**Covers:** F43
+- Given: `ci.yml` (A35c D1: the macOS job moved out, `ci.yml` is back to its
+  content on `main`)
+- When: the `ubuntu-latest` job is read and the non-comment lines of `ci.yml`
+  are searched case-insensitively for `macos`
+- Then: exactly one such job still runs `./check`, the gitleaks step, the link-3
+  and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
+  permissions, and no non-comment line of `ci.yml` contains `macos` (a runs-on,
+  a matrix entry, a block-list label such as `macOS`, or a step name all turn
+  it red; a full-line comment that mentions it does not; a step that
+  legitimately names macOS later changes this one check). It is a regression
+  scenario that claims no closed world, so a new non-macOS job or a new step
+  in the Linux job does not turn it red
+- Limits: line-based; a CR or encoded spelling can hide a job (#442)
+
+### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
+**Covers:** F43
+- Given: `bash test/platform-identity.sh` (no arguments) run on a macOS host
+  with a PATH shim that reports GNU awk (or GNU grep) and records its
+  invocation
+- When: the script runs
+- Then: it exits non-zero, its `FAIL:` line names the mismatched tool, and the
+  shim was invoked; a control run on the real macOS tools exits 0 and prints
+  one identity line each for awk, grep and bash plus a line starting with
+  `locale charmap:` (not merely the word `locale`, which the `locale:` line
+  already satisfies) (macOS host only)
+
+### S225 — a bash that is not 3.2 fails `test/platform-identity.sh`, naming bash
+**Covers:** F43
+- Given: the script run on a macOS host with a PATH shim reporting bash 5, and
+  with the running `$BASH_VERSION` not 3.2 (a startup-file override, and a real
+  bash 4 or later where one is installed)
+- When: the script runs
+- Then: it exits non-zero and its `FAIL:` line names bash (macOS host only; the
+  real bash 4 arm prints a note and is skipped where none is installed)
+
+### S226 — a locale that is not installed fails `test/platform-identity.sh` and is never skipped
+**Covers:** F43
+- Given: the script run on a macOS host with the real tools, `LANG` naming a
+  locale that is not installed (`xx_XX.UTF-8`) and `LC_ALL` unset; no
+  `locale` shim
+- When: the script runs
+- Then: it exits non-zero and its `FAIL:` line names the locale; it never exits
+  0 (macOS host only). A missing locale is covered by the `locale charmap`
+  check alone: a locale that is not installed does not give a UTF-8 charmap.
+  Limit: AC3 (the macOS job red and the Linux job green on a real
+  locale-class defect, a throwaway-branch run linked from the PR) is a
+  human-visible hosted-runner result and cannot be a unit test
+
+### S227 — a locale that is installed but not in effect fails `test/platform-identity.sh`
+**Covers:** F43
+- Given: the script run on a macOS host with the real tools and the effective
+  locale C: `LANG=en_US.UTF-8` with `LC_ALL=C`, with `LC_CTYPE=C`, and with
+  `LANG` empty
+- When: the script runs
+- Then: each run exits non-zero and its `FAIL:` line names the locale (macOS
+  host only; the runner image's `LC_ALL` could otherwise drift to C unnoticed)
+
+### S228 — regression: the marker parser reads a body with an invalid UTF-8 byte inside a marker under a UTF-8 LANG
+**Covers:** F43
+- Given: `lib/model-record.sh`, `LC_ALL` unset, `LANG=en_US.UTF-8`, a marker
+  whose value holds the byte `\377` (issue #422, AC3's precondition)
+- When: `marker_scan` and `marker_find` read it
+- Then: both exit 0, `marker_scan`'s output reports the stage `Test`, and
+  `marker_find`'s output is non-empty and contains the value carrying `\377`
+  (an empty result is red); green today because each awk call carries the
+  `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is removed from the
+  `marker_scan` or the `marker_find` call (gawk may not abort, so the macOS leg
+  is where it bites). The case guards `marker_scan` and `marker_find` only;
+  `marker_attr` and `marker_emit` are not guarded, because removing their
+  `LC_ALL=C` does not abort on BWK awk (equivalent mutants)
+
+### S229 — on the macOS CI leg the suite runs the platform identity check in its own environment
+**Covers:** F43
+- Given: the suite case `test/cases/s229_platform_identity_in_suite.sh` (issue
+  #422, AC1, AC2, A35b D1); the gate is `GITHUB_ACTIONS=true` and
+  `RUNNER_OS=macOS`, both set by the runner
+- When: the case runs under the suite's own PATH, bash and locale
+- Then: with the gate open it runs `bash test/platform-identity.sh`, puts the
+  identity lines in its log, and is red naming the tool or locale on a
+  mismatch; otherwise it prints `note: platform identity not asserted (not the
+  macOS CI leg)` and passes. Arms, run in a child with a controlled
+  environment: (a) a GNU awk shim first on PATH with both CI variables set is
+  red and names awk; (b) `RUNNER_OS=Linux` with the same shim is green and
+  prints the note; (c) on a macOS host only (`uname -s` is Darwin, otherwise
+  the arm is skipped with a note), both CI variables set, the real tools and no
+  shim is green and its output has lines starting `awk:`, `grep:`, `bash` and
+  `locale charmap:`; (d) `RUNNER_OS=macOS` with `GITHUB_ACTIONS` unset and the
+  GNU awk shim is green, prints the note and never calls the shim; (e) both
+  variables unset with the same shim is the same. Limits: the gate cannot
+  prove from inside the suite that it fired in CI (the green macOS log showing
+  the identity lines, not the note, and a throwaway red run are the evidence);
+  subversion through `macos.yml` (`BASH_ENV`, an overridden `RUNNER_OS`, a job
+  `env:` setting `S229_INNER`, changed triggers) is red under S219, while the
+  suite's own files and settings outside the repository are trusted

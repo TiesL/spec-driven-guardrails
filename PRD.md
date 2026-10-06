@@ -1498,6 +1498,54 @@ a script can only check that the route left evidence).
 
 ---
 
+### F43 — CI also runs the full test suite on the macOS platform tools (issue #422)
+
+CI ran only on Linux, so a defect that shows only on BWK awk, BSD grep or
+bash 3.2 (the locale class of #397) reached review unseen (#405 R8).
+Requirement: `.github/workflows/macos.yml` holds the single `macos-latest`
+job; the file is pinned by S219, so its suite step
+`run: /bin/bash test/run.sh` can neither skip, filter nor swallow the suite's
+exit status. The pin has two parts (A35d). First, a byte alphabet: the file
+may hold only LF and printable ASCII (0x20 to 0x7E), so no CR, NEL, LS, tab,
+form feed, NUL, BOM or other non-ASCII byte can make a YAML reader see a line
+break the text check does not. Second, comments and blank lines are allowed
+only in the leading header before `name:`; from `name:` to the end the
+content must be byte-identical to the pinned block, with nothing stripped,
+so no comment can sit inside an open YAML structure. Editing the header's
+comments stays free. Edits to `ci.yml` stay free, within S222. `/usr/bin` is
+first on PATH, so BWK awk and BSD grep are the tools in use; mawk is installed
+for S153 only and replaces nothing. The job names a UTF-8 locale. The tool
+identity is checked inside the suite: on the macOS runner
+(`GITHUB_ACTIONS=true`, `RUNNER_OS=macOS`), a suite case runs
+`test/platform-identity.sh` in the suite's own environment. That script checks
+that awk is BWK, grep is BSD, and both the bash on PATH and the running bash
+are 3.2. It also checks that the **effective** locale is UTF-8 (`locale
+charmap`): `LC_ALL` or `LC_CTYPE` set to C, or a locale that is not installed,
+fails. A mismatch fails the suite, and so the job, with a message naming the
+tool or the locale, and never skips. The job log shows the identity the suite
+ran on. The Linux job is unchanged. Slice V1 of #411 (A35a, amended by A35b, A35c and A35d).
+
+Acceptance criteria: AC1 and AC2 of issue #422. Mechanically verified: the
+macOS workflow's pinned content (S219), and the identity script's behaviour
+against PATH shims and real locales on a macOS host (S224 to S227, S229). Not
+verified (AC3, a stated limit): that the leg is red on a real locale-class
+defect and the Linux job green. That is a human-visible CI run on a throwaway
+branch (the `LC_ALL=C` prefix removed from one awk call of the marker parser)
+that the PR links; it cannot be a unit test because it needs the hosted
+runners.
+
+Stated limits (A35c, A35d): the pin judges the file's text, not how GitHub
+interprets it. The suite's own files (`test/run.sh`, `test/lib.sh`,
+`test/platform-identity.sh`, the S229 case, and its test seams `S229_INNER`
+and `PLATFORM_IDENTITY_UNDER_TEST`) are trusted; a commit that weakens them is
+caught by review, not by a guard. Settings outside the repo are not seen:
+repository or organisation Actions settings, a disabled workflow, and
+required checks (not available on this plan). Runner image drift and future
+BWK or BSD banner wording are not tested. The gate variables are spelled by
+the runner.
+
+---
+
 ## Non-functional characteristics
 
 ### Security
