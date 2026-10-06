@@ -2865,6 +2865,21 @@ something new is being added.
   spec change that also edits this scenario. The case reads
   `CI_MACOS_YML_UNDER_TEST` when set (mutation proofs). The tools and the
   locale are not judged here; S229 judges them at run time
+- File kind (A35d-2, finding 25): the candidate must be a regular file, and
+  `-L` is tested before `-f` because `-f` follows links. In the working tree,
+  on every run including through the seam: `[ -L "$macos_yml" ]` is red, then
+  `[ ! -f "$macos_yml" ]` is red, both with the message "not a regular file".
+  Permanent arms, run through the seam in a child process, each red with that
+  message: a symlink to a byte-identical pinned copy (it passes D1 and D2, so
+  only the kind check kills it), a dangling symlink, a directory, a FIFO (the
+  arm is skipped, with a note, where `mkfifo` is unavailable); the unchanged
+  regular file stays green. Committed state, only when the seam is unset:
+  `git ls-files -s -- .github/workflows/macos.yml` must report mode `100644`;
+  `120000` (symlink), `160000` (gitlink), `100755` (executable) and empty
+  output (untracked, or not a git checkout) are red. That half has no
+  permanent arm; it was proven once in a throwaway clone and reported in the
+  PR. A hardlink needs no check (git has no hardlink mode; the blob is pinned
+  by content)
 
 ### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
 **Covers:** F43
@@ -2880,6 +2895,7 @@ something new is being added.
   legitimately names macOS later changes this one check). It is a regression
   scenario that claims no closed world, so a new non-macOS job or a new step
   in the Linux job does not turn it red
+- Limits: line-based; a CR or encoded spelling can hide a job (#442)
 
 ### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
 **Covers:** F43

@@ -80,6 +80,72 @@ PINNED
   fi
 fi
 
+# --- S219 file-kind arms (A35d-2): the candidate must be a regular file -----
+# `-f` follows links, so a symlink to a byte-identical pinned copy passes D1
+# and D2 unless the guard tests `-L` first. Each arm runs this same case in a
+# child process with the seam pointed at a scratch candidate; the child skips
+# this block (S219_ARMS_INNER) so there is no recursion. The guard's message
+# must say "not a regular file". A watchdog kills a child that hangs (a guard
+# that reads a FIFO before testing its kind).
+if [ -z "${S219_ARMS_INNER:-}" ] && [ -f "$SANDBOX/expected.yml" ]; then
+  arm_self="${BASH_SOURCE[0]}"
+  arm_dir="$SANDBOX/arms"
+  mkdir -p "$arm_dir"
+  cp "$SANDBOX/expected.yml" "$arm_dir/pinned-copy.yml"
+
+  # Prints the child's combined output, then "rc=<n>" (rc=124 on a hang).
+  s219_run_child() {
+    local out="$arm_dir/child.out" pid wd rc
+    : > "$out"
+    S219_ARMS_INNER=1 CI_MACOS_YML_UNDER_TEST="$1" /bin/bash "$arm_self" > "$out" 2>&1 &
+    pid=$!
+    ( sleep 30; kill "$pid" 2>/dev/null ) > /dev/null 2>&1 &
+    wd=$!
+    wait "$pid" 2> /dev/null
+    rc=$?
+    kill "$wd" 2> /dev/null
+    wait "$wd" 2> /dev/null
+    [ "$rc" -gt 128 ] && rc=124
+    cat "$out"
+    echo "rc=$rc"
+  }
+
+  # arm <label> <candidate path>: red (non-zero, "not a regular file").
+  s219_arm_red() {
+    local res
+    res="$(s219_run_child "$2")"
+    case "$res" in
+      *"rc=0") fail "S219 arm '$1' — a $1 as the candidate was accepted (rc=0); the guard must test -L first, then ! -f, and say 'not a regular file'" ;;
+      *"rc=124") fail "S219 arm '$1' — the case hung on a $1 (the kind check must come before any read)" ;;
+      *"not a regular file"*) ;;
+      *) fail "S219 arm '$1' — red, but without the message 'not a regular file' (a $1 must be refused for its kind, not by an incidental check): $(printf '%s' "$res" | LC_ALL=C sed -n l | head -5 | tr '\n' '~')" ;;
+    esac
+  }
+
+  ln -s "$arm_dir/pinned-copy.yml" "$arm_dir/link-identical.yml"
+  s219_arm_red "symlink to a byte-identical pinned copy" "$arm_dir/link-identical.yml"
+
+  ln -s "$arm_dir/no-such-target.yml" "$arm_dir/link-dangling.yml"
+  s219_arm_red "dangling symlink" "$arm_dir/link-dangling.yml"
+
+  mkdir "$arm_dir/dir-candidate.yml"
+  s219_arm_red "directory" "$arm_dir/dir-candidate.yml"
+
+  if mkfifo "$arm_dir/fifo-candidate.yml" 2> /dev/null; then
+    s219_arm_red "FIFO" "$arm_dir/fifo-candidate.yml"
+  else
+    echo "    note: S219 FIFO arm skipped (mkfifo unavailable here)" >&2
+  fi
+
+  # The unchanged regular file stays green.
+  res="$(s219_run_child "$arm_dir/pinned-copy.yml")"
+  case "$res" in
+    *"not a regular file"*) fail "S219 arm 'regular file' — the guard refused an ordinary regular file" ;;
+    *"rc=0") ;;
+    *) fail "S219 arm 'regular file' — an unchanged regular pinned copy was red: $(printf '%s' "$res" | LC_ALL=C sed -n l | head -5 | tr '\n' '~')" ;;
+  esac
+fi
+
 # --- S222: regression, the Linux job is as it was, and ci.yml has no macOS job
 yml="$(ci_yml_path)"
 [ -f "$yml" ] || { fail "S222 — $yml is missing"; test_done; }
