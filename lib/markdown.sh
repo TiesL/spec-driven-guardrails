@@ -45,22 +45,26 @@
 #     not expanded; keeping the fence open is the safe direction: it quotes
 #     too much, never hides less than GitHub does). Why: a marker GitHub shows
 #     as quoted must never read as live.
-#   - An ordered list item whose number is not 1 does not open a list-item
-#     fence when the previous line was top-level paragraph text (not blank,
-#     not a fence line, not a list-item line): CommonMark lets only "1." or
-#     "1)" interrupt a paragraph (A32c). Such a line is plain text, and the
-#     indent-3 run on it then opens a top-level fence, as on GitHub. The
-#     approximation can differ from CommonMark (for example after a lazy
-#     continuation inside an earlier item); it then opens fewer list fences,
-#     so later runs open top-level fences and quote more: the safe direction.
 #   - Accepted limits: nested list prefixes ("- - ```"), list items inside a
-#     blockquote, tab expansion beyond the rule above, and a fence opened on
-#     the continuation line of a list item (not on its first line) and closed
-#     at column 0: its enclosing item's content column is not tracked across
-#     lines, so the column-0 closer is read as a closer and a marker after it
-#     can read as live where GitHub renders it inside the item
-#     (continuation-line-list-fence, follow-up #445). No other accepted limit
-#     is known to put a column-0 marker inside a fence.
+#     blockquote, tab expansion beyond the rule above, and two shapes that
+#     both need list context the lib does not track:
+#     * continuation-line-list-fence: a fence opened on the continuation line
+#       of a list item (not on its first line) and closed at column 0: the
+#       enclosing item's content column is not tracked across lines, so the
+#       column-0 closer is read as a closer and a marker after it can read as
+#       live where GitHub renders it inside the item (follow-up #445).
+#     * ordered-item-after-paragraph (shape s1, goes in the BAD direction): an
+#       ordered item numbered 2 or higher right after top-level paragraph text
+#       ("text", then "2. ```" with no blank line) cannot interrupt the
+#       paragraph on GitHub, so the indent-3 run after it opens a top-level
+#       fence there; here "2. ```" opens a list-item fence, and a marker inside
+#       the top-level fence reads as LIVE where GitHub renders it quoted.
+#       Reason: no list-context tracking. Out of the threat model (the shape
+#       is accidental at most; the gate guards against accidental quoting, not
+#       forgery). Follow-up #446 (quote under every plausible reading); #445
+#       may close with it. A32d reverted the A32c ordered-start rule because
+#       a single-shape rule moved the error onto other shapes (wrapped items,
+#       lazy lines, after a blockquote).
 #   - Blockquote first in live_text: a `> ```` line never toggles fence state.
 #
 # Portability (the suite runs on macOS: BWK awk, BSD tools, bash 3.2): no
@@ -103,9 +107,9 @@ function fence_run(s,   m) {
   return ""
 }
 
-function handle(line,   run, ind, rest, p, islist, num) {
+function handle(line,   run, ind, rest, p, islist) {
   if (fch != "") {                                       # inside a fence
-    prevpara = 0    match(line, /^ */); ind = RLENGTH
+    match(line, /^ */); ind = RLENGTH
     # A list-item fence ends with its item: a non-blank line, no tab in its
     # indent, indented less than the content column lcc (A32b). Not blanked
     # and not a closer: it is read again as a top-level line.
@@ -121,33 +125,26 @@ function handle(line,   run, ind, rest, p, islist, num) {
     }
     print ""; return
   }
-  if (mode == "live" && line ~ /^[ \t]*>/) { prevpara = 1; print ""; return }   # blockquote
+  if (mode == "live" && line ~ /^[ \t]*>/) { print ""; return }   # blockquote
   # opener at top level (indent 0 to 3), else on a list-item line
   match(line, /^ ? ? ?/); p = RLENGTH
   run = fence_run(substr(line, p + 1)); islist = 0
   if (run == "" && match(line, /^ ? ? ?([-*+]|[0-9]+[.)])[ ] ? ? ?/)) {
-    num = substr(line, 1, RLENGTH); sub(/^ */, "", num)
-    # An ordered item whose number is not 1 cannot interrupt a paragraph
-    # (CommonMark): after top-level paragraph text it is plain text, not an
-    # opener, and does not end the paragraph.
-    if (!(num ~ /^[0-9]/ && num + 0 != 1 && prevpara)) {
-      p = RLENGTH; islist = 1
-      run = fence_run(substr(line, p + 1))
-    }
+    p = RLENGTH; islist = 1
+    run = fence_run(substr(line, p + 1))
   }
   if (run != "") {
     rest = substr(line, p + 1 + length(run))
     if (!(substr(run, 1, 1) == "`" && index(rest, "`") > 0)) {    # info string rule
       fch = substr(run, 1, 1); flen = length(run)
       maxind = islist ? p + 3 : 3; lcc = islist ? p : 0
-      prevpara = 0; print ""; return
+      print ""; return
     }
   }
-  prevpara = (islist || line !~ /[^ \t]/) ? 0 : 1
   if (mode == "live") print drop_spans(line); else print line
 }
 
-BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; prevpara = 0; CR = sprintf("%c", 13) }
+BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; CR = sprintf("%c", 13) }
 {
   line = $0
   sub(CR "$", "", line)                                  # CRLF is LF

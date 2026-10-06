@@ -606,10 +606,28 @@ the next free numbers after A23.
 - **Enforcement:** S235 is a static lint (L1 exports, L2 lib prefixes, L3
   self-mutants). A class-L finding inside the guarded set is a lint defect, not
   a site to patch. S230 stays the behavioural proof, one arm per script.
-- **Also decided (A32c):** an ordered list item whose number is not 1 after
-  top-level paragraph text is not a list-fence opener (`lib/markdown.sh`
-  `handle()`); a fence opened on a list item's continuation line and closed at
-  column 0 is an accepted limit (follow-up #445).
+- **Also decided (A32c):** a fence opened on a list item's continuation line
+  and closed at column 0 is an accepted limit (follow-up #445). A32c's
+  ordered-start rule is superseded by A32d below; the locale part stands.
+
+### A32d — Revert the ordered-start rule; `ordered-item-after-paragraph` is an accepted limit (#423, round 3 of PR #443)
+- **Why:** the A32c rule (an ordered item numbered above 1 after paragraph
+  text is not a list-fence opener) fixed one shape and moved the error onto
+  neighbours: wrapped items, lazy lines and items after a blockquote read a
+  quoted marker as live. Extending a list-fence recognizer one shape at a time,
+  without list-context tracking, repeats the #422 pattern. A32c's claim that
+  declining an opener is "the safe direction" was false.
+- **Decision:** the `_MD_AWK` program in `lib/markdown.sh` is byte-identical
+  to the one reviewed at 5ea3a5b. Class-L changes (the `LC_ALL=C` prefixes and
+  exports) stay. `ordered-item-after-paragraph` (shape s1) is an accepted limit
+  that goes in the bad direction (a marker inside the top-level fence after
+  `text` / `2. ```` reads as live); it is out of the threat model (accidental
+  at most, very unlikely). Follow-up #446: quote under every plausible reading
+  (union of quoting), which may also close #445.
+- **Safe direction:** a marker GitHub renders as quoted must never read as
+  live; over-quoting is the safe error.
+- **Violated when:** a single-reading list-fence rule is added to `handle()`
+  without a union or list-context mechanism.
 
 ### A26 — Markers are produced by one command; an unreadable field is a finding (#402)
 - **Why:** the dry run on a scratch repo (release head fa1beae) showed
