@@ -1512,7 +1512,7 @@ break the text check does not. Second, comments and blank lines are allowed
 only in the leading header before `name:`; from `name:` to the end the
 content must be byte-identical to the pinned block, with nothing stripped,
 so no comment can sit inside an open YAML structure. Editing the header's
-comments stays free; `ci.yml` stays free. `ci.yml` is unchanged. `/usr/bin` is
+comments stays free. Edits to `ci.yml` stay free, within S222. `/usr/bin` is
 first on PATH, so BWK awk and BSD grep are the tools in use; mawk is installed
 for S153 only and replaces nothing. The job names a UTF-8 locale. The tool
 identity is checked inside the suite: on the macOS runner
