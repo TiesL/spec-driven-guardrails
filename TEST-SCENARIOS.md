@@ -3168,23 +3168,28 @@ something new is being added.
   arm); the closing bound becomes 3 instead of content column + 3 (lg). Not
   tested (A32b accepted limits): nested list prefixes, list items inside a
   blockquote, tab expansion beyond the tab rule
-- Round 3 of PR #443 (A32c, finding ordered-item-after-paragraph): an ordered
-  item whose number is not 1 cannot interrupt a paragraph (CommonMark), so
-  `text` / `2. ```` is one paragraph and the following indent-3 run OPENS a
-  top-level fence; the column-0 marker after it is quoted. Read as a list-item
-  opener, the marker stays live (the bad direction). Arms, each checked against
-  `gh api markdown -f mode=gfm` on 2026-10-06: (d1) `text`, `2. ````, an
-  indent-3 run, a marker, ```` ```: the marker is quoted, in `live_text`, and
-  `md_strip_fences` keeps `text` and `2. ```` while blanking the rest;
-  (d1b) the number 9 and (d1c) the delimiter `)`, same result; regression
-  arms, green on arrival: (d3) after a blank line `2. ```` is an opener,
-  (d4) after a list-item line (`1. a`, `2. ````, `x`, an indent-3 run, a
-  marker) it is an opener and the marker is live, (d5) the number 1 after a
-  paragraph is an opener, (d6) a bullet after a paragraph is an opener.
-  Red today: d1, d1b, d1c. Mutations (scratch lib with the rule applied): drop
-  the rule (d1, d1 strip, d1b, d1c red); apply it after a list-item line too
-  (d4); apply it to number 1 (d5); apply it after a blank line (d3, d4); apply
-  it to bullets (d6)
+- Round 3 of PR #443 (A32d, finding ordered-start-unsafe-direction; replaces
+  A32c's arms). The ordered-start rule is reverted, so the round-2 shape
+  (`text` / `2. ```` / indent-3 run / marker, accepted limit
+  ordered-item-after-paragraph, follow-up #446) is NOT pinned here: base reads
+  it in the bad direction and pinning that would be tautological; #446 owns
+  its acceptance test. Arms, each checked against `gh api markdown -f
+  mode=gfm` on 2026-10-06 (the oracle): a marker inside the fence of `2. ````
+  is quoted and the column-0 marker after it is live when the previous line is
+  (d2) a wrapped item line, (d3) a lazy continuation line, (d4) a blockquote,
+  (d5) an item holding a closed fence (also checked at marker level, d5b);
+  (d6) `text` / `2. ```` / a column-0 marker / an indent-3 run / a late marker:
+  the column-0 marker is live and the late one is quoted (the item ends at the
+  column-0 line, the indent-3 run opens a top-level fence). Regression arms,
+  green on arrival: (R-d3) after a blank line `2. ```` is an opener, (R-d4)
+  after a list-item line it is an opener, (R-d5) the number 1 after a
+  paragraph is an opener, (R-d6) a bullet after a paragraph is an opener. Red
+  at 4bcc497: d2 (live_text and md_strip_fences), d3, d4, d5, d5b; green with
+  the rule reverted (the `_MD_AWK` block identical to 5ea3a5b's). Mutations
+  (scratch lib): re-introduce the ordered-start rule (d2-d5 red); the prevpara
+  typo variant, the rule firing after a fence (d5, d5b red on top of d2-d4);
+  the rule applied after any line (d2-d5, R-d3, R-d4 red); drop the item-end
+  rule (la, lb, lc, le, lh, d6 red)
 
 ### S233 — CRLF and a lone CR are line endings: the CRLF body reads as the same body with LF, and a lone CR is a line break
 **Covers:** F34

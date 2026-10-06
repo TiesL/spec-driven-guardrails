@@ -118,33 +118,40 @@ md_expect "S232 lh a run indented content column + 4 does not close it" live_tex
 # no content column): an indented line inside it never ends it
 md_expect "S232 R-lr a top-level fence is not ended by an indented line" live_text "${BT}${NL}${IN}${NL}  x${NL}${BT}${NL}${AF}" "${NL}${NL}${NL}${NL}${AF}"
 
-# --- (d) an ordered item whose number is not 1, after paragraph text (A32c) ---
-# Round 2 of PR #443 (ordered-item-after-paragraph, design): in CommonMark an
-# ordered item may interrupt a paragraph only when its number is 1, so
-# `text` / `2. ```` is ONE paragraph, not a list-item opener. Read as an
-# opener, the following indent-3 run is taken as its closer and the later
-# column-0 marker stays live; GitHub OPENS a top-level fence at that run, so
-# the marker is quoted. Failing direction: a quoted marker counted as live.
-# Rule (A32c): an ordered line whose number is not 1 is not an opener when the
-# previous line is top-level paragraph text (not blank, not a fence line, not a
-# list-item line). Every expectation below was checked against
-# `gh api markdown -f mode=gfm` on 2026-10-06:
-#   d1 text / 2. ``` / (indent 3) ``` / MARKER / ```    -> <p>text 2. ```</p>, code holds MARKER
-#   d4 1. a / 2. ``` / x / (indent 3) ``` / MARKER      -> the item's code is x, MARKER is <p>
-#   d5 text / 1. ``` / (indent 3) ``` / MARKER / ```    -> a list with the code block, MARKER is <p>
-#   d3 text / blank / 2. ``` / (indent 3) ``` / MARKER  -> <ol start="2">, MARKER is <p>
-#   `3)` and `9.` behave as `2.`; a bullet after a paragraph IS an opener.
-# d1, d1b, d1c are RED today (the marker reads live). d3-d5 are regression
-# arms (green on arrival) that kill the over-broad mutants: the rule applied
-# after a list-item line (d4), applied to the number 1 (d5), applied after a
-# blank line (d3). Mutations: drop the rule (d1, d1b, d1c red); apply it after
-# a list-item line too (d4 red); apply it to number 1 (d5 red); apply it after
-# a blank line (d3 red).
-md_live "S232 d1 'text' then '2. \`\`\`': the item is a paragraph line, the indent-3 run opens a fence, the marker is quoted" "text${NL}2. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
-md_expect "S232 d1 md_strip_fences, same shape: the marker line and both runs are blanked" md_strip_fences "text${NL}2. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "text${NL}2. ${BT}"
-md_live "S232 d1b the number 9" "text${NL}9. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
-md_live "S232 d1c the delimiter ')' (3)" "text${NL}3) ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
-# R: a blank line first: '2. ```' starts a list (start=2), an opener; the run closes it, the marker is live
+# --- (d) ordered items after text, a wrapped item, a lazy line, a quote, a fence (A32d) ---
+# Round 3 of PR #443 (A32d, finding ordered-start-unsafe-direction). A32c added
+# an "ordered start after paragraph" rule; it read `2. ```` as a paragraph line
+# after a continuation line, a lazy line, a blockquote and a fence, where
+# GitHub starts a list item, so a QUOTED marker read as LIVE (the bad
+# direction). A32d reverts the rule. These arms pin the shapes the rule broke;
+# each expectation was checked against `gh api markdown -f mode=gfm` on
+# 2026-10-06 (the oracle; the same shapes are the evidence, not a CI oracle).
+# MARKER = a model-record marker (INSIDE); LATE = a column-0 marker (AFTER):
+#   s2 1. a / (indent 3) b / 2. ``` / (indent 3) MARKER / (indent 3) ``` / LATE
+#   s3 1. a / lazy / 2. ``` / ...        s4 > q / 2. ``` / ...
+#   s5 1. Example: / fence ok / 2. ``` / ...    -> MARKER in <pre><code>, LATE live
+#   s6 text / 2. ``` / MARKER (col 0) / (indent 3) ``` / LATE
+#      -> MARKER live, LATE quoted (the indent-3 run opens a top-level fence)
+# s2-s5 are RED at 4bcc497 (the ordered-start rule: MARKER read live) and
+# green once the rule is reverted; s5 also covers finding (a) (the prevpara
+# typo, a rule fired after a fence). s6 is green at both. The round-2 shape
+# (`text` / `2. ```` / indent-3 run / MARKER) is NOT pinned here: base reads it
+# in the bad direction (accepted limit ordered-item-after-paragraph, follow-up
+# #446 owns its acceptance test); pinning base's reading would be tautological.
+# Mutations: re-introduce the ordered-start rule (s2-s5 red); the prevpara
+# typo variant, the rule firing after a fence (s5 red); read s6's column-0
+# marker as quoted, i.e. let a list item outlive its content column (s6 red).
+d_run="${BT}${NL}   ${IN}${NL}   ${BT}${NL}${AF}"
+d_want="${NL}${NL}${NL}${AF}"
+md_expect "S232 d2 a wrapped item line, then '2. \`\`\`': the marker in its fence is quoted, LATE live" live_text "1. a${NL}   b${NL}2. ${d_run}" "1. a${NL}   b${NL}${d_want}"
+md_expect "S232 d2 md_strip_fences, same shape" md_strip_fences "1. a${NL}   b${NL}2. ${d_run}" "1. a${NL}   b${NL}${d_want}"
+md_expect "S232 d3 a lazy continuation line, then '2. \`\`\`'" live_text "1. a${NL}lazy${NL}2. ${d_run}" "1. a${NL}lazy${NL}${d_want}"
+md_expect "S232 d4 a blockquote, then '2. \`\`\`'" live_text "> q${NL}2. ${d_run}" "${NL}${d_want}"
+md_expect "S232 d5 an item holding a fence, then '2. \`\`\`'" live_text "1. Example:${NL}   ${BT}${NL}   ok${NL}   ${BT}${NL}2. ${d_run}" "1. Example:${NL}${NL}${NL}${NL}${NL}${NL}${NL}${AF}"
+md_live "S232 d5b same shape, marker-level check" "1. Example:${NL}   ${BT}${NL}   ok${NL}   ${BT}${NL}2. ${d_run}" "INSIDE" "AFTER"
+# s6: the marker is at column 0, i.e. outside the item: live; the indent-3 run opens a fence: LATE quoted
+md_live "S232 d6 'text' then '2. \`\`\`', a column-0 marker, an indent-3 run, LATE: the marker is live, LATE quoted" "text${NL}2. ${BT}${NL}${IN}${NL}   ${BT}${NL}${AF}" "AFTER" "INSIDE"
+# R: after a blank line '2. ```' starts a list (start=2): an opener, the run closes it, the marker after it is live
 md_live "S232 R-d3 after a blank line '2. \`\`\`' IS a list-item opener (the marker after its closing run is live)" "text${NL}${NL}2. ${BT}${NL}   ${BT}${NL}${AF}" "" "AFTER"
 # R: after a list-item line the same text is a list-item opener (content column 3): AFTER is live
 md_live "S232 R-d4 after a list-item line '2. \`\`\`' IS an opener (the marker after its closing run is live)" "1. a${NL}2. ${BT}${NL}   x${NL}   ${BT}${NL}${AF}" "" "AFTER"
