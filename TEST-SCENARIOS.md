@@ -3045,6 +3045,34 @@ something new is being added.
   a `-o` result, the gate's `grep -qx` on stage names, the `sed` after a
   `grep -o`, the first and the last `sed` of `normalize_model` (BSD sed
   only reads past the start of an anchored match once a match is found)
+- Round 3 of PR #443 (A32c; findings c-locale-grep-callers round 2,
+  lib-normalize-locale round 2, normalize-sed1-untested, collector-cell-locale):
+  the four scripts export `LC_ALL=C` as their first statement, so these arms
+  go red when that export is removed from their script. Gate: a PR description
+  (and a PR title) of `x<bytes>y Closes #239` finds #239 (Discovery recorded
+  only there) and prints nothing, as under `LC_ALL=C` (the raw-title and
+  description closing-keyword grep, line 161); a Review record with effort
+  `low<bytes>` on the same model as Implementation `high` gives no
+  lower-effort finding. Collector: the FULL output, evidence column and stderr
+  included, is byte-identical in both locales for the Test record at
+  `model="claude-sonnet-5<bytes>"` (no status-only workaround), and for two
+  closing issues whose Review efforts are `low<bytes>` against `low` (the
+  conflict verdict flips when `tr` cuts the value) and against `high` (the
+  evidence text shows the cut value). Lib: `effort_rank "low<bytes>"` prints
+  nothing with an empty stderr in both locales; `normalize_model` of values
+  that do NOT start with `claude` (`opus-5<bytes>`, `<bytes>claude-opus-5`,
+  `claude<bytes>-opus`, `x<bytes>`) is identical in both locales with an empty
+  stderr (BSD `sed` aborts on input whose anchored match fails before the
+  byte; QA's earlier "equivalent" call for the first `sed` was wrong). Red
+  today on a macOS host: the gate arms, the collector arms and the
+  `effort_rank` arm; the `normalize_model` arm is green on arrival and kills
+  the scratch mutant that drops the first `sed` prefix (via `MR_LIB`). Not
+  behaviourally reachable, so guarded by S235 alone: the staleness script's
+  and `review-rounds.sh`'s export (their remaining unprefixed commands read
+  numbers and label names); removing either export leaves S230 and S234 green
+  and S235 red. Mutations killed (scratch tree with the A32c fix applied): gate
+  export removed (4 failing assertions), collector export removed (12),
+  `effort_rank` prefix removed (4), first `sed` prefix removed (16)
 
 ### S231 — a live_text failure is visible: a model-record: finding in the gate, indeterminate in the collector and the staleness script
 **Covers:** F34, F35, F39
@@ -3140,6 +3168,23 @@ something new is being added.
   arm); the closing bound becomes 3 instead of content column + 3 (lg). Not
   tested (A32b accepted limits): nested list prefixes, list items inside a
   blockquote, tab expansion beyond the tab rule
+- Round 3 of PR #443 (A32c, finding ordered-item-after-paragraph): an ordered
+  item whose number is not 1 cannot interrupt a paragraph (CommonMark), so
+  `text` / `2. ```` is one paragraph and the following indent-3 run OPENS a
+  top-level fence; the column-0 marker after it is quoted. Read as a list-item
+  opener, the marker stays live (the bad direction). Arms, each checked against
+  `gh api markdown -f mode=gfm` on 2026-10-06: (d1) `text`, `2. ````, an
+  indent-3 run, a marker, ```` ```: the marker is quoted, in `live_text`, and
+  `md_strip_fences` keeps `text` and `2. ```` while blanking the rest;
+  (d1b) the number 9 and (d1c) the delimiter `)`, same result; regression
+  arms, green on arrival: (d3) after a blank line `2. ```` is an opener,
+  (d4) after a list-item line (`1. a`, `2. ````, `x`, an indent-3 run, a
+  marker) it is an opener and the marker is live, (d5) the number 1 after a
+  paragraph is an opener, (d6) a bullet after a paragraph is an opener.
+  Red today: d1, d1b, d1c. Mutations (scratch lib with the rule applied): drop
+  the rule (d1, d1 strip, d1b, d1c red); apply it after a list-item line too
+  (d4); apply it to number 1 (d5); apply it after a blank line (d3, d4); apply
+  it to bullets (d6)
 
 ### S233 — CRLF and a lone CR are line endings: the CRLF body reads as the same body with LF, and a lone CR is a line break
 **Covers:** F34
@@ -3183,3 +3228,33 @@ something new is being added.
   `marker_scan` failure return removed (the sweep); `LC_ALL=C` removed from the
   `tr '\001' '\n'` or from the done-marker `grep` (the byte arm). Not
   asserted: the wording of the warning
+
+### S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the two text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked
+**Covers:** F34, F42
+- Given: the four scripts `skills/pre-merge-review/model-record-gate.sh`,
+  `compliance-evidence.sh`, `role-label-staleness.sh`, `review-rounds.sh` and
+  the two libs `lib/markdown.sh`, `lib/model-record.sh`; the static lint in
+  `test/fixtures/locale-lint.sh`
+- When: the lint reads them (no network, no locale needed)
+- Then: (L1) each script has `export LC_ALL=C` as its first statement after
+  the shebang, comments, blank lines and `set` lines, and nowhere assigns
+  LC_ALL to anything but C or unsets it; (L2) every command-position awk,
+  grep, sed, tr, cut, sort and uniq in the two libs is directly preceded by
+  `LC_ALL=C `, grep is always `grep -a`, unless the line carries
+  `# locale-exempt: <reason>` (a non-empty reason; the allow-list is empty
+  today); the number of sites checked is printed and must be above zero (and at
+  least 11, the count at head 5ea3a5b). (L3) the lint is red on a scratch copy
+  with the export removed from each script in turn, with a non-C export, with
+  an unset, and with one lib prefix removed (`effort_rank`'s `tr`,
+  `normalize_model`'s first `sed` and `tr`, both `markdown.sh` awks, both
+  parser awks); and on a synthetic tree and snippets, each of the seven
+  commands bare in every command position (line start, after a pipe, `$(`,
+  `"$(`, `;`, `&&`, `||`, a subshell, `then`, `if`, a backtick, another env
+  assignment, a case arm) is a violation, while the same text prefixed, named
+  only as an argument, in a string, in single quotes, in a comment, or exempt
+  with a reason is not (an exemption with no reason is). The real-tree L3
+  mutants need a green real baseline and are reported once as not run while
+  L1/L2 are red. Red today: five L1/L2 violations (the four missing exports and
+  `effort_rank`'s `tr`). Accepted limits of the lint: `${...}` skipped to its
+  first `}`, a grep continued on a backslash line is not checked for `-a`,
+  heredoc bodies read as code

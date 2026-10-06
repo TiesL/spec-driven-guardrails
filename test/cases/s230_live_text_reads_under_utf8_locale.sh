@@ -130,6 +130,52 @@ for name in $byte_names; do
   [ ! -s "$SANDBOX/nm.u.err" ] || fail "S230 lib/normalize_model/$name — stderr under LANG=$MD_UTF8 is not empty: $(LC_ALL=C head -c 200 "$SANDBOX/nm.u.err")"
 done
 
+# normalize-sed1-untested (round 2 of PR #443): QA's earlier "equivalent" call
+# for the FIRST sed of normalize_model was wrong. BSD sed aborts with "RE error:
+# illegal byte sequence" whenever the anchored match (^[[:space:]]*claude)
+# fails before it reaches the byte, so a value that does NOT start with
+# "claude" is the one that bites; "claude-opus-5<bytes>" above never does.
+# Values: no claude prefix, the bytes first, the bytes inside the word. Each
+# must normalize to the same non-empty string under both locales with nothing
+# on stderr. (R: green on arrival, the prefix is there; the scratch mutant
+# `sed -E 's/^[[:space:]]*claude...` without it, via MR_LIB, is red.)
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  for val in "opus-5${b}" "${b}claude-opus-5" "claude${b}-opus" "x${b}"; do
+    # shellcheck disable=SC2016
+    env LC_ALL=C bash -c '. "$1"; normalize_model "$2"' _ "$mr_lib" "$val" > "$SANDBOX/nm.c.out" 2> "$SANDBOX/nm.c.err"
+    nm_c="$(cat "$SANDBOX/nm.c.out")"
+    [ -n "$nm_c" ] || fail "S230 lib/normalize_model-noclaude/$name/$(printf '%q' "$val") — baseline under LC_ALL=C is empty (a broken baseline)"
+    # shellcheck disable=SC2016
+    env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" bash -c '. "$1"; normalize_model "$2"' _ "$mr_lib" "$val" > "$SANDBOX/nm.u.out" 2> "$SANDBOX/nm.u.err"
+    nm_u="$(cat "$SANDBOX/nm.u.out")"
+    [ "$nm_u" = "$nm_c" ] || fail "S230 lib/normalize_model-noclaude/$name/$(printf '%q' "$val") — under LANG=$MD_UTF8 it normalizes to $(printf '%q' "$nm_u"), under LC_ALL=C to $(printf '%q' "$nm_c") (a sed ran without the C locale)"
+    [ ! -s "$SANDBOX/nm.u.err" ] || fail "S230 lib/normalize_model-noclaude/$name/$(printf '%q' "$val") — stderr under LANG=$MD_UTF8 is not empty: $(LC_ALL=C head -c 200 "$SANDBOX/nm.u.err")"
+  done
+done
+
+# --- effort_rank (lib/model-record.sh:57), lib-normalize-locale round 2 -------
+# `effort_rank "low<bytes>"` prints nothing under LC_ALL=C (not a known
+# effort). Under a UTF-8 LANG an unprefixed BSD `tr` cuts the value at the byte
+# ("Illegal byte sequence" on stderr) and the rest reads as `low`: rank 0, a
+# false "Review recorded lower effort" finding. RED today on a macOS host.
+# Control: a plain `HIGH` ranks 2 (so the function is not a stub).
+# shellcheck disable=SC2016
+env LC_ALL=C bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "HIGH" > "$SANDBOX/er.out" 2>&1
+[ "$(cat "$SANDBOX/er.out")" = "2" ] || fail "S230 lib/effort_rank — control: HIGH should rank 2 under LC_ALL=C, got $(printf '%q' "$(cat "$SANDBOX/er.out")")"
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  # shellcheck disable=SC2016
+  env LC_ALL=C bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "low${b}" > "$SANDBOX/er.c.out" 2> "$SANDBOX/er.c.err"
+  er_c="$(cat "$SANDBOX/er.c.out")"
+  [ -z "$er_c" ] || fail "S230 lib/effort_rank/$name — baseline under LC_ALL=C: low+bytes is not a known effort and must rank as nothing, got $(printf '%q' "$er_c")"
+  # shellcheck disable=SC2016
+  env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" bash -c '. "$1"; effort_rank "$2"' _ "$mr_lib" "low${b}" > "$SANDBOX/er.u.out" 2> "$SANDBOX/er.u.err"
+  er_u="$(cat "$SANDBOX/er.u.out")"
+  [ "$er_u" = "$er_c" ] || fail "S230 lib/effort_rank/$name — under LANG=$MD_UTF8 'low'+bytes ranks as $(printf '%q' "$er_u"), under LC_ALL=C as nothing (tr cut the value at the byte)"
+  [ ! -s "$SANDBOX/er.u.err" ] || fail "S230 lib/effort_rank/$name — stderr under LANG=$MD_UTF8 is not empty: $(LC_ALL=C head -c 200 "$SANDBOX/er.u.err")"
+done
+
 # =========================================================================
 # 2. gate: main path and role-play path
 # =========================================================================
@@ -266,6 +312,61 @@ for name in $byte_names; do
   done
 done
 
+# --- gate: the closing keyword in the RAW title and description (line 161) ---
+# Round 2 of PR #443 (c-locale-grep-callers, medium): the gate finds the
+# closing issues with a grep over the raw PR title and description. BSD grep in
+# a UTF-8 locale finds nothing on a line where an invalid byte comes BEFORE
+# `Closes #239`; the issue is then never read, and the gate prints a false
+# `no record found for stage Discovery` and the blocking `role-played: stages
+# missing: Discovery`. Discovery is recorded on #239 only, the other four
+# stages on the PR; under LC_ALL=C the gate prints nothing. RED today on a
+# macOS host. After A32c the script's own `export LC_ALL=C` fixes it; the arm
+# is red again if that line is removed.
+for name in $byte_names; do
+  ph="$(placeholder_of "$name")"
+  for where in description title; do
+    case "$where" in
+      description) kw_title="Fix: something"; kw_desc="x${ph}y Closes #239" ;;
+      title) kw_title="x${ph}y Closes #239: something"; kw_desc="no keyword in the description" ;;
+    esac
+    rm -f "${FAKE_GH_DATA:?}"/*.json
+    json_pr "$FAKE_GH_DATA/pr-246.json" "$kw_title" "$kw_desc"
+    json_comments "$FAKE_GH_DATA/reviews-246.json" "$(rec Review opus "floor-basis=\"stronger\"")"
+    json_comments "$FAKE_GH_DATA/comments-239.json" "$(rec Discovery sonnet)"
+    json_comments "$FAKE_GH_DATA/comments-246.json" "$(rec Planning sonnet)" "$(rec Test sonnet)" "$(rec Implementation sonnet)"
+    gate_run C
+    c_out="$GATE_OUT"
+    [ -z "$c_out" ] || fail "S230 gate keyword-$where/$name — baseline under LC_ALL=C: the keyword after the bytes must still find #239 and give no finding, got: $c_out"
+    # control: without the Discovery record on #239 the gate must say so (proves #239 is read)
+    json_comments "$FAKE_GH_DATA/comments-239.json"
+    gate_run C
+    md_has "$GATE_OUT" "no record found for stage Discovery" || fail "S230 gate keyword-$where/$name — control under LC_ALL=C: without the Discovery record on #239 the gate must name the missing stage, got: $GATE_OUT"
+    json_comments "$FAKE_GH_DATA/comments-239.json" "$(rec Discovery sonnet)"
+    gate_run utf8
+    [ "$GATE_RC" -eq 0 ] || fail "S230 gate keyword-$where/$name — exit $GATE_RC with LC_ALL unset and LANG=$MD_UTF8"
+    [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate keyword-$where/$name — the closing keyword in the raw PR $where is read differently under LANG=$MD_UTF8 than under LC_ALL=C (the grep over the raw text ran without the C locale): '$GATE_OUT' vs '$c_out'"
+  done
+done
+
+# --- gate: effort_rank on the Review record (round 2, lib-normalize-locale) ---
+# The Reviewer's reproduction: Implementation `opus`/`high`, Review `opus`/`low<bytes>`.
+# Under LC_ALL=C `low<bytes>` is not a known effort and the gate prints nothing;
+# an unprefixed BSD tr turns it into `low` and the gate prints a false
+# "Review recorded lower effort" finding.
+for name in $byte_names; do
+  ph="$(placeholder_of "$name")"
+  rm -f "${FAKE_GH_DATA:?}"/*.json
+  json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "Closes #239"
+  json_comments "$FAKE_GH_DATA/reviews-246.json" "<!-- model-record: stage=Review model=\"opus\" effort=\"low${ph}\" floor-basis=\"ok\" -->"
+  json_comments "$FAKE_GH_DATA/comments-239.json" "$(rec Discovery sonnet)"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "$(rec Planning sonnet)" "$(rec Test sonnet)" "$(rec Implementation opus)"
+  gate_run C
+  c_out="$GATE_OUT"
+  md_has "$c_out" "recorded lower effort" && fail "S230 gate effort/$name — baseline under LC_ALL=C: low+bytes is not a known effort, so no lower-effort finding is expected, got: $c_out"
+  gate_run utf8
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate effort/$name — the Review effort low+bytes is read differently under LANG=$MD_UTF8 than under LC_ALL=C (effort_rank's tr ran without the C locale): '$GATE_OUT' vs '$c_out'"
+done
+
 # =========================================================================
 # 3. collector: gate rows 1-3
 # =========================================================================
@@ -277,19 +378,29 @@ ce_script="$TEST_REPO_ROOT/compliance-evidence.sh"
 script="$ce_script"
 export CE_ID=S230
 
-# row_status of the shared fixture runs sed in the ambient locale, which errors
-# on an invalid byte in the evidence text; this one pins LC_ALL=C.
-row_st() { # output n
-  printf '%s\n' "$1" | LC_ALL=C sed -n "$(($2 + 2))p" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/'
-}
-ce_rows() { # mode: prints "<row1>/<row2>/<row3>" statuses of the last-built fake gh
-  local mode="$1" bin out
+# The comparison is the collector's FULL stdout (the evidence column of every
+# row included) and its stderr, byte for byte, between the two locales
+# (round 2 of PR #443, collector-cell-locale: `cell()` ran sed/tr/cut in the
+# ambient locale, so BSD sed aborted on the byte and the evidence cell came out
+# empty). No status-only workaround: the baseline's statuses are read with a
+# pinned sed, but the compared text is everything.
+ce_run_to() { # mode outfile errfile: runs the collector on the last-built fake gh
+  local mode="$1" bin
   bin="$(cat "$FAKEGH_OUT")"
   case "$mode" in
-    C) out="$(env LC_ALL=C PATH="$bin:$PATH" "$ce_script" 279 2>/dev/null)" ;;
-    utf8) out="$(env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" PATH="$bin:$PATH" "$ce_script" 279 2>/dev/null)" ;;
+    C) env LC_ALL=C PATH="$bin:$PATH" "$ce_script" 279 > "$2" 2> "$3" ;;
+    utf8) env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" PATH="$bin:$PATH" "$ce_script" 279 > "$2" 2> "$3" ;;
   esac
-  printf '%s/%s/%s' "$(row_st "$out" 1)" "$(row_st "$out" 2)" "$(row_st "$out" 3)"
+}
+ce_status_of() { # file n: the status column of gate row n, pinned to the C locale
+  LC_ALL=C sed -n "$(($2 + 2))p" "$1" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/'
+}
+ce_compare() { # label: C and utf8 output of the last-built fake gh must be identical
+  local label="$1"
+  ce_run_to C "$SANDBOX/ce.c.out" "$SANDBOX/ce.c.err"
+  ce_run_to utf8 "$SANDBOX/ce.u.out" "$SANDBOX/ce.u.err"
+  cmp -s "$SANDBOX/ce.c.out" "$SANDBOX/ce.u.out" || fail "S230 $label — the collector's full output (evidence text included) differs under LANG=$MD_UTF8 from LC_ALL=C: $(LC_ALL=C diff "$SANDBOX/ce.c.out" "$SANDBOX/ce.u.out" | LC_ALL=C head -c 600 | LC_ALL=C tr '\n' ' ')"
+  cmp -s "$SANDBOX/ce.c.err" "$SANDBOX/ce.u.err" || fail "S230 $label — the collector's stderr differs under LANG=$MD_UTF8 from LC_ALL=C: $(LC_ALL=C head -c 300 "$SANDBOX/ce.u.err")"
 }
 for name in $byte_names; do
   b="$(bytes_of "$name")"
@@ -301,10 +412,29 @@ $(mk Test "claude-sonnet-5${b}" medium)
 $(mk Implementation claude-sonnet-5 medium)
 $(mk Review claude-sonnet-5 medium "$FB")
 <!-- pre-merge-review:done sha=$SHA -->" "$(mk Discovery claude-sonnet-5 low)" >/dev/null 2>&1
-  c_rows="$(ce_rows C)"
+  ce_run_to C "$SANDBOX/ce.c.out" "$SANDBOX/ce.c.err"
+  c_rows="$(ce_status_of "$SANDBOX/ce.c.out" 1)/$(ce_status_of "$SANDBOX/ce.c.out" 2)/$(ce_status_of "$SANDBOX/ce.c.out" 3)"
   [ "$c_rows" = "evidenced/evidenced/evidenced" ] || fail "S230 collector/$name — baseline under LC_ALL=C: rows 1-3 should be evidenced/evidenced/evidenced, got $c_rows (a broken fixture)"
-  u_rows="$(ce_rows utf8)"
-  [ "$u_rows" = "$c_rows" ] || fail "S230 collector/$name — rows 1-3 under LANG=$MD_UTF8 (LC_ALL unset) are $u_rows, under LC_ALL=C $c_rows: live_text ran without the C locale"
+  ce_compare "collector/$name"
+done
+
+# --- collector: issue-side efforts holding a byte (compliance-evidence.sh:622) -
+# Two closing issues each record a Review marker. The collector lower-cases
+# each issue-side effort with `tr` and calls the two issues in conflict when
+# they differ. BSD tr cuts `low<bytes>` to `low` under a UTF-8 LANG, so against
+# an issue that says plain `low` the conflict check sees agreement where
+# LC_ALL=C sees a conflict (the evidence then also shows a cut value). Pairs:
+# `low<bytes>` vs `low` (the verdict flips) and vs `high` (the conflict stays,
+# the effort text printed in the evidence differs). RED today on a macOS host.
+two="Closes #265, closes #266"
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  for other in low high; do
+    ce "$two" "$(mk Implementation claude-sonnet-5 medium)" "$(mk Review claude-sonnet-5 "low${b}" 'floor-basis="x"')" "$(mk Review claude-sonnet-5 "$other" 'floor-basis="x"')" >/dev/null 2>&1
+    ce_run_to C "$SANDBOX/ce.c.out" "$SANDBOX/ce.c.err"
+    [ "$(ce_status_of "$SANDBOX/ce.c.out" 2)" = "indeterminate" ] || fail "S230 collector-effort/$name/$other — baseline under LC_ALL=C: 'low'+bytes against '$other' is an effort conflict (row 2 indeterminate), got '$(ce_status_of "$SANDBOX/ce.c.out" 2)' (a broken fixture)"
+    ce_compare "collector-effort/$name/$other"
+  done
 done
 
 # --- collector: the bytes BEFORE the marker, in every body source ------------

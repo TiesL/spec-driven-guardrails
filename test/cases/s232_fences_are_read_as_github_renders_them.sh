@@ -118,4 +118,39 @@ md_expect "S232 lh a run indented content column + 4 does not close it" live_tex
 # no content column): an indented line inside it never ends it
 md_expect "S232 R-lr a top-level fence is not ended by an indented line" live_text "${BT}${NL}${IN}${NL}  x${NL}${BT}${NL}${AF}" "${NL}${NL}${NL}${NL}${AF}"
 
+# --- (d) an ordered item whose number is not 1, after paragraph text (A32c) ---
+# Round 2 of PR #443 (ordered-item-after-paragraph, design): in CommonMark an
+# ordered item may interrupt a paragraph only when its number is 1, so
+# `text` / `2. ```` is ONE paragraph, not a list-item opener. Read as an
+# opener, the following indent-3 run is taken as its closer and the later
+# column-0 marker stays live; GitHub OPENS a top-level fence at that run, so
+# the marker is quoted. Failing direction: a quoted marker counted as live.
+# Rule (A32c): an ordered line whose number is not 1 is not an opener when the
+# previous line is top-level paragraph text (not blank, not a fence line, not a
+# list-item line). Every expectation below was checked against
+# `gh api markdown -f mode=gfm` on 2026-10-06:
+#   d1 text / 2. ``` / (indent 3) ``` / MARKER / ```    -> <p>text 2. ```</p>, code holds MARKER
+#   d4 1. a / 2. ``` / x / (indent 3) ``` / MARKER      -> the item's code is x, MARKER is <p>
+#   d5 text / 1. ``` / (indent 3) ``` / MARKER / ```    -> a list with the code block, MARKER is <p>
+#   d3 text / blank / 2. ``` / (indent 3) ``` / MARKER  -> <ol start="2">, MARKER is <p>
+#   `3)` and `9.` behave as `2.`; a bullet after a paragraph IS an opener.
+# d1, d1b, d1c are RED today (the marker reads live). d3-d5 are regression
+# arms (green on arrival) that kill the over-broad mutants: the rule applied
+# after a list-item line (d4), applied to the number 1 (d5), applied after a
+# blank line (d3). Mutations: drop the rule (d1, d1b, d1c red); apply it after
+# a list-item line too (d4 red); apply it to number 1 (d5 red); apply it after
+# a blank line (d3 red).
+md_live "S232 d1 'text' then '2. \`\`\`': the item is a paragraph line, the indent-3 run opens a fence, the marker is quoted" "text${NL}2. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
+md_expect "S232 d1 md_strip_fences, same shape: the marker line and both runs are blanked" md_strip_fences "text${NL}2. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "text${NL}2. ${BT}"
+md_live "S232 d1b the number 9" "text${NL}9. ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
+md_live "S232 d1c the delimiter ')' (3)" "text${NL}3) ${BT}${NL}   ${BT}${NL}${IN}${NL}${BT}" "INSIDE" "text"
+# R: a blank line first: '2. ```' starts a list (start=2), an opener; the run closes it, the marker is live
+md_live "S232 R-d3 after a blank line '2. \`\`\`' IS a list-item opener (the marker after its closing run is live)" "text${NL}${NL}2. ${BT}${NL}   ${BT}${NL}${AF}" "" "AFTER"
+# R: after a list-item line the same text is a list-item opener (content column 3): AFTER is live
+md_live "S232 R-d4 after a list-item line '2. \`\`\`' IS an opener (the marker after its closing run is live)" "1. a${NL}2. ${BT}${NL}   x${NL}   ${BT}${NL}${AF}" "" "AFTER"
+# R: the number 1 may interrupt a paragraph: an opener, the marker after its closing run is live
+md_live "S232 R-d5 after a paragraph '1. \`\`\`' IS an opener (the marker after its closing run is live)" "text${NL}1. ${BT}${NL}   ${BT}${NL}${AF}" "" "AFTER"
+# R: a bullet may interrupt a paragraph too
+md_live "S232 R-d6 after a paragraph '- \`\`\`' IS an opener (the marker after its closing run is live)" "text${NL}- ${BT}${NL}  ${BT}${NL}${AF}" "" "AFTER"
+
 test_done
