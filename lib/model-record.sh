@@ -7,14 +7,12 @@
 #
 #   normalize_model <label>      model label -> comparable form (moved
 #                                unchanged from both scripts, #268)
-#   effort_rank <value>          low|medium|high -> 0|1|2; anything else
-#                                prints nothing (unknown: no claim)
 #   marker_find <Stage> <text>   every well-formed `model-record` marker of
 #                                that stage, one per line
 #   marker_scan <text>           every `model-record` marker, well-formed or
 #                                malformed, with its stage token
 #   marker_attr <marker> <name>  the quoted value of one attribute
-#   marker_emit <Stage> <model> <effort> [<floor-basis>]
+#   marker_emit <Stage> <model> [<floor-basis>]
 #                                THE way to produce a marker line (#402,
 #                                A26; wrapper: skills/pre-merge-review/
 #                                model-record-emit.sh): the one valid line,
@@ -51,15 +49,6 @@ normalize_model() {
     | LC_ALL=C sed -E 's/-[0-9]{8}$//' \
     | LC_ALL=C sed -E 's/[^a-z0-9]+/ /g' \
     | LC_ALL=C sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
-}
-
-effort_rank() {
-  case "$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
-    low) printf '0' ;;
-    medium) printf '1' ;;
-    high) printf '2' ;;
-  esac
-  return 0
 }
 
 
@@ -270,14 +259,13 @@ marker_scan() {
   return 0
 }
 
-# marker_emit <Stage> <model> <effort> [<floor-basis>] (#402, A26): THE way
+# marker_emit <Stage> <model> [<floor-basis>] (#402, A26; no effort, #424): THE way
 # to produce a marker line; nobody types one. Prints exactly one line,
-#   <!-- model-record: stage=<Stage> model="<model>" effort="<effort>"[ floor-basis="<sentence>"] -->
+#   <!-- model-record: stage=<Stage> model="<model>"[ floor-basis="<sentence>"] -->
 # or prints nothing, gives a one-line reason on stderr and returns 2.
 # Refused: a stage other than the five names (it is emitted bare); a model
 # that is empty, over 200 characters or not one token of [A-Za-z0-9._:@/+-]
-# (a model id; no space, quote, `=` or control byte); an effort other than
-# low|medium|high|unknown; a floor-basis missing or blank on Review or given
+# (a model id; no space, quote, `=` or control byte);; a floor-basis missing or blank on Review or given
 # on any other stage (A24); a floor-basis with a double quote (it would end
 # the value) or a control byte (newline, tab, U+001E, ...), or over 500
 # bytes. Nothing else: `>`, `<`, `--`, `-->`, `<!--`, `=` and non-ASCII text
@@ -288,10 +276,10 @@ marker_scan() {
 # does not read back exactly is refused, never printed.
 marker_emit() {
   local LC_ALL=C
-  local stage="${1-}" model="${2-}" effort="${3-}" fb="${4-}" have_fb=0 line got tab=$'\t'
-  [ "$#" -ge 4 ] && have_fb=1
-  if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-    echo "marker_emit: usage: marker_emit <Stage> <model> <effort> [<floor-basis>]" >&2
+  local stage="${1-}" model="${2-}" fb="${3-}" have_fb=0 line got tab=$'\t'
+  [ "$#" -ge 3 ] && have_fb=1
+  if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+    echo "marker_emit: usage: marker_emit <Stage> <model> [<floor-basis>]" >&2
     return 2
   fi
   case "$stage" in
@@ -311,16 +299,9 @@ marker_emit() {
       return 2
       ;;
   esac
-  case "$effort" in
-    low | medium | high | unknown) : ;;
-    *)
-      echo "marker_emit: effort must be low, medium, high or unknown (got '$effort')" >&2
-      return 2
-      ;;
-  esac
   if [ "$stage" = Review ]; then
     if [ "$have_fb" -eq 0 ]; then
-      echo "marker_emit: a Review marker needs a floor-basis: one sentence on why this model and effort clear Implementation's" >&2
+      echo "marker_emit: a Review marker needs a floor-basis: one sentence on why this model clears Implementation's" >&2
       return 2
     fi
     case "$fb" in
@@ -348,14 +329,13 @@ marker_emit() {
     echo "marker_emit: only a Review marker carries a floor-basis (stage is $stage)" >&2
     return 2
   fi
-  line="<!-- model-record: stage=$stage model=\"$model\" effort=\"$effort\""
+  line="<!-- model-record: stage=$stage model=\"$model\""
   [ "$have_fb" -eq 1 ] && line="$line floor-basis=\"$fb\""
   line="$line -->"
   # the round trip: never print a line the parser cannot read back
   got="$(marker_find "$stage" "$line$MARKER_SEP")" && [ "$got" = "$line" ] \
     && got="$(marker_scan "$line$MARKER_SEP")" && [ "$got" = "ok${tab}$stage${tab}$line" ] \
     && got="$(marker_attr "$line" model)" && [ "$got" = "$model" ] \
-    && got="$(marker_attr "$line" effort)" && [ "$got" = "$effort" ] \
     && got="$(marker_attr "$line" floor-basis)" && [ "$got" = "$fb" ] || {
     echo "marker_emit: the line would not read back through lib/model-record.sh unchanged, so it is not printed" >&2
     return 2
