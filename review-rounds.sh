@@ -30,6 +30,7 @@
 # Needs gh; the --jq filtering is gh's own. Bash 3.2, BSD tools.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 usage() { echo "usage: review-rounds.sh <pr-number> [<issue-number>] (numbers must be positive integers)" >&2; exit 0; }
 [ $# -ge 1 ] && [ $# -le 2 ] || usage
@@ -53,47 +54,7 @@ fi
 # shellcheck source=lib/model-record.sh
 . "$script_dir/lib/model-record.sh"
 
-# live_text <body>: the body with fenced, tilde-fenced, code-span and blockquote
-# text blanked (same as role-label-staleness.sh).
-live_text() {
-  printf '%s\n' "$1" | awk '
-    function drop_spans(s,   out, n, tick, after, p, q, r) {
-      out = ""
-      while (match(s, /`+/)) {
-        n = RLENGTH; tick = substr(s, RSTART, n)
-        out = out substr(s, 1, RSTART - 1)
-        after = substr(s, RSTART + n)
-        p = 0; r = after; q = 0
-        while (match(r, /`+/)) {
-          if (RLENGTH == n) { p = q + RSTART; break }
-          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
-        }
-        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
-        else        { out = out " ";  s = substr(after, p + n) }
-      }
-      return out s
-    }
-    BEGIN { fch = ""; flen = 0 }
-    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
-    {
-      line = $0
-      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
-        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        if (length(m) >= 3) {
-          ch = substr(m, 1, 1); len = length(m)
-          rest = substr(line, RSTART + RLENGTH)
-          if (fch == "") {                                  # open: any info string allowed
-            fch = ch; flen = len; print ""; next
-          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
-          }
-        }
-      }
-      if (fch != "") { print ""; next }
-      print drop_spans(line)
-    }
-  '
-}
+# live_text comes from lib/markdown.sh through lib/model-record.sh (#423).
 
 # rr_rounds: THE round logic (A37). Reads rows on stdin, one per body:
 #   created_at<TAB>source<TAB>url<TAB>body
@@ -105,9 +66,9 @@ rr_rounds() {
   while IFS=$'\t' read -r ts src _ body; do
     [ -n "$ts" ] || continue
     seq=$((seq + 1))
-    body="$(printf '%s' "$body" | tr '\001' '\n')"
+    body="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')"
     body="${body//$MARKER_SEP/}"
-    live="$(live_text "$body")"
+    live="$(live_text "$body")" || return 1
     scan="$(marker_scan "$live$MARKER_SEP")" || return 1
     first="${scan%%$'\n'*}"
     kind=""
@@ -117,7 +78,7 @@ rr_rounds() {
         Review) kind=R ;;
         Planning) kind=P ;;
       esac
-    elif grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
+    elif LC_ALL=C grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
       kind=R
     fi
     [ -n "$kind" ] || continue

@@ -87,6 +87,7 @@
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 pr_number="${1:?usage: model-record-gate.sh <pr-number>}"
 
@@ -194,84 +195,10 @@ fi
 # issue over a genuinely newer one on the PR — backwards from the
 # typical case this reorders toward. Recorded as Technical debt (PRD.md)
 # rather than chasing full generality here.
-# live_text() — copied verbatim from compliance-evidence.sh, the same
-# quoted-text rule (fenced code, inline code spans and blockquotes are
-# illustration, not live markers). A copy, not a shared lib, by this repo's
-# convention for scripts shipped to adopted projects (see
-# role-label-staleness.sh); test/cases/s153_live_text_mawk_portability.sh
-# asserts the copies stay byte-identical.
-live_text() {
-  printf '%s\n' "$1" | awk '
-    function drop_spans(s,   out, n, tick, after, p, q, r) {
-      out = ""
-      while (match(s, /`+/)) {
-        n = RLENGTH; tick = substr(s, RSTART, n)
-        out = out substr(s, 1, RSTART - 1)
-        after = substr(s, RSTART + n)
-        # first backtick run in "after" of length exactly n
-        p = 0; r = after; q = 0
-        while (match(r, /`+/)) {
-          if (RLENGTH == n) { p = q + RSTART; break }
-          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
-        }
-        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
-        else        { out = out " ";  s = substr(after, p + n) }
-      }
-      return out s
-    }
-    BEGIN { fch = ""; flen = 0 }
-    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
-    {
-      line = $0
-      # Issue #319, two independent mawk defects, neither worked around
-      # with an mawk-specific code path:
-      #
-      # (1) the mawk regex compiler panics on an unbounded-lower-bound
-      # interval `{n,}` combined with alternation in a group
-      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy
-      # under mawk (it matches exactly n, not "n or more") — silently
-      # truncating a longer fence run and corrupting flen. Two top-level
-      # alternatives using `+` (which every awk, mawk included, matches
-      # greedily) dodge both. `+` alone would now also match a 1- or
-      # 2-character run the original `{3,}`-anchored regex never did
-      # (CommonMark fences need >= 3), so the `length(m) >= 3` guard
-      # below is load-bearing, not defensive: without it, an inline code
-      # span opening a line (e.g. `` `x` is code ``) would itself open an
-      # unclosed fence and blank every line after it, including a real
-      # marker (test/cases/s153_live_text_mawk_portability.sh G5). For a
-      # run already >= 3, RSTART/RLENGTH match the original regex under
-      # gawk exactly (verified: a 5-character fence run no longer
-      # truncates to 3).
-      #
-      # (2) found afterward: the leading `{0,3}` itself does not parse at
-      # all on an older mawk build (1.3.4 20200120, the default `awk` on
-      # Ubuntu 22.04, among others) — that mawk build has no
-      # brace-interval support and reads `{0,3}` as four literal
-      # characters, so it never matches a real fence line and every
-      # fence silently goes undetected. `? ? ?` (three
-      # independently-optional literal spaces) is the brace-free
-      # equivalent of "0 to 3 spaces", parses identically on every awk
-      # this script has been run under (mawk 1.3.4 20200120, mawk 1.3.4
-      # 20240123, gawk), and was verified against 800 randomized
-      # fence-line inputs with zero differences from the original
-      # `{0,3}` behavior under gawk.
-      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
-        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        if (length(m) >= 3) {
-          ch = substr(m, 1, 1); len = length(m)
-          rest = substr(line, RSTART + RLENGTH)
-          if (fch == "") {                                  # open: any info string allowed
-            fch = ch; flen = len; print ""; next
-          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
-          }
-        }
-      }
-      if (fch != "") { print ""; next }
-      print drop_spans(line)
-    }
-  '
-}
+# live_text() — one definition in lib/markdown.sh (#423), sourced below through
+# lib/model-record.sh before the first body is read: the same quoted-text rule
+# as the collector and the staleness script (fenced code, inline code spans
+# and blockquotes are illustration, not live markers).
 
 framed_issue_text="$issue_text"
 framed_comments_part="$comments_part"
@@ -285,27 +212,36 @@ reviews_part="${reviews_part//$'\036'/}"
 # role-label-staleness.sh: every body goes through live_text() on its own
 # (fence state never carries from one comment into the next), so a marker
 # quoted in a code span, a fence or a blockquote is an example, not a
-# record. live_text() runs under LC_ALL=C here (its delimiters are ASCII;
-# the same reason as the marker parser), and its failure is visible: the
+# record. live_text() runs awk under LC_ALL=C (lib/markdown.sh: its
+# delimiters are ASCII; the same reason as the marker parser), and its failure is visible: the
 # checks below are skipped with a `model-record:` finding instead of
 # reporting stages missing. marker_text keeps each live body followed by
 # U+001E for the marker parser (round 4). The role-play check's "stages
 # missing" test reads the same live text (release holistic review, B2).
 body_sep=$'\036'
 live_failed=0
+# #423: live_text and the marker parser come from lib/model-record.sh, sourced
+# here, before the first body is read. A lib that cannot be read means no
+# body can be read: the same visible finding as a failed live_text call.
+if [ -r "$own_dir/../../lib/model-record.sh" ]; then
+  # shellcheck source=../../lib/model-record.sh
+  . "$own_dir/../../lib/model-record.sh"
+else
+  live_failed=1
+fi
 live_frame() { # framed text -> each body through live_text, re-framed
   local body live out=""
   while IFS= read -r -d $'\036' body || [ -n "$body" ]; do
     body="${body#$'\n'}"
     [ -n "$body" ] || continue
-    live="$(LC_ALL=C live_text "$body")" || return 1
+    live="$(live_text "$body")" || return 1
     out="$out
 $live$body_sep"
   done <<<"$1"
   printf '%s' "$out"
 }
 live_issue="$(live_frame "$framed_issue_text")" || live_failed=1
-live_description="$(LC_ALL=C live_text "$description_part")" || live_failed=1
+live_description="$(live_text "$description_part")" || live_failed=1
 live_comments="$(live_frame "$framed_comments_part")" || live_failed=1
 live_reviews="$(live_frame "$framed_reviews_part")" || live_failed=1
 marker_text="$live_issue
@@ -320,7 +256,7 @@ else
   for stage in Discovery Planning Test Implementation Review; do
     # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
     # race, see issue #218 and check-no-sigpipe-race.sh.
-    if ! grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$live_all_text"; then
+    if ! LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$live_all_text"; then
       echo "model-record: no record found for stage $stage (missing model-choice marker)"
     fi
   done
@@ -345,9 +281,7 @@ fi
 impl_line=""
 review_line=""
 parser_failed=0
-if [ "$live_failed" -eq 0 ] && [ -r "$own_dir/../../lib/model-record.sh" ]; then
-  # shellcheck source=../../lib/model-record.sh
-  . "$own_dir/../../lib/model-record.sh"
+if [ "$live_failed" -eq 0 ]; then
   # marker_find: the one marker grammar (a quoted value may hold `>`, `<`,
   # `--`, a newline; only a quote ends a value), shared with the collector.
   # A malformed marker is never read (it would otherwise win or hide a later
@@ -442,10 +376,12 @@ in_one_text=""
 override_bodies=""
 check_text() { # source label, raw body
   local label="$1" live stages count
-  live="$(live_text "$2")"
+  # #423: a failure is a finding, never a silent empty body (the role-play
+  # path used to ignore it).
+  live="$(live_text "$2")" || echo "model-record: dropping quoted text (live_text) failed on a $label body, so the role-play check read it incomplete (#423)"
   override_bodies="$override_bodies
 $live"
-  stages="$(grep -oE "$stage_ere" <<<"$live" | sed 's/.*stage=//')"
+  stages="$(LC_ALL=C grep -oE "$stage_ere" <<<"$live" | sed 's/.*stage=//')"
   # distinct, in pipeline order
   stages="$(for st in $all_stages; do grep -qx "$st" <<<"$stages" && echo "$st"; done)"
   [ -n "$stages" ] || return 0
@@ -474,14 +410,14 @@ waive_all=0
 skipped=""
 while IFS= read -r marker; do
   [ -n "$marker" ] || continue
-  grep -qE '(^|[[:space:]:])decided-by="[^"]+"' <<<"$marker" || continue
-  grep -qE '(^|[[:space:]])reason="[^"]+"' <<<"$marker" || continue
-  scope="$(grep -oE '(^|[[:space:]])scope="[^"]*"' <<<"$marker" | head -1 | sed 's/^[[:space:]]*scope="//; s/"$//')"
+  LC_ALL=C grep -qE '(^|[[:space:]:])decided-by="[^"]+"' <<<"$marker" || continue
+  LC_ALL=C grep -qE '(^|[[:space:]])reason="[^"]+"' <<<"$marker" || continue
+  scope="$(LC_ALL=C grep -oE '(^|[[:space:]])scope="[^"]*"' <<<"$marker" | head -1 | sed 's/^[[:space:]]*scope="//; s/"$//')"
   case "$scope" in
     single-session) waive_all=1 ;;
     skip=Discovery|skip=Planning|skip=Test|skip=Implementation|skip=Review) skipped="$skipped ${scope#skip=} " ;;
   esac
-done < <(grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bodies")
+done < <(LC_ALL=C grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bodies")
 
 missing=""
 waived=""
@@ -489,7 +425,7 @@ for stage in $all_stages; do
   # Live text only (B2 of the release holistic review on #369): a marker or
   # a stage name quoted in a code span, a fence or a blockquote is not a
   # present stage, the same rule as the stage check above and check_text.
-  grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
+  LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
   case "$skipped" in
     *" $stage "*) waived="$waived skip=$stage" ;;
     *) missing="$missing${missing:+, }$stage" ;;

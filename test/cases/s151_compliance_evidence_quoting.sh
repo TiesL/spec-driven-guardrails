@@ -750,8 +750,9 @@ assert_table_shape "S151 Q20" "$output_q20"
 
 # =========================================================================
 # Transport — new surface, all green after the fix. Exercised directly
-# against the real CALL_A_JQ expression and live_text(), both extracted
-# verbatim from compliance-evidence.sh (never retyped), since a fake gh
+# against the real CALL_A_JQ expression (extracted verbatim from
+# compliance-evidence.sh, never retyped) and the real live_text() (sourced
+# from lib/markdown.sh, #423), since a fake gh
 # bypasses the real jq call entirely and so can't exercise the sentinel
 # transport by itself.
 # =========================================================================
@@ -766,8 +767,11 @@ if ! command -v jq >/dev/null 2>&1; then
 else
   call_a_jq_line="$(grep '^CALL_A_JQ=' "$script")"
   eval "$call_a_jq_line"
-  # shellcheck disable=SC2317  # invoked below via eval'd extraction, not a dead branch
-  eval "$(awk '/^live_text\(\) \{/,/^}/' "$script")"
+  # #423: live_text() is defined once, in lib/markdown.sh (the copy that used
+  # to be extracted from the collector is gone), so the transport checks
+  # source it from there. Mechanical re-pointing only: no golden changes.
+  # shellcheck source=../../lib/markdown.sh
+  . "$TEST_REPO_ROOT/lib/markdown.sh"
 
   # Q21 — CRLF body: an unrelated demo fence with a trailing \r on its
   # open and close lines, and a real marker (also trailing \r) after it

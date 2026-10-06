@@ -33,6 +33,12 @@
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
+# live_text and md_strip_fences (one definition, #423) come from the sibling
+# lib/markdown.sh, so every script that sources this file reads quoted text
+# the same way.
+# shellcheck source=lib/markdown.sh
+. "$(dirname "${BASH_SOURCE[0]}")/markdown.sh"
+
 # Structural, not a per-model alias table (#268): strips the vendor-prefix
 # word and a trailing 8-digit snapshot-date suffix, then folds every
 # remaining separator and case difference away. Exact-modulo-format, not
@@ -40,15 +46,15 @@
 # full id ("claude-opus-5"), recorded as debt (PRD.md).
 normalize_model() {
   printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/^[[:space:]]*claude[- ]*//' \
-    | sed -E 's/-[0-9]{8}$//' \
-    | sed -E 's/[^a-z0-9]+/ /g' \
-    | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/^[[:space:]]*claude[- ]*//' \
+    | LC_ALL=C sed -E 's/-[0-9]{8}$//' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/ /g' \
+    | LC_ALL=C sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
 }
 
 effort_rank() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+  case "$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
     low) printf '0' ;;
     medium) printf '1' ;;
     high) printf '2' ;;
