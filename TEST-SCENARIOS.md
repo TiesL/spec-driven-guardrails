@@ -3436,3 +3436,149 @@ something new is being added.
 - Then: none contains the word effort in any case (a comment included), and no
   pure comment line contains `;;` (a case arm's own `;;` is code and is not
   looked at). Red today: the `marker_emit` header comment in `lib/model-record.sh` (one effort word, one `;;`)
+
+### S242 — rec_scan reads a well-formed whole line as one ok row with its exact fields, under three locale environments (R1)
+**Covers:** F40
+- Given: the sourced `lib/model-record.sh` (issue #425, slice V4 of #411, AC1/AC6;
+  A31, A31a, A32a): a matrix of strict record lines built from named parts (every
+  stage with and without a floor-basis; a model with spaces; legacy `effort` and
+  `same-model-exception` attributes in either order; trailing blanks, tabs as
+  separators, no blank after `<!--` or before `-->`; valid UTF-8, NEL/LS/PS,
+  invalid and truncated UTF-8 and a lone continuation byte, shell and printf
+  metacharacters, a value ending in ` model=`, an empty and a 600-byte
+  floor-basis; the `pipeline-override` kind), each alone and inside a body of
+  prose; the three locale environments C (`LC_ALL=C`), UTF8 (both set) and LANG
+  (`LC_ALL` unset, `LANG` UTF-8: how production runs a sourced lib)
+- When: `rec_scan <kind> <body>` reads the body and `rec_field <line> <name>`
+  reads the returned line
+- Then: exactly one row, `<index 1> TAB ok TAB <stage> TAB <the line verbatim>`
+  (an override's stage is `?`); `rec_field` returns `model` and every attribute
+  that was built in, byte for byte, and nothing for an absent attribute; a
+  `model-record` line is no row for kind `pipeline-override` and the reverse;
+  a body with no candidate, and the empty body, give status 0 and no rows.
+  Threat model: accidental defects (a regex typo, a bash 3.2 `[[ =~ ]]` quirk, a
+  locale that leaks into a child process, a value byte left out); no forger.
+  Red today: the three functions are stubs that return 99, so every case fails
+  on an assertion about rec_scan's status or rows. Kill table on the red
+  commit: forbid bytes 0x80-0xFF in a value, drop the trailing-blank allowance,
+  cut a value at `--`, `=`, a backtick or `$`, read a blank model, a sixth stage
+
+### S243 — each #405 defect class is a near-miss and never hides a later or earlier record; the same through a bundle (R2)
+**Covers:** F40
+- Given: a hostile line (`>` or `<` in a value, an odd quote, an open quote, `-->`
+  or `<!--` inside a value, a whole record nested in a value, invalid, truncated
+  and valid multibyte text right after `stage=`, a quoted stage, an unquoted,
+  empty, blank or missing model, a record split over two lines, an inline
+  record, text after the closing arrow, no closing arrow, two records on one
+  line, a tab, a C0 byte, DEL, a lone CR, CRLF and a newline inside a value, an
+  upper-case or bare attribute, NBSP after the colon) with one valid record
+  after it, before it, and on both sides, in one body; the same cases as one
+  bundle; an open quote at the end of body 1 and records in bodies 2 and 3;
+  U+001E inside a value (`rec_scan` only: the bundle removes the byte first);
+  three locale environments including `LC_ALL` unset with `LANG` UTF-8 (AC2)
+- When: `rec_scan` and `rec_scan_bundle` read them
+- Then: the hostile line is exactly one `near-miss` row (stage field the bare
+  `stage=` token when it is a valid stage name), every valid record is an `ok`
+  row holding its line verbatim and readable with `rec_field`, the row count
+  is the candidate count (a hostile line neither consumes its neighbour nor
+  yields a second row), and the bundle gives the same classes per body index.
+  Threat model: accidental defects of the #397/#405 rounds 1 to 4 and #402,
+  plus the shapes a careless author produces by typing a marker; a typed strict
+  line is byte-identical to emitter output and no artifact can show otherwise
+  (stated limit). Red today: stubs. Kill table: allow `>` or `<` in a value,
+  make the reader multi-line (a split record reads ok, an open quote runs on),
+  let the near-miss branch swallow the next line, read an inline record or an
+  unquoted model or a quoted stage as ok, abort on a multibyte byte
+
+### S244 — quoted text is never a record: a record in a fence, code span, blockquote or indented block is `quoted`; not on a line of its own is a near-miss; a non-candidate prints nothing (R3)
+**Covers:** F40
+- Given: bodies with a record in backtick and tilde fences (longer closer, info
+  string, three-space indent, a shorter inner run, a different closing character,
+  a closer with an info string, unclosed, closed, list-item fences, a backtick
+  info string, a four-space indented fence line, CRLF endings), in a code span, a
+  blockquote, indented four spaces or a tab, with one to three leading spaces,
+  inline, in a table or list-item line, and non-candidates (NBSP or a zero-width
+  space after `<!--`, `model-record-gate`, no colon, a finding marker, bare
+  prose); the same for `pipeline-override`; and every record shape wrapped in a
+  fence one backtick longer than its longest run and in a tilde fence (AC1)
+- When: `rec_scan` reads them under the three locale environments
+- Then: the class sequence is the one the labelled oracle gives: fence shapes
+  were labelled once against GitHub's renderer on 2026-10-06 (`gh api markdown`)
+  and the comment above each says so; blockquote, indentation and the not-on-
+  its-own-line near-miss are A31a policy and are labelled as policy; every
+  wrapped row is `quoted`; an unclosed fence runs to the end of its body (a
+  later record is `quoted`); a fence whose info string holds a backtick is
+  not an opener; non-candidates give no row; an ok row always holds a line of
+  the body verbatim. Threat model: accidental quoting defects (#308, #400, #405
+  round 4); a strict line typed at column 0 outside any quoting is not stopped.
+  Red today: stubs. Kill table: drop the fence strip, read a fenced or spanned
+  record, treat 1-3 leading spaces as column 0, accept a four-space indent,
+  treat a backtick-info line as an opener, close on a closer with an info
+  string, close ``` on a `~~~` line
+
+### S245 — rec_scan_bundle resets fence state per body and keeps body order and indices; every row has four non-empty fields; same-stage records, CRLF, a lone CR and an override with `>` read as the issue says (R4 + AC6)
+**Covers:** F40
+- Given: bundles of bodies joined by U+001E (U+001E removed from each body first)
+  with an unclosed fence in body 2 and in the last body, empty and record-less
+  bodies, two records of one stage in one body and in two bodies, CRLF and lone
+  CR line endings (also around a fence and across a bundle), a `pipeline-override`
+  whose `reason` holds `>`, a record-less line, a line with a tab and a 3000-
+  byte hostile line
+- When: `rec_scan_bundle` and `rec_scan` read them
+- Then: a record after an unclosed fence is `quoted` and the fence does not
+  leak into the next body (body 3 is ok); indices count from 1 and an empty or
+  record-less body keeps its number; `rec_scan` of body i equals its bundle rows
+  with index 1; both same-stage records are rows in body order and the last ok row of the
+  stage is the later record with the later fields; CRLF and a lone CR are line
+  ends, the line field never holds a CR; the override with `>` is a near-miss and a
+  valid one is ok, both with stage `?`; every row is four tab-separated
+  fields, none empty (`?` for an unknown stage), a near-miss or quoted row
+  holds at most 400 bytes however long the line was. The design left the
+  body-index base open: this test pins 1. Threat model: accidental state leaks
+  and CR handling. Red today: stubs. Kill table: scan the concatenated bodies,
+  drop the per-separator reset, renumber bodies, strip CR instead of splitting
+  on it, drop the earlier same-stage record, print an empty stage, dump a 3000-
+  byte line
+
+### S246 — rec_field reads attributes by a left-to-right walk: first occurrence wins, a value ending in ` name=` is never an attribute, a name that merely ends in another is not that attribute (R5)
+**Covers:** F40
+- Given: strict lines such as `model="x" effort="see floor-basis=" floor-basis="the
+  real one"` (AC3), a floor-basis ending in ` model=` or ` effort=`, a chain
+  of values each ending in the next name, a model ending in ` floor-basis=`,
+  `reviewer-model`, `peak-effort`, `same-model`, `max-effort`, `xmodel`,
+  `old-floor-basis`, duplicate names, empty values, `=` and shell
+  metacharacters in values, invalid and truncated UTF-8, tabs between attributes,
+  an override reason ending in ` scope=`; and 120 deterministic generated lines
+  (a linear congruential generator, seed 425, no `$RANDOM`) whose values end in
+  other attribute names; the hijack arms of S188 move here
+- When: `rec_field <line> <name>` reads each attribute under the three locale
+  environments
+- Then: the literal case gives `the real one`; every attribute gives exactly its own
+  first value (expected from the construction, never from the reader); an
+  absent, prefix, suffix, upper-case, regex-looking or empty name prints
+  nothing; a value is data and is never evaluated. Threat model: accidental, plus a
+  typed or legacy line whose value ends in an attribute name. Red today: stubs.
+  Kill table: a first-match search over the whole line, an unanchored name match,
+  the last occurrence instead of the first, a name read as a regex
+
+### S247 — a reader failure is never "no record": a failing external tool gives a non-zero status with empty stdout; grep's exit 1 is not a failure; the failure shim must have run (R6)
+**Covers:** F40
+- Given: PATH shims (counting their own calls) for grep, awk, sed, tr, cut, wc,
+  head, tail, sort and uniq, in modes pass-through, always fail (exit 2), fail
+  from the Nth call (N = 1 to 4) and, for grep only, no-hit (exit 1); a body and
+  a five-body bundle with records; a body without a record
+- When: `rec_scan` and `rec_scan_bundle` run with the shim first on the PATH
+  (and `rec_field` with every shim failing)
+- Then: with pass-through shims the reader still reads the record and the grep
+  and awk shims were called (a vacuous scenario is red); when grep or awk
+  exits 2 the status is non-zero, stdout is empty and stderr says why; grep
+  exit 1 on a record-less body is status 0, no rows, nothing on stderr; for every
+  tool, whenever the shim actually failed the whole read failed with empty
+  stdout (no rows of earlier bodies leak out of a failed bundle), and a tool
+  that never failed leaves a clean read; `rec_field` never returns status 0
+  with a wrong or empty value when a tool fails. A `[[ =~ ]]` result of 2 cannot
+  be injected from outside: a stated limit. Threat model: accidental (a dropped
+  `|| return`, a pipeline status from the last command, grep 2 read as no
+  match); no forger. Red today: stubs. Kill table: drop a `|| return`, treat
+  grep 2 as 1, treat grep 1 as a failure, print rows before returning the
+  failure, a reader that never calls grep
