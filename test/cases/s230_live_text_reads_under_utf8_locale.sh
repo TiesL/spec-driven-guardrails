@@ -24,6 +24,18 @@
 # Red today on a macOS host: the role-play arm, the collector arm and the
 # staleness arm (their live_text copies run without the prefix).
 # MD_LIB points the lib arms at a scratch copy (mutation proof).
+#
+# Review round 1 of PR #443 (finding c-locale-grep-callers, lib-normalize-locale):
+# the C locale must also hold for the callers' OWN grep (and tr) on the live
+# text. BSD grep 2.6.0 in a UTF-8 locale finds NO match on a line where an
+# invalid byte comes BEFORE the match, so a marker after `x\377y ` on its line is
+# lost. Every arm labelled "before" below puts the bytes BEFORE the marker on
+# the same line, in every body source that has its own tr or grep site (the
+# existing arms put them after the start of the marker, which BSD grep still
+# matches). Mutation: remove `LC_ALL=C` from one caller grep or tr at a time;
+# each removal must turn a "before" arm red (equivalent mutants, not
+# killable: a grep or sed whose input is already the -o output of a
+# C-locale grep, so it holds only ASCII).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -97,6 +109,26 @@ done
 md_run_lib utf8 live_text "\`\`\`${NL}hidden${MD_FF}inside${NL}\`\`\`${NL}shown"
 md_has "$MD_OUT" "hidden" && fail "S230 lib/fence — a fenced line holding \\377 must be blanked under LANG=$MD_UTF8, got: $(printf '%q' "$MD_OUT")"
 md_has "$MD_OUT" "shown" || fail "S230 lib/fence — the line after the fence must stay under LANG=$MD_UTF8, got: $(printf '%q' "$MD_OUT")"
+
+# --- normalize_model (lib/model-record.sh): tr and sed carry LC_ALL=C too ----
+# lib-normalize-locale (round 1 of PR #443): every external command in lib/
+# carries the per-command prefix. A model value holding an invalid byte must
+# normalize to the same string under a UTF-8 LANG as under LC_ALL=C, with
+# nothing on stderr (BSD tr aborts with "Illegal byte sequence" and cuts the
+# value at the byte).
+mr_lib="${MR_LIB:-$TEST_REPO_ROOT/lib/model-record.sh}"
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  # shellcheck disable=SC2016  # the program text is meant to expand in the child
+  env LC_ALL=C bash -c '. "$1"; normalize_model "$2"' _ "$mr_lib" "claude-opus-5${b}" > "$SANDBOX/nm.c.out" 2> "$SANDBOX/nm.c.err"
+  nm_c="$(cat "$SANDBOX/nm.c.out")"
+  [ "$nm_c" = "opus 5" ] || fail "S230 lib/normalize_model/$name — baseline under LC_ALL=C should be 'opus 5', got $(printf '%q' "$nm_c") (a broken baseline)"
+  # shellcheck disable=SC2016
+  env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" bash -c '. "$1"; normalize_model "$2"' _ "$mr_lib" "claude-opus-5${b}" > "$SANDBOX/nm.u.out" 2> "$SANDBOX/nm.u.err"
+  nm_u="$(cat "$SANDBOX/nm.u.out")"
+  [ "$nm_u" = "$nm_c" ] || fail "S230 lib/normalize_model/$name — under LANG=$MD_UTF8 the model normalizes to $(printf '%q' "$nm_u"), under LC_ALL=C to $(printf '%q' "$nm_c")"
+  [ ! -s "$SANDBOX/nm.u.err" ] || fail "S230 lib/normalize_model/$name — stderr under LANG=$MD_UTF8 is not empty: $(LC_ALL=C head -c 200 "$SANDBOX/nm.u.err")"
+done
 
 # =========================================================================
 # 2. gate: main path and role-play path
@@ -177,6 +209,63 @@ for name in $byte_names; do
   [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play/$name — the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
 done
 
+# --- gate: the bytes BEFORE the marker on the same line (round 1 of PR #443) --
+# The callers' own greps (main path stage check, role-play stage_ere, the
+# override reader, the "stages missing" check) read the live text. Every
+# body below puts `x<bytes>y ` before each marker on its line.
+for name in $byte_names; do
+  ph="$(placeholder_of "$name")"
+  pre="x${ph}y "
+  # (main path + stages missing) all five stages, each marker after the bytes
+  rm -f "${FAKE_GH_DATA:?}"/*.json
+  json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "Closes #239"
+  json_comments "$FAKE_GH_DATA/reviews-246.json" "${pre}$(rec Review opus "floor-basis=\"stronger\"")"
+  json_comments "$FAKE_GH_DATA/comments-239.json" "${pre}$(rec Discovery sonnet)"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet)"
+  gate_run C
+  c_out="$GATE_OUT"
+  [ -z "$c_out" ] || fail "S230 gate main-before/$name — baseline under LC_ALL=C: five records after the bytes must give no finding at all, got: $c_out"
+  gate_run utf8
+  [ "$GATE_RC" -eq 0 ] || fail "S230 gate main-before/$name — exit $GATE_RC with LC_ALL unset and LANG=$MD_UTF8"
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate main-before/$name — a marker after '$name' bytes on its line is read differently under LANG=$MD_UTF8 than under LC_ALL=C (a grep of the live text ran without the C locale): '$GATE_OUT' vs '$c_out'"
+
+  # (role-play path) two stage records in one body: on separate lines, and on one line
+  json_comments "$FAKE_GH_DATA/reviews-246.json"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet)${NL}${pre}$(rec Review opus "floor-basis=\"stronger\"")"
+  gate_run C
+  c_out="$GATE_OUT"
+  md_has "$c_out" "role-played: stages in one text: Implementation, Review" || fail "S230 gate role-play-before/$name — baseline under LC_ALL=C must report the two stages in one text, got: $c_out"
+  gate_run utf8
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play-before/$name — separate lines: the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet) $(rec Review opus "floor-basis=\"stronger\"")"
+  gate_run C
+  c_out="$GATE_OUT"
+  md_has "$c_out" "role-played: stages in one text: Implementation, Review" || fail "S230 gate role-play-before/$name — one line: baseline under LC_ALL=C must report the two stages in one text, got: $c_out"
+  gate_run utf8
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play-before/$name — one line: the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
+
+  # (override reader) a single-session override waives the missing stages;
+  # variant 1: the bytes before the marker; variant 2: before each attribute
+  # inside it (the three attribute greps each read after a byte)
+  ov_a="${pre}<!-- pipeline-override: decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  ov_b="<!-- pipeline-override: note=\"x${ph}y\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  ov_c="<!-- pipeline-override: decided-by=\"x${ph}y\" reason=\"x${ph}y\" scope=\"single-session\" -->"
+  ov_n=0
+  for ov in "$ov_a" "$ov_b" "$ov_c"; do
+    ov_n=$((ov_n + 1))
+    rm -f "${FAKE_GH_DATA:?}"/*.json
+    json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "Closes #239"
+    json_comments "$FAKE_GH_DATA/reviews-246.json"
+    json_comments "$FAKE_GH_DATA/comments-239.json"
+    json_comments "$FAKE_GH_DATA/comments-246.json" "$ov"
+    gate_run C
+    c_out="$GATE_OUT"
+    md_has "$c_out" "a pipeline-override (scope=single-session) is recorded" || fail "S230 gate override-before/$name/$ov_n — baseline under LC_ALL=C must read the single-session override, got: $c_out"
+    gate_run utf8
+    [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate override-before/$name/$ov_n — the override is read differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
+  done
+done
+
 # =========================================================================
 # 3. collector: gate rows 1-3
 # =========================================================================
@@ -216,6 +305,77 @@ $(mk Review claude-sonnet-5 medium "$FB")
   [ "$c_rows" = "evidenced/evidenced/evidenced" ] || fail "S230 collector/$name — baseline under LC_ALL=C: rows 1-3 should be evidenced/evidenced/evidenced, got $c_rows (a broken fixture)"
   u_rows="$(ce_rows utf8)"
   [ "$u_rows" = "$c_rows" ] || fail "S230 collector/$name — rows 1-3 under LANG=$MD_UTF8 (LC_ALL unset) are $u_rows, under LC_ALL=C $c_rows: live_text ran without the C locale"
+done
+
+# --- collector: the bytes BEFORE the marker, in every body source ------------
+# One record per reading site (as S231 does), each after `x<bytes>y ` on its
+# line: the closing keyword in the PR title (its own tr site and the
+# closing-keyword grep), Planning and the done marker in the PR body (own tr
+# site), Test and Review in PR comments and Implementation in a PR review
+# (the shared comment/review tr site), Discovery in the closing issue's
+# comment (own tr site). The stage grep, the done-marker greps and the
+# quoted-suffix grep each read after a byte.
+ce_rows_full() { # mode: rows 1-3, status and evidence, of the last-built fake gh
+  local mode="$1" bin out
+  bin="$(cat "$FAKEGH_OUT")"
+  case "$mode" in
+    C) out="$(env LC_ALL=C PATH="$bin:$PATH" "$ce_script" 279 2>/dev/null)" ;;
+    utf8) out="$(env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" PATH="$bin:$PATH" "$ce_script" 279 2>/dev/null)" ;;
+  esac
+  printf '%s\n' "$out" | LC_ALL=C sed -n '3,5p'
+}
+ce_before() { # <title> <body> <pr comments> <pr review> <issue comment>
+  local title="$1" body="$2" prc="$3" prr="$4" ic="$5"
+  body="${body//$'\n'/$'\001'}"
+  {
+    echo 'case "$*" in'
+    echo '  __CALL_A__)'
+    printf "    printf 'HEAD\\\\t%s\\\\n'\n" "$SHA"
+    printf "    printf 'STATE\\\\tOPEN\\\\n'\n"
+    printf "    printf 'TITLE\\\\t%%s\\\\n' '%s'\n" "$title"
+    printf "    printf 'TEXT\\\\t%%s\\\\n' '%s'\n" "$body"
+    echo '    exit 0 ;;'
+    echo '  __CALL_A_COMMENTS__)'
+    emit "$prc"
+    echo '  __CALL_A_REVIEWS__)'
+    emit "$prr"
+    echo '  __CALL_B__)'
+    printf "    printf 'check\\\\tSUCCESS\\\\tpass\\\\n'\n"
+    echo '    exit 0 ;;'
+    echo '  __CALL_C265__)'
+    emit "$ic"
+    echo 'esac'
+    echo 'exit 1'
+  } | run_build_fake_gh "$SHA"
+}
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  pre="x${b}y "
+  ce_before "${pre}Closes #265" \
+    "${pre}$(mk Planning claude-sonnet-5 medium)${MD_LF}${pre}<!-- pre-merge-review:done sha=$SHA -->" \
+    "${pre}$(mk Test claude-sonnet-5 medium)
+${pre}$(mk Review claude-sonnet-5 medium "$FB")" \
+    "${pre}$(mk Implementation claude-sonnet-5 medium)" \
+    "${pre}$(mk Discovery claude-sonnet-5 low)"
+  c_full="$(ce_rows_full C)"
+  c_stat="$(printf '%s\n' "$c_full" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/' | paste -sd/ -)"
+  [ "$c_stat" = "evidenced/evidenced/evidenced" ] || fail "S230 collector-before/$name — baseline under LC_ALL=C: rows 1-3 should be evidenced/evidenced/evidenced, got $c_stat (a broken fixture)"
+  u_full="$(ce_rows_full utf8)"
+  [ "$u_full" = "$c_full" ] || fail "S230 collector-before/$name — rows 1-3 with the bytes before each marker differ under LANG=$MD_UTF8 (LC_ALL unset) from LC_ALL=C (a tr or grep ran without the C locale): $(printf '%s' "$u_full" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/' | paste -sd/ -) vs $c_stat"
+
+  # a done marker in the wrong shape, after the bytes: the loose-marker grep
+  ce_before "Closes #265" "" "${pre}<!-- pre-merge-review:done sha=abc -->" "" ""
+  c_full="$(ce_rows_full C)"
+  md_has "$c_full" "not in the recognized" || fail "S230 collector-before-loose/$name — baseline under LC_ALL=C should say the done marker is not in the recognized shape, got: $c_full"
+  u_full="$(ce_rows_full utf8)"
+  [ "$u_full" = "$c_full" ] || fail "S230 collector-before-loose/$name — a malformed done marker after the bytes reads differently under LANG=$MD_UTF8 than under LC_ALL=C: $u_full"
+
+  # marker-shaped text only in a code span, after the bytes: the quoted-suffix grep on the raw text
+  ce_before "Closes #265" "" "${pre}\`<!-- pre-merge-review:done sha=$SHA -->\`" "" ""
+  c_full="$(ce_rows_full C)"
+  md_has "$c_full" "only inside a code span" || fail "S230 collector-before-quoted/$name — baseline under LC_ALL=C should say the done marker appears only inside a code span, got: $c_full"
+  u_full="$(ce_rows_full utf8)"
+  [ "$u_full" = "$c_full" ] || fail "S230 collector-before-quoted/$name — the quoted-suffix wording differs under LANG=$MD_UTF8 from LC_ALL=C: $u_full"
 done
 
 # =========================================================================
@@ -268,6 +428,67 @@ for name in $byte_names; do
   st_verdict utf8 "$m"
   [ "$st_rc" -eq 0 ] || fail "S230 staleness/$name — exit $st_rc with LC_ALL unset and LANG=$MD_UTF8"
   [ "$st_out" = "$c_verdict" ] || fail "S230 staleness/$name — verdict under LANG=$MD_UTF8 is '$st_out', under LC_ALL=C '$c_verdict': live_text ran without the C locale"
+done
+
+# --- staleness: the bytes BEFORE the marker and the closing keyword -----------
+# One variant per body source with its own tr site, and the two places the
+# closing keyword lives (title only, body only): the keyword grep reads the
+# live text after a byte, and the title/body tr sits before it.
+st_before() { # mode, where
+  local mode="$1" where="$2" pre="x${b}y " ib="" ic="plain comment" pt="Fix: something" pb="Closes #400" pc="plain" pr="plain" m bin
+  m="${pre}<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"medium\" floor-basis=\"ok\" -->"
+  case "$where" in
+    issue-body) ib="$m" ;;
+    issue-comment) ic="$m" ;;
+    pr-body-marker) pb="Closes #400 $m" ;;
+    pr-comment) pc="$m" ;;
+    pr-review) pr="$m" ;;
+    pr-title-keyword) pt="${pre}Closes #400: something"; pb="no keyword here"; pc="$m" ;;
+    pr-body-keyword) pb="${pre}Closes #400"; pc="$m" ;;
+  esac
+  run_build_fake_gh > "$FAKEGH_OUT" <<GHEOF
+__CALL_ISSUE__)
+  printf 'LABEL\trole:architect\n'
+  printf 'BODY\t%s\n' '$ib'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  printf 'TEXT\t%s\n' '$ic'
+  exit 0 ;;
+__CALL_REPO_IDENTITY__)
+  printf 'owner/repo\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_TITLEBODY__)
+  printf 'TITLE\t%s\n' '$pt'
+  printf 'BODY\t%s\n' '$pb'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t%s\n' '$pc'
+  exit 0 ;;
+__CALL_PR501_REVIEWS__)
+  printf 'TEXT\t%s\n' '$pr'
+  exit 0 ;;
+GHEOF
+  bin="$(cat "$FAKEGH_OUT")"
+  case "$mode" in
+    C) st_out="$(env LC_ALL=C PATH="$bin:$PATH" "$st_script" 400 2>/dev/null)" ;;
+    utf8) st_out="$(env -u LC_ALL -u LC_CTYPE LANG="$MD_UTF8" PATH="$bin:$PATH" "$st_script" 400 2>/dev/null)" ;;
+  esac
+}
+for name in $byte_names; do
+  b="$(bytes_of "$name")"
+  for where in issue-body issue-comment pr-body-marker pr-comment pr-review pr-title-keyword pr-body-keyword; do
+    st_before C "$where"
+    c_verdict="$st_out"
+    case "$c_verdict" in
+      *" — stale "*) : ;;
+      *) fail "S230 staleness-before/$name/$where — baseline under LC_ALL=C: role:architect behind a stage=Review marker must be stale, got: $c_verdict" ;;
+    esac
+    st_before utf8 "$where"
+    [ "$st_out" = "$c_verdict" ] || fail "S230 staleness-before/$name/$where — verdict under LANG=$MD_UTF8 is '$st_out', under LC_ALL=C '$c_verdict': a tr or grep ran without the C locale"
+  done
 done
 
 test_done

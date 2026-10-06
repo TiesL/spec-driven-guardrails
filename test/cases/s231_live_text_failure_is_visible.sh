@@ -30,6 +30,14 @@
 # staleness verdict. Regression arms (green on arrival): the gate's main-path
 # calls and the marker parser's calls in all three.
 # Not asserted: the wording of a finding or evidence line (messages only).
+#
+# Review round 1 of PR #443: the gate sweep also asserts that a single failed
+# read never adds a blocking `role-played:` line to a complete record set
+# (finding gate-frame-failure-test; mutation: the gate's `live_frame` stops
+# returning a failure, which only prints a misleading "no record found" AND a
+# false "stages missing" line). The unreadable-lib arm is a regression arm: the
+# gate's "lib not readable" branch is redundant with the 127 of the first
+# live_text call, so removing its `live_failed=1` is an equivalent mutant.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -104,8 +112,25 @@ while [ "$k" -le "$g_total" ]; do
   gate_run "$k" "$k"
   [ "$(shim_count)" -ge "$k" ] || fail "S231 gate/call $k — the run made fewer than $k awk calls this time (the count is not stable): $(shim_count)"
   gate_visible || fail "S231 gate/call $k of $g_total — awk call $k alone fails and the gate prints no model-record: finding (a silent failure), got: '$g_out'"
+  # round 1 of PR #443 (finding gate-frame-failure-test): a single failed
+  # read must never ALSO print a blocking `role-played:` line. With every
+  # stage recorded, "stages missing" can only come from a body that was
+  # read as empty (the main path's `live_frame` ignoring a failure).
+  LC_ALL=C grep -aq '^role-played:' <<<"$g_out" && fail "S231 gate/call $k of $g_total — awk call $k alone fails and the gate prints a blocking role-played: line on a complete, opted-in record set (a failed read taken as 'stages missing'), got: '$g_out'"
   k=$((k + 1))
 done
+
+# The lib cannot be read (a gate copied without lib/model-record.sh): a
+# visible model-record: finding, never a silent pass. Regression arm.
+nolib="$SANDBOX/nolib"
+mkdir -p "$nolib/skills/pre-merge-review" "$nolib/lib"
+cp "$gate" "$nolib/skills/pre-merge-review/model-record-gate.sh"
+for lf in "$TEST_REPO_ROOT"/lib/*.sh; do
+  case "$lf" in */model-record.sh | */markdown.sh) : ;; *) cp "$lf" "$nolib/lib/" ;; esac
+done
+GH_BIN="$gh_bin"
+g_out="$(cd "$optin" && with_shim 0 0 "$nolib/skills/pre-merge-review/model-record-gate.sh" 246 2>/dev/null)"
+gate_visible || fail "S231 gate/no-lib — lib/model-record.sh unreadable: expected a model-record: finding, got: '$g_out'"
 
 # =========================================================================
 # 2. the collector: rows 1-3 read live text

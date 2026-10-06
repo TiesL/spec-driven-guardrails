@@ -3011,6 +3011,40 @@ something new is being added.
   the `LC_ALL=C` in a caller's `tr '\001' '\n'`. On a non-macOS runner the
   awk-abort mutants can pass (gawk and mawk do not abort), so the macOS leg is
   where this scenario bites
+- Round 1 of PR #443 adds the bytes BEFORE the marker on the same line
+  (`x\377y <marker>`; also the truncated sequence; valid multibyte as the
+  green control). BSD grep in a UTF-8 locale finds no match after such a byte,
+  so every caller `grep` that reads the live text, and every caller `tr`, must
+  carry its own `LC_ALL=C`: the gate's main path (all five stages after the
+  bytes: no finding), its role-play path (two stages in one body, on separate
+  lines and on one line: `stages in one text`), its override reader (a
+  single-session override after the bytes, and bytes before each of its three
+  attribute greps); the collector (one record per body source, each after the
+  bytes: the closing keyword in the PR title, Planning and the done marker in
+  the PR body, Test and Review in PR comments, Implementation in a PR review,
+  Discovery in the closing issue's comment, rows 1-3 `evidenced`; a malformed
+  done marker after the bytes still reads "not in the recognized shape"; a done
+  marker only in a code span after the bytes still says "only inside a code
+  span"); the staleness script (the Review marker after the bytes in the issue
+  body, an issue comment, the PR body, a PR comment, a PR review, and the
+  closing keyword after the bytes in the PR title and in the PR body: verdict
+  `stale`). Each result, rows with their evidence text included, equals the
+  `LC_ALL=C` result, which is itself asserted non-trivial. `normalize_model`
+  of `lib/model-record.sh` (finding lib-normalize-locale): a model value
+  holding `\377` or `\342\200` normalizes to `opus 5` under both locales with
+  nothing on stderr (BSD `tr` aborts with "Illegal byte sequence" otherwise).
+  Mutations, each killed on a macOS host (BSD grep, BSD tr, BWK awk): remove
+  `LC_ALL=C` from any one of the gate's greps (stage check, role-play
+  stage_ere, the three override attribute greps, the override reader, the
+  stages-missing check), the collector's quoted-suffix, closing-keyword, stage,
+  done-marker and loose-marker greps and its four `tr` sites, the staleness
+  script's closing-keyword grep and its six `tr` sites, and the `tr` and the
+  second and third `sed` of `normalize_model`. Not killable, equivalent
+  (the input is the `-o` output of a C-locale grep, or has already lost the
+  invalid byte, so it is ASCII): the collector's `[0-9]+` and `sha=` greps on
+  a `-o` result, the gate's `grep -qx` on stage names, the `sed` after a
+  `grep -o`, the first and the last `sed` of `normalize_model` (BSD sed
+  only reads past the start of an anchored match once a match is found)
 
 ### S231 — a live_text failure is visible: a model-record: finding in the gate, indeterminate in the collector and the staleness script
 **Covers:** F34, F35, F39
@@ -3047,6 +3081,17 @@ something new is being added.
   sites, or from any one of the staleness script's call sites (each site is
   made decisive by the spread above, so each removal turns a row or the
   verdict into an absence claim)
+- Round 1 of PR #443 (finding gate-frame-failure-test): in the gate's
+  single-failure sweep, the run with call k failing never prints a
+  `role-played:` line either: with all five stages recorded, a "stages
+  missing" line can only come from a body read as empty. Mutation: the gate's
+  `live_frame` stops returning a failure (it prints the misleading "no record
+  found" AND a blocking "stages missing" line; the first alone is still a
+  `model-record:` line, which is why the existing assertion missed it). A gate
+  copied without `lib/model-record.sh` prints a `model-record:` finding
+  (regression arm; the gate's "lib not readable" branch is redundant with the
+  127 of the first `live_text` call, so dropping its `live_failed=1` is an
+  equivalent mutant, not a gap)
 
 ### S232 — a fence opened on a list-item line is recognized, and a backtick fence whose info string holds a backtick is not an opener
 **Covers:** F34
@@ -3069,11 +3114,32 @@ something new is being added.
   holds a tilde still opens, and a bullet line that merely mentions three
   backticks opens nothing (regression arms). The PR records the
   `gh api markdown` output for these shapes once, as evidence and not as a CI
-  oracle. Not tested (unspecified): an unclosed list-item fence, an indented
-  marker after the closing line, nested list prefixes, a closing fence at
-  column 0. Mutations: do not recognize the list-item prefix; treat a backtick
+  oracle. Mutations: do not recognize the list-item prefix; treat a backtick
   in the info string as an opener; require the closing line at column 0;
   close on a shorter run
+- Round 1 of PR #443 (A32b, finding list-fence-container-end): where a
+  list-item fence ENDS. A list item ends at the first non-blank line indented
+  less than its content column, and that ends its fence; the ending line is
+  then read as an ordinary top-level line (live, or the opener of a top-level
+  fence). Arms, each checked against `gh api markdown` on the day it was
+  written: (la) `- ```` closed at column 0: the column-0 line after it is
+  quoted; (lb) a column-0 line inside is live, and the one after a later
+  column-0 run is quoted; (lc) an unclosed list fence ends at the column-0
+  line, which is live; (ld) a blank line inside keeps the fence open, and so
+  (ld2) does a whitespace-only line below the content column; (le) an ordered
+  item (content column 3) closed by a run indented 2 ends the item and opens a
+  top-level fence; (lf) a tab-indented line inside keeps the fence open; (lg)
+  a closing run indented content column + 3 closes it and the item's next line
+  is live; (lh) one indented content column + 4 does not close it; (lr,
+  regression) a top-level fence is not ended by an indented line. Failing
+  direction that matters: a fence ended EARLIER than GitHub ends it reads a
+  quoted marker as live. Mutations: drop the item-end rule (la, lb, lc, le,
+  lh red); consume the ending line instead of handling it again (la, lb);
+  let a blank line end the item (ld); a whitespace-only line (ld2); a tab
+  line (lf); end it at an indent equal to the content column (every list
+  arm); the closing bound becomes 3 instead of content column + 3 (lg). Not
+  tested (A32b accepted limits): nested list prefixes, list items inside a
+  blockquote, tab expansion beyond the tab rule
 
 ### S233 — CRLF and a lone CR are line endings: the CRLF body reads as the same body with LF, and a lone CR is a line break
 **Covers:** F34
@@ -3091,3 +3157,29 @@ something new is being added.
   arm). A31a: this replaces "remove every CR byte". Mutations: leave the CR
   in; delete CR bytes instead of splitting; read only CRLF and not a lone CR;
   strip CR after the fence logic instead of before
+
+### S234 — review-rounds.sh prints no count when a read fails, and reads a marker after an invalid byte on its line the same under a UTF-8 LANG as under LC_ALL=C
+**Covers:** F34, F42
+- Given: `review-rounds.sh` (it takes `live_text` from `lib/markdown.sh` since
+  #423; it was outside AC3) against a recording fake gh with three rounds (a
+  Review marker, a done-only body, a Review marker) and a Planning marker
+  after them; a PATH shim named `awk` that counts its calls and exits 2 for
+  the call(s) selected; a second fixture where every body line starts with
+  `x\377y ` (and the truncated `x\342\200y `), the bytes reaching the script
+  through a placeholder swapped after jq
+- When: the script runs once with every awk call passing (the baseline, which
+  gives the number of awk calls), once with every call failing, once per call
+  k failing alone; and with the byte-bearing bodies under `LC_ALL=C` and under
+  `LC_ALL` unset with `LANG=en_US.UTF-8`
+- Then: the baseline prints `review-rounds: 3` and the shim's count is above
+  zero; with every call failing, and with call k failing alone for every k,
+  the exit status is 0 (fail-open) and no `review-round` or `review-rounds:`
+  line is printed (a body read as empty is never counted as "no round"); the
+  byte-bearing bodies give the same lines under LANG as under `LC_ALL=C`
+  (three rounds, `planning-after: 3`). Red today: the byte-bearing arm (the
+  done-marker `grep` of `rr_rounds` runs in the ambient locale); the failure
+  sweep is green on arrival and guards its mutation. Mutations: the
+  `live_text ... || return 1` of `rr_rounds` removed (the sweep); the
+  `marker_scan` failure return removed (the sweep); `LC_ALL=C` removed from the
+  `tr '\001' '\n'` or from the done-marker `grep` (the byte arm). Not
+  asserted: the wording of the warning
