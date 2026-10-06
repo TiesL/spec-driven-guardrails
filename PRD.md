@@ -416,8 +416,8 @@ capable, not necessarily different). Frontmatter expresses part of that
 literally: `context: fork` gives the fresh, isolated context;
 `allowed-tools` keeps it read-only. The model itself is deliberately
 *not* pinned in frontmatter — a stale prior description here said it was —
-`model-choice`'s qualitative floor (#392, F39: model and effort at least as
-capable as Implementation's, with a recorded `floor-basis`; #244's
+`model-choice`'s qualitative floor (#392, F39: the model at least as
+capable as Implementation's, judged on the model alone since #424, with a recorded `floor-basis`; #244's
 different-model rule is reversed) governs the choice instead, so the
 rule survives new model releases without editing this skill.
 
@@ -964,8 +964,8 @@ Review already anchored to Implementation. The one stage with no
 predecessor — Discovery — floors directly on the task's own demands
 instead, described the same qualitative way.
 
-**Visibility tightens.** Every stage records which model and reasoning
-effort handled it, always — not only when it deviates from what's
+**Visibility tightens.** Every stage records which model handled it
+(no effort since #424), always — not only when it deviates from what's
 obvious, which was `pre-merge-review`'s old bar. `pre-merge-review`'s own
 "Model choice" section is replaced with a cross-reference to the new
 `model-choice` skill, so there's one canonical statement instead of two
@@ -980,13 +980,13 @@ documents the principle so #65's future orchestration has it ready-made.
 stage ever recorded a model in `portfolio-mgt-agents` (#238);
 Discovery/Planning/Test/Implementation never did, and the skill's prose
 instruction had no mechanical check behind it. Each stage now carries a
-`<!-- model-record: stage=<Stage> model="..." effort="..." -->` marker.
+`<!-- model-record: stage=<Stage> model="..." -->` marker (effort left the marker in #424).
 `model-record-gate.sh <pr-number>` checks a PR's own comments/description
 and the comments of every issue it closes for all five stages, reporting
 whichever are missing. Fails open (a warning, not a block) without `gh`.
-Same mechanism also catches a same-model Review recorded at lower
-effort than Implementation, and a Review marker without `floor-basis`
-(#392 replaced #244 AC2's different-model finding; see F39) — see the
+Same mechanism also catches a Review marker without `floor-basis`
+(#392 replaced #244 AC2's different-model finding; #424 removed the
+same-model lower-effort finding; see F39) — see the
 Technical debt entries on this gate's own known gaps (spelling-mismatch
 false negatives, comment-ordering heuristic).
 
@@ -1331,7 +1331,7 @@ the pipeline (#371) showed the cost: the orchestrator chose one model and
 one low effort for every stage, and the gate flagged Review. The
 maintainer reversed the choice (2026-10-03).
 
-Requirement: Review's model and effort, taken together, are at least as
+Requirement (as amended by #424, A33: the floor is judged on the model alone, effort is neither chosen nor checked): Review's model is at least as
 capable as the Implementation stage's, and among the combinations that
 clear that, the cheapest is chosen (the `model-choice` principle applied
 to Review). A different model is not required. No text or script names a
@@ -1796,9 +1796,10 @@ epics still apply, detached from the execution history in which they arose.
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
 | `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
-| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so the same-model effort check (F39, #392) is skipped for a Review recorded under an alias; gate 2 reports `unverifiable-from-artifacts`, never a pass, and `model-record-gate.sh` raises no effort finding. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
+| Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so a Review recorded under an alias is never treated as the same model as Implementation (F39, #392); gate 2 reports `unverifiable-from-artifacts`, never a pass. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
 | The shared marker parser (`lib/model-record.sh`, F39, #392) is slow on huge input under macOS awk (BWK), whose `substr` costs time proportional to the whole text: before round 3 of the PR #397 review a single 1 MB quoted value took about 20 s; the parser now jumps over a quoted value with `index()` (1 MB: 0.15 s), but about 500 KB of unquoted words inside one marker still takes about 20 s (mawk: 0.2 s). Correctness is unaffected | No real marker comes near this size (a `floor-basis` is one sentence); the cost is time, never a wrong answer, and fixing it means restructuring the parser around `match()`/`split()` for one platform's awk | A real comment makes a gate or `role-label-staleness.sh` noticeably slow, or a marker-scanning caller starts reading untrusted bulk text |
-| The `effort` in a `model-record` marker is self-reported: nothing verifies it unless the platform set it, and the dispatch tool has no effort argument (A25), so a dispatched role's honest value is `unknown`. The gate and the collector compare efforts as recorded (F39); a wrong but well-formed effort passes | No platform reports the effort a session runs at in a form a script can read; `model-choice` says so and makes `unknown` the documented honest value, so a comparison is only as good as the record | The platform exposes the effort a session or dispatch actually ran at, or a dispatch tool gains an effort argument |
+| `model-record-emit.sh` still accepts `--effort` and ignores it, printing one stderr line (#424, A33a), so stale prompts in adopted projects keep working | Removing the flag at once would break every adopted project whose dispatch prompts still pass it | The next release: remove the `--effort` flag and its stderr line (#413) |
+| The floor is judged on the model alone: the same model at a lower effort meets it, because the dispatch tool takes no effort argument and effort is neither chosen nor checked (A33a). The model string in a marker is self-reported | No platform exposes the effort a dispatch ran at, and recording an unverifiable value only looked like a check | When the dispatch tool gains an effort parameter |
 | `templates/PRD.md` becomes a build artifact | Price for removing the NFR duplication; `check` guards it | If the generator costs more than it saves |
 | Link 2 (scenario → issue) stays without a hard block | The `pre-merge-review` gate covers it; only link 3 also runs in CI | If scenarios structurally end up without an issue |
 | Skills bind this repo to Claude Code | Deliberately bounded, level a — see "Boundary between the core and agent tooling (W31, #55)" under *Portability*; AC4/AC5 from #55 are deliberately deferred until W35 makes a neutrality claim | On switching to a different agent, or once W35 (#59) makes a claim that then needs AC4/AC5 |

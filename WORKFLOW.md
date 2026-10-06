@@ -62,7 +62,7 @@ This file holds what every session needs. For everything else: the table below r
 | Complexity, technical debt, refactoring | `refactoring-triggers` |
 | Test-first work: seams, red-before-green, anti-patterns | `tdd-seams` |
 | Diagnosing a bug: reproduction → hypotheses → regression test → fix | `diagnose-bug` |
-| Which model/reasoning effort to use for a pipeline stage | `model-choice` |
+| Which model to use for a pipeline stage | `model-choice` |
 | Dispatching or reviewing a Product / Architect / QA / Fullstack Developer / Reviewer role (opt-in, `process-multi-agent-roles`) | `role-contracts` |
 | Setting up a new (related) project | `adopt-workflow` (user-level) |
 | Relentless, round-based requirement elicitation from Ties | `grilling` |

@@ -97,20 +97,19 @@ evidence is the wrong way to guess).
 See the `model-choice` skill for the canonical principle (floor + cost,
 stated qualitatively, never a model name) and how it applies across every
 pipeline stage. This review is that skill's Review-stage instance: choose
-a model and effort that, taken together, are **at least as capable as
-the model and effort that did Implementation** (#392). A different model
-is not required, and a legacy `same-model-exception` is ignored. Within
-that floor, the cheapest combination: the same model at higher effort, or
-a stronger model, whichever clears it. Record which model and effort
-reviewed, always, not only when it deviates from what's obvious, as a
+a model that is **at least as capable as the model that did
+Implementation** (#392). A different model is not required, and a legacy
+`same-model-exception` is ignored. Within that floor, the cheapest model
+that clears it. The floor is judged on the model alone: effort is neither
+chosen nor checked (#424; the limit is stated in `model-choice`). Record
+which model reviewed, always, not only when it deviates from what's obvious, as a
 Review marker with `floor-basis`. Produce it with
 `.claude/skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
-exact model id> --effort <e> --floor-basis '<sentence>'` (`effort` is
-`unknown` when you don't know it) and paste the output unchanged; never
+exact model id> --floor-basis '<sentence>'` and paste the output unchanged; never
 type a marker by hand. Run it from the project root: the path goes through
 the project's installed skill (the guardrails repo installs its own skills
 the same way). `floor-basis` is required on every Review marker:
-one sentence on why this pair clears Implementation's. The format and its
+one sentence on why this model clears Implementation's. The format and its
 grammar are owned by `model-choice` ("Machine-readable form", "Marker
 grammar"). The gate checks that `floor-basis` is present, never what it
 says.
@@ -119,7 +118,6 @@ Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
 the PR or the issue(s) it closes. A missing stage is a finding, the same
 non-blocking shape as every other gate here. The gate also flags a
-Review on the same model recorded at lower effort than Implementation, and a
 Review marker without `floor-basis`. It can't rank two different models,
 so for those the capability ordering stays your recorded judgment.
 

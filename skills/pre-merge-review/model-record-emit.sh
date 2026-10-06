@@ -3,7 +3,7 @@
 # `model-record` marker line, so nobody types one (#402, A26).
 #
 # Usage:
-#   model-record-emit.sh --stage <Stage> --model <id> [--effort <ignored>] [--floor-basis <sentence>]
+#   model-record-emit.sh --stage <Stage> --model <id> [--floor-basis <sentence>]
 #
 # The orchestrator puts this command in each dispatch prompt with --stage
 # filled in; the role adds --model with its own exact model id (the
@@ -42,7 +42,7 @@ fi
 # shellcheck source=../../lib/model-record.sh
 . "$own_dir/../../lib/model-record.sh"
 
-usage="usage: model-record-emit.sh --stage <Stage> --model <id> [--effort <ignored>] [--floor-basis <sentence>]"
+usage="usage: model-record-emit.sh --stage <Stage> --model <id> [--floor-basis <sentence>]"
 stage="" model="" fb=""
 have_stage=0 have_model=0 have_fb=0 saw_effort=0
 
