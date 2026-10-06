@@ -31,11 +31,23 @@
 #     run). A backtick fence whose info string contains a backtick is NOT an
 #     opener. A tilde fence may carry a backtick.
 #   - It closes on a later line with the same character, a run >= the
-#     opener's, indented at most 3 spaces (for a list-item fence: at most 3
-#     past the item's content column), and nothing but blanks after the run.
-#     A closing line never carries an info string. An unclosed fence runs to
-#     the end of the body. Fence state never crosses a body (one body per
+#     opener's, indented at most 3 spaces (for a list-item fence: from the
+#     item's content column cc to cc + 3), and nothing but blanks after the
+#     run. A closing line never carries an info string. An unclosed fence runs
+#     to the end of the body. Fence state never crosses a body (one body per
 #     call).
+#   - A list-item fence also ends where its item ends (A32b): a non-blank
+#     line whose indent holds no tab and is shorter than cc (the offset where
+#     the run started) ends the item and the fence. That line is not blanked
+#     and not a closer; it is read again as an ordinary top-level line, so it
+#     can open a new fence or be live text. Blank and whitespace-only lines
+#     never end the item, nor does a line with a tab in its indent (tabs are
+#     not expanded; keeping the fence open is the safe direction: it quotes
+#     too much, never hides less than GitHub does). Why: a marker GitHub shows
+#     as quoted must never read as live.
+#   - Accepted limits: nested list prefixes ("- - ```"), list items inside a
+#     blockquote, and tab expansion beyond the rule above. None of these can
+#     put a column-0 marker inside a fence.
 #   - Blockquote first in live_text: a `> ```` line never toggles fence state.
 #
 # Portability (the suite runs on macOS: BWK awk, BSD tools, bash 3.2): no
@@ -79,6 +91,12 @@ function fence_run(s,   m) {
 function handle(line,   run, ind, rest, p, islist) {
   if (fch != "") {                                       # inside a fence
     match(line, /^ */); ind = RLENGTH
+    # A list-item fence ends with its item: a non-blank line, no tab in its
+    # indent, indented less than the content column lcc (A32b). Not blanked
+    # and not a closer: it is read again as a top-level line.
+    if (lcc > 0 && ind < lcc && line ~ /[^ \t]/ && line !~ /^ *\t/) {
+      fch = ""; flen = 0; lcc = 0; handle(line); return
+    }
     if (ind <= maxind) {
       run = fence_run(substr(line, ind + 1))
       if (run != "" && substr(run, 1, 1) == fch && length(run) >= flen &&
@@ -100,14 +118,14 @@ function handle(line,   run, ind, rest, p, islist) {
     rest = substr(line, p + 1 + length(run))
     if (!(substr(run, 1, 1) == "`" && index(rest, "`") > 0)) {    # info string rule
       fch = substr(run, 1, 1); flen = length(run)
-      maxind = islist ? p + 3 : 3
+      maxind = islist ? p + 3 : 3; lcc = islist ? p : 0
       print ""; return
     }
   }
   if (mode == "live") print drop_spans(line); else print line
 }
 
-BEGIN { fch = ""; flen = 0; maxind = 3; CR = sprintf("%c", 13) }
+BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; CR = sprintf("%c", 13) }
 {
   line = $0
   sub(CR "$", "", line)                                  # CRLF is LF

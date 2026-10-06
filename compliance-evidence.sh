@@ -118,7 +118,7 @@ fi
 # which this same anchored ERE never matches in the first place.
 quoted_suffix() {
   local ere="$1"
-  grep -qE "$ere" <<<"$BUNDLE_TEXT_RAW" \
+  LC_ALL=C grep -qE "$ere" <<<"$BUNDLE_TEXT_RAW" \
     && printf '%s' " — marker-shaped text matching this gate does appear on PR #$pr_number, but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence"
 }
 
@@ -345,7 +345,7 @@ $raw_body"
   # dependence" discipline issue #302 already established for the rest
   # of this function).
   BUNDLE_ISSUES="$(printf '%s\n%s\n' "$pr_title_raw" "$raw_body" \
-    | grep -oiE "$CLOSING_KEYWORD_ERE" \
+    | LC_ALL=C grep -oiE "$CLOSING_KEYWORD_ERE" \
     | grep -oE '[0-9]+' \
     | sort -un)"
 
@@ -491,7 +491,7 @@ gate_stage_models() {
     # prose mentioning "model-record: stage=X" with no `<!--` is not a
     # marker at all and must read as not-evidenced, not indeterminate —
     # unreachable by quote-stripping since there's nothing to strip.
-    if grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
+    if LC_ALL=C grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
       local line model
       # A parser failure (lib/model-record.sh returns non-zero) means the
       # markers were not read: indeterminate, never a verdict (#392).
@@ -831,9 +831,9 @@ gate_review_marker() {
   # reasoning as gate_stage_models above. loose_ere is reused below by
   # quoted_suffix() (D8: must be the identical ERE the live grep used).
   local loose_ere='<!--[[:space:]]*pre-merge-review:done'
-  strict_matches="$(grep -oE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$BUNDLE_TEXT")"
+  strict_matches="$(LC_ALL=C grep -oE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$BUNDLE_TEXT")"
 
-  if grep -qE "$loose_ere" <<<"$BUNDLE_TEXT"; then
+  if LC_ALL=C grep -qE "$loose_ere" <<<"$BUNDLE_TEXT"; then
     loose_present=1
   fi
 

@@ -557,7 +557,7 @@ $rest"
       live_body="$(live_text "$pr_body_raw")" || LIVE_FAILED=1
       combined_live="$live_title
 $live_body"
-      if ! grep -qiE "$closing_ere" <<<"$combined_live"; then
+      if ! LC_ALL=C grep -qiE "$closing_ere" <<<"$combined_live"; then
         continue
       fi
 

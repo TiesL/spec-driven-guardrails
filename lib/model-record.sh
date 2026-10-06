@@ -46,11 +46,11 @@
 # full id ("claude-opus-5"), recorded as debt (PRD.md).
 normalize_model() {
   printf '%s' "$1" \
-    | tr '[:upper:]' '[:lower:]' \
-    | sed -E 's/^[[:space:]]*claude[- ]*//' \
-    | sed -E 's/-[0-9]{8}$//' \
-    | sed -E 's/[^a-z0-9]+/ /g' \
-    | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
+    | LC_ALL=C tr '[:upper:]' '[:lower:]' \
+    | LC_ALL=C sed -E 's/^[[:space:]]*claude[- ]*//' \
+    | LC_ALL=C sed -E 's/-[0-9]{8}$//' \
+    | LC_ALL=C sed -E 's/[^a-z0-9]+/ /g' \
+    | LC_ALL=C sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
 }
 
 effort_rank() {

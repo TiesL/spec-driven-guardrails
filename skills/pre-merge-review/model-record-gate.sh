@@ -255,7 +255,7 @@ else
   for stage in Discovery Planning Test Implementation Review; do
     # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
     # race, see issue #218 and check-no-sigpipe-race.sh.
-    if ! grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$live_all_text"; then
+    if ! LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$live_all_text"; then
       echo "model-record: no record found for stage $stage (missing model-choice marker)"
     fi
   done
@@ -380,7 +380,7 @@ check_text() { # source label, raw body
   live="$(live_text "$2")" || echo "model-record: dropping quoted text (live_text) failed on a $label body, so the role-play check read it incomplete (#423)"
   override_bodies="$override_bodies
 $live"
-  stages="$(grep -oE "$stage_ere" <<<"$live" | sed 's/.*stage=//')"
+  stages="$(LC_ALL=C grep -oE "$stage_ere" <<<"$live" | sed 's/.*stage=//')"
   # distinct, in pipeline order
   stages="$(for st in $all_stages; do grep -qx "$st" <<<"$stages" && echo "$st"; done)"
   [ -n "$stages" ] || return 0
@@ -409,14 +409,14 @@ waive_all=0
 skipped=""
 while IFS= read -r marker; do
   [ -n "$marker" ] || continue
-  grep -qE '(^|[[:space:]:])decided-by="[^"]+"' <<<"$marker" || continue
-  grep -qE '(^|[[:space:]])reason="[^"]+"' <<<"$marker" || continue
-  scope="$(grep -oE '(^|[[:space:]])scope="[^"]*"' <<<"$marker" | head -1 | sed 's/^[[:space:]]*scope="//; s/"$//')"
+  LC_ALL=C grep -qE '(^|[[:space:]:])decided-by="[^"]+"' <<<"$marker" || continue
+  LC_ALL=C grep -qE '(^|[[:space:]])reason="[^"]+"' <<<"$marker" || continue
+  scope="$(LC_ALL=C grep -oE '(^|[[:space:]])scope="[^"]*"' <<<"$marker" | head -1 | sed 's/^[[:space:]]*scope="//; s/"$//')"
   case "$scope" in
     single-session) waive_all=1 ;;
     skip=Discovery|skip=Planning|skip=Test|skip=Implementation|skip=Review) skipped="$skipped ${scope#skip=} " ;;
   esac
-done < <(grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bodies")
+done < <(LC_ALL=C grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bodies")
 
 missing=""
 waived=""
@@ -424,7 +424,7 @@ for stage in $all_stages; do
   # Live text only (B2 of the release holistic review on #369): a marker or
   # a stage name quoted in a code span, a fence or a blockquote is not a
   # present stage, the same rule as the stage check above and check_text.
-  grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
+  LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
   case "$skipped" in
     *" $stage "*) waived="$waived skip=$stage" ;;
     *) missing="$missing${missing:+, }$stage" ;;

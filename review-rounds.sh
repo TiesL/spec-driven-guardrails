@@ -77,7 +77,7 @@ rr_rounds() {
         Review) kind=R ;;
         Planning) kind=P ;;
       esac
-    elif grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
+    elif LC_ALL=C grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
       kind=R
     fi
     [ -n "$kind" ] || continue
