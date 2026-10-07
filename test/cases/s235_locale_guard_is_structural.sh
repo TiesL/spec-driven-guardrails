@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the two text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked.
+# S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the three text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked.
 # Covers: F34, F42
 #
 # Issue #423 AC7 (A32c, round 3 of PR #443). Rounds 1 and 2 each found the
@@ -20,6 +20,12 @@
 #       script in turn, with the export weakened (a non-C value, an unset), and
 #       with one lib prefix removed (normalize_model's first
 #       sed, a markdown.sh awk, a parser awk).
+#
+# Edited for #426 (V5 of #411): the carry-forward gate is a fifth script that reads
+# GitHub text (its `export LC_ALL=C` is L1's first statement, L3 removes it) and
+# lib/review-rounds.sh a third lib (L2 reads it; the synthetic tree below has one
+# sort site in it, so the synthetic tree has 9 sites). Red until the gate exports
+# LC_ALL=C and the external text commands of the new lib carry the prefix.
 #
 # The lint lives in test/fixtures/locale-lint.sh (test code). Its own
 # recognizing power is proven first on synthetic text and a synthetic tree
@@ -138,6 +144,10 @@ mk_syn() { # root
 live_text() { printf '%s\n' "$1" | LC_ALL=C awk -v mode=live "$P"; }
 strip() { out="$(LC_ALL=C grep -a -E x <<<"$1")" || return 1; }
 EOF
+  cat > "$r/lib/review-rounds.sh" <<'EOF'
+#!/usr/bin/env bash
+rr_sorted() { printf '%s\n' "$1" | LC_ALL=C sort -t x -k1,1; }
+EOF
   cat > "$r/lib/model-record.sh" <<'EOF'
 #!/usr/bin/env bash
 norm() {
@@ -154,7 +164,7 @@ EOF
 mk_syn "$SYN"
 expect_green "synthetic tree" "$SYN"
 syn_sites="$(sites_of "$SYN")"
-[ "$syn_sites" = "8" ] || fail "S235 lint — the synthetic tree has 8 sites, the lint counted '$syn_sites'"
+[ "$syn_sites" = "9" ] || fail "S235 lint — the synthetic tree has 9 sites, the lint counted '$syn_sites'"
 
 mutant_of() { # root-to-copy name file old new: a fresh copy with one literal replaced; sets MUT_ROOT
   local src="$1" name="$2" file="$3" old="$4" new="$5"
@@ -191,6 +201,7 @@ kill_mutant "$SYN" "syn:sed" lib/model-record.sh "LC_ALL=C sed" "sed"
 kill_mutant "$SYN" "syn:cut" lib/model-record.sh "LC_ALL=C cut" "cut"
 kill_mutant "$SYN" "syn:sort" lib/model-record.sh "LC_ALL=C sort" "sort"
 kill_mutant "$SYN" "syn:uniq" lib/model-record.sh "LC_ALL=C uniq" "uniq"
+kill_mutant "$SYN" "syn:review-rounds-sort" lib/review-rounds.sh "LC_ALL=C sort" "sort"
 kill_mutant "$SYN" "syn:tr-in-subst" lib/model-record.sh "| LC_ALL=C tr a b" "| tr a b"
 
 # =========================================================================

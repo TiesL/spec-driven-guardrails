@@ -74,3 +74,28 @@ rr_run() {
 rr_lines() { printf '%s\n' "$rr_out" | grep -E -- "$1" || true; }
 # rr_lines_i <ere>: the same, case-insensitively.
 rr_lines_i() { printf '%s\n' "$rr_out" | grep -E -i -- "$1" || true; }
+
+# --- #426 (V5 of #411): fixtures for the one Review round definition ----------
+# rr_done: a legacy done marker (the HTML-comment form with a 40-hex sha).
+RR_SHA40="dddddddddddddddddddddddddddddddddddddddd"
+rr_done() { printf '<!-- pre-merge-review:done sha=%s -->' "$RR_SHA40"; }
+# rr_finding <slug> <open|resolved>: a finding marker.
+rr_finding() { printf '<!-- finding:%s status=%s -->' "$1" "$2"; }
+# rr_pr_json <created_at> <description>: the PR object, with the time a gate
+# would need if it (wrongly) counted the description as a round.
+rr_pr_json() {
+  jq -n --arg c "$1" --arg b "$2" --arg t "Fix #$RR_ISSUE: something" '{title: $t, body: $b, created_at: $c}' > "$FAKE_GH_DATA/pr-$RR_PR.json"
+}
+# rr_script_run <script> [<args>...]: rr_run for another script (the carry-forward gate takes the PR number only).
+rr_script_run() {
+  RR_SCRIPT="$1"
+  shift
+  rr_run "$@"
+}
+# rr_gate_lines: the stdout lines of the gate that report a finding, one per line, sorted.
+rr_gate_lines() { printf '%s\n' "$rr_out" | LC_ALL=C grep -a '^finding-carryforward: ' | LC_ALL=C sort || true; }
+# rr_gate_slugs: the slugs those lines report, one per line, sorted (each line must start
+# `finding-carryforward: <slug> was open in the previous round and is missing from this one`).
+rr_gate_slugs() {
+  printf '%s\n' "$rr_out" | LC_ALL=C sed -n -E 's/^finding-carryforward: ([^ ]+) was open in the previous round and is missing from this one.*$/\1/p' | LC_ALL=C sort
+}

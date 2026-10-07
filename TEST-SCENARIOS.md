@@ -1419,14 +1419,18 @@ something new is being added.
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
 **Covers:** F28
-- Given: a PR's previous `pre-merge-review:done` comment left a finding
-  marked `<!-- finding:<slug> status=open -->`
-- When: `finding-carryforward-gate.sh <pr-number>` runs after a new
-  `pre-merge-review:done` comment is posted
-- Then: the slug is reported if it's missing from the new comment, and
-  not reported if the new comment re-flags it as still open or marks it
+- Given: a PR whose earlier Review round left a finding marked
+  `<!-- finding:<slug> status=open -->`, served as REST data by a recording fake
+  `gh` (`gh api repos/{owner}/{repo}/issues/N/comments`, `.../pulls/N/reviews`; the
+  fixtures were keyed to `gh pr view --json comments` until #426)
+- When: `finding-carryforward-gate.sh <pr-number>` runs after a new Review round
+  is posted
+- Then: the slug is reported if it's missing from the new round, and
+  not reported if the new round re-flags it as still open or marks it
   `status=resolved`; with only one review round so far, or without `gh`,
-  nothing is reported
+  nothing is reported; a failed fetch gives exit 0, a warning and no finding.
+  Edited for #426: each round is an A37 round (a Review record or a legacy done
+  marker with a 40-hex sha), S251 to S253 hold the new behaviour
 
 ### S132 — The 4th traceability link: an issue's own AC/Covers/work-item structure
 **Covers:** F29
@@ -2874,10 +2878,13 @@ something new is being added.
 - Then: every `gh` call is a plain `api` GET (no write verb, no GraphQL);
   a failed fetch prints a warning on stderr, no `review-rounds:` summary, and
   exits 0; a missing argument or malformed number prints usage and calls
-  nothing; markers are read only through `lib/model-record.sh`; the script uses
-  no bash 4 feature or GNU-only tool, runs under macOS `/bin/bash` 3.2, keeps
-  the round definition in one function (`rr_rounds`, A37) and is wired into no
-  hook, check or gate
+  nothing; records are read only through `rr_rounds` of `lib/review-rounds.sh`
+  (which reads them through `rec_scan model-record`; the script and the lib carry
+  no record pattern of their own and call no `marker_*`); the script uses
+  no bash 4 feature or GNU-only tool, runs under macOS `/bin/bash` 3.2, defines
+  no `rr_rounds` itself (the one definition is in the lib, A37, T1) and is wired
+  into no hook, check or gate (a gate sourcing `lib/review-rounds.sh`, or naming the
+  script in a comment, is not wiring). Edited for #426 (the definition moved to the lib)
 
 ### S218 — the self-check lines, the stated limit and the override pointer to #415
 **Covers:** F42
@@ -3301,22 +3308,25 @@ something new is being added.
   `tr '\001' '\n'` or from the done-marker `grep` (the byte arm). Not
   asserted: the wording of the warning
 
-### S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the two text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked
+### S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the three text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked
 **Covers:** F34, F42
-- Given: the four scripts `skills/pre-merge-review/model-record-gate.sh`,
-  `compliance-evidence.sh`, `role-label-staleness.sh`, `review-rounds.sh` and
-  the two libs `lib/markdown.sh`, `lib/model-record.sh`; the static lint in
+- Given: the five scripts `skills/pre-merge-review/model-record-gate.sh`,
+  `compliance-evidence.sh`, `role-label-staleness.sh`, `review-rounds.sh`,
+  `skills/pre-merge-review/finding-carryforward-gate.sh` (added by #426) and
+  the three libs `lib/markdown.sh`, `lib/model-record.sh`, `lib/review-rounds.sh`
+  (added by #426); the static lint in
   `test/fixtures/locale-lint.sh`
 - When: the lint reads them (no network, no locale needed)
 - Then: (L1) each script has `export LC_ALL=C` as its first statement after
   the shebang, comments, blank lines and `set` lines, and nowhere assigns
   LC_ALL to anything but C or unsets it; (L2) every command-position awk,
-  grep, sed, tr, cut, sort and uniq in the two libs is directly preceded by
+  grep, sed, tr, cut, sort and uniq in the three libs is directly preceded by
   `LC_ALL=C `, grep is always `grep -a`, unless the line carries
   `# locale-exempt: <reason>` (a non-empty reason; the allow-list is empty
   today); the number of sites checked is printed and must be above zero (and at
   least 10, the count after #424; it was 11 at head 5ea3a5b). (L3) the lint is red on a scratch copy
-  with the export removed from each script in turn, with a non-C export, with
+  with the export removed from each script in turn (the synthetic tree has a
+  `lib/review-rounds.sh` of one `sort` site, and its prefix removal is a mutant), with a non-C export, with
   an unset, and with one lib prefix removed (`normalize_model`'s first `sed` and `tr`, both `markdown.sh` awks, both
   parser awks); and on a synthetic tree and snippets, each of the seven
   commands bare in every command position (line start, after a pipe, `$(`,
@@ -3329,7 +3339,9 @@ something new is being added.
   `effort_rank`'s `tr`, a site that #424 deleted with the function, so the
   site floor is 10 now). Accepted limits of the lint: `${...}` skipped to its
   first `}`, a grep continued on a backslash line is not checked for `-a`,
-  heredoc bodies read as code
+  heredoc bodies read as code. Red after #426's tests, before its code: the carry-forward gate has
+  no `export LC_ALL=C`. A real-tree mutant of `lib/review-rounds.sh` is for the
+  Developer to add once the lib has an external text command (the stub has none)
 
 ### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
 **Covers:** F39, F40
@@ -3682,3 +3694,119 @@ something new is being added.
   record run over a newline, abort on invalid UTF-8 under `LANG` (no
   per-command `LC_ALL=C`), fail on a `~~~` or a longer closing fence, print the
   whole 100 KB line
+
+### S250 — rr_rounds in lib/review-rounds.sh is the one definition of a Review round: what counts, the order, the output rows, the read through rec_scan, and a failed read is never "no round"
+**Covers:** F42, F40
+- Given: `lib/review-rounds.sh` sourced alone (it sources `lib/model-record.sh`
+  itself) and rows on stdin, `<created_at> TAB <source> TAB <url> TAB <body>`,
+  source `comment`, `issue` or `review`, the body's newlines as U+0001 (issue
+  #426, AC2 and AC4; A37). The agreed signature: it prints one row per round
+  (`R TAB <n> TAB <created_at> TAB <source> TAB <url> TAB <body>`, six fields, the
+  body field the input unchanged) and one `P` row for a body whose first
+  candidate is a Planning record after at least one round (n is the latest round
+  before it); order is `created_at`, then issue, comment, review, then input
+  order; status 0 for no round; a failed read prints nothing on stdout, one line
+  on stderr and returns non-zero
+- When: bodies are fed alone and in sets, under `LC_ALL=C`, a UTF-8 locale and
+  `LANG` only (`LC_ALL` unset), with counting PATH shims for grep, awk, sed, tr,
+  cut, head, tail, sort, uniq and wc, and with a stand-in `rec_scan`
+- Then: a body is a round when its FIRST candidate is `stage=Review`: an ok
+  record, or a near-miss (unclosed, prose before it, blank model, text after it,
+  a value with `<`); a body with no candidate and a live `pre-merge-review:done
+  sha=<40 hex>` is a legacy round; a record in a fence, tilde fence, blockquote,
+  code span, indented block or unclosed fence is no candidate and no round; a
+  first candidate of another stage (Test, Discovery, a Planning near-miss) is no
+  round even with a Review record after it; two Review records, or a record and a
+  done marker, are one round; a done marker that is prose, 39 hex, without a sha,
+  fenced or quoted is none; rounds are numbered in time order across sources,
+  ties go issue, comment, review, then input order; a Planning body before round
+  1 gives no row; a stand-in `rec_scan` that finds no candidate makes a real
+  Review record no round and one that says Review makes prose a round (the
+  records are read through `rec_scan model-record`); with every tool failing from
+  its 1st to 4th call (when it ran at least that often) the status is non-zero,
+  stdout empty, stderr non-empty, and the shim ran; a grep exit 1 with a `0` count
+  is a clean "no hit"; an invalid or truncated UTF-8 byte before a record changes
+  nothing in any of the three environments. Threat model: accidental defects in
+  real PR bodies and tools, no forger. Red today: the stub exits 99. Kill table:
+  count any Review record not the first candidate; ok records only; drop the
+  legacy round or accept it unquoted or without 40 hex; read a quoted record as a
+  candidate; count two records of one body twice; file order or swapped tie
+  ranks; number in file order; Planning before round 1 or a Planning row spending
+  a round number; change the field count or the body field; a record pattern of
+  its own instead of `rec_scan`; ignore a failing grep, awk or sort; print the
+  rounds read before a failure; an external tool without `LC_ALL=C`
+
+### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
+**Covers:** F28, F42
+- Given: a PR served as REST data (comments with `created_at`, reviews with
+  `submitted_at`) with Review rounds that carry `<!-- finding:<slug> status=... -->`
+  markers (issue #426 AC1, issue #421 found on PR #397; A34 F1 as superseded by
+  A37)
+- When: `finding-carryforward-gate.sh <pr-number>` runs
+- Then: with three rounds, the middle one a request-changes PR review (and
+  again a PR comment) without `pre-merge-review:done`, a slug open in round 1 and
+  missing from round 2 is reported although round 3 mentions it again; with five
+  rounds, three of them request-changes without a done marker, exactly the
+  findings that vanished (c, d) are reported and one that round 3 carried (b) is
+  not; nothing is reported when every open slug is carried (open or resolved), with
+  one round, with no round, or when a finding is open only in the last round; a
+  human comment between two rounds is no round (it cannot carry a finding forward
+  and does not split the comparison); several vanished findings give one line each
+  (an inline marker is read) and stdout holds finding lines only; exit 0. Threat
+  model: accidental (a round type the old filter did not know, chatter between
+  rounds, endpoint order not time order). Red today: the gate calls `gh pr view`
+  which a REST-only host refuses, so it fails open and reports nothing. Kill
+  table: rounds are the bodies with a done marker; compare only the two latest
+  rounds; read PR comments only; every comment is a round; never compare round 1
+  with round 2; report every open slug of every round; a resolved marker does not
+  count as carried; extra output
+
+### S252 — the carry-forward gate calls only `gh api repos/{owner}/{repo}/...` (comments and reviews), fails open with a warning when a fetch fails, and a failed read is a warning, never "no round" and never a false finding
+**Covers:** F28, F42
+- Given: the carry-forward gate behind a recording fake `gh` that serves REST
+  data and refuses everything else (as a Claude Code session refuses GraphQL,
+  #318), and counting PATH shims (issue #426 AC3; A34, A37, A32a)
+- When: it runs on a PR with a vanished finding, with every fetch failing, with the
+  comments or the reviews unreadable, without `gh`, with grep, awk or any other
+  external tool failing from its 1st to 4th call, with grep exiting 1 on a PR
+  without a round
+- Then: every `gh` call is `gh api repos/{owner}/{repo}/...`, a plain GET, the
+  PR's comments and its reviews are both read, no `pr view`, no GraphQL, nothing
+  written to the working directory; a failed fetch (all, comments only, reviews
+  only, no `gh`) gives exit 0, a warning on stderr and NO finding on stdout; a
+  failing tool (when the shim ran) gives exit 0, a warning, no finding (a failed
+  `sed`, `tr` or `grep` is never read as "no finding" or as a finding); grep exit 1
+  is a clean no-hit (no warning, nothing printed); the gate exports `LC_ALL=C` as
+  its first statement, sources `lib/review-rounds.sh`, calls `rr_rounds`, defines
+  no `rr_rounds`, `live_text` or `md_strip_fences`, carries no record pattern of
+  its own, no `gh pr`, no `eval`, no bash 4 or GNU-only construct, and gives the
+  same output under `/bin/bash` 3.2. Threat model: accidental (a half failing
+  fetch, a tool that exits 2, GraphQL refused by the host). Red today: the gate
+  calls `gh pr view`, has no export and no lib. Kill table: `gh pr view --json
+  comments`; a write verb; one endpoint only; exit 1 on a failed fetch; no warning;
+  a verdict from the comments when the reviews failed; a failing tool read as no
+  finding; grep exit 1 as a failure; a record pattern or an own `rr_rounds`
+
+### S253 — review-rounds.sh and the carry-forward gate count the same Review rounds, in the same order: a PR review is a round like a comment, a near-miss and a legacy body are rounds, a fenced record and the PR description are not
+**Covers:** F28, F42
+- Given: the two real scripts on the same REST data (issue #426 AC2 and AC4; A37):
+  (AC2) a comment, a PR review and a comment, the review in the other endpoint's
+  list, and the same with the review first and last, and a comment and a review
+  at one time; (AC4) a near-miss Review body (three shapes), a PR review that
+  holds a fenced Review record (fence, tilde fence, blockquote, code span,
+  indented block) next to a resolved marker, a legacy done-marker body, a human
+  comment, and a PR description that holds a Review record and an open finding
+- When: `review-rounds.sh` and `finding-carryforward-gate.sh` run
+- Then: `review-rounds.sh` prints `review-rounds: 3` with the rounds at the three
+  times in time order, and the gate (x open in round 1, resolved in round 2 where
+  y opens, nothing in round 3) reports y and only y; in AC4 `review-rounds.sh`
+  counts exactly the near-miss body and the legacy body (2 rounds, at their times)
+  and the gate reports the near-miss body's finding as missing from the legacy
+  body and nothing else (if the fenced body counted the finding would be carried,
+  if the description counted its own would be reported, if either real round did
+  not count nothing would be reported). Threat model: accidental defects in real
+  PR bodies, no forger. Red today: the gate reads no REST data (and counts through
+  `gh pr view`), the script counts through its own copy of the rule. Kill table: a
+  script that reads PR comments only; reviews numbered after comments; ok records
+  only; no legacy bodies; a fenced or quoted record counted; the PR description
+  counted; one script that keeps its own definition
