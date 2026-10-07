@@ -240,6 +240,9 @@ else
   kill_mutant "$ROOT" "real:markdown-live-awk" lib/markdown.sh "LC_ALL=C awk -v mode=live" "awk -v mode=live"
   kill_mutant "$ROOT" "real:parser-find-awk" lib/model-record.sh "LC_ALL=C awk -v want=\"\$1\" -v mode=find" "awk -v want=\"\$1\" -v mode=find"
   kill_mutant "$ROOT" "real:parser-scan-awk" lib/model-record.sh "LC_ALL=C awk -v want= -v mode=scan" "awk -v want= -v mode=scan"
+  kill_mutant "$ROOT" "real:review-rounds-sort" lib/review-rounds.sh "LC_ALL=C sort -t" "sort -t"
+  kill_mutant "$ROOT" "real:review-rounds-grep" lib/review-rounds.sh "LC_ALL=C grep -aqE" "grep -aqE"
+  kill_mutant "$ROOT" "real:review-rounds-tr" lib/review-rounds.sh "LC_ALL=C tr '\\001'" "tr '\\001'"
 fi
 
 test_done

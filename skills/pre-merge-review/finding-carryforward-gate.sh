@@ -18,10 +18,13 @@
 #   <!-- finding:<slug> status=open -->
 #   <!-- finding:<slug> status=resolved -->
 #
-# This compares the two most recent `pre-merge-review:done` comments on
-# the PR: every slug the second-to-last comment left `status=open` must
-# reappear (open or resolved) in the latest one. Fewer than two review
-# comments exist yet -> nothing to carry forward, no findings.
+# This compares every Review round with the one immediately before it
+# (#421, #426): a round is the A37 round (lib/review-rounds.sh, one
+# definition shared with review-rounds.sh), a PR comment or a PR review, so a
+# request-changes round with no `pre-merge-review:done` marker counts. Every
+# slug a round left `status=open` must reappear (open or resolved) in the
+# next one. Fewer than two rounds -> nothing to carry forward, no findings.
+# The PR description is no round.
 #
 # Fail-open without gh or network: warn, don't block — same ground rule
 # as every other gate here.
@@ -33,53 +36,64 @@
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 pr_number="${1:?usage: finding-carryforward-gate.sh <pr-number>}"
+
+skip() { # <what failed>: fail open, a warning, no verdict
+  echo "warning: finding-carryforward-gate $1 and is skipping the carry-forward check for PR #$pr_number." >&2
+  exit 0
+}
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "warning: finding-carryforward-gate can't find gh and is skipping the carry-forward check." >&2
   exit 0
 fi
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || skip "could not find its own directory"
+# shellcheck source=lib/review-rounds.sh
+. "$script_dir/../../lib/review-rounds.sh" || skip "could not load lib/review-rounds.sh"
 
-comments="$(gh pr view "$pr_number" --json comments --jq '.comments[] | select(.body | contains("pre-merge-review:done")) | .body' 2>&1)"
-status=$?
-if [ "$status" -ne 0 ]; then
-  echo "warning: finding-carryforward-gate couldn't consult PR #$pr_number (no network or no access) and is skipping the check." >&2
-  echo "$comments" >&2
-  exit 0
-fi
+rows=""
+fetch() { # <endpoint> <timefield> <source>
+  local out
+  out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null)" \
+    || skip "couldn't consult PR #$pr_number (no network or no access)"
+  [ -z "$out" ] || rows="$rows$out"$'\n'
+}
+fetch "repos/{owner}/{repo}/issues/$pr_number/comments" created_at comment
+fetch "repos/{owner}/{repo}/pulls/$pr_number/reviews" submitted_at review
 
-# Concatenated comment bodies have no delimiter gh's --jq output can add
-# between them, but the marker convention gives one for free: it's always
-# the last line of its own comment (see SKILL.md's "ending with the
-# required marker"), so a marker line's position is that comment's end.
-marker_lines="$(printf '%s' "$comments" | grep -n "pre-merge-review:done" | cut -d: -f1)"
-total="$(printf '%s' "$marker_lines" | grep -c . || true)"
-[ "$total" -ge 2 ] || exit 0
+rounds="$(rr_rounds <<<"$rows")" || skip "couldn't read the review rounds"
 
-prevprev_line=0
-if [ "$total" -ge 3 ]; then
-  prevprev_line="$(printf '%s' "$marker_lines" | sed -n "$((total - 2))p")"
-fi
-prev_line="$(printf '%s' "$marker_lines" | sed -n "$((total - 1))p")"
-
-# previous: only the second-to-last comment's own body (not all of
-# history) — the immediately preceding round, which is what a fresh round
-# must account for. latest: only the last comment's body, to end of input.
-previous="$(printf '%s' "$comments" | sed -n "$((prevprev_line + 1)),${prev_line}p")"
-latest="$(printf '%s' "$comments" | sed -n "$((prev_line + 1)),\$p")"
-
-# Slugs the previous round left open, one per line.
-open_slugs="$(printf '%s' "$previous" \
-  | grep -oE '<!--[[:space:]]*finding:[^[:space:]]+[[:space:]]+status=open[[:space:]]*-->' \
-  | sed -E 's/<!--[[:space:]]*finding:([^[:space:]]+).*/\1/')"
-[ -n "$open_slugs" ] || exit 0
-
-printf '%s\n' "$open_slugs" | while IFS= read -r slug; do
-  [ -n "$slug" ] || continue
-  # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
-  # race, see issue #218 and check-no-sigpipe-race.sh.
-  if ! grep -qF "finding:$slug" <<<"$latest"; then
-    echo "finding-carryforward: $slug was open in the previous round and is missing from this one"
+tab=$'\t'
+out=""
+prev=""
+have_prev=0
+while IFS="$tab" read -r kind _ _ _ _ body; do
+  [ "$kind" = R ] || continue
+  body="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')" || skip "could not decode a round (tr failed)"
+  if [ "$have_prev" -eq 1 ]; then
+    # Slugs the previous round left open, one per line. grep exit 1 is "none".
+    slugs="$(LC_ALL=C grep -aoE '<!--[[:space:]]*finding:[^[:space:]]+[[:space:]]+status=open[[:space:]]*-->' <<<"$prev")"
+    rc=$?
+    [ "$rc" -le 1 ] || skip "could not read the findings (grep exit $rc)"
+    if [ -n "$slugs" ]; then
+      slugs="$(LC_ALL=C sed -E 's/<!--[[:space:]]*finding:([^[:space:]]+).*/\1/' <<<"$slugs")" \
+        || skip "could not read the findings (sed failed)"
+      while IFS= read -r slug; do
+        [ -n "$slug" ] || continue
+        LC_ALL=C grep -aqF "finding:$slug" <<<"$body"
+        rc=$?
+        case "$rc" in
+          0) : ;;
+          1) out="$out""finding-carryforward: $slug was open in the previous round and is missing from this one"$'\n' ;;
+          *) skip "could not compare the rounds (grep exit $rc)" ;;
+        esac
+      done <<<"$slugs"
+    fi
   fi
-done
+  prev="$body"
+  have_prev=1
+done <<<"$rounds"
+printf '%s' "$out"
+exit 0

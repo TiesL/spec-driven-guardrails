@@ -997,10 +997,14 @@ nothing to catch it — `portfolio-mgt-agents` PR #4: round 1 flagged a
 missing entry, round 2 never carried it forward, merged 17 seconds later.
 Every finding now carries its own
 `<!-- finding:<slug> status=open|resolved -->` marker.
-`finding-carryforward-gate.sh <pr-number>` compares the two most recent
-`pre-merge-review:done` comments and reports any slug the previous round
-left open that doesn't reappear (as still-open or resolved) in the new
-one. With only one review round so far, or without `gh`, it fails open.
+`finding-carryforward-gate.sh <pr-number>` compares every Review round with
+the one immediately before it (issue #421, #426) and reports any slug a
+round left open that doesn't reappear (as still-open or resolved) in the
+next one. A round is the one definition shared with `review-rounds.sh`
+(F42): a PR comment or a PR review, so a request-changes round without a
+`pre-merge-review:done` marker counts. It reads the PR over REST only
+(comments and reviews). With fewer than two rounds nothing is reported;
+without `gh`, or when a fetch or a read fails, it warns and fails open.
 
 ### F29 — The 4th traceability link: issue structure (issue #242)
 
@@ -1497,6 +1501,14 @@ markers after each; it is not a gate, because severity and class are not
 machine-readable. Overriding the route is a recorded human decision that
 follows the pushback and risk-note flow of #415, which this feature does not
 redefine.
+
+Review rounds have one definition (issue #426): `rr_rounds` in
+`lib/review-rounds.sh`. A round is one PR comment or PR review whose first
+record candidate is `stage=Review` (well-formed or malformed), or a legacy
+body with only a `pre-merge-review:done` marker; a fenced record and the PR
+description do not count. `review-rounds.sh` and the finding carry-forward
+gate (F28) both read their rounds through it and so always agree on the
+count.
 
 Acceptance criteria: full text in issue #410. Mechanically verified: the
 rule text in the role contracts, `ORCHESTRATOR.md` and `pre-merge-review`,
