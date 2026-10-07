@@ -230,7 +230,11 @@ if [ -x /bin/bash ] && /bin/bash -c '[ "${BASH_VERSINFO[0]}" -lt 4 ]' 2>/dev/nul
   seed
   want="$(rr_gate_slugs; true)"
   b32="$(cd "$RR_CWD" && PATH="$RR_BIN:$PATH" /bin/bash "$GATE" "$RR_PR" 2>"$SANDBOX/b32-err")"
-  [ "$b32" = "finding-carryforward: gone was open in the previous round and is missing from this one" ] || fail "S252/R4 bash32 — under /bin/bash 3.2 the output differs or the gate failed ($want): $b32 / $(cat "$SANDBOX/b32-err")"
+  # one line, the fixed prefix, then (S254) the round it names
+  case "$b32" in
+    "finding-carryforward: gone was open in the previous round and is missing from this one"*) [ "$(printf '%s\n' "$b32" | wc -l | tr -d ' ')" -eq 1 ] || fail "S252/R4 bash32 — more than one line: $b32" ;;
+    *) fail "S252/R4 bash32 — under /bin/bash 3.2 the output differs or the gate failed ($want): $b32 / $(cat "$SANDBOX/b32-err")" ;;
+  esac
 fi
 
 test_done
