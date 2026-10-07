@@ -33,6 +33,7 @@
 #   comment-numbered  a human comment takes a round number (N, review in the middle)
 #   forever      a closed gap is reported on every later run (H)
 #   silence-all  every gap is dropped once the slug turns up again later, resolved or not (N, H beta)
+#   mention-heals  any later mention closes the gap, not an open then a resolved (H3)
 #   dup          one line per later round instead of one per vanished slug (H)
 
 set -uo pipefail
@@ -139,5 +140,16 @@ rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}$(op alpha
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T2" "r2, request changes${NL}${rev}" "$T4" "r4, request changes${NL}$(rs alpha)${NL}${rev}"
 run_gate "H2"
 [ -z "$(line_for alpha)" ] || fail "S254/H2 — alpha closed in a request-changes round 4 after being re-flagged, and the gate still reports it: '$(line_for alpha)'"
+
+# H3: a mere mention is no re-flag: missing in round 2, only resolved in round 3 and
+# again in round 4 (never flagged open after the gap) stays reported, as round 2
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at \
+  "$T1" "r1${NL}$(op alpha)${NL}${rev}${NL}${dn}" \
+  "$T2" "r2${NL}${rev}${NL}${dn}" \
+  "$T3" "r3${NL}$(rs alpha)${NL}${rev}${NL}${dn}" \
+  "$T4" "r4${NL}$(rs alpha)${NL}${rev}${NL}${dn}"
+run_gate "H3"
+names_round "H3 resolved without ever being flagged open again" alpha 2
 
 test_done

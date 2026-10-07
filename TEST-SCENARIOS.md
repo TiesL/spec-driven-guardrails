@@ -3825,7 +3825,9 @@ something new is being added.
   the previous round and is missing from this one` and names the round it is
   missing from as `round <k>` (the A37 number; a human comment takes none) with no
   round number outside the pair; `alpha` (gap closed by re-flag then resolve) is
-  not reported; `beta` is reported once, as missing from round 3. Not asserted
+  not reported; `beta` is reported once, as missing from round 3; a slug that was
+  only mentioned as resolved after its gap (never flagged open again) stays
+  reported. Not asserted
   (spec ambiguity, for the Architect): a slug missing in round 2, open again in
   round 3 and still open in round 4. Threat model: accidental, no forger. Kill
   table: no round named; the previous or the last round named; a human comment
