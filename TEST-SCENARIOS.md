@@ -3744,11 +3744,12 @@ something new is being added.
   A37)
 - When: `finding-carryforward-gate.sh <pr-number>` runs
 - Then: with three rounds, the middle one a request-changes PR review (and
-  again a PR comment) without `pre-merge-review:done`, a slug open in round 1 and
-  missing from round 2 is reported although round 3 mentions it again; with five
-  rounds, three of them request-changes without a done marker, exactly the
-  findings that vanished (c, d) are reported and one that round 3 carried (b) is
-  not; nothing is reported when every open slug is carried (open or resolved), with
+  again a PR comment) without `pre-merge-review:done`, a slug open in round 1,
+  missing from round 2 and not mentioned in round 3 is reported, and is not when
+  round 3 resolves it (A37b); with five rounds, three of them request-changes
+  without a done marker, exactly the findings that vanished (c, d) are reported and
+  one that round 3 resolved (b) is not, and with round 5 resolving c only d is
+  reported; nothing is reported when every open slug is carried (open or resolved), with
   one round, with no round, or when a finding is open only in the last round; a
   human comment between two rounds is no round (it cannot carry a finding forward
   and does not split the comparison); several vanished findings give one line each
@@ -3759,7 +3760,7 @@ something new is being added.
   table: rounds are the bodies with a done marker; compare only the two latest
   rounds; read PR comments only; every comment is a round; never compare round 1
   with round 2; report every open slug of every round; a resolved marker does not
-  count as carried; extra output
+  count as carried; a later round that carries the slug does not clear the gap; extra output
 
 ### S252 — the carry-forward gate calls only `gh api repos/{owner}/{repo}/...` (comments and reviews), fails open with a warning when a fetch fails, and a failed read is a warning, never "no round" and never a false finding
 **Covers:** F28, F42
@@ -3811,28 +3812,32 @@ something new is being added.
   only; no legacy bodies; a fenced or quoted record counted; the PR description
   counted; one script that keeps its own definition
 
-### S254 — the carry-forward gate names the round each vanished finding is missing from, and a finding that was re-flagged and then resolved is not reported any more
+### S254 — the carry-forward gate names the round that dropped each finding, and a slug that a later round re-flags or resolves is not reported any more (A37b)
 **Covers:** F28, F42
 - Given: the carry-forward gate behind a recording fake `gh` with REST data
-  (issue #426 AC1; review round 1 of PR #452, finding
-  `gate-output-names-no-round`): #421's three rounds (the middle one a PR review
-  without a done marker); a drop in round 3 of three; a human comment between
-  rounds; four rounds where `alpha` is open, missing, open again, resolved and
-  `beta` is open, open, missing, missing; the same with request-changes PR reviews
-  in rounds 2 and 4
+  (issue #426 AC1 as amended by Architect ruling A37b; review round 1 of PR #452,
+  finding `gate-output-names-no-round`): #421's three rounds (the middle one a PR
+  review without a done marker); a drop in round 3 of three; a human comment
+  between rounds; four rounds where `alpha` is open, missing, open again, resolved
+  and `beta` is open, open, missing, missing; the same with request-changes PR
+  reviews in rounds 2 and 4; one slug per state sequence over three or four rounds
+  for the rest of the clearing table
 - When: the gate runs
-- Then: every finding line keeps the prefix `finding-carryforward: <slug> was open in
-  the previous round and is missing from this one` and names the round it is
-  missing from as `round <k>` (the A37 number; a human comment takes none) with no
-  round number outside the pair; `alpha` (gap closed by re-flag then resolve) is
-  not reported; `beta` is reported once, as missing from round 3; a slug that was
-  only mentioned as resolved after its gap (never flagged open again) stays
-  reported. Not asserted
-  (spec ambiguity, for the Architect): a slug missing in round 2, open again in
-  round 3 and still open in round 4. Threat model: accidental, no forger. Kill
-  table: no round named; the previous or the last round named; a human comment
-  numbered; a closed gap reported forever; every gap silenced once the slug turns
-  up again; one line per later round
+- Then: a slug is reported if, and only if, the latest round that mentions it
+  leaves it open and that round is not the last; every finding line keeps the
+  prefix `finding-carryforward: <slug> was open in the previous round and is
+  missing from this one` and ends with `round <k>`, the A37 number of the round that
+  dropped it (a human comment takes none), with no round number outside the pair.
+  Per sequence (o open, m missing, r resolved): o m is round 2; o m r, o m o,
+  o m o o, o m o r, o m m o and m m o are not reported; o m o m is reported once, as
+  round 4; o m m is reported once, as round 2 and not round 3; o o m m (`beta`) is
+  reported once, as round 3; m m r is not reported. Threat model: accidental, no
+  forger. Kill table: no round named; the previous or the last round named; a
+  human comment numbered; every gap reported forever or only the first one; only
+  an open then a resolved clears (the earlier encoding); only a later open, only a
+  later resolved or only the next round clears; a later carry silences the slug for
+  good; the first gap named instead of the latest; one line per missing round; a
+  drop in the last round not reported
 
 ### S255 — a Planning body (or any non-review body) posted between two Review rounds is no round for the carry-forward gate: it is neither compared nor does it split the comparison
 **Covers:** F28, F42

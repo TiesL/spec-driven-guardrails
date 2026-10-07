@@ -43,7 +43,7 @@
 #   comment-numbered a human comment takes a round number (N3)
 #   forever          every gap is reported on every later run, nothing clears it (H, T1-T3, T6)
 #   first-gap-only   a slug is reported once at its first gap, whatever follows (H alpha, T4)
-#   silence-all      every gap is dropped once the slug turns up again later, resolved or not (N, H beta)
+#   heal-whole-slug a later carry silences the slug for good, a new gap included (T4)
 #   open-then-resolved-only  QA's earlier rule: only an open and then a resolved clears (T1, T2, T3, T6)
 #   only-open-heals  a later open clears the gap, a later resolved does not (T1, H3)
 #   only-resolved-heals  a later resolved clears the gap, a later open does not (T2, T3, T6)
@@ -151,9 +151,10 @@ names_round "N2 drop in the last round" beta 3
 
 # ---- N3: a human comment between the rounds takes no number ------------------------
 rr_reset
-rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}$(op gamma)${NL}${rev}${NL}${dn}" "$T2" "a human remark, no marker" "$T4" "r3${NL}$(op gamma)${NL}${rev}${NL}${dn}"
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}$(op gamma)${NL}${rev}${NL}${dn}" "$T2" "a human remark, no marker" "$T4" "r3, gamma still gone${NL}${rev}${NL}${dn}"
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T3" "r2, gamma gone${NL}${rev}"
 run_gate "N3"
+# (round 3 does not mention gamma: under A37b a re-flag in round 3 would clear the gap)
 names_round "N3 round 2 is the review, the human comment has no number" gamma 2
 
 # ---- H: re-flagged and resolved is not reported; a slug that stays missing is -------
