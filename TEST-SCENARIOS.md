@@ -3522,7 +3522,8 @@ something new is being added.
   blockquote, indented four spaces or a tab, with one to three leading spaces,
   inline, in a table or list-item line, and non-candidates (NBSP or a zero-width
   space after `<!--`, `model-record-gate`, no colon, a finding marker, bare
-  prose); the same for `pipeline-override`; and every record shape wrapped in a
+  prose; a colon-less line next to a real record still gives no row, review
+  round 1 F2, kill: the awk opener's colon made optional); the same for `pipeline-override`; and every record shape wrapped in a
   fence one backtick longer than its longest run and in a tilde fence (AC1)
 - When: `rec_scan` reads them under the three locale environments
 - Then: the class sequence is the one the labelled oracle gives: fence shapes
@@ -3595,7 +3596,11 @@ something new is being added.
 - Then: with pass-through shims the reader still reads the record and the grep
   and awk shims were called (a vacuous scenario is red); when grep or awk
   exits 2 the status is non-zero, stdout is empty and stderr says why; grep
-  exit 1 on a record-less body is status 0, no rows, nothing on stderr; for every
+  exit 1 on a record-less body (the shim prints "0", as a real `grep -c` does) is
+  status 0, no rows, nothing on stderr; a grep step with NO count (status 1 or 0
+  with nothing printed, also a real run under `ulimit -n 3`, which leaves bash no
+  pipe) is a failure: non-zero, empty stdout, a line on stderr (review round 1,
+  F1); for every
   tool, whenever the shim actually failed the whole read failed with empty
   stdout (no rows of earlier bodies leak out of a failed bundle), and a tool
   that never failed leaves a clean read; `rec_field` never returns status 0
@@ -3604,7 +3609,7 @@ something new is being added.
   `|| return`, a pipeline status from the last command, grep 2 read as no
   match); no forger. Red today: stubs. Kill table: drop a `|| return`, treat
   grep 2 as 1, treat grep 1 as a failure, print rows before returning the
-  failure, a reader that never calls grep
+  failure, a reader that never calls grep, a count-less grep read as no hit
 
 ### S248 — the frozen corpus: every row of test/fixtures/marker-corpus.jsonl gets its labelled class and fields from rec_scan, alone and wrapped in a fence; the counts match the fixture header; the fixture is self-consistent and clean (K1)
 **Covers:** F40

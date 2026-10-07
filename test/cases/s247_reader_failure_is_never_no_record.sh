@@ -109,6 +109,50 @@ for mode in $mode_list; do
   done
 done
 
+# --- 3b. a grep step WITHOUT the count is not "no hit" (review round 1, F1) ---------
+# `grep -c` prints "0" and exits 1 when nothing matches. Bash itself gives status
+# 1 to a command it could not even set up (no temp file for a here-string), and
+# bash 3.2 gives a command substitution that could not get a pipe status 0 and an
+# empty value; either way no count is printed. That is a failure: on a body that
+# HOLDS a record the reader must not return 0 with empty stdout. Shapes: silent1
+# (status 1, no count) and silent0 (status 0, no count). Only a printed count
+# (0 with status 1, or a positive number with status 0) says grep ran.
+for shape in silent1 silent0; do
+for mode in $mode_list; do
+  for fn in rec_scan rec_scan_bundle; do
+    fresh
+    rh_shim "$SHIMS" grep "$shape" "$CNT" || continue
+    if [ "$fn" = rec_scan ]; then arg="$with_record"; else arg="$bundle5"; fi
+    rh_run "$mode" rh_with_path "$SHIMS" "$fn" model-record "$arg"
+    c="$(rh_count "$CNT")"
+    [ "$c" -gt 0 ] || fail "S247/grep exit 1 without a count ($shape) $fn [$mode] — the grep shim was never called (count $c): the scenario proved nothing"
+    [ "$RH_RC" -ne 0 ] || fail "S247/grep exit 1 without a count ($shape) $fn [$mode] — status 0: a grep that could not run (no count printed) was read as 'no record' (stdout: '$RH_OUT')"
+    [ -z "$RH_OUT" ] || fail "S247/grep exit 1 without a count ($shape) $fn [$mode] — stdout must be empty when the reader failed, got: '$RH_OUT'"
+    [ -n "$RH_ERR" ] || fail "S247/grep exit 1 without a count ($shape) $fn [$mode] — a failure says so on stderr (one line at least)"
+  done
+done
+done
+
+# --- 3c. the real thing, no shim: bash cannot set up the grep step ----------------
+# A descriptor limit of 3 (0, 1, 2 are taken) leaves no pipe for the command
+# substitution (bash 3.2 and 5.x alike; a here-string that needs a temp file
+# fails the same way). Portable on macOS and Linux, unlike a sandbox profile or
+# TMPDIR tricks (bash 3.2 ignores TMPDIR for here-strings). The limit is set
+# inside the subshell that runs the reader, after the harness has opened its files.
+rh_nofile() { ulimit -n 3 2>/dev/null || return 99; "$@"; }
+if ( ulimit -n 3 2>/dev/null && [ "$(printf a)" = a ] ) 2>/dev/null; then
+  fail "S247/descriptor limit — 'ulimit -n 3' does not stop a command substitution here; the real-failure arm cannot be injected"
+else
+  for mode in $mode_list; do
+    for fn in rec_scan rec_scan_bundle; do
+      if [ "$fn" = rec_scan ]; then arg="$with_record"; else arg="$bundle5"; fi
+      rh_run "$mode" rh_nofile "$fn" model-record "$arg"
+      [ "$RH_RC" -ne 0 ] || fail "S247/no pipe for grep $fn [$mode] — status 0 although the reader could not run its grep step: a bash-level failure was read as 'no record' (stdout: '$RH_OUT')"
+      [ -z "$RH_OUT" ] || fail "S247/no pipe for grep $fn [$mode] — stdout must be empty when the reader failed, got: '$RH_OUT'"
+    done
+  done
+fi
+
 # --- 4. any tool, failing from the Nth call: the whole read fails, nothing leaks ----
 # (the first mode only: the sweep is tools x call numbers x two functions)
 sweep_modes=C

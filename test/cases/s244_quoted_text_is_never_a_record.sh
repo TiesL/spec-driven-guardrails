@@ -123,6 +123,15 @@ check "NBSP between <!-- and model-record: is plain text (stated limit)" "" "<!-
 check "a zero-width space between <!-- and model-record: is plain text (stated limit)" "" "<!--${ZW}model-record: stage=Test model=\"m1\" -->"
 check "a different comment that starts with the word" "" "<!-- model-record-gate: x -->"
 check "no colon after model-record" "" "<!-- model-record stage=Test model=\"m1\" -->"
+# The grep prefilter only lets a body through when it holds a candidate WITH the
+# colon, so the lines above never reach the awk scan. With a real candidate in
+# the body the awk scan sees the colon-less line too, and it must not make a row
+# of it either (A31a: the loose pattern needs the colon; review round 1, F2).
+check "no colon, next to a real record after it: one row only" "ok" "<!-- model-record stage=Test model=\"m1\" -->${LF}${S}"
+check "no colon, next to a real record before it: one row only" "ok" "${S}${LF}<!-- model-record stage=Test model=\"m1\" -->"
+check "no colon between two real records: two rows only" "ok ok" "${R}${LF}<!-- model-record stage=Test model=\"m1\" -->${LF}${S}"
+check "no colon, spaces before the name, next to a real record" "ok" "${S}${LF}<!--   model-record stage=Test model=\"m1\" -->"
+check "override without the colon next to a real override: one row only" "ok" "<!-- pipeline-override decided-by=\"human\" scope=\"single-session\" reason=\"r\" -->${LF}<!-- pipeline-override: decided-by=\"human\" scope=\"single-session\" reason=\"r\" -->" pipeline-override
 check "a finding marker that mentions the word" "" "<!-- finding:no-model-record status=open -->"
 check "bare prose without a comment opener" "" "every PR needs a model-record: stage=Test marker"
 check "an opener with no model-record at all" "" "<!-- nfr: x -->"

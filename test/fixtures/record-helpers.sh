@@ -293,7 +293,14 @@ rh_shim() {
     printf 'echo x >> "%s"\n' "$counter"
     case "$mode" in
       pass) printf 'exec "%s" "$@"\n' "$real" ;;
-      nohit) printf 'exit 1\n' ;;
+      # what a real `grep -c` prints and returns when nothing matches: "0", exit 1
+      nohit) printf 'echo 0\nexit 1\n' ;;
+      # exit 1 with NO count: the status bash itself gives a command it could not
+      # run, so it is not a "no hit" (review round 1, F1)
+      silent1) printf 'exit 1\n' ;;
+      # exit 0 with NO count: bash 3.2 gives a failed command substitution status 0
+      # and an empty value, so "grep ran, printed nothing" is also no count
+      silent0) printf 'exit 0\n' ;;
       fail | failafter:*)
         # shellcheck disable=SC2016  # written into the shim, not expanded here
         printf 'n=0; while read -r _l; do n=$((n + 1)); done < "%s"\n' "$counter"
