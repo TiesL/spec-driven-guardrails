@@ -120,12 +120,12 @@ function handle(line,   run, ind, rest, p, islist) {
       run = fence_run(substr(line, ind + 1))
       if (run != "" && substr(run, 1, 1) == fch && length(run) >= flen &&
           substr(line, ind + 1 + length(run)) ~ /^[ \t]*$/) {
-        fch = ""; flen = 0; print ""; return             # close: no info string
+        fch = ""; flen = 0; fenced(line); return         # close: no info string
       }
     }
-    print ""; return
+    fenced(line); return
   }
-  if (mode == "live" && line ~ /^[ \t]*>/) { print ""; return }   # blockquote
+  if ((mode == "live" || mode == "rec") && line ~ /^[ \t]*>/) { quoted(line); return }   # blockquote
   # opener at top level (indent 0 to 3), else on a list-item line
   match(line, /^ ? ? ?/); p = RLENGTH
   run = fence_run(substr(line, p + 1)); islist = 0
@@ -138,20 +138,50 @@ function handle(line,   run, ind, rest, p, islist) {
     if (!(substr(run, 1, 1) == "`" && index(rest, "`") > 0)) {    # info string rule
       fch = substr(run, 1, 1); flen = length(run)
       maxind = islist ? p + 3 : 3; lcc = islist ? p : 0
-      print ""; return
+      fenced(line); return
     }
   }
-  if (mode == "live") print drop_spans(line); else print line
+  if (mode == "live") print drop_spans(line)
+  else if (mode == "rec") rec_text(line)
+  else print line
 }
 
-BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; CR = sprintf("%c", 13) }
-{
-  line = $0
+# What a line that is quoted away becomes: an empty line (strip, live), or,
+# for the record reader (mode rec, #425, `-v kind=model-record|pipeline-
+# override`), a candidate row `<body-index> TAB <C|Q> TAB <raw line>` when it
+# holds the opener of a record: Q (quoted) for a fenced, blockquoted or
+# indented line, or one whose opener sits inside a code span; C (live) for the
+# rest, which lib/model-record.sh then classifies against the strict pattern.
+# (mawk needs every function defined, so the rec_* functions live here.)
+function rec_cand(line, flag) { if (line ~ OPEN) print bodyno "\t" flag "\t" line }
+function rec_text(line,   ws, sp) {
+  if (line !~ OPEN) return
+  match(line, /^[ \t]*/); ws = substr(line, 1, RLENGTH)
+  if (RLENGTH >= 4 || index(ws, "\t") > 0) { rec_cand(line, "Q"); return }   # indented code
+  sp = drop_spans(line)
+  print bodyno "\t" ((sp ~ OPEN) ? "C" : "Q") "\t" line
+}
+function fenced(line) { if (mode == "rec") rec_cand(line, "Q"); else print "" }
+function quoted(line) { if (mode == "rec") rec_cand(line, "Q"); else print "" }
+
+# One body is over (bundle mode): the fence state does not cross it.
+function body_end() { fch = ""; flen = 0; lcc = 0; bodyno++ }
+
+function feed(line,   i) {
   sub(CR "$", "", line)                                  # CRLF is LF
   while ((i = index(line, CR)) > 0) {                    # a lone CR is a line break
     handle(substr(line, 1, i - 1)); line = substr(line, i + 1)
   }
   handle(line)
+}
+
+BEGIN { fch = ""; flen = 0; maxind = 3; lcc = 0; bodyno = 1; CR = sprintf("%c", 13); SEP = sprintf("%c", 30); OPEN = "<!--[ \t]*" kind ":" }
+{
+  line = $0
+  if (bundle == 1) {                                     # U+001E ends a body
+    while ((k = index(line, SEP)) > 0) { feed(substr(line, 1, k - 1)); body_end(); line = substr(line, k + 1) }
+  }
+  feed(line)
 }
 '
 

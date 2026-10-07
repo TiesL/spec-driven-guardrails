@@ -79,25 +79,11 @@ eq "unquoted model is not read" "$(marker_attr '<!-- model-record: stage=Review 
 eq "unquoted effort is not read" "$(marker_attr '<!-- model-record: stage=Review model="a" effort=medium -->' effort)" ""
 eq "empty value is empty" "$(marker_attr '<!-- model-record: stage=Review model="a" floor-basis="" -->' floor-basis)" ""
 
-# --- #397 review round (#392): free text in floor-basis must never be read
-# as another attribute, and `>`, `<`, `--` inside a value are just text.
-m='<!-- model-record: stage=Review xmodel="x" model="opus" xeffort="high" effort="low" -->'
-eq "xmodel before model" "$(marker_attr "$m" model)" "opus"
-eq "xeffort before effort" "$(marker_attr "$m" effort)" "low"
-m='<!-- model-record: stage=Review floor-basis="beats model=" model="opus" effort="low" -->'
-eq "floor-basis ending in ' model=' does not hijack model" "$(marker_attr "$m" model)" "opus"
-m='<!-- model-record: stage=Review floor-basis="slower effort=" model="opus" effort="high" -->'
-eq "floor-basis ending in ' effort=' does not hijack effort" "$(marker_attr "$m" effort)" "high"
-m='<!-- model-record: stage=Review floor-basis="beats model=" effort="low" -->'
-eq "model absent: a floor-basis ending in ' model=' is not a model" "$(marker_attr "$m" model)" ""
-m='<!-- model-record: stage=Review floor-basis="uses model= and effort= words" -->'
-eq "model absent: model= inside a value is not a model" "$(marker_attr "$m" model)" ""
-eq "model absent: effort= inside a value is not an effort" "$(marker_attr "$m" effort)" ""
-m='<!-- model-record: stage=Review floor-basis="stronger > weaker, a < b, a -- b" model="opus" effort="low" -->'
-eq "value with > < -- : model" "$(marker_attr "$m" model)" "opus"
-eq "value with > < -- : effort" "$(marker_attr "$m" effort)" "low"
-eq "value with > < -- : floor-basis itself" "$(marker_attr "$m" floor-basis)" "stronger > weaker, a < b, a -- b"
-m='<!-- model-record: stage=Review model="opus" effort="low" floor-basis="x --> y" -->'
-eq "value containing --> : floor-basis itself" "$(marker_attr "$m" floor-basis)" "x --> y"
+# The attribute-hijack arms (#397 review round: a floor-basis ending in ' model='
+# or ' effort=', model= inside a value, `>`, `<`, `--` and `-->` in a value) moved
+# to S246 (issue #425, R5), where they are asserted on rec_field against strict
+# lines; the `>`, `<` and `-->` shapes are near-misses under the v2 grammar
+# (S243), not lines marker_attr's successor reads. marker_attr stays here, with
+# its word-boundary arms, until its last caller moves (V8).
 
 test_done
