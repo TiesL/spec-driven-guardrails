@@ -3810,3 +3810,49 @@ something new is being added.
   script that reads PR comments only; reviews numbered after comments; ok records
   only; no legacy bodies; a fenced or quoted record counted; the PR description
   counted; one script that keeps its own definition
+
+### S254 — the carry-forward gate names the round each vanished finding is missing from, and a finding that was re-flagged and then resolved is not reported any more
+**Covers:** F28, F42
+- Given: the carry-forward gate behind a recording fake `gh` with REST data
+  (issue #426 AC1; review round 1 of PR #452, finding
+  `gate-output-names-no-round`): #421's three rounds (the middle one a PR review
+  without a done marker); a drop in round 3 of three; a human comment between
+  rounds; four rounds where `alpha` is open, missing, open again, resolved and
+  `beta` is open, open, missing, missing; the same with request-changes PR reviews
+  in rounds 2 and 4
+- When: the gate runs
+- Then: every finding line keeps the prefix `finding-carryforward: <slug> was open in
+  the previous round and is missing from this one` and names the round it is
+  missing from as `round <k>` (the A37 number; a human comment takes none) with no
+  round number outside the pair; `alpha` (gap closed by re-flag then resolve) is
+  not reported; `beta` is reported once, as missing from round 3. Not asserted
+  (spec ambiguity, for the Architect): a slug missing in round 2, open again in
+  round 3 and still open in round 4. Threat model: accidental, no forger. Kill
+  table: no round named; the previous or the last round named; a human comment
+  numbered; a closed gap reported forever; every gap silenced once the slug turns
+  up again; one line per later round
+
+### S255 — a Planning body (or any non-review body) posted between two Review rounds is no round for the carry-forward gate: it is neither compared nor does it split the comparison
+**Covers:** F28, F42
+- Given: the carry-forward gate with REST data (issue #426; review round 1 of PR
+  #452, finding `gate-planning-row-guard-untested`): round 1 with a slug open, a
+  Planning comment (also as a PR review, also a Test-stage record comment, also one
+  with an open finding of its own), then round 2
+- When: the gate runs
+- Then: round 2 carrying the slug gives nothing; round 2 without it gives the slug
+  once; the Planning body's own open slug is nobody's to carry. Threat model:
+  accidental. Kill table: the gate without its `[ "$kind" = R ] || continue`
+  filter
+
+### S256 — rr_rounds and the carry-forward gate treat "status 0 but nothing printed" from a tool that must print something as a failed read: a warning and no verdict, never "no round" and never a false finding
+**Covers:** F42, F28
+- Given: counting PATH shims that run the real tool and drop its stdout but keep
+  its status (a bash 3.2 command substitution that cannot make its pipe), for `tr`,
+  `sort`, `grep -o` and `sed s///` (issue #426; review round 1 of PR #452, finding
+  `empty-substitution-unguarded`; `rec_scan` already guards the same case)
+- When: `rr_rounds` (sourced alone, two rounds) and the gate (two rounds, one
+  vanished finding) run with a shim dropping output from its 1st to its 3rd or 4th call
+- Then: `rr_rounds` returns non-zero with empty stdout and a line on stderr; the
+  gate exits 0 with a `warning` on stderr and no finding line; every shim was
+  called (a vacuous pass is red). Threat model: accidental (fd or temp exhaustion).
+  Kill table: an unguarded `tr` decode, `sort`, `grep -o` or `sed` in the lib or the gate
