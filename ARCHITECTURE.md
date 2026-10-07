@@ -804,9 +804,19 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   review) whose first marker candidate is `stage=Review`, well-formed or
   malformed, plus legacy bodies with only `pre-merge-review:done`; "time
   order" is `created_at`/`submitted_at`. The round logic is one function,
-  `rr_rounds`, so #426 can move it to `lib/review-rounds.sh` unchanged; it
-  reads markers only through `lib/model-record.sh` (A25), never `finding:`
-  slugs. It is not a gate and not wired into the merge guard: the trigger
+  `rr_rounds` in `lib/review-rounds.sh` (#426): it reads rows on stdin
+  (`created_at`, source, url, body), reads records only through `rec_scan`
+  of `lib/model-record.sh` (A25) and prints `R`/`P` rows of six tab separated
+  fields; a failed read prints nothing and returns non-zero, never "no
+  round". `finding-carryforward-gate.sh` is its second caller: it fetches PR
+  comments and PR reviews over REST (no GraphQL, #318), compares each round
+  with the one before it (#421), buffers its findings and fails open with a
+  warning on any fetch or tool failure; the `finding:` slug reading is its
+  own and never in the lib. A37b (#426): a gap (open in round k-1, not
+  mentioned in round k) is cleared by any later round that mentions the slug,
+  open or resolved, so the gate reports a slug iff the latest round that
+  mentions it leaves it open and is not the last round, one line per slug
+  ending ` (round <k>)`, k the round that dropped it. It is not a gate and not wired into the merge guard: the trigger
   turns on severity, which it cannot see. The orchestrator runs it in its
   self-check.
 - **Rejected:** a `severity=` attribute on `finding:` markers (a marker

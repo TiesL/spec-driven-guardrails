@@ -3,11 +3,11 @@
 # A32c). Source it; it is not a test case. Test code only: nothing here ships.
 #
 # The rule it checks (A32c, "Amended rule"):
-#   L1  each of the four scripts that read text from GitHub has
+#   L1  each of the five scripts that read text from GitHub (#426 added the carry-forward gate) has
 #       `export LC_ALL=C` as its first statement (after the shebang,
 #       comments, blank lines and `set ...` lines), and nowhere else assigns
 #       LC_ALL to something other than C or unsets it.
-#   L2  in lib/markdown.sh and lib/model-record.sh every command-position
+#   L2  in lib/markdown.sh, lib/model-record.sh and lib/review-rounds.sh every command-position
 #       awk, grep, sed, tr, cut, sort and uniq carries the per-command prefix
 #       `LC_ALL=C `, and grep is always `grep -a`.
 #
@@ -30,8 +30,10 @@
 # Bash 3.2, BWK awk, BSD tools: the one awk program below uses no gawk-only
 # feature and runs under LC_ALL=C itself.
 
-LL_SCRIPTS="skills/pre-merge-review/model-record-gate.sh compliance-evidence.sh role-label-staleness.sh review-rounds.sh"
-LL_LIBS="lib/markdown.sh lib/model-record.sh"
+# #426 (V5 of #411): the carry-forward gate now reads GitHub text through rr_rounds, and
+# lib/review-rounds.sh is the third lib that does
+LL_SCRIPTS="skills/pre-merge-review/model-record-gate.sh compliance-evidence.sh role-label-staleness.sh review-rounds.sh skills/pre-merge-review/finding-carryforward-gate.sh"
+LL_LIBS="lib/markdown.sh lib/model-record.sh lib/review-rounds.sh"
 
 # ll_l1 <root>: prints one "V<TAB>file<TAB>message" line per L1 violation.
 ll_l1() {

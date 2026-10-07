@@ -47,71 +47,20 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-if [ ! -r "$script_dir/lib/model-record.sh" ]; then
-  echo "warning: review-rounds: lib/model-record.sh not found next to this script, so no rounds were counted." >&2
+if [ ! -r "$script_dir/lib/review-rounds.sh" ]; then
+  echo "warning: review-rounds: lib/review-rounds.sh not found next to this script, so no rounds were counted." >&2
   exit 0
 fi
-# shellcheck source=lib/model-record.sh
-. "$script_dir/lib/model-record.sh"
+# shellcheck source=lib/review-rounds.sh
+. "$script_dir/lib/review-rounds.sh"
 
-# live_text comes from lib/markdown.sh through lib/model-record.sh (#423).
-
-# rr_rounds: THE round logic (A37). Reads rows on stdin, one per body:
-#   created_at<TAB>source<TAB>url<TAB>body
-# source is comment | issue | review, url is "-" when unknown (a tab-separated empty field would collapse); newlines in the body are \001. Prints the
-# review-round, planning-after and review-rounds lines. Returns 1 when the marker
-# reader fails (nothing printed). Moves unchanged to lib/review-rounds.sh (#426).
-rr_rounds() {
-  local ts src body live scan first stage kind rank seq=0 keyed="" n=0 k1 k4 tab=$'\t'
-  while IFS=$'\t' read -r ts src _ body; do
-    [ -n "$ts" ] || continue
-    seq=$((seq + 1))
-    body="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')"
-    body="${body//$MARKER_SEP/}"
-    live="$(live_text "$body")" || return 1
-    scan="$(marker_scan "$live$MARKER_SEP")" || return 1
-    first="${scan%%$'\n'*}"
-    kind=""
-    if [ -n "$first" ]; then
-      IFS=$'\t' read -r _ stage _ <<<"$first"
-      case "$stage" in
-        Review) kind=R ;;
-        Planning) kind=P ;;
-      esac
-    elif LC_ALL=C grep -qE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"; then
-      kind=R
-    fi
-    [ -n "$kind" ] || continue
-    case "$src" in
-      issue) rank=0 ;;
-      review) rank=2 ;;
-      *) rank=1 ;;
-    esac
-    keyed="$keyed$(printf '%s\t%s\t%08d\t%s' "$ts" "$rank" "$seq" "$kind")"$'\n'
-  done
-  [ -n "$keyed" ] && keyed="$(printf '%s' "$keyed" | LC_ALL=C sort -t "$tab" -k1,1 -k2,2n -k3,3n)"
-  while IFS=$'\t' read -r k1 _ _ k4; do
-    [ -n "$k1" ] || continue
-    if [ "$k4" = R ]; then
-      n=$((n + 1))
-      printf 'review-round: %s at=%s\n' "$n" "$k1"
-    elif [ "$n" -gt 0 ]; then
-      printf 'planning-after: %s\n' "$n"
-    fi
-  done <<<"$keyed"
-  printf 'review-rounds: %s\n' "$n"
-}
-
-# rows_jq <timefield> <source>: gh --jq that turns a REST array into rr_rounds rows.
-rows_jq() {
-  printf '.[] | select(.%s != null) | [.%s, "%s", ((.html_url // "") | if . == "" then "-" else . end), ((.body // "") | gsub("\\u0001"; " ") | gsub("\\r"; "") | gsub("\\t"; " ") | gsub("\\n"; "\\u0001"))] | join("\\t")' "$1" "$1" "$2"
-}
+# rr_rounds (the one definition of a round, A37) and rr_rows_jq come from lib/review-rounds.sh (#426).
 
 rows=""
 failed=0
 fetch() { # <endpoint> <timefield> <source> <what>
   local out
-  if out="$(gh api "$1" --paginate --jq "$(rows_jq "$2" "$3")" 2>/dev/null)"; then
+  if out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null)"; then
     [ -z "$out" ] || rows="$rows$out"$'\n'
   else
     echo "warning: review-rounds could not read $4 (no network or no access), so no count is printed." >&2
@@ -129,6 +78,17 @@ if ! result="$(rr_rounds <<<"$rows")"; then
   echo "warning: review-rounds could not read the markers (the marker reader failed), so no count is printed." >&2
   exit 0
 fi
-printf '%s\n' "$result"
+rounds=0
+tab=$'\t'
+while IFS="$tab" read -r kind n ts _; do
+  [ -n "$kind" ] || continue
+  if [ "$kind" = R ]; then
+    rounds="$n"
+    printf 'review-round: %s at=%s\n' "$n" "$ts"
+  else
+    printf 'planning-after: %s\n' "$n"
+  fi
+done <<<"$result"
+printf 'review-rounds: %s\n' "$rounds"
 echo "note: severity is not machine-readable, so this cannot tell which rounds count toward the two-round trigger."
 exit 0

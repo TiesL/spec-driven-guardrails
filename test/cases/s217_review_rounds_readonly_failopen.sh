@@ -16,10 +16,10 @@
 #  partial     ignore the failing reviews (or comments) endpoint without a warning
 #  nogh        crash (exit non-zero / silent) when gh is missing
 #  usage       run without an argument or with a malformed number without printing usage; or call gh with the malformed number
-#  one-owner   add a model-record regex of its own to the script, or stop reading through lib/model-record.sh
+#  one-owner   add a model-record regex of its own to the script or the lib, call marker_*, or stop reading through rr_rounds / rec_scan (#426: the definition lives in lib/review-rounds.sh)
 #  portable    use `declare -A`, `mapfile`, `${x,,}`, `grep -P`, `sed -i`, `date -d` anywhere in the script
 #  bash32      use a bash 4 feature (the /bin/bash 3.2 run fails)
-#  fn          inline rr_rounds away, or define it twice
+#  fn          define rr_rounds in the script (it is defined once, in lib/review-rounds.sh), or twice
 #  not-gate    reference review-rounds.sh from a hook, settings, check or a gate script
 #  writes      create a file in the working directory
 
@@ -138,15 +138,25 @@ fi
 
 # --- static: what the behaviour cannot show ---------------------------------------
 code="$(grep -vE '^[[:space:]]*#' "$RR_SCRIPT")"
-grep -q 'lib/model-record\.sh' <<<"$code" || fail "S217/one-owner — the script does not source lib/model-record.sh (A25: no script carries its own marker extraction)"
-reader="$(grep -oE '\bmarker_[a-z_]+' <<<"$code" | grep -vE '^marker_(emit|fail)$' | head -1)"
-if [ -z "$reader" ]; then
-  fail "S217/one-owner — the script calls no reader (marker_*) of lib/model-record.sh"
-elif ! grep -qE "^$reader\(\)" "$TEST_REPO_ROOT/lib/model-record.sh"; then
-  fail "S217/one-owner — the script calls $reader, which lib/model-record.sh does not define"
+libf="$TEST_REPO_ROOT/lib/review-rounds.sh"
+libcode=""
+[ -r "$libf" ] && libcode="$(grep -vE '^[[:space:]]*#' "$libf")"
+# #426 (V5 of #411): the round definition moved to lib/review-rounds.sh (rr_rounds), read through rec_scan
+grep -q 'lib/review-rounds\.sh' <<<"$code" || fail "S217/one-owner — the script does not source lib/review-rounds.sh (A37: one definition of a round)"
+grep -qE '(^|[^A-Za-z_])rr_rounds([^A-Za-z_]|$)' <<<"$code" || fail "S217/one-owner — the script does not call rr_rounds"
+if grep -qE '(^|[^A-Za-z_])(marker_[a-z_]+|rec_scan|rec_scan_bundle|live_text|md_strip_fences)[[:space:]]' <<<"$code"; then
+  fail "S217/one-owner — the script reads records or markdown itself instead of through rr_rounds: $(grep -nE '(^|[^A-Za-z_])(marker_[a-z_]+|rec_scan|rec_scan_bundle|live_text|md_strip_fences)[[:space:]]' <<<"$code" | head -2)"
 fi
-if grep -qE 'model-record:|stage=' <<<"$code"; then
-  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=): $(grep -nE 'model-record:|stage=' <<<"$code" | head -2)"
+if [ -z "$libcode" ]; then
+  fail "S217/one-owner — lib/review-rounds.sh is missing"
+else
+  grep -qE '(^|[^A-Za-z_])rec_scan[[:space:]]+model-record' <<<"$libcode" || fail "S217/one-owner — lib/review-rounds.sh does not read records through rec_scan model-record (A37)"
+  if grep -qE '(^|[^A-Za-z_])marker_[a-z_]+|model-record:|stage=[A-Z(]|pipeline-override' <<<"$libcode"; then
+    fail "S217/one-owner — lib/review-rounds.sh carries a record pattern of its own or calls the old marker reader: $(grep -nE 'marker_[a-z_]+|model-record:|stage=[A-Z(]' <<<"$libcode" | head -2)"
+  fi
+fi
+if grep -qE 'model-record:|stage=[A-Z(]' <<<"$code"; then
+  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=): $(grep -nE 'model-record:|stage=[A-Z(]' <<<"$code" | head -2)"
 fi
 # the only HTML-comment text allowed is the legacy done marker (not a model-record marker)
 other="$(grep -E '<!--' <<<"$code" | grep -vE 'pre-merge-review:done' || true)"
@@ -158,7 +168,9 @@ if grep -qE "$bad" <<<"$code"; then
   fail "S217/portable — the script uses a bash 4 or GNU-only construct: $(grep -nE "$bad" <<<"$code" | head -2)"
 fi
 n="$(grep -cE '^rr_rounds\(\)|^function rr_rounds' <<<"$code")"
-[ "$n" -eq 1 ] || fail "S217/fn — the round definition must be ONE function named rr_rounds (A37: the lib takes it over); found $n definitions"
+[ "$n" -eq 0 ] || fail "S217/fn — the script defines rr_rounds itself ($n times); it is defined only in lib/review-rounds.sh (A37, T1)"
+n="$(grep -cE '^rr_rounds\(\)|^function rr_rounds' <<<"$libcode")"
+[ "$n" -eq 1 ] || fail "S217/fn — lib/review-rounds.sh must define ONE function named rr_rounds; found $n definitions"
 [ "$(head -1 "$RR_SCRIPT")" = '#!/usr/bin/env bash' ] || fail "S217/portable — the shebang is not '#!/usr/bin/env bash'"
 grep -qE '^set -[a-z]*u' <<<"$code" || fail "S217/portable — the script does not set -u (the other evidence scripts do)"
 if grep -qE '(^|[^a-z])eval ' <<<"$code"; then
@@ -169,7 +181,13 @@ if grep -qE 'gh (pr|issue) (view|comment|edit|merge|close|review|create)|gh labe
 fi
 
 # --- not a gate: nothing wires it in ---------------------------------------------------
-wired="$(cd "$TEST_REPO_ROOT" && grep -rlE 'review-rounds' hooks settings check check-commit .github skills/pre-merge-review/*.sh skills/*/*.sh compliance-evidence.sh role-label-staleness.sh classify-review-depth.sh wait-for-ci.sh epic-auto-close.sh 2>/dev/null | grep -v 'review-rounds\.sh$' || true)"
+# #426: a gate script sources lib/review-rounds.sh (the shared round definition) and may name the
+# script in a comment; neither wires review-rounds.sh in. Only a code line that is not the lib path counts.
+wired=""
+for f in $(cd "$TEST_REPO_ROOT" && grep -rlE 'review-rounds' hooks settings check check-commit .github skills/pre-merge-review/*.sh skills/*/*.sh compliance-evidence.sh role-label-staleness.sh classify-review-depth.sh wait-for-ci.sh epic-auto-close.sh 2>/dev/null | grep -v 'review-rounds\.sh$' || true); do
+  mentions="$(grep -vE '^[[:space:]]*#' "$TEST_REPO_ROOT/$f" | grep -vE 'lib/review-rounds\.sh' || true)"
+  if grep -qE 'review-rounds' <<<"$mentions"; then wired="$wired $f"; fi
+done
 [ -z "$wired" ] || fail "S217/not-gate — review-rounds is referenced from a hook, check or gate script (A28: it is not a gate): $wired"
 
 test_done
