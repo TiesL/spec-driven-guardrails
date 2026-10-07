@@ -13,14 +13,16 @@
 #   R1 every gh call is `gh api repos/{owner}/{repo}/...` and a plain GET; the PR's
 #      comments and the PR's reviews are both read; no `pr view`, no GraphQL;
 #      nothing is written to the working directory;
-#   R2 the fetch fails (everything, the comments only, the reviews only): exit 0, a
-#      warning on stderr, NO finding on stdout (a half-read PR must not give a
-#      verdict). No gh at all: the same, without a call;
+#   R2 the fetch fails (everything, the comments only, the reviews only; the data is
+#      built so that each endpoint ALONE would give a verdict): exit 0, a warning on
+#      stderr, NO finding on stdout (a half-read PR must not give a verdict). No gh at
+#      all: the same, without a call;
 #   R3 the read fails (a tool exits 2): exit 0, a warning on stderr, nothing on stdout,
 #      for grep and awk, and for every other tool the gate turns out to call (sed,
 #      tr, cut, sort, head, tail, uniq, wc) from its 1st to its 4th call, and
 #      every shim that was supposed to fail has run (a vacuous pass is red);
-#      grep's exit 1 stays a plain "no hit" (a clean PR prints nothing, no warning);
+#      grep's exit 1 stays a plain "no hit" (a clean PR, with nothing open or
+#      with a carried finding, prints nothing and warns of nothing);
 #   R4 static: the gate defines no rr_rounds, live_text or md_strip_fences, sources
 #      lib/review-rounds.sh, carries no model-record or stage= pattern of its own, no
 #      `gh pr`, no eval, and runs under /bin/bash 3.2 where that exists; its first
@@ -101,8 +103,21 @@ check_open() { # <label>: exit 0, a warning, no finding line on stdout
 seed
 FAKE_GH_FAIL=1 rr_script_run "$GATE" "$RR_PR"
 check_open "gh fails"
+# data where EACH endpoint alone gives a verdict: a half-read PR must give none
+T3=2026-10-03T10:00:00Z T4=2026-10-04T10:00:00Z
+seed_halves() {
+  rr_reset
+  rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at \
+    "$T1" "c1${NL}$(rr_finding gone-c open)${NL}${rev}${NL}${dn}" "$T2" "c2${NL}${rev}${NL}${dn}"
+  rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at \
+    "$T3" "v1${NL}$(rr_finding gone-v open)${NL}${rev}" "$T4" "v2${NL}${rev}"
+}
+seed_halves
+rr_script_run "$GATE" "$RR_PR"
+[ "$(rr_gate_slugs | LC_ALL=C tr '\n' ' ')" = "gone-c gone-v " ] \
+  || fail "S252/R2 — baseline: with both endpoints readable the gate must report gone-c and gone-v (got: $rr_out; stderr: $rr_err), so the half-read checks prove nothing"
 for gone in "comments-$RR_PR" "reviews-$RR_PR"; do
-  seed
+  seed_halves
   rm -f "${FAKE_GH_DATA:?}/${gone:?}.json"
   rr_script_run "$GATE" "$RR_PR"
   check_open "$gone unreadable"
@@ -175,6 +190,24 @@ gate_shimmed
 [ "$rr_status" -eq 0 ] && [ -z "$rr_out" ] && ! grep -qi 'warning' <<<"$rr_err" \
   || fail "S252/R3 grep exit 1 — grep's exit 1 is 'no hit': a PR without a round gives status 0, nothing on stdout and no warning; got rc=$rr_status out='$rr_out' err='$rr_err'"
 [ "$(rh_count "$CNT")" -gt 0 ] || fail "S252/R3 grep exit 1 — the grep shim was never called (a vacuous pass is red)"
+
+# a clean PR (two rounds, nothing open; and one finding carried): grep finds nothing for the
+# finding markers (exit 1) and that is no failure: exit 0, no warning, no output
+fresh
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}${rev}${NL}${dn}" "$T2" "r2${NL}${rev}${NL}${dn}"
+for tool in grep sed; do rh_shim "$SHIMS" "$tool" pass "$CNT.$tool" || continue; done
+gate_shimmed
+[ "$rr_status" -eq 0 ] && [ -z "$rr_out" ] && ! grep -qi 'warning' <<<"$rr_err" \
+  || fail "S252/R3 clean — two rounds without any finding give status 0, nothing on stdout and no warning (grep's exit 1 on a body without a marker is no failure); got rc=$rr_status out='$rr_out' err='$rr_err'"
+[ "$(rh_count "$CNT.grep")" -gt 0 ] || fail "S252/R3 clean — the grep shim was never called (a vacuous pass is red)"
+fresh
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "r1${NL}$(rr_finding kept open)${NL}${rev}${NL}${dn}" "$T2" "r2${NL}$(rr_finding kept open)${NL}${rev}${NL}${dn}"
+rh_shim "$SHIMS" grep pass "$CNT.grep" || true
+gate_shimmed
+[ "$rr_status" -eq 0 ] && [ -z "$rr_out" ] && ! grep -qi 'warning' <<<"$rr_err" \
+  || fail "S252/R3 clean — a carried finding gives status 0, nothing on stdout and no warning; got rc=$rr_status out='$rr_out' err='$rr_err'"
 
 # ---- R4 static ---------------------------------------------------------------------
 code="$(grep -vE '^[[:space:]]*#' "$GATE")"
