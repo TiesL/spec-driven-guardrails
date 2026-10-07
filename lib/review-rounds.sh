@@ -41,7 +41,7 @@ rr_rows_jq() {
 
 rr_rounds() {
   local tab=$'\t' line ts rest src url body text live scan row cls stage first kind rank seq=0 keyed="" n=0
-  local rc k1 k3 k4 out="" rowsarr_seq
+  local rc k1 k3 k4 out="" rowsarr_seq hit
   local rows
   rows=()
   while IFS= read -r line; do
@@ -57,6 +57,9 @@ rr_rounds() {
     text="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')"
     rc=$?
     [ "$rc" -eq 0 ] || { _rr_fail tr "$rc"; return "$rc"; }
+    # tr always prints something for a body with a non-\001 byte. On bash 3.2 a failed
+    # substitution (no pipe) returns 0 with an empty value, so empty is a failure here.
+    if [ -z "$text" ] && [ -n "${body//$'\001'/}" ]; then _rr_fail tr "0 (printed nothing)"; return 2; fi
     scan="$(rec_scan model-record "$text")" || return $?
     first=""
     while IFS= read -r row; do
@@ -71,16 +74,30 @@ rr_rounds() {
       Review) kind=R ;;
       Planning) kind=P ;;
       "")
-        live="$(live_text "$text")"
-        rc=$?
-        [ "$rc" -eq 0 ] || { _rr_fail live_text "$rc"; return "$rc"; }
-        LC_ALL=C grep -aqE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live"
-        rc=$?
-        case "$rc" in
-          0) kind=R ;;
-          1) : ;;
-          *) _rr_fail grep "$rc"; return "$rc" ;;
+        # live_text may legitimately print nothing (all quoted); a sentinel plus its status
+        # tells that apart from a substitution that failed and left an empty value.
+        live="$(live_text "$text"; printf 'x%s' "$?")"
+        case "$live" in
+          *x[0-9]*) rc="${live##*x}"; live="${live%x*}" ;;
+          *) _rr_fail live_text "(no output)"; return 2 ;;
         esac
+        [ "$rc" -eq 0 ] || { _rr_fail live_text "$rc"; return "$rc"; }
+        # grep -c, not -q: a here-string that cannot be made returns 1 like "no hit", but
+        # it prints no count, and a count is what tells the two apart (as in rec_scan).
+        hit="$(LC_ALL=C grep -acE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live")"
+        rc=$?
+        case "$hit" in
+          "" | *[!0-9]*) _rr_fail grep "$rc (no numeric hit count)"; return 2 ;;
+        esac
+        if [ "$rc" -ge 2 ] || { [ "$rc" -eq 1 ] && [ "$hit" != 0 ]; } || { [ "$rc" -eq 0 ] && [ "$hit" = 0 ]; }; then
+          _rr_fail grep "$rc"; return 2
+        fi
+        if [ "$rc" -eq 0 ]; then
+          # cross-check the count with a plain match: both must agree before it is a round
+          LC_ALL=C grep -aqE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live" \
+            || { _rr_fail grep "disagreement between count and match"; return 2; }
+          kind=R
+        fi
         ;;
     esac
     [ -n "$kind" ] || continue
@@ -95,6 +112,7 @@ rr_rounds() {
     keyed="$(LC_ALL=C sort -t "$tab" -k1,1 -k2,2n -k3,3n <<<"$keyed")"
     rc=$?
     [ "$rc" -eq 0 ] || { _rr_fail sort "$rc"; return "$rc"; }
+    [ -n "$keyed" ] || { _rr_fail sort "0 (printed nothing)"; return 2; }
   fi
   while IFS=$'\t' read -r k1 _ k3 k4; do
     [ -n "$k1" ] || continue
