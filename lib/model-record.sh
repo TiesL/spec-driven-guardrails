@@ -390,7 +390,8 @@ _REC_STEP_ERE='^[[:blank:]]+([a-z][a-z0-9-]*)="([^"]*)"'
 
 # The candidate scan is mode rec of lib/markdown.sh's one awk program (the
 # fence, blockquote and span logic is the one markdown.sh owns, so a record is
-# quoted exactly where live_text would blank it). It prints one row per line
+# quoted where live_text would blank it, plus indented code, which only this
+# mode quotes). It prints one row per line
 # that holds `<!--`, blanks and `<kind>:`: `<body-index> TAB <C|Q> TAB <raw
 # line>`. Q: quoted (a fence, a blockquote, an indented code block, or the
 # opener sits inside a code span). C: live; the strict pattern then decides ok
@@ -434,7 +435,10 @@ _rec_why() {
 #   <body-index> TAB <ok|near-miss|quoted> TAB <stage-or-?> TAB <line-or-reason>
 # Body indices count from 1. ok: the line itself; near-miss and quoted: a
 # reason and the first 200 bytes. No field is ever empty. A body without a
-# candidate gives no row. grep exit 1 is "no hit"; any tool failure (grep or
+# candidate gives no row. Every row ends in an ASCII byte (the text of a
+# near-miss or quoted row is wrapped in quotes), so a consumer that splits rows
+# with `read` never sees a UTF-8 sequence cut off. grep exit 1 with a count of
+# 0 is "no hit"; any tool failure (grep with no numeric count, or grep or
 # awk exit 2 or more, a `[[ =~ ]]` result of 2) prints NOTHING on stdout, one
 # line on stderr and returns non-zero: a caller treats that as "not read",
 # never as "no record".
@@ -460,11 +464,22 @@ _rec_scan() { # <bundle 0|1> <kind> <text>
   esac
   hit="$(LC_ALL=C grep -aEc "<!--[[:blank:]]*$kind:" <<<"$text")"
   rc=$?
-  if [ "$rc" -ge 2 ]; then
+  # grep -c always prints a count when it ran. Bash can fail the command
+  # substitution itself (no pipe, no temp file) and, on 3.2, still return 0 with
+  # an empty value, so "no hit" needs the status AND a numeric count of 0.
+  case "$hit" in
+    "" | *[!0-9]*)
+      [ "$rc" -ge 2 ] || rc=2
+      _rec_fail "$fn" "grep (no numeric hit count)" "$rc"
+      return "$rc"
+      ;;
+  esac
+  if [ "$rc" -ge 2 ] || { [ "$rc" -eq 1 ] && [ "$hit" != 0 ]; } || { [ "$rc" -eq 0 ] && [ "$hit" = 0 ]; }; then
+    [ "$rc" -ge 2 ] || rc=2
     _rec_fail "$fn" grep "$rc"
     return "$rc"
   fi
-  [ "$rc" -eq 0 ] || return 0                       # exit 1: no candidate, nothing to read
+  [ "$rc" -eq 0 ] || return 0                       # exit 1 and count 0: no candidate, nothing to read
   out="$(LC_ALL=C awk -v mode=rec -v bundle="$bundle" -v kind="$kind" "$_MD_AWK" <<<"$text")"
   rc=$?
   if [ "$rc" -ne 0 ]; then
