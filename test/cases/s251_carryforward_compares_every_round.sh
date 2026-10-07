@@ -17,17 +17,26 @@
 # Cases:
 #   A  #421's three-round case, the middle round a PR review without a done marker,
 #      and again as a PR comment without a done marker: slug a open in round 1,
-#      missing from round 2, present again in round 3 -> reported. A gate that
-#      compares only the done-marker rounds (1 and 3) says nothing;
+#      missing from round 2, and round 3 does not mention a -> reported (A37b: a
+#      later round that carries it, open or resolved, would clear the gap; this
+#      one does not). A gate that compares only the done-marker rounds (1 and 3)
+#      says nothing. A2: the same rounds with round 3 resolving a -> nothing
+#      reported (A37b, #426 AC1 "unless a later round re-flags or resolves it");
 #   B  five rounds, three of them request-changes without a done marker: exactly the
-#      two findings that vanished are reported (c, d), and b, which round 3 carried,
-#      is not (a gate comparing round 5 with round 2 reports b and misses c and d);
+#      two findings that vanished are reported (c, d); b, which round 3 resolved,
+#      is not, and c is not mentioned in round 5 (a gate comparing round 5 with
+#      round 2 reports b and misses c and d). B2: round 5 resolving c -> d alone
+#      (A37b);
 #   C  nothing to report: every open slug carried (open or resolved); one round;
 #      no round; open findings only in the last round;
 #   D  a human comment between two rounds is no round: it cannot carry a slug
 #      forward, and it does not split the comparison;
 #   E  several open slugs: one line each; an inline marker (prose around it on the
 #      line) is read; the output holds finding lines and nothing else; exit 0.
+#
+# Re-encoded to Architect ruling A37b (issue #426 comment 6032113503): a slug is
+# reported iff the latest round mentioning it leaves it open and is not the last
+# round; the S254 case pins the round named and the rest of the clearing table.
 #
 # Red today: the gate calls `gh pr view --json comments`, which the fake (REST
 # only, like a Claude Code session, #318) refuses, so it fails open and reports
@@ -38,6 +47,8 @@
 #   every-body   every comment is a round (D)
 #   first-round  never compare round 1 with round 2 (A, E)
 #   all-open     report every open slug of every round, found again or not (B, C)
+#   later-heals-not  a later round that carries the slug (open or resolved) does not
+#                clear the gap (A2, B2)
 #   no-resolved  a resolved marker in the next round does not count as carried (C)
 #   extra-out    print anything but the finding lines on stdout (E)
 
@@ -94,7 +105,8 @@ gate_expect() {
 # ---- A: #421's case, the middle round without a done marker ---------------------
 r1="round 1:${NL}- a thing is missing${NL}$(op a)${NL}${rev}${NL}${dn}"
 r2="request changes, nothing about a:${NL}${rev}"
-r3="round 3, a is mentioned again:${NL}$(rs a)${NL}${rev}${NL}${dn}"
+r3="round 3, nothing about a either:${NL}${rev}${NL}${dn}"
+r3res="round 3, a is resolved:${NL}$(rs a)${NL}${rev}${NL}${dn}"
 rr_reset
 rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$r1" "$T3" "$r3"
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T2" "$r2"
@@ -107,17 +119,31 @@ rr_reset
 rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T2" "$r2"
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T1" "$r1" "$T3" "$r3"
 gate_expect "A reviews around a comment" a
+# A2 (A37b): the same rounds, round 3 resolves a explicitly: the gap is closed, nothing reported
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$r1" "$T3" "$r3res"
+rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T2" "$r2"
+gate_expect "A2 review in the middle, round 3 resolves a" ""
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$r1" "$T2" "$r2" "$T3" "$r3res"
+gate_expect "A2 comment in the middle, round 3 resolves a" ""
 
 # ---- B: five rounds, three of them request-changes without a done marker ---------
 b1="round 1, clean:${NL}${rev}${NL}${dn}"
 b2="round 2:${NL}$(op b)${NL}${rev}${NL}${dn}"
 b3="request changes, b carried, c new:${NL}$(rs b)${NL}$(op c)${NL}${rev}"
 b4="request changes, c vanished, d new:${NL}$(op d)${NL}${rev}"
-b5="round 5, d vanished, c mentioned:${NL}$(rs c)${NL}${rev}${NL}${dn}"
+b5="round 5, d vanished, c not mentioned either:${NL}${rev}${NL}${dn}"
+b5res="round 5, d vanished, c resolved:${NL}$(rs c)${NL}${rev}${NL}${dn}"
 rr_reset
 rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$b1" "$T2" "$b2" "$T4" "$b4" "$T5" "$b5"
 rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T3" "$b3"
 gate_expect "B five rounds" "c d"
+# B2 (A37b): round 5 resolves c explicitly, so only d vanished
+rr_reset
+rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$b1" "$T2" "$b2" "$T4" "$b4" "$T5" "$b5res"
+rr_json "$FAKE_GH_DATA/reviews-$RR_PR.json" submitted_at "$T3" "$b3"
+gate_expect "B2 five rounds, round 5 resolves c" "d"
 
 # ---- C: nothing to report ---------------------------------------------------------
 rr_reset
