@@ -139,6 +139,7 @@ done
 # fails the same way). Portable on macOS and Linux, unlike a sandbox profile or
 # TMPDIR tricks (bash 3.2 ignores TMPDIR for here-strings). The limit is set
 # inside the subshell that runs the reader, after the harness has opened its files.
+# shellcheck disable=SC2329  # called indirectly through rh_run
 rh_nofile() { ulimit -n 3 2>/dev/null || return 99; "$@"; }
 if ( ulimit -n 3 2>/dev/null && [ "$(printf a)" = a ] ) 2>/dev/null; then
   fail "S247/descriptor limit — 'ulimit -n 3' does not stop a command substitution here; the real-failure arm cannot be injected"
