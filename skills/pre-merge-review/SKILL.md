@@ -313,11 +313,13 @@ The previous round's findings are inputs the new Reviewer re-checks against the 
 
 On a second (or later) round, run
 `skills/pre-merge-review/finding-carryforward-gate.sh <pr-number>` before
-posting — it compares the two most recent `pre-merge-review:done`
-comments and reports any slug the previous round left `status=open` that
-doesn't reappear (open or resolved) in this round's comment. Every such
-report is itself a finding: re-flag it or explicitly resolve it, don't let
-it just vanish.
+posting — it compares every Review round (a PR comment or a PR review,
+request-changes rounds included, as `review-rounds.sh` counts them) with the
+one before it and reports any slug a round left `status=open` that doesn't
+reappear (open or resolved) in the next. Each line names the round that
+dropped the slug, as `(round <k>)`. Every such report is itself a finding:
+re-flag it or explicitly resolve it, don't let it just vanish. The line goes
+away once a later round re-flags the slug or resolves it explicitly.
 
 ## Its limits
 

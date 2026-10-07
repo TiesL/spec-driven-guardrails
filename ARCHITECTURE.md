@@ -812,7 +812,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   comments and PR reviews over REST (no GraphQL, #318), compares each round
   with the one before it (#421), buffers its findings and fails open with a
   warning on any fetch or tool failure; the `finding:` slug reading is its
-  own and never in the lib. It is not a gate and not wired into the merge guard: the trigger
+  own and never in the lib. A37b (#426): a gap (open in round k-1, not
+  mentioned in round k) is cleared by any later round that mentions the slug,
+  open or resolved, so the gate reports a slug iff the latest round that
+  mentions it leaves it open and is not the last round, one line per slug
+  ending ` (round <k>)`, k the round that dropped it. It is not a gate and not wired into the merge guard: the trigger
   turns on severity, which it cannot see. The orchestrator runs it in its
   self-check.
 - **Rejected:** a `severity=` attribute on `finding:` markers (a marker

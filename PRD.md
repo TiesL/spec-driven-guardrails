@@ -1000,7 +1000,10 @@ Every finding now carries its own
 `finding-carryforward-gate.sh <pr-number>` compares every Review round with
 the one immediately before it (issue #421, #426) and reports any slug a
 round left open that doesn't reappear (as still-open or resolved) in the
-next one. A round is the one definition shared with `review-rounds.sh`
+next one. A report is cleared by any later round that mentions the slug,
+open or resolved, so a slug is reported only while the latest round that
+mentions it leaves it open and is not the last round; each line ends with
+` (round <k>)`, the round that dropped it (A37b). A round is the one definition shared with `review-rounds.sh`
 (F42): a PR comment or a PR review, so a request-changes round without a
 `pre-merge-review:done` marker counts. It reads the PR over REST only
 (comments and reviews). With fewer than two rounds nothing is reported;
