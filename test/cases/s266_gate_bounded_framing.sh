@@ -51,14 +51,26 @@ for bytes in $'\377' $'\342\200'; do
  rawbin="$SANDBOX/raw-gh"; mkdir -p "$rawbin"
  cat > "$rawbin/gh" <<EOF
 #!/usr/bin/env bash
-if [ "\${2:-}" = 'repos/{owner}/{repo}/issues/246/comments' ]; then printf '%s' "\$INVALID_PROSE"; fi
+if [ "\${2:-}" = 'repos/{owner}/{repo}/issues/246/comments' ]; then
+ printf '%s\t%s\001%s\n' "$early" "\$INVALID_PROSE" '<!-- model-record: stage=Planning model="m" -->'
+fi
 exec "$v2_bin/gh" "\$@"
 EOF
- chmod +x "$rawbin/gh"; export INVALID_PROSE="$bytes"$'\n'
- v2_base; v2_path="$rawbin:$v2_bin:$PATH"; v2_run "$v2_yes"; clean
+ chmod +x "$rawbin/gh"; export INVALID_PROSE="$bytes"
+ v2_base; v2_comments comments-246.json "$(mr Test)" "$(mr Implementation)"; v2_path="$rawbin:$v2_bin:$PATH"; v2_run "$v2_yes"; clean
 done
 unset v2_path
 v2_base; v2_comments comments-246.json $'<!-- model-record: stage=Planning model="m\rm" -->' "$(mr Test)" "$(mr Implementation)"; v2_run
 has 'no record found for stage Planning'; count 'near-miss' 1
+
+# Bounded scale regression: 60 fetched bodies and one 100 KB prose line.
+v2_base
+long="$(printf '%100000s' x)"
+bodies=("$long" "$(mr Planning)" "$(mr Test)" "$(mr Implementation)")
+for ((i=4;i<60;i++)); do bodies+=("prose $i"); done
+# Use explicit timestamps: 60 seconds would otherwise overflow fixture seconds.
+jq -n '$ARGS.positional | map({body:.,created_at:"2026-10-01T00:00:01Z"})' --args "${bodies[@]}" > "$FAKE_GH_DATA/comments-246.json"
+start=$SECONDS; v2_run "$v2_yes"; clean
+printf 'S266 scale: 60 bodies, 100 KB line, %s seconds\n' "$((SECONDS-start))"
 
 test_done

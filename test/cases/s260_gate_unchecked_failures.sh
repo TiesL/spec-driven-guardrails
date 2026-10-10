@@ -9,7 +9,7 @@ set -uo pipefail
 rest="$v2_bin"; shim="$SANDBOX/failing-gh"; mkdir -p "$shim"
 cat > "$shim/gh" <<EOF
 #!/usr/bin/env bash
-if [ "\${2:-}" = "\$FAIL_EP" ]; then echo "\$FAIL_REASON" >&2; exit 1; fi
+if [ "\${2:-}" = "\$FAIL_EP" ]; then printf '%s' "\${FAIL_PARTIAL:-}"; echo "\$FAIL_REASON" >&2; exit 1; fi
 exec "$rest/gh" "\$@"
 EOF
 chmod +x "$shim/gh"
@@ -21,6 +21,12 @@ for ep in issues/246/comments pulls/246/reviews pulls/246 issues/239/comments; d
   count 'role-play-unchecked: ' 1; absent 'no record found'; absent 'role-played:'; absent 'has no floor-basis'
  done
 done
+# Partial paginated stdout is untrusted body data, never an HTTP status.
+export FAIL_PARTIAL="$early"$'\t''example (HTTP 404)'
+FAIL_EP='repos/{owner}/{repo}/issues/239/comments'; FAIL_REASON='gh: HTTP 500'
+v2_base; v2_run "$v2_yes"
+count 'role-play-unchecked:' 1; absent 'does not exist and was ignored'; absent 'no record found'
+unset FAIL_PARTIAL
 unset v2_path
 # Counted reader-only tool failures. All unrelated invocations forwarded.
 realgrep="$(command -v grep)"; realawk="$(command -v awk)"

@@ -2547,8 +2547,10 @@ something new is being added.
   `LC_ALL=C`
 - When: `model-record-gate.sh` and `compliance-evidence.sh` run
 - Then: in both locales a same-model Review (at a lower legacy effort) after
-  the placeholder is read (the gate prints nothing, no "no record found"; gate
-  2 is `evidenced`, #424), and gate 1 still sees all four stages; when the parser's
+  the placeholder is read (no "no record found"; valid/quoted gate inputs
+  are clean, invalid live candidates are named once as near-misses under
+  #427 A31a, and the sole Review with an unquoted note is missing/unreadable
+  instead of supplying presence; gate 2 retains `evidenced`, #424), and gate 1 still sees all four stages; when the parser's
   awk fails the gate prints a `model-record:` finding (or exits non-zero) and
   gate 2 is `indeterminate` (or the run non-zero), never "no findings" or a
   definite verdict

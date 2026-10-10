@@ -1,105 +1,25 @@
 #!/usr/bin/env bash
-# skills/pre-merge-review/model-record-gate.sh — #241 AC1: makes
-# process-model-choice mechanically checkable instead of resting on an
-# agent remembering to follow the model-choice skill's prose instruction.
+# model-record-gate.sh <pr-number> — A31a/A32a/A34a/A37, #427.
 #
-# Usage:
-#   model-record-gate.sh <pr-number>
+# REST-only, Bash 3.2. Each fetched body is sanitized before transport framing;
+# rec_scan_bundle owns quoting and grammar. One cached scan per record kind.
+# Only ok records supply presence. Timestamp-latest candidates (including
+# near-misses) decide; no fallback to an older ok. PR description edits are
+# not tracked: its timestamp is created_at. Source ties: issue, description,
+# comments, reviews; within a body the later candidate line wins.
 #
-# Checks that all five pipeline stages (Discovery, Planning, Test,
-# Implementation, Review) have at least one machine-readable
-#   <!-- model-record: stage=<Stage> model="..." -->
-# marker, searched across the PR's own comments, the PR's own description,
-# and the comments of every issue it closes (Discovery is typically
-# recorded on the issue, the other four on the PR — but this searches all
-# three for either: where a stage's report lands is not fixed).
+# Findings are stdout, exit 0. In projects answering process-multi-agent-roles
+# yes, only `role-played: ` blocks a merge. Every incomplete check emits
+# `role-play-unchecked: ` and fails open; a closing-reference HTTP 404 instead
+# gives a note and is ignored. The guard shows near-misses as context.
 #
-# Role-played runs (#371, A18): only in a project that answers
-# process-multi-agent-roles yes (answered_yes, lib/changes.sh, read from
-# the clone this script lives in), it also flags a run where one session
-# played every role instead of the pipeline dispatching them. That is:
-# one text (a comment, a review or the PR description) carrying live
-# markers for two or more different stages, or any of the five stages
-# missing. A valid human override record on the issue or PR,
-#   <!-- pipeline-override: decided-by="..." scope="single-session|skip=<Stage>" reason="..." -->
-# (live text, every field non-empty, scope from that closed list) waives
-# it: single-session waives every finding, skip=<Stage> only that stage's
-# absence. The merge guard (hooks/git-guardrails) refuses `gh pr merge` on
-# any `role-played: ` line, so this script owns the rule and the guard only
-# reads the prefix. A project that didn't answer yes sees no change.
-# Accepted limit: a session that forges five separate stage comments isn't
-# detected (same non-adversarial trust model as every gate here).
-#
-# Found via #238 (portfolio-mgt-agents): only the Review stage ever
-# recorded a model in practice — Discovery/Planning/Test/Implementation
-# never did, and nothing made that visible before this gate.
-#
-# Fail-open without gh or network: warn, don't block — same ground rule
-# as every other gate here (scenario-gate.sh, check-pr-issue-link.sh).
-#
-# REST-only (issue #318, reusing role-label-staleness.sh's/
-# compliance-evidence.sh's already-reviewed design rather than
-# re-deriving it independently): every `gh pr view --json ...`/`gh issue
-# view --json ...` call this script used to make is GraphQL-backed under
-# the hood and 403s from inside a Claude Code session — confirmed live,
-# where this gate's own fail-open design meant it never crashed, just
-# silently skipped the check on every single run rather than performing
-# it (a correctness gap distinct from, and worse in a different way
-# than, an outright failure). `closingIssuesReferences` has a second,
-# separate defect even outside that block: GitHub only populates it for
-# a PR whose base is the repository's default branch, so it silently
-# missed every closing issue on a release-branch PR — exactly the shape
-# that would make this gate wrongly report "no Discovery record found"
-# when Discovery's marker sits on the issue this gate never looked at.
-#
-# Every call below is `gh api repos/{owner}/{repo}/...` against an
-# explicit REST endpoint, confirmed working from inside a Claude Code
-# session. Closing-issue discovery replaces `closingIssuesReferences`
-# with the same closing-keyword scan against the PR's own title+body
-# compliance-evidence.sh uses (title included — this repo's own
-# release-branch PRs carry the keyword only there).
-#
-# Output on stdout: one line per missing stage:
-#   "model-record: no record found for stage <Stage> (missing model-choice marker)"
-# plus, when Review and Implementation both have a marker (#392):
-#   "model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's) (#392)"
-# plus, for each malformed marker of any stage (an unbalanced quote, no
-# closing -->, a <!-- inside it, a quoted stage; lib/model-record.sh), which
-# is ignored, never read (an empty or quoted stage shows as `stage=?`, #402):
-#   "model-record: a stage=<Stage> marker is malformed and was ignored (<reason>: <text>) (#392)"
-# plus, for the latest marker of each of the five stages whose model
-# is unquoted, empty or missing (#402, A26), one line:
-#   "model-record: the latest stage=<Stage> marker has no quoted <field>=\"...\" ... (#402)"
-# and, when live_text() fails on a body (no marker read, the stage and
-# floor checks skipped; markers are read from live text only, #392):
-#   "model-record: dropping quoted text (live_text) failed, ... (#392)"
-# and, when the marker parser itself fails (lib/model-record.sh returns
-# non-zero), instead of the floor checks:
-#   "model-record: the marker parser (lib/model-record.sh) failed, ... (#392)"
-# plus, opted in only (#371), one line per role-play finding:
-#   "role-played: stages in one text: <Stage>, <Stage> (<source>)"
-#   "role-played: stages missing: <Stage>, ..."
-# and, when a valid override waived them, a note that never starts with
-# "role-played: ". Exit status stays 0: findings are output.
-#
-# No `eval`. PR/issue comment text isn't under this script's control.
-# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
-
+# Limits: cannot verify emitter provenance, model identity/capability, agent
+# identity, basis honesty, override authorship or work-item attribution.
+# A session forging five separate stage comments is not detected. Effort is
+# neither chosen nor checked. Printed warning delivery is checked in #430.
 set -uo pipefail
-export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
-
+export LC_ALL=C
 pr_number="${1:?usage: model-record-gate.sh <pr-number>}"
-
-if ! command -v gh >/dev/null 2>&1; then
-  echo "warning: model-record-gate can't find gh and is skipping the model-record check." >&2
-  exit 0
-fi
-
-# #371: is this project opted in to the five-role pipeline? Read from the
-# project this runs in (its git root, else the working directory), with
-# the shared answered_yes rule from the clone this script lives in (pwd -P:
-# in an adopted project this directory is a symlink into the clone, same
-# resolution as scope.sh). No lib, no opt-in: fail open.
 own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 project_root="$(git rev-parse --show-toplevel 2>/dev/null)" || project_root="$(pwd)"
 opted_in=0
@@ -108,322 +28,186 @@ if [ -r "$own_dir/../../lib/changes.sh" ]; then
   . "$own_dir/../../lib/changes.sh"
   answered_yes "$project_root" process-multi-agent-roles && opted_in=1
 fi
-
-# Each comment/review body is framed with U+001E, after that byte is
-# removed from the body itself (a body can neither forge nor hide a
-# boundary: #392, round 4 of the PR #397 review). The marker parser
-# (lib/model-record.sh) keeps a malformed marker inside its own comment by
-# it, and the role-play check (#371, opted in only) tells one text from the
-# next by it. The grep-based checks below read the same text with the
-# separators removed.
-body_jq='.[] | (.body // "" | gsub("\u001e"; "")) + "\u001e"'
-
-comments_part="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq "$body_jq" 2>&1)"
-status=$?
-if [ "$status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't consult PR #$pr_number's comments (no network or no access) and is skipping the model-record check." >&2
-  echo "$comments_part" >&2
+unchecked() {
+  echo "warning: model-record-gate $1; skipping the incomplete check." >&2
+  [ "$opted_in" -eq 0 ] || echo "role-play-unchecked: $1"
+}
+reader_failed() {
+  echo 'model-record: the record reader failed, so no records were read and dependent checks were skipped'
+  unchecked 'record reader failed'
+  exit 0
+}
+if ! command -v gh >/dev/null 2>&1; then
+  unchecked "can't find gh"
   exit 0
 fi
+if [ ! -r "$own_dir/../../lib/model-record.sh" ]; then reader_failed; fi
+# shellcheck source=../../lib/model-record.sh
+. "$own_dir/../../lib/model-record.sh"
 
-# PR reviews (issue #318, folding in the same fix role-label-staleness.sh
-# needed as its own F-6 finding): this pipeline posts the Review stage's
-# marker as a PR review's own body, not a plain conversation comment —
-# a source this gate never read either, under the old call or the new.
-reviews_part="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate --jq "$body_jq" 2>&1)"
-status=$?
-if [ "$status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't consult PR #$pr_number's reviews (no network or no access) and is skipping the model-record check." >&2
-  echo "$reviews_part" >&2
-  exit 0
-fi
-
-# Found during PR #251's pre-merge-review: a marker posted directly in
-# the PR's own description (common when a work item's Planning/Test/
-# Implementation markers are added at PR-creation time, before any
-# comment exists) was invisible to this gate — it only ever scanned
-# comments. The description is as durable an artifact as a comment.
-# Fetched together with the title (needed for closing-issue discovery
-# below) in one call.
-pr_json_part="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq '(.title//"")+"\u0001"+(.body//"")' 2>&1)"
-status=$?
-if [ "$status" -ne 0 ]; then
-  echo "warning: model-record-gate couldn't consult PR #$pr_number's description (no network or no access) and is skipping the model-record check." >&2
-  echo "$pr_json_part" >&2
-  exit 0
-fi
-pr_title_part="${pr_json_part%%$'\001'*}"
-description_part="${pr_json_part#*$'\001'}"
-description_part="${description_part//$'\036'/}"
-
+# Transport: time TAB body, with body LF encoded as SOH. Remove injected
+# framing bytes BEFORE adding separators. Preserve tabs/CR in values for
+# the reader to classify; only the first tab is the metadata delimiter.
+body_filter='(.body // "" | gsub("\u001e"; "") | gsub("\u0001"; " ") | gsub("\n"; "\u0001"))'
+comments_jq=".[] | (.created_at // \"\") + \"\t\" + $body_filter"
+reviews_jq=".[] | (.submitted_at // \"\") + \"\t\" + $body_filter"
+comments="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq "$comments_jq")" || { unchecked "couldn't consult PR #$pr_number's comments"; exit 0; }
+reviews="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate --jq "$reviews_jq")" || { unchecked "couldn't consult PR #$pr_number's reviews"; exit 0; }
+pr_jq="((.title // \"\") | gsub(\"[\\u0000-\\u001f]\"; \" \")), ((.created_at // \"\") + \"\t\" + $body_filter)"
+pr="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq "$pr_jq")" || { unchecked "couldn't consult PR #$pr_number's description"; exit 0; }
+# A blank title is still a first line (command substitution strips only final LF).
+title="${pr%%$'\n'*}"
+description="${pr#*$'\n'}"
+[ "$description" != "$pr" ] || { unchecked 'unreadable PR description response'; exit 0; }
+description_body="${description#*$'\t'}"
 closing_keyword_ere='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
-issue_numbers="$(printf '%s\n%s\n' "$pr_title_part" "$description_part" \
-  | grep -oiE "$closing_keyword_ere" | grep -oE '[0-9]+' | sort -un)"
+issue_numbers="$(LC_ALL=C grep -oiE "$closing_keyword_ere" <<<"$title ${description_body//$'\001'/$'\n'}" | LC_ALL=C grep -oE '[0-9]+' | LC_ALL=C sort -un)"
 
-issue_text=""
-issue_fetch_failed=0
-if [ -n "$issue_numbers" ]; then
-  while IFS= read -r issue_num; do
-    [ -n "$issue_num" ] || continue
-    issue_body="$(gh api "repos/{owner}/{repo}/issues/$issue_num/comments" --paginate --jq "$body_jq" 2>&1)"
-    issue_status=$?
-    if [ "$issue_status" -ne 0 ]; then
-      # Found during PR #249's pre-merge-review (round 2): silently
-      # swallowing this would misreport "no Discovery record" as if the
-      # stage were genuinely missing, rather than "couldn't check" — a
-      # transient failure here must warn, same as every other gh call in
-      # this script, not degrade to a false negative.
-      echo "warning: model-record-gate couldn't consult issue #$issue_num (no network or no access) and is skipping its comments." >&2
-      echo "$issue_body" >&2
-      issue_fetch_failed=1
+# Private implementation arrays: raw bodies never participate in a sort key.
+# Numeric sequence preserves order within equal-time sources.
+tab=$'\t'
+seq=0
+bodies=()
+labels=()
+keyed=''
+add_bodies() { # rank, source label, time<TAB>encoded-body rows
+  local rank="$1" label="$2" row ts body
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    case "$row" in *"$tab"*) :;; *) return 1;; esac
+    ts="${row%%"$tab"*}"
+    [ -n "$ts" ] || return 1
+    body="${row#*"$tab"}"
+    seq=$((seq + 1))
+    bodies[$seq]="${body//$'\001'/$'\n'}"
+    labels[$seq]="$label"
+    keyed="$keyed$ts$tab$rank$tab$seq"$'\n'
+  done <<<"$3"
+}
+notes=''
+issue_error_file="$(mktemp)" || { unchecked 'could not capture closing-issue status'; exit 0; }
+trap 'rm -f "$issue_error_file"' EXIT
+while IFS= read -r issue; do
+  [ -n "$issue" ] || continue
+  issue_rows="$(gh api "repos/{owner}/{repo}/issues/$issue/comments" --paginate --jq "$comments_jq" 2>"$issue_error_file")"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    # The CLI reports an HTTP status alongside its message. Never classify
+    # a transport/authorization/server failure merely from 'Not Found' prose.
+    issue_error="$(cat "$issue_error_file")"
+    case "$issue_error" in
+      *'(HTTP 404)'*) notes="$notes""model-record: closing reference #$issue does not exist and was ignored"$'\n'; continue;;
+      *) echo "$issue_error" >&2; unchecked "couldn't consult closing issue #$issue"; exit 0;;
+    esac
+  fi
+  add_bodies 0 'issue comment' "$issue_rows" || { unchecked "unreadable closing issue #$issue response"; exit 0; }
+done <<<"$issue_numbers"
+add_bodies 1 'PR description' "$description" && add_bodies 2 'PR comment' "$comments" && add_bodies 3 'PR review' "$reviews" || { unchecked 'unreadable fetched body timestamps'; exit 0; }
+ordered="$(LC_ALL=C sort -t "$tab" -k1,1 -k2,2n -k3,3n <<<"$keyed")" || reader_failed
+[ -n "$ordered" ] || reader_failed
+bundle=''
+body_labels=()
+body_count=0
+while IFS="$tab" read -r _ _ original; do
+  [ -n "$original" ] || continue
+  body_count=$((body_count + 1))
+  bundle="$bundle${bodies[$original]}$MARKER_SEP"
+  body_labels[$body_count]="${labels[$original]}"
+done <<<"$ordered"
+scan="$(rec_scan_bundle model-record "$bundle")" || reader_failed
+po_scan=''
+if [ "$opted_in" -eq 1 ]; then
+  po_scan="$(rec_scan_bundle pipeline-override "$bundle")" || reader_failed
+fi
+
+stages=(Discovery Planning Test Implementation Review)
+present=(0 0 0 0 0)
+latest_class=('' '' '' '' '')
+latest_line=('' '' '' '' '')
+body_present=()
+findings="$notes"
+# No record patterns here: classification/stage/fields come only from lib.
+stage_index() {
+  case "$1" in Discovery) echo 0;; Planning) echo 1;; Test) echo 2;; Implementation) echo 3;; Review) echo 4;; *) return 1;; esac
+}
+while IFS= read -r row; do
+  [ -n "$row" ] || continue
+  idx="${row%%"$tab"*}"; rest="${row#*"$tab"}"
+  cls="${rest%%"$tab"*}"; rest="${rest#*"$tab"}"
+  stage="${rest%%"$tab"*}"; line="${rest#*"$tab"}"
+  [ "$cls" != quoted ] || continue
+  if [ "$cls" = near-miss ]; then
+    findings="$findings""model-record: a stage=$stage record is a near-miss ($line)"$'\n'
+  fi
+  s="$(stage_index "$stage")" || continue
+  latest_class[$s]="$cls"
+  latest_line[$s]="$line"
+  if [ "$cls" = ok ]; then
+    present[$s]=1
+    body_present[$((idx * 5 + s))]=1
+  fi
+done <<<"$scan"
+for s in 0 1 2 3 4; do
+  stage="${stages[$s]}"
+  if [ "${present[$s]}" -eq 0 ]; then
+    findings="$findings""model-record: no record found for stage $stage (missing model-choice marker)"$'\n'
+  fi
+  if [ "${latest_class[$s]}" = near-miss ]; then
+    findings="$findings""model-record: the latest stage=$stage record is unreadable, so no earlier record is used"$'\n'
+  fi
+done
+# Review's own basis is required even without Implementation. Different
+# models cannot be ranked by the gate; same-model legacy effort is ignored.
+if [ "${latest_class[4]}" = ok ]; then
+  basis="$(rec_field "${latest_line[4]}" floor-basis)" || reader_failed
+  case "$basis" in *[![:space:]]*) :;; *) findings="$findings""model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's)"$'\n';; esac
+fi
+
+waive_all=0
+skipped=' '
+while IFS= read -r row; do
+  [ -n "$row" ] || continue
+  rest="${row#*"$tab"}"; cls="${rest%%"$tab"*}"; rest="${rest#*"$tab"}"; line="${rest#*"$tab"}"
+  [ "$cls" != quoted ] || continue
+  if [ "$cls" = ok ]; then
+    who="$(rec_field "$line" decided-by)" && reason="$(rec_field "$line" reason)" && scope="$(rec_field "$line" scope)" || reader_failed
+    valid=1
+    case "$who" in *[![:space:]]*) :;; *) valid=0;; esac
+    case "$reason" in *[![:space:]]*) :;; *) valid=0;; esac
+    case "$scope" in single-session|skip=Discovery|skip=Planning|skip=Test|skip=Implementation|skip=Review) :;; *) valid=0;; esac
+    if [ "$valid" -eq 1 ]; then
+      if [ "$scope" = single-session ]; then waive_all=1; else skipped="$skipped${scope#skip=} "; fi
       continue
     fi
-    issue_text="$issue_text
-$issue_body"
-  done <<<"$issue_numbers"
-fi
-
-# Ordered issue -> description -> comments -> reviews: a heuristic match
-# to the typical stage lifecycle (Discovery on the issue first, then the
-# PR opens with its description, then PR comments/reviews accumulate
-# through Planning/Test/Implementation/Review), not a true global
-# timestamp sort — gh's comment JSON does carry createdAt, but nothing
-# here reads it yet. Found during PR #253's pre-merge-review (round 2):
-# the previous order (comments, then description, then issue) put issue
-# comments *last*, so `tail -1` could prefer a stray older marker on the
-# issue over a genuinely newer one on the PR — backwards from the
-# typical case this reorders toward. Recorded as Technical debt (PRD.md)
-# rather than chasing full generality here.
-# live_text() — one definition in lib/markdown.sh (#423), sourced below through
-# lib/model-record.sh before the first body is read: the same quoted-text rule
-# as the collector and the staleness script (fenced code, inline code spans
-# and blockquotes are illustration, not live markers).
-
-framed_issue_text="$issue_text"
-framed_comments_part="$comments_part"
-framed_reviews_part="$reviews_part"
-issue_text="${issue_text//$'\036'/}"
-comments_part="${comments_part//$'\036'/}"
-reviews_part="${reviews_part//$'\036'/}"
-
-# #392, round 5 of the PR #397 review: the stage-presence and Review-floor
-# checks read LIVE text only, like compliance-evidence.sh and
-# role-label-staleness.sh: every body goes through live_text() on its own
-# (fence state never carries from one comment into the next), so a marker
-# quoted in a code span, a fence or a blockquote is an example, not a
-# record. live_text() runs awk under LC_ALL=C (lib/markdown.sh: its
-# delimiters are ASCII; the same reason as the marker parser), and its failure is visible: the
-# checks below are skipped with a `model-record:` finding instead of
-# reporting stages missing. marker_text keeps each live body followed by
-# U+001E for the marker parser (round 4). The role-play check's "stages
-# missing" test reads the same live text (release holistic review, B2).
-body_sep=$'\036'
-live_failed=0
-# #423: live_text and the marker parser come from lib/model-record.sh, sourced
-# here, before the first body is read. A lib that cannot be read means no
-# body can be read: the same visible finding as a failed live_text call.
-if [ -r "$own_dir/../../lib/model-record.sh" ]; then
-  # shellcheck source=../../lib/model-record.sh
-  . "$own_dir/../../lib/model-record.sh"
-else
-  live_failed=1
-fi
-live_frame() { # framed text -> each body through live_text, re-framed
-  local body live out=""
-  while IFS= read -r -d $'\036' body || [ -n "$body" ]; do
-    body="${body#$'\n'}"
-    [ -n "$body" ] || continue
-    live="$(live_text "$body")" || return 1
-    out="$out
-$live$body_sep"
-  done <<<"$1"
-  printf '%s' "$out"
-}
-live_issue="$(live_frame "$framed_issue_text")" || live_failed=1
-live_description="$(live_text "$description_part")" || live_failed=1
-live_comments="$(live_frame "$framed_comments_part")" || live_failed=1
-live_reviews="$(live_frame "$framed_reviews_part")" || live_failed=1
-marker_text="$live_issue
-$live_description$body_sep
-$live_comments
-$live_reviews"
-live_all_text="${marker_text//$body_sep/}"
-
-if [ "$live_failed" -eq 1 ]; then
-  echo "model-record: dropping quoted text (live_text) failed, so no marker was read and the stage and Review-floor checks were skipped (#392)"
-else
-  for stage in Discovery Planning Test Implementation Review; do
-    # <<< here-string, not a piped producer | grep -q: SIGPIPE/pipefail
-    # race, see issue #218 and check-no-sigpipe-race.sh.
-    if ! LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\\b" <<<"$live_all_text"; then
-      echo "model-record: no record found for stage $stage (missing model-choice marker)"
-    fi
-  done
-fi
-
-# #392 (A24), narrowed by #424 (A33/A33a): the floor is judged on the model
-# alone; effort is no longer recorded, and a legacy effort attribute is read
-# and ignored. One check on the LATEST Review marker (`tail -1`, as before: a
-# later review round's marker must win), only when both markers are present
-# (the loop above already reports either one missing). Models are never
-# ranked here (no model table): that stays the Reviewer's recorded judgment.
-# - the marker must carry a non-empty quoted floor-basis (one sentence on
-#   why the pair clears the floor); its text is never verified. A legacy
-#   same-model-exception is ignored completely and does not stand in for it.
-# Both are findings with the `model-record:` prefix, never `role-played: `,
-# so the merge guard is unaffected. No lib, no comparison: fail open.
-impl_line=""
-review_line=""
-parser_failed=0
-if [ "$live_failed" -eq 0 ]; then
-  # marker_find: the one marker grammar (a quoted value may hold `>`, `<`,
-  # `--`, a newline; only a quote ends a value), shared with the collector.
-  # A malformed marker is never read (it would otherwise win or hide a later
-  # one); marker_scan names it here instead (round 3 of the PR #397 review).
-  # A parser failure is a finding, never a silent "no marker".
-  impl_line="$(marker_find Implementation "$marker_text" | tail -1)" || parser_failed=1
-  review_line="$(marker_find Review "$marker_text" | tail -1)" || parser_failed=1
-  scan_out="$(marker_scan "$marker_text")" || parser_failed=1
-  if [ "$parser_failed" -eq 0 ]; then
-    # #402 (A26): a malformed marker of ANY stage is named, including an
-    # empty or quoted stage (a hand-typed `stage="Planning"` reads as an
-    # empty stage, shown as `stage=?`). Split on the tabs by hand: `read`
-    # with a tab IFS would collapse an empty stage field.
-    tab=$'\t'
-    while IFS= read -r scan_line; do
-      scan_status="${scan_line%%"$tab"*}"
-      [ "$scan_status" = "malformed" ] || continue
-      scan_rest="${scan_line#*"$tab"}"
-      scan_stage="${scan_rest%%"$tab"*}"
-      scan_rest="${scan_rest#*"$tab"}"
-      echo "model-record: a stage=${scan_stage:-?} marker is malformed and was ignored ($scan_rest) (#392)"
-    done <<<"$scan_out"
-    # #402 (A26): the latest marker of each stage must carry a readable
-    # (quoted, non-empty) model. An unquoted, empty or missing one is one
-    # finding per stage; a legacy effort attribute is never a finding (#424).
-    # A missing stage keeps only its
-    # "no record found" line above.
-    for stage in Discovery Planning Test Implementation Review; do
-      stage_line="$(marker_find "$stage" "$marker_text" | tail -1)" || { parser_failed=1; break; }
-      [ -n "$stage_line" ] || continue
-      for field in model; do
-        field_value="$(marker_attr "$stage_line" "$field")" || { parser_failed=1; break 2; }
-        if [ -z "$field_value" ]; then
-          echo "model-record: the latest stage=$stage marker has no quoted $field=\"...\" (unquoted, empty or missing), so it can't be read; produce a corrected marker with skills/pre-merge-review/model-record-emit.sh (#402)"
-        fi
-      done
-    done
+    line="non-blank decided-by and reason, and a valid scope are required: $line"
   fi
-fi
-if [ "$parser_failed" -eq 1 ]; then
-  echo "model-record: the marker parser (lib/model-record.sh) failed, so the Implementation and Review markers were not read and the Review floor was not checked (#392)"
-  impl_line=""
-  review_line=""
-fi
-if [ -n "$impl_line" ] && [ -n "$review_line" ]; then
-  review_fb="$(marker_attr "$review_line" floor-basis)" || parser_failed=1
-  if [ "$parser_failed" -eq 1 ]; then
-    echo "model-record: the marker parser (lib/model-record.sh) failed, so the Implementation and Review markers were not read and the Review floor was not checked (#392)"
-  else
-    if [ -z "$review_fb" ]; then
-      echo "model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's) (#392)"
-    fi
-  fi
-fi
-
-# --- #371 A18: role-played runs, opted-in projects only ---------------------
+  findings="$findings""model-record: a pipeline-override near-miss ($line)"$'\n'
+done <<<"$po_scan"
+printf '%s' "$findings"
 [ "$opted_in" -eq 1 ] || exit 0
 
-if [ "$issue_fetch_failed" -eq 1 ]; then
-  echo "warning: model-record-gate couldn't read every closing issue and is skipping the role-play check (a missing Discovery marker could be a lookup failure)." >&2
-  exit 0
-fi
-# The "stages missing" test below reads live text; when dropping quoted text
-# failed (already a model-record: finding above), every stage would look
-# missing, a false block: skip the check instead, as for a failed lookup.
-if [ "$live_failed" -eq 1 ]; then
-  echo "warning: model-record-gate couldn't drop quoted text and is skipping the role-play check." >&2
-  exit 0
-fi
-
-
-all_stages="Discovery Planning Test Implementation Review"
-stage_ere='model-record:[[:space:]]*stage=(Discovery|Planning|Test|Implementation|Review)\b'
-
-# Every text the markers are searched in, one live body per record.
-# Separator-framed sources are split on U+001E; the PR description is one
-# text on its own.
-in_one_text=""
-override_bodies=""
-check_text() { # source label, raw body
-  local label="$1" live stages count
-  # #423: a failure is a finding, never a silent empty body (the role-play
-  # path used to ignore it).
-  live="$(live_text "$2")" || echo "model-record: dropping quoted text (live_text) failed on a $label body, so the role-play check read it incomplete (#423)"
-  override_bodies="$override_bodies
-$live"
-  stages="$(LC_ALL=C grep -oE "$stage_ere" <<<"$live" | sed 's/.*stage=//')"
-  # distinct, in pipeline order
-  stages="$(for st in $all_stages; do grep -qx "$st" <<<"$stages" && echo "$st"; done)"
-  [ -n "$stages" ] || return 0
-  count="$(printf '%s\n' "$stages" | wc -l | tr -d ' ')"
-  if [ "$count" -ge 2 ]; then
-    in_one_text="$in_one_text$(printf '%s\n' "$stages" | paste -sd, - | sed 's/,/, /g') ($label)
-"
-  fi
-  return 0
-}
-check_framed() { # label, framed text
-  local label="$1" body
-  while IFS= read -r -d $'\036' body || [ -n "$body" ]; do
-    body="${body#$'\n'}"
-    [ -n "$body" ] || continue
-    check_text "$label" "$body"
-  done <<<"$2"
-}
-check_framed "issue comment" "$framed_issue_text"
-check_text "PR description" "$description_part"
-check_framed "PR comment" "$framed_comments_part"
-check_framed "PR review" "$framed_reviews_part"
-
-# Valid override records: every field non-empty, scope from the closed list.
-waive_all=0
-skipped=""
-while IFS= read -r marker; do
-  [ -n "$marker" ] || continue
-  LC_ALL=C grep -qE '(^|[[:space:]:])decided-by="[^"]+"' <<<"$marker" || continue
-  LC_ALL=C grep -qE '(^|[[:space:]])reason="[^"]+"' <<<"$marker" || continue
-  scope="$(LC_ALL=C grep -oE '(^|[[:space:]])scope="[^"]*"' <<<"$marker" | head -1 | sed 's/^[[:space:]]*scope="//; s/"$//')"
-  case "$scope" in
-    single-session) waive_all=1 ;;
-    skip=Discovery|skip=Planning|skip=Test|skip=Implementation|skip=Review) skipped="$skipped ${scope#skip=} " ;;
-  esac
-done < <(LC_ALL=C grep -oE '<!--[[:space:]]*pipeline-override:[^>]*-->' <<<"$override_bodies")
-
-missing=""
-waived=""
-for stage in $all_stages; do
-  # Live text only (B2 of the release holistic review on #369): a marker or
-  # a stage name quoted in a code span, a fence or a blockquote is not a
-  # present stage, the same rule as the stage check above and check_text.
-  LC_ALL=C grep -qE "model-record:[[:space:]]*stage=$stage\b" <<<"$live_all_text" && continue
-  case "$skipped" in
-    *" $stage "*) waived="$waived skip=$stage" ;;
-    *) missing="$missing${missing:+, }$stage" ;;
-  esac
+in_one_text=''
+for ((idx=1; idx<=body_count; idx++)); do
+  names=''; n=0
+  for s in 0 1 2 3 4; do
+    [ "${body_present[$((idx * 5 + s))]:-0}" -eq 1 ] || continue
+    names="$names${names:+, }${stages[$s]}"; n=$((n + 1))
+  done
+  if [ "$n" -ge 2 ]; then in_one_text="$in_one_text$names (${body_labels[$idx]})"$'\n'; fi
 done
-
+missing=''; waived=''
+for s in 0 1 2 3 4; do
+  [ "${present[$s]}" -eq 0 ] || continue
+  stage="${stages[$s]}"
+  case "$skipped" in *" $stage "*) waived="$waived skip=$stage";; *) missing="$missing${missing:+, }$stage";; esac
+done
 if [ "$waive_all" -eq 1 ]; then
-  if [ -n "$in_one_text" ] || [ -n "$missing" ]; then
-    echo "model-record: a pipeline-override (scope=single-session) is recorded; one session doing several stages is the human's decision here"
-  fi
+  if [ -n "$in_one_text$missing$waived" ]; then echo 'model-record: a pipeline-override (scope=single-session) waived the role-play findings'; fi
   exit 0
 fi
-[ -z "$waived" ] || echo "model-record: a pipeline-override is recorded for:$waived"
-if [ -n "$in_one_text" ]; then
-  while IFS= read -r line; do
-    [ -n "$line" ] && echo "role-played: stages in one text: $line"
-  done <<<"$in_one_text"
-fi
+while IFS= read -r text; do
+  [ -z "$text" ] || echo "role-played: stages in one text: $text"
+done <<<"$in_one_text"
 [ -z "$missing" ] || echo "role-played: stages missing: $missing"
+[ -z "$waived" ] || echo "model-record: a pipeline-override waived stage absence:$waived"
 exit 0

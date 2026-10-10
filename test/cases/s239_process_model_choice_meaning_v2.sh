@@ -7,8 +7,7 @@
 # said every stage records "which model/effort") bumps from the absent
 # version (= 1) to 2, and `quality-review-before-merge` from 3 to 4 (S191
 # pins its text). Both move once, in this slice. `process-multi-agent-roles`
-# is NOT bumped here (its v2, for the stricter guard, comes with the slice that
-# makes the guard stricter). Each "Yes means" states that the floor is judged
+# now carries v2 with #427, which makes the guard stricter. Each "Yes means" states that the floor is judged
 # on the model and effort is neither chosen nor checked, with the revisit
 # trigger "when the dispatch tool gains an effort parameter". Seam: CHANGES.md
 # and WORKFLOW-ADOPTION.md as text, and pending-changes.sh run on fixture
@@ -84,7 +83,7 @@ case "$row_pmc" in *"#424"*) : ;; *) fail "S239/AC4 — the re-confirmed process
 row_qrbm="$(grep -E '^\| *quality-review-before-merge *\|' "$adoption")"
 last="$(printf '%s' "$row_qrbm" | grep -oE '\(meaning v[0-9]+\)' | tail -1)"
 [ "$last" = "(meaning v4)" ] || fail "S239/AC4 — this repo's own quality-review-before-merge row must end with (meaning v4), got '${last:-none}'"
-# the multi-agent row is not touched in this slice
+# #427 reconfirms the multi-agent row at v2
 row_pmar="$(grep -E '^\| *process-multi-agent-roles *\|' "$adoption")"
 grep -qE '\(meaning v2\)' <<<"$row_pmar" || fail "S239/AC4 — process-multi-agent-roles must be re-confirmed at v2 (#427)"
 

@@ -440,25 +440,35 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
   top-level session (A16's probe), roles are dispatched fresh and never
   forked, and `ORCHESTRATOR.md`'s first line excludes any prompt starting
   `ROLE SESSION:`. No `SubagentStart` hook.
-- **Override record (AC6):**
+- **Override record (AC6), amended by #427 (A31a):**
   `<!-- pipeline-override: decided-by="..." scope="single-session|skip=<Stage>" reason="..." -->`,
-  live text (not fenced, not a code span, not a blockquote, same `live_text`
-  rule as `compliance-evidence.sh`, one definition in `lib/markdown.sh`
-  since #423, S153), every field non-empty, `scope` from that closed list. Searched in
-  the same sources as the markers. `single-session` waives every finding;
-  `skip=<Stage>` waives only that stage's absence.
+  one whole line starting in column 0 outside quoted text (fences, spans,
+  blockquotes and indented code). Values may not contain `"`, `<`, `>` or a
+  control character. The literal scope substitutes one of the five stage
+  names for `<Stage>`. The strict `rec_scan_bundle`/`rec_field` reader owns
+  grammar; decided-by and reason must be non-blank, scope from that closed
+  list. Searched in the same sources as stage records. `single-session`
+  waives every role-play finding; `skip=<Stage>` waives only that stage's
+  absence. Invalid live overrides give one near-miss and waive nothing.
 - **Detection (AC9):** `model-record-gate.sh`, only when `answered_yes`
   holds for the project it runs in, prints one line per finding starting
   `role-played: `: several different stages' live markers in one text
   (comment, review or PR description), or any of the five stages missing.
-  The existing output is unchanged; exit stays 0. The comment and review
+  Only strict ok records supply presence and multi-stage evidence; quoted
+  records count as nothing and inline candidates are named near-misses.
+  Exit stays 0. The comment and review
   calls frame each body with U+001E, after removing that byte from the body
   (so a body cannot forge a boundary and split one role-played text into
   several), so one text can be told from the next. Since #392 (round 4 of
   the PR #397 review) this framing applies in every project, because the
   marker parser needs it too (A24). A closing issue that
-  can't be read skips the role-play check (a missing Discovery could be a
-  lookup failure).
+  can't be read emits `role-play-unchecked: ` and skips dependent checks;
+  a genuine HTTP 404 is instead noted and ignored, leaving Discovery missing.
+  Every opted-in early exit (including reader failure) emits unchecked stdout.
+  The guard prints unchecked lines as warnings and near-misses as context,
+  and still blocks only on `role-played: `. Both remedies are shown: re-post
+  via the emitter or provide a valid override. Actual warning delivery to
+  the session is checked in #430 AC3; this slice verifies printed stderr.
 - **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
   `check_merge_guard` in `hooks/git-guardrails` gains a last step,
   `check_role_play_guard`: only when the project answers yes, it runs the
