@@ -53,7 +53,11 @@ dispatched() {
 all_in_one() {
   reset_data
   json_comments "$FAKE_GH_DATA/comments-239.json" "no markers"
-  json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Discovery) $(mr Planning) $(mr Test) $(mr Implementation) $(mr Review)"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Discovery)
+$(mr Planning)
+$(mr Test)
+$(mr Implementation)
+$(mr Review)"
 }
 
 merge() { # project [path] [command] -> output in $out, status in $status

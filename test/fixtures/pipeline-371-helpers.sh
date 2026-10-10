@@ -104,12 +104,12 @@ mr() {
 json_comments() {
   local out="$1"
   shift
-  jq -n '$ARGS.positional | map({body: .})' --args "$@" > "$out"
+  jq -n '$ARGS.positional | to_entries | map({body:.value, created_at:("2026-10-01T00:00:" + ((.key+10)|tostring) + "Z"), submitted_at:("2026-10-01T00:00:" + ((.key+10)|tostring) + "Z")})' --args "$@" > "$out"
 }
 
 # json_pr <outfile> <title> <body>
 json_pr() {
-  jq -n --arg t "$2" --arg b "$3" '{title: $t, body: $b}' > "$1"
+  jq -n --arg t "$2" --arg b "$3" '{title:$t,body:$b,created_at:"2026-09-01T00:00:00Z"}' > "$1"
 }
 
 # fake_gh_rest <data-dir>: a fake `gh` serving REST `gh api` calls from

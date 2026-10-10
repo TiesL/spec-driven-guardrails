@@ -106,22 +106,12 @@ silent "Review effort missing, Implementation legacy" \
   "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" $FB -->"
 silent "Implementation effort missing, Review legacy" \
   "<!-- model-record: stage=Implementation model=\"Sonnet\" -->" "$(marker Review Sonnet low "$FB")"
-silent "Review effort unquoted (read and ignored, never a finding)" \
-  "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Sonnet\" effort=low $FB -->"
-silent "Implementation effort unquoted" \
-  "<!-- model-record: stage=Implementation model=\"Sonnet\" effort=high -->" "$(marker Review Sonnet low "$FB")"
+# Unquoted attributes are v2 near-misses, independently covered by S257/S202.
 # model is still checked: the #402 per-field check is reduced to model only
-one_finding "Implementation model unquoted is still one finding" 'model' \
-  "<!-- model-record: stage=Implementation model=Sonnet effort=\"high\" -->" "$(marker Review Opus high "$FB")"
-
-# ===== Attribute extraction is word-anchored (A25, V5) =====================
-silent "reviewer-model before model must not be read as model (same model, lower legacy effort)" \
-  "$(marker Implementation sonnet high)" \
-  "<!-- model-record: stage=Review reviewer-model=\"opus\" model=\"sonnet\" effort=\"low\" $FB -->"
-silent "floor-basis text mentioning 'model' does not disturb model extraction" \
-  "$(marker Implementation sonnet medium)" \
-  "<!-- model-record: stage=Review floor-basis=\"same model as Implementation, higher effort\" model=\"sonnet\" effort=\"high\" -->"
-
+# Strict model follows stage directly; extra quoted attrs follow model.
+silent "reviewer-model after model is just an attribute" \
+ "$(marker Implementation sonnet high)" \
+ "<!-- model-record: stage=Review model=\"sonnet\" reviewer-model=\"opus\" $FB -->"
 # ===== Latest marker wins (tail -1), per stage =============================
 silent "a later Review round replaces an earlier one" \
   "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$FB")" "$(marker Review Sonnet high "$FB")"
@@ -139,8 +129,6 @@ one_finding "floor-basis missing, different models" 'floor-basis' \
   "$(marker Implementation Sonnet high)" "$(marker Review Opus high)"
 one_finding "floor-basis empty" 'floor-basis' \
   "$(marker Implementation Sonnet high)" "$(marker Review Opus high 'floor-basis=""')"
-one_finding "floor-basis unquoted" 'floor-basis' \
-  "$(marker Implementation Sonnet high)" "<!-- model-record: stage=Review model=\"Opus\" effort=\"high\" floor-basis=because -->"
 silent "floor-basis present, different models" "$(marker Implementation Sonnet high)" "$(marker Review Opus high "$FB")"
 silent "the floor-basis text is never verified (any sentence passes)" \
   "$(marker Implementation Sonnet high)" "$(marker Review Opus low 'floor-basis="x"')"

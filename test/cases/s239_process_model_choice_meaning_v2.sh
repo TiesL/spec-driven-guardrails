@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S239 — process-model-choice moves to meaning version 2 (effort is no longer recorded), quality-review-before-merge to 4, each exactly once; process-multi-agent-roles does not move yet; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced.
+# S239 — process-model-choice moves to meaning version 2 (effort is no longer recorded), quality-review-before-merge to 4, each exactly once; process-multi-agent-roles is now v2 (#427); this repo's own rows re-confirm; adopters answered under the old version are re-surfaced.
 # Covers: F9, F26, F39
 #
 # Issue #424 (V3; A33a), AC4. The adoption-registry rule (#254) counts a
@@ -36,10 +36,7 @@ trap sandbox_destroy EXIT
 [ "$(changes_meaning_version process-model-choice "$changes")" = "2" ] \
   || fail "S239/AC4 — process-model-choice must be at Meaning version 2, got '$(changes_meaning_version process-model-choice "$changes")'"
 pmar="$(changes_meaning_version process-multi-agent-roles "$changes")"
-case "$pmar" in
-  "" | 1) : ;;
-  *) fail "S239/AC4 — process-multi-agent-roles must NOT move in this slice (its bump belongs to the guard slice), got version '$pmar'" ;;
-esac
+[ "$pmar" = 2 ] || fail "S239 — multi-agent meaning must now be v2 (#427)"
 
 # ===== the process-model-choice entry =======================================
 entry="$(awk -v id="process-model-choice" '
@@ -89,7 +86,7 @@ last="$(printf '%s' "$row_qrbm" | grep -oE '\(meaning v[0-9]+\)' | tail -1)"
 [ "$last" = "(meaning v4)" ] || fail "S239/AC4 — this repo's own quality-review-before-merge row must end with (meaning v4), got '${last:-none}'"
 # the multi-agent row is not touched in this slice
 row_pmar="$(grep -E '^\| *process-multi-agent-roles *\|' "$adoption")"
-! grep -qE '\(meaning v2\)' <<<"$row_pmar" || fail "S239/AC4 — process-multi-agent-roles must not be re-confirmed at v2 in this slice"
+grep -qE '\(meaning v2\)' <<<"$row_pmar" || fail "S239/AC4 — process-multi-agent-roles must be re-confirmed at v2 (#427)"
 
 # ===== adopters answered under the old version are re-surfaced ================
 resurface() { # label, notes, expect-substring-or-QUIET

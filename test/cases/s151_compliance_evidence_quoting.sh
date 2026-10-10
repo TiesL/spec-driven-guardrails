@@ -818,4 +818,46 @@ else
   grep -q 'pre-merge-review:done' <<<"$q23_live" || fail "S151 Q23 (transport) — the marker on the third line must stay live end to end"
 fi
 
+# #427: S201 non-gate controls transferred verbatim; retained legacy semantics.
+. "$TEST_REPO_ROOT/test/fixtures/pipeline-371-helpers.sh"
+. "$TEST_REPO_ROOT/test/fixtures/review-floor-helpers.sh"
+NL=$'\n'
+BT='`'
+quote_fence() { printf 'Example of the format:%s```%s%s%s```' "$NL" "$NL" "$1" "$NL"; }
+quote_tilde() { printf 'Example:%s~~~%s%s%s~~~' "$NL" "$NL" "$1" "$NL"; }
+quote_span() { printf 'The format is %s%s%s, as in the skill.' "$BT" "$1" "$BT"; }
+quote_block() { printf '> Reviewer wrote:%s> %s' "$NL" "$1"; }
+. "$TEST_REPO_ROOT/test/fixtures/ce-review-helpers.sh"
+# ---- the same inputs through compliance-evidence.sh gate 2 -------------------
+impl_c="$(mk Implementation claude-sonnet-5 medium)"
+rev_c_low="$(mk Review claude-sonnet-5 low 'floor-basis="ok"')"
+c_ex_impl_low='<!-- model-record: stage=Implementation model="claude-opus-5" effort="low" -->'
+c_ex_rev_high='<!-- model-record: stage=Review model="claude-opus-5" effort="high" floor-basis="example" -->'
+# one TEXT record per comment; a multi-line comment is sent with the \001 sentinel
+for form in fence tilde span block; do
+  q="$("quote_$form" "$c_ex_impl_low")"
+  q="${q//$NL/$'\001'}"
+  ce "Closes #265" "$impl_c
+$rev_c_low
+$q" ""
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S151 transferred S201 gate2/$form — the quoted example (another model) must not count: the real Review is on Implementation's model, so evidenced, got '$(row_status "$ce_out" 2)' ($(row_evidence "$ce_out" 2))"
+done
+for form in fence span block; do
+  q="$("quote_$form" "$c_ex_rev_high")"
+  q="${q//$NL/$'\001'}"
+  ce "Closes #265" "$impl_c
+$rev_c_low
+$q" ""
+  [ "$(row_status "$ce_out" 2)" = "evidenced" ] || fail "S151 transferred S201 gate2/review-$form — a quoted Review example must not replace the real one, got '$(row_status "$ce_out" 2)'"
+done
+
+# ---- an indented code block: live_text keeps it in every script (accepted
+# debt, S151 Q18): the three scripts must AGREE, whatever they decide ---------
+c_ind="    $c_ex_impl_low"
+c_ind="${c_ind//$NL/$'\001'}"
+ce "Closes #265" "$impl_c
+$rev_c_low
+Indented example:${NL}${NL}$c_ind" ""
+[ "$(row_status "$ce_out" 2)" = unverifiable-from-artifacts ] || fail "S151 transferred S151 transferred S201 indent — legacy collector must count indented example"
+
 test_done
