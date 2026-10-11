@@ -3118,10 +3118,19 @@ something new is being added.
   Discovery in the closing issue's comment, rows 1-3 `evidenced`; a malformed
   done marker after the bytes still reads "not in the recognized shape"; a done
   marker only in a code span after the bytes still says "only inside a code
-  span"); the staleness script (the Review marker after the bytes in the issue
-  body, an issue comment, the PR body, a PR comment, a PR review, and the
-  closing keyword after the bytes in the PR title and in the PR body: verdict
-  `stale`). Each result, rows with their evidence text included, equals the
+  span"); for the #428 staleness migration, a valid whole column-0 Review
+  record follows byte-bearing prose on a separate line in the issue body,
+  an issue comment, the PR body, a PR comment and a PR review. The fixture
+  transports that line break as encoded `\001`, so caller decoding remains
+  exercised; the PR description's closing keyword also occupies a separate
+  line from the record. Retain the two closing-keyword placements after the
+  bytes in the PR title and PR body, each with a valid whole-line Review
+  record in the PR comment. All seven placements and all three byte variants
+  must assert baseline verdict `stale`, then exact full-output equality
+  between C and UTF-8 environments. Keep the byte-in-`floor-basis` staleness
+  arms as valid records. Inline prose-prefixed records are near-misses under
+  #428, covered by S268; they cannot be stale success controls. Each result,
+  rows with their evidence text included, equals the
   `LC_ALL=C` result, which is itself asserted non-trivial. `normalize_model`
   of `lib/model-record.sh` (finding lib-normalize-locale): a model value
   holding `\377` or `\342\200` normalizes to `opus 5` under both locales with
