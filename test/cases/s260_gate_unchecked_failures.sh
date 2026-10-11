@@ -44,7 +44,12 @@ if $select; then
 fi
 exec "$real" "\$@"
 EOF
-  chmod +x "$bin/$tool"; v2_path="$bin:$v2_bin:$PATH"
+  chmod +x "$bin/$tool"
+  forwarded="$(printf 'alpha\nbeta\n' | "$bin/$tool" 'alpha' 2>"$SANDBOX/forward-err")"; forward_rc=$?
+  correct_real="$realgrep"; [ "$tool" != awk ] || correct_real="$realawk"
+  expected="$(printf 'alpha\nbeta\n' | "$correct_real" 'alpha')"; expected_rc=$?
+  [ "$forwarded" = "$expected" ] && [ "$forward_rc" -eq "$expected_rc" ] && [ ! -s "$SANDBOX/forward-err" ] || fail "S260/forward-$tool-$mode — unmatched call changed same-tool stdout/status"
+  v2_path="$bin:$v2_bin:$PATH"
   v2_base; v2_run "$v2_yes"
   [ -s "$COUNT_FILE" ] || fail "unused $tool/$mode shim"
   count 'model-record:' 1; has 'reader'; count 'role-play-unchecked:' 1; absent 'no record found'; absent 'role-played:'

@@ -2441,9 +2441,13 @@ something new is being added.
   conflict (`indeterminate`, naming the models and no effort), while agreeing
   ones, ones differing only in legacy effort, and ones differing only in a
   legacy exception are not (the conflict key is the model alone); the
-  #302/#336 lookup-failure guard still degrades a same-model verdict that
-  depends on a possibly unread marker to `indeterminate`, and leaves sound
-  verdicts alone
+  lookup-failure guard follows A37 latest-candidate authority: any unread
+  closing source can contain a newer candidate, so gate 2 is `indeterminate`
+  even with readable same-model or different-model PR records. Retain the
+  actual single-issue failed-lookup payloads and lower/equal legacy-effort
+  controls; change their oracles, never substitute empty successful input.
+  Independent positive done-marker and CI evidence retain their own semantics
+  (S150/S276), rather than inheriting model-authority uncertainty.
 
 ### S191 — quality-review-before-merge is at meaning v4 (the floor is on the model alone) and the specs follow
 **Covers:** F9, F39
@@ -2677,6 +2681,15 @@ something new is being added.
   `$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh` and says to run it with
   the project's checkout as the working directory, not "from the guardrails
   clone"
+
+- Review-round-1 helper fidelity (`source-matcher-flags`): extraction with
+  `test_source_match -oE` returns precisely every matched executable-path
+  token, including multiple matches on one line, without surrounding prose,
+  arguments or backticks. Retain actual adopted-project path resolution and
+  wrapper execution. A valid path embedded in prose is a positive control;
+  an unresolved documented path is a clean assertion failure. Exact helper
+  stdout/status controls must first fail against the frozen helper, then pass;
+  returning whole matching lines instead of tokens must make them red.
 
 ### S207 — merging is human-only only for main, and the text says so once
 **Covers:** F38
@@ -3300,8 +3313,7 @@ something new is being added.
   least 10, the count after #424; it was 11 at head 5ea3a5b). (L3) the lint is red on a scratch copy
   with the export removed from each script in turn (the synthetic tree has a
   `lib/review-rounds.sh` of one `sort` site, and its prefix removal is a mutant), with a non-C export, with
-  an unset, and with one lib prefix removed (`normalize_model`'s first `sed` and `tr`, both `markdown.sh` awks, both
-  parser awks); and on a synthetic tree and snippets, each of the seven
+  an unset, and with one lib prefix removed (`normalize_model`'s first `sed` and `tr`, both `markdown.sh` awks, the surviving v2 reader candidate-count grep and mode=rec awk); and on a synthetic tree and snippets, each of the seven
   commands bare in every command position (line start, after a pipe, `$(`,
   `"$(`, `;`, `&&`, `||`, a subshell, `then`, `if`, a backtick, another env
   assignment, a case arm) is a violation, while the same text prefixed, named
@@ -3315,6 +3327,18 @@ something new is being added.
   heredoc bodies read as code. Red after #426's tests, before its code: the carry-forward gate has
   no `export LC_ALL=C`. A real-tree mutant of `lib/review-rounds.sh` is for the
   Developer to add once the lib has an external text command (the stub has none)
+
+- Review-round-1 retirement (`deleted-reader-locale-mutants`): real-tree
+  mutations target surviving command sites only, including `_rec_scan`'s
+  candidate-count grep and `mode=rec` awk. Each replacement must apply to a
+  present site and the real baseline must be green before its mutant is
+  evaluated. Removing the locale prefix must yield that site's named lint
+  violation; restored copies must be green. Preserve the synthetic command
+  positions, export sweep, checked-site reporting and meaningful nonzero
+  floor, revising a historical numeric floor only from the actual site inventory.
+  Deleted find/scan command targets cannot count as killed mutants. Preserve
+  the separate genuine native K3 invalid/truncated-byte and multibyte controls;
+  a structural lint rejection does not replace native behavioral evidence.
 
 ### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
 **Covers:** F39, F40
@@ -3715,6 +3739,15 @@ something new is being added.
   its own instead of `rec_scan`; ignore a failing grep, awk or sort; print the
   rounds read before a failure; an external tool without `LC_ALL=C`
 
+- Review-round-1 helper fidelity (`source-matcher-flags`): the actual
+  `test_source_match -avc` caller returns a numeric count of non-model-record
+  scanner-kind log lines, including zero with no selected lines. Correct-kind
+  delegation is green; a reached scanner call with an incorrect kind is a
+  named assertion failure, without integer-expression or fixture errors.
+  Preserve the canned-none/canned-Review controls and call-log witness. The
+  negative witness must alter the reached kind, not simply erase the log;
+  omitting inversion or counting must be caught by exact stdout/status checks.
+
 ### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
 **Covers:** F28, F42
 - Given: a PR served as REST data (comments with `created_at`, reviews with
@@ -4012,6 +4045,18 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
 - Test mapping: new `test/cases/s260_gate_unchecked_failures.sh`; S130 retains
   no-gh warning controls. Injection selection may inspect arguments, but all
   behavior assertions use public stdout/stderr/status; no new external Seam.
+
+- Review-round-1 injection fidelity (`reader-failure-shim-selection`): the
+  grep shim selects the surviving candidate-count grep and delegates every
+  unmatched grep call to real grep; the awk shim selects the surviving reader
+  mode=rec invocation and delegates every unmatched awk call to real awk.
+  Each arm has a persistent tool/argument call witness proving the intended
+  invocation ran, separately for grep exit 2, grep successful empty output,
+  and awk exit 2. Include an unrelated-call forwarding control with unchanged
+  real-tool output/status. Preserve opted-in/plain-project assertions and
+  legitimate no-hit numeric-zero controls. A deliberately unmatched selector
+  must fail the reachability assertion; swallowing a reached failure must
+  fail the public reader-failure/unchecked assertions, not setup diagnostics.
 
 ### S261 — a genuine missing closing reference is ignored, not unchecked
 **Covers:** F27, F38, F40

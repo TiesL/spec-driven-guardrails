@@ -26,6 +26,14 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
+# Exact private matcher controls: extraction, inverse count and no-hit status.
+matched="$(printf '%s\n' 'run ./one/model-record-emit.sh then .claude/skills/model-record-emit.sh now' | test_source_match -oE '[A-Za-z0-9_./${}-]*model-record-emit\.sh')"
+[ "$matched" = $'./one/model-record-emit.sh\n.claude/skills/model-record-emit.sh' ] || fail "S206/matcher-extraction — expected only two path tokens, got '$matched'"
+matched="$(printf '%s\n' model-record model-record | test_source_match -avc '^model-record$')"; match_rc=$?
+[ "$matched" = 0 ] && [ "$match_rc" -eq 1 ] || fail "S206/matcher-zero — inverse no-hit must print numeric 0 with status1, got '$matched'/$match_rc"
+matched="$(printf '%s\n' model-record pipeline-override | test_source_match -avc '^model-record$')"; match_rc=$?
+[ "$matched" = 1 ] && [ "$match_rc" -eq 0 ] || fail "S206/matcher-inversion — wrong kind must count exactly1, got '$matched'/$match_rc"
+
 clone="$(sandbox_copy_repo clone)"
 project="$(fresh_project adopter)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >/dev/null 2>&1
