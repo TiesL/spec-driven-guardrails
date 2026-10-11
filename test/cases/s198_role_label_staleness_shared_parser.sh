@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# S198 — record-v2 rejects forbidden delimiters in stage-marker attribute
-# values contain `>`, `-->` or `<!--`, through the shared marker parser.
+# S198 — record-v2 rejects forbidden delimiters in attribute values.
 # Covers: F39
-#
-# Issue #392, round 3 of the PR #397 review (low finding): the script matched
-# markers with `[^>]*-->`, so a Review marker with `floor-basis="a > b"` was
-# invisible to it and a stale `role:architect` label read as in-sync.
-# Behaviour only: the verdict must be `stale` (the marker's stage detected).
+# #428 rewrites the old shared-parser acceptance case: valid Review controls
+# evidence the stage, but forbidden value delimiters are named near-misses.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -69,11 +65,11 @@ for v in 'opus > sonnet' 'a --> b' 'a <!-- b' 'x < y -- z' '<!-- x --> > <'; do
   esac
 done
 
-# a label AT the evidenced stage stays in-sync with such a marker
+# a label AT the evidenced stage stays in-sync with a valid value
 verdict_for role:reviewer '<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" floor-basis="opus exceeds sonnet" -->'
 case "$verdict" in
   *" — in-sync "*) : ;;
-  *) fail "S198 — role:reviewer with a stage=Review marker (floor-basis with '>') must be in-sync, got: $verdict" ;;
+  *) fail "S198 — role:reviewer with a stage=Review marker (valid floor-basis) must be in-sync, got: $verdict" ;;
 esac
 
 test_done

@@ -15,6 +15,9 @@ case "$endpoint" in
  repos/\{owner\}/\{repo\}/issues/400/comments) file=issue-comments;;
  repos/\{owner\}/\{repo\}/issues/400/timeline) file=timeline;;
  repos/\{owner\}/\{repo\}/pulls/501) file=pr;;
+ repos/\{owner\}/\{repo\}/pulls/502) file=pr2;;
+ repos/\{owner\}/\{repo\}/issues/502/comments) file=comments2;;
+ repos/\{owner\}/\{repo\}/pulls/502/reviews) file=reviews2;;
  repos/\{owner\}/\{repo\}/issues/501/comments) file=comments;;
  repos/\{owner\}/\{repo\}/pulls/501/reviews) file=reviews;;
  *) printf '%s\n' "$endpoint" >> "$ROLE_V2_UNEXPECTED"; exit 1;;
@@ -29,7 +32,7 @@ r_good='<!-- model-record: stage=Review model="claude-sonnet-5" -->'
 r_bad='<!-- model-record: stage=Review-->'
 r_early=2026-10-01T10:00:00Z
 r_late=2026-10-01T11:00:00Z
-r_script="$TEST_REPO_ROOT/role-label-staleness.sh"
+r_script="${ROLE_V2_SCRIPT:-$TEST_REPO_ROOT/role-label-staleness.sh}"
 r_rows() {
  local file="$1"; shift
  jq -n '$ARGS.positional as $a | [range(0;($a|length);2) as $i | {created_at:$a[$i],submitted_at:$a[$i],body:$a[$i+1]}]' --args "$@" > "$ROLE_V2_DATA/$file.json"
@@ -41,7 +44,8 @@ r_base() {
  r_issue role:architect
  printf '{"full_name":"owner/repo"}\n' > "$ROLE_V2_DATA/repo.json"
  printf '[]\n' > "$ROLE_V2_DATA/timeline.json"
- r_pr ''; r_rows issue-comments; r_rows comments; r_rows reviews
+ r_pr ''; r_rows issue-comments; r_rows comments; r_rows reviews; r_rows comments2; r_rows reviews2
+ cp "$ROLE_V2_DATA/pr.json" "$ROLE_V2_DATA/pr2.json"
 }
 r_link() { printf '[{"event":"cross-referenced","source":{"issue":{"number":501,"repository":{"full_name":"owner/repo"},"pull_request":{}}}}]\n' > "$ROLE_V2_DATA/timeline.json"; }
 r_run() {

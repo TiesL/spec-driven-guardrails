@@ -4,8 +4,8 @@
 # #501), extracted verbatim so S198 can reuse it. Source after sandbox_create.
 # Bash 3.2.
 
-CALL_ISSUE_ARGS='api repos/{owner}/{repo}/issues/400 --jq ("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
-CALL_ISSUE_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/400/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_ISSUE_ARGS='api repos/{owner}/{repo}/issues/400 --jq ("BODY\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
+CALL_ISSUE_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/400/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 # issue #317 F-8: a new, unconditional call the script makes once per
 # run (right before the timeline call, regardless of the comments
 # call's own outcome) — this repo's own identity, used to filter
@@ -22,12 +22,12 @@ CALL_TIMELINE_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq
 # — captured the same way, by observing the real script's argv against
 # a recording fake gh with only the identity call answered to fail.
 CALL_TIMELINE_UNFILTERED_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
-CALL_PR501_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/501 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR501_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/501/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR501_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/501/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR502_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/502 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR502_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/502/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR502_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/502/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR501_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/501 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
+CALL_PR501_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/501/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR501_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/501/reviews --paginate --jq  .[] | "TEXT\t"+(.submitted_at//"")+"\t"+((.body//"")|gsub("\u0001";" " )|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR502_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/502 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
+CALL_PR502_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/502/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_PR502_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/502/reviews --paginate --jq  .[] | "TEXT\t"+(.submitted_at//"")+"\t"+((.body//"")|gsub("\u0001";" " )|gsub("\r";"")|gsub("\n";"\u0001"))'
 
 pattern_issue="'$CALL_ISSUE_ARGS'"
 pattern_issue_comments="'$CALL_ISSUE_COMMENTS_ARGS'"
@@ -85,12 +85,19 @@ run_build_fake_gh() {
   arms="${arms//__CALL_PR502_COMMENTS__/$pattern_pr502_comments}"
   arms="${arms//__CALL_PR502_REVIEWS__/$pattern_pr502_reviews}"
 
-  body='case "$*" in'
+  body='set -o pipefail
+(case "$*" in'
   body="$body
 $arms
 esac
 printf 'UNEXPECTED: %s\n' \"\$*\" >> '$WITNESS'
-exit 1"
+exit 1) | while IFS= read -r row; do
+  case \"\$row\" in
+    BODY\$'\\t'*|TEXT\$'\\t'*)
+      printf '%s\\t2026-10-01T10:00:00Z\\t%s\\n' \"\${row%%\$'\\t'*}\" \"\${row#*\$'\\t'}\" ;;
+    *) printf '%s\\n' \"\$row\" ;;
+  esac
+done"
 
   : > "$WITNESS"
   fake_gh_bin "$body" > "$FAKEGH_OUT"

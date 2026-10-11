@@ -4253,12 +4253,15 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   `<!-- model-record: stage=Review-draft model="claude-sonnet-5" -->`, and
   `<!-- model-record: model="claude-sonnet-5" -->`.
   Every arm yields ` — indeterminate (` and names a near-miss plus its
-  candidate/cause; readable Review arms name `stage=Review`, unreadable
-  stage arms name `?`. No candidate yields ` — in-sync (` and the literal
+  candidate/cause; all arms containing `stage=Review`, including Review-draft,
+  name `stage=Review`; the missing-stage arm names `stage=?`. Review-draft
+  remains a near-miss with `the stage is quoted, missing or not one of the five names`:
+  the reader's diagnostic stage token is distinct from strict record acceptance.
+  No candidate yields ` — in-sync (` and the literal
   `no model-record marker evidenced yet` fragment, proving absence is distinct.
 - Repeat missing-model case with `role:reviewer` as the named S152 F-5
   intentional reversal; retain S152 g1 unchanged (AC2 regression).
-- Falsifiers: recognize stage without model; truncate Review-draft to Review;
+- Falsifiers: accept a record without model; accept Review-draft as an ok Review record;
   ignore near-misses. New file `test/cases/s267_role_label_v2_presence.sh`.
 
 ### S268 — role-label-staleness.sh separates quoted records from whole-line near-misses
@@ -4274,7 +4277,9 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   but a next comment's live Test yields stale with expected role:qa.
 - Prefix the candidate with `prose `, suffix it with ` prose`, wrap in a
   table cell, or indent by one/two/three spaces: each yields
-  ` — indeterminate (` with the named `not on a line of its own` cause.
+  ` — indeterminate (`. The suffix-only arm names
+  `text after the closing --> or no closing -->`; the prefix, table-cell and
+  one/two/three-space arms name `not on a line of its own`.
   Use valid model-bearing records so rejection cannot be due to missing model.
 - Repeat live and fenced controls in a kept PR review with successful real
   closing-reference data; assert the review endpoint was answered and used.

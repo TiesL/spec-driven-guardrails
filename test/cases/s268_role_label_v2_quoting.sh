@@ -16,7 +16,8 @@ for source in issue review; do
  done
 done
 for body in "prose $test_rec" "$test_rec prose" "| $test_rec |" " $test_rec" "  $test_rec" "   $test_rec"; do
- r_base; r_issue role:product; r_rows issue-comments "$r_early" "$body"; r_run; r_status indeterminate; r_has 'not on a line of its own'
+ r_base; r_issue role:product; r_rows issue-comments "$r_early" "$body"; r_run; r_status indeterminate
+ case "$body" in "$test_rec prose") r_has 'text after the closing --> or no closing -->';; *) r_has 'not on a line of its own';; esac
 done
 r_base; r_issue role:product; r_rows issue-comments "$r_early" $'```\n'"$test_rec" "$r_late" "$test_rec"; r_run; r_status stale; r_has 'expected role:qa'
 test_done
