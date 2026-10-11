@@ -19,7 +19,7 @@
 #   L3  the lint is red on a scratch copy with one export removed from each
 #       script in turn, with the export weakened (a non-C value, an unset), and
 #       with one lib prefix removed (normalize_model's first
-#       sed, a markdown.sh awk, a parser awk).
+#       sed, markdown awk, and the record candidate-count grep/record awk).
 #
 # Edited for #426 (V5 of #411): the carry-forward gate is a fifth script that reads
 # GitHub text (its `export LC_ALL=C` is L1's first statement, L3 removes it) and
@@ -71,6 +71,7 @@ expect_red() {
   local label="$1" v
   v="$(violations "$2")"
   [ -n "$v" ] || fail "S235 L3 — $label: the lint stayed GREEN (the mutant survives)"
+  printf '    S235 mutant %s: %s\n' "$label" "$v" >&2
 }
 expect_green() {
   local label="$1" v
@@ -184,6 +185,7 @@ mutant_of() { # root-to-copy name file old new: a fresh copy with one literal re
 kill_mutant() { # src name file old new
   mutant_of "$1" "$2" "$3" "$4" "$5" || return 0
   expect_red "$2" "$MUT_ROOT"
+  expect_green "restored:$2" "$1"
 }
 
 for f in $LL_SCRIPTS; do
@@ -217,9 +219,9 @@ fi
 real_sites="$(sites_of "$ROOT")"
 echo "    S235: the lint checked $real_sites external text-command sites in $LL_LIBS" >&2
 [ "$real_sites" -gt 0 ] || fail "S235 L2 — the lint checked 0 sites in the libs (a lint that scans nothing is red)"
-# the two libs have, together, at least the 10 sites left after #424 deleted
-# effort_rank (head 5ea3a5b had 11, effort_rank's tr being one of them)
-[ "$real_sites" -ge 10 ] || fail "S235 L2 — the lint checked only $real_sites sites; the head after #424 has 10 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
+# Current inventory: markdown2; normalize_model5; record reader2;
+# review-rounds4 (tr, two grep sites, sort). Preserve a meaningful floor.
+[ "$real_sites" -ge 13 ] || fail "S235 L2 — the lint checked only $real_sites sites; the current three-lib inventory has 13 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
 
 # =========================================================================
 # 2. L3 on the REAL tree (needs a green real baseline)
@@ -238,8 +240,8 @@ else
   kill_mutant "$ROOT" "real:normalize_model-tr" lib/model-record.sh "LC_ALL=C tr '[:upper:]' '[:lower:]' \\" "tr '[:upper:]' '[:lower:]' \\"
   kill_mutant "$ROOT" "real:markdown-strip-awk" lib/markdown.sh "LC_ALL=C awk -v mode=strip" "awk -v mode=strip"
   kill_mutant "$ROOT" "real:markdown-live-awk" lib/markdown.sh "LC_ALL=C awk -v mode=live" "awk -v mode=live"
-  kill_mutant "$ROOT" "real:parser-find-awk" lib/model-record.sh "LC_ALL=C awk -v want=\"\$1\" -v mode=find" "awk -v want=\"\$1\" -v mode=find"
-  kill_mutant "$ROOT" "real:parser-scan-awk" lib/model-record.sh "LC_ALL=C awk -v want= -v mode=scan" "awk -v want= -v mode=scan"
+  kill_mutant "$ROOT" "real:record-count-grep" lib/model-record.sh "LC_ALL=C grep -aEc" "grep -aEc"
+  kill_mutant "$ROOT" "real:record-scan-awk" lib/model-record.sh "LC_ALL=C awk -v mode=rec" "awk -v mode=rec"
   kill_mutant "$ROOT" "real:review-rounds-sort" lib/review-rounds.sh "LC_ALL=C sort -t" "sort -t"
   kill_mutant "$ROOT" "real:review-rounds-grep" lib/review-rounds.sh "LC_ALL=C grep -aqE" "grep -aqE"
   kill_mutant "$ROOT" "real:review-rounds-tr" lib/review-rounds.sh "LC_ALL=C tr '\\001'" "tr '\\001'"

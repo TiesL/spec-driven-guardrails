@@ -134,8 +134,8 @@ marker_emit() {
 # --- Record grammar v2: the reader (#425, slice V4 of #411; A31, A31a, A32a) -
 #
 # ONE definition of what a `model-record` or `pipeline-override` record is,
-# read line by line. Today's parser above stays for the callers that have not
-# moved yet (slices V6 to V8); nothing here changes what they read.
+# read line by line. All record callers use this reader; the legacy parser
+# was retired with the final collector migration (#429, slice V8).
 #
 # The grammar (A31 as amended by A31a). A record is ONE whole line, starting in
 # column 0, outside a fenced block, a code span, a blockquote and an indented

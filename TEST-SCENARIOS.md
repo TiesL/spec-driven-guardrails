@@ -2430,7 +2430,7 @@ something new is being added.
   #392, AC4/AC5/AC6, A24/A25; the effort branch removed by #424, AC2/AC6)
 - When: `compliance-evidence.sh 279` runs
 - Then: for the same model, whatever legacy efforts the markers carry (lower,
-  higher, equal, `unknown`, missing, unquoted, or no effort attribute),
+  higher, equal, quoted `unknown`, or no effort attribute),
   gate 2 is `evidenced`, its basis naming the model-only floor on
   self-reported model strings and quoting no effort; different models are
   `unverifiable-from-artifacts`, the evidence saying the models differ and
@@ -2448,6 +2448,17 @@ something new is being added.
   controls; change their oracles, never substitute empty successful input.
   Independent positive done-marker and CI evidence retain their own semantics
   (S150/S276), rather than inheriting model-authority uncertainty.
+
+- Review-round-1 additional malformed-input oracle reconciliation: retain the
+  exact Review `effort=low` unquoted payload and the exact
+  `stage=Review reviewer-model="..." model="..."` payload. Both are v2
+  near-misses and gate 2 is `indeterminate`: ignored legacy attributes still
+  require quoted values, and `model` must immediately follow `stage`.
+  Preserve valid quoted/missing-effort positives. Keep extraction coverage
+  with a separate valid-order `stage=Review model="..." reviewer-model="..."`
+  control whose actual model determines the floor; do not replace the retained
+  malformed-order payload with this positive. A mutant accepting either
+  malformed line as an ok candidate must make the uncertainty assertions red.
 
 ### S191 — quality-review-before-merge is at meaning v4 (the floor is on the model alone) and the specs follow
 **Covers:** F9, F39

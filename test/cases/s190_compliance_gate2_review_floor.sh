@@ -149,14 +149,14 @@ grep -qi 'floor-basis' <<<"$(row_evidence "$ce_out" 2)" || fail "S190 — a Revi
 check "short alias vs full id: different, never evidenced" unverifiable-from-artifacts \
   "$(mk Implementation claude-opus-5 high)$nl$(mk Review opus low "$FB")"
 
-# ===== unknown / missing / unquoted legacy effort on the SAME model =========
-# read without error and ignored: the model-only verdict, never indeterminate
+# ===== quoted unknown / missing legacy effort on the SAME model ==========
+# Well-formed optional effort is ignored; unquoted effort is a near-miss.
 check "Review effort session-default" evidenced "$impl_m$nl$(mk Review claude-sonnet-5 session-default "$FB")"
 check "Review effort unknown" evidenced "$impl_m$nl$(mk Review claude-sonnet-5 unknown "$FB")"
 check "Implementation effort unknown" evidenced "$(mk Implementation claude-sonnet-5 unknown)$nl$(mk Review claude-sonnet-5 high "$FB")"
 check "Review effort missing" evidenced "$impl_m$nl<!-- model-record: stage=Review model=\"claude-sonnet-5\" $FB -->"
 check "Implementation effort missing" evidenced "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" -->$nl$(mk Review claude-sonnet-5 high "$FB")"
-check "Review effort unquoted" evidenced "$impl_m$nl<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=low $FB -->"
+check "Review effort unquoted: latest near-miss" indeterminate "$impl_m$nl<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=low $FB -->"
 # but missing effort with DIFFERENT models stays the different-models verdict
 check "different models, effort missing on both" unverifiable-from-artifacts \
   "<!-- model-record: stage=Implementation model=\"claude-sonnet-5\" -->$nl<!-- model-record: stage=Review model=\"claude-opus-5\" $FB -->"
@@ -166,8 +166,10 @@ check "unquoted model: indeterminate as before" indeterminate \
 check "no Review marker: not-evidenced as before" not-evidenced "$impl_m"
 
 # ===== Word-boundary attribute extraction ==================================
-check "reviewer-model before model is not read as model" evidenced \
+check "reviewer-model before required model: latest near-miss" indeterminate \
   "$impl_m$nl<!-- model-record: stage=Review reviewer-model=\"claude-opus-5\" model=\"claude-sonnet-5\" effort=\"low\" $FB -->"
+check "valid order: reviewer-model never replaces model" evidenced \
+  "$impl_m$nl<!-- model-record: stage=Review model=\"claude-sonnet-5\" reviewer-model=\"claude-opus-5\" effort=\"low\" $FB -->"
 check "peak-effort before effort: ignored, same model evidenced" evidenced \
   "$impl_m$nl<!-- model-record: stage=Review model=\"claude-sonnet-5\" peak-effort=\"high\" effort=\"low\" $FB -->"
 
@@ -228,11 +230,11 @@ check "PR comments fetch fails, issue markers equal effort" indeterminate FAIL "
 # two closing issues, one fetch fails, the markers come from the other
 check "two issues, one fetch fails, lower effort" indeterminate "" "$both_low" FAIL "$two"
 check "two issues, one fetch fails, equal effort" indeterminate "" "$both_eq" FAIL "$two"
-# but ONE closing issue failing while both markers sit on the PR is sound:
-# the verdict rests on data in hand, unchanged
-check "one issue lookup fails, markers on the PR, lower legacy effort: still evidenced (model-only)" evidenced "$both_low" FAIL
-check "one issue lookup fails, markers on the PR, equal effort: still evidenced" evidenced "$both_eq" FAIL
-check "one issue lookup fails, different models on the PR: still unverifiable" unverifiable-from-artifacts \
+# An unread closing issue may carry the newest candidate even when both
+# readable PR markers agree; A37 requires uncertainty for either relationship.
+check "one issue lookup fails, markers on the PR, lower legacy effort: latest authority unknown" indeterminate "$both_low" FAIL
+check "one issue lookup fails, markers on the PR, equal effort: latest authority unknown" indeterminate "$both_eq" FAIL
+check "one issue lookup fails, different models on the PR: latest authority unknown" indeterminate \
   "$(mk Implementation claude-sonnet-5 medium)$nl$(mk Review claude-opus-5 medium "$FB")" FAIL
 # absent marker + failed lookup: indeterminate as before
 check "Review marker absent and a lookup failed: indeterminate as before" indeterminate "$impl_m" FAIL

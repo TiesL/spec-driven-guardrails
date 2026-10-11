@@ -34,25 +34,34 @@ for tool in grep awk; do
  for mode in fail empty; do
   [ "$tool:$mode" != awk:empty ] || continue
   bin="$SANDBOX/$tool-$mode"; mkdir -p "$bin"; export COUNT_FILE="$SANDBOX/count"; : > "$COUNT_FILE"
-  if [ "$tool" = test_source_match ]; then select='case "$*" in *model-record:*|*pipeline-override:*) true;; *) false;; esac'; real="$realgrep"; else select='case "$*" in *mode=rec*|*mode=find*|*mode=scan*) true;; *) false;; esac'; real="$realawk"; fi
+  if [ "$tool" = grep ]; then select='case "$*" in *model-record:*|*pipeline-override:*) true;; *) false;; esac'; real="$realgrep"; else select='case "$*" in *mode=rec*) true;; *) false;; esac'; real="$realawk"; fi
   cat > "$bin/$tool" <<EOF
 #!/usr/bin/env bash
 if $select; then
- echo hit >> "\$COUNT_FILE"
+ printf '%s\n' "$tool:$mode:\$*" >> "\$COUNT_FILE"
  [ "$mode" = empty ] && exit 0
  exit 2
 fi
 exec "$real" "\$@"
 EOF
   chmod +x "$bin/$tool"
-  forwarded="$(printf 'alpha\nbeta\n' | "$bin/$tool" 'alpha' 2>"$SANDBOX/forward-err")"; forward_rc=$?
   correct_real="$realgrep"; [ "$tool" != awk ] || correct_real="$realawk"
-  expected="$(printf 'alpha\nbeta\n' | "$correct_real" 'alpha')"; expected_rc=$?
-  [ "$forwarded" = "$expected" ] && [ "$forward_rc" -eq "$expected_rc" ] && [ ! -s "$SANDBOX/forward-err" ] || fail "S260/forward-$tool-$mode — unmatched call changed same-tool stdout/status"
+  for probe in alpha absent; do
+    forwarded="$(printf 'alpha\nbeta\n' | "$bin/$tool" "$probe" 2>"$SANDBOX/forward-err")"; forward_rc=$?
+    expected="$(printf 'alpha\nbeta\n' | "$correct_real" "$probe")"; expected_rc=$?
+    [ "$forwarded" = "$expected" ] && [ "$forward_rc" -eq "$expected_rc" ] && [ ! -s "$SANDBOX/forward-err" ] || fail "S260/forward-$tool-$mode-$probe — unmatched call changed same-tool stdout/status"
+  done
   v2_path="$bin:$v2_bin:$PATH"
   v2_base; v2_run "$v2_yes"
   [ -s "$COUNT_FILE" ] || fail "unused $tool/$mode shim"
+  witness="$(cat "$COUNT_FILE")"
+  case "$tool:$witness" in
+    grep:grep:"$mode":*model-record:*) : ;;
+    awk:awk:"$mode":*mode=rec*kind=model-record*) : ;;
+    *) fail "S260/reached-$tool-$mode — intended reader arguments absent: $witness" ;;
+  esac
   count 'model-record:' 1; has 'reader'; count 'role-play-unchecked:' 1; absent 'no record found'; absent 'role-played:'
+  printf '    S260 reached %s/%s: %.100s\n' "$tool" "$mode" "$witness" >&2
   v2_run; count 'model-record:' 1; absent 'role-play-unchecked:'
  done
 done

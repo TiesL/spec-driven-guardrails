@@ -327,6 +327,9 @@ while args and args[0].startswith("-"):
  flag=args.pop(0)
  if flag=="--": break
  flags+=flag[1:]
+unsupported=set(flags)-set("aEqFinovc")
+if unsupported or ("o" in flags and "v" in flags):
+ print("test_source_match: unsupported flags: "+flags,file=sys.stderr);sys.exit(2)
 pattern=args.pop(0)
 if "F" not in flags:
  for name,value in {"space":r"\s","blank":r" \t","alnum":"A-Za-z0-9","alpha":"A-Za-z","digit":"0-9"}.items():
@@ -336,10 +339,20 @@ regex=re.compile(pattern,re.I if "i" in flags else 0)
 streams=[open(p,errors="surrogateescape") for p in args] if args else [sys.stdin]
 hit=False
 for stream in streams:
+ count=0
  for number,line in enumerate(stream,1):
-  if regex.search(line):
-   hit=True
-   if "q" not in flags: print((str(number)+":" if "n" in flags else "")+line.rstrip("\n"))
+  selected=bool(regex.search(line))
+  if "v" in flags: selected=not selected
+  if selected:
+   hit=True;count+=1
+   if "q" in flags: sys.exit(0)
+   if "c" not in flags:
+    prefix=str(number)+":" if "n" in flags else ""
+    if "o" in flags:
+     for match in regex.finditer(line):
+      if match.group(): print(prefix+match.group())
+    else: print(prefix+line.rstrip("\n"))
+ if "c" in flags: print(count)
 sys.exit(0 if hit else 1)
 ' "$@"
 }
