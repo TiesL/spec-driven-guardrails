@@ -224,7 +224,7 @@ st_build() {
   case "$where" in
     issue-body) ib="$st_marker" ;;
     issue-comment) ic="$st_marker" ;;
-    pr-title-body) pb="Closes #400 $st_marker" ;;
+    pr-title-body) pb="Closes #400"$'\001'"$st_marker" ;;
     pr-comment) pc="$st_marker" ;;
     pr-review) pr="$st_marker" ;;
     pr-title-keyword) pt="Closes #400: something"; pb="no keyword here"; pc="$st_marker" ;;

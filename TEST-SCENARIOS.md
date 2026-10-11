@@ -1762,11 +1762,13 @@ something new is being added.
   live marker matched by the anchor but with no recognized `stage=`
   value, on the issue or any kept PR, forces `indeterminate` for the
   whole run even when another kept PR's marker is well-formed, including
-  one closed with no whitespace before its own `-->` delimiter (issue
-  #317 F-5: `stage=Review-->` must still parse as `Review`, not as a
-  malformed `Review--` token); markers split across multiple kept PRs
-  combine by union/max, order-independent of which PR the timeline names
-  first; a marker merely quoted in a fenced block, code span or
+  the intentional #428 reversal of S152 F-5: the model-less
+  `<!-- model-record: stage=Review-->` is a named near-miss and gives
+  `indeterminate`, even with `role:reviewer`; a recognized stage alone
+  is no longer a record (A32a D10); valid records split across multiple kept PRs
+  combine by highest evidenced stage, independent of timeline retrieval
+  order; same-stage candidates first resolve by timestamp/latest under
+  S269, so this does not permit an older good candidate to mask a newer bad one; a marker merely quoted in a fenced block, code span or
   blockquote is not counted as live evidence; a failed lookup — the
   issue's own comments, the timeline itself, or a candidate/kept PR's
   title/body, comments, or reviews — degrades the verdict to
@@ -1791,8 +1793,8 @@ something new is being added.
 
 - Legacy coverage retained from retired S201 (#427): move its label-only
   controls into `test/cases/s152_role_label_staleness.sh`: `role:qa` with live Test plus a later Review example in
-  a fence, span or blockquote stays `in-sync`. The collector/label migration
-  remains #429; no equality with the strict v2 gate is required.
+  a fence, span or blockquote stays `in-sync`. The label migration
+  is #428; the collector migration remains #429.
 
 ### S153 — live_text() has one definition, and its fence detection is portable: the golden cases give the same answer under mawk and under /usr/bin/awk
 **Covers:** F34, F35
@@ -2578,14 +2580,27 @@ something new is being added.
   Gate containment and latest-near-miss behavior move to S257/S259/S266;
   the gate no longer promises that a newest malformed candidate never wins.
 
-### S198 — role-label-staleness.sh detects a marker whose value contains `>`
-**Covers:** F35, F39
-- Given: a stale `role:architect` label and a Review marker on the linked PR
-  whose `floor-basis` contains `>`, `-->`, `<!--` or `<` (issue #392, round 3
-  of the PR #397 review, low finding)
-- When: `role-label-staleness.sh` runs against a fake `gh` (S152's recording)
-- Then: the verdict is `stale` (the marker's stage is detected, not
-  malformed), and a label at the evidenced stage is `in-sync`
+### S198 — role-label-staleness.sh names forbidden-value v2 near-misses
+**Covers:** F35
+- Given: S152's REST fake-gh seam with issue #400, one `role:architect`
+  label, linked PR #501 whose live title/body closes #400, and a whole
+  column-0 Review candidate in its comment. A valid control uses
+  `<!-- model-record: stage=Review model="claude-sonnet-5" floor-basis="ok" -->`.
+- When: `/bin/bash role-label-staleness.sh 400` runs.
+- Then: exit 0 and exactly one verdict line. The control contains
+  ` — stale (` and `expected role:reviewer`; substituting each literal
+  floor-basis value `opus > sonnet`, `a --> b`, `a <!-- b`, `x < y -- z`,
+  and `<!-- x --> > <` contains ` — indeterminate (` and names the
+  near-miss with `stage=Review` and the offending candidate. Repeat with
+  `role:reviewer`: the valid control contains ` — in-sync (`; each invalid
+  candidate still contains ` — indeterminate (`. No fallback to an older
+  valid Review is allowed (S269).
+- This rewrites the old shared-walker assertion intentionally: delimiter
+  values are invalid v2 records (A31a), rather than valid Review evidence.
+  Do not retain the old `stale` oracle or test obsolete `marker_scan`.
+- Falsifier: accepting the old tokenizer's arbitrary quoted delimiters
+  makes these invalid-value arms fail. Test file remains
+  `test/cases/s198_role_label_staleness_shared_parser.sh`, rewritten by Developer.
 
 ### S199 — legacy collector and staleness contain an unclosed quote to its body
 **Covers:** F35, F39
@@ -3103,10 +3118,19 @@ something new is being added.
   Discovery in the closing issue's comment, rows 1-3 `evidenced`; a malformed
   done marker after the bytes still reads "not in the recognized shape"; a done
   marker only in a code span after the bytes still says "only inside a code
-  span"); the staleness script (the Review marker after the bytes in the issue
-  body, an issue comment, the PR body, a PR comment, a PR review, and the
-  closing keyword after the bytes in the PR title and in the PR body: verdict
-  `stale`). Each result, rows with their evidence text included, equals the
+  span"); for the #428 staleness migration, a valid whole column-0 Review
+  record follows byte-bearing prose on a separate line in the issue body,
+  an issue comment, the PR body, a PR comment and a PR review. The fixture
+  transports that line break as encoded `\001`, so caller decoding remains
+  exercised; the PR description's closing keyword also occupies a separate
+  line from the record. Retain the two closing-keyword placements after the
+  bytes in the PR title and PR body, each with a valid whole-line Review
+  record in the PR comment. All seven placements and all three byte variants
+  must assert baseline verdict `stale`, then exact full-output equality
+  between C and UTF-8 environments. Keep the byte-in-`floor-basis` staleness
+  arms as valid records. Inline prose-prefixed records are near-misses under
+  #428, covered by S268; they cannot be stale success controls. Each result,
+  rows with their evidence text included, equals the
   `LC_ALL=C` result, which is itself asserted non-trivial. `normalize_model`
   of `lib/model-record.sh` (finding lib-normalize-locale): a model value
   holding `\377` or `\342\200` normalizes to `opus 5` under both locales with
@@ -3173,6 +3197,13 @@ something new is being added.
   turn, in the issue body, an issue comment, the PR description, a PR comment,
   a PR review, and a PR comment of a PR whose closing keyword is only in its
   title (as in release-branch PRs), each against fake `gh`
+- #428 compatibility: every staleness baseline uses a whole column-0,
+  model-bearing valid v2 Review record. In the PR description the closing
+  keyword and record occupy separate lines (the transport encodes that
+  newline as U+0001); an inline record is a near-miss, not a valid baseline.
+  The REST fake-gh review argv witness matches the current `--jq` spelling,
+  so the review baseline reaches its intended reading site. Retain every
+  outcome and invoked-count assertion in the all-call and single-call sweep.
 - When: each script runs once with the shim passing everything through (the
   baseline, which also gives the number T of awk calls it makes), once with
   every awk call failing, and T more times with exactly one call k failing
@@ -4217,3 +4248,114 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   valid via a quoted extra `note` field on K2e's good Review; a `-->` value
   is now a named near-miss (S257/S259), never a good v2 record. Do not infer
   collector/staleness correctness from it; S249's full property arm is kept.
+
+
+### S267 — role-label-staleness.sh requires a strict model-bearing record
+**Covers:** F35
+- #428 AC1; A31a/A32a D10. Public seam throughout S267-S270 is
+  `/bin/bash role-label-staleness.sh 400` with a REST fake gh ahead of PATH;
+  stdout is exactly one `role-label-staleness: issue #400 — <status> (<detail>)`
+  line and exit 0. Assert the literal status fragments below and named
+  causes, rather than pinning incidental wording of the whole detail.
+- Given: one `role:architect` label, all reads succeed, no other candidates.
+  Whole column-0 `<!-- model-record: stage=Review model="claude-sonnet-5" -->`
+  yields ` — stale (` and `expected role:reviewer`. The same with legacy
+  `model="Claude Sonnet 5" effort="medium"` also yields stale (reader accepts
+  model spaces and ignores effort; no emitter rules applied to the reader).
+- Then: separately replace the candidate by `<!-- model-record: stage=Review-->`,
+  `<!-- model-record: stage=Review model="" -->`,
+  `<!-- model-record: stage=Review model="   " -->`,
+  `<!-- model-record: stage=Review model=claude-sonnet-5 -->`,
+  `<!-- model-record: stage=Review-draft model="claude-sonnet-5" -->`, and
+  `<!-- model-record: model="claude-sonnet-5" -->`.
+  Every arm yields ` — indeterminate (` and names a near-miss plus its
+  candidate/cause; all arms containing `stage=Review`, including Review-draft,
+  name `stage=Review`; the missing-stage arm names `stage=?`. Review-draft
+  remains a near-miss with `the stage is quoted, missing or not one of the five names`:
+  the reader's diagnostic stage token is distinct from strict record acceptance.
+  No candidate yields ` — in-sync (` and the literal
+  `no model-record marker evidenced yet` fragment, proving absence is distinct.
+- Repeat missing-model case with `role:reviewer` as the named S152 F-5
+  intentional reversal; retain S152 g1 unchanged (AC2 regression).
+- Falsifiers: accept a record without model; accept Review-draft as an ok Review record;
+  ignore near-misses. New file `test/cases/s267_role_label_v2_presence.sh`.
+
+### S268 — role-label-staleness.sh separates quoted records from whole-line near-misses
+**Covers:** F35
+- #428 AC2; A31a/A32a. Given: label `role:product`, successful issue-only
+  reads and only `<!-- model-record: stage=Test model="claude-sonnet-5" -->`.
+  Live whole-line control yields ` — stale (` and `expected role:qa`.
+- Then: put that same candidate separately in a backtick fence, tilde fence,
+  inline code span, blockquote, four-space indent, and tab indent: each yields
+  ` — in-sync (` with `no model-record marker evidenced yet`, no `stage=Test`
+  in the verdict and no near-miss cause. This includes original S152 g1.
+  Fence state is body-local: unclosed issue-comment fence quotes its own Test,
+  but a next comment's live Test yields stale with expected role:qa.
+- Prefix the candidate with `prose `, suffix it with ` prose`, wrap in a
+  table cell, or indent by one/two/three spaces: each yields
+  ` — indeterminate (`. The suffix-only arm names
+  `text after the closing --> or no closing -->`; the prefix, table-cell and
+  one/two/three-space arms name `not on a line of its own`.
+  Use valid model-bearing records so rejection cannot be due to missing model.
+- Repeat live and fenced controls in a kept PR review with successful real
+  closing-reference data; assert the review endpoint was answered and used.
+  Closing keyword quote filtering remains S152 coverage through shared live_text.
+- Falsifiers: scan stripped prose instead of raw candidates; accept inline
+  records; count quoted rows; share fence state across bodies.
+  New file `test/cases/s268_role_label_v2_quoting.sh`.
+
+### S269 — role-label-staleness.sh chooses the latest candidate in chronological source order
+**Covers:** F35
+- #428 AC4; A37. Given: one `role:architect` label and a valid Review
+  `<!-- model-record: stage=Review model="claude-sonnet-5" -->` at
+  2026-10-01T10:00:00Z, with missing-model Review candidate at 11:00:00Z.
+  Then: ` — indeterminate (` with near-miss stage=Review, never stale;
+  reverse the timestamps, keeping fetch order fixed, and get ` — stale (`
+  with `expected role:reviewer`. Older near-miss is superseded, not globally fatal.
+- Exercise pairs across issue body/comments, PR description/comments and
+  reviews; descriptions use creation timestamps, comments created_at,
+  reviews submitted_at. Put timestamped fixtures in reverse retrieval order
+  and permute linked PR timeline order: verdict remains chronological.
+  A description's newer updated_at must not make its older near-miss win.
+- Equal timestamps use issue, description, comments, reviews source order:
+  put valid Review in earlier source and near-miss in later source to get
+  indeterminate; swap candidate payloads to get stale. Within one body later
+  Review line wins; test both valid/near-miss orders. A newer quoted Review
+  never supersedes a live candidate. Invalid unknown-stage candidate stays
+  named indeterminate rather than being coerced to an existing stage.
+- Keep lower-stage live Test alongside latest unreadable Review to prove
+  no fallback to either older Review or lower-stage max-stage verdict.
+- Fixtures must provide actual timestamps through current REST --jq output;
+  old TEXT-only shims cannot prove timestamp ordering. Assert consumed endpoints
+  and unmatched-call witness empty, with positive control proving witness reachable.
+- Falsifiers: global any-near-miss flag; max-stage union; endpoint/fetch order;
+  description updated_at; first line wins. New file
+  `test/cases/s269_role_label_v2_latest.sh`.
+
+### S270 — role-label-staleness.sh caches one counted scan per 60-body bundle
+**Covers:** F35
+- #428 AC3; A32a scale evidence. Given: issue plus kept closing PR source
+  fixtures containing exactly 60 framed bodies total and one 100 KB prose
+  line, with valid Test and Review in distinct bodies; label role:architect.
+  Every REST read succeeds and endpoint/body counts are witnessed. Expected
+  public verdict contains ` — stale (` and `expected role:reviewer`, exit 0.
+- Count existing public `rec_scan_bundle` invocations with a test-only shell
+  function shim wrapping the actual function, logging to a file (subshell-safe)
+  and delegating unchanged. Use a scratch copied script/lib tree or Bash startup
+  wrapping, not a production seam. Assert exactly one call for every actual
+  bundle and total one for the collected corpus; assert kind model-record,
+  60 transport bodies and the 100 KB line actually reach it. Zero calls fails.
+  Do not substitute a fixed scanner result or infer count from source grep.
+- Repeat latest-near-miss and quoted controls at this scale with the same count:
+  status indeterminate and stale respectively; payload of the scan is unchanged
+  by the shim. Its positive control records one delegated direct invocation,
+  proving the counter can fire. A deliberately doubled scan makes count fail.
+- Report elapsed time and bash/awk/grep identities on macOS with `/bin/bash`
+  (3.2) and platform tools. The 2 s soft marker-reading target is reported,
+  never a hard assertion; distinguish scan time from end-to-end fake-gh time.
+  Linux and macOS CI re-execute behavior/count assertions independently.
+- Existing live_text failure regression remains mandatory; a reached PATH awk
+  failure shim returns nonzero and yields indeterminate, never no-evidence
+  in-sync. Count its invocation to avoid a vacuous failure test.
+- New file `test/cases/s270_role_label_v2_counted_bundle.sh`. No collector
+  migration, collector timing promise, or #429 cleanup is inferred from this case.

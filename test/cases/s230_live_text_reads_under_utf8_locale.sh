@@ -552,11 +552,11 @@ done
 # live text after a byte, and the title/body tr sits before it.
 st_before() { # mode, where
   local mode="$1" where="$2" pre="x${b}y " ib="" ic="plain comment" pt="Fix: something" pb="Closes #400" pc="plain" pr="plain" m bin
-  m="${pre}<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"medium\" floor-basis=\"ok\" -->"
+  m="${pre}"$'\001'"<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"medium\" floor-basis=\"ok\" -->"
   case "$where" in
     issue-body) ib="$m" ;;
     issue-comment) ic="$m" ;;
-    pr-body-marker) pb="Closes #400 $m" ;;
+    pr-body-marker) pb="Closes #400"$'\001'"$m" ;;
     pr-comment) pc="$m" ;;
     pr-review) pr="$m" ;;
     pr-title-keyword) pt="${pre}Closes #400: something"; pb="no keyword here"; pc="$m" ;;
