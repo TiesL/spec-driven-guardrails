@@ -1000,7 +1000,8 @@ skipped, with no fallback to an earlier `ok`. An earlier `ok` still counts
 as presence. The latest `ok` Review needs a non-blank `floor-basis` (F39).
 Fetch/reader failures and missing closing references follow F38; without
 `gh` the gate remains fail-open with a warning. #427 changes the gate,
-not collector/staleness consumers, whose v2 migration belongs to #429.
+while #428 migrates the staleness consumer and #429 migrates the collector.
+The collector's inter-issue conflict rule remains unchanged.
 
 ### F28 — Machine-readable finding-carryforward markers (issue #241 AC2)
 
@@ -1171,11 +1172,26 @@ only its tests are, since it needs `gh`/network and `./check` must stay
 usable with no GitHub credentials). Status vocabulary is closed to four
 values — `not-started`, `in-sync`, `stale`, `indeterminate` — with
 `indeterminate` reserved for two-or-more `role:<name>` labels at once, a
-`model-record` marker that matched but carries no recognized `stage=`
-value, or a PR lookup failure that leaves the evidence set provably
-incomplete in a way that could still change the verdict; a label at or
-ahead of the latest evidenced stage is `in-sync`, never `stale` — the
-label tracks the active phase, not the last completed one.
+live candidate with no recognized stage, a latest same-stage candidate
+that is a near-miss (including a malformed or missing-model candidate),
+or a PR lookup failure that leaves the evidence set provably incomplete
+in a way that could still change the verdict; a label at or ahead of the
+latest evidenced stage is `in-sync`, never `stale` — the label tracks the
+active phase, not the last completed one.
+
+As amended by #428 (A31a, A32a, A37), the script scans each bundle once
+through `rec_scan_bundle` and caches the output. Only strict `ok` records
+with a model evidence a stage; quoted candidates count as neither evidence
+nor near-misses. For each stage, the latest candidate (`ok` or near-miss)
+decides, ordered by comment `created_at` or review `submitted_at`; the PR
+description counts at the PR's `created_at`, never its edit time. Equal
+timestamps use source order issue, description, comments, reviews; within
+one body the later same-stage line wins. A latest near-miss is named and
+makes the result `indeterminate`, with no fallback to an older `ok` record.
+In particular, S152 F-5's `<!-- model-record: stage=Review-->` without a
+model changes to `indeterminate` (#428 AC1), and a newer Review near-miss
+over an older `ok` Review is `indeterminate` (#428 AC4). Collector migration
+and its unchanged inter-issue conflict rule remain #429's scope.
 
 This single heading exists as the same narrow, stated exception `F34`
 above already used (that exception's origin is issue #296's non-goals
