@@ -9,7 +9,7 @@ python3 - "$TEST_REPO_ROOT" "$SANDBOX/tree" <<'PY'
 import shutil,sys
 shutil.copytree(sys.argv[1],sys.argv[2],dirs_exist_ok=True,ignore=shutil.ignore_patterns('.git','__pycache__'))
 PY
-lint() { CHECK_SKIP_SHELLCHECK=1 PYTHONPYCACHEPREFIX=/private/tmp/429-pycache /bin/bash "$TEST_REPO_ROOT/check" --no-tests "$SANDBOX/tree" > "$SANDBOX/lint-output" 2>&1; lint_rc=$?; }
+lint() { CHECK_SKIP_SHELLCHECK=1 PYTHONPYCACHEPREFIX="$SANDBOX/pycache" /bin/bash "$TEST_REPO_ROOT/check" --no-tests "$SANDBOX/tree" > "$SANDBOX/lint-output" 2>&1; lint_rc=$?; }
 green() { lint; [ "$lint_rc" = 0 ] || fail "baseline lint: $(tail -20 "$SANDBOX/lint-output")"; }
 red() {
  lint

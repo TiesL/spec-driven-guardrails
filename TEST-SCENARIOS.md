@@ -4486,6 +4486,18 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   Falsifier: disable any of four lint arms; each killed independently.
   New file test/cases/s274_one_definition_lint.sh.
 
+- Review-round-2 portability (`s274-portable-cache-path`): run the existing
+  real check Interface unprivileged on supported Linux and native macOS.
+  Runtime Python cache storage belongs within the existing writable disposable
+  scratch setup, independent of workstation-specific absolute roots or elevated
+  permissions. Unchanged-tree and every restoration baseline must be green;
+  cache/setup diagnostics cannot stand in for a lint rejection. Keep all four
+  independent exact category/path additions and disabled-arm negative witnesses,
+  extensionless/helper/matcher syntax controls, and permitted-example positives.
+  The supplied Linux 238-pass/1-fail result is actual pre-correction red; native
+  passing evidence does not erase it. Verify behavior through real baseline,
+  reached additions and restoration results, not a test mirroring a path string.
+
 ### S275 — Last reader deletion retains emitter v2 round trip
 **Covers:** F27, F39, F40
 - #429 AC1: whole working tree (excluding .git/history) contains none of the
