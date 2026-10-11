@@ -3188,6 +3188,13 @@ something new is being added.
   turn, in the issue body, an issue comment, the PR description, a PR comment,
   a PR review, and a PR comment of a PR whose closing keyword is only in its
   title (as in release-branch PRs), each against fake `gh`
+- #428 compatibility: every staleness baseline uses a whole column-0,
+  model-bearing valid v2 Review record. In the PR description the closing
+  keyword and record occupy separate lines (the transport encodes that
+  newline as U+0001); an inline record is a near-miss, not a valid baseline.
+  The REST fake-gh review argv witness matches the current `--jq` spelling,
+  so the review baseline reaches its intended reading site. Retain every
+  outcome and invoked-count assertion in the all-call and single-call sweep.
 - When: each script runs once with the shim passing everything through (the
   baseline, which also gives the number T of awk calls it makes), once with
   every awk call failing, and T more times with exactly one call k failing
