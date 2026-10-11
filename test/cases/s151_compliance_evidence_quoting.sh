@@ -860,4 +860,9 @@ $rev_c_low
 Indented example:${NL}${NL}$c_ind" ""
 [ "$(row_status "$ce_out" 2)" = unverifiable-from-artifacts ] || fail "S151 transferred S151 transferred S201 indent — legacy collector must count indented example"
 
+# #429 AC4 explicitly reverses #308 AC3 for inline model-record evidence.
+# Q6/Q7/Q8 done-marker gate-3 controls above stay outside record v2.
+ce "Closes #265" 'Done. <!-- model-record: stage=Planning model="m" -->' ""
+[ "$(row_status "$ce_out" 1)" = indeterminate ] || fail "S151 AC4 model-record reversal — inline Planning must be indeterminate"
+
 test_done

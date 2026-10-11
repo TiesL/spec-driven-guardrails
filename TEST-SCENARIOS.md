@@ -1694,8 +1694,10 @@ something new is being added.
   quoted occurrences were seen and ignored; bare marker-shaped prose
   reports `not-evidenced` rather than `indeterminate`, while a malformed
   marker inside real delimiters still reports `indeterminate`; a real
-  marker posted inline on a line that also carries prose, backticked
-  text, table pipes or a stray unmatched backtick keeps evidencing;
+  model-record candidate posted inline with prose is a named near-miss
+  and gives gate 1/2 indeterminate (S271 AC4 control). Done markers stay
+  outside v2: preserve Q6 inline, Q7 unmatched-backtick and Q8 table-cell
+  pre-merge-review:done gate-3 `evidenced` regressions unchanged;
   fence state never crosses a body boundary; the collector's own
   rendered table pasted into the PR changes no status; and the six-row
   shape, the four-status vocabulary and the absence of any write path
@@ -2386,23 +2388,18 @@ something new is being added.
   that no text tells anyone to pass `--effort` or ask the human about an
   unknown effort is S238
 
-### S188 — lib/model-record.sh: normalize_model and marker_attr (effort_rank is gone)
-**Covers:** F39
-- Given: the sourced `lib/model-record.sh` (issue #392, A25; issue #424 deleted
-  `effort_rank`), shared by the model-record gate and the compliance collector
-- When: `normalize_model` and `marker_attr` are called
-- Then: `normalize_model` behaves as before (label styles, case and an
-  8-digit snapshot date fold together; different models and a short alias
-  vs its full id stay different); `marker_attr <line> <name>` prints the
-  quoted value of exactly that attribute, never one whose name merely ends in
-  `model` or `effort` (in either attribute order), and nothing for an absent,
-  unquoted or differently-prefixed attribute; it stays generic, so a legacy
-  `effort` attribute is still readable though nothing interprets it; the lib
-  defines no `effort_rank` and does not mention it
-- Moved to S246 (issue #425, R5): the attribute-hijack arms (review of PR #397:
-  attribute text inside a value, `floor-basis="beats model="`, `>`, `<`, `--`,
-  `-->`), now asserted on `rec_field` against strict lines; `marker_attr` keeps
-  its word-boundary arms here until its last caller moves
+### S188 — Shared normalization and v2 attribute reads
+**Covers:** F39, F40
+- Given: sourced lib/model-record.sh; call normalize_model and rec_field at
+  their documented public seams. Preserve case/vendor/separator/date folding,
+  distinct versions and alias/full-id inequality, and empty-input output.
+- Then: rec_field returns the first exact named attribute, never suffix names
+  or text inside a value; preserve generic legacy effort reads without ranking.
+  Strict model-first lines exercise lookalikes after model, absent/empty fields,
+  and values ending in another attribute name. Invalid attribute-order records
+  belong to S271 near-misses; direct field isolation remains S246.
+- Falsifiers: normalize aliases as full ids; unanchored or last-match extraction.
+  Rewrite existing test file; no deleted-reader compatibility obligation.
 
 ### S189 — the model-record gate checks the Review floor it can check, on the model alone
 **Covers:** F39
@@ -4359,3 +4356,139 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   in-sync. Count its invocation to avoid a vacuous failure test.
 - New file `test/cases/s270_role_label_v2_counted_bundle.sh`. No collector
   migration, collector timing promise, or #429 cleanup is inferred from this case.
+
+
+### S271 — Collector v2 presence, quoted-only evidence and latest candidates
+**Covers:** F27, F34, F39, F40
+- #429 AC2/3/4/7, C1. Seam: `/bin/bash compliance-evidence.sh 279` with
+  successful REST fake-gh; exit 0, exact eight-line/six-row S150 table and
+  closed status vocabulary. Supply all four gate-1 stages in controls and
+  Implementation/Review model="claude-sonnet-5"; gates 1/2 are `evidenced`.
+- Only Planning in a code span, backtick/tilde fence, blockquote, four-space
+  or tab indent: gate 1 `not-evidenced`; preserve literal suffix
+  `but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence`.
+  Bare delimiter-free prose is `not-evidenced` without this suffix.
+  `Done. <!-- model-record: stage=Planning model="m" -->` gives gate 1
+  `indeterminate`, naming `stage=Planning` and `not on a line of its own`;
+  no only-quoted suffix. Name this distinct arm `AC4 inline Planning`; it
+  scopes the #308 AC3 reversal to model-record stage evidence. Preserve
+  existing S151 Q6 gate-3 inline done-marker `evidenced` (also Q7/Q8),
+  whose payload is not a model-record candidate. Prefix/table/1-3-space
+  and suffix-only cases name the reader's exact cause, including
+  `text after the closing --> or no closing -->` for suffix-only.
+- Review good at 2026-10-01T10:00:00Z and missing-model Review at 11:00:00Z:
+  gate 2 `indeterminate`, naming `stage=Review` and
+  `no quoted, non-blank model`; never earlier model-only pass.
+  Reverse timestamps with retrieval order unchanged: gate 2 `evidenced`
+  with model-only floor evidence and `claude-sonnet-5`. Newest different-model
+  good Review gives `unverifiable-from-artifacts`, names both models and
+  `their capability ordering isn't machine-checked`. Newest quoted candidate
+  never supersedes good; older malformed candidate is superseded.
+- Exercise description/comments/reviews and issue comments, reversed fetch
+  order, equal timestamp source order issue/description/comments/reviews,
+  later same-stage line within a body, and description updated_at newer than
+  its created_at. Test both payload orders for ties. Actual created_at and
+  submitted_at must reach transport; TEXT-only legacy fixtures cannot prove
+  ordering. Count consumed endpoints and record unmatched calls; a deliberate
+  unmatched call must trip the witness. Preserve the two-PR isolation control:
+  invoking 279 then a different fixture PR cannot reuse the prior cache.
+- Falsifiers: endpoint order, first-line selection, updated_at ordering,
+  any-near-miss-global flag, inline acceptance, quoted-as-latest, stale cache.
+  New file test/cases/s271_collector_v2_candidates.sh.
+
+### S272 — Collector normalized conflict keeps closing issues distinct
+**Covers:** F34, F39
+- #429 AC7, C1 regression. Successful actual closing keywords for #265/#266;
+  Implementation sonnet on PR. Issue Review sonnet versus opus yields gate 2
+  `indeterminate` with literal `conflicting`, both `issue #265`/`issue #266`
+  and both model strings; newer timestamps or PR Review cannot erase this
+  inter-issue conflict. Opposite retrieval order retains the same verdict.
+- Equal normalized models (`Claude Sonnet 5`, `claude-sonnet-5-20260101`)
+  with different legacy efforts yield `evidenced`, model-only floor, no
+  conflict and no effort comparison. Alias `sonnet` versus full id remains
+  conflict. Single issue with newer good/near-miss follows S271 latest rule.
+- Preserve S195 missing-lib exit 3/header naming lib/model-record.sh;
+  parser-lookalike arms transfer to S188/S246 and S271 invalid-order cases.
+- Falsifiers: raw model conflict key, effort key, latest source overrides
+  inter-issue conflict. New file test/cases/s272_collector_v2_conflict.sh.
+
+### S273 — Collector scans each raw bundle once and contains hostile bodies
+**Covers:** F34, F40
+- #429 AC5, A32a/K2. Exactly 60 bodies including one 100 KB prose line;
+  gate 1/2 controls `evidenced`. A test-only shell wrapper delegates the actual
+  rec_scan_bundle unchanged and logs each invocation to a subshell-safe file.
+  Assert one invocation per actual raw bundle, correct model-record kind,
+  body count and actual long-line arrival; zero calls fails. Exercise latest
+  near-miss (`indeterminate`) and newer quoted (`evidenced`) at equal scale.
+  Direct delegated positive control fires once; duplicate scan mutation fails.
+- Smaller deterministic hostile corpus (seed 429) replays value-position
+  quotes/delimiters/shell tokens, C0 except NUL, DEL, invalid/truncated UTF-8,
+  NEL/LS/PS, CR/CRLF and actual U+001E/U+0001 transport collisions through
+  fake-gh. Unclosed marker/fence in body N never swallows body N+1 good record;
+  next good newest gives `evidenced`, swapped newest malformed gives
+  `indeterminate`. Valid `--` and shell-like values remain data; forbidden
+  delimiters are near-misses. No shell sentinel may be executed. Pin bounded
+  diagnostic line (reader 400-byte cap) and table framing for hostile tabs/pipes.
+  NUL in Bash arguments is a stated untestable limit.
+- Reached failing scanner/tool shim returns nonzero: affected row
+  `indeterminate`, never no evidence or model pass; log invocation and positive
+  control. Report scan and complete run elapsed times separately; 2 s macOS
+  soft budget is reported, never failed. Report actual tool identities.
+- Retirement input transfer: S194 forbidden values -> S271/S273 and S243;
+  valid double-hyphen content -> S273. S196 parser locale/failure -> S247/S273
+  and existing K3; keep any live reader-failure regression. S197 odd quote,
+  missing close/nesting/suffix and good-after-bad -> S271/S273. S199 open quote
+  and space/letter-first next body -> S273 (strict good), delimiter-first
+  values -> S243 near-miss. S200 forged separator -> S273. Delete retired
+  files/headings together only at Developer red checkpoint; do not retain
+  obsolete malformed-newest-good-fallback or arbitrary-value acceptance.
+- Existing K3 is mandatory because this slice touches lib/: full macOS suite
+  via /bin/bash, BWK/BSD identities and UTF-8 locale precondition; actual
+  fence-awk C-prefix removal with LC_ALL unset, LANG=en_US.UTF-8 and byte
+  377 must be red, valid multibyte control green, BSD strict-count witness.
+  Syntax lint mutation is additional, never equivalent proof of K3.
+  New file test/cases/s273_collector_v2_counted_hostile.sh.
+
+### S274 — One-definition syntax lint has reached mutation controls
+**Covers:** F27, F40
+- #429 AC6/T1 exact A35a policy: outside lib/test .sh files reject regex
+  forms model-record:[[: and stage=( inside a pattern, pipeline-override:[
+  and pipeline-override:[^; outside lib reject passing model-record strings
+  to grep/awk/sed or [[ =~ ]]; helper definitions live_text/md_strip_fences/
+  rr_rounds only in lib; skill/ORCHESTRATOR text never instructs passing effort.
+  Output prefixes and documentation examples are permitted. Fixture examples
+  that specify this lint's prohibited syntax must be treated as examples,
+  not as instructions or executable matches. State `this lint can be evaded`.
+- Actual unchanged repository lint exits 0. Four independent scratch-tree
+  additions each make the same real lint nonzero with path/category evidence:
+  executable record regex outside lib/test; actual grep model-record call;
+  duplicate live_text definition; skill instruction to pass effort flag.
+  Restore each addition and prove green before next. Positive allowed
+  message/docs examples remain green. Reachability counters prove scratch
+  files were inspected; intentionally skipped-file control must fail.
+- Also cover awk/sed/conditional forms and all three duplicate helper names
+  with syntax fixtures. Do not replace source syntax with token presence:
+  messages/examples are allowed. No assertion of complete static analysis.
+  Falsifier: disable any of four lint arms; each killed independently.
+  New file test/cases/s274_one_definition_lint.sh.
+
+### S275 — Last reader deletion retains emitter v2 round trip
+**Covers:** F27, F39, F40
+- #429 AC1: whole working tree (excluding .git/history) contains none of the
+  four retired reader identifiers, including stale test/header/docs references.
+  Freeze prohibited names in test via split fragments so the check does not
+  match its own specification. No retired stage-presence patterns in collector;
+  one-definition lint green; obsolete intentional-copy PRD debt gone.
+- Source lib then emit Discovery/Planning/Test/Implementation/Review and
+  wrapper output: literal lines remain as S249/E1; v2 rec_scan output is
+  exactly one ok row, rec_field gives original fields. No deleted-reader
+  call is reachable. Mutation-only scratch shim of rec_scan or rec_field
+  returns mismatched round-trip data: emitter refuses with exit 2, empty
+  stdout and existing `would not read back` stderr fragment; count calls to
+  prove actual delegation. Restore shim for green. Keep S249/E2 constraints.
+- Rewrite S188 and retire collector-only S194/S197/S199/S200 headings/files;
+  S195 retains conflict and missing-lib arms, replaces parser arms as above.
+  S196 keeps only surviving relevant locale/failure coverage and headings.
+  Update stale historical claims throughout current docs/scenarios/test source;
+  repository history is explicitly excluded. Existing regression input
+  transfers above must survive removal. New file test/cases/s275_old_reader_removed.sh.
