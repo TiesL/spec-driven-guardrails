@@ -81,6 +81,11 @@ for must in 'fresh context' 'complexity' 'dependencies' 'spec-' 'Findings go int
   grep -qiF -- "$must" <<<"$entry" || fail "S191/AC7 — the rest of the entry must be unchanged: '$must' is gone"
 done
 
+# #427 adds grammar without another meaning bump.
+for term in 'column 0' 'control' '<' '>'; do
+ grep -qF "$term" <<<"$entry" || fail "S191 grammar lacks $term"
+done
+
 # --- this repo's own adoption row is re-confirmed at v4 ---------------------
 row="$(grep -E "^\| *$id *\|" "$TEST_REPO_ROOT/WORKFLOW-ADOPTION.md")"
 [ -n "$row" ] || fail "S191/AC10 — WORKFLOW-ADOPTION.md has no $id row"

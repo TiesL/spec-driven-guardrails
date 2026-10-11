@@ -71,7 +71,11 @@ dispatched() { # the shape of a real pipeline: Discovery on the issue, one comme
 all_in_one() { # one session playing every role: all five markers in one text
   reset_data
   json_comments "$FAKE_GH_DATA/comments-239.json" "no markers here"
-  json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Discovery) $(mr Planning) $(mr Test) $(mr Implementation) $(mr Review)"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Discovery)
+$(mr Planning)
+$(mr Test)
+$(mr Implementation)
+$(mr Review)"
 }
 override_marker() { # decided-by scope reason
   printf '<!-- pipeline-override: decided-by="%s" scope="%s" reason="%s" -->' "$1" "$2" "$3"
@@ -98,7 +102,8 @@ flagged || fail "S183/2 — ja in the pre-migration WORKFLOW-ADOPTIE.md must cou
 
 # 3. Two stages in the PR body (PR-creation-time markers), others separate.
 reset_data "Closes #239
-$(mr Planning) $(mr Test)"
+$(mr Planning)
+$(mr Test)"
 json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Implementation)"
 json_comments "$FAKE_GH_DATA/reviews-246.json" "$(mr Review)"
 gate "$yes_p"
@@ -109,13 +114,16 @@ gate "$no_p"
 # 4. Two stages inside one PR review body.
 reset_data
 json_comments "$FAKE_GH_DATA/comments-246.json" "$(mr Planning)" "$(mr Test)"
-json_comments "$FAKE_GH_DATA/reviews-246.json" "$(mr Implementation) $(mr Review)"
+json_comments "$FAKE_GH_DATA/reviews-246.json" "$(mr Implementation)
+$(mr Review)"
 gate "$yes_p"
 flagged || fail "S183/4 — two stages in one review body were not flagged (output: $out)"
 
 # 5. The same stage twice in one comment is not two different stages.
 dispatched
-json_comments "$FAKE_GH_DATA/reviews-246.json" "$(mr Review) round 2: $(mr Review)"
+json_comments "$FAKE_GH_DATA/reviews-246.json" "$(mr Review)
+round 2:
+$(mr Review)"
 gate "$yes_p"
 flagged && fail "S183/5 — one stage recorded twice in one text was flagged (output: $out)"
 

@@ -1,19 +1,7 @@
 #!/usr/bin/env bash
-# S194 — free text inside a Review marker (`>`, `<`, `--`, `-->`, a newline in
-# the floor-basis value) never hides the marker from either script.
+# S194 — legacy collector input coverage retained unchanged until #429.
 # Covers: F39
-#
-# Issue #392, review of PR #397 (medium finding), human decision "fix the
-# parser": the marker grammar used to end a marker at the first `>`, so
-# floor-basis="x > y" made the whole Review marker invisible: the gate then
-# said "no record found for stage Review", and gate 2 said the marker was
-# only a "quoted illustration". Since #424 the floor is on the model alone, so
-# "the marker was seen" is proved by the ABSENCE of "no record found" (gate)
-# and by `evidenced` instead of `not-evidenced` (gate 2), and by a missing
-# floor-basis being reported on the latest round. Quotes are the one thing a value
-# cannot contain (A24); every other character is tolerated and the marker
-# parses as if the value were plain. Seam: model-record-gate.sh stdout and
-# compliance-evidence.sh gate 2's row, both against fake gh.
+# #427 retires gate half; strict gate counterparts: S257/S259/S264/S266.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -27,9 +15,6 @@ set -uo pipefail
 command -v jq >/dev/null 2>&1 || { fail "S194 — jq is needed by the fake gh"; test_done; }
 sandbox_create
 trap sandbox_destroy EXIT
-rf_gate_setup
-rf_out=""
-rf_status=0 # set by rf_gate
 # shellcheck source-path=SCRIPTDIR/..
 # shellcheck source=../compliance-evidence-fixture.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../compliance-evidence-fixture.sh"
@@ -52,63 +37,6 @@ variants=(
 NL=$'\n'
 SOH=$'\001'
 BT='`'
-
-# ---------------------------------------------------------------------------
-# model-record-gate.sh
-# ---------------------------------------------------------------------------
-gate_variant() { # label value
-  local label="$1" v="$2" fb
-  fb="floor-basis=\"$v\""
-  # same model, Review at a lower legacy effort: the marker is seen (no "no
-  # record found for stage Review"), its floor-basis is present, and effort
-  # gives no finding (#424): no output at all
-  rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$fb")"
-  rf_gate
-  [ "$rf_status" -eq 0 ] || fail "S194 gate/$label — exit $rf_status"
-  [ -z "$rf_out" ] || fail "S194 gate/$label — a Review marker with '$v' in floor-basis must be seen and give no finding, got: '$rf_out'"
-
-  rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high "$fb")"
-  rf_gate
-  [ -z "$rf_out" ] || fail "S194 gate/$label — equal effort with '$v': expected no findings, got: '$rf_out'"
-
-  rf_data "$(marker Implementation Sonnet high)" "$(marker Review Opus low "$fb")"
-  rf_gate
-  [ -z "$rf_out" ] || fail "S194 gate/$label — different models with '$v': expected no findings, got: '$rf_out'"
-
-  # the same marker is read as the LATEST round: a later Review without any
-  # floor-basis is the one whose missing floor-basis is reported
-  rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low "$fb")" "$(marker Review Sonnet low)"
-  rf_gate
-  [ "$(rf_findings)" -eq 1 ] && grep -q 'floor-basis' <<<"$rf_out" || fail "S194 gate/$label — a later Review without floor-basis must be the one reported, got: '$rf_out'"
-}
-for pair in "${variants[@]}"; do gate_variant "${pair%%|*}" "${pair#*|}"; done
-
-# a newline inside the value (a multi-line comment body)
-gate_variant nl "line one${NL}line two"
-gate_variant nl-gt "stronger >${NL}weaker"
-
-# a `>` in some OTHER attribute, on either marker
-rf_data "$(marker Implementation Sonnet high 'note="uses > here"')" "$(marker Review Sonnet low 'floor-basis="ok" note="a > b"')"
-rf_gate
-[ "$rf_status" -eq 0 ] && [ -z "$rf_out" ] \
-  || fail "S194 gate — a '>' in another attribute of either marker must not hide it (no 'no record found'), got: '$rf_out'"
-
-# a marker with '>' elsewhere and NO floor-basis is still a Review marker: the
-# missing-floor-basis finding appears (and not "no record found for stage Review")
-rf_data "$(marker Implementation Sonnet high)" "$(marker Review Opus high 'note="a > b"')"
-rf_gate
-[ "$(rf_findings)" -eq 1 ] && grep -q 'floor-basis' <<<"$rf_out" \
-  || fail "S194 gate — Review marker with '>' in a note and no floor-basis: expected exactly the floor-basis finding, got: '$rf_out'"
-grep -q 'no record found for stage Review' <<<"$rf_out" && fail "S194 gate — the Review marker was not recognised, got: '$rf_out'"
-
-# the latest round still wins when an earlier one carries free text
-rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet low 'floor-basis="a > b"')" "$(marker Review Sonnet high 'floor-basis="c > d"')"
-rf_gate
-[ -z "$rf_out" ] || fail "S194 gate — a later round with '>' must replace the earlier one, got: '$rf_out'"
-# ...and the other way round: an earlier round with '>' and floor-basis, a later one without it
-rf_data "$(marker Implementation Sonnet high)" "$(marker Review Sonnet high 'floor-basis="a > b"')" "$(marker Review Sonnet high)"
-rf_gate
-[ "$(rf_findings)" -eq 1 ] && grep -q 'floor-basis' <<<"$rf_out" || fail "S194 gate — the later Review without floor-basis must win over an earlier one with '>', got: '$rf_out'"
 
 # ---------------------------------------------------------------------------
 # compliance-evidence.sh gate 2

@@ -1261,4 +1261,55 @@ output_f10="$(PATH="$fakebin_f10:$PATH" "$script" 400 2>/dev/null)"; status_f10=
 [ "$status_f10" -eq 0 ] || fail "S152 F-10 — expected exit 0, got $status_f10"
 [ "$(assert_verdict_shape 'S152 F-10' "$output_f10")" = "stale" ] || fail "S152 F-10 — issue comments failed but PR #501's reviews evidence (stage=Review, the ceiling) must still render stale (no label at all), not indeterminate: $output_f10"
 
+# #427: S201 non-gate controls transferred verbatim; retained legacy semantics.
+. "$TEST_REPO_ROOT/test/fixtures/pipeline-371-helpers.sh"
+. "$TEST_REPO_ROOT/test/fixtures/review-floor-helpers.sh"
+NL=$'\n'
+BT='`'
+quote_fence() { printf 'Example of the format:%s```%s%s%s```' "$NL" "$NL" "$1" "$NL"; }
+quote_tilde() { printf 'Example:%s~~~%s%s%s~~~' "$NL" "$NL" "$1" "$NL"; }
+quote_span() { printf 'The format is %s%s%s, as in the skill.' "$BT" "$1" "$BT"; }
+quote_block() { printf '> Reviewer wrote:%s> %s' "$NL" "$1"; }
+ex_rev_high='<!-- model-record: stage=Review model="Sonnet" effort="high" floor-basis="example" -->'
+# ---- and through role-label-staleness.sh ------------------------------------
+# shellcheck source=../fixtures/role-label-fake-gh.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/role-label-fake-gh.sh"
+rl_verdict() { # label, comment-text (one comment, \001 for newlines)
+  local label="$1" body="$2" bin
+  body="${body//$NL/$'\001'}"
+  run_build_fake_gh > "$FAKEGH_OUT" <<GHEOF
+__CALL_ISSUE__)
+  printf 'LABEL\t$label\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_REPO_IDENTITY__)
+  printf 'owner/repo\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_TITLEBODY__)
+  printf 'TITLE\t\nBODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t%s\n' '$body'
+  exit 0 ;;
+__CALL_PR501_REVIEWS__)
+  exit 0 ;;
+GHEOF
+  bin="$(cat "$FAKEGH_OUT")"
+  rl="$(PATH="$bin:$PATH" "$TEST_REPO_ROOT/role-label-staleness.sh" 400 2>/dev/null)"
+}
+# the label is at the real stage (Test); a quoted example of a LATER stage
+# would make it look stale if it counted
+for form in fence span block; do
+  rl_verdict role:qa "$(marker Test Sonnet medium)${NL}$("quote_$form" "$ex_rev_high")"
+  case "$rl" in
+    *" — in-sync "*) : ;;
+    *) fail "S152 transferred S201 role-label/$form — a quoted Review example must not make role:qa stale, got: $rl" ;;
+  esac
+done
+
+
 test_done

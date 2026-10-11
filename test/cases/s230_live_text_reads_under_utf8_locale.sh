@@ -11,8 +11,7 @@
 # to bite there (case-level LC_ALL unset, LANG=en_US.UTF-8).
 #
 # Seams: lib/markdown.sh (md_strip_fences, live_text) called in a fresh bash;
-# model-record-gate.sh stdout (its main path, and its role-play path, which
-# today calls live_text without the C locale: the #406 item); the
+# model-record-gate.sh stdout (its v2 main and role-play paths); the
 # collector's rows 1-3 (compliance-evidence.sh); role-label-staleness.sh's
 # verdict line. Gate and callers run against fake gh. The bytes reach the
 # gate through a placeholder (@FF@, @TR@) swapped for raw bytes after jq, since
@@ -25,7 +24,7 @@
 # staleness arm (their live_text copies run without the prefix).
 # MD_LIB points the lib arms at a scratch copy (mutation proof).
 #
-# Review round 1 of PR #443 (finding c-locale-grep-callers, lib-normalize-locale):
+# Historical, pre-v2 mutation evidence: Review round 1 of PR #443 (finding c-locale-grep-callers, lib-normalize-locale):
 # the C locale must also hold for the callers' OWN grep (and tr) on the live
 # text. BSD grep 2.6.0 in a UTF-8 locale finds NO match on a line where an
 # invalid byte comes BEFORE the match, so a marker after `x\377y ` on its line is
@@ -240,60 +239,64 @@ for name in $byte_names; do
   [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play/$name — the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
 done
 
-# --- gate: the bytes BEFORE the marker on the same line (round 1 of PR #443) --
-# The callers' own greps (main path stage check, role-play stage_ere, the
-# override reader, the "stages missing" check) read the live text. Every
-# body below puts `x<bytes>y ` before each marker on its line.
+# --- gate v2: preceding prose, invalid prefixes, and exact overrides --------
+# Historical #443 per-grep mutants preceded v2. Export-only removal now
+# survives: reader and keyword commands also pin C. Raw keyword arms kill
+# loss of BOTH defenses (export plus first keyword grep prefix) on macOS.
 for name in $byte_names; do
   ph="$(placeholder_of "$name")"
   pre="x${ph}y "
-  # (main path + stages missing) all five stages, each marker after the bytes
   rm -f "${FAKE_GH_DATA:?}"/*.json
-  json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "Closes #239"
-  json_comments "$FAKE_GH_DATA/reviews-246.json" "${pre}$(rec Review opus "floor-basis=\"stronger\"")"
-  json_comments "$FAKE_GH_DATA/comments-239.json" "${pre}$(rec Discovery sonnet)"
-  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet)"
-  gate_run C
-  c_out="$GATE_OUT"
-  [ -z "$c_out" ] || fail "S230 gate main-before/$name — baseline under LC_ALL=C: five records after the bytes must give no finding at all, got: $c_out"
+  json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239" "Closes #239"
+  json_comments "$FAKE_GH_DATA/reviews-246.json" "${pre}${NL}$(rec Review opus 'floor-basis="stronger"')"
+  json_comments "$FAKE_GH_DATA/comments-239.json" "${pre}${NL}$(rec Discovery sonnet)"
+  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}${NL}$(rec Planning sonnet)" "${pre}${NL}$(rec Test sonnet)" "${pre}${NL}$(rec Implementation sonnet)"
+  gate_run C; c_out="$GATE_OUT"
+  [ -z "$c_out" ] || fail "S230 gate preceding-prose/$name — whole-line records must be clean: $c_out"
   gate_run utf8
-  [ "$GATE_RC" -eq 0 ] || fail "S230 gate main-before/$name — exit $GATE_RC with LC_ALL unset and LANG=$MD_UTF8"
-  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate main-before/$name — a marker after '$name' bytes on its line is read differently under LANG=$MD_UTF8 than under LC_ALL=C (a grep of the live text ran without the C locale): '$GATE_OUT' vs '$c_out'"
+  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate preceding-prose/$name — locale differs: $GATE_OUT"
 
-  # (role-play path) two stage records in one body: on separate lines, and on one line
-  json_comments "$FAKE_GH_DATA/reviews-246.json"
-  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet)${NL}${pre}$(rec Review opus "floor-basis=\"stronger\"")"
-  gate_run C
-  c_out="$GATE_OUT"
-  md_has "$c_out" "role-played: stages in one text: Implementation, Review" || fail "S230 gate role-play-before/$name — baseline under LC_ALL=C must report the two stages in one text, got: $c_out"
-  gate_run utf8
-  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play-before/$name — separate lines: the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
-  json_comments "$FAKE_GH_DATA/comments-246.json" "${pre}$(rec Planning sonnet)" "${pre}$(rec Test sonnet)" "${pre}$(rec Implementation sonnet) $(rec Review opus "floor-basis=\"stronger\"")"
-  gate_run C
-  c_out="$GATE_OUT"
-  md_has "$c_out" "role-played: stages in one text: Implementation, Review" || fail "S230 gate role-play-before/$name — one line: baseline under LC_ALL=C must report the two stages in one text, got: $c_out"
-  gate_run utf8
-  [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate role-play-before/$name — one line: the role-play check reads this body differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
+  # Neither prefixed records nor two records sharing a line count as stages.
+  for shape in prefix same-line; do
+    json_comments "$FAKE_GH_DATA/reviews-246.json"
+    json_comments "$FAKE_GH_DATA/comments-239.json"
+    case "$shape" in
+      prefix) body="${pre}$(rec Implementation sonnet)${NL}${pre}$(rec Review opus 'floor-basis="stronger"')" ;;
+      same-line) body="$(rec Implementation sonnet) $(rec Review opus "floor-basis=\"stronger x${ph}y\"")" ;;
+    esac
+    json_comments "$FAKE_GH_DATA/comments-246.json" "$body"
+    gate_run C; c_out="$GATE_OUT"
+    md_has "$c_out" 'record is a near-miss' || fail "S230 gate $shape/$name — must name near-miss: $c_out"
+    md_has "$c_out" 'role-played: stages missing: Discovery, Planning, Test, Implementation, Review' || fail "S230 gate $shape/$name — invalid records waive no missing stage: $c_out"
+    md_has "$c_out" 'no record found for stage Implementation' || fail "S230 gate $shape/$name — invalid Implementation cannot count: $c_out"
+    md_has "$c_out" 'no record found for stage Review' || fail "S230 gate $shape/$name — invalid Review cannot count: $c_out"
+    md_has "$c_out" 'stages in one text' && fail "S230 gate $shape/$name — invalid records cannot yield role-play: $c_out"
+    gate_run utf8
+    [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate $shape/$name — locale differs: $GATE_OUT"
+  done
 
-  # (override reader) a single-session override waives the missing stages;
-  # variant 1: the bytes before the marker; variant 2: before each attribute
-  # inside it (the three attribute greps each read after a byte)
   ov_a="${pre}<!-- pipeline-override: decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
   ov_b="<!-- pipeline-override: note=\"x${ph}y\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
   ov_c="<!-- pipeline-override: decided-by=\"x${ph}y\" reason=\"x${ph}y\" scope=\"single-session\" -->"
   ov_n=0
-  for ov in "$ov_a" "$ov_b" "$ov_c"; do
+  ov_d="<!-- pipeline-override: note=\"x${ph}y>z\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  ov_e="<!-- pipeline-override: note=\"x${ph}y<z\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  ov_f="<!-- pipeline-override: note=\"x${ph}y\"z\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  ov_g="<!-- pipeline-override: note=\"x${ph}y"$'\177'"z\" decided-by=\"d\" reason=\"r\" scope=\"single-session\" -->"
+  for ov in "$ov_a" "$ov_b" "$ov_c" "$ov_d" "$ov_e" "$ov_f" "$ov_g"; do
     ov_n=$((ov_n + 1))
-    rm -f "${FAKE_GH_DATA:?}"/*.json
-    json_pr "$FAKE_GH_DATA/pr-246.json" "Fix #239: something" "Closes #239"
-    json_comments "$FAKE_GH_DATA/reviews-246.json"
-    json_comments "$FAKE_GH_DATA/comments-239.json"
     json_comments "$FAKE_GH_DATA/comments-246.json" "$ov"
-    gate_run C
-    c_out="$GATE_OUT"
-    md_has "$c_out" "a pipeline-override (scope=single-session) is recorded" || fail "S230 gate override-before/$name/$ov_n — baseline under LC_ALL=C must read the single-session override, got: $c_out"
+    gate_run C; c_out="$GATE_OUT"
+    if [ "$ov_n" -eq 2 ] || [ "$ov_n" -eq 3 ]; then
+      md_has "$c_out" 'a pipeline-override (scope=single-session) waived the role-play findings' || fail "S230 gate override/$name — valid values must waive: $c_out"
+      md_has "$c_out" 'role-played:' && fail "S230 gate override/$name — valid override leaves role-play findings: $c_out"
+    else
+      md_has "$c_out" 'pipeline-override near-miss' || fail "S230 gate override/$name/$ov_n — invalid override must name near-miss: $c_out"
+      md_has "$c_out" 'role-played: stages missing: Discovery, Planning, Test, Implementation, Review' || fail "S230 gate override/$name/$ov_n — invalid override must waive nothing: $c_out"
+      md_has "$c_out" 'waived the role-play findings' && fail "S230 gate override/$name/$ov_n — invalid override waived findings: $c_out"
+    fi
     gate_run utf8
-    [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate override-before/$name/$ov_n — the override is read differently under LANG=$MD_UTF8 than under LC_ALL=C: '$GATE_OUT' vs '$c_out'"
+    [ "$GATE_OUT" = "$c_out" ] || fail "S230 gate override/$name/$ov_n — locale differs: $GATE_OUT"
   done
 done
 
@@ -305,8 +308,8 @@ done
 # `no record found for stage Discovery` and the blocking `role-played: stages
 # missing: Discovery`. Discovery is recorded on #239 only, the other four
 # stages on the PR; under LC_ALL=C the gate prints nothing. RED today on a
-# macOS host. After A32c the script's own `export LC_ALL=C` fixes it; the arm
-# is red again if that line is removed.
+# macOS host before A32c. In v2, both export and the keyword grep prefix
+# defend this call: removing only one is equivalent; removing both is red.
 for name in $byte_names; do
   ph="$(placeholder_of "$name")"
   for where in description title; do

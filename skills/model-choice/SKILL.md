@@ -125,8 +125,9 @@ Review marker, one sentence of free text (#392):
 Implementation's, for example "same model as Implementation" or "stronger
 model than Implementation's; the diff is a mechanical rename". A human
 weighs that sentence; the gate never verifies it, only that it is present.
-Any character is fine in it except a double quote and a control character
-such as a newline (see "Marker grammar" below). The Review report's
+It may not contain a double quote, `<`, `>` or a control character
+such as a newline; the emitter also refuses the extended controls listed
+in A33a (see "Marker grammar" below). The Review report's
 one-line self-declaration (below) repeats it in prose. `same-model-exception`
 is legacy: no script reads it, and it does not stand in for `floor-basis`.
 
@@ -146,29 +147,25 @@ alias and the full id of the same model count as different models, since
 no script holds a model table, so such a pair is never treated as the same
 model (recorded as debt in the PRD).
 
-**Marker grammar.** A `model-record` marker is `<!--`, `model-record:`,
-`stage=<Stage>` (a bare name, never quoted), then `name="value"`
-attributes, then `-->`. A value may contain any character except a double
-quote: `>`, `<`, `--` and even `-->` are plain text, so write `floor-basis`
-as an ordinary sentence (the command also refuses a newline or another
-control character in it). The marker ends at the first `-->` outside
-quotes. All three scripts (`model-record-gate.sh`,
-`compliance-evidence.sh`, `role-label-staleness.sh`) read markers through
-`lib/model-record.sh`, so a `>` in `floor-basis` never hides the marker,
-and none counts a marker quoted in a code span, a fence or a blockquote:
-that is an example, not a record. A malformed marker (a stray or
-unbalanced quote, a quoted stage, no closing `-->`, a `<!--` inside it) is
-ignored, never read, and never hides a later marker; the gate names it as
-a finding. So does an unquoted, empty or missing `model` on the
-latest marker of any stage (#402): produce a corrected marker with the
-command.
+**Marker grammar.** A31/A31a in `ARCHITECTURE.md` owns the record grammar;
+`lib/model-record.sh` owns its implementation (`rec_scan_bundle` and
+`rec_field`). A record is one whole line starting in column 0, outside
+quoted text; values contain no `"`, `<`, `>` or control character.
+Two reader rules: only `ok` records supply presence; the timestamp-latest
+candidate decides, even when it is a near-miss. Every live near-miss is named
+once; a latest near-miss is unreadable and no earlier record replaces it.
+Quoted records supply neither presence nor latest candidates. Re-post a
+corrected line using the emitter. The gate uses this reader now; the
+collector and staleness migrate in #429 and #428 respectively.
 
 `skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
 five stages have at least one marker, searched across both the PR's
 comments and the comments of every issue it closes — a finding, same
 non-blocking shape as every other `pre-merge-review` gate, for any stage
-missing one. It also compares Implementation's and Review's latest
-markers: a Review marker without `floor-basis` is a finding. The model
+missing one. The latest ok Review record needs its own non-blank
+`floor-basis`, even without Implementation. A latest near-miss skips its
+dependent checks. Timestamp order uses created_at/submitted_at; description
+edits are not tracked (the PR's created_at is used). The model
 itself is not compared: the same model meets the floor, different models are
 the Reviewer's recorded judgment (see "The limit").
 

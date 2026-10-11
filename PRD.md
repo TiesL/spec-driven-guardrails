@@ -981,14 +981,26 @@ stage ever recorded a model in `portfolio-mgt-agents` (#238);
 Discovery/Planning/Test/Implementation never did, and the skill's prose
 instruction had no mechanical check behind it. Each stage now carries a
 `<!-- model-record: stage=<Stage> model="..." -->` marker (effort left the marker in #424).
-`model-record-gate.sh <pr-number>` checks a PR's own comments/description
-and the comments of every issue it closes for all five stages, reporting
-whichever are missing. Fails open (a warning, not a block) without `gh`.
-Same mechanism also catches a Review marker without `floor-basis`
-(#392 replaced #244 AC2's different-model finding; #424 removed the
-same-model lower-effort finding; see F39) — see the
-Technical debt entries on this gate's own known gaps (spelling-mismatch
-false negatives, comment-ordering heuristic).
+`model-record-gate.sh <pr-number>` checks the PR description, PR comments
+and reviews, and the comments of every issue it closes for all five stages.
+As amended by #427 (A31a, A37), it reads live candidates through
+`rec_scan_bundle`: only `ok` records count as stage presence. Every
+near-miss is named once, including its stage (`?` if unreadable); quoted
+records count as neither evidence nor near-misses. `no record found for
+stage X` means no `ok` record for X exists anywhere in the fetched bodies.
+
+For each stage, latest means the newest candidate (`ok` or near-miss) by
+comment `created_at` or review `submitted_at`. The description counts at
+the PR's `created_at`, never `updated_at`; description edits are not tracked.
+Equal timestamps use source order issue, description, comments, reviews;
+within one body the later same-stage line wins. A latest near-miss is named
+and produces `model-record: the latest stage=<S> record is unreadable, so
+no earlier record is used`; dependent floor and floor-basis checks are
+skipped, with no fallback to an earlier `ok`. An earlier `ok` still counts
+as presence. The latest `ok` Review needs a non-blank `floor-basis` (F39).
+Fetch/reader failures and missing closing references follow F38; without
+`gh` the gate remains fail-open with a warning. #427 changes the gate,
+not collector/staleness consumers, whose v2 migration belongs to #429.
 
 ### F28 — Machine-readable finding-carryforward markers (issue #241 AC2)
 
@@ -1324,6 +1336,40 @@ once (Claude Code 2.1.287, headless): `SessionStart` output reaches the
 top-level session but not a freshly dispatched subagent, and the hook
 fires again on resume and after compaction.
 
+Record-v2 acceptance (#427 AC2, AC4-AC6, AC8; A31a, A34a): role-play
+uses the same live strict records as F27. Quoted records supply no stages
+and cannot create a “stages in one text” finding. Two distinct live stages
+in one body are role-played; repeated records of one stage alone are not.
+A near-miss-only stage, including an inline Planning record, is missing
+and yields `role-played: stages missing: ...` in an opted-in project.
+Only a live strict `pipeline-override` waives the checks within its stated
+scope: `single-session` waives role-play; `skip=<Stage>` waives only that
+stage's absence. Quoted or malformed overrides waive nothing. Values,
+including `reason`, may contain no double quote, `<`, `>` or control byte;
+a live near-miss override is named once. Authorship cannot be verified.
+
+Every early exit in an opted-in project emits a nonempty
+`role-play-unchecked: <reason>` on stdout: PR comments, reviews or
+description fetch failure, unreadable closing issue, or reader failure.
+A main-path reader failure also produces one `model-record:` finding and
+skips dependent checks; incomplete input gives no missing-stage verdict.
+The guard prints unchecked lines as warnings and blocks only on
+`role-played: `, never on `model-record:` or unchecked lines alone. A block
+shows the near-miss diagnostics as context and both remedies: re-post the
+emitter's whole line, or supply a valid override. A closing-reference HTTP
+404 instead prints `model-record: closing reference #N does not exist and
+was ignored`, skips that reference and continues checking complete input;
+it is not unchecked. Without another source of Discovery, the missing
+stage blocks. Other fetch failures remain unchecked. #430 AC3 determines
+whether the guard's stderr warning reaches the session; #427 establishes
+only that it is printed. If not received, the stated limit is “visible in
+the transcript only”.
+
+#427 AC10 moves `process-multi-agent-roles` to meaning v2 for the refusal
+of inline-only records and `<`/`>` overrides. `quality-review-before-merge`
+stays at v4 with its grammar text amended; `process-model-choice` stays
+at v2. This repo's adoption and the A18 override documentation must follow.
+
 Not part of this feature: orchestrator software, per-change-type phase
 shortening (#281), changing the role contracts' content (#369), and
 verifying the role sessions' quality (AC9 covers only that they were
@@ -1356,8 +1402,12 @@ Decisions (maintainer, 2026-10-03):
   (not counted as a substitute for anything), not repurposed.
 - Every Review `model-record` marker carries `floor-basis="<one
   sentence>"`, the Reviewer's stated reason why its model clears
-  Implementation's (effort part removed by #424). A missing or empty one is a non-blocking finding; the
-  text is never verified.
+  Implementation's (effort part removed by #424). A missing, empty or
+  whitespace-only basis on the latest `ok` Review is
+  a non-blocking `model-record:` finding, even without Implementation
+  presence; an older basis cannot supply it (#427 AC9). A latest
+  near-miss instead follows F27 and skips the dependent checks. The text
+  is never verified.
 - `compliance-evidence.sh` reports two different models as
   `unverifiable-from-artifacts`, never `evidenced`.
 - Documentation names the full model id as the platform reports it, but
@@ -1370,7 +1420,8 @@ Decisions (maintainer, 2026-10-03):
 
 Acceptance criteria (full text in issue #392): **AC1-AC2** the rule is
 stated one way and no live text demands a different model; **AC3** same
-model: effort compared; **AC4** different models: no mechanical verdict,
+model: effort comparison superseded by #424; **AC4** different models:
+no mechanical verdict,
 stated as such; **AC5** a legacy `same-model-exception` is ignored;
 **AC6** gate 2 keeps its lookup-failure degradation to `indeterminate`;
 **AC7** the meaning-version bump and its fixtures; **AC8** the
@@ -1423,23 +1474,27 @@ dispatch prompt with the stage filled in (effort is no longer passed or
 recorded: removed by #424, A33); the role adds its own exact model id (and, for
 Review, its `floor-basis`) and pastes the output unchanged as the first
 line of its report. The marker format and grammar are written down in one
-place, `model-choice`; `ORCHESTRATOR.md` carries no copy. (2) For the
-latest marker of each of the five stages, an unquoted, empty or missing
-`model` makes `model-record-gate.sh` print a visible finding (the
-per-field check on effort was removed by #424, A33) with the existing `model-record:` prefix, one per stage and field, and a
-malformed marker of any stage (a quoted `stage="..."` included) is named.
-The findings are non-blocking, consistent with the collector's
-`indeterminate`, and never use the `role-played:` prefix that the merge
-guard keys on.
+place: `model-choice` points to A31 and states the two reader rules
+(whole column-0 line; no double quote, `<`, `>` or control byte in values);
+`ORCHESTRATOR.md` carries no copy. (2) As amended by #427 (A31a, A37),
+the gate names every live near-miss once, of any stage, including an
+unquoted, empty or missing `model` and a quoted `stage="..."`. It reports
+the latest unreadable candidate without using an earlier record, as F27
+specifies; this replaces the per-stage/per-field diagnostic rule. The
+`model-record:` diagnostics are non-blocking. They supply context for a
+separate `role-played:` block when an opted-in stage has no `ok` record
+(F38), rather than themselves becoming a blocking reason.
 
 Decision (maintainer, 2026-10-03): fix before the release PR that carries
 #369, #371 and #392. The scratch repo is kept for a re-run that validates
 the fix. Further decisions on the Architect's design (A26): an unquoted
 marker is reported, not tolerated; the finding covers all five stages and
-both `model` and `effort` (effort part superseded by A33, #424); the role fills in `model`. The emitter is never
-stricter than the grammar for a `floor-basis`: it refuses only a double
-quote, a control character (newline, U+001E, ...), a blank or over-long
-text, and a floor-basis on a stage other than Review.
+both `model` and `effort` (effort part superseded by A33, #424); the role fills in `model`. The agreed emitter refusal rules
+for `floor-basis` (A31/A33a) cover a double
+quote, `<`, `>`, C0/DEL, C1, U+2028/2029 and bidirectional controls
+U+202A-202E/U+2066-2069; a blank or over-long text; and a floor-basis on a
+stage other than Review. Backticks and shell-like text alone are valid
+value content and must not hide a whole-line record (#404 item 5).
 
 Acceptance criteria: full text in issue #402.
 
@@ -1447,18 +1502,17 @@ What is mechanically verified: that `ORCHESTRATOR.md` tells the
 orchestrator to pass the emit command per stage and contains no second
 copy of the grammar; that every line the emitter prints reads back
 through the parser in both locales, and every refused input prints
-nothing; that the gate prints a `model-record:` finding for an unreadable
-`model` (the effort check was removed by #424, A33) on the latest marker of any stage and for a malformed
-marker, and stays silent for a well-formed one, a stage that is missing (already a
-separate finding), a `stage=...` placeholder (not a real marker) and a
-project that did not opt in where applicable. What stays judgment and is
-not checked: whether the orchestrator in a real session actually pastes
+nothing; that the gate names near-misses and applies the presence/latest
+rules in F27 and the role-play/unchecked rules in F38. Plain non-candidate
+text and quoted records produce no near-miss diagnostic. What stays
+judgment and is not checked: whether the orchestrator in a real session actually pastes
 the marker line (model behaviour, shown only by a re-run on the scratch
 repo); whether the model name a role records is the model it really ran
 on (a pasted marker can carry a made-up name); and whether every role
 session follows the instruction.
 
-Not part of this feature: the role-played-in-fence issue (#400), the
+Not part of the original #402 fix: the role-played-in-fence issue (#400,
+now included in #427 through F38), the
 dispatch tool having no effort argument (A25), interactive-mode and fork
 dispatch coverage, and verifying marker contents beyond parseability.
 
@@ -1809,7 +1863,7 @@ epics still apply, detached from the execution history in which they arose.
 | What | Why acceptable for now | Trigger to address |
 |---|---|---|
 | Traceability mechanism (F13, W17-W20) designed without practical proof | Deliberately overruled; W17 replaces proof with human review | Once the first real work item runs the chain |
-| `model-record-gate.sh` orders issue-comments before the PR's own description and comments when building `all_text` for the same-model check — a heuristic match to the typical stage lifecycle, not a true global timestamp sort. A marker posted out of the typical order (e.g. a stray Review-stage marker landing on the issue after the PR's own) could still be picked up by `tail -1` instead of the PR's genuinely latest one. Found during PR #253's pre-merge-review (round 2), which also found and fixed the prior, more common inversion (issue text ordered last) | `gh`'s comment JSON carries `createdAt`, but nothing here reads it yet; the heuristic reorder covers the failure mode actually seen in practice | If a real review is affected by out-of-typical-order markers, or once the gate is worth extending to sort by actual timestamp across all three sources |
+| The gate cannot track edits to the PR description: #427 requires timestamp ordering (F27, A37), but the description is dated at PR creation | GitHub supplies no description-edit history in these inputs; edits must not be treated as new evidence via `updated_at` | When a reliable description-edit history is available, or a real work item requires edits to change the latest candidate |
 | Short model aliases (`opus`) and their full ids (`claude-opus-5`) normalize as different models, so a Review recorded under an alias is never treated as the same model as Implementation (F39, #392); gate 2 reports `unverifiable-from-artifacts`, never a pass. About 31 historical markers use aliases | `normalize_model` is deliberately generic (no model table, so a new model version needs no code change); the documentation names the full id as the platform reports it; the case is a missed check, not a false pass | If aliased markers keep appearing in new PRs, or a stable alias-to-id source exists |
 | The shared marker parser (`lib/model-record.sh`, F39, #392) is slow on huge input under macOS awk (BWK), whose `substr` costs time proportional to the whole text: before round 3 of the PR #397 review a single 1 MB quoted value took about 20 s; the parser now jumps over a quoted value with `index()` (1 MB: 0.15 s), but about 500 KB of unquoted words inside one marker still takes about 20 s (mawk: 0.2 s). Correctness is unaffected | No real marker comes near this size (a `floor-basis` is one sentence); the cost is time, never a wrong answer, and fixing it means restructuring the parser around `match()`/`split()` for one platform's awk | A real comment makes a gate or `role-label-staleness.sh` noticeably slow, or a marker-scanning caller starts reading untrusted bulk text |
 | `model-record-emit.sh` still accepts `--effort` and ignores it, printing one stderr line (#424, A33a), so stale prompts in adopted projects keep working | Removing the flag at once would break every adopted project whose dispatch prompts still pass it | The next release: remove the `--effort` flag and its stderr line (#413) |
@@ -1833,9 +1887,9 @@ epics still apply, detached from the execution history in which they arose.
 | `check_ci_guard`, `check_stray_closes_guard`, and now `check_merge_guard`'s marker check (`hooks/git-guardrails`) each duplicate the same stdout/stderr-separation boilerplate (a `mktemp` error file, falling back to `2>/dev/null` if `mktemp` itself fails) rather than sharing one helper. Now three call sites — found during PR #224's pre-merge-review (round 3) at two, found again during PR #227's (round 1) at three. An extraction was attempted during PR #227 and reverted the same session after it (indirectly) caused a real incident: see the row below | Extracting a shared helper is still worth doing, but not attempted again casually — the revert wasn't about the extraction's design, it was about the incident it took down with it | Next time this pattern needs touching — with the apostrophe-in-single-quoted-heredoc risk (row below) fixed first, or checked for explicitly, before editing near either python block again |
 | Writing prose with an apostrophe (`it's`, `doesn't`, `#227's`) inside a bash *single-quoted* `python3 -c '...'` block silently and catastrophically breaks the script: bash single quotes have no escape mechanism, so the apostrophe ends the string early and everything after is reparsed as bash code — with no error until a syntax mismatch surfaces somewhere later in the file, at an unrelated line. Concretely: a comment reading "found during PR #227's own pre-merge-review" inside `check_merge_guard`'s marker-parsing python block took down `hooks/git-guardrails` entirely — and since this repo adopts itself, every `Bash` tool call in the session broke immediately (the `PreToolUse` hook execs this same file to vet every command), discovered only by working blind through `Read`/`Edit` until the apostrophe was found by manual quote-counting | Caught and fixed within the same session, but only by disabling all git/gh command execution until found — a real, high-blast-radius incident, not a near miss | Add a `check-no-...` script (matching `check-no-sigpipe-race.sh`'s F22 pattern) that scans every `python3 -c '...'`-shaped single-quoted block for a bare apostrophe — tracked as its own issue rather than built under this incident's own time pressure |
 | `compliance-evidence.sh`'s `normalize_model()` (F34, issue #296) is a verbatim copy of `skills/pre-merge-review/model-record-gate.sh`'s function of the same name (#268), not a shared import — two copies of the same model-string-comparison logic now exist. Deliberate (D5, Architect's implementation plan): extracting a shared lib would cross the dogfood-only boundary, since `skills/` is what `adopt.sh` propagates to adopted projects and this collector is dogfood-only | A reimplementation that drifted from `model-record-gate.sh`'s comparison rules would make the collector silently disagree with the gate it reports on — worse than the duplication itself; the two are kept in sync by comment (each names the other as origin/copy) | Unify if/when this collector is ever propagated beyond this repo, or if the two copies are ever found to have drifted |
-| `compliance-evidence.sh` (F34, issue #308, fixing the #296 debt row this replaces) now discriminates a live marker from the same shape merely quoted in a fenced code block, an inline code span, or a Markdown blockquote — `live_text()` strips those enclosures (by CommonMark's own fence-closing rule: opening char + run length, no info string on a close, 3-space indent cap) before any `gate_*` predicate greps the result, and a real marker inline with prose keeps evidencing (AC3). This is a bounded heuristic, not a full CommonMark parser, and by design (non-goal 1, Product's ruling on D2) it **fails open** — counts as live, not flagged as quoted — for shapes it doesn't attempt: a 4-space-indented (or tab-indented) code block, an HTML `<pre>`/`<code>` block, a marker nested inside another HTML comment, backticks inside a link title, a blockquote's lazy-continuation line, and a fence opened on a list item's continuation line and closed at column 0 (`continuation-line-list-fence`, follow-up #445: fixing it needs the enclosing item's content column across lines, which is real list parsing). (Since #423 a backtick-fence opener whose info string contains a backtick is no longer one of them — it is not an opener, as in CommonMark — and a fence opened on a list-item line is recognized; S232.) The one `live_text()` in `lib/markdown.sh` (#423) also filters `role-label-staleness.sh` and, since #392 (round 5 of the PR #397 review), `model-record-gate.sh`'s stage-presence and Review-floor checks, so the three agree on these shapes (S201 checks the indented case). `test/cases/s151_compliance_evidence_quoting.sh` pins two of these (Q18, Q18b) as accepted debt on purpose, precisely so a later half-fix is a visible, reviewed status change rather than a silent one | Closing every one of these needs a real CommonMark-aware parser, which is out of proportion to a dogfood-only compliance reporter; the fail-open direction is the honest one to ship rather than overclaim full coverage (Product's D2 ruling) | If any of these shapes is ever seen quoted in a real PR/issue in a way that produces a false `evidenced` — delete the corresponding S151 arm (Q18/Q18b) and move this row, rather than leaving the debt undocumented once the gap closes |
+| `compliance-evidence.sh` (F34, issue #308, fixing the #296 debt row this replaces) now discriminates a live marker from the same shape merely quoted in a fenced code block, an inline code span, or a Markdown blockquote — `live_text()` strips those enclosures (by CommonMark's own fence-closing rule: opening char + run length, no info string on a close, 3-space indent cap) before any `gate_*` predicate greps the result, and a real marker inline with prose keeps evidencing (AC3). This is a bounded heuristic, not a full CommonMark parser, and by design (non-goal 1, Product's ruling on D2) it **fails open** — counts as live, not flagged as quoted — for shapes it doesn't attempt: a 4-space-indented (or tab-indented) code block, an HTML `<pre>`/`<code>` block, a marker nested inside another HTML comment, backticks inside a link title, a blockquote's lazy-continuation line, and a fence opened on a list item's continuation line and closed at column 0 (`continuation-line-list-fence`, follow-up #445: fixing it needs the enclosing item's content column across lines, which is real list parsing). (Since #423 a backtick-fence opener whose info string contains a backtick is no longer one of them — it is not an opener, as in CommonMark — and a fence opened on a list-item line is recognized; S232.) The shared `live_text()` still filters the legacy collector/staleness consumers until #429. #427 moves the gate to `rec_scan_bundle` (F27/F38/F40): indented code is quoted, inline records are near-misses, and only whole column-0 strict records count. The former three-consumer agreement and gate S201 debt no longer define the gate requirement; remaining collector/staleness debt stays in scope for their later slice. `test/cases/s151_compliance_evidence_quoting.sh` pins two of these (Q18, Q18b) as accepted debt on purpose, precisely so a later half-fix is a visible, reviewed status change rather than a silent one | Closing every one of these needs a real CommonMark-aware parser, which is out of proportion to a dogfood-only compliance reporter; the fail-open direction is the honest one to ship rather than overclaim full coverage (Product's D2 ruling) | If any of these shapes is ever seen quoted in a real PR/issue in a way that produces a false `evidenced` — delete the corresponding S151 arm (Q18/Q18b) and move this row, rather than leaving the debt undocumented once the gap closes |
 | `lib/markdown.sh` `live_text()` (F34, issue #423, A32d) reads an ordered list item numbered 2 or higher directly after top-level paragraph text (`text`, then `2. ```` with no blank line) as a list-fence opener, where GitHub treats it as paragraph text and the indent-3 run after it opens a top-level fence. A marker inside that fence reads as **live** where GitHub renders it quoted: the **bad direction**, not a fail-safe one (`ordered-item-after-paragraph`, shape s1, follow-up #446; also #445). A rule fixing only this shape was tried (A32c) and reverted (A32d) because it read quoted markers as live on wrapped items, lazy lines and after a blockquote | Out of the threat model: the shape needs paragraph text, then an ordered item 2+ with a fence run on its own line, with no blank between, then a marker in the next fence; no pipeline template produces it, and the gate guards against accidental quoting, not forgery. A correct fix needs list-context tracking or a union-of-readings mechanism, not one more single-shape rule | When #446 is picked up (quote under every plausible reading; its acceptance test is s1), or if this shape is seen in a real PR/issue |
-| `compliance-evidence.sh` and `model-record-gate.sh` (F34, issue #318) both append PR review bodies (`pulls/<pr>/reviews`) strictly after every PR comment when building their flat text corpus, not merged in true chronological order. This is harmless when a review genuinely is the newest event (it correctly lands last in append order too) — the real risk is the opposite: a comment posted *after* an existing review is still appended *before* every review in the fixed body→comments→reviews order, so that older review's `model-record` marker can still win under `tail -1` over a comment that's actually newer (e.g. a round-2 comment correcting a round-1 review's recorded model would lose to that stale review). The same class of ordering flaw #253 already fixed once for issue-text-vs-PR-text ordering, now reappearing between two PR-side sources instead of two different bundle sources. Found during PR #336's own pre-merge-review (round 1; the direction was initially misdescribed here and in this file's own code comment, corrected during round 2) | Both scripts' comment JSON and review JSON carry `created_at`/`submitted_at`, but neither script reads it — merging by real timestamp is a bigger, separate change than #318's own REST-transport scope, and reviews are a source neither script read at all before this PR, so this is a new, narrower version of an already-accepted risk class, not a regression this PR introduced from a previously-safe state | The first real PR where a `model-record` marker in a review body is superseded by a later, disagreeing marker in a plain PR comment, and gate 2 (or model-record-gate.sh's own same-model check) gives the stale review's verdict instead — sort PR_TEXT's sources by their own `created_at`/`submitted_at` instead of a fixed body→comments→reviews append order |
+| `compliance-evidence.sh` (F34, #318) appends PR reviews after comments rather than sorting by `created_at`/`submitted_at`, so an older review can supersede a newer comment. The gate portion is superseded by #427's required timestamp ordering (F27, A37) | Collector migration is deliberately a later vertical slice; #427 does not change its legacy behavior or claim this debt resolved in code | #429 migrates collector/staleness consumers to record v2 and timestamp ordering |
 
 ---
 

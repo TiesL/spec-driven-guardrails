@@ -386,7 +386,8 @@ the shared parser warns if it has no `Applies if`.
   effort meets the floor, and nothing flags it. Revisit when the dispatch
   tool gains an effort parameter. The Review `model-record` marker carries
   `floor-basis="..."`: one sentence on why. `model-record-gate.sh` flags a
-  missing `floor-basis`. It can't rank two different models, so that stays
+  missing `floor-basis`. Only a record on its own line, starting in column 0,
+  counts; a value may not contain `"`, `<`, `>` or a control character. It can't rank two different models, so that stays
   the Reviewer's recorded judgment. The review always checks complexity
   and dependencies (basic hygiene), plus exactly the NFRs whose
   corresponding `spec-*` question this project answered "yes" to.
@@ -516,6 +517,9 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
 - **Default:** question
 - **Applies if:** always
+- **Meaning version:** 2 — #427 (A31a/A34a) makes the merge guard refuse
+  inline-only records and overrides with `<` or `>` in a value. Projects
+  answered under v1 re-confirm this stricter obligation (#254).
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
@@ -525,8 +529,14 @@ the shared parser warns if it has no `Applies if`.
   work-item request starts the pipeline without being asked; a `no` or
   unanswered row prints nothing. A run where one session played every role,
   without a recorded human override (`pipeline-override`), is flagged by
-  `model-record-gate.sh` and refused by the merge guard (`gh pr merge`);
-  without `gh` or network both let it through. Role conflicts escalate to the project's human decision-maker instead of
+  `model-record-gate.sh` and refused by the merge guard (`gh pr merge`).
+  The guard refuses inline-only stage records and overrides with `<` or `>`
+  in a value. Records must be whole lines starting in column 0, read through
+  A31's strict reader. Near-misses are named as context; only `role-played: `
+  blocks. Without `gh` or network both let it through with an unchecked
+  warning; a closing-reference HTTP 404 is ignored and leaves absent stages
+  missing. Printed warning delivery to the session is checked in #430 AC3.
+  Role conflicts escalate to the project's human decision-maker instead of
   being settled by whichever role spoke last. Create the five `role:*` labels
   (`role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`)
   once in this project's own GitHub repo; the skill has the command. The three

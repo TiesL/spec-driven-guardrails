@@ -1,33 +1,7 @@
 #!/usr/bin/env bash
-# S199 — an unclosed quote in one comment never changes how a well-formed
-# marker in ANOTHER comment is read.
+# S199 — legacy collector and staleness input coverage retained unchanged until #429.
 # Covers: F39
-#
-# Issue #392, round 4 of the PR #397 review (medium finding) and the human
-# decision "contain a malformed marker to its own comment". Callers join the
-# comments before parsing. A marker whose quote is left open in comment N used
-# to run into comment N+1: the first quote of N+1 closed N's value, and when
-# that first quoted value started with a space or `-->` the glued-text check
-# did not fire, so N read as a well-formed marker and N+1's Review marker was
-# never seen: the gate skipped the floor check silently and the collector said
-# not-evidenced. Required: the well-formed marker in the other comment is found
-# with its own values; the malformed marker is a visible finding or ignored,
-# never wins. Seam: the real callers only (model-record-gate.sh,
-# compliance-evidence.sh gate 2, role-label-staleness.sh) against fake gh.
-#
-# Issue #424: with effort gone, "found with its own values" is told apart by
-# the floor-basis (gate: the well-formed Review marker has none, so a
-# floor-basis finding appears iff it was read; the first quoted value that
-# starts with a space or `-->` is now a `note`) and by the model (gate 2: an
-# unclosed marker claims another model than Implementation's, so `evidenced`
-# appears iff the well-formed one was read).
-#
-# Issue #424: with effort gone, "found with its own values" is told apart by
-# the floor-basis (gate: the well-formed Review marker has none, so a
-# floor-basis finding appears iff it was read; the first quoted value that
-# starts with a space or `-->` is now a `note`) and by the model (gate 2: an
-# unclosed marker claims another model than Implementation's, so `evidenced`
-# appears iff the well-formed one was read).
+# #427 retires gate half; strict gate counterparts: S257/S259/S264/S266.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -41,9 +15,6 @@ set -uo pipefail
 command -v jq >/dev/null 2>&1 || { fail "S199 — jq is needed by the fake gh"; test_done; }
 sandbox_create
 trap sandbox_destroy EXIT
-rf_gate_setup
-rf_out=""
-rf_status=0 # set by rf_gate
 # shellcheck source-path=SCRIPTDIR/..
 # shellcheck source=../compliance-evidence-fixture.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../compliance-evidence-fixture.sh"
@@ -68,53 +39,6 @@ rev_sp_model='<!-- model-record: stage=Review model=" Sonnet" effort="low" -->'
 impl_sp='<!-- model-record: stage=Implementation note=" first --> value starts with a space" model="Sonnet" effort="high" -->'
 impl_good="$(marker Implementation Sonnet high)"
 rev_good_low="$(marker Review Sonnet low)"
-
-expect_lower() { # label
-  [ "$rf_status" -eq 0 ] || fail "S199 gate/$1 — exit $rf_status"
-  [ "$(grep -i 'floor-basis' <<<"$rf_out" | grep -vi 'malformed' | grep -c .)" -eq 1 ] \
-    || fail "S199 gate/$1 — the well-formed Review marker in the other comment (no floor-basis) must be found with its own values: the floor-basis finding, got: '$rf_out'"
-  ! grep -q 'no record found' <<<"$rf_out" \
-    || fail "S199 gate/$1 — a well-formed marker was lost ('no record found'), got: '$rf_out'"
-}
-gate_case() { # label, comment bodies...
-  local label="$1"
-  shift
-  rf_data "$@"
-  rf_gate
-  expect_lower "$label"
-}
-
-# --- the unclosed quote is in comment N, the well-formed marker in N+1 ------
-for pair in "sp|$rev_sp" "arrow|$rev_ar" "sp-plain|$rev_sp_plain" "letter|$rev_ab" "model-space|$rev_sp_model"; do
-  v="${pair%%|*}"; r="${pair#*|}"
-  gate_case "unclosed Review, then Review ($v)" "$impl_good" "$UNC_REVIEW" "$r"
-  gate_case "unclosed Implementation, then Review ($v)" "$impl_good" "$UNC_IMPL" "$r"
-  gate_case "unclosed Test, then Review ($v)" "$impl_good" "$UNC_TEST" "$r"
-  gate_case "unclosed text with prose around it ($v)" "$impl_good" "Draft, do not use: $UNC_REVIEW and so on" "$r"
-done
-# N+1 is the IMPLEMENTATION marker (the Review marker came first)
-gate_case "unclosed, then Implementation (space)" "$rev_good_low" "$UNC_REVIEW" "$impl_sp"
-gate_case "unclosed Implementation, then Implementation (space)" "$rev_good_low" "$UNC_IMPL" "$impl_sp"
-# several unclosed comments in a row
-gate_case "three unclosed comments in a row, then a good Review" "$impl_good" "$UNC_REVIEW" "$UNC_IMPL" "$UNC_TEST" "$rev_sp"
-gate_case "unclosed comments on both sides of the good ones" "$UNC_IMPL" "$impl_good" "$UNC_REVIEW" "$rev_ar"
-# the unclosed quote is in the LAST comment: it must neither win nor hide
-gate_case "unclosed Review in the last comment" "$impl_good" "$rev_sp" "$UNC_REVIEW"
-if grep -q 'no record found for stage Review' <<<"$rf_out"; then
-  fail "S199 gate/last comment — the good Review marker was lost: $rf_out"
-fi
-gate_case "unclosed Implementation in the last comment" "$impl_good" "$rev_sp" "$UNC_IMPL"
-# an unclosed quote inside a code fence of comment N (the gate reads fences as text)
-gate_case "unclosed quote inside a code fence" "$impl_good" "Example:${NL}\`\`\`${NL}$UNC_REVIEW${NL}\`\`\`" "$rev_sp"
-# the open quote at the very end of the comment, closing text at the start of the next
-gate_case "N ends with an open value, N+1 starts with the closing text" "$impl_good" "$UNC_REVIEW" "$rev_sp"
-
-# the malformed marker itself: visible or ignored, never a verdict of its own.
-# Here it would be the latest Review marker and (if read) carry the floor-basis
-# that the earlier well-formed round lacks:
-rf_data "$impl_good" "$rev_good_low" '<!-- model-record: stage=Review floor-basis="ok" model="Sonnet effort=high'
-rf_gate
-[ "$(grep -i 'floor-basis' <<<"$rf_out" | grep -vi 'malformed' | grep -c .)" -eq 1 ] || fail "S199 gate — a malformed LATER marker must not win over the earlier well-formed round, got: '$rf_out'"
 
 # ---------------------------------------------------------------------------
 # compliance-evidence.sh gate 2
