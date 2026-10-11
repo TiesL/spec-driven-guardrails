@@ -22,7 +22,7 @@ set -uo pipefail
 
 root="$TEST_REPO_ROOT"
 req='genuinely different|different model (from|than)|different model is required|must (be|use|run on) a different model|requires? (a )?different model|same-model-exception'
-allow='#392|legacy|history|historical|reversed|superseded|replaced|no longer|retired'
+allow='#392|legacy|history|historical|reversed|superseded|replaced|no longer|retired|^[[:space:]]*(-[[:space:]]*)?falsifiers:'
 
 # unit scan: a unit is a paragraph, a list item (a line starting with "- " or
 # "* ", plus its wrapped continuation lines) or a table row; prints
@@ -45,6 +45,17 @@ scan() {
     END { flush() }
   ' "$1"
 }
+
+# Paired controls cross the same document scan Seam, including a live rule
+# outside any scenario section. An unrelated falsifier cannot excuse it.
+control="$(mktemp)"
+trap 'rm -f "$control"' EXIT
+printf '%s\n' 'Falsifiers: compare effort; require a different model' > "$control"
+[ -z "$(scan "$control")" ] || fail "S192 — negative falsifier is not a live requirement"
+printf '%s\n' '# Review policy' 'Review must use a different model.' '' 'Falsifiers: compare effort; require a different model' > "$control"
+assert_contains "S192 — live policy remains detectable outside scenarios" 'Review must use a different model.' "$(scan "$control")"
+printf '%s\n' '## S999' '- Review must use a different model.' > "$control"
+assert_contains "S192 — scenario live policy remains detectable" 'Review must use a different model.' "$(scan "$control")"
 
 files="$(find "$root" -name '*.md' \
   -not -path '*/.git/*' -not -path '*/wip/*' -not -path '*/test/*' \

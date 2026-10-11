@@ -3087,8 +3087,14 @@ something new is being added.
   under both locales, rather than only equality. The override success control
   is a whole-line single-session record with bytes in decided-by/reason;
   it reports `waived the role-play findings` and no `role-played:` findings.
-  A prose-prefixed override or an extra `note` attribute is a near-miss and
-  waives nothing. All three byte variants run through these controls. Preserve
+  A prose-prefixed override is a near-miss and waives nothing. A whole-line
+  override with an additional quoted `note` attribute whose value contains
+  only allowed bytes remains valid and waives the role-play findings. Pair
+  that success control with a `note` value containing a forbidden `"`, `<`,
+  `>` or control byte: the record is a near-miss and waives nothing. Assert
+  acceptance/waiver for the arbitrary attribute and diagnostics/no waiver for
+  the forbidden-value controls under both locales; equality alone is insufficient.
+  All three byte variants run through these controls. Preserve
   closing-keyword discovery after bytes, byte-in-value arms, lib controls and
   caller decoding coverage. The collector retains its legacy inline contract
   (one record per body source, each after the
@@ -3119,8 +3125,16 @@ something new is being added.
   only reads past the start of an anchored match once a match is found)
 - Round 3 of PR #443 (A32c; findings c-locale-grep-callers round 2,
   lib-normalize-locale round 2, normalize-sed1-untested, collector-cell-locale):
-  the four scripts export `LC_ALL=C` as their first statement, so these arms
-  go red when that export is removed from their script. Gate: a PR description
+  the four scripts export `LC_ALL=C` as their first statement. The historical
+  pre-v2 gate and collector arms went red when that export was removed.
+  For the #427 v2 gate, removing only the export is an equivalent behavioral
+  mutant: raw keyword greps and sort retain independent `LC_ALL=C` prefixes,
+  so S230 stays green (S235 separately guards the export structurally).
+  The current gate locale falsifier removes both the export and only the
+  first raw closing-keyword grep's `LC_ALL=C` prefix, preserving the numeric
+  grep and sort prefixes. Invalid/truncated bytes before `Closes #239` in
+  the title or description must then break the UTF-8/C output equality on
+  native macOS; baseline and restored runs must pass. Gate: a PR description
   (and a PR title) of `x<bytes>y Closes #239` finds #239 (Discovery recorded
   only there) and prints nothing, as under `LC_ALL=C` (the raw-title and
   description closing-keyword grep, line 161); a Review record with a legacy effort
@@ -3137,12 +3151,12 @@ something new is being added.
   `claude<bytes>-opus`, `x<bytes>`) is identical in both locales with an empty
   stderr (BSD `sed` aborts on input whose anchored match fails before the
   byte; QA's earlier "equivalent" call for the first `sed` was wrong). Red
-  today on a macOS host: the gate arms and the collector arms; the `normalize_model` arm is green on arrival and kills
+  at the historical pre-v2 checkpoint on a macOS host: the gate arms and the collector arms; the `normalize_model` arm is green on arrival and kills
   the scratch mutant that drops the first `sed` prefix (via `MR_LIB`). Not
   behaviourally reachable, so guarded by S235 alone: the staleness script's
   and `review-rounds.sh`'s export (their remaining unprefixed commands read
   numbers and label names); removing either export leaves S230 and S234 green
-  and S235 red. Mutations killed (scratch tree with the A32c fix applied): gate
+  and S235 red. Historical pre-v2 mutations killed (scratch tree with the A32c fix applied): gate
   export removed (4 failing assertions), collector export removed (12),
   first `sed` prefix removed (16); (the `effort_rank` prefix mutant, 4, is
   retired with the function)

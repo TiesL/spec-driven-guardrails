@@ -30,10 +30,25 @@ v2_pr 'Fix #239' "$(mr Review)" "$late"; v2_times reviews-246.json "$early" "$go
 for pair in issue-description description-comments comments-reviews; do
  v2_base; v2_comments reviews-246.json
  case "$pair" in
- issue-description) v2_times comments-239.json "$late" "$good"; v2_pr '' "$(mr Review)" "$late";;
+ issue-description) v2_times comments-239.json "$late" "$good"; v2_pr 'Fix #239' "$(mr Review)" "$late";;
  description-comments) v2_pr '' "$good" "$late"; v2_times comments-246.json "$late" "$(mr Review)";;
  comments-reviews) v2_times comments-246.json "$late" "$good"; v2_times reviews-246.json "$late" "$(mr Review)";; esac
+ # Record actual endpoint calls without substituting the response adapter.
+ tracebin="$SANDBOX/traced-gh"; mkdir -p "$tracebin"
+ export V2_GH_TRACE="$SANDBOX/gh-trace"
+ cat > "$tracebin/gh" <<GHEOF
+#!/bin/bash
+printf '%s\\n' "\$*" >> "\$V2_GH_TRACE"
+exec "$v2_bin/gh" "\$@"
+GHEOF
+ chmod +x "$tracebin/gh"
+ : > "$V2_GH_TRACE"
+ v2_path="$tracebin:$PATH"
  v2_run; absent 'has no floor-basis'
+ if [ "$pair" = issue-description ]; then
+   assert_contains 'S259 — competing issue source was fetched' 'repos/{owner}/{repo}/issues/239/comments' "$(cat "$V2_GH_TRACE")"
+ fi
+ unset v2_path
 done
 v2_base; v2_times reviews-246.json "$late" "$(mr Review)"$'\n'"$good"; v2_run; count 'has no floor-basis' 1
 v2_times reviews-246.json "$late" "$good"$'\n'"$(mr Review)"; v2_run; absent 'has no floor-basis'

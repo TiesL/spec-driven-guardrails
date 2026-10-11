@@ -46,10 +46,7 @@ entry_line="$(awk -v h="## $id" '
 assert_contains "S182 — $id reaches a session through ORCHESTRATOR.md" "session-context: skills/role-contracts/ORCHESTRATOR.md" "$entry_line"
 assert_contains "S182 — $id is also checked by the model-record gate" "gate: skills/pre-merge-review/model-record-gate.sh" "$entry_line"
 
-# Adding the field is not a meaning change: no version bump on this entry.
-entry="$(awk -v h="## $id" '$0 == h { on = 1; next } on && /^## / { exit } on { print }' "$changes")"
-case "$entry" in
-  *"**Meaning version:**"*) fail "S182 — $id carries a Meaning version; #371 ships in the same release and must not bump it" ;;
-esac
+# #427 AC10 intentionally advances this entry to Meaning version 2.
+# S265 independently checks the required version and its semantics.
 
 test_done
