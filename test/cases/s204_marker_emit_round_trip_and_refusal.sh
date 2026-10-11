@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-# S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field (and today's parser reads too), or prints nothing (E1 and E2)
+# S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field, or prints nothing (E1 and E2)
 # Covers: F40
 #
 # Issue #402 (A26), reduced to the model by #424 (no effort), rewritten on E1 and
 # E2 by issue #425 (slice V4 of #411; A33 as amended by A33a, the QA critique D9).
 # Seam: the wrapper skills/pre-merge-review/model-record-emit.sh (stdout, stderr,
 # exit status); the lib's marker_emit agrees with it; the NEW reader
-# (rec_scan, rec_field) is the judge of the round trip, with today's parser
-# (marker_find, marker_attr) as the second judge (the issue: everything the
-# emitter prints is also read by today's parser, so the old callers stay
-# green); the gate is the end-to-end judge; the wrapper is run through a
+# (rec_scan, rec_field) is the judge of the round trip; the gate is the end-to-end judge; the wrapper is run through a
 # symlinked skills directory (an adopted project) and without the lib.
 #
 # E1 (the round trip) pins LITERAL lines: every accepted input has its expected
@@ -45,7 +42,7 @@
 # prompt still gets the literal line.
 #
 # Retired from the old S204: the old-parser-only round-trip assertions
-# (marker_find/marker_attr as the sole judge), and the arms that ACCEPTED `>`,
+# (former stage lookup/former attribute tokenizer as the sole judge), and the arms that ACCEPTED `>`,
 # `<`, `-->` or `<!--` in a floor-basis (they are refusals now: E2). Kept: the
 # symlinked skills directory, the missing lib (exit 3), the gate as judge, the
 # refusal matrix for flags, stage, model, blank and over-long values.
@@ -137,22 +134,8 @@ round_trip() {
       rh_expect_field "S204 round-trip/$label (no floor-basis)" "$mode" "$out" floor-basis ""
     fi
     rh_expect_field "S204 round-trip/$label (no effort)" "$mode" "$out" effort ""
-    # today's parser reads it too (the old callers stay green until they move)
-    got="$(marker_find "$stage" "$out$SEP")"
-    [ "$got" = "$out" ] || fail "S204 round-trip/$label [$mode] — today's marker_find does not return the emitted line: '$got'"
-    got="$(marker_scan "$out$SEP")"
-    case "$got" in
-      "ok"$'\t'"$stage"$'\t'*) : ;;
-      *) fail "S204 round-trip/$label [$mode] — today's marker_scan must say ok for the stage, got: '$got'" ;;
-    esac
-    [ "$(marker_attr "$out" model)" = "$model" ] || fail "S204 round-trip/$label [$mode] — today's marker_attr read model as '$(marker_attr "$out" model)'"
-    if [ "$have" -eq 1 ]; then
-      [ "$(marker_attr "$out" floor-basis)" = "$fb" ] || fail "S204 round-trip/$label [$mode] — today's marker_attr read floor-basis as '$(marker_attr "$out" floor-basis)'"
-    fi
   done
 }
-# marker_find, marker_scan and marker_attr (today's parser) are still in the lib
-# that rh_init sourced.
 
 models=("claude-opus-5-5" "claude-haiku-4-5-20251001" "us.anthropic.claude-opus-4:0" "anthropic/claude-3.5@v1+x" "opus" "gpt-4o" "a" "-x")
 long_model="$(printf 'a%.0s' $(seq 1 200))"
@@ -364,6 +347,6 @@ mkdir -p "$alone"
 cp "$emit" "$alone/model-record-emit.sh"
 run C "$alone/model-record-emit.sh" --stage Planning --model claude-opus-5-5
 [ "$rc" -eq 3 ] && [ -z "$out" ] || fail "S204 — without lib/model-record.sh: expected exit 3 and empty stdout, got rc=$rc out='$out'"
-grep -q 'model-record' <<<"$err" || fail "S204 — the missing-lib message must name lib/model-record.sh, got: '$err'"
+test_source_match -q 'model-record' <<<"$err" || fail "S204 — the missing-lib message must name lib/model-record.sh, got: '$err'"
 
 test_done

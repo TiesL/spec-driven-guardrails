@@ -475,7 +475,7 @@ ${pre}$(mk Review claude-sonnet-5 medium "$FB")" \
     "${pre}$(mk Discovery claude-sonnet-5 low)"
   c_full="$(ce_rows_full C)"
   c_stat="$(printf '%s\n' "$c_full" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/' | paste -sd/ -)"
-  [ "$c_stat" = "evidenced/evidenced/evidenced" ] || fail "S230 collector-before/$name — baseline under LC_ALL=C: rows 1-3 should be evidenced/evidenced/evidenced, got $c_stat (a broken fixture)"
+  [ "$c_stat" = "indeterminate/indeterminate/evidenced" ] || fail "S230 collector-before/$name — strict inline record baseline under LC_ALL=C: rows 1-3 should be indeterminate/indeterminate/evidenced, got $c_stat (a broken fixture)"
   u_full="$(ce_rows_full utf8)"
   [ "$u_full" = "$c_full" ] || fail "S230 collector-before/$name — rows 1-3 with the bytes before each marker differ under LANG=$MD_UTF8 (LC_ALL unset) from LC_ALL=C (a tr or grep ran without the C locale): $(printf '%s' "$u_full" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/' | paste -sd/ -) vs $c_stat"
 

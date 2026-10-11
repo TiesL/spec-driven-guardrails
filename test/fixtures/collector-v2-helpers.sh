@@ -3,7 +3,7 @@
 sandbox_create
 trap sandbox_destroy EXIT
 . "$TEST_REPO_ROOT/test/compliance-evidence-fixture.sh"
-export CV_DATA="$SANDBOX/data" CV_LOG="$SANDBOX/calls" CV_UNEXPECTED="$SANDBOX/unexpected"
+export CV_DATA="$SANDBOX/data" CV_LOG="$SANDBOX/calls" CV_UNEXPECTED="$SANDBOX/unexpected" CV_FAILURE_LOG="$SANDBOX/failures"
 mkdir -p "$CV_DATA" "$SANDBOX/bin"
 cat > "$SANDBOX/bin/gh" <<'GH'
 #!/usr/bin/env bash
@@ -19,10 +19,19 @@ case "$endpoint" in
  repos/\{owner\}/\{repo\}/commits/*/check-runs) file=checks;;
  *) printf '%s\n' "$endpoint" >> "$CV_UNEXPECTED"; exit 1;;
 esac
+if [ "$file" = "${CV_FAIL_FILE:-}" ]; then
+ printf '%s\n' "$file" >> "$CV_FAILURE_LOG"
+ exit 1
+fi
 while [ "$#" -gt 0 ]; do
  case "$1" in --paginate) shift;; --jq) query="$2"; shift 2;; *) printf '%s\n' "$*" >> "$CV_UNEXPECTED"; exit 1;; esac
 done
-exec jq -r "$query" "$CV_DATA/$file.json"
+output="$(jq -r "$query" "$CV_DATA/$file.json")" || exit 1
+# JSON cannot hold invalid UTF-8. These named hostile-test placeholders are
+# restored after real jq, as in the retained S230 byte-transport fixture.
+output="${output//@CV_FF@/$'\377'}"
+output="${output//@CV_TR@/$'\302'}"
+printf '%s\n' "$output"
 GH
 chmod +x "$SANDBOX/bin/gh"
 cv_early=2026-10-01T10:00:00Z
@@ -37,7 +46,8 @@ cv_rows() {
  jq -n '$ARGS.positional as $a | [range(0;($a|length);2) as $i | {created_at:$a[$i],submitted_at:$a[$i],body:$a[$i+1]}]' --args "$@" > "$CV_DATA/$file.json"
 }
 cv_base() {
- : > "$CV_LOG"; : > "$CV_UNEXPECTED"
+ export CV_FAIL_FILE=""
+ : > "$CV_LOG"; : > "$CV_UNEXPECTED"; : > "$CV_FAILURE_LOG"
  cv_pr "$(cv_mark Discovery)
 $(cv_mark Planning)
 $(cv_mark Test)
@@ -46,7 +56,7 @@ $(cv_mark Implementation)"
  printf '{"check_runs":[]}\n' > "$CV_DATA/checks.json"
 }
 cv_run() {
- : > "$CV_LOG"; : > "$CV_UNEXPECTED"
+ : > "$CV_LOG"; : > "$CV_UNEXPECTED"; : > "$CV_FAILURE_LOG"
  cv_out="$(PATH="$SANDBOX/bin:$PATH" /bin/bash "${CV_SCRIPT:-$TEST_REPO_ROOT/compliance-evidence.sh}" "${1:-279}" 2> "$SANDBOX/stderr")"; cv_rc=$?
  [ "$cv_rc" -eq 0 ] || fail "collector exit $cv_rc: $(cat "$SANDBOX/stderr")"
  assert_table_shape CV "$cv_out"

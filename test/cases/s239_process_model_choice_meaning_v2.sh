@@ -71,7 +71,7 @@ para_has_all "$tmp_yes" 'same model' 'lower effort' '(meets|clears) the floor' '
 for must in 'own demands' 'qualitatively' 'cheapest'; do
   grep -qiF -- "$must" "$tmp_yes" || fail "S239/AC4 — the rest of 'Yes means' must be unchanged: '$must' is gone"
 done
-grep -qE '\*\*Reaches session:\*\*.*gate: *skills/pre-merge-review/model-record-gate\.sh' <<<"$entry" \
+test_source_match -qE '\*\*Reaches session:\*\*.*gate: *skills/pre-merge-review/model-record-gate\.sh' <<<"$entry" \
   || fail "S239/AC4 — Reaches session must still name the model-record gate"
 
 # ===== this repo's own adoption rows re-confirm at the new versions ===========

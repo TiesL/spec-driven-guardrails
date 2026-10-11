@@ -138,7 +138,7 @@ run_golden_cases() {
   local g4_in g4_out
   g4_in=$'```\nsome demo content\n```\n<!-- model-record: stage=Review model="x" effort="low" -->'
   g4_out="$(PATH="$shim:$PATH" live_text "$g4_in")"
-  grep -q 'model-record' <<<"$g4_out" || fail "S153 G4 ($label) — a real marker after a closed fence must stay live under $label"
+  test_source_match -q 'model-record' <<<"$g4_out" || fail "S153 G4 ($label) — a real marker after a closed fence must stay live under $label"
 
   # G5 — the `length(m) >= 3` guard (issue #319, review round 1): a line
   # that starts with a 1- or 2-backtick inline-code run is not a fence
@@ -149,7 +149,7 @@ run_golden_cases() {
   local g5_in g5_out
   g5_in=$'`x` is inline code, not a fence\n<!-- model-record: stage=Review model="x" effort="low" -->'
   g5_out="$(PATH="$shim:$PATH" live_text "$g5_in")"
-  grep -q 'model-record' <<<"$g5_out" || fail "S153 G5 ($label) — a 1-backtick run starting a line must not open a fence and swallow a later marker under $label"
+  test_source_match -q 'model-record' <<<"$g5_out" || fail "S153 G5 ($label) — a 1-backtick run starting a line must not open a fence and swallow a later marker under $label"
 
   # G6 — a real fence-syntax line of one character (backtick) appearing
   # INSIDE an already-open fence of the OTHER character (tilde): must
@@ -177,7 +177,7 @@ run_golden_cases() {
   local g8_in g8_out
   g8_in=$'``` not `a fence\n<!-- model-record: stage=Test model="x" effort="low" -->'
   g8_out="$(PATH="$shim:$PATH" live_text "$g8_in")"
-  grep -q 'model-record' <<<"$g8_out" || fail "S153 G8 ($label) — a backtick in a backtick fence's info string must not open a fence; got $(printf '%q' "$g8_out")"
+  test_source_match -q 'model-record' <<<"$g8_out" || fail "S153 G8 ($label) — a backtick in a backtick fence's info string must not open a fence; got $(printf '%q' "$g8_out")"
 
   # G9 — CRLF and a lone CR are line endings (#423, AC5), through this awk's
   # own CR handling: the CRLF fence closes, the lone CR splits two lines.

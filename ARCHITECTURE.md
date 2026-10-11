@@ -571,15 +571,15 @@ the next free numbers after A23.
   effort records `effort="unknown"`. A short alias and its full id normalize
   as different models: no effort comparison, gate 2 reports
   `unverifiable-from-artifacts`, never a pass.
-- **`lib/model-record.sh`** (sourced, bash 3.2), used by the gate, the
-  collector and `role-label-staleness.sh`:
+- **Historical shared module** (sourced, bash 3.2), then used by the gate,
+  collector and `role-label-staleness.sh` (the tokenizer retired in V8, #429):
   `normalize_model` (moved unchanged, #268; the duplicate copy is gone),
-  `marker_attr <marker> <name>`
+  the former generic quoted-attribute tokenizer
   (the quoted value; the marker is tokenized, so text inside another value
   such as `beats model=` or a lookalike name such as `reviewer-model` is
-  never read as an attribute), `marker_find <Stage> <text>` (every
+  never read as an attribute), the former per-stage lookup (every
   well-formed marker of a stage, the one marker grammar: quote-aware end at
-  the closing `-->`) and `marker_scan <text>` (every marker, well-formed or
+  the closing `-->`) and the former marker classifier (every marker, well-formed or
   malformed, with its stage token). All three scripts, and gate 1 of the
   collector, read markers only through these. The parser's awk programs run
   under `LC_ALL=C` (every delimiter is ASCII; under a UTF-8 locale macOS awk
@@ -660,7 +660,8 @@ the next free numbers after A23.
   which also refused `-->` and `<!--` there (GitHub may then show the text
   after a `-->` in the rendered comment; the marker still reads back).
 - **Safety: the round trip.** Before printing, `marker_emit` parses its own
-  line with `marker_find`, `marker_scan` and `marker_attr`; unless the line
+  line with the then-current stage lookup, classification scan and attribute
+  tokenizer (retired by V8, #429); unless the line
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
 - **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
@@ -848,12 +849,12 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Meaning versions:** `quality-review-before-merge` goes to 4 and `process-model-choice` to 2, once, in this slice.
 - **Violated when:** a script, skill or the orchestrator tells a role to pass `--effort`, or a finding or verdict reads an `effort` attribute.
 
-### A31 — The record grammar v2 reader, beside today's parser (#425, slice V4 of #411; A31a, A32a)
-- **Why:** today's walker (`marker_find`, `marker_scan`, `marker_attr`) tokenizes quotes, `-->` and `<!--` across lines, which is where the #405 defect classes (a `>` or odd quote in a value, an open quote, a split record) came from. A record is now one whole line from a closed value set, so there is nothing to tokenize and nothing that can swallow a later record.
+### A31 — The record grammar v2 reader, initially beside the former parser (#425, slice V4 of #411; A31a, A32a)
+- **Why (at V4):** the former walker (`former stage lookup`, `former classification scan`, `former attribute tokenizer`) tokenizes quotes, `-->` and `<!--` across lines, which is where the #405 defect classes (a `>` or odd quote in a value, an open quote, a split record) came from. A record is now one whole line from a closed value set, so there is nothing to tokenize and nothing that can swallow a later record.
 - **Grammar:** `MR_STRICT_ERE`, `MR_LOOSE_ERE`, `PO_STRICT_ERE`, `PO_LOOSE_ERE` in `lib/model-record.sh` are the whole grammar for `model-record` and `pipeline-override`. The record starts in column 0; a value byte is anything but `"`, `<`, `>` and a control byte (0x80-0xFF are values); the loose pattern needs the colon. Matching runs on bytes.
 - **Reader:** `rec_scan_bundle <kind> <bundle>` and `rec_scan <kind> <body>` print one row per candidate line, `<body-index> TAB <ok|near-miss|quoted> TAB <stage-or-?> TAB <line-or-reason>`; indices count from 1 and no field is empty. One awk pass per bundle, the one program in `lib/markdown.sh` (mode `rec`), so a record is quoted where `live_text` would blank it (a fence, state reset at every U+001E; a blockquote; a code span) plus indented code (an indent of 4 or a tab), which only rec mode quotes: `live_text` keeps those lines. Every row ends in an ASCII byte (the text of a near-miss or quoted row is wrapped in quotes, so `read` never splits a UTF-8 sequence); consumers may rely on this. The strict pattern then classifies each live candidate in bash. Text before the opener, or 1-3 leading spaces, is a near-miss.
 - **Fields:** `rec_field <line> <name>` is a left-to-right walk, one `<blanks>name="value"` per step, first occurrence wins, so a value ending in ` floor-basis=` is never an attribute.
 - **Failure:** grep exit 1 is "no hit"; grep or awk exit 2 or more, or `[[ =~ ]]` result 2, prints nothing on stdout, one line on stderr and returns non-zero. Every external command carries `LC_ALL=C` (S235) and grep is `grep -a`.
-- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and through today's parser, so old callers stay green. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names (`--model --floor-basis`); a value that merely starts with `--` is allowed.
-- **Not in this slice:** no caller moves yet (the gate, collector and staleness script keep today's parser until V6 to V8); the old functions are deleted with the last caller.
+- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names (`--model --floor-basis`); a value that merely starts with `--` is allowed.
+- **Not in this slice:** no caller moves yet (the gate, collector and staleness script kept the former parser until V6 to V8); the old functions are deleted with the last caller.
 - **Violated when:** a script outside `lib/` carries its own record pattern; a near-miss is read as a record; a reader failure becomes "no record".

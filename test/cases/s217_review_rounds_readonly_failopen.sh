@@ -150,13 +150,13 @@ fi
 if [ -z "$libcode" ]; then
   fail "S217/one-owner — lib/review-rounds.sh is missing"
 else
-  grep -qE '(^|[^A-Za-z_])rec_scan[[:space:]]+model-record' <<<"$libcode" || fail "S217/one-owner — lib/review-rounds.sh does not read records through rec_scan model-record (A37)"
-  if grep -qE '(^|[^A-Za-z_])marker_[a-z_]+|model-record:|stage=[A-Z(]|pipeline-override' <<<"$libcode"; then
-    fail "S217/one-owner — lib/review-rounds.sh carries a record pattern of its own or calls the old marker reader: $(grep -nE 'marker_[a-z_]+|model-record:|stage=[A-Z(]' <<<"$libcode" | head -2)"
+  test_source_match -qE '(^|[^A-Za-z_])rec_scan[[:space:]]+model-record' <<<"$libcode" || fail "S217/one-owner — lib/review-rounds.sh does not read records through rec_scan model-record (A37)"
+  if test_source_match -qE '(^|[^A-Za-z_])marker_[a-z_]+|model-record:|stage=[A-Z(]|pipeline-override' <<<"$libcode"; then
+    fail "S217/one-owner — lib/review-rounds.sh carries a record pattern of its own or calls the old marker reader: $(test_source_match -nE 'marker_[a-z_]+|model-record:|stage=[A-Z(]' <<<"$libcode" | head -2)"
   fi
 fi
-if grep -qE 'model-record:|stage=[A-Z(]' <<<"$code"; then
-  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=): $(grep -nE 'model-record:|stage=[A-Z(]' <<<"$code" | head -2)"
+if test_source_match -qE 'model-record:|stage=[A-Z(]' <<<"$code"; then
+  fail "S217/one-owner — the script carries marker text of its own (model-record:, stage=): $(test_source_match -nE 'model-record:|stage=[A-Z(]' <<<"$code" | head -2)"
 fi
 # the only HTML-comment text allowed is the legacy done marker (not a model-record marker)
 other="$(grep -E '<!--' <<<"$code" | grep -vE 'pre-merge-review:done' || true)"

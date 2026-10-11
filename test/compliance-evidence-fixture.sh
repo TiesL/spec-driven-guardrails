@@ -32,11 +32,11 @@
 # separate gh call — so a fixture's PR title (or body) must itself carry
 # the closing keyword text for #265/#266 discovery to fire; there is no
 # `ISSUE\t<n>` tag to emit directly any more.
-CALL_A_ARGS='api repos/{owner}/{repo}/pulls/279 --jq "HEAD\t"+(.head.sha//""),"STATE\t"+(if .merged then "MERGED" elif .state=="open" then "OPEN" else "CLOSED" end),"MERGEDAT\t"+(.merged_at//""),"MERGEDBY\t"+((.merged_by.login)//""),"TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")),"TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_A_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/279/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_A_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/279/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_C265_ARGS='api repos/{owner}/{repo}/issues/265/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_C266_ARGS='api repos/{owner}/{repo}/issues/266/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+CALL_A_ARGS='api repos/{owner}/{repo}/pulls/279 --jq "HEAD\t"+(.head.sha//""),"STATE\t"+(if .merged then "MERGED" elif .state=="open" then "OPEN" else "CLOSED" end),"MERGEDAT\t"+(.merged_at//""),"MERGEDBY\t"+((.merged_by.login)//""),"TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"\n")|gsub("\n";"\u0001")),"TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
+CALL_A_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/279/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
+CALL_A_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/279/reviews --paginate --jq .[] | "TEXT\t"+(.submitted_at//"1970-01-01T00:00:00Z")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
+CALL_C265_ARGS='api repos/{owner}/{repo}/issues/265/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
+CALL_C266_ARGS='api repos/{owner}/{repo}/issues/266/comments --paginate --jq .[] | "TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
 
 # Call B's endpoint is commit-scoped, not PR-scoped the way `gh pr
 # checks <pr>` was — a structural difference from every other call
@@ -79,6 +79,9 @@ run_build_fake_gh() {
   local sha="${1:-$DEFAULT_HEAD_SHA}"
   local body
   body="$(cat)"
+  # Existing TSV fixtures model equal timestamps explicitly; JSON v2 cases
+  # exercise created_at/submitted_at chronology independently.
+  body="${body//TEXT\\t/TEXT\\t1970-01-01T00:00:00Z\\t}"
   body="${body//__CALL_A__/$pattern_a}"
   body="${body//__CALL_A_COMMENTS__/$pattern_a_comments}"
   body="${body//__CALL_A_REVIEWS__/$pattern_a_reviews}"
@@ -126,9 +129,9 @@ assert_table_shape() {
   for i in 0 1 2 3 4 5; do
     local row="${lines[$((i + 2))]}"
     local gate status evidence
-    gate="$(printf '%s' "$row" | sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\1/')"
-    status="$(printf '%s' "$row" | sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\2/')"
-    evidence="$(printf '%s' "$row" | sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\3/')"
+    gate="$(printf '%s' "$row" | LC_ALL=C sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\1/')"
+    status="$(printf '%s' "$row" | LC_ALL=C sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\2/')"
+    evidence="$(printf '%s' "$row" | LC_ALL=C sed -E 's/^\| (.*) \| ([a-z-]+) \| (.*) \|$/\3/')"
 
     case "$i" in
       0 | 1)
@@ -150,7 +153,7 @@ assert_table_shape() {
       *) fail "$label — row $((i + 1)) status '$status' is not one of the four closed-vocabulary values (AC8)" ;;
     esac
     local trimmed
-    trimmed="$(printf '%s' "$evidence" | sed -E 's/^ +| +$//g')"
+    trimmed="$(printf '%s' "$evidence" | LC_ALL=C sed -E 's/^ +| +$//g')"
     if [ -z "$trimmed" ]; then
       fail "$label — row $((i + 1)) (gate '$gate', status '$status') has an empty Evidence cell (AC2)"
     fi
@@ -161,10 +164,10 @@ assert_table_shape() {
 # one specific gate rather than the whole table.
 row_status() {
   local output="$1" n="$2"
-  printf '%s\n' "$output" | sed -n "$((n + 2))p" | sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/'
+  printf '%s\n' "$output" | LC_ALL=C sed -n "$((n + 2))p" | LC_ALL=C sed -E 's/^\| .* \| ([a-z-]+) \| .* \|$/\1/'
 }
 
 row_evidence() {
   local output="$1" n="$2"
-  printf '%s\n' "$output" | sed -n "$((n + 2))p" | sed -E 's/^\| .* \| [a-z-]+ \| (.*) \|$/\1/'
+  printf '%s\n' "$output" | LC_ALL=C sed -n "$((n + 2))p" | LC_ALL=C sed -E 's/^\| .* \| [a-z-]+ \| (.*) \|$/\1/'
 }

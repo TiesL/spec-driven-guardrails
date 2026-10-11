@@ -15,7 +15,8 @@ red() {
  lint
  [ "$lint_rc" -ne 0 ] || fail "lint missed $1 in $2"
  grep -F "one-definition: $1" "$SANDBOX/lint-output" >/dev/null || fail "category $1 not reached"
- grep -F "$2" "$SANDBOX/lint-output" >/dev/null || fail "scratch file not reached $2"
+ witness_count="$(grep -cF "one-definition: $1: $2:" "$SANDBOX/lint-output")"
+ [ "$witness_count" = 1 ] || fail "scratch inspection counter for $2 is $witness_count, expected1"
 }
 green
 for arm in pattern matcher helper effort; do
@@ -35,6 +36,15 @@ Path(sys.argv[1]).unlink()
 PY
  green
 done
+# Helper ownership applies to executable shell files without an extension too.
+printf '%s\n' '#!/bin/bash' 'live_text() { :; }' > "$SANDBOX/tree/scratch-429"
+red helper scratch-429
+python3 - "$SANDBOX/tree/scratch-429" <<'PYEXT'
+from pathlib import Path
+import sys
+Path(sys.argv[1]).unlink()
+PYEXT
+green
 # Actual matcher syntax and helper definitions, rather than token presence.
 for code in "awk '/model-record/' input" "sed '/model-record/d' input" "[[ \$body =~ 'model-record' ]]" 'md_strip_fences() { :; }' 'rr_rounds() { :; }'; do
  printf '%s\n' '#!/bin/bash' "$code" > "$SANDBOX/tree/scratch-429.sh"

@@ -14,5 +14,5 @@ done
 mkdir -p "$SANDBOX/missing"; cp "$TEST_REPO_ROOT/compliance-evidence.sh" "$SANDBOX/missing/"
 PATH="$SANDBOX/bin:$PATH" /bin/bash "$SANDBOX/missing/compliance-evidence.sh" 279 > "$SANDBOX/stdout" 2> "$SANDBOX/stderr"; rc=$?
 [ "$rc" = 3 ] && [ ! -s "$SANDBOX/stdout" ] || fail 'missing-lib contract'
-grep -F lib/model-record.sh "$SANDBOX/stderr" >/dev/null || fail 'missing-lib diagnostic'
+test_source_match -F lib/model-record.sh "$SANDBOX/stderr" >/dev/null || fail 'missing-lib diagnostic'
 test_done

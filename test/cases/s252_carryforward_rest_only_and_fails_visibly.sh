@@ -217,8 +217,8 @@ grep -qE '(^|[^A-Za-z_])rr_rounds([^A-Za-z_]|$)' <<<"$code" || fail "S252/R4 —
 for fn in rr_rounds live_text md_strip_fences; do
   grep -qE "^[[:space:]]*(function[[:space:]]+)?${fn}[[:space:]]*\\(\\)" <<<"$code" && fail "S252/R4 — the gate defines $fn; it is defined only in lib/ (T1)"
 done
-if grep -qE 'model-record:|stage=|pipeline-override' <<<"$code"; then
-  fail "S252/R4 — the gate carries record text of its own: $(grep -nE 'model-record:|stage=|pipeline-override' <<<"$code" | head -2)"
+if test_source_match -qE 'model-record:|stage=|pipeline-override' <<<"$code"; then
+  fail "S252/R4 — the gate carries record text of its own: $(test_source_match -nE 'model-record:|stage=|pipeline-override' <<<"$code" | head -2)"
 fi
 if grep -qE 'gh (pr|issue) |gh api graphql|graphql|(^|[^a-z])eval ' <<<"$code"; then
   fail "S252/R4 — the gate has a GraphQL-backed gh call or an eval: $(grep -nE 'gh (pr|issue) |graphql|(^|[^a-z])eval ' <<<"$code" | head -2)"

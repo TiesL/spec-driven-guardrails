@@ -315,3 +315,31 @@ skill_from_row() {
   printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
     | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'
 }
+
+# Private source/message inspection for tests. Record parsing stays in lib/;
+# tests that inspect literal documentation never pass a record pattern to a
+# shell text matcher (A35a). Arguments follow the small grep subset used here.
+test_source_match() {
+  python3 -c '
+import re,sys
+args=sys.argv[1:]; flags=""
+while args and args[0].startswith("-"):
+ flag=args.pop(0)
+ if flag=="--": break
+ flags+=flag[1:]
+pattern=args.pop(0)
+if "F" not in flags:
+ for name,value in {"space":r"\s","blank":r" \t","alnum":"A-Za-z0-9","alpha":"A-Za-z","digit":"0-9"}.items():
+  pattern=pattern.replace("[[:"+name+":]]", "["+value+"]")
+else: pattern=re.escape(pattern)
+regex=re.compile(pattern,re.I if "i" in flags else 0)
+streams=[open(p,errors="surrogateescape") for p in args] if args else [sys.stdin]
+hit=False
+for stream in streams:
+ for number,line in enumerate(stream,1):
+  if regex.search(line):
+   hit=True
+   if "q" not in flags: print((str(number)+":" if "n" in flags else "")+line.rstrip("\n"))
+sys.exit(0 if hit else 1)
+' "$@"
+}

@@ -56,7 +56,7 @@ if [ -n "$utf8" ]; then
   locales="C $utf8"
 else
   echo "    NOTE: S196 — no UTF-8 locale is installed here (tried en_US.UTF-8 nl_NL.UTF-8 C.UTF-8); the UTF-8 half cannot run, falling back to checking that the parser pins LC_ALL=C for its awk programs" >&2
-  grep -qE 'LC_ALL=C[[:space:]]+awk|LC_ALL=C[[:space:]]+(command[[:space:]]+)?awk|export LC_ALL=C|local LC_ALL=C' "$TEST_REPO_ROOT/lib/model-record.sh" \
+  test_source_match -qE 'LC_ALL=C[[:space:]]+awk|LC_ALL=C[[:space:]]+(command[[:space:]]+)?awk|export LC_ALL=C|local LC_ALL=C' "$TEST_REPO_ROOT/lib/model-record.sh" \
     || fail "S196 — no UTF-8 locale to test with, and lib/model-record.sh does not pin LC_ALL=C for its awk programs"
 fi
 
@@ -118,7 +118,7 @@ $rev_c_low" evidenced
   ce_case "gate2 non-ASCII in quoted value" "$loc" "$impl_c
 $(mk Review claude-sonnet-5 low 'floor-basis="stronger → weaker"')" evidenced
   ce_case "gate2 non-ASCII outside quotes" "$loc" "$impl_c
-<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" evidenced
+<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" indeterminate
   # gate 1: Planning after the placeholder
   export LC_ALL="$loc" LANG="$loc"
   ce "Closes #265" "$PH
@@ -140,7 +140,7 @@ cat > "$fakeawk/awk" <<EOF2
 # fails only the marker parser's programs (they take -v want=...); anything
 # else is the real awk
 case "\$*" in
-  *want=*|*mode=rec*) echo hit >> "\$S196_COUNT"; echo "awk: simulated parser failure" >&2; exit 2 ;;
+  *mode=rec*) echo hit >> "\$S196_COUNT"; echo "awk: simulated parser failure" >&2; exit 2 ;;
 esac
 exec "$real_awk" "\$@"
 EOF2
@@ -153,7 +153,7 @@ rf_out="$(cd "$RF_PLAIN" && PATH="$fakeawk:$RF_BIN:$PATH" "$TEST_REPO_ROOT/skill
 rf_status=$?
 [ -s "$S196_COUNT" ] || fail "S196 — parser failure shim was not invoked"
 if [ "$rf_status" -eq 0 ]; then
-  grep -q '^model-record:' <<<"$rf_out" \
+  test_source_match -q '^model-record:' <<<"$rf_out" \
     || fail "S196 gate — the marker parser's awk failed and the gate printed no model-record: finding and exited 0 (a silent fail-open), got: '$rf_out'"
 fi
 

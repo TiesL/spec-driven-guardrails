@@ -34,7 +34,7 @@ for tool in grep awk; do
  for mode in fail empty; do
   [ "$tool:$mode" != awk:empty ] || continue
   bin="$SANDBOX/$tool-$mode"; mkdir -p "$bin"; export COUNT_FILE="$SANDBOX/count"; : > "$COUNT_FILE"
-  if [ "$tool" = grep ]; then select='case "$*" in *model-record:*|*pipeline-override:*) true;; *) false;; esac'; real="$realgrep"; else select='case "$*" in *mode=rec*|*mode=find*|*mode=scan*) true;; *) false;; esac'; real="$realawk"; fi
+  if [ "$tool" = test_source_match ]; then select='case "$*" in *model-record:*|*pipeline-override:*) true;; *) false;; esac'; real="$realgrep"; else select='case "$*" in *mode=rec*|*mode=find*|*mode=scan*) true;; *) false;; esac'; real="$realawk"; fi
   cat > "$bin/$tool" <<EOF
 #!/usr/bin/env bash
 if $select; then

@@ -2513,33 +2513,13 @@ something new is being added.
   correlated-blind-spots caveat stays; the accepted limit and its revisit
   trigger are S238
 
-### S194 — legacy collector reads free text inside a Review marker
+### S195 — Collector normalized conflict and missing-library contract
 **Covers:** F39
-- Given: collector Review values containing `>`, `<`, `--`, `-->`, `<!--` or
-  a newline, and `>` in another attribute, under the legacy reader.
-- When: `compliance-evidence.sh` runs against its existing fake gh.
-- Then: gate 2 is `evidenced` for the same model and
-  `unverifiable-from-artifacts` for different models; evidence names the live
-  model, not a quoted illustration or absent marker; lookup failure remains
-  `indeterminate`. These collector semantics remain until #429.
-- Retirement #427: remove only the gate arms and gate wording from
-  `test/cases/s194_floor_basis_free_text_is_parsed.sh`; forbidden gate values
-  move to S257/S259, valid `--`/shell-like basis content to S264. Do not remove
-  the shared input builders or collector assertions.
-
-### S195 — the collector shares the anchored extraction, ignores an effort-only difference, and names its lib
-**Covers:** F39
-- Given: markers with a lookalike attribute (`xmodel=`, text ending in
-  ` model=`) before the real `model=`; two closing issues whose Review markers
-  differ only in legacy effort; the collector run without
-  `lib/model-record.sh` (issue #392, review of PR #397, low findings that
-  contradict A25; the effort-only conflict retired by #424)
-- When: `compliance-evidence.sh` runs
-- Then: gate 1 reads the real model (never the lookalike) and treats a marker
-  with no real `model=` as malformed; an effort-only difference between the
-  issues is no conflict (gate 2 `evidenced`, no conflict text), a model
-  conflict still shows both models and no effort; the header's exit-code-3
-  entry and the runtime message name `lib/model-record.sh`
+- Two closing issues agreeing on normalized model but differing in legacy
+  effort give gate 2 evidenced; model disagreement stays indeterminate and
+  names both models. Missing library gives exit 3, with its path in header
+  and stderr. Obsolete tokenizer lookalikes transfer to S188/S246; strict
+  invalid attribute order is named by S271.
 
 ### S196 — the marker parser works under a UTF-8 locale and never fails silently
 **Covers:** F39
@@ -2563,20 +2543,6 @@ something new is being added.
   gate 2 is `indeterminate` (or the run non-zero), never "no findings" or a
   definite verdict
 
-### S197 — legacy collector contains malformed markers and reads the later good one
-**Covers:** F39
-- Given: odd quotes, missing `-->` or nested `<!--` before a well-formed
-  Review in the same or a later comment, stray quote/close suffixes, and a
-  malformed marker after a good one.
-- When: `compliance-evidence.sh` runs against its existing fake gh.
-- Then: gate 2 names the good marker's model, is `evidenced` for the same
-  model, and never derives a verdict from malformed attributes, including a
-  newest malformed marker. This is the legacy collector contract until #429.
-- Retirement #427: remove only gate invocations/assertions and gate wording
-  from `test/cases/s197_malformed_marker_does_not_swallow_the_next.sh`.
-  Gate containment and latest-near-miss behavior move to S257/S259/S266;
-  the gate no longer promises that a newest malformed candidate never wins.
-
 ### S198 — role-label-staleness.sh names forbidden-value v2 near-misses
 **Covers:** F35
 - Given: S152's REST fake-gh seam with issue #400, one `role:architect`
@@ -2594,40 +2560,12 @@ something new is being added.
   valid Review is allowed (S269).
 - This rewrites the old shared-walker assertion intentionally: delimiter
   values are invalid v2 records (A31a), rather than valid Review evidence.
-  Do not retain the old `stale` oracle or test obsolete `marker_scan`.
+  Do not retain the old `stale` oracle or test obsolete `former classification scan`.
 - Falsifier: accepting the old tokenizer's arbitrary quoted delimiters
   makes these invalid-value arms fail. Test file remains
   `test/cases/s198_role_label_staleness_shared_parser.sh`, rewritten by Developer.
 
-### S199 — legacy collector and staleness contain an unclosed quote to its body
-**Covers:** F35, F39
-- Given: unclosed Review/Implementation/Test quotes in comment N, fenced or
-  with prose, repeated or in the last comment; a well-formed marker in another
-  comment whose first quoted value begins with a space, `-->` or a letter.
-- When: `compliance-evidence.sh` and `role-label-staleness.sh` run on their
-  existing fake-gh fixtures.
-- Then: collector gate 2 names the good model (`evidenced` for the same model);
-  the label verdict is stale or indeterminate, never falsely in-sync.
-  Malformed legacy evidence never supplies its own verdict, even when latest.
-  Keep these contracts until #429.
-- Retirement #427: in `test/cases/s199_unclosed_quote_stays_in_its_comment.sh`
-  retire only gate arms/headings/comments. Gate malformed containment and
-  latest behavior are S257/S259/S266; keep collector and staleness arms.
-
-### S200 — a body separator cannot corrupt the legacy collector's next body
-**Covers:** F39
-- Given: actual U+001E inside a comment body or next to an unclosed marker,
-  followed by a well-formed Review whose first quoted value begins with a
-  space or `-->`, under the existing collector transport fixture.
-- When: `compliance-evidence.sh` runs.
-- Then: gate 2 is `evidenced` naming the well-formed Review's model, not the
-  unclosed marker's other model; retain this collector contract until #429.
-- Retirement #427: remove only gate/role-play arms and gate wording from
-  `test/cases/s200_comment_separator_cannot_be_forged.sh`; their body-isolation
-  and one-body-versus-five-bodies inputs move to S266 (guard decision S263).
-  Keep the collector's U+001E ingestion and next-body assertions.
-
-### S202 — the gate names every live unreadable candidate, with legacy collector controls retained
+### S202 — The gate and collector diagnose unreadable candidates
 **Covers:** F27, F38, F40
 - Given: each stage with unquoted, empty or missing model; quoted stage;
   missing, empty quoted or odd quoted legacy effort; unquoted effort;
@@ -2641,13 +2579,13 @@ something new is being added.
   role-play too. Missing or empty/odd QUOTED legacy effort is ignored;
   unquoted effort is a syntax near-miss, not an effort-floor comparison.
   Quoted and non-candidate text have no near-miss diagnostic.
-- Legacy collector controls: retain `ce_case` arms in
+- Collector controls: retain `ce_case` arms in
   `test/cases/s202_gate_reports_unreadable_marker_fields.sh`: well-formed gives
   gates 1/2 `evidenced`; unquoted Planning model gives gate 1 `indeterminate`
   and gate 2 `evidenced`; unquoted Implementation model gives both
-  `indeterminate`. Keep their existing helpers/semantics until #429.
+  `indeterminate`. Strict collector candidates use the same near-miss rules.
 - Test mapping: rewrite only gate fixture/assertion/header portions to
-  S257/S259/S264; do not convert the collector to strict v2 judgments here.
+  S257/S259/S264; collector controls now use the same strict v2 judgments.
 
 ### S203 — the orchestrator hands each role its marker line from the one template
 **Covers:** F40
@@ -2671,7 +2609,7 @@ something new is being added.
   first line is the wrapper's output, never typed, and that a role whose prompt
   has no command runs the wrapper itself and says so
 
-### S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field (and today's parser reads too), or prints nothing (E1 and E2)
+### S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field, or prints nothing (E1 and E2)
 **Covers:** F40
 - Given: `skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model
   <id> [--floor-basis <sentence>]` and `marker_emit <Stage> <model>
@@ -2692,8 +2630,7 @@ something new is being added.
   model-record: stage=<S> model="<M>"[ floor-basis="<F>"] -->` (bare stage, no
   effort attribute, nothing on stderr), which `rec_scan` reads as one ok row
   for the stage holding the line verbatim, `rec_field` returns `model` and
-  `floor-basis` byte for byte (and nothing for effort), and today's
-  `marker_find`, `marker_scan` and `marker_attr` read too; `marker_emit` agrees
+  `floor-basis` byte for byte (and nothing for effort); `marker_emit` agrees
   with the wrapper; a stale `--effort high` still gives the literal line; five
   emitted lines give the gate no finding
 - Then (E2): every refused input prints nothing on stdout, a reason on stderr
@@ -3016,19 +2953,14 @@ something new is being added.
 - Then: each run exits non-zero and its `FAIL:` line names the locale (macOS
   host only; the runner image's `LC_ALL` could otherwise drift to C unnoticed)
 
-### S228 — regression: the marker parser reads a body with an invalid UTF-8 byte inside a marker under a UTF-8 LANG
+### S228 — V2 scanner and fields preserve invalid UTF-8 bytes under a UTF-8 LANG
 **Covers:** F43
-- Given: `lib/model-record.sh`, `LC_ALL` unset, `LANG=en_US.UTF-8`, a marker
-  whose value holds the byte `\377` (issue #422, AC3's precondition)
-- When: `marker_scan` and `marker_find` read it
-- Then: both exit 0, `marker_scan`'s output reports the stage `Test`, and
-  `marker_find`'s output is non-empty and contains the value carrying `\377`
-  (an empty result is red); green today because each awk call carries the
-  `LC_ALL=C` prefix, red on BWK awk (macOS) when the prefix is removed from the
-  `marker_scan` or the `marker_find` call (gawk may not abort, so the macOS leg
-  is where it bites). The case guards `marker_scan` and `marker_find` only;
-  `marker_attr` and `marker_emit` are not guarded, because removing their
-  `LC_ALL=C` does not abort on BWK awk (equivalent mutants)
+- Source lib/model-record.sh in a fresh shell with LC_ALL unset and
+  LANG=en_US.UTF-8; a strict Test value contains byte 377. rec_scan returns
+  an ok Test row, rec_field returns the original byte-bearing model. Empty
+  or failed reads are red. This transfers the old tokenizer byte regression;
+  S230 retains the genuine native fence-awk C-prefix mutation and valid
+  multibyte control, and S247 the scanner tool-failure matrix.
 
 ### S229 — on the macOS CI leg the suite runs the platform identity check in its own environment
 **Covers:** F43
@@ -3345,7 +3277,7 @@ something new is being added.
   done-marker `grep` of `rr_rounds` runs in the ambient locale); the failure
   sweep is green on arrival and guards its mutation. Mutations: the
   `live_text ... || return 1` of `rr_rounds` removed (the sweep); the
-  `marker_scan` failure return removed (the sweep); `LC_ALL=C` removed from the
+  `rec_scan` failure return removed (the sweep); `LC_ALL=C` removed from the
   `tr '\001' '\n'` or from the done-marker `grep` (the byte arm). Not
   asserted: the wording of the warning
 
@@ -3437,8 +3369,8 @@ something new is being added.
 - Amendment #427: preserve the model-only regression and every collector arm.
   Gate controls use syntactically valid quoted legacy effort (or no attribute);
   unquoted effort is a gate syntax near-miss per S257, not an effort comparison.
-  The collector's existing missing/empty/unquoted effort acceptance remains
-  unchanged until #429. Keep this distinction in the shared test header.
+  The collector now treats unquoted effort as the same syntax near-miss;
+  missing/empty quoted effort remains ignored. Inputs remain unchanged.
 
 ### S238 — no text tells anyone to pass --effort or ask the human about an unknown effort; the same-model-lower-effort limit and its revisit trigger are stated; the flag's removal is a debt row
 **Covers:** F39, F40
@@ -3684,7 +3616,7 @@ something new is being added.
   each row has an expected class (ok, near-miss, quoted, text), the stage and
   fields of an ok row, an oracle note, `v030` (what the v0.3.0 pipeline made of
   the line alone) and a label-reason; the oracle for ok `model-record` rows is
-  the v0.3.0 parser (`marker_scan`, `marker_find`, `marker_attr` at 411699d), run
+  the v0.3.0 parser (`former classification scan`, `former stage lookup`, `former attribute tokenizer` at 411699d), run
   once and never regenerated from the new code; every other row is hand-labelled
 - When: the header and rows are checked, then `rec_scan_bundle` (one body per
   row), `rec_scan` (every eighth corpus row and every synthetic row) and
@@ -4051,7 +3983,7 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   read floor-basis from an older record.
 - Test mapping: new `test/cases/s259_gate_latest_candidate.sh`, timestamp
   rewrites in S130/S202. Replaces the retired gate “malformed never wins”
-  assertions in S197/S199; collector/staleness retain their legacy contract.
+  assertions in S197/S199; collector/staleness now use strict candidates (S271/S267).
 
 ### S260 — fetch and reader failures are visible unchecked checks, never false absence
 **Covers:** F27, F38, F40
@@ -4430,6 +4362,26 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   delimiters are near-misses. No shell sentinel may be executed. Pin bounded
   diagnostic line (reader 400-byte cap) and table framing for hostile tabs/pipes.
   NUL in Bash arguments is a stated untestable limit.
+  Transport oracle is distinct from raw grammar: existing codec replaces
+  literal U+0001 with space before encoding LF as U+0001 and decoding it;
+  literal U+001E is removed before trusted bundle separators are added.
+  Newest `model="x<U+0001>y"` becomes strict `model="x y"`: gate 2
+  `unverifiable-from-artifacts` versus Implementation claude-sonnet-5,
+  naming `x y`; newest literal U+001E becomes `xy`, likewise unverifiable.
+  These controls prove neutralization, not forbidden-byte rejection. Older
+  versions followed by newest good Review remain `evidenced`.
+  Assert both collisions preserve actual body count and cannot manufacture
+  a separate candidate/body; inject apparent record text around the sentinel
+  and verify it cannot become a trusted new body. A removed neutralization
+  mutation must fail this body-count/status control.
+  Retain direct reader S243/S248 true C0 coverage, including raw U+0001
+  inside a rec_scan value; it is a near-miss. U+001E is framing at the bundle
+  seam, so only sanitized bodies are passed to that seam. At collector seam
+  other retained control bytes are near-misses; CR/LF/CRLF become line ends
+  and split the record, giving indeterminate. Construct byte values without
+  command substitution trimming trailing LF; assert payload bytes actually
+  reached JSON and decoded scanner input. C1/invalid UTF-8 reader values
+  remain valid data, separate from the emitter's stricter deny-list.
 - Reached failing scanner/tool shim returns nonzero: affected row
   `indeterminate`, never no evidence or model pass; log invocation and positive
   control. Report scan and complete run elapsed times separately; 2 s macOS
@@ -4466,6 +4418,12 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   Restore each addition and prove green before next. Positive allowed
   message/docs examples remain green. Reachability counters prove scratch
   files were inspected; intentionally skipped-file control must fail.
+- Helper ownership is not limited to the .sh suffix: actual extensionless
+  shell shebang file `scratch-429` defining live_text must yield one exact
+  helper category/path diagnostic, nonzero lint status, then restored green.
+  This covers the existing outside-lib definition obligation; first regex
+  pattern arm stays .sh-only outside lib/test per A35a. Definition examples
+  in messages/docs remain allowed; shell source must actually be inspected.
 - Also cover awk/sed/conditional forms and all three duplicate helper names
   with syntax fixtures. Do not replace source syntax with token presence:
   messages/examples are allowed. No assertion of complete static analysis.
@@ -4492,3 +4450,45 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   Update stale historical claims throughout current docs/scenarios/test source;
   repository history is explicitly excluded. Existing regression input
   transfers above must survive removal. New file test/cases/s275_old_reader_removed.sh.
+
+
+### S276 — Unread closing issue cannot certify latest model authority
+**Covers:** F27, F34, F39
+- #429 A37 failure regression. Public collector CLI with actual `Closes #265`
+  title; PR description/comment timestamps 2026-10-01T10:00:00Z; strict
+  Discovery/Planning/Test/Implementation and same-model Review on PR, all
+  model="claude-sonnet-5". Closing issue comments endpoint actually fails
+  nonzero after recording invocation; every other endpoint succeeds.
+  Exit 0, exact S150 table; gates 1 and 2 both `indeterminate`, evidence
+  contains `lookup failed` and states latest/superseding evidence cannot be
+  ruled out. No same-model pass, quoted-only suffix or missing-stage claim:
+  readable strict presence exists, but latest authority is unknown.
+- Witness exactly one issue265 comments fetch and nonzero failure from that
+  endpoint (not a shim that is never called). Remove closing reference with
+  same failing endpoint configured: no issue fetch and both model rows
+  `evidenced`; readable empty issue gives `evidenced`. A reached deliberate
+  unexpected-call control must trip the fixture witness.
+- Readable issue controls use real JSON + production --jq timestamps:
+  Planning and Review missing-model candidates at 11:00:00Z produce both
+  gates `indeterminate`, named stages and `no quoted, non-blank model`.
+  Move only their timestamp to 09:00:00Z: both gates `evidenced` from PR;
+  this proves issue-vs-PR chronology, never unconditional PR precedence.
+  Newer valid issue Review different model yields gate 2
+  `unverifiable-from-artifacts`, with both model names; reverse timestamps
+  gives `evidenced`. Newer valid issue Planning must be cited in gate 1's
+  model summary; older issue Planning must not displace the PR model.
+- Repeat fetch-failure with readable different-model PR Review: gate 2
+  `indeterminate`, because unread issue may carry a newer near-miss;
+  readable empty issue restores `unverifiable-from-artifacts`. Repeat with
+  two closing issues, one readable and one failed; preserve existing
+  normalized-model conflict and PR comments/reviews/reader-failure controls.
+- Gate 3 stays independent of record latest authority: matching current-head
+  done marker on PR remains `evidenced` during issue fetch failure. Absent
+  done marker during failure remains `indeterminate` with existing absence
+  uncertainty text. Preserve S151 inline-done Q6/Q7/Q8 regressions unchanged.
+- Red before production fix must include failure log and reached endpoint
+  witness; no status-only fixture bypass. Falsifiers: single-unread-issue
+  exemption; certify gate1 merely from presence; different-model early return
+  before latest-authority failure; unconditional PR-over-issue precedence;
+  extend model uncertainty to gate3's positive done evidence.
+  New file test/cases/s276_collector_unread_latest_authority.sh.

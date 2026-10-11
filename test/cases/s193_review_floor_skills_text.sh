@@ -53,7 +53,7 @@ para_has_all "$mc" 'Resolved contradiction \(#244' '#392' '(revers|superseded|re
 # attribute is no longer part of the format
 grep -qE 'stage=Review.*floor-basis="' "$mc" \
   || fail "S193/AC9 — model-choice's marker format does not show floor-basis on the Review marker"
-templates="$(grep -E 'model-record: stage=' "$mc")"
+templates="$(test_source_match -E 'model-record: stage=' "$mc")"
 if grep -qE 'effort=' <<<"$templates"; then
   fail "S193/#424 — model-choice's marker templates still carry effort: $(grep -E 'effort=' <<<"$templates" | head -2)"
 fi

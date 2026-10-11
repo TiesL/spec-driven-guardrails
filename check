@@ -280,6 +280,14 @@ if [ -x "$target/check-traceability.sh" ]; then
   fi
 fi
 
+# A35a T1: private syntax lint, reached through this existing Interface.
+if [ -f "$target/lib/one-definition-lint.py" ]; then
+  if ! lint_output="$(python3 "$target/lib/one-definition-lint.py" "$target" 2>&1)"; then
+    report_error "one-definition syntax lint reported a problem:"
+  fi
+  printf '%s\n' "$lint_output"
+fi
+
 # --- 3e. test/cases file <-> TEST-SCENARIOS.md heading, 1:1 (#260) ---------
 # Repo-specific, not something an adopted project carries (its own test
 # suite, if any, doesn't follow this convention) — gated on the script's
