@@ -2300,8 +2300,10 @@ something new is being added.
 - Then: every entry has a non-empty Reaches session value; the preamble
   documents the field and its five keywords; `process-multi-agent-roles`
   declares `session-context: skills/role-contracts/ORCHESTRATOR.md` and
-  `gate: skills/pre-merge-review/model-record-gate.sh`, and carries no
-  Meaning version
+  `gate: skills/pre-merge-review/model-record-gate.sh`. The historical #371
+  no-bump decision does not prohibit the approved #427 Meaning version 2;
+  S265 checks that version and its semantics. Removing any Reaches session
+  field or either declared route must still fail this scenario.
 
 ### S183 — strict live evidence determines role-play only in opted-in projects
 **Covers:** F38
@@ -2482,7 +2484,14 @@ something new is being added.
   different model") or mentions `same-model-exception` without saying it is
   history or legacy; the scripts mention `same-model-exception` only in
   comments (they do not parse or print it) and call it legacy or ignored;
-  the old gate-2 row label is gone
+  the old gate-2 row label is gone. Negative scenario oracles such as
+  `Falsifiers: compare effort; require a different model` are not live
+  requirements. Paired document controls must accept that negative statement
+  and reject an otherwise live `Review must use a different model` requirement,
+  including one outside the scenario section. Do not exclude the whole
+  TEST-SCENARIOS.md file or allow a positive requirement merely because an
+  unrelated falsifier occurs elsewhere. Mutation: suppress all old-rule
+  matches; the positive control must fail.
 
 ### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis, without effort
 **Covers:** F39
@@ -3065,15 +3074,24 @@ something new is being added.
   the `LC_ALL=C` in a caller's `tr '\001' '\n'`. On a non-macOS runner the
   awk-abort mutants can pass (gawk and mawk do not abort), so the macOS leg is
   where this scenario bites
-- Round 1 of PR #443 adds the bytes BEFORE the marker on the same line
+- Legacy round 1 of PR #443 adds the bytes BEFORE the marker on the same line
   (`x\377y <marker>`; also the truncated sequence; valid multibyte as the
   green control). BSD grep in a UTF-8 locale finds no match after such a byte,
   so every caller `grep` that reads the live text, and every caller `tr`, must
-  carry its own `LC_ALL=C`: the gate's main path (all five stages after the
-  bytes: no finding), its role-play path (two stages in one body, on separate
-  lines and on one line: `stages in one text`), its override reader (a
-  single-session override after the bytes, and bytes before each of its three
-  attribute greps); the collector (one record per body source, each after the
+  carry its own `LC_ALL=C`. For the #427 gate, whole column-0 records on
+  separate lines are the success control; bytes remain in allowed values or
+  on a separate preceding prose line. Two whole-line stages in one body
+  report `stages in one text`. Same-line prose prefixes and two records on
+  one line are near-misses, cannot supply stage presence, and cannot create
+  that role-play finding. Assert these diagnostics and missing-stage results
+  under both locales, rather than only equality. The override success control
+  is a whole-line single-session record with bytes in decided-by/reason;
+  it reports `waived the role-play findings` and no `role-played:` findings.
+  A prose-prefixed override or an extra `note` attribute is a near-miss and
+  waives nothing. All three byte variants run through these controls. Preserve
+  closing-keyword discovery after bytes, byte-in-value arms, lib controls and
+  caller decoding coverage. The collector retains its legacy inline contract
+  (one record per body source, each after the
   bytes: the closing keyword in the PR title, Planning and the done marker in
   the PR body, Test and Review in PR comments, Implementation in a PR review,
   Discovery in the closing issue's comment, rows 1-3 `evidenced`; a malformed
@@ -3087,8 +3105,8 @@ something new is being added.
   of `lib/model-record.sh` (finding lib-normalize-locale): a model value
   holding `\377` or `\342\200` normalizes to `opus 5` under both locales with
   nothing on stderr (BSD `tr` aborts with "Illegal byte sequence" otherwise).
-  Mutations, each killed on a macOS host (BSD grep, BSD tr, BWK awk): remove
-  `LC_ALL=C` from any one of the gate's greps (stage check, role-play
+  Historical mutations, each killed on a macOS host (BSD grep, BSD tr, BWK awk): remove
+  `LC_ALL=C` from any one of the pre-v2 gate's greps (stage check, role-play
   stage_ere, the three override attribute greps, the override reader, the
   stages-missing check), the collector's quoted-suffix, closing-keyword, stage,
   done-marker and loose-marker greps and its four `tr` sites, the staleness
@@ -3980,6 +3998,12 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   wins); use an ok Review without basis against one with basis to observe
   selection, and test each adjacent source tie. Two same-stage records in
   one body use the later line. Reverse array order for unequal timestamps.
+- Issue-description tie: retain `Fix #239` in the PR title/body while both
+  sources carry equal-time competing Review records. The description has
+  basis, the issue lacks it, and no later source carries Review. Require
+  evidence that the fake-gh issue-comments endpoint was fetched; the normal
+  order gives no missing-basis finding. Reversing only the issue/description
+  source ranks must produce the missing-basis finding and fail the arm.
 - Falsifiers: append/fetch order rather than timestamps; select latest ok;
   use description `updated_at`; reverse source tie order; first-line wins;
   read floor-basis from an older record.
