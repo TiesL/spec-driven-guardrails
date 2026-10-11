@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S198 — role-label-staleness.sh recognises a stage marker whose attribute
+# S198 — record-v2 rejects forbidden delimiters in stage-marker attribute
 # values contain `>`, `-->` or `<!--`, through the shared marker parser.
 # Covers: F39
 #
@@ -60,16 +60,17 @@ for v in 'opus > sonnet' 'a --> b' 'a <!-- b' 'x < y -- z' '<!-- x --> > <'; do
   verdict_for role:architect "<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"medium\" floor-basis=\"$v\" -->"
   [ "$verdict_rc" -eq 0 ] || fail "S198 — '$v': exit $verdict_rc"
   case "$verdict" in
-    *" — stale "*) : ;;
-    *) fail "S198 — a Review marker with '$v' in floor-basis must still be detected (role:architect is stale), got: $verdict" ;;
+    *" — indeterminate "*) : ;;
+    *) fail "S198 — a Review marker with '$v' in floor-basis must be named as a near-miss, got: $verdict" ;;
   esac
   case "$verdict" in
-    *indeterminate*) fail "S198 — '$v': the marker is well-formed, not malformed, got: $verdict" ;;
+    *near-miss*) : ;;
+    *) fail "S198 — '$v': near-miss cause absent: $verdict" ;;
   esac
 done
 
 # a label AT the evidenced stage stays in-sync with such a marker
-verdict_for role:reviewer '<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" floor-basis="opus > sonnet" -->'
+verdict_for role:reviewer '<!-- model-record: stage=Review model="claude-sonnet-5" effort="medium" floor-basis="opus exceeds sonnet" -->'
 case "$verdict" in
   *" — in-sync "*) : ;;
   *) fail "S198 — role:reviewer with a stage=Review marker (floor-basis with '>') must be in-sync, got: $verdict" ;;

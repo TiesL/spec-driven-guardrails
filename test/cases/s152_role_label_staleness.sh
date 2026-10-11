@@ -1127,7 +1127,7 @@ GHEOF
 fakebin_f5="$(cat "$FAKEGH_OUT")"
 output_f5="$(PATH="$fakebin_f5:$PATH" "$script" 400)"; status_f5=$?
 [ "$status_f5" -eq 0 ] || fail "S152 F-5 — expected exit 0, got $status_f5"
-[ "$(assert_verdict_shape 'S152 F-5' "$output_f5")" = "in-sync" ] || fail "S152 F-5 — a no-space-before--> marker (stage=Review-->) must still be recognized as stage=Review (in-sync with role:reviewer), not malformed: $output_f5"
+[ "$(assert_verdict_shape 'S152 F-5' "$output_f5")" = "indeterminate" ] || fail "S152 F-5 — intentional #428 reversal: model-less stage=Review--> is a near-miss: $output_f5"
 
 # issue #317 AC3 (F-7) — a PR whose title/body only QUOTES "Closes
 # #400" inside an inline code span (not a real closing intent) must
