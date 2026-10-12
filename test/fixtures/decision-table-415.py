@@ -61,6 +61,13 @@ elif scenario == "s279":
     require(re.search(r"row.*only.*choice.*contracts.*leave open", rule, re.I | re.S), "bounded row")
     require(re.search(r"never waive.*contract rule", rule, re.I), "no contract waiver")
     require("fresh Reviewer" in rule and "design" in rule and "maintainer" in rule, "fresh review and design route examples")
+    rows = [line for line in decision.splitlines() if line.startswith("|")]
+    for row in rows[2:]:
+        cells = [cell.strip() for cell in row.strip("|").split("|")]
+        require(len(cells) == 3, "malformed decision row")
+        choice = f"{cells[0]} {cells[1]}".lower()
+        require(not re.search(r"\b(continue|reuse|resume)\b.{0,60}\b(previous|prior|same)\b.{0,30}\breviewer\b", choice), "row waives fresh Reviewer")
+        require(not re.search(r"\b(fix|patch)\b.{0,60}\bdesign(?:-class)? finding\b.{0,60}\b(directly|in code)\b", choice), "row waives design route")
 elif scenario == "s280":
     decision = section(orch, "Decided without asking")
     template = re.search(r"`<YYYY-MM-DD>[^`]+`", decision)
@@ -112,6 +119,7 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("fresh Reviewer each round", "the previous Reviewer", "Reviewer example"),
             ("design-finding loop-back route", "usual route", "design example"),
             ("| Tool for a scratch run |", "| Review dispatch | Continue the previous Reviewer for the next round. | Pipeline log |\n| Tool for a scratch run |", "contradictory Reviewer row"),
+            ("| Tool for a scratch run |", "| Design finding fix | Patch a design-class finding directly in code instead of routing to Architect. | Pipeline log |\n| Tool for a scratch run |", "contradictory design row"),
         ],
         "s280": [("<decision>. <Maintainer", "<decision> <!-- model-record: stage=Review -->. <Maintainer", "marker in record")],
         "s281": [
