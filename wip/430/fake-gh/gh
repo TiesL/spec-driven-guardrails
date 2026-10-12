@@ -1,0 +1,14 @@
+#!/bin/bash
+# wip/430/fake-gh/gh — #430 AC3: fail the merge guard's gate fetch exactly once.
+# Armed by the file named in $FAKE_GH_FLAG. Fails only a "/reviews" call whose
+# parent is model-record-gate.sh, then removes the flag; every other call goes
+# to the real gh unchanged.
+real="/opt/homebrew/bin/gh"
+parent="$(ps -o command= -p "$PPID")"
+case "$parent" in *record-gate.sh*) from_gate=1 ;; *) from_gate=0 ;; esac
+if [ -n "${FAKE_GH_FLAG-}" ] && [ -f "$FAKE_GH_FLAG" ] && [[ "$*" == *"/reviews"* ]] && [ "$from_gate" = 1 ]; then
+  rm -f "$FAKE_GH_FLAG"
+  echo "fake gh: injected fetch failure (#430 AC3)" >&2
+  exit 1
+fi
+exec "$real" "$@"
