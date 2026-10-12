@@ -13,6 +13,52 @@ point.
 
 ## Unreleased
 
+- **Epic #408: process improvements from the meta review of epic #369.** Summary of the candidate
+  (details in the bullets below and in `CHANGES.md`): fresh Reviewers for every Review round and a finding-class loop-back rule
+  with an override flow; an orchestrator decision table with one-time pushback and Architect risk notes;
+  macOS CI running the full suite; shared Markdown handling in one library; effort removal from the
+  marker pipeline; a v2 reader/emitter for review records with migrated callers and old-parser
+  removal. #430 is the acceptance evidence (adopter corpus check and scratch-repository dry run)
+  and #420 is the documentation closure; both come after the code items. This work is unreleased and
+  the version is not chosen: v0.4.0 is a proposal only, for the maintainer to decide at release time.
+
+- **Fix #414: every Review round is a fresh Reviewer.** The rule is written in the Reviewer
+  contract, `ORCHESTRATOR.md` and `pre-merge-review`: a round is a new dispatch, never a resumed
+  or continued agent, and its brief is built from the artifacts (diff, issue, previous findings).
+- **Fix #410: finding-class loop-back.** A Reviewer names the defect and its class, never the fix;
+  a design-class defect goes to the Architect, then QA, then the Developer; two consecutive rounds
+  with a medium-or-worse finding on one PR force an Architect redesign step. A read-only
+  `review-rounds.sh` shows the rounds.
+- **Fix #415: bounded orchestrator decisions and the override record.** `ORCHESTRATOR.md` gains a
+  decision table of choices the orchestrator settles by rule (never merges into `main`, the version,
+  spec-touching or outward-facing decisions, or a waiver of a contract rule), logged on the issue.
+  When the maintainer does not accept a recommendation, the recommending role pushes back once before the decision is
+  recorded; an overrule gets an Architect risk note.
+- **Fix #422: macOS CI.** A separate `macos-latest` workflow runs the full suite under the macOS
+  platform tools (BWK awk, BSD grep, bash 3.2); the suite fails if the tool identity or a UTF-8 locale
+  is not as expected.
+- **Fix #423: shared Markdown handling.** `live_text` and `md_strip_fences` have one definition in
+  `lib/markdown.sh`, in the C locale, with visible failure in every caller and two CommonMark fence fixes.
+- **Fix #424: effort removal.** Effort is no longer recorded or checked; the emitter accepts `--effort`, ignores it and prints a warning for one release, and the flag is to be removed in the next release.
+- **Fix #425: record v2 reader and emitter.** One strict whole-line reader in `lib/model-record.sh`; the emitter checks its own output through it and refuses more kinds of unsafe values.
+- **Fix #426: one definition of a Review round.** `rr_rounds` is read by every script; the carry-forward gate now reads PR comments and reviews over REST and compares every round with the one before it.
+- **Fix #427: the gate and merge guard on record v2.** Near-misses are named, quoted records count as nothing, and an unchecked run prints a `role-play-unchecked` line instead of passing silently.
+- **Fix #428: `role-label-staleness.sh` on record v2.** One cached scan per bundle; a candidate without a model is a near-miss and gives `indeterminate`.
+- **Fix #429: `compliance-evidence.sh` on record v2, and old-parser removal.** The old marker parser is deleted, and a one-definition lint keeps record handling inside `lib/`; migrated callers are all on the v2 reader.
+- **Not in this release or not separate.** #409 (caveman style by default) is deferred to a later release; #455 (Codex support) is outside this release and paused until #408 merges into `main`. Absorbed work: #400 and #421 are carried by #427 and #426, #413 by #424, and #404 items 1-5 by the redesign slices (item 6 is excluded and not complete); #400, #413 and #421 are absorbed, not separate features, and their own issues are reconciled separately.
+- **Compatibility and limits (#408).**
+  Adopters re-confirm three questions in `CHANGES.md`:
+  `quality-review-before-merge` moves from meaning version 3 to meaning version 4 (the floor is on the model alone),
+  `process-model-choice` is first versioned at meaning version 2 (effort is no longer recorded),
+  and `process-multi-agent-roles` is first versioned at meaning version 2 (stricter merge guard).
+  Only a record on its own line in column 0 counts; named near-misses are context and a newer candidate decides over an older one; an invalid override is refused, and the remedies are the emitter, a corrected record, or a valid override.
+  Accepted reader limits, named in the `lib/markdown.sh` header: nested list prefixes, list items inside a blockquote and tab expansion beyond the stated rule are not handled; `continuation-line-list-fence` (#445) can read a marker as live after a column-0 closer that GitHub renders inside the list item; `ordered-item-after-paragraph` (#446) can read a marker as live where GitHub renders it quoted. The one-definition lint is a bounded shell syntax check: variable indirection, generated code and other shell forms can evade it, and the shared reader is not CommonMark in full.
+  `--effort` is accepted and ignored with a warning; the same model at lower effort meets the floor and nothing flags it, and a different model's capability cannot be verified from artifacts.
+  Fail-open paths (no `gh`, no network) are not a successful check, and artifact checks do not prove live behavior.
+  Adopter impact and whether the guard's warnings reach a session: to be confirmed by #430.
+
+## v0.3.0 — adoptable, opt-in multi-agent workflow (2026-10-04)
+
 - **Epic #369: the multi-agent workflow is adoptable, and applies itself in opted-in projects.**
   Summary of what ships (details in the two entries below and in `CHANGES.md`): `role-contracts`
   moved from `wip/` to `skills/` (#369), so `adopt.sh` symlinks it; the opt-in `CHANGES.md` question
@@ -25,6 +71,14 @@ point.
   session actually start the pipeline, ignore non-work-items, stop and ask when it cannot
   dispatch, resume mid-pipeline) can only be confirmed by a human dry run in a real opted-in
   project; no script here can observe them.
+
+- **Issue-label convention (#398).** Every issue carries three independent labels: a type
+  (`bug`, `documentation`, `enhancement`, or `process`), a status (`status:backlog`,
+  `status:in-progress`, `status:blocked`) and a role (`role:product` through `role:reviewer`, the
+  multi-agent phase currently active). Status and role are maintained by hand by the orchestrator;
+  `role-label-staleness.sh` only flags a role label that lags the evidence. Documented in
+  `WORKFLOW.md`, which adopted projects load through the `CLAUDE.md` symlink; there is no
+  `CHANGES.md` question and no `adopt.sh` offer for it.
 
 - **Fix #402: markers are produced by one command, never typed.** `marker_emit` in
   `lib/model-record.sh` and its wrapper `skills/pre-merge-review/model-record-emit.sh --stage
@@ -65,6 +119,19 @@ point.
   Adopted projects get all of this through the existing symlinks; the behaviour itself
   (whether a session follows the rules it is given) needs a human dry run.
 
+- **Multi-agent workflow is adoptable, opt-in** (#369, PR #385): `role-contracts` moved
+  from `wip/` to `skills/`, so `adopt.sh` installs it, and was rewritten to be self-contained
+  (installed skill names instead of `vendor/` paths, a "Running the pipeline" stage/label
+  table, the decision-maker named by role). New `CHANGES.md` entry `process-multi-agent-roles`
+  (default `question`, applies always): every adopted project is asked it at its next session.
+  The three evidence scripts are offered by path from the clone
+  (`$SPEC_DRIVEN_GUARDRAILS_DIR/<script>`, run from the adopted project's checkout); they are
+  not installed. `pre-merge-review` now runs `classify-review-depth.sh` by that path too: it
+  said `./classify-review-depth.sh`, which no adopted project has. README no longer says the
+  pipeline is not adoptable. Automatic activation followed in #371 (above).
+
+## v0.2.1 — release-branch workflow and commit-time check (2026-10-03)
+
 - **Epic #370: formalize the release-branch workflow.** Issue #309's informal
   precedent (one real exercise: `release/295-multi-agent-workflow-v1` →
   v0.2.0) is now a real, adoptable mechanism. New `skills/release-branch-workflow/SKILL.md`
@@ -103,18 +170,7 @@ point.
   git's temporary one. No `CHANGES.md` entry: there is no choice to make (ARCHITECTURE.md
   A20).
 
-- **Multi-agent workflow is adoptable, opt-in** (#369, PR #385): `role-contracts` moved
-  from `wip/` to `skills/`, so `adopt.sh` installs it, and was rewritten to be self-contained
-  (installed skill names instead of `vendor/` paths, a "Running the pipeline" stage/label
-  table, the decision-maker named by role). New `CHANGES.md` entry `process-multi-agent-roles`
-  (default `question`, applies always): every adopted project is asked it at its next session.
-  The three evidence scripts are offered by path from the clone
-  (`$SPEC_DRIVEN_GUARDRAILS_DIR/<script>`, run from the adopted project's checkout); they are
-  not installed. `pre-merge-review` now runs `classify-review-depth.sh` by that path too: it
-  said `./classify-review-depth.sh`, which no adopted project has. README no longer says the
-  pipeline is not adoptable. Automatic activation followed in #371 (above).
-
-## v0.2.0 — multi-agent development workflow (2026-09-30)
+## v0.2.0 — multi-agent development workflow (2026-10-01)
 
 Epic [#295](https://github.com/TiesL/spec-driven-guardrails/issues/295): the multi-agent
 development workflow (epic #65's design, accepted 2026-09-21) becomes **executable** — real

@@ -4,7 +4,7 @@ Guardrails for an AI coding agent working past toy-project size: what was decide
 written down, and nothing merges without a traceable link back to a reviewed requirement.
 Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
 
-**v0.2.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
+**v0.3.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
 pipeline, and an adopted project can opt into it — see
 [How this repo builds itself](#how-this-repo-builds-itself).
 

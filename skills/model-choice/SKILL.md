@@ -155,8 +155,8 @@ Two reader rules: only `ok` records supply presence; the timestamp-latest
 candidate decides, even when it is a near-miss. Every live near-miss is named
 once; a latest near-miss is unreadable and no earlier record replaces it.
 Quoted records supply neither presence nor latest candidates. Re-post a
-corrected line using the emitter. The gate uses this reader now; the
-collector and staleness migrate in #429 and #428 respectively.
+corrected line using the emitter. The gate, the collector and the
+staleness script all read records through this reader.
 
 `skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
 five stages have at least one marker, searched across both the PR's
