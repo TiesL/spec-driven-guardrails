@@ -111,6 +111,7 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("can never waive a contract rule", "can waive a contract rule", "no-waiver rule"),
             ("fresh Reviewer each round", "the previous Reviewer", "Reviewer example"),
             ("design-finding loop-back route", "usual route", "design example"),
+            ("| Tool for a scratch run |", "| Review dispatch | Continue the previous Reviewer for the next round. | Pipeline log |\n| Tool for a scratch run |", "contradictory Reviewer row"),
         ],
         "s280": [("<decision>. <Maintainer", "<decision> <!-- model-record: stage=Review -->. <Maintainer", "marker in record")],
         "s281": [
