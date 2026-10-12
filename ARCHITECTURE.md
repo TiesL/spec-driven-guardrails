@@ -841,6 +841,59 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Revisit when:** finding severity becomes machine-readable; the trigger
   can then be counted by `review-rounds.sh`.
 
+### A29 — Bounded orchestrator decisions, one pushback, and an Architect risk note (#415)
+- **Decision:** put a short "Decided without asking" table in
+  `skills/role-contracts/ORCHESTRATOR.md`, the A16 source for run rules. Its
+  Interface is a decision, rule, and log location per row. Seed it with the
+  scratch-run tool, role model when the floor is clear, low-severity finding
+  disposition, and conventional naming/numbering; the existing notice rule
+  may be a fifth row. A row settles only a choice the contracts leave open.
+  The never-list covers merges into `main`, version and meaning-version
+  bumps, spec content, outward-facing actions, security trade-offs,
+  departures from a role's recommendation, and contract waivers.
+- **Module and Seam:** the existing orchestrator run-rule Module owns the
+  table and its issue-log Interface. Its Seam remains the injected
+  `ORCHESTRATOR.md`; there is no new runtime Seam or adapter. A separate
+  skill would depend on optional loading and add adoption surface. Deleting
+  this table would return routine choices to individual dispatches and
+  maintainer questions. Keeping the rules together gives Leverage across
+  work items and Locality for changes; its Depth comes from resolving
+  several recurring decisions behind one short, always-read Interface.
+- **Record:** a decision by rule is normal prose in a "Decisions by rule"
+  section of A27's issue Pipeline log: date, row, decision, and the
+  maintainer's objection deadline. Orchestrator records carry no
+  `model-record` marker. The deadline is pending the maintainer's Q2
+  answer; A29 recommends until the change reaches `main`, since a work-item
+  PR may merge into a release branch first.
+- **Overrule:** before recording a departure from a role's recommendation,
+  dispatch that recommending role for one pushback stating its arguments
+  and the cost of the alternative; relay it, let the maintainer decide, and
+  link it from a numbered human decision. Do not repeat pushback after the
+  maintainer holds the position. A Reviewer is fresh under A27. #412 owns
+  any reuse choice for other roles. If the maintainer overrules another
+  role, or waives a contract rule, dispatch the Architect for a risk note.
+  An Architect pushback can include the note in its "If overruled" section.
+  The note is an Architect issue report with its own Planning marker and
+  normal prose headed "Risk note": **Decision** (link), **What is
+  accepted**, **Likely consequence**, **Early signal**, and **Revisit when**.
+  This is the format referenced by A28's route override.
+- **Pending maintainer default (Q1):** whether a low-severity finding is
+  fixed in the PR or filed as an issue. A29 recommends filing it, with a
+  narrow text-only fix allowance during a round already required for a
+  medium/high finding. This recommendation is not the table rule until the
+  maintainer decides. An out-of-scope finding still needs its recorded
+  disposition and any scope-expansion decision.
+- **Trade-off and limit:** printing the table costs roughly 600 tokens per
+  opted-in session, but keeps the rule at the existing Seam where it will
+  be read. Revisit a plain linked `DECISIONS.md` if the table exceeds about
+  ten rows or the injected file approaches S180's 80-line cap; keep the
+  rule sentence and never-list in `ORCHESTRATOR.md`. Tests can check the
+  seeded rows, exclusions, record shape, pushback text and note fields;
+  whether every suitable choice is represented or a row is applied
+  correctly in a live session remains human judgment. Add to A27's
+  pre-merge self-check that no orchestrator comment has a `model-record`
+  marker and every overruled recommendation has an Architect risk note.
+
 ### A33 — Effort is removed from the marker pipeline; the floor is judged on the model (#424, #413)
 - **Why:** the dispatch tool takes no effort argument, so effort was never set or verified: #405 W2 found that all 33 agents ran at medium whatever their markers said. A recorded effort was a claim nobody could check.
 - **Emitter:** `model-record-emit.sh` no longer writes `effort`. It accepts `--effort` and ignores it for one release, printing one stderr line, "effort is no longer recorded (#413); drop --effort from your prompt", so stale prompts in adopted projects keep working. The next release removes the flag (PRD debt row).

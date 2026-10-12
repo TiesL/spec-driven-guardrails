@@ -1673,6 +1673,39 @@ the runner.
 
 ---
 
+### F44 — The orchestrator settles bounded routine choices and records human overrides (issue #415)
+
+The #405 meta review counted 37 numbered human decisions, about 22 of which
+could have been settled by an existing rule. Requirement: the orchestrator has
+a short decision table, owned in `skills/role-contracts/ORCHESTRATOR.md` per
+A29, with a decision, rule and log location in each row. It covers at least
+the tool for a scratch run, a role's model when its floor is clear, disposition
+of a low-severity finding, and conventional naming and numbering. A row can
+settle only a choice the role contracts leave open. It cannot waive their
+stage order, fresh Reviewer rule (F41), or finding route (F42). The table
+explicitly excludes merges into `main`, version and meaning-version bumps,
+spec content, outward-facing actions, security trade-offs, departures from a
+role's recommendation, and contract waivers.
+
+Each decision taken by a table row is logged in normal prose on the work-item
+issue with the row, decision and date; an orchestrator record carries no
+`model-record` marker. If the maintainer rejects a role's recommendation,
+the recommending role pushes back once with its reasons before a numbered
+human decision is recorded. The maintainer may still overrule it; that record
+links the pushback, and the Architect writes an issue risk note stating what
+is accepted and its likely consequence. A waiver of F42's route follows this
+same flow. The exact low-severity default and end of the objection window
+remain maintainer decisions in #415; A29 recommends filing a low finding and
+keeping objections open until the change reaches `main`. Neither recommendation
+is treated as decided here.
+
+Acceptance criteria: issue #415 AC1–AC8. Tests can assert the four seeded
+rows, exclusions, contract-waiver limit, record template, pushback and risk-note
+text, and green `./check`. Completeness beyond the seeded rows and correct
+application of a row in a live session require human review (AC7). This item
+lands after F41/F42 and before the release documentation and acceptance work
+in the agreed #408 scope.
+
 ## Non-functional characteristics
 
 ### Security

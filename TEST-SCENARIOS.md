@@ -4560,3 +4560,117 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   before latest-authority failure; unconditional PR-over-issue precedence;
   extend model uncertainty to gate3's positive done evidence.
   New file test/cases/s276_collector_unread_latest_authority.sh.
+
+## #415 — bounded orchestrator decisions and human override strategy
+
+The test seam is the existing, session-injected `skills/role-contracts/ORCHESTRATOR.md`
+and the role contract in `skills/role-contracts/SKILL.md`. A Developer test can
+read their Markdown sections and table cells, and use controlled example
+decisions to check the rule's stated outcome. It must inspect the operative
+sections, rather than pass because a term appears somewhere in historical
+prose, A29, or these scenarios. Each negative control changes one rule or
+record in a temporary copy and must fail the relevant assertion. There is
+no new external seam or live GitHub write in these tests. The Developer
+writes and runs the tests red before changing the contracts; QA assesses
+that evidence and the final `./check` result.
+
+### S277 — four seeded choices have executable rules and a log destination
+**Covers:** F44
+- Given: the decision table in `ORCHESTRATOR.md` (issue #415 AC1; A29)
+- When: its rows are read as decision, rule, and log-location cells
+- Then: separate, nonempty rows settle (1) which available tool to use for
+  a scratch run confined to a scratch directory or repo, (2) the cheapest
+  model that clears a role's known floor according to `model-choice`, (3)
+  the maintainer-approved disposition of a low-severity finding, and (4)
+  naming and the next free number under the existing convention; each row
+  says where its result is logged. A tool that writes into the real repo
+  fails the scratch example; a dearer model with the same clear floor fails
+  the model example; reuse of an answered ID fails the numbering example.
+  Removing any row or blanking its rule or log cell fails independently.
+- Pending Q1: the exact low-finding oracle is **file an issue** if the
+  maintainer adopts A29's recommendation, or **fix in this PR** if the
+  maintainer chooses that alternative. The test must assert the chosen
+  disposition in the row and its example, and reject the opposite default.
+  A29's recommendation alone does not select the oracle. Preserve the
+  existing out-of-scope `Disposition` and scope-expansion rules.
+
+### S278 — the never-list excludes human and role decisions
+**Covers:** F44
+- Given: the table's adjacent never-list (issue #415 AC2; A29)
+- When: the contract is applied to examples of a merge into `main`, a
+  version bump, changes to the content of PRD.md, ARCHITECTURE.md or
+  TEST-SCENARIOS.md, an outward-facing publication or message, and a
+  departure from a role recommendation
+- Then: each example is outside the table's authority, even if a broad
+  row such as naming could appear to cover it. The never-list explicitly
+  names all six categories; removing any one or moving it into an allowed
+  row fails. A release-branch work-item merge is judged under its existing
+  contract, without enlarging this table's authority.
+
+### S279 — a row cannot waive a contract rule
+**Covers:** F44
+- Given: S209's fresh Reviewer rule and S214/S218's finding route (issue
+  #415 AC3; A29)
+- When: a synthetic table row suggests continuing the prior Reviewer or
+  fixing a design-class finding directly in code
+- Then: the explicit no-waiver rule makes both suggestions invalid as
+  table decisions; a waiver goes to a maintainer and the S281–S282 flow.
+  A test must fail if either example can be accepted by a row merely
+  because the row is present, or if the no-waiver rule is removed.
+
+### S280 — a by-rule decision has an issue record, with no stage marker
+**Covers:** F44
+- Given: an ordinary decision under an allowed row (issue #415 AC4; A29)
+- When: the prescribed record is rendered in the work-item issue's
+  `Pipeline log` / `Decisions by rule` section
+- Then: the prose contains the date, identifiable row, and actual
+  decision, plus the maintainer objection rule selected for Q2. Neither
+  the template nor the rendered orchestrator record contains a
+  `model-record` stage marker; an otherwise valid record in a PR comment,
+  with an empty row or decision, or with a stage marker fails. The
+  pipeline log remains the one issue comment of S211.
+- Pending Q2: if the maintainer chooses A29's window, assert an objection
+  deadline at the change's merge into `main` (not merely the work-item
+  merge into a release branch). If the maintainer chooses log-only,
+  assert that exact rule and do not invent a deadline. A29's proposal and
+  the issue's ambiguous “the merge” do not settle this assertion.
+
+### S281 — a rejected recommendation gets one pushback before a human decision
+**Covers:** F44
+- Given: a role's recommendation and a maintainer's contrary proposal
+  (issue #415 AC5; A29)
+- When: the override flow is followed
+- Then: no decision is recorded before the recommending role gives one
+  reasoned pushback explaining the cost of the alternative; the
+  maintainer can then hold the position and overrule it; the numbered
+  human decision links that pushback. It is not sent back for repeated
+  pushback. If the recommending role is Reviewer, this dispatch is a fresh
+  Reviewer under S209. A synthetic trace with decision-before-pushback,
+  two pushbacks after the maintainer holds the position, a missing link,
+  or reuse of the Reviewer fails. Non-Reviewer reuse remains #412's choice.
+
+### S282 — an overrule leaves an Architect risk note with the #410 reference
+**Covers:** F44
+- Given: the maintainer overrules the pushback, including S218's proposed
+  waiver of the design finding route (issue #415 AC6; A29)
+- When: the numbered human decision and Architect issue report are read
+- Then: the Architect's normal-prose `Risk note` links that decision and
+  states what is accepted, its likely consequence, an early signal, and
+  when to revisit. The Architect report has its own emitted Planning
+  marker; the orchestrator's decision record has none. If a non-Architect
+  role was overruled, the flow dispatches the Architect for this note.
+  The contracts explicitly say this is the risk-note format referenced
+  by #410 AC6/S218. A missing field, missing decision link, or note only
+  in the orchestrator's markerless log fails.
+
+### S283 — completeness remains a review limit and the full check passes
+**Covers:** F44
+- Given: the four seeded choices and exclusions covered by S277–S278
+  (issue #415 AC7–AC8; A29)
+- When: the PR is reviewed and `./check` runs on the completed change
+- Then: the PR says that no mechanical test can establish whether every
+  rule-able decision from #405 is in the table or whether a live
+  orchestrator applied a row correctly; Reviewer judges those limits
+  against the diff and issue evidence. `./check` exits zero. The document
+  tests assert the four seeds and never-list, not a fabricated count of
+  all roughly 22 possible decisions.
