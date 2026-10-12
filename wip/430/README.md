@@ -7,8 +7,12 @@ Evidence is posted on issue #430; this directory only holds what reproduces it.
     git fetch origin
     git worktree add --detach $W/release-head origin/release/408-process-improvements
     git worktree add --detach $W/v0.3.0 v0.3.0
-    git clone git@github.com:TiesL/sdg-dryrun-scratch.git $W/sdg-dryrun-scratch
-    SPEC_DRIVEN_GUARDRAILS_DIR=$W/release-head $W/release-head/adopt.sh $W/sdg-dryrun-scratch
+    git clone git@github.com:TiesL/sdg-dryrun-scratch.git ~/Documents/ClaudeCodeZandbak/sdg-dryrun-scratch-430
+    SPEC_DRIVEN_GUARDRAILS_DIR=$W/release-head $W/release-head/adopt.sh ~/Documents/ClaudeCodeZandbak/sdg-dryrun-scratch-430
+The dry-run clone must sit outside any `.git/` directory: Claude Code refuses
+Write/Edit under `.git/` paths (run 1 stopped at Implementation on that). A
+second scratch clone at `$W/sdg-dryrun-scratch` was used only for the
+read-only gate comparison.
 Setup check (AC2): `git -C $W/release-head rev-parse HEAD` equals `origin/release/408-process-improvements`.
 
 Run git commits for this branch from the guardrails clone's own directory: the
@@ -22,7 +26,7 @@ Open-PR verdict change: from a clone of each opted-in adopter, run
 `$W/v0.3.0/skills/pre-merge-review/model-record-gate.sh <pr>` and compare.
 
 ## AC2 dry run
-Fresh headless sessions in `$W/sdg-dryrun-scratch`, with
+Fresh headless sessions in `~/Documents/ClaudeCodeZandbak/sdg-dryrun-scratch-430`, with
 `SPEC_DRIVEN_GUARDRAILS_DIR=$W/release-head`, plain prompts that do not mention
 the pipeline; then the gate and `compliance-evidence.sh` on the resulting PR.
 
