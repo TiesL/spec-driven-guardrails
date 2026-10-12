@@ -155,6 +155,14 @@ comment — never direct edits to application source.
 **Evidence / gates it produces:** specification/design, architecture review, recorded
 decisions — where useful, as diagrams (sequence, flow, component) in Mermaid.
 
+**Risk note for an overrule (TiesL/spec-driven-guardrails#415, including TiesL/spec-driven-guardrails#410 AC6/S218).** When the maintainer
+overrules the pushback, write an issue report headed "Risk note" in normal prose,
+with **Decision** linking the numbered human decision, **What is accepted**,
+**Likely consequence**, **Early signal**, and **Revisit when**. Start the report
+with your own emitted Planning marker; the orchestrator's decision record has
+no role marker. If you gave the pushback yourself, include an "If overruled"
+section with this risk note in that report, so another dispatch is unnecessary.
+
 ---
 
 ## QA
@@ -286,6 +294,15 @@ pass already earned. A **request-changes** verdict never posts the marker, same 
 ---
 
 ## Shared, across all five roles
+
+**When your recommendation is not accepted (TiesL/spec-driven-guardrails#415).** Before the decision is recorded,
+push back once with arguments for your recommendation and an explanation of
+the cost of the maintainer's alternative. The orchestrator relays it, and the
+maintainer may then hold the position and overrule. Do not repeat the pushback
+after that. The numbered human decision links the pushback. A recommending
+Reviewer is a fresh Reviewer for this dispatch. Non-Reviewer reuse remains
+TiesL/spec-driven-guardrails#412's decision. An overrule then gets the Architect's issue Risk note in the
+format above; this is the format referenced by TiesL/spec-driven-guardrails#410 AC6/S218.
 
 Product decides *what*; Architect decides *how*; Fullstack Developer executes; QA verifies it
 works as intended; Reviewer independently confirms the whole chain before release. Conflict

@@ -35,16 +35,16 @@ Never relay a Reviewer's suggested fix as a decision; the next role's brief link
 
 **Two-round trigger.** A Review round counts when it reports at least one open finding of severity medium or high, new or carried over. When two consecutive rounds on one PR count, dispatch the Architect for a redesign step before any Developer fix. The Architect records that step as a PR comment with a Planning marker, and may conclude that no design change is needed. The count starts again after that recorded Architect step.
 
-**Override.** If the maintainer tells you to patch a design defect in code instead of looping it back, that waives the loop-back route, so the A29 (#415) flow applies: the Architect pushes back once, the decision is a numbered human decision naming the rule overridden (the loop-back route, A28) and linking the pushback, and the Architect writes the risk note. The pushback and the risk note are defined in #415 (A29); this file defines no format and no marker for them.
+**Override.** If the maintainer tells you to patch a design defect in code instead of looping it back, that waives the loop-back route, so the A29 flow, defined in "When a recommendation is not accepted" below, applies: the Architect pushes back once, the decision is a numbered human decision naming the rule overridden (the loop-back route, A28) and linking the pushback, and the Architect writes the risk note. The Architect's risk-note format is in `SKILL.md`; this file defines no format and no marker for them.
 
 **Pipeline log.** Keep one comment per work-item issue, headed "Pipeline log", that you write and edit. It never carries a `model-record` marker. Write one line per dispatch when you dispatch: the stage, the round (for Review), the agent id the dispatch tool returned, and the model requested. The orchestrator may note the effort the platform transcript shows, in prose in its step comment, after the fact; it is a note for a human, not a marker attribute and not a check (A27, A33, A33a).
 
-**Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. The same self-check also records:
+**Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. Class and severity are judgments, so a script can only check that the route left evidence. The same self-check also records:
 
 - No design-class finding was fixed without an Architect step before the fix commit.
 - The two-round trigger did not fire, or its Architect step is on the PR (count the rounds with `$SPEC_DRIVEN_GUARDRAILS_DIR/review-rounds.sh <pr> [<issue>]`, run with the project's checkout as the working directory; run inside the guardrails repo it would count that repo's PR with the same number).
-
-Limit: class and severity are judgments. A script can only check that the route left evidence.
+- No orchestrator-written issue comment carries a `model-record` marker.
+- Every overruled recommendation has an Architect risk note on the issue.
 
 **Model per stage.** Before each dispatch, assess that stage's floor on its own demands, per the `model-choice` skill: what would a model that is too weak get wrong here? Then choose the cheapest model that clears it, separately for each stage, never one model for the whole run. Review must be at least as capable as Implementation's recorded model. A different model is not required. Choose the model when you dispatch. The dispatch tool takes no effort argument, so effort is neither chosen nor recorded in markers, and the same model at a lower effort meets the floor, an accepted risk (see "The limit" in the `model-choice` skill). Name the chosen model in the dispatch prompt, and hand the role its marker line as the next paragraph says.
 
@@ -59,3 +59,21 @@ Limit: class and severity are judgments. A script can only check that the route 
 **Cannot dispatch** (no agent tool in this environment, or dispatch fails): stop and ask the human whether to override as above or to stop. Never silently play the roles yourself.
 
 **Resume:** on an existing work-item branch, find the stages already evidenced (their `model-record` markers and the issue's role label; `$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh <issue>`, run with the project's checkout as the working directory so it reads the project's repository, reports the latest one) and resume at the first stage without a marker. Do not restart, and do not skip ahead.
+
+## Decided without asking
+
+A row settles only a choice the contracts leave open. It can never waive a contract rule, including a fresh Reviewer each round or the design-finding loop-back route. Waiving a contract rule is a maintainer decision and follows the pushback and risk-note flow below.
+
+| Decision | Rule | Logged |
+| --- | --- | --- |
+| Tool for a scratch run | Use an available tool in a scratch directory or scratch repo; write nothing to a real repo or shared clone. Otherwise it is not a scratch run. | Pipeline log |
+| Model for a role when its floor is clear | Choose the cheapest model that clears that stage's floor per `model-choice`; ask only when no available model clearly clears a demanding floor. | Dispatch line in Pipeline log |
+| Low-severity finding: fix in the PR or file an issue | File a low-severity finding as an issue by default. A narrow text-only fix may go in the PR only during a round already required by a medium or high finding, never in a low-only round. An out-of-scope finding keeps its recorded `Disposition` and scope-expansion rules. | Decision-by-rule record in Pipeline log |
+| Naming and numbering | Follow the existing convention and take the next free number on the target line, checked with grep; never rename an ID a project has answered. | Decision-by-rule record in Pipeline log |
+| Notice location when a skill already answers it | Follow that skill's rule for `CHANGELOG.md` or `CHANGES.md` (A20). | Decision-by-rule record in Pipeline log |
+
+**Never decided by the orchestrator:** merges into `main`; the version bump or a `CHANGES.md` meaning-version bump; spec-touching decisions about the content of `PRD.md`, `ARCHITECTURE.md`, or `TEST-SCENARIOS.md`; anything outward-facing (release, tag, publication, external message, or repository setting); security trade-offs; any departure from a role's recommendation; or waiver of a contract rule. Existing authority for work-item merges into release branches is unchanged.
+
+**Record template:** In the issue's one Pipeline log comment, append to "Decisions by rule" one prose line with a date, table row and actual decision: `<YYYY-MM-DD>, row "<row>": <decision>.` The maintainer may object to a decision by rule until the change reaches `main`, including after a work-item merge into a release branch. Do not put a `model-record` marker in an orchestrator record.
+
+**When a recommendation is not accepted:** Record no decision yet. Dispatch the recommending role once for reasoned pushback before the decision is recorded; its input is its recommendation and the maintainer's words. A Reviewer pushback uses a fresh Reviewer. Relay the arguments and cost of the alternative to the maintainer. If the maintainer holds the position, do not repeat pushback; record a numbered human decision linking it. For a non-Architect role's overrule, dispatch the Architect for an issue risk note. The same flow applies to a proposed contract waiver; the Architect's risk-note format is in `SKILL.md`.
