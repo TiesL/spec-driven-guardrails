@@ -4618,8 +4618,12 @@ that evidence and the final `./check` result.
   fixing a design-class finding directly in code
 - Then: the explicit no-waiver rule makes both suggestions invalid as
   table decisions; a waiver goes to a maintainer and the S281–S282 flow.
-  A test must fail if either example can be accepted by a row merely
-  because the row is present, or if the no-waiver rule is removed.
+  A test must fail if the no-waiver rule is removed or weakened. The row
+  scan is a bounded negative control, not general waiver detection: it
+  rejects only a row phrased like the two synthetic examples (continue or
+  reuse the previous Reviewer; fix a design finding directly in code). A
+  differently worded waiver row is not caught by the scan, so AC3 rests on
+  the tested no-waiver sentence, and Reviewer judges any new row against it.
 
 ### S280 — a by-rule decision has an issue record, with no stage marker
 **Covers:** F44
@@ -4677,3 +4681,22 @@ that evidence and the final `./check` result.
   against the diff and issue evidence. `./check` exits zero. The document
   tests assert the four seeds and never-list, not a fabricated count of
   all roughly 22 possible decisions.
+- Structure oracles (round 1, F44 "Structure of the injected file"; A29
+  "File structure"), on the same `ORCHESTRATOR.md`; each fails on the
+  counterexample named with it:
+  - `## Decided without asking` is the last `##` heading of the file.
+    Counterexample: a `##` heading (e.g. `## Run rules`) after it fails.
+  - The six run rules (merge self-check, model per stage, marker line, no
+    self-granted shortcuts, cannot dispatch, resume) each start a paragraph
+    before that heading, so none sits under it. Counterexample: any one
+    moved below the heading, or removed, fails.
+  - The "When a recommendation is not accepted" paragraph has a blank line
+    before and after it, so it is its own paragraph and is not adjacent to
+    the "Before asking for a merge" paragraph. Counterexample: the two
+    paragraphs on consecutive lines (the pre-fix file) fails.
+  - The file is at most 80 lines (S180's cap, unchanged). Counterexample: 81
+    lines fails. The wording of the "Limit:" sentence is not asserted.
+  - The Override paragraph contains no bare `#<digits>` reference, names
+    "When a recommendation is not accepted" and names `SKILL.md`.
+    Counterexamples: the paragraph with `(#415)` or any other bare `#<n>`;
+    without the in-file paragraph name; without `SKILL.md`.
