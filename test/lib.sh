@@ -309,6 +309,17 @@ routing_table_rows() {
   awk '/^## Routing table/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
 }
 
+# Body of the first "## " section of $1 (CHANGELOG.md) whose heading starts
+# with the prefix $2 followed by a space or end of line, up to the next
+# "## " heading. Empty output means no such section: the caller fails,
+# naming the prefix (#420). Literal prefix match, no regex escaping.
+changelog_section() {
+  awk -v p="$2" '
+    /^## / { if (f) exit; if (index($0, p " ") == 1 || $0 == p) { f = 1; next } }
+    f
+  ' "$1"
+}
+
 # The last column of a routing table row, stripped of backticks,
 # whitespace, and the "(user-level)" suffix.
 skill_from_row() {

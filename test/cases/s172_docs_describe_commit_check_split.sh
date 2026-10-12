@@ -21,10 +21,11 @@ if grep -q "pre-commit\`'s \`./check\` call (#263) has no timeout" "$r/PRD.md"; 
 fi
 grep -q 'check-commit' "$r/PRD.md" || fail "S172 — PRD does not mention check-commit"
 
-# CHANGELOG: an Unreleased line for #378 naming check-commit and the entry id.
-unreleased="$(awk '/^## Unreleased/{f=1;next} /^## /{f=0} f' "$r/CHANGELOG.md")"
-case "$unreleased" in *"#378"*"check-commit"*|*"check-commit"*"#378"*) : ;; *) fail "S172 — CHANGELOG Unreleased has no #378 line naming check-commit" ;; esac
-case "$unreleased" in *"ci-commit-check"*) : ;; *) fail "S172 — CHANGELOG Unreleased does not point adopters at ci-commit-check" ;; esac
+# CHANGELOG: the v0.2.1 section has a line for #378 naming check-commit and the entry id (the entry moved there with the cut, #420).
+v021="$(changelog_section "$r/CHANGELOG.md" '## v0.2.1')"
+[ -n "$v021" ] || fail "S172 — CHANGELOG has no non-empty '## v0.2.1' section"
+case "$v021" in *"#378"*"check-commit"*|*"check-commit"*"#378"*) : ;; *) fail "S172 — CHANGELOG v0.2.1 section has no #378 line naming check-commit" ;; esac
+case "$v021" in *"ci-commit-check"*) : ;; *) fail "S172 — CHANGELOG v0.2.1 section does not point adopters at ci-commit-check" ;; esac
 
 # check-convention names check-commit as a fixed command, and says CI calls only check.
 grep -q 'check-commit' "$r/skills/check-convention/SKILL.md" || fail "S172 — check-convention does not define check-commit"

@@ -2182,8 +2182,9 @@ something new is being added.
 - Then: the README no longer says a bad commit is caught before it
   reaches a branch and mentions `check-commit`; the PRD no longer lists
   the untimed `./check` call as debt and mentions `check-commit`; the
-  CHANGELOG Unreleased section has a #378 line naming `check-commit` and
-  `ci-commit-check`; `check-commit` is defined by `check-convention`; S144
+  CHANGELOG `## v0.2.1` section (not Unreleased: the #378 entry moved there
+  with the cut, issue #420 AC2) has a #378 line naming `check-commit` and
+  `ci-commit-check`, and a failure message names that section; `check-commit` is defined by `check-convention`; S144
   describes `check-commit`; the root `check-commit` is executable and runs
   the static part of `check`
 
@@ -4700,3 +4701,81 @@ that evidence and the final `./check` result.
     "When a recommendation is not accepted" and names `SKILL.md`.
     Counterexamples: the paragraph with `(#415)` or any other bare `#<n>`;
     without the in-file paragraph name; without `SKILL.md`.
+
+### S284 — CHANGELOG.md has dated release sections that match the tags
+**Covers:** F15
+- Given: CHANGELOG.md after the cut, and the tags v0.2.0 (2026-10-01),
+  v0.2.1 (2026-10-03) and v0.3.0 (2026-10-04) (issue #420 AC1; test file
+  `test/cases/s284_changelog_release_sections.sh`, using the
+  `changelog_section` helper in `test/lib.sh`)
+- When: its `## ` headings and the entries inside each section are read
+- Then: the `## ` headings in order are `## Unreleased`, `## v0.3.0`,
+  `## v0.2.1`, `## v0.2.0`; each version heading matches
+  `^## vX.Y.Z — .+ \(YYYY-MM-DD\)$` with the dates 2026-10-04, 2026-10-03
+  and 2026-10-01 respectively. Counterexamples: v0.2.0 still dated
+  2026-09-30; a version heading without a date; v0.2.1 above v0.3.0; a
+  missing section.
+- And: the `v0.2.1` section mentions #370, #372, #373, #374, #378 and #377
+  and none of #369, #371, #392, #402, #398; the `v0.3.0` section mentions
+  #369, #371, #392, #402 and #398 and none of #370, #378, #377, #417, #407.
+  Counterexamples: the #378 entry left in v0.3.0 or Unreleased; the #398
+  entry missing; a #417 or #407 entry added.
+- And: the Unreleased section holds none of the moved entry headers
+  (`Fix #378`, `Fix #377`, `Fix #371`, `Fix #392`, `Fix #402`,
+  `Epic #370`, `Epic #369`). Counterexample: any one still there.
+- And: the retargeted S172 stays green and fails when its #378 line is
+  removed from the `v0.2.1` section in a sandbox copy. The prose of the
+  entries is not asserted, and no line numbers are used.
+
+### S285 — Unreleased carries the #408 release notes, with compatibility terms and pending markers
+**Covers:** F15
+- Given: CHANGELOG.md `## Unreleased` after the cut and `CHANGES.md` (issue
+  #420 AC4a, AC5, AC6; test file
+  `test/cases/s285_unreleased_408_notes.sh`)
+- When: the Unreleased section is read
+- Then: it mentions each of #410, #414, #415, #422, #423, #424, #425, #426,
+  #427, #428 and #429 by number; it identifies #430 as acceptance evidence
+  and #420 as documentation closure (the number and the words on one line);
+  it contains each of the terms: fresh Reviewers, finding-class loop-back,
+  override, decision table, risk notes, macOS CI, shared Markdown handling,
+  effort removal, v2 reader/emitter (`v2` and `emitter`), migrated callers,
+  old-parser removal. Counterexamples: any one number or term missing; #430
+  or #420 present without its role.
+- And: #409 appears on a line containing "deferred"; #455 on a line
+  containing "paused" and "main"; #400, #413 and #421 each appear on a line
+  containing "absorbed" (case-insensitive). Counterexample: any one line
+  missing the word.
+- And: it contains `meaning version`-numbers equal to those in
+  `CHANGES.md`: the `Meaning version:` number under the
+  `## quality-review-before-merge` heading (4 today) and under
+  `## process-multi-agent-roles` (2 today) are read from `CHANGES.md` and
+  the Unreleased text must contain `quality-review-before-merge` and
+  `process-multi-agent-roles` each with `meaning version <that number>`.
+  Counterexamples: a hard-coded or stale number; a bump invented for any
+  other question.
+- And: it contains `--effort` and the exact phrase
+  `to be confirmed by #430`. Counterexamples: either missing.
+- Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
+  notes are accurate against merged work, that absorbed work is not
+  presented as a duplicate feature, that #404 item 6 is not implied
+  complete, that the release PR body carries the same scope statement, and
+  that adopter-impact and warning-visibility claims match the #430
+  observation. Prose beyond the fixed terms is not asserted.
+
+### S286 — the current-version line is v0.3.0 and v0.4.0 only appears as a proposal
+**Covers:** F15
+- Given: README.md, CHANGELOG.md and the other current documentation (issue
+  #420 AC3, AC6; test file `test/cases/s286_version_line_and_proposals.sh`)
+- When: README.md line 7 and every occurrence of `v0.4.0` are read
+- Then: the bold version token on README.md line 7 is `**v0.3.0**`, and the
+  other `v0.2.0` mentions in README.md are unchanged in number (the count
+  of `v0.2.0` lines outside line 7 equals the count before the change).
+  Counterexamples: line 7 still `**v0.2.0**`; a historical `v0.2.0`
+  mention rewritten.
+- And: no `## v0.4.0` heading exists in CHANGELOG.md, and every line in
+  README.md, CHANGELOG.md, `skills/` (including the injected orchestrator file) and the root
+  documents that contains `v0.4.0` also contains `propos` (case-insensitive).
+  Counterexamples: a `## v0.4.0` placeholder heading; a line stating
+  "v0.4.0 ships ..." without the word.
+- Not asserted: that #420's PR does not merge into `main`, choose the
+  version or tag (a review fact), and AC4b.
