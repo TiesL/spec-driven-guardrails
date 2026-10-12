@@ -862,9 +862,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Record:** a decision by rule is normal prose in a "Decisions by rule"
   section of A27's issue Pipeline log: date, row, decision, and the
   maintainer's objection deadline. Orchestrator records carry no
-  `model-record` marker. The deadline is pending the maintainer's Q2
-  answer; A29 recommends until the change reaches `main`, since a work-item
-  PR may merge into a release branch first.
+  `model-record` marker. Per human decision 2 (issue #415 comment
+  6119460026), the maintainer may object to a decision taken by rule until the
+  change reaches `main`, including after a work-item merge into a release
+  branch; the record states that deadline.
 - **Overrule:** before recording a departure from a role's recommendation,
   dispatch that recommending role for one pushback stating its arguments
   and the cost of the alternative; relay it, let the maintainer decide, and
@@ -877,12 +878,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   normal prose headed "Risk note": **Decision** (link), **What is
   accepted**, **Likely consequence**, **Early signal**, and **Revisit when**.
   This is the format referenced by A28's route override.
-- **Pending maintainer default (Q1):** whether a low-severity finding is
-  fixed in the PR or filed as an issue. A29 recommends filing it, with a
-  narrow text-only fix allowance during a round already required for a
-  medium/high finding. This recommendation is not the table rule until the
-  maintainer decides. An out-of-scope finding still needs its recorded
-  disposition and any scope-expansion decision.
+- **Low-severity findings (decided, Q1):** per human decision 1 (issue #415
+  comment 6119460026), a low-severity finding is filed as an issue by default.
+  A narrow text-only fix is allowed only during a round already required for a
+  medium/high finding. An out-of-scope finding still needs its recorded
+  Disposition and any scope-expansion decision.
 - **Trade-off and limit:** printing the table costs roughly 600 tokens per
   opted-in session, but keeps the rule at the existing Seam where it will
   be read. Revisit a plain linked `DECISIONS.md` if the table exceeds about
