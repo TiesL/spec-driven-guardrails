@@ -1703,6 +1703,13 @@ scope-expansion decision. Objection deadline: the maintainer may object to a
 decision taken by rule until the change reaches `main`, including after a
 work-item merge into a release branch.
 
+Structure of the injected file: the "Decided without asking" section holds
+only the table, the never-list, the record template and the override flow.
+The run rules that follow it (merge self-check, model per stage, marker line,
+no self-granted shortcuts, cannot dispatch, resume) are not under that
+heading, so none reads as a decision taken without asking, and each paragraph
+renders as its own paragraph.
+
 Acceptance criteria: issue #415 AC1–AC8. Tests can assert the four seeded
 rows, exclusions, contract-waiver limit, record template, pushback and risk-note
 text, and green `./check`. Completeness beyond the seeded rows and correct
