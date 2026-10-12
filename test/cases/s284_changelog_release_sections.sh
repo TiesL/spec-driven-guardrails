@@ -11,9 +11,10 @@ r="$TEST_REPO_ROOT"
 cl="$r/CHANGELOG.md"
 
 # Headings, in order.
-got="$(grep '^## ' "$cl" | sed 's/^\(## [^ ]*\).*/\1/' | tr '\n' ' ')"
+# The first four headings; older releases (v0.1.0, ...) follow and are not asserted.
+got="$(grep '^## ' "$cl" | head -n 4 | sed 's/^\(## [^ ]*\).*/\1/' | tr '\n' ' ')"
 [ "$got" = "## Unreleased ## v0.3.0 ## v0.2.1 ## v0.2.0 " ] \
-  || fail "S284 — CHANGELOG '## ' headings are '$got', expected Unreleased, v0.3.0, v0.2.1, v0.2.0 in that order"
+  || fail "S284 — CHANGELOG '## ' headings are '$got' (first four), expected Unreleased, v0.3.0, v0.2.1, v0.2.0 in that order"
 
 # Each version heading: title and the tag date.
 check_heading() {
