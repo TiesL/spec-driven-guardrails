@@ -104,6 +104,29 @@ elif scenario == "s282":
     require("risk note" in orch.lower() and "Architect" in orch, "Architect dispatch")
 elif scenario == "s283":
     require(len(orch.splitlines()) <= 80, "S180 line cap")
+    # Structure oracles (round 1, F44 / A29 "File structure").
+    headings = re.findall(r"(?m)^## .*$", orch)
+    require(headings and headings[-1] == "## Decided without asking", "decision section is not the last ## heading")
+    head = re.search(r"(?m)^## Decided without asking\s*$", orch)
+    require(head, "missing section Decided without asking")
+    run_paragraphs = re.split(r"\n\s*\n", orch[:head.start()])
+    for label, start in {
+        "merge self-check": "**Before asking for a merge,**", "model per stage": "**Model per stage.**",
+        "marker line": "**Marker line: never typed.**", "no self-granted shortcuts": "**No self-granted shortcuts.**",
+        "cannot dispatch": "**Cannot dispatch**", "resume": "**Resume:**",
+    }.items():
+        require(any(p.startswith(start) for p in run_paragraphs), f"run rule not a paragraph before the decision section: {label}")
+    override = [p for p in run_paragraphs if p.startswith("**Override.**")]
+    require(len(override) == 1, "one Override paragraph before the decision section")
+    require(not re.search(r"(?<![\w/])#\d+", override[0]), "Override paragraph carries a bare #<n> pointer")
+    require("When a recommendation is not accepted" in override[0] and "SKILL.md" in override[0], "Override paragraph does not name the not-accepted paragraph and SKILL.md")
+    lines = orch.splitlines()
+    idx = [i for i, l in enumerate(lines) if l.startswith("**When a recommendation is not accepted:**")]
+    require(len(idx) == 1, "one 'When a recommendation is not accepted' paragraph")
+    i = idx[0]
+    require(i > 0 and lines[i - 1].strip() == "", "no blank line before the not-accepted paragraph")
+    require(i + 1 >= len(lines) or lines[i + 1].strip() == "", "no blank line after the not-accepted paragraph")
+    require(not any(l.startswith("**Before asking for a merge,**") for l in lines[max(0, i - 1):i + 2]), "not-accepted paragraph adjacent to the merge self-check paragraph")
 else:
     raise AssertionError(f"unknown scenario {scenario}")
 
