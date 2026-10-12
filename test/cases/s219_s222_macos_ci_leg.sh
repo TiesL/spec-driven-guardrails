@@ -61,6 +61,8 @@ jobs:
       LC_ALL: en_US.UTF-8
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Platform tools first on PATH
         run: |
           echo "/bin" >> "$GITHUB_PATH"
