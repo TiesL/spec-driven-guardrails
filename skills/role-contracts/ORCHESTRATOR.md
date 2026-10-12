@@ -39,10 +39,29 @@ Never relay a Reviewer's suggested fix as a decision; the next role's brief link
 
 **Pipeline log.** Keep one comment per work-item issue, headed "Pipeline log", that you write and edit. It never carries a `model-record` marker. Write one line per dispatch when you dispatch: the stage, the round (for Review), the agent id the dispatch tool returned, and the model requested. The orchestrator may note the effort the platform transcript shows, in prose in its step comment, after the fact; it is a note for a human, not a marker attribute and not a check (A27, A33, A33a).
 
+## Decided without asking
+
+A row settles only a choice the contracts leave open. It can never waive a contract rule, including a fresh Reviewer each round or the design-finding loop-back route. Waiving a contract rule is a maintainer decision and follows the pushback and risk-note flow below.
+
+| Decision | Rule | Logged |
+| --- | --- | --- |
+| Tool for a scratch run | Use an available tool in a scratch directory or scratch repo; write nothing to a real repo or shared clone. Otherwise it is not a scratch run. | Pipeline log |
+| Model for a role when its floor is clear | Choose the cheapest model that clears that stage's floor per `model-choice`; ask only when no available model clearly clears a demanding floor. | Dispatch line in Pipeline log |
+| Low-severity finding: fix in the PR or file an issue | Pending maintainer Q1; do not infer a default from A29's recommendation. Preserve the finding's `Disposition` and scope-expansion rules. | Decision-by-rule record in Pipeline log, after Q1 is answered |
+| Naming and numbering | Follow the existing convention and take the next free number on the target line, checked with grep; never rename an ID a project has answered. | Decision-by-rule record in Pipeline log |
+| Notice location when a skill already answers it | Follow that skill's rule for `CHANGELOG.md` or `CHANGES.md` (A20). | Decision-by-rule record in Pipeline log |
+
+**Never decided by the orchestrator:** merges into `main`; the version bump or a `CHANGES.md` meaning-version bump; spec-touching decisions about the content of `PRD.md`, `ARCHITECTURE.md`, or `TEST-SCENARIOS.md`; anything outward-facing (release, tag, publication, external message, or repository setting); security trade-offs; any departure from a role's recommendation; or waiver of a contract rule. Existing authority for work-item merges into release branches is unchanged.
+
+**Record template:** In the issue's one Pipeline log comment, append to "Decisions by rule" one prose line with a date, table row and actual decision: `<YYYY-MM-DD>, row "<row>": <decision>. <Maintainer objection rule pending Q2.>` Do not put a `model-record` marker in an orchestrator record. Once Q2 is answered, replace the placeholder with the chosen objection rule; a work-item merge into a release branch and a merge into `main` are different deadlines.
+
+**When a recommendation is not accepted:** Record no decision yet. Dispatch the recommending role once for reasoned pushback before the decision is recorded; its input is its recommendation and the maintainer's words. A Reviewer pushback uses a fresh Reviewer. Relay the arguments and cost of the alternative to the maintainer. If the maintainer holds the position, do not repeat pushback; record a numbered human decision linking it. For a non-Architect role's overrule, dispatch the Architect for an issue risk note. The same flow applies to a proposed contract waiver; the Architect's risk-note format is in `SKILL.md`.
 **Before asking for a merge,** run this self-check and record its result as a line in the issue's Pipeline log: every Review round in the pipeline log has its own agent id, and no message went to an earlier Reviewer. GitHub artifacts cannot show whether two rounds came from different agent instances, so this check is a recorded self-check, not a pass. The same self-check also records:
 
 - No design-class finding was fixed without an Architect step before the fix commit.
 - The two-round trigger did not fire, or its Architect step is on the PR (count the rounds with `$SPEC_DRIVEN_GUARDRAILS_DIR/review-rounds.sh <pr> [<issue>]`, run with the project's checkout as the working directory; run inside the guardrails repo it would count that repo's PR with the same number).
+- No orchestrator-written issue comment carries a `model-record` marker.
+- Every overruled recommendation has an Architect risk note on the issue.
 
 Limit: class and severity are judgments. A script can only check that the route left evidence.
 
