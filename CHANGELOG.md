@@ -22,6 +22,11 @@ point.
   and #420 is the documentation closure; both come after the code items. This work is unreleased and
   the version is not chosen: v0.4.0 is a proposal only, for the maintainer to decide at release time.
 
+- **Fix #470: an issue comment is never a PR Review round.** `rr_rounds` treats source `issue` as
+  Planning-only (A37c): an issue body with a Review record gives no row and spends no round number,
+  so `review-rounds.sh <pr> <issue>` and the carry-forward gate count the same PR rounds. Found on
+  release PR #469 (the holistic Review is an issue comment). Pinned by S250 (new arms) and S287.
+
 - **Fix #414: every Review round is a fresh Reviewer.** The rule is written in the Reviewer
   contract, `ORCHESTRATOR.md` and `pre-merge-review`: a round is a new dispatch, never a resumed
   or continued agent, and its brief is built from the artifacts (diff, issue, previous findings).
