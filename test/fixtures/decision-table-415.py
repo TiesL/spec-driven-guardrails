@@ -34,7 +34,7 @@ if scenario == "s277":
     expected = {
         "scratch": (r"scratch (run|directory|repo)", r"available", r"scratch (directory|repo)", r"real repo|shared clone"),
         "model": (r"model.*role", r"cheapest", r"floor", r"model-choice"),
-        "low finding": (r"low.severity finding", r"maintainer", r"pending|Q1|answer"),
+        "low finding": (r"low.severity finding",),
         "naming": (r"naming and numbering", r"existing convention", r"next free", r"answered"),
     }
     for name, patterns in expected.items():
@@ -45,6 +45,15 @@ if scenario == "s277":
         for pattern in patterns[1:]:
             require(re.search(pattern, row[1], re.I), f"{name} rule missing {pattern}")
         require("log" in row[2].lower() or "record" in row[2].lower(), f"{name} log destination")
+    low = next(r for r in parsed if len(r) == 3 and re.search(r"low.severity finding", r[0], re.I))
+    rule = low[1]
+    require(re.search(r"file[^.]*\bissue\b[^.]*\bby default", rule, re.I), "low finding: file an issue by default")
+    require(re.search(r"text-only", rule, re.I) and re.search(r"medium or high", rule, re.I)
+            and re.search(r"already required", rule, re.I), "low finding: text-only exception tied to a round already required by medium/high")
+    require(re.search(r"never[^.]*low-only", rule, re.I), "low finding: no text-only fix in a low-only round")
+    require("`Disposition`" in rule and re.search(r"scope-expansion", rule, re.I), "low finding: Disposition and scope-expansion kept")
+    require(not re.search(r"pending|\bQ1\b|do not infer|if the maintainer|fix in the PR by default|default[^.]*fix", rule, re.I), "low finding: pending or fix-default wording")
+    require(not re.search(r"pending|\bQ[12]\b", low[2], re.I), "low finding: pending log wording")
 elif scenario == "s278":
     decision = section(orch, "Decided without asking")
     require("**Never decided by the orchestrator:**" in decision, "never-list heading")
@@ -76,7 +85,11 @@ elif scenario == "s280":
     for token in ("YYYY-MM-DD", "row", "decision"):
         require(token in template.group(), f"record template {token}")
     require("model-record" not in template.group(), "template carries stage marker")
-    # Q2 deadline oracle awaits maintainer.
+    require("until the change reaches `main`" in decision, "objection deadline: until the change reaches main")
+    require(re.search(r"including after a work-item merge into a release branch", decision), "objection deadline covers release-branch work-item merge")
+    require(not re.search(r"until the (release-branch )?merge\b", decision, re.I), "ambiguous merge deadline")
+    require(not re.search(r"pending|\bQ2\b|Once Q", decision, re.I), "pending Q2 wording")
+    require(re.search(r"object", decision, re.I), "objection rule stated")
 elif scenario == "s281":
     shared = section(roles, "Shared, across all five roles")
     require("When your recommendation is not accepted" in shared, "pushback contract")
@@ -101,7 +114,11 @@ if not os.environ.get("DT415_NEGATIVE"):
         "s277": [
             ("Use an available tool", "Use any tool", "scratch rule"),
             ("cheapest model", "preferred model", "model rule"),
-            ("Pending maintainer Q1", "Undecided", "low-finding rule"),
+            ("File a low-severity finding as an issue by default", "Fix a low-severity finding in the PR by default", "flipped default"),
+            ("only during a round already required by a medium or high finding, never in a low-only round", "during any round, including a low-only round", "exception widened to low-only round"),
+            ("only during a round already required by a medium or high finding, never in a low-only round", "never in a low-only round", "exception loses medium/high anchor"),
+            ("`Disposition` and scope-expansion rules", "rules", "Disposition and scope-expansion dropped"),
+            ("File a low-severity finding", "Pending maintainer Q1; file a low-severity finding", "pending wording returns"),
             ("next free number", "any number", "numbering rule"),
             ("| Tool for a scratch run |", "| Other choice |", "scratch row"),
             ("| Pipeline log |\n| Model", "| |\n| Model", "scratch log cell"),
@@ -121,7 +138,14 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("| Tool for a scratch run |", "| Review dispatch | Continue the previous Reviewer for the next round. | Pipeline log |\n| Tool for a scratch run |", "contradictory Reviewer row"),
             ("| Tool for a scratch run |", "| Design finding fix | Patch a design-class finding directly in code instead of routing to Architect. | Pipeline log |\n| Tool for a scratch run |", "contradictory design row"),
         ],
-        "s280": [("<decision>. <Maintainer", "<decision> <!-- model-record: stage=Review -->. <Maintainer", "marker in record")],
+        "s280": [
+            ("<decision>.` The maintainer", "<decision> <!-- model-record: stage=Review -->.` The maintainer", "marker in record"),
+            ("until the change reaches `main`", "until the merge", "ambiguous until the merge"),
+            ("until the change reaches `main`", "until the release-branch merge", "release-branch merge deadline"),
+            (", including after a work-item merge into a release branch", "", "release-branch coverage dropped"),
+            ("The maintainer may object to a decision by rule until the change reaches `main`, including after a work-item merge into a release branch.", "Log it.", "log-only rule, no deadline"),
+            ("The maintainer may object", "Maintainer objection rule pending Q2; the maintainer may object", "pending wording"),
+        ],
         "s281": [
             ("Before the decision is recorded", "After the decision is recorded", "pushback order"),
             ("numbered human decision links the pushback", "numbered human decision follows", "pushback link"),
