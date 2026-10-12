@@ -893,6 +893,17 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   correctly in a live session remains human judgment. Add to A27's
   pre-merge self-check that no orchestrator comment has a `model-record`
   marker and every overruled recommendation has an Architect risk note.
+- **File structure (round 1, F44):** in `ORCHESTRATOR.md` the "Decided
+  without asking" section is the last section of the file, so no closing
+  heading is needed and the later run rules (merge self-check, model per stage,
+  marker line, no self-granted shortcuts, cannot dispatch, resume) sit above
+  it, not under it. The "When a recommendation is not accepted" paragraph is
+  separated from its neighbours by blank lines. The file stays at or under S180's
+  80-line cap (the move costs one blank line; the "Limit:" sentence folds into
+  the self-check paragraph to pay for it). Not the DECISIONS.md trigger: that
+  fires on more than about ten rows or an overrun; the cap is unchanged. The
+  Override paragraph points to that in-file paragraph and `SKILL.md`, not to a
+  bare issue number.
 
 ### A33 — Effort is removed from the marker pipeline; the floor is judged on the model (#424, #413)
 - **Why:** the dispatch tool takes no effort argument, so effort was never set or verified: #405 W2 found that all 33 agents ran at medium whatever their markers said. A recorded effort was a claim nobody could check.
