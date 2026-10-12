@@ -11,4 +11,10 @@ if [ -n "${FAKE_GH_FLAG-}" ] && [ -f "$FAKE_GH_FLAG" ] && [[ "$*" == *"/reviews"
   echo "fake gh: injected fetch failure (#430 AC3)" >&2
   exit 1
 fi
+# The acceptance run observes a merge attempt. Keep its reviewed scratch PR
+# open even if all guard checks allow the command.
+if [ "${1-}" = pr ] && [ "${2-}" = merge ]; then
+  echo "fake gh: merge suppressed for #430 acceptance" >&2
+  exit 1
+fi
 exec "$real" "$@"

@@ -37,3 +37,10 @@ the pipeline; then the gate and `compliance-evidence.sh` on the resulting PR.
 `touch $W/fakegh.flag`, with `--output-format stream-json --verbose` so the
 transcript shows whether the `role-play-unchecked:` warning reached the session.
 The real gh path is hard-coded for this machine.
+The fake gh also refuses the final `gh pr merge` command, keeping the reviewed
+scratch PR open after the guard has run. Use `--include-hook-events` to capture
+the guard's stderr even when Claude does not receive it as command output.
+
+`inline-only-fixture.py` posts five deliberately invalid inline candidates to
+a scratch issue and PR. Run it only once per fixture: each invocation posts new
+comments.
