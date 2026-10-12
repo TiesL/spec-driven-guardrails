@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S285 — Unreleased carries the #408 release notes, with compatibility terms and pending markers (#420, AC4a, AC5, AC6).
+# S285 — Unreleased carries the #408 release notes and observed acceptance results (#420, AC4a, AC5, AC6).
 # Covers: F15
 
 set -uo pipefail
@@ -102,6 +102,13 @@ while IFS= read -r l; do
 done <<<"$entry"
 
 grep -qF -- '--effort' <<<"$unrel" || fail "S285 — Unreleased does not mention --effort"
-grep -qF 'to be confirmed by #430' <<<"$unrel" || fail "S285 — Unreleased has no 'to be confirmed by #430' marker"
+if grep -qF 'to be confirmed by #430' <<<"$unrel"; then
+  fail "S285 — Unreleased still has the #430 placeholder"
+fi
+for t in 'scratch #5 and #14 changed from non-blocking model warnings under v0.3.0 to blocking missing stages' \
+         'scratch #10 was non-blocking under both gates' \
+         'warning appeared in the hook transcript but did not reach the agent as command output'; do
+  grep -qiF -- "$t" <<<"$entry" || fail "S285 — compatibility entry does not contain '$t'"
+done
 
 test_done
