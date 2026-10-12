@@ -4587,12 +4587,15 @@ that evidence and the final `./check` result.
   fails the scratch example; a dearer model with the same clear floor fails
   the model example; reuse of an answered ID fails the numbering example.
   Removing any row or blanking its rule or log cell fails independently.
-- Pending Q1: the exact low-finding oracle is **file an issue** if the
-  maintainer adopts A29's recommendation, or **fix in this PR** if the
-  maintainer chooses that alternative. The test must assert the chosen
-  disposition in the row and its example, and reject the opposite default.
-  A29's recommendation alone does not select the oracle. Preserve the
-  existing out-of-scope `Disposition` and scope-expansion rules.
+- Decided oracle (Q1, maintainer decision 1): the low-severity row says
+  **file an issue by default**. It names one narrow exception: a text-only
+  fix may go into the PR, but only during a round already required for a
+  medium or high finding; a round with only low findings never qualifies.
+  The row keeps the existing out-of-scope `Disposition` and any
+  scope-expansion decision. A counterexample row that defaults to fixing
+  in the PR, or allows the text-only fix in a low-only round, or drops the
+  Disposition/scope-expansion rule, fails. No conditional or pending
+  wording remains.
 
 ### S278 — the never-list excludes human and role decisions
 **Covers:** F44
@@ -4624,16 +4627,16 @@ that evidence and the final `./check` result.
 - When: the prescribed record is rendered in the work-item issue's
   `Pipeline log` / `Decisions by rule` section
 - Then: the prose contains the date, identifiable row, and actual
-  decision, plus the maintainer objection rule selected for Q2. Neither
+  decision, plus the objection deadline decided for Q2. Neither
   the template nor the rendered orchestrator record contains a
   `model-record` stage marker; an otherwise valid record in a PR comment,
   with an empty row or decision, or with a stage marker fails. The
   pipeline log remains the one issue comment of S211.
-- Pending Q2: if the maintainer chooses A29's window, assert an objection
-  deadline at the change's merge into `main` (not merely the work-item
-  merge into a release branch). If the maintainer chooses log-only,
-  assert that exact rule and do not invent a deadline. A29's proposal and
-  the issue's ambiguous “the merge” do not settle this assertion.
+- Decided oracle (Q2, maintainer decision 2): the record template states
+  the objection deadline as **until the change reaches `main`**, including
+  after a work-item merge into a release branch. A template saying only
+  "until the merge" (ambiguous), a deadline at the release-branch merge,
+  a log-only rule with no deadline, or any leftover pending wording fails.
 
 ### S281 — a rejected recommendation gets one pushback before a human decision
 **Covers:** F44
