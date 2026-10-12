@@ -136,7 +136,7 @@ if not os.environ.get("DT415_NEGATIVE"):
     mutations = {
         "s277": [
             ("Use an available tool", "Use any tool", "scratch rule"),
-            ("cheapest model", "preferred model", "model rule"),
+            ("Choose the cheapest model", "Choose the preferred model", "model rule"),
             ("File a low-severity finding as an issue by default", "Fix a low-severity finding in the PR by default", "flipped default"),
             ("only during a round already required by a medium or high finding, never in a low-only round", "during any round, including a low-only round", "exception widened to low-only round"),
             ("only during a round already required by a medium or high finding, never in a low-only round", "never in a low-only round", "exception loses medium/high anchor"),
@@ -175,7 +175,16 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("Reviewer is a fresh Reviewer", "Reviewer can continue", "fresh Reviewer"),
         ],
         "s282": [("**Likely consequence**", "**Possible outcome**", "risk-note field")],
-        "s283": [("## Decided without asking", "\n" * 81 + "## Decided without asking", "line cap")],
+        "s283": [
+            ("## Decided without asking", "\n" * 81 + "## Decided without asking", "line cap"),
+            ("Do not put a `model-record` marker in an orchestrator record.", "Do not put a `model-record` marker in an orchestrator record.\n\n## Run rules", "heading after the section"),
+            ("\n\n**Cannot dispatch**", "\n\n## Decided without asking\n\n**Cannot dispatch**", "rule moved below the heading"),
+            ("\n\n**Cannot dispatch**", "\n\nCannot dispatch", "rule removed"),
+            ("\n\n**When a recommendation is not accepted:**", "\n**When a recommendation is not accepted:**", "adjacency re-created"),
+            ("the A29 flow, defined in \"When a recommendation is not accepted\" below, applies", "the A29 (#415) flow applies", "bare #n in Override"),
+            ("The Architect's risk-note format is in `SKILL.md`; this file", "The Architect's risk-note format is elsewhere; this file", "SKILL.md replaced"),
+            ("defined in \"When a recommendation is not accepted\" below", "defined below", "paragraph name replaced"),
+        ],
     }
     for old, new, label in mutations[scenario]:
         source = roles if scenario in ("s281", "s282") else orch
