@@ -47,10 +47,12 @@ point.
 - **Fix #429: `compliance-evidence.sh` on record v2, and old-parser removal.** The old marker parser is deleted, and a one-definition lint keeps record handling inside `lib/`; migrated callers are all on the v2 reader.
 - **Not in this release or not separate.** #409 (caveman style by default) is deferred to a later release; #455 (Codex support) is outside this release and paused until #408 merges into `main`. Absorbed work: #400 and #421 are carried by #427 and #426, #413 by #424, and #404 items 1-5 by the redesign slices (item 6 is excluded and not complete); #400, #413 and #421 are absorbed, not separate features, and their own issues are reconciled separately.
 - **Compatibility and limits (#408).**
-  Adopters re-confirm two answers in `CHANGES.md`:
-  `quality-review-before-merge` is at meaning version 4 (the floor is on the model alone)
-  and `process-multi-agent-roles` is at meaning version 2 (stricter merge guard).
+  Adopters re-confirm three questions in `CHANGES.md`:
+  `quality-review-before-merge` moves from meaning version 3 to meaning version 4 (the floor is on the model alone),
+  `process-model-choice` is first versioned at meaning version 2 (effort is no longer recorded),
+  and `process-multi-agent-roles` is first versioned at meaning version 2 (stricter merge guard).
   Only a record on its own line in column 0 counts; named near-misses are context and a newer candidate decides over an older one; an invalid override is refused, and the remedies are the emitter, a corrected record, or a valid override.
+  Accepted reader limits, named in the `lib/markdown.sh` header: nested list prefixes, list items inside a blockquote and tab expansion beyond the stated rule are not handled; `continuation-line-list-fence` (#445) can read a marker as live after a column-0 closer that GitHub renders inside the list item; `ordered-item-after-paragraph` (#446) can read a marker as live where GitHub renders it quoted. The one-definition lint is a bounded shell syntax check: variable indirection, generated code and other shell forms can evade it, and the shared reader is not CommonMark in full.
   `--effort` is accepted and ignored with a warning; the same model at lower effort meets the floor and nothing flags it, and a different model's capability cannot be verified from artifacts.
   Fail-open paths (no `gh`, no network) are not a successful check, and artifact checks do not prove live behavior.
   Adopter impact and whether the guard's warnings reach a session: to be confirmed by #430.
@@ -74,8 +76,9 @@ point.
   (`bug`, `documentation`, `enhancement`, or `process`), a status (`status:backlog`,
   `status:in-progress`, `status:blocked`) and a role (`role:product` through `role:reviewer`, the
   multi-agent phase currently active). Status and role are maintained by hand by the orchestrator;
-  `role-label-staleness.sh` only flags a role label that lags the evidence. Documented in this
-  repo's `CLAUDE.md` only, not offered to adopted projects.
+  `role-label-staleness.sh` only flags a role label that lags the evidence. Documented in
+  `WORKFLOW.md`, which adopted projects load through the `CLAUDE.md` symlink; there is no
+  `CHANGES.md` question and no `adopt.sh` offer for it.
 
 - **Fix #402: markers are produced by one command, never typed.** `marker_emit` in
   `lib/model-record.sh` and its wrapper `skills/pre-merge-review/model-record-emit.sh --stage
