@@ -4709,8 +4709,9 @@ that evidence and the final `./check` result.
   `test/cases/s284_changelog_release_sections.sh`, using the
   `changelog_section` helper in `test/lib.sh`)
 - When: its `## ` headings and the entries inside each section are read
-- Then: the `## ` headings in order are `## Unreleased`, `## v0.3.0`,
-  `## v0.2.1`, `## v0.2.0`; each version heading matches
+- Then: the first four `## ` headings in order are `## Unreleased`,
+  `## v0.3.0`, `## v0.2.1`, `## v0.2.0` (older sections follow and are not
+  asserted); each of those version headings matches
   `^## vX.Y.Z — .+ \(YYYY-MM-DD\)$` with the dates 2026-10-04, 2026-10-03
   and 2026-10-01 respectively. Counterexamples: v0.2.0 still dated
   2026-09-30; a version heading without a date; v0.2.1 above v0.3.0; a
@@ -4745,14 +4746,38 @@ that evidence and the final `./check` result.
   containing "paused" and "main"; #400, #413 and #421 each appear on a line
   containing "absorbed" (case-insensitive). Counterexample: any one line
   missing the word.
-- And: it contains `meaning version`-numbers equal to those in
-  `CHANGES.md`: the `Meaning version:` number under the
-  `## quality-review-before-merge` heading (4 today) and under
-  `## process-multi-agent-roles` (2 today) are read from `CHANGES.md` and
-  the Unreleased text must contain `quality-review-before-merge` and
-  `process-multi-agent-roles` each with `meaning version <that number>`.
-  Counterexamples: a hard-coded or stale number; a bump invented for any
-  other question.
+- And: the compatibility entry (the `- **Compatibility and limits (#408).**`
+  bullet inside Unreleased, up to the next top-level bullet) names every
+  question whose `Meaning version:` differs between `git show
+  v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
+  `meaning version <new number>`. A question differs when its `## <name>`
+  section has a `Meaning version:` number in the new file that is absent from
+  or unequal to the old file's. Today that set is
+  `quality-review-before-merge` (4), `process-model-choice` (2) and
+  `process-multi-agent-roles` (2); the test derives it, it does not list it.
+  Any count the entry states in words or digits ("two answers", "3
+  questions") equals the set size. Counterexamples: the set computed from the
+  working tree alone or hard-coded; `process-model-choice` omitted; the entry
+  saying "two" while three differ; a bump invented for a question whose number
+  did not change. If tag `v0.3.0` does not resolve to a commit, the test
+  fails with a message naming the tag and "fetch tags / fetch-depth: 0", never
+  skips or passes: `ci.yml` checks out with `fetch-depth: 0`, but `macos.yml`
+  runs `test/run.sh` on a shallow checkout, so that workflow must fetch tags
+  too. Counterexample: the test passing in a clone without the tag.
+- And: the compatibility entry names the accepted limits and does not call the
+  strict reader or the lint complete. Reader: every limit name the header of
+  `lib/markdown.sh` lists as an accepted-limit bullet
+  (`continuation-line-list-fence`, `ordered-item-after-paragraph` today; read
+  from the header lines `#     * <name>:`, so a renamed or added limit is
+  tracked) appears in the entry. Lint: the entry contains `one-definition` and
+  `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
+  still states it can evade (anchor against drift). No entry line mentioning
+  the reader, the lint or `CommonMark` contains `complete`, `exhaustive` or
+  `guarantee` unless it also contains `not`, `no `, `cannot` or `outside`.
+  Counterexamples: the entry without `ordered-item-after-paragraph`; a lint
+  sentence without the evasion limit; "the strict reader is complete";
+  a header limit added without an entry mention. A pointer such as "see
+  `lib/markdown.sh`" does not substitute for the names.
 - And: it contains `--effort` and the exact phrase
   `to be confirmed by #430`. Counterexamples: either missing.
 - Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
@@ -4777,5 +4802,8 @@ that evidence and the final `./check` result.
   documents that contains `v0.4.0` also contains `propos` (case-insensitive).
   Counterexamples: a `## v0.4.0` placeholder heading; a line stating
   "v0.4.0 ships ..." without the word.
+- Excluded: `TEST-SCENARIOS.md` is not scanned, because the scenarios quote
+  `v0.4.0` as test data without the word `propos`; scanning it would fail on
+  its own specification text.
 - Not asserted: that #420's PR does not merge into `main`, choose the
   version or tag (a review fact), and AC4b.
