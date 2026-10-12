@@ -827,7 +827,13 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   mentioned in round k) is cleared by any later round that mentions the slug,
   open or resolved, so the gate reports a slug iff the latest round that
   mentions it leaves it open and is not the last round, one line per slug
-  ending ` (round <k>)`, k the round that dropped it. It is not a gate and not wired into the merge guard: the trigger
+  ending ` (round <k>)`, k the round that dropped it. A37c (#470): the source
+  decides what a body can be. In `rr_rounds` a body with source `issue` can
+  only be a `P` row, never an `R` row, so an issue-comment Review record
+  (the holistic review on the release epic) is no round and takes no round
+  number; a Planning record on the issue keeps its `P` row against the
+  latest PR round. The rule lives in `rr_rounds` alone, so both callers
+  agree with no caller-side filter. It is not a gate and not wired into the merge guard: the trigger
   turns on severity, which it cannot see. The orchestrator runs it in its
   self-check.
 - **Rejected:** a `severity=` attribute on `finding:` markers (a marker

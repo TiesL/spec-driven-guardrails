@@ -15,6 +15,11 @@
 #                    one round, in time order, six tab separated fields:
 #                        R TAB <n> TAB <created_at> TAB <source> TAB <url> TAB <body>
 #                        P TAB <n> TAB <created_at> TAB <source> TAB <url> TAB <body>
+#                    Source issue is Planning-only (A37c, #470): an issue body can be a P
+#                    row but never an R row. An issue body whose first candidate is a
+#                    Review record, or that holds only a legacy done marker, gives NO row
+#                    and spends no round number; round numbers count comment and review
+#                    bodies only.
 #                    R: n is the round's 1-based number. P: the number of the latest
 #                    round before it. The body field is the input field unchanged.
 #                    Order: created_at, then source (issue, comment, review), then
@@ -100,6 +105,8 @@ rr_rounds() {
         fi
         ;;
     esac
+    # A37c: source issue is Planning-only; an issue Review is no PR round (and no P row either)
+    if [ "$kind" = R ] && [ "$src" = issue ]; then kind=""; fi
     [ -n "$kind" ] || continue
     case "$src" in
       issue) rank=0 ;;

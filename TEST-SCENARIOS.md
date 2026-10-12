@@ -2694,6 +2694,52 @@ something new is being added.
   the project's checkout as the working directory, not "from the guardrails
   clone"
 
+- Issue #470 amendment (A37c; `issue-review-counted-as-pr-round`, found on
+  PR #469): source `issue` is Planning-only. The paragraphs above stay true
+  for `comment` and `review`; for source `issue` they are amended as follows.
+  (a) An issue body whose first candidate is a Review record (ok or near-miss)
+  or that holds only a legacy done marker yields NO row: not an `R` row, not
+  a downgraded `P` row, and it spends no round number. (b) A Planning-first
+  issue body keeps its `P` row after at least one PR round (n the latest PR
+  round before it); before any PR round it still gives no row. (c) Order is
+  unchanged (`created_at`, then issue, comment, review, then input order), and
+  round numbers count `comment`/`review` bodies only. (d) Six-field `R` rows
+  and the failed-read contract are unchanged. In `test/cases/s250_...sh` the
+  following existing expectations must flip red to green: "time order across
+  sources" (an input `issue` Review at T3 currently gives `R:2:$T3:issue`;
+  new expectation: that row is absent and the T4 comment is `R:2:$T4:comment`
+  - use inputs review T1, issue-Review T3, comment T4, expected
+  `R:1:$T1:review`, `R:2:$T4:comment`), and "tie issue comment review" (an
+  issue Review at T1 with a comment and a review at T1 currently gives
+  `R:1:$T1:issue`; new expectation `R:1:$T1:comment`, `R:2:$T1:review`; the
+  tie rank for a `P` row is pinned separately by arm 7). The "planning rows" arm (`P:1:$T4:issue`) and all
+  `comment`/`review` expectations stay unchanged. New arms, each in all
+  `$RH_MODES`: (1) PR Review comment T1 + issue Review T2 gives exactly
+  `R:1:$T1:comment` (a body with source `comment` and `issue` Review at the
+  same instant likewise gives one `comment` round); (2) issue Review alone
+  gives empty stdout, status 0; (3) issue legacy done marker alone gives empty
+  stdout; an issue near-miss Review alone gives empty stdout; (4) issue Review
+  before any PR round gives no row, then a PR Review gives `R:1`, not `R:2`;
+  (5) PR Review T1, issue Review T2, issue Planning T3, PR Review T4 gives
+  `R:1:$T1:comment`, `P:1:$T3:issue`, `R:2:$T4:comment` (the issue Review is
+  neither a round nor the n of the Planning row; this is the falsifier at the
+  lib seam: a "downgrade issue Review to `P`" mutant adds `P:1:$T2:issue`);
+  (6) an issue body with a fenced Review record and a live Planning record
+  still yields its `P` row (the first-candidate rule is unchanged); (7) tie
+  at T1: PR comment Review, issue Planning, PR review Review gives
+  `R:1:$T1:issue`-free output `R:1:$T1:comment`, `P:1:$T1:issue`... - precisely:
+  a tie ranks issue before comment, so the issue Planning sorts first, before
+  any round, and gives NO row: expect `R:1:$T1:comment`, `R:2:$T1:review`
+  only. Kill
+  table additions: count issue `R`; downgrade issue Review to `P`; drop issue
+  `P` (arm 5 and the existing planning-rows arm); filter in `review-rounds.sh`
+  instead of the lib (killed by S287 arm B' - a third caller that feeds
+  `rr_rounds` an issue Review directly is arm 1/5 here, which a caller-side
+  filter leaves red); give the issue Review a round number but hide its row.
+  Red today: arms 1, 2, 3, 4, 5 and the two flipped expectations (the lib
+  returns issue `R` rows today); the arm 6 and the planning-rows arm are
+  green today and must stay green.
+
 - Review-round-1 helper fidelity (`source-matcher-flags`): extraction with
   `test_source_match -oE` returns precisely every matched executable-path
   token, including multiple matches on one line, without surrounding prose,
@@ -4810,3 +4856,59 @@ that evidence and the final `./check` result.
   its own specification text.
 - Not asserted: that #420's PR does not merge into `main`, choose the
   version or tag (a review fact), and AC4b.
+
+### S287 — an issue comment carrying a Review record is no PR Review round: review-rounds.sh and the carry-forward gate count the same PR rounds when the issue holds a Review record and a later Planning record (A37c)
+**Covers:** F42, F28
+- Given: the two real scripts on one recording fake `gh` (as S253) that now
+  also serves `repos/{owner}/{repo}/issues/<issue>/comments` for an issue
+  number passed to `review-rounds.sh <pr> <issue>` (issue #470 AC1-AC4; the
+  PR #469 finding `issue-review-counted-as-pr-round`; A37, A37c). Timeline,
+  all distinct instants T1 < T2 < T3 < T4 < T5: arm A (the AC4 falsifier):
+  issue comment at T1 holds an ok Review record with an open finding
+  `<!-- finding:z status=open -->`; PR comment at T2 holds an ok Review
+  record with `<!-- finding:x status=open -->`; issue comment at T3 holds an
+  ok Planning record. Arm B: arm A plus a second PR Review record at T4 (a
+  PR review in the reviews endpoint) that does not mention x. Arm C: the
+  issue Review record at T1 and a PR comment at T2 holding only a human
+  sentence (no PR round at all). Arm D: arm A with the issue comment at T1
+  holding a legacy `<!-- pre-merge-review:done sha=<40 hex> -->` instead of
+  the record. Arm E: arm A, but no issue number passed.
+- When: `review-rounds.sh <pr> <issue>` and `finding-carryforward-gate.sh
+  <pr>` run on each arm (the gate never receives the issue number)
+- Then: arm A: `review-rounds.sh` prints exactly `review-round: 1 at=<T2>`,
+  `planning-after: 1`, `review-rounds: 1` in that order (one PR round; the
+  later issue Planning still shows as a planning-after record, so the
+  chronology is intact); the gate prints nothing (x is open only in the last
+  and only round, and z, open only in an issue comment, is never reported) and
+  exits 0. Arm B: `review-round: 1 at=<T2>`, `planning-after: 1`,
+  `review-round: 2 at=<T4>`, `review-rounds: 2`; the gate reports exactly x
+  as dropped by round 2 (so the script's two rounds and the gate's two rounds
+  are the same two bodies, T2 and T4, and the issue Review is in neither
+  chain). Arm C: `review-rounds: 0` and no `review-round:` line, no
+  `planning-after:` line; the gate prints nothing. Arm D: identical stdout to
+  arm A (a legacy done marker on the issue is no round either). Arm E:
+  identical `review-round:`/`review-rounds:` lines to arm A and no
+  `planning-after:` line (no issue read at all), so the issue argument adds
+  only the Planning chronology and never a round. In every arm the counts
+  from the script equal the number of chain bodies the gate compared (derived
+  from arm A/B's x reported or not), asserted explicitly, not left implicit.
+  Threat model: accidental (the #408 holistic Review is an issue comment
+  carrying a genuine Review record; no forger). Red today: arm A prints
+  `review-round: 1 at=<T1>`, `review-round: 2 at=<T2>`, `planning-after: 2`,
+  `review-rounds: 2`; arm B prints `review-rounds: 3`; arm C prints
+  `review-rounds: 1`; arm D prints `review-rounds: 2`; arm E is green today
+  and a control. The gate's expectations are green today and must stay green
+  (they pin the agreement from the gate side). Kill table: count issue
+  Review as a round (A, B, C, D); downgrade issue Review to a Planning row
+  (A: an extra `planning-after`); drop the issue Planning row (A, B:
+  `planning-after` missing); number the Planning row from the issue Review;
+  a filter in `review-rounds.sh` rather than the lib (this scenario passes
+  with it, S250 arms 1-5 do not: the pair is what catches it); make the gate
+  read the issue endpoint; change a `review-round:`/`planning-after:`/
+  `review-rounds:` line format. The scripts' header comments (`review-rounds.sh`
+  line 10 area, the lib header) no longer say an issue row may be an `R`:
+  asserted by grepping both files for an issue-sourced `R` claim, not
+  prose beyond the fixed term `Planning-only`.
+- Not asserted: the Reviewer's judgment on whether the A37c text is complete,
+  and `release-implementation-record` (a separate, Developer-evidence item
+  in #470 with no test of its own; the live gate run is its check).

@@ -147,11 +147,12 @@ one "done marker in a blockquote" 0 "> <!-- pre-merge-review:done sha=${RR_SHA40
 r_a="a${NL}${rev}" r_b="b${NL}${rev}" r_c="c${NL}${rev}"
 for mode in $RH_MODES; do
   # time order, whatever the input order, across all three sources
+  # (A37c: an issue Review at T3 is no round and spends no number)
   rows="$(rrl_row "$T4" comment "$r_a")${NL}$(rrl_row "$T1" review "$r_b")${NL}$(rrl_row "$T3" issue "$r_c")${NL}$(rrl_row "$T2" comment "$dsc")"
-  expect "time order across sources" "$mode" "$rows" "R:1:$T1:review${NL}R:2:$T3:issue${NL}R:3:$T4:comment"
-  # a tie: issue, then comment, then review, whatever the input order
+  expect "time order across sources" "$mode" "$rows" "R:1:$T1:review${NL}R:2:$T4:comment"
+  # a tie: comment, then review, whatever the input order; the issue Review at the same instant is no round
   rows="$(rrl_row "$T1" review "$r_a")${NL}$(rrl_row "$T1" comment "$r_b")${NL}$(rrl_row "$T1" issue "$r_c")"
-  expect "tie issue comment review" "$mode" "$rows" "R:1:$T1:issue${NL}R:2:$T1:comment${NL}R:3:$T1:review"
+  expect "tie issue comment review" "$mode" "$rows" "R:1:$T1:comment${NL}R:2:$T1:review"
   # a tie inside one source: input order, and every row survives
   rows="$(rrl_row "$T1" comment "first${NL}${rev}")${NL}$(rrl_row "$T1" comment "second${NL}${rev}")"
   rrl_call "$mode" "$rows"
@@ -161,6 +162,25 @@ for mode in $RH_MODES; do
   # Planning rows: none before round 1, one after a round carrying that round's number; no round number is spent on it
   rows="$(rrl_row "$T1" comment "$pln")${NL}$(rrl_row "$T2" comment "$r_a")${NL}$(rrl_row "$T3" comment "$pln")${NL}$(rrl_row "$T4" issue "$pln")${NL}$(rrl_row "$T5" comment "$r_b")"
   expect "planning rows" "$mode" "$rows" "R:1:$T2:comment${NL}P:1:$T3:comment${NL}P:1:$T4:issue${NL}R:2:$T5:comment"
+  # Issue #470 / A37c: source issue is Planning-only
+  # (1) a PR Review and an issue Review is ONE round; likewise at one instant
+  expect "issue Review after a PR Review" "$mode" "$(rrl_row "$T1" comment "$r_a")${NL}$(rrl_row "$T2" issue "$r_c")" "R:1:$T1:comment"
+  expect "issue Review at the PR Review's instant" "$mode" "$(rrl_row "$T1" issue "$r_c")${NL}$(rrl_row "$T1" comment "$r_a")" "R:1:$T1:comment"
+  # (2) (3) an issue Review, a legacy done marker, a near-miss Review alone: no row
+  expect "issue Review alone" "$mode" "$(rrl_row "$T1" issue "$r_c")" ""
+  expect "issue legacy done marker alone" "$mode" "$(rrl_row "$T1" issue "legacy${NL}${done_m}")" ""
+  expect "issue near-miss Review alone" "$mode" "$(rrl_row "$T1" issue "${rev} trailing")" ""
+  # (4) an issue Review before any PR round does not shift the numbering
+  expect "issue Review before the first PR round" "$mode" "$(rrl_row "$T1" issue "$r_c")${NL}$(rrl_row "$T2" review "$r_a")" "R:1:$T2:review"
+  # (5) PR Review, issue Review, issue Planning, PR Review: the issue Review is neither a round nor a P row
+  rows="$(rrl_row "$T1" comment "$r_a")${NL}$(rrl_row "$T2" issue "$r_c")${NL}$(rrl_row "$T3" issue "$pln")${NL}$(rrl_row "$T4" comment "$r_b")"
+  expect "issue Review between PR rounds" "$mode" "$rows" "R:1:$T1:comment${NL}P:1:$T3:issue${NL}R:2:$T4:comment"
+  # (6) a fenced issue Review record and a live Planning record still gives its P row
+  rows="$(rrl_row "$T1" comment "$r_a")${NL}$(rrl_row "$T2" issue "Example:${NL}\`\`\`${NL}${rev}${NL}\`\`\`${NL}${pln}")"
+  expect "issue fenced Review, live Planning" "$mode" "$rows" "R:1:$T1:comment${NL}P:1:$T2:issue"
+  # (7) tie at T1: the issue Planning ranks first, before any round: no row
+  rows="$(rrl_row "$T1" comment "$r_a")${NL}$(rrl_row "$T1" issue "$pln")${NL}$(rrl_row "$T1" review "$r_b")"
+  expect "tie with an issue Planning" "$mode" "$rows" "R:1:$T1:comment${NL}R:2:$T1:review"
   # zero rounds: status 0, empty stdout; empty input too
   expect "zero rounds" "$mode" "$(rrl_row "$T1" comment "talk")${NL}$(rrl_row "$T2" comment "$tst")" ""
   expect "empty input" "$mode" "" ""

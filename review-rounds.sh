@@ -16,7 +16,9 @@
 # when its FIRST live marker is a Review marker (well-formed or malformed); a
 # body with no model-record marker but a pre-merge-review:done marker (the
 # HTML-comment form with a 40-hex sha) is a legacy round. Quoted examples (fenced, tilde-fenced, code span, blockquote)
-# never count. Order is created_at / submitted_at; ties: issue comments, PR comments, PR reviews.
+# never count. An issue comment (the optional issue argument) is Planning-only (A37c):
+# it can show up as a planning-after line but is never a round, even when it holds a
+# Review record. Order is created_at / submitted_at; ties: issue comments, PR comments, PR reviews.
 #
 # Limit: severity is prose, not in any marker, so this cannot say whether a
 # round counts toward the two-round trigger. Class and severity are judgments;
