@@ -765,7 +765,7 @@ if ! command -v jq >/dev/null 2>&1; then
   # instead, naming exactly what's missing and why.
   fail "S151 — jq not installed; cannot run Q21-Q23 (transport-level checks against the real CALL_A_JQ expression and live_text())"
 else
-  call_a_jq_line="$(grep '^CALL_A_JQ=' "$script")"
+  call_a_jq_line="$(grep -E '^(_BODY_JQ|CALL_A_JQ)=' "$script")"
   eval "$call_a_jq_line"
   # #423: live_text() is defined once, in lib/markdown.sh (the copy that used
   # to be extracted from the collector is gone), so the transport checks
@@ -783,7 +783,7 @@ else
   q21_body=$'```\r\nsome demo content\r\n```\r\n<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->\r'
   q21_json="$(jq -n --arg body "$q21_body" '{body:$body}')"
   q21_out="$(printf '%s' "$q21_json" | jq -r "$CALL_A_JQ")"
-  q21_raw_line="$(printf '%s' "$q21_out" | grep '^TEXT' | cut -f2-)"
+  q21_raw_line="$(printf '%s' "$q21_out" | grep '^TEXT' | cut -f3-)"
   q21_raw_body="$(printf '%s' "$q21_raw_line" | tr '\001' '\n')"
   case "$q21_raw_body" in
     *$'\r'*) fail "S151 Q21 (transport) — a \\r survived the jq gsub; raw body still contains one" ;;
@@ -797,7 +797,7 @@ else
   q22_body=$'text with a stray \001 byte then <!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->'
   q22_json="$(jq -n --arg body "$q22_body" '{body:$body}')"
   q22_out="$(printf '%s' "$q22_json" | jq -r "$CALL_A_JQ")"
-  q22_raw_line="$(printf '%s' "$q22_out" | grep '^TEXT' | cut -f2-)"
+  q22_raw_line="$(printf '%s' "$q22_out" | grep '^TEXT' | cut -f3-)"
   q22_raw_body="$(printf '%s' "$q22_raw_line" | tr '\001' '\n')"
   q22_line_count="$(printf '%s\n' "$q22_raw_body" | wc -l | tr -d ' ')"
   [ "$q22_line_count" = "1" ] || fail "S151 Q22 (transport) — a literal U+0001 in the body forged a line break: expected 1 line, got $q22_line_count"
@@ -810,7 +810,7 @@ else
   q23_body=$'first line\nsecond line\n<!-- pre-merge-review:done sha=6e00a8c38bf18f19cd53084b5c77ae476c1e74e6 -->'
   q23_json="$(jq -n --arg body "$q23_body" '{body:$body}')"
   q23_out="$(printf '%s' "$q23_json" | jq -r "$CALL_A_JQ")"
-  q23_raw_line="$(printf '%s' "$q23_out" | grep '^TEXT' | cut -f2-)"
+  q23_raw_line="$(printf '%s' "$q23_out" | grep '^TEXT' | cut -f3-)"
   q23_raw_body="$(printf '%s' "$q23_raw_line" | tr '\001' '\n')"
   q23_line_count="$(printf '%s\n' "$q23_raw_body" | wc -l | tr -d ' ')"
   [ "$q23_line_count" = "3" ] || fail "S151 Q23 (transport) — expected 3 real lines after the sentinel round-trip, got $q23_line_count"
@@ -858,6 +858,11 @@ c_ind="${c_ind//$NL/$'\001'}"
 ce "Closes #265" "$impl_c
 $rev_c_low
 Indented example:${NL}${NL}$c_ind" ""
-[ "$(row_status "$ce_out" 2)" = unverifiable-from-artifacts ] || fail "S151 transferred S151 transferred S201 indent — legacy collector must count indented example"
+[ "$(row_status "$ce_out" 2)" = evidenced ] || fail "S151 transferred indent — quoted model example cannot replace Implementation"
+
+# #429 AC4 explicitly reverses #308 AC3 for inline model-record evidence.
+# Q6/Q7/Q8 done-marker gate-3 controls above stay outside record v2.
+ce "Closes #265" 'Done. <!-- model-record: stage=Planning model="m" -->' ""
+[ "$(row_status "$ce_out" 1)" = indeterminate ] || fail "S151 AC4 model-record reversal — inline Planning must be indeterminate"
 
 test_done

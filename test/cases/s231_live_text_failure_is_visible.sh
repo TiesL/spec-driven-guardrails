@@ -95,7 +95,7 @@ gate_run() { # from to: sets g_out
   g_out="$(cd "$optin" && with_shim "$1" "$2" "$gate" 246 2>/dev/null)"
 }
 # a visible finding is a line starting with `model-record:`
-gate_visible() { LC_ALL=C grep -aq '^model-record:' <<<"$g_out"; }
+gate_visible() { LC_ALL=C test_source_match -aq '^model-record:' <<<"$g_out"; }
 
 gate_run 0 0
 g_total="$(shim_count)"

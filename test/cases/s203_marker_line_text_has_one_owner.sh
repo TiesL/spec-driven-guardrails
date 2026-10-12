@@ -56,7 +56,7 @@ para_has_all "$orch" 'model-record-emit\.sh' '(requested|chose|chosen|asked for)
 para_has_all "$orch" 'model-record-emit\.sh' '(never|not|nobody|no one)[^.]*(typ|hand|write)' \
   || fail "S203/AC1 — ORCHESTRATOR.md must say a marker is never typed by hand"
 # the bare "state the model and effort" sentence alone is not enough
-if grep -qE 'so the role records them in its .model-record. marker' "$orch" && ! grep -q 'model-record-emit' "$orch"; then
+if test_source_match -qE 'so the role records them in its .model-record. marker' "$orch" && ! test_source_match -q 'model-record-emit' "$orch"; then
   fail "S203/AC1 — only the old 'state model and effort' sentence is there, no wrapper command"
 fi
 
@@ -66,7 +66,7 @@ attr_ere='(effort|stage|floor-basis)="|model="[^"…]'
 if grep -qE "$attr_ere" "$orch"; then
   fail "S203/AC2 — ORCHESTRATOR.md carries a quoted-attribute example of the marker (a second copy of the grammar): $(grep -nE "$attr_ere" "$orch" | head -2)"
 fi
-if grep -qE 'model-record:[[:space:]]*stage=' "$orch"; then
+if test_source_match -qE 'model-record:[[:space:]]*stage=' "$orch"; then
   fail "S203/AC2 — ORCHESTRATOR.md spells out a marker line ('model-record: stage='); it must point to the template, not copy it"
 fi
 if grep -qiE 'low ?(\||,|/) ?medium ?(\||,|/) ?high|bare token|quoted attributes? (are|must)|quoting rules?|must be quoted|allowed values' "$orch"; then
@@ -74,15 +74,15 @@ if grep -qiE 'low ?(\||,|/) ?medium ?(\||,|/) ?high|bare token|quoted attributes
 fi
 
 # --- the template is the one copy ------------------------------------------------
-grep -qE 'model-record: stage=<[^>]*> model="<model>" -->' "$mc" \
+test_source_match -qE 'model-record: stage=<[^>]*> model="<model>" -->' "$mc" \
   || fail "S203/AC2 — model-choice must keep the marker template, without effort (#424), as the single owner of the line"
-grep -qE 'model-record: stage=Review model="<model>" floor-basis="[^"]*" -->' "$mc" \
+test_source_match -qE 'model-record: stage=Review model="<model>" floor-basis="[^"]*" -->' "$mc" \
   || fail "S203/AC2 — model-choice must keep the Review template with floor-basis and without effort (#424)"
 if grep -qE 'stage="' "$mc" "$pmr" "$orch" "$rc"; then
   fail "S203/AC2 — a skill shows a QUOTED stage (stage=\"...\"), which is malformed: the stage is a bare token"
 fi
 for f in "$orch" "$rc"; do
-  if grep -qE 'model-record: stage=<[^>]*> model=' "$f"; then
+  if test_source_match -qE 'model-record: stage=<[^>]*> model=' "$f"; then
     fail "S203/AC2 — ${f#"$TEST_REPO_ROOT"/} carries its own copy of the marker template"
   fi
 done
@@ -102,7 +102,7 @@ para_has_all "$rc" 'model-record-emit\.sh' '(no command|has no command|without a
 for f in "$TEST_REPO_ROOT"/WORKFLOW.md "$TEST_REPO_ROOT"/README.md "$TEST_REPO_ROOT"/skills/*/SKILL.md "$TEST_REPO_ROOT"/skills/role-contracts/*.md; do
   [ -f "$f" ] || continue
   case "$f" in "$mc" | "$pmr") continue ;; esac
-  if grep -qE 'model="<model>"|model-record: stage=<' "$f"; then
+  if test_source_match -qE 'model="<model>"|model-record: stage=<' "$f"; then
     fail "S203/AC2 — ${f#"$TEST_REPO_ROOT"/} carries a second copy of the marker template; the owner is model-choice"
   fi
 done

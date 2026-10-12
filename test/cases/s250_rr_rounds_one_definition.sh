@@ -194,7 +194,7 @@ for mode in $RH_MODES; do
   rh_run "$mode" canned_review "$(rrl_row "$T1" comment "plain prose, nothing in it")"
   [ "$RH_RC" -eq 0 ] && [ "$(rrl_view)" = "R:1:$T1:comment" ] \
     || fail "S250/own-parser [$mode] — rec_scan said the first candidate is Review, yet rr_rounds did not count the body (rc $RH_RC, out '$RH_OUT'): the round must follow rec_scan's rows"
-  if [ -s "$RECLOG" ] && [ "$(LC_ALL=C grep -avc '^model-record$' "$RECLOG")" -ne 0 ]; then
+  if [ -s "$RECLOG" ] && [ "$(LC_ALL=C test_source_match -avc '^model-record$' "$RECLOG")" -ne 0 ]; then
     fail "S250/own-parser [$mode] — rec_scan was called with a kind other than model-record: $(LC_ALL=C tr '\n' '|' < "$RECLOG")"
   fi
 done

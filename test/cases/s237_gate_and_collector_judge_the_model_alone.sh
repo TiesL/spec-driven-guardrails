@@ -76,7 +76,7 @@ for pair in "high low" "low low" "medium high" "unknown unknown" "session-defaul
 done
 check "AC2 same model, no effort attribute at all" evidenced \
   "<!-- model-record: stage=Implementation model=\"$M\" -->$nl<!-- model-record: stage=Review model=\"$M\" $FBX -->"
-check "AC2 same model, unquoted effort on Review" evidenced "$(mk Implementation "$M" high)$nl<!-- model-record: stage=Review model=\"$M\" effort=low $FBX -->"
+check "AC2 same model, unquoted effort on Review is syntax near-miss" indeterminate "$(mk Implementation "$M" high)$nl<!-- model-record: stage=Review model=\"$M\" effort=low $FBX -->"
 check "AC2 same model, empty effort on Implementation" evidenced "<!-- model-record: stage=Implementation model=\"$M\" effort=\"\" -->$nl$(mk Review "$M" low "$FBX")"
 # the lookup-failure guard (#302/#336) is unchanged: an unread marker can still overturn the verdict
 check "AC2 guard: PR comments fetch fails, markers on the issue" indeterminate FAIL "$(mk Implementation "$M" medium)$nl$(mk Review "$M" low "$FBX")"
@@ -132,9 +132,10 @@ ce "Closes #265" "$(mk Planning "$M" low)$nl$(mk Test "$M" high)$nl$(mk Implemen
 assert_table_shape "S237 gate 1 baseline" "$ce_out"
 [ "$(row_status "$ce_out" 1)" = "evidenced" ] || fail "S237 AC6 gate 1 — four stages recorded (Discovery on the issue): expected evidenced, got '$(row_status "$ce_out" 1)' ($(row_evidence "$ce_out" 1))"
 ce "Closes #265" "<!-- model-record: stage=Planning model=\"$M\" -->$nl<!-- model-record: stage=Test model=\"$M\" effort=\"\" -->$nl<!-- model-record: stage=Implementation model=\"$M\" effort=high -->" "<!-- model-record: stage=Discovery model=\"$M\" effort=\"unknown\" -->"
-[ "$(row_status "$ce_out" 1)" = "evidenced" ] || fail "S237 AC6 gate 1 — a missing, empty or unquoted legacy effort is still a recorded stage: expected evidenced, got '$(row_status "$ce_out" 1)' ($(row_evidence "$ce_out" 1))"
+[ "$(row_status "$ce_out" 1)" = "indeterminate" ] || fail "S237 AC6 gate 1 — unquoted legacy effort is syntax near-miss: expected indeterminate, got '$(row_status "$ce_out" 1)' ($(row_evidence "$ce_out" 1))"
 case "$(row_evidence "$ce_out" 1)" in
-  *effort*) fail "S237 AC6 gate 1 — the evidence must not mention effort, got: $(row_evidence "$ce_out" 1)" ;;
+  *stage=Implementation*near-miss*) :;;
+  *) fail "S237 AC6 gate 1 — unquoted effort must be named as unreadable syntax";;
 esac
 # the gate (script): a stage marker with no effort is complete
 rf_data "$(marker_ne Implementation "$M")" "$(marker_ne Review "$M" "$FBX")"

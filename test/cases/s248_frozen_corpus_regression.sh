@@ -21,7 +21,7 @@
 #
 # The oracle (QA critique D8: a fixture whose oracle is the pattern under test
 # can never go red). For every `ok` model-record row the oracle is the v0.3.0
-# parser (marker_scan, marker_find, marker_attr of lib/model-record.sh at commit
+# parser (classification scan, stage lookup, attribute tokenizer of lib/model-record.sh at commit
 # 411699d), run ONCE per row alone; stage, model and floor-basis agree with the
 # labelled fields on every ok row (the fixture says so per row and this case
 # checks the claim). It is never regenerated from the new code. Every other row
@@ -100,7 +100,7 @@ dups="$(jqr '.row' | LC_ALL=C sort | LC_ALL=C uniq -d | LC_ALL=C head -1)"
 [ -z "$dups" ] || fail "S248/rows — a row id occurs twice: $dups"
 bad="$(jqr 'select((.["label-reason"] // "") == "" or (.expected | IN("ok","near-miss","quoted","text") | not) or (.kind | IN("model-record","pipeline-override") | not)) | .row' | LC_ALL=C head -3)"
 [ -z "$bad" ] || fail "S248/rows — a row without a label-reason, a valid class or a kind: $bad"
-bad="$(jqr 'select(.expected == "ok" and .kind == "model-record" and ((.oracle // "") | startswith("v0.3.0 marker_scan+marker_attr agree") | not)) | .row' | LC_ALL=C head -3)"
+bad="$(jqr 'select(.expected == "ok" and .kind == "model-record" and ((.oracle // "") | startswith("v0.3.0 classification+attribute oracle agree") | not)) | .row' | LC_ALL=C head -3)"
 [ -z "$bad" ] || fail "S248/oracle — an ok model-record row whose v0.3.0 oracle does not agree: $bad"
 bad="$(jqr 'select(.expected == "ok" and (.stage == null or .fields == null)) | .row' | LC_ALL=C head -3)"
 [ -z "$bad" ] || fail "S248/rows — an ok row without stage or fields: $bad"

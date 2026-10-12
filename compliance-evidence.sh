@@ -19,19 +19,6 @@
 # No `eval`: PR/issue comment text is not under this script's control.
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 #
-# awk requirement (issue #319): `live_text()` below has no special awk
-# requirement left — every awk it has been run under (mawk 1.3.4
-# 20200120, mawk 1.3.4 20240123, gawk) parses and executes its fence
-# regex the same way. Getting there dodged two independent, unrelated
-# mawk defects rather than working around either in an mawk-specific
-# code path: mawk's REcompile() panics on a grouped alternation combined
-# with an unbounded-lower-bound interval (`(`{3,}|~{3,})`), and,
-# separately, mawk 1.3.4 20200120 and earlier (Ubuntu 22.04's default
-# `awk`, among others) doesn't parse a bounded interval (`{0,3}`) at all
-# — it reads the four characters literally instead of as "0 to 3". See
-# the fence-tracking bullets below and test/cases/
-# s153_live_text_mawk_portability.sh.
-#
 # Status vocabulary (closed, exactly these four, AC8):
 #   evidenced                    — an artifact was found that shows the
 #                                   gate actually held
@@ -61,12 +48,6 @@
 # output's destination is a GitHub comment; a stray warning inside the
 # table would break the Markdown).
 #
-# awk requirement (issue #319): live_text() below needs an awk whose
-# regex engine greedily matches an unbounded-lower-bound interval and
-# tolerates alternation grouped with one; known broken under mawk. See
-# that function's own comment and test/cases/
-# s153_live_text_mawk_portability.sh.
-#
 # Not invoked by `./check` — only its tests are (test/cases/
 # s150_compliance_evidence.sh). This script needs `gh`/network, and no
 # gh-dependent script in this repo runs inside `./check` (issue #296 AC7):
@@ -88,605 +69,200 @@ require_gh() {
   fi
 }
 
-# normalize_model, marker_attr — shared with
-# skills/pre-merge-review/model-record-gate.sh through lib/model-record.sh
-# (A25, #392; the verbatim copy of normalize_model that used to sit here
-# is gone). The collector lives at the repo root, next to lib/.
+# The shared reader owns record grammar, quoting and fields.
 collector_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 if [ ! -r "$collector_dir/lib/model-record.sh" ]; then
   echo "compliance-evidence: lib/model-record.sh not found next to the collector — cannot collect evidence." >&2
   exit 3
 fi
-# shellcheck source=lib/model-record.sh
 . "$collector_dir/lib/model-record.sh"
 
-# live_text() — one definition in lib/markdown.sh (#423, from issue #308),
-# sourced through lib/model-record.sh above. A failure of it means a body
-# was not read: the call sites below set the corpus-incompleteness flags, so
-# the gates go indeterminate, never not-evidenced.
-
-# quoted_suffix() — issue #308, AC4/AC7/D8. Called only from a gate's
-# negative (not-evidenced) branch, to say, truthfully, that marker-shaped
-# text was seen but only in quoted form, rather than leaving a reader to
-# misread "nothing found" as "nothing was ever written". $1 MUST be the
-# exact same delimiter-anchored ERE ("<!--[[:space:]]*<token>...") the
-# caller just greped the LIVE corpus with for this same check — never a
-# looser, unanchored token (D8). That constraint is what makes the
-# wording sound rather than merely safe: in a negative branch the live
-# grep has already failed, so a hit on the anchored ERE in
-# BUNDLE_TEXT_RAW but not in the live corpus can only mean live_text()
-# removed it, i.e. it really was enclosed — never bare prose (AC7),
-# which this same anchored ERE never matches in the first place.
-quoted_suffix() {
-  local ere="$1"
-  LC_ALL=C grep -qE "$ere" <<<"$BUNDLE_TEXT_RAW" \
-    && printf '%s' " — marker-shaped text matching this gate does appear on PR #$pr_number, but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence"
-}
-
-# --- collect(): the gh calls; interpretation-free, fills a fixed set of
-# globals. Returns 1 only when call A (the PR itself) failed — the one
-# failure that makes an honest table impossible.
-#
-# REST-only (issue #318, reusing role-label-staleness.sh's already-
-# reviewed design rather than re-deriving it independently, per that
-# issue's AC3): `gh pr view --json ...`, `gh issue view --json ...`, and
-# `gh pr checks` are all GraphQL-backed under the hood regardless of
-# which fields are requested, and GraphQL is blocked entirely from
-# inside a Claude Code session (confirmed live, #318 AC1: this script
-# used to exit 4 — "could not be read" — against every real PR tried
-# from such a session). `closingIssuesReferences` has a second, separate
-# defect even where GraphQL isn't blocked: GitHub only populates it for
-# a PR whose base is the repository's default branch, so it was silently
-# empty for every one of this epic's own release-branch PRs (#318 AC2,
-# confirmed via the equivalent `closed_by_pull_requests` connection
-# reading 0 for #313/#314 and #315/#316 alike).
-#
-# Every `gh` call below is `gh api repos/{owner}/{repo}/...` against an
-# explicit REST endpoint — confirmed working from inside a Claude Code
-# session (unlike any `--json` flag). `{owner}/{repo}` is `gh`'s own
-# placeholder syntax, resolved from the checkout's `origin` remote; no
-# extra call needed to learn it.
-#
-# Closing-issue discovery replaces the `closingIssuesReferences` field
-# with the same closing-keyword scan role-label-staleness.sh's PR
-# discovery already uses (there, issue-to-PR; here, PR-to-issue is
-# simpler — the PR's own title+body is already in hand, no separate
-# timeline/candidate-filtering step needed): a GitHub closing keyword
-# (close/closes/closed, fix/fixes/fixed, resolve/resolves/resolved,
-# optionally followed by `:`, then whitespace, then `#<issue-number>`),
-# scanned case-insensitively against the PR's raw title and body — title
-# included because every one of this epic's own release-branch PRs
-# (#311/#312/#314/#316) carries the keyword only in the title, the same
-# fact that shaped #320's fix to check-pr-issue-link.sh. This is a
-# broadening beyond GitHub's own documented default-branch scope (body/
-# commit messages only, not title) by design, same reasoning as #320.
 CLOSING_KEYWORD_ERE='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
 
-# Sentinel transport (issue #308, D9): a body's internal line structure
-# has to survive the TSV hop intact — blockquote detection needs to know
-# which line a `>` starts, which `gsub("\n";" ")` used to destroy. Each
-# body is put through three gsubs, in order: neutralise any literal
-# U+0001 the body might already contain (so a body can never forge a
-# line break downstream — belt and braces, also keeps the sentinel
-# round-trip total), drop `\r` (GitHub bodies are CRLF; a trailing `\r`
-# would defeat fence-close matching in live_text()'s info-string check),
-# then fold real newlines into U+0001. `collect()` below turns the
-# sentinel back into real newlines once per body (`LC_ALL=C tr '\001' '\n'`)
-# before handing it to live_text(). The one-body-per-TSV-line framing
-# (IFS=$'\t' read) is untouched.
-#
-# REST's PR object has no "MERGED" state of its own (only open/closed,
-# plus a separate `.merged` boolean) — reconstructed here to the same
-# three-value shape (OPEN/CLOSED/MERGED) render()/gate_merge_confirmation()
-# already expect, so nothing downstream of collect() needed to change.
-CALL_A_JQ='"HEAD\t"+(.head.sha//""),"STATE\t"+(if .merged then "MERGED" elif .state=="open" then "OPEN" else "CLOSED" end),"MERGEDAT\t"+(.merged_at//""),"MERGEDBY\t"+((.merged_by.login)//""),"TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")),"TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_A_COMMENTS_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-# PR reviews (issue #318, folding in the same fix role-label-staleness.sh
-# needed as its own F-6 finding): this pipeline posts the Review stage's
-# model-record marker as a PR review's own body, not a plain conversation
-# comment — a source the original `gh pr view --json comments` call
-# never read either. Same jq shape as comments (both are flat arrays of
-# {body}), reused rather than re-derived.
-CALL_A_REVIEWS_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+# TSV transport preserves CommonMark line endings and neutralizes only the two
+# framing bytes. Descriptions date at creation; edits are not observable here.
+_BODY_JQ='((.body//"")|gsub("\u0001";" ")|gsub("\u001e";"")|gsub("\r\n";"\n")|gsub("\r";"\n")|gsub("\n";"\u0001"))'
+CALL_A_JQ='"HEAD\t"+(.head.sha//""),"STATE\t"+(if .merged then "MERGED" elif .state=="open" then "OPEN" else "CLOSED" end),"MERGEDAT\t"+(.merged_at//""),"MERGEDBY\t"+((.merged_by.login)//""),"TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"\n")|gsub("\n";"\u0001")),"TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+'
+CALL_A_JQ="$CALL_A_JQ$_BODY_JQ"
+CALL_A_COMMENTS_JQ='.[] | "TEXT\t"+(.created_at//"1970-01-01T00:00:00Z")+"\t"+'
+CALL_A_COMMENTS_JQ="$CALL_A_COMMENTS_JQ$_BODY_JQ"
+CALL_A_REVIEWS_JQ='.[] | "TEXT\t"+(.submitted_at//"1970-01-01T00:00:00Z")+"\t"+'
+CALL_A_REVIEWS_JQ="$CALL_A_REVIEWS_JQ$_BODY_JQ"
+CALL_C_JQ="$CALL_A_COMMENTS_JQ"
 CALL_B_JQ='.check_runs[] | .name+"\t"+(if .status!="completed" then .status else (.conclusion//"unknown") end)+"\t"+(if .status!="completed" then "pending" elif .conclusion=="success" or .conclusion=="neutral" then "pass" elif .conclusion=="failure" or .conclusion=="timed_out" or .conclusion=="action_required" then "fail" elif .conclusion=="cancelled" then "cancel" elif .conclusion=="skipped" then "skipping" else "unknown_bucket_"+(.conclusion//"null") end)'
-CALL_C_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 
-collect() {
-  local pr_out pr_status
-
-  pr_out="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" \
-    --jq "$CALL_A_JQ" 2>/dev/null)"
-  pr_status=$?
-  if [ "$pr_status" -ne 0 ]; then
-    return 1
-  fi
-
-  # Quoting-aware collection (issue #308, fixing F34's debt entry from
-  # #296). BUNDLE_TEXT below is now LIVE text only: every body passes
-  # through live_text() first, which blanks fenced code blocks, inline
-  # code spans and blockquoted lines before the text is ever appended.
-  # Every existing gate_* predicate keeps greping this exactly as before
-  # — the discriminator is enclosure (fence/span/blockquote), never line
-  # position, so a real marker posted inline next to prose still
-  # evidences (AC3), while the same marker shape merely quoted for
-  # illustration no longer does (AC1). See live_text() below for the
-  # mechanism and its known fail-open residue (PRD.md Technical debt).
-  #
-  # BUNDLE_TEXT_RAW is the unstripped counterpart: every body's text
-  # before live_text() runs, concatenated with no per-source split. It
-  # exists only so a gate's negative branch can say, truthfully, "this
-  # was seen but only in quoted form" (AC4) via quoted_suffix() below,
-  # rather than the plain "nothing found" a reader would otherwise
-  # misread as "no marker was ever written". D8b (Architect, #308):
-  # this soundness argument depends on BUNDLE_TEXT_RAW's scope matching
-  # every gate that consults it — today every gate greps bundle-wide
-  # BUNDLE_TEXT (or PR_TEXT/ISSUE_TEXTS via resolve_stage_marker(), also
-  # bundle-wide in aggregate), and BUNDLE_TEXT_RAW is bundle-wide too, so
-  # the elimination argument ("a RAW hit with no live hit means
-  # live_text() removed it, i.e. it was genuinely enclosed") holds. A
-  # future gate scoped to a narrower corpus (e.g. PR_TEXT alone) paired
-  # with this bundle-wide RAW would wrongly call a marker "quoted" when
-  # it's actually live elsewhere in the bundle — keep the scopes matched
-  # if that ever changes.
-  BUNDLE_TEXT=""
-  BUNDLE_TEXT_RAW=""
-  BUNDLE_HEAD_SHA=""
-  BUNDLE_STATE=""
-  BUNDLE_MERGED_AT=""
-  BUNDLE_MERGED_BY=""
-  BUNDLE_ISSUES=""
-  # Soundness rule for every gate that reads BUNDLE_TEXT: when this flag
-  # is 1 the corpus is provably incomplete, so no gate may return
-  # `not-evidenced` on the strength of having found nothing — that
-  # verdict must degrade to `indeterminate` (issue #299). Gate 4's CI
-  # verdicts are a separate call with their own degradation and stay as
-  # they are.
-  #
-  # Corrected invariant (issue #302 — the wording that used to live here
-  # claimed gate 2's same-model `not-evidenced` never needed this guard
-  # because "both markers were read". That holds only when at most one
-  # closing issue is involved. `collect()` used to accumulate every named
-  # issue's text into one shared blob, in `BUNDLE_ISSUES` order, before
-  # prepending it to the PR text — so with >=2 closing issues, a *later*
-  # issue's marker could silently outrank an *earlier* one (or a PR-side
-  # one) purely by accumulation position, in either direction, including
-  # a marker in an issue this flag says was never successfully fetched.
-  # That's what P2-1 (META-REVIEW-PILOT-2.md) reproduced: the exact same
-  # "both markers were read" corpus rendered `not-evidenced` or
-  # `evidenced` depending only on whether a *second*, unread issue's
-  # content happened to differ.
-  #
-  # Fixed two ways, per source (PR text, and each closing issue's own
-  # text, kept apart in PR_TEXT/ISSUE_TEXTS/ISSUE_NUMS below) rather than
-  # by accumulation order:
-  #   1. gate_review_model (gate 2) resolves each stage's marker
-  #      per-source. The PR-side marker, when present, always wins over
-  #      a disagreeing issue-side one (issue #253 precedent: the PR
-  #      records what actually happened, an issue can record an earlier
-  #      plan) — that is not a conflict. Only disagreement BETWEEN two
-  #      or more issues (the PR silent or absent) is a genuine,
-  #      unresolvable conflict, reported `indeterminate` — a detected
-  #      conflict, not a coin flip decided by which issue happened to
-  #      be listed first.
-  #   2. gate_review_model additionally degrades its same-model
-  #      `not-evidenced` verdict to `indeterminate` when this flag is set
-  #      AND more than one closing issue is named: an unread issue could
-  #      still have supplied a marker that would have created exactly
-  #      the kind of conflict (1) now catches.
-  # Consulted by: gate_stage_models, gate_review_model, gate_review_marker.
-  #
-  # gate_review_marker (gate 3) never needed either fix: it already
-  # resolves "which marker counts" by matching each candidate's `sha=`
-  # against `headRefOid` across the whole corpus (R-B, #296's Architect
-  # report) rather than by `tail -1` position, so accumulation order
-  # never changes its answer, lookup failure or not. gate_review_model
-  # (gate 2) has no such anchor available — `model-record` markers carry
-  # no `sha=` to compare against `headRefOid` — so accumulation order
-  # stayed a real risk there until fixed above.
-  BUNDLE_ISSUE_LOOKUP_FAILED=0
-  # PR-side lookup failure, kept apart from BUNDLE_ISSUE_LOOKUP_FAILED
-  # (issue #336 round 2): gate_review_model's same-model branch only
-  # degrades on an issue-lookup failure when more than one closing issue
-  # is named, because a single unread issue's marker can never outrank
-  # the PR's own (PR-side always wins over exactly one disagreeing
-  # issue-side marker — see the comment below). That reasoning does not
-  # apply when the *PR's own* comments or reviews failed to fetch: a
-  # comment or review this run never saw is PR-side too, and a later
-  # one there replaces an earlier one same as always, regardless of how
-  # many closing issues exist, including zero. Set only by a PR
-  # comments/reviews fetch failure below, read only by that one branch.
-  BUNDLE_PR_LOOKUP_FAILED=0
-  # Per-source text, kept apart precisely so gate_review_model never has
-  # to trust accumulation order to know "which marker counts" (see the
-  # comment above). PR_TEXT is the PR's own body+comments+reviews,
-  # appended in that fixed order (body, then every comment, then every
-  # review) — NOT true chronological order despite that once having
-  # been true here (issue #336 round 1: reviews are appended after
-  # every comment regardless of actual timing, so a comment that is
-  # genuinely newer than an existing review can still lose to that
-  # review's marker under tail-1, which only ever looks at append
-  # position, not real time; PRD.md's Technical debt table has the
-  # row). ISSUE_TEXTS/ISSUE_NUMS are parallel arrays, one entry per
-  # successfully-fetched closing issue, in the order fetched — an order
-  # gate_review_model must not, and does not, treat as a recency
-  # signal.
-  PR_TEXT=""
-  ISSUE_TEXTS=()
-  ISSUE_NUMS=()
-
-  local tag rest raw_body live_body pr_title_raw=""
+# Internal collection helpers share collect's dynamically scoped bundle and
+# metadata. Raw bodies stay separate; done markers retain live_text semantics.
+collect_rows() { # REST TSV, source rank (issue/description/comments/reviews)
+  local rows="$1" rank="$2" tag rest stamp raw live
   while IFS=$'\t' read -r tag rest; do
-    case "$tag" in
-      HEAD) BUNDLE_HEAD_SHA="$rest" ;;
-      STATE) BUNDLE_STATE="$rest" ;;
-      MERGEDAT) BUNDLE_MERGED_AT="$rest" ;;
-      MERGEDBY) BUNDLE_MERGED_BY="$rest" ;;
-      TITLE) pr_title_raw="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')" ;;
-      TEXT)
-        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
-        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")" || {
-          echo "warning: compliance-evidence couldn't read a PR body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
-          BUNDLE_ISSUE_LOOKUP_FAILED=1
-          BUNDLE_PR_LOOKUP_FAILED=1
-        }
-        BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body$MARKER_SEP"
-        BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
-$raw_body"
-        ;;
-    esac
-  done <<<"$pr_out"
-
-  # Closing-issue discovery (replaces closingIssuesReferences — see the
-  # collect() header comment above for why): a closing keyword scanned
-  # against the PR's own raw title+body, case-insensitive, deduplicated
-  # and numerically sorted so the order gh happened to return keyword
-  # occurrences in can never matter (same "no accumulation-order
-  # dependence" discipline issue #302 already established for the rest
-  # of this function).
-  BUNDLE_ISSUES="$(printf '%s\n%s\n' "$pr_title_raw" "$raw_body" \
-    | LC_ALL=C grep -oiE "$CLOSING_KEYWORD_ERE" \
-    | grep -oE '[0-9]+' \
-    | sort -un)"
-
-  # PR comments and reviews (issue #318: reviews are a new source this
-  # script never read before — see CALL_A_REVIEWS_JQ above). Order
-  # (comments then reviews) is another flat, order-dependent append to
-  # BUNDLE_TEXT/BUNDLE_TEXT_RAW/PR_TEXT — the same accumulation-order
-  # exemption issue #302's comment above already documents for this
-  # corpus (gate_review_model resolves per-source via
-  # resolve_stage_marker(), not via this blob's tail-1 position).
-  #
-  # Found during PR #336's own pre-merge-review (round 1): a failure of
-  # either call here used to go straight to `/dev/null` with no exit-
-  # status check and no flag set at all — unlike every other `gh` call
-  # in this function. Before this REST rewrite, PR comments were part
-  # of the same single `gh pr view` call as the PR body, so a failure
-  # there already hit Call A's own `return 1`; splitting comments and
-  # reviews into separate calls introduced a failure mode this function
-  # had never had to handle before, and initially didn't. Reproduced:
-  # with every model-record marker living only in PR comments, a comments
-  # fetch failure made gates 1-3 confidently report `not-evidenced`
-  # instead of degrading — precisely the false-negative issue #299
-  # exists to forbid. Fixed the same way a closing-issue comments
-  # failure already was: warn on stderr and set
-  # BUNDLE_ISSUE_LOOKUP_FAILED, the same corpus-incompleteness flag
-  # every gate below already respects (it was never PR-issue-lookup-
-  # specific in what it means, only in what set it until now).
-  local pr_comments_out pr_reviews_out pr_comments_status pr_reviews_status
-  pr_comments_out="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate \
-    --jq "$CALL_A_COMMENTS_JQ" 2>/dev/null)"
-  pr_comments_status=$?
-  if [ "$pr_comments_status" -ne 0 ]; then
-    echo "warning: compliance-evidence couldn't consult PR #$pr_number's comments (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
-    BUNDLE_ISSUE_LOOKUP_FAILED=1
-    BUNDLE_PR_LOOKUP_FAILED=1
-    pr_comments_out=""
-  fi
-  pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate \
-    --jq "$CALL_A_REVIEWS_JQ" 2>/dev/null)"
-  pr_reviews_status=$?
-  if [ "$pr_reviews_status" -ne 0 ]; then
-    echo "warning: compliance-evidence couldn't consult PR #$pr_number's reviews (no network or no access) — gates that search them may render as indeterminate rather than not-evidenced." >&2
-    BUNDLE_ISSUE_LOOKUP_FAILED=1
-    BUNDLE_PR_LOOKUP_FAILED=1
-    pr_reviews_out=""
-  fi
-  while IFS=$'\t' read -r tag rest; do
-    [ "$tag" = "TEXT" ] || continue
-    raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
-    raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-    live_body="$(live_text "$raw_body")" || {
-      echo "warning: compliance-evidence couldn't read a PR body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
+    [ "$tag" = TEXT ] || continue
+    stamp="${rest%%$'\t'*}"
+    raw="${rest#*$'\t'}"
+    raw="${raw//$'\001'/$'\n'}"
+    raw="${raw//$MARKER_SEP/}"
+    times+=("$stamp"); ranks+=("$rank")
+    raw_bundle="$raw_bundle$raw$MARKER_SEP"
+    BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
+$raw"
+    live="$(live_text "$raw")" || {
       BUNDLE_ISSUE_LOOKUP_FAILED=1
-      BUNDLE_PR_LOOKUP_FAILED=1
+      [ "$rank" = 0 ] || BUNDLE_PR_LOOKUP_FAILED=1
+      echo 'warning: compliance-evidence: live_text failed; evidence corpus unreadable' >&2
     }
     BUNDLE_TEXT="$BUNDLE_TEXT
-$live_body$MARKER_SEP"
-    BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
-$raw_body"
-  done <<<"$pr_comments_out
-$pr_reviews_out"
-  PR_TEXT="$BUNDLE_TEXT"
+$live$MARKER_SEP"
+  done <<<"$rows"
+}
 
-  # Closing-issue comments, gathered ahead of the PR's own text (order:
-  # issue, then PR body/comments — model-record-gate.sh's PR #253 round 2
-  # fix, inherited rather than re-earned: issue text ordered last let a
-  # stray older marker outrank a genuinely newer one under `tail -1`).
-  # BUNDLE_TEXT (built here) stays a flat, order-dependent blob — still
-  # fine for gate_stage_models/gate_review_marker/gate_traceability,
-  # which don't compare disagreeing per-source values the way gate 2
-  # does. ISSUE_TEXTS/ISSUE_NUMS below are gate 2's own, order-safe view
-  # of the same data.
-  local issue_text="" issue_num issue_out issue_status
+collect_scan() {
+  local scan idx cls stage text
+  cached=""
+  if ! scan="$(rec_scan_bundle model-record "$raw_bundle")"; then
+    BUNDLE_SCAN_FAILED=1
+    BUNDLE_ISSUE_LOOKUP_FAILED=1
+    echo 'warning: compliance-evidence: record scan failed; evidence corpus unreadable' >&2
+    return
+  fi
+  while IFS=$'\t' read -r idx cls stage text; do
+    [ -n "$idx" ] || continue
+    cached="$cached${times[$((idx-1))]}"$'\t'"${ranks[$((idx-1))]}"$'\t'"$cls"$'\t'"$stage"$'\t'"$text"$'\n'
+  done <<<"$scan"
+  BUNDLE_CACHE="$BUNDLE_CACHE$cached"
+}
+
+collect() {
+  local pr_out tag rest pr_title_raw="" pr_body_raw="" comments reviews issue_out issue_num
+  pr_out="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq "$CALL_A_JQ" 2>/dev/null)" || return 1
+  BUNDLE_TEXT="" BUNDLE_TEXT_RAW="" BUNDLE_CACHE="" PR_CACHE=""
+  BUNDLE_HEAD_SHA="" BUNDLE_STATE="" BUNDLE_MERGED_AT="" BUNDLE_MERGED_BY="" BUNDLE_ISSUES=""
+  BUNDLE_ISSUE_LOOKUP_FAILED=0 BUNDLE_PR_LOOKUP_FAILED=0 BUNDLE_SCAN_FAILED=0
+  ISSUE_CACHES=() ISSUE_NUMS=()
+  local raw_bundle="" cached=""
+  local -a times=() ranks=()
+  while IFS=$'\t' read -r tag rest; do
+    case "$tag" in
+      HEAD) BUNDLE_HEAD_SHA="$rest";; STATE) BUNDLE_STATE="$rest";;
+      MERGEDAT) BUNDLE_MERGED_AT="$rest";; MERGEDBY) BUNDLE_MERGED_BY="$rest";;
+      TITLE) pr_title_raw="${rest//$'\001'/$'\n'}";;
+      TEXT) pr_body_raw="${rest#*$'\t'}"; pr_body_raw="${pr_body_raw//$'\001'/$'\n'}";;
+    esac
+  done <<<"$pr_out"
+  collect_rows "$pr_out" 1
+  if ! comments="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq "$CALL_A_COMMENTS_JQ" 2>/dev/null)"; then
+    BUNDLE_ISSUE_LOOKUP_FAILED=1 BUNDLE_PR_LOOKUP_FAILED=1
+    echo "warning: compliance-evidence couldn't consult PR #$pr_number's comments" >&2
+    comments=""
+  fi
+  if ! reviews="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate --jq "$CALL_A_REVIEWS_JQ" 2>/dev/null)"; then
+    BUNDLE_ISSUE_LOOKUP_FAILED=1 BUNDLE_PR_LOOKUP_FAILED=1
+    echo "warning: compliance-evidence couldn't consult PR #$pr_number's reviews" >&2
+    reviews=""
+  fi
+  collect_rows "$comments" 2; collect_rows "$reviews" 3
+  collect_scan; PR_CACHE="$cached"
+  BUNDLE_ISSUES="$(printf '%s\n%s\n' "$pr_title_raw" "$pr_body_raw" | LC_ALL=C grep -oiE "$CLOSING_KEYWORD_ERE" | LC_ALL=C grep -oE '[0-9]+' | LC_ALL=C sort -un)"
   if [ -n "$BUNDLE_ISSUES" ]; then
     while IFS= read -r issue_num; do
-      [ -n "$issue_num" ] || continue
-      issue_out="$(gh api "repos/{owner}/{repo}/issues/$issue_num/comments" --paginate \
-        --jq "$CALL_C_JQ" 2>/dev/null)"
-      issue_status=$?
-      if [ "$issue_status" -ne 0 ]; then
-        echo "warning: compliance-evidence couldn't consult issue #$issue_num (no network or no access) — gates that search its comments may render as indeterminate rather than not-evidenced." >&2
+      if ! issue_out="$(gh api "repos/{owner}/{repo}/issues/$issue_num/comments" --paginate --jq "$CALL_C_JQ" 2>/dev/null)"; then
         BUNDLE_ISSUE_LOOKUP_FAILED=1
+        echo "warning: compliance-evidence couldn't consult issue #$issue_num — gates that search its comments may render as indeterminate rather than not-evidenced." >&2
         continue
       fi
-      local one_issue_text="" raw_body live_body
-      while IFS=$'\t' read -r tag rest; do
-        [ "$tag" = "TEXT" ] || continue
-        raw_body="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')"
-        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")" || {
-          echo "warning: compliance-evidence couldn't read an issue body (live_text failed) — gates that search it may render as indeterminate rather than not-evidenced." >&2
-          BUNDLE_ISSUE_LOOKUP_FAILED=1
-        }
-        issue_text="$issue_text
-$live_body$MARKER_SEP"
-        one_issue_text="$one_issue_text
-$live_body$MARKER_SEP"
-        BUNDLE_TEXT_RAW="$BUNDLE_TEXT_RAW
-$raw_body"
-      done <<<"$issue_out"
-      ISSUE_TEXTS+=("$one_issue_text")
-      ISSUE_NUMS+=("$issue_num")
+      raw_bundle=""; times=(); ranks=()
+      collect_rows "$issue_out" 0; collect_scan
+      ISSUE_CACHES+=("$cached"); ISSUE_NUMS+=("$issue_num")
     done <<<"$BUNDLE_ISSUES"
   fi
-  BUNDLE_TEXT="$issue_text
-$BUNDLE_TEXT"
-
-  # Call B — CI checks (issue #318: `gh pr checks` is GraphQL-backed too,
-  # blocked the same as `gh pr view`/`gh issue view` — confirmed live).
-  # REST's check-runs endpoint has a simpler, unambiguous exit-code
-  # contract than `gh pr checks` ever did: it exits 0 whenever the API
-  # call itself succeeds, whether that run has zero checks, all-passing
-  # checks, or a failing one — there is no overloaded "exit code means
-  # check outcome" behavior to work around here, so the elaborate
-  # stderr-message sniffing the old call needed is gone; exit status
-  # alone now tells call success from call failure.
-  local checks_out checks_status
-  checks_out="$(gh api "repos/{owner}/{repo}/commits/$BUNDLE_HEAD_SHA/check-runs" --paginate \
-    --jq "$CALL_B_JQ" 2>/dev/null)"
-  checks_status=$?
-
-  if [ "$checks_status" -eq 0 ]; then
-    BUNDLE_CHECKS="$checks_out"
+  if BUNDLE_CHECKS="$(gh api "repos/{owner}/{repo}/commits/$BUNDLE_HEAD_SHA/check-runs" --paginate --jq "$CALL_B_JQ" 2>/dev/null)"; then
     BUNDLE_CHECKS_OK=1
-  else
-    BUNDLE_CHECKS=""
-    BUNDLE_CHECKS_OK=0
-  fi
-
+  else BUNDLE_CHECKS="" BUNDLE_CHECKS_OK=0; fi
   return 0
 }
 
-# --- Gate predicates. Each prints exactly two tab-separated fields on
-# stdout: status<TAB>evidence. Internal seams only — private to this
-# script, not a test API (a test that calls one directly tests past the
-# argv->stdout Interface).
-
-gate_stage_models() {
-  local stage missing="" malformed="" summary="" first_model="" any_model=0 all_same=1
-  local missing_ere=""
-  for stage in Discovery Planning Test Implementation; do
-    # AC7 (issue #308, D4): anchored to a real HTML-comment opener. Bare
-    # prose mentioning "model-record: stage=X" with no `<!--` is not a
-    # marker at all and must read as not-evidenced, not indeterminate —
-    # unreachable by quote-stripping since there's nothing to strip.
-    if LC_ALL=C grep -qE "<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b" <<<"$BUNDLE_TEXT"; then
-      local line model
-      # A parser failure (lib/model-record.sh returns non-zero) means the
-      # markers were not read: indeterminate, never a verdict (#392).
-      if ! line="$(marker_find "$stage" "$BUNDLE_TEXT" | tail -1)" \
-        || ! model="$(marker_attr "$line" model)"; then
-        printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the stage markers could not be read"
-        return
-      fi
-      if [ -z "$model" ]; then
-        malformed="$malformed $stage"
-      else
-        if [ "$any_model" -eq 0 ]; then
-          first_model="$model"
-          any_model=1
-        elif [ "$model" != "$first_model" ]; then
-          all_same=0
-        fi
-        summary="$summary $stage=\`$model\`,"
-      fi
-    else
-      missing="$missing $stage"
-      if [ -z "$missing_ere" ]; then
-        missing_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b"
-      else
-        missing_ere="$missing_ere|<!--[[:space:]]*model-record:[[:space:]]*stage=$stage\\b"
-      fi
+# A37: timestamps, then issue/description/comments/reviews, then later line.
+# A quoted candidate never supersedes live evidence. Questions only read cache.
+collector_latest() {
+  local want="$1" rows="$2" time rank cls stage text best="" best_rank=-1 result=""
+  while IFS=$'\t' read -r time rank cls stage text; do
+    [ "$stage" = "$want" ] && [ "$cls" != quoted ] || continue
+    if [ -z "$best" ] || [[ $time > $best ]] || { [ "$time" = "$best" ] && [ "$rank" -ge "$best_rank" ]; }; then
+      best="$time" best_rank="$rank"
+      result="$cls"$'\t'"$text"
     fi
-  done
-
-  malformed="${malformed# }"
-  missing="${missing# }"
-  summary="${summary# }"
-
-  if [ -n "$malformed" ]; then
-    printf '%s\t%s\n' "indeterminate" "model-record marker(s) for stage(s) $malformed on PR #$pr_number matched but carry no quoted \`model=\"...\"\` (unquoted/malformed form)"
-    return
-  fi
-
-  if [ -n "$missing" ]; then
-    if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
-      printf '%s\t%s\n' "indeterminate" "stage(s) $missing appear to have no model-record marker on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
-      return
-    fi
-    printf '%s\t%s\n' "not-evidenced" "no model-record marker found for stage(s) $missing, searched in PR #$pr_number's body/comments/reviews and its closing issue(s)$(quoted_suffix "$missing_ere")"
-    return
-  fi
-
-  if [ "$all_same" -eq 1 ]; then
-    printf '%s\t%s\n' "evidenced" "\`model-record\` markers on PR #$pr_number for Discovery, Planning, Test, Implementation (all \`$first_model\`)"
-  else
-    printf '%s\t%s\n' "evidenced" "\`model-record\` markers on PR #$pr_number for Discovery, Planning, Test, Implementation (${summary%,})"
-  fi
+  done <<<"$rows"
+  printf '%s\n' "$result"
 }
 
-# resolve_stage_marker() — issue #302 (R-B generalized, then corrected
-# under R-1/R-3/R-4). Finds the `model-record` marker for stage $1
-# independently in PR_TEXT and in each of ISSUE_TEXTS (order within
-# each source is genuine chronology, from gh's own comment ordering —
-# that part was never the bug), then decides which marker is
-# authoritative using a real signal instead of accumulation order:
-#
-#   - The PR-side marker, when present, always wins over an issue-side
-#     one it disagrees with. A PR marker records what actually
-#     happened (e.g. which model actually ran the review); an
-#     issue-side marker can be a plan recorded earlier (e.g. at
-#     Planning time) that the PR then superseded — precedent from
-#     issue #253. So PR-vs-issue disagreement is not a conflict.
-#   - Disagreement BETWEEN two or more issues (the PR silent or absent
-#     from this comparison) IS a genuine, unresolvable conflict —
-#     neither issue is "the" outcome.
-#   - "Disagreement" covers the normalized `model=` and
-#     well-formed-vs-malformed (a marker that matched but has no quoted
-#     `model="..."`) alike (R-3/R-4). Effort is not part of the key (#424,
-#     A33): a legacy `effort=` attribute is ignored, so two issues agreeing
-#     on the model are no conflict whatever their efforts say; the legacy
-#     `same-model-exception=` attribute is ignored too (#392 AC5).
-#   - When more than one issue-side marker exists and they agree, the
-#     representative line is picked by sorting on issue number, not on
-#     fetch order, so the result can't flip depending on which issue
-#     `gh` happened to list first in `closingIssuesReferences`.
-#
-# Prints one tab-separated line on stdout:
-#   none      <empty>                     — no source has this stage's marker
-#   single    <the winning marker line>   — PR wins, or issue sources agree,
-#                                            or only one source matched at all
-#   conflict  <"source: `model`; ..." >   — two+ ISSUE sources matched with
-#                                            genuinely different markers
-#   malformed <reason: text>              — no source has a well-formed
-#                                            marker for this stage, but one
-#                                            has a malformed one (#392: it is
-#                                            never read, and "none" would be
-#                                            a false absence)
-#   parsefail <empty>                     — lib/model-record.sh failed: the
-#                                            markers were not read (#392)
-resolve_stage_marker() {
-  local stage="$1"
-  local pr_line="" line model eff src_num i
-
-  if ! line="$(marker_find "$stage" "$PR_TEXT" | tail -1)"; then
-    printf '%s\t%s\n' "parsefail" ""
-    return
-  fi
-  [ -n "$line" ] && pr_line="$line"
-
-  # Note on order: unlike the old `tail -1`-over-the-flat-corpus code,
-  # nothing below needs the issues visited in a particular order.
-  # Conflict detection only asks whether the SET of issue-side values
-  # agrees (order can't change that answer), and once they agree any
-  # one of them is an equally valid representative to return — so no
-  # sort-by-issue-number step is needed here (an earlier version tried
-  # one and tripped a bash-3.2 `set -u` empty-array bug for no benefit).
-  local -a marker_labels=() marker_lines=() marker_models=()
-  for i in "${!ISSUE_TEXTS[@]}"; do
-    if ! line="$(marker_find "$stage" "${ISSUE_TEXTS[$i]}" | tail -1)"; then
-      printf '%s\t%s\n' "parsefail" ""
+quoted_suffix() {
+  local want="$1" time rank cls stage text
+  while IFS=$'\t' read -r time rank cls stage text; do
+    if [ "$cls" = quoted ] && [ "$stage" = "$want" ]; then
+      printf '%s' " — marker-shaped text matching this gate does appear on PR #$pr_number, but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence"
       return
     fi
-    if [ -n "$line" ]; then
-      src_num="${ISSUE_NUMS[$i]}"
-      if ! model="$(marker_attr "$line" model)"; then
-        printf '%s\t%s\n' "parsefail" ""
-        return
-      fi
-      marker_labels+=("issue #$src_num")
-      marker_lines+=("$line")
-      marker_models+=("$model")
+  done <<<"$BUNDLE_CACHE"
+}
+# Done/finding markers remain outside record v2 (A34a).
+done_quoted_suffix() {
+  LC_ALL=C grep -qE "$1" <<<"$BUNDLE_TEXT_RAW" && printf '%s' " — marker-shaped text matching this gate does appear on PR #$pr_number, but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence"
+}
+
+gate_stage_models() {
+  local stage cls text model first="" missing="" suffix="" summary="" same=1
+  if [ "$BUNDLE_SCAN_FAILED" = 1 ]; then printf 'indeterminate\trecord reader failed; stage evidence could not be read\n'; return; fi
+  if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" = 1 ]; then
+    printf 'indeterminate\tevidence-corpus lookup failed; latest stage candidates cannot be confirmed\n'
+    return
+  fi
+  for stage in Discovery Planning Test Implementation; do
+    IFS=$'\t' read -r cls text <<<"$(collector_latest "$stage" "$BUNDLE_CACHE")"
+    if [ "$cls" = near-miss ]; then
+      printf 'indeterminate\tlatest stage=%s near-miss: %s; no earlier record used\n' "$stage" "$text"; return
+    elif [ "$cls" = ok ]; then
+      model="$(rec_field "$text" model)" || { printf 'indeterminate\trecord field reader failed\n'; return; }
+      if [ -z "$first" ]; then first="$model"; elif [ "$model" != "$first" ]; then same=0; fi
+      summary="$summary $stage=\`$model\`,"
+    else
+      missing="$missing $stage"
+      [ -n "$suffix" ] || suffix="$(quoted_suffix "$stage")"
     fi
   done
+  if [ -n "$missing" ]; then
+    if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" = 1 ]; then printf 'indeterminate\tstage(s)%s absent, but an evidence-corpus lookup failed\n' "$missing"; else printf 'not-evidenced\tno model-record for stage(s)%s%s\n' "$missing" "$suffix"; fi
+  elif [ "$same" = 1 ]; then
+    printf 'evidenced\t`model-record` markers on PR #%s for Discovery, Planning, Test, Implementation (all `%s`)\n' "$pr_number" "$first"
+  else printf 'evidenced\t`model-record` markers on PR #%s for Discovery, Planning, Test, Implementation (%s)\n' "$pr_number" "$(printf '%s' "${summary# }" | sed 's/,$//')"; fi
+}
 
-  if [ -z "$pr_line" ] && [ "${#marker_lines[@]}" -eq 0 ]; then
-    local scan_out bad="" scan_status scan_stage scan_rest
-    if ! scan_out="$(marker_scan "$BUNDLE_TEXT")"; then
-      printf '%s\t%s\n' "parsefail" ""
-      return
-    fi
-    while IFS=$'\t' read -r scan_status scan_stage scan_rest; do
-      if [ "$scan_status" = "malformed" ] && [ "$scan_stage" = "$stage" ]; then
-        bad="$scan_rest"
-        break
-      fi
-    done <<<"$scan_out"
-    if [ -n "$bad" ]; then
-      printf '%s\t%s\n' "malformed" "$bad"
-      return
-    fi
-    printf '%s\t%s\n' "none" ""
-    return
-  fi
-
-  # Inter-issue conflict check only — the PR is deliberately excluded
-  # (R-1): PR-vs-issue disagreement is resolved by PR precedence below,
-  # never treated as a conflict.
-  local issues_conflict=0
-  if [ "${#marker_lines[@]}" -gt 1 ]; then
-    local first_norm norm
-    first_norm="$(normalize_model "${marker_models[0]}")"
-    for i in "${!marker_models[@]}"; do
-      norm="$(normalize_model "${marker_models[$i]}")"
-      if [ "$norm" != "$first_norm" ]; then
-        issues_conflict=1
-      fi
-    done
-  fi
-
-  if [ "$issues_conflict" -eq 1 ]; then
-    local detail="" sep=""
-    if [ -n "$pr_line" ]; then
-      if ! model="$(marker_attr "$pr_line" model)"; then
-        printf '%s\t%s\n' "parsefail" ""
-        return
-      fi
-      detail="PR #$pr_number: \`${model:-<malformed>}\`"
-      sep="; "
-    fi
-    for i in "${!marker_lines[@]}"; do
-      detail="${detail}${sep}${marker_labels[$i]}: \`${marker_models[$i]:-<malformed>}\`"
-      sep="; "
-    done
-    printf '%s\t%s\n' "conflict" "$detail"
-    return
-  fi
-
-  if [ -n "$pr_line" ]; then
-    printf '%s\t%s\n' "single" "$pr_line"
-    return
-  fi
-
-  printf '%s\t%s\n' "single" "${marker_lines[0]}"
+# Two closing issues still conflict on normalized model, even with a PR record.
+resolve_stage_marker() {
+  local stage="$1" cls line model norm first="" count=0 conflict=0 detail="" i
+  if [ "$BUNDLE_SCAN_FAILED" = 1 ]; then printf 'parsefail\t\n'; return; fi
+  for i in "${!ISSUE_CACHES[@]}"; do
+    IFS=$'\t' read -r cls line <<<"$(collector_latest "$stage" "${ISSUE_CACHES[$i]}")"
+    [ -n "$cls" ] || continue
+    model=""
+    if [ "$cls" = ok ]; then model="$(rec_field "$line" model)" || { printf 'parsefail\t\n'; return; }; fi
+    norm="$(normalize_model "$model")"
+    if [ "$count" = 0 ]; then first="$norm"; elif [ "$norm" != "$first" ]; then conflict=1; fi
+    count=$((count+1))
+    detail="${detail}${detail:+; }issue #${ISSUE_NUMS[$i]}: \`${model:-<malformed>}\`"
+  done
+  if [ "$conflict" = 1 ]; then printf 'conflict\t%s\n' "$detail"; return; fi
+  IFS=$'\t' read -r cls line <<<"$(collector_latest "$stage" "$BUNDLE_CACHE")"
+  case "$cls" in ok) printf 'single\t%s\n' "$line";; near-miss) printf 'malformed\tlatest stage=%s near-miss: %s; no earlier record used\n' "$stage" "$line";; *) printf 'none\t\n';; esac
 }
 
 gate_review_model() {
   local impl_status impl_line review_status review_line
   local impl_model review_model impl_norm review_norm
-  local total_issues=0
+  # A37: an unread source can supersede either candidate, including a
+  # readable different-model pair. Done markers keep their own gate semantics.
+  if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" = 1 ]; then
+    printf 'indeterminate\tevidence-corpus lookup failed; latest Implementation and Review candidates cannot be confirmed\n'
+    return
+  fi
 
   IFS=$'\t' read -r impl_status impl_line <<<"$(resolve_stage_marker Implementation)"
   IFS=$'\t' read -r review_status review_line <<<"$(resolve_stage_marker Review)"
@@ -724,34 +300,23 @@ gate_review_model() {
     return
   fi
 
-  if [ -n "$BUNDLE_ISSUES" ]; then
-    total_issues="$(printf '%s\n' "$BUNDLE_ISSUES" | grep -c '.')"
-  fi
 
   if [ "$impl_status" = "none" ] || [ "$review_status" = "none" ]; then
     if [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ]; then
       printf '%s\t%s\n' "indeterminate" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number, but an evidence-corpus lookup failed, so absence can't be confirmed"
       return
     fi
-    local none_ere=""
-    if [ "$impl_status" = "none" ]; then
-      none_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=Implementation\\b"
-    fi
-    if [ "$review_status" = "none" ]; then
-      if [ -z "$none_ere" ]; then
-        none_ere="<!--[[:space:]]*model-record:[[:space:]]*stage=Review\\b"
-      else
-        none_ere="$none_ere|<!--[[:space:]]*model-record:[[:space:]]*stage=Review\\b"
-      fi
-    fi
-    printf '%s\t%s\n' "not-evidenced" "no \`stage=Review\` and/or \`stage=Implementation\` model-record marker found on PR #$pr_number$(quoted_suffix "$none_ere")"
+    local suffix=""
+    [ "$impl_status" != none ] || suffix="$(quoted_suffix Implementation)"
+    [ -n "$suffix" ] || { [ "$review_status" != none ] || suffix="$(quoted_suffix Review)"; }
+    printf '%s\t%s\n' "not-evidenced" "no stage=Review and/or stage=Implementation model-record marker on PR #$pr_number$suffix"
     return
   fi
 
   local attrs_ok=1 fb=""
-  impl_model="$(marker_attr "$impl_line" model)" || attrs_ok=0
-  review_model="$(marker_attr "$review_line" model)" || attrs_ok=0
-  fb="$(marker_attr "$review_line" floor-basis)" || attrs_ok=0
+  impl_model="$(rec_field "$impl_line" model)" || attrs_ok=0
+  review_model="$(rec_field "$review_line" model)" || attrs_ok=0
+  fb="$(rec_field "$review_line" floor-basis)" || attrs_ok=0
   if [ "$attrs_ok" -eq 0 ]; then
     printf '%s\t%s\n' "indeterminate" "the model-record marker parser (lib/model-record.sh) failed on PR #$pr_number's evidence corpus, so the Implementation and Review markers could not be read"
     return
@@ -776,30 +341,6 @@ gate_review_model() {
       fb_text="no floor-basis recorded"
     fi
     printf '%s\t%s\n' "unverifiable-from-artifacts" "Review (\`$review_model\`) and Implementation (\`$impl_model\`) on PR #$pr_number record different models; their capability ordering isn't machine-checked. $fb_text"
-    return
-  fi
-
-  # issue #302: unlike the checks above, the same-model verdicts used to fire
-  # unconditionally on "both markers found" — sound for <=1 closing
-  # issue (nothing else could have contributed a marker), unsound for
-  # >=2: an unread issue could have supplied a marker resolve_stage_marker
-  # never saw, which — had it been read — might have created exactly
-  # the kind of conflict caught above instead of this same-model match.
-  # The >=2 guard is right for BUNDLE_ISSUE_LOOKUP_FAILED alone (a
-  # single unread issue's marker can never outrank the PR's own — see
-  # the per-source resolution comment above), but issue #336 round 2
-  # found it wrongly carried over to BUNDLE_PR_LOOKUP_FAILED too: a
-  # failed PR comments/reviews fetch is PR-side, not issue-side, and a
-  # later PR comment or review always replaces an earlier one
-  # regardless of how many closing issues exist, including zero or one.
-  # Round 1's fix set both flags together on a PR-side failure without
-  # updating this condition, so it still silently returned
-  # `not-evidenced` in exactly the case it was meant to guard against.
-  # #392 (AC6 ruling), narrowed by #424: the same-model verdict comes from the
-  # latest two markers, which an unread marker can overturn (a later review
-  # round on another model), so it goes behind this guard.
-  if [ "$BUNDLE_PR_LOOKUP_FAILED" -eq 1 ] || { [ "$BUNDLE_ISSUE_LOOKUP_FAILED" -eq 1 ] && [ "$total_issues" -gt 1 ]; }; then
-    printf '%s\t%s\n' "indeterminate" "\`stage=Review\` and \`stage=Implementation\` markers found on PR #$pr_number both record \`$review_model\`, but an evidence-corpus lookup failed, so a superseding marker there can't be ruled out"
     return
   fi
 
@@ -857,7 +398,7 @@ gate_review_marker() {
     return
   fi
 
-  printf '%s\t%s\n' "not-evidenced" "no \`pre-merge-review:done\` marker found on PR #$pr_number$(quoted_suffix "$loose_ere")"
+  printf '%s\t%s\n' "not-evidenced" "no \`pre-merge-review:done\` marker found on PR #$pr_number$(done_quoted_suffix "$loose_ere")"
 }
 
 gate_ci() {

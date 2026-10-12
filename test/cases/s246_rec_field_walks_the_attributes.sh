@@ -13,7 +13,7 @@
 #
 # Seam: rec_field <line> <name> on an ok line (the line field of an ok row, or
 # a literal strict line), prints the value, nothing when the attribute is
-# absent. This case also takes over the hijack arms of S188 (the `marker_attr`
+# absent. This case also takes over the hijack arms of S188 (the `former attribute tokenizer`
 # tests with `floor-basis="beats model="` and the like, retired there): every
 # line below is a STRICT line (model first), because the reader's input is an
 # ok line; the S188 arms that put floor-basis before model or put `>` or `<` or

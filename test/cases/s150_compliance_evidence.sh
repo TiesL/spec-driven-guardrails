@@ -834,7 +834,7 @@ assert_contains "S150 call-C-fails — a warning appears on stderr" "warning" "$
 [ "$(row_status "$output_callc_fails" 2)" = "indeterminate" ] || fail "S150 AC1 — expected gate 2 indeterminate (not not-evidenced) when a closing issue lookup fails and stage=Review looks missing, got '$(row_status "$output_callc_fails" 2)'"
 [ "$(row_status "$output_callc_fails" 3)" = "indeterminate" ] || fail "S150 AC2 — expected gate 3 indeterminate (not not-evidenced) when a closing issue lookup fails and no pre-merge-review:done marker is found, got '$(row_status "$output_callc_fails" 3)'"
 # shellcheck disable=SC2016
-expected_ac1_evidence='no `stage=Review` and/or `stage=Implementation` model-record marker found on PR #279, but an evidence-corpus lookup failed, so absence can'"'"'t be confirmed'
+expected_ac1_evidence="evidence-corpus lookup failed; latest Implementation and Review candidates cannot be confirmed"
 [ "$(row_evidence "$output_callc_fails" 2)" = "$expected_ac1_evidence" ] || fail "S150 AC1 — gate 2 evidence text doesn't match the spec'd template: $(row_evidence "$output_callc_fails" 2)"
 # shellcheck disable=SC2016
 expected_ac2_evidence='no `pre-merge-review:done` marker found on PR #279, but an evidence-corpus lookup failed, so absence can'"'"'t be confirmed'
@@ -942,23 +942,16 @@ output_ac5="$(PATH="$fakebin_ac5:$PATH" "$script" 279 2>"$SANDBOX/s150_stderr_ac
 status_ac5=$?
 [ "$status_ac5" -eq 0 ] || fail "S150 AC5 — expected exit 0, got $status_ac5"
 assert_table_shape "S150 AC5" "$output_ac5"
-[ "$(row_status "$output_ac5" 1)" = "evidenced" ] || fail "S150 AC5 — expected gate 1 evidenced (Discovery came from the successful fetch), got '$(row_status "$output_ac5" 1)'"
+[ "$(row_status "$output_ac5" 1)" = "indeterminate" ] || fail "S150 AC5 — expected gate 1 indeterminate (unread issue may supersede the successful Discovery fetch), got '$(row_status "$output_ac5" 1)'"
 [ "$(row_status "$output_ac5" 2)" = "indeterminate" ] || fail "S150 AC5 — expected gate 2 indeterminate when one of two closing-issue fetches failed, got '$(row_status "$output_ac5" 2)'"
 [ "$(row_status "$output_ac5" 3)" = "indeterminate" ] || fail "S150 AC5 — expected gate 3 indeterminate when one of two closing-issue fetches failed, got '$(row_status "$output_ac5" 3)'"
 
 # =========================================================================
-# Arm D (AC6 guard, issue #299 — Architect's Arm D / Product's D3 ruling).
-# This is the arm that can actually fail against an over-broad fix (one
-# that flips every not-evidenced to indeterminate whenever the flag is
-# set, or a blanket rule at the row()/render seam): it constructs the one
-# corpus where a SOUND not-evidenced (gate 2's same-model verdict, gate
-# 4's zero-checks verdict) coexists with a failed issue lookup. (#424: gate 2's sound
-# same-model verdict is now `evidenced` on the model alone, whatever the legacy
-# efforts; it used to be `not-evidenced` on a lower effort.) Neither
-# may change status. Row 3's indeterminate assertion is a positive
-# control: if a "fix" swallows call C's failure instead of degrading
-# gates 2/3, rows 2/4 would stay not-evidenced for the wrong reason and
-# this arm would pass vacuously without it.
+# Arm D (AC6 guard): original failed single-issue payload is retained.
+# A37/S276 reverse the legacy same-model bypass: unread latest authority is
+# indeterminate. The independent zero-checks gate stays not-evidenced, and
+# absent done evidence stays indeterminate. These prevent blanket degradation
+# of unrelated rows or swallowing the failed lookup.
 # =========================================================================
 run_build_fake_gh "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -988,22 +981,23 @@ output_ac6_guard="$(PATH="$fakebin_ac6_guard:$PATH" "$script" 279 2>"$SANDBOX/s1
 status_ac6_guard=$?
 [ "$status_ac6_guard" -eq 0 ] || fail "S150 AC6-guard — expected exit 0, got $status_ac6_guard"
 assert_table_shape "S150 AC6-guard" "$output_ac6_guard"
-[ "$(row_status "$output_ac6_guard" 2)" = "evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 2's same-model verdict must stay evidenced under a failed issue lookup (both markers were actually read), got '$(row_status "$output_ac6_guard" 2)'"
+[ "$(row_status "$output_ac6_guard" 2)" = "indeterminate" ] || fail "S150 AC6-guard — A37: an unread single issue may supersede both readable markers, got '$(row_status "$output_ac6_guard" 2)'"
 [ "$(row_status "$output_ac6_guard" 4)" = "not-evidenced" ] || fail "S150 AC6-guard — THE GUARD: gate 4's zero-checks verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_ac6_guard" 4)'"
 [ "$(row_status "$output_ac6_guard" 3)" = "indeterminate" ] || fail "S150 AC6-guard — positive control: gate 3 (no marker at all) must still degrade to indeterminate in this same arm, got '$(row_status "$output_ac6_guard" 3)'"
 # The evidence text is pinned in AC1 above; what the guard still needs is that
-# it names the model, mentions no effort (#424) and gained no degradation clause.
+# it names latest authority and the failed lookup, and compares no effort.
 ev_ac6_g2="$(row_evidence "$output_ac6_guard" 2)"
 BT='`'
 case "$ev_ac6_g2" in
-  *claude-sonnet-5*) : ;;
-  *) fail "S150 AC6-guard — gate 2's evidence must name the model, got: $ev_ac6_g2" ;;
+  *latest*) : ;;
+  *) fail "S150 AC6-guard — gate 2's evidence must name latest-authority uncertainty, got: $ev_ac6_g2" ;;
 esac
 case "$ev_ac6_g2" in
   *"${BT}low${BT}"* | *"${BT}medium${BT}"* | *"Review effort"*) fail "S150 AC6-guard — gate 2's evidence must not quote any recorded effort (#424), got: $ev_ac6_g2" ;;
 esac
 case "$ev_ac6_g2" in
-  *lookup* | *failed* | *"can't be ruled out"*) fail "S150 AC6-guard — gate 2's evidence text must not gain a degradation clause on a sound path, got: $ev_ac6_g2" ;;
+  *"lookup failed"*) :;;
+  *) fail "S150 AC6-guard — gate 2 must explain incomplete latest authority, got: $ev_ac6_g2";;
 esac
 
 # =========================================================================
@@ -1419,14 +1413,10 @@ assert_table_shape "S150 issue #302 Arm L (order 2)" "$output_ac302_malf2"
 [ "$(row_status "$output_ac302_malf1" 2)" = "$(row_status "$output_ac302_malf2" 2)" ] || fail "S150 issue #302 Arm L — gate 2 must not depend on closing-issue order: order1='$(row_status "$output_ac302_malf1" 2)' order2='$(row_status "$output_ac302_malf2" 2)'"
 
 # =========================================================================
-# Presence arm (Product's original AC9 arm, retained as a cheap extra —
-# NOT the AC6 guard, per D3: an over-broad fix leaves evidenced paths
-# untouched, so this arm cannot catch it. It catches a different mistake
-# instead: a guard placed above the branch it belongs in, e.g. at the top
-# of gate_review_marker()/gate_review_model() rather than before the
-# specific defective branch, which would flip a matching-sha or
-# differs-model evidenced row to indeterminate. Also folds in the
-# cheap gate-4 bucket=fail non-regression under flag=1 (Architect §3.5).
+# Presence arm: preserve the original differing-model and matching-sha payload.
+# Latest model authority is indeterminate after failed lookup (A37/S276);
+# matching done evidence remains evidenced, and the failed CI bucket remains
+# not-evidenced. This catches accidental uncertainty in independent gates.
 # =========================================================================
 run_build_fake_gh "cccccccccccccccccccccccccccccccccccccccc" > "$FAKEGH_OUT" <<'GHEOF'
 case "$*" in
@@ -1457,7 +1447,7 @@ output_presence="$(PATH="$fakebin_presence:$PATH" "$script" 279 2>"$SANDBOX/s150
 status_presence=$?
 [ "$status_presence" -eq 0 ] || fail "S150 presence-arm — expected exit 0, got $status_presence"
 assert_table_shape "S150 presence-arm" "$output_presence"
-[ "$(row_status "$output_presence" 2)" = "unverifiable-from-artifacts" ] || fail "S150 presence-arm — gate 2 (models differ) must stay unverifiable-from-artifacts (#392; not degraded to indeterminate) under a failed issue lookup, got '$(row_status "$output_presence" 2)'"
+[ "$(row_status "$output_presence" 2)" = "indeterminate" ] || fail "S150 presence-arm — an unread issue may supersede the readable different-model pair, got '$(row_status "$output_presence" 2)'"
 [ "$(row_status "$output_presence" 3)" = "evidenced" ] || fail "S150 presence-arm — gate 3 (matching sha) must stay evidenced under a failed issue lookup, got '$(row_status "$output_presence" 3)'"
 [ "$(row_status "$output_presence" 4)" = "not-evidenced" ] || fail "S150 presence-arm — gate 4's bucket=fail verdict must stay not-evidenced under a failed issue lookup, got '$(row_status "$output_presence" 4)'"
 
@@ -1727,7 +1717,7 @@ assert_table_shape "S150 reviews-fail" "$output_reviewsfail"
 # plausibly have needed the Review-stage or pre-merge-review marker a
 # review body carries.
 status1_reviewsfail="$(row_status "$output_reviewsfail" 1)"
-[ "$status1_reviewsfail" = "evidenced" ] || fail "S150 reviews-fail — gate 1 doesn't depend on the reviews source in this fixture (Discovery/Planning/Test/Implementation are all in comments); expected evidenced, got $status1_reviewsfail"
+[ "$status1_reviewsfail" = "indeterminate" ] || fail "S150 reviews-fail — unseen newer reviews may supersede stages already present; expected indeterminate, got $status1_reviewsfail"
 for n in 2 3; do
   st="$(row_status "$output_reviewsfail" "$n")"
   [ "$st" = "indeterminate" ] || fail "S150 reviews-fail — gate $n must degrade to indeterminate when the PR-reviews fetch fails (Review marker could live only there); got $st"

@@ -273,7 +273,7 @@ require_gh() {
   fi
 }
 
-# marker_scan — the one model-record marker grammar, shared with
+# rec_scan_bundle — the one model-record grammar, shared with
 # compliance-evidence.sh and skills/pre-merge-review/model-record-gate.sh
 # through lib/model-record.sh (#392, round 3 of the PR #397 review: the
 # private `[^>]*-->` pattern this script used made a marker with a `>` in a

@@ -74,7 +74,7 @@ fi
 grep -qE 'unchanged|ranks? two different models|can.t rank|cannot rank|not machine-checked|judgment' <<<"$entry" \
   || fail "S191/AC7 — the entry should say what the gate cannot check (two different models stay the Reviewer's judgment)"
 # the gate is now where the rule reaches a session
-grep -qE '\*\*Reaches session:\*\*.*gate: *skills/pre-merge-review/model-record-gate\.sh' <<<"$entry" \
+test_source_match -qE '\*\*Reaches session:\*\*.*gate: *skills/pre-merge-review/model-record-gate\.sh' <<<"$entry" \
   || fail "S191/AC7 — Reaches session must name gate: skills/pre-merge-review/model-record-gate.sh (A24)"
 # unchanged parts of the rule
 for must in 'fresh context' 'complexity' 'dependencies' 'spec-' 'Findings go into the PR'; do
@@ -99,11 +99,11 @@ esac
 # --- AC10: specs follow -------------------------------------------------------
 arch="$TEST_REPO_ROOT/ARCHITECTURE.md"
 grep -qE '^### A24( |$)' "$arch" || fail "S191/AC10 — ARCHITECTURE.md has no ### A24 entry (the Review floor and floor-basis)"
-grep -qE '^### A25( |$)' "$arch" || fail "S191/AC10 — ARCHITECTURE.md has no ### A25 entry (effort scale, lib/model-record.sh)"
+test_source_match -qE '^### A25( |$)' "$arch" || fail "S191/AC10 — ARCHITECTURE.md has no ### A25 entry (effort scale, lib/model-record.sh)"
 a24="$(awk '/^### A24( |$)/ { f = 1; next } f && /^### / { exit } f { print }' "$arch")"
 a25="$(awk '/^### A25( |$)/ { f = 1; next } f && /^### / { exit } f { print }' "$arch")"
 grep -q 'floor-basis' <<<"$a24" || fail "S191/AC10 — A24 does not describe floor-basis"
-grep -q 'lib/model-record.sh' <<<"$a25" || fail "S191/AC10 — A25 does not name lib/model-record.sh"
+test_source_match -q 'lib/model-record.sh' <<<"$a25" || fail "S191/AC10 — A25 does not name lib/model-record.sh"
 grep -qE 'low *< *medium *< *high' <<<"$a25" || fail "S191/AC10 — A25 does not state the effort scale low < medium < high (kept as history)"
 # #424: A25 is marked superseded and A33 is added
 grep -qiE 'superseded' <<<"$a25" || fail "S191/#424 — A25 must be marked superseded (effort left the floor)"
@@ -115,7 +115,7 @@ grep -q 'when the dispatch tool gains an effort parameter' <<<"$a33" || fail "S1
 # the short-alias false pass is recorded as technical debt (human decision 4)
 debt="$(awk '/^## Technical debt/ { f = 1; next } f && /^## / { exit } f { print }' "$TEST_REPO_ROOT/PRD.md")"
 alias_rows="$(grep -iE 'alias' <<<"$debt")"
-grep -qE '#392|model-record' <<<"$alias_rows" \
+test_source_match -qE '#392|model-record' <<<"$alias_rows" \
   || fail "S191/AC10 — PRD.md's Technical debt register has no row on short model aliases (opus vs claude-opus-5 count as different, effort check skipped)"
 
 # the lib exists (the shared module A25 introduces)

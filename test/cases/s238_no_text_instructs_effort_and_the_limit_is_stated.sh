@@ -91,11 +91,11 @@ done <<<"$files"
 
 # the skills that give a command give it without --effort, and still give it
 for f in "$pmr" "$mc" "$rc" "$orch"; do
-  grep -q 'model-record-emit' "$f" || fail "S238/AC5 — ${f#"$root"/} no longer names model-record-emit.sh (the command is still how a marker is produced)"
+  test_source_match -q 'model-record-emit' "$f" || fail "S238/AC5 — ${f#"$root"/} no longer names model-record-emit.sh (the command is still how a marker is produced)"
   ! grep -q -- '--effort' "$f" || fail "S238/AC5 — ${f#"$root"/} still has --effort in it: $(grep -n -- '--effort' "$f" | cut -c1-120 | head -1)"
 done
 # the emitter's own usage line no longer advertises it
-usage="$(grep -E '^# +model-record-emit\.sh --stage|^usage=' "$emit")"
+usage="$(test_source_match -E '^# +model-record-emit\.sh --stage|^usage=' "$emit")"
 [ -n "$usage" ] || fail "S238 — could not find the emitter's usage line"
 ! grep -q -- '--effort' <<<"$usage" || fail "S238/AC5 — the emitter's usage line still advertises --effort: $usage"
 err="$(LC_ALL=C "$emit" 2>&1 >/dev/null)"
@@ -126,7 +126,7 @@ row="$(grep -E -- '--effort' <<<"$debt" | head -1)"
 grep -qiE 'next release' <<<"$row" || fail "S238 — the --effort debt row must say the next release removes the flag, got: $row"
 grep -qE '#413|#424' <<<"$row" || fail "S238 — the --effort debt row must cite #413 or #424, got: $row"
 # the two retired debt rows: a same-model effort check no longer exists
-! grep -qiE 'effort in a .model-record. marker is self-reported' <<<"$debt" \
+! test_source_match -qiE 'effort in a .model-record. marker is self-reported' <<<"$debt" \
   || fail "S238 — PRD.md's debt register still has the retired row 'the effort in a model-record marker is self-reported'"
 ! grep -qiE 'same-model effort check' <<<"$debt" \
   || fail "S238 — PRD.md's debt register still talks about the same-model effort check (deleted by #424)"
