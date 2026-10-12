@@ -105,10 +105,11 @@ grep -qF -- '--effort' <<<"$unrel" || fail "S285 — Unreleased does not mention
 if grep -qF 'to be confirmed by #430' <<<"$unrel"; then
   fail "S285 — Unreleased still has the #430 placeholder"
 fi
-for t in 'scratch #5 and #14 changed from non-blocking model warnings under v0.3.0 to blocking missing stages' \
-         'scratch #10 was non-blocking under both gates' \
-         'warning appeared in the hook transcript but did not reach the agent as command output'; do
-  grep -qiF -- "$t" <<<"$entry" || fail "S285 — compatibility entry does not contain '$t'"
-done
+grep -qiE 'scratch #5 and #14.* (blocked|blocking) .*missing stages' <<<"$entry" \
+  || fail "S285 — compatibility entry does not say scratch #5 and #14 are blocked for missing stages"
+grep -qiE 'scratch #10.*non-blocking.*both gates' <<<"$entry" \
+  || fail "S285 — compatibility entry does not say scratch #10 is non-blocking under both gates"
+grep -qiE 'warning.*hook transcript.*did not reach.*agent.*command output' <<<"$entry" \
+  || fail "S285 — compatibility entry does not distinguish hook visibility from agent command output"
 
 test_done
