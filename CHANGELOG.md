@@ -55,7 +55,7 @@ point.
   Accepted reader limits, named in the `lib/markdown.sh` header: nested list prefixes, list items inside a blockquote and tab expansion beyond the stated rule are not handled; `continuation-line-list-fence` (#445) can read a marker as live after a column-0 closer that GitHub renders inside the list item; `ordered-item-after-paragraph` (#446) can read a marker as live where GitHub renders it quoted. The one-definition lint is a bounded shell syntax check: variable indirection, generated code and other shell forms can evade it, and the shared reader is not CommonMark in full.
   `--effort` is accepted and ignored with a warning; the same model at lower effort meets the floor and nothing flags it, and a different model's capability cannot be verified from artifacts.
   Fail-open paths (no `gh`, no network) are not a successful check, and artifact checks do not prove live behavior.
-  Adopter impact and whether the guard's warnings reach a session: to be confirmed by #430.
+  In the #430 adopter check, scratch #5 and #14 changed from non-blocking model warnings under v0.3.0 to blocking missing stages under the release gate; scratch #10 was non-blocking under both gates and produced no release-gate output. The scan covered repositories readable in the owner's account and Ties-IT-advies organization; adopters outside those accounts remain unverified, and the check shares the reader's blind spots. In the AC3 run, the unchecked warning appeared in the hook transcript but did not reach the agent as command output. The fake `gh` suppressed the attempted merge, leaving scratch #10 open.
 
 ## v0.3.0 — adoptable, opt-in multi-agent workflow (2026-10-04)
 

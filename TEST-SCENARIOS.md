@@ -4728,7 +4728,7 @@ that evidence and the final `./check` result.
   removed from the `v0.2.1` section in a sandbox copy. The prose of the
   entries is not asserted, and no line numbers are used.
 
-### S285 — Unreleased carries the #408 release notes, with compatibility terms and pending markers
+### S285 — Unreleased carries the #408 release notes and observed acceptance results
 **Covers:** F15
 - Given: CHANGELOG.md `## Unreleased` after the cut and `CHANGES.md` (issue
   #420 AC4a, AC5, AC6; test file
@@ -4778,13 +4778,16 @@ that evidence and the final `./check` result.
   sentence without the evasion limit; "the strict reader is complete";
   a header limit added without an entry mention. A pointer such as "see
   `lib/markdown.sh`" does not substitute for the names.
-- And: it contains `--effort` and the exact phrase
-  `to be confirmed by #430`. Counterexamples: either missing.
+- And: it contains `--effort`, names scratch #5 and #14 as newly blocked by
+  missing stages, names scratch #10 as non-blocking under both gates, and says
+  the AC3 warning appeared in the hook transcript but did not reach the agent
+  as command output. The placeholder `to be confirmed by #430` is absent.
+  Counterexamples: a missing result, or the placeholder still present.
 - Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
   notes are accurate against merged work, that absorbed work is not
   presented as a duplicate feature, that #404 item 6 is not implied
   complete, that the release PR body carries the same scope statement, and
-  that adopter-impact and warning-visibility claims match the #430
+  that the adopter-impact and warning-visibility details match the #430
   observation. Prose beyond the fixed terms is not asserted.
 
 ### S286 — the current-version line is v0.3.0 and v0.4.0 only appears as a proposal
