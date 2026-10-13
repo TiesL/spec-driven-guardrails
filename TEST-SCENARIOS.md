@@ -5034,6 +5034,32 @@ that evidence and the final `./check` result.
   removed; the file grown to 81 lines; the row split over two lines; the
   old `never in a low-only round` text restored.
 - Red today: (b), (c), (d), (e), (g) fail; (h) fails (old text present).
+- Loop-back after Review round 1 (#488 AC12, AC13, AC14; A38 at b2c4602),
+  clause-local. Define `clause(cell, anchor)` = the one sentence of the rule
+  cell (split on `.` not followed by `md`, and on `;`) that contains the
+  anchor; every token below is matched inside that clause only, never in the
+  cell. Clauses: (j) R3 trivial: anchor ``tagged `trivial` ``; clause
+  contains `fixed in the PR` and `passes`. (k) other lows: anchor `any other
+  low finding`; clause contains `deferred` and `absent or doubtful`. (l)
+  class route and QA red check: anchor `QA`; clause contains `red check`,
+  `Developer`, and `code` and `test` as the only eligible classes, with
+  `design` and `spec` named as deferred (a clause without the class
+  restriction fails). (m) AC12: the clause anchored on `T1` or `T2` contains
+  `after` and `red CI`, or the red-CI clause itself names the T1/T2 failure;
+  the red-CI clause keeps `revert`, `defer`, `fresh review`, `no second
+  trivial` (g, now clause-local). (n) AC14: the clause anchored on
+  `` `Disposition` `` contains `own issue` and `immediately`; the clause
+  anchored on `bundled` contains `no Disposition` (or the Developer's literal)
+  and does not contain `` `Disposition` `` as an issue-bound value. The
+  Developer pins the exact literals in one list in the test.
+- Clause-local mutations (each must fail by name): R3 clause removed while the
+  words `trivial-fix` (cap) and `defer that finding` (red-CI) remain
+  (reviewer escape 1); `any other low finding is deferred` removed while
+  another `defer` remains; class restriction `code` and `test` only dropped;
+  QA `red check` sentence removed; T1/T2-after-commit sentence removed; `own
+  issue` removed from the Disposition clause; `bundled` clause rewritten to
+  include Disposition `issue` lows; a decoy: the red-CI text moved into the
+  cap clause (right tokens, wrong clause) must fail.
 
 ### S289 — SKILL.md defines `Fix cost` and `trivial` once, with T1-T6 and the numeric limits (#488 AC2, AC2b)
 **Covers:** F38, F44
@@ -5068,6 +5094,33 @@ that evidence and the final `./check` result.
   `2 files` removed; the T5 disqualifier list removed; the `Fix cost` field
   duplicated into `ORCHESTRATOR.md` (S288 forbids the limits there).
 - Red today: no `**Fix cost**` field exists, so (a) fails and all else with it.
+- Loop-back after Review round 1 (#488 AC12, AC13; A38 at b2c4602), item-local.
+  Split the field into its labelled items `T1`..`T6` plus the lead sentences;
+  each needle is matched inside the item it belongs to. (k) T1 item:
+  `git diff --name-only F^ F`, `<base>...<reviewed-sha>`, `*.md` with
+  `anywhere`, and `templates/*.sh` and `ci.yml` named as code, not docs
+  (AC13). (l) T2 item: `git diff --numstat F^ F`, `git diff -U0 F^ F`,
+  `grep -c '^@@'`, and the digit-and-unit limits (S289 d moves into T2/T1
+  items; the Developer pins which item holds which). (m) single parent, in the
+  sentence that introduces `F`: `git rev-list --parents -n 1` and `exactly one
+  parent`, with a merge commit or a fix folded into a blocking-fix commit
+  stated as not trivial. (n) the field contains no `<reviewed-sha>..<fix-sha>`
+  and no `<reviewed-sha>..` range (global negative, the only global check).
+  (o) eligibility sentence: contains `code` and `test` as eligible and `design`
+  and `spec` as deferred; QA sentence: `QA`, `red check`, `once per round`, no
+  new test, and `void` with `deferred` when no red check can be named. (p) T3
+  keeps the `*.md` docs allowance, T4 keeps the code/test allowance, T5 item
+  carries `new behavior`, `assertion`, `spec`, `guard`, `gate`, `new file`
+  inside T5 itself (reviewer escape 2: words in T4 do not count). (q) T6
+  item: `revert`, `defer`, `fresh review`, `no second trivial`, and that a
+  T1/T2 failure after the commit takes this path (AC12), with `no test edited`.
+- Clause-local mutations (each must fail by name): T5 assertion and spec
+  disqualifiers deleted while T4 still contains those words; `F^ F` replaced
+  by `<reviewed-sha>..<fix-sha>` in T1 or T2; the single-parent sentence
+  removed; `anywhere` dropped from T1; `templates/*.sh` moved into the docs
+  list; eligibility narrowed to or widened beyond `code`/`test`; QA `red check`
+  sentence removed; the AC12 sentence moved from T6 into T4 (decoy); `no
+  second trivial` removed from T6.
 
 **Walkthrough-only (no S-number, no test file; Reviewer reads): the walkthrough ACs are Reviewer-read, not scripted (#488 AC4, AC5, AC6, AC9, AC10). The number S290 is deliberately unused; this block took its place.**
 **Covers:** F44
@@ -5103,6 +5156,15 @@ that evidence and the final `./check` result.
   pre-change corpus (old row) also fails, which is the red-before-green
   proof (AC3). Each break names a distinct row of the mutation table so a
   break that is silently accepted is reported by name, as for S277.
+- Loop-back after Review round 1 (#488 AC12-AC14): the break tables for S288
+  and S289 gain every clause-local mutation listed in those scenarios, each
+  with a distinct name. Two of them are the Reviewer's confirmed escapes: R3
+  clause removed with `trivial-fix` and `defer that finding` still present
+  (S288), and T5 disqualifiers removed with T4 still carrying `assertion` and
+  `spec` (S289). The test also asserts the clause-local design itself: a
+  decoy mutation that moves the right tokens into the wrong clause is
+  rejected, so a check that regresses to row-wide or field-wide matching is
+  caught.
 - Red today: the old-row break cannot be expressed against a new-row
   check until the checks exist; before the Developer's change S288/S289
   fail on the unmodified file, which is the red state.
