@@ -5,12 +5,46 @@
 # Usage:
 #   ./adopt.sh                 # adopts the workflow in the current directory
 #   ./adopt.sh /path/to/proj   # adopts the workflow in the given directory
-#   ./adopt.sh --user           # sets the ~/.claude/CLAUDE.md symlink (once per machine)
+#   ./adopt.sh --user           # Claude-only user adoption trigger
+#   ./adopt.sh --runtime codex [project]  # install/update Codex CLI/desktop
+#   ./adopt.sh --status --runtime claude|codex [project]  # read-only inventory
 #
 # Requires: environment variable SPEC_DRIVEN_GUARDRAILS_DIR, pointing at the
 # local checkout of this repo on *this* machine (see README.md).
 
-set -euo pipefail
+set -Eeuo pipefail
+
+# Parse the complete public Interface before any project writes.
+runtime=claude
+runtime_seen=0
+status_mode=0
+user_mode=0
+project_arg=""
+project_seen=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --runtime)
+      [ "$runtime_seen" -eq 0 ] && [ "$#" -ge 2 ] || { echo "Error: repeated or missing --runtime" >&2; exit 2; }
+      runtime_seen=1
+      runtime="$2"
+      case "$runtime" in claude|codex) ;; *) echo "Error: unknown runtime: $runtime" >&2; exit 2 ;; esac
+      shift 2 ;;
+    --status)
+      [ "$status_mode" -eq 0 ] || { echo "Error: repeated --status" >&2; exit 2; }
+      status_mode=1; shift ;;
+    --user)
+      [ "$user_mode" -eq 0 ] || { echo "Error: repeated --user" >&2; exit 2; }
+      user_mode=1; shift ;;
+    -*) echo "Error: unknown option: $1" >&2; exit 2 ;;
+    *)
+      [ "$project_seen" -eq 0 ] && [ -n "$1" ] || { echo "Error: multiple or invalid projects" >&2; exit 2; }
+      project_seen=1; project_arg="$1"; shift ;;
+  esac
+done
+if [ "$user_mode" -eq 1 ] && { [ "$runtime" != claude ] || [ "$status_mode" -eq 1 ] || [ "$project_seen" -eq 1 ]; }; then
+  echo "Error: --user is Claude-only and cannot combine with status/project" >&2
+  exit 2
+fi
 
 if [ -z "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
   echo "Error: SPEC_DRIVEN_GUARDRAILS_DIR is not set." >&2
@@ -506,6 +540,13 @@ adopt_project() {
   install_skills "$project_dir"
   install_git_hooks "$project_dir"
 
+  scaffold_shared "$project_dir"
+
+  echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
+}
+
+scaffold_shared() {
+  local project_dir="$1"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
   # #156: the template was renamed from ARCHITECTUUR.md to ARCHITECTURE.md.
@@ -584,11 +625,31 @@ adopt_project() {
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
   fi
 
-  echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
 }
 
-if [ "${1:-}" = "--user" ]; then
+project_dir="${project_arg:-.}"
+if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
+elif [ "$runtime" = codex ]; then
+  if [ "$status_mode" -eq 1 ]; then
+    exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status
+  fi
+  trap 'echo "incomplete installation: runtime codex; inspect reported paths before retrying" >&2' ERR
+  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" install
+  # Ownership conflicts were preflighted before all writes; the Codex plan
+  # installed owned native hooks and left foreign hooks untouched.
+  scaffold_shared "$project_dir"
+  echo "Done: runtime codex installed; structural installation only, not live-loaded."
+elif [ "$status_mode" -eq 1 ]; then
+  exec python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir"
 else
-  adopt_project "${1:-.}"
+  echo "runtime: claude; project: $project_dir"
+  echo "checkout: $CLAUDE_WORKFLOW_DIR; revision: $(git -C "$CLAUDE_WORKFLOW_DIR" rev-parse HEAD 2>/dev/null || echo unavailable)"
+  installation_before="$(mktemp)"
+  trap 'rm -f "$installation_before"' EXIT
+  python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" snapshot > "$installation_before"
+  trap 'echo "incomplete installation: runtime claude; inspect reported paths before retrying" >&2' ERR
+  adopt_project "$project_dir"
+  python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" report "$installation_before"
+  echo "Claude installed; structural installation only, not live-loaded."
 fi

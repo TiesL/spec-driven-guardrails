@@ -1717,6 +1717,75 @@ application of a row in a live session require human review (AC7). This item
 lands after F41/F42 and before the release documentation and acceptance work
 in the agreed #408 scope.
 
+### F45 — Shared workflow guidance across supported agents (issue #455 AC1)
+
+An adopted project provides the same role definitions, stage order, role scopes,
+opt-in behavior and human override rules in Claude Code, Codex CLI and Codex
+desktop. Shared workflow meaning follows the completed `v0.4.0` baseline;
+adding Codex support does not redesign the five-role workflow.
+
+### F46 — Detectable drift between shared guidance and runtime adapters (issue #455 AC2)
+
+When shared workflow rules change, applicable repository checks report
+mechanically detectable drift between the shared source and runtime adapters.
+Users can distinguish a consistent adapter from one requiring an update.
+
+### F47 — Codex CLI adoption and guidance discovery (issue #455 AC3)
+
+A user beginning work in an adopted project with Codex CLI can discover project
+instructions and relevant shared skills, including grilling and role-contracts.
+Adoption supports machine-local setup without requiring Claude-only files or a
+committed machine-specific absolute path.
+
+### F48 — Codex desktop guidance discovery (issue #455 AC4)
+
+A user beginning work in the same adopted project with Codex desktop can
+discover the same shared project instructions and relevant skills available
+in Codex CLI, including grilling and role-contracts.
+
+### F49 — Explicit handling of unavailable Codex role dispatch (issue #455 AC5)
+
+When a Codex surface cannot dispatch a required fresh role session, the workflow
+stops at that stage and requests the existing human override decision. Roles
+are not silently collapsed into the current session.
+
+### F50 — Consistent shared check outcomes (issue #455 AC6)
+
+Runtime-independent artifact and convention checks produce the same results
+in either supported workflow. Runtime-dependent behavior is identified so
+users can interpret differences without mistaking them for shared guarantees.
+
+### F51 — Accurate runtime capability documentation (issue #455 AC7)
+
+Adoption and project documentation clearly distinguish shared behavior,
+Codex-specific behavior, Claude-specific behavior and limitations for hooks
+and dispatch. Practical parity means consistent workflow and check outcomes;
+documentation makes no unverified claim of identical runtime automation or
+mechanically proven behavioral compliance.
+
+### F52 — Recorded Codex workflow dry runs (issue #455 AC8)
+
+Human dry runs in Codex CLI and Codex desktop exercise starting work, resuming
+work and unavailable dispatch. Each records whether guidance was available
+and whether the shared workflow behavior was followed.
+
+### F53 — Continued Claude workflow usability (issue #455 AC9)
+
+Adding Codex integration preserves supported Claude workflow behavior, verified
+through existing Claude workflow checks and a human Claude dry run. Codex web,
+other agent products and the completed Stageuur invoice change remain outside
+the #455 product scope.
+
+### F54 — Autonomous Codex role handoffs (issue #455 AC10)
+
+Once the five-role workflow is authorized, the Codex orchestrator autonomously
+continues through routine Product, Architect, QA, Developer and Reviewer
+handoffs, including the existing finding routes, without asking the user to
+confirm each stage. It preserves role contracts, fresh-session requirements,
+stage order, opt-in behavior and human override rules. It stops only for an
+existing required human decision or override, unavailable required role
+dispatch, or confirmation before merging into `main`.
+
 ## Non-functional characteristics
 
 ### Security

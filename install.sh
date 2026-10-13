@@ -13,8 +13,8 @@
 # per machine", with a pinned tag instead of a live `main`.
 #
 # No curl-to-bash: this repo runs on auditable scripts, and a clone is a
-# reasonable ask for this audience (someone already using Claude Code +
-# git).
+# reasonable ask for this audience (someone already using Claude Code or
+# Codex CLI/desktop with git).
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 

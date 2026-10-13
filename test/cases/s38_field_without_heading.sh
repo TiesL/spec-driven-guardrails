@@ -54,7 +54,8 @@ fi
 # never see an empty-ID row.
 nep="$SANDBOX/nepworkflow"
 mkdir -p "$nep/lib" "$nep/templates"
-cp "$TEST_REPO_ROOT/lib/changes.sh" "$TEST_REPO_ROOT/lib/nfr.sh" "$nep/lib/"
+cp "$TEST_REPO_ROOT/lib/changes.sh" "$TEST_REPO_ROOT/lib/nfr.sh" \
+  "$TEST_REPO_ROOT/lib/claude-status.py" "$nep/lib/"
 cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
 echo "# Werkwijze" > "$nep/WORKFLOW.md"
 cp "$source" "$nep/CHANGES.md"

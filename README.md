@@ -2,7 +2,7 @@
 
 Guardrails for an AI coding agent working past toy-project size: what was decided stays
 written down, and nothing merges without a traceable link back to a reviewed requirement.
-Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
+Not an agent framework — shared conventions and scripts with Claude Code and Codex CLI/desktop adapters.
 
 **v0.4.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
 pipeline, and an adopted project can opt into it — see
@@ -13,9 +13,7 @@ pipeline, and an adopted project can opt into it — see
 Two things go wrong once an AI agent works on a project long enough to matter: it forgets
 what was decided and why, and it merges things nobody reviewed. `PRD.md` plus
 `TEST-SCENARIOS.md` fix the first — nothing is "decided" until it's a spec entry a test
-scenario traces back to. A mechanical merge guard fixes the second — `gh pr merge` is blocked
-without a review marker pinned to the current commit and green CI. Both are enforced by
-scripts, not by the agent remembering to follow a convention.
+scenario traces back to. Claude’s Bash merge guard blocks `gh pr merge` without a review marker pinned to the current commit and green CI, subject to its documented fail-open limits. Codex follows the same review agreements through instructions and shared artifact checks; its adapter installs no runtime shell interception.
 
 ## How work actually moves
 
@@ -106,8 +104,7 @@ Stated up front rather than discovered later:
   required, `check` must pass, administrators included).
 - **Guardrails are machine-local** until `adopt.sh` runs there — a fresh clone doesn't have
   them yet.
-- **Bash 3.2 and Claude Code specifically** — not provider-agnostic today (see `PRD.md`'s
-  technical debt table).
+- **Bash 3.2, Python 3, Claude Code and Codex CLI/desktop adapters.** Other agent products and Codex web are outside this scope. Live Codex loading and workflow behavior still require the recorded human dry runs below.
 - **Native Windows is not supported yet.** On Windows, use WSL (a full Linux, covered by the
   Linux CI job) and keep the checkout inside the WSL file system, not under `/mnt/c`. See
   `PRD.md`, "Out of scope", for what supporting it would take.
@@ -154,6 +151,80 @@ branch once (permanent), or just re-run `adopt.sh` (idempotent, no risk either w
 records its answer to each entry in this repo's `CHANGES.md`; a `SessionStart` hook reports
 what's still open. See the `adoption-registry` skill for the full mechanism.
 
+## Codex CLI and desktop setup
+
+Clone/pin this workflow checkout on each machine as above, set
+`SPEC_DRIVEN_GUARDRAILS_DIR` to that machine's local checkout and run:
+
+```bash
+"$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --runtime codex /path/to/project
+"$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh" --status --runtime codex /path/to/project
+```
+
+Omitting runtime means Claude; omitting project means the current directory.
+`install.sh [tag]` only selects this checkout's version and never adopts a project.
+Repeat adoption repairs/updates local installation after checkout, version or
+machine changes. Status is read-only and compares managed bytes/link provenance:
+0 is structurally current, 1 is incomplete/stale/conflicting and 2 is invalid or
+unreadable input. Adoption exits 0 installed, 1 conflict/operational failure and
+2 invalid arguments. Neither success establishes actual instruction loading.
+
+Codex owns one marked block in root AGENTS.md; surrounding project bytes survive.
+Individual `.agents/skills/<name>` links preserve project skills. Ignored local
+`.guardrails/source` and `installation.json` record exact owned targets, not
+adoption decisions. Only exact managed children are ignored. No machine-specific
+path enters the committed block. AGENTS.override.md, AGENTS symlinks, malformed
+markers/provenance, project files in managed skill paths, foreign/broken
+unrecorded links and tracked absolute managed links conflict before project/index
+writes. Resolve the named conflict explicitly and rerun; the installer never
+silently edits the Codex index. Unexpected write failures report incomplete
+installation; transactional rollback is not promised. Claude's existing
+CLAUDE/settings/skills paths and legacy backup handling remain separate.
+
+Open a fresh CLI/desktop session after adoption/update and verify actual loading.
+Run and read `.guardrails/source/session-context.sh --runtime codex .` and each
+invoked `.agents/skills/<name>/SKILL.md` before dependent work. The same canonical
+grilling/role-contracts bodies serve both surfaces; no plugin publication is
+required. For shared scripts, resolve the local `.guardrails/source` checkout into
+`SPEC_DRIVEN_GUARDRAILS_DIR` for the session. Claude-only skill path examples map to
+`.agents/skills` in Codex; runtime frontmatter is not an enforcement guarantee.
+
+[Official instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+documents override/deeper precedence and the default 32 KiB combined instruction
+budget. [Official skill discovery](https://learn.chatgpt.com/docs/build-skills)
+documents `.agents/skills`, symlink support and reading skill bodies on invocation
+(consulted 2026-10-13). Parent/deeper instructions, instruction budget, unsupported
+versions or withheld trust may suppress guidance; report that before relying on
+it. Adoption preserves all Codex config/trust/permissions/hooks/plugin state.
+
+| Mechanism | Claude Code | Codex CLI/desktop | Shared coverage/limits |
+| --- | --- | --- | --- |
+| Session context/fetch | SessionStart configured hook | Explicit reads/fetch instructions | Network/read failures remain visible; installation is not loading |
+| Destructive Git/issue-first/merge | Bash PreToolUse configured guard | Instructions/manual checks; absent runtime interception | Non-Bash/indirect paths and Claude fail-open limits remain |
+| Commit/session push | PostToolUse/SessionEnd configured hooks | Explicit push instructions | Branch exceptions/post-action failures remain |
+| Native Git hooks | pre-commit/commit-msg/pre-push | Same hooks | Foreign hooks/hooksPath/--no-verify/dependencies/escape hatches; do not intercept gh pr merge |
+| Evidence/check/CI | Existing public commands | Same commands and parsers | Artifacts only; cannot prove identity, authorship, freshness or obedience |
+| Five-role dispatch | Available fresh session tool | Runtime-dependent fresh session tool | Unavailable required dispatch stops for existing human override; no role collapse |
+
+Codex status reports `runtime-hooks: not-installed; runtime shell interception unavailable`.
+Trust or existing user hooks do not change that installed coverage claim.
+Once the opted-in workflow is authorized, its orchestrator continues ordinary
+handoffs and finding routes without new confirmations. Canonical
+`skills/role-contracts/ORCHESTRATOR.md` owns this rule and durable-artifact resume.
+Genuine human decisions/overrides, unavailable required fresh dispatch and
+confirmation before main merge remain stops.
+
+Policy is owned by `policy/WORKFLOW.md`, mappings by `adapters/*/INSTRUCTIONS.md`
+and skill bodies by `skills/`. Run `./generate-workflow-adapters.sh` after changing
+policy/mappings. `./check-workflow-adapters.sh` recomputes exact bytes without
+writes and is included in static `./check` and CI. It names missing/drifting
+sources/outputs; it cannot detect contradictory adapter prose. Claude's workflow
+link follows regeneration live; Codex's copied block stays stale until readoption.
+
+Real CLI, desktop, Claude and second-machine observations remain outstanding in
+[the runtime dry-run matrix](docs/codex-dry-runs.md). Structural tests supplement
+those observations and never certify live continuation or behavioral compliance.
+
 ## How this repo builds itself
 
 Everything above is what an adopted project gets: one agent session carrying a change through
@@ -173,7 +244,7 @@ Reviewer's security triggers — in the `role-contracts` skill (`skills/role-con
 When roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
-The dispatching itself is done by an orchestrating Claude Code session, so the "not an agent
+The dispatching itself is done by an orchestrating Claude Code or Codex session with available fresh-role dispatch, so the "not an agent
 framework" line at the top still holds: this repo supplies contracts, run rules and evidence,
 not orchestrator software. Three read-only scripts provide the evidence:
 
@@ -195,10 +266,9 @@ like any other skill. Whether the project actually follows the pipeline is the o
 `process-multi-agent-roles` question in `CHANGES.md` (default: `question`, no general
 preference): `pending-changes.sh` raises it, the `adoption-registry` skill handles the answer.
 The skill is self-contained: it names the `role:<name>` labels and the `model-record` markers,
-and points only at installed skills or built-in Claude Code skills (`security-review`,
-`code-review`).
+and points at canonical installed skills. Built-in Claude Code review capabilities (`security-review`, `code-review`) remain runtime-dependent; unavailable required dispatch/capability is handled through the shared stop/override contract.
 
-**Automatic from the first work item.** Once the row says yes, the `SessionStart` hook runs
+**Claude: automatic from the first work item.** Once the row says yes, the `SessionStart` hook runs
 `session-context.sh`, which prints the skill's `ORCHESTRATOR.md` into every session of that
 project: what counts as a work item, the stage order with labels and markers, dispatching each
 role as a fresh agent (never a fork), the human override record, what to do when dispatch
@@ -223,7 +293,7 @@ detected.
 What an adopted project **gets**: the `role-contracts` skill, the opt-in question, the
 session-start rules and the merge-time check once it answers yes, and permission to run the
 three evidence scripts against its own repo. What it does **not** get: orchestrator software
-(the orchestrating session is an ordinary Claude Code session following `ORCHESTRATOR.md`)
+(the orchestrating session follows canonical `ORCHESTRATOR.md`; Codex explicitly reads session-context)
 and any installed copy of the evidence scripts (`compliance-evidence.sh` and the other two). They are not installed into
 the project and not wired into its `check` or CI, and they are read-only. Run them by path from
 the guardrails clone, with the adopted
@@ -282,7 +352,7 @@ dogfooding the mechanism it specifies.
 | `WORKFLOW.md` | The workflow text (branch/PR/session steps, spec process) plus a routing table to every skill. Symlinked as `CLAUDE.md`. |
 | `settings/session-hooks.json` | `SessionStart`/`SessionEnd` hooks, `attribution.commit`. Symlinked as `.claude/settings.json`. |
 | `hooks/` | `git-guardrails` (the `PreToolUse` guard against destructive git commands, plus the merge guard; fails open on a broken environment), `push-after-commit`, and the native git hooks `pre-commit`/`pre-push`/`commit-msg`, which cover commits and pushes made outside Claude Code. |
-| `skills/` | Claude Code skills — see `WORKFLOW.md`'s routing table for the current list. Symlinked into `.claude/skills/`. |
+| `skills/` | Canonical shared skills — see `WORKFLOW.md`'s routing table for the current list. Symlinked into `.claude/skills/`. |
 | `USER-CLAUDE.md` | Trigger for the per-machine adoption prompt. Symlinked as `~/.claude/CLAUDE.md`. |
 
 **What adoption scaffolds into a project** — copied once, never overwritten once filled in:
