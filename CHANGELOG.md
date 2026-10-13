@@ -13,6 +13,9 @@ point.
 
 ## Unreleased
 
+- **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
+  `PRD.md` ("Out of scope": decision and how to support it later).
+
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
 - **Epic #408: process improvements from the meta review of epic #369.** Summary of what ships
