@@ -117,4 +117,10 @@ for t in 'version is not chosen' 'proposal only' 'unreleased'; do
   grep -qiF -- "$t" <<<"$unrel" && fail "S285 — v0.4.0 section still says '$t'"
 done
 
+# Release-as-candidate wording (#474 review round 1): determiner/compound phrases that can only mean the release itself.
+# The bare word stays allowed: the section uses "candidate" for review-record candidates (#428).
+for t in 'the candidate' 'this candidate' 'release candidate' 'candidate release'; do
+  grep -qiF -- "$t" <<<"$unrel" && fail "S285 — v0.4.0 section still says '$t' (release-candidate wording)"
+done
+
 test_done

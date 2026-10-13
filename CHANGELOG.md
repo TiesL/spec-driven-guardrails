@@ -15,7 +15,7 @@ point.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
-- **Epic #408: process improvements from the meta review of epic #369.** Summary of the candidate
+- **Epic #408: process improvements from the meta review of epic #369.** Summary of what ships
   (details in the bullets below and in `CHANGES.md`): fresh Reviewers for every Review round and a finding-class loop-back rule
   with an override flow; an orchestrator decision table with one-time pushback and Architect risk notes;
   macOS CI running the full suite; shared Markdown handling in one library; effort removal from the
