@@ -15,6 +15,9 @@ point.
 
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
+- **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
+  version paragraph: SDG means this repository and workflow; an adopted project's installed copy is
+  the "adopted copy"; nothing is renamed).
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 

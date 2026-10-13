@@ -8,6 +8,8 @@ Not an agent framework — conventions and scripts that Claude Code is instructe
 pipeline, and an adopted project can opt into it — see
 [How this repo builds itself](#how-this-repo-builds-itself).
 
+**SDG** is talk-only shorthand for this repository and the workflow it provides; an adopted project's installed copy is the "adopted copy", never "SDG", and no directory, variable, script or repository name changes.
+
 ## The problem, and the shape of the fix
 
 Two things go wrong once an AI agent works on a project long enough to matter: it forgets
