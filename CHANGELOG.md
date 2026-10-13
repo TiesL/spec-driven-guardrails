@@ -13,6 +13,9 @@ point.
 
 ## Unreleased
 
+- **Fix #473: S287 shellcheck SC2154 warnings cleared.** `test/cases/s287_issue_review_is_no_pr_round.sh`
+  initialises `rr_out` and `rr_status` after `rr_setup` (non-zero status, so an unset one fails).
+  No assertion changed.
 - **Fix #468: trailing whitespace removed from three test files.** `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at EOF). No behavior change. Recurrence guard: #484.
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
