@@ -47,13 +47,50 @@ if scenario == "s277":
         require("log" in row[2].lower() or "record" in row[2].lower(), f"{name} log destination")
     low = next(r for r in parsed if len(r) == 3 and re.search(r"low.severity finding", r[0], re.I))
     rule = low[1]
-    require(re.search(r"file[^.]*\bissue\b[^.]*\bby default", rule, re.I), "low finding: file an issue by default")
-    require(re.search(r"text-only", rule, re.I) and re.search(r"medium or high", rule, re.I)
-            and re.search(r"already required", rule, re.I), "low finding: text-only exception tied to a round already required by medium/high")
-    require(re.search(r"never[^.]*low-only", rule, re.I), "low finding: no text-only fix in a low-only round")
     require("`Disposition`" in rule and re.search(r"scope-expansion", rule, re.I), "low finding: Disposition and scope-expansion kept")
-    require(not re.search(r"pending|\bQ1\b|do not infer|if the maintainer|fix in the PR by default|default[^.]*fix", rule, re.I), "low finding: pending or fix-default wording")
+    require(not re.search(r"pending|\bQ1\b|do not infer|if the maintainer", rule, re.I), "low finding: pending or conditional wording")
     require(not re.search(r"pending|\bQ[12]\b", low[2], re.I), "low finding: pending log wording")
+elif scenario == "s288":
+    # #488 AC1, AC11 (S288): the exact oracle of the low-severity row. Located by
+    # its first cell; every phrase is matched inside that one row's cells.
+    rows = [r for r in orch.splitlines() if r.startswith("|")]
+    low_rows = [r for r in rows if re.search(r"low.severity finding", r.strip("|").split("|")[0], re.I)]
+    require(len(low_rows) == 1, "exactly one physical low-severity row line")
+    cells = [c.strip() for c in low_rows[0].strip("|").split("|")]
+    require(len(cells) == 3, "low-severity row has decision, rule and log cells")
+    rule, log = cells[1], cells[2]
+    require(len(orch.splitlines()) <= 79, "file at most 79 lines (pre-change count; S180 cap is 80)")
+    require("`Fix cost`" in rule and "SKILL.md" in rule, "rule names the `Fix cost` field and SKILL.md")
+    sentences = [s for s in re.split(r"\.(?!md\b)", rule)]
+    require(any(re.search(r"\btrivial\b", s) and "in the PR" in s for s in sentences), "trivial clause tied to fixing in the PR")
+    require(re.search(r"\bdefer", rule), "any other low finding is deferred")
+    require(any(re.search(r"\bone\b[^.;]*trivial-fix commit[^.;]*per PR", s) for s in sentences), "cap: one trivial-fix commit per PR")
+    require(any(re.search(r"new low[^.]*delta[^.]*\bdeferred\b", s) for s in sentences), "cap: a new low found in the delta round is deferred")
+    require(re.search(r"\bslug", rule), "delta re-review keeps earlier slugs")
+    require("Pipeline log" in log, "log cell names the Pipeline log")
+    require(re.search(r"\bfix", log + " " + rule, re.I) and re.search(r"\bdefer", log + " " + rule, re.I), "log requires fix-in-PR or deferred per finding")
+    require(any(re.search(r"\brevert\b", s) and re.search(r"\bdefer", s) and re.search(r"fresh review", s) and re.search(r"no second trivial", s) for s in sentences), "red-CI sentence: revert, defer, fresh review, no second trivial")
+    require(not re.search(r"never in a low-only round|File a low-severity finding as an issue by default|already required by a medium or high finding", rule, re.I), "old low-finding text is gone")
+    require("`Disposition`" in rule and "scope-expansion" in rule, "Disposition and scope-expansion kept")
+    require(not re.search(r"10 changed lines|2 files|1 hunk", rule), "row does not restate the T1-T6 limits")
+elif scenario == "s289":
+    # #488 AC2, AC2b (S289): the single Fix cost definition in SKILL.md.
+    require(roles.count("**Fix cost**") == 1, "exactly one **Fix cost** field")
+    start = roles.index("**Fix cost**")
+    nxt = re.search(r"\n- \*\*", roles[start:])
+    field = roles[start:start + nxt.start()] if nxt else roles[start:]
+    for value in ("`trivial`", "`small`", "`large`"):
+        require(value in field, f"Fix cost value {value}")
+    require("`trivial`, `small` or `large`" in field, "Fix cost lists its three values together")
+    for tag in ("T1", "T2", "T3", "T4", "T5", "T6"):
+        require(re.search(rf"(?m)^\s*- {tag} ", field), f"Fix cost item {tag} as a labelled list item")
+    for digits, unit in (("2", "files"), ("10", "changed lines"), ("1", "hunk")):
+        require(re.search(rf"(?<![\w.]){digits} {unit}\b", field), f"numeric limit {digits} {unit}")
+    for needle in ("new behavior", "assertion", "spec", "new file", "no test edited", "*.md files", "`CONFIRMED`", "@@",
+                   "git diff --name-only", "git diff --numstat", "git diff -U0"):
+        require(needle in field, f"Fix cost text {needle}")
+    require(re.search(r"\bguard\b", field) and re.search(r"\bgate\b", field), "T5 names guard and gate")
+    require(any(re.search(r"\babsent\b|\bdoubtful\b", s) and "not trivial" in s for s in re.split(r"(?<=\.) ", re.sub(r"\s+", " ", field))), "absent-or-doubtful rule")
 elif scenario == "s278":
     decision = section(orch, "Decided without asking")
     require("**Never decided by the orchestrator:**" in decision, "never-list heading")
@@ -137,14 +174,35 @@ if not os.environ.get("DT415_NEGATIVE"):
         "s277": [
             ("Use an available tool", "Use any tool", "scratch rule"),
             ("Choose the cheapest model", "Choose the preferred model", "model rule"),
-            ("File a low-severity finding as an issue by default", "Fix a low-severity finding in the PR by default", "flipped default"),
-            ("only during a round already required by a medium or high finding, never in a low-only round", "during any round, including a low-only round", "exception widened to low-only round"),
-            ("only during a round already required by a medium or high finding, never in a low-only round", "never in a low-only round", "exception loses medium/high anchor"),
             ("`Disposition` and scope-expansion rules", "rules", "Disposition and scope-expansion dropped"),
-            ("File a low-severity finding", "Pending maintainer Q1; file a low-severity finding", "pending wording returns"),
+            ("By `Fix cost`", "Pending maintainer Q1; by `Fix cost`", "pending wording returns"),
             ("next free number", "any number", "numbering rule"),
             ("| Tool for a scratch run |", "| Other choice |", "scratch row"),
             ("| Pipeline log |\n| Model", "| |\n| Model", "scratch log cell"),
+        ],
+        "s288": [
+            ("By `Fix cost` (defined in `skills/role-contracts/SKILL.md`)", "File a low-severity finding as an issue by default; a narrow text-only fix may go in the PR only during a round already required by a medium or high finding, never in a low-only round", "row reverted to old text"),
+            ("Cap: one trivial-fix commit per PR, separate from any blocking-fix commit; ", "", "cap sentence removed"),
+            ("By `Fix cost` (defined in `skills/role-contracts/SKILL.md`)", "By cost (defined elsewhere)", "Fix cost pointer removed"),
+            ("; the delta re-review is a fresh Reviewer round that carries every earlier slug", "", "slug carry-forward removed"),
+            ("a new low found in the delta round is deferred, never fixed in the PR", "a new low found in the delta round is fixed", "delta-round low deferral removed"),
+            ("revert it, defer that finding, run a fresh review of the new HEAD, and make no second trivial fix", "carry on", "red-CI sentence removed"),
+            ("Pipeline log: per finding", "Issue log: per finding", "Pipeline log dropped"),
+            ("| Pipeline log: per finding", "|\n| Pipeline log: per finding", "row split over two lines"),
+            ("## Decided without asking", "\n" * 81 + "## Decided without asking", "file padded to 81 lines"),
+            ("`Disposition` and scope-expansion rules", "rules", "Disposition and scope-expansion dropped"),
+            ("By `Fix cost`", "By `Fix cost` (at most 10 changed lines)", "limit restated in the row"),
+        ],
+        "s289": [
+            ("at most 10 changed lines", "at most 20 changed lines", "limit digit changed"),
+            ("2 files,", "files,", "2 files limit removed"),
+            ("1 hunk in", "hunk in", "1 hunk limit removed"),
+            ("- T3 Docs", "- X3 Docs", "T3 removed"),
+            ("- T6 Evidence", "- X6 Evidence", "T6 removed"),
+            ("new behavior, ", "", "T5 disqualifier list reduced"),
+            ("`trivial`, `small` or `large`", "`trivial` or `large`", "three values reduced to two"),
+            ("git diff --numstat", "git diff --stat", "numstat command changed"),
+            ("**Fix cost**", "**Fix cost**: first.\n- **Fix cost**", "field duplicated"),
         ],
         "s278": [
             ("**Never decided by the orchestrator:**", "**Examples:**", "never-list heading"),
@@ -187,10 +245,10 @@ if not os.environ.get("DT415_NEGATIVE"):
         ],
     }
     for old, new, label in mutations[scenario]:
-        source = roles if scenario in ("s281", "s282") else orch
+        source = roles if scenario in ("s281", "s282", "s289") else orch
         require(old in source, f"mutation anchor absent: {label}")
         env = os.environ.copy()
         env["DT415_NEGATIVE"] = "1"
-        env["DT415_ROLES" if scenario in ("s281", "s282") else "DT415_ORCH"] = source.replace(old, new, 1)
+        env["DT415_ROLES" if scenario in ("s281", "s282", "s289") else "DT415_ORCH"] = source.replace(old, new, 1)
         result = subprocess.run([sys.executable, __file__, str(root), scenario], env=env, capture_output=True, text=True)
         require(result.returncode != 0 and f"{scenario}:" in result.stderr, f"controlled break escaped: {label}")
