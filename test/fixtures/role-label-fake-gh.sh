@@ -102,4 +102,3 @@ done"
   : > "$WITNESS"
   fake_gh_bin "$body" > "$FAKEGH_OUT"
 }
-
