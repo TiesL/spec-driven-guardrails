@@ -4854,6 +4854,21 @@ that evidence and the final `./check` result.
   surviving the move (red against the section once the bullets are moved
   verbatim, so the Developer shows this arm red by moving first, then
   rewording). Other uses of the word `proposal` are not scanned.
+- And (amended, #474 Review round 1, slug `v040-candidate-wording`): the
+  section also does not call itself a candidate: it contains none of
+  `the candidate`, `this candidate`, `release candidate` and `candidate
+  release` (case-insensitive, fixed strings). Counterexample (red at head
+  114bef5): CHANGELOG.md:18 "Summary of the candidate"; the Developer
+  rewords it (e.g. "Summary of what ships", as the v0.3.0 bullet does) to
+  go green. Phrase-list justification: the bare word `candidate` is NOT
+  forbidden, because the section legitimately uses it for review-record
+  candidates (the #428 bullet: "a candidate without a model", "a newer
+  candidate decides over an older one"); each listed phrase is a
+  determiner or compound that can only refer to the release itself, and
+  none appears in those legitimate lines (indefinite "a candidate" stays
+  allowed). The section is a frozen record, so a fixed list is stable.
+  Scope is the v0.4.0 section only; a later release's wording is not this
+  test's concern.
 - Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
   notes are accurate against merged work, that absorbed work is not
   presented as a duplicate feature, that #404 item 6 is not implied
@@ -4884,7 +4899,20 @@ that evidence and the final `./check` result.
   the heading's date equals `git log -1 --format=%ad --date=short V`; if the
   tag is absent the arm prints a skip note and does not fail (shallow
   checkouts exist; S285 already makes tags a CI requirement). Counterexample:
-  a heading dated one day off the tag.
+  a heading dated one day off the tag. Red evidence the Developer pastes in
+  the PR (Review round 1, slug `s286-arm3-red-unevidenced`): in a sandbox
+  copy (scratchpad `git worktree add` or `cp -r` of the repo at the PR head,
+  never the PR branch itself) change only the newest dated heading's date to
+  the day before the tag date (tag v0.4.0 is 2026-10-13, so write
+  2026-10-12), run `bash test/cases/s286_version_line_and_proposals.sh`, and
+  paste (a) the one-line `diff` of the heading edit, (b) the
+  `git log -1 --format=%ad --date=short v0.4.0` output, (c) the test output:
+  non-zero exit and a failure line from arm 3 naming the heading date and the
+  tag date, with no other arm failing. Then paste the same command's green
+  run on the unmodified PR head. If the arm-3 failure line is missing or
+  another arm also fails, the arm is not evidenced. Also run once with the
+  tag unresolvable (e.g. `git tag -d v0.4.0` in the sandbox only): expect the
+  skip note and exit 0, not a failure.
 - And (arm 4): the count of `v0.2.0` lines in README.md outside line 7 stays
   4 (historical mentions unchanged). Counterexample: a historical mention
   rewritten. Kept literal; it is history.
@@ -4893,7 +4921,11 @@ that evidence and the final `./check` result.
   released version is no proposal. Scope is deliberately CHANGELOG `## V`
   section plus README.md, not `skills/` or root documents (those have no V
   mention today, and a scan over them would forbid honest history such as a
-  future "proposed vX" PR title). Counterexample: the surviving "v0.4.0 is a
+  future "proposed vX" PR title); AC8 was amended to this narrower scope by
+  Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
+  wording in `skills/` and root documents is verified once by reading at
+  review (`git grep v0.4.0` hits only CHANGELOG.md and README.md), not by a
+  standing scan. Counterexample: the surviving "v0.4.0 is a
   proposal only" line (red today only if arm 1 is first made green; show it
   red by placing the cut heading above the unchanged bullets). `Unreleased`
   as the heading itself is outside the section and unaffected.
