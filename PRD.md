@@ -1925,11 +1925,13 @@ epics still apply, detached from the execution history in which they arose.
   Bash's `ln -s` copies instead of linking unless native symlinks are enabled
   (`MSYS=winsymlinks:nativestrict` plus Developer Mode or admin), so adopted files would stop
   receiving updates unnoticed; (2) line endings: `core.autocrlf` CRLF checkouts break bash
-  scripts, fixed with a `.gitattributes` (`*.sh text eol=lf`); (3) a `windows-latest` CI job,
-  as the macOS job was added in #422 (F43). Remaining risks: `C:\...` vs `/c/...` paths;
-  a case-insensitive file system. WSL is the cheapest option and the existing Linux CI job
-  already covers it, so supporting Windows via WSL mainly means documenting "Windows means
-  WSL" (done in `README.md`).
+  scripts, so a `.gitattributes` must force LF for every bash script, including the
+  extensionless ones (`check`, `hooks/*`), not only `*.sh`; (3) a `windows-latest` CI job,
+  as the macOS job was added in #422 (F43). Remaining risks: (a) `C:\...` vs `/c/...` paths
+  and a case-insensitive file system; (b) Git Bash ships GNU (MSYS) tools, so the risk is the
+  file system and Git config more than the tools. WSL is the cheapest option and the existing
+  Linux CI job already covers it, so supporting Windows via WSL mainly means documenting
+  "Windows means WSL" (done in `README.md`).
 
 ---
 
