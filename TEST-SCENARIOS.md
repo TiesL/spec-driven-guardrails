@@ -4774,12 +4774,17 @@ that evidence and the final `./check` result.
   removed from the `v0.2.1` section in a sandbox copy. The prose of the
   entries is not asserted, and no line numbers are used.
 
-### S285 — Unreleased carries the #408 release notes and observed acceptance results
+### S285 — the v0.4.0 CHANGELOG section carries the #408 release notes and observed acceptance results
 **Covers:** F15
-- Given: CHANGELOG.md `## Unreleased` after the cut and `CHANGES.md` (issue
-  #420 AC4a, AC5, AC6; test file
-  `test/cases/s285_unreleased_408_notes.sh`)
-- When: the Unreleased section is read
+- Given: CHANGELOG.md `## v0.4.0` section (the released form of the former
+  `## Unreleased`; issues #420 AC4a, AC5, AC6 and #474 AC2, AC3, AC7; test
+  file `test/cases/s285_unreleased_408_notes.sh`, file name kept) and
+  `CHANGES.md`. The section is a frozen record of one release, so the test
+  pins `## v0.4.0` literally (`changelog_section` matches the dated heading by
+  prefix); it does not derive "the latest section", which would assert #408
+  numbers against the next release. It does not assert that `## Unreleased`
+  is empty or non-empty (a durable test must not pin the transient state).
+- When: the v0.4.0 section is read
 - Then: it mentions each of #410, #414, #415, #422, #423, #424, #425, #426,
   #427, #428 and #429 by number; it identifies #430 as acceptance evidence
   and #420 as documentation closure (the number and the words on one line);
@@ -4787,7 +4792,8 @@ that evidence and the final `./check` result.
   override, decision table, risk notes, macOS CI, shared Markdown handling,
   effort removal, v2 reader/emitter (`v2` and `emitter`), migrated callers,
   old-parser removal. Counterexamples: any one number or term missing; #430
-  or #420 present without its role.
+  or #420 present without its role; no `## v0.4.0` section (red today: the
+  notes still sit under `## Unreleased`).
 - And: #409 appears on a line containing "deferred"; #455 on a line
   containing "paused" and "main"; #400, #413 and #421 each appear on a line
   containing "absorbed" (case-insensitive). Counterexample: any one line
@@ -4829,6 +4835,13 @@ that evidence and the final `./check` result.
   the AC3 warning appeared in the hook transcript but did not reach the agent
   as command output. The placeholder `to be confirmed by #430` is absent.
   Counterexamples: a missing result, or the placeholder still present.
+- And (new, #474 AC3): the v0.4.0 section states its own released status
+  correctly: it contains none of `version is not chosen`, `proposal only` and
+  `unreleased` (case-insensitive). Counterexample: the sentence "This work is
+  unreleased and the version is not chosen: v0.4.0 is a proposal only ..."
+  surviving the move (red against the section once the bullets are moved
+  verbatim, so the Developer shows this arm red by moving first, then
+  rewording). Other uses of the word `proposal` are not scanned.
 - Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
   notes are accurate against merged work, that absorbed work is not
   presented as a duplicate feature, that #404 item 6 is not implied
@@ -4836,26 +4849,49 @@ that evidence and the final `./check` result.
   that the adopter-impact and warning-visibility details match the #430
   observation. Prose beyond the fixed terms is not asserted.
 
-### S286 — the current-version line is v0.3.0 and v0.4.0 only appears as a proposal
+### S286 — the README current-version line equals the newest dated CHANGELOG release, and that release has one dated heading matching its tag
 **Covers:** F15
-- Given: README.md, CHANGELOG.md and the other current documentation (issue
-  #420 AC3, AC6; test file `test/cases/s286_version_line_and_proposals.sh`)
-- When: README.md line 7 and every occurrence of `v0.4.0` are read
-- Then: the bold version token on README.md line 7 is `**v0.3.0**`, and the
-  other `v0.2.0` mentions in README.md are unchanged in number (the count
-  of `v0.2.0` lines outside line 7 equals the count before the change).
-  Counterexamples: line 7 still `**v0.2.0**`; a historical `v0.2.0`
-  mention rewritten.
-- And: no `## v0.4.0` heading exists in CHANGELOG.md, and every line in
-  README.md, CHANGELOG.md, `skills/` (including the injected orchestrator file) and the root
-  documents that contains `v0.4.0` also contains `propos` (case-insensitive).
-  Counterexamples: a `## v0.4.0` placeholder heading; a line stating
-  "v0.4.0 ships ..." without the word.
-- Excluded: `TEST-SCENARIOS.md` is not scanned, because the scenarios quote
-  `v0.4.0` as test data without the word `propos`; scanning it would fail on
-  its own specification text.
-- Not asserted: that #420's PR does not merge into `main`, choose the
-  version or tag (a review fact), and AC4b.
+- Given: README.md, CHANGELOG.md and the git tags (issues #420 AC3, #474 AC6,
+  AC8; test file `test/cases/s286_version_line_and_proposals.sh`, file name
+  kept). Version-neutral by design (maintainer decision on #474, following the
+  Architect): the test derives the version, so the next release changes
+  CHANGELOG.md and README.md together and S286 needs no edit. Derivation: the
+  newest dated release is the first CHANGELOG.md heading matching
+  `^## v[0-9]+\.[0-9]+\.[0-9]+ — .*\([0-9]{4}-[0-9]{2}-[0-9]{2}\)$`; call its
+  version V. `## Unreleased` and undated headings are skipped.
+- When: README.md line 7 and the CHANGELOG.md headings are read
+- Then (arm 1): the bold token on README.md line 7 equals `**V**`. Counterexample:
+  line 7 naming an older release (red today against the cut: line 7 is
+  `**v0.3.0**` while the newest dated heading, once the cut lands, is v0.4.0;
+  the Developer shows it red by cutting CHANGELOG first, README second).
+- And (arm 2): exactly one heading begins `## V ` (count is 1, not 0 or 2).
+  Counterexamples: a duplicated heading; V's heading missing its date or em
+  dash (then no heading is dated and the derivation itself fails with a
+  message, not a pass).
+- And (arm 3): if tag `V` resolves (`git rev-parse -q --verify refs/tags/V`),
+  the heading's date equals `git log -1 --format=%ad --date=short V`; if the
+  tag is absent the arm prints a skip note and does not fail (shallow
+  checkouts exist; S285 already makes tags a CI requirement). Counterexample:
+  a heading dated one day off the tag.
+- And (arm 4): the count of `v0.2.0` lines in README.md outside line 7 stays
+  4 (historical mentions unchanged). Counterexample: a historical mention
+  rewritten. Kept literal; it is history.
+- And (arm 5): no line in the CHANGELOG.md `## V ` section or in README.md
+  that mentions V also says `propos` or `unreleased` (case-insensitive): a
+  released version is no proposal. Scope is deliberately CHANGELOG `## V`
+  section plus README.md, not `skills/` or root documents (those have no V
+  mention today, and a scan over them would forbid honest history such as a
+  future "proposed vX" PR title). Counterexample: the surviving "v0.4.0 is a
+  proposal only" line (red today only if arm 1 is first made green; show it
+  red by placing the cut heading above the unchanged bullets). `Unreleased`
+  as the heading itself is outside the section and unaffected.
+- Dropped from the old S286 (#474 AC8): the "no `## v0.4.0` heading" arm and
+  the "every v0.4.0 line says `propos`" arm. Both described a release
+  candidate, and the second would forbid the released state.
+- Excluded: TEST-SCENARIOS.md is not scanned (it quotes the tokens as test
+  data).
+- Not asserted: that #474's PR does not choose a different date or tag (a
+  review fact), and that every historical mention elsewhere is accurate.
 
 ### S287 — an issue comment carrying a Review record is no PR Review round: review-rounds.sh and the carry-forward gate count the same PR rounds when the issue holds a Review record and a later Planning record (A37c)
 **Covers:** F42, F28
