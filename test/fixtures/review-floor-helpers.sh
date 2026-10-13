@@ -13,6 +13,12 @@ marker() {
     "$1" "$2" "$3" "${4:+ $4}"
 }
 
+# marker_ne <Stage> <model> [<extra attrs>]: a model-record marker with NO
+# effort attribute, which is what model-record-emit.sh prints from #424 on.
+marker_ne() {
+  printf '<!-- model-record: stage=%s model="%s"%s -->' "$1" "$2" "${3:+ $3}"
+}
+
 # para_has_all <file> <ere> [<ere> ...]: success when ONE paragraph (a run
 # of non-blank lines, joined into one line) of <file> matches every ERE,
 # case-insensitively. The

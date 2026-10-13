@@ -37,107 +37,8 @@ script="$TEST_REPO_ROOT/role-label-staleness.sh"
 sandbox_create
 trap sandbox_destroy EXIT
 
-# --- Fixed argv patterns (captured, not retyped — see header). Every
-# case arm below is single-quoted defensively (none of these actually
-# contain a literal `$`, unlike the old GraphQL-based design, but the
-# convention costs nothing and keeps every future edit to this file
-# safe by construction if one ever does).
-CALL_ISSUE_ARGS='api repos/{owner}/{repo}/issues/400 --jq ("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
-CALL_ISSUE_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/400/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-# issue #317 F-8: a new, unconditional call the script makes once per
-# run (right before the timeline call, regardless of the comments
-# call's own outcome) — this repo's own identity, used to filter
-# cross-repo timeline events out of PR discovery. Every fixture below
-# that reaches this point answers it with the same fixed fake identity
-# ("owner/repo"), which CALL_TIMELINE_ARGS' own jq filter now embeds
-# literally, exactly as the real script splices its own fetched value
-# into its timeline jq expression.
-CALL_REPO_IDENTITY_ARGS='api repos/{owner}/{repo} --jq .full_name'
-CALL_TIMELINE_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null and .source.issue.repository.full_name == "owner/repo") | "PR\t"+(.source.issue.number|tostring)'
-# The fallback shape the script sends when the repo-identity call
-# itself fails (fail-open per F-8's own design): the ORIGINAL,
-# unfiltered timeline jq expression, with no repository clause at all
-# — captured the same way, by observing the real script's argv against
-# a recording fake gh with only the identity call answered to fail.
-CALL_TIMELINE_UNFILTERED_ARGS='api repos/{owner}/{repo}/issues/400/timeline --paginate --jq .[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
-CALL_PR501_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/501 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR501_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/501/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR501_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/501/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR502_TITLEBODY_ARGS='api repos/{owner}/{repo}/pulls/502 --jq ("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
-CALL_PR502_COMMENTS_ARGS='api repos/{owner}/{repo}/issues/502/comments --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
-CALL_PR502_REVIEWS_ARGS='api repos/{owner}/{repo}/pulls/502/reviews --paginate --jq .[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/role-label-fake-gh.sh"
 
-pattern_issue="'$CALL_ISSUE_ARGS'"
-pattern_issue_comments="'$CALL_ISSUE_COMMENTS_ARGS'"
-pattern_repo_identity="'$CALL_REPO_IDENTITY_ARGS'"
-pattern_timeline="'$CALL_TIMELINE_ARGS'"
-pattern_timeline_unfiltered="'$CALL_TIMELINE_UNFILTERED_ARGS'"
-pattern_pr501_titlebody="'$CALL_PR501_TITLEBODY_ARGS'"
-pattern_pr501_comments="'$CALL_PR501_COMMENTS_ARGS'"
-pattern_pr501_reviews="'$CALL_PR501_REVIEWS_ARGS'"
-pattern_pr502_titlebody="'$CALL_PR502_TITLEBODY_ARGS'"
-pattern_pr502_comments="'$CALL_PR502_COMMENTS_ARGS'"
-pattern_pr502_reviews="'$CALL_PR502_REVIEWS_ARGS'"
-
-FAKEGH_OUT="$SANDBOX/fakegh-out"
-WITNESS="$SANDBOX/witness"
-
-# Reads a heredoc-style list of case ARMS (not a full case statement) from
-# stdin — never wrapped in $(...) at the call site (a literal ')' inside
-# the heredoc, unavoidable in case-arm syntax and this script's own --jq
-# expressions, would otherwise close the surrounding command substitution
-# before the heredoc terminator is ever reached). __CALL_ISSUE__ etc. are
-# replaced with the exact argv patterns above via plain substring
-# replacement — quote-safe, since heredoc content is never re-parsed as
-# shell syntax at substitution time.
-#
-# F-2 fix (PR #316 Reviewer, round 1): the ONE `case "$*" in ... esac` and
-# the witness-plus-exit-1 fallthrough are supplied ONCE, here, centrally —
-# never per-fixture. A fixture below supplies only the arms it wants to
-# answer; any call it has no arm for correctly falls through to the
-# witness line and exit 1 (a fixture's own missing arm is how a call is
-# made to "fail" for that test, same as every other fake_gh_bin fixture
-# in this repo). An earlier version had each fixture supply its own
-# trailing `esac; exit 1` *after* which the witness line was appended —
-# unreachable, since a case statement's own `exit 1` inside the fixture
-# already terminated the process first. This version's witness line
-# sits *inside* the one case statement's fallthrough, so it's reached by
-# construction whenever no arm matches, and never otherwise (a matched
-# arm's own `exit 0 ;;` always exits the script before the fallthrough
-# is reached, since a case arm's `exit` ends the whole process, not the
-# case statement). Reviewer's round-2 review re-verified this by
-# mutation (injecting an unexpected write call) and confirmed it's now
-# genuinely reachable.
-run_build_fake_gh() {
-  local arms body
-  arms="$(cat)"
-  arms="${arms//__CALL_ISSUE__/$pattern_issue}"
-  arms="${arms//__CALL_ISSUE_COMMENTS__/$pattern_issue_comments}"
-  arms="${arms//__CALL_REPO_IDENTITY__/$pattern_repo_identity}"
-  arms="${arms//__CALL_TIMELINE_UNFILTERED__/$pattern_timeline_unfiltered}"
-  arms="${arms//__CALL_TIMELINE__/$pattern_timeline}"
-  arms="${arms//__CALL_PR501_TITLEBODY__/$pattern_pr501_titlebody}"
-  arms="${arms//__CALL_PR501_COMMENTS__/$pattern_pr501_comments}"
-  arms="${arms//__CALL_PR501_REVIEWS__/$pattern_pr501_reviews}"
-  arms="${arms//__CALL_PR502_TITLEBODY__/$pattern_pr502_titlebody}"
-  arms="${arms//__CALL_PR502_COMMENTS__/$pattern_pr502_comments}"
-  arms="${arms//__CALL_PR502_REVIEWS__/$pattern_pr502_reviews}"
-
-  body='case "$*" in'
-  body="$body
-$arms
-esac
-printf 'UNEXPECTED: %s\n' \"\$*\" >> '$WITNESS'
-exit 1"
-
-  : > "$WITNESS"
-  fake_gh_bin "$body" > "$FAKEGH_OUT"
-}
-
-# Verdict-line shape assertion (mirrors compliance-evidence-fixture.sh's
-# assert_table_shape, for this script's one-line output instead of a
-# six-row table): exactly the documented format, status one of the four
-# closed values, and a non-empty parenthesized detail.
 assert_verdict_shape() {
   local label="$1" output="$2"
   case "$output" in
@@ -1127,7 +1028,7 @@ GHEOF
 fakebin_f5="$(cat "$FAKEGH_OUT")"
 output_f5="$(PATH="$fakebin_f5:$PATH" "$script" 400)"; status_f5=$?
 [ "$status_f5" -eq 0 ] || fail "S152 F-5 — expected exit 0, got $status_f5"
-[ "$(assert_verdict_shape 'S152 F-5' "$output_f5")" = "in-sync" ] || fail "S152 F-5 — a no-space-before--> marker (stage=Review-->) must still be recognized as stage=Review (in-sync with role:reviewer), not malformed: $output_f5"
+[ "$(assert_verdict_shape 'S152 F-5' "$output_f5")" = "indeterminate" ] || fail "S152 F-5 — intentional #428 reversal: model-less stage=Review--> is a near-miss: $output_f5"
 
 # issue #317 AC3 (F-7) — a PR whose title/body only QUOTES "Closes
 # #400" inside an inline code span (not a real closing intent) must
@@ -1260,5 +1161,56 @@ fakebin_f10="$(cat "$FAKEGH_OUT")"
 output_f10="$(PATH="$fakebin_f10:$PATH" "$script" 400 2>/dev/null)"; status_f10=$?
 [ "$status_f10" -eq 0 ] || fail "S152 F-10 — expected exit 0, got $status_f10"
 [ "$(assert_verdict_shape 'S152 F-10' "$output_f10")" = "stale" ] || fail "S152 F-10 — issue comments failed but PR #501's reviews evidence (stage=Review, the ceiling) must still render stale (no label at all), not indeterminate: $output_f10"
+
+# #427: S201 non-gate controls transferred verbatim; retained legacy semantics.
+. "$TEST_REPO_ROOT/test/fixtures/pipeline-371-helpers.sh"
+. "$TEST_REPO_ROOT/test/fixtures/review-floor-helpers.sh"
+NL=$'\n'
+BT='`'
+quote_fence() { printf 'Example of the format:%s```%s%s%s```' "$NL" "$NL" "$1" "$NL"; }
+quote_tilde() { printf 'Example:%s~~~%s%s%s~~~' "$NL" "$NL" "$1" "$NL"; }
+quote_span() { printf 'The format is %s%s%s, as in the skill.' "$BT" "$1" "$BT"; }
+quote_block() { printf '> Reviewer wrote:%s> %s' "$NL" "$1"; }
+ex_rev_high='<!-- model-record: stage=Review model="Sonnet" effort="high" floor-basis="example" -->'
+# ---- and through role-label-staleness.sh ------------------------------------
+# shellcheck source=../fixtures/role-label-fake-gh.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/role-label-fake-gh.sh"
+rl_verdict() { # label, comment-text (one comment, \001 for newlines)
+  local label="$1" body="$2" bin
+  body="${body//$NL/$'\001'}"
+  run_build_fake_gh > "$FAKEGH_OUT" <<GHEOF
+__CALL_ISSUE__)
+  printf 'LABEL\t$label\n'
+  exit 0 ;;
+__CALL_ISSUE_COMMENTS__)
+  exit 0 ;;
+__CALL_REPO_IDENTITY__)
+  printf 'owner/repo\n'
+  exit 0 ;;
+__CALL_TIMELINE__)
+  printf 'PR\t501\n'
+  exit 0 ;;
+__CALL_PR501_TITLEBODY__)
+  printf 'TITLE\t\nBODY\tCloses #400\n'
+  exit 0 ;;
+__CALL_PR501_COMMENTS__)
+  printf 'TEXT\t%s\n' '$body'
+  exit 0 ;;
+__CALL_PR501_REVIEWS__)
+  exit 0 ;;
+GHEOF
+  bin="$(cat "$FAKEGH_OUT")"
+  rl="$(PATH="$bin:$PATH" "$TEST_REPO_ROOT/role-label-staleness.sh" 400 2>/dev/null)"
+}
+# the label is at the real stage (Test); a quoted example of a LATER stage
+# would make it look stale if it counted
+for form in fence span block; do
+  rl_verdict role:qa "$(marker Test Sonnet medium)${NL}$("quote_$form" "$ex_rev_high")"
+  case "$rl" in
+    *" — in-sync "*) : ;;
+    *) fail "S152 transferred S201 role-label/$form — a quoted Review example must not make role:qa stale, got: $rl" ;;
+  esac
+done
+
 
 test_done

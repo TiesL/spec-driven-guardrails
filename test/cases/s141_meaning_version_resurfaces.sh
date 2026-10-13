@@ -12,8 +12,10 @@
 # (bumped to meaning v2 in CHANGES.md as part of #254's own fix) — not a
 # synthetic fixture entry. Issue #392 bumped it again (v3: the different-model
 # requirement was replaced by "at least as capable as Implementation, model
-# and effort together"), so a project that re-confirmed at v2 is re-surfaced
-# in turn (case 5) and only a `(meaning v3)` row is quiet (case 2).
+# and effort together"), and #424 once more (v4: the floor is on the model
+# alone, effort is neither chosen nor checked), so a project that
+# re-confirmed at v2 or v3 is re-surfaced in turn (cases 5 and 6) and only a
+# `(meaning v4)` row is quiet (case 2).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -37,7 +39,7 @@ EOF
 
 output="$("$TEST_REPO_ROOT/pending-changes.sh" "$project" 2>&1)"
 case "$output" in
-  *"quality-review-before-merge"*"answered under meaning v1, now v3"*) : ;;
+  *"quality-review-before-merge"*"answered under meaning v1, now v4"*) : ;;
   *) fail "S141 — expected quality-review-before-merge to resurface, got: $output" ;;
 esac
 
@@ -60,7 +62,7 @@ cat > "$project_confirmed/WORKFLOW-ADOPTION.md" <<'EOF'
 
 | Change | Answer | Date | Notes |
 |---|---|---|---|
-| quality-review-before-merge | yes | 2026-09-19 | re-confirmed for #392 (meaning v3) |
+| quality-review-before-merge | yes | 2026-09-19 | re-confirmed for #424 (meaning v4) |
 EOF
 
 output_confirmed="$("$TEST_REPO_ROOT/pending-changes.sh" "$project_confirmed" 2>&1)"
@@ -69,7 +71,7 @@ case "$output_confirmed" in
 esac
 
 # Case 5 (#392 AC7): a project that answered at v2 (re-confirmed for #244)
-# is re-surfaced with the v2 -> v3 notice, not silently carried over under
+# is re-surfaced with the v2 -> v4 notice, not silently carried over under
 # the replaced rule.
 project_v2="$(fresh_project answered-v2)"
 git -C "$project_v2" commit -q --allow-empty -m start
@@ -83,8 +85,8 @@ EOF2
 
 output_v2="$("$TEST_REPO_ROOT/pending-changes.sh" "$project_v2" 2>&1)"
 case "$output_v2" in
-  *"quality-review-before-merge"*"answered under meaning v2, now v3"*) : ;;
-  *) fail "S141 — a row answered at (meaning v2) did not resurface as v2 -> v3 (#392), got: $output_v2" ;;
+  *"quality-review-before-merge"*"answered under meaning v2, now v4"*) : ;;
+  *) fail "S141 — a row answered at (meaning v2) did not resurface as v2 -> v4 (#392, #424), got: $output_v2" ;;
 esac
 case "$output_v2" in
   *"meaning has changed"*) : ;;
@@ -93,6 +95,29 @@ esac
 if grep -qE '^  - quality-review-before-merge — Must every PR' <<<"$output_v2"; then
   fail "S141 — a v2 row wrongly appeared in the never-answered list, got: $output_v2"
 fi
+
+# Case 6 (#424 AC4): a project that re-confirmed at v3 (for #392: the floor on
+# model AND effort together) is re-surfaced with the v3 -> v4 notice, not
+# silently carried over under the replaced rule.
+project_v3="$(fresh_project answered-v3)"
+git -C "$project_v3" commit -q --allow-empty -m start
+cat > "$project_v3/WORKFLOW-ADOPTION.md" <<'EOF3'
+# Adoption of shared workflow changes
+
+| Change | Answer | Date | Notes |
+|---|---|---|---|
+| quality-review-before-merge | yes | 2026-10-03 | re-confirmed for #392 (meaning v3) |
+EOF3
+
+output_v3="$("$TEST_REPO_ROOT/pending-changes.sh" "$project_v3" 2>&1)"
+case "$output_v3" in
+  *"quality-review-before-merge"*"answered under meaning v3, now v4"*) : ;;
+  *) fail "S141 — a row answered at (meaning v3) did not resurface as v3 -> v4 (#424), got: $output_v3" ;;
+esac
+case "$output_v3" in
+  *"meaning has changed"*) : ;;
+  *) fail "S141 — the v3 row must be in the 'meaning has changed' block, got: $output_v3" ;;
+esac
 
 # Case 3 (AC2): an entry never touched by a version bump (no Meaning
 # version field at all) never resurfaces, regardless of how it was
@@ -130,7 +155,7 @@ EOF
 
 output_double_marker="$("$TEST_REPO_ROOT/pending-changes.sh" "$project_double_marker" 2>&1)"
 case "$output_double_marker" in
-  *"quality-review-before-merge"*"answered under meaning v1, now v3"*) : ;;
+  *"quality-review-before-merge"*"answered under meaning v1, now v4"*) : ;;
   *) fail "S141 — a row with a duplicated (meaning vN) marker did not resurface, got: $output_double_marker" ;;
 esac
 

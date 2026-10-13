@@ -44,10 +44,8 @@
 #   indeterminate  — two-or-more role:<name> labels at once; a
 #                     model-record marker matched the anchor but has no
 #                     recognized stage= value (malformed/unrecognized,
-#                     anywhere in scope — one sighting forces this for the
-#                     whole run, the same blunt/conservative reading
-#                     compliance-evidence.sh already prefers over a
-#                     narrower "only if it could flip the verdict" rule);
+#                     as the latest candidate for its stage; older near-misses
+#                     are superseded by newer valid records);
 #                     or a lookup failed while the verdict computed from
 #                     what WAS read still rests on an absence claim that
 #                     lookup could have contradicted (see "Lookup
@@ -144,9 +142,10 @@
 #      every Review-stage marker posted the way this pipeline actually
 #      posts it was invisible. The title/body already fetched in step 2
 #      is reused for the body's evidence — no second body fetch.
-#   4. Every collected body (issue body, issue comments, each kept PR's
-#      body, comments, and reviews) runs through live_text() before any
-#      marker match, unchanged from the original design.
+#   4. Raw bodies are sorted by creation/submission time, with source
+#      order breaking ties, then framed and read by one cached
+#      rec_scan_bundle call. Quoted candidates do not evidence a stage.
+#      Description edits are unseen: descriptions use created_at (A37).
 #
 # Lookup failures — three independent flags, split because REST breaks
 # the original single-call shape into several independently-failing
@@ -246,6 +245,7 @@
 # test/cases/s153_live_text_mawk_portability.sh.
 
 set -uo pipefail
+export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
 if [ $# -lt 1 ] || [ -z "${1:-}" ]; then
   echo "usage: role-label-staleness.sh <issue-number>" >&2
@@ -273,7 +273,7 @@ require_gh() {
   fi
 }
 
-# marker_scan — the one model-record marker grammar, shared with
+# rec_scan_bundle — the one model-record grammar, shared with
 # compliance-evidence.sh and skills/pre-merge-review/model-record-gate.sh
 # through lib/model-record.sh (#392, round 3 of the PR #397 review: the
 # private `[^>]*-->` pattern this script used made a marker with a `>` in a
@@ -288,92 +288,14 @@ fi
 # shellcheck source=lib/model-record.sh
 . "$script_dir/lib/model-record.sh"
 
-# live_text() — copied verbatim from compliance-evidence.sh (issue #308),
-# not sourced/imported: a shared lib would cross the dogfood-only
-# boundary the same way compliance-evidence.sh's own header already
-# explains for its copy of normalize_model() (skills/ ships to adopted
-# projects via adopt.sh; neither collector does). Strips quoted/fenced
-# spans (fenced code blocks, inline code spans, blockquoted lines) out of
-# a single body before any marker grep ever runs, so a marker merely
-# quoted for illustration in a PR/issue comment doesn't count as live
-# evidence — the same false-positive class issue #308 fixed for
-# compliance-evidence.sh, and exactly the class issue #315's Technical
-# notes call out by name. See compliance-evidence.sh's own copy for the
-# full mechanism notes (fence-open/close rule, blockquote-first ordering,
-# per-body fence isolation); unmodified here, so those notes still apply
-# verbatim.
-live_text() {
-  printf '%s\n' "$1" | awk '
-    function drop_spans(s,   out, n, tick, after, p, q, r) {
-      out = ""
-      while (match(s, /`+/)) {
-        n = RLENGTH; tick = substr(s, RSTART, n)
-        out = out substr(s, 1, RSTART - 1)
-        after = substr(s, RSTART + n)
-        # first backtick run in "after" of length exactly n
-        p = 0; r = after; q = 0
-        while (match(r, /`+/)) {
-          if (RLENGTH == n) { p = q + RSTART; break }
-          q += RSTART + RLENGTH - 1; r = substr(r, RSTART + RLENGTH)
-        }
-        if (p == 0) { out = out tick; s = after }        # unmatched run: literal
-        else        { out = out " ";  s = substr(after, p + n) }
-      }
-      return out s
-    }
-    BEGIN { fch = ""; flen = 0 }
-    /^[ \t]*>/ { print ""; next }                         # blockquote first, unchanged by fence state
-    {
-      line = $0
-      # Issue #319, two independent mawk defects, neither worked around
-      # with an mawk-specific code path:
-      #
-      # (1) the mawk regex compiler panics on an unbounded-lower-bound
-      # interval `{n,}` combined with alternation in a group
-      # (`(`{3,}|~{3,})`), and separately, `{n,}` alone is not greedy
-      # under mawk (it matches exactly n, not "n or more") — silently
-      # truncating a longer fence run and corrupting flen. Two top-level
-      # alternatives using `+` (which every awk, mawk included, matches
-      # greedily) dodge both. `+` alone would now also match a 1- or
-      # 2-character run the original `{3,}`-anchored regex never did
-      # (CommonMark fences need >= 3), so the `length(m) >= 3` guard
-      # below is load-bearing, not defensive: without it, an inline code
-      # span opening a line (e.g. `` `x` is code ``) would itself open an
-      # unclosed fence and blank every line after it, including a real
-      # marker (test/cases/s153_live_text_mawk_portability.sh G5). For a
-      # run already >= 3, RSTART/RLENGTH match the original regex under
-      # gawk exactly (verified: a 5-character fence run no longer
-      # truncates to 3).
-      #
-      # (2) found afterward: the leading `{0,3}` itself does not parse at
-      # all on an older mawk build (1.3.4 20200120, the default `awk` on
-      # Ubuntu 22.04, among others) — that mawk build has no
-      # brace-interval support and reads `{0,3}` as four literal
-      # characters, so it never matches a real fence line and every
-      # fence silently goes undetected. `? ? ?` (three
-      # independently-optional literal spaces) is the brace-free
-      # equivalent of "0 to 3 spaces", parses identically on every awk
-      # this script has been run under (mawk 1.3.4 20200120, mawk 1.3.4
-      # 20240123, gawk), and was verified against 800 randomized
-      # fence-line inputs with zero differences from the original
-      # `{0,3}` behavior under gawk.
-      if (match(line, /^ ? ? ?`+/) || match(line, /^ ? ? ?~+/)) {
-        m = substr(line, RSTART, RLENGTH); sub(/^ +/, "", m)
-        if (length(m) >= 3) {
-          ch = substr(m, 1, 1); len = length(m)
-          rest = substr(line, RSTART + RLENGTH)
-          if (fch == "") {                                  # open: any info string allowed
-            fch = ch; flen = len; print ""; next
-          } else if (ch == fch && len >= flen && rest ~ /^[ \t]*$/) {
-            fch = ""; flen = 0; print ""; next               # close: no info string allowed (D10)
-          }
-        }
-      }
-      if (fch != "") { print ""; next }
-      print drop_spans(line)
-    }
-  '
-}
+# live_text() — one definition in lib/markdown.sh (#423, from issue #308),
+# sourced through lib/model-record.sh above. It strips quoted/fenced spans
+# (fenced code blocks, inline code spans, blockquoted lines) out of a single
+# body before any marker grep runs, so a marker merely quoted for
+# illustration does not count as live evidence (issue #315). A failure of it
+# means a body was not read: LIVE_FAILED, and the verdict is indeterminate,
+# never in-sync or not-started on an absence nobody checked.
+LIVE_FAILED=0
 
 # --- Stage <-> role-label mapping, fixed order. Indexed by literal 0-4
 # only, never `[@]` (see the bash-3.2 note above) — these two arrays are
@@ -426,14 +348,15 @@ label_rank() {
 # dropping \r — GitHub bodies are CRLF, and a trailing \r would defeat
 # live_text()'s fence-close info-string check) so the TSV framing
 # survives the round trip; collect() below folds it back with
-# `tr '\001' '\n'` once per body, before live_text() ever sees it. The
+# `LC_ALL=C tr '\001' '\n'` once per body, before live_text() ever sees it. The
 # --jq expressions themselves are written fresh against REST's flat-JSON
 # shapes (`.[] | .body`, `.labels[].name`, a `select()` on the timeline's
 # event type) — different enough from compliance-evidence.sh's
 # GraphQL-nested ones (`.comments[]?`, `.closingIssuesReferences[]?`)
 # that this isn't a port, just the same convention re-applied.
-ISSUE_JQ='("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
-COMMENTS_JQ='.[] | "TEXT\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+ISSUE_JQ='("BODY\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),(.labels[]? | "LABEL\t"+.name)'
+COMMENTS_JQ='.[] | "TEXT\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
+REVIEWS_JQ='.[] | "TEXT\t"+(.submitted_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))'
 TIMELINE_JQ='.[] | select(.event=="cross-referenced" and .source.issue.pull_request != null) | "PR\t"+(.source.issue.number|tostring)'
 # Emits BOTH the title and the body (issue #315 PR #316 round-2 review,
 # 1b): this repo's own release-branch work-item PRs (#314, #316) carry
@@ -443,21 +366,34 @@ TIMELINE_JQ='.[] | select(.event=="cross-referenced" and .source.issue.pull_requ
 # only .body and so silently missed exactly the PRs this script exists
 # to find. One extra field on the same already-budgeted call, no new
 # request.
-PR_TITLE_BODY_JQ='("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
+PR_TITLE_BODY_JQ='("TITLE\t"+((.title//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001"))),("BODY\t"+(.created_at//"")+"\t"+((.body//"")|gsub("\u0001";" ")|gsub("\r";"")|gsub("\n";"\u0001")))'
 
 # --- collect(): fills these globals. Returns 1 only when the issue-body
 # call fails — the one failure that makes an honest verdict impossible.
 # Every other call failure only sets its own flag (see the header's
 # "Lookup failures" note) and keeps going.
 ROLE_LABELS_FOUND=""       # clean list — one role:<name> label per line, as found on the issue
-CORPUS_TEXT=""             # every live-text()-processed body/comment set in scope, concatenated
+CORPUS_TEXT=""             # raw bodies, chronologically ordered and framed for one scan
+BODY_ROWS=""               # timestamp TAB source-rank TAB arrival-index TAB encoded-body
+BODY_COUNT=0
 ISSUE_COMMENTS_FAILED=0
 PR_DISCOVERY_FAILED=0
 PR_LOOKUP_FAILED=0
 FAILED_PRS=""              # clean list — candidate/kept PR numbers whose Call 4 or Call 5 failed
 
+# Private ingestion: timestamp and source tie order are kept with each raw body.
+# Newlines stay encoded until after sorting. Bodies cannot forge MARKER_SEP.
+append_body() { # <timestamp TAB encoded-body> <source-rank>
+  local row="$1" source="$2" timestamp encoded tab=$'\t'
+  timestamp="${row%%"$tab"*}"
+  encoded="${row#*"$tab"}"
+  encoded="${encoded//$MARKER_SEP/}"
+  BODY_COUNT=$((BODY_COUNT + 1))
+  BODY_ROWS="$BODY_ROWS$timestamp$tab$source$tab$BODY_COUNT$tab$encoded"$'\n'
+}
+
 collect() {
-  local issue_out issue_status tag rest raw_body live_body
+  local issue_out issue_status row tag rest raw_body live_body
 
   issue_out="$(gh api "repos/{owner}/{repo}/issues/$issue_number" --jq "$ISSUE_JQ" 2>/dev/null)"
   issue_status=$?
@@ -465,7 +401,8 @@ collect() {
     return 1
   fi
 
-  while IFS=$'\t' read -r tag rest; do
+  while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
     case "$tag" in
       LABEL)
         case "$rest" in
@@ -484,11 +421,7 @@ $rest"
         esac
         ;;
       BODY)
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
-        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
-        CORPUS_TEXT="$CORPUS_TEXT
-$live_body$MARKER_SEP"
+        append_body "$rest" 0
         ;;
     esac
   done <<<"$issue_out"
@@ -503,13 +436,10 @@ $live_body$MARKER_SEP"
     echo "warning: role-label-staleness couldn't read issue #$issue_number's own comments (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
     ISSUE_COMMENTS_FAILED=1
   else
-    while IFS=$'\t' read -r tag rest; do
+    while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
       [ "$tag" = "TEXT" ] || continue
-      raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
-      raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-      live_body="$(live_text "$raw_body")"
-      CORPUS_TEXT="$CORPUS_TEXT
-$live_body$MARKER_SEP"
+      append_body "$rest" 0
     done <<<"$comments_out"
   fi
 
@@ -555,7 +485,8 @@ $live_body$MARKER_SEP"
     echo "warning: role-label-staleness couldn't discover linked PRs for issue #$issue_number (the timeline lookup failed) — this means PRs might exist and weren't found, never that there are none; a verdict resting on that absence will degrade to indeterminate." >&2
     PR_DISCOVERY_FAILED=1
   else
-    while IFS=$'\t' read -r tag rest; do
+    while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
       [ "$tag" = "PR" ] || continue
       [ -n "$rest" ] || continue
       if [ -z "$candidate_prs" ]; then
@@ -578,7 +509,7 @@ $rest"
   # comments and reviews).
   if [ -n "$candidate_prs" ]; then
     local closing_ere pr pr_out pr_status pr_title_raw pr_body_raw
-    local live_title combined_live
+    local live_title combined_live pr_body_row
     local pr_comments_out pr_comments_status pr_reviews_out pr_reviews_status
 
     # GitHub's own closing-keyword grammar (issue #315 PR #316 round-2
@@ -604,10 +535,12 @@ $rest"
 
       pr_title_raw=""
       pr_body_raw=""
-      while IFS=$'\t' read -r tag rest; do
+      pr_body_row=""
+      while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
         case "$tag" in
-          TITLE) pr_title_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
-          BODY) pr_body_raw="$(printf '%s' "$rest" | tr '\001' '\n')" ;;
+          TITLE) pr_title_raw="$(printf '%s' "$rest" | LC_ALL=C tr '\001' '\n')" ;;
+          BODY) pr_body_row="$rest"; pr_body_raw="$(printf '%s' "${rest#*$'\t'}" | LC_ALL=C tr '\001' '\n')" ;;
         esac
       done <<<"$pr_out"
 
@@ -631,16 +564,15 @@ $rest"
       # that matches neither is discarded silently: cross-referencing an
       # issue in prose is common and not a failure of anything.
       pr_body_raw="${pr_body_raw//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-      live_title="$(live_text "$pr_title_raw")"
-      live_body="$(live_text "$pr_body_raw")"
+      live_title="$(live_text "$pr_title_raw")" || LIVE_FAILED=1
+      live_body="$(live_text "$pr_body_raw")" || LIVE_FAILED=1
       combined_live="$live_title
 $live_body"
-      if ! grep -qiE "$closing_ere" <<<"$combined_live"; then
+      if ! LC_ALL=C grep -qiE "$closing_ere" <<<"$combined_live"; then
         continue
       fi
 
-      CORPUS_TEXT="$CORPUS_TEXT
-$live_body$MARKER_SEP"
+      append_body "$pr_body_row" 1
 
       pr_comments_out="$(gh api "repos/{owner}/{repo}/issues/$pr/comments" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
       pr_comments_status=$?
@@ -649,13 +581,10 @@ $live_body$MARKER_SEP"
         PR_LOOKUP_FAILED=1
         mark_pr_failed "$pr"
       else
-        while IFS=$'\t' read -r tag rest; do
+        while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
           [ "$tag" = "TEXT" ] || continue
-          raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
-          raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-          live_body="$(live_text "$raw_body")"
-          CORPUS_TEXT="$CORPUS_TEXT
-$live_body$MARKER_SEP"
+          append_body "$rest" 2
         done <<<"$pr_comments_out"
       fi
 
@@ -669,7 +598,7 @@ $live_body$MARKER_SEP"
       # comments read fine while its reviews call fails, or vice versa,
       # so this is its own call with its own failure handling, not
       # gated behind the comments call's outcome.
-      pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --paginate --jq "$COMMENTS_JQ" 2>/dev/null)"
+      pr_reviews_out="$(gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --paginate --jq "$REVIEWS_JQ" 2>/dev/null)"
       pr_reviews_status=$?
       if [ "$pr_reviews_status" -ne 0 ]; then
         echo "warning: role-label-staleness couldn't read PR #$pr's reviews (no network or no access) — a verdict resting on an absence claim they could have contradicted will degrade to indeterminate." >&2
@@ -677,78 +606,61 @@ $live_body$MARKER_SEP"
         mark_pr_failed "$pr"
         continue
       fi
-      while IFS=$'\t' read -r tag rest; do
+      while IFS= read -r row; do
+    tag="${row%%$'\t'*}"; rest="${row#*$'\t'}"
         [ "$tag" = "TEXT" ] || continue
-        raw_body="$(printf '%s' "$rest" | tr '\001' '\n')"
-        raw_body="${raw_body//$MARKER_SEP/}" # #392: a body cannot forge a comment boundary
-        live_body="$(live_text "$raw_body")"
-        CORPUS_TEXT="$CORPUS_TEXT
-$live_body$MARKER_SEP"
+        append_body "$rest" 3
       done <<<"$pr_reviews_out"
     done <<<"$candidate_prs"
   fi
 
+  local ordered timestamp source ordinal encoded
+  ordered="$(printf '%s' "$BODY_ROWS" | LC_ALL=C sort -t $'\t' -k1,1 -k2,2n -k3,3n)" || { PARSER_FAILED=1; return 0; }
+  while IFS= read -r row; do
+    timestamp="${row%%$'\t'*}"; row="${row#*$'\t'}"
+    source="${row%%$'\t'*}"; row="${row#*$'\t'}"
+    ordinal="${row%%$'\t'*}"; encoded="${row#*$'\t'}"
+    [ -n "$ordinal" ] || continue
+    raw_body="$(printf '%s' "$encoded" | LC_ALL=C tr '\001' '\n')"
+    CORPUS_TEXT="$CORPUS_TEXT$raw_body$MARKER_SEP"
+  done <<<"$ordered"
   return 0
 }
 
-# --- Marker scanning. New relative to compliance-evidence.sh (Architect's
-# Planning comment: "the inverse of gate_stage_models()'s loop, which
-# checks one *known* stage name per iteration and never needs to look at
-# an unrecognized value") — this extracts whatever stage= token is
-# actually there and classifies it, rather than checking presence of one
-# fixed name at a time.
-#
-# Anchored the same way compliance-evidence.sh's own gates are (issue
-# #308 AC7/D4): a real `<!--...-->` HTML-comment opener, not bare prose —
-# bare text that merely mentions "model-record: stage=X" with no `<!--`
-# is not a marker at all and is invisible here, same reasoning as
-# gate_stage_models(). Deliberately anchored on `model-record:` alone
-# (not `model-record:[[:space:]]*stage=`, unlike compliance-evidence.sh's
-# per-stage gates): a marker that matched the anchor but has NO stage=
-# token at all must still be seen and classified as malformed (AC6),
-# never silently invisible the way a tighter anchor would make it.
-#
-# Updates two globals: KNOWN_MAX_RANK (highest recognized stage rank
-# found anywhere in $1, or stays -1 if none) and MALFORMED_FOUND/
-# MALFORMED_LINE (set the first time a marker matches the anchor but its
-# stage= token is missing or not one of the five recognized names).
-# Never coerces an unrecognized token to the nearest recognized stage,
-# and never silently drops it as if absent (AC6) — either would risk
-# flipping a real stale/in-sync answer silently, which is exactly what
-# indeterminate exists to prevent.
+# --- Cached record-v2 candidates (A31a/A32a/A37). Raw bodies have already
+# been sorted chronologically; row order then supplies body/line tie order.
+# A model is mandatory. Latest near-misses make the verdict indeterminate,
+# while newer valid candidates supersede older near-misses for that stage.
 KNOWN_MAX_RANK=-1
 MALFORMED_FOUND=0
 MALFORMED_LINE=""
 PARSER_FAILED=0
 
+# Cache the one scan. Newest candidate per readable stage wins; unknown-stage
+# candidates have their own slot and remain unreadable. Quoted rows never vote.
 scan_markers() {
-  local text="$1" scan_out status token rest rank
-  # marker_scan (lib/model-record.sh): every `<!-- model-record:` marker,
-  # one per line, `ok|malformed<TAB><stage token><TAB><text>`. The stage
-  # token is the [A-Za-z0-9_] run after `stage=` (issue #317 F-5's
-  # `stage=Review-->` still reads as Review, and `stage=Review-draft` as
-  # Review, the same narrow tradeoff as before). A grammar-malformed marker
-  # (an unbalanced quote, no closing `-->`, a `<!--` inside it) is never
-  # read for its stage; it counts as malformed here (AC6: never silently
-  # dropped). A parser failure means nothing was read: PARSER_FAILED.
-  if ! scan_out="$(marker_scan "$text")"; then
+  local text="$1" scan_out idx status token rest rank slot i
+  local latest_status=("" "" "" "" "" "") latest_reason=("" "" "" "" "" "")
+  if [ "$PARSER_FAILED" -eq 1 ] || ! scan_out="$(rec_scan_bundle model-record "$text")"; then
     PARSER_FAILED=1
     return 0
   fi
-  [ -n "$scan_out" ] || return 0
-  while IFS=$'\t' read -r status token rest; do
-    [ -n "$status" ] || continue
-    if [ "$status" = "ok" ] && [ -n "$token" ] && rank="$(stage_rank "$token" 2>/dev/null)"; then
-      if [ "$rank" -gt "$KNOWN_MAX_RANK" ]; then
-        KNOWN_MAX_RANK="$rank"
-      fi
-    else
-      MALFORMED_FOUND=1
-      if [ -z "$MALFORMED_LINE" ]; then
-        MALFORMED_LINE="$rest"
-      fi
-    fi
+  while IFS=$'\t' read -r idx status token rest; do
+    [ -n "$idx" ] || continue
+    [ "$status" != quoted ] || continue
+    slot=5
+    if rank="$(stage_rank "$token" 2>/dev/null)"; then slot="$rank"; fi
+    latest_status[$slot]="$status"
+    latest_reason[$slot]="stage=$token: $rest"
   done <<<"$scan_out"
+  for i in 0 1 2 3 4 5; do
+    if [ "${latest_status[$i]}" = near-miss ]; then
+      MALFORMED_FOUND=1
+      [ -n "$MALFORMED_LINE" ] || MALFORMED_LINE="${latest_reason[$i]}"
+    elif [ "${latest_status[$i]}" = ok ] && [ "$i" -lt 5 ]; then
+      KNOWN_MAX_RANK="$i"
+    fi
+  done
 }
 
 # Appends $1 (a PR number) to FAILED_PRS exactly once, even if more than
@@ -815,19 +727,21 @@ if [ "$role_label_count" -gt 1 ]; then
 else
   scan_markers "$CORPUS_TEXT"
 
-  if [ "$PARSER_FAILED" -eq 1 ]; then
+  if [ "$LIVE_FAILED" -eq 1 ]; then
+    # #423: dropping quoted text (live_text) failed on at least one body, so
+    # what was read is incomplete; any verdict would rest on an absence
+    # nobody checked.
+    verdict="indeterminate"
+    detail="reading the quoted text of a body on issue #$issue_number or a linked PR failed (live_text), so the model-record markers could not be read completely"
+  elif [ "$PARSER_FAILED" -eq 1 ]; then
     # #392: the marker parser failed, so no marker was read; any verdict
     # would rest on an absence nobody checked.
     verdict="indeterminate"
     detail="the model-record marker parser (lib/model-record.sh) failed, so no marker on issue #$issue_number or a linked PR could be read"
   elif [ "$MALFORMED_FOUND" -eq 1 ]; then
-    # AC6 — one sighting anywhere in scope forces this for the whole
-    # run (the blunt, conservative reading Architect's Planning comment
-    # recommended over a narrower "only if it could flip the verdict"
-    # rule) — g3 depends on this taking priority over a well-formed,
-    # later marker found elsewhere in the same corpus.
+    # A37/AC6: no fallback to an older valid candidate at this stage.
     verdict="indeterminate"
-    detail="a model-record marker on issue #$issue_number or a linked PR matched but is malformed or has no recognized stage=<Discovery|Planning|Test|Implementation|Review> value: $MALFORMED_LINE"
+    detail="the latest model-record candidate on issue #$issue_number or a linked PR is a near-miss ($MALFORMED_LINE), so no earlier record is used"
   else
     label_r=-1
     single_label=""

@@ -15,6 +15,11 @@
 # a fake awk checks the failure path on every platform.
 # Seam: model-record-gate.sh stdout and compliance-evidence.sh's rows,
 # against fake gh, with the locale exported by this test.
+#
+# Issue #424: "the marker was read" used to be proved by the same-model
+# lower-effort finding. With effort gone, a read marker pair gives NO output
+# (gate) or `evidenced` (gate 2), while a dropped marker gives "no record
+# found for stage ..." / not-evidenced. The proof is the absence of those.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -51,7 +56,7 @@ if [ -n "$utf8" ]; then
   locales="C $utf8"
 else
   echo "    NOTE: S196 — no UTF-8 locale is installed here (tried en_US.UTF-8 nl_NL.UTF-8 C.UTF-8); the UTF-8 half cannot run, falling back to checking that the parser pins LC_ALL=C for its awk programs" >&2
-  grep -qE 'LC_ALL=C[[:space:]]+awk|LC_ALL=C[[:space:]]+(command[[:space:]]+)?awk|export LC_ALL=C|local LC_ALL=C' "$TEST_REPO_ROOT/lib/model-record.sh" \
+  test_source_match -qE 'LC_ALL=C[[:space:]]+awk|LC_ALL=C[[:space:]]+(command[[:space:]]+)?awk|export LC_ALL=C|local LC_ALL=C' "$TEST_REPO_ROOT/lib/model-record.sh" \
     || fail "S196 — no UTF-8 locale to test with, and lib/model-record.sh does not pin LC_ALL=C for its awk programs"
 fi
 
@@ -63,23 +68,32 @@ impl_g="$(marker Implementation Sonnet high)"
 # gate: placeholder prose before the real markers must not drop them
 # ---------------------------------------------------------------------------
 gate_case() { # label locale body...   (bodies = comments, in order)
-  local label="$1" loc="$2"
-  shift 2
+  local label="$1" loc="$2" expected="$3"
+  shift 3
   rf_data "$@"
   rf_out="$(cd "$RF_PLAIN" && PATH="$RF_BIN:$PATH" LC_ALL="$loc" LANG="$loc" "$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh" 246 2>/dev/null)"
   rf_status=$?
   [ "$rf_status" -eq 0 ] || fail "S196 gate/$label [$loc] — exit $rf_status"
-  [ "$(rf_findings)" -eq 1 ] && grep -qiE 'low.*high|high.*low' <<<"$rf_out" \
-    || fail "S196 gate/$label [$loc] — same model, Review low vs Implementation high: expected exactly the lower-effort finding, got: '$rf_out'"
+  if [ "$label" = 'non-ASCII outside the quotes' ]; then
+    assert_contains "S196 invalid sole Review" 'no record found for stage Review' "$rf_out"
+    ! grep -q 'has no floor-basis' <<<"$rf_out" || fail "S196 invalid Review must skip basis check"
+  else
+    ! grep -q 'no record found' <<<"$rf_out" || fail "S196 gate/$label [$loc] — valid stages were lost: $rf_out"
+  fi
+  if [ "$expected" = near-miss ]; then
+    [ "$(grep -c 'near-miss' <<<"$rf_out")" = 1 ] || fail "S196 gate/$label [$loc] — invalid live candidate must be named once: $rf_out"
+  else
+    [ -z "$rf_out" ] || fail "S196 gate/$label [$loc] — valid/quoted input must be clean: $rf_out"
+  fi
 }
 for loc in $locales; do
   rev_low="$(marker Review Sonnet low 'floor-basis="ok"')"
-  gate_case "placeholder in its own comment" "$loc" "Placeholder: \`$PH\` is written as prose." "$impl_g" "$rev_low"
-  gate_case "placeholder bare, own comment" "$loc" "$PH" "$impl_g" "$rev_low"
-  gate_case "placeholder in the same comment, before the markers" "$loc" "see $PH${NL}$impl_g${NL}$rev_low"
-  gate_case "non-ASCII in a quoted value" "$loc" "$impl_g" "$(marker Review Sonnet low 'floor-basis="stronger → weaker, ≥ Implementation"')"
-  gate_case "non-ASCII outside the quotes" "$loc" "$impl_g" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" note=… floor-basis=\"ok\" -->"
-  gate_case "non-ASCII right after stage= on a real marker is not a stage" "$loc" "<!-- model-record: stage=Réview model=\"Sonnet\" effort=\"high\" -->${NL}$impl_g" "$rev_low"
+  gate_case "placeholder in its own comment" "$loc" clean "Placeholder: \`$PH\` is written as prose." "$impl_g" "$rev_low"
+  gate_case "placeholder bare, own comment" "$loc" near-miss "$PH" "$impl_g" "$rev_low"
+  gate_case "placeholder in the same comment, before the markers" "$loc" near-miss "see $PH${NL}$impl_g${NL}$rev_low"
+  gate_case "non-ASCII in a quoted value" "$loc" clean "$impl_g" "$(marker Review Sonnet low 'floor-basis="stronger → weaker, ≥ Implementation"')"
+  gate_case "non-ASCII outside the quotes" "$loc" near-miss "$impl_g" "<!-- model-record: stage=Review model=\"Sonnet\" effort=\"low\" note=… floor-basis=\"ok\" -->"
+  gate_case "non-ASCII right after stage= on a real marker is not a stage" "$loc" near-miss "<!-- model-record: stage=Réview model=\"Sonnet\" effort=\"high\" -->${NL}$impl_g" "$rev_low"
 done
 
 # ---------------------------------------------------------------------------
@@ -96,15 +110,15 @@ ce_case() { # label locale
 for loc in $locales; do
   ce_case "gate2 placeholder before markers" "$loc" "$PH
 $impl_c
-$rev_c_low" not-evidenced
+$rev_c_low" evidenced
   case "$(row_evidence "$ce_out" 2)" in
-    *low*medium* | *medium*low*) : ;;
-    *) fail "S196 gate2 [$loc] — the lower-effort verdict must name both efforts, got: $(row_evidence "$ce_out" 2)" ;;
+    *claude-sonnet-5*) : ;;
+    *) fail "S196 gate2 [$loc] — the model-only verdict must name the model, got: $(row_evidence "$ce_out" 2)" ;;
   esac
   ce_case "gate2 non-ASCII in quoted value" "$loc" "$impl_c
-$(mk Review claude-sonnet-5 low 'floor-basis="stronger → weaker"')" not-evidenced
+$(mk Review claude-sonnet-5 low 'floor-basis="stronger → weaker"')" evidenced
   ce_case "gate2 non-ASCII outside quotes" "$loc" "$impl_c
-<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" not-evidenced
+<!-- model-record: stage=Review model=\"claude-sonnet-5\" effort=\"low\" note=… floor-basis=\"ok\" -->" indeterminate
   # gate 1: Planning after the placeholder
   export LC_ALL="$loc" LANG="$loc"
   ce "Closes #265" "$PH
@@ -126,17 +140,20 @@ cat > "$fakeawk/awk" <<EOF2
 # fails only the marker parser's programs (they take -v want=...); anything
 # else is the real awk
 case "\$*" in
-  *want=*) echo "awk: simulated parser failure" >&2; exit 2 ;;
+  *mode=rec*) echo hit >> "\$S196_COUNT"; echo "awk: simulated parser failure" >&2; exit 2 ;;
 esac
 exec "$real_awk" "\$@"
 EOF2
 chmod +x "$fakeawk/awk"
 
+export S196_COUNT="$SANDBOX/awk-count"
+: > "$S196_COUNT"
 rf_data "$impl_g" "$(marker Review Sonnet low 'floor-basis="ok"')"
 rf_out="$(cd "$RF_PLAIN" && PATH="$fakeawk:$RF_BIN:$PATH" "$TEST_REPO_ROOT/skills/pre-merge-review/model-record-gate.sh" 246 2>/dev/null)"
 rf_status=$?
+[ -s "$S196_COUNT" ] || fail "S196 — parser failure shim was not invoked"
 if [ "$rf_status" -eq 0 ]; then
-  grep -q '^model-record:' <<<"$rf_out" \
+  test_source_match -q '^model-record:' <<<"$rf_out" \
     || fail "S196 gate — the marker parser's awk failed and the gate printed no model-record: finding and exited 0 (a silent fail-open), got: '$rf_out'"
 fi
 

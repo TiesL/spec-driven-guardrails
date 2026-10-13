@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
-# S188 — lib/model-record.sh: one shared normalize_model, effort_rank and
-# marker_attr for the model-record gate and the compliance collector.
+# S188 — unchanged normalization and v2 attribute walks.
 # Covers: F39
-#
-# Issue #392, A25. Seam: the three functions of the sourced lib
-# (normalize_model <label>, effort_rank <value>, marker_attr <marker-line>
-# <name>), by their documented output only. normalize_model's behaviour is
-# the pre-#392 one, moved unchanged (#268).
-
+# Seam: normalize_model, rec_scan and rec_field on strict valid records.
+# Invalid attribute order/classification belongs to S271/S246.
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../lib.sh
@@ -20,10 +15,13 @@ if [ ! -f "$lib" ]; then
 fi
 # shellcheck source=../../lib/model-record.sh disable=SC1091
 . "$lib"
-for fn in normalize_model effort_rank marker_attr; do
+for fn in normalize_model rec_field; do
   type "$fn" >/dev/null 2>&1 || fail "S188 — lib/model-record.sh defines no $fn"
 done
-type marker_attr >/dev/null 2>&1 && type effort_rank >/dev/null 2>&1 && type normalize_model >/dev/null 2>&1 || test_done
+type rec_field >/dev/null 2>&1 && type normalize_model >/dev/null 2>&1 || test_done
+# #424: effort_rank is deleted; nothing may be left to rank an effort
+! type effort_rank >/dev/null 2>&1 || fail "S188/#424 — lib/model-record.sh still defines effort_rank"
+! test_source_match -qE '(^|[^A-Za-z_])effort_rank' "$lib" || fail "S188/#424 — lib/model-record.sh still mentions effort_rank"
 
 eq() { # label, got, want
   [ "$2" = "$3" ] || fail "S188 — $1: got '$2', want '$3'"
@@ -40,69 +38,40 @@ eq "multi-part version" "$(normalize_model 'claude-opus-5-5')" "opus 5 5"
 [ "$(normalize_model 'claude-sonnet-5')" != "$(normalize_model 'claude-opus-5')" ] \
   || fail "S188 — different models must normalize different"
 # A short alias is NOT the same model as its full id (human decision 4: no
-# model table; the effort check is skipped, recorded as debt).
+# model table; different models are a recorded judgment, #424).
 [ "$(normalize_model 'opus')" != "$(normalize_model 'claude-opus-5')" ] \
   || fail "S188 — a short alias must not normalize equal to its full id (no model table)"
 eq "empty stays empty" "$(normalize_model '')" ""
 
-# --- effort_rank: low < medium < high, as 0/1/2; unknown prints nothing.
-eq "low" "$(effort_rank low)" "0"
-eq "medium" "$(effort_rank medium)" "1"
-eq "high" "$(effort_rank high)" "2"
-eq "case-insensitive HIGH" "$(effort_rank HIGH)" "2"
-eq "case-insensitive Medium" "$(effort_rank Medium)" "1"
-for unknown in session-default unknown max xhigh "" " " "very high" "low,high" 1; do
-  eq "unknown effort '$unknown' prints nothing" "$(effort_rank "$unknown")" ""
-done
-
-# --- marker_attr <line> <name>: the quoted value of one attribute.
+# --- rec_field <line> <name>: the quoted value of one attribute.
 m='<!-- model-record: stage=Review model="claude-sonnet-5" effort="high" floor-basis="same model, higher effort" -->'
-eq "model" "$(marker_attr "$m" model)" "claude-sonnet-5"
-eq "effort" "$(marker_attr "$m" effort)" "high"
-eq "floor-basis (value with spaces and a comma)" "$(marker_attr "$m" floor-basis)" "same model, higher effort"
-eq "stage-less attribute absent" "$(marker_attr "$m" same-model-exception)" ""
-eq "absent attribute prints nothing" "$(marker_attr '<!-- model-record: stage=Test model="x" -->' effort)" ""
+eq "model" "$(rec_field "$m" model)" "claude-sonnet-5"
+eq "effort" "$(rec_field "$m" effort)" "high"
+eq "floor-basis (value with spaces and a comma)" "$(rec_field "$m" floor-basis)" "same model, higher effort"
+eq "stage-less attribute absent" "$(rec_field "$m" same-model-exception)" ""
+eq "absent attribute prints nothing" "$(rec_field '<!-- model-record: stage=Test model="x" -->' effort)" ""
 
 # Word boundary: an attribute whose name merely ENDS in model/effort must
 # never be read as model/effort, in either order (A25, V5).
-m='<!-- model-record: stage=Review reviewer-model="opus" model="sonnet" peak-effort="high" effort="low" -->'
-eq "reviewer-model before model" "$(marker_attr "$m" model)" "sonnet"
-eq "peak-effort before effort" "$(marker_attr "$m" effort)" "low"
+m='<!-- model-record: stage=Review model="sonnet" reviewer-model="opus" peak-effort="high" effort="low" -->'
+eq "reviewer-model before model" "$(rec_field "$m" model)" "sonnet"
+eq "peak-effort before effort" "$(rec_field "$m" effort)" "low"
 m='<!-- model-record: stage=Review model="sonnet" same-model="opus" effort="low" max-effort="high" -->'
-eq "same-model after model" "$(marker_attr "$m" model)" "sonnet"
-eq "max-effort after effort" "$(marker_attr "$m" effort)" "low"
-m='<!-- model-record: stage=Review x-model="opus" -->'
-eq "only a suffixed name: model is absent" "$(marker_attr "$m" model)" ""
-m='<!-- model-record: stage=Review floor-basis="uses a bigger model" model="sonnet" -->'
-eq "floor-basis first, model second" "$(marker_attr "$m" model)" "sonnet"
+eq "same-model after model" "$(rec_field "$m" model)" "sonnet"
+eq "max-effort after effort" "$(rec_field "$m" effort)" "low"
+m='<!-- model-record: stage=Review model="real" x-model="opus" -->'
+eq "suffixed name cannot replace model" "$(rec_field "$m" model)" "real"
+m='<!-- model-record: stage=Review model="sonnet" floor-basis="uses a bigger model" -->'
+eq "floor-basis first, model second" "$(rec_field "$m" model)" "sonnet"
 # floor-basis itself is not found inside a longer name either
-m='<!-- model-record: stage=Review old-floor-basis="x" -->'
-eq "floor-basis not matched inside old-floor-basis" "$(marker_attr "$m" floor-basis)" ""
+m='<!-- model-record: stage=Review model="real" old-floor-basis="x" -->'
+eq "floor-basis not matched inside old-floor-basis" "$(rec_field "$m" floor-basis)" ""
 
-# Unquoted and empty values.
-eq "unquoted model is not read" "$(marker_attr '<!-- model-record: stage=Review model=Sonnet effort=medium -->' model)" ""
-eq "unquoted effort is not read" "$(marker_attr '<!-- model-record: stage=Review model="a" effort=medium -->' effort)" ""
-eq "empty value is empty" "$(marker_attr '<!-- model-record: stage=Review model="a" floor-basis="" -->' floor-basis)" ""
-
-# --- #397 review round (#392): free text in floor-basis must never be read
-# as another attribute, and `>`, `<`, `--` inside a value are just text.
-m='<!-- model-record: stage=Review xmodel="x" model="opus" xeffort="high" effort="low" -->'
-eq "xmodel before model" "$(marker_attr "$m" model)" "opus"
-eq "xeffort before effort" "$(marker_attr "$m" effort)" "low"
-m='<!-- model-record: stage=Review floor-basis="beats model=" model="opus" effort="low" -->'
-eq "floor-basis ending in ' model=' does not hijack model" "$(marker_attr "$m" model)" "opus"
-m='<!-- model-record: stage=Review floor-basis="slower effort=" model="opus" effort="high" -->'
-eq "floor-basis ending in ' effort=' does not hijack effort" "$(marker_attr "$m" effort)" "high"
-m='<!-- model-record: stage=Review floor-basis="beats model=" effort="low" -->'
-eq "model absent: a floor-basis ending in ' model=' is not a model" "$(marker_attr "$m" model)" ""
-m='<!-- model-record: stage=Review floor-basis="uses model= and effort= words" -->'
-eq "model absent: model= inside a value is not a model" "$(marker_attr "$m" model)" ""
-eq "model absent: effort= inside a value is not an effort" "$(marker_attr "$m" effort)" ""
-m='<!-- model-record: stage=Review floor-basis="stronger > weaker, a < b, a -- b" model="opus" effort="low" -->'
-eq "value with > < -- : model" "$(marker_attr "$m" model)" "opus"
-eq "value with > < -- : effort" "$(marker_attr "$m" effort)" "low"
-eq "value with > < -- : floor-basis itself" "$(marker_attr "$m" floor-basis)" "stronger > weaker, a < b, a -- b"
-m='<!-- model-record: stage=Review model="opus" effort="low" floor-basis="x --> y" -->'
-eq "value containing --> : floor-basis itself" "$(marker_attr "$m" floor-basis)" "x --> y"
+# Strict invalid records are not attribute sources (S246 pins isolation).
+for m in '<!-- model-record: stage=Review model=Sonnet effort=medium -->' '<!-- model-record: stage=Review model="a" effort=medium -->'; do
+ out="$(rec_scan model-record "$m")"
+ case "$out" in $'1\tnear-miss\tReview\t'*) :;; *) fail "invalid record class: $out";; esac
+done
+eq "empty optional value" "$(rec_field '<!-- model-record: stage=Review model="a" floor-basis="" -->' floor-basis)" ""
 
 test_done

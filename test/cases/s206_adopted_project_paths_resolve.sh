@@ -26,6 +26,14 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
+# Exact private matcher controls: extraction, inverse count and no-hit status.
+matched="$(printf '%s\n' 'run ./one/model-record-emit.sh then .claude/skills/model-record-emit.sh now' | test_source_match -oE '[A-Za-z0-9_./${}-]*model-record-emit\.sh')"
+[ "$matched" = $'./one/model-record-emit.sh\n.claude/skills/model-record-emit.sh' ] || fail "S206/matcher-extraction — expected only two path tokens, got '$matched'"
+matched="$(printf '%s\n' model-record model-record | test_source_match -avc '^model-record$')"; match_rc=$?
+[ "$matched" = 0 ] && [ "$match_rc" -eq 1 ] || fail "S206/matcher-zero — inverse no-hit must print numeric 0 with status1, got '$matched'/$match_rc"
+matched="$(printf '%s\n' model-record pipeline-override | test_source_match -avc '^model-record$')"; match_rc=$?
+[ "$matched" = 1 ] && [ "$match_rc" -eq 0 ] || fail "S206/matcher-inversion — wrong kind must count exactly1, got '$matched'/$match_rc"
+
 clone="$(sandbox_copy_repo clone)"
 project="$(fresh_project adopter)"
 SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >/dev/null 2>&1
@@ -53,7 +61,7 @@ resolve() {
 # --- 1. the emit wrapper: the path as written must work from the project root --
 for f in "$pmr" "$mc"; do
   name="${f#"$project"/.claude/skills/}"
-  tokens="$(grep -oE '[A-Za-z0-9_./${}-]*model-record-emit\.sh' "$f" | sort -u)"
+  tokens="$(test_source_match -oE '[A-Za-z0-9_./${}-]*model-record-emit\.sh' "$f" | sort -u)"
   [ -n "$tokens" ] || { fail "S206 — $name does not name model-record-emit.sh at all"; continue; }
   while IFS= read -r tok; do
     case "$tok" in */*) : ;; *) continue ;; esac # a bare name, no path claim
@@ -62,19 +70,24 @@ for f in "$pmr" "$mc"; do
       fail "S206 — $name tells the Reviewer to run '$tok', which does not resolve from an adopted project (no such executable at '${target#"$project"/}')"
       continue
     fi
-    out="$(cd "$project" && SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$target" --stage Planning --model claude-opus-5-5 --effort low 2>&1)"
+    out="$(cd "$project" && SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$target" --stage Planning --model claude-opus-5-5 2>&1)"
     rc=$?
     [ "$rc" -eq 0 ] || fail "S206 — '$tok' from the adopted project exits $rc (127 = not found): $out"
+    [ "$out" = '<!-- model-record: stage=Planning model="claude-opus-5-5" -->' ] || fail "S206 — '$tok' from the adopted project must print the effort-free line (#424), got: $out"
   done <<<"$tokens"
 done
 
 # the documented way works from the project root, whatever the text says
-out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 --effort low 2>&1)"
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 2>&1)"
 [ $? -eq 0 ] || fail "S206 — .claude/skills/pre-merge-review/model-record-emit.sh must work from the project root: $out"
+[ "$out" = '<!-- model-record: stage=Planning model="claude-opus-5-5" -->' ] || fail "S206 — the documented way must print the effort-free line (#424), got: $out"
+# a stale prompt that still passes --effort keeps working from an adopted project (A33a), with its one stderr line
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 --effort low 2>&1 >/dev/null)"
+[ "$out" = 'effort is no longer recorded (#413); drop --effort from your prompt' ] || fail "S206 — a stale --effort must still work from an adopted project, with exactly one warning line, got: '$out'"
 # ...and the texts must name that way (or the clone variable), not a bare skills/ path
 for f in "$pmr" "$mc"; do
   name="${f#"$project"/.claude/skills/}"
-  if grep -qE '(^|[^A-Za-z0-9_./}-])skills/pre-merge-review/model-record-emit\.sh' "$f"; then
+  if test_source_match -qE '(^|[^A-Za-z0-9_./}-])skills/pre-merge-review/model-record-emit\.sh' "$f"; then
     fail "S206 — $name still names the bare 'skills/pre-merge-review/model-record-emit.sh', which resolves only inside the guardrails clone; write .claude/skills/pre-merge-review/... or \$SPEC_DRIVEN_GUARDRAILS_DIR/skills/..."
   fi
 done

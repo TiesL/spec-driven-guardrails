@@ -4,7 +4,7 @@ Guardrails for an AI coding agent working past toy-project size: what was decide
 written down, and nothing merges without a traceable link back to a reviewed requirement.
 Not an agent framework — conventions and scripts that Claude Code is instructed to follow.
 
-**v0.2.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
+**v0.3.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
 pipeline, and an adopted project can opt into it — see
 [How this repo builds itself](#how-this-repo-builds-itself).
 
@@ -71,7 +71,7 @@ Each stage of that diagram is backed by a concrete practice:
 | CI | Continuous Integration | `check` — identical locally and in CI, blocks a red merge; the full gate; `pre-commit` runs only the project's declared, static `check-commit` (opt-in, 30 s budget, never the tests) |
 | CI | Secret scanning | `gitleaks` in `pre-push` (blocking), with a CI backstop so a bypassed hook still gets caught |
 | Review | Mandatory quality review | `pre-merge-review` skill, enforced by the merge guard |
-| Review | Capability/cost-aware model selection | `model-choice` skill — which model/reasoning effort fits each pipeline stage, with a machine-readable `model-record` marker per stage |
+| Review | Capability/cost-aware model selection | `model-choice` skill — which model fits each pipeline stage, with a machine-readable `model-record` marker per stage |
 | Merge | Requirements traceability | PRD → scenario → issue → PR: `check-traceability.sh` checks the first link offline; CI's `check-pr-issue-link.sh` refuses a PR that names no issue; `pre-merge-review` judges whether the links are the right ones |
 | Maintain | Technical debt tracking | `PRD.md`'s debt table — accepted, why, and the trigger to fix it |
 | Maintain | Named refactoring triggers | `refactoring-triggers` skill |

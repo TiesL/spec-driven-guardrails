@@ -309,9 +309,61 @@ routing_table_rows() {
   awk '/^## Routing table/{f=1;next} /^## /{f=0} f' "$1" | grep '^|'
 }
 
+# Body of the first "## " section of $1 (CHANGELOG.md) whose heading starts
+# with the prefix $2 followed by a space or end of line, up to the next
+# "## " heading. Empty output means no such section: the caller fails,
+# naming the prefix (#420). Literal prefix match, no regex escaping.
+changelog_section() {
+  awk -v p="$2" '
+    /^## / { if (f) exit; if (index($0, p " ") == 1 || $0 == p) { f = 1; next } }
+    f
+  ' "$1"
+}
+
 # The last column of a routing table row, stripped of backticks,
 # whitespace, and the "(user-level)" suffix.
 skill_from_row() {
   printf '%s\n' "$1" | awk -F'|' '{print $(NF-1)}' \
     | sed 's/[[:space:]]//g; s/`//g; s/(user-level)//'
+}
+
+# Private source/message inspection for tests. Record parsing stays in lib/;
+# tests that inspect literal documentation never pass a record pattern to a
+# shell text matcher (A35a). Arguments follow the small grep subset used here.
+test_source_match() {
+  python3 -c '
+import re,sys
+args=sys.argv[1:]; flags=""
+while args and args[0].startswith("-"):
+ flag=args.pop(0)
+ if flag=="--": break
+ flags+=flag[1:]
+unsupported=set(flags)-set("aEqFinovc")
+if unsupported or ("o" in flags and "v" in flags):
+ print("test_source_match: unsupported flags: "+flags,file=sys.stderr);sys.exit(2)
+pattern=args.pop(0)
+if "F" not in flags:
+ for name,value in {"space":r"\s","blank":r" \t","alnum":"A-Za-z0-9","alpha":"A-Za-z","digit":"0-9"}.items():
+  pattern=pattern.replace("[[:"+name+":]]", "["+value+"]")
+else: pattern=re.escape(pattern)
+regex=re.compile(pattern,re.I if "i" in flags else 0)
+streams=[open(p,errors="surrogateescape") for p in args] if args else [sys.stdin]
+hit=False
+for stream in streams:
+ count=0
+ for number,line in enumerate(stream,1):
+  selected=bool(regex.search(line))
+  if "v" in flags: selected=not selected
+  if selected:
+   hit=True;count+=1
+   if "q" in flags: sys.exit(0)
+   if "c" not in flags:
+    prefix=str(number)+":" if "n" in flags else ""
+    if "o" in flags:
+     for match in regex.finditer(line):
+      if match.group(): print(prefix+match.group())
+    else: print(prefix+line.rstrip("\n"))
+ if "c" in flags: print(count)
+sys.exit(0 if hit else 1)
+' "$@"
 }

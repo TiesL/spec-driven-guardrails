@@ -1401,32 +1401,38 @@ something new is being added.
 - Then: the sync check doesn't run at all — no error, no false pass
   claim
 
-### S130 — Every pipeline stage's model choice is machine-checkable, not just Review
+### S130 — all five stages are checked through the gate's REST interface
 **Covers:** F27
-- Given: a PR and the issue(s) it closes, each carrying zero or more
-  `<!-- model-record: stage=... -->` markers across their comments, in a
-  project that does not answer `process-multi-agent-roles` yes (the
-  opted-in additions are S183)
-- When: `model-record-gate.sh <pr-number>` runs
-- Then: a missing stage among Discovery/Planning/Test/Implementation/Review
-  is reported, one line per stage; nothing is reported once all five are
-  present; without `gh` the gate fails open with a warning, not a block
-- And (#392, which reversed #244 AC2): Review and Implementation recording
-  the identical model at a LOWER Review effort is reported, at equal or
-  higher effort it is not; a legacy `same-model-exception` field on
-  Review's marker neither waives that finding nor is required (the
-  attribute is ignored); the new floor rule itself is S189
+- Given: timestamped REST JSON for PR description, comments, reviews and closing
+  issue comments, served by a data-driven fake `gh` applying the real requested
+  jq expression; a project not opted in to `process-multi-agent-roles`.
+- When: `model-record-gate.sh <pr-number>` runs with that project as cwd.
+- Then: only live whole-column-0-line `ok` records supply presence; each missing
+  stage gives one `no record found for stage <Stage>` line; all five present,
+  with a Review floor-basis, gives no findings. Description and PR review records
+  count, and title-only as well as body-only closing references are followed.
+  Without `gh`, exit 0 and a stderr warning; fetch failures are S260.
+- And: same-model lower quoted legacy effort, different models, and a legacy
+  `same-model-exception` with a valid Review basis give no capability/effort
+  finding. Timestamp latest and unreadable candidates are S259; basis is S264.
+- Test mapping: rewrite `test/cases/s130_model_record_gate.sh` fixtures from
+  exact command-string matching to REST data with timestamps; preserve endpoint,
+  pagination, title-only closing-reference and no-gh controls.
 
 ### S131 — A review finding surfaces if it silently vanishes between fresh-context rounds
 **Covers:** F28
-- Given: a PR's previous `pre-merge-review:done` comment left a finding
-  marked `<!-- finding:<slug> status=open -->`
-- When: `finding-carryforward-gate.sh <pr-number>` runs after a new
-  `pre-merge-review:done` comment is posted
-- Then: the slug is reported if it's missing from the new comment, and
-  not reported if the new comment re-flags it as still open or marks it
+- Given: a PR whose earlier Review round left a finding marked
+  `<!-- finding:<slug> status=open -->`, served as REST data by a recording fake
+  `gh` (`gh api repos/{owner}/{repo}/issues/N/comments`, `.../pulls/N/reviews`; the
+  fixtures were keyed to `gh pr view --json comments` until #426)
+- When: `finding-carryforward-gate.sh <pr-number>` runs after a new Review round
+  is posted
+- Then: the slug is reported if it's missing from the new round, and
+  not reported if the new round re-flags it as still open or marks it
   `status=resolved`; with only one review round so far, or without `gh`,
-  nothing is reported
+  nothing is reported; a failed fetch gives exit 0, a warning and no finding.
+  Edited for #426: each round is an A37 round (a Review record or a legacy done
+  marker with a 40-hex sha), S251 to S253 hold the new behaviour
 
 ### S132 — The 4th traceability link: an issue's own AC/Covers/work-item structure
 **Covers:** F29
@@ -1525,11 +1531,12 @@ something new is being added.
   old and new version; re-confirming with the current version marker
   quiets it; a row whose entry was never touched by a version bump never
   resurfaces, regardless of how it was answered
-- And (#392, `quality-review-before-merge` now at meaning v3): a row
-  answered with no marker reports "answered under meaning v1, now v3", a
-  row re-confirmed at `(meaning v2)` reports "answered under meaning v2,
-  now v3" in the "meaning has changed" block (not in the never-answered
-  list), and only a `(meaning v3)` row is quiet
+- And (#392 and #424, `quality-review-before-merge` now at meaning v4): a row
+  answered with no marker reports "answered under meaning v1, now v4", a
+  row re-confirmed at `(meaning v2)` or `(meaning v3)` reports "answered
+  under meaning v2, now v4" / "answered under meaning v3, now v4" in the
+  "meaning has changed" block (not in the never-answered list), and only a
+  `(meaning v4)` row is quiet; the `process-model-choice` equivalent is S239
 
 ### S142 — changes_meaning_version's field extraction, edge cases
 **Covers:** F3
@@ -1660,7 +1667,11 @@ something new is being added.
   in the fixed order, one row per gate, always six rows and never fewer;
   every Status cell is exactly one of `evidenced`, `not-evidenced`,
   `unverifiable-from-artifacts`, `indeterminate`; every Evidence cell
-  names an artifact; the merge-confirmation row is
+  names an artifact; the two model rows read "Per-stage model recorded (...)"
+  and "Review at least as capable as Implementation (same model: the floor is
+  met on the model alone; ...)" and a same-model gate 2 is `evidenced` on the
+  model alone whatever legacy efforts the markers carry, its basis named as
+  the model-only floor on self-reported model strings (#424; S237); the merge-confirmation row is
   `unverifiable-from-artifacts` whether the PR is merged or open; a red,
   pending, unknown-bucket or absent CI check is never `evidenced`; a
   stale review marker is `not-evidenced` while an unparseable one is
@@ -1683,12 +1694,24 @@ something new is being added.
   quoted occurrences were seen and ignored; bare marker-shaped prose
   reports `not-evidenced` rather than `indeterminate`, while a malformed
   marker inside real delimiters still reports `indeterminate`; a real
-  marker posted inline on a line that also carries prose, backticked
-  text, table pipes or a stray unmatched backtick keeps evidencing;
+  model-record candidate posted inline with prose is a named near-miss
+  and gives gate 1/2 indeterminate (S271 AC4 control). Done markers stay
+  outside v2: preserve Q6 inline, Q7 unmatched-backtick and Q8 table-cell
+  pre-merge-review:done gate-3 `evidenced` regressions unchanged;
   fence state never crosses a body boundary; the collector's own
   rendered table pasted into the PR changes no status; and the six-row
   shape, the four-status vocabulary and the absence of any write path
   are unchanged
+
+- Legacy coverage retained from retired S201 (#427): move its collector-only
+  quoting controls into `test/cases/s151_compliance_evidence_quoting.sh`:
+  a real same-model Implementation/Review pair plus a different-model example
+  Implementation in backtick/tilde fences, code spans or blockquotes stays
+  gate-2 `evidenced`; a similarly quoted Review never replaces the real one.
+  Preserve the collector's indented-code accepted debt (Q18): the indented
+  different-model Implementation example is live under the legacy reader,
+  so gate 2 is `unverifiable-from-artifacts`, not equality with the v2 gate. Retire S201's three-consumer
+  equality assertion. Collector semantics change only in #429.
 
 ### S152 — role-label-staleness.sh detects role:<name> label staleness for one issue
 **Covers:** F35
@@ -1741,11 +1764,13 @@ something new is being added.
   live marker matched by the anchor but with no recognized `stage=`
   value, on the issue or any kept PR, forces `indeterminate` for the
   whole run even when another kept PR's marker is well-formed, including
-  one closed with no whitespace before its own `-->` delimiter (issue
-  #317 F-5: `stage=Review-->` must still parse as `Review`, not as a
-  malformed `Review--` token); markers split across multiple kept PRs
-  combine by union/max, order-independent of which PR the timeline names
-  first; a marker merely quoted in a fenced block, code span or
+  the intentional #428 reversal of S152 F-5: the model-less
+  `<!-- model-record: stage=Review-->` is a named near-miss and gives
+  `indeterminate`, even with `role:reviewer`; a recognized stage alone
+  is no longer a record (A32a D10); valid records split across multiple kept PRs
+  combine by highest evidenced stage, independent of timeline retrieval
+  order; same-stage candidates first resolve by timestamp/latest under
+  S269, so this does not permit an older good candidate to mask a newer bad one; a marker merely quoted in a fenced block, code span or
   blockquote is not counted as live evidence; a failed lookup — the
   issue's own comments, the timeline itself, or a candidate/kept PR's
   title/body, comments, or reviews — degrades the verdict to
@@ -1768,38 +1793,44 @@ something new is being added.
   unanswered argv and confirms the witness fires), not merely a source
   grep alone
 
-### S153 — live_text()'s fence-detection regex is mawk-portable
+- Legacy coverage retained from retired S201 (#427): move its label-only
+  controls into `test/cases/s152_role_label_staleness.sh`: `role:qa` with live Test plus a later Review example in
+  a fence, span or blockquote stays `in-sync`. The label migration
+  is #428; the collector migration remains #429.
+
+### S153 — live_text() has one definition, and its fence detection is portable: the golden cases give the same answer under mawk and under /usr/bin/awk
 **Covers:** F34, F35
-- Given: the real, shipped `live_text()` function re-extracted verbatim
-  at test time from `compliance-evidence.sh`,
-  `role-label-staleness.sh` and (since #371) `model-record-gate.sh` (the same no-stale-copy technique
-  S151's Q21-Q23 already use, with the extraction itself asserted
-  non-empty and the copies asserted byte-identical before any
-  golden case runs, so a bad extraction or a drifted copy can't silently
-  make the test re-check the wrong function), run under mawk
-  specifically — not gawk, which is this repo's usual local/CI `awk` and
-  does not exhibit any of the failure modes below
-- When: a simple 3-character fence, a 5-character wrapper fence around
-  an inner line that itself contains 3 backticks, a shorter (3-character)
-  closing run that must not close a longer (5-character) opening run
-  (D5/D6), a real `model-record` marker after a closed fence, a line
-  starting with a 1-backtick inline-code run followed by a real marker,
-  and a real backtick fence-line nested inside an already-open tilde
-  fence, are each run through it
-- Then: every case matches the same output gawk already produces — a
-  panic in mawk's regex compiler on the original grouped-alternation
-  form (`^ {0,3}(`{3,}|~{3,})`), mawk's `{n,}` matching exactly `n`
-  rather than greedily (silently truncating a longer fence run and
-  corrupting the recorded fence length even where it doesn't panic —
-  distinct from the panic and not caught by fixing that alone), and,
-  independently, an older mawk build (1.3.4 20200120, the default `awk`
-  on Ubuntu 22.04) not parsing the bounded interval `{0,3}` at all and
-  so never detecting a fence — are all three fixed, the third by
-  replacing `{0,3}` with the brace-free `? ? ?`, verified end to end
-  under both mawk builds and gawk, with the guard against a 1- or
-  2-character run wrongly opening a fence (and swallowing every later
-  marker) covered explicitly; fails loudly, naming why, if mawk isn't
-  installed to run this exact check with
+- Given: the repository after #423 (V2 of #411), where `live_text()` and
+  `md_strip_fences()` live in `lib/markdown.sh` and nowhere else, and the
+  three callers (`compliance-evidence.sh`, `role-label-staleness.sh`,
+  `skills/pre-merge-review/model-record-gate.sh`) get them through
+  `lib/model-record.sh`; mawk installed (the macOS leg installs it for this
+  scenario only) and `/usr/bin/awk` (BWK awk on macOS) present
+- When: a search over every text file outside `.git`, `test/`, `wip/` and the
+  `.md` documents looks for a definition of either function; `lib/model-record.sh`
+  is sourced alone in a bash with `extdebug`; then the golden fence cases
+  G1-G9 run through the sourced `lib/markdown.sh` `live_text`, once with
+  `awk` resolving to mawk and once with `awk` resolving to `/usr/bin/awk`
+  named explicitly
+- Then: the only definition is `lib/markdown.sh` (which defines both; a
+  fourth copy in `review-rounds.sh`, added by #410 after #423 was written, is
+  also gone), and after sourcing `lib/model-record.sh` both functions are
+  defined from `markdown.sh`; the "copies are byte-identical" arm of the old
+  S153 is retired with the copies. G1-G6 are the old cases, unchanged: a
+  simple fence; a 5-tilde wrapper around an inner line that holds three
+  backticks; a shorter closing run that must not close a longer opener; a
+  marker after a closed fence stays live; a one-backtick run starting a line
+  opens nothing; a backtick fence line inside an open tilde fence is content.
+  G7-G9 are new and put the new awk code through both awks: a fence opened
+  on a list-item line closes at its own indented closing line; a backtick in
+  a backtick fence's info string makes the line a non-opener; a CRLF fence
+  and a lone CR are line endings. Every case gives the answer gawk gives. A
+  static guard keeps brace-interval syntax (`{n,m}`) out of the fence regex
+  (mawk 1.3.4 20200120 does not parse it, #319). Fails loudly, naming why, if
+  mawk or `/usr/bin/awk` is missing. Retires: the identical-copies arm.
+  Mutations (A35a): a second `live_text` definition in a script (copy back),
+  `{0,3}` back in the fence regex, the list-item prefix written with a brace
+  interval, CR splitting removed
 
 ### S154 — classify-review-depth.sh classifies a PR quick/thorough by Reviewer's six trigger categories
 **Covers:** F36
@@ -2151,8 +2182,9 @@ something new is being added.
 - Then: the README no longer says a bad commit is caught before it
   reaches a branch and mentions `check-commit`; the PRD no longer lists
   the untimed `./check` call as debt and mentions `check-commit`; the
-  CHANGELOG Unreleased section has a #378 line naming `check-commit` and
-  `ci-commit-check`; `check-commit` is defined by `check-convention`; S144
+  CHANGELOG `## v0.2.1` section (not Unreleased: the #378 entry moved there
+  with the cut, issue #420 AC2) has a #378 line naming `check-commit` and
+  `ci-commit-check`, and a failure message names that section; `check-commit` is defined by `check-convention`; S144
   describes `check-commit`; the root `check-commit` is executable and runs
   the static part of `check`
 
@@ -2273,26 +2305,30 @@ something new is being added.
 - Then: every entry has a non-empty Reaches session value; the preamble
   documents the field and its five keywords; `process-multi-agent-roles`
   declares `session-context: skills/role-contracts/ORCHESTRATOR.md` and
-  `gate: skills/pre-merge-review/model-record-gate.sh`, and carries no
-  Meaning version
+  `gate: skills/pre-merge-review/model-record-gate.sh`. The historical #371
+  no-bump decision does not prohibit the approved #427 Meaning version 2;
+  S265 checks that version and its semantics. Removing any Reaches session
+  field or either declared route must still fail this scenario.
 
-### S183 — the model-record gate flags a role-played run in opted-in projects only
+### S183 — strict live evidence determines role-play only in opted-in projects
 **Covers:** F38
-- Given: PR and issue data from a data-driven fake `gh`: a dispatched run
-  (one marker per comment), all five markers in one comment, two stages in
-  the PR body, two in one review body, one stage twice in one text,
-  markers quoted in a fence or blockquote, a missing stage, valid and
-  invalid or quoted override records, and gh failing; projects that
-  answer the row yes, ja (old file), no, never, or have no adoption file
-  (issue #371, A18, AC3, AC6, AC9)
-- When: `model-record-gate.sh <pr>` runs with the project as cwd
-- Then: a run with live markers of two different stages in one text, or
-  with a stage missing, gets a finding line starting `role-played: ` in
-  opted-in projects only; a dispatched run, a repeated single stage and
-  quoted markers get none; a valid override (decided-by, reason, and a scope of
-  `single-session` or `skip=<Stage>`; not quoted) removes the finding, an
-  empty-reason, who-less, unknown-scope or quoted one does not; with gh failing or absent it exits 0 and invents no finding; the
-  gate exits 0 whenever it runs
+- Given: timestamped fake-gh REST data for five separate live stage bodies, two
+  distinct stages on separate whole lines in one description/comment/review,
+  repeated same-stage lines, quoted-only stages and scoped overrides; projects
+  answering yes, legacy ja, no, unanswered, or with no adoption file.
+- When: `model-record-gate.sh <pr>` runs with the project as cwd.
+- Then: exit 0 in all cases. Only yes/ja projects get `role-played: ` findings:
+  distinct live stages in one body give “stages in one text”; missing `ok`
+  stages give “stages missing”. Repetition alone does not create a multi-stage
+  finding. Quoted text gives no multi-stage finding but cannot fill a missing
+  stage. Complete separate live bodies are clean. No/unanswered/no-file controls
+  still get ordinary missing-record diagnostics, never role-play findings.
+- And: valid scoped overrides are S262; fetch/reader failure is unchecked,
+  never fabricated absence (S260). Quoted-only cases, including report prose
+  quoting a stage name or the gate's message, replace the retired S205 inputs.
+- Test mapping: rewrite `test/cases/s183_model_record_gate_role_play.sh` with
+  newline-separated whole-line records rather than space-joined records;
+  preserve every adoption control and repeated-stage control (S258/S262).
 
 ### S184 — no installed or always-loaded text says one session doing every stage is the norm
 **Covers:** F38
@@ -2328,94 +2364,128 @@ something new is being added.
   a missing review marker still blocks as before; the explicit
   `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` hatch still lets the merge through
 
-### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and set model and effort per stage
+- Amendment #427: rewrite `test/cases/s186_merge_guard_blocks_role_play.sh`
+  with whole-line fixtures and the S263 stdout/stderr/status truth table.
+  Unchecked checks warn without blocking; inline-only evidence blocks with its
+  cause as context and both remedies. Preserve the independent missing-review
+  marker and explicit escape-hatch arms; a near-miss alone cannot block.
+
+### S187 — ORCHESTRATOR.md tells the orchestrator to assess each stage's floor and choose the model per stage, without effort
 **Covers:** F39
 - Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #392, R5/AC8, group 1;
   what the session then actually chooses is model behaviour, checked by a
-  human dry run on the scratch repo, not here)
+  human dry run on the scratch repo, not here; issue #424: effort is neither
+  chosen nor recorded)
 - When: it is read, paragraph by paragraph
 - Then: one paragraph points at `model-choice`, has the orchestrator assess
-  each stage's floor and choose model AND effort separately per stage (never
-  one pair for the whole run), requires Review to be at least as capable as
-  Implementation, says what to do when the dispatch tool can set a model but
-  not an effort (choose a more capable model if the effort the role will run
-  at is below the floor), and has the chosen model and effort stated in the
-  dispatch prompt for the role's `model-record` marker; the file names no
-  model or tier and carries no different-model rule (the phrase may only
-  appear in a sentence saying it is not required)
+  each stage's floor and choose the model separately per stage (never one
+  model for the whole run), requires Review to be at least as capable as
+  Implementation on the model alone (no longer "model and effort together"),
+  says that the dispatch tool takes no effort so effort is neither chosen nor
+  recorded in markers, and has the chosen model named in the dispatch prompt
+  for the role's `model-record` marker; no command in the file carries
+  `--effort`; the file names no model or tier and carries no different-model
+  rule (the phrase may only appear in a sentence saying it is not required);
+  that no text tells anyone to pass `--effort` or ask the human about an
+  unknown effort is S238
 
-### S188 — lib/model-record.sh: normalize_model, effort_rank and marker_attr
-**Covers:** F39
-- Given: the sourced `lib/model-record.sh` (issue #392, A25), shared by the
-  model-record gate and the compliance collector
-- When: `normalize_model`, `effort_rank` and `marker_attr` are called
-- Then: `normalize_model` behaves as before (label styles, case and an
-  8-digit snapshot date fold together; different models and a short alias
-  vs its full id stay different); `effort_rank` prints 0, 1, 2 for low,
-  medium, high (case-insensitive) and nothing for any other value;
-  `marker_attr <line> <name>` prints the quoted value of exactly that
-  attribute, never one whose name merely ends in `model` or `effort`
-  (in either attribute order), and nothing for an absent, unquoted or
-  differently-prefixed attribute
-- And (review of PR #397): attribute text inside a value (`floor-basis="beats
-  model="`, `>`, `<`, `--`, `-->`) is never read as another attribute and
-  never breaks the value
+### S188 — Shared normalization and v2 attribute reads
+**Covers:** F39, F40
+- Given: sourced lib/model-record.sh; call normalize_model and rec_field at
+  their documented public seams. Preserve case/vendor/separator/date folding,
+  distinct versions and alias/full-id inequality, and empty-input output.
+- Then: rec_field returns the first exact named attribute, never suffix names
+  or text inside a value; preserve generic legacy effort reads without ranking.
+  Strict model-first lines exercise lookalikes after model, absent/empty fields,
+  and values ending in another attribute name. Invalid attribute-order records
+  belong to S271 near-misses; direct field isolation remains S246.
+- Falsifiers: normalize aliases as full ids; unanchored or last-match extraction.
+  Rewrite existing test file; no deleted-reader compatibility obligation.
 
-### S189 — the model-record gate checks the Review floor it can check
+### S189 — the model-record gate checks the Review floor it can check, on the model alone
 **Covers:** F39
 - Given: PR 246 closing issue 239 against a data-driven fake `gh`, with
   Implementation and Review markers varied per case (issue #392, AC3/AC4/
-  AC5/AC9, A24/A25); a plain project and an opted-in one
+  AC5/AC9, A24/A25; reduced to the model by #424, AC2); a plain project and an
+  opted-in one
 - When: `model-record-gate.sh 246` runs
-- Then: for the same model after normalization, a Review effort lower than
-  Implementation's gives one `model-record:` finding naming the model and
-  both efforts, equal or higher gives none (label style, snapshot date and
-  effort case do not matter); different models give no capability finding
-  at all, including a short alias vs its full id (a known false pass); a
-  missing, unknown, unquoted or out-of-scale effort gives no claim; the
-  latest marker per stage wins; every Review marker needs a non-empty
-  quoted `floor-basis` (a missing, empty or unquoted one is a finding, a
-  present one is never verified, and the other stages need none); a legacy
-  `same-model-exception` is ignored completely, so it neither waives
-  anything nor stands in for `floor-basis`; findings never start with
-  `role-played:` and the exit status stays 0; attribute extraction is
-  word-anchored; a missing stage stays its existing line; the gate works
-  when run through a symlinked `skills/` directory
+- Then: for any pair of models, same after normalization or different (a
+  short alias vs its full id is a known false pass), and for any legacy
+  `effort` values on the markers (lower, higher, equal, different case,
+  `unknown`, `session-default`, out of scale, missing or empty quoted, or
+  no effort attribute at all, which is what the emitter prints now) the gate
+  gives no finding and no line that mentions effort; an unquoted legacy
+  effort is a syntax near-miss (S257), never an effort comparison; unreadable model/presence/latest behavior follows S257/S259;
+  the latest ok Review needs a non-blank quoted `floor-basis` (S264), whose
+  text is never verified; other stages need none; a legacy
+  `same-model-exception` is ignored completely, so it neither waives anything nor stands in for `floor-basis`;
+  floor diagnostics never start with `role-played:` (separate opted-in
+  missing-stage findings follow S183) and the exit status stays 0;
+  attribute extraction is word-anchored; a missing stage stays its existing
+  line; the gate works when run through a symlinked `skills/` directory
 
-### S190 — compliance gate 2 reports the Review floor honestly
+### S190 — compliance gate 2 reports the Review floor honestly, on the model alone
 **Covers:** F39
 - Given: a recording fake `gh` for PR 279 with Implementation and Review
   markers on the PR, on one or two closing issues, or unreadable (issue
-  #392, AC4/AC5/AC6, A24/A25)
+  #392, AC4/AC5/AC6, A24/A25; the effort branch removed by #424, AC2/AC6)
 - When: `compliance-evidence.sh 279` runs
-- Then: for the same model, Review effort not lower than Implementation's is
-  `evidenced` and lower is `not-evidenced`, both naming the efforts;
-  different models are `unverifiable-from-artifacts`, the evidence saying the
-  models differ and their capability ordering is not machine-checked, quoting
-  the `floor-basis` or saying none was recorded, and a short alias vs its full
-  id counts as different; an unknown, missing or unquoted effort on the same
-  model is `indeterminate`; a legacy `same-model-exception` changes no
-  verdict and is not printed; two closing issues disagreeing on the
-  normalized model OR on the effort are a conflict (`indeterminate`), while
-  agreeing ones, or differing only in a legacy exception, are not; the
-  #302/#336 lookup-failure guard still degrades a same-model verdict that
-  depends on a possibly unread marker to `indeterminate`, for lower and for
-  equal effort, and leaves sound verdicts alone
+- Then: for the same model, whatever legacy efforts the markers carry (lower,
+  higher, equal, quoted `unknown`, or no effort attribute),
+  gate 2 is `evidenced`, its basis naming the model-only floor on
+  self-reported model strings and quoting no effort; different models are
+  `unverifiable-from-artifacts`, the evidence saying the models differ and
+  their capability ordering is not machine-checked, quoting the `floor-basis`
+  or saying none was recorded, and a short alias vs its full id counts as
+  different; a legacy `same-model-exception` changes no verdict and is not
+  printed; two closing issues disagreeing on the normalized model are a
+  conflict (`indeterminate`, naming the models and no effort), while agreeing
+  ones, ones differing only in legacy effort, and ones differing only in a
+  legacy exception are not (the conflict key is the model alone); the
+  lookup-failure guard follows A37 latest-candidate authority: any unread
+  closing source can contain a newer candidate, so gate 2 is `indeterminate`
+  even with readable same-model or different-model PR records. Retain the
+  actual single-issue failed-lookup payloads and lower/equal legacy-effort
+  controls; change their oracles, never substitute empty successful input.
+  Independent positive done-marker and CI evidence retain their own semantics
+  (S150/S276), rather than inheriting model-authority uncertainty.
 
-### S191 — quality-review-before-merge is at meaning v3 and the specs follow
+- Review-round-1 additional malformed-input oracle reconciliation: retain the
+  exact Review `effort=low` unquoted payload and the exact
+  `stage=Review reviewer-model="..." model="..."` payload. Both are v2
+  near-misses and gate 2 is `indeterminate`: ignored legacy attributes still
+  require quoted values, and `model` must immediately follow `stage`.
+  Preserve valid quoted/missing-effort positives. Keep extraction coverage
+  with a separate valid-order `stage=Review model="..." reviewer-model="..."`
+  control whose actual model determines the floor; do not replace the retained
+  malformed-order payload with this positive. A mutant accepting either
+  malformed line as an ok candidate must make the uncertainty assertions red.
+
+### S191 — quality-review-before-merge is at meaning v4 (the floor is on the model alone) and the specs follow
 **Covers:** F9, F39
 - Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, `ARCHITECTURE.md`,
-  `PRD.md` (issue #392, AC7/AC10)
+  `PRD.md` (issue #392, AC7/AC10; issue #424, AC4/AC7)
 - When: the `quality-review-before-merge` entry and the documents are read
-- Then: the entry is at Meaning version 3 and cites #392; "Yes means" states
-  the new floor (at least as capable as Implementation, model and effort,
-  `floor-basis`, a different model not required, what the gate cannot rank),
-  keeps the unchanged parts (fresh context, complexity, dependencies,
-  `spec-*` NFRs, findings in the PR), and Reaches session names the gate
-  script; this repo's own row ends with `(meaning v3)`; `ARCHITECTURE.md` has
-  A24 (floor-basis) and A25 (`lib/model-record.sh`, `low < medium < high`);
-  `PRD.md`'s Technical debt register has a row on short model aliases; the
-  adopter-facing re-surfacing is S141 and the snapshot sync is S90
+- Then: the entry is at Meaning version 4 and cites #392 (kept as history),
+  #413 and #424; "Yes means" states the floor (at least as capable as
+  Implementation, judged on the model, `floor-basis`, a different model not
+  required, what the gate cannot rank), says that effort is neither chosen nor
+  checked and that the same model at a lower effort therefore meets the floor
+  (an accepted risk), with the revisit trigger "when the dispatch tool gains
+  an effort parameter", no longer pairs the model with effort and no longer
+  says a lower same-model effort is a finding; it keeps the unchanged parts
+  (fresh context, complexity, dependencies, `spec-*` NFRs, findings in the PR),
+  and Reaches session names the gate script; this repo's own row ends with
+  `(meaning v4)` and cites #424; `ARCHITECTURE.md` has A24 (floor-basis), A25
+  (`lib/model-record.sh`, `low < medium < high`, marked superseded) and A33
+  (the limit and the revisit trigger); `PRD.md`'s Technical debt register has
+  a row on short model aliases; the adopter-facing re-surfacing is S141, the
+  `process-model-choice` equivalent is S239 and the snapshot sync is S90
+
+- Amendment #427 AC10 (S265): keep meaning v4, add the grammar sentence:
+  only a record on its own column-0 line counts, and values may contain no
+  double quote, `<`, `>` or control character. Update the S191 document-test
+  counterpart without a v5 bump.
 
 ### S192 — no live text demands a different Review model, and the old exception attribute is legacy only
 **Covers:** F39
@@ -2423,60 +2493,49 @@ something new is being added.
   `CHANGELOG.md`, tests), the frozen `CHANGES.md` snapshot, and the two
   verification scripts and the lib (issue #392, R1/R6, AC2/AC5)
 - When: they are scanned
-- Then: no paragraph, list item or table row states the old requirement
+- Then (unchanged by #424, which only removes effort; green throughout and the
+  guard that the retiring texts keep their history notes): no paragraph, list item or table row states the old requirement
   ("a different model from/than", "genuinely different", "must use a
   different model") or mentions `same-model-exception` without saying it is
   history or legacy; the scripts mention `same-model-exception` only in
   comments (they do not parse or print it) and call it legacy or ignored;
-  the old gate-2 row label is gone
+  the old gate-2 row label is gone. Negative scenario oracles such as
+  `Falsifiers: compare effort; require a different model` are not live
+  requirements. Paired document controls must accept that negative statement
+  and reject an otherwise live `Review must use a different model` requirement,
+  including one outside the scenario section. Do not exclude the whole
+  TEST-SCENARIOS.md file or allow a positive requirement merely because an
+  unrelated falsifier occurs elsewhere. Mutation: suppress all old-rule
+  matches; the positive control must fail.
 
-### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis
+### S193 — model-choice and pre-merge-review state the Review floor once and document floor-basis, without effort
 **Covers:** F39
 - Given: `skills/model-choice/SKILL.md` and `skills/pre-merge-review/SKILL.md`
-  (issue #392, R1/AC1/AC9, human decisions 1-4)
+  (issue #392, R1/AC1/AC9, human decisions 1-4; issue #424: the floor is on
+  the model alone)
 - When: their Review-stage text is read, paragraph by paragraph
 - Then: the Review row and the pre-merge-review "Model choice" paragraph say
-  at least as capable as Implementation, model and effort together, with no
-  different-model requirement; the "Resolved contradiction (#244)" paragraph
-  survives as history saying #392 reversed it; the Review marker format shows
-  `floor-basis` (one sentence, required on every Review marker, present-checked
-  but never verified) and no longer offers `same-model-exception`; both skills
-  say the gate flags a same-model Review at lower effort and a missing
-  `floor-basis`; model-choice says two different models have no ordering a
-  script can check, documents the effort values (including `unknown`) and the
-  full model id as the platform reports it, and that a short alias and its
-  full id count as different models; the correlated-blind-spots caveat stays
+  at least as capable as Implementation, on the model, no longer "model and
+  effort together", with no different-model requirement; the "Resolved
+  contradiction (#244)" paragraph survives as history saying #392 reversed it;
+  the Review marker format shows `floor-basis` (one sentence, required on
+  every Review marker, present-checked but never verified), carries no
+  `effort` in any template and no longer offers `same-model-exception`; both
+  skills say the gate flags a missing `floor-basis` and neither says it flags a
+  same-model Review at lower effort; model-choice says two different models
+  have no ordering a script can check, documents no effort values, the full
+  model id as the platform reports it, and that a short alias and its full id
+  count as different models (without an effort comparison being skipped); the
+  correlated-blind-spots caveat stays; the accepted limit and its revisit
+  trigger are S238
 
-### S194 — free text in a Review marker never hides the marker from either script
+### S195 — Collector normalized conflict and missing-library contract
 **Covers:** F39
-- Given: Review markers whose `floor-basis` value contains `>`, `<`, `--`,
-  `-->`, `<!--` or a newline, or whose other attributes contain `>`, on a fake
-  `gh` for the gate and for the collector (issue #392, review of PR #397:
-  the first `>` used to end the marker and hide it; human decision: fix the
-  parser, so such values are tolerated, quotes remain the only forbidden
-  character)
-- When: `model-record-gate.sh` and `compliance-evidence.sh` run
-- Then: a same-model Review at lower effort still gives the gate's
-  lower-effort finding (and no missing-`floor-basis` finding) and gate 2
-  `not-evidenced`, equal effort is silent / `evidenced`, different models are
-  silent / `unverifiable-from-artifacts`, the latest round still wins, a
-  marker with `>` in another attribute and no `floor-basis` gives exactly the
-  `floor-basis` finding; gate 2's evidence never claims a quoted illustration
-  or an absent marker for a marker it read; under a lookup failure the
-  verdict is `indeterminate` for the guard's reason
-
-### S195 — the collector shares the anchored extraction, says what an effort conflict is, and names its lib
-**Covers:** F39
-- Given: markers with a lookalike attribute (`xmodel=`, text ending in
-  ` model=`) before the real `model=`; two closing issues whose Review markers
-  differ only in effort; the collector run without `lib/model-record.sh`
-  (issue #392, review of PR #397, low findings that contradict A25)
-- When: `compliance-evidence.sh` runs
-- Then: gate 1 reads the real model (never the lookalike) and treats a marker
-  with no real `model=` as malformed; the effort-only conflict evidence says
-  the effort differs and shows both efforts and both issues, a model conflict
-  still shows both models; the header's exit-code-3 entry and the runtime
-  message name `lib/model-record.sh`
+- Two closing issues agreeing on normalized model but differing in legacy
+  effort give gate 2 evidenced; model disagreement stays indeterminate and
+  names both models. Missing library gives exit 3, with its path in header
+  and stderr. Obsolete tokenizer lookalikes transfer to S188/S246; strict
+  invalid attribute order is named by S271.
 
 ### S196 — the marker parser works under a UTF-8 locale and never fails silently
 **Covers:** F39
@@ -2491,105 +2550,58 @@ something new is being added.
   UTF-8 locale installed the test says so and checks that the parser pins
   `LC_ALL=C`
 - When: `model-record-gate.sh` and `compliance-evidence.sh` run
-- Then: in both locales a same-model lower-effort Review after the
-  placeholder still gives the gate's lower-effort finding and gate 2
-  `not-evidenced`, and gate 1 still sees all four stages; when the parser's
+- Then: in both locales a same-model Review (at a lower legacy effort) after
+  the placeholder is read (no "no record found"; valid/quoted gate inputs
+  are clean, invalid live candidates are named once as near-misses under
+  #427 A31a, and the sole Review with an unquoted note is missing/unreadable
+  instead of supplying presence; gate 2 retains `evidenced`, #424), and gate 1 still sees all four stages; when the parser's
   awk fails the gate prints a `model-record:` finding (or exits non-zero) and
   gate 2 is `indeterminate` (or the run non-zero), never "no findings" or a
   definite verdict
 
-### S197 — a malformed marker never swallows a later well-formed one
-**Covers:** F39
-- Given: Review markers with an odd number of quotes, with no closing `-->`
-  (also with another model) or with a nested `<!--`, followed by a
-  well-formed marker in the same comment, in a later comment, or before
-  further text with a stray quote and `-->`; and a malformed marker AFTER a
-  good one (issue #392, round 3 of the PR #397 review, medium finding)
-- When: `model-record-gate.sh` and `compliance-evidence.sh` run
-- Then: the later well-formed marker is found with its own values (the
-  lower-effort finding; gate 2 `not-evidenced` naming its efforts); a
-  malformed marker may produce a finding or be ignored but never wins and
-  never gives the lower-effort verdict from its own attributes
+### S198 — role-label-staleness.sh names forbidden-value v2 near-misses
+**Covers:** F35
+- Given: S152's REST fake-gh seam with issue #400, one `role:architect`
+  label, linked PR #501 whose live title/body closes #400, and a whole
+  column-0 Review candidate in its comment. A valid control uses
+  `<!-- model-record: stage=Review model="claude-sonnet-5" floor-basis="ok" -->`.
+- When: `/bin/bash role-label-staleness.sh 400` runs.
+- Then: exit 0 and exactly one verdict line. The control contains
+  ` — stale (` and `expected role:reviewer`; substituting each literal
+  floor-basis value `opus > sonnet`, `a --> b`, `a <!-- b`, `x < y -- z`,
+  and `<!-- x --> > <` contains ` — indeterminate (` and names the
+  near-miss with `stage=Review` and the offending candidate. Repeat with
+  `role:reviewer`: the valid control contains ` — in-sync (`; each invalid
+  candidate still contains ` — indeterminate (`. No fallback to an older
+  valid Review is allowed (S269).
+- This rewrites the old shared-walker assertion intentionally: delimiter
+  values are invalid v2 records (A31a), rather than valid Review evidence.
+  Do not retain the old `stale` oracle or test obsolete `former classification scan`.
+- Falsifier: accepting the old tokenizer's arbitrary quoted delimiters
+  makes these invalid-value arms fail. Test file remains
+  `test/cases/s198_role_label_staleness_shared_parser.sh`, rewritten by Developer.
 
-### S198 — role-label-staleness.sh detects a marker whose value contains `>`
-**Covers:** F35, F39
-- Given: a stale `role:architect` label and a Review marker on the linked PR
-  whose `floor-basis` contains `>`, `-->`, `<!--` or `<` (issue #392, round 3
-  of the PR #397 review, low finding)
-- When: `role-label-staleness.sh` runs against a fake `gh` (S152's recording)
-- Then: the verdict is `stale` (the marker's stage is detected, not
-  malformed), and a label at the evidenced stage is `in-sync`
-
-### S199 — an unclosed quote stays in its own comment
-**Covers:** F39
-- Given: a marker whose quote is never closed (Review, Implementation or Test,
-  also inside a code fence, with prose around it, several in a row, or in the
-  last comment) in comment N, and a well-formed Review or Implementation
-  marker in another comment whose first quoted value starts with a space,
-  with `-->`, or with a letter (issue #392, round 4 of the PR #397 review and
-  the human decision to contain a malformed marker to its own comment)
-- When: `model-record-gate.sh`, `compliance-evidence.sh` and
-  `role-label-staleness.sh` run against fake `gh`
-- Then: the well-formed marker is found with its own values (the gate's
-  lower-effort finding, gate 2 `not-evidenced` naming its efforts, a stale
-  or indeterminate label verdict, never in-sync); a malformed marker is a
-  visible finding or ignored and never wins, also when it is the latest
-  Review marker
-
-### S200 — the comment-boundary byte in a comment body cannot forge a boundary
-**Covers:** F39
-- Given: comment bodies containing the boundary byte U+001E themselves, next to
-  an unclosed marker or inside a marker, and one comment carrying all five
-  stage markers separated by that byte, in an opted-in project (issue #392,
-  round 4 of the PR #397 review)
-- When: `model-record-gate.sh` and `compliance-evidence.sh` run
-- Then: safe outcome: the byte inside a body is removed or ignored, so a
-  well-formed marker in the NEXT comment is still found with its own values
-  and one comment stays one comment (five markers in one comment are still
-  reported as role-played; five separate comments are not)
-
-### S201 — quoted marker-shaped text is not evidence in the model-record gate either
-**Covers:** F39
-- Given: a real Implementation marker (effort high) and a real Review marker
-  (same model, effort low) in separate comments, and another comment that
-  quotes an example Implementation or Review marker in a fenced block (backtick
-  or tilde), inline backticks or a blockquote, before, after or in the same
-  comment as the real markers; the same inputs through the collector and
-  `role-label-staleness.sh`; an indented code block (issue #392, round 5 of the
-  PR #397 review: the gate read raw bodies, so a quoted example hid a real
-  lower-effort Review; out of scope: five markers inside one fence, issue #400)
-- When: `model-record-gate.sh`, `compliance-evidence.sh` and
-  `role-label-staleness.sh` run against fake `gh`
-- Then: the gate still gives the lower-effort finding from the real markers; a
-  quoted Review example never replaces the real latest Review, and a Review
-  marker that exists only in a fence is a missing stage, as for the
-  collector; gate 2 stays `not-evidenced` and the label verdict `in-sync`; for
-  an indented code block (not stripped by `live_text`, accepted debt) the
-  gate and the collector must give the same outcome
-
-### S202 — the gate reports a latest marker whose model or effort cannot be read, for every stage
-**Covers:** F40
-- Given: PR 246 and its closing issue on a data-driven fake `gh`, with the
-  latest marker of one of the five stages having an unquoted, empty or missing
-  `model` or `effort` (the dry-run shape `model=claude-haiku-4-5 effort=low`
-  included), or a placeholder, a quoted example in a fence, a code span or a
-  blockquote, a missing marker, an earlier bad marker superseded by a later
-  good one; plain, opted-in and not-opted-in projects (issue #402, R3/R4,
-  AC3-AC6, A26 and the human decisions of 2026-10-03)
-- When: `model-record-gate.sh 246` runs, and `compliance-evidence.sh` on the
-  same input
-- Then: the gate prints one `model-record:` finding per stage and field,
-  naming the stage and the field, exit 0, never a `role-played:` line, in every
-  kind of project; Implementation and Review unreadable together are two lines;
-  only the latest marker of a stage counts; a quoted marker (also
-  `effort="unknown"`), an unrelated unquoted attribute, a placeholder, a quoted
-  example and a missing marker (its existing "no record found" line only) give
-  no new finding; the collector stays `indeterminate` for the unreadable model
-  (gate 1 for the four earlier stages, gate 2 for Implementation) and
-  `evidenced` for a well-formed run; a hand-typed `stage="Planning"` marker is
-  reported as malformed next to the stage's "no record found" line (A26
-  amended); an effort that is missing or unquoted on the latest Implementation
-  or Review marker is one finding saying so (S189's former silent arms)
+### S202 — The gate and collector diagnose unreadable candidates
+**Covers:** F27, F38, F40
+- Given: each stage with unquoted, empty or missing model; quoted stage;
+  missing, empty quoted or odd quoted legacy effort; unquoted effort;
+  earlier bad/newer good and older good/newer bad records; plain/opted-in
+  projects, non-candidate prose and quoted examples.
+- When: `model-record-gate.sh 246` runs via timestamped fake-gh REST fixtures.
+- Then: every live near-miss is named once, not just the latest; only `ok`
+  supplies presence, latest candidate by timestamp decides dependent checks,
+  and unreadable latest never falls back (S257/S259). Plain/opt-out projects
+  have no role-play findings; an opted-in near-miss-only stage is missing for
+  role-play too. Missing or empty/odd QUOTED legacy effort is ignored;
+  unquoted effort is a syntax near-miss, not an effort-floor comparison.
+  Quoted and non-candidate text have no near-miss diagnostic.
+- Collector controls: retain `ce_case` arms in
+  `test/cases/s202_gate_reports_unreadable_marker_fields.sh`: well-formed gives
+  gates 1/2 `evidenced`; unquoted Planning model gives gate 1 `indeterminate`
+  and gate 2 `evidenced`; unquoted Implementation model gives both
+  `indeterminate`. Strict collector candidates use the same near-miss rules.
+- Test mapping: rewrite only gate fixture/assertion/header portions to
+  S257/S259/S264; collector controls now use the same strict v2 judgments.
 
 ### S203 — the orchestrator hands each role its marker line from the one template
 **Covers:** F40
@@ -2601,56 +2613,65 @@ something new is being added.
 - Then: one paragraph of `ORCHESTRATOR.md` (A26 amended: nobody types a
   marker) gives each role the `model-record-emit.sh` command in its dispatch
   prompt, found through `SPEC_DRIVEN_GUARDRAILS_DIR` or the installed skill, with
-  `--stage` and `--effort` filled in (`unknown` when it cannot find the effort
-  out), names the requested model, has the role add `--model` with its own
+  `--stage` filled in and no `--effort` (#424: nothing says to pass it or to
+  fill it with `unknown`), names the requested model, has the role add `--model` with its own
   exact id (the Reviewer also `--floor-basis`) and paste the output unchanged
   as the first line of its report; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
   example, no spelled-out marker line, no effort values, no quoting rule);
-  `model-choice` keeps the two templates as the single copy and no skill shows a
+  `model-choice` keeps the two templates (without effort) as the single copy and no skill shows a
   quoted stage and no second template exists outside `model-choice` and
   `pre-merge-review`; `model-choice` and `pre-merge-review` say the line is
   produced with the wrapper and never typed; `role-contracts` says a report's
   first line is the wrapper's output, never typed, and that a role whose prompt
   has no command runs the wrapper itself and says so
 
-### S204 — model-record-emit.sh prints the one valid marker line, or nothing
+### S204 — model-record-emit.sh prints the one valid marker line, which rec_scan and rec_field read back field by field, or prints nothing (E1 and E2)
 **Covers:** F40
 - Given: `skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model
-  <id> --effort <low|medium|high|unknown> [--floor-basis <sentence>]` and
-  `marker_emit` in `lib/model-record.sh`; a matrix of valid inputs (all five
-  stages, all four efforts, ids with dots, dashes, colons, slashes and digits,
-  a Review floor-basis with `>`, `<`, `--`, an apostrophe, `model=x` text and
-  non-ASCII); a matrix of invalid ones; macOS `/bin/bash` 3.2 under `LC_ALL=C`
-  and a UTF-8 locale; the real path and a symlinked `.claude/skills` (issue
-  #402, A26 amended, the maintainer's acceptance test)
+  <id> [--floor-basis <sentence>]` and `marker_emit <Stage> <model>
+  [<floor-basis>]` in `lib/model-record.sh` (issue #402, A26; no effort since
+  #424; rewritten on E1 and E2 by issue #425, slice V4 of #411, AC4, A33 as
+  amended by A33a); a matrix of valid inputs (all five stages; model ids with
+  dots, dashes, colons, slashes, digits, a leading dash, 200 bytes; a Review
+  floor-basis with `'`, `--`, `=`, ` model=` and ` floor-basis=` at its end,
+  `$`, a backtick, `*`, a leading `--`, non-ASCII; the code points the deny-list
+  lets through: NBSP, zero-width characters, U+200E, U+2027, U+202F, U+2065,
+  U+206A, U+FFFD, an emoji; invalid and truncated UTF-8; 500 bytes of ASCII,
+  166 em dashes, 498 ASCII bytes plus one two-byte letter, 250 two-byte
+  letters); a matrix of refused ones; three environments (`LC_ALL=C`, a UTF-8
+  `LC_ALL`, and `LC_ALL` unset with `LANG` UTF-8); the real path and a symlinked
+  `.claude/skills` (an adopted project)
 - When: the wrapper runs
-- Then: for every valid input the output is exactly one line with a bare
-  stage that `marker_find` returns, `marker_attr` reads back byte for byte and
-  `marker_scan` calls ok, and five emitted lines give the gate no finding;
-  every invalid input (a quoted, lower-case, empty or unknown stage; a bad
-  effort; an empty, over-long or quote/space/newline/tab/`=`/`-->`/`$(...)`
-  model; a Review floor-basis that is missing, blank, over 500 bytes or holds a
-  quote, newline, tab, U+001E or another control byte; a floor-basis on another
-  stage; unknown, missing, repeated or value-less flags, a positional
-  argument) prints nothing on stdout, a reason on stderr and exits 2; a
-  floor-basis with `-->` or `<!--` is refused or round-trips exactly, never a
-  malformed line; without the lib the exit status is 3 with empty stdout
-
-### S205 — the role-play check's "stages missing" test ignores quoted text
-**Covers:** F38
-- Given: an opted-in project, a PR whose Planning, Test and Implementation
-  markers are real and whose Review stage is only named in quoted text: a
-  code span, a backtick or tilde fence, a blockquote, report prose quoting the
-  gate's finding and the marker form, the PR description (issue #369, holistic
-  review finding B2); a real Review marker as the control; three stages in one
-  comment plus a quoted Review mention
-- When: `model-record-gate.sh 246` runs on a fake `gh`
-- Then: `role-played: stages missing: Review` is printed for every quoted
-  form (a quoted mention is not a present stage), a real Review marker gives a
-  clean run, the one-comment run is still reported, and a project that did not
-  opt in sees no `role-played:` line and the existing "no record found" line.
-  Five markers inside one fence (issue #400) is not asserted: it is reported as
-  stages missing by the same one-line change, whichever way #400 is decided
+- Then (E1): every valid input prints exactly the LITERAL line `<!--
+  model-record: stage=<S> model="<M>"[ floor-basis="<F>"] -->` (bare stage, no
+  effort attribute, nothing on stderr), which `rec_scan` reads as one ok row
+  for the stage holding the line verbatim, `rec_field` returns `model` and
+  `floor-basis` byte for byte (and nothing for effort); `marker_emit` agrees
+  with the wrapper; a stale `--effort high` still gives the literal line; five
+  emitted lines give the gate no finding
+- Then (E2): every refused input prints nothing on stdout, a reason on stderr
+  and exits 2: a quoted, lower-case, empty or unknown stage; an empty, over-
+  long (201 bytes), non-ASCII or quote/space/newline/tab/`=`/`<`/`>`/`-->`/
+  `$(...)` model; a Review floor-basis that is missing, blank, over 500 BYTES
+  (501 ASCII bytes, 167 em dashes, 251 em dashes = 753 bytes, 499 ASCII bytes
+  plus a two-byte letter, 251 two-byte letters) or holds `"`, `<`, `>`, `-->`,
+  `<!--`, any of the 31 C0 controls (LF, CR and tab included), U+001E, DEL, any
+  of the 32 C1 controls U+0080 to U+009F as UTF-8 bytes, U+2028, U+2029,
+  U+202A to U+202E or U+2066 to U+2069; a floor-basis on another stage;
+  unknown, missing, repeated or value-less flags, a positional argument, and
+  a flag value equal to a flag name (`--model --floor-basis`, `--floor-basis
+  --stage`, ...) while a floor-basis that merely begins with `--` is accepted;
+  without the lib the exit status is 3 with empty stdout. Threat model:
+  accidental defects (characters versus bytes, a deny-list entry left out, a
+  locale-dependent control-class test); a typed strict line is byte-identical
+  to emitter output (stated limit). The emitter's own round trip is defence in
+  depth with no red-only test. Retired from the old S204: the old-parser-only
+  judgement and the arms that accepted `>`, `<`, `-->` or `<!--` (refusals now).
+  Red today on the red commit: the `<`, `>`, C1, separator, bidirectional,
+  byte-limit and flag-name refusals, and every `rec_scan` and `rec_field`
+  judgement (stubs). Kill table: drop `<` or `>`, count characters, drop one C1
+  or bidi or separator entry, a locale-dependent control test, drop or widen
+  the flag-name rule, change the literal line
 
 ### S206 — the script paths named in finding B5 resolve from an adopted project
 **Covers:** F37, F40
@@ -2662,7 +2683,9 @@ something new is being added.
 - When: the paths in their run instructions are resolved from the project root
   and the emit wrapper is executed
 - Then: the emit wrapper path as written in `pre-merge-review` and
-  `model-choice` exits 0 (not 127) and neither names the bare
+  `model-choice` exits 0 (not 127, no `--effort` needed, #424) and prints the
+  effort-free line, a stale `--effort` still works from the project with its
+  one stderr warning, and neither names the bare
   `skills/pre-merge-review/model-record-emit.sh`, every "Run `<path>`" command
   path in ORCHESTRATOR.md resolves (`.claude/skills/...`,
   `$SPEC_DRIVEN_GUARDRAILS_DIR/...` or `./name.sh`), and
@@ -2670,6 +2693,61 @@ something new is being added.
   `$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh` and says to run it with
   the project's checkout as the working directory, not "from the guardrails
   clone"
+
+- Issue #470 amendment (A37c; `issue-review-counted-as-pr-round`, found on
+  PR #469): source `issue` is Planning-only. The paragraphs above stay true
+  for `comment` and `review`; for source `issue` they are amended as follows.
+  (a) An issue body whose first candidate is a Review record (ok or near-miss)
+  or that holds only a legacy done marker yields NO row: not an `R` row, not
+  a downgraded `P` row, and it spends no round number. (b) A Planning-first
+  issue body keeps its `P` row after at least one PR round (n the latest PR
+  round before it); before any PR round it still gives no row. (c) Order is
+  unchanged (`created_at`, then issue, comment, review, then input order), and
+  round numbers count `comment`/`review` bodies only. (d) Six-field `R` rows
+  and the failed-read contract are unchanged. In `test/cases/s250_...sh` the
+  following existing expectations must flip red to green: "time order across
+  sources" (an input `issue` Review at T3 currently gives `R:2:$T3:issue`;
+  new expectation: that row is absent and the T4 comment is `R:2:$T4:comment`
+  - use inputs review T1, issue-Review T3, comment T4, expected
+  `R:1:$T1:review`, `R:2:$T4:comment`), and "tie issue comment review" (an
+  issue Review at T1 with a comment and a review at T1 currently gives
+  `R:1:$T1:issue`; new expectation `R:1:$T1:comment`, `R:2:$T1:review`; the
+  tie rank for a `P` row is pinned separately by arm 7). The "planning rows" arm (`P:1:$T4:issue`) and all
+  `comment`/`review` expectations stay unchanged. New arms, each in all
+  `$RH_MODES`: (1) PR Review comment T1 + issue Review T2 gives exactly
+  `R:1:$T1:comment` (a body with source `comment` and `issue` Review at the
+  same instant likewise gives one `comment` round); (2) issue Review alone
+  gives empty stdout, status 0; (3) issue legacy done marker alone gives empty
+  stdout; an issue near-miss Review alone gives empty stdout; (4) issue Review
+  before any PR round gives no row, then a PR Review gives `R:1`, not `R:2`;
+  (5) PR Review T1, issue Review T2, issue Planning T3, PR Review T4 gives
+  `R:1:$T1:comment`, `P:1:$T3:issue`, `R:2:$T4:comment` (the issue Review is
+  neither a round nor the n of the Planning row; this is the falsifier at the
+  lib seam: a "downgrade issue Review to `P`" mutant adds `P:1:$T2:issue`);
+  (6) an issue body with a fenced Review record and a live Planning record
+  still yields its `P` row (the first-candidate rule is unchanged); (7) tie
+  at T1: PR comment Review, issue Planning, PR review Review gives
+  `R:1:$T1:issue`-free output `R:1:$T1:comment`, `P:1:$T1:issue`... - precisely:
+  a tie ranks issue before comment, so the issue Planning sorts first, before
+  any round, and gives NO row: expect `R:1:$T1:comment`, `R:2:$T1:review`
+  only. Kill
+  table additions: count issue `R`; downgrade issue Review to `P`; drop issue
+  `P` (arm 5 and the existing planning-rows arm); filter in `review-rounds.sh`
+  instead of the lib (killed by S287 arm B' - a third caller that feeds
+  `rr_rounds` an issue Review directly is arm 1/5 here, which a caller-side
+  filter leaves red); give the issue Review a round number but hide its row.
+  Red today: arms 1, 2, 3, 4, 5 and the two flipped expectations (the lib
+  returns issue `R` rows today); the arm 6 and the planning-rows arm are
+  green today and must stay green.
+
+- Review-round-1 helper fidelity (`source-matcher-flags`): extraction with
+  `test_source_match -oE` returns precisely every matched executable-path
+  token, including multiple matches on one line, without surrounding prose,
+  arguments or backticks. Retain actual adopted-project path resolution and
+  wrapper execution. A valid path embedded in prose is a positive control;
+  an unresolved documented path is a clean assertion failure. Exact helper
+  stdout/status controls must first fail against the frozen helper, then pass;
+  returning whole matching lines instead of tokens must make them red.
 
 ### S207 — merging is human-only only for main, and the text says so once
 **Covers:** F38
@@ -2683,14 +2761,2154 @@ something new is being added.
   release branch follows the skill); `WORKFLOW.md` and the skill keep their
   side (controls)
 
-### S208 — the README says the release-branch tier is adoptable, and model-choice says the effort is self-reported
+### S208 — the README says the release-branch tier is adoptable, and model-choice says the recorded model is self-reported
 **Covers:** F37, F39
 - Given: `README.md`, `model-choice`, and the registry facts (`adopt.sh`
   installs `release-branch-workflow`, `pending-changes.sh` asks its question)
-  (issue #369, holistic review finding B4 and the effort-honesty note)
+  (issue #369, holistic review finding B4; the honesty note moved from effort
+  to the model by #424: A33a words the same-model floor as "by the model-only
+  floor, on self-reported model strings")
 - When: they are read
 - Then: the README no longer says the tier is not adoptable, no longer lists
   it under what an adopted project does not get and no longer contrasts it as
   "unlike" the five-role pipeline; it says an adopted project is asked about it
-  and gets the skill; `model-choice` says in one sentence that the effort in a
-  marker is self-reported and unverified unless the platform set it
+  and gets the skill; `model-choice` says in one sentence that the model in a
+  marker is self-reported and unverified, and no longer has the sentence that
+  the effort is self-reported unless the platform set it
+
+### S209 — every Review round is a fresh Reviewer dispatch, and the orchestrator may not continue one
+**Covers:** F41
+- Given: `skills/role-contracts/SKILL.md` (Reviewer section),
+  `skills/role-contracts/ORCHESTRATOR.md` and `skills/pre-merge-review/SKILL.md`
+  (issue #414, AC1, AC2)
+- When: each is read for the rule on repeat Review rounds
+- Then: each states that every Review round is a new dispatch of a fresh agent
+  and that a Reviewer is never continued or resumed; `ORCHESTRATOR.md` forbids
+  it for the Reviewer explicitly, in one sentence naming both `SendMessage`
+  and the dispatch tool's `fork` type (also in the Reviewer contract and
+  `pre-merge-review`), says roles are started as a new agent never by that
+  `fork` type, imposes no `SendMessage` ban on other roles, and leaves
+  continuing another role for a later step to #412
+
+### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
+**Covers:** F41
+- Given: `ORCHESTRATOR.md` and the carry-forward text of `pre-merge-review`
+  (issue #414, AC3, AC4)
+- When: the brief for a later Review round is read
+- Then: it names the PR head SHA and diff, the work-item issue, and the previous
+  round's findings as inputs, and says it never includes the earlier
+  Reviewer's conversation, a summary of it, or recollection; `pre-merge-review`
+  says the previous round's findings are inputs the new Reviewer re-checks
+  against the new head, not memory
+
+### S211 — the limit on proving a fresh agent is stated, with the pipeline-log and self-check fallback
+**Covers:** F41
+- Given: `ORCHESTRATOR.md` (issue #414, AC5 case b)
+- When: the pipeline log and the pre-merge self-check are read
+- Then: the pipeline log has one line per dispatch with the agent id, is never a
+  `model-record` marker, and the mandatory "Before asking for a merge"
+  self-check (its result recorded as a line in the issue's Pipeline log) has a
+  line that every Review round has its own agent id and no message went to an
+  earlier Reviewer; the text states plainly that GitHub artifacts cannot show
+  whether two rounds came from different agent instances, so the line is a
+  recorded self-check, not a pass
+
+### S212 — in pre-merge-review a bare "fork" means only `context: fork`
+**Covers:** F41
+- Given: `skills/pre-merge-review/SKILL.md` after the fresh-Reviewer rule
+  (issue #414, A27, round 1 finding 7)
+- When: it is read for the word "fork"
+- Then: apart from `context: fork` and "the dispatch tool's `fork` type", no
+  "fork" remains, so no reader can take the single-Reviewer or lens-Adapter
+  runs for the dispatch type the rule bans; they are named as runs
+
+### S213 — a finding names its class and a falsifying check, and a Reviewer never gives a fix
+**Covers:** F42
+- Given: `skills/role-contracts/SKILL.md` (finding structure) and
+  `skills/pre-merge-review/SKILL.md` (issue #410, AC1, A28)
+- When: the finding structure and the Reviewer rules are read
+- Then: the structure has a Class field with the four values `design`, `code`,
+  `test` and `spec`, and a Falsifying check field (the observable condition a
+  correct fix must meet); a finding names the defect, its class and a
+  falsifying check and never a fix, patch or code, the same for QA and the
+  Developer; there is no exception for a typo-level or trivial finding
+
+### S214 — each class is routed to the role that owns the fix, from any stage
+**Covers:** F42
+- Given: `skills/role-contracts/SKILL.md` and `ORCHESTRATOR.md` (issue #410,
+  AC2, A28; the fresh Reviewer is #414)
+- When: the loop-back route is read
+- Then: both give the route per class (`design`: Architect, QA, Developer,
+  fresh Reviewer; `code` and `test`: QA, Developer, fresh Reviewer; `spec`:
+  Product, then QA, Developer, fresh Reviewer); `ORCHESTRATOR.md` says the
+  orchestrator never relays a Reviewer's suggested fix as a decision, never
+  downgrades a class (role-contracts says so too, and neither file says
+  "nobody downgrades": the Architect may record that a finding is not a design
+  defect and route it as code) and dispatches the Architect when a design class
+  is in doubt or a finding has no class, and says a Developer or QA that finds a
+  design defect stops the change, saves the attempted patch and reports
+  class `design`
+
+### S215 — two consecutive rounds with a medium-or-worse finding force an Architect step, and the count resets
+**Covers:** F42
+- Given: `ORCHESTRATOR.md` (issue #410, AC3, A28)
+- When: the two-round trigger is read
+- Then: a round counts when it has at least one open medium-or-higher finding,
+  new or carried over; two consecutive counting rounds on one PR send the
+  orchestrator to the Architect before any Developer fix; the Architect posts a
+  PR comment with a Planning marker and may conclude no design change is
+  needed; the count starts again after that recorded step
+
+### S216 — review-rounds.sh counts Review rounds and reports Planning markers after each
+**Covers:** F42
+- Given: a PR (and its issue) whose comments and reviews carry `model-record`
+  markers, behind a fake `gh` (issue #410, AC4, A28)
+- When: `review-rounds.sh <pr> [<issue>]` runs
+- Then: it prints one `review-round: <n> at=<timestamp>` line per body (a PR
+  comment or PR review) whose first live marker is a Review marker (a
+  malformed one still counts; two Review markers in one body are one round; a
+  body that only has a `pre-merge-review:done` marker counts; a body whose
+  first marker is another stage does not), in time order (A37), a
+  `planning-after: <n>` line for each round a Planning marker on the PR or the
+  issue follows (the latest round before it), the summary
+  `review-rounds: <N>` and a line saying severity is not machine-readable;
+  a body that only mentions `pre-merge-review:done` in prose is not a legacy
+  round (only the marker form `<!-- pre-merge-review:done sha=<40 hex> -->`
+  is); on equal timestamps the order is issue comments, PR comments, PR reviews,
+  visible through where a Planning marker lands;
+  bodies without such a first marker and quoted example markers count for
+  nothing; zero rounds gives `review-rounds: 0`; it always exits 0
+
+### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
+**Covers:** F42
+- Given: `review-rounds.sh` behind a recording fake `gh` (issue #410, AC4,
+  A28, A37)
+- When: it runs, with a failing `gh`, a failing endpoint, no `gh`, no
+  argument or a malformed PR number
+- Then: every `gh` call is a plain `api` GET (no write verb, no GraphQL);
+  a failed fetch prints a warning on stderr, no `review-rounds:` summary, and
+  exits 0; a missing argument or malformed number prints usage and calls
+  nothing; records are read only through `rr_rounds` of `lib/review-rounds.sh`
+  (which reads them through `rec_scan model-record`; the script and the lib carry
+  no record pattern of their own and call no `marker_*`); the script uses
+  no bash 4 feature or GNU-only tool, runs under macOS `/bin/bash` 3.2, defines
+  no `rr_rounds` itself (the one definition is in the lib, A37, T1) and is wired
+  into no hook, check or gate (a gate sourcing `lib/review-rounds.sh`, or naming the
+  script in a comment, is not wiring). Edited for #426 (the definition moved to the lib)
+
+### S218 — the self-check lines, the stated limit and the override pointer to #415
+**Covers:** F42
+- Given: `ORCHESTRATOR.md`, its "Before asking for a merge" self-check (issue
+  #410, AC5, AC6, A28)
+- When: the self-check and the override text are read
+- Then: the self-check list says no design-class finding was fixed without an
+  Architect step and the two-round trigger either did not fire or its Architect
+  step is on the PR, and names `review-rounds.sh` and says it runs with the
+  project's checkout as the working directory (it reads that repository); the text states the limit
+  (class and severity are judgments, a script can only check that the route
+  left evidence); overriding the route is a numbered human decision on the
+  issue that names the rule overridden and follows the pushback and risk-note
+  flow of #415 (A29) without defining a format of its own
+
+### S219 — `.github/workflows/macos.yml` is pinned whole: a closed byte alphabet, comments only in the header, the rest exactly the expected block
+**Covers:** F43
+- Given: `.github/workflows/macos.yml`, the macOS leg's own workflow file (issue
+  #422, AC1, A35c D1/D2, hardened by A35d D1/D2, which replaced A35b D3's
+  reader of `ci.yml`)
+- When: two rules are applied in order. D1, byte alphabet, on the raw file
+  first: `LC_ALL=C grep -an '[^ -~]'` must find nothing, i.e. the file holds
+  only LF and printable ASCII (0x20-0x7E). D2, header-only comments: only the
+  leading run of blank and full-line-comment lines before `name:` is stripped,
+  with `LC_ALL=C awk 'started || !/^[[:space:]]*(#|$)/ { started = 1; print }'`,
+  and from `name: CI macOS` to the end the file is compared byte for byte with
+  the block written inline in the case (triggers `pull_request` and `push` to
+  `main`; one job `macos` on `macos-latest` with `permissions: contents:
+  read`, `env` `LANG` and `LC_ALL` both `en_US.UTF-8`, and the four steps
+  checkout, platform tools first on PATH, `brew install mawk`, and the suite
+  step `run: /bin/bash test/run.sh`)
+- Then: the file exists, passes D1, and the D2 comparison is identical; any
+  other content is red. A D1 failure prints the first three offending lines
+  through `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251` is
+  visible); a D2 failure prints the diff through the same `sed -n l` (POSIX,
+  so it shows the bytes on BSD and GNU alike; `cat -A` is not used). No YAML
+  is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
+  suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
+  `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
+  scalar, an under-indented scalar), a deleted or duplicated job, a step that
+  rewrites `test/run.sh` or writes `BASH_ENV`/PATH, a job `env:` that sets
+  `S229_INNER` or `PLATFORM_IDENTITY_UNDER_TEST`, a changed trigger, trailing
+  whitespace, tab indentation; every byte outside the alphabet (a lone CR
+  inside a header or body "comment" that hides a key such as `if: false`,
+  `continue-on-error: true`, `defaults:` or `env: BASH_ENV`; NEL and LS in the
+  same place; whole-file CRLF; a BOM; a tab; `é`; a form feed; a NUL); any
+  comment or blank line after `name:` (a comment as the first line of the
+  `run: |` block, an indent-8 comment between its two `echo` lines, a trailing
+  comment or blank line at the end of the file). Green: the unchanged file;
+  adding, editing or removing ASCII comment lines and blank lines in the
+  header; a missing final newline. Changing the pinned block is a deliberate
+  spec change that also edits this scenario. The case reads
+  `CI_MACOS_YML_UNDER_TEST` when set (mutation proofs). The tools and the
+  locale are not judged here; S229 judges them at run time
+- File kind (A35d-2, finding 25): the candidate must be a regular file, and
+  `-L` is tested before `-f` because `-f` follows links. In the working tree,
+  on every run including through the seam: `[ -L "$macos_yml" ]` is red, then
+  `[ ! -f "$macos_yml" ]` is red, both with the message "not a regular file".
+  Permanent arms, run through the seam in a child process, each red with that
+  message: a symlink to a byte-identical pinned copy (it passes D1 and D2, so
+  only the kind check kills it), a dangling symlink, a directory, a FIFO (the
+  arm is skipped, with a note, where `mkfifo` is unavailable); the unchanged
+  regular file stays green. Committed state, only when the seam is unset:
+  `git ls-files -s -- .github/workflows/macos.yml` must report mode `100644`;
+  `120000` (symlink), `160000` (gitlink), `100755` (executable) and empty
+  output (untracked, or not a git checkout) are red. That half has no
+  permanent arm; it was proven once in a throwaway clone and reported in the
+  PR. A hardlink needs no check (git has no hardlink mode; the blob is pinned
+  by content)
+
+### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
+**Covers:** F43
+- Given: `ci.yml` (A35c D1: the macOS job moved out, `ci.yml` is back to its
+  content on `main`)
+- When: the `ubuntu-latest` job is read and the non-comment lines of `ci.yml`
+  are searched case-insensitively for `macos`
+- Then: exactly one such job still runs `./check`, the gitleaks step, the link-3
+  and main-via-PR steps, `fetch-depth: 0` and its issues/pull-requests read
+  permissions, and no non-comment line of `ci.yml` contains `macos` (a runs-on,
+  a matrix entry, a block-list label such as `macOS`, or a step name all turn
+  it red; a full-line comment that mentions it does not; a step that
+  legitimately names macOS later changes this one check). It is a regression
+  scenario that claims no closed world, so a new non-macOS job or a new step
+  in the Linux job does not turn it red
+- Limits: line-based; a CR or encoded spelling can hide a job (#442)
+
+### S224 — a non-BWK awk or non-BSD grep fails `test/platform-identity.sh`, naming the tool
+**Covers:** F43
+- Given: `bash test/platform-identity.sh` (no arguments) run on a macOS host
+  with a PATH shim that reports GNU awk (or GNU grep) and records its
+  invocation
+- When: the script runs
+- Then: it exits non-zero, its `FAIL:` line names the mismatched tool, and the
+  shim was invoked; a control run on the real macOS tools exits 0 and prints
+  one identity line each for awk, grep and bash plus a line starting with
+  `locale charmap:` (not merely the word `locale`, which the `locale:` line
+  already satisfies) (macOS host only)
+
+### S225 — a bash that is not 3.2 fails `test/platform-identity.sh`, naming bash
+**Covers:** F43
+- Given: the script run on a macOS host with a PATH shim reporting bash 5, and
+  with the running `$BASH_VERSION` not 3.2 (a startup-file override, and a real
+  bash 4 or later where one is installed)
+- When: the script runs
+- Then: it exits non-zero and its `FAIL:` line names bash (macOS host only; the
+  real bash 4 arm prints a note and is skipped where none is installed)
+
+### S226 — a locale that is not installed fails `test/platform-identity.sh` and is never skipped
+**Covers:** F43
+- Given: the script run on a macOS host with the real tools, `LANG` naming a
+  locale that is not installed (`xx_XX.UTF-8`) and `LC_ALL` unset; no
+  `locale` shim
+- When: the script runs
+- Then: it exits non-zero and its `FAIL:` line names the locale; it never exits
+  0 (macOS host only). A missing locale is covered by the `locale charmap`
+  check alone: a locale that is not installed does not give a UTF-8 charmap.
+  Limit: AC3 (the macOS job red and the Linux job green on a real
+  locale-class defect, a throwaway-branch run linked from the PR) is a
+  human-visible hosted-runner result and cannot be a unit test
+
+### S227 — a locale that is installed but not in effect fails `test/platform-identity.sh`
+**Covers:** F43
+- Given: the script run on a macOS host with the real tools and the effective
+  locale C: `LANG=en_US.UTF-8` with `LC_ALL=C`, with `LC_CTYPE=C`, and with
+  `LANG` empty
+- When: the script runs
+- Then: each run exits non-zero and its `FAIL:` line names the locale (macOS
+  host only; the runner image's `LC_ALL` could otherwise drift to C unnoticed)
+
+### S228 — V2 scanner and fields preserve invalid UTF-8 bytes under a UTF-8 LANG
+**Covers:** F43
+- Source lib/model-record.sh in a fresh shell with LC_ALL unset and
+  LANG=en_US.UTF-8; a strict Test value contains byte 377. rec_scan returns
+  an ok Test row, rec_field returns the original byte-bearing model. Empty
+  or failed reads are red. This transfers the old tokenizer byte regression;
+  S230 retains the genuine native fence-awk C-prefix mutation and valid
+  multibyte control, and S247 the scanner tool-failure matrix.
+
+### S229 — on the macOS CI leg the suite runs the platform identity check in its own environment
+**Covers:** F43
+- Given: the suite case `test/cases/s229_platform_identity_in_suite.sh` (issue
+  #422, AC1, AC2, A35b D1); the gate is `GITHUB_ACTIONS=true` and
+  `RUNNER_OS=macOS`, both set by the runner
+- When: the case runs under the suite's own PATH, bash and locale
+- Then: with the gate open it runs `bash test/platform-identity.sh`, puts the
+  identity lines in its log, and is red naming the tool or locale on a
+  mismatch; otherwise it prints `note: platform identity not asserted (not the
+  macOS CI leg)` and passes. Arms, run in a child with a controlled
+  environment: (a) a GNU awk shim first on PATH with both CI variables set is
+  red and names awk; (b) `RUNNER_OS=Linux` with the same shim is green and
+  prints the note; (c) on a macOS host only (`uname -s` is Darwin, otherwise
+  the arm is skipped with a note), both CI variables set, the real tools and no
+  shim is green and its output has lines starting `awk:`, `grep:`, `bash` and
+  `locale charmap:`; (d) `RUNNER_OS=macOS` with `GITHUB_ACTIONS` unset and the
+  GNU awk shim is green, prints the note and never calls the shim; (e) both
+  variables unset with the same shim is the same. Limits: the gate cannot
+  prove from inside the suite that it fired in CI (the green macOS log showing
+  the identity lines, not the note, and a throwaway red run are the evidence);
+  subversion through `macos.yml` (`BASH_ENV`, an overridden `RUNNER_OS`, a job
+  `env:` setting `S229_INNER`, changed triggers) is red under S219, while the
+  suite's own files and settings outside the repository are trusted
+
+### S230 — live_text reads a body with an invalid or truncated UTF-8 sequence the same under a UTF-8 LANG as under LC_ALL=C, in the lib and in all three callers
+**Covers:** F34, F35, F39
+- Given: `LC_ALL` unset (by the case itself) and `LANG=en_US.UTF-8`; three
+  bodies, one holding `\377` (an invalid UTF-8 byte), one a truncated
+  `\342\200`, one a valid multibyte character (the green control, `\342\200\224`);
+  each placed in a live marker value, in a fenced line, in a code span and in a
+  blockquote (lib arms), in the Review record's `floor-basis` (gate main
+  path), in a body holding two stage records (the gate's role-play path), in a
+  PR comment's Test record (collector), and in a Review record of a linked PR
+  (staleness script); the callers run against fake `gh`, the bytes reach the
+  gate through a placeholder swapped after `jq` (jq itself would turn the
+  byte into U+FFFD)
+- When: `md_strip_fences` and `live_text` of `lib/markdown.sh`; the gate (main
+  path, and role-play path in an opted-in project); the collector; and the
+  staleness script each read the body, once under `LC_ALL=C` and once under
+  the case's UTF-8 environment
+- Then: no reader aborts, and each result equals the `LC_ALL=C` result, which
+  is itself asserted non-trivial so a vacuous pass is red: the lib keeps the
+  marker line and blanks the fenced one; the gate main path prints no
+  `model-record:` finding for a complete run (and names the missing stage
+  when the Review record is removed); the role-play path prints `role-played:
+  stages in one text: Implementation, Review`; the collector's rows 1-3 are
+  `evidenced`; the staleness verdict is `stale`. The body bytes must also
+  survive the callers' own decoding of `\001` (their `tr`), not only
+  `live_text`. Red today on a macOS host (BWK awk, BSD tools): the role-play
+  arm, the collector arm and the staleness arm; regression arms (green on
+  arrival): the gate main path, the valid-multibyte control, every C-locale
+  baseline. Mutations (A35a K3): remove the `LC_ALL=C` prefix from the awk
+  call in `lib/markdown.sh`; remove it from the gate's role-play read; drop
+  the `LC_ALL=C` in a caller's `tr '\001' '\n'`. On a non-macOS runner the
+  awk-abort mutants can pass (gawk and mawk do not abort), so the macOS leg is
+  where this scenario bites
+- Legacy round 1 of PR #443 adds the bytes BEFORE the marker on the same line
+  (`x\377y <marker>`; also the truncated sequence; valid multibyte as the
+  green control). BSD grep in a UTF-8 locale finds no match after such a byte,
+  so every caller `grep` that reads the live text, and every caller `tr`, must
+  carry its own `LC_ALL=C`. For the #427 gate, whole column-0 records on
+  separate lines are the success control; bytes remain in allowed values or
+  on a separate preceding prose line. Two whole-line stages in one body
+  report `stages in one text`. Same-line prose prefixes and two records on
+  one line are near-misses, cannot supply stage presence, and cannot create
+  that role-play finding. Assert these diagnostics and missing-stage results
+  under both locales, rather than only equality. The override success control
+  is a whole-line single-session record with bytes in decided-by/reason;
+  it reports `waived the role-play findings` and no `role-played:` findings.
+  A prose-prefixed override is a near-miss and waives nothing. A whole-line
+  override with an additional quoted `note` attribute whose value contains
+  only allowed bytes remains valid and waives the role-play findings. Pair
+  that success control with a `note` value containing a forbidden `"`, `<`,
+  `>` or control byte: the record is a near-miss and waives nothing. Assert
+  acceptance/waiver for the arbitrary attribute and diagnostics/no waiver for
+  the forbidden-value controls under both locales; equality alone is insufficient.
+  All three byte variants run through these controls. Preserve
+  closing-keyword discovery after bytes, byte-in-value arms, lib controls and
+  caller decoding coverage. The collector retains its legacy inline contract
+  (one record per body source, each after the
+  bytes: the closing keyword in the PR title, Planning and the done marker in
+  the PR body, Test and Review in PR comments, Implementation in a PR review,
+  Discovery in the closing issue's comment, rows 1-3 `evidenced`; a malformed
+  done marker after the bytes still reads "not in the recognized shape"; a done
+  marker only in a code span after the bytes still says "only inside a code
+  span"); for the #428 staleness migration, a valid whole column-0 Review
+  record follows byte-bearing prose on a separate line in the issue body,
+  an issue comment, the PR body, a PR comment and a PR review. The fixture
+  transports that line break as encoded `\001`, so caller decoding remains
+  exercised; the PR description's closing keyword also occupies a separate
+  line from the record. Retain the two closing-keyword placements after the
+  bytes in the PR title and PR body, each with a valid whole-line Review
+  record in the PR comment. All seven placements and all three byte variants
+  must assert baseline verdict `stale`, then exact full-output equality
+  between C and UTF-8 environments. Keep the byte-in-`floor-basis` staleness
+  arms as valid records. Inline prose-prefixed records are near-misses under
+  #428, covered by S268; they cannot be stale success controls. Each result,
+  rows with their evidence text included, equals the
+  `LC_ALL=C` result, which is itself asserted non-trivial. `normalize_model`
+  of `lib/model-record.sh` (finding lib-normalize-locale): a model value
+  holding `\377` or `\342\200` normalizes to `opus 5` under both locales with
+  nothing on stderr (BSD `tr` aborts with "Illegal byte sequence" otherwise).
+  Historical mutations, each killed on a macOS host (BSD grep, BSD tr, BWK awk): remove
+  `LC_ALL=C` from any one of the pre-v2 gate's greps (stage check, role-play
+  stage_ere, the three override attribute greps, the override reader, the
+  stages-missing check), the collector's quoted-suffix, closing-keyword, stage,
+  done-marker and loose-marker greps and its four `tr` sites, the staleness
+  script's closing-keyword grep and its six `tr` sites, and the `tr` and the
+  second and third `sed` of `normalize_model`. Not killable, equivalent
+  (the input is the `-o` output of a C-locale grep, or has already lost the
+  invalid byte, so it is ASCII): the collector's `[0-9]+` and `sha=` greps on
+  a `-o` result, the gate's `grep -qx` on stage names, the `sed` after a
+  `grep -o`, the first and the last `sed` of `normalize_model` (BSD sed
+  only reads past the start of an anchored match once a match is found)
+- Round 3 of PR #443 (A32c; findings c-locale-grep-callers round 2,
+  lib-normalize-locale round 2, normalize-sed1-untested, collector-cell-locale):
+  the four scripts export `LC_ALL=C` as their first statement. The historical
+  pre-v2 gate and collector arms went red when that export was removed.
+  For the #427 v2 gate, removing only the export is an equivalent behavioral
+  mutant: raw keyword greps and sort retain independent `LC_ALL=C` prefixes,
+  so S230 stays green (S235 separately guards the export structurally).
+  The current gate locale falsifier removes both the export and only the
+  first raw closing-keyword grep's `LC_ALL=C` prefix, preserving the numeric
+  grep and sort prefixes. Invalid/truncated bytes before `Closes #239` in
+  the title or description must then break the UTF-8/C output equality on
+  native macOS; baseline and restored runs must pass. Gate: a PR description
+  (and a PR title) of `x<bytes>y Closes #239` finds #239 (Discovery recorded
+  only there) and prints nothing, as under `LC_ALL=C` (the raw-title and
+  description closing-keyword grep, line 161); a Review record with a legacy effort
+  `low<bytes>` on the same model as Implementation `high` gives no finding at
+  all and the same output in both locales (#424: no effort is read; the old
+  lower-effort arm is retired). Collector: the FULL output, evidence column and stderr
+  included, is byte-identical in both locales for the Test record at
+  `model="claude-sonnet-5<bytes>"` (no status-only workaround), and for two
+  closing issues whose legacy Review efforts are `low<bytes>` against `low` or
+  `high` (no conflict since #424: gate 2 `evidenced` and the full output
+  byte-identical in both locales). Lib: `effort_rank` and its arm are retired
+  with the function; `normalize_model` of values
+  that do NOT start with `claude` (`opus-5<bytes>`, `<bytes>claude-opus-5`,
+  `claude<bytes>-opus`, `x<bytes>`) is identical in both locales with an empty
+  stderr (BSD `sed` aborts on input whose anchored match fails before the
+  byte; QA's earlier "equivalent" call for the first `sed` was wrong). Red
+  at the historical pre-v2 checkpoint on a macOS host: the gate arms and the collector arms; the `normalize_model` arm is green on arrival and kills
+  the scratch mutant that drops the first `sed` prefix (via `MR_LIB`). Not
+  behaviourally reachable, so guarded by S235 alone: the staleness script's
+  and `review-rounds.sh`'s export (their remaining unprefixed commands read
+  numbers and label names); removing either export leaves S230 and S234 green
+  and S235 red. Historical pre-v2 mutations killed (scratch tree with the A32c fix applied): gate
+  export removed (4 failing assertions), collector export removed (12),
+  first `sed` prefix removed (16); (the `effort_rank` prefix mutant, 4, is
+  retired with the function)
+
+### S231 — a live_text failure is visible: a model-record: finding in the gate, indeterminate in the collector and the staleness script
+**Covers:** F34, F35, F39
+- Given: a PATH shim named `awk` that counts its own invocations in a file and
+  exits 2 for the calls selected by the case (all calls, or exactly call k),
+  and otherwise runs the real awk; the gate in an opted-in project with all
+  five stages recorded, the collector with one record per reading site (the
+  PR body holds Planning and the done marker, a PR comment Test and Review, a
+  PR review Implementation, the closing issue's comment Discovery), and the
+  staleness script with `role:architect` behind a Review record that sits, in
+  turn, in the issue body, an issue comment, the PR description, a PR comment,
+  a PR review, and a PR comment of a PR whose closing keyword is only in its
+  title (as in release-branch PRs), each against fake `gh`
+- #428 compatibility: every staleness baseline uses a whole column-0,
+  model-bearing valid v2 Review record. In the PR description the closing
+  keyword and record occupy separate lines (the transport encodes that
+  newline as U+0001); an inline record is a near-miss, not a valid baseline.
+  The REST fake-gh review argv witness matches the current `--jq` spelling,
+  so the review baseline reaches its intended reading site. Retain every
+  outcome and invoked-count assertion in the all-call and single-call sweep.
+- When: each script runs once with the shim passing everything through (the
+  baseline, which also gives the number T of awk calls it makes), once with
+  every awk call failing, and T more times with exactly one call k failing
+- Then: the baseline call count is above zero (a script that never reaches
+  awk makes the arms vacuous) and the verdict is the clean one (no
+  `model-record:` finding, rows 1-3 `evidenced`, `stale`); with every call
+  failing the gate prints a line starting `model-record:`, rows 1-3 of the
+  collector are all `indeterminate`, and the staleness verdict is
+  `indeterminate`; with call k failing alone the gate prints a
+  `model-record:` finding for every k, the collector's rows 1-3 are each
+  `evidenced` or `indeterminate` and never `not-evidenced` or
+  `unverifiable-from-artifacts`, and the staleness verdict is `stale` or
+  `indeterminate`, never `in-sync` or `not-started`; the shim's count is above
+  zero in every failing run. A failure is never read as "no record". The
+  sweep reaches the gate's role-play read (its last awk calls), which today
+  ignores a `live_text` failure, and each of the collector's and the staleness
+  script's several call sites without naming them. Closes the PRD debt row at
+  `PRD.md:1712`. Not asserted: the wording of a finding or evidence line.
+  Mutations (A35a R6, D10): the gate's role-play `check_text` ignores a
+  failure; the failure flag removed from any one of the collector's call
+  sites, or from any one of the staleness script's call sites (each site is
+  made decisive by the spread above, so each removal turns a row or the
+  verdict into an absence claim)
+- Round 1 of PR #443 (finding gate-frame-failure-test): in the gate's
+  single-failure sweep, the run with call k failing never prints a
+  `role-played:` line either: with all five stages recorded, a "stages
+  missing" line can only come from a body read as empty. Mutation: the gate's
+  `live_frame` stops returning a failure (it prints the misleading "no record
+  found" AND a blocking "stages missing" line; the first alone is still a
+  `model-record:` line, which is why the existing assertion missed it). A gate
+  copied without `lib/model-record.sh` prints a `model-record:` finding
+  (regression arm; the gate's "lib not readable" branch is redundant with the
+  127 of the first `live_text` call, so dropping its `live_failed=1` is an
+  equivalent mutant, not a gap)
+
+### S232 — a fence opened on a list-item line is recognized, and a backtick fence whose info string holds a backtick is not an opener
+**Covers:** F34
+- Given: `lib/markdown.sh` under `LC_ALL=C`; a marker INSIDE (indented as list
+  content) and a marker AFTER (column 0, after the closing line); bodies with
+  a fence opened on a list-item line (`-`, `*`, `+` with a tilde fence, `1.`;
+  with an info string; a longer closing run; a second item; two list-item
+  fences in a row; a shorter run inside a longer fence), and bodies with a
+  backtick fence line whose info string holds a backtick (also indented 3
+  spaces, also four backticks)
+- When: `live_text` and `md_strip_fences` read each
+- Then: the output is exactly the body with the fenced lines (opener, content,
+  closing) blanked and the line count kept: INSIDE is quoted, the column-0
+  AFTER marker is live (as GitHub renders it: the closing line cannot open a
+  false fence that hides the later marker); a line `` ``` not `a fence ``
+  opens nothing, so the marker after it is live, and a later bare run opens
+  its own fence that runs to the end of the body (the INSIDE marker before it
+  is live, the AFTER marker after it is quoted); a tilde fence whose info
+  string holds a backtick still opens, a backtick fence whose info string
+  holds a tilde still opens, and a bullet line that merely mentions three
+  backticks opens nothing (regression arms). The PR records the
+  `gh api markdown` output for these shapes once, as evidence and not as a CI
+  oracle. Mutations: do not recognize the list-item prefix; treat a backtick
+  in the info string as an opener; require the closing line at column 0;
+  close on a shorter run
+- Round 1 of PR #443 (A32b, finding list-fence-container-end): where a
+  list-item fence ENDS. A list item ends at the first non-blank line indented
+  less than its content column, and that ends its fence; the ending line is
+  then read as an ordinary top-level line (live, or the opener of a top-level
+  fence). Arms, each checked against `gh api markdown` on the day it was
+  written: (la) `- ```` closed at column 0: the column-0 line after it is
+  quoted; (lb) a column-0 line inside is live, and the one after a later
+  column-0 run is quoted; (lc) an unclosed list fence ends at the column-0
+  line, which is live; (ld) a blank line inside keeps the fence open, and so
+  (ld2) does a whitespace-only line below the content column; (le) an ordered
+  item (content column 3) closed by a run indented 2 ends the item and opens a
+  top-level fence; (lf) a tab-indented line inside keeps the fence open; (lg)
+  a closing run indented content column + 3 closes it and the item's next line
+  is live; (lh) one indented content column + 4 does not close it; (lr,
+  regression) a top-level fence is not ended by an indented line. Failing
+  direction that matters: a fence ended EARLIER than GitHub ends it reads a
+  quoted marker as live. Mutations: drop the item-end rule (la, lb, lc, le,
+  lh red); consume the ending line instead of handling it again (la, lb);
+  let a blank line end the item (ld); a whitespace-only line (ld2); a tab
+  line (lf); end it at an indent equal to the content column (every list
+  arm); the closing bound becomes 3 instead of content column + 3 (lg). Not
+  tested (A32b accepted limits): nested list prefixes, list items inside a
+  blockquote, tab expansion beyond the tab rule
+- Round 3 of PR #443 (A32d, finding ordered-start-unsafe-direction; replaces
+  A32c's arms). The ordered-start rule is reverted, so the round-2 shape
+  (`text` / `2. ```` / indent-3 run / marker, accepted limit
+  ordered-item-after-paragraph, follow-up #446) is NOT pinned here: base reads
+  it in the bad direction and pinning that would be tautological; #446 owns
+  its acceptance test. Arms, each checked against `gh api markdown -f
+  mode=gfm` on 2026-10-06 (the oracle): a marker inside the fence of `2. ````
+  is quoted and the column-0 marker after it is live when the previous line is
+  (d2) a wrapped item line, (d3) a lazy continuation line, (d4) a blockquote,
+  (d5) an item holding a closed fence (also checked at marker level, d5b);
+  (d6) `text` / `2. ```` / a column-0 marker / an indent-3 run / a late marker:
+  the column-0 marker is live and the late one is quoted (the item ends at the
+  column-0 line, the indent-3 run opens a top-level fence). Regression arms,
+  green on arrival: (R-d3) after a blank line `2. ```` is an opener, (R-d4)
+  after a list-item line it is an opener, (R-d5) the number 1 after a
+  paragraph is an opener, (R-d6) a bullet after a paragraph is an opener. Red
+  at 4bcc497: d2 (live_text and md_strip_fences), d3, d4, d5, d5b; green with
+  the rule reverted (the `_MD_AWK` block identical to 5ea3a5b's). Mutations
+  (scratch lib): re-introduce the ordered-start rule (d2-d5 red); the prevpara
+  typo variant, the rule firing after a fence (d5, d5b red on top of d2-d4);
+  the rule applied after any line (d2-d5, R-d3, R-d4 red); drop the item-end
+  rule (la, lb, lc, le, lh, d6 red)
+
+### S233 — CRLF and a lone CR are line endings: the CRLF body reads as the same body with LF, and a lone CR is a line break
+**Covers:** F34
+- Given: `lib/markdown.sh` under `LC_ALL=C`; a body with CRLF line endings
+  around a fence and a marker, the same body with LF, a body with a lone CR
+  between two markers, a fence made of lone-CR lines, mixed endings with a CR at
+  the very end, a CR inside a marker value, a CRLF blockquote line
+- When: `live_text` and `md_strip_fences` read each
+- Then: the CRLF body gives exactly the LF body's output (the fence closes,
+  the marker after it is live) and the output holds no CR byte; the lone CR
+  between two markers gives two lines (never one glued line); the lone-CR
+  fence is a fence; mixed endings give one line per ending; a CR inside a
+  value splits the line (the later record reader names it a near-miss, never a
+  silently cleaned value); a body without any CR is unchanged (regression
+  arm). A31a: this replaces "remove every CR byte". Mutations: leave the CR
+  in; delete CR bytes instead of splitting; read only CRLF and not a lone CR;
+  strip CR after the fence logic instead of before
+
+### S234 — review-rounds.sh prints no count when a read fails, and reads a marker after an invalid byte on its line the same under a UTF-8 LANG as under LC_ALL=C
+**Covers:** F34, F42
+- Given: `review-rounds.sh` (it takes `live_text` from `lib/markdown.sh` since
+  #423; it was outside AC3) against a recording fake gh with three rounds (a
+  Review marker, a done-only body, a Review marker) and a Planning marker
+  after them; a PATH shim named `awk` that counts its calls and exits 2 for
+  the call(s) selected; a second fixture where every body line starts with
+  `x\377y ` (and the truncated `x\342\200y `), the bytes reaching the script
+  through a placeholder swapped after jq
+- When: the script runs once with every awk call passing (the baseline, which
+  gives the number of awk calls), once with every call failing, once per call
+  k failing alone; and with the byte-bearing bodies under `LC_ALL=C` and under
+  `LC_ALL` unset with `LANG=en_US.UTF-8`
+- Then: the baseline prints `review-rounds: 3` and the shim's count is above
+  zero; with every call failing, and with call k failing alone for every k,
+  the exit status is 0 (fail-open) and no `review-round` or `review-rounds:`
+  line is printed (a body read as empty is never counted as "no round"); the
+  byte-bearing bodies give the same lines under LANG as under `LC_ALL=C`
+  (three rounds, `planning-after: 3`). Red today: the byte-bearing arm (the
+  done-marker `grep` of `rr_rounds` runs in the ambient locale); the failure
+  sweep is green on arrival and guards its mutation. Mutations: the
+  `live_text ... || return 1` of `rr_rounds` removed (the sweep); the
+  `rec_scan` failure return removed (the sweep); `LC_ALL=C` removed from the
+  `tr '\001' '\n'` or from the done-marker `grep` (the byte arm). Not
+  asserted: the wording of the warning
+
+### S235 — the locale guard is structural: every script that reads GitHub text exports LC_ALL=C first, and every external text command in the three text-reading libs carries the LC_ALL=C prefix; the lint is itself mutation-checked
+**Covers:** F34, F42
+- Given: the five scripts `skills/pre-merge-review/model-record-gate.sh`,
+  `compliance-evidence.sh`, `role-label-staleness.sh`, `review-rounds.sh`,
+  `skills/pre-merge-review/finding-carryforward-gate.sh` (added by #426) and
+  the three libs `lib/markdown.sh`, `lib/model-record.sh`, `lib/review-rounds.sh`
+  (added by #426); the static lint in
+  `test/fixtures/locale-lint.sh`
+- When: the lint reads them (no network, no locale needed)
+- Then: (L1) each script has `export LC_ALL=C` as its first statement after
+  the shebang, comments, blank lines and `set` lines, and nowhere assigns
+  LC_ALL to anything but C or unsets it; (L2) every command-position awk,
+  grep, sed, tr, cut, sort and uniq in the three libs is directly preceded by
+  `LC_ALL=C `, grep is always `grep -a`, unless the line carries
+  `# locale-exempt: <reason>` (a non-empty reason; the allow-list is empty
+  today); the number of sites checked is printed and must be above zero (and at
+  least 10, the count after #424; it was 11 at head 5ea3a5b). (L3) the lint is red on a scratch copy
+  with the export removed from each script in turn (the synthetic tree has a
+  `lib/review-rounds.sh` of one `sort` site, and its prefix removal is a mutant), with a non-C export, with
+  an unset, and with one lib prefix removed (`normalize_model`'s first `sed` and `tr`, both `markdown.sh` awks, the surviving v2 reader candidate-count grep and mode=rec awk); and on a synthetic tree and snippets, each of the seven
+  commands bare in every command position (line start, after a pipe, `$(`,
+  `"$(`, `;`, `&&`, `||`, a subshell, `then`, `if`, a backtick, another env
+  assignment, a case arm) is a violation, while the same text prefixed, named
+  only as an argument, in a string, in single quotes, in a comment, or exempt
+  with a reason is not (an exemption with no reason is). The real-tree L3
+  mutants need a green real baseline and are reported once as not run while
+  L1/L2 are red. Red today: five L1/L2 violations (the four missing exports and
+  `effort_rank`'s `tr`, a site that #424 deleted with the function, so the
+  site floor is 10 now). Accepted limits of the lint: `${...}` skipped to its
+  first `}`, a grep continued on a backslash line is not checked for `-a`,
+  heredoc bodies read as code. Red after #426's tests, before its code: the carry-forward gate has
+  no `export LC_ALL=C`. A real-tree mutant of `lib/review-rounds.sh` is for the
+  Developer to add once the lib has an external text command (the stub has none)
+
+- Review-round-1 retirement (`deleted-reader-locale-mutants`): real-tree
+  mutations target surviving command sites only, including `_rec_scan`'s
+  candidate-count grep and `mode=rec` awk. Each replacement must apply to a
+  present site and the real baseline must be green before its mutant is
+  evaluated. Removing the locale prefix must yield that site's named lint
+  violation; restored copies must be green. Preserve the synthetic command
+  positions, export sweep, checked-site reporting and meaningful nonzero
+  floor, revising a historical numeric floor only from the actual site inventory.
+  Deleted find/scan command targets cannot count as killed mutants. Preserve
+  the separate genuine native K3 invalid/truncated-byte and multibyte controls;
+  a structural lint rejection does not replace native behavioral evidence.
+
+### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
+**Covers:** F39, F40
+- Given: `skills/pre-merge-review/model-record-emit.sh` (issue #424, V3 of the
+  #411 redesign, AC1; A33 as amended by A33a), called by a stale prompt in an
+  adopted project with `--effort <anything>` (`high`, `low`, `unknown`, an
+  out-of-scale or empty value), before, between or after the other flags, and
+  without it; macOS `/bin/bash` 3.2 under `LC_ALL=C` and a UTF-8 locale
+- When: the wrapper runs
+- Then: with `--effort`, stdout is exactly `<!-- model-record: stage=<S>
+  model="<M>"[ floor-basis="<F>"] -->` with no effort attribute, the exit
+  status is 0, and stderr is exactly one line, `effort is no longer recorded
+  (#413); drop --effort from your prompt`; without `--effort` stderr is empty;
+  a call refused for another reason (a bad stage) is still exit 2 with empty
+  stdout whatever `--effort` says; the gate reads an emitted line next to a
+  legacy-effort one without a finding; the usage text no longer advertises the
+  flag (S238). Mutations the Developer's emitter must not survive (the QA
+  kill table on the red commit): printing the effort, a different stderr text
+  or two lines, exit 2 for the flag, a warning on every call. Review round 1
+  of PR #447: `--effort` in every slot among `--stage`, `--model` and
+  `--floor-basis` (six orders x four slots) leaves the Review line and its
+  floor-basis intact, and does not excuse a floor-basis on Implementation or
+  a Review without one (kills a mutant that resets the floor-basis on
+  `--effort`)
+
+### S237 — the gate and the collector judge the Review floor on the model alone: no effort finding, gate 2 is model-only, the conflict key is the model, gate 1 reads presence and model
+**Covers:** F39, F40
+- Given: one PR read by `model-record-gate.sh` (data-driven fake `gh`) and
+  `compliance-evidence.sh` (recording fake `gh`), with legacy `effort`
+  attributes in the markers (issue #424, AC2/AC3/AC6; this repo's own pipeline
+  still emits `effort="unknown"`): the same model with efforts low (Review)
+  and high (Implementation), also unknown, out of scale, missing, empty and
+  unquoted; different models with a `floor-basis`; two closing issues whose
+  Implementation or Review markers name the same model with different efforts,
+  or different models; stage markers with an odd, empty or missing effort
+- When: the gate and the collector run
+- Then: AC2 the gate prints no line at all (so none that mentions effort) and
+  collector gate 2 is `evidenced`, its evidence naming the model, saying the
+  model strings are self-reported and the floor is on the model alone, quoting
+  no effort; the lookup-failure guard (#302/#336) still gives `indeterminate`;
+  AC3 different models are `unverifiable-from-artifacts`, naming both models
+  and quoting the `floor-basis`, with or without effort attributes; AC6 two
+  issues with the same model and different (or no) efforts are no conflict
+  (`evidenced`), while different models are a conflict naming the models only,
+  and gate 1 is `evidenced` whatever the effort attributes of the four stage
+  markers say (presence and model only); the two model rows read exactly
+  "Per-stage model recorded (Discovery, Planning, Test, Implementation)" and
+  "Review at least as capable as Implementation (same model: the floor is met
+  on the model alone; different models: recorded judgment, not
+  machine-checked)"
+
+- Amendment #427: preserve the model-only regression and every collector arm.
+  Gate controls use syntactically valid quoted legacy effort (or no attribute);
+  unquoted effort is a gate syntax near-miss per S257, not an effort comparison.
+  The collector now treats unquoted effort as the same syntax near-miss;
+  missing/empty quoted effort remains ignored. Inputs remain unchanged.
+
+### S238 — no text tells anyone to pass --effort or ask the human about an unknown effort; the same-model-lower-effort limit and its revisit trigger are stated; the flag's removal is a debt row
+**Covers:** F39, F40
+- Given: the skills, `ORCHESTRATOR.md`, `README.md` and `WORKFLOW-ADOPTION.md`,
+  `model-choice`, the emitter's usage text, and `PRD.md`'s Technical debt
+  register (issue #424, AC5/AC7 and the item's documentation list; history and
+  decision documents are excluded from the scan)
+- When: they are read, paragraph by paragraph
+- Then: AC5 no paragraph tells anyone to pass `--effort`, to fill it with
+  `unknown`, to ask the human about an effort or to find out the effort a role
+  runs at, unless it says the flag is gone (no longer, removed, retired,
+  legacy, ignored, #413); the two sentences of `ORCHESTRATOR.md` that did are
+  deleted; `pre-merge-review`, `model-choice`, `role-contracts` and
+  `ORCHESTRATOR.md` still name `model-record-emit.sh` and none shows
+  `--effort`; the emitter's usage line and no-argument message do not advertise
+  it; the README no longer says the skill picks a "model/reasoning effort";
+  AC7 `model-choice` says the same model at a lower effort meets the floor
+  because effort is neither chosen nor checked (an accepted risk, A33a), with
+  the revisit trigger "when the dispatch tool gains an effort parameter", that
+  the floor rests on self-reported model strings, and shows no effort attribute
+  or scale; PRD.md's Technical debt register has a row that the next release
+  removes `--effort` from `model-record-emit.sh` (#413 or #424) and no longer
+  carries the rows on the same-model effort check or on a self-reported
+  effort
+
+### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v2 in #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
+**Covers:** F9, F26, F39
+- Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, and fixture projects
+  run through `pending-changes.sh` (issue #424, AC4; A33a, the adoption-registry
+  rule of #254 that a removed obligation is material)
+- When: the entries and rows are read, and `pending-changes.sh <project>` runs
+- Then: `quality-review-before-merge` is at Meaning version 4 (its text is
+  S191), `process-model-choice` at 2 and `process-multi-agent-roles` at
+  2 (#427 guard slice, S265); the `process-model-choice` entry cites
+  #424 and #413, says in its Meaning version note that effort is no longer
+  recorded, and its "Yes means" says the floor is judged on the model and
+  effort is neither chosen nor checked, that the same model at a lower effort
+  meets the floor (an accepted risk), carries the revisit trigger "when the
+  dispatch tool gains an effort parameter", no longer asks for a "model/effort"
+  per stage, still says every stage records which model was used, keeps its
+  unchanged parts and its gate in Reaches session; this repo's own
+  `process-model-choice` row ends with `(meaning v2)` citing #424 and the
+  `quality-review-before-merge` row with `(meaning v4)`; a project that
+  answered `process-model-choice` at v1 (no marker, or `(meaning v1)`) is
+  reported in the "meaning has changed" block as "answered under meaning v1,
+  now v2", not in the never-answered list, and a `(meaning v2)` row is quiet
+
+### S240 — the live design and spec text and the orchestrator's text state no effort rule as current behaviour, and the Pipeline log keeps its after-the-fact effort note
+**Covers:** F39, F40
+- Given: `ARCHITECTURE.md` sections A24 and A26, `PRD.md` sections F39 and F40,
+  and `skills/role-contracts/ORCHESTRATOR.md` (issue #424, review round 1 of
+  PR #447: findings `pr447-live-docs-still-state-effort-rules` and
+  `pr447-pipeline-log-observed-effort-dropped`; A27, A33, A33a). A25, A27, A33,
+  the debt register, `CHANGES*.md`, `wip/` and `test/` are out of scope
+- When: each document is cut into units (a list item with its continuation
+  lines and nested items, or a paragraph) and read
+- Then: a unit that states an effort rule (it compares, passes, checks, sets,
+  chooses or ranks an effort, or names an effort field or `--effort`) carries a
+  supersession mark (superseded, amended, A33, #424, no longer, history,
+  legacy, retired, removed, ignored, accepted risk, neither chosen nor, #413 or
+  S238's other allow words), a nested item inheriting its parent's mark; a bare
+  attribute name such as `effort=` in a code span and a passing word (the
+  dispatch tool has no effort argument) are not rules; deleting, rewording in
+  the past tense with a pointer to A33, or marking amended all pass; and the
+  `Pipeline log.` paragraph of `ORCHESTRATOR.md` still has one sentence saying
+  the orchestrator may note the effort the platform transcript shows, in
+  prose, after the fact, which is not a marker attribute, flag or check, while
+  A27 still lists the observed effort (the two documents agree). Red today:
+  five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
+  sentence
+
+### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
+**Covers:** F39, F40
+- Given: every `lib/*.sh` (issue #424, review round 1 of PR #447, finding
+  `pr447-lib-comment-typo-and-effort-word`; QA round 1 Developer note 2)
+- When: they are read as text
+- Then: none contains the word effort in any case (a comment included), and no
+  pure comment line contains `;;` (a case arm's own `;;` is code and is not
+  looked at). Red today: the `marker_emit` header comment in `lib/model-record.sh` (one effort word, one `;;`)
+
+### S242 — rec_scan reads a well-formed whole line as one ok row with its exact fields, under three locale environments (R1)
+**Covers:** F40
+- Given: the sourced `lib/model-record.sh` (issue #425, slice V4 of #411, AC1/AC6;
+  A31, A31a, A32a): a matrix of strict record lines built from named parts (every
+  stage with and without a floor-basis; a model with spaces; legacy `effort` and
+  `same-model-exception` attributes in either order; trailing blanks, tabs as
+  separators, no blank after `<!--` or before `-->`; valid UTF-8, NEL/LS/PS,
+  invalid and truncated UTF-8 and a lone continuation byte, shell and printf
+  metacharacters, a value ending in ` model=`, an empty and a 600-byte
+  floor-basis; the `pipeline-override` kind), each alone and inside a body of
+  prose; the three locale environments C (`LC_ALL=C`), UTF8 (both set) and LANG
+  (`LC_ALL` unset, `LANG` UTF-8: how production runs a sourced lib)
+- When: `rec_scan <kind> <body>` reads the body and `rec_field <line> <name>`
+  reads the returned line
+- Then: exactly one row, `<index 1> TAB ok TAB <stage> TAB <the line verbatim>`
+  (an override's stage is `?`); `rec_field` returns `model` and every attribute
+  that was built in, byte for byte, and nothing for an absent attribute; a
+  `model-record` line is no row for kind `pipeline-override` and the reverse;
+  a body with no candidate, and the empty body, give status 0 and no rows.
+  Threat model: accidental defects (a regex typo, a bash 3.2 `[[ =~ ]]` quirk, a
+  locale that leaks into a child process, a value byte left out); no forger.
+  Red today: the three functions are stubs that return 99, so every case fails
+  on an assertion about rec_scan's status or rows. Kill table on the red
+  commit: forbid bytes 0x80-0xFF in a value, drop the trailing-blank allowance,
+  cut a value at `--`, `=`, a backtick or `$`, read a blank model, a sixth stage
+
+### S243 — each #405 defect class is a near-miss and never hides a later or earlier record; the same through a bundle (R2)
+**Covers:** F40
+- Given: a hostile line (`>` or `<` in a value, an odd quote, an open quote, `-->`
+  or `<!--` inside a value, a whole record nested in a value, invalid, truncated
+  and valid multibyte text right after `stage=`, a quoted stage, an unquoted,
+  empty, blank or missing model, a record split over two lines, an inline
+  record, text after the closing arrow, no closing arrow, two records on one
+  line, a tab, a C0 byte, DEL, a lone CR, CRLF and a newline inside a value, an
+  upper-case or bare attribute, NBSP after the colon) with one valid record
+  after it, before it, and on both sides, in one body; the same cases as one
+  bundle; an open quote at the end of body 1 and records in bodies 2 and 3;
+  U+001E inside a value (`rec_scan` only: the bundle removes the byte first);
+  three locale environments including `LC_ALL` unset with `LANG` UTF-8 (AC2)
+- When: `rec_scan` and `rec_scan_bundle` read them
+- Then: the hostile line is exactly one `near-miss` row (stage field the bare
+  `stage=` token when it is a valid stage name), every valid record is an `ok`
+  row holding its line verbatim and readable with `rec_field`, the row count
+  is the candidate count (a hostile line neither consumes its neighbour nor
+  yields a second row), and the bundle gives the same classes per body index.
+  Threat model: accidental defects of the #397/#405 rounds 1 to 4 and #402,
+  plus the shapes a careless author produces by typing a marker; a typed strict
+  line is byte-identical to emitter output and no artifact can show otherwise
+  (stated limit). Red today: stubs. Kill table: allow `>` or `<` in a value,
+  make the reader multi-line (a split record reads ok, an open quote runs on),
+  let the near-miss branch swallow the next line, read an inline record or an
+  unquoted model or a quoted stage as ok, abort on a multibyte byte
+
+### S244 — quoted text is never a record: a record in a fence, code span, blockquote or indented block is `quoted`; not on a line of its own is a near-miss; a non-candidate prints nothing (R3)
+**Covers:** F40
+- Given: bodies with a record in backtick and tilde fences (longer closer, info
+  string, three-space indent, a shorter inner run, a different closing character,
+  a closer with an info string, unclosed, closed, list-item fences, a backtick
+  info string, a four-space indented fence line, CRLF endings), in a code span, a
+  blockquote, indented four spaces or a tab, with one to three leading spaces,
+  inline, in a table or list-item line, and non-candidates (NBSP or a zero-width
+  space after `<!--`, `model-record-gate`, no colon, a finding marker, bare
+  prose; a colon-less line next to a real record still gives no row, review
+  round 1 F2, kill: the awk opener's colon made optional); the same for `pipeline-override`; and every record shape wrapped in a
+  fence one backtick longer than its longest run and in a tilde fence (AC1)
+- When: `rec_scan` reads them under the three locale environments
+- Then: the class sequence is the one the labelled oracle gives: fence shapes
+  were labelled once against GitHub's renderer on 2026-10-06 (`gh api markdown`)
+  and the comment above each says so; blockquote, indentation and the not-on-
+  its-own-line near-miss are A31a policy and are labelled as policy; every
+  wrapped row is `quoted`; an unclosed fence runs to the end of its body (a
+  later record is `quoted`); a fence whose info string holds a backtick is
+  not an opener; non-candidates give no row; an ok row always holds a line of
+  the body verbatim. Threat model: accidental quoting defects (#308, #400, #405
+  round 4); a strict line typed at column 0 outside any quoting is not stopped.
+  Red today: stubs. Kill table: drop the fence strip, read a fenced or spanned
+  record, treat 1-3 leading spaces as column 0, accept a four-space indent,
+  treat a backtick-info line as an opener, close on a closer with an info
+  string, close ``` on a `~~~` line
+
+### S245 — rec_scan_bundle resets fence state per body and keeps body order and indices; every row has four non-empty fields; same-stage records, CRLF, a lone CR and an override with `>` read as the issue says (R4 + AC6)
+**Covers:** F40
+- Given: bundles of bodies joined by U+001E (U+001E removed from each body first)
+  with an unclosed fence in body 2 and in the last body, empty and record-less
+  bodies, two records of one stage in one body and in two bodies, CRLF and lone
+  CR line endings (also around a fence and across a bundle), a `pipeline-override`
+  whose `reason` holds `>`, a record-less line, a line with a tab and a 3000-
+  byte hostile line
+- When: `rec_scan_bundle` and `rec_scan` read them
+- Then: a record after an unclosed fence is `quoted` and the fence does not
+  leak into the next body (body 3 is ok); indices count from 1 and an empty or
+  record-less body keeps its number; `rec_scan` of body i equals its bundle rows
+  with index 1; both same-stage records are rows in body order and the last ok row of the
+  stage is the later record with the later fields; CRLF and a lone CR are line
+  ends, the line field never holds a CR; the override with `>` is a near-miss and a
+  valid one is ok, both with stage `?`; every row is four tab-separated
+  fields, none empty (`?` for an unknown stage), a near-miss or quoted row
+  holds at most 400 bytes however long the line was. The design left the
+  body-index base open: this test pins 1. Threat model: accidental state leaks
+  and CR handling. Red today: stubs. Kill table: scan the concatenated bodies,
+  drop the per-separator reset, renumber bodies, strip CR instead of splitting
+  on it, drop the earlier same-stage record, print an empty stage, dump a 3000-
+  byte line
+
+### S246 — rec_field reads attributes by a left-to-right walk: first occurrence wins, a value ending in ` name=` is never an attribute, a name that merely ends in another is not that attribute (R5)
+**Covers:** F40
+- Given: strict lines such as `model="x" effort="see floor-basis=" floor-basis="the
+  real one"` (AC3), a floor-basis ending in ` model=` or ` effort=`, a chain
+  of values each ending in the next name, a model ending in ` floor-basis=`,
+  `reviewer-model`, `peak-effort`, `same-model`, `max-effort`, `xmodel`,
+  `old-floor-basis`, duplicate names, empty values, `=` and shell
+  metacharacters in values, invalid and truncated UTF-8, tabs between attributes,
+  an override reason ending in ` scope=`; and 120 deterministic generated lines
+  (a linear congruential generator, seed 425, no `$RANDOM`) whose values end in
+  other attribute names; the hijack arms of S188 move here
+- When: `rec_field <line> <name>` reads each attribute under the three locale
+  environments
+- Then: the literal case gives `the real one`; every attribute gives exactly its own
+  first value (expected from the construction, never from the reader); an
+  absent, prefix, suffix, upper-case, regex-looking or empty name prints
+  nothing; a value is data and is never evaluated. Threat model: accidental, plus a
+  typed or legacy line whose value ends in an attribute name. Red today: stubs.
+  Kill table: a first-match search over the whole line, an unanchored name match,
+  the last occurrence instead of the first, a name read as a regex
+
+### S247 — a reader failure is never "no record": a failing external tool gives a non-zero status with empty stdout; grep's exit 1 is not a failure; the failure shim must have run (R6)
+**Covers:** F40
+- Given: PATH shims (counting their own calls) for grep, awk, sed, tr, cut, wc,
+  head, tail, sort and uniq, in modes pass-through, always fail (exit 2), fail
+  from the Nth call (N = 1 to 4) and, for grep only, no-hit (exit 1); a body and
+  a five-body bundle with records; a body without a record
+- When: `rec_scan` and `rec_scan_bundle` run with the shim first on the PATH
+  (and `rec_field` with every shim failing)
+- Then: with pass-through shims the reader still reads the record and the grep
+  and awk shims were called (a vacuous scenario is red); when grep or awk
+  exits 2 the status is non-zero, stdout is empty and stderr says why; grep
+  exit 1 on a record-less body (the shim prints "0", as a real `grep -c` does) is
+  status 0, no rows, nothing on stderr; a grep step with NO count (status 1 or 0
+  with nothing printed, also a real run under `ulimit -n 3`, which leaves bash no
+  pipe) is a failure: non-zero, empty stdout, a line on stderr (review round 1,
+  F1); for every
+  tool, whenever the shim actually failed the whole read failed with empty
+  stdout (no rows of earlier bodies leak out of a failed bundle), and a tool
+  that never failed leaves a clean read; `rec_field` never returns status 0
+  with a wrong or empty value when a tool fails. A `[[ =~ ]]` result of 2 cannot
+  be injected from outside: a stated limit. Threat model: accidental (a dropped
+  `|| return`, a pipeline status from the last command, grep 2 read as no
+  match); no forger. Red today: stubs. Kill table: drop a `|| return`, treat
+  grep 2 as 1, treat grep 1 as a failure, print rows before returning the
+  failure, a reader that never calls grep, a count-less grep read as no hit
+
+### S248 — the frozen corpus: every row of test/fixtures/marker-corpus.jsonl gets its labelled class and fields from rec_scan, alone and wrapped in a fence; the counts match the fixture header; the fixture is self-consistent and clean (K1)
+**Covers:** F40
+- Given: `test/fixtures/marker-corpus.jsonl` (issue #425, AC1; A35a K1): a header
+  (the oracle commit 411699d, the snapshot date, the counts, the Phase 1a
+  floor, the intended-shifts list, the stated limits) and one JSON object per
+  row: 1290 corpus rows (every line of this public repo's issue and PR bodies,
+  comments and review bodies, 2026-10-06, that contains `model-record` or
+  `pipeline-override`; one line withheld for a personal name) and 74 synthetic
+  rows counted separately (one near-miss per A31a reason, `<` and `>` alone,
+  `--` alone, a CR in a value, NBSP and zero-width after `<!--`, `<!--
+  model-record-gate: x -->`, a value ending in ` floor-basis=`, invalid UTF-8);
+  each row has an expected class (ok, near-miss, quoted, text), the stage and
+  fields of an ok row, an oracle note, `v030` (what the v0.3.0 pipeline made of
+  the line alone) and a label-reason; the oracle for ok `model-record` rows is
+  the v0.3.0 parser (`former classification scan`, `former stage lookup`, `former attribute tokenizer` at 411699d), run
+  once and never regenerated from the new code; every other row is hand-labelled
+- When: the header and rows are checked, then `rec_scan_bundle` (one body per
+  row), `rec_scan` (every eighth corpus row and every synthetic row) and
+  `rec_field` read them, alone and with each line wrapped in a fence one
+  backtick longer than its longest backtick run
+- Then: the header counts equal the rows (corpus, synthetic, all, per class),
+  are at least the Phase 1a floor (965 lines, 396 ok), the oracle commit is
+  recorded, no ok model-record row's oracle disagrees, the intended-shifts list
+  equals the set of rows whose v0.3.0 class differs from their v2 class, and
+  the fixture holds no name the repo forbids (SHA-256 of the owner's first
+  name, as S159), no secret shape, no email address (gitleaks too when it is
+  installed); every row gets exactly its labelled class (a text row gives no
+  row), every ok row its stage, its line and every labelled attribute through
+  `rec_field` (and nothing for an absent one), every wrapped candidate row is
+  `quoted`, and the reader's aggregate counts equal the header. Threat model:
+  accidental regressions of a grammar change against everything this repo has
+  written; a regression scenario in its fixture part (green on arrival), red on
+  the stubs in its reader part. Kill table: any grammar change that shifts a
+  class, a wrong model or floor-basis out of `rec_field` for a legacy model
+  with spaces, a mislabelled indented or inline row
+
+### S249 — the property arm: every hostile byte or token at every position of a record, every byte class, a seeded generator with a fence oracle, and a scale case; every inserted record reads back exactly and nothing else is read (K2)
+**Covers:** F40
+- Given: a valid Review record with each of about 95 tokens inserted at 12
+  positions (the start, middle and end of the model, the floor-basis and a
+  legacy effort value; before and after the stage name; inside an attribute
+  name; between attributes; after the closing arrow): every C0 byte, DEL, `"`
+  `<` `>` `-->` `<!--`, tab, LF, CR, CRLF, `'` `\` backtick `$` `*` `?` `[` `%`
+  `=`, a value ending in ` name=`, a leading dash, NEL, LS, PS, NBSP, BOM,
+  zero-width, bidirectional controls, U+FFFD, an emoji, invalid, truncated,
+  overlong and surrogate UTF-8; every single byte 0x01 to 0xFF as a
+  floor-basis character; 150 generated bodies (a linear congruential
+  generator, seed 425, no `$RANDOM`) of valid records, hostile lines, noise
+  full of delimiters and fence lines, with a fence-state oracle; 60 bodies with
+  a 100 KB value and a 100 KB hostile line; `LC_ALL=C` and `LC_ALL` unset with
+  `LANG` UTF-8
+- When: `rec_scan_bundle`, `rec_scan` and `rec_field` read them, each
+  injected record with a valid sentinel record before and after it
+- Then: the expectation comes from a two-flag table of the grammar (value byte?
+  blank? ends the line?), never from the reader: a hostile token is exactly one
+  near-miss, a value byte is exactly one ok row holding the line verbatim
+  whose attributes read back, and the sentinel is always ok verbatim; every
+  byte but `"`, `<`, `>`, a C0 control and DEL is an ok floor-basis character;
+  the generated bodies' rows are exactly the oracle's (valid records outside
+  fences ok and in order, hostile lines near-miss, everything inside a fence
+  quoted, noise nothing); the 100 KB value reads back whole, the 100 KB
+  hostile line is a near-miss row of at most 400 bytes, the time is reported
+  and not failed. Threat model: accidental defects and the deliberate
+  injection shapes of #405 rounds 1 to 4; not a forger of a strict line (stated
+  limit); NUL cannot be carried in a bash argument (stated limit); the framing
+  layers of the gate (U+001E) and the collector (`\001`) get their own arm when
+  those callers move (V6 to V8). Red today: stubs. Kill table: drop one
+  injection arm (`<`, a control byte, DEL), forbid bytes 0x80 to 0xFF, let a
+  record run over a newline, abort on invalid UTF-8 under `LANG` (no
+  per-command `LC_ALL=C`), fail on a `~~~` or a longer closing fence, print the
+  whole 100 KB line
+
+### S250 — rr_rounds in lib/review-rounds.sh is the one definition of a Review round: what counts, the order, the output rows, the read through rec_scan, and a failed read is never "no round"
+**Covers:** F42, F40
+- Given: `lib/review-rounds.sh` sourced alone (it sources `lib/model-record.sh`
+  itself) and rows on stdin, `<created_at> TAB <source> TAB <url> TAB <body>`,
+  source `comment`, `issue` or `review`, the body's newlines as U+0001 (issue
+  #426, AC2 and AC4; A37). The agreed signature: it prints one row per round
+  (`R TAB <n> TAB <created_at> TAB <source> TAB <url> TAB <body>`, six fields, the
+  body field the input unchanged) and one `P` row for a body whose first
+  candidate is a Planning record after at least one round (n is the latest round
+  before it); order is `created_at`, then issue, comment, review, then input
+  order; status 0 for no round; a failed read prints nothing on stdout, one line
+  on stderr and returns non-zero
+- When: bodies are fed alone and in sets, under `LC_ALL=C`, a UTF-8 locale and
+  `LANG` only (`LC_ALL` unset), with counting PATH shims for grep, awk, sed, tr,
+  cut, head, tail, sort, uniq and wc, and with a stand-in `rec_scan`
+- Then: a body is a round when its FIRST candidate is `stage=Review`: an ok
+  record, or a near-miss (unclosed, prose before it, blank model, text after it,
+  a value with `<`); a body with no candidate and a live `pre-merge-review:done
+  sha=<40 hex>` is a legacy round; a record in a fence, tilde fence, blockquote,
+  code span, indented block or unclosed fence is no candidate and no round; a
+  first candidate of another stage (Test, Discovery, a Planning near-miss) is no
+  round even with a Review record after it; two Review records, or a record and a
+  done marker, are one round; a done marker that is prose, 39 hex, without a sha,
+  fenced or quoted is none; rounds are numbered in time order across sources,
+  ties go issue, comment, review, then input order; a Planning body before round
+  1 gives no row; a stand-in `rec_scan` that finds no candidate makes a real
+  Review record no round and one that says Review makes prose a round (the
+  records are read through `rec_scan model-record`); with every tool failing from
+  its 1st to 4th call (when it ran at least that often) the status is non-zero,
+  stdout empty, stderr non-empty, and the shim ran; a grep exit 1 with a `0` count
+  is a clean "no hit"; an invalid or truncated UTF-8 byte before a record changes
+  nothing in any of the three environments. Threat model: accidental defects in
+  real PR bodies and tools, no forger. Red today: the stub exits 99. Kill table:
+  count any Review record not the first candidate; ok records only; drop the
+  legacy round or accept it unquoted or without 40 hex; read a quoted record as a
+  candidate; count two records of one body twice; file order or swapped tie
+  ranks; number in file order; Planning before round 1 or a Planning row spending
+  a round number; change the field count or the body field; a record pattern of
+  its own instead of `rec_scan`; ignore a failing grep, awk or sort; print the
+  rounds read before a failure; an external tool without `LC_ALL=C`
+
+- Review-round-1 helper fidelity (`source-matcher-flags`): the actual
+  `test_source_match -avc` caller returns a numeric count of non-model-record
+  scanner-kind log lines, including zero with no selected lines. Correct-kind
+  delegation is green; a reached scanner call with an incorrect kind is a
+  named assertion failure, without integer-expression or fixture errors.
+  Preserve the canned-none/canned-Review controls and call-log witness. The
+  negative witness must alter the reached kind, not simply erase the log;
+  omitting inversion or counting must be caught by exact stdout/status checks.
+
+### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
+**Covers:** F28, F42
+- Given: a PR served as REST data (comments with `created_at`, reviews with
+  `submitted_at`) with Review rounds that carry `<!-- finding:<slug> status=... -->`
+  markers (issue #426 AC1, issue #421 found on PR #397; A34 F1 as superseded by
+  A37)
+- When: `finding-carryforward-gate.sh <pr-number>` runs
+- Then: with three rounds, the middle one a request-changes PR review (and
+  again a PR comment) without `pre-merge-review:done`, a slug open in round 1,
+  missing from round 2 and not mentioned in round 3 is reported, and is not when
+  round 3 resolves it (A37b); with five rounds, three of them request-changes
+  without a done marker, exactly the findings that vanished (c, d) are reported and
+  one that round 3 resolved (b) is not, and with round 5 resolving c only d is
+  reported; nothing is reported when every open slug is carried (open or resolved), with
+  one round, with no round, or when a finding is open only in the last round; a
+  human comment between two rounds is no round (it cannot carry a finding forward
+  and does not split the comparison); several vanished findings give one line each
+  (an inline marker is read) and stdout holds finding lines only; exit 0. Threat
+  model: accidental (a round type the old filter did not know, chatter between
+  rounds, endpoint order not time order). Red today: the gate calls `gh pr view`
+  which a REST-only host refuses, so it fails open and reports nothing. Kill
+  table: rounds are the bodies with a done marker; compare only the two latest
+  rounds; read PR comments only; every comment is a round; never compare round 1
+  with round 2; report every open slug of every round; a resolved marker does not
+  count as carried; a later round that carries the slug does not clear the gap; extra output
+
+### S252 — the carry-forward gate calls only `gh api repos/{owner}/{repo}/...` (comments and reviews), fails open with a warning when a fetch fails, and a failed read is a warning, never "no round" and never a false finding
+**Covers:** F28, F42
+- Given: the carry-forward gate behind a recording fake `gh` that serves REST
+  data and refuses everything else (as a Claude Code session refuses GraphQL,
+  #318), and counting PATH shims (issue #426 AC3; A34, A37, A32a)
+- When: it runs on a PR with a vanished finding, with every fetch failing, with the
+  comments or the reviews unreadable, without `gh`, with grep, awk or any other
+  external tool failing from its 1st to 4th call, with grep exiting 1 on a PR
+  without a round
+- Then: every `gh` call is `gh api repos/{owner}/{repo}/...`, a plain GET, the
+  PR's comments and its reviews are both read, no `pr view`, no GraphQL, nothing
+  written to the working directory; a failed fetch (all, comments only, reviews
+  only, no `gh`) gives exit 0, a warning on stderr and NO finding on stdout; a
+  failing tool (when the shim ran) gives exit 0, a warning, no finding (a failed
+  `sed`, `tr` or `grep` is never read as "no finding" or as a finding); grep exit 1
+  is a clean no-hit (no warning, nothing printed); the gate exports `LC_ALL=C` as
+  its first statement, sources `lib/review-rounds.sh`, calls `rr_rounds`, defines
+  no `rr_rounds`, `live_text` or `md_strip_fences`, carries no record pattern of
+  its own, no `gh pr`, no `eval`, no bash 4 or GNU-only construct, and gives the
+  same output under `/bin/bash` 3.2. Threat model: accidental (a half failing
+  fetch, a tool that exits 2, GraphQL refused by the host). Red today: the gate
+  calls `gh pr view`, has no export and no lib. Kill table: `gh pr view --json
+  comments`; a write verb; one endpoint only; exit 1 on a failed fetch; no warning;
+  a verdict from the comments when the reviews failed; a failing tool read as no
+  finding; grep exit 1 as a failure; a record pattern or an own `rr_rounds`
+
+### S253 — review-rounds.sh and the carry-forward gate count the same Review rounds, in the same order: a PR review is a round like a comment, a near-miss and a legacy body are rounds, a fenced record and the PR description are not
+**Covers:** F28, F42
+- Given: the two real scripts on the same REST data (issue #426 AC2 and AC4; A37):
+  (AC2) a comment, a PR review and a comment, the review in the other endpoint's
+  list, and the same with the review first and last, and a comment and a review
+  at one time; (AC4) a near-miss Review body (three shapes), a PR review that
+  holds a fenced Review record (fence, tilde fence, blockquote, code span,
+  indented block) next to a resolved marker, a legacy done-marker body, a human
+  comment, and a PR description that holds a Review record and an open finding
+- When: `review-rounds.sh` and `finding-carryforward-gate.sh` run
+- Then: `review-rounds.sh` prints `review-rounds: 3` with the rounds at the three
+  times in time order, and the gate (x open in round 1, resolved in round 2 where
+  y opens, nothing in round 3) reports y and only y; in AC4 `review-rounds.sh`
+  counts exactly the near-miss body and the legacy body (2 rounds, at their times)
+  and the gate reports the near-miss body's finding as missing from the legacy
+  body and nothing else (if the fenced body counted the finding would be carried,
+  if the description counted its own would be reported, if either real round did
+  not count nothing would be reported). Threat model: accidental defects in real
+  PR bodies, no forger. Red today: the gate reads no REST data (and counts through
+  `gh pr view`), the script counts through its own copy of the rule. Kill table: a
+  script that reads PR comments only; reviews numbered after comments; ok records
+  only; no legacy bodies; a fenced or quoted record counted; the PR description
+  counted; one script that keeps its own definition
+
+### S254 — the carry-forward gate names the round that dropped each finding, and a slug that a later round re-flags or resolves is not reported any more (A37b)
+**Covers:** F28, F42
+- Given: the carry-forward gate behind a recording fake `gh` with REST data
+  (issue #426 AC1 as amended by Architect ruling A37b; review round 1 of PR #452,
+  finding `gate-output-names-no-round`): #421's three rounds (the middle one a PR
+  review without a done marker); a drop in round 3 of three; a human comment
+  between rounds; four rounds where `alpha` is open, missing, open again, resolved
+  and `beta` is open, open, missing, missing; the same with request-changes PR
+  reviews in rounds 2 and 4; one slug per state sequence over three or four rounds
+  for the rest of the clearing table
+- When: the gate runs
+- Then: a slug is reported if, and only if, the latest round that mentions it
+  leaves it open and that round is not the last; every finding line keeps the
+  prefix `finding-carryforward: <slug> was open in the previous round and is
+  missing from this one` and ends with `round <k>`, the A37 number of the round that
+  dropped it (a human comment takes none), with no round number outside the pair.
+  Per sequence (o open, m missing, r resolved): o m is round 2; o m r, o m o,
+  o m o o, o m o r, o m m o and m m o are not reported; o m o m is reported once, as
+  round 4; o m m is reported once, as round 2 and not round 3; o o m m (`beta`) is
+  reported once, as round 3; m m r is not reported. Threat model: accidental, no
+  forger. Kill table: no round named; the previous or the last round named; a
+  human comment numbered; every gap reported forever or only the first one; only
+  an open then a resolved clears (the earlier encoding); only a later open, only a
+  later resolved or only the next round clears; a later carry silences the slug for
+  good; the first gap named instead of the latest; one line per missing round; a
+  drop in the last round not reported
+
+### S255 — a Planning body (or any non-review body) posted between two Review rounds is no round for the carry-forward gate: it is neither compared nor does it split the comparison
+**Covers:** F28, F42
+- Given: the carry-forward gate with REST data (issue #426; review round 1 of PR
+  #452, finding `gate-planning-row-guard-untested`): round 1 with a slug open, a
+  Planning comment (also as a PR review, also a Test-stage record comment, also one
+  with an open finding of its own), then round 2
+- When: the gate runs
+- Then: round 2 carrying the slug gives nothing; round 2 without it gives the slug
+  once; the Planning body's own open slug is nobody's to carry. Threat model:
+  accidental. Kill table: the gate without its `[ "$kind" = R ] || continue`
+  filter
+
+### S256 — rr_rounds and the carry-forward gate treat "status 0 but nothing printed" from a tool that must print something as a failed read: a warning and no verdict, never "no round" and never a false finding
+**Covers:** F42, F28
+- Given: counting PATH shims that run the real tool and drop its stdout but keep
+  its status (a bash 3.2 command substitution that cannot make its pipe), for `tr`,
+  `sort`, `grep -o` and `sed s///` (issue #426; review round 1 of PR #452, finding
+  `empty-substitution-unguarded`; `rec_scan` already guards the same case)
+- When: `rr_rounds` (sourced alone, two rounds) and the gate (two rounds, one
+  vanished finding) run with a shim dropping output from its 1st to its 3rd or 4th call
+- Then: `rr_rounds` returns non-zero with empty stdout and a line on stderr; the
+  gate exits 0 with a `warning` on stderr and no finding line; every shim was
+  called (a vacuous pass is red). Threat model: accidental (fd or temp exhaustion).
+  Kill table: an unguarded `tr` decode, `sort`, `grep -o` or `sed` in the lib or the gate
+
+## #427 — record-v2 gate and merge-guard test strategy
+
+These entries finalize the incomplete QA draft comment 6100832586 after Product's
+PRD reconciliation at d90891a. The agreed design is A31a/A32a/A34a/A35a/A37;
+no new external Seam is proposed. Test kinds: hermetic CLI integration for the
+gate, hook integration for merge decisions, and bounded document/adoption
+contract checks. Fullstack Developer writes and runs tests assertion-red before
+implementation, then green; CI independently re-runs the suite. QA assesses that
+evidence without executing tests. Green-on-arrival arms must be labelled
+regressions and proved sensitive to the named mutation. A missing tool, exit 127,
+fixture error or an uninvoked failure shim is not acceptable red evidence.
+
+**Seams and oracle.** Invoke `model-record-gate.sh <pr>` with the fixture project
+as cwd and `hooks/git-guardrails` through its existing Bash hook input for
+`gh pr merge <pr>`. Use timestamped REST JSON and the existing data-driven
+fake-gh Interface, applying the real requested jq filter to that JSON; do not
+match exact jq command strings. Record endpoints/pagination, reject unexpected
+non-REST gate fetches, and capture stdout, stderr and exit status separately.
+Supply all unrelated guard prerequisites (including a HEAD-pinned review marker)
+so only role-play decides. A35's stub-gate arm uses a disposable fixture clone at
+the existing gate CLI, not a new production switch. Never call a production
+record reader to compute expected results: literal output fragments, counts,
+stage sets and independently labelled fixture outcomes form the oracle.
+
+**Baseline.** Unless stated otherwise, supply all five stages in separate bodies,
+valid model strings and a Review with `floor-basis="adequate for this change"`.
+Use explicit UTC timestamps (for example 2026-10-01T10:00:00Z and
+2026-10-01T11:00:00Z), real LF between whole-line records, and distinct ids.
+Comment JSON uses `created_at`, review JSON `submitted_at`, PR JSON `created_at`
+and a deliberately conflicting `updated_at`. Existing fixture helpers omit those
+fields: Developer supplies timestamped data before relying on an ordering test.
+Gate findings remain exit 0; a guard block is exit 2. Assert the relevant complete
+finding set, not merely that output contains one desired substring.
+
+**Boundaries.** S257-S266 cover AC1-10 and G1-G4/M1 plus a small K2 framing arm.
+S249 retains the exhaustive reader property arm; this work does not extend it
+into a parser audit. Existing reader/round regressions (#425/#426), S196 and
+S237 remain. Collector/staleness and carry-forward migrations stay in #429/#428;
+legacy splits above deliberately retain their current requirements. Existing
+Linux and macOS full-suite legs provide bash 3.2/BWK/BSD portability evidence;
+no new performance threshold, load suite or penetration suite is required.
+Estimated testing share: medium, one scenario refinement pass plus one
+Developer/CI evidence-assessment pass. Grammar cannot establish model identity,
+truth of floor-basis, override authorship or emitter provenance; fake gh cannot
+establish session receipt of stderr (#430 AC3), description-edit history, or
+real GitHub storage behavior. NUL is outside the Bash string transport Seam.
+
+### S257 — every live near-miss is named once and only ok records supply presence (G1)
+**Covers:** F27, F40
+- Given: the sole Planning candidate is
+  `<!-- model-record: stage="Planning" model="m" -->`; other stages have valid
+  separate records. Repeat the following bounded representative shapes for
+  each of the five stages: unquoted model, empty quoted model, absent model,
+  unquoted legacy effort, inline prose before/after, one-to-three-space indent,
+  odd quote, missing close, nested opener, split record, and `<` or `>` in a
+  quoted value. Include a stage that cannot be read and ordinary non-candidate
+  prose (a stage name or opener without the candidate colon).
+- When: the public gate runs in a plain project against fake-gh REST data.
+- Then: AC1 prints `no record found for stage Planning` and exactly one
+  near-miss diagnostic mentioning the quoted Planning text. Its classified
+  stage can be `?` (the existing reader contract); do not decode quoted stage
+  into a recognized stage. Every live candidate line is named exactly once,
+  including unreadable `?`; no near-miss supplies presence. Non-candidates
+  produce no near-miss diagnostic. Split/nested input follows candidate LINE
+  count, not opener count. With an additional ok record for that stage,
+  absence disappears but the near-miss diagnostic remains. A good next line
+  after a malformed line is not swallowed.
+- And: a quoted record gives no diagnostic (S258); a malformed latest candidate
+  may add the distinct latest-unreadable finding (S259). “Once” counts the
+  candidate diagnostic, not all output lines mentioning the stage.
+- Falsifiers: count a near-miss as presence; emit only latest diagnostics;
+  suppress `?`, duplicate a candidate diagnostic, or consume the next line.
+- Test mapping: new `test/cases/s257_gate_near_miss_presence.sh`; rewritten
+  S202 matrix may share fixtures. Replaces gate input classes from S194/S197
+  and unreadable fields from S202. Strict syntax is not an effort-floor rule.
+
+### S258 — quoted records supply neither role-play evidence nor latest candidates (G3)
+**Covers:** F27, F38, F39, F40
+- Given: an opted-in project with all five whole-line stage records inside one
+  fenced comment and no other records (AC2); backtick and tilde fence arms.
+  Bounded controls wrap the same examples in code spans, blockquotes and
+  four-space indented code. Another setup has separate live stages and a live
+  Review without basis, followed by a newer quoted Review with basis.
+- When: the gate runs via timestamped fake gh.
+- Then: quoted-only input has all five stages missing, one opted-in
+  `role-played: stages missing: Discovery, Planning, Test, Implementation, Review`,
+  no “stages in one text” finding, and no near-miss diagnostic for the quoted
+  candidates. The newer quoted Review cannot hide the live Review's one
+  missing-floor-basis finding. Repeating an ok stage alone gives no multi-stage
+  finding; two distinct live stages on separate lines in one body do.
+- Controls: five complete live bodies are clean; a fence opened in one body
+  cannot quote the next body's record; an unclosed fence quotes through the
+  end of its OWN body. A code span on an earlier line cannot hide a later
+  whole-line record. Report prose quoting a missing-stage message supplies
+  no presence. Opt-out still gives ordinary missing-record lines without
+  `role-played:`. Include quoted examples before, after and beside live lines.
+- Falsifiers: read role-play/latest from raw bodies; use quoted rows as
+  presence; let fence state leak between bodies; count same-stage repetition
+  as multi-stage; strip backticks inside a valid record value (S264).
+- Test mapping: new `test/cases/s258_gate_quoted_evidence.sh` and rewritten
+  S183. Replaces retired S201/S205 gate arms; their collector/label controls
+  are retained in S151/S152, not required to agree with the v2 gate on indent.
+
+### S259 — latest means timestamp-latest candidate, with no fallback from a near-miss
+**Covers:** F27, F39, F40
+- Given: older ok Review round 1 on Implementation's model, with no basis,
+  and newer Review round 2 with readable bare stage but invalid model/value.
+  Other stages are complete. Put round 1 in a PR review (`submitted_at`) and
+  round 2 in a comment (`created_at`); then exchange source types and reverse
+  the array/fetch ordering relative to time.
+- When: the gate runs (AC3).
+- Then: older ok still supplies Review presence (no missing-Review line), the
+  newer near-miss is named once, and the gate prints
+  `model-record: the latest stage=Review record is unreadable, so no earlier record is used`.
+  No missing-floor-basis/floor check may be taken from round 1. Repeat with
+  round 1 carrying a basis to exclude both silent fallback and stale failure.
+  Reverse chronology: newest ok Review without basis gives that basis finding;
+  the older near-miss is still named but no latest-unreadable Review finding.
+- Bounded ordering matrix: for each stage, an older ok plus newest recognized
+  near-miss gives that stage's latest-unreadable finding without absence;
+  newest unreadable Implementation also skips dependent floor comparison.
+  A latest ok Review still needs its OWN basis (S264). A quoted newest record
+  is not a candidate (S258). An unknown `?` cannot displace a named stage.
+- Timestamp controls: an older description with a much newer `updated_at`
+  cannot replace a newer comment; a newer PR `created_at` description can.
+  Equal-time sources are ordered issue, description, comments, reviews (last
+  wins); use an ok Review without basis against one with basis to observe
+  selection, and test each adjacent source tie. Two same-stage records in
+  one body use the later line. Reverse array order for unequal timestamps.
+- Issue-description tie: retain `Fix #239` in the PR title/body while both
+  sources carry equal-time competing Review records. The description has
+  basis, the issue lacks it, and no later source carries Review. Require
+  evidence that the fake-gh issue-comments endpoint was fetched; the normal
+  order gives no missing-basis finding. Reversing only the issue/description
+  source ranks must produce the missing-basis finding and fail the arm.
+- Falsifiers: append/fetch order rather than timestamps; select latest ok;
+  use description `updated_at`; reverse source tie order; first-line wins;
+  read floor-basis from an older record.
+- Test mapping: new `test/cases/s259_gate_latest_candidate.sh`, timestamp
+  rewrites in S130/S202. Replaces the retired gate “malformed never wins”
+  assertions in S197/S199; collector/staleness now use strict candidates (S271/S267).
+
+### S260 — fetch and reader failures are visible unchecked checks, never false absence
+**Covers:** F27, F38, F40
+- Given: an opted-in baseline with endpoint-specific failures: PR comments,
+  PR reviews, PR description and a closing issue's comments. Use 403, 500 and
+  transport failure controls for the closing issue, separately from S261's
+  genuine HTTP 404. Include a plain-project control.
+- When: the gate runs (AC4); separately inject the main-path reader failure
+  through a counting PATH shim for its external candidate-count grep (exit 2),
+  then its reader awk. Forward all unrelated calls to the real tool.
+- Then: each failing opted-in invocation exits 0 and prints a nonempty reason
+  on stdout prefixed `role-play-unchecked: `. Incomplete input produces no
+  invented missing-stage/role-play/floor verdict. Reader failure also prints
+  exactly one `model-record:` reader-failure finding and skips dependent
+  checks (AC7); the relevant shim invocation count must exceed zero.
+  Plain-project reader failure still gives that finding but no role-play.
+- Controls: a legitimate no-hit grep result (exit 1 with numeric zero) on
+  successfully fetched non-candidate prose produces ordinary absence, never
+  reader-failure/unchecked. Empty output from a tool required to print a
+  numeric count is reader failure, not no-hit. Failed reviews through the real
+  guard must warn on stderr and permit when other prerequisites pass (S263).
+- Falsifiers: suppress unchecked stdout; infer absence from incomplete input;
+  swallow reader failure; duplicate its main finding; treat grep exit 1 as
+  failure or empty successful output as a zero count. An unused shim is a
+  failing test, not permission to weaken the invocation precondition.
+- Test mapping: new `test/cases/s260_gate_unchecked_failures.sh`; S130 retains
+  no-gh warning controls. Injection selection may inspect arguments, but all
+  behavior assertions use public stdout/stderr/status; no new external Seam.
+
+- Review-round-1 injection fidelity (`reader-failure-shim-selection`): the
+  grep shim selects the surviving candidate-count grep and delegates every
+  unmatched grep call to real grep; the awk shim selects the surviving reader
+  mode=rec invocation and delegates every unmatched awk call to real awk.
+  Each arm has a persistent tool/argument call witness proving the intended
+  invocation ran, separately for grep exit 2, grep successful empty output,
+  and awk exit 2. Include an unrelated-call forwarding control with unchanged
+  real-tool output/status. Preserve opted-in/plain-project assertions and
+  legitimate no-hit numeric-zero controls. A deliberately unmatched selector
+  must fail the reachability assertion; swallowing a reached failure must
+  fail the public reader-failure/unchecked assertions, not setup diagnostics.
+
+### S261 — a genuine missing closing reference is ignored, not unchecked
+**Covers:** F27, F38, F40
+- Given: PR body `Fixes #999999`, genuine HTTP 404 for that closing issue,
+  and separate valid records for the other four stages in an opted-in project.
+- When: gate and merge guard run on the fake REST responses (AC5).
+- Then: stdout includes
+  `model-record: closing reference #999999 does not exist and was ignored`,
+  `no record found for stage Discovery` and
+  `role-played: stages missing: Discovery`, but no `role-play-unchecked:` for
+  the 404. Gate exits 0; guard blocks (2) on role-play, with the note only
+  context. Guard's other prerequisites are already satisfied.
+- Controls: another valid closing issue supplies Discovery, so the ignored
+  typo produces only its note and cannot block. An empty successful comments
+  array is readable input (absence), not 404; 403/500/transport failures give
+  unchecked, not the missing-reference note (S260).
+- Falsifiers: classify all gh failures as 404 or every 404 as unchecked; abort
+  collection after a typo instead of reading another valid closing reference.
+- Test mapping: new `test/cases/s261_gate_missing_closing_reference.sh`;
+  retain S130 title-only closing-reference discovery.
+
+### S262 — only a live strict override waives exactly its declared scope (G4)
+**Covers:** F38, F40
+- Given: one missing stage or one body with two distinct stages in an opted-in
+  project; override `<!-- pipeline-override: decided-by="human" scope="single-session" reason="approved exception" -->`
+  as a whole column-0 line in a separate live body. Invalid variants have
+  `<` or `>` in reason (AC6), an empty/missing decided-by or reason, invalid
+  scope, a control byte, or prose on the same line; quoted variants use fence,
+  span or blockquote. Stage records remain unchanged between arms.
+- When: the gate runs, varying override source issue comment, description,
+  PR comment or PR review (with timestamps).
+- Then: valid single-session waives all role-play findings with a waiver note,
+  not a `role-played:` prefix. Each invalid live override is named once as an
+  override near-miss and waives nothing; quoted overrides are not diagnostics
+  or waivers. `skip=Planning` waives only Planning absence: another missing
+  Test remains missing and a multi-stage body still yields its finding.
+  Exercise `skip=<Stage>` for all five stages with one stage absent at a time.
+- Controls: ordinary model-record presence diagnostics are not erased by a
+  role-play override. Invalid `>` reason and valid reason in otherwise
+  identical data must respectively retain and remove role-play findings.
+- Falsifiers: retain old `[^>]*-->` extraction; tolerate `<`/`>` reason;
+  accept inline/quoted override; waive every stage for a skip scope.
+- Test mapping: new `test/cases/s262_gate_strict_override.sh`, rewritten S183.
+  The check validates syntax and scope, not who authored the decision.
+
+### S263 — the merge guard blocks only role-play, shows cause/remedies and warns on unchecked (M1)
+**Covers:** F38, F40
+- Given: an opted-in baseline whose only Planning candidate is
+  `Done. <!-- model-record: stage=Planning model="m" -->` (AC8), and a valid
+  HEAD-pinned review marker for the independent merge prerequisite.
+- When: the existing hook Interface receives `gh pr merge 246`.
+- Then: exit 2 with `role-played: stages missing: Planning` as the blocking
+  reason, near-miss context naming “not on a line of its own”, and BOTH
+  remedies: re-post a whole line using `model-record-emit.sh`, or supply a
+  valid `pipeline-override`. An additional separate ok Planning gives exit 0
+  despite the remaining near-miss diagnostic. Re-posting the line and adding
+  a valid single-session override are separate integrated permitting arms.
+- A35 stub-gate truth table (all other merge prerequisites pass):
+
+  | Gate stdout | Hook exit | Required hook stderr/message |
+  | --- | --- | --- |
+  | empty | 0 | no role-play block or unchecked warning |
+  | `model-record: <near-miss context>` only | 0 | no role-play block |
+  | `role-play-unchecked: reviews fetch failed` only | 0 | warning containing the unchecked line |
+  | `role-played: stages missing: Planning` plus near-miss context | 2 | role-play reason, context and both remedies |
+  | unchecked plus role-played plus context | 2 | unchecked warning and role-play block with context |
+
+- Integrated AC4 control: fake gh fails the reviews endpoint, so the actual
+  gate produces unchecked stdout; guard prints it as a warning and exits 0.
+  Opt-out/no-file controls do not run the role-play block. Preserve S186's
+  missing-review-marker and explicit escape-hatch decisions independently.
+- Falsifiers: block on `model-record:` or unchecked alone; drop context,
+  warning, or either remedy; conflate warning-only with cleared checks.
+- Test mapping: new `test/cases/s263_guard_record_v2_decisions.sh` plus S186
+  rewrite. Fake-hook evidence proves printed stderr only; actual session
+  receipt belongs to #430 AC3, not an assertion in #427.
+
+### S264 — latest ok Review requires its own non-blank basis, independent of effort (G2)
+**Covers:** F27, F39, F40
+- Given: latest ok Review with absent, empty quoted or whitespace-only quoted
+  floor-basis (AC9), with and without an older basis and with and without
+  Implementation presence; use a plain project to isolate floor diagnostics.
+- When: the gate runs on timestamped REST bodies.
+- Then: exactly one missing-floor-basis finding for the latest ok Review,
+  even when Implementation is absent (that absence has its own diagnostic).
+  Earlier basis cannot fill it. Latest near-miss instead follows S259 and
+  skips its dependent basis check. A legacy `same-model-exception` cannot
+  substitute. Valid non-blank basis is not evaluated for honesty/capability.
+- Controls: same-model lower legacy QUOTED effort, absent/empty/odd quoted
+  effort, same models and different models with valid basis produce no
+  effort/capability finding. An unquoted effort is a syntax near-miss (S257).
+  A valid basis containing backticks, `$`, `$(...)`, `--` or ` model=` is read
+  as part of the whole-line record, not stripped as a code span (#404 item 5).
+  Include the retired S194 valid `--` content without tolerating `<`/`>`/LF.
+- Falsifiers: compare effort; require a different model; borrow older basis;
+  treat exception as basis; skip basis when Implementation is absent; span-strip
+  a valid record's value. Keep S237's model-only regression coverage.
+- Test mapping: new `test/cases/s264_gate_latest_review_basis.sh`; update
+  gate S189 expectations/fixtures to this contract without changing collector
+  S190/S237 semantics. Rewrite S130/S202 gate arms as mapped above.
+
+### S265 — meaning versions, adoption and grammar documentation match the gate (AC10)
+**Covers:** F9, F26, F38, F39, F40
+- Given: bounded sections of `CHANGES.md`, own `WORKFLOW-ADOPTION.md`,
+  model-choice “Marker grammar” and `ARCHITECTURE.md` A18; existing
+  pending-changes CLI with fixture adopters answered at old/current meaning.
+- When: document contract tests read those sections and
+  `pending-changes.sh <fixture-project>` runs.
+- Then: process-multi-agent-roles is Meaning version 2, its “Yes means” names
+  refusal of inline-only records and `<`/`>` override values, and own adoption
+  row reconfirms v2 with reasoning. Old v1 (implicit or explicit) resurfaces
+  as meaning changed v1 -> v2, current v2 is quiet.
+  quality-review-before-merge remains v4, with whole-line/column-0 and no
+  double-quote/angle/control-in-values grammar added, and own v4 adoption is
+  retained. process-model-choice stays v2. No second bump to v5/v3.
+  model-choice points to A31 and states both reader rules; A18 override grammar
+  follows the strict values/line rules. No permissive legacy grammar is current.
+- Falsifiers: omit/over-bump meaning, leave own adoption at old meaning,
+  suppress old-adopter resurfacing, or leave permissive grammar in A18/model-choice.
+- Test mapping: new `test/cases/s265_gate_meaning_and_docs.sh`; amend existing
+  S191/S239 document tests and the usual S90 snapshot if it carries changed
+  text. These are Developer edits; QA changes only scenario contracts.
+
+### S266 — small K2 through fake gh preserves body framing under U+001E injections
+**Covers:** F27, F38, F39, F40
+- Given: timestamped REST JSON consumed through the REAL fake-gh jq path;
+  actual U+001E bytes inserted into a fixed small corpus, not the printable
+  characters `\u001e`. Approved ingestion removes body U+001E before appending
+  transport separators; this differs deliberately from single-body `rec_scan`,
+  where the byte is a control. Fixtures/oracles are literal, not generated by
+  calling the reader. R means a whole-line stage record, LF is a newline.
+- When: the opted-in gate runs for each row below, with all unmentioned stages
+  supplied in distinct baseline bodies and Review basis valid unless specified.
+- Then: the following bounded injection table holds after ingestion:
+
+  | Arm | Raw body shape | Literal expected gate behavior |
+  | --- | --- | --- |
+  | K2a | U+001E before and after R, without adjacent prose | same presence/findings as R, no invented extra body |
+  | K2b | one comment with five whole-line R lines, U+001E next to each LF | all five present; exactly one “stages in one text” naming all five |
+  | K2c | five separate comments, each a whole-line R with prefix/suffix U+001E | all five present, no role-play finding |
+  | K2d | U+001E inside `model="m"` and inside Review `floor-basis="adequate"` | sanitized values stay valid; no missing-stage/basis or near-miss finding |
+  | K2e | unclosed Review quote next to U+001E in older body, good Review without basis in next body | one malformed diagnostic; latest good Review's missing-basis finding, no missing Review or latest-unreadable Review |
+  | K2f | same two bodies as K2e in reverse timestamp chronology | good Review still supplies presence; newest malformed Review is unreadable, no stale basis check |
+  | K2g | unclosed fence then U+001E in one body, whole-line R in next body | next body's R remains live; no fence-state leakage |
+
+- Each before/after/between/value/unclosed injection position is present;
+  table deletion is not a passing implementation. Put K2a/K2d injections in
+  description, comment, review and closing-issue source data to cover each
+  ingestion path; one selected body-isolation case suffices for K2e-g.
+- Small locale/line-ending replay: K2b/K2c under LF, CRLF and lone-CR record
+  line endings have the same outcomes. Invalid byte `0xff` and truncated
+  UTF-8 `0xe2 0x80` on an unrelated prose line do not hide next-line records
+  or force reader failure. CR inside a value splits it and gives a near-miss,
+  not a silently cleaned valid value. Run the fixed corpus under C, UTF-8
+  LC_ALL and LC_ALL unset with UTF-8 LANG; require the existing CI locales
+  and record bash/awk/grep platform identities for the macOS evidence.
+- Falsifiers: omit U+001E sanitization; split an injected byte as transport;
+  join bodies before scanning; leak fence/quote state; delete CR rather than
+  normalize line endings; drop byte-locale protection (invalid UTF-8 arm,
+  especially BWK). Label already-green framing/locale arms as regressions.
+- Test mapping: new `test/cases/s266_gate_bounded_framing.sh`. Replaces gate
+  S199/S200 framing inputs. Their first-value space/letter variants remain
+  valid via a quoted extra `note` field on K2e's good Review; a `-->` value
+  is now a named near-miss (S257/S259), never a good v2 record. Do not infer
+  collector/staleness correctness from it; S249's full property arm is kept.
+
+
+### S267 — role-label-staleness.sh requires a strict model-bearing record
+**Covers:** F35
+- #428 AC1; A31a/A32a D10. Public seam throughout S267-S270 is
+  `/bin/bash role-label-staleness.sh 400` with a REST fake gh ahead of PATH;
+  stdout is exactly one `role-label-staleness: issue #400 — <status> (<detail>)`
+  line and exit 0. Assert the literal status fragments below and named
+  causes, rather than pinning incidental wording of the whole detail.
+- Given: one `role:architect` label, all reads succeed, no other candidates.
+  Whole column-0 `<!-- model-record: stage=Review model="claude-sonnet-5" -->`
+  yields ` — stale (` and `expected role:reviewer`. The same with legacy
+  `model="Claude Sonnet 5" effort="medium"` also yields stale (reader accepts
+  model spaces and ignores effort; no emitter rules applied to the reader).
+- Then: separately replace the candidate by `<!-- model-record: stage=Review-->`,
+  `<!-- model-record: stage=Review model="" -->`,
+  `<!-- model-record: stage=Review model="   " -->`,
+  `<!-- model-record: stage=Review model=claude-sonnet-5 -->`,
+  `<!-- model-record: stage=Review-draft model="claude-sonnet-5" -->`, and
+  `<!-- model-record: model="claude-sonnet-5" -->`.
+  Every arm yields ` — indeterminate (` and names a near-miss plus its
+  candidate/cause; all arms containing `stage=Review`, including Review-draft,
+  name `stage=Review`; the missing-stage arm names `stage=?`. Review-draft
+  remains a near-miss with `the stage is quoted, missing or not one of the five names`:
+  the reader's diagnostic stage token is distinct from strict record acceptance.
+  No candidate yields ` — in-sync (` and the literal
+  `no model-record marker evidenced yet` fragment, proving absence is distinct.
+- Repeat missing-model case with `role:reviewer` as the named S152 F-5
+  intentional reversal; retain S152 g1 unchanged (AC2 regression).
+- Falsifiers: accept a record without model; accept Review-draft as an ok Review record;
+  ignore near-misses. New file `test/cases/s267_role_label_v2_presence.sh`.
+
+### S268 — role-label-staleness.sh separates quoted records from whole-line near-misses
+**Covers:** F35
+- #428 AC2; A31a/A32a. Given: label `role:product`, successful issue-only
+  reads and only `<!-- model-record: stage=Test model="claude-sonnet-5" -->`.
+  Live whole-line control yields ` — stale (` and `expected role:qa`.
+- Then: put that same candidate separately in a backtick fence, tilde fence,
+  inline code span, blockquote, four-space indent, and tab indent: each yields
+  ` — in-sync (` with `no model-record marker evidenced yet`, no `stage=Test`
+  in the verdict and no near-miss cause. This includes original S152 g1.
+  Fence state is body-local: unclosed issue-comment fence quotes its own Test,
+  but a next comment's live Test yields stale with expected role:qa.
+- Prefix the candidate with `prose `, suffix it with ` prose`, wrap in a
+  table cell, or indent by one/two/three spaces: each yields
+  ` — indeterminate (`. The suffix-only arm names
+  `text after the closing --> or no closing -->`; the prefix, table-cell and
+  one/two/three-space arms name `not on a line of its own`.
+  Use valid model-bearing records so rejection cannot be due to missing model.
+- Repeat live and fenced controls in a kept PR review with successful real
+  closing-reference data; assert the review endpoint was answered and used.
+  Closing keyword quote filtering remains S152 coverage through shared live_text.
+- Falsifiers: scan stripped prose instead of raw candidates; accept inline
+  records; count quoted rows; share fence state across bodies.
+  New file `test/cases/s268_role_label_v2_quoting.sh`.
+
+### S269 — role-label-staleness.sh chooses the latest candidate in chronological source order
+**Covers:** F35
+- #428 AC4; A37. Given: one `role:architect` label and a valid Review
+  `<!-- model-record: stage=Review model="claude-sonnet-5" -->` at
+  2026-10-01T10:00:00Z, with missing-model Review candidate at 11:00:00Z.
+  Then: ` — indeterminate (` with near-miss stage=Review, never stale;
+  reverse the timestamps, keeping fetch order fixed, and get ` — stale (`
+  with `expected role:reviewer`. Older near-miss is superseded, not globally fatal.
+- Exercise pairs across issue body/comments, PR description/comments and
+  reviews; descriptions use creation timestamps, comments created_at,
+  reviews submitted_at. Put timestamped fixtures in reverse retrieval order
+  and permute linked PR timeline order: verdict remains chronological.
+  A description's newer updated_at must not make its older near-miss win.
+- Equal timestamps use issue, description, comments, reviews source order:
+  put valid Review in earlier source and near-miss in later source to get
+  indeterminate; swap candidate payloads to get stale. Within one body later
+  Review line wins; test both valid/near-miss orders. A newer quoted Review
+  never supersedes a live candidate. Invalid unknown-stage candidate stays
+  named indeterminate rather than being coerced to an existing stage.
+- Keep lower-stage live Test alongside latest unreadable Review to prove
+  no fallback to either older Review or lower-stage max-stage verdict.
+- Fixtures must provide actual timestamps through current REST --jq output;
+  old TEXT-only shims cannot prove timestamp ordering. Assert consumed endpoints
+  and unmatched-call witness empty, with positive control proving witness reachable.
+- Falsifiers: global any-near-miss flag; max-stage union; endpoint/fetch order;
+  description updated_at; first line wins. New file
+  `test/cases/s269_role_label_v2_latest.sh`.
+
+### S270 — role-label-staleness.sh caches one counted scan per 60-body bundle
+**Covers:** F35
+- #428 AC3; A32a scale evidence. Given: issue plus kept closing PR source
+  fixtures containing exactly 60 framed bodies total and one 100 KB prose
+  line, with valid Test and Review in distinct bodies; label role:architect.
+  Every REST read succeeds and endpoint/body counts are witnessed. Expected
+  public verdict contains ` — stale (` and `expected role:reviewer`, exit 0.
+- Count existing public `rec_scan_bundle` invocations with a test-only shell
+  function shim wrapping the actual function, logging to a file (subshell-safe)
+  and delegating unchanged. Use a scratch copied script/lib tree or Bash startup
+  wrapping, not a production seam. Assert exactly one call for every actual
+  bundle and total one for the collected corpus; assert kind model-record,
+  60 transport bodies and the 100 KB line actually reach it. Zero calls fails.
+  Do not substitute a fixed scanner result or infer count from source grep.
+- Repeat latest-near-miss and quoted controls at this scale with the same count:
+  status indeterminate and stale respectively; payload of the scan is unchanged
+  by the shim. Its positive control records one delegated direct invocation,
+  proving the counter can fire. A deliberately doubled scan makes count fail.
+- Report elapsed time and bash/awk/grep identities on macOS with `/bin/bash`
+  (3.2) and platform tools. The 2 s soft marker-reading target is reported,
+  never a hard assertion; distinguish scan time from end-to-end fake-gh time.
+  Linux and macOS CI re-execute behavior/count assertions independently.
+- Existing live_text failure regression remains mandatory; a reached PATH awk
+  failure shim returns nonzero and yields indeterminate, never no-evidence
+  in-sync. Count its invocation to avoid a vacuous failure test.
+- New file `test/cases/s270_role_label_v2_counted_bundle.sh`. No collector
+  migration, collector timing promise, or #429 cleanup is inferred from this case.
+
+
+### S271 — Collector v2 presence, quoted-only evidence and latest candidates
+**Covers:** F27, F34, F39, F40
+- #429 AC2/3/4/7, C1. Seam: `/bin/bash compliance-evidence.sh 279` with
+  successful REST fake-gh; exit 0, exact eight-line/six-row S150 table and
+  closed status vocabulary. Supply all four gate-1 stages in controls and
+  Implementation/Review model="claude-sonnet-5"; gates 1/2 are `evidenced`.
+- Only Planning in a code span, backtick/tilde fence, blockquote, four-space
+  or tab indent: gate 1 `not-evidenced`; preserve literal suffix
+  `but only inside a code span, fenced block or blockquote, so it was read as quoted illustration and not counted as live evidence`.
+  Bare delimiter-free prose is `not-evidenced` without this suffix.
+  `Done. <!-- model-record: stage=Planning model="m" -->` gives gate 1
+  `indeterminate`, naming `stage=Planning` and `not on a line of its own`;
+  no only-quoted suffix. Name this distinct arm `AC4 inline Planning`; it
+  scopes the #308 AC3 reversal to model-record stage evidence. Preserve
+  existing S151 Q6 gate-3 inline done-marker `evidenced` (also Q7/Q8),
+  whose payload is not a model-record candidate. Prefix/table/1-3-space
+  and suffix-only cases name the reader's exact cause, including
+  `text after the closing --> or no closing -->` for suffix-only.
+- Review good at 2026-10-01T10:00:00Z and missing-model Review at 11:00:00Z:
+  gate 2 `indeterminate`, naming `stage=Review` and
+  `no quoted, non-blank model`; never earlier model-only pass.
+  Reverse timestamps with retrieval order unchanged: gate 2 `evidenced`
+  with model-only floor evidence and `claude-sonnet-5`. Newest different-model
+  good Review gives `unverifiable-from-artifacts`, names both models and
+  `their capability ordering isn't machine-checked`. Newest quoted candidate
+  never supersedes good; older malformed candidate is superseded.
+- Exercise description/comments/reviews and issue comments, reversed fetch
+  order, equal timestamp source order issue/description/comments/reviews,
+  later same-stage line within a body, and description updated_at newer than
+  its created_at. Test both payload orders for ties. Actual created_at and
+  submitted_at must reach transport; TEXT-only legacy fixtures cannot prove
+  ordering. Count consumed endpoints and record unmatched calls; a deliberate
+  unmatched call must trip the witness. Preserve the two-PR isolation control:
+  invoking 279 then a different fixture PR cannot reuse the prior cache.
+- Falsifiers: endpoint order, first-line selection, updated_at ordering,
+  any-near-miss-global flag, inline acceptance, quoted-as-latest, stale cache.
+  New file test/cases/s271_collector_v2_candidates.sh.
+
+### S272 — Collector normalized conflict keeps closing issues distinct
+**Covers:** F34, F39
+- #429 AC7, C1 regression. Successful actual closing keywords for #265/#266;
+  Implementation sonnet on PR. Issue Review sonnet versus opus yields gate 2
+  `indeterminate` with literal `conflicting`, both `issue #265`/`issue #266`
+  and both model strings; newer timestamps or PR Review cannot erase this
+  inter-issue conflict. Opposite retrieval order retains the same verdict.
+- Equal normalized models (`Claude Sonnet 5`, `claude-sonnet-5-20260101`)
+  with different legacy efforts yield `evidenced`, model-only floor, no
+  conflict and no effort comparison. Alias `sonnet` versus full id remains
+  conflict. Single issue with newer good/near-miss follows S271 latest rule.
+- Preserve S195 missing-lib exit 3/header naming lib/model-record.sh;
+  parser-lookalike arms transfer to S188/S246 and S271 invalid-order cases.
+- Falsifiers: raw model conflict key, effort key, latest source overrides
+  inter-issue conflict. New file test/cases/s272_collector_v2_conflict.sh.
+
+### S273 — Collector scans each raw bundle once and contains hostile bodies
+**Covers:** F34, F40
+- #429 AC5, A32a/K2. Exactly 60 bodies including one 100 KB prose line;
+  gate 1/2 controls `evidenced`. A test-only shell wrapper delegates the actual
+  rec_scan_bundle unchanged and logs each invocation to a subshell-safe file.
+  Assert one invocation per actual raw bundle, correct model-record kind,
+  body count and actual long-line arrival; zero calls fails. Exercise latest
+  near-miss (`indeterminate`) and newer quoted (`evidenced`) at equal scale.
+  Direct delegated positive control fires once; duplicate scan mutation fails.
+- Smaller deterministic hostile corpus (seed 429) replays value-position
+  quotes/delimiters/shell tokens, C0 except NUL, DEL, invalid/truncated UTF-8,
+  NEL/LS/PS, CR/CRLF and actual U+001E/U+0001 transport collisions through
+  fake-gh. Unclosed marker/fence in body N never swallows body N+1 good record;
+  next good newest gives `evidenced`, swapped newest malformed gives
+  `indeterminate`. Valid `--` and shell-like values remain data; forbidden
+  delimiters are near-misses. No shell sentinel may be executed. Pin bounded
+  diagnostic line (reader 400-byte cap) and table framing for hostile tabs/pipes.
+  NUL in Bash arguments is a stated untestable limit.
+  Transport oracle is distinct from raw grammar: existing codec replaces
+  literal U+0001 with space before encoding LF as U+0001 and decoding it;
+  literal U+001E is removed before trusted bundle separators are added.
+  Newest `model="x<U+0001>y"` becomes strict `model="x y"`: gate 2
+  `unverifiable-from-artifacts` versus Implementation claude-sonnet-5,
+  naming `x y`; newest literal U+001E becomes `xy`, likewise unverifiable.
+  These controls prove neutralization, not forbidden-byte rejection. Older
+  versions followed by newest good Review remain `evidenced`.
+  Assert both collisions preserve actual body count and cannot manufacture
+  a separate candidate/body; inject apparent record text around the sentinel
+  and verify it cannot become a trusted new body. A removed neutralization
+  mutation must fail this body-count/status control.
+  Retain direct reader S243/S248 true C0 coverage, including raw U+0001
+  inside a rec_scan value; it is a near-miss. U+001E is framing at the bundle
+  seam, so only sanitized bodies are passed to that seam. At collector seam
+  other retained control bytes are near-misses; CR/LF/CRLF become line ends
+  and split the record, giving indeterminate. Construct byte values without
+  command substitution trimming trailing LF; assert payload bytes actually
+  reached JSON and decoded scanner input. C1/invalid UTF-8 reader values
+  remain valid data, separate from the emitter's stricter deny-list.
+- Reached failing scanner/tool shim returns nonzero: affected row
+  `indeterminate`, never no evidence or model pass; log invocation and positive
+  control. Report scan and complete run elapsed times separately; 2 s macOS
+  soft budget is reported, never failed. Report actual tool identities.
+- Retirement input transfer: S194 forbidden values -> S271/S273 and S243;
+  valid double-hyphen content -> S273. S196 parser locale/failure -> S247/S273
+  and existing K3; keep any live reader-failure regression. S197 odd quote,
+  missing close/nesting/suffix and good-after-bad -> S271/S273. S199 open quote
+  and space/letter-first next body -> S273 (strict good), delimiter-first
+  values -> S243 near-miss. S200 forged separator -> S273. Delete retired
+  files/headings together only at Developer red checkpoint; do not retain
+  obsolete malformed-newest-good-fallback or arbitrary-value acceptance.
+- Existing K3 is mandatory because this slice touches lib/: full macOS suite
+  via /bin/bash, BWK/BSD identities and UTF-8 locale precondition; actual
+  fence-awk C-prefix removal with LC_ALL unset, LANG=en_US.UTF-8 and byte
+  377 must be red, valid multibyte control green, BSD strict-count witness.
+  Syntax lint mutation is additional, never equivalent proof of K3.
+  New file test/cases/s273_collector_v2_counted_hostile.sh.
+
+### S274 — One-definition syntax lint has reached mutation controls
+**Covers:** F27, F40
+- #429 AC6/T1 exact A35a policy: outside lib/test .sh files reject regex
+  forms model-record:[[: and stage=( inside a pattern, pipeline-override:[
+  and pipeline-override:[^; outside lib reject passing model-record strings
+  to grep/awk/sed or [[ =~ ]]; helper definitions live_text/md_strip_fences/
+  rr_rounds only in lib; skill/ORCHESTRATOR text never instructs passing effort.
+  Output prefixes and documentation examples are permitted. Fixture examples
+  that specify this lint's prohibited syntax must be treated as examples,
+  not as instructions or executable matches. State `this lint can be evaded`.
+- Actual unchanged repository lint exits 0. Four independent scratch-tree
+  additions each make the same real lint nonzero with path/category evidence:
+  executable record regex outside lib/test; actual grep model-record call;
+  duplicate live_text definition; skill instruction to pass effort flag.
+  Restore each addition and prove green before next. Positive allowed
+  message/docs examples remain green. Reachability counters prove scratch
+  files were inspected; intentionally skipped-file control must fail.
+- Helper ownership is not limited to the .sh suffix: actual extensionless
+  shell shebang file `scratch-429` defining live_text must yield one exact
+  helper category/path diagnostic, nonzero lint status, then restored green.
+  This covers the existing outside-lib definition obligation; first regex
+  pattern arm stays .sh-only outside lib/test per A35a. Definition examples
+  in messages/docs remain allowed; shell source must actually be inspected.
+- Also cover awk/sed/conditional forms and all three duplicate helper names
+  with syntax fixtures. Do not replace source syntax with token presence:
+  messages/examples are allowed. No assertion of complete static analysis.
+  Falsifier: disable any of four lint arms; each killed independently.
+  New file test/cases/s274_one_definition_lint.sh.
+
+- Review-round-2 portability (`s274-portable-cache-path`): run the existing
+  real check Interface unprivileged on supported Linux and native macOS.
+  Runtime Python cache storage belongs within the existing writable disposable
+  scratch setup, independent of workstation-specific absolute roots or elevated
+  permissions. Unchanged-tree and every restoration baseline must be green;
+  cache/setup diagnostics cannot stand in for a lint rejection. Keep all four
+  independent exact category/path additions and disabled-arm negative witnesses,
+  extensionless/helper/matcher syntax controls, and permitted-example positives.
+  The supplied Linux 238-pass/1-fail result is actual pre-correction red; native
+  passing evidence does not erase it. Verify behavior through real baseline,
+  reached additions and restoration results, not a test mirroring a path string.
+
+### S275 — Last reader deletion retains emitter v2 round trip
+**Covers:** F27, F39, F40
+- #429 AC1: whole working tree (excluding .git/history) contains none of the
+  four retired reader identifiers, including stale test/header/docs references.
+  Freeze prohibited names in test via split fragments so the check does not
+  match its own specification. No retired stage-presence patterns in collector;
+  one-definition lint green; obsolete intentional-copy PRD debt gone.
+- Source lib then emit Discovery/Planning/Test/Implementation/Review and
+  wrapper output: literal lines remain as S249/E1; v2 rec_scan output is
+  exactly one ok row, rec_field gives original fields. No deleted-reader
+  call is reachable. Mutation-only scratch shim of rec_scan or rec_field
+  returns mismatched round-trip data: emitter refuses with exit 2, empty
+  stdout and existing `would not read back` stderr fragment; count calls to
+  prove actual delegation. Restore shim for green. Keep S249/E2 constraints.
+- Rewrite S188 and retire collector-only S194/S197/S199/S200 headings/files;
+  S195 retains conflict and missing-lib arms, replaces parser arms as above.
+  S196 keeps only surviving relevant locale/failure coverage and headings.
+  Update stale historical claims throughout current docs/scenarios/test source;
+  repository history is explicitly excluded. Existing regression input
+  transfers above must survive removal. New file test/cases/s275_old_reader_removed.sh.
+
+
+### S276 — Unread closing issue cannot certify latest model authority
+**Covers:** F27, F34, F39
+- #429 A37 failure regression. Public collector CLI with actual `Closes #265`
+  title; PR description/comment timestamps 2026-10-01T10:00:00Z; strict
+  Discovery/Planning/Test/Implementation and same-model Review on PR, all
+  model="claude-sonnet-5". Closing issue comments endpoint actually fails
+  nonzero after recording invocation; every other endpoint succeeds.
+  Exit 0, exact S150 table; gates 1 and 2 both `indeterminate`, evidence
+  contains `lookup failed` and states latest/superseding evidence cannot be
+  ruled out. No same-model pass, quoted-only suffix or missing-stage claim:
+  readable strict presence exists, but latest authority is unknown.
+- Witness exactly one issue265 comments fetch and nonzero failure from that
+  endpoint (not a shim that is never called). Remove closing reference with
+  same failing endpoint configured: no issue fetch and both model rows
+  `evidenced`; readable empty issue gives `evidenced`. A reached deliberate
+  unexpected-call control must trip the fixture witness.
+- Readable issue controls use real JSON + production --jq timestamps:
+  Planning and Review missing-model candidates at 11:00:00Z produce both
+  gates `indeterminate`, named stages and `no quoted, non-blank model`.
+  Move only their timestamp to 09:00:00Z: both gates `evidenced` from PR;
+  this proves issue-vs-PR chronology, never unconditional PR precedence.
+  Newer valid issue Review different model yields gate 2
+  `unverifiable-from-artifacts`, with both model names; reverse timestamps
+  gives `evidenced`. Newer valid issue Planning must be cited in gate 1's
+  model summary; older issue Planning must not displace the PR model.
+- Repeat fetch-failure with readable different-model PR Review: gate 2
+  `indeterminate`, because unread issue may carry a newer near-miss;
+  readable empty issue restores `unverifiable-from-artifacts`. Repeat with
+  two closing issues, one readable and one failed; preserve existing
+  normalized-model conflict and PR comments/reviews/reader-failure controls.
+- Gate 3 stays independent of record latest authority: matching current-head
+  done marker on PR remains `evidenced` during issue fetch failure. Absent
+  done marker during failure remains `indeterminate` with existing absence
+  uncertainty text. Preserve S151 inline-done Q6/Q7/Q8 regressions unchanged.
+- Red before production fix must include failure log and reached endpoint
+  witness; no status-only fixture bypass. Falsifiers: single-unread-issue
+  exemption; certify gate1 merely from presence; different-model early return
+  before latest-authority failure; unconditional PR-over-issue precedence;
+  extend model uncertainty to gate3's positive done evidence.
+  New file test/cases/s276_collector_unread_latest_authority.sh.
+
+## #415 — bounded orchestrator decisions and human override strategy
+
+The test seam is the existing, session-injected `skills/role-contracts/ORCHESTRATOR.md`
+and the role contract in `skills/role-contracts/SKILL.md`. A Developer test can
+read their Markdown sections and table cells, and use controlled example
+decisions to check the rule's stated outcome. It must inspect the operative
+sections, rather than pass because a term appears somewhere in historical
+prose, A29, or these scenarios. Each negative control changes one rule or
+record in a temporary copy and must fail the relevant assertion. There is
+no new external seam or live GitHub write in these tests. The Developer
+writes and runs the tests red before changing the contracts; QA assesses
+that evidence and the final `./check` result.
+
+### S277 — four seeded choices have executable rules and a log destination
+**Covers:** F44
+- Given: the decision table in `ORCHESTRATOR.md` (issue #415 AC1; A29)
+- When: its rows are read as decision, rule, and log-location cells
+- Then: separate, nonempty rows settle (1) which available tool to use for
+  a scratch run confined to a scratch directory or repo, (2) the cheapest
+  model that clears a role's known floor according to `model-choice`, (3)
+  the maintainer-approved disposition of a low-severity finding, and (4)
+  naming and the next free number under the existing convention; each row
+  says where its result is logged. A tool that writes into the real repo
+  fails the scratch example; a dearer model with the same clear floor fails
+  the model example; reuse of an answered ID fails the numbering example.
+  Removing any row or blanking its rule or log cell fails independently.
+- Decided oracle (Q1, maintainer decision 1): the low-severity row says
+  **file an issue by default**. It names one narrow exception: a text-only
+  fix may go into the PR, but only during a round already required for a
+  medium or high finding; a round with only low findings never qualifies.
+  The row keeps the existing out-of-scope `Disposition` and any
+  scope-expansion decision. A counterexample row that defaults to fixing
+  in the PR, or allows the text-only fix in a low-only round, or drops the
+  Disposition/scope-expansion rule, fails. No conditional or pending
+  wording remains.
+
+### S278 — the never-list excludes human and role decisions
+**Covers:** F44
+- Given: the table's adjacent never-list (issue #415 AC2; A29)
+- When: the contract is applied to examples of a merge into `main`, a
+  version bump, changes to the content of PRD.md, ARCHITECTURE.md or
+  TEST-SCENARIOS.md, an outward-facing publication or message, and a
+  departure from a role recommendation
+- Then: each example is outside the table's authority, even if a broad
+  row such as naming could appear to cover it. The never-list explicitly
+  names all six categories; removing any one or moving it into an allowed
+  row fails. A release-branch work-item merge is judged under its existing
+  contract, without enlarging this table's authority.
+
+### S279 — a row cannot waive a contract rule
+**Covers:** F44
+- Given: S209's fresh Reviewer rule and S214/S218's finding route (issue
+  #415 AC3; A29)
+- When: a synthetic table row suggests continuing the prior Reviewer or
+  fixing a design-class finding directly in code
+- Then: the explicit no-waiver rule makes both suggestions invalid as
+  table decisions; a waiver goes to a maintainer and the S281–S282 flow.
+  A test must fail if the no-waiver rule is removed or weakened. The row
+  scan is a bounded negative control, not general waiver detection: it
+  rejects only a row phrased like the two synthetic examples (continue or
+  reuse the previous Reviewer; fix a design finding directly in code). A
+  differently worded waiver row is not caught by the scan, so AC3 rests on
+  the tested no-waiver sentence, and Reviewer judges any new row against it.
+
+### S280 — a by-rule decision has an issue record, with no stage marker
+**Covers:** F44
+- Given: an ordinary decision under an allowed row (issue #415 AC4; A29)
+- When: the prescribed record is rendered in the work-item issue's
+  `Pipeline log` / `Decisions by rule` section
+- Then: the prose contains the date, identifiable row, and actual
+  decision, plus the objection deadline decided for Q2. Neither
+  the template nor the rendered orchestrator record contains a
+  `model-record` stage marker; an otherwise valid record in a PR comment,
+  with an empty row or decision, or with a stage marker fails. The
+  pipeline log remains the one issue comment of S211.
+- Decided oracle (Q2, maintainer decision 2): the record template states
+  the objection deadline as **until the change reaches `main`**, including
+  after a work-item merge into a release branch. A template saying only
+  "until the merge" (ambiguous), a deadline at the release-branch merge,
+  a log-only rule with no deadline, or any leftover pending wording fails.
+
+### S281 — a rejected recommendation gets one pushback before a human decision
+**Covers:** F44
+- Given: a role's recommendation and a maintainer's contrary proposal
+  (issue #415 AC5; A29)
+- When: the override flow is followed
+- Then: no decision is recorded before the recommending role gives one
+  reasoned pushback explaining the cost of the alternative; the
+  maintainer can then hold the position and overrule it; the numbered
+  human decision links that pushback. It is not sent back for repeated
+  pushback. If the recommending role is Reviewer, this dispatch is a fresh
+  Reviewer under S209. A synthetic trace with decision-before-pushback,
+  two pushbacks after the maintainer holds the position, a missing link,
+  or reuse of the Reviewer fails. Non-Reviewer reuse remains #412's choice.
+
+### S282 — an overrule leaves an Architect risk note with the #410 reference
+**Covers:** F44
+- Given: the maintainer overrules the pushback, including S218's proposed
+  waiver of the design finding route (issue #415 AC6; A29)
+- When: the numbered human decision and Architect issue report are read
+- Then: the Architect's normal-prose `Risk note` links that decision and
+  states what is accepted, its likely consequence, an early signal, and
+  when to revisit. The Architect report has its own emitted Planning
+  marker; the orchestrator's decision record has none. If a non-Architect
+  role was overruled, the flow dispatches the Architect for this note.
+  The contracts explicitly say this is the risk-note format referenced
+  by #410 AC6/S218. A missing field, missing decision link, or note only
+  in the orchestrator's markerless log fails.
+
+### S283 — completeness remains a review limit and the full check passes
+**Covers:** F44
+- Given: the four seeded choices and exclusions covered by S277–S278
+  (issue #415 AC7–AC8; A29)
+- When: the PR is reviewed and `./check` runs on the completed change
+- Then: the PR says that no mechanical test can establish whether every
+  rule-able decision from #405 is in the table or whether a live
+  orchestrator applied a row correctly; Reviewer judges those limits
+  against the diff and issue evidence. `./check` exits zero. The document
+  tests assert the four seeds and never-list, not a fabricated count of
+  all roughly 22 possible decisions.
+- Structure oracles (round 1, F44 "Structure of the injected file"; A29
+  "File structure"), on the same `ORCHESTRATOR.md`; each fails on the
+  counterexample named with it:
+  - `## Decided without asking` is the last `##` heading of the file.
+    Counterexample: a `##` heading (e.g. `## Run rules`) after it fails.
+  - The six run rules (merge self-check, model per stage, marker line, no
+    self-granted shortcuts, cannot dispatch, resume) each start a paragraph
+    before that heading, so none sits under it. Counterexample: any one
+    moved below the heading, or removed, fails.
+  - The "When a recommendation is not accepted" paragraph has a blank line
+    before and after it, so it is its own paragraph and is not adjacent to
+    the "Before asking for a merge" paragraph. Counterexample: the two
+    paragraphs on consecutive lines (the pre-fix file) fails.
+  - The file is at most 80 lines (S180's cap, unchanged). Counterexample: 81
+    lines fails. The wording of the "Limit:" sentence is not asserted.
+  - The Override paragraph contains no bare `#<digits>` reference, names
+    "When a recommendation is not accepted" and names `SKILL.md`.
+    Counterexamples: the paragraph with `(#415)` or any other bare `#<n>`;
+    without the in-file paragraph name; without `SKILL.md`.
+
+### S284 — CHANGELOG.md has dated release sections that match the tags
+**Covers:** F15
+- Given: CHANGELOG.md after the cut, and the tags v0.2.0 (2026-10-01),
+  v0.2.1 (2026-10-03) and v0.3.0 (2026-10-04) (issue #420 AC1; test file
+  `test/cases/s284_changelog_release_sections.sh`, using the
+  `changelog_section` helper in `test/lib.sh`)
+- When: its `## ` headings and the entries inside each section are read
+- Then: the first four `## ` headings in order are `## Unreleased`,
+  `## v0.3.0`, `## v0.2.1`, `## v0.2.0` (older sections follow and are not
+  asserted); each of those version headings matches
+  `^## vX.Y.Z — .+ \(YYYY-MM-DD\)$` with the dates 2026-10-04, 2026-10-03
+  and 2026-10-01 respectively. Counterexamples: v0.2.0 still dated
+  2026-09-30; a version heading without a date; v0.2.1 above v0.3.0; a
+  missing section.
+- And: the `v0.2.1` section mentions #370, #372, #373, #374, #378 and #377
+  and none of #369, #371, #392, #402, #398; the `v0.3.0` section mentions
+  #369, #371, #392, #402 and #398 and none of #370, #378, #377, #417, #407.
+  Counterexamples: the #378 entry left in v0.3.0 or Unreleased; the #398
+  entry missing; a #417 or #407 entry added.
+- And: the Unreleased section holds none of the moved entry headers
+  (`Fix #378`, `Fix #377`, `Fix #371`, `Fix #392`, `Fix #402`,
+  `Epic #370`, `Epic #369`). Counterexample: any one still there.
+- And: the retargeted S172 stays green and fails when its #378 line is
+  removed from the `v0.2.1` section in a sandbox copy. The prose of the
+  entries is not asserted, and no line numbers are used.
+
+### S285 — Unreleased carries the #408 release notes and observed acceptance results
+**Covers:** F15
+- Given: CHANGELOG.md `## Unreleased` after the cut and `CHANGES.md` (issue
+  #420 AC4a, AC5, AC6; test file
+  `test/cases/s285_unreleased_408_notes.sh`)
+- When: the Unreleased section is read
+- Then: it mentions each of #410, #414, #415, #422, #423, #424, #425, #426,
+  #427, #428 and #429 by number; it identifies #430 as acceptance evidence
+  and #420 as documentation closure (the number and the words on one line);
+  it contains each of the terms: fresh Reviewers, finding-class loop-back,
+  override, decision table, risk notes, macOS CI, shared Markdown handling,
+  effort removal, v2 reader/emitter (`v2` and `emitter`), migrated callers,
+  old-parser removal. Counterexamples: any one number or term missing; #430
+  or #420 present without its role.
+- And: #409 appears on a line containing "deferred"; #455 on a line
+  containing "paused" and "main"; #400, #413 and #421 each appear on a line
+  containing "absorbed" (case-insensitive). Counterexample: any one line
+  missing the word.
+- And: the compatibility entry (the `- **Compatibility and limits (#408).**`
+  bullet inside Unreleased, up to the next top-level bullet) names every
+  question whose `Meaning version:` differs between `git show
+  v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
+  `meaning version <new number>`. A question differs when its `## <name>`
+  section has a `Meaning version:` number in the new file that is absent from
+  or unequal to the old file's. Today that set is
+  `quality-review-before-merge` (4), `process-model-choice` (2) and
+  `process-multi-agent-roles` (2); the test derives it, it does not list it.
+  Any count the entry states in words or digits ("two answers", "3
+  questions") equals the set size. Counterexamples: the set computed from the
+  working tree alone or hard-coded; `process-model-choice` omitted; the entry
+  saying "two" while three differ; a bump invented for a question whose number
+  did not change. If tag `v0.3.0` does not resolve to a commit, the test
+  fails with a message naming the tag and "fetch tags / fetch-depth: 0", never
+  skips or passes: `ci.yml` checks out with `fetch-depth: 0`, but `macos.yml`
+  runs `test/run.sh` on a shallow checkout, so that workflow must fetch tags
+  too. Counterexample: the test passing in a clone without the tag.
+- And: the compatibility entry names the accepted limits and does not call the
+  strict reader or the lint complete. Reader: every limit name the header of
+  `lib/markdown.sh` lists as an accepted-limit bullet
+  (`continuation-line-list-fence`, `ordered-item-after-paragraph` today; read
+  from the header lines `#     * <name>:`, so a renamed or added limit is
+  tracked) appears in the entry. Lint: the entry contains `one-definition` and
+  `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
+  still states it can evade (anchor against drift). No entry line mentioning
+  the reader, the lint or `CommonMark` contains `complete`, `exhaustive` or
+  `guarantee` unless it also contains `not`, `no `, `cannot` or `outside`.
+  Counterexamples: the entry without `ordered-item-after-paragraph`; a lint
+  sentence without the evasion limit; "the strict reader is complete";
+  a header limit added without an entry mention. A pointer such as "see
+  `lib/markdown.sh`" does not substitute for the names.
+- And: it contains `--effort`, names scratch #5 and #14 as newly blocked by
+  missing stages, names scratch #10 as non-blocking under both gates, and says
+  the AC3 warning appeared in the hook transcript but did not reach the agent
+  as command output. The placeholder `to be confirmed by #430` is absent.
+  Counterexamples: a missing result, or the placeholder still present.
+- Not asserted (Reviewer judgment, AC4b and AC7 release-time): that the
+  notes are accurate against merged work, that absorbed work is not
+  presented as a duplicate feature, that #404 item 6 is not implied
+  complete, that the release PR body carries the same scope statement, and
+  that the adopter-impact and warning-visibility details match the #430
+  observation. Prose beyond the fixed terms is not asserted.
+
+### S286 — the current-version line is v0.3.0 and v0.4.0 only appears as a proposal
+**Covers:** F15
+- Given: README.md, CHANGELOG.md and the other current documentation (issue
+  #420 AC3, AC6; test file `test/cases/s286_version_line_and_proposals.sh`)
+- When: README.md line 7 and every occurrence of `v0.4.0` are read
+- Then: the bold version token on README.md line 7 is `**v0.3.0**`, and the
+  other `v0.2.0` mentions in README.md are unchanged in number (the count
+  of `v0.2.0` lines outside line 7 equals the count before the change).
+  Counterexamples: line 7 still `**v0.2.0**`; a historical `v0.2.0`
+  mention rewritten.
+- And: no `## v0.4.0` heading exists in CHANGELOG.md, and every line in
+  README.md, CHANGELOG.md, `skills/` (including the injected orchestrator file) and the root
+  documents that contains `v0.4.0` also contains `propos` (case-insensitive).
+  Counterexamples: a `## v0.4.0` placeholder heading; a line stating
+  "v0.4.0 ships ..." without the word.
+- Excluded: `TEST-SCENARIOS.md` is not scanned, because the scenarios quote
+  `v0.4.0` as test data without the word `propos`; scanning it would fail on
+  its own specification text.
+- Not asserted: that #420's PR does not merge into `main`, choose the
+  version or tag (a review fact), and AC4b.
+
+### S287 — an issue comment carrying a Review record is no PR Review round: review-rounds.sh and the carry-forward gate count the same PR rounds when the issue holds a Review record and a later Planning record (A37c)
+**Covers:** F42, F28
+- Given: the two real scripts on one recording fake `gh` (as S253) that now
+  also serves `repos/{owner}/{repo}/issues/<issue>/comments` for an issue
+  number passed to `review-rounds.sh <pr> <issue>` (issue #470 AC1-AC4; the
+  PR #469 finding `issue-review-counted-as-pr-round`; A37, A37c). Timeline,
+  all distinct instants T1 < T2 < T3 < T4 < T5: arm A (the AC4 falsifier):
+  issue comment at T1 holds an ok Review record with an open finding
+  `<!-- finding:z status=open -->`; PR comment at T2 holds an ok Review
+  record with `<!-- finding:x status=open -->`; issue comment at T3 holds an
+  ok Planning record. Arm B: arm A plus a second PR Review record at T4 (a
+  PR review in the reviews endpoint) that does not mention x. Arm C: the
+  issue Review record at T1 and a PR comment at T2 holding only a human
+  sentence (no PR round at all). Arm D: arm A with the issue comment at T1
+  holding a legacy `<!-- pre-merge-review:done sha=<40 hex> -->` instead of
+  the record. Arm E: arm A, but no issue number passed.
+- When: `review-rounds.sh <pr> <issue>` and `finding-carryforward-gate.sh
+  <pr>` run on each arm (the gate never receives the issue number)
+- Then: arm A: `review-rounds.sh` prints exactly `review-round: 1 at=<T2>`,
+  `planning-after: 1`, `review-rounds: 1` in that order (one PR round; the
+  later issue Planning still shows as a planning-after record, so the
+  chronology is intact); the gate prints nothing (x is open only in the last
+  and only round, and z, open only in an issue comment, is never reported) and
+  exits 0. Arm B: `review-round: 1 at=<T2>`, `planning-after: 1`,
+  `review-round: 2 at=<T4>`, `review-rounds: 2`; the gate reports exactly x
+  as dropped by round 2 (so the script's two rounds and the gate's two rounds
+  are the same two bodies, T2 and T4, and the issue Review is in neither
+  chain). Arm C: `review-rounds: 0` and no `review-round:` line, no
+  `planning-after:` line; the gate prints nothing. Arm D: identical stdout to
+  arm A (a legacy done marker on the issue is no round either). Arm E:
+  identical `review-round:`/`review-rounds:` lines to arm A and no
+  `planning-after:` line (no issue read at all), so the issue argument adds
+  only the Planning chronology and never a round. In every arm the counts
+  from the script equal the number of chain bodies the gate compared (derived
+  from arm A/B's x reported or not), asserted explicitly, not left implicit.
+  Threat model: accidental (the #408 holistic Review is an issue comment
+  carrying a genuine Review record; no forger). Red today: arm A prints
+  `review-round: 1 at=<T1>`, `review-round: 2 at=<T2>`, `planning-after: 2`,
+  `review-rounds: 2`; arm B prints `review-rounds: 3`; arm C prints
+  `review-rounds: 1`; arm D prints `review-rounds: 2`; arm E is green today
+  and a control. The gate's expectations are green today and must stay green
+  (they pin the agreement from the gate side). Kill table: count issue
+  Review as a round (A, B, C, D); downgrade issue Review to a Planning row
+  (A: an extra `planning-after`); drop the issue Planning row (A, B:
+  `planning-after` missing); number the Planning row from the issue Review;
+  a filter in `review-rounds.sh` rather than the lib (this scenario passes
+  with it, S250 arms 1-5 do not: the pair is what catches it); make the gate
+  read the issue endpoint; change a `review-round:`/`planning-after:`/
+  `review-rounds:` line format. The scripts' header comments (`review-rounds.sh`
+  line 10 area, the lib header) no longer say an issue row may be an `R`:
+  asserted by grepping both files for an issue-sourced `R` claim, not
+  prose beyond the fixed term `Planning-only`.
+- Not asserted: the Reviewer's judgment on whether the A37c text is complete,
+  and `release-implementation-record` (a separate, Developer-evidence item
+  in #470 with no test of its own; the live gate run is its check).

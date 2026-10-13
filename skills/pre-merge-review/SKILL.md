@@ -35,11 +35,13 @@ excludes `Edit`/`Write`/`NotebookEdit`: this skill cannot modify the
 working tree with an editor tool. `Bash` *is* allowed (needed for
 `scope.sh`, `gh pr diff`, posting the findings comment) and is therefore
 not a technically enforced write ban — use it only to read and to post the
-comment, never to change files. This skill delivers findings, not fixes.
+comment, never to change files. This skill delivers findings, not fixes: a finding names the defect, its class (`design`, `code`, `test` or `spec`) and a falsifying check, and never gives a fix or a patch (`role-contracts`, "Reporting a defect or finding").
+
+Every Review round, including a re-review after a fix commit, is a new dispatch of a fresh Reviewer; a Reviewer is never continued, by `SendMessage` or by the dispatch tool's `fork` type (not the `context: fork` above).
 
 ## Review depth: quick vs thorough
 
-Every PR gets at least the single-Reviewer fork above (`context: fork`) —
+Every PR gets at least the single isolated Reviewer run above (`context: fork`) —
 "quick" mode, unchanged. On top of that, run:
 
 ```
@@ -57,8 +59,8 @@ into thorough mode regardless of what the categories say — a manual
 override for dogfooding this mechanism before issue #307 decides on any
 default-on rule, never a standing default itself.
 
-**When the verdict is `thorough`:** fork Reviewer as usual, **plus
-exactly `LENS_ADAPTER_COUNT` additional lens-Adapter forks** — fresh,
+**When the verdict is `thorough`:** run the Reviewer as usual, **plus
+exactly `LENS_ADAPTER_COUNT` additional lens-Adapter runs** — fresh,
 isolated `context: fork` instances, generic and undifferentiated copies
 of Reviewer's own review scope (same prompt, same finding format, same
 `allowed-tools`), never named personas (no "Blind Hunter", no "Edge Cases
@@ -80,8 +82,8 @@ the same machine-readable disposition convention ("What happens with it"
 below) — a second or third set of eyes, not a second gate with its own
 marker.
 
-**When the verdict is `quick`:** nothing changes — the single-Reviewer
-fork above is the whole review, same as before this classifier existed.
+**When the verdict is `quick`:** nothing changes — the single isolated
+Reviewer run above is the whole review, same as before this classifier existed.
 
 Both `classify-review-depth.sh` and `--lens-adapter-count` fail open the
 same way every other `gh`-dependent check in this skill does when `gh` or
@@ -95,20 +97,19 @@ evidence is the wrong way to guess).
 See the `model-choice` skill for the canonical principle (floor + cost,
 stated qualitatively, never a model name) and how it applies across every
 pipeline stage. This review is that skill's Review-stage instance: choose
-a model and effort that, taken together, are **at least as capable as
-the model and effort that did Implementation** (#392). A different model
-is not required, and a legacy `same-model-exception` is ignored. Within
-that floor, the cheapest combination: the same model at higher effort, or
-a stronger model, whichever clears it. Record which model and effort
-reviewed, always, not only when it deviates from what's obvious, as a
+a model that is **at least as capable as the model that did
+Implementation** (#392). A different model is not required, and a legacy
+`same-model-exception` is ignored. Within that floor, the cheapest model
+that clears it. The floor is judged on the model alone: effort is neither
+chosen nor checked (#424; the limit is stated in `model-choice`). Record
+which model reviewed, always, not only when it deviates from what's obvious, as a
 Review marker with `floor-basis`. Produce it with
 `.claude/skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
-exact model id> --effort <e> --floor-basis '<sentence>'` (`effort` is
-`unknown` when you don't know it) and paste the output unchanged; never
+exact model id> --floor-basis '<sentence>'` and paste the output unchanged; never
 type a marker by hand. Run it from the project root: the path goes through
 the project's installed skill (the guardrails repo installs its own skills
 the same way). `floor-basis` is required on every Review marker:
-one sentence on why this pair clears Implementation's. The format and its
+one sentence on why this model clears Implementation's. The format and its
 grammar are owned by `model-choice` ("Machine-readable form", "Marker
 grammar"). The gate checks that `floor-basis` is present, never what it
 says.
@@ -117,7 +118,6 @@ Run `skills/pre-merge-review/model-record-gate.sh <pr-number>` to check
 that every stage — not only this one — has a matching marker somewhere in
 the PR or the issue(s) it closes. A missing stage is a finding, the same
 non-blocking shape as every other gate here. The gate also flags a
-Review on the same model recorded at lower effort than Implementation, and a
 Review marker without `floor-basis`. It can't rank two different models,
 so for those the capability ordering stays your recorded judgment.
 
@@ -309,13 +309,17 @@ marker, immediately after that finding's text:
 <!-- finding:<short-slug> status=resolved -->
 ```
 
+The previous round's findings are inputs the new Reviewer re-checks against the new head, not memory: each open slug is verified again, never assumed from a remembered conversation.
+
 On a second (or later) round, run
 `skills/pre-merge-review/finding-carryforward-gate.sh <pr-number>` before
-posting — it compares the two most recent `pre-merge-review:done`
-comments and reports any slug the previous round left `status=open` that
-doesn't reappear (open or resolved) in this round's comment. Every such
-report is itself a finding: re-flag it or explicitly resolve it, don't let
-it just vanish.
+posting — it compares every Review round (a PR comment or a PR review,
+request-changes rounds included, as `review-rounds.sh` counts them) with the
+one before it and reports any slug a round left `status=open` that doesn't
+reappear (open or resolved) in the next. Each line names the round that
+dropped the slug, as `(round <k>)`. Every such report is itself a finding:
+re-flag it or explicitly resolve it, don't let it just vanish. The line goes
+away once a later round re-flags the slug or resolves it explicitly.
 
 ## Its limits
 

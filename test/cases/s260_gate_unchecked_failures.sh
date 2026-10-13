@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# S260 — gate_unchecked_failures; #427, independent CLI assertions (A31a/A34a/A37).
+# Covers: F27, F38, F39, F40
+set -uo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
+. "$TEST_REPO_ROOT/test/fixtures/gate-v2-helpers.sh"
+
+# Endpoint failures use real fake-gh JSON processing for all other endpoints.
+rest="$v2_bin"; shim="$SANDBOX/failing-gh"; mkdir -p "$shim"
+cat > "$shim/gh" <<EOF
+#!/usr/bin/env bash
+if [ "\${2:-}" = "\$FAIL_EP" ]; then printf '%s' "\${FAIL_PARTIAL:-}"; echo "\$FAIL_REASON" >&2; exit 1; fi
+exec "$rest/gh" "\$@"
+EOF
+chmod +x "$shim/gh"
+export FAIL_EP FAIL_REASON
+v2_path="$shim:$PATH"
+for ep in issues/246/comments pulls/246/reviews pulls/246 issues/239/comments; do
+ for reason in 'gh: HTTP 403' 'gh: HTTP 500' 'gh: could not connect'; do
+  v2_base; FAIL_EP="repos/{owner}/{repo}/$ep"; FAIL_REASON="$reason"; v2_run "$v2_yes"
+  count 'role-play-unchecked: ' 1; absent 'no record found'; absent 'role-played:'; absent 'has no floor-basis'
+ done
+done
+# Partial paginated stdout is untrusted body data, never an HTTP status.
+export FAIL_PARTIAL="$early"$'\t''example (HTTP 404)'
+FAIL_EP='repos/{owner}/{repo}/issues/239/comments'; FAIL_REASON='gh: HTTP 500'
+v2_base; v2_run "$v2_yes"
+count 'role-play-unchecked:' 1; absent 'does not exist and was ignored'; absent 'no record found'
+unset FAIL_PARTIAL
+unset v2_path
+# Counted reader-only tool failures. All unrelated invocations forwarded.
+realgrep="$(command -v grep)"; realawk="$(command -v awk)"
+for tool in grep awk; do
+ for mode in fail empty; do
+  [ "$tool:$mode" != awk:empty ] || continue
+  bin="$SANDBOX/$tool-$mode"; mkdir -p "$bin"; export COUNT_FILE="$SANDBOX/count"; : > "$COUNT_FILE"
+  if [ "$tool" = grep ]; then select='case "$*" in *model-record:*|*pipeline-override:*) true;; *) false;; esac'; real="$realgrep"; else select='case "$*" in *mode=rec*) true;; *) false;; esac'; real="$realawk"; fi
+  cat > "$bin/$tool" <<EOF
+#!/usr/bin/env bash
+if $select; then
+ printf '%s\n' "$tool:$mode:\$*" >> "\$COUNT_FILE"
+ [ "$mode" = empty ] && exit 0
+ exit 2
+fi
+exec "$real" "\$@"
+EOF
+  chmod +x "$bin/$tool"
+  correct_real="$realgrep"; [ "$tool" != awk ] || correct_real="$realawk"
+  for probe in alpha absent; do
+    forwarded="$(printf 'alpha\nbeta\n' | "$bin/$tool" "$probe" 2>"$SANDBOX/forward-err")"; forward_rc=$?
+    expected="$(printf 'alpha\nbeta\n' | "$correct_real" "$probe")"; expected_rc=$?
+    [ "$forwarded" = "$expected" ] && [ "$forward_rc" -eq "$expected_rc" ] && [ ! -s "$SANDBOX/forward-err" ] || fail "S260/forward-$tool-$mode-$probe — unmatched call changed same-tool stdout/status"
+  done
+  v2_path="$bin:$v2_bin:$PATH"
+  v2_base; v2_run "$v2_yes"
+  [ -s "$COUNT_FILE" ] || fail "unused $tool/$mode shim"
+  witness="$(cat "$COUNT_FILE")"
+  case "$tool:$witness" in
+    grep:grep:"$mode":*model-record:*) : ;;
+    awk:awk:"$mode":*mode=rec*kind=model-record*) : ;;
+    *) fail "S260/reached-$tool-$mode — intended reader arguments absent: $witness" ;;
+  esac
+  count 'model-record:' 1; has 'reader'; count 'role-play-unchecked:' 1; absent 'no record found'; absent 'role-played:'
+  printf '    S260 reached %s/%s: %.100s\n' "$tool" "$mode" "$witness" >&2
+  v2_run; count 'model-record:' 1; absent 'role-play-unchecked:'
+ done
+done
+unset v2_path
+v2_base; v2_comments comments-239.json prose; v2_comments comments-246.json prose; v2_comments reviews-246.json
+v2_run "$v2_yes"; has "$missing"; absent 'reader'; absent 'role-play-unchecked:'
+
+test_done

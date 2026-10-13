@@ -61,8 +61,8 @@ the dispatching prompt's own job to state.
 Every role takes part in every change: there is no phase skipping in v1 (A3). Roles work
 sequentially on one shared branch per work item. The run rules live in one file,
 [`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
-with each stage's label and `model-record` `stage=` value, fresh (never forked) dispatch, the
-human override record, what to do when dispatch isn't available, and how to resume. In a
+with each stage's label and `model-record` `stage=` value, fresh dispatch (a fresh Reviewer for every Review round), the
+loop-back route for a finding by its class, the human override record, what to do when dispatch isn't available, and how to resume. In a
 project that answers `process-multi-agent-roles` yes, the `SessionStart` hook prints that file
 into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
 the `model-choice` skill.
@@ -155,6 +155,14 @@ comment — never direct edits to application source.
 **Evidence / gates it produces:** specification/design, architecture review, recorded
 decisions — where useful, as diagrams (sequence, flow, component) in Mermaid.
 
+**Risk note for an overrule (TiesL/spec-driven-guardrails#415, including TiesL/spec-driven-guardrails#410 AC6/S218).** When the maintainer
+overrules the pushback, write an issue report headed "Risk note" in normal prose,
+with **Decision** linking the numbered human decision, **What is accepted**,
+**Likely consequence**, **Early signal**, and **Revisit when**. Start the report
+with your own emitted Planning marker; the orchestrator's decision record has
+no role marker. If you gave the pushback yourself, include an "If overruled"
+section with this risk note in that report, so another dispatch is unnecessary.
+
 ---
 
 ## QA
@@ -223,6 +231,8 @@ abstractions, reuse, and verbosity/efficiency.*
 Scoped input for this role is a floor by default unless its dispatch prompt states otherwise —
 see the note above.
 
+**Fresh every round.** Each Review round is a new dispatch of a fresh Reviewer, never resumed or continued: not by `SendMessage`, and not by the dispatch tool's `fork` type. You have no memory of earlier rounds: earlier findings reach you only as a link to the previous findings comment and its `finding:` slugs, and you re-check each one against the new head.
+
 **Responsibilities:** independently confirm the preceding roles' work is evidenced, not
 self-certified; judge code quality (abstractions, reuse, efficiency) alongside semantic
 traceability — same scope as the `pre-merge-review` and `code-review` skills. Stays a
@@ -285,6 +295,15 @@ pass already earned. A **request-changes** verdict never posts the marker, same 
 
 ## Shared, across all five roles
 
+**When your recommendation is not accepted (TiesL/spec-driven-guardrails#415).** Before the decision is recorded,
+push back once with arguments for your recommendation and an explanation of
+the cost of the maintainer's alternative. The orchestrator relays it, and the
+maintainer may then hold the position and overrule. Do not repeat the pushback
+after that. The numbered human decision links the pushback. A recommending
+Reviewer is a fresh Reviewer for this dispatch. Non-Reviewer reuse remains
+TiesL/spec-driven-guardrails#412's decision. An overrule then gets the Architect's issue Risk note in the
+format above; this is the format referenced by TiesL/spec-driven-guardrails#410 AC6/S218.
+
 Product decides *what*; Architect decides *how*; Fullstack Developer executes; QA verifies it
 works as intended; Reviewer independently confirms the whole chain before release. Conflict
 between roles is expected, not a model failure — it escalates, it doesn't get suppressed
@@ -301,7 +320,8 @@ meant to avoid).
 
 **Your report's first line is your `model-record` marker, never typed by hand.** It is
 the output of the `model-record-emit.sh` command in your dispatch prompt, run with your own
-exact model id as `--model` (the Reviewer also adds `--floor-basis`), pasted unchanged. If your
+exact model id as `--model` (the Reviewer also adds `--floor-basis`), pasted unchanged. No
+effort is recorded (TiesL/spec-driven-guardrails#424). If your
 prompt has no command (it is missing), run the wrapper yourself
 (`skills/pre-merge-review/model-record-emit.sh` in the guardrails clone, flags as in the
 `model-choice` skill) and say in your report that the prompt lacked it; don't stop work over it.
@@ -335,6 +355,15 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   for a scenario/behavior-level defect without a specific line.
 - **Category** — short label for the kind of defect (e.g. correctness, regression,
   test-coverage, code-quality).
+- **Class** — `design`, `code`, `test` or `spec` (A28): where the fix starts. Category says what
+  kind of defect it is; Class names the role whose step the fix begins at, per the route table
+  below. `design`: the cause is a decision about structure (a format, a contract or Interface, a
+  Seam, a parsing approach, where a responsibility lives, a data shape), so a correct code fix
+  would leave that decision in place. `code`: the implementation departs from a sound design.
+  `test`: a test does not falsify what it claims. `spec`: an acceptance criterion or the PRD is
+  wrong, ambiguous or missing. The reporting role proposes the class; the orchestrator never downgrades a class, and the Architect may record that a finding is not a design defect and route it as code.
+- **Falsifying check** — the observable condition that a correct fix must meet, stated so that
+  a test or a reader could show the defect gone. It replaces any "Fix:" line.
 - **Verdict** — `CONFIRMED` (reproduced) or `PLAUSIBLE` (suspected, not yet reproduced) —
   never asserted as certain without naming which of the two it is.
 - **Severity** — `low`, `medium`, or `high` (added 2026-09-29). Independent of Verdict: a finding can be `CONFIRMED` and still `low`
@@ -347,6 +376,19 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
   and never fixed inline without a scope-expansion decision. A finding within the current
   change's own scope (i.e. it gets fixed in this same PR) doesn't need this field — Disposition only
   applies once a finding is judged out of scope for the work at hand.
+
+A finding names the defect, its class and a falsifying check, and never gives a fix, a patch or
+code. There is no exception for a typo-level or one-line finding: its falsifying check is a single
+line anyway. The same rule holds for the findings of QA and the Developer. Each class is routed
+to the role that owns the fix (roles in order; the orchestrator runs the route, see
+[`ORCHESTRATOR.md`](ORCHESTRATOR.md)), from whichever stage found the defect:
+
+| Class | Route |
+| --- | --- |
+| `design` | Architect, QA, Developer, fresh Reviewer |
+| `code` | QA (a red test for the defect), Developer, fresh Reviewer |
+| `test` | QA, Developer, fresh Reviewer |
+| `spec` | Product, then the Architect if the design is affected, QA, Developer, fresh Reviewer |
 
 No new tooling: this is the same shape already produced by this project's own
 review-finding conventions, written down as a standing content requirement instead of only

@@ -401,18 +401,29 @@ check_role_play_guard() {
     return 0
   fi
 
-  local findings
-  findings="$(cd "$workdir" && "$gate" "$number" 2>/dev/null | grep '^role-played: ')"
+  local output findings context warnings line
+  output="$(cd "$workdir" && "$gate" "$number" 2>/dev/null)"
+  warnings="$(LC_ALL=C grep '^role-play-unchecked: ' <<<"$output")"
+  if [ -n "$warnings" ]; then
+    printf 'warning: merge-guard role-play check was unchecked:\n%s\n' "$warnings" >&2
+  fi
+  findings="$(LC_ALL=C grep '^role-played: ' <<<"$output")"
   [ -n "$findings" ] || return 0
+  context=""
+  while IFS= read -r line; do
+    case "$line" in 'model-record: '*) context="$context$line"$'\n';; esac
+  done <<<"$output"
 
   block "gh pr merge on a role-played run" \
 "this project answers process-multi-agent-roles yes, and
        model-record-gate.sh finds that one session played the pipeline's
        roles instead of dispatching them:
 
-$(printf '%s\n' "$findings" | sed 's/^/       /')
+$(printf '%s\n' "$findings" "$context" | sed 's/^/       /')
 
-       Dispatch each stage as its own role session, or, if the
+       Re-post a whole record line using
+       skills/pre-merge-review/model-record-emit.sh when a record is a
+       near-miss. Dispatch each stage as its own role session, or, if the
        human decided otherwise, record that decision on the issue (live
        text, not quoted):
 
