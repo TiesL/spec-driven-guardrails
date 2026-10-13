@@ -1696,9 +1696,11 @@ links the pushback, and the Architect writes an issue risk note stating what
 is accepted and its likely consequence. A waiver of F42's route follows this
 same flow. The maintainer decided both open points
 on 2026-10-12 (human decisions 1 and 2 in the #415 Pipeline log). Low-severity
-default: a low finding is filed as an issue; a narrow text-only fix is allowed
-only during a review round already required for a medium or high finding. An
-out-of-scope finding still needs its recorded Disposition and any
+default (issue #488, which supersedes human decision 1 of #415 at the maintainer's
+request; ARCHITECTURE.md A38): a low finding whose `Fix cost` is `trivial`, as
+defined once in `skills/role-contracts/SKILL.md`, is fixed in the PR, at most one
+trivial-fix commit per PR; any other low finding is deferred in one bundled issue.
+An out-of-scope finding still needs its recorded Disposition and any
 scope-expansion decision. Objection deadline: the maintainer may object to a
 decision taken by rule until the change reaches `main`, including after a
 work-item merge into a release branch.
