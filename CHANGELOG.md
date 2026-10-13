@@ -13,14 +13,16 @@ point.
 
 ## Unreleased
 
-- **Epic #408: process improvements from the meta review of epic #369.** Summary of the candidate
+## v0.4.0 — process improvements (epic #408) (2026-10-13)
+
+- **Epic #408: process improvements from the meta review of epic #369.** Summary of what ships
   (details in the bullets below and in `CHANGES.md`): fresh Reviewers for every Review round and a finding-class loop-back rule
   with an override flow; an orchestrator decision table with one-time pushback and Architect risk notes;
   macOS CI running the full suite; shared Markdown handling in one library; effort removal from the
   marker pipeline; a v2 reader/emitter for review records with migrated callers and old-parser
   removal. #430 is the acceptance evidence (adopter corpus check and scratch-repository dry run)
-  and #420 is the documentation closure; both come after the code items. This work is unreleased and
-  the version is not chosen: v0.4.0 is a proposal only, for the maintainer to decide at release time.
+  and #420 is the documentation closure; both come after the code items. This work ships
+  as v0.4.0 (tag v0.4.0, 2026-10-13).
 
 - **Fix #470: an issue comment is never a PR Review round.** `rr_rounds` treats source `issue` as
   Planning-only (A37c): an issue body with a Review record gives no row and spends no round number,
@@ -60,7 +62,7 @@ point.
   Accepted reader limits, named in the `lib/markdown.sh` header: nested list prefixes, list items inside a blockquote and tab expansion beyond the stated rule are not handled; `continuation-line-list-fence` (#445) can read a marker as live after a column-0 closer that GitHub renders inside the list item; `ordered-item-after-paragraph` (#446) can read a marker as live where GitHub renders it quoted. The one-definition lint is a bounded shell syntax check: variable indirection, generated code and other shell forms can evade it, and the shared reader is not CommonMark in full.
   `--effort` is accepted and ignored with a warning; the same model at lower effort meets the floor and nothing flags it, and a different model's capability cannot be verified from artifacts.
   Fail-open paths (no `gh`, no network) are not a successful check, and artifact checks do not prove live behavior.
-  In the #430 adopter check, scratch #5 and #14 changed from non-blocking model warnings under v0.3.0 to blocking missing stages under the release gate; scratch #10 was non-blocking under both gates and produced no release-gate output. The scan covered repositories readable in the owner's account and Ties-IT-advies organization; adopters outside those accounts remain unverified, and the check shares the reader's blind spots. In the AC3 run, the unchecked warning appeared in the hook transcript but did not reach the agent as command output. The fake `gh` suppressed the attempted merge, leaving scratch #10 open.
+  In the #430 adopter check, scratch #5 and #14 changed from non-blocking model warnings under v0.3.0 to blocking missing stages under the release gate; scratch #10 was non-blocking under both gates and produced no release-gate output. The scan covered the repositories readable to the maintainer; adopters in repositories the maintainer cannot read remain unverified, and the check shares the reader's blind spots. In the AC3 run, the unchecked warning appeared in the hook transcript but did not reach the agent as command output. The fake `gh` suppressed the attempted merge, leaving scratch #10 open.
 
 ## v0.3.0 — adoptable, opt-in multi-agent workflow (2026-10-04)
 

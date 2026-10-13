@@ -10,11 +10,31 @@ set -uo pipefail
 r="$TEST_REPO_ROOT"
 cl="$r/CHANGELOG.md"
 
-# Headings, in order.
-# The first four headings; older releases (v0.1.0, ...) follow and are not asserted.
-got="$(grep '^## ' "$cl" | head -n 4 | sed 's/^\(## [^ ]*\).*/\1/' | tr '\n' ' ')"
-[ "$got" = "## Unreleased ## v0.3.0 ## v0.2.1 ## v0.2.0 " ] \
-  || fail "S284 — CHANGELOG '## ' headings are '$got' (first four), expected Unreleased, v0.3.0, v0.2.1, v0.2.0 in that order"
+# Headings, in order (version-neutral, #474): Unreleased first; the dated release
+# headings after it in strictly descending numeric version order; the pinned
+# v0.3.0, v0.2.1, v0.2.0 adjacent and in that relative order. Older sections
+# (v0.1.0, ...) follow and are not asserted.
+first="$(grep '^## ' "$cl" | head -n 1)"
+[ "$first" = "## Unreleased" ] || fail "S284 — first '## ' heading is '$first', expected '## Unreleased'"
+prev=""
+pinned=""
+while IFS= read -r h; do
+  grep -Eq '^## v[0-9]+\.[0-9]+\.[0-9]+ — .+ \([0-9]{4}-[0-9]{2}-[0-9]{2}\)$' <<<"$h" || break
+  ver="${h#\#\# v}"; ver="${ver%% *}"
+  if [ -n "$prev" ]; then
+    IFS=. read -r a1 a2 a3 <<<"$prev"; IFS=. read -r b1 b2 b3 <<<"$ver"
+    if [ "$b1" -gt "$a1" ] || { [ "$b1" -eq "$a1" ] && { [ "$b2" -gt "$a2" ] || { [ "$b2" -eq "$a2" ] && [ "$b3" -ge "$a3" ]; }; }; }; then
+      fail "S284 — heading v$ver is not strictly below v$prev (descending order)"
+    fi
+  fi
+  prev="$ver"
+  case "$ver" in 0.3.0|0.2.1|0.2.0) pinned="$pinned$ver " ;; esac
+done < <(grep '^## ' "$cl" | tail -n +2)
+[ "$pinned" = "0.3.0 0.2.1 0.2.0 " ] \
+  || fail "S284 — pinned releases appear as '$pinned', expected '0.3.0 0.2.1 0.2.0 ' (adjacent, in order)"
+# Adjacent: nothing between the pinned three.
+mid="$(grep '^## ' "$cl" | sed -n '/^## v0\.3\.0 /,/^## v0\.2\.0 /p' | wc -l | tr -d ' ')"
+[ "$mid" = 3 ] || fail "S284 — $mid headings from v0.3.0 to v0.2.0, expected exactly 3 (nothing between)"
 
 # Each version heading: title and the tag date.
 check_heading() {
