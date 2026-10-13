@@ -72,4 +72,3 @@ check() {
   got="$(row_status "$ce_out" 2)"
   [ "$got" = "$want" ] || fail "${CE_ID} — $label: gate 2 should be '$want', got '$got' ($(row_evidence "$ce_out" 2))"
 }
-

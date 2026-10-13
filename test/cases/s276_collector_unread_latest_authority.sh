@@ -62,7 +62,7 @@ $(cv_mark Planning)
 $(cv_mark Test)
 $(cv_mark Implementation)
 $(cv_mark Review)" 'Closes #265'; export CV_FAIL_FILE=issue265; cv_run
-cv_status 3 indeterminate; cv_has 3 'absence' 
+cv_status 3 indeterminate; cv_has 3 'absence'
 # Both PR comments and reviews participate in the same latest uncertainty.
 for file in comments reviews; do
  authority_base 'No closing reference'; export CV_FAIL_FILE="$file"; cv_run

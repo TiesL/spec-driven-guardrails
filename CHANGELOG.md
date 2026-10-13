@@ -13,6 +13,7 @@ point.
 
 ## Unreleased
 
+- **Fix #468: trailing whitespace removed from three test files.** `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at EOF). No behavior change. Recurrence guard: #484.
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
 - **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
