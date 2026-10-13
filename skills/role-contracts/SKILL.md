@@ -369,6 +369,33 @@ implying more rigor than existed. Whether posted as a PR comment or an issue com
 - **Severity** — `low`, `medium`, or `high` (added 2026-09-29). Independent of Verdict: a finding can be `CONFIRMED` and still `low`
   (real, but not release-blocking), or `PLAUSIBLE` and `high` (suspected, but severe enough to chase
   down before merge). Neither axis substitutes for the other.
+- **Fix cost** — `trivial`, `small` or `large` (added 2026-10-13): what fixing the finding
+  costs, proposed by the Reviewer and re-checked by the orchestrator. This is the one definition of
+  `trivial`; [`ORCHESTRATOR.md`](ORCHESTRATOR.md) points here and does not restate it. A fix is
+  `trivial` only if all of T1-T6 hold. If any fails, or the tag is absent or doubtful, it is not
+  trivial. `small` and `large` are every other fix and are not told apart by any rule.
+  - T1 Files: the fix touches only files already in the PR diff at the reviewed sha (the head the
+    finding was pinned to, not the new HEAD): `git diff --name-only <base>...<reviewed-sha>`. At most
+    2 files, and at most 1 of them is code or test. By path: *.md files and templates are docs; anything
+    else is code or test, including a comment-only change in a shell script.
+  - T2 Size: the whole fix delta is at most 10 changed lines (added plus deleted, summed from
+    `git diff --numstat <reviewed-sha>..<fix-sha>`) and at most 1 hunk in a code or test file
+    (`git diff -U0 <reviewed-sha>..<fix-sha> -- <file> | grep -c '^@@'`). A binary or renamed file
+    (`-` in numstat) is not trivial.
+  - T3 Docs and comments: any wording, formatting, typo, grammar, re-wrap or link fix.
+  - T4 Code and test: a typo or literal fix, a quoting or whitespace fix, an off-by-one or
+    wrong-variable fix, or a message-text fix that brings the code to what the spec, the existing
+    test oracle or the surrounding code already states. In a test file T4 covers non-assertion lines
+    only; assertions and expected values fall under T5. A code or test fix also needs Verdict
+    `CONFIRMED`, not `PLAUSIBLE`.
+  - T5 Never allowed: new behavior, a new or changed test case or scenario (no new `TEST-SCENARIOS.md`
+    ID), any change to an existing assertion, expected value or oracle, any change to spec content
+    (PRD, ARCHITECTURE, TEST-SCENARIOS), a new file, function, CLI flag, env var, seam or dependency,
+    or a change to a guard or gate (merge guard, hooks, `./check`, CI workflow, settings).
+  - T6 Evidence: the existing test suite and CI pass on the fix commit, with no test edited to make
+    that so.
+  Only T1, T2 and T6 are measured, with the commands above; the orchestrator reads T3-T5 from the
+  diff and records its judgment in the Pipeline log.
 - **Disposition** — how a finding outside the current change's own scope gets handled (added
   2026-09-29): **issue** (turned into its own issue immediately,
   if actionable and small), **holding-pen** (appended to a backlog epic the project
