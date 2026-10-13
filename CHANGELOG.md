@@ -13,6 +13,10 @@ point.
 
 ## Unreleased
 
+- **Fix #472: S250 amendment text corrected.** `TEST-SCENARIOS.md` ("Issue #470 amendment"): arm
+  (7) states one expectation (`R:1:$T1:comment`, `R:2:$T1:review`, no `P` row), and the kill table
+  credits the caller-side-filter mutant to amendment arms 1-5, not a nonexistent S287 "arm B'". Text
+  only; no test changed.
 - **#488: trivial low review findings are now fixed in the PR.** The orchestrator's low-severity row
   and the new `Fix cost` field in `skills/role-contracts/SKILL.md` replace "file every low as an
   issue" (#415 decision 1): a `trivial` low is fixed in the PR (one trivial-fix commit per PR), any

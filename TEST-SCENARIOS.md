@@ -2727,15 +2727,14 @@ something new is being added.
   (6) an issue body with a fenced Review record and a live Planning record
   still yields its `P` row (the first-candidate rule is unchanged); (7) tie
   at T1: PR comment Review, issue Planning, PR review Review gives
-  `R:1:$T1:issue`-free output `R:1:$T1:comment`, `P:1:$T1:issue`... - precisely:
-  a tie ranks issue before comment, so the issue Planning sorts first, before
-  any round, and gives NO row: expect `R:1:$T1:comment`, `R:2:$T1:review`
-  only. Kill
+  `R:1:$T1:comment` and `R:2:$T1:review`, and no `P` row (a tie ranks issue
+  before comment, so the issue Planning sorts first, before any round). Kill
   table additions: count issue `R`; downgrade issue Review to `P`; drop issue
   `P` (arm 5 and the existing planning-rows arm); filter in `review-rounds.sh`
-  instead of the lib (killed by S287 arm B' - a third caller that feeds
-  `rr_rounds` an issue Review directly is arm 1/5 here, which a caller-side
-  filter leaves red); give the issue Review a round number but hide its row.
+  instead of the lib (killed by amendment arms 1-5 here, which feed
+  `rr_rounds` an issue Review directly and so see the rows a caller-side
+  filter leaves in place; S287 passes with it); give the issue Review a round
+  number but hide its row.
   Red today: arms 1, 2, 3, 4, 5 and the two flipped expectations (the lib
   returns issue `R` rows today); the arm 6 and the planning-rows arm are
   green today and must stay green.
