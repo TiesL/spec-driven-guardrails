@@ -13,7 +13,11 @@ point.
 
 ## Unreleased
 
-- **#488: trivial low review findings are now fixed in the PR.** The orchestrator's low-severity row and the new `Fix cost` field in `skills/role-contracts/SKILL.md` replace "file every low as an issue" (#415 decision 1): a `trivial` low is fixed in the PR (one trivial-fix commit per PR), any other low is deferred. Arrives with `ORCHESTRATOR.md`; no choice to make, so no `CHANGES.md` entry.
+- **#488: trivial low review findings are now fixed in the PR.** The orchestrator's low-severity row
+  and the new `Fix cost` field in `skills/role-contracts/SKILL.md` replace "file every low as an
+  issue" (#415 decision 1): a `trivial` low is fixed in the PR (one trivial-fix commit per PR), any
+  other low is deferred. Arrives with `ORCHESTRATOR.md`; no choice to make, so no `CHANGES.md`
+  entry.
 - **Fix #473: S287 shellcheck SC2154 warnings cleared.** `test/cases/s287_issue_review_is_no_pr_round.sh`
   initialises `rr_out` and `rr_status` after `rr_setup` (non-zero status, so an unset one fails).
   No assertion changed.
