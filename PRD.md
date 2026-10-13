@@ -1920,6 +1920,18 @@ epics still apply, detached from the execution history in which they arose.
 - **A pinnable version for consumers.** *(Revised: picked up after all in
   W37 (#79), see `CHANGELOG.md`, "Decided in W29 (#53)", decision 5 — this
   exclusion held for epic #11, no longer for epic #52.)*
+- **Native Windows support.** Not supported yet (maintainer decision, 2026-10-13, #478).
+  To support it later, in order: (1) symlinks: `adopt.sh` uses `ln -s` in 5 places, and Git
+  Bash's `ln -s` copies instead of linking unless native symlinks are enabled
+  (`MSYS=winsymlinks:nativestrict` plus Developer Mode or admin), so adopted files would stop
+  receiving updates unnoticed; (2) line endings: `core.autocrlf` CRLF checkouts break bash
+  scripts, so a `.gitattributes` must force LF for every bash script, including the
+  extensionless ones (`check`, `hooks/*`), not only `*.sh`; (3) a `windows-latest` CI job,
+  as the macOS job was added in #422 (F43). Remaining risks: (a) `C:\...` vs `/c/...` paths
+  and a case-insensitive file system; (b) Git Bash ships GNU (MSYS) tools, so the risk is the
+  file system and Git config more than the tools. WSL is the cheapest option and the existing
+  Linux CI job already covers it, so supporting Windows via WSL mainly means documenting
+  "Windows means WSL" (done in `README.md`).
 
 ---
 

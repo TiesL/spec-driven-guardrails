@@ -108,6 +108,9 @@ Stated up front rather than discovered later:
   them yet.
 - **Bash 3.2 and Claude Code specifically** — not provider-agnostic today (see `PRD.md`'s
   technical debt table).
+- **Native Windows is not supported yet.** On Windows, use WSL (a full Linux, covered by the
+  Linux CI job) and keep the checkout inside the WSL file system, not under `/mnt/c`. See
+  `PRD.md`, "Out of scope", for what supporting it would take.
 - **Review has a ceiling.** `pre-merge-review` raises the floor; it's still model-based and
   can share a blind spot with the model that wrote the change.
 
