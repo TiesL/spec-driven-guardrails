@@ -62,7 +62,7 @@ The core owns everything that's the same across every consuming project:
 detecting and resolving prerequisites, running the conversational
 question flow, narrating actions in plain language, tracking install
 progress for resume, and verifying success. A manifest — one per
-consuming project (`spec-driven-guardrails`, later `portfolio-mgt-agents`,
+consuming project (`spec-driven-guardrails`,
 future projects) — declares only *what* that project needs: which
 prerequisites, which questions, which steps (as calls to the core's
 primitives), which files, which verification checks. The manifest never
@@ -118,7 +118,7 @@ exists to replace, not repeat under a new name.
 
 ### Option 3 — Single monolithic script covering every known project inline
 One script with per-project branches (`if project == "spec-driven-
-guardrails" then ... elif project == "portfolio-mgt-agents" then ...`).
+guardrails" then ... elif project == "other-project" then ...`).
 
 Avoids a manifest format up front, but mixes generic and project-specific
 logic in one file that only grows, and every new project is a code change
@@ -621,10 +621,12 @@ A7's local-scope confinement and `PRD.md` F8's native uninstall.
 
 ## When we would revisit this choice
 
-- **Added 2026-09-20:** a second real project (e.g. `portfolio-mgt-agents`,
-  once it has application code) needs the same installer behavior — the
-  trigger to extract the plugins' generic side into its own distributable
-  "core" plugin (see "Build order decided" above), not before.
+- **Added 2026-09-20:** a second real project needs the same installer
+  behavior — the trigger to extract the plugins' generic side into its own
+  distributable "core" plugin (see "Build order decided" above), not before.
+  **Updated 2026-10-13:** no second real consumer is currently identified;
+  the previously named candidate was retired from this workflow. The trigger
+  itself is unchanged.
 - A third consuming project's manifest needs a capability the core's
   declarative primitives can't express (would signal the manifest
   format itself needs to grow, not that Option 2/3 were right after all).
@@ -680,9 +682,8 @@ A7's local-scope confinement and `PRD.md` F8's native uninstall.
   manual itself is `PRD.md`'s E1, funded and next, but not yet written or
   tested against a real non-engineer. This remains the single largest open
   risk to the whole project's usability goal until it's written and tested.
-- **How `portfolio-mgt-agents` will eventually plug in** — that project
-  has no application code yet, so there is nothing to write a manifest
-  for today; explicitly deferred, not designed against a guess.
+- **How a second consuming project would plug in** — no such project is
+  identified; deferred, not designed against a guess.
 - **Q8 from the 2026-09-26 co-thinking session — does F2 ever drive package
   installs, or only detect-and-guide, forever?** Decided for v1: detect
   and guide only (`PRD.md` F2). Revisit only if E1's bootstrap manual, once
