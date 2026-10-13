@@ -26,6 +26,18 @@ def section(text, heading):
     return text[match.end():match.end() + end.start()] if end else text[match.end():]
 
 
+def clause(cell, anchor):
+    """The one sentence of a cell (split on '.' not followed by 'md', and on ';') holding anchor."""
+    parts = [p.strip() for p in re.split(r"\.(?!md\b)|;", cell)]
+    hits = [p for p in parts if anchor in p]
+    require(len(hits) == 1, f"exactly one clause holds {anchor!r} (found {len(hits)})")
+    return hits[0]
+
+
+def norm(text):
+    return re.sub(r"\s+", " ", text)
+
+
 if scenario == "s277":
     table = section(orch, "Decided without asking")
     rows = [r for r in table.splitlines() if r.startswith("|")]
@@ -62,14 +74,28 @@ elif scenario == "s288":
     require(len(orch.splitlines()) <= 79, "file at most 79 lines (pre-change count; S180 cap is 80)")
     require("`Fix cost`" in rule and "SKILL.md" in rule, "rule names the `Fix cost` field and SKILL.md")
     sentences = [s for s in re.split(r"\.(?!md\b)", rule)]
-    require(any(re.search(r"\btrivial\b", s) and "in the PR" in s for s in sentences), "trivial clause tied to fixing in the PR")
-    require(re.search(r"\bdefer", rule), "any other low finding is deferred")
+    # Clause-local checks (#460/#464 lesson): every token is asserted inside its own clause.
+    core = clause(rule, "tagged `trivial`")
+    require("fixed in the PR" in core and "passes" in core, "R3 clause: trivial low that passes is fixed in the PR")
+    other = clause(rule, "any other low finding")
+    require("deferred" in other and "absent or doubtful" in other, "other-low clause: deferred, tag absent or doubtful")
+    bundle = clause(rule, "filed after the last round")
+    require("bundled" in bundle and "no `Disposition` of its own" in bundle, "bundle clause: only lows with no Disposition of their own")
+    require("`issue`" not in bundle, "bundle clause: no Disposition `issue` value")
+    route = clause(rule, "QA names")
+    require("red check" in route and "Developer" in route, "route clause: QA red check, Developer commits")
+    require("only a `code` or `test` low can be trivial" in route, "route clause: code and test are the only eligible classes")
+    require("a `design` or `spec` low is deferred" in route, "route clause: design and spec lows are deferred")
+    red = clause(rule, "CI is red")
+    for needle in ("T1 or T2 fails after it exists", "revert", "defer that finding", "fresh review", "no second trivial"):
+        require(needle in red, f"red-CI clause: {needle}")
+    disp = clause(rule, "recorded `Disposition`")
+    require("own issue" in disp and "immediately" in disp, "Disposition clause: issue-bound low is its own issue, immediately")
     require(any(re.search(r"\bone\b[^.;]*trivial-fix commit[^.;]*per PR", s) for s in sentences), "cap: one trivial-fix commit per PR")
     require(any(re.search(r"new low[^.]*delta[^.]*\bdeferred\b", s) for s in sentences), "cap: a new low found in the delta round is deferred")
     require(re.search(r"\bslug", rule), "delta re-review keeps earlier slugs")
     require("Pipeline log" in log, "log cell names the Pipeline log")
     require(re.search(r"\bfix", log + " " + rule, re.I) and re.search(r"\bdefer", log + " " + rule, re.I), "log requires fix-in-PR or deferred per finding")
-    require(any(re.search(r"\brevert\b", s) and re.search(r"\bdefer", s) and re.search(r"fresh review", s) and re.search(r"no second trivial", s) for s in sentences), "red-CI sentence: revert, defer, fresh review, no second trivial")
     require(not re.search(r"never in a low-only round|File a low-severity finding as an issue by default|already required by a medium or high finding", rule, re.I), "old low-finding text is gone")
     require("`Disposition`" in rule and "scope-expansion" in rule, "Disposition and scope-expansion kept")
     require(not re.search(r"10 changed lines|2 files|1 hunk", rule), "row does not restate the T1-T6 limits")
@@ -84,13 +110,49 @@ elif scenario == "s289":
     require("`trivial`, `small` or `large`" in field, "Fix cost lists its three values together")
     for tag in ("T1", "T2", "T3", "T4", "T5", "T6"):
         require(re.search(rf"(?m)^\s*- {tag} ", field), f"Fix cost item {tag} as a labelled list item")
-    for digits, unit in (("2", "files"), ("10", "changed lines"), ("1", "hunk")):
-        require(re.search(rf"(?<![\w.]){digits} {unit}\b", field), f"numeric limit {digits} {unit}")
-    for needle in ("new behavior", "assertion", "spec", "new file", "no test edited", "*.md files", "`CONFIRMED`", "@@",
-                   "git diff --name-only", "git diff --numstat", "git diff -U0"):
-        require(needle in field, f"Fix cost text {needle}")
-    require(re.search(r"\bguard\b", field) and re.search(r"\bgate\b", field), "T5 names guard and gate")
-    require(any(re.search(r"\babsent\b|\bdoubtful\b", s) and "not trivial" in s for s in re.split(r"(?<=\.) ", re.sub(r"\s+", " ", field))), "absent-or-doubtful rule")
+    first = re.search(r"(?m)^\s*- T1 ", field)
+    lead = norm(field[:first.start()])
+    parts = re.split(r"(?m)^\s*- (T[1-6]) ", field[first.start():])
+    item = {parts[i]: norm(parts[i + 1]) for i in range(1, len(parts), 2)}
+    require(sorted(item) == ["T1", "T2", "T3", "T4", "T5", "T6"], "six distinct items")
+    lead_sentences = re.split(r"(?<=\.) ", lead)
+
+    def lead_sentence(anchor):
+        hits = [s for s in lead_sentences if anchor in s]
+        require(len(hits) == 1, f"exactly one lead sentence holds {anchor!r}")
+        return hits[0]
+
+    elig = lead_sentence("Only a `code` or `test` low can be trivial")
+    require("`design`" in elig and "`spec`" in elig and "deferred" in elig, "eligibility: design and spec lows are deferred")
+    qa = lead_sentence("QA runs once per round")
+    require("red check" in qa, "QA sentence: names the red check")
+    require("QA adds no test" in lead, "QA sentence: adds no test, scenario or assertion")
+    void = lead_sentence("no red check")
+    require("void" in void and "deferred" in void, "QA sentence: void tag and deferred if no red check")
+    single = lead_sentence("exactly one parent")
+    require("git rev-list --parents -n 1" in single, "single parent: rev-list command")
+    nonmeasurable = lead_sentence("folded into a blocking-fix commit")
+    require("merge commit" in nonmeasurable and "not trivial" in nonmeasurable, "merge or folded fix is not trivial")
+    require("<reviewed-sha>.." not in field and "<fix-sha>" not in field, "no <reviewed-sha>..<fix-sha> range remains")
+    t1, t2, t3, t4, t5, t6 = (item[k] for k in ("T1", "T2", "T3", "T4", "T5", "T6"))
+    for needle in ("git diff --name-only F^ F", "<base>...<reviewed-sha>", "any *.md file anywhere", "templates/*.sh", "`ci.yml`"):
+        require(needle in t1, f"T1 item: {needle}")
+    docs_part, code_part = t1.split("anything else is code or test", 1) if "anything else is code or test" in t1 else (t1, "")
+    require("templates/*.sh" not in docs_part and "`ci.yml`" in code_part and "templates/*.sh" in code_part, "T1 item: templates scripts and ci.yml are code, not docs")
+    for needle in ("git diff --numstat F^ F", "git diff -U0 F^ F", "grep -c '^@@'"):
+        require(needle in t2, f"T2 item: {needle}")
+    for digits, unit, where in (("2", "files", t1), ("10", "changed lines", t2), ("1", "hunk", t2)):
+        require(re.search(rf"(?<![\w.]){digits} {unit}\b", where), f"numeric limit {digits} {unit}")
+    require("Docs and comments" in t3 and "any wording" in t3, "T3 item keeps the docs allowance")
+    require("Code and test" in t4 and "typo" in t4, "T4 item keeps the code and test allowance")
+    for needle in ("new behavior", "assertion", "spec", "new file", "guard", "gate"):
+        require(re.search(rf"\b{re.escape(needle)}\b", t5), f"T5 item: {needle}")
+    for needle in ("`CONFIRMED`", "no test edited"):
+        require(needle in (t4 if needle == "`CONFIRMED`" else t6), f"item text {needle}")
+    for needle in ("T1 or T2 fails", "revert", "defer", "fresh review", "no second trivial"):
+        require(needle in t6, f"T6 item: {needle}")
+    require("@@" in t2, "T2 item counts hunks")
+    require(any(re.search(r"\babsent\b|\bdoubtful\b", s) and "not trivial" in s for s in re.split(r"(?<=\.) ", norm(field))), "absent-or-doubtful rule")
 elif scenario == "s278":
     decision = section(orch, "Decided without asking")
     require("**Never decided by the orchestrator:**" in decision, "never-list heading")
@@ -192,6 +254,14 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("## Decided without asking", "\n" * 81 + "## Decided without asking", "file padded to 81 lines"),
             ("`Disposition` and scope-expansion rules", "rules", "Disposition and scope-expansion dropped"),
             ("By `Fix cost`", "By `Fix cost` (at most 10 changed lines)", "limit restated in the row"),
+            ("a low finding tagged `trivial` that passes that definition is fixed in the PR", "every low finding is bundled", "R3 clause removed while trivial-fix and defer that finding remain"),
+            ("any other low finding, and one whose tag is absent or doubtful, is deferred, ", "", "any-other-low-is-deferred removed while another defer remains"),
+            ("only a `code` or `test` low can be trivial (a `design` or `spec` low is deferred), and ", "", "class restriction dropped"),
+            ("QA names a red check for it on the reviewed sha before the ", "the ", "QA red check sentence removed"),
+            (", or T1 or T2 fails after it exists, revert it", ", revert it", "T1/T2-after-commit sentence removed"),
+            ("is filed as its own issue immediately, never bundled", "is filed later, never bundled", "own issue removed from the Disposition clause"),
+            ("if it has no `Disposition` of its own", "including a low with `Disposition` `issue`", "bundled clause includes Disposition issue lows"),
+            ([", or T1 or T2 fails after it exists, revert it"], ["; T1 or T2 fails after it exists; revert it"], "decoy: red-CI tokens moved into the wrong clause"),
         ],
         "s289": [
             ("at most 10 changed lines", "at most 20 changed lines", "limit digit changed"),
@@ -203,6 +273,16 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("`trivial`, `small` or `large`", "`trivial` or `large`", "three values reduced to two"),
             ("git diff --numstat", "git diff --stat", "numstat command changed"),
             ("**Fix cost**", "**Fix cost**: first.\n- **Fix cost**", "field duplicated"),
+            ("any change to an existing assertion, expected value or oracle, any change to spec content\n    (PRD, ARCHITECTURE, TEST-SCENARIOS), ", "", "T5 assertion and spec disqualifiers deleted while T4 keeps the words"),
+            ("git diff --numstat F^ F", "git diff --numstat <reviewed-sha>..<fix-sha>", "T2 range replaces F^ F"),
+            ("exactly one parent (`git rev-list --parents -n 1 F` prints two fields)", "one parent", "single-parent sentence removed"),
+            ("any *.md file anywhere", "any `*.md` file", "anywhere dropped from T1"),
+            ("(including under templates/)", "(including templates/*.sh)", "templates scripts moved into the docs list"),
+            ("Only a `code` or `test` low can be trivial", "Any low can be trivial", "eligibility widened"),
+            ("names the red\n  check on the reviewed sha", "names a\n  failing run on the reviewed sha", "QA red check sentence removed"),
+            (["If CI is red, or T1 or T2 fails then,\n    revert F, defer the finding, run a fresh review of the new HEAD, and make no second trivial fix:\n    the attempt is spent."], ["Nothing more."], "T6 failure path removed"),
+            ("and make no second trivial fix:\n    the attempt is spent.", "and carry on.", "no second trivial fix removed from T6"),
+            (["`CONFIRMED`, not `PLAUSIBLE`.", "If CI is red, or T1 or T2 fails then,\n    revert F, defer the finding, run a fresh review of the new HEAD, and make no second trivial fix:\n    the attempt is spent."], ["`CONFIRMED`, not `PLAUSIBLE`. If CI is red, or T1 or T2 fails then, revert F, defer the finding, run a fresh review of the new HEAD, and make no second trivial fix.", "Nothing more."], "decoy: AC12 failure path moved from T6 into T4"),
         ],
         "s278": [
             ("**Never decided by the orchestrator:**", "**Examples:**", "never-list heading"),
@@ -246,9 +326,13 @@ if not os.environ.get("DT415_NEGATIVE"):
     }
     for old, new, label in mutations[scenario]:
         source = roles if scenario in ("s281", "s282", "s289") else orch
-        require(old in source, f"mutation anchor absent: {label}")
+        olds, news = (old, new) if isinstance(old, list) else ([old], [new])
+        mutated = source
+        for o, n in zip(olds, news):
+            require(o in mutated, f"mutation anchor absent: {label}")
+            mutated = mutated.replace(o, n, 1)
         env = os.environ.copy()
         env["DT415_NEGATIVE"] = "1"
-        env["DT415_ROLES" if scenario in ("s281", "s282", "s289") else "DT415_ORCH"] = source.replace(old, new, 1)
+        env["DT415_ROLES" if scenario in ("s281", "s282", "s289") else "DT415_ORCH"] = mutated
         result = subprocess.run([sys.executable, __file__, str(root), scenario], env=env, capture_output=True, text=True)
         require(result.returncode != 0 and f"{scenario}:" in result.stderr, f"controlled break escaped: {label}")
