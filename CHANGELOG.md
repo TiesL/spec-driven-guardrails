@@ -13,6 +13,10 @@ point.
 
 ## Unreleased
 
+- **Fix #477: S286 arm 5 no longer claims a bare `git grep` of the version token hits only two
+  files.** `TEST-SCENARIOS.md` states the arm's scope as a property and gives a path-scoped command
+  (excluding `TEST-SCENARIOS.md` and `test/`, which quote the token as data) with a "verified at"
+  commit. Text only; no test changed.
 - **Fix #472: S250 amendment text corrected.** `TEST-SCENARIOS.md` ("Issue #470 amendment"): arm
   (7) states one expectation (`R:1:$T1:comment`, `R:2:$T1:review`, no `P` row), and the kill table
   credits the caller-side-filter mutant to amendment arms 1-5, not a nonexistent S287 "arm B'". Text

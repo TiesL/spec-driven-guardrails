@@ -4921,9 +4921,14 @@ that evidence and the final `./check` result.
   mention today, and a scan over them would forbid honest history such as a
   future "proposed vX" PR title); AC8 was amended to this narrower scope by
   Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
-  wording in `skills/` and root documents is verified once by reading at
-  review (`git grep v0.4.0` hits only CHANGELOG.md and README.md), not by a
-  standing scan. Counterexample: the surviving "v0.4.0 is a
+  wording in `skills/` and root documents is not covered by a standing scan.
+  The arm's scope is the places that state the current version, CHANGELOG.md
+  and README.md; elsewhere the token appears only as quoted data in
+  TEST-SCENARIOS.md and `test/`, which are excluded for that reason. As of the
+  review of #477 (verified at a7a5f48)
+  `git grep -l 'v0\.4\.0' -- . ':!TEST-SCENARIOS.md' ':!test'` lists exactly
+  those two files; a new hit there is a prompt to extend arm 5's scope, not a
+  contradiction. Counterexample: the surviving "v0.4.0 is a
   proposal only" line (red today only if arm 1 is first made green; show it
   red by placing the cut heading above the unchanged bullets). `Unreleased`
   as the heading itself is outside the section and unaffected.
