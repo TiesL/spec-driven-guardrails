@@ -4755,13 +4755,25 @@ that evidence and the final `./check` result.
   `test/cases/s284_changelog_release_sections.sh`, using the
   `changelog_section` helper in `test/lib.sh`)
 - When: its `## ` headings and the entries inside each section are read
-- Then: the first four `## ` headings in order are `## Unreleased`,
-  `## v0.3.0`, `## v0.2.1`, `## v0.2.0` (older sections follow and are not
-  asserted); each of those version headings matches
-  `^## vX.Y.Z — .+ \(YYYY-MM-DD\)$` with the dates 2026-10-04, 2026-10-03
-  and 2026-10-01 respectively. Counterexamples: v0.2.0 still dated
-  2026-09-30; a version heading without a date; v0.2.1 above v0.3.0; a
-  missing section.
+- Then (arm 1, amended for the v0.4.0 cut, #474; version-neutral like S286,
+  so later releases need no edit): the first `## ` heading is `## Unreleased`;
+  the headings after it, read while each matches
+  `^## vX.Y.Z — .+ \(YYYY-MM-DD\)$`, are in strictly descending version order
+  (compared numerically per component, not as strings), and the three pinned
+  releases `## v0.3.0`, `## v0.2.1`, `## v0.2.0` appear in that relative order
+  with nothing else between them (any newer dated release sits above v0.3.0;
+  older sections such as v0.1.0 follow and are not asserted). Each pinned
+  heading matches the pattern above with the dates 2026-10-04, 2026-10-03 and
+  2026-10-01 respectively. Counterexamples: `## Unreleased` not first;
+  v0.2.1 above v0.3.0; a newer release listed below an older one; a version
+  heading without a date; v0.2.0 still dated 2026-09-30; a missing pinned
+  section.
+- Red-before-green for arm 1: the unamended assertion (first four headings
+  exactly Unreleased, v0.3.0, v0.2.1, v0.2.0) is red against the cut
+  CHANGELOG.md, where `## v0.4.0` sits second. The amended check is green on
+  the real cut file, and red in a sandbox copy with the v0.3.0 and v0.2.1
+  headings swapped (order counterexample) and in one with the date stripped
+  from `## v0.4.0` (undated counterexample). No other S284 arm changes.
 - And: the `v0.2.1` section mentions #370, #372, #373, #374, #378 and #377
   and none of #369, #371, #392, #402, #398; the `v0.3.0` section mentions
   #369, #371, #392, #402 and #398 and none of #370, #378, #377, #417, #407.
