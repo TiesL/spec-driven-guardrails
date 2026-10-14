@@ -1413,8 +1413,7 @@ the hook prints the warning. In the #430 AC3 run (one headless Claude Code
 run with a fake `gh`) it appeared in the stream transcript only and did not
 reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414). The stated
 limit is therefore “visible in the transcript only”; delivery to the agent
-is not established. The blocking `role-played:` finding is unaffected: the
-same run showed the merge refused.
+is not established.
 
 #427 AC10 moves `process-multi-agent-roles` to meaning v2 for the refusal
 of inline-only records and `<`/`>` overrides. `quality-review-before-merge`
