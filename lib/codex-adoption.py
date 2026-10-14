@@ -93,6 +93,10 @@ def main():
     removals = []
     old = None
     try:
+        for name in ('.git', '.git/hooks'):
+            p = project / name
+            if p.is_symlink() or (exists(p) and not p.is_dir()):
+                raise Conflict(name + ': unsafe parent; expected a real directory')
         for name in ('.guardrails', '.agents', '.agents/skills'):
             p = project / name
             if p.is_symlink() or (exists(p) and not p.is_dir()): raise Conflict(name + ': expected a real directory')

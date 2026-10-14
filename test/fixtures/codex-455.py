@@ -32,7 +32,8 @@ def adopt(p, *args, rc=0):
 
 def snapshot(p):
     return {str(f.relative_to(p)): ('link', os.readlink(f)) if f.is_symlink()
-            else ('file', f.read_bytes()) for f in p.rglob('*') if f.is_symlink() or f.is_file()}
+            else ('file', f.read_bytes()) if f.is_file() else ('directory',)
+            for f in p.rglob('*')}
 
 def status(p, rc=0):
     before = snapshot(p)
@@ -96,6 +97,15 @@ try:
             old = snapshot(p)
             run(wf / 'adopt.sh', *args, p, rc=2)
             assert snapshot(p) == old
+        foreign_hooks = project('foreign-hooks')
+        for hook in ('pre-commit', 'commit-msg', 'pre-push'):
+            (foreign_hooks / '.git/hooks' / hook).write_text('project-owned hook sentinel')
+        hook_before = snapshot(foreign_hooks / '.git/hooks')
+        out = adopt(foreign_hooks)
+        expect(out, 'native-hook unavailable/foreign: .git/hooks/pre-commit')
+        assert snapshot(foreign_hooks / '.git/hooks') == hook_before
+        status(foreign_hooks, rc=1)
+        assert snapshot(foreign_hooks / '.git/hooks') == hook_before
         fixtures = ['override', 'symlink', 'duplicate', 'unmatched', 'nested', 'namespace',
                     'child-file', 'child-dir', 'foreign-link', 'broken-link', 'record', 'ignore', 'tracked', 'tracked-missing']
         for name in fixtures:
@@ -112,17 +122,55 @@ try:
                 f = q / '.agents/skills/grilling'
                 if name == 'child-file': f.write_text('own')
                 elif name == 'child-dir': f.mkdir()
-                else: f.symlink_to(wf / 'skills/grilling' if name.startswith('tracked') else tmp / 'missing')
+                else:
+                    target = wf / 'skills/grilling' if name.startswith('tracked') else tmp / 'missing'
+                    if name == 'foreign-link':
+                        target = tmp / 'live-foreign'; target.mkdir()
+                        (target / 'SKILL.md').write_text('foreign sentinel')
+                    f.symlink_to(target)
+                    assert f.is_symlink()
+                    if name == 'foreign-link':
+                        assert f.exists() and f.resolve() == target.resolve()
+                        assert (f / 'SKILL.md').read_text() == 'foreign sentinel'
+                    elif name == 'broken-link': assert not f.exists()
                 if name.startswith('tracked'):
                     run('git', '-C', q, 'add', '.agents/skills/grilling')
                     if name == 'tracked-missing': f.unlink()
             elif name == 'record':
                 (q / '.guardrails').mkdir(); (q / '.guardrails/installation.json').write_text('{"foreign":true}')
             elif name == 'ignore': (q / '.gitignore').write_text('# spec-driven-guardrails: begin\n')
-            old = snapshot(q); expect(adopt(q, rc=1), 'conflict'); assert snapshot(q) == old, name
+            external = tmp / 'live-foreign'
+            external_before = snapshot(external) if external.exists() else {}
+            old = snapshot(q); out = adopt(q, rc=1); expect(out, 'conflict'); assert snapshot(q) == old, name
+            if name in ('foreign-link', 'broken-link'): expect(out, '.agents/skills/grilling')
+            assert (snapshot(external) if external.exists() else {}) == external_before, name
         # Recorded links may repair, manually redirected links may not.
-        f = p / '.agents/skills/grilling'; f.unlink(); f.symlink_to(tmp / 'foreign')
-        old = snapshot(p); adopt(p, rc=1); assert snapshot(p) == old
+        foreign = tmp / 'redirect-live'; foreign.mkdir(); (foreign / 'SKILL.md').write_text('redirect sentinel')
+        f = p / '.agents/skills/grilling'; f.unlink(); f.symlink_to(foreign)
+        assert f.exists() and f.resolve() == foreign.resolve()
+        assert (f / 'SKILL.md').read_text() == 'redirect sentinel'
+        external_before = snapshot(foreign)
+        old = snapshot(p); expect(adopt(p, rc=1), '.agents/skills/grilling'); assert snapshot(p) == old
+        assert snapshot(foreign) == external_before
+        # Parent escapes need an independent oracle: the project walker does not follow links.
+        for parent in ('.git/hooks', '.git'):
+            q = project('escape-' + parent.replace('/', '-'))
+            (q / 'tracked-sentinel').write_text('index sentinel')
+            run('git', '-C', q, 'add', 'tracked-sentinel')
+            external = tmp / ('external-' + parent.replace('/', '-'))
+            shutil.move(str(q / parent), external)
+            (q / parent).symlink_to(external, target_is_directory=True)
+            (external / 'sentinel').write_text('external sentinel')
+            hooks = external if parent.endswith('hooks') else external / 'hooks'
+            assert (q / parent).resolve() == external.resolve()
+            assert not external.is_relative_to(q)
+            assert all(not (hooks / h).exists() for h in ('pre-commit', 'commit-msg', 'pre-push'))
+            for args in ((), ('--status',)):
+                old = snapshot(q); external_before = snapshot(external)
+                expect(adopt(q, *args, rc=1), parent + ': unsafe parent')
+                assert snapshot(q) == old, parent
+                assert snapshot(external) == external_before, parent
+                assert all(not (hooks / h).exists() for h in ('pre-commit', 'commit-msg', 'pre-push'))
     elif SCENARIO == 292:
         p = project(); adopt(p)
         b = tmp / 'machine-b'; shutil.copytree(wf, b)
