@@ -535,7 +535,9 @@ the shared parser warns if it has no `Applies if`.
   A31's strict reader. Near-misses are named as context; only `role-played: `
   blocks. Without `gh` or network both let it through with an unchecked
   warning; a closing-reference HTTP 404 is ignored and leaves absent stages
-  missing. Printed warning delivery to the session is checked in #430 AC3.
+  missing. The hook prints the warning; in the #430 AC3 run it appeared in the
+  stream transcript only and did not reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414);
+  the blocking `role-played:` finding is unaffected.
   Role conflicts escalate to the project's human decision-maker instead of
   being settled by whichever role spoke last. Create the five `role:*` labels
   (`role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`)

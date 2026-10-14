@@ -467,8 +467,9 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
   Every opted-in early exit (including reader failure) emits unchecked stdout.
   The guard prints unchecked lines as warnings and near-misses as context,
   and still blocks only on `role-played: `. Both remedies are shown: re-post
-  via the emitter or provide a valid override. Actual warning delivery to
-  the session is checked in #430 AC3; this slice verifies printed stderr.
+  via the emitter or provide a valid override. The hook prints the
+  warning; in the #430 AC3 run it appeared in the stream transcript only and
+  did not reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414).
 - **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
   `check_merge_guard` in `hooks/git-guardrails` gains a last step,
   `check_role_play_guard`: only when the project answers yes, it runs the
