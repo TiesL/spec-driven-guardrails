@@ -31,8 +31,8 @@ def adopt(p, *args, rc=0):
     return run(wf / 'adopt.sh', '--runtime', 'codex', *args, p, rc=rc)
 
 def snapshot(p):
-    return {str(f.relative_to(p)): ('link', os.readlink(f)) if f.is_symlink()
-            else ('file', f.read_bytes()) if f.is_file() else ('directory',)
+    return {str(f.relative_to(p)): ('link', os.readlink(f), f.lstat().st_mode) if f.is_symlink()
+            else ('file', f.read_bytes(), f.lstat().st_mode) if f.is_file() else ('directory', f.lstat().st_mode)
             for f in p.rglob('*')}
 
 def status(p, rc=0):
@@ -144,6 +144,94 @@ try:
             old = snapshot(q); out = adopt(q, rc=1); expect(out, 'conflict'); assert snapshot(q) == old, name
             if name in ('foreign-link', 'broken-link'): expect(out, '.agents/skills/grilling')
             assert (snapshot(external) if external.exists() else {}) == external_before, name
+        # S297: shared scaffolds are part of the same no-write preflight.
+        failures = []
+        cases = [(path, live) for path in (
+            '.github', '.github/ISSUE_TEMPLATE', '.github/workflows',
+            '.github/ISSUE_TEMPLATE/bug.md', '.github/ISSUE_TEMPLATE/config.yml',
+            '.github/workflows/ci.yml', 'check-traceability.sh',
+            'check-pr-issue-link.sh', 'check-main-via-pr.sh', 'wait-for-ci.sh',
+            'PRD.md', 'TEST-SCENARIOS.md', 'ARCHITECTURE.md',
+            'WORKFLOW-ADOPTION.md', 'CONTEXT.md') for live in (False, True) if not (path == 'WORKFLOW-ADOPTION.md' and live)]
+        template_name = next((wf / 'templates/ISSUE_TEMPLATE').glob('*.md')).name
+        cases = [(path.replace('bug.md', template_name), live) for path, live in cases]
+        cases += [('.github', True), ('wait-for-ci.sh', True)]
+        for number, (path, live) in enumerate(cases):
+            q = project('shared-%d' % number)
+            (q / '.agents').mkdir(); (q / '.guardrails').mkdir()
+            (q / 'tracked-sentinel').write_text('staged sentinel')
+            run('git', '-C', q, 'add', 'tracked-sentinel')
+            (q / 'check').write_text('#!/bin/sh\nexit 0\n'); (q / 'check').chmod(0o750)
+            (q / 'AGENTS.md').write_text('project prefix')
+            (q / '.gitignore').write_text('local-ignore\n')
+            if path != 'WORKFLOW-ADOPTION.md':
+                (q / 'WORKFLOW-ADOPTION.md').write_text(
+                    '| process-issue-tracking | yes | date | reason |\n'
+                    '| process-context-document | yes | date | reason |\n')
+            if number == len(cases)-1:
+                adopt(q)
+                (q / 'AGENTS.md').write_text((q / 'AGENTS.md').read_text().replace('project prefix', 'pending prefix'))
+            external = tmp / ('shared-external-%d' % number); external.mkdir(); external.chmod(0o750)
+            (external / 'sentinel').write_text('external sentinel'); (external / 'sentinel').chmod(0o640)
+            target = external / 'target'
+            directory = path in ('.github', '.github/ISSUE_TEMPLATE', '.github/workflows')
+            if live:
+                if directory:
+                    target.mkdir(); target.chmod(0o750)
+                    if path.endswith('ISSUE_TEMPLATE'):
+                        for src in (wf / 'templates/ISSUE_TEMPLATE').iterdir():
+                            (target / src.name).write_text('external template'); (target / src.name).chmod(0o640)
+                    if number == len(cases)-2: (target / 'workflows').mkdir()
+                else: target.write_text('external file'); target.chmod(0o640)
+            leaf = q / path; leaf.parent.mkdir(parents=True, exist_ok=True)
+            if leaf.exists(): leaf.unlink()
+            leaf.symlink_to(target, target_is_directory=directory)
+            assert leaf.is_symlink() and os.readlink(leaf) == str(target)
+            assert leaf.exists() == live and not target.is_relative_to(q)
+            if live: assert leaf.resolve() == target.resolve()
+            for args in ((), ('--status',)):
+                before = snapshot(q); outside = snapshot(external)
+                index = ((q / '.git/index').read_bytes(), (q / '.git/index').stat().st_mode)
+                result = subprocess.run([str(wf / 'adopt.sh'), '--runtime', 'codex', *args, str(q)],
+                                        env=env, capture_output=True, text=True)
+                out = result.stdout + result.stderr
+                try:
+                    assert result.returncode == 1, out
+                    expect(out, 'conflict: ' + path)
+                    assert 'adapter installed' not in out and 'Done:' not in out, out
+                    assert snapshot(q) == before, 'project changed'
+                    assert snapshot(external) == outside, 'external bytes/modes changed'
+                    assert ((q / '.git/index').read_bytes(), (q / '.git/index').stat().st_mode) == index
+                except AssertionError as exc:
+                    failures.append((path, live, args, str(exc)))
+        assert not failures, failures
+        # Real-file controls: template refresh, executable helpers, stable index,
+        # repeated adoption, explicit/default Claude, and Codex coexistence.
+        for runtime in ('codex', 'default-claude', 'claude'):
+            q = project('ordinary-' + runtime)
+            (q / 'tracked-sentinel').write_text('index sentinel')
+            run('git', '-C', q, 'add', 'tracked-sentinel')
+            index = (q / '.git/index').read_bytes()
+            (q / 'check').write_text('#!/bin/sh\nexit 0\n'); (q / 'check').chmod(0o750)
+            (q / 'WORKFLOW-ADOPTION.md').write_text('| process-context-document | yes | date | reason |\n')
+            (q / '.github/ISSUE_TEMPLATE').mkdir(parents=True)
+            (q / '.github/ISSUE_TEMPLATE' / template_name).write_text('outdated project template')
+            for name in ('PRD.md', 'TEST-SCENARIOS.md', 'ARCHITECTURE.md', 'CONTEXT.md'):
+                (q / name).write_text('preserved ' + name)
+            command = [wf / 'adopt.sh'] + ([] if runtime == 'default-claude' else ['--runtime', runtime])
+            run(*command, q)
+            assert (q / '.github/ISSUE_TEMPLATE' / template_name).read_bytes() == (wf / 'templates/ISSUE_TEMPLATE' / template_name).read_bytes()
+            assert (q / '.github/workflows/ci.yml').is_file()
+            for name in ('check-traceability.sh', 'check-pr-issue-link.sh', 'check-main-via-pr.sh', 'wait-for-ci.sh'):
+                assert os.access(q / name, os.X_OK)
+            for name in ('PRD.md', 'TEST-SCENARIOS.md', 'ARCHITECTURE.md', 'CONTEXT.md'):
+                assert (q / name).read_text() == 'preserved ' + name
+            before = snapshot(q); run(*command, q); assert before == snapshot(q)
+            assert (q / '.git/index').read_bytes() == index
+            if runtime != 'codex':
+                claude = {k:v for k,v in snapshot(q).items() if k == 'CLAUDE.md' or k.startswith('.claude/')}
+                adopt(q)
+                assert {k:v for k,v in snapshot(q).items() if k == 'CLAUDE.md' or k.startswith('.claude/')} == claude
         # Recorded links may repair, manually redirected links may not.
         foreign = tmp / 'redirect-live'; foreign.mkdir(); (foreign / 'SKILL.md').write_text('redirect sentinel')
         f = p / '.agents/skills/grilling'; f.unlink(); f.symlink_to(foreign)

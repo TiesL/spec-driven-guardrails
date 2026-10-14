@@ -93,6 +93,19 @@ def main():
     removals = []
     old = None
     try:
+        # Shared scaffolding runs after this Module, but belongs to this same
+        # preflight. Inspect the whole path without authorizing writes through
+        # symlinks, including leaves copy-if-missing would skip before chmod.
+        for name in sys.argv[4:]:
+            relative = Path(name)
+            for part in reversed((relative, *relative.parents)):
+                if part == Path('.'): continue
+                p = project / part
+                if p.is_symlink():
+                    raise Conflict(str(part) + ': unsafe shared scaffolding symlink')
+                directory = part != relative or name in ('.github/ISSUE_TEMPLATE', '.github/workflows')
+                if exists(p) and not (p.is_dir() if directory else p.is_file()):
+                    raise Conflict(str(part) + ': unsafe shared scaffolding parent; expected directory')
         for name in ('.git', '.git/hooks'):
             p = project / name
             if p.is_symlink() or (exists(p) and not p.is_dir()):

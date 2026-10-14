@@ -627,15 +627,65 @@ scaffold_shared() {
 
 }
 
+# Read-only destination selection for the Codex ownership preflight. Keep the
+# same gates as scaffold_shared; Claude retains its existing adoption behavior.
+shared_destinations() {
+  local project_dir="$1" name
+  shared_paths=()
+  for name in PRD.md TEST-SCENARIOS.md check-traceability.sh; do
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/$name" ] || shared_paths+=("$name")
+  done
+  if [ ! -e "$project_dir/ARCHITECTUUR.md" ] && [ -f "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTURE.md" ]; then
+    shared_paths+=(ARCHITECTURE.md)
+  fi
+  # chmod is selected even when no source template is available.
+  [ ! -f "$project_dir/check-traceability.sh" ] || shared_paths+=(check-traceability.sh)
+  if [ -d "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE" ] && {
+    [ -d "$project_dir/.github/ISSUE_TEMPLATE" ] || answered_yes "$project_dir" process-issue-tracking;
+  }; then
+    shared_paths+=(.github/ISSUE_TEMPLATE)
+    for name in "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE/"*.md "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE/config.yml"; do
+      [ ! -f "$name" ] || shared_paths+=(".github/ISSUE_TEMPLATE/$(basename "$name")")
+    done
+  fi
+  if [ -x "$project_dir/check" ]; then
+    shared_paths+=(.github/workflows)
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" ] || shared_paths+=(.github/workflows/ci.yml)
+    for name in check-pr-issue-link.sh check-main-via-pr.sh wait-for-ci.sh; do
+      if [ -f "$CLAUDE_WORKFLOW_DIR/templates/$name" ] || [ -f "$project_dir/$name" ]; then
+        shared_paths+=("$name")
+      fi
+    done
+  fi
+  shared_seed_context=0
+  if [ ! -e "$project_dir/WORKFLOW-ADOPTION.md" ] && [ ! -e "$project_dir/WORKFLOW-ADOPTIE.md" ] && [ -f "$CLAUDE_WORKFLOW_DIR/CHANGES.md" ]; then
+    shared_paths+=(WORKFLOW-ADOPTION.md)
+    _shared_project_dir="$project_dir"
+    iterate_all_entries "$CLAUDE_WORKFLOW_DIR" shared_seed_selection
+  fi
+  if [ "$shared_seed_context" -eq 1 ] \
+    || grep -qE '^\| *process-context-document *\| *yes *\|' "$project_dir/WORKFLOW-ADOPTION.md" 2>/dev/null \
+    || grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" ] || shared_paths+=(CONTEXT.md)
+  fi
+}
+
+shared_seed_selection() {
+  if [ "$1" = process-context-document ] && [ "$2" != question ] && predicate_true "$3" "$_shared_project_dir"; then
+    shared_seed_context=1
+  fi
+}
+
 project_dir="${project_arg:-.}"
 if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
 elif [ "$runtime" = codex ]; then
+  shared_destinations "$project_dir"
   if [ "$status_mode" -eq 1 ]; then
-    exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status
+    exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status "${shared_paths[@]}"
   fi
   trap 'echo "incomplete installation: runtime codex; inspect reported paths before retrying" >&2' ERR
-  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" install
+  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" install "${shared_paths[@]}"
   # Ownership conflicts were preflighted before all writes; the Codex plan
   # installed owned native hooks and left foreign hooks untouched.
   scaffold_shared "$project_dir"
