@@ -9,10 +9,10 @@ reproduced by this Developer. They do not complete any runtime scenario.
 
 | Surface | Bounded observation | Outstanding acceptance observations |
 | --- | --- | --- |
-| Codex CLI | Partial, 0.162.1: scratch read-only exec session `01a136ad-92c1-7510-8ae9-0e4c684115b6` read AGENTS heading/mapping; session-context emitted Continuation after opt-in yes. No role dispatch. | S289, S292–S296, S298 remain unobserved: matching skill use before dependent work; precedence/budget negatives; available fresh scoped roles and unforked Review; unavailable dispatch stop; resume; every finding route and two-round Architect step; uninterrupted ordinary handoffs; genuine decision/override/main-merge stops |
-| Codex desktop | Bundle `com.openai.codex` inventoried; computer-use getApp denied for safety. Presence only. | S290, S292–S296, S298 unobserved: restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld; loading, dispatch, resume, routes, continuation and stops |
-| Claude Code | CLI 2.1.296 structural adoption succeeded; live `claude -p` failed with `Not logged in`. No usable runtime workflow observed. | S297 unobserved: authenticated default/repeated adoption; legacy backups; fresh/resumed work; representative SessionStart/Bash PreToolUse/PostToolUse/SessionEnd and native Git/CI behavior; fresh Review and finding loop-back |
-| second machine | No independent environment available. | S292 unobserved: actual independent machine, local checkout/revision/OS, before/after status, missing clone-local links and owned stale-link repair, preserved answers/project bytes, actual guidance loading |
+| Codex CLI | Partial, 0.162.1: scratch read-only exec session `01a136ad-92c1-7510-8ae9-0e4c684115b6` read AGENTS heading/mapping; session-context emitted Continuation after opt-in yes. No role dispatch. | S295, S298–S302, S304 remain unobserved: matching skill use before dependent work; precedence/budget negatives; available fresh scoped roles and unforked Review; unavailable dispatch stop; resume; every finding route and two-round Architect step; uninterrupted ordinary handoffs; genuine decision/override/main-merge stops |
+| Codex desktop | Bundle `com.openai.codex` inventoried; computer-use getApp denied for safety. Presence only. | S296, S298–S302, S304 unobserved: restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld; loading, dispatch, resume, routes, continuation and stops |
+| Claude Code | CLI 2.1.296 structural adoption succeeded; live `claude -p` failed with `Not logged in`. No usable runtime workflow observed. | S303 unobserved: authenticated default/repeated adoption; legacy backups; fresh/resumed work; representative SessionStart/Bash PreToolUse/PostToolUse/SessionEnd and native Git/CI behavior; fresh Review and finding loop-back |
+| second machine | No independent environment available. | S298 unobserved: actual independent machine, local checkout/revision/OS, before/after status, missing clone-local links and owned stale-link repair, preserved answers/project bytes, actual guidance loading |
 
 The linked record contains the available exact commands, outputs, source state,
 local paths and session identifier. Missing configuration, trust, budget and
@@ -36,7 +36,7 @@ For each run record:
   numbered bounded decision, pushback and Architect risk note; no fabricated
   emitter records or inferred consent. Main merge always awaits confirmation.
 - Limitations, missing guidance, failed reads and unobserved variants. A routine
-  “continue?” pause at a required ordinary handoff fails S298 continuation.
+  “continue?” pause at a required ordinary handoff fails S304 continuation.
 
 Codex web, third-party hosts and native Windows are outside the supported scope.
 One-host two-path fixtures cannot establish a second-machine or additional OS

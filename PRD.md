@@ -1408,10 +1408,12 @@ emitter's whole line, or supply a valid override. A closing-reference HTTP
 404 instead prints `model-record: closing reference #N does not exist and
 was ignored`, skips that reference and continues checking complete input;
 it is not unchecked. Without another source of Discovery, the missing
-stage blocks. Other fetch failures remain unchecked. #430 AC3 determines
-whether the guard's stderr warning reaches the session; #427 establishes
-only that it is printed. If not received, the stated limit is “visible in
-the transcript only”.
+stage blocks. Other fetch failures remain unchecked. #427 establishes that
+the hook prints the warning. In the #430 AC3 run (one headless Claude Code
+run with a fake `gh`) it appeared in the stream transcript only and did not
+reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414). The stated
+limit is therefore “visible in the transcript only”; delivery to the agent
+is not established.
 
 #427 AC10 moves `process-multi-agent-roles` to meaning v2 for the refusal
 of inline-only records and `<`/`>` overrides. `quality-review-before-merge`
@@ -1696,9 +1698,11 @@ links the pushback, and the Architect writes an issue risk note stating what
 is accepted and its likely consequence. A waiver of F42's route follows this
 same flow. The maintainer decided both open points
 on 2026-10-12 (human decisions 1 and 2 in the #415 Pipeline log). Low-severity
-default: a low finding is filed as an issue; a narrow text-only fix is allowed
-only during a review round already required for a medium or high finding. An
-out-of-scope finding still needs its recorded Disposition and any
+default (issue #488, which supersedes human decision 1 of #415 at the maintainer's
+request; ARCHITECTURE.md A38): a low finding whose `Fix cost` is `trivial`, as
+defined once in `skills/role-contracts/SKILL.md`, is fixed in the PR, at most one
+trivial-fix commit per PR; any other low finding is deferred in one bundled issue.
+An out-of-scope finding still needs its recorded Disposition and any
 scope-expansion decision. Objection deadline: the maintainer may object to a
 decision taken by rule until the change reaches `main`, including after a
 work-item merge into a release branch.

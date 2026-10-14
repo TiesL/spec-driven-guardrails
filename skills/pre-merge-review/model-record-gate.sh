@@ -16,7 +16,8 @@
 # Limits: cannot verify emitter provenance, model identity/capability, agent
 # identity, basis honesty, override authorship or work-item attribution.
 # A session forging five separate stage comments is not detected. Effort is
-# neither chosen nor checked. Printed warning delivery is checked in #430.
+# neither chosen nor checked. The hook prints the warning; in the #430 AC3 run it was seen in the
+# transcript only, not by the agent as command output.
 set -uo pipefail
 export LC_ALL=C
 pr_number="${1:?usage: model-record-gate.sh <pr-number>}"

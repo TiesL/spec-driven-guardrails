@@ -467,8 +467,9 @@ from shipping as prose no session loads. Continues A14/A15 (#369).
   Every opted-in early exit (including reader failure) emits unchecked stdout.
   The guard prints unchecked lines as warnings and near-misses as context,
   and still blocks only on `role-played: `. Both remedies are shown: re-post
-  via the emitter or provide a valid override. Actual warning delivery to
-  the session is checked in #430 AC3; this slice verifies printed stderr.
+  via the emitter or provide a valid override. The hook prints the
+  warning; in the #430 AC3 run it appeared in the stream transcript only and
+  did not reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414).
 - **Amendment (2026-10-02, kept by the human):** the merge guard enforces it.
   `check_merge_guard` in `hooks/git-guardrails` gains a last step,
   `check_role_play_guard`: only when the project answers yes, it runs the
@@ -884,7 +885,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   normal prose headed "Risk note": **Decision** (link), **What is
   accepted**, **Likely consequence**, **Early signal**, and **Revisit when**.
   This is the format referenced by A28's route override.
-- **Low-severity findings (decided, Q1):** per human decision 1 (issue #415
+- **Low-severity findings (decided, Q1; superseded by A38, #488):** per human decision 1 (issue #415
   comment 6119460026), a low-severity finding is filed as an issue by default.
   A narrow text-only fix is allowed only during a round already required for a
   medium/high finding. An out-of-scope finding still needs its recorded
@@ -911,6 +912,19 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   Override paragraph points to that in-file paragraph and `SKILL.md`, not to a
   bare issue number.
 
+### A38 — A low review finding is fixed in the PR when its fix is trivial; otherwise deferred in one bundle (#488)
+- **Decision:** supersedes human decision 1 of #415 (the A29 bullet "Low-severity findings", low = issue by default), at the maintainer's request. The "Decided without asking" row in `ORCHESTRATOR.md` keys on two axes: severity (unchanged, medium/high block) and a Reviewer-proposed `Fix cost` of `trivial`, `small` or `large`. A low finding with a verified `trivial` fix is fixed in the PR; every other low is deferred into one bundled issue per PR. Cost of delay is one comparison (trivial fix plus one delta re-review against a later full pipeline run); there is no numeric model.
+- **Module and Locality:** the `trivial` definition (T1-T6, with its numeric limits and the git commands that measure them) lives in one place, the `Fix cost` field of the Reviewer finding format in `skills/role-contracts/SKILL.md`. The `ORCHESTRATOR.md` row holds the decision rule (fix or defer, the one-fix-commit cap, the delta-scope re-review, the log line) and points to that field; it does not restate T1-T6. `ORCHESTRATOR.md` is at 79 of S180's 80 lines, so a second copy of the definition would not fit and would drift. `skills/pre-merge-review/SKILL.md` gains one sentence: a re-review after a trivial-fix commit is scoped to that delta for new findings, but still carries every earlier slug. Deleting the row returns the choice to each dispatch; deleting the field leaves the tag undefined. Deep Interface: one short row over one definition.
+- **Tag format:** a prose `Fix cost:` line in the finding, beside Class and Severity. It is not inside the `<!-- finding:<slug> status=... -->` marker, so `rr_rounds`, `review-rounds.sh`, `finding-carryforward-gate.sh` and the merge guard are unchanged. A missing or doubtful tag means not trivial.
+- **Mechanical check, no new script:** only T1, T2 and T6 are measured: the fix commit's files against `git diff --name-only <base>...<reviewed-sha>` (the head the findings were pinned to, not the new HEAD, or the check is tautological), `git diff --numstat` for changed lines, `git diff -U0` for hunks, CI on the fix commit. T1 and T2 measure the trivial-fix commit F alone, never a range: `git diff --name-only F^ F` (each file must be in the reviewed-sha set above), `git diff --numstat F^ F`, `git diff -U0 F^ F -- <file> | grep -c '^@@'`. A range `<reviewed-sha>..F` would also count a blocking-fix commit pushed beside F, or a merge of `main`, and push a genuinely trivial fix toward deferral. F must be a single commit with exactly one parent (`git rev-list --parents -n 1 F` prints two fields); a merge commit, or a fix folded into a blocking-fix commit, cannot be measured and is not a trivial-fix commit, so the finding is not trivial. T1 and T2 run after F exists, so a failure there takes the same path as a red CI (below). T3-T5 are judged by the orchestrator reading the diff. A helper script would have one caller and one adapter (git), so the two-adapters rule does not justify a new Seam, test surface and adoption surface; the commands in the field are the Interface. Revisit if the orchestrator misapplies the check in a recorded run.
+- **Class route kept (A28 not waived):** `trivial` is a Fix cost, not a Class, and the row never skips the A28 route. Only `code` and `test` lows can be trivial: a `design` or `spec` low starts at the Architect or Product and changes spec content, which T5 already excludes, so it is deferred. For a `code` or `test` low tagged `trivial` the route runs in full: QA, then Developer, then a fresh Reviewer (the delta round). QA's step is the A28 "red test for the defect" met without a new test case (T5 stays whole): QA names the check that is red on the reviewed sha for this defect, either an existing test, gate or `./check` step, or the Reviewer's `Falsifying check` run as a command (for a docs file such as `CHANGELOG.md`, that command is the red check, e.g. the line-length `awk`). QA adds no test, scenario or assertion. If QA can name no such red check, the `trivial` tag is void and the finding is deferred. QA does this once for all trivial-tagged lows of the round, because only one trivial-fix commit is allowed. The Developer makes the fix commit F (A4: application source and files are the Developer's, and the orchestrator writes no work-item artifact). So T4's code and test allowance stays reachable, and AC4's PR #485 replay (class `code`, a docs-file defect) still ends in "fix in the PR". Open risk: a maintainer who reads "red test" in A28 as strictly "a new test case" must decide this; this entry reads it as "a red check", the same observable condition the Falsifying check field already requires.
+- **Cap and loop:** at most one trivial-fix commit per PR, kept apart from any blocking-fix commit so that its lines are measurable; it may be pushed together with one. The re-review is a fresh Reviewer round (A27) whose new findings are limited to the fix delta; new lows there are deferred; a new medium or high blocks as today and follows the two-round trigger (A28). The bundle is filed once, after the last round, with every deferred low of the PR. If CI fails on the fix commit (T6), or T1 or T2 fails when measured after it exists (AC12), the fix is reverted, its finding is deferred, and the revert is a normal commit that needs a fresh review of the new HEAD; no second trivial fix is allowed. One failure path, not two: a trivial fix is attempted at most once per PR, and the attempt is spent even when it is reverted. The bundle holds only lows deferred by this rule that have no `Disposition` of their own; an out-of-scope low with Disposition `issue` is filed as its own issue immediately, as before (AC14), and is never added to the bundle.
+- **Gates unchanged:** the fix commit moves HEAD, so round 1's marker is stale and the merge guard needs round 2's marker on the new HEAD (#225). Each round is one A37 round, so `review-rounds.sh` counts it; a low-only round does not count toward the two-round trigger. `finding-carryforward-gate.sh` needs round 2 to mention every slug round 1 left open: fixed lows as `status=resolved`, deferred lows still `status=open`. A delta-scoped Reviewer must therefore be briefed with the earlier slugs as inputs; the scope limit is for new findings, not for carrying old ones.
+- **Reconciliations with #488's text:** "changes no behavior" (R5, T5) cannot hold beside T4's off-by-one and wrong-variable fixes; the rule is "no new behavior: the code is brought to what the spec, existing oracle or surrounding code already states". In a test file T4 applies to lines that are not assertions or expected values (T5 owns those). A file counts as docs only by path: any `*.md` file anywhere, including `templates/**/*.md` (AC13). Scripts and `ci.yml` under `templates/` are code or test. A comment-only change in any other file is a code/test file for T1 and T2.
+- **Adopted projects:** `ORCHESTRATOR.md` reaches an opted-in project through the symlinked checkout with no choice of its own, which is A20's case. The notice is a `CHANGELOG.md` line unless the maintainer bumps the meaning version of `process-multi-agent-roles`, a decision the orchestrator does not take.
+- **Not decided here:** that every "tiny code fix" stays tiny. T6 shows only that nothing regressed, not that the fix is right; the delta round and the finding's falsifying check carry that. Accepted limit: T3-T5 and the one-commit cap are judgments logged in the Pipeline log (R8), not gated.
+- **Violated when:** `ORCHESTRATOR.md` restates T1-T6 or exceeds 80 lines; a low is fixed without a `Fix cost: trivial` tag and a recorded T1/T2/T6 check; a second trivial-fix commit lands on one PR; a script reads `Fix cost`; a delta re-review drops an earlier open slug; a trivial-fix commit is measured as a range or is a merge commit; a `trivial` low is fixed without QA naming a red check; a `design` or `spec` low is fixed as trivial; an out-of-scope low with Disposition `issue` goes into the bundle.
+
 ### A33 — Effort is removed from the marker pipeline; the floor is judged on the model (#424, #413)
 - **Why:** the dispatch tool takes no effort argument, so effort was never set or verified: #405 W2 found that all 33 agents ran at medium whatever their markers said. A recorded effort was a claim nobody could check.
 - **Emitter:** `model-record-emit.sh` no longer writes `effort`. It accepts `--effort` and ignores it for one release, printing one stderr line, "effort is no longer recorded (#413); drop --effort from your prompt", so stale prompts in adopted projects keep working. The next release removes the flag (PRD debt row).
@@ -930,9 +944,9 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Violated when:** a script outside `lib/` carries its own record pattern; a near-miss is read as a record; a reader failure becomes "no record".
 
 
-### A38 — One canonical workflow policy, two runtime adapters, explicit installation ownership (#455)
+### A39 — One canonical workflow policy, two runtime adapters, explicit installation ownership (#455)
 
-- **Decision / scope:** implements F45–F53 using the completed `v0.4.0`
+- **Decision / scope:** implements F45–F54 using the completed `v0.4.0`
   workflow meaning. Records the [Architect planning decision](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6144735967)
   without redesigning roles, evidence or adoption semantics. This checkout
   descends from `v0.4.0`; release evidence still requires real Claude, Codex
@@ -944,6 +958,13 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   mappings are `adapters/claude/INSTRUCTIONS.md` and
   `adapters/codex/INSTRUCTIONS.md`, limited to discovery/execution instructions
   and capability limitations. No adapter-specific policy override is permitted.
+  A38 (#488) updates those shared owners: the Fix cost definition stays in
+  `skills/role-contracts/SKILL.md`, and the fix/defer rule stays in
+  `skills/role-contracts/ORCHESTRATOR.md`. Both runtimes consume that same
+  policy, including QA's red check, the single trivial-fix attempt, fresh delta
+  Review with prior slugs, and deferral rules. No adapter copy of T1–T6 or
+  separate low-finding route is introduced. AC10 continuation follows these
+  current shared routes; it does not freeze the pre-#488 route wording.
 - **Generation Interface:** `generate-workflow-adapters.sh` deterministically
   emits root `WORKFLOW.md` (Claude compatibility path) and
   `adapters/codex/AGENTS.md` (managed-block payload): generated header,

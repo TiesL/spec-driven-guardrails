@@ -2727,15 +2727,14 @@ something new is being added.
   (6) an issue body with a fenced Review record and a live Planning record
   still yields its `P` row (the first-candidate rule is unchanged); (7) tie
   at T1: PR comment Review, issue Planning, PR review Review gives
-  `R:1:$T1:issue`-free output `R:1:$T1:comment`, `P:1:$T1:issue`... - precisely:
-  a tie ranks issue before comment, so the issue Planning sorts first, before
-  any round, and gives NO row: expect `R:1:$T1:comment`, `R:2:$T1:review`
-  only. Kill
+  `R:1:$T1:comment` and `R:2:$T1:review`, and no `P` row (a tie ranks issue
+  before comment, so the issue Planning sorts first, before any round). Kill
   table additions: count issue `R`; downgrade issue Review to `P`; drop issue
   `P` (arm 5 and the existing planning-rows arm); filter in `review-rounds.sh`
-  instead of the lib (killed by S287 arm B' - a third caller that feeds
-  `rr_rounds` an issue Review directly is arm 1/5 here, which a caller-side
-  filter leaves red); give the issue Review a round number but hide its row.
+  instead of the lib (killed by amendment arms 1-5 here, which feed
+  `rr_rounds` an issue Review directly and so see the rows a caller-side
+  filter leaves in place; S287 passes with it); give the issue Review a round
+  number but hide its row.
   Red today: arms 1, 2, 3, 4, 5 and the two flipped expectations (the lib
   returns issue `R` rows today); the arm 6 and the planning-rows arm are
   green today and must stay green.
@@ -4634,15 +4633,14 @@ that evidence and the final `./check` result.
   fails the scratch example; a dearer model with the same clear floor fails
   the model example; reuse of an answered ID fails the numbering example.
   Removing any row or blanking its rule or log cell fails independently.
-- Decided oracle (Q1, maintainer decision 1): the low-severity row says
-  **file an issue by default**. It names one narrow exception: a text-only
-  fix may go into the PR, but only during a round already required for a
-  medium or high finding; a round with only low findings never qualifies.
-  The row keeps the existing out-of-scope `Disposition` and any
-  scope-expansion decision. A counterexample row that defaults to fixing
-  in the PR, or allows the text-only fix in a low-only round, or drops the
-  Disposition/scope-expansion rule, fails. No conditional or pending
-  wording remains.
+- Decided oracle (Q1, maintainer decision 1, superseded by #488 / A38): the
+  low-severity row no longer says "file an issue by default"; its decision
+  is by `Fix cost` and its exact oracle is S288 (single line, pointer,
+  cap, red-CI, no old text). S277 keeps only what is not specific to that
+  decision: the row exists once, has a rule and a log cell, keeps the
+  `Disposition` and scope-expansion rules, and carries no pending or
+  conditional wording. A row that drops the Disposition/scope-expansion
+  rule, or keeps pending wording, fails.
 
 ### S278 — the never-list excludes human and role decisions
 **Covers:** F44
@@ -4923,9 +4921,14 @@ that evidence and the final `./check` result.
   mention today, and a scan over them would forbid honest history such as a
   future "proposed vX" PR title); AC8 was amended to this narrower scope by
   Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
-  wording in `skills/` and root documents is verified once by reading at
-  review (`git grep v0.4.0` hits only CHANGELOG.md and README.md), not by a
-  standing scan. Counterexample: the surviving "v0.4.0 is a
+  wording in `skills/` and root documents is not covered by a standing scan.
+  The arm's scope is the places that state the current version, CHANGELOG.md
+  and README.md; elsewhere the token appears only as quoted data in
+  TEST-SCENARIOS.md and `test/`, which are excluded for that reason. As of the
+  review of #477 (verified at a7a5f48)
+  `git grep -l 'v0\.4\.0' -- . ':!TEST-SCENARIOS.md' ':!test'` lists exactly
+  those two files; a new hit there is a prompt to extend arm 5's scope, not a
+  contradiction. Counterexample: the surviving "v0.4.0 is a
   proposal only" line (red today only if arm 1 is first made green; show it
   red by placing the cut heading above the unchanged bullets). `Unreleased`
   as the heading itself is outside the section and unaffected.
@@ -4993,6 +4996,218 @@ that evidence and the final `./check` result.
   and `release-implementation-record` (a separate, Developer-evidence item
   in #470 with no test of its own; the live gate run is its check).
 
+
+### S288 — the ORCHESTRATOR.md low-finding row states the trivial-fix rule in one line and points at SKILL.md (#488 AC1, AC11)
+**Covers:** F44
+- Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #488 AC1; A38). Row
+  located by the first cell, not by line number: exactly one table line
+  whose first cell matches `low.severity finding` (case-insensitive), the
+  same locator S277 uses. The rule cell is the second `|`-cell.
+- When: the row is read as decision, rule and log cells
+- Then: (a) the row is one physical line and the file's total line count is
+  at most the pre-change count (79) and at most 80 (S180/S283 cap); (b) the
+  rule cell names the `Fix cost` field and `skills/role-contracts/SKILL.md`
+  (pointer, AC2b), matched as the exact tokens `` `Fix cost` `` and
+  `SKILL.md`; (c) it contains a `trivial` clause tied to fixing in the PR
+  (regex on the one cell: `trivial` and `in the PR` in the same sentence,
+  sentence = text between `.` characters) and a clause that any other low
+  finding is deferred (`defer`); (d) cap, R6: the cell matches
+  `one` + `trivial-fix commit` + `per PR` (tolerating wording between
+  `one` and `commit` only within the same sentence), and a new low found in
+  the delta round is deferred; (e) delta re-review keeps earlier slugs
+  (`slug` appears in the cell); (f) the log cell mentions the
+  `Pipeline log` and the cell requires naming per finding fix-in-PR or
+  deferred (R8: tokens `fix` and `defer` in the log or rule cell); (g)
+  red-CI sentence, AC11: the cell, or the `Fix cost` paragraph in
+  `SKILL.md`, matches all of `revert`, `defer`, `fresh review`, and
+  `no second trivial` (either file satisfies it, whichever the Developer
+  chose); (h) the old text is gone: the row does not match
+  `never in a low-only round`, `File a low-severity finding as an issue by
+  default`, or `already required by a medium or high finding`; (i) the
+  `Disposition` and `scope-expansion` tokens are still in the cell (R5, R9).
+- Not asserted: whether a live orchestrator applies the row (Reviewer reads
+  the walkthroughs AC4, AC5, AC6, AC9, AC10; see the walkthrough-only block
+  after S289, S290 is deliberately unused). The row must not
+  restate T1-T6: the cell contains none of the numeric limits `10 changed
+  lines`, `2 files`, `1 hunk` (single definition in `SKILL.md`, A38).
+- Matching rule (avoids the #460/#464 false positives): every phrase is
+  matched inside the one located row, never against the whole file, and
+  tokens are matched with word boundaries (`\bdefer`, `\btrivial\b`), so a
+  mention elsewhere in the file cannot satisfy it. Counterexamples, each
+  fails (see S289): the row with `Fix cost` removed; the cap sentence
+  removed; the file grown to 81 lines; the row split over two lines; the
+  old `never in a low-only round` text restored.
+- Red today: (b), (c), (d), (e), (g) fail; (h) fails (old text present).
+- Loop-back after Review round 1 (#488 AC12, AC13, AC14; A38 at b2c4602),
+  clause-local. Define `clause(cell, anchor)` = the one sentence of the rule
+  cell (split on `.` not followed by `md`, and on `;`) that contains the
+  anchor; every token below is matched inside that clause only, never in the
+  cell. Clauses: (j) R3 trivial: anchor ``tagged `trivial` ``; clause
+  contains `fixed in the PR` and `passes`. (k) other lows: anchor `any other
+  low finding`; clause contains `deferred` and `absent or doubtful`. (l)
+  class route and QA red check: anchor `QA`; clause contains `red check`,
+  `Developer`, and `code` and `test` as the only eligible classes, with
+  `design` and `spec` named as deferred (a clause without the class
+  restriction fails). (m) AC12: the clause anchored on `T1` or `T2` contains
+  `after` and `red CI`, or the red-CI clause itself names the T1/T2 failure;
+  the red-CI clause keeps `revert`, `defer`, `fresh review`, `no second
+  trivial` (g, now clause-local). (n) AC14: the clause anchored on
+  `` `Disposition` `` contains `own issue` and `immediately`; the clause
+  anchored on `bundled` contains `no Disposition` (or the Developer's literal)
+  and does not contain `` `Disposition` `` as an issue-bound value. The
+  Developer pins the exact literals in one list in the test.
+- Clause-local mutations (each must fail by name): R3 clause removed while the
+  words `trivial-fix` (cap) and `defer that finding` (red-CI) remain
+  (reviewer escape 1); `any other low finding is deferred` removed while
+  another `defer` remains; class restriction `code` and `test` only dropped;
+  QA `red check` sentence removed; T1/T2-after-commit sentence removed; `own
+  issue` removed from the Disposition clause; `bundled` clause rewritten to
+  include Disposition `issue` lows; a decoy: the red-CI text moved into the
+  cap clause (right tokens, wrong clause) must fail.
+
+### S289 — SKILL.md defines `Fix cost` and `trivial` once, with T1-T6 and the numeric limits (#488 AC2, AC2b)
+**Covers:** F38, F44
+- Given: `skills/role-contracts/SKILL.md`, the Reviewer finding format
+  section (issue #488 AC2, AC2b; A38). The field is located by the bold
+  field name, as the existing `Severity` and `Disposition` fields are
+  (`**Fix cost**`), and its text is the paragraph or list item up to the
+  next `**` field.
+- When: that field text is read
+- Then: (a) exactly one `**Fix cost**` field exists in the file; (b) it
+  lists the three values `trivial`, `small`, `large` each as a code span
+  (`` `trivial` `` etc.); (c) it lists T1 to T6 (six labelled items, the
+  tokens `T1`..`T6` each present); (d) the numeric limits are present as
+  exact digits-and-unit forms: `2 files`, `10 changed lines`, `1 hunk` (or
+  the Developer's equivalent: the test pins whatever literals the Developer
+  writes, and a mutation that changes any digit must fail, so the literals
+  are read from one list in the test, not from three greps); (e) the
+  disqualifiers of T5 are named: `new behavior`, `assertion`, `spec`,
+  `guard` or `gate`, `new file`; (f) the measuring commands are present as
+  exact strings: `git diff --name-only`, `git diff --numstat`,
+  `git diff -U0`, and the `@@` hunk count; (g) the Verdict rule for code
+  or test fixes: `CONFIRMED` appears in the field; (h) the absent-or-doubtful
+  rule: a sentence with `absent` or `doubtful` and `not trivial`; (i) the
+  `.md`-and-templates-are-docs path rule (`*.md`) is present; (j) T6 text
+  `no test edited` (or the Developer's equivalent literal pinned in the
+  test's list).
+- Matching rule: matched inside the field text only, with word boundaries;
+  a numeric limit is matched with the digit and unit adjacent (`\b10\b`
+  followed by `changed lines`), so `110 changed lines` or `10 files` does not
+  satisfy it (substring false positive from #460/#464).
+- Counterexamples (each fails): any of T1-T6 removed; `10` changed to `20`;
+  `2 files` removed; the T5 disqualifier list removed; the `Fix cost` field
+  duplicated into `ORCHESTRATOR.md` (S288 forbids the limits there).
+- Red today: no `**Fix cost**` field exists, so (a) fails and all else with it.
+- Loop-back after Review round 1 (#488 AC12, AC13; A38 at b2c4602), item-local.
+  Split the field into its labelled items `T1`..`T6` plus the lead sentences;
+  each needle is matched inside the item it belongs to. (k) T1 item:
+  `git diff --name-only F^ F`, `<base>...<reviewed-sha>`, `*.md` with
+  `anywhere`, and `templates/*.sh` and `ci.yml` named as code, not docs
+  (AC13). (l) T2 item: `git diff --numstat F^ F`, `git diff -U0 F^ F`,
+  `grep -c '^@@'`, and the digit-and-unit limits (S289 d moves into T2/T1
+  items; the Developer pins which item holds which). (m) single parent, in the
+  sentence that introduces `F`: `git rev-list --parents -n 1` and `exactly one
+  parent`, with a merge commit or a fix folded into a blocking-fix commit
+  stated as not trivial. (n) the field contains no `<reviewed-sha>..<fix-sha>`
+  and no `<reviewed-sha>..` range (global negative, the only global check).
+  (o) eligibility sentence: contains `code` and `test` as eligible and `design`
+  and `spec` as deferred; QA sentence: `QA`, `red check`, `once per round`, no
+  new test, and `void` with `deferred` when no red check can be named. (p) T3
+  keeps the `*.md` docs allowance, T4 keeps the code/test allowance, T5 item
+  carries `new behavior`, `assertion`, `spec`, `guard`, `gate`, `new file`
+  inside T5 itself (reviewer escape 2: words in T4 do not count). (q) T6
+  item: `revert`, `defer`, `fresh review`, `no second trivial`, and that a
+  T1/T2 failure after the commit takes this path (AC12), with `no test edited`.
+- Clause-local mutations (each must fail by name): T5 assertion and spec
+  disqualifiers deleted while T4 still contains those words; `F^ F` replaced
+  by `<reviewed-sha>..<fix-sha>` in T1 or T2; the single-parent sentence
+  removed; `anywhere` dropped from T1; `templates/*.sh` moved into the docs
+  list; eligibility narrowed to or widened beyond `code`/`test`; QA `red check`
+  sentence removed; the AC12 sentence moved from T6 into T4 (decoy); `no
+  second trivial` removed from T6.
+
+**Walkthrough-only (no S-number, no test file; Reviewer reads): the walkthrough ACs are Reviewer-read, not scripted (#488 AC4, AC5, AC6, AC9, AC10). The number S290 is deliberately unused; this block took its place.**
+**Covers:** F44
+- Given: the rule text from S288/S289 and the four replays in #488: AC4
+  (PR #485 round 1, `changelog-bullet-unwrapped`: fix in the PR), AC5
+  (#442, CR-comment hardening in S222: deferred, changes a test oracle),
+  AC6 (a second low-only round, or a PR whose blocking-fix commit already
+  used the cap: lows deferred), AC9 (an edited assertion or added test
+  case, more than 10 lines, a file outside the PR diff: deferred)
+- When: the Reviewer applies the written rule to each replay, citing the
+  tag, T1-T6 clause and the cap that decide it
+- Then: the verdicts equal those listed. This scenario has no test case
+  and no script: T3-T5, the cap and the doubtful-tag rule are judgment
+  (A38, Architect point 8; AC10), so a behavioral test would be invented
+  and would only restate the rule. The only mechanical part is that each
+  rule sentence and limit exists, which S288/S289 assert. Mechanical
+  sub-measures T1, T2 and T6 (git commands) are likewise read, not run.
+  Covered by the Reviewer's recorded replay in the review comment; a review
+  without the four replays is an incomplete review.
+
+### S291 — a mutation of the new low-finding rule is caught by the document tests (#488 AC3)
+**Covers:** F44
+- Given: the S288/S289 document checks and the injected-document seam that
+  `test/fixtures/decision-table-415.py` already provides (private test
+  inputs, `DT415_NEGATIVE` guard, one controlled break per rule)
+- When: each controlled break is applied to a copy of the document and the
+  checks run on it
+- Then: every break is rejected, one at a time: row reverted to the old
+  text (`never in a low-only round`); cap sentence removed; `Fix cost`
+  pointer removed from the row; row split over two lines; file padded to 81
+  lines; in `SKILL.md`, one limit digit changed, one of T1-T6 removed, the
+  T5 disqualifier list removed, the three values reduced to two. The
+  pre-change corpus (old row) also fails, which is the red-before-green
+  proof (AC3). Each break names a distinct row of the mutation table so a
+  break that is silently accepted is reported by name, as for S277.
+- Loop-back after Review round 1 (#488 AC12-AC14): the break tables for S288
+  and S289 gain every clause-local mutation listed in those scenarios, each
+  with a distinct name. Two of them are the Reviewer's confirmed escapes: R3
+  clause removed with `trivial-fix` and `defer that finding` still present
+  (S288), and T5 disqualifiers removed with T4 still carrying `assertion` and
+  `spec` (S289). The test also asserts the clause-local design itself: a
+  decoy mutation that moves the right tokens into the wrong clause is
+  rejected, so a check that regresses to row-wide or field-wide matching is
+  caught.
+- Red today: the old-row break cannot be expressed against a new-row
+  check until the checks exist; before the Developer's change S288/S289
+  fail on the unmodified file, which is the red state.
+
+### S292 — pre-merge-review/SKILL.md says a delta re-review limits new findings but carries every earlier slug (#488 R6)
+**Covers:** F28
+- Given: `skills/pre-merge-review/SKILL.md` (issue #488 R6; A38, section 2
+  of the Architect review, the `finding-carryforward-gate.sh` interaction)
+- When: the section on re-review after a trivial-fix commit is read
+- Then: one sentence, located by the token `delta` in the same sentence as
+  `slug`, states that new findings are limited to the fix delta, that every
+  earlier slug is carried, fixed lows as `status=resolved`, deferred lows as
+  `status=open`; the two literals `status=resolved` and `status=open` are
+  both present in that sentence. A mutation dropping either status literal
+  or the word `slug` fails. No script is edited (`finding-carryforward-gate.sh`,
+  `review-rounds.sh` are unchanged: asserted by their existing tests staying
+  green, not by a new one).
+- Red today: the sentence does not exist.
+
+### S293 — PRD.md F44 states the supersession of #415 decision 1; the adopter notice exists (#488 AC7)
+**Covers:** F44
+- Given: `PRD.md` F44 paragraph "Low-severity default" (issue #488 AC7;
+  A38, commit 219a5ae), located between the `### F44` heading and the next
+  `### F` heading, then the sentence containing `Low-severity default`
+- When: that paragraph is read
+- Then (PRD part, scripted): it contains `#415` and `decision 1`, the word
+  `supersede` (any form), `#488`, and no longer states the unqualified old
+  default (`low = issue by default` or the old text `never in a low-only
+  round`) as the current rule. Matched inside the F44 section only, so the
+  same words elsewhere in the PRD (including F38) cannot satisfy it.
+- Then (notice part, scripted, maintainer decision on Q-A = option a): the
+  adopter notice is `CHANGELOG.md` (variable `NOTICE_FILE` in the test; no
+  `CHANGES.md` entry, no meaning-version bump). Under `## Unreleased` there
+  is exactly one entry (a top-level `- ` bullet with its indented
+  continuation lines) that contains `#488` and `Fix cost` in the same
+  entry. S284's dated-section checks stay green; `CHANGES.md` gains no
+  `#488` line.
+- Red today: the F44 paragraph has no supersession sentence; no notice.
+
 ## Codex support and shared workflow parity — #455 (A38)
 
 These ten durable scenarios map the planning aliases C455-S1–C455-S10 to
@@ -5005,7 +5220,7 @@ are release evidence, never inferred from installation success or fake runtime
 responses. No check proves model identity, authorship, session freshness or
 behavioral obedience.
 
-### S288 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
+### S294 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
 **Covers:** F45, F46
 - Given: A38's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
   owners (including role-contracts/ORCHESTRATOR and model-choice), CHANGES.md
@@ -5031,7 +5246,7 @@ behavioral obedience.
   link alone cannot establish live loaded guidance. Automated byte/context
   checks and manual policy-loading observations are distinct evidence.
 
-### S289 — fresh Codex CLI sessions discover and actually read guidance and skills (C455-S2; AC1, AC3)
+### S295 — fresh Codex CLI sessions discover and actually read guidance and skills (C455-S2; AC1, AC3)
 **Covers:** F45, F47
 - Given: a supported CLI version and locally adopted project, with individual
   canonical skill links including grilling and role-contracts, plus controlled
@@ -5051,9 +5266,9 @@ behavioral obedience.
   copying skill bodies. Unadopted/unsupported setup is explicitly unavailable,
   never recorded as observed success. This is a manual loading dry run.
 
-### S290 — desktop discovers the same local instructions and skills with accurate trust coverage (C455-S3; AC1, AC4, AC7)
+### S296 — desktop discovers the same local instructions and skills with accurate trust coverage (C455-S3; AC1, AC4, AC7)
 **Covers:** F45, F48, F51
-- Given: the S289 project opened in supported Codex desktop, without mandatory
+- Given: the S295 project opened in supported Codex desktop, without mandatory
   plugin publication, and existing user hooks/trust both enabled and withheld.
 - When: a human opens a fresh session, restarts after adoption/update, invokes
   matching skills and inspects available instructions/context and attempted
@@ -5069,7 +5284,7 @@ behavioral obedience.
   cannot imply installed Codex interception. No hook/trust/config state is
   changed by adoption. Manual observation is required, not fake CLI responses.
 
-### S291 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
+### S297 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
 **Covers:** F47, F48, F51
 - Given: isolated projects with absent/unmarked/sound-block AGENTS.md,
   project-owned bytes/config/skills/adoption answers, and A38 ownership fixtures.
@@ -5101,7 +5316,7 @@ behavioral obedience.
   with the existing unavailable-coverage warning, not a new hard conflict.
   `install.sh [tag]` never adopts projects. Automated filesystem/CLI scenario.
 
-### S292 — two machine-local checkouts recover without committed machine paths (C455-S5; AC3, AC4)
+### S298 — two machine-local checkouts recover without committed machine paths (C455-S5; AC3, AC4)
 **Covers:** F47, F48
 - Given: independent checkout paths A and B and an adopted shared project with
   preserved answers/project-owned files; a clone lacks local provenance, while
@@ -5120,7 +5335,7 @@ behavioral obedience.
   run recording paths/revisions/OS and before/after diagnostics; one-host fixtures
   cannot certify second-machine loading or additional OS support.
 
-### S293 — shared v0.4.0 evidence and check outcomes are runtime-independent (C455-S6; AC2, AC6)
+### S299 — shared v0.4.0 evidence and check outcomes are runtime-independent (C455-S6; AC2, AC6)
 **Covers:** F46, F50
 - Given: identical durable artifacts supplied to existing shared checks/emitters
   and consumers without either runtime, including record-v2 and failed-read
@@ -5140,7 +5355,7 @@ behavioral obedience.
   Automated public-command regressions; preserve tagged green controls and
   demonstrate new missing-adapter assertions red before implementation.
 
-### S294 — coverage claims distinguish absent Codex interception from Claude and shared gates (C455-S7; AC6, AC7, AC9)
+### S300 — coverage claims distinguish absent Codex interception from Claude and shared gates (C455-S7; AC6, AC7, AC9)
 **Covers:** F50, F51, F53
 - Given: A38's inventory of Claude runtime hooks, initial Codex adapter, native
   Git hooks and shared check/evidence/CI mechanisms.
@@ -5162,7 +5377,7 @@ behavioral obedience.
   cannot count as available coverage. Docs claiming automatic Codex fetch/push,
   installed runtime hooks or CI proof of freshness/obedience fail semantic review.
 
-### S295 — available dispatch is fresh and unavailable dispatch stops the stage (C455-S8; AC1, AC5, AC8)
+### S301 — available dispatch is fresh and unavailable dispatch stops the stage (C455-S8; AC1, AC5, AC8)
 **Covers:** F45, F49, F52
 - Given: opted-in CLI/desktop work at a required role stage, with dispatch
   available in one dry run and unavailable in another.
@@ -5180,7 +5395,7 @@ behavioral obedience.
   actual freshness, human authorship and dispatch-failure adherence require manual
   observations; capability/date/context may be prose, not fabricated records.
 
-### S296 — fresh-session resume and finding routes use durable evidence (C455-S9; AC1, AC8)
+### S302 — fresh-session resume and finding routes use durable evidence (C455-S9; AC1, AC8)
 **Covers:** F45, F52
 - Given: a stopped opted-in workflow with durable role artifacts and controlled
   missing/latest-near-miss/conflicting evidence, stale labels, and Review findings.
@@ -5199,14 +5414,14 @@ behavioral obedience.
   contract-waiving bounded log fails. Automated evidence/round controls supplement
   manual artifact-only resume/next-stage observations on CLI and desktop.
 
-### S297 — Claude remains usable and the runtime dry-run matrix is evidenced (C455-S10; AC8, AC9)
+### S303 — Claude remains usable and the runtime dry-run matrix is evidenced (C455-S10; AC8, AC9)
 **Covers:** F52, F53
 - Given: the v0.4.0 Claude installation/behavior inventory and the new adapters,
   plus supported real CLI, desktop, Claude and second-machine environments.
 - When: Developer/CI run existing Claude regressions and humans perform default/
   repeated Claude adoption and fresh/resumed workflow, representative hooks/Git/
   CI, fresh Review/loop-back; CLI/desktop perform start/resume/unavailable-dispatch
-  and S289–S296 loading/trust cases; second machine performs S292.
+  and S295–S302 loading/trust cases; second machine performs S298.
 - Then: Claude default adoption retains CLAUDE/settings/skills/native-hook paths,
   legacy backup behavior and tagged checks/outcomes. Codex adoption leaves Claude
   configuration byte-identical. Each human report records exact runtime/version,
@@ -5219,7 +5434,7 @@ behavioral obedience.
   by installation exit 0, passing CI or one-host simulation. No automatic parity,
   OS expansion, Codex web or mandatory plugin-publication claim is accepted.
 
-### S298 — authorized Codex workflow continues routine handoffs and finding routes autonomously (AC10)
+### S304 — authorized Codex workflow continues routine handoffs and finding routes autonomously (AC10)
 **Covers:** F54
 - Given: an authorized, opted-in five-role work item in an adopted project on
   supported real Codex CLI and desktop, with canonical orchestrator guidance
@@ -5236,7 +5451,7 @@ behavioral obedience.
   fresh Reviewer; code and test through QA/Developer/fresh Reviewer; spec through
   Product/Architect if design is affected/QA/Developer/fresh Reviewer. Two
   consecutive medium/high rounds dispatch Architect before any Developer fix;
-  low-only and interrupted-round controls retain S296's behavior. Each dispatch
+  low-only and interrupted-round controls retain S302's behavior. Each dispatch
   preserves role scopes and required fresh sessions; every Review is a new,
   unforked Reviewer with an artifact-only brief. Resume chooses the next required
   stage or finding route from durable evidence, never treating an initial-stage

@@ -33,6 +33,8 @@ command -v jq >/dev/null 2>&1 || { fail "S287 — jq is needed by the fake gh"; 
 sandbox_create
 trap sandbox_destroy EXIT
 rr_setup
+# init for shellcheck only (rr_run sets them); non-zero so an unset status fails
+rr_out="" rr_status=1
 
 NL=$'\n'
 T1=2026-10-01T10:00:00Z T2=2026-10-02T10:00:00Z T3=2026-10-03T10:00:00Z T4=2026-10-04T10:00:00Z

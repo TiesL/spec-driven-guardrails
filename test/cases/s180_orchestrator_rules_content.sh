@@ -57,7 +57,7 @@ for non in question research "co-thinking" adoption; do need "AC4 non-work-item:
 # AC6: the override record, who and why, never self-granted.
 need "AC6 override marker" "pipeline-override"
 for field in decided-by scope reason; do need "AC6 override field $field" "$field"; done
-need "AC6 no self-granted shortcuts" "trivial"
+need "AC6 no self-granted shortcuts" "not even for a change you consider trivial"
 
 # AC7: cannot dispatch -> stop and ask.
 need "AC7 stop" "stop"

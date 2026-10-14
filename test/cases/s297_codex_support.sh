@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # S297 — Codex public Interface and evidence contract.
-# Covers: F52, F53
+# Covers: F47, F48, F51
 set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 sandbox_create

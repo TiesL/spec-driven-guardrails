@@ -1,4 +1,4 @@
-"""S288-S298: public commands and filesystem oracles; no fake runtime evidence."""
+"""S294-S304: public commands and filesystem oracles; no fake runtime evidence."""
 import hashlib
 import json
 import os
@@ -45,7 +45,7 @@ def expect(out, text):
     assert text in out, (text, out)
 
 try:
-    if SCENARIO == 288:
+    if SCENARIO == 294:
         assert (wf / 'generate-workflow-adapters.sh').is_file(), 'missing generator'
         run(wf / 'generate-workflow-adapters.sh')
         before = snapshot(wf)
@@ -73,7 +73,7 @@ try:
         expect(out, (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text())
         (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | no | date | reason |\n')
         assert (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text() not in run(wf / 'session-context.sh', '--runtime', 'codex', p)
-    elif SCENARIO in (289, 290):
+    elif SCENARIO in (295, 296):
         p = project(); (p / '.codex').mkdir(); (p / '.codex/config.toml').write_text('trust = "withheld"\n')
         out = adopt(p); status(p)
         for skill in ('grilling', 'role-contracts', 'model-choice'):
@@ -84,7 +84,7 @@ try:
         assert not (p / 'CLAUDE.md').exists()
         expect(out, 'installed'); expect(out, 'not live-loaded')
         print('Structural discovery only; real CLI/desktop loading remains unobserved.')
-    elif SCENARIO == 291:
+    elif SCENARIO == 297:
         p = project(); prefix = b'Project-owned notes with no final newline'
         (p / 'AGENTS.md').write_bytes(prefix)
         (p / '.agents/skills/local').mkdir(parents=True)
@@ -171,7 +171,7 @@ try:
                 assert snapshot(q) == old, parent
                 assert snapshot(external) == external_before, parent
                 assert all(not (hooks / h).exists() for h in ('pre-commit', 'commit-msg', 'pre-push'))
-    elif SCENARIO == 292:
+    elif SCENARIO == 298:
         p = project(); adopt(p)
         b = tmp / 'machine-b'; shutil.copytree(wf, b)
         shutil.rmtree(wf); env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(b); wf = b
@@ -187,7 +187,7 @@ try:
         (wf / 'policy/WORKFLOW.md').write_text((wf / 'policy/WORKFLOW.md').read_text()+'\nUPDATED-455\n')
         run(wf / 'generate-workflow-adapters.sh'); status(p, rc=1); adopt(p); status(p)
         print('One-host two-path recovery; real second-machine run remains unobserved.')
-    elif SCENARIO == 293:
+    elif SCENARIO == 299:
         p = project(); adopt(p)
         out = run(p / '.agents/skills/pre-merge-review/model-record-emit.sh', '--stage', 'Implementation', '--model', 'gpt-6.1-sol', cwd=p)
         control = run(wf / 'skills/pre-merge-review/model-record-emit.sh', '--stage', 'Implementation', '--model', 'gpt-6.1-sol')
@@ -200,7 +200,7 @@ try:
         section = skill.split('## Pending adoption gate')[1].split('## ')[0]
         command = re.search(r'```(?:bash)?\n(.*?)```', section, re.S).group(1)
         expect(run('bash', '-c', command, cwd=p), 'process-multi-agent-roles')
-    elif SCENARIO == 294:
+    elif SCENARIO == 300:
         p = project(); (p / '.claude').mkdir(); (p / '.claude/settings.json').write_text('own settings')
         out = adopt(p)
         claim = 'runtime-hooks: not-installed; runtime shell interception unavailable'
@@ -210,18 +210,18 @@ try:
             assert (p / '.git/hooks' / hook).is_symlink()
         assert not (p / '.codex').exists()
         expect((wf / 'adapters/codex/INSTRUCTIONS.md').read_text(), 'gh pr merge')
-    elif SCENARIO in (295, 296, 298):
+    elif SCENARIO in (301, 302, 304):
         assert (wf / 'adapters/codex/INSTRUCTIONS.md').is_file(), 'missing Codex mapping'
         mapping = (wf / 'adapters/codex/INSTRUCTIONS.md').read_text()
         orch = (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text()
         expect(mapping, 'ORCHESTRATOR.md'); expect(mapping, 'fresh'); expect(mapping, 'override')
-        if SCENARIO == 295: expect(mapping, 'unavailable'); expect(orch, '**Cannot dispatch**')
-        if SCENARIO == 296: expect(mapping, 'durable'); expect(orch, 'open findings')
-        if SCENARIO == 298:
+        if SCENARIO == 301: expect(mapping, 'unavailable'); expect(orch, '**Cannot dispatch**')
+        if SCENARIO == 302: expect(mapping, 'durable'); expect(orch, 'open findings')
+        if SCENARIO == 304:
             expect(orch, 'without requesting confirmation'); expect(mapping, 'continue')
             expect(orch, 'completed initial stage'); expect(orch, 'main')
         print('Instruction contract only; live dispatch/resume/continuation remains unobserved.')
-    elif SCENARIO == 297:
+    elif SCENARIO == 303:
         p = project()
         expect(run(wf / 'adopt.sh', p), 'created: CLAUDE.md')
         expect(run(wf / 'adopt.sh', p), 'unchanged: CLAUDE.md')

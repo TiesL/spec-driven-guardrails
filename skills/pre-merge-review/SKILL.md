@@ -39,6 +39,8 @@ comment, never to change files. This skill delivers findings, not fixes: a findi
 
 Every Review round, including a re-review after a fix commit, is a new dispatch of a fresh Reviewer; a Reviewer is never continued, by `SendMessage` or by the dispatch tool's `fork` type (not the `context: fork` above).
 
+A re-review after a trivial-fix commit (`Fix cost`, `role-contracts`) limits new findings to the fix delta, but its brief still lists every earlier slug so `finding-carryforward-gate.sh` is not tripped: a fixed low is reported `status=resolved`, a deferred low `status=open`.
+
 ## Review depth: quick vs thorough
 
 Every PR gets at least the single isolated Reviewer run above (`context: fork`) —

@@ -13,8 +13,31 @@ point.
 
 ## Unreleased
 
+- **Fix #467: warning-visibility wording after #430 acceptance.** `ARCHITECTURE.md` (A34), `CHANGES.md`,
+  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the hook transcript
+  only and did not reach the agent as command output in the #430 AC3 run. Text only; no behavior changed.
+- **Fix #477: S286 arm 5 no longer claims a bare `git grep` of the version token hits only two
+  files.** `TEST-SCENARIOS.md` states the arm's scope as a property and gives a path-scoped command
+  (excluding `TEST-SCENARIOS.md` and `test/`, which quote the token as data) with a "verified at"
+  commit. Text only; no test changed.
+- **Fix #472: S250 amendment text corrected.** `TEST-SCENARIOS.md` ("Issue #470 amendment"): arm
+  (7) states one expectation (`R:1:$T1:comment`, `R:2:$T1:review`, no `P` row), and the kill table
+  credits the caller-side-filter mutant to amendment arms 1-5, not a nonexistent S287 "arm B'". Text
+  only; no test changed.
+- **#488: trivial low review findings are now fixed in the PR.** The orchestrator's low-severity row
+  and the new `Fix cost` field in `skills/role-contracts/SKILL.md` replace "file every low as an
+  issue" (#415 decision 1): a `trivial` low is fixed in the PR (one trivial-fix commit per PR), any
+  other low is deferred. Arrives with `ORCHESTRATOR.md`; no choice to make, so no `CHANGES.md`
+  entry.
+- **Fix #473: S287 shellcheck SC2154 warnings cleared.** `test/cases/s287_issue_review_is_no_pr_round.sh`
+  initialises `rr_out` and `rr_status` after `rr_setup` (non-zero status, so an unset one fails).
+  No assertion changed.
+- **Fix #468: trailing whitespace removed from three test files.** `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at EOF). No behavior change. Recurrence guard: #484.
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
+- **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
+  version paragraph: SDG means this repository and workflow; an adopted project's installed copy is
+  the "adopted copy"; nothing is renamed).
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
