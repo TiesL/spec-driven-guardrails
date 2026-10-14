@@ -13,6 +13,9 @@ point.
 
 ## Unreleased
 
+- **Fix #467: warning-visibility wording after #430 acceptance.** `ARCHITECTURE.md` (A34), `CHANGES.md`,
+  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the hook transcript
+  only and did not reach the agent as command output in the #430 AC3 run. Text only; no behavior changed.
 - **Fix #477: S286 arm 5 no longer claims a bare `git grep` of the version token hits only two
   files.** `TEST-SCENARIOS.md` states the arm's scope as a property and gives a path-scoped command
   (excluding `TEST-SCENARIOS.md` and `test/`, which quote the token as data) with a "verified at"
