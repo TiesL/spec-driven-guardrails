@@ -3,21 +3,42 @@
 Release acceptance remains **unobserved** for the outstanding cases below.
 Automated filesystem fixtures and configured CI checks are structural evidence.
 The [dated operator-host record](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155405547)
-and [QA assessment](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6155374914)
-provide bounded observations supplied by the orchestrator, not independently
-reproduced by this Developer. They do not complete any runtime scenario.
+and [updated QA assessment](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6194073106)
+provide bounded observations, not independently reproduced by this Developer.
+No full manual acceptance scenario is complete. S294/S297/S299 structural
+checks remain a separate evidence class; this refresh does not re-certify them.
 
 | Surface | Bounded observation | Outstanding acceptance observations |
 | --- | --- | --- |
-| Codex CLI | Partial, 0.162.1: scratch read-only exec session `01a136ad-92c1-7510-8ae9-0e4c684115b6` read AGENTS heading/mapping; session-context emitted Continuation after opt-in yes. No role dispatch. | S295, S298–S302, S304 remain unobserved: matching skill use before dependent work; precedence/budget negatives; available fresh scoped roles and unforked Review; unavailable dispatch stop; resume; every finding route and two-round Architect step; uninterrupted ordinary handoffs; genuine decision/override/main-merge stops |
-| Codex desktop | Bundle `com.openai.codex` inventoried; computer-use getApp denied for safety. Presence only. | S296, S298–S302, S304 unobserved: restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld; loading, dispatch, resume, routes, continuation and stops |
-| Claude Code | CLI 2.1.296 structural adoption succeeded; live `claude -p` failed with `Not logged in`. No usable runtime workflow observed. | S303 unobserved: authenticated default/repeated adoption; legacy backups; fresh/resumed work; representative SessionStart/Bash PreToolUse/PostToolUse/SessionEnd and native Git/CI behavior; fresh Review and finding loop-back |
-| second machine | No independent environment available. | S298 unobserved: actual independent machine, local checkout/revision/OS, before/after status, missing clone-local links and owned stale-link repair, preserved answers/project bytes, actual guidance loading |
+| Codex CLI | Partial, 0.162.1: original macOS host fresh session `01a13f38-8b7e-7092-b7fe-181b4984b34b` reportedly read AGENTS, context, role-contracts and ORCHESTRATOR at feature HEAD `f71d9fd`. Independent MacBook terminal transcripts record actual reads in unopted session `01a13fc1-66b1-7242-90e2-abc215059404` and opted-in session `01a13fc5-30d2-7893-b793-85c00f49175d`. Answers describe routes/continuation/stops; no roles were dispatched. | S295, S298–S302, S304 remain partial/unobserved: matching/nonmatching skill use before dependent work; precedence/budget negatives; available fresh scoped roles and unforked Review; unavailable dispatch stop; artifact-based resume; every finding route and two-round Architect step/reset, including low-only/interrupted controls; uninterrupted ordinary handoffs; genuine decision/override/main-merge stops |
+| Codex desktop | Partial maintainer testimony: MacBook desktop 26.1007.71326, task `Run read-only #455 dry run`, session `01a13fe1-661a-7453-ba78-1d1067e9d801`, reported AGENTS/context/skill/ORCHESTRATOR reads and correct hypothetical route guidance, with no trust warning. Version, title and session id were supplied by the maintainer; raw tool transcript was not supplied. Original host computer-use app selection was denied separately. | S296, S298–S302, S304 unobserved: full configuration and actual action transcript; restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld and suppressed/unavailable guidance; actual dispatch, artifact-based resume, routes, continuation and stops |
+| Claude Code | Partial authenticated 2.1.300 feature-adopted scratch loading: session `266ec384-7614-4b36-8dd1-26f06426c7eb` read skill/ORCHESTRATOR and compared saved SessionStart output with `--add-dir /private/tmp/sdg-455`. Without that allowed directory, symlink reads were denied. Explicit CLI `--resume` returned the same id. Earlier 2.1.296 authentication failure is historical; the real-main-checkout session lacked role-contracts. | S303 remains partial: authenticated default/repeated adoption and legacy backups; fresh/stopped-workflow-stage resume with an open finding; representative SessionStart/Bash PreToolUse/PostToolUse/SessionEnd and guarded Git/native-hook/bypass/CI behavior; fresh Review and finding loop-back. Process resumption alone does not establish workflow recovery. |
+| second machine | Partial, real MacBook-Air-van-Ties, macOS 26.6.2, feature HEAD `f71d9fd`: maintainer Terminal observations cover absent local installation, initial/repeated adoption/status, moving the workflow checkout, stale owned-link/provenance diagnostics and repair, clean status, preserved adoption/owner bytes by `cmp`, local source resolution, and subsequent fresh CLI loading. Both hosts are macOS. | S298 remains partial: previously adopted shared-project transfer/clone from A to B (B's project was new); actual workflow version/revision update with before/after status and stale copied-block/readoption behavior; committed-artifact inspection for machine-path absence. Owned local-checkout relocation is observed, not this transfer/update variant. |
 
-The linked record contains the available exact commands, outputs, source state,
-local paths and session identifier. Missing configuration, trust, budget and
-runtime observations remain missing evidence; copied directories on this host
-and the existing development pipeline do not substitute for controlled runs.
+The linked operator record gives dated commands, outputs, configuration, source
+state, local paths and session identifiers where available. Its MacBook CLI and
+adoption observations are attributed to maintainer terminal transcripts. This
+Developer has not independently inspected those raw attachments. The original
+host's `/private/tmp/455-cli-live-output.txt` is a last answer, not a raw tool
+transcript. Desktop observations are a maintainer-provided task answer, not
+independent trace verification. Hypothetical route answers establish guidance
+understanding only; they do not establish actual dispatch or enforcement.
+
+S300's absent Codex runtime-interception message was observed. Representative
+live Claude/native-hook/bypass behavior remains unobserved. Missing trust,
+budget and behavioral observations remain missing evidence; copied directories
+on one host and the existing development pipeline do not substitute for the
+controlled per-surface runs.
+
+An active desktop QA → Developer → fresh Reviewer route can add bounded S304
+evidence only with actual product/version, thread/child-session ids, prompts,
+sequential results and absence of routine approval pauses recorded. The current
+parent uses the real repository main checkout while children read feature
+artifacts from `/private/tmp/sdg-455`; explicit dispatch instructions do not
+establish automatic discovery in a freshly feature-adopted desktop project.
+The linked QA report records only its QA leg at publication. This documentation
+refresh does not claim downstream completion or the full five-stage chain,
+other routes, two-round/reset controls, resume or required stops.
 
 For each run record:
 
