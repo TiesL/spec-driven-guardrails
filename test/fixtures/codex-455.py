@@ -144,6 +144,70 @@ try:
             old = snapshot(q); out = adopt(q, rc=1); expect(out, 'conflict'); assert snapshot(q) == old, name
             if name in ('foreign-link', 'broken-link'): expect(out, '.agents/skills/grilling')
             assert (snapshot(external) if external.exists() else {}) == external_before, name
+        # Valid machine-local provenance is forbidden in the index, even when
+        # its worktree file or original checkout has disappeared (S297/S298).
+        failures = []
+        for case in ('staged', 'committed', 'absent-record', 'clone', 'retained'):
+            for command in ((), ('--status',)):
+                label = case + ('-status' if command else '-adopt')
+                a = (tmp / ('checkout-a-' + label)).resolve()
+                shutil.copytree(wf, a)
+                q = project('provenance-' + label)
+                (q / 'AGENTS.md').write_text('project outside-block sentinel\n')
+                (q / 'WORKFLOW-ADOPTION.md').write_text('project answers sentinel\n')
+                (q / '.codex').mkdir(); (q / '.codex/config.toml').write_text('project config')
+                (q / '.agents/skills/local').mkdir(parents=True)
+                (q / '.agents/skills/local/SKILL.md').write_text('project skill')
+                env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(a)
+                adopt(q)
+                env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(wf)
+                record = '.guardrails/installation.json'
+                valid = json.loads((q / record).read_bytes())
+                assert valid['checkout'] == str(a) and valid['links']['.guardrails/source'] == str(a)
+                assert all(target.startswith(str(a)) for target in valid['links'].values())
+                run('git', '-C', q, 'add', 'AGENTS.md', 'WORKFLOW-ADOPTION.md', '.codex', '.agents/skills/local', '.gitignore')
+                run('git', '-C', q, 'add', '-f', record)
+                if case != 'staged':
+                    run('git', '-C', q, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                        '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'tracked provenance')
+                committed = run('git', '-C', q, 'show', 'HEAD:' + record) if case != 'staged' else None
+                if case == 'clone':
+                    original = q; q = tmp / ('received-' + label)
+                    run('git', 'clone', '-q', original, q)
+                    assert not (q / '.guardrails/source').is_symlink()
+                if case == 'absent-record': (q / record).unlink()
+                if case == 'retained': shutil.rmtree(a)
+                (q / 'tracked-sentinel').write_text('unrelated staged sentinel')
+                run('git', '-C', q, 'add', 'tracked-sentinel')
+                (q / 'check').write_text('stale scaffolding sentinel')
+                indexed = run('git', '-C', q, 'show', ':' + record)
+                assert json.loads(indexed) == valid and str(a) in indexed
+                if case != 'absent-record': assert json.loads((q / record).read_bytes()) == valid
+                # Read Git identity/index oracles before raw snapshots; no Git
+                # command between the raw snapshots may refresh the index.
+                staged = run('git', '-C', q, 'ls-files', '--stage', '-z')
+                head = run('git', '-C', q, 'rev-parse', '--verify', 'HEAD', rc=128 if case == 'staged' else 0)
+                before = snapshot(q); index = (q / '.git/index').read_bytes()
+                env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(a if case in ('staged', 'committed', 'absent-record') else wf)
+                result = subprocess.run([str(wf / 'adopt.sh'), '--runtime', 'codex', *command, str(q)],
+                                        env=env, capture_output=True, text=True)
+                after = snapshot(q); index_after = (q / '.git/index').read_bytes()
+                env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(wf)
+                out = result.stdout + result.stderr
+                try:
+                    assert result.returncode == 1, (result.returncode, out)
+                    expect(out, record + ': tracked machine-local provenance')
+                    expect(out, 'explicitly untrack or relocate')
+                    assert before == after, 'project/index mutation'
+                    assert index == index_after, 'raw index mutation'
+                    assert staged == run('git', '-C', q, 'ls-files', '--stage', '-z')
+                    assert head == run('git', '-C', q, 'rev-parse', '--verify', 'HEAD', rc=128 if case == 'staged' else 0)
+                    assert indexed == run('git', '-C', q, 'show', ':' + record)
+                    if committed is not None: assert committed == run('git', '-C', q, 'show', 'HEAD:' + record)
+                except AssertionError as exc:
+                    failures.append((label, str(exc)))
+                print('tracked provenance %s: %s' % (label, 'FAIL' if failures and failures[-1][0] == label else 'PASS'))
+        assert not failures, failures
         # S297: shared scaffolds are part of the same no-write preflight.
         failures = []
         cases = [(path, live) for path in (
@@ -260,10 +324,38 @@ try:
                 assert snapshot(external) == external_before, parent
                 assert all(not (hooks / h).exists() for h in ('pre-commit', 'commit-msg', 'pre-push'))
     elif SCENARIO == 298:
-        p = project(); adopt(p)
+        p = project()
+        (p / 'AGENTS.md').write_text('owner prefix\n')
+        (p / 'WORKFLOW-ADOPTION.md').write_text('owner answers')
+        (p / 'tracked-sentinel').write_text('index sentinel')
+        run('git', '-C', p, 'add', 'tracked-sentinel')
+        index = (p / '.git/index').read_bytes()
+        adopt(p)
+        run('git', '-C', p, 'add', 'AGENTS.md', 'WORKFLOW-ADOPTION.md', '.gitignore')
+        run('git', '-C', p, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'portable shared project')
+        clone = tmp / 'portable-clone'; run('git', 'clone', '-q', p, clone)
+        assert not (clone / '.guardrails/installation.json').exists()
+        assert not (clone / '.guardrails/source').is_symlink()
+        index = (p / '.git/index').read_bytes()
         b = tmp / 'machine-b'; shutil.copytree(wf, b)
         shutil.rmtree(wf); env['SPEC_DRIVEN_GUARDRAILS_DIR'] = str(b); wf = b
         status(p, rc=1); adopt(p); status(p)
+        assert (p / '.git/index').read_bytes() == index
+        assert (p / 'AGENTS.md').read_text().startswith('owner prefix\n')
+        assert (p / 'WORKFLOW-ADOPTION.md').read_text() == 'owner answers'
+        status(clone, rc=1)
+        clone_index = (clone / '.git/index').read_bytes()
+        adopt(clone); status(clone)
+        before = snapshot(clone); adopt(clone); assert snapshot(clone) == before
+        assert (clone / '.git/index').read_bytes() == clone_index
+        for shared in (p, clone):
+            names = run('git', '-C', shared, 'ls-files', '-z').split('\0')
+            assert '.guardrails/installation.json' not in names
+            assert not any(n.startswith('.agents/skills/') or n == '.guardrails/source' for n in names)
+            for name in filter(None, names):
+                blob = run('git', '-C', shared, 'show', 'HEAD:' + name)
+                assert str(tmp) not in blob and str(tmp.resolve()) not in blob
         assert (p / '.guardrails/source').resolve() == b.resolve()
         assert str(tmp) not in (p / 'AGENTS.md').read_text()
         for path in ('.guardrails/source', '.guardrails/installation.json', '.agents/skills/grilling'):

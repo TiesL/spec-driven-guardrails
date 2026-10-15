@@ -113,6 +113,13 @@ def main():
         for name in ('.guardrails', '.agents', '.agents/skills'):
             p = project / name
             if p.is_symlink() or (exists(p) and not p.is_dir()): raise Conflict(name + ': expected a real directory')
+        # Provenance contains machine-local absolute paths even when its
+        # worktree copy is absent. Reject indexed ownership before reading it.
+        tracked = subprocess.run(['git', '-C', str(project), 'ls-files', '-s', '-z'], capture_output=True)
+        if tracked.returncode: raise OSError('cannot read Git index')
+        for entry in tracked.stdout.decode().split('\0'):
+            if entry and entry.split('\t', 1)[1] == RECORD:
+                raise Conflict(RECORD + ': tracked machine-local provenance; explicitly untrack or relocate before adoption')
         if exists(project / 'AGENTS.override.md'): raise Conflict('AGENTS.override.md: overrides root instructions; resolve before adoption')
         data = regular(project / 'AGENTS.md', 'AGENTS.md')
         span = block(data, BEGIN, END, 'AGENTS.md')
@@ -151,8 +158,6 @@ def main():
                 raise Conflict(name + ': foreign/broken unrecorded/manually redirected link; restore recorded target or relocate project path')
             if name not in links: removals.append(name)
         # Absolute managed links cannot remain in the index. Never edit it.
-        tracked = subprocess.run(['git', '-C', str(project), 'ls-files', '-s', '-z'], capture_output=True)
-        if tracked.returncode: raise OSError('cannot read Git index')
         for entry in tracked.stdout.decode().split('\0'):
             if not entry: continue
             metadata, name = entry.split('\t', 1)

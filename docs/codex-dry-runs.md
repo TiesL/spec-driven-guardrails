@@ -40,6 +40,17 @@ The linked QA report records only its QA leg at publication. This documentation
 refresh does not claim downstream completion or the full five-stage chain,
 other routes, two-round/reset controls, resume or required stops.
 
+On 2026-10-15, the automated S297/S298 correction campaign covered valid
+staged/committed tracked provenance, an absent worktree record, receipt in a
+fresh clone and retained owned links after checkout A disappears. Both public
+adopt/status commands must reject the indexed record without project/index
+writes. The ten command cases failed before the code correction and passed
+after it; normal ignored provenance, clone-local installation and relocation
+remain green controls. These are filesystem/CLI observations on one host,
+not live runtime or independent-machine acceptance. The
+[round-4 QA strategy](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6199276898)
+retains the full outstanding runtime campaign listed above.
+
 For each run record:
 
 - Date, exact runtime/product and version, OS, install mode and configuration;
