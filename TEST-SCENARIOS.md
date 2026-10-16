@@ -5508,3 +5508,46 @@ behavioral obedience.
   freshness or obedience. Installation success, mocked dispatch, passing CI and
   static instruction matches never substitute for manual behavior evidence;
   no background scheduling or runtime hook enforcement is claimed.
+
+### S305 — the carry-forward gate counts a slug as mentioned only when the round carries exactly that slug as a whole token (#453)
+**Covers:** F28
+- Given: the carry-forward gate behind the S254 recording fake `gh` with REST data
+  (issue #453, AC1–AC7 plus the Architect's two extra cases; a slug is the maximal
+  run of non-whitespace characters after `finding:`, compared whole). Each case is
+  its own PR with two or three rounds; `ab` and `abc` are the prefix pair.
+- When: the gate runs
+- Then, per case (R red on `main` 7dcb490, G green there and a regression guard):
+  - C1 (AC1, R): round 1 `ab` open, round 2 only `abc` open: `ab` reported once, as round 2.
+  - C2 (AC2, G): round 2 has `ab` open, and separately `ab` resolved: nothing reported.
+  - C3 (AC3, G on `main`: `finding:abc` is no substring of `finding:ab`; guards the other direction): round 1 `abc` open, round 2 only `ab`: `abc` reported, as round 2.
+  - C4 (AC4, R): round 2 mentions both `ab` and `abc` (round 1 had both open):
+    nothing reported (G); round 2 mentions only `abc`: only `ab` reported (R).
+  - C5 (AC5): `finding:ab` followed by end of line, by a space, and by
+    ` status=resolved -->` each carry `ab` (G); `finding:ab-x` and `finding:ab_x` do
+    not, so `ab` is reported (R).
+  - C6 (AC6, G on main, guards a future regex rewrite): round 1 `a.c` open, round 2 only `abc`: `a.c` reported. Control (G):
+    round 2 carrying exactly `a.c` reports nothing. Same shape for `a+c`, `a*c`, `a[c`.
+  - C7 (AC7): `ab` open, missing in round 2, carried exactly in round 3: nothing
+    reported (G, A37b clearing); round 3 mentioning only `abc`: `ab` reported, as
+    round 2 (R).
+  - C8 (Architect, two markers on one line): a round 2 line holding
+    `<!-- finding:abc status=open -->` and `<!-- finding:ab status=resolved -->`
+    reports nothing for `ab` (G); the same line with `abc` and `abd` only reports
+    `ab` (R); each marker is judged on its own slug.
+  - C9 (Architect, regex-character slug as a guard against a future regex rewrite, G on main):
+    `a.c` and `a+c` each open in round 1, round 2 carrying only `abc` and `aac`:
+    both reported.
+  - C10 (Product decision 1, G for `ab` carried, R for glued forms): `finding:ab-->`,
+    `finding:ab"` and `finding:ab.` in round 2 do not carry `ab` (reported, R); the
+    gate fails loud and the reviewer re-flags. `xfinding:ab` still counts as a
+    mention (G, unchanged).
+  - Regression (G, existing cases): S131, S252, S254, S255 and S256 stay green
+    unchanged; output format, round numbering and fail-open warnings do not move.
+- Threat model: accidental (a short slug shadowed by a longer one that shares its
+  prefix, silently clearing a real accidental drop). No forger.
+- Kill table: substring `grep -F` of `finding:<slug>` (C1, C4, C5, C7, C10);
+  prefix-only or suffix-only match (C1/C3, C5); slug read as a regex, a future rewrite (C6, C9);
+  boundary limited to `[A-Za-z0-9_-]` or to a following space (C5, C10); a second
+  marker on the line masking the first (C8); only the first marker per line read
+  (C8); the boundary check applied to the open side only (C1, C3); clearing broken
+  by the fix (C7); a changed output line or round number (S254).

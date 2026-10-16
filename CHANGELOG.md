@@ -13,6 +13,9 @@ point.
 
 ## Unreleased
 
+- **Fix #453: the carry-forward gate counts a slug as mentioned only on an exact whole-token match.**
+  `finding-carryforward-gate.sh` no longer lets `finding:abc` clear a dropped `ab`; a slug is the maximal
+  non-whitespace run after `finding:`. New S305 (`test/cases/s305_carryforward_slug_exact.sh`); F28 and A37 state the rule.
 - **Fix #467: warning-visibility wording after #430 acceptance.** `ARCHITECTURE.md` (A34), `CHANGES.md`,
   `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the hook transcript
   only and did not reach the agent as command output in the #430 AC3 run. Text only; no behavior changed.
