@@ -1767,28 +1767,39 @@ and dispatch. Practical parity means consistent workflow and check outcomes;
 documentation makes no unverified claim of identical runtime automation or
 mechanically proven behavioral compliance.
 
-### F52 — Recorded Codex workflow dry runs (issue #455 AC8)
+### F52 — Accurate Codex workflow evidence and deferred live observations (issue #455 AC8)
 
-Human dry runs in Codex CLI and Codex desktop exercise starting work, resuming
-work and unavailable dispatch. Each records whether guidance was available
-and whether the shared workflow behavior was followed.
+For #455's expedited release, report available Codex CLI and desktop
+observations with their raw or attributed provenance and limits. Separate
+static installation/adapter checks from observed guidance loading,
+start/resume, dispatch, finding routes and unavailable-dispatch behavior.
+Unobserved live variants remain unverified, are enumerated in QA-owned
+follow-up #503, and are collected during actual Codex work. A passing check,
+installed link, route answer or partial trace is never treated as a completed
+runtime dry run or proof of behavioral parity.
 
 ### F53 — Continued Claude workflow usability (issue #455 AC9)
 
-Adding Codex integration preserves supported Claude workflow behavior, verified
-through existing Claude workflow checks and a human Claude dry run. Codex web,
-other agent products and the completed Stageuur invoice change remain outside
-the #455 product scope.
+Adding Codex integration preserves supported Claude workflow behavior as a
+requirement; existing Claude workflow checks and the available attributed
+runtime record are assessed for regressions, while remaining live Claude
+variants are documented as unverified and tracked in QA-owned follow-up #503.
+Codex web, other agent products and the completed Stageuur invoice change
+remain outside the #455 product scope.
 
-### F54 — Autonomous Codex role handoffs (issue #455 AC10)
+### F54 — Autonomous Codex role handoffs and honest evidence boundary (issue #455 AC10)
 
-Once the five-role workflow is authorized, the Codex orchestrator autonomously
-continues through routine Product, Architect, QA, Developer and Reviewer
-handoffs, including the existing finding routes, without asking the user to
-confirm each stage. It preserves role contracts, fresh-session requirements,
-stage order, opt-in behavior and human override rules. It stops only for an
-existing required human decision or override, unavailable required role
-dispatch, or confirmation before merging into `main`.
+Once the five-role workflow is authorized, the shared policy and Codex adapters
+require the orchestrator to continue routine Product, Architect, QA, Developer
+and fresh Reviewer handoffs and existing finding routes without asking for
+confirmation at each stage. Preserve scopes, stage order, opt-in, durable
+artifact-based resume, fresh unforked Review and human override rules. Stop
+for an unresolved human decision or override, unavailable required fresh-role
+dispatch, or explicit human confirmation before merging into `main`.
+Structural review verifies this contract is present and consistent; live
+execution across CLI and desktop remains unverified where not actually
+observed and is tracked in QA-owned follow-up #503. This release makes no
+claim of proven runtime behavioral parity.
 
 ## Non-functional characteristics
 
