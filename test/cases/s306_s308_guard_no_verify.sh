@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S305-S307 — Bypass options, operand controls, and explicit escapes. Covers: F7
+# S306-S308 — Bypass options, operand controls, and explicit escapes. Covers: F7
 set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory() as tmp:
             check(f'CLAUDE_WORKFLOW_GUARDRAILS_OFF={value} ' + command, warning=True)
         blocked(command, flag, extra={'CLAUDE_WORKFLOW_MERGE_GUARD_OFF': '1'})
         blocked('CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 ' + command, flag)
-print(f'S305-S307: {checks} checks; {len(failures)} failures')
+print(f'S306-S308: {checks} checks; {len(failures)} failures')
 for failure in failures: print(failure)
 sys.exit(bool(failures))
 PY

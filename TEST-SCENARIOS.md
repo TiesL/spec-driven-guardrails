@@ -397,7 +397,7 @@ something new is being added.
 
 ---
 
-### S305 — Hook bypass options require the explicit workflow escape hatch (#441 AC1)
+### S306 — Hook bypass options require the explicit workflow escape hatch (#441 AC1)
 **Covers:** F7
 - Seam: invoke the real `hooks/git-guardrails` with stdin PreToolUse JSON
   (`tool_name: Bash`, fixture `cwd`, `tool_input.command`); observe exit status
@@ -418,9 +418,9 @@ something new is being added.
   demonstrably fail its exit/diagnostic oracle against the old hook; on main,
   an existing unrelated exit 2 alone is insufficient evidence.
 
-### S306 — Option operands and prose remain data (#441 false-positive controls)
+### S307 — Option operands and prose remain data (#441 false-positive controls)
 **Covers:** F7
-- Given: the S305 Interface and a feature-branch fixture
+- Given: the S306 Interface and a feature-branch fixture
 - Then: exact exit 0 for ordinary commit/push, `git push -n origin HEAD`,
   commit `-m '--no-verify'`, `-m '-n'`, `--message=--no-verify`,
   `-m--no-verify`, `-mn`, `-am--no-verify`, `-F --no-verify`,
@@ -435,12 +435,12 @@ something new is being added.
   An actual bypass command after a heredoc terminator is blocked.
 - Existing S11–S14 and S44–S47 remain regression controls: allowing data
   does not exempt a real commit/push on/to main from its existing policy.
-  These controls may already be green; record them separately from S305's
+  These controls may already be green; record them separately from S306's
   red evidence rather than claiming every new assertion initially fails.
 
-### S307 — Bypass permission is explicit and visibly warned (#441 AC2)
+### S308 — Bypass permission is explicit and visibly warned (#441 AC2)
 **Covers:** F7
-- Given: each of the three S305 direct spellings through the JSON Seam
+- Given: each of the three S306 direct spellings through the JSON Seam
 - When: `CLAUDE_WORKFLOW_GUARDRAILS_OFF=1` is set in the hook process
   environment, or prefixes the evaluated command
 - Then: exact exit 0 and stderr warns that the workflow guard is disabled
