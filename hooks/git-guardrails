@@ -852,6 +852,45 @@ short_flag_has() {
   esac
 }
 
+# Scan only actual commit/push options; their operands remain data. The
+# shell reader already owns quoting and segmentation. Keep Git policy here.
+check_hook_bypass() {
+  local sub="$1" token cluster letter
+  shift
+  while [ $# -gt 0 ]; do
+    token="$1"
+    shift
+    case "$token" in
+      --) return 0 ;;
+      --no-verify)
+        block "git $sub $token" "this bypasses native Git hooks; use the explicit workflow escape hatch." ;;
+      --*=*) continue ;;
+      --*)
+        case "$sub:$token" in
+          commit:--message|commit:--file|commit:--author|commit:--date|commit:--reedit-message|commit:--reuse-message|commit:--fixup|commit:--squash|commit:--trailer|commit:--template|commit:--cleanup|commit:--pathspec-from-file|push:--repo|push:--recurse-submodules|push:--receive-pack|push:--exec|push:--push-option)
+            [ $# -gt 0 ] && shift ;;
+        esac ;;
+      -?*)
+        cluster="${token#-}"
+        while [ -n "$cluster" ]; do
+          letter="${cluster:0:1}"
+          cluster="${cluster:1}"
+          if [ "$sub:$letter" = "commit:n" ]; then
+            block "git $sub $token" "this bypasses native Git hooks (-n); use the explicit workflow escape hatch."
+          fi
+          case "$sub:$letter" in
+            commit:m|commit:F|commit:c|commit:C|commit:t|push:o)
+              if [ -z "$cluster" ] && [ $# -gt 0 ]; then shift; fi
+              break ;;
+            commit:S|commit:u)
+              # These optional values must be attached, never the next token.
+              break ;;
+          esac
+        done ;;
+    esac
+  done
+}
+
 # Does this argument point at the entire working directory? `.`, `./`, and
 # `./.` are the same place.
 is_whole_workdir() {
@@ -933,6 +972,10 @@ judge_segment() {
   local sub="${1:-}"
   [ -n "$sub" ] || return 0
   shift
+
+  case "$sub" in
+    commit|push) check_hook_bypass "$sub" "$@" ;;
+  esac
 
   local arg
   case "$sub" in

@@ -282,6 +282,14 @@ production rollout at the latest; the rest → visible until you get to it.
 
 Blocks `reset --hard`, `clean -f[d]`, `branch -D`, `checkout .`/`restore .`,
 `commit` **on `main`**, and `push` **to `main`**.
+It also blocks actual `commit --no-verify`, commit `-n` (including short
+option clusters), and `push --no-verify` options before branch checks.
+Option operands and paths after `--` remain data; push `-n` remains a dry
+run. These bypass options require the existing, visibly warned
+`CLAUDE_WORKFLOW_GUARDRAILS_OFF=1` escape hatch. The merge-only escape hatch
+does not disable this Git policy. This applies to recognized Claude Bash
+calls; native hooks and Codex cannot intercept their own `--no-verify`
+bypass.
 
 **Blocking `commit` on `main` is a deliberate extension**, added at TiesL's
 request after it turned out that blocking only the push creates a bad moment:
