@@ -824,7 +824,9 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   comments and PR reviews over REST (no GraphQL, #318), compares each round
   with the one before it (#421), buffers its findings and fails open with a
   warning on any fetch or tool failure; the `finding:` slug reading is its
-  own and never in the lib. A37b (#426): a gap (open in round k-1, not
+  own and never in the lib: both sides read a slug as the maximal non-whitespace
+  run after `finding:` and compare it whole, so a slug is mentioned only by
+  exactly that token (#453). A37b (#426): a gap (open in round k-1, not
   mentioned in round k) is cleared by any later round that mentions the slug,
   open or resolved, so the gate reports a slug iff the latest round that
   mentions it leaves it open and is not the last round, one line per slug

@@ -31,7 +31,8 @@
 # gate reports a slug if, and only if, the latest round that mentions it leaves
 # it open and is not the last round; the line names the round after that one,
 # the round that dropped it. One line per slug. "Mentions" is `finding:<slug>`
-# anywhere in the round (unchanged; the slug reading is out of scope, #347).
+# anywhere in the round, and the slug is the maximal run of non-whitespace characters after
+# `finding:`, compared whole: `ab` is not mentioned by `finding:abc` (#453).
 #
 # Fail-open without gh or network: warn, don't block — same ground rule
 # as every other gate here.
@@ -110,19 +111,34 @@ read_open() {
 # is_open <slug>: 0 when OPEN lists it. Pure bash, nothing to fail.
 is_open() { case "$NL$OPEN$NL" in *"$NL$1$NL"*) return 0 ;; esac; return 1; }
 
-# mentioned <slug> <body>: 0 when the body has finding:<slug> anywhere (open or resolved).
-mentioned() {
-  local c rc
-  c="$(LC_ALL=C grep -acF -e "finding:$1" <<<"$2")"
+# read_mentions <body>: sets MENTIONS to every token `finding:<slug>` in the body (open or
+# resolved, marker or prose), one slug per line. A slug is the maximal run of non-whitespace
+# characters after `finding:` (the same reading OPEN_RE uses), kept whole and compared as text.
+MENTIONS=""
+read_mentions() {
+  local hits rc s
+  MENTIONS=""
+  hits="$(LC_ALL=C grep -aEc 'finding:[^[:space:]]+' <<<"$1")"
   rc=$?
-  case "$c" in
+  case "$hits" in
     "" | *[!0-9]*) skip "could not compare the rounds (grep printed no count, exit $rc)" ;;
   esac
-  if [ "$rc" -ge 2 ] || { [ "$rc" -eq 1 ] && [ "$c" != 0 ]; } || { [ "$rc" -eq 0 ] && [ "$c" = 0 ]; }; then
-    skip "could not compare the rounds (grep exit $rc)"
+  if [ "$hits" -eq 0 ]; then
+    [ "$rc" -eq 1 ] || skip "could not compare the rounds (grep exit $rc)"
+    return 0
   fi
-  [ "$rc" -eq 0 ]
+  [ "$rc" -eq 0 ] || skip "could not compare the rounds (grep exit $rc)"
+  s="$(LC_ALL=C grep -aoE 'finding:[^[:space:]]+' <<<"$1")"
+  rc=$?
+  { [ "$rc" -eq 0 ] && [ -n "$s" ]; } || skip "could not compare the rounds (grep -o exit $rc, printed nothing)"
+  s="$(LC_ALL=C sed -E 's/^finding://' <<<"$s")"
+  rc=$?
+  { [ "$rc" -eq 0 ] && [ -n "$s" ]; } || skip "could not compare the rounds (sed exit $rc, printed nothing)"
+  MENTIONS="$s"
 }
+
+# mentioned <slug>: 0 when MENTIONS lists exactly that slug. Pure bash, nothing to fail.
+mentioned() { case "$NL$MENTIONS$NL" in *"$NL$1$NL"*) return 0 ;; esac; return 1; }
 
 # One walk over the rounds. cands holds one line per slug that was ever open:
 # <slug> TAB <latest round that mentions it> TAB <1 if that round leaves it open>.
@@ -141,12 +157,13 @@ while [ -n "$rest_rounds" ]; do
   body="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')" || skip "could not decode a round (tr failed)"
   [ -n "$body" ] || skip "could not decode a round (tr printed nothing)"
   read_open "$body"
+  read_mentions "$body"
   newc=""
   rest_c="$cands"
   while [ -n "$rest_c" ]; do
     line="${rest_c%%"$NL"*}"; rest_c="${rest_c#*"$NL"}"
     slug="${line%%"$tab"*}"; r="${line#*"$tab"}"; r="${r%%"$tab"*}"; o="${line##*"$tab"}"
-    if mentioned "$slug" "$body"; then
+    if mentioned "$slug"; then
       r="$n"
       if is_open "$slug"; then o=1; else o=0; fi
     fi
