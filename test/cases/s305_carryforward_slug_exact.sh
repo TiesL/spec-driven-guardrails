@@ -10,7 +10,7 @@
 # prefix silently clears a real accidental drop). No forger.
 #
 # Kill table (mutations this case must not survive):
-#   substring-grep    `grep -F finding:<slug>` as before (C1, C3, C4, C5, C7, C10)
+#   substring-grep    `grep -F finding:<slug>` as before (C1, C4, C5, C7, C10)
 #   prefix/suffix     prefix-only or suffix-only match (C1/C3, C5)
 #   slug-as-regex     a future rewrite that reads the slug as a pattern (C6, C9)
 #   narrow-boundary   boundary limited to [A-Za-z0-9_-] or to a following space (C5, C10)
