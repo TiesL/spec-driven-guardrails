@@ -1721,6 +1721,86 @@ application of a row in a live session require human review (AC7). This item
 lands after F41/F42 and before the release documentation and acceptance work
 in the agreed #408 scope.
 
+### F45 — Shared workflow guidance across supported agents (issue #455 AC1)
+
+An adopted project provides the same role definitions, stage order, role scopes,
+opt-in behavior and human override rules in Claude Code, Codex CLI and Codex
+desktop. Shared workflow meaning follows the completed `v0.4.0` baseline;
+adding Codex support does not redesign the five-role workflow.
+
+### F46 — Detectable drift between shared guidance and runtime adapters (issue #455 AC2)
+
+When shared workflow rules change, applicable repository checks report
+mechanically detectable drift between the shared source and runtime adapters.
+Users can distinguish a consistent adapter from one requiring an update.
+
+### F47 — Codex CLI adoption and guidance discovery (issue #455 AC3)
+
+A user beginning work in an adopted project with Codex CLI can discover project
+instructions and relevant shared skills, including grilling and role-contracts.
+Adoption supports machine-local setup without requiring Claude-only files or a
+committed machine-specific absolute path.
+
+### F48 — Codex desktop guidance discovery (issue #455 AC4)
+
+A user beginning work in the same adopted project with Codex desktop can
+discover the same shared project instructions and relevant skills available
+in Codex CLI, including grilling and role-contracts.
+
+### F49 — Explicit handling of unavailable Codex role dispatch (issue #455 AC5)
+
+When a Codex surface cannot dispatch a required fresh role session, the workflow
+stops at that stage and requests the existing human override decision. Roles
+are not silently collapsed into the current session.
+
+### F50 — Consistent shared check outcomes (issue #455 AC6)
+
+Runtime-independent artifact and convention checks produce the same results
+in either supported workflow. Runtime-dependent behavior is identified so
+users can interpret differences without mistaking them for shared guarantees.
+
+### F51 — Accurate runtime capability documentation (issue #455 AC7)
+
+Adoption and project documentation clearly distinguish shared behavior,
+Codex-specific behavior, Claude-specific behavior and limitations for hooks
+and dispatch. Practical parity means consistent workflow and check outcomes;
+documentation makes no unverified claim of identical runtime automation or
+mechanically proven behavioral compliance.
+
+### F52 — Accurate Codex workflow evidence and deferred live observations (issue #455 AC8)
+
+For #455's expedited release, report available Codex CLI and desktop
+observations with their raw or attributed provenance and limits. Separate
+static installation/adapter checks from observed guidance loading,
+start/resume, dispatch, finding routes and unavailable-dispatch behavior.
+Unobserved live variants remain unverified, are enumerated in QA-owned
+follow-up #503, and are collected during actual Codex work. A passing check,
+installed link, route answer or partial trace is never treated as a completed
+runtime dry run or proof of behavioral parity.
+
+### F53 — Continued Claude workflow usability (issue #455 AC9)
+
+Adding Codex integration preserves supported Claude workflow behavior as a
+requirement; existing Claude workflow checks and the available attributed
+runtime record are assessed for regressions, while remaining live Claude
+variants are documented as unverified and tracked in QA-owned follow-up #503.
+Codex web, other agent products and the completed Stageuur invoice change
+remain outside the #455 product scope.
+
+### F54 — Autonomous Codex role handoffs and honest evidence boundary (issue #455 AC10)
+
+Once the five-role workflow is authorized, the shared policy and Codex adapters
+require the orchestrator to continue routine Product, Architect, QA, Developer
+and fresh Reviewer handoffs and existing finding routes without asking for
+confirmation at each stage. Preserve scopes, stage order, opt-in, durable
+artifact-based resume, fresh unforked Review and human override rules. Stop
+for an unresolved human decision or override, unavailable required fresh-role
+dispatch, or explicit human confirmation before merging into `main`.
+Structural review verifies this contract is present and consistent; live
+execution across CLI and desktop remains unverified where not actually
+observed and is tracked in QA-owned follow-up #503. This release makes no
+claim of proven runtime behavioral parity.
+
 ## Non-functional characteristics
 
 ### Security

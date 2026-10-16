@@ -253,12 +253,23 @@ the `SessionStart` hook, a single notice easy to scroll past mid-session
 and never re-surfaced at PR time. Found via #238 (`portfolio-mgt-agents`):
 8 applicable rows sat unanswered and unmentioned across two merged PRs.
 
-Run it the same way the `SessionStart` hook resolves its own checkout path:
+Resolve the shared checkout from the active adapter (or the session's local
+`SPEC_DRIVEN_GUARDRAILS_DIR`), then run the same public check:
 
-```
-p="$(pwd)"; target=$(readlink "$p/.claude/settings.json" 2>/dev/null); \
-  wf=$(dirname "$(dirname "$target")"); \
-  [ -x "$wf/pending-changes.sh" ] && "$wf/pending-changes.sh" "$p"
+```bash
+p="$(pwd)"
+wf="${SPEC_DRIVEN_GUARDRAILS_DIR:-}"
+if [ -z "$wf" ] && [ -d "$p/.guardrails/source" ]; then
+  wf="$(cd "$p/.guardrails/source" && pwd -P)"
+elif [ -z "$wf" ]; then
+  target="$(readlink "$p/.claude/settings.json" 2>/dev/null)"
+  wf="$(dirname "$(dirname "$target")")"
+fi
+if [ -x "$wf/pending-changes.sh" ]; then
+  "$wf/pending-changes.sh" "$p"
+else
+  echo "warning: pending adoption check unavailable; restore local adoption" >&2
+fi
 ```
 
 Any output is a finding in the PR, one row per line — not a hard block

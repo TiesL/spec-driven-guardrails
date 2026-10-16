@@ -5,12 +5,46 @@
 # Usage:
 #   ./adopt.sh                 # adopts the workflow in the current directory
 #   ./adopt.sh /path/to/proj   # adopts the workflow in the given directory
-#   ./adopt.sh --user           # sets the ~/.claude/CLAUDE.md symlink (once per machine)
+#   ./adopt.sh --user           # Claude-only user adoption trigger
+#   ./adopt.sh --runtime codex [project]  # install/update Codex CLI/desktop
+#   ./adopt.sh --status --runtime claude|codex [project]  # read-only inventory
 #
 # Requires: environment variable SPEC_DRIVEN_GUARDRAILS_DIR, pointing at the
 # local checkout of this repo on *this* machine (see README.md).
 
-set -euo pipefail
+set -Eeuo pipefail
+
+# Parse the complete public Interface before any project writes.
+runtime=claude
+runtime_seen=0
+status_mode=0
+user_mode=0
+project_arg=""
+project_seen=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --runtime)
+      [ "$runtime_seen" -eq 0 ] && [ "$#" -ge 2 ] || { echo "Error: repeated or missing --runtime" >&2; exit 2; }
+      runtime_seen=1
+      runtime="$2"
+      case "$runtime" in claude|codex) ;; *) echo "Error: unknown runtime: $runtime" >&2; exit 2 ;; esac
+      shift 2 ;;
+    --status)
+      [ "$status_mode" -eq 0 ] || { echo "Error: repeated --status" >&2; exit 2; }
+      status_mode=1; shift ;;
+    --user)
+      [ "$user_mode" -eq 0 ] || { echo "Error: repeated --user" >&2; exit 2; }
+      user_mode=1; shift ;;
+    -*) echo "Error: unknown option: $1" >&2; exit 2 ;;
+    *)
+      [ "$project_seen" -eq 0 ] && [ -n "$1" ] || { echo "Error: multiple or invalid projects" >&2; exit 2; }
+      project_seen=1; project_arg="$1"; shift ;;
+  esac
+done
+if [ "$user_mode" -eq 1 ] && { [ "$runtime" != claude ] || [ "$status_mode" -eq 1 ] || [ "$project_seen" -eq 1 ]; }; then
+  echo "Error: --user is Claude-only and cannot combine with status/project" >&2
+  exit 2
+fi
 
 if [ -z "${SPEC_DRIVEN_GUARDRAILS_DIR:-}" ]; then
   echo "Error: SPEC_DRIVEN_GUARDRAILS_DIR is not set." >&2
@@ -506,6 +540,13 @@ adopt_project() {
   install_skills "$project_dir"
   install_git_hooks "$project_dir"
 
+  scaffold_shared "$project_dir"
+
+  echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
+}
+
+scaffold_shared() {
+  local project_dir="$1"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/PRD.md" "$project_dir/PRD.md"
   scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/TEST-SCENARIOS.md" "$project_dir/TEST-SCENARIOS.md"
   # #156: the template was renamed from ARCHITECTUUR.md to ARCHITECTURE.md.
@@ -584,11 +625,81 @@ adopt_project() {
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" "$project_dir/CONTEXT.md"
   fi
 
-  echo "Done: $project_dir now uses the shared workflow from $CLAUDE_WORKFLOW_DIR"
 }
 
-if [ "${1:-}" = "--user" ]; then
+# Read-only destination selection for the Codex ownership preflight. Keep the
+# same gates as scaffold_shared; Claude retains its existing adoption behavior.
+shared_destinations() {
+  local project_dir="$1" name
+  shared_paths=()
+  for name in PRD.md TEST-SCENARIOS.md check-traceability.sh; do
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/$name" ] || shared_paths+=("$name")
+  done
+  if [ ! -e "$project_dir/ARCHITECTUUR.md" ] && [ -f "$CLAUDE_WORKFLOW_DIR/templates/ARCHITECTURE.md" ]; then
+    shared_paths+=(ARCHITECTURE.md)
+  fi
+  # chmod is selected even when no source template is available.
+  [ ! -f "$project_dir/check-traceability.sh" ] || shared_paths+=(check-traceability.sh)
+  if [ -d "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE" ] && {
+    [ -d "$project_dir/.github/ISSUE_TEMPLATE" ] || answered_yes "$project_dir" process-issue-tracking;
+  }; then
+    shared_paths+=(.github/ISSUE_TEMPLATE)
+    for name in "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE/"*.md "$CLAUDE_WORKFLOW_DIR/templates/ISSUE_TEMPLATE/config.yml"; do
+      [ ! -f "$name" ] || shared_paths+=(".github/ISSUE_TEMPLATE/$(basename "$name")")
+    done
+  fi
+  if [ -x "$project_dir/check" ]; then
+    shared_paths+=(.github/workflows)
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" ] || shared_paths+=(.github/workflows/ci.yml)
+    for name in check-pr-issue-link.sh check-main-via-pr.sh wait-for-ci.sh; do
+      if [ -f "$CLAUDE_WORKFLOW_DIR/templates/$name" ] || [ -f "$project_dir/$name" ]; then
+        shared_paths+=("$name")
+      fi
+    done
+  fi
+  shared_seed_context=0
+  if [ ! -e "$project_dir/WORKFLOW-ADOPTION.md" ] && [ ! -e "$project_dir/WORKFLOW-ADOPTIE.md" ] && [ -f "$CLAUDE_WORKFLOW_DIR/CHANGES.md" ]; then
+    shared_paths+=(WORKFLOW-ADOPTION.md)
+    _shared_project_dir="$project_dir"
+    iterate_all_entries "$CLAUDE_WORKFLOW_DIR" shared_seed_selection
+  fi
+  if [ "$shared_seed_context" -eq 1 ] \
+    || grep -qE '^\| *process-context-document *\| *yes *\|' "$project_dir/WORKFLOW-ADOPTION.md" 2>/dev/null \
+    || grep -qE '^\| *proces-context-document *\| *ja *\|' "$project_dir/WORKFLOW-ADOPTIE.md" 2>/dev/null; then
+    [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/CONTEXT.md" ] || shared_paths+=(CONTEXT.md)
+  fi
+}
+
+shared_seed_selection() {
+  if [ "$1" = process-context-document ] && [ "$2" != question ] && predicate_true "$3" "$_shared_project_dir"; then
+    shared_seed_context=1
+  fi
+}
+
+project_dir="${project_arg:-.}"
+if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
+elif [ "$runtime" = codex ]; then
+  shared_destinations "$project_dir"
+  if [ "$status_mode" -eq 1 ]; then
+    exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status "${shared_paths[@]}"
+  fi
+  trap 'echo "incomplete installation: runtime codex; inspect reported paths before retrying" >&2' ERR
+  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" install "${shared_paths[@]}"
+  # Ownership conflicts were preflighted before all writes; the Codex plan
+  # installed owned native hooks and left foreign hooks untouched.
+  scaffold_shared "$project_dir"
+  echo "Done: runtime codex installed; structural installation only, not live-loaded."
+elif [ "$status_mode" -eq 1 ]; then
+  exec python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir"
 else
-  adopt_project "${1:-.}"
+  echo "runtime: claude; project: $project_dir"
+  echo "checkout: $CLAUDE_WORKFLOW_DIR; revision: $(git -C "$CLAUDE_WORKFLOW_DIR" rev-parse HEAD 2>/dev/null || echo unavailable)"
+  installation_before="$(mktemp)"
+  trap 'rm -f "$installation_before"' EXIT
+  python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" snapshot > "$installation_before"
+  trap 'echo "incomplete installation: runtime claude; inspect reported paths before retrying" >&2' ERR
+  adopt_project "$project_dir"
+  python3 "$own_dir/lib/claude-status.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" report "$installation_before"
+  echo "Claude installed; structural installation only, not live-loaded."
 fi

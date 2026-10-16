@@ -5207,3 +5207,304 @@ that evidence and the final `./check` result.
   entry. S284's dated-section checks stay green; `CHANGES.md` gains no
   `#488` line.
 - Red today: the F44 paragraph has no supersession sentence; no notice.
+
+## Codex support and shared workflow parity — #455 (A38)
+
+These eleven durable scenarios map the planning aliases C455-S1–C455-S10 plus
+S304 to F45–F54 and issue #455 AC1–AC10. Public command Interfaces, project
+filesystem state and durable issue/PR evidence are the automated Seams; runtime
+instruction loading and session behavior require human observation. Developer
+writes and runs new automated behavior red before implementation, then CI
+independently repeats it. Existing v0.4.0 regressions remain green controls.
+
+Under numbered decision #455-D4, #455 release assessment uses exact-HEAD
+automated checks, source/adoption and documentation review, and attributed
+partial observations only to the extent actually observed. S294/S297/S299
+public-command and structural outcomes are release evidence; S300's capability
+inventory and existing Claude regressions are assessed structurally. The
+remaining live variants in S295/S296/S298/S300–S304 are explicitly unverified
+where not observed and tracked in QA-owned #503 for collection during actual
+work. Their behavior oracles remain required; an observed failure still needs
+assessment before release. Neither a green check, installed link, hypothetical
+route answer nor a partial trace passes an unobserved manual variant or a whole
+scenario. No check proves model identity, authorship, session freshness or
+behavioral obedience.
+
+### S294 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
+**Covers:** F45, F46
+- Given: A38's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
+  owners (including role-contracts/ORCHESTRATOR and model-choice), CHANGES.md
+  version ownership, and the two mappings `adapters/claude/INSTRUCTIONS.md`
+  and `adapters/codex/INSTRUCTIONS.md`.
+- When: `generate-workflow-adapters.sh` runs twice and
+  `check-workflow-adapters.sh [workflow-checkout]` runs without writes,
+  directly and through root `check` static mode/CI.
+- Then: root WORKFLOW.md and adapters/codex/AGENTS.md have deterministic exact
+  bytes in generated-header, canonical-policy, selected-mapping order, without
+  timestamps/machine paths. Clean drift exits 0; mismatching/missing contract
+  exits 1 and names every source/output; invalid/unreadable input exits 2.
+  Both expose the same five roles, stage order, scopes, opt-in and overrides.
+  `session-context.sh --runtime claude|codex <project>` defaults to Claude,
+  preserves CHANGES/answered_yes selection and emits ORCHESTRATOR verbatim only
+  when opted in. Both mappings require context and invoked-skill reads.
+- Negative variants: mutate one canonical policy sentence: both outputs become
+  stale and regeneration includes it in both. Change/delete either output or
+  required mapping/owner: name the affected path, never report clean. After
+  regeneration an adopted Codex copied block is stale until readoption, while
+  Claude's WORKFLOW symlink follows live. Semantic review rejects contradictory
+  adapter-only policy prose even if byte generation is consistent. A Markdown
+  link alone cannot establish live loaded guidance. Automated byte/context
+  checks and manual policy-loading observations are distinct evidence.
+
+### S295 — fresh Codex CLI sessions discover and actually read guidance and skills (C455-S2; AC1, AC3)
+**Covers:** F45, F47
+- Given: a supported CLI version and locally adopted project, with individual
+  canonical skill links including grilling and role-contracts, plus controlled
+  parent/root/deeper instruction precedence and instruction-budget cases.
+- When: a human starts fresh matching and nonmatching tasks and observes the
+  instructions, explicit session-context output read and relevant skill-file
+  reads before dependent work.
+- Then: applicable shared rules and invoked skills are available and used;
+  nonmatching tasks do not pretend every skill was invoked. Record exact
+  runtime/version, configuration, checkout revision, local path, observed
+  loaded rules/skills and resulting action. Static path checks establish only
+  installation. CLI/desktop use the same local installation and skill bodies.
+- Negative variants: precedence hides the root block, a required rule is
+  truncated, context is not read, or a skill is undiscoverable: report missing
+  guidance before dependent work, never certify loading from links alone.
+  Supported-version metadata discovery failure returns to Architect without
+  copying skill bodies. Unadopted/unsupported setup is explicitly unavailable,
+  never recorded as observed success. Unobserved live loading and negative
+  variants remain in #503; existing bounded CLI reads do not complete S295.
+
+### S296 — desktop discovers the same local instructions and skills with accurate trust coverage (C455-S3; AC1, AC4, AC7)
+**Covers:** F45, F48, F51
+- Given: the S295 project opened in supported Codex desktop, without mandatory
+  plugin publication, and existing user hooks/trust both enabled and withheld.
+- When: a human opens a fresh session, restarts after adoption/update, invokes
+  matching skills and inspects available instructions/context and attempted
+  actions under each trust configuration.
+- Then: desktop exposes the same canonical guidance/skills as CLI and reads
+  required context/skills before dependent work. Record exact product/version,
+  configuration/install mode and observed loading/actions; distinguish capability
+  absent, attempted behavior failed and behavior observed. Existing trust/user
+  hooks are outside the adapter's installed coverage.
+- Negative variants: unavailable skill, suppressed instruction or unsupported
+  setup is reported before relying on it; restarting cannot be replaced by a
+  stale-session claim. Adoption success, plugin presence or trusted user hooks
+  cannot imply installed Codex interception. No hook/trust/config state is
+  changed by adoption. Manual observation is required, not fake CLI responses.
+  Attributed desktop guidance and bounded QA dispatch observations are partial;
+  unobserved restart, trust, skill and action variants remain in #503.
+
+### S297 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
+**Covers:** F47, F48, F51
+- Given: isolated projects with absent/unmarked/sound-block AGENTS.md,
+  project-owned bytes/config/skills/adoption answers, and A38 ownership fixtures.
+- When: `SPEC_DRIVEN_GUARDRAILS_DIR=<local-checkout> adopt.sh
+  [--runtime claude|codex] [project]` runs and repeats, followed by read-only
+  `adopt.sh --status --runtime claude|codex [project]`.
+- Then: omitted runtime/project means Claude/current directory; only the chosen
+  adapter plus existing shared adoption work is installed. Codex creates/appends
+  or replaces exactly one literal `<!-- spec-driven-guardrails: begin -->` /
+  `<!-- spec-driven-guardrails: end -->` block, preserves outside bytes and
+  contains no absolute path in its block. It installs individual skill links,
+  ignored local source/provenance and exact-child guarded ignores, preserving
+  project skills, answers, config/trust/permissions/hooks/plugins and Claude
+  files. Live canonical links may become owned; repair/remove only recorded
+  targets. Each run reports runtime/project/revision and each managed path as
+  created/unchanged/repaired/removed/conflict with reasons. Adoption exits 0
+  installed, 1 conflict/operational failure, 2 invalid input. Status names
+  stale/broken/foreign paths, compares block bytes and owned/canonical targets,
+  reports coverage, exits 0 current/1 incomplete-conflicting-stale/2
+  invalid-unreadable, makes no writes and never asserts live loading.
+- Negative variants: unknown/multiple runtimes, invalid inputs/options or
+  Codex `--user` exit 2 before writes. AGENTS symlink/override, duplicate,
+  unmatched/nested markers, symlinked skill namespace, child file/directory or
+  foreign link, malformed/foreign provenance/ignore block, broken unrecorded
+  or redirected link, and tracked absolute managed link each cause a named
+  preflight conflict with no project/index writes. Removed canonical skills
+  remove only still-owned links. Unexpected write failure reports incomplete,
+  never success; rollback is not promised. Foreign native hooks remain untouched
+  with the existing unavailable-coverage warning, not a new hard conflict.
+  `install.sh [tag]` never adopts projects. Automated filesystem/CLI scenario.
+
+### S298 — two machine-local checkouts recover without committed machine paths (C455-S5; AC3, AC4)
+**Covers:** F47, F48
+- Given: independent checkout paths A and B and an adopted shared project with
+  preserved answers/project-owned files; a clone lacks local provenance, while
+  a moved working copy may retain recorded ownership from A.
+- When: open on B before local adoption, adopt with B's checkout, change its
+  checkout/version and repeat adoption/update/status; inspect committed artifacts.
+- Then: missing/stale links are visible before use; B resolves B's checkout.
+  Absent clone-local links are created; retained matching provenance permits
+  repair of broken owned A links. Answers/project bytes survive and committed
+  artifacts contain no machine-specific absolute paths. Repeat adoption is the
+  repair/update operation after machine/version changes, not automatic fetching.
+- Negative variants: broken unrecorded or redirected links conflict rather than
+  being guessed owned; tracked absolute links require explicit remediation,
+  never silent index edits. Policy regeneration leaves Codex's block stale until
+  readoption. Automated two-path fixtures supplement a real second-machine dry
+  run recording paths/revisions/OS and before/after diagnostics; one-host fixtures
+  cannot certify second-machine loading or additional OS support. The observed
+  MacBook local-checkout relocation is partial; shared-project transfer and
+  revision/readoption live variants remain in #503.
+
+### S299 — shared v0.4.0 evidence and check outcomes are runtime-independent (C455-S6; AC2, AC6)
+**Covers:** F46, F50
+- Given: identical durable artifacts supplied to existing shared checks/emitters
+  and consumers without either runtime, including record-v2 and failed-read
+  fixtures from the v0.4.0 baseline.
+- When: invoke the public evidence/check commands for Claude/Codex workflows
+  against identical artifacts and compare diagnostics/status/exits.
+- Then: outcomes agree; reuse whole-column-0 record v2, latest-near-miss,
+  legacy-effort-ignore/no-new-effort and model-only Review floor with floor-basis.
+  Same-model satisfies the floor; different-model capability remains human
+  judgment/unverifiable from artifacts. Existing script-specific unavailable,
+  warning/error exits and collector indeterminate outcomes remain unchanged.
+- Negative variants: inline/quoted/fenced records do not establish presence;
+  latest malformed candidate cannot revive older valid evidence; missing Review
+  floor-basis is invalid. Missing gh/network, failed corpus/reader or round reads
+  never become zero rounds or successful validation. Fail-open is not passed
+  validation. New adapter parsers/ranking tables cannot change the shared result.
+  Automated public-command regressions; preserve tagged green controls and
+  demonstrate new missing-adapter assertions red before implementation.
+
+### S300 — coverage claims distinguish absent Codex interception from Claude and shared gates (C455-S7; AC6, AC7, AC9)
+**Covers:** F50, F51, F53
+- Given: A38's inventory of Claude runtime hooks, initial Codex adapter, native
+  Git hooks and shared check/evidence/CI mechanisms.
+- When: inspect adoption/status/docs and exercise each claimed mechanism through
+  its public event/command, including intercepted and bypass paths.
+- Then: Codex reports exactly `runtime-hooks: not-installed; runtime shell
+  interception unavailable`; context/fetch/push/guards are guidance/manual work
+  plus shared enforcement. Claude SessionStart fetch/context notices,
+  PreToolUse Bash tokenized destructive-Git/issue-first/merge gates and
+  PostToolUse/SessionEnd push retain existing tagged token/exit oracles. Native
+  pre-commit/commit-msg/pre-push and configured CI preserve existing coverage;
+  native hooks do not intercept gh-pr-merge. Automated inventory/config and
+  Claude regressions supplement manual trust/action observations.
+- Negative variants: Codex specialized/indirect shell actions have absent runtime
+  interception, not an invented block. Claude non-Bash/indirect paths, missing
+  gh/network/readers, fail-open warnings, post-action failure notices/branch
+  exceptions and native foreign hooks/hooksPath/--no-verify/missing dependencies/
+  escape hatches retain documented limits. Withheld trust or unavailable scripts
+  cannot count as available coverage. Docs claiming automatic Codex fetch/push,
+  installed runtime hooks or CI proof of freshness/obedience fail semantic review.
+  Inventory, absent Codex interception and existing regressions are #455
+  release evidence; unobserved live Claude/hook/trust actions remain in #503.
+
+### S301 — available dispatch is fresh and unavailable dispatch stops the stage (C455-S8; AC1, AC5, AC8)
+**Covers:** F45, F49, F52
+- Given: opted-in CLI/desktop work at a required role stage, with dispatch
+  available in one dry run and unavailable in another.
+- When: reach that stage and, separately, every Review round.
+- Then: available dispatch starts a genuinely fresh task-scoped role session;
+  each Review has only an artifact brief and prior finding links/slugs. Unavailable
+  dispatch stops before another role acts and requests the existing human
+  stop/override decision. Records use the existing emitter/pipeline-override
+  grammar and, where applicable, numbered human decision linked to pushback and
+  Architect risk note; do not invent override attributes. Record actual session
+  evidence, version/capability and observed stop/override on each surface.
+- Negative variants: resumed/forked Reviewer or role collapse fails; separate
+  comments alone do not prove separate sessions. Missing/invalid override cannot
+  authorize continuation. Artifact grammar can be checked automatically, but
+  actual freshness, human authorship and dispatch-failure adherence require manual
+  observations; capability/date/context may be prose, not fabricated records.
+  Bounded CLI QA/Review and desktop QA dispatch evidence is partial; remaining
+  fresh-role, unavailable-dispatch and stop variants remain in #503.
+
+### S302 — fresh-session resume and finding routes use durable evidence (C455-S9; AC1, AC8)
+**Covers:** F45, F52
+- Given: a stopped opted-in workflow with durable role artifacts and controlled
+  missing/latest-near-miss/conflicting evidence, stale labels, and Review findings.
+- When: a fresh CLI/desktop session resumes and identifies the first unevidenced
+  stage; exercise design/code/test/spec routes and consecutive Review rounds.
+- Then: artifacts determine the stage, not transcript or labels. Routes are
+  design → Architect/QA/Developer/fresh Reviewer; code or test → QA/Developer/
+  fresh Reviewer; spec → Product/Architect if affected/QA/Developer/fresh Reviewer.
+  Two consecutive medium/high Review rounds require Architect before Developer;
+  low-only and interrupted-round controls do not trigger that rule, and recorded
+  Architect intervention resets the sequence. Bounded decisions by rule preserve
+  contracts and numbered override/pushback/risk-note links.
+- Negative variants: unknown/failed round reads remain unresolved, never a
+  zero-round control; stale label or older valid record cannot hide missing/latest
+  malformed evidence. Skipped owner, reused Reviewer, premature Developer or
+  contract-waiving bounded log fails. Automated evidence/round controls supplement
+  manual artifact-only resume/next-stage observations on CLI and desktop.
+  Bounded CLI stage selection does not pass the interrupted-resume or route
+  matrix; unobserved live variants remain in #503.
+
+### S303 — Claude remains usable and runtime evidence is accurately bounded (C455-S10; AC8, AC9)
+**Covers:** F52, F53
+- Given: the v0.4.0 Claude installation/behavior inventory and the new adapters,
+  plus supported real CLI, desktop, Claude and second-machine environments.
+- When: Developer/CI run existing Claude regressions and the available
+  attributed Claude/runtime observations are assessed for #455. During actual
+  work, humans collect remaining default/repeated Claude adoption, fresh/resumed
+  workflow, representative hooks/Git/CI and fresh Review/loop-back; CLI/desktop
+  start/resume/unavailable-dispatch and S295–S302 loading/trust cases; and
+  second-machine S298 variants under #503.
+- Then: Claude default adoption retains CLAUDE/settings/skills/native-hook paths,
+  legacy backup behavior and tagged checks/outcomes. Codex adoption leaves Claude
+  configuration byte-identical. Each human report records exact runtime/version,
+  configuration, checkout revision/local path, guidance availability, attempted
+  action/result, fresh session evidence, recovered stage and stop/override record,
+  distinguishing absent capability, failed attempt and observed behavior.
+- Negative variants: changed Claude token/exit behavior or overwritten settings
+  fails regression; installing Codex must not invoke Claude replacement logic.
+  Missing surface/run evidence is unverified and tracked in #503, never filled
+  by installation exit 0, passing CI or one-host simulation. An observed
+  regression remains a #455 release defect. No automatic parity, OS expansion,
+  Codex web or mandatory plugin-publication claim is accepted.
+
+### S304 — authorized Codex workflow continues routine handoffs and finding routes autonomously (AC10)
+**Covers:** F54
+- Given: an authorized, opted-in five-role work item in an adopted project on
+  supported real Codex CLI and desktop, with canonical orchestrator guidance
+  actually read, available fresh role dispatch, settled human decisions and
+  durable issue/PR artifacts. Each surface has a normal stage-chain run and
+  controlled design/code/test/spec findings, consecutive medium/high Review
+  rounds, and an interrupted run with completed initial stages but an open finding.
+- When: a human observes Product → Architect → QA → Developer → Reviewer stage
+  completion, the existing finding routes and the two-round Architect step;
+  then a fresh orchestrating session resumes the interrupted work from issue/PR
+  artifacts, stage markers, Pipeline log and open finding links/slugs.
+- Then: the next required role is dispatched without a user confirmation at
+  routine stage or route boundaries. Design routes through Architect/QA/Developer/
+  fresh Reviewer; code and test through QA/Developer/fresh Reviewer; spec through
+  Product/Architect if design is affected/QA/Developer/fresh Reviewer. Two
+  consecutive medium/high rounds dispatch Architect before any Developer fix;
+  low-only and interrupted-round controls retain S302's behavior. Each dispatch
+  preserves role scopes and required fresh sessions; every Review is a new,
+  unforked Reviewer with an artifact-only brief. Resume chooses the next required
+  stage or finding route from durable evidence, never treating an initial-stage
+  marker as completion of its later route or a stale label as authoritative.
+  Record runtime/version, configuration, checkout revision/path, loaded guidance,
+  observed dispatch/session evidence, stage/route sequence, prompts and resulting
+  actions for each surface. A routine "continue?" pause before a required next
+  dispatch falsifies uninterrupted continuation.
+- Negative variants: introduce a genuine unresolved human preference/trade-off
+  or a proposed contract override: stop for that decision; discoverable facts
+  and completed stages alone must not become new approval gates. Missing or
+  invalid override evidence cannot authorize continuation; preserve numbered
+  human decision, one pushback and Architect risk-note requirements where they
+  apply. Remove or fail required fresh dispatch: stop before dependent work and
+  request the existing stop/override decision, never collapse roles, reuse/fork
+  a Reviewer or infer an override from silence. Reach an approved PR ready for
+  `main`: wait for explicit human merge confirmation; routine workflow authority
+  alone cannot authorize that merge. Failed/missing artifact reads leave resume
+  unresolved rather than skipping a stage or open finding. A no/pending opt-in
+  cannot start this five-role workflow.
+- Evidence: real CLI and desktop observations establish only the exact
+  continuation and stops seen in their traces. The CLI QA → fresh Review
+  handoff followed an explicit operator continuation prompt; its parent then
+  ended at an open finding-route boundary. The attributed desktop QA dispatch
+  did not continue through a full chain. These are partial, not a pass for
+  neutral-prompt continuation, every route, resume or the required stops;
+  unobserved execution remains in #503.
+  Static checks may verify canonical continuation wording, Codex mapping to that
+  owner and regenerated payload consistency, but cannot prove live autonomy,
+  freshness or obedience. Installation success, mocked dispatch, passing CI and
+  static instruction matches never substitute for manual behavior evidence;
+  no background scheduling or runtime hook enforcement is claimed.

@@ -140,6 +140,14 @@ if [ -d "$target/nfr" ] && [ -f "$target/templates/PRD.md" ]; then
   fi
 fi
 
+# A38: generation drift is shared, including static mode and CI.
+if [ -x "$target/check-workflow-adapters.sh" ]; then
+  echo "check: workflow adapters"
+  if ! adapter_output="$("$target/check-workflow-adapters.sh" "$target" 2>&1)"; then
+    report_error "workflow adapter drift: $adapter_output"
+  fi
+fi
+
 # --- 3a. PR linkbacks in CHANGES.md / CHANGES-ARCHIEF.md (W21, F15) ---------
 # Without this linkback, an adopted project can't find out *why* a row is
 # in its own WORKFLOW-ADOPTIE.md (S32). CHANGES-ARCHIEF.md shares the same

@@ -942,3 +942,148 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names (`--model --floor-basis`); a value that merely starts with `--` is allowed.
 - **Not in this slice:** no caller moves yet (the gate, collector and staleness script kept the former parser until V6 to V8); the old functions are deleted with the last caller.
 - **Violated when:** a script outside `lib/` carries its own record pattern; a near-miss is read as a record; a reader failure becomes "no record".
+
+
+### A39 — One canonical workflow policy, two runtime adapters, explicit installation ownership (#455)
+
+- **Decision / scope:** implements F45–F54 using the completed `v0.4.0`
+  workflow meaning. Records the [Architect planning decision](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6144735967)
+  without redesigning roles, evidence or adoption semantics. This checkout
+  descends from `v0.4.0`; release evidence still requires real Claude, Codex
+  CLI/desktop and second-machine dry runs, not a structural installation claim.
+- **Canonical owners:** the Workflow policy Module owns `policy/WORKFLOW.md`,
+  extracted from current WORKFLOW.md without semantic edits. `skills/<name>/`
+  remains the sole skill-content owner, including role-contracts/ORCHESTRATOR
+  and model-choice; CHANGES.md owns adoption and meaning versions. Runtime
+  mappings are `adapters/claude/INSTRUCTIONS.md` and
+  `adapters/codex/INSTRUCTIONS.md`, limited to discovery/execution instructions
+  and capability limitations. No adapter-specific policy override is permitted.
+  A38 (#488) updates those shared owners: the Fix cost definition stays in
+  `skills/role-contracts/SKILL.md`, and the fix/defer rule stays in
+  `skills/role-contracts/ORCHESTRATOR.md`. Both runtimes consume that same
+  policy, including QA's red check, the single trivial-fix attempt, fresh delta
+  Review with prior slugs, and deferral rules. No adapter copy of T1–T6 or
+  separate low-finding route is introduced. AC10 continuation follows these
+  current shared routes; it does not freeze the pre-#488 route wording.
+- **Generation Interface:** `generate-workflow-adapters.sh` deterministically
+  emits root `WORKFLOW.md` (Claude compatibility path) and
+  `adapters/codex/AGENTS.md` (managed-block payload): generated header,
+  canonical policy bytes, selected mapping bytes, in that order. Outputs are
+  committed and never edited directly; no timestamps or machine paths.
+  Codex embeds policy because a Markdown link does not import instructions.
+  Both mappings require reading applicable session-context output and invoked
+  skill content before dependent work. `session-context.sh --runtime
+  claude|codex <project>` defaults to Claude, preserves CHANGES/answered_yes
+  selection and emits ORCHESTRATOR verbatim only when opted in; runtime selects
+  diagnostics, never different workflow rules.
+- **Adoption/update Interface:**
+  `SPEC_DRIVEN_GUARDRAILS_DIR=<local-checkout> adopt.sh [--runtime claude|codex] [project]`
+  defaults to Claude/current directory. Repeat adoption performs update/repair;
+  rerun after checkout/version/machine changes. `install.sh [tag]` selects only
+  checkout version, never adoption. Unknown/multiple runtimes, invalid inputs
+  or option combinations, and `--runtime codex --user` exit 2 before writes;
+  `--user` remains Claude-only. Install only the selected adapter plus existing
+  shared scaffolding/adoption work. Each run reports runtime, project, checkout
+  revision and each managed path as created/unchanged/repaired/removed/conflict,
+  with conflict reason. Exit 0 means installed, not live-loaded; 1 means conflict
+  or operational failure. Preflight conflicts cause no project/index writes;
+  unexpected write failures report incomplete installation, never success.
+  Transactional rollback is not promised. Existing foreign native Git hooks
+  retain the leave-alone warning and unavailable-coverage behavior.
+- **Codex ownership:** root AGENTS.md is project-owned outside exactly one
+  `<!-- spec-driven-guardrails: begin -->` / `<!-- spec-driven-guardrails: end -->`
+  block. Create an absent file, append to an unmarked regular file preserving
+  existing bytes, or replace only a sound owned block. Duplicate, unmatched or
+  nested markers, any AGENTS.md symlink, or root AGENTS.override.md are preflight
+  conflicts. Parent/deeper instruction precedence and instruction budget require
+  manual loading checks. The block contains no absolute path and directs an
+  explicit read of `.guardrails/source/session-context.sh --runtime codex <project>`
+  output and required skill files.
+- **Skill/link ownership:** install individual `.agents/skills/<name>` links to
+  the same canonical skills used by Claude; `.agents/skills` must be a real
+  directory or absent. Child regular files/directories and foreign symlinks
+  conflict. Local ignored `.guardrails/source` links to the selected checkout;
+  local ignored `.guardrails/installation.json` records runtime, checkout and
+  exact owned symlink paths/targets as provenance, never adoption evidence.
+  Malformed/foreign records conflict. Live links resolving to canonical targets
+  may be adopted; otherwise repair/remove only links matching recorded ownership.
+  Broken unrecorded or manually redirected links conflict. Removed canonical
+  skills remove only still-owned links. Ignore exact child paths using a separate
+  guarded block, never the entire project skill namespace; malformed ignore
+  markers or tracked absolute managed links conflict, with explicit remediation
+  paths rather than index edits. Preserve project skills, adoption answers,
+  AGENTS bytes outside the block and all Codex config/trust/permissions/hooks/plugin
+  state. Claude retains its existing CLAUDE/settings/skills/native-hook paths and
+  legacy backups; Codex never invokes that replacement path.
+- **Status/drift Interfaces:** `adopt.sh --status --runtime claude|codex [project]`
+  is read-only: reports inventory/revision, compares Codex block bytes to payload
+  and links to recorded/canonical targets, names stale/broken/foreign paths and
+  config/hook coverage. Exit 0 structurally current, 1 incomplete/conflicting/stale,
+  2 invalid/unreadable; never claims live loading.
+  `check-workflow-adapters.sh [workflow-checkout]`, included in `check` including
+  static mode and CI, recomputes without writes, compares exact generated bytes,
+  verifies both mappings/canonical owners and names every missing/mismatching
+  source/output. Exit 0 clean, 1 drift/missing contract, 2 invalid/unreadable.
+  A policy sentence mutation makes both outputs stale; regeneration puts it in
+  both; changing/deleting one output names it. After regeneration Codex's copied
+  block stays stale until re-adoption, while Claude's WORKFLOW symlink follows
+  live. Byte equality cannot detect contradictory mapping prose; semantic review
+  remains required. These are falsifiable S1/S4 installation/drift outcomes.
+- **Evidence / S7 failure outcomes:** reuse `lib/model-record.sh`,
+  `lib/markdown.sh`, `lib/review-rounds.sh`, the emitter and existing consumers;
+  no adapter parser or ranking table. Preserve whole column-0 record v2,
+  latest-near-miss behavior, ignored legacy effort/no new effort, model-only
+  Review floor with floor-basis and script-specific unavailable/error outcomes.
+  Failed reads never become zero rounds or successful validation. Preserve fresh
+  Review sessions, artifact-only briefs, finding-class routes, two-round
+  Architect reset and numbered bounded override/pushback/risk-note chain.
+  Unavailable fresh role dispatch stops that stage for the existing human
+  override; no role collapse. Runtime metadata must not silently hide shared
+  skills: supported-version discovery failures return to Architect, without
+  duplicated bodies. CLI and desktop share one local installation; no required
+  plugin publication or meaning-version bump.
+- **Actual runtime coverage:** initial Codex installs no runtime hooks and reports
+  `runtime-hooks: not-installed; runtime shell interception unavailable`.
+  Context/fetch/push and guards are instructions/manual actions plus shared Git/CI
+  enforcement, not automatic Codex SessionStart/PreToolUse/PostToolUse/SessionEnd
+  interception. Claude retains its existing SessionStart fetch/context notices,
+  Bash PreToolUse tokenized destructive-Git/issue-first/merge gates and
+  PostToolUse/SessionEnd push behavior. Existing non-Bash/indirect bypasses,
+  missing gh/network/readers, fail-open warnings, post-action failure notices
+  and branch exceptions remain. Native pre-commit/commit-msg/pre-push and shared
+  check/evidence/CI remain shared: foreign hooks/hooksPath/--no-verify, missing
+  dependencies and escape hatches retain their limits; native hooks do not
+  intercept gh-pr-merge. CI proves configured artifact checks, not authorship,
+  role freshness or obedience. QA uses existing Claude token/exit oracles and
+  verifies Codex adoption leaves those paths untouched; Codex bypass cases expect
+  absent interception plus documented shared coverage. Future translated hooks
+  require a new Architect event/input/output contract and QA negatives.
+- **F54 continuation addendum (AC10):** once the five-role workflow is
+  authorized, stage completion is evidence for the next dispatch, not a new
+  user approval gate. The canonical `skills/role-contracts/ORCHESTRATOR.md`
+  owns this continuation rule for routine handoffs and existing finding routes,
+  including fresh-role requirements and the two-round Architect step. Existing
+  genuine human decisions, contract overrides, unavailable required dispatch
+  and confirmation before a merge into `main` remain stops. Resume from durable
+  issue/PR artifacts, stage markers, Pipeline log and open findings to determine
+  the next required stage or route; a completed initial stage does not discharge
+  a later finding route. The Codex mapping in `adapters/codex/INSTRUCTIONS.md`
+  directs the orchestrating session to read and follow that canonical guidance,
+  continue with available fresh dispatch, and recover from those artifacts;
+  it does not duplicate route tables, override policy or introduce a dispatch
+  framework. Regenerate its managed payload through the existing generator.
+  This is instruction-driven continuation, not a claim of background scheduling,
+  runtime hook enforcement or proven live autonomy; structural checks and the
+  supported-runtime human dry run provide distinct evidence.
+- **Module / Interface / Seam / Depth / Leverage / Locality:** installation
+  filesystem and runtime instruction loading are the external Seams; adoption,
+  status and drift commands are test Interfaces. Workflow policy and
+  Adoption/update are deep Modules, hiding extraction, mapping, ownership,
+  collision and repair complexity. Deletion would spread this complexity across
+  both callers: Depth earns shared Leverage and concentrated Locality. A forwarding
+  parity facade adds none. The two-adapters rule is satisfied by real Claude and
+  Codex mappings; no speculative CLI/desktop/plugin Module or dispatch framework.
+- **Revisit when:** observed supported-runtime discovery/loading failures,
+  changed Codex hook capabilities, or actual drift/ownership failures require a
+  new contract. Structural checks supplement the F52/F53 human dry runs; they
+  cannot certify practical runtime behavior.

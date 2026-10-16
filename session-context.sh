@@ -3,7 +3,8 @@
 # that nothing else loads.
 #
 # Usage:
-#   ./session-context.sh [/path/to/project]   # default: current directory
+#   ./session-context.sh [--runtime claude|codex] [/path/to/project]
+#   # defaults: Claude/current directory; Codex explicitly reads the output
 #
 # Called by the SessionStart hook (settings/session-hooks.json), after
 # pending-changes.sh, with the clone resolved through the project's
@@ -24,12 +25,22 @@
 # The file is read from this clone on every run, so a later release reaches
 # the project's next session without re-running adopt.sh (AC11).
 #
-# Always exits 0: a hook must never block a session. A declared file that
+# Default Claude hook invocation exits 0: a hook must never block a session.
+# Invalid runtime/options exit 2 before context reads. A declared file that
 # is missing warns on stderr and prints nothing for it.
 #
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
+
+runtime=claude
+if [ "${1:-}" = --runtime ]; then
+  [ "$#" -ge 2 ] || { echo "session-context: missing runtime" >&2; exit 2; }
+  runtime="$2"; shift 2
+fi
+case "$runtime" in claude|codex) ;; *) echo "session-context: unknown runtime" >&2; exit 2 ;; esac
+[ "$#" -le 1 ] || { echo "session-context: invalid arguments" >&2; exit 2; }
+case "${1:-}" in -*) echo "session-context: invalid option" >&2; exit 2 ;; esac
 
 workflow_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_dir="$(cd "${1:-.}" 2>/dev/null && pwd)" || exit 0
@@ -47,6 +58,12 @@ physical() {
   printf '%s/%s' "$dir" "$(basename "$1")"
 }
 
+if [ "$runtime" = codex ]; then
+  if ! python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status >/dev/null 2>&1; then
+    echo "Warning: Codex AGENTS.md/links installation is missing, stale or conflicting; run adopt.sh --runtime codex again and verify actual instruction loading."
+  fi
+  echo "runtime-hooks: not-installed; runtime shell interception unavailable"
+else
 claude_md="$project_dir/CLAUDE.md"
 expected="$(physical "$workflow_dir/WORKFLOW.md")"
 actual=""
@@ -60,6 +77,8 @@ if [ -L "$claude_md" ]; then
 fi
 if [ -z "$actual" ] || [ "$actual" != "$expected" ]; then
   echo "Warning: CLAUDE.md in $project_dir is not a link to $workflow_dir/WORKFLOW.md, so this session doesn't load the shared workflow. Run adopt.sh again from the guardrails clone to restore it."
+fi
+
 fi
 
 [ -f "$changes" ] || exit 0
