@@ -5210,14 +5210,24 @@ that evidence and the final `./check` result.
 
 ## Codex support and shared workflow parity — #455 (A38)
 
-These ten durable scenarios map the planning aliases C455-S1–C455-S10 to
-F45–F53 and issue #455 AC1–AC9. Public command Interfaces, project filesystem
-state and durable issue/PR evidence are the automated Seams; runtime instruction
-loading and session behavior require human observation. Developer writes and
-runs new automated behavior red before implementation, then CI independently
-repeats it. Existing v0.4.0 regressions remain green controls. Human dry runs
-are release evidence, never inferred from installation success or fake runtime
-responses. No check proves model identity, authorship, session freshness or
+These eleven durable scenarios map the planning aliases C455-S1–C455-S10 plus
+S304 to F45–F54 and issue #455 AC1–AC10. Public command Interfaces, project
+filesystem state and durable issue/PR evidence are the automated Seams; runtime
+instruction loading and session behavior require human observation. Developer
+writes and runs new automated behavior red before implementation, then CI
+independently repeats it. Existing v0.4.0 regressions remain green controls.
+
+Under numbered decision #455-D4, #455 release assessment uses exact-HEAD
+automated checks, source/adoption and documentation review, and attributed
+partial observations only to the extent actually observed. S294/S297/S299
+public-command and structural outcomes are release evidence; S300's capability
+inventory and existing Claude regressions are assessed structurally. The
+remaining live variants in S295/S296/S298/S300–S304 are explicitly unverified
+where not observed and tracked in QA-owned #503 for collection during actual
+work. Their behavior oracles remain required; an observed failure still needs
+assessment before release. Neither a green check, installed link, hypothetical
+route answer nor a partial trace passes an unobserved manual variant or a whole
+scenario. No check proves model identity, authorship, session freshness or
 behavioral obedience.
 
 ### S294 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
@@ -5264,7 +5274,8 @@ behavioral obedience.
   guidance before dependent work, never certify loading from links alone.
   Supported-version metadata discovery failure returns to Architect without
   copying skill bodies. Unadopted/unsupported setup is explicitly unavailable,
-  never recorded as observed success. This is a manual loading dry run.
+  never recorded as observed success. Unobserved live loading and negative
+  variants remain in #503; existing bounded CLI reads do not complete S295.
 
 ### S296 — desktop discovers the same local instructions and skills with accurate trust coverage (C455-S3; AC1, AC4, AC7)
 **Covers:** F45, F48, F51
@@ -5283,6 +5294,8 @@ behavioral obedience.
   stale-session claim. Adoption success, plugin presence or trusted user hooks
   cannot imply installed Codex interception. No hook/trust/config state is
   changed by adoption. Manual observation is required, not fake CLI responses.
+  Attributed desktop guidance and bounded QA dispatch observations are partial;
+  unobserved restart, trust, skill and action variants remain in #503.
 
 ### S297 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
 **Covers:** F47, F48, F51
@@ -5333,7 +5346,9 @@ behavioral obedience.
   never silent index edits. Policy regeneration leaves Codex's block stale until
   readoption. Automated two-path fixtures supplement a real second-machine dry
   run recording paths/revisions/OS and before/after diagnostics; one-host fixtures
-  cannot certify second-machine loading or additional OS support.
+  cannot certify second-machine loading or additional OS support. The observed
+  MacBook local-checkout relocation is partial; shared-project transfer and
+  revision/readoption live variants remain in #503.
 
 ### S299 — shared v0.4.0 evidence and check outcomes are runtime-independent (C455-S6; AC2, AC6)
 **Covers:** F46, F50
@@ -5376,6 +5391,8 @@ behavioral obedience.
   escape hatches retain documented limits. Withheld trust or unavailable scripts
   cannot count as available coverage. Docs claiming automatic Codex fetch/push,
   installed runtime hooks or CI proof of freshness/obedience fail semantic review.
+  Inventory, absent Codex interception and existing regressions are #455
+  release evidence; unobserved live Claude/hook/trust actions remain in #503.
 
 ### S301 — available dispatch is fresh and unavailable dispatch stops the stage (C455-S8; AC1, AC5, AC8)
 **Covers:** F45, F49, F52
@@ -5394,6 +5411,8 @@ behavioral obedience.
   authorize continuation. Artifact grammar can be checked automatically, but
   actual freshness, human authorship and dispatch-failure adherence require manual
   observations; capability/date/context may be prose, not fabricated records.
+  Bounded CLI QA/Review and desktop QA dispatch evidence is partial; remaining
+  fresh-role, unavailable-dispatch and stop variants remain in #503.
 
 ### S302 — fresh-session resume and finding routes use durable evidence (C455-S9; AC1, AC8)
 **Covers:** F45, F52
@@ -5413,15 +5432,19 @@ behavioral obedience.
   malformed evidence. Skipped owner, reused Reviewer, premature Developer or
   contract-waiving bounded log fails. Automated evidence/round controls supplement
   manual artifact-only resume/next-stage observations on CLI and desktop.
+  Bounded CLI stage selection does not pass the interrupted-resume or route
+  matrix; unobserved live variants remain in #503.
 
-### S303 — Claude remains usable and the runtime dry-run matrix is evidenced (C455-S10; AC8, AC9)
+### S303 — Claude remains usable and runtime evidence is accurately bounded (C455-S10; AC8, AC9)
 **Covers:** F52, F53
 - Given: the v0.4.0 Claude installation/behavior inventory and the new adapters,
   plus supported real CLI, desktop, Claude and second-machine environments.
-- When: Developer/CI run existing Claude regressions and humans perform default/
-  repeated Claude adoption and fresh/resumed workflow, representative hooks/Git/
-  CI, fresh Review/loop-back; CLI/desktop perform start/resume/unavailable-dispatch
-  and S295–S302 loading/trust cases; second machine performs S298.
+- When: Developer/CI run existing Claude regressions and the available
+  attributed Claude/runtime observations are assessed for #455. During actual
+  work, humans collect remaining default/repeated Claude adoption, fresh/resumed
+  workflow, representative hooks/Git/CI and fresh Review/loop-back; CLI/desktop
+  start/resume/unavailable-dispatch and S295–S302 loading/trust cases; and
+  second-machine S298 variants under #503.
 - Then: Claude default adoption retains CLAUDE/settings/skills/native-hook paths,
   legacy backup behavior and tagged checks/outcomes. Codex adoption leaves Claude
   configuration byte-identical. Each human report records exact runtime/version,
@@ -5430,9 +5453,10 @@ behavioral obedience.
   distinguishing absent capability, failed attempt and observed behavior.
 - Negative variants: changed Claude token/exit behavior or overwritten settings
   fails regression; installing Codex must not invoke Claude replacement logic.
-  Missing surface/run evidence remains outstanding release evidence, never filled
-  by installation exit 0, passing CI or one-host simulation. No automatic parity,
-  OS expansion, Codex web or mandatory plugin-publication claim is accepted.
+  Missing surface/run evidence is unverified and tracked in #503, never filled
+  by installation exit 0, passing CI or one-host simulation. An observed
+  regression remains a #455 release defect. No automatic parity, OS expansion,
+  Codex web or mandatory plugin-publication claim is accepted.
 
 ### S304 — authorized Codex workflow continues routine handoffs and finding routes autonomously (AC10)
 **Covers:** F54
@@ -5472,8 +5496,13 @@ behavioral obedience.
   alone cannot authorize that merge. Failed/missing artifact reads leave resume
   unresolved rather than skipping a stage or open finding. A no/pending opt-in
   cannot start this five-role workflow.
-- Evidence: real CLI and desktop human dry-run observations establish behavioral
-  continuation and stops; unavailable or unobserved runs remain outstanding.
+- Evidence: real CLI and desktop observations establish only the exact
+  continuation and stops seen in their traces. The CLI QA → fresh Review
+  handoff followed an explicit operator continuation prompt; its parent then
+  ended at an open finding-route boundary. The attributed desktop QA dispatch
+  did not continue through a full chain. These are partial, not a pass for
+  neutral-prompt continuation, every route, resume or the required stops;
+  unobserved execution remains in #503.
   Static checks may verify canonical continuation wording, Codex mapping to that
   owner and regenerated payload consistency, but cannot prove live autonomy,
   freshness or obedience. Installation success, mocked dispatch, passing CI and
