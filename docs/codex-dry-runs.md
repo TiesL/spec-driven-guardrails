@@ -51,6 +51,63 @@ not live runtime or independent-machine acceptance. The
 [round-4 QA strategy](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6199276898)
 retains the full outstanding runtime campaign listed above.
 
+## Feature-adopted continuation observations (2026-10-15 and 2026-10-16)
+
+These are bounded live observations from the Pipeline log and the
+[QA assessment after Review round 5](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209140880),
+which inspected the raw traces. They do not complete any full manual acceptance
+scenario and do not close `runtime-dry-runs-unobserved`.
+
+- **Codex CLI 0.162.1, 2026-10-15, QA to fresh Review.** Parent session
+  `01a140ee-fdad-7580-b585-0765f4dfe18f` in isolated clone
+  `/private/tmp/sdg-455-cli-live` at HEAD `049d278`: a fresh `codex exec` with one
+  turn read AGENTS, session context, role-contracts and durable issue/PR/Pipeline
+  artifacts, selected QA, then dispatched with `fork_turns:"none"`: QA child
+  `01a140ef-bebf-7a00-9836-2d79b6cfb5cd` ([report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6200008416)),
+  Review lenses `01a140f1-4abd-7792-8d58-1a022b802d12` and
+  `01a140f1-6dd3-73c0-b368-16f28f9585e6`, and lead
+  `01a140f2-8ad2-7a30-8f62-9bafd11f660d` ([round-5 report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6200091485),
+  transported verbatim by the parent after the lead's own publication failed).
+  Raw traces: `/private/tmp/455-cli-live.jsonl` and the native rollouts under
+  `~/.codex/sessions/2026/10/15/`. See the [Pipeline log](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155086172)
+  and [operator record](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155405547).
+- **Claude Code 2.1.301, 2026-10-16, orchestrator continuation.** Parent session
+  `f821800a-abb9-4dcd-9d44-ca1bec9f02c8` in feature-adopted clone
+  `/private/tmp/sdg-455-claude-live` at HEAD `049d278`: SessionStart fetch and
+  ORCHESTRATOR rules were delivered; the parent read artifacts, ran
+  `review-rounds.sh` and `role-label-staleness.sh`, selected the test-class route
+  and dispatched QA (`general-purpose`, not fork, agent `aed68537d71ebd512`,
+  [report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209140880)),
+  then this Developer dispatch for the documentation step. The route's fresh
+  Reviewer leg had not happened when this was written.
+
+Limits, as stated by QA:
+
+- Both parent prompts explicitly instructed continuing to the next ordinary stage
+  without routine confirmation. This is the runtime following guidance plus an
+  explicit operator instruction, partial S304 evidence only; it does not show
+  continuation driven by guidance alone.
+- The CLI parent stopped at the finding-route boundary after Review round 5
+  without dispatching the test-class QA. Cause is not isolated (prompt said
+  "the next ordinary stage", singular; Pipeline-log writes also failed). It is
+  tracked as PLAUSIBLE medium/test `cli-continuation-stopped-at-route-boundary`.
+- CLI rollouts carry originator "Codex Desktop" with source `exec`. This is
+  CLI-surface evidence and gives Codex desktop no credit.
+- Every variant QA lists as unobserved stays unobserved; these observations
+  change nothing in the outstanding column above beyond the partial credit named.
+
+Still outstanding, operator-owned and not claimed here: Codex desktop in a
+freshly feature-adopted project (restart, five-stage chain with raw per-dispatch
+transcripts, controlled interruption and resume, unavailable-dispatch stop,
+trust enabled/withheld, matching/nonmatching skills); a neutral-prompt Codex CLI
+rerun that neither instructs continuation nor bounds it to one stage, plus
+design/spec routes, low-only and interrupted controls, stale-label negative,
+decision/override/merge-confirmation stops and precedence/budget negatives;
+completion of the Claude route (Developer, fresh Reviewer) with live hook,
+native-hook and CI behavior and repeated adoption with legacy backup; and
+second-machine shared-project transfer, workflow revision update and
+committed-artifact inspection.
+
 For each run record:
 
 - Date, exact runtime/product and version, OS, install mode and configuration;
