@@ -948,6 +948,41 @@ something new is being added.
   `git push origin main` outside Claude Code (same pattern as S50)
 - And: a second `adopt.sh` call is idempotent — no errors, no duplicate
   `.gitignore` lines
+- And: for both `--runtime claude` and `--runtime codex`, self-adoption
+  recognizes physical directory identity when source and target use direct
+  paths, only the target uses a symlink alias, only the source uses one,
+  or both use aliases (including paths containing spaces)
+- And: with an executable `check`, missing root `check-pr-issue-link.sh`
+  and `check-main-via-pr.sh` stay absent after the first and second call;
+  existing copies keep their distinct contents and exact permission bits,
+  including non-executable copies; mixed existing/missing pairs obey both
+  guarantees independently
+- And: another missing shared scaffold, such as `wait-for-ci.sh`, is still
+  created and made executable, proving adoption did not skip shared
+  scaffolding altogether
+- And: Codex self-adoption succeeds when either skipped root script is a
+  symlink to a sentinel outside the adoption target but inside the sandbox;
+  the link and sentinel contents and permissions remain unchanged. This
+  distinguishes an excluded destination from a stale shared-write
+  preflight conflict. An equivalent symlink at the still-selected
+  `wait-for-ci.sh` destination is refused before installation writes
+- Given: a physically distinct project with an executable `check`, using
+  the sandbox workflow checkout as source (even if the project is another
+  checkout with the same origin)
+- When: adoption runs through each runtime, including with aliased paths
+- Then: both missing root scripts are scaffolded from their templates and
+  made executable; existing copies retain their distinct contents and
+  have executable bits repaired, including on re-adoption
+- Test seam: invoke the public `adopt.sh` CLI with sandbox source/target
+  directories and inspect exit status, filesystem contents, links and
+  permissions; do not call private identity or destination helpers
+- Red-before-green: explicitly remove copied root scripts in missing-file
+  fixtures (sandbox copies can inherit machine-local copies). Before any
+  implementation change, show the new absence assertions fail on current
+  adoption, existing non-executable copies gain permissions incorrectly,
+  and the skipped-script Codex symlink fixture is refused. Keep ordinary
+  project and retained-scaffold assertions as positive controls; retain
+  the original hook, committed-file and idempotence assertions above
 
 ### S82 — A fresh WORKFLOW-ADOPTION.md names the right repo
 **Covers:** F3
