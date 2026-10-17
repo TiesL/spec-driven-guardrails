@@ -1090,7 +1090,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   new contract. Structural checks supplement the F52/F53 human dry runs; they
   cannot certify practical runtime behavior.
 
-### A41 — Run rules get stable IDs, a condensed core and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
+### A41 — Run rules get stable IDs, a condensed core in two self-standing parts and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
 
 - **Why:** Claude Code keeps at most 10,000 characters of one hook's stdout in
   context and saves the rest to a file it does not ask the model to read.
@@ -1099,8 +1099,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   injected verbatim, no rule moves to a voluntary read, and one stateless
   `PreToolUse` hook on `Agent` is in scope. Human decision 4: rules get stable
   IDs, the core is condensed in caveman style, wording tests give way to
-  behavior tests, and slots are only a fallback. A41 is used because #515 has
-  reserved A40.
+  behavior tests, and slots are only a fallback. Human decision 5: two
+  parts, fundamentals and procedure, each self-standing and
+  order-independent, plus a committed differential-run stamp. A41 is used
+  because #515 has reserved A40.
 - **Budget:** one value, `CONTEXT_BUDGET_CHARS=9000` (10% under the cap), in
   `lib/context-budget.sh` with `context_chars`, which counts UTF-8 code points
   in Python. That is the same number as `wc -m` in a UTF-8 locale, without
@@ -1125,22 +1127,98 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   that line is the deny text. A Planning scratch rewrite that keeps all 45
   rules measured 10,252 characters (from 13,933); with the CLAUDE.md-link
   warning at 100-character paths (about 365) the worst case is about 10,600,
-  over the budget. So Human decision 4's fallback applies: slots.
-- **Slots (fallback, Human decision 4 point 4):**
-  `session-context.sh --slot <n>` prints only the n-th chunk of its normal
-  output (the CLAUDE.md warning, then each declared file). Chunks are split at
-  a line `<!-- session-context: slot -->` in a declared file, and that line is
-  never printed. Run without `--slot`, the script prints everything, as Codex
-  and older callers expect. `settings/session-hooks.json` wires slots 1..K as
-  separate `SessionStart` commands (K=2). Every chunk opens with a line that
-  names its part ("Orchestrator run rules, part n of K"), because hooks run in
-  parallel and their outputs may arrive in any order. The split sits at a
-  section boundary, so no rule is cut. `./check` asserts that, in the worst
-  case, every slot is within budget, the chunk count is at most the K wired
-  in settings, and the slots joined equal the unsplit output. With the
-  condensed core each slot is about 5,300 characters.
+  over the budget. So Human decision 4's fallback applies, as the two parts
+  below (Human decision 5).
+- **Two parts (Human decision 5; amends the Human decision 4 slot
+  fallback):** `ORCHESTRATOR.md` is two parts, both always injected in full,
+  each by its own `SessionStart` command. The split exists for failure and
+  ordering, not for loading: hooks run in parallel, outputs arrive in any
+  order, and one hook can fail on its own.
+  - **Part 1, fundamentals** (violation is irreversible or outward-facing):
+    OR1-OR8, OR11-OR13, OR33-OR35, OR43, OR45 (16 IDs). Sections: "Role and
+    pipeline" (OR1-OR6), "Dispatch" (OR7, OR8, OR11-OR13), "Shortcuts,
+    stops, human gates" (OR33-OR35, OR43, OR45).
+  - **Part 2, procedure:** OR9, OR10, OR14-OR32, OR36-OR42, OR44 (29 IDs).
+    Sections: "Dispatch brief and Review round" (OR9, OR10, OR14-OR16),
+    "Findings" (OR17-OR21), "Log and self-check" (OR22-OR27), "Models and
+    markers" (OR28-OR32), "Resume" (OR36), "Decided without asking"
+    (OR37-OR42, OR44).
+  - **Placement calls.** OR43 ("never decided by the orchestrator") and OR45
+    (pushback, then numbered human decision) leave the "Decided without
+    asking" section for part 1, as Human decision 5 names them as human
+    gates. OR37 (what a row may settle) stays in part 2 with its table.
+    OR12 and OR13 (fresh Reviewer, no `SendMessage`) are fresh dispatch, so
+    part 1; OR14-OR16 (brief contents) are part 2. OR3 and OR4 (what a work
+    item is, first request) decide whether the pipeline starts, so part 1.
+    OR9 and OR10 (contract quote, own report) are dispatch procedure, so
+    part 2.
+  - **Header.** Each part opens with a heading line, a blank line and one
+    sentence line. For part 1 (part 2 swaps `1`/`2` and the two names):
+
+    ```
+    # Multi-agent pipeline run rules, part 1 of 2: fundamentals
+
+    Part 2 of 2 (procedure) also applies; parts arrive in any order. Part 2 not in context: tell human before any dispatch or merge. `OR<n>` = stable rule ID; cross-part reference by ID only; never renumber.
+    ```
+
+    The sentence line replaces the single `OR<n>` header line. It is a fixed
+    template, tier `core`, with no ID.
+  - **Cross-part references.** By ID only. Three rules need the other part:
+    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--stage`) and OR36
+    (resume "at first stage without marker") need the stage order in OR5
+    (part 1), so OR31 gains "Stage names: OR5." and OR36 reads "first stage,
+    in OR5 order, without marker". No part-1 rule needs part 2 to be read
+    correctly: OR6's "finding-route steps" and OR12's fresh Reviewer stand
+    as written. The words "above" and "below" do not occur in
+    `ORCHESTRATOR.md`.
+  - **OR11 wording.** Human decision 5 puts "merge into `main` only after
+    the maintainer confirms the final head SHA" in part 1. OR11 reads:
+    "Merge into `main` only after human confirms final head SHA; new commit
+    after confirmation needs new confirmation." (Maintainer question on
+    #499 if this goes beyond what was meant.)
+  - **Split marker.** One line `<!-- session-context: slot -->` between the
+    parts, the only such line in the file. It is not a list item, so the
+    dispatch hook never reads it as a rule. `session-context.sh` never
+    prints it.
+  - **`session-context.sh --slot <n>`.** `<n>` is a positive integer;
+    anything else exits 2 before any read, like the other invalid options.
+    The script builds its normal output (Claude: the CLAUDE.md warning; Codex:
+    its two lines; then a blank line and each declared file), splits it at
+    each marker line, drops the marker lines and prints only chunk n. So slot
+    1 is the warning plus part 1, slot 2 is part 2, and a slot past the last
+    chunk prints nothing and exits 0. Without `--slot` it prints every chunk
+    in order with the marker lines dropped, which Codex and the differential
+    runner's arm text use.
+  - **Wiring.** `settings/session-hooks.json` replaces the one session-context
+    command with two in the same matcher-less `SessionStart` group, so both
+    run on every source, `startup` and `compact` included (also `resume` and
+    `clear`): the same dispatcher command with `--slot 1` and `--slot 2`,
+    status messages "session context, part 1 of 2" and "part 2 of 2". An
+    adopted project gets both through its existing settings symlink.
+  - **Worst-case size** (scratch rewrite split as above, with the OR11, OR31
+    and OR36 changes, and the CLAUDE.md warning at 100-character paths, 364
+    characters): slot 1 about 4,260 (part 1 alone 3,890); slot 2 about
+    6,980. Both are under 9,000; part 2 has about 2,000 of headroom.
+  - **Inventory.** `orchestrator-rules.tsv` gains a `part` column:
+    `id<TAB>name<TAB>tier<TAB>part<TAB>covered_by`, `part` is `1` or `2`, and
+    `-` for `retired`. Moving a rule between parts is then a visible
+    inventory change.
+  - **`./check` asserts** (deterministic, from the files):
+    1. `ORCHESTRATOR.md` has exactly one marker line, so exactly 2 parts.
+    2. Each part starts with its two header lines, with `n` equal to its
+       position and `m` the other part.
+    3. Every non-retired ID occurs in exactly one part, and that part equals
+       its inventory `part`.
+    4. No `above` or `below` as a word in either part.
+    5. Worst case per slot: `session-context.sh --slot <n>` output, with the
+       warning at 100-character paths, is at most `CONTEXT_BUDGET_CHARS`
+       for n = 1..K.
+    6. The number of chunks equals K, the count of `--slot` commands in
+       `settings/session-hooks.json`, and those are `--slot 1..K`.
+    7. Slots 1..K joined equal the output without `--slot`.
 - **Rule inventory:** `skills/role-contracts/orchestrator-rules.tsv` has one
-  row per rule: `id<TAB>name<TAB>tier<TAB>covered_by`. `name` is a short
+  row per rule: `id<TAB>name<TAB>tier<TAB>part<TAB>covered_by` (`part`:
+  see "Two parts"). `name` is a short
   kebab-case label that AC lists and tests refer to; it is not injected.
   `tier` is one of:
   - `judgment`: a decision only a model makes; covered by at least one
@@ -1215,6 +1293,14 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     verdicts. `./check` tests it with a stub `claude` named by `CLAUDE_BIN`
     that returns canned JSON, so the majority and verdict logic is
     deterministic and free.
+  - **Stamp (Human decision 5 point 2).** When every scenario is `same`,
+    the runner writes `test/behavior/orchestrator-diff.stamp`: one line
+    `sha256=<hex> base=<rev> model=<resolved id> scenarios=<count>`, where
+    the hash is SHA-256 over the bytes of `ORCHESTRATOR.md` followed by the
+    bytes of `orchestrator-scenarios.md`. The stamp is committed. `./check`
+    recomputes the hash and fails when it does not match, so a change to
+    either file needs a fresh passing run. `./check` never runs the model;
+    it only compares hashes.
 - **Existing wording scenarios:** absence checks (no model names, tiers,
   `--effort`, grammar copies, risk-note field lists or new markers) and
   plumbing checks (S177-S179, S182, S184, S206 path resolution) stay
@@ -1284,11 +1370,14 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   `ORCHESTRATOR.md` line; a rule has no ID or two rules share one; a
   `judgment` rule has no behavior scenario; a slot or `pending-changes.sh`
   output exceeds `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk
-  has no wired slot; `ORCHESTRATOR.md` changes reach `main` without a
+  has no wired slot; a rule ID sits in no part or in both, or in a part other
+  than its inventory row; a part refers to the other part other than by ID;
+  the stamp hash does not match `ORCHESTRATOR.md` and the scenarios; `ORCHESTRATOR.md` changes reach `main` without a
   differential report on the PR; or a rule is delivered only by a file
   nothing injects.
 - **Revisit when:** Claude Code changes the cap or the `Agent` input shape;
-  K would have to go above 3 (then the run rules need a redesign, not more
-  slots); the A/A calibration shows more than one scenario in ten
-  `unstable` at 3 runs; or the condensed core fits one slot with the warning,
-  at which point K drops to 1.
+  K would have to go above 2 (then the run rules need a redesign, not a third
+  part); the A/A calibration shows more than one scenario in ten
+  `unstable` at 3 runs; or either part's worst case comes within 500
+  characters of the budget. The split is not undone when the whole core
+  would fit one slot: it exists for failure and ordering (Human decision 5).
