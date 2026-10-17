@@ -1089,3 +1089,108 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   changed Codex hook capabilities, or actual drift/ownership failures require a
   new contract. Structural checks supplement the F52/F53 human dry runs; they
   cannot certify practical runtime behavior.
+
+### A41 — Session-context output fits the hook cap by slots; the `Agent` dispatch hook quotes the core (#499)
+
+- **Why:** Claude Code keeps at most 10,000 characters of one hook's stdout in
+  context and saves the rest to a file it does not ask the model to read.
+  `ORCHESTRATOR.md` reached 13,933 characters, so opted-in sessions saw only a
+  2,000-character preview. Human decisions 1-2 on #499: every rule stays
+  injected verbatim, no rule moves to a voluntary read, and one stateless
+  `PreToolUse` hook on `Agent` is in scope. A41 is used because #515 has
+  reserved A40.
+- **Budget:** one value, `CONTEXT_BUDGET_CHARS=9000` (10% under the cap), in
+  `lib/context-budget.sh` with `context_chars`, which counts UTF-8 code points
+  in Python. That is the same number as `wc -m` in a UTF-8 locale, without
+  depending on the locales a CI image has. The budget applies to each hook's
+  output string, because that is how the platform measures. Only tests source
+  the module; no run-time guard (Human decision 3). The docs that state the
+  number (the `CHANGES.md` Reaches session field, PRD F38) are kept equal to
+  the constant by a test.
+- **Slots (pending the human decision requested on #499):**
+  `session-context.sh --slot <n>` prints only the n-th chunk of its normal
+  output (the CLAUDE.md warning, then each declared file). Chunks are split at
+  a line `<!-- session-context: slot -->` in a declared file, and that line is
+  never printed. Run without `--slot`, the script prints everything, as Codex
+  and older callers expect. `settings/session-hooks.json` wires slots 1..K as
+  separate `SessionStart` commands (K=2 to start). Every chunk opens with a
+  line that names its part ("Orchestrator run rules, part n of K"), because
+  hooks run in parallel and their outputs may arrive in any order.
+  `ORCHESTRATOR.md` stays one source file, so A16's single source and the
+  existing content scenarios hold unchanged. `./check` asserts that, in the
+  worst case, every slot is within budget, the chunk count is at most the K
+  wired in settings, and the slots joined equal the unsplit output.
+  - If the slots are declined, there is one slot and the core must be
+    rewritten to 9,000 or less. In that case the Developer stops and escalates
+    rather than drop or move a rule.
+- **Rule inventory:** `skills/role-contracts/orchestrator-rules.tsv` has one
+  row per rule: `id<TAB>tier<TAB>anchor`. The tier is `core` or
+  `hook:<check-id>`; a rule a gate enforces is `core` with a one-line
+  statement. The anchor is an exact, case-sensitive substring of
+  `ORCHESTRATOR.md`. A `core` anchor occurs at least once; a `hook:` anchor
+  occurs on exactly one physical line, which is the deny text. The
+  inventory's set of check ids equals `agent-dispatch.py --list-checks`.
+  Nothing tells a session to read the inventory, and it holds no rule text of
+  its own.
+  - Accepted limit: an anchor can survive a rewrite that hollows out the rule
+    around it. Catching that is reviewer judgment.
+- **Dispatch hook, Module and Interface:**
+  - **Files and wiring.** Two new files, `hooks/agent-dispatch` (bash adapter)
+    and `hooks/agent-dispatch.py` (pure core), not added to `git-guardrails`,
+    which has a different matcher, input and deletion test. Wired as a second
+    `PreToolUse` entry with `matcher` `Agent`, `timeout` 10, through the same
+    `readlink` dispatcher, so an adopted project gets it through its existing
+    symlink.
+  - **Adapter.** It honours `CLAUDE_WORKFLOW_GUARDRAILS_OFF`. It exits 0 unless
+    `answered_yes "${CLAUDE_PROJECT_DIR:-.}" process-multi-agent-roles` (the
+    one yes rule, A16). Without `python3` it warns and exits 0. Otherwise it
+    runs `python3 -I agent-dispatch.py <ORCHESTRATOR.md> <inventory>` with
+    stdin passed through. Both paths are in the clone, so the deny text is the
+    injected text.
+  - **Core.** It reads `tool_name`, `agent_id` and
+    `tool_input.{prompt,subagent_type,model}`. The tool name and field names
+    are constants that exist only here, and `--print-contract` prints them for
+    the drift test against the settings matcher. Its precedence:
+    1. A tool other than `Agent` exits 0 silently.
+    2. A non-empty `agent_id` (a call inside a subagent) exits 0 silently.
+    3. Input that is not JSON, or has no `tool_input` object, or whose
+       `prompt` is not a string, exits 0 with one stderr line.
+  - **What counts as a role dispatch.** A prompt with a line that starts
+    `ROLE SESSION:`, or a line that has `model-record-emit.sh` followed by
+    `--stage`. Anything else is allowed silently.
+  - **Checks.**
+    - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
+      Product, Architect, QA, Fullstack Developer or Reviewer.
+    - `no-fork`: `subagent_type` is not `fork`.
+    - `marker-command`: `model-record-emit.sh` with `--stage <one of the five
+      stages>`.
+    - `model`: a non-empty `model` argument.
+    - `reviewer-pr`, `reviewer-sha` and `reviewer-gate`: Reviewer only. A PR
+      number or `/pull/<n>`, a 7-40 character hex SHA, and the literal
+      `finding-carryforward-gate.sh`.
+  - **Result.** All checks pass: exit 0, no output. Any check fails: exit 2.
+    stderr lists, once each, the `ORCHESTRATOR.md` lines that the failed
+    checks' anchors resolve to, then one line on how a non-role prompt
+    avoids detection.
+  - **Fail open.** If the inventory or `ORCHESTRATOR.md` is unreadable, or an
+    anchor does not resolve, the call is allowed with a stderr line.
+  - **Limits.** No network, no `gh`, no state.
+- **Not in the hook:** the two-round trigger (needs `gh`), the fresh-Reviewer
+  `SendMessage` check, deny-once and new merge gates (the follow-up issue),
+  the content quality of the contract quote, and "no paraphrase". The checks
+  test presence and shape, not correctness; that residual risk is accepted.
+- **Module / Interface / Seam / Depth:**
+  - **Deletion test.** Deleting the hook removes exactly the dispatch-shape
+    enforcement and nothing else, so the hook earns its place.
+  - **Seam.** The pure core is the test Seam: synthetic JSON on stdin plus two
+    file paths, no git, no project.
+  - **Adapters.** The bash adapter is the only part that knows about the
+    environment or adoption. There is one real adapter (Claude Code), and
+    Codex has no hook surface, so no runtime abstraction is built.
+- **Violated when:** a hook-tier rule's deny text differs from its
+  `ORCHESTRATOR.md` line; a slot or `pending-changes.sh` output exceeds
+  `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk has no wired
+  slot; or a rule is delivered only by a file nothing injects.
+- **Revisit when:** Claude Code changes the cap or the `Agent` input shape, or
+  K would have to go above 3. At that point the run rules themselves need a
+  redesign, not more slots.
