@@ -397,6 +397,62 @@ something new is being added.
 
 ---
 
+### S306 — Hook bypass options require the explicit workflow escape hatch (#441 AC1)
+**Covers:** F7
+- Seam: invoke the real `hooks/git-guardrails` with stdin PreToolUse JSON
+  (`tool_name: Bash`, fixture `cwd`, `tool_input.command`); observe exit status
+  and stderr. Commands are input data, never executed as Git mutations.
+- Given: a committed feature-branch fixture with no remote needed
+- When: `git commit --no-verify`, `git commit -n`, or
+  `git push --no-verify origin HEAD` is evaluated
+- Then: each exits exactly 2; stderr names the offending option and
+  `CLAUDE_WORKFLOW_GUARDRAILS_OFF=1`.
+- Also block quoted `"--no-verify"`, commit `-an`, `-nm text`, and an
+  explicit `--no-verify --verify` sequence. Repeat direct spellings on
+  committed main, unborn main, detached HEAD and a non-repository cwd:
+  the bypass diagnostic must still win, independently of branch/HEAD.
+- Preserve supported recognition: include an environment assignment prefix,
+  `git -C <fixture>`, `--git-dir`/`--work-tree`, a supported `git -c` global
+  option, and a bypass in a later semicolon/AND/newline command segment.
+- Red evidence: before implementation, each new blocked-behavior arm must
+  demonstrably fail its exit/diagnostic oracle against the old hook; on main,
+  an existing unrelated exit 2 alone is insufficient evidence.
+
+### S307 — Option operands and prose remain data (#441 false-positive controls)
+**Covers:** F7
+- Given: the S306 Interface and a feature-branch fixture
+- Then: exact exit 0 for ordinary commit/push, `git push -n origin HEAD`,
+  commit `-m '--no-verify'`, `-m '-n'`, `--message=--no-verify`,
+  `-m--no-verify`, `-mn`, `-am--no-verify`, `-F --no-verify`,
+  `--file --no-verify`, and `--file=--no-verify`.
+- Also allow push `-o --no-verify`, `--push-option --no-verify`, and
+  `--push-option=--no-verify`; commit/push `-- --no-verify` and commit
+  `-- -n` are data. Require a later real bypass after a consumed operand
+  to block, e.g. `git commit -m '-n' --no-verify` and
+  `git push -o --no-verify --no-verify origin HEAD`.
+- Echoed prose and heredoc bodies containing all three AC1 spellings,
+  non-Bash JSON, and malformed quoting keep their existing allow behavior.
+  An actual bypass command after a heredoc terminator is blocked.
+- Existing S11–S14 and S44–S47 remain regression controls: allowing data
+  does not exempt a real commit/push on/to main from its existing policy.
+  These controls may already be green; record them separately from S306's
+  red evidence rather than claiming every new assertion initially fails.
+
+### S308 — Bypass permission is explicit and visibly warned (#441 AC2)
+**Covers:** F7
+- Given: each of the three S306 direct spellings through the JSON Seam
+- When: `CLAUDE_WORKFLOW_GUARDRAILS_OFF=1` is set in the hook process
+  environment, or prefixes the evaluated command
+- Then: exact exit 0 and stderr warns that the workflow guard is disabled
+  via `CLAUDE_WORKFLOW_GUARDRAILS_OFF`.
+- Preserve the existing nonempty-value escape behavior with a non-1 value
+  in both supported locations; this issue does not tighten that contract.
+- With only `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1`, in either location,
+  each bypass still exits 2 and names the workflow escape hatch. Keep S64.
+- The Developer records red-before-green output for new refusal oracles,
+  then green results for all three scenarios, parser regressions and the
+  required project check. QA assesses that evidence without executing tests.
+
 ## Merge guard
 
 ### S15 — Merge without a review marker is blocked
