@@ -1090,14 +1090,16 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   new contract. Structural checks supplement the F52/F53 human dry runs; they
   cannot certify practical runtime behavior.
 
-### A41 — Session-context output fits the hook cap by slots; the `Agent` dispatch hook quotes the core (#499)
+### A41 — Run rules get stable IDs, a condensed core and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
 
 - **Why:** Claude Code keeps at most 10,000 characters of one hook's stdout in
   context and saves the rest to a file it does not ask the model to read.
   `ORCHESTRATOR.md` reached 13,933 characters, so opted-in sessions saw only a
   2,000-character preview. Human decisions 1-2 on #499: every rule stays
   injected verbatim, no rule moves to a voluntary read, and one stateless
-  `PreToolUse` hook on `Agent` is in scope. A41 is used because #515 has
+  `PreToolUse` hook on `Agent` is in scope. Human decision 4: rules get stable
+  IDs, the core is condensed in caveman style, wording tests give way to
+  behavior tests, and slots are only a fallback. A41 is used because #515 has
   reserved A40.
 - **Budget:** one value, `CONTEXT_BUDGET_CHARS=9000` (10% under the cap), in
   `lib/context-budget.sh` with `context_chars`, which counts UTF-8 code points
@@ -1107,33 +1109,120 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   the module; no run-time guard (Human decision 3). The docs that state the
   number (the `CHANGES.md` Reaches session field, PRD F38) are kept equal to
   the constant by a test.
-- **Slots (pending the human decision requested on #499):**
+- **Rule IDs:** every rule in `ORCHESTRATOR.md` is one list item (or one
+  sub-item) that starts with its ID, `OR<n>` followed by a space, for example
+  `- OR20 Two-round trigger. ...`. `OR` is used because adopted projects
+  already use single-letter IDs (`O1`-`O5` in one of them). IDs are never
+  renumbered or reused; a removed rule keeps its row with tier `retired`.
+  Cost: about 5 characters per rule, about 220 for 45 rules, plus one header
+  line. A paragraph-sized rule is split into several IDs only where a test or
+  the hook needs to point at a part of it (the four self-check items, the
+  Reviewer brief).
+- **Condensed core:** `ORCHESTRATOR.md` is rewritten in the caveman style
+  (#409): no articles or filler, terms, numbers, paths and negations
+  (`not`, `never`, `only`, `except`) kept verbatim, at most 20 words per
+  sentence. A rule enforced by the dispatch hook is one line in the core, and
+  that line is the deny text. A Planning scratch rewrite that keeps all 45
+  rules measured 10,252 characters (from 13,933); with the CLAUDE.md-link
+  warning at 100-character paths (about 365) the worst case is about 10,600,
+  over the budget. So Human decision 4's fallback applies: slots.
+- **Slots (fallback, Human decision 4 point 4):**
   `session-context.sh --slot <n>` prints only the n-th chunk of its normal
   output (the CLAUDE.md warning, then each declared file). Chunks are split at
   a line `<!-- session-context: slot -->` in a declared file, and that line is
   never printed. Run without `--slot`, the script prints everything, as Codex
   and older callers expect. `settings/session-hooks.json` wires slots 1..K as
-  separate `SessionStart` commands (K=2 to start). Every chunk opens with a
-  line that names its part ("Orchestrator run rules, part n of K"), because
-  hooks run in parallel and their outputs may arrive in any order.
-  `ORCHESTRATOR.md` stays one source file, so A16's single source and the
-  existing content scenarios hold unchanged. `./check` asserts that, in the
-  worst case, every slot is within budget, the chunk count is at most the K
-  wired in settings, and the slots joined equal the unsplit output.
-  - If the slots are declined, there is one slot and the core must be
-    rewritten to 9,000 or less. In that case the Developer stops and escalates
-    rather than drop or move a rule.
+  separate `SessionStart` commands (K=2). Every chunk opens with a line that
+  names its part ("Orchestrator run rules, part n of K"), because hooks run in
+  parallel and their outputs may arrive in any order. The split sits at a
+  section boundary, so no rule is cut. `./check` asserts that, in the worst
+  case, every slot is within budget, the chunk count is at most the K wired
+  in settings, and the slots joined equal the unsplit output. With the
+  condensed core each slot is about 5,300 characters.
 - **Rule inventory:** `skills/role-contracts/orchestrator-rules.tsv` has one
-  row per rule: `id<TAB>tier<TAB>anchor`. The tier is `core` or
-  `hook:<check-id>`; a rule a gate enforces is `core` with a one-line
-  statement. The anchor is an exact, case-sensitive substring of
-  `ORCHESTRATOR.md`. A `core` anchor occurs at least once; a `hook:` anchor
-  occurs on exactly one physical line, which is the deny text. The
-  inventory's set of check ids equals `agent-dispatch.py --list-checks`.
-  Nothing tells a session to read the inventory, and it holds no rule text of
-  its own.
-  - Accepted limit: an anchor can survive a rewrite that hollows out the rule
-    around it. Catching that is reviewer judgment.
+  row per rule: `id<TAB>name<TAB>tier<TAB>covered_by`. `name` is a short
+  kebab-case label that AC lists and tests refer to; it is not injected.
+  `tier` is one of:
+  - `judgment`: a decision only a model makes; covered by at least one
+    behavior scenario.
+  - `hook:<check>[,<check>]`: enforced by the dispatch hook; covered by the
+    hook's deterministic tests.
+  - `gate:<script>`: enforced by an existing gate; covered by that gate's
+    tests.
+  - `core`: a fact, pointer, literal template or disclaimer; covered by a
+    deterministic structure or absence check.
+  - `retired`: the ID is gone from the core and is never reused.
+
+  `covered_by` lists the `S<n>` tests and `OB<n>` behavior scenarios that
+  verify the rule. `./check` asserts: every non-retired ID occurs exactly once
+  in `ORCHESTRATOR.md`, at the start of an item, and every ID there has a row;
+  the AC4 rule names are all present; the hook check ids equal
+  `agent-dispatch.py --list-checks`; every `judgment` row has an `OB` that
+  exists and every `OB` cites only existing IDs; every `gate:` script exists.
+  Nothing tells a session to read the inventory, and it holds no rule text.
+  The ID replaces the anchor substring of the first A41 draft.
+- **Behavior scenarios:** `test/behavior/orchestrator-scenarios.md` holds
+  `OB<n>` scenarios, each one block:
+  `### OB<n> · OR<a>[, OR<b>]`, then `Given:`, `When:` and
+  `Then: <field>=<value>; ...`. The fields form one closed schema owned by the
+  runner: `next_action` (`dispatch`, `ask_human`, `stop`, `answer_directly`,
+  `comply_and_record`, `self_check`, `record_decision`), `next_role` (the five
+  roles or `none`), `starts_pipeline`, `asks_human` (booleans), `low_finding`
+  (`fix_in_pr`, `defer`, `file_issue_now`) and `model_choice`
+  (`same_or_stronger`, `weaker`), plus an ungraded `reason`. `Then` lists only
+  the graded fields. A `./check` structure test parses the file: every field
+  and value is in the schema, and every scenario cites an existing ID.
+- **Differential run:** `test/behavior/orchestrator-diff.sh [--base <rev>]
+  [--runs N] [--model M] [--max-budget-usd X] [--calibrate]` compares the
+  `ORCHESTRATOR.md` at `<rev>` (default `origin/main`) with the working
+  tree's. For each scenario and arm it runs N times (default 3):
+  `claude -p --model <M> --system-prompt-file <arm text plus a fixed preamble>
+  --tools "" --strict-mcp-config --setting-sources "" --settings
+  '{"disableAllHooks":true}' --no-session-persistence --output-format json
+  --json-schema <schema>`, from an empty scratch directory, with Given and
+  When as the prompt and never Then. Hooks are disabled so the
+  session-context hook cannot inject the current file into the old arm.
+  `--bare` is not used because it requires an API key and ignores the OAuth
+  login. (Probed on Claude Code 2.1.301: `structured_output`,
+  `total_cost_usd` and the resolved model id under `modelUsage` are in the
+  JSON result.)
+  - **Majority:** per arm and graded field, the value reached by more than
+    half of the runs; none means `unstable`.
+  - **Verdict per scenario:** `same` when both majorities equal `Then`;
+    `diverged` when they differ; `old-wrong` when the old majority misses
+    `Then` (a scenario or old-text defect, for a human to settle);
+    `unstable`. Exit 0 only when every scenario is `same`.
+  - **Calibration (`--calibrate`):** an A/A run (old against old) measures
+    the noise floor, and a mutant arm (the new text with one `never` or `not`
+    removed in a `judgment` rule) must come out `diverged`. This shows that
+    the test catches the moved-`not` failure that Human decision 4 named.
+  - **Report:** a Markdown table (scenario, old, new, Then, verdict, resolved
+    model id, cost) for the PR. It is acceptance evidence for a rewrite, not a
+    `./check` gate.
+  - **Model:** the current Sonnet alias at its default effort; the resolved id
+    goes into the report. The orchestrator in real runs is at least that
+    capable, and a much weaker model raises the noise floor. Both arms run
+    with the same model on the same day, so model drift cancels out of the
+    comparison; `Then` catches both arms going wrong together.
+  - **Cost:** about 40 scenarios × 2 arms × 3 runs = 240 calls of about
+    4,500 input and 400 output tokens, roughly USD 1.5-3 at list price per
+    full run (under a subscription login it counts against plan usage).
+    `--max-budget-usd` caps it (default 5).
+  - **Where it runs:** locally, on demand, when `ORCHESTRATOR.md` or the
+    scenarios change. Not in CI: it needs an API-key secret, costs money on
+    every push, and is not deterministic.
+  - **Seam:** the pure core (`orchestrator_diff.py`) turns run results into
+    verdicts. `./check` tests it with a stub `claude` named by `CLAUDE_BIN`
+    that returns canned JSON, so the majority and verdict logic is
+    deterministic and free.
+- **Existing wording scenarios:** absence checks (no model names, tiers,
+  `--effort`, grammar copies, risk-note field lists or new markers) and
+  plumbing checks (S177-S179, S182, S184, S206 path resolution) stay
+  deterministic. Presence-of-phrase checks on `ORCHESTRATOR.md` shrink to
+  "the ID exists, has its tier and sits in the core", and the behavior they
+  protected moves to `OB` scenarios. S283's paragraph oracles and the
+  S288/S291 clause and mutation checks are replaced by the inventory and by
+  the `OB` scenarios and the calibration mutant on OR40.
 - **Dispatch hook, Module and Interface:**
   - **Files and wiring.** Two new files, `hooks/agent-dispatch` (bash adapter)
     and `hooks/agent-dispatch.py` (pure core), not added to `git-guardrails`,
@@ -1169,11 +1258,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
       number or `/pull/<n>`, a 7-40 character hex SHA, and the literal
       `finding-carryforward-gate.sh`.
   - **Result.** All checks pass: exit 0, no output. Any check fails: exit 2.
-    stderr lists, once each, the `ORCHESTRATOR.md` lines that the failed
-    checks' anchors resolve to, then one line on how a non-role prompt
-    avoids detection.
-  - **Fail open.** If the inventory or `ORCHESTRATOR.md` is unreadable, or an
-    anchor does not resolve, the call is allowed with a stderr line.
+    stderr lists, once each, the `ORCHESTRATOR.md` lines whose IDs the
+    inventory maps to the failed checks, then one line on how a non-role
+    prompt avoids detection.
+  - **Fail open.** If the inventory or `ORCHESTRATOR.md` is unreadable, or a
+    mapped ID has no line, the call is allowed with a stderr line.
   - **Limits.** No network, no `gh`, no state.
 - **Not in the hook:** the two-round trigger (needs `gh`), the fresh-Reviewer
   `SendMessage` check, deny-once and new merge gates (the follow-up issue),
@@ -1181,16 +1270,25 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   test presence and shape, not correctness; that residual risk is accepted.
 - **Module / Interface / Seam / Depth:**
   - **Deletion test.** Deleting the hook removes exactly the dispatch-shape
-    enforcement and nothing else, so the hook earns its place.
-  - **Seam.** The pure core is the test Seam: synthetic JSON on stdin plus two
-    file paths, no git, no project.
-  - **Adapters.** The bash adapter is the only part that knows about the
-    environment or adoption. There is one real adapter (Claude Code), and
-    Codex has no hook surface, so no runtime abstraction is built.
+    enforcement and nothing else, so the hook earns its place. Deleting the
+    differential runner leaves judgment rules protected by nothing but
+    reviewer reading, which is the failure Human decision 4 rejects.
+  - **Seams.** The hook's pure core (synthetic JSON on stdin plus two file
+    paths) and the runner's verdict core (run results in, verdicts out) are
+    the test Seams; neither needs git, a project or a model.
+  - **Adapters.** The bash adapter is the only part of the hook that knows
+    about the environment or adoption, and `claude -p` is the runner's only
+    model adapter. One real adapter each, so no runtime or provider
+    abstraction is built.
 - **Violated when:** a hook-tier rule's deny text differs from its
-  `ORCHESTRATOR.md` line; a slot or `pending-changes.sh` output exceeds
-  `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk has no wired
-  slot; or a rule is delivered only by a file nothing injects.
-- **Revisit when:** Claude Code changes the cap or the `Agent` input shape, or
-  K would have to go above 3. At that point the run rules themselves need a
-  redesign, not more slots.
+  `ORCHESTRATOR.md` line; a rule has no ID or two rules share one; a
+  `judgment` rule has no behavior scenario; a slot or `pending-changes.sh`
+  output exceeds `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk
+  has no wired slot; `ORCHESTRATOR.md` changes reach `main` without a
+  differential report on the PR; or a rule is delivered only by a file
+  nothing injects.
+- **Revisit when:** Claude Code changes the cap or the `Agent` input shape;
+  K would have to go above 3 (then the run rules need a redesign, not more
+  slots); the A/A calibration shows more than one scenario in ten
+  `unstable` at 3 runs; or the condensed core fits one slot with the warning,
+  at which point K drops to 1.
