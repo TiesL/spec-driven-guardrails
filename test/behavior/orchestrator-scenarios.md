@@ -19,8 +19,8 @@ Rules for authors:
 - `Given` and `When` name no rule ID: the old text has none, and both arms
   must read the same prompt.
 - Every scenario is decidable from either text. A scenario that only the new
-  text can answer is an intended change and is listed in "Intended changes"
-  at the end of this file.
+  text can answer is an intended change and must be listed in "Intended
+  changes" at the end of this file, in the format given there.
 - `Then` lists only graded fields. A field left out is ungraded.
 - The `OR` IDs in the heading are the rules the scenario verifies; the
   inventory's `covered_by` column lists the same pairs from the rule side.
@@ -29,17 +29,21 @@ Rules for authors:
 
 Graded fields and their values. The definitions below are the reading this
 file is written against; the runner's fixed preamble, which both arms share,
-should carry the same definitions so a value means one thing in both arms.
+carries these definitions word for word, so a value means one thing in both
+arms.
 
 - `next_action`, the decisive step you take now (routine bookkeeping on the way
   to it, such as announcing, creating the issue and branch or setting a label,
   is not a separate step):
   - `dispatch`: start a new agent for a role (`next_role` names it).
+  - `continue_agent`: send a further message to an agent that already exists
+    (`SendMessage`); `next_role` names that agent's role.
+  - `merge`: run a PR merge now.
   - `ask_human`: ask the human a question or for a confirmation, and wait.
   - `stop`: stop and report, with nothing to ask.
-  - `answer_directly`: act yourself now, with no role dispatch and no
-    question: answer, explain, run a command, or merge where your rules allow
-    it.
+  - `answer_directly`: act yourself now, with no new agent, no message to an
+    existing agent, no merge and no question: answer, explain, or run a
+    command.
   - `comply_and_record`: follow a human instruction that changes the pipeline
     and write the record your rules require for it.
   - `self_check`: run a check your rules require before the next step.
@@ -109,17 +113,22 @@ Then: next_action=ask_human; asks_human=true
 ### OB10 · OR11
 Given: PR 41 is a work-item PR into `main`. Review passed, CI is green and your self-check is in the Pipeline log. You asked the maintainer to merge PR 41 at head 1a2b3c4 and they replied "confirmed, merge it". The head is still 1a2b3c4.
 When: You act on that reply.
-Then: next_action=answer_directly; asks_human=false
+Then: next_action=merge; asks_human=false
 
 ### OB11 · OR11
 Given: PR 43 is a work-item PR into the release branch `release/40-epic`, not into `main`. CI is green, the tests pass and its Review round is clean.
 When: You decide whether to merge PR 43.
-Then: next_action=answer_directly; asks_human=false
+Then: next_action=merge; asks_human=false
 
 ### OB12 · OR12
 Given: Review round 1 on PR 41 was run by Reviewer agent r1 and reported one medium `code` finding. QA and the Developer fixed it at the new head 9f8e7d6. Agent r1 is still reachable by `SendMessage`, which would be cheaper than a new agent.
 When: You start Review round 2.
 Then: next_action=dispatch; next_role=Reviewer
+
+### OB51 · OR13, OR17
+Given: Review round 1 on PR 41 reported one open finding `finding:missing-guard`, class `code`, severity medium. No other finding is open. QA agent q77, which wrote issue 40's test scenarios, is still reachable by `SendMessage`. Nothing in your rules or from the maintainer says whether a QA agent may or may not be continued.
+When: You route the finding.
+Then: next_role=QA; asks_human=false
 
 ## Review round brief and findings
 
@@ -310,7 +319,7 @@ When: You answer the Developer.
 Then: next_action=ask_human; asks_human=true
 
 ### OB49 · OR45
-Given: Review round 1 on PR 41 recommended blocking the merge on finding `finding:race-in-hook`. The maintainer writes: "I don't accept that recommendation." No pushback has happened on it yet.
+Given: Review round 1 on PR 41 was run by Reviewer agent r1 and recommended blocking the merge on finding `finding:race-in-hook`. The maintainer writes: "I don't accept that recommendation." No pushback has happened on it yet. Agent r1 is still reachable by `SendMessage` and already knows the finding's reasoning, which would make it cheaper than a new agent.
 When: You act on the maintainer's message.
 Then: next_action=dispatch; next_role=Reviewer; asks_human=false
 
@@ -322,8 +331,15 @@ Then: next_action=dispatch; next_role=Architect
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
-state, so the old arm can legitimately miss `Then` (`old-wrong`) in the
-baseline and the differential run:
+state. In the differential run a listed scenario whose new arm meets `Then`
+while the old arm does not gets the verdict `changed-as-intended`; in the
+baseline (old against old) its expected verdict is `old-wrong`. A listing
+only relaxes the old arm: the new arm must still meet `Then`.
+
+Format, parsed by `./check`: one list item per scenario,
+`- OB<n> (OR<a>[, OR<b>]): <change>`, continuation lines indented. The `OR`
+list equals the scenario's heading IDs, each `OB` is listed once, and each
+item cites its decision as at least one `#<n>`.
 
 - OB9 (OR11): a commit after the merge confirmation needs a new confirmation.
   Decided by the maintainer (#513 answer 5 and its round-3 addition, recorded
