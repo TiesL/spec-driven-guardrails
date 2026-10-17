@@ -5642,3 +5642,102 @@ behavioral obedience.
   marker on the line masking the first (C8); only the first marker per line read
   (C8); the boundary check applied to the open side only (C1, C3); clearing broken
   by the fix (C7); a changed output line or round number (S254).
+## #499 — session-context budget, run-rule inventory, dispatch hook and behavior suite
+
+Seams (A41), agreed before the tests: `session-context.sh --slot <n>` output
+and `pending-changes.sh` output, measured by `context_chars` of
+`lib/context-budget.sh` against `CONTEXT_BUDGET_CHARS`; the files
+`ORCHESTRATOR.md`, `orchestrator-rules.tsv`, `settings/session-hooks.json`
+and `test/behavior/orchestrator-scenarios.md`, read as data; the dispatch
+hook's pure core `hooks/agent-dispatch.py` (JSON on stdin plus the two file
+paths, `--list-checks`, `--print-contract`) and its bash adapter
+`hooks/agent-dispatch`; the runner's verdict core `orchestrator_diff.py`
+behind `orchestrator-diff.sh`, with a stub `claude` named by `CLAUDE_BIN`.
+No test calls a model, `gh` or the network. The Developer runs every new
+test red on `main` b43ee55 (or on the branch before the matching change)
+before making it green; QA assesses that evidence and does not execute
+tests. The `OB<n>` scenarios are not `S` rows: they are nondeterministic
+acceptance evidence (AC12), traced through the inventory's `covered_by`.
+
+
+### S315 — the behavior file parses against the closed schema and the runner's verdict logic is right with a stub model (#499 AC11, AC12)
+**Covers:** F38
+- Given: `test/behavior/orchestrator-scenarios.md`; the runner with
+  `CLAUDE_BIN` pointing at a stub `claude` that returns canned JSON per
+  arm, scenario and run (keyed by the system-prompt file and the prompt),
+  and records its arguments
+- When: the parser and the runner run
+- Then, file: every `### OB<n> · OR<a>[, OR<b>]` block has exactly `Given:`,
+  `When:`, `Then:`; every `Then` field and value is in the schema
+  (`next_action` with `dispatch`, `continue_agent`, `merge`, `ask_human`,
+  `stop`, `answer_directly`, `comply_and_record`, `self_check`,
+  `record_decision`; `next_role`, `starts_pipeline`, `asks_human`,
+  `low_finding`, `model_choice`; `reason` is never in `Then`); every cited ID
+  exists; `Given`/`When` cite no `OR` ID; OB numbers are unique; a stricter
+  OR11 case (`OB9`, `next_action=ask_human`) and at least one case per
+  part-1 `judgment` rule exist. The `## Intended changes` section (the
+  file's last) is parsed: each item `- OB<n> (OR<a>[, OR<b>]): <change>`,
+  continuation lines indented, names an existing `OB`, its `OR` list equals
+  that scenario's heading IDs, no `OB` is listed twice, and each item cites
+  at least one `#<n>`. Negative controls, each failing by name:
+  `next_action=continue`; `low_finding=maybe`; a block without `When:`; a
+  block citing `OR99`; an Intended-changes item naming `OB99`; an item whose
+  `OR` list differs from the heading (`OB9 (OR12)`); the same `OB` listed
+  twice; an item with no `#<n>`
+- Then, runner (stub, no model): the prompt the stub receives contains
+  `Given` and `When` and never `Then`; each call carries `--tools ""`,
+  `--strict-mcp-config`, `--setting-sources ""`, `disableAllHooks`,
+  `--no-session-persistence`, `--json-schema`, from an empty scratch
+  directory; the old arm's system prompt is the base revision's unsplit
+  text, the new arm's the working tree's (marker line dropped in both), and
+  both carry the same fixed preamble, which contains the scenario file's
+  Schema definitions word for word; per field the majority is the value in
+  more than half the runs; "equals `Then`" means every graded field's
+  majority equals its `Then` value; verdicts, first match wins: (1) new arm
+  without a majority on a graded field gives `unstable`; (2) listed under
+  Intended changes, new equals `Then`, old does not (an old arm without a
+  majority counts as not equal) gives `changed-as-intended`; (3) old arm
+  without a majority gives `unstable`; (4) both equal `Then` gives `same`;
+  (5) old misses `Then` gives `old-wrong`; (6) old equals `Then`, new does
+  not, gives `diverged`. Stub cases, each by name: listed, old wrong, new
+  right gives `changed-as-intended`; listed, new wrong gives not
+  `changed-as-intended` (`old-wrong` or `diverged` by the order); listed and
+  both right gives `same`; unlisted, old wrong, new right gives `old-wrong`;
+  listed, old unstable (1-1-1 of 3), new right gives `changed-as-intended`;
+  new unstable gives `unstable` whether listed or not. Exit 0 only when
+  every scenario is `same` or `changed-as-intended`; any `old-wrong`,
+  `diverged` or `unstable` exits non-zero. Baseline (old against old): it
+  passes when every unlisted scenario is `same`; listed scenarios are
+  reported with expected verdict `old-wrong` and do not fail it; an unlisted
+  `old-wrong` fails it; `--calibrate` runs old against old and a mutant arm,
+  and the stub returning a flipped decision only for the mutant arm yields
+  `diverged` for that scenario; the run stops before the call that would
+  pass `--max-budget-usd` (stub costs summed from `total_cost_usd`) and says
+  so; the report table has the columns scenario, old, new, Then, verdict,
+  resolved model id (from `modelUsage`), cost; no use of `timeout`
+- Red on `main` b43ee55: no runner, no parser (the scenario file exists from
+  #499 QA, so the file half is green as soon as the parser lands; its red
+  proof is the negative controls)
+
+### S316 — the committed stamp matches the hash, and a stale stamp fails (#499 AC13)
+**Covers:** F38
+- Given: `test/behavior/orchestrator-diff.stamp`, `ORCHESTRATOR.md` and the
+  scenario file; the stub runner of S315
+- When: `./check`'s stamp test runs, and the stub runner finishes a run in
+  which every scenario is `same` or `changed-as-intended` (one listed
+  scenario `changed-as-intended`), a run with one `diverged`, and a run in
+  which a listed scenario's new arm misses `Then`
+- Then: the stamp is one line `sha256=<64 hex> base=<rev> model=<id>
+  scenarios=<count>`; the test recomputes SHA-256 over the bytes of
+  `ORCHESTRATOR.md` followed by the bytes of the scenario file and passes
+  only when it equals the stamp; `scenarios` equals the number of `OB`
+  blocks; a fixture with one byte changed in either file, and a fixture
+  with the files hashed in the other order, fails, and so does a fixture
+  whose only change is one item added under `## Intended changes` (the list
+  is inside the hash); the run with every scenario `same` or
+  `changed-as-intended` writes the stamp, unchanged in format; the run with
+  a `diverged` scenario and the run with the listed scenario whose new arm
+  misses `Then` each leave the old stamp untouched; the test never calls a
+  model (`CLAUDE_BIN` set to a command
+  that fails if called)
+- Red on `main` b43ee55: no stamp
