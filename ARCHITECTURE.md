@@ -1101,7 +1101,9 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   IDs, the core is condensed in caveman style, wording tests give way to
   behavior tests, and slots are only a fallback. Human decision 5: two
   parts, fundamentals and procedure, each self-standing and
-  order-independent, plus a committed differential-run stamp. A41 is used
+  order-independent, plus a committed differential-run stamp. QA's Test
+  findings on #499 (Q1, Q2) add declared intended changes with their own
+  verdict and the `continue_agent` and `merge` schema values. A41 is used
   because #515 has reserved A40.
 - **Budget:** one value, `CONTEXT_BUDGET_CHARS=9000` (10% under the cap), in
   `lib/context-budget.sh` with `context_chars`, which counts UTF-8 code points
@@ -1243,13 +1245,35 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   `OB<n>` scenarios, each one block:
   `### OB<n> · OR<a>[, OR<b>]`, then `Given:`, `When:` and
   `Then: <field>=<value>; ...`. The fields form one closed schema owned by the
-  runner: `next_action` (`dispatch`, `ask_human`, `stop`, `answer_directly`,
-  `comply_and_record`, `self_check`, `record_decision`), `next_role` (the five
-  roles or `none`), `starts_pipeline`, `asks_human` (booleans), `low_finding`
-  (`fix_in_pr`, `defer`, `file_issue_now`) and `model_choice`
-  (`same_or_stronger`, `weaker`), plus an ungraded `reason`. `Then` lists only
-  the graded fields. A `./check` structure test parses the file: every field
-  and value is in the schema, and every scenario cites an existing ID.
+  runner: `next_action` (`dispatch`, `continue_agent`, `merge`, `ask_human`,
+  `stop`, `answer_directly`, `comply_and_record`, `self_check`,
+  `record_decision`), `next_role` (the five roles or `none`),
+  `starts_pipeline`, `asks_human` (booleans), `low_finding` (`fix_in_pr`,
+  `defer`, `file_issue_now`) and `model_choice` (`same_or_stronger`,
+  `weaker`), plus an ungraded `reason`. `Then` lists only the graded fields.
+  A `./check` structure test parses the file: every field and value is in
+  the schema, and every scenario cites an existing ID.
+  - **`dispatch`, `continue_agent`, `merge` (QA finding Q2).** `dispatch`
+    starts a new agent; `continue_agent` sends a further message to an agent
+    that already exists (`SendMessage`), with `next_role` naming its role;
+    `merge` runs a PR merge now. `answer_directly` excludes all three. With
+    one value for both kinds of agent call, a mutant that drops "never
+    `SendMessage`" (OR12, OR13, OR45) grades `same`; with merge folded into
+    `answer_directly`, OR11's merge-or-not cases grade on a value that also
+    covers "explain" or "run a command". The fresh-Reviewer rule and the
+    merge gate are part 1, so their scenarios must be able to fail. The
+    runner's fixed preamble carries the scenario file's Schema definitions
+    word for word, so both arms read each value the same way.
+  - **Intended changes (QA finding Q1).** A scenario whose `Then` follows a
+    decided rule change the old text may not state is declared in the
+    file's last section, `## Intended changes`, one list item per scenario:
+    `- OB<n> (OR<a>[, OR<b>]): <change>`, continuation lines indented, the
+    item citing the decision as at least one `#<n>`. The parser reads only
+    that section. `./check` asserts: each listed `OB` exists, its `OR` list
+    equals that scenario's heading IDs, no `OB` is listed twice, and each
+    item has a `#<n>`. Whether the cited decision is real is reviewer
+    judgment. The list sits inside the stamp hash, so adding an entry needs
+    a fresh run.
 - **Differential run:** `test/behavior/orchestrator-diff.sh [--base <rev>]
   [--runs N] [--model M] [--max-budget-usd X] [--calibrate]` compares the
   `ORCHESTRATOR.md` at `<rev>` (default `origin/main`) with the working
@@ -1266,10 +1290,25 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   JSON result.)
   - **Majority:** per arm and graded field, the value reached by more than
     half of the runs; none means `unstable`.
-  - **Verdict per scenario:** `same` when both majorities equal `Then`;
-    `diverged` when they differ; `old-wrong` when the old majority misses
-    `Then` (a scenario or old-text defect, for a human to settle);
-    `unstable`. Exit 0 only when every scenario is `same`.
+  - **Verdict per scenario,** first match wins; "equals `Then`" means every
+    graded field's majority equals its `Then` value:
+    1. `unstable`: the new arm has no majority on a graded field.
+    2. `changed-as-intended`: the scenario is listed under Intended
+       changes, the new arm equals `Then` and the old arm does not (a
+       missing majority included).
+    3. `unstable`: the old arm has no majority on a graded field.
+    4. `same`: both arms equal `Then`.
+    5. `old-wrong`: the old arm misses `Then` (a scenario or old-text
+       defect, for a human to settle).
+    6. `diverged`: the old arm equals `Then` and the new arm does not.
+
+    A listed scenario only relaxes the old arm: the new arm must still equal
+    `Then`, so a listing cannot hide a new-text defect. A listed scenario
+    that comes out `same` is not an error, and an entry may stay after its
+    change is on `main`. Exit 0 only when every scenario is `same` or
+    `changed-as-intended`. Baseline (old against old, AC12): its pass
+    criterion is every unlisted scenario `same`; listed scenarios are
+    reported, and their expected verdict there is `old-wrong`.
   - **Calibration (`--calibrate`):** an A/A run (old against old) measures
     the noise floor, and a mutant arm (the new text with one `never` or `not`
     removed in a `judgment` rule) must come out `diverged`. This shows that
@@ -1282,8 +1321,8 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     capable, and a much weaker model raises the noise floor. Both arms run
     with the same model on the same day, so model drift cancels out of the
     comparison; `Then` catches both arms going wrong together.
-  - **Cost:** about 40 scenarios × 2 arms × 3 runs = 240 calls of about
-    4,500 input and 400 output tokens, roughly USD 1.5-3 at list price per
+  - **Cost:** 50 scenarios × 2 arms × 3 runs = 300 calls of about
+    4,500 input and 400 output tokens, roughly USD 1.9-3.8 at list price per
     full run (under a subscription login it counts against plan usage).
     `--max-budget-usd` caps it (default 5).
   - **Where it runs:** locally, on demand, when `ORCHESTRATOR.md` or the
@@ -1293,8 +1332,8 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     verdicts. `./check` tests it with a stub `claude` named by `CLAUDE_BIN`
     that returns canned JSON, so the majority and verdict logic is
     deterministic and free.
-  - **Stamp (Human decision 5 point 2).** When every scenario is `same`,
-    the runner writes `test/behavior/orchestrator-diff.stamp`: one line
+  - **Stamp (Human decision 5 point 2).** When every scenario is `same` or
+    `changed-as-intended` (the exit-0 condition), the runner writes `test/behavior/orchestrator-diff.stamp`: one line
     `sha256=<hex> base=<rev> model=<resolved id> scenarios=<count>`, where
     the hash is SHA-256 over the bytes of `ORCHESTRATOR.md` followed by the
     bytes of `orchestrator-scenarios.md`. The stamp is committed. `./check`
