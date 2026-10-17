@@ -1022,7 +1022,9 @@ Every finding now carries its own
 `finding-carryforward-gate.sh <pr-number>` compares every Review round with
 the one immediately before it (issue #421, #426) and reports any slug a
 round left open that doesn't reappear (as still-open or resolved) in the
-next one. A report is cleared by any later round that mentions the slug,
+next one; a slug is the maximal run of non-whitespace characters after
+`finding:`, and a round mentions it only when it carries exactly that token
+(`finding:abc` is no mention of `ab`, #453). A report is cleared by any later round that mentions the slug,
 open or resolved, so a slug is reported only while the latest round that
 mentions it leaves it open and is not the last round; each line ends with
 ` (round <k>)`, the round that dropped it (A37b). A round is the one definition shared with `review-rounds.sh`

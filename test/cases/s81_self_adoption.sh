@@ -87,4 +87,119 @@ gitignore_regels="$(grep -c '^CLAUDE\.md$' "$repo/.gitignore" 2>/dev/null || ech
 [ "$gitignore_regels" -le 1 ] \
   || fail "S81 — a second self-adoption adds CLAUDE.md to .gitignore twice"
 
+
+# #419: exercise the public CLI with real directory aliases and file modes.
+script_names="check-pr-issue-link.sh check-main-via-pr.sh"
+file_state() {
+  python3 - "$1" <<'PY_STATE'
+import os, stat, sys
+p = sys.argv[1]
+s = os.lstat(p)
+print(oct(stat.S_IMODE(s.st_mode)))
+print(os.readlink(p) if stat.S_ISLNK(s.st_mode) else open(p).read())
+PY_STATE
+}
+prepare_self() {
+  fixture="$(sandbox_copy_repo "$1")"
+  rm -rf "$fixture/.agents" "$fixture/.guardrails"
+  git -C "$fixture" init -q -b main
+  # sandbox_copy_repo may inherit machine-local adoption artifacts.
+  rm -f "$fixture/AGENTS.md" "$fixture/check-pr-issue-link.sh" \
+    "$fixture/check-main-via-pr.sh" "$fixture/wait-for-ci.sh" \
+    "$fixture/.guardrails/installation.json"
+}
+run_adoption() {
+  result="$(SPEC_DRIVEN_GUARDRAILS_DIR="$source_path" "$TEST_REPO_ROOT/adopt.sh" \
+    --runtime "$route" "$target_path" 2>&1)"
+  result_status=$?
+}
+for route in claude codex; do
+  for spelling in direct target source both; do
+    prepare_self "$route $spelling missing"
+    ln -s "$fixture" "$fixture alias"
+    source_path="$fixture"; target_path="$fixture"
+    case "$spelling" in source|both) source_path="$fixture alias" ;; esac
+    case "$spelling" in target|both) target_path="$fixture alias" ;; esac
+    for invocation in 1 2; do
+      run_adoption
+      [ "$result_status" -eq 0 ] || fail "S81 $route $spelling call $invocation: $result"
+      for name in $script_names; do
+        [ ! -e "$fixture/$name" ] || fail "S81 $route $spelling created $name"
+      done
+      [ -x "$fixture/wait-for-ci.sh" ] || fail "S81 $route $spelling skipped wait-for-ci.sh"
+    done
+  done
+  for pair in existing mixed; do
+    prepare_self "$route $pair"
+    source_path="$fixture"; target_path="$fixture"
+    printf 'issue marker\n' > "$fixture/check-pr-issue-link.sh"
+    chmod 640 "$fixture/check-pr-issue-link.sh"
+    before_issue="$(file_state "$fixture/check-pr-issue-link.sh")"
+    if [ "$pair" = existing ]; then
+      printf 'main marker\n' > "$fixture/check-main-via-pr.sh"
+      chmod 600 "$fixture/check-main-via-pr.sh"
+      before_main="$(file_state "$fixture/check-main-via-pr.sh")"
+    fi
+    for invocation in 1 2; do
+      run_adoption
+      [ "$result_status" -eq 0 ] || fail "S81 $route $pair adoption: $result"
+      [ "$(file_state "$fixture/check-pr-issue-link.sh")" = "$before_issue" ] || fail "S81 $route $pair changed issue copy contents/mode"
+      if [ "$pair" = existing ]; then
+        [ "$(file_state "$fixture/check-main-via-pr.sh")" = "$before_main" ] || fail "S81 $route $pair changed main copy contents/mode"
+      else
+        [ ! -e "$fixture/check-main-via-pr.sh" ] || fail "S81 $route mixed created missing copy"
+      fi
+    done
+  done
+
+  # A separate checkout with the same remote must still receive scaffolds.
+  other="$(fresh_project "$route other project")"
+  git -C "$fixture" remote add origin https://example.invalid/shared.git
+  git -C "$other" remote add origin https://example.invalid/shared.git
+  printf '#!/bin/sh\nexit 0\n' > "$other/check"
+  chmod +x "$other/check"
+  ln -s "$other" "$other alias"
+  source_path="$fixture"; target_path="$other alias"
+  run_adoption
+  [ "$result_status" -eq 0 ] || fail "S81 $route distinct project: $result"
+  for name in $script_names; do
+    cmp -s "$fixture/templates/$name" "$other/$name" || fail "S81 $route distinct missing $name"
+    [ -x "$other/$name" ] || fail "S81 $route distinct non-executable $name"
+    printf '%s custom\n' "$name" > "$other/$name"
+    chmod 600 "$other/$name"
+  done
+  for invocation in 1 2; do
+    run_adoption
+    [ "$result_status" -eq 0 ] || fail "S81 $route distinct re-adoption: $result"
+    for name in $script_names; do
+      [ "$(cat "$other/$name")" = "$name custom" ] || fail "S81 $route overwrote custom $name"
+      [ -x "$other/$name" ] || fail "S81 $route did not repair executable $name"
+      chmod 600 "$other/$name"
+    done
+  done
+done
+
+# Codex must exclude each skipped destination, but retain other preflight guards.
+route=codex
+for name in $script_names wait-for-ci.sh; do
+  prepare_self "codex symlink $name"
+  sentinel="$SANDBOX/sentinel $name"
+  printf 'outside sentinel\n' > "$sentinel"
+  chmod 600 "$sentinel"
+  ln -s "$sentinel" "$fixture/$name"
+  before_link="$(file_state "$fixture/$name")"
+  before_sentinel="$(file_state "$sentinel")"
+  source_path="$fixture"; target_path="$fixture"
+  run_adoption
+  if [ "$name" = wait-for-ci.sh ]; then
+    [ "$result_status" -ne 0 ] || fail "S81 Codex accepted selected symlink $name"
+    [ ! -e "$fixture/.guardrails/installation.json" ] || fail "S81 Codex wrote ownership before refusal"
+    [ ! -e "$fixture/AGENTS.md" ] || fail "S81 Codex wrote AGENTS before refusal"
+  else
+    [ "$result_status" -eq 0 ] || fail "S81 Codex refused skipped symlink $name: $result"
+  fi
+  [ "$(file_state "$fixture/$name")" = "$before_link" ] || fail "S81 Codex changed symlink $name"
+  [ "$(file_state "$sentinel")" = "$before_sentinel" ] || fail "S81 Codex changed sentinel $name"
+done
+
 test_done

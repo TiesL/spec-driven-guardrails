@@ -581,13 +581,16 @@ scaffold_shared() {
   if [ -x "$project_dir/check" ]; then
     mkdir -p "$project_dir/.github/workflows"
     scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" "$project_dir/.github/workflows/ci.yml"
-    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-pr-issue-link.sh" "$project_dir/check-pr-issue-link.sh"
-    if [ -f "$project_dir/check-pr-issue-link.sh" ]; then
-      chmod +x "$project_dir/check-pr-issue-link.sh"
-    fi
-    scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-main-via-pr.sh" "$project_dir/check-main-via-pr.sh"
-    if [ -f "$project_dir/check-main-via-pr.sh" ]; then
-      chmod +x "$project_dir/check-main-via-pr.sh"
+    # This checkout's CI uses templates directly; leave root copies untouched.
+    if ! is_self_adoption "$project_dir"; then
+      scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-pr-issue-link.sh" "$project_dir/check-pr-issue-link.sh"
+      if [ -f "$project_dir/check-pr-issue-link.sh" ]; then
+        chmod +x "$project_dir/check-pr-issue-link.sh"
+      fi
+      scaffold_if_missing "$CLAUDE_WORKFLOW_DIR/templates/check-main-via-pr.sh" "$project_dir/check-main-via-pr.sh"
+      if [ -f "$project_dir/check-main-via-pr.sh" ]; then
+        chmod +x "$project_dir/check-main-via-pr.sh"
+      fi
     fi
     # #265: enforces WORKFLOW.md's 5min-then-1min CI-polling cadence as a
     # script instead of a prose instruction an agent could improvise
@@ -627,6 +630,12 @@ scaffold_shared() {
 
 }
 
+# Physical checkout identity is shared by scaffolding and its write preflight.
+# Keep installed link spellings unchanged; aliases only affect this decision.
+is_self_adoption() {
+  [ "$(cd "$1" && pwd -P)" = "$(cd "$CLAUDE_WORKFLOW_DIR" && pwd -P)" ]
+}
+
 # Read-only destination selection for the Codex ownership preflight. Keep the
 # same gates as scaffold_shared; Claude retains its existing adoption behavior.
 shared_destinations() {
@@ -652,6 +661,9 @@ shared_destinations() {
     shared_paths+=(.github/workflows)
     [ ! -f "$CLAUDE_WORKFLOW_DIR/templates/ci.yml" ] || shared_paths+=(.github/workflows/ci.yml)
     for name in check-pr-issue-link.sh check-main-via-pr.sh wait-for-ci.sh; do
+      if [ "$name" != wait-for-ci.sh ] && is_self_adoption "$project_dir"; then
+        continue
+      fi
       if [ -f "$CLAUDE_WORKFLOW_DIR/templates/$name" ] || [ -f "$project_dir/$name" ]; then
         shared_paths+=("$name")
       fi
