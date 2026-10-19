@@ -1347,7 +1347,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   "the ID exists, has its tier and sits in the core", and the behavior they
   protected moves to `OB` scenarios. S283's paragraph oracles and the
   S288/S291 clause and mutation checks are replaced by the inventory and by
-  the `OB` scenarios and the calibration mutant on OR40.
+  the `OB` scenarios and the calibration mutant on OR43 (removing its opening "Never" flips the never-decided list; OR40's only `never` is redundant with "deferred").
 - **Dispatch hook, Module and Interface:**
   - **Files and wiring.** Two new files, `hooks/agent-dispatch` (bash adapter)
     and `hooks/agent-dispatch.py` (pure core), not added to `git-guardrails`,
