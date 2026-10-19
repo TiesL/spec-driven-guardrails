@@ -320,7 +320,7 @@ When: You answer the Developer's question.
 Then: next_action=ask_human; asks_human=true
 
 ### OB48 · OR43
-Given: QA's test strategy for issue 40 recommends an end-to-end test. The Developer says it is too expensive, proposes a unit test instead and asks you to approve the switch. The maintainer has not been asked.
+Given: QA's test strategy for issue 40 recommends an end-to-end test. The Developer says it is too expensive, proposes a unit test instead and asks you to approve the switch. QA has pushed back once with reasons, which are on the issue. The maintainer has not been asked.
 When: You answer the Developer.
 Then: next_action=ask_human; asks_human=true
 
