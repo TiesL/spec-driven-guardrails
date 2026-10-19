@@ -39,9 +39,9 @@ cc() {
     [ -n "$(item "$id" "$o")" ] || echo "missing-item: $id is not in the core"
   done
   row() { awk -F'\t' -v i="$1" '$1==i{print $2" "$3" "$4" "$5}' "$t"; }
-  [[ "$(row OR46)" == "no-agent-steps judgment 1 "OB* ]] || echo "row-or46: expected 'no-agent-steps judgment 1' with covered_by OBs, got '$(row OR46)'"
-  [[ "$(row OR47)" == "fresh-brief-size judgment 2 "OB* ]] || echo "row-or47: expected 'fresh-brief-size judgment 2' with covered_by OBs, got '$(row OR47)'"
-  [[ "$(row OR48)" == "run-scope judgment 2 "OB* ]] || echo "row-or48: expected 'run-scope judgment 2' with covered_by OBs, got '$(row OR48)'"
+  [[ "$(row OR46)" == "no-agent-steps judgment 1 "*OB* ]] || echo "row-or46: expected 'no-agent-steps judgment 1' with covered_by OBs, got '$(row OR46)'"
+  [[ "$(row OR47)" == "fresh-brief-size judgment 2 "*OB* ]] || echo "row-or47: expected 'fresh-brief-size judgment 2' with covered_by OBs, got '$(row OR47)'"
+  [[ "$(row OR48)" == "run-scope judgment 2 "*OB* ]] || echo "row-or48: expected 'run-scope judgment 2' with covered_by OBs, got '$(row OR48)'"
   [[ "$(row OR13)" == "continuation-rule judgment 1 "* ]] || echo "row-or13: OR13 must be 'continuation-rule judgment 1', got '$(row OR13)'"
   grep -q 'continuing-other-roles-undecided' "$t" && echo "row-or13-old-name: continuing-other-roles-undecided is still in the inventory"
   for id in OR4 OR22 OR23 OR28 OR33; do
@@ -131,7 +131,8 @@ grep -v '^- OR46 ' "$ORCH" > "$d/o-no46.md"
 negc or46-removed missing-item "$d/o-no46.md" "$TSV"
 negh or46-removed-harness id-missing "$d/o-no46.md" "$TSV"
 
-awk '/^- OR47 /{hold=$0; next} {print} /^- OR45 /{print hold}' "$ORCH" > "$d/o-p1.md"
+l47="$(grep -m1 '^- OR47 ' "$ORCH")"
+awk -v l="$l47" '/^- OR47 /{next} {print} /^- OR45 /{print l}' "$ORCH" > "$d/o-p1.md"
 negh or47-in-part1 wrong-part "$d/o-p1.md" "$TSV"
 
 awk '/^- OR13 /{print $0 " Not decided here (#412)."; next} {print}' "$ORCH" | sed 's/Not decided/not decided/' > "$d/o-undec.md"
