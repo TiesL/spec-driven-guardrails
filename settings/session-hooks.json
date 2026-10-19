@@ -10,6 +10,17 @@
             "statusMessage": "git-guardrails"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; wf=$(dirname \"$(dirname \"$(readlink \"$p/.claude/settings.json\" 2>/dev/null)\")\"); if [ -x \"$wf/hooks/agent-dispatch\" ]; then exec \"$wf/hooks/agent-dispatch\"; fi; exit 0",
+            "statusMessage": "agent-dispatch",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -39,8 +50,13 @@
           },
           {
             "type": "command",
-            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ -x \"$wf/session-context.sh\" ]; then \"$wf/session-context.sh\" \"$p\" 2>/dev/null; fi; exit 0",
-            "statusMessage": "session context for opted-in workflow changes"
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ -x \"$wf/session-context.sh\" ]; then \"$wf/session-context.sh\" --slot 1 \"$p\" 2>/dev/null; fi; exit 0",
+            "statusMessage": "session context, part 1 of 2"
+          },
+          {
+            "type": "command",
+            "command": "p=\"${CLAUDE_PROJECT_DIR:-.}\"; target=$(readlink \"$p/.claude/settings.json\" 2>/dev/null); if [ -z \"$target\" ]; then exit 0; fi; wf=$(dirname \"$(dirname \"$target\")\"); if [ -x \"$wf/session-context.sh\" ]; then \"$wf/session-context.sh\" --slot 2 \"$p\" 2>/dev/null; fi; exit 0",
+            "statusMessage": "session context, part 2 of 2"
           }
         ]
       }

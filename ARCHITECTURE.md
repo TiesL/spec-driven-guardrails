@@ -1089,3 +1089,375 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   changed Codex hook capabilities, or actual drift/ownership failures require a
   new contract. Structural checks supplement the F52/F53 human dry runs; they
   cannot certify practical runtime behavior.
+
+### A41 — Run rules get stable IDs, a condensed core in two self-standing parts and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
+
+- **Why:** Claude Code keeps at most 10,000 characters of one hook's stdout in
+  context and saves the rest to a file it does not ask the model to read.
+  `ORCHESTRATOR.md` reached 13,933 characters, so opted-in sessions saw only a
+  2,000-character preview. Human decisions 1-2 on #499: every rule stays
+  injected verbatim, no rule moves to a voluntary read, and one stateless
+  `PreToolUse` hook on `Agent` is in scope. Human decision 4: rules get stable
+  IDs, the core is condensed in caveman style, wording tests give way to
+  behavior tests, and slots are only a fallback. Human decision 5: two
+  parts, fundamentals and procedure, each self-standing and
+  order-independent, plus a committed differential-run stamp. QA's Test
+  findings on #499 (Q1, Q2) add declared intended changes with their own
+  verdict and the `continue_agent` and `merge` schema values. A41 is used
+  because #515 has reserved A40.
+- **Budget:** one value, `CONTEXT_BUDGET_CHARS=9000` (10% under the cap), in
+  `lib/context-budget.sh` with `context_chars`, which counts UTF-8 code points
+  in Python. That is the same number as `wc -m` in a UTF-8 locale, without
+  depending on the locales a CI image has. The budget applies to each hook's
+  output string, because that is how the platform measures. Only tests source
+  the module; no run-time guard (Human decision 3). The docs that state the
+  number (the `CHANGES.md` Reaches session field, PRD F38) are kept equal to
+  the constant by a test.
+- **Rule IDs:** every rule in `ORCHESTRATOR.md` is one list item (or one
+  sub-item) that starts with its ID, `OR<n>` followed by a space, for example
+  `- OR20 Two-round trigger. ...`. `OR` is used because adopted projects
+  already use single-letter IDs (`O1`-`O5` in one of them). IDs are never
+  renumbered or reused; a removed rule keeps its row with tier `retired`.
+  Cost: about 5 characters per rule, about 220 for 45 rules, plus one header
+  line. A paragraph-sized rule is split into several IDs only where a test or
+  the hook needs to point at a part of it (the four self-check items, the
+  Reviewer brief).
+- **Condensed core:** `ORCHESTRATOR.md` is rewritten in the caveman style
+  (#409): no articles or filler, terms, numbers, paths and negations
+  (`not`, `never`, `only`, `except`) kept verbatim, at most 20 words per
+  sentence. A rule enforced by the dispatch hook is one line in the core, and
+  that line is the deny text. A Planning scratch rewrite that keeps all 45
+  rules measured 10,252 characters (from 13,933); with the CLAUDE.md-link
+  warning at 100-character paths (about 365) the worst case is about 10,600,
+  over the budget. So Human decision 4's fallback applies, as the two parts
+  below (Human decision 5).
+- **Two parts (Human decision 5; amends the Human decision 4 slot
+  fallback):** `ORCHESTRATOR.md` is two parts, both always injected in full,
+  each by its own `SessionStart` command. The split exists for failure and
+  ordering, not for loading: hooks run in parallel, outputs arrive in any
+  order, and one hook can fail on its own.
+  - **Part 1, fundamentals** (violation is irreversible or outward-facing):
+    OR1-OR8, OR11-OR13, OR33-OR35, OR43, OR45 (16 IDs). Sections: "Role and
+    pipeline" (OR1-OR6), "Dispatch" (OR7, OR8, OR11-OR13), "Shortcuts,
+    stops, human gates" (OR33-OR35, OR43, OR45).
+  - **Part 2, procedure:** OR9, OR10, OR14-OR32, OR36-OR42, OR44 (29 IDs).
+    Sections: "Dispatch brief and Review round" (OR9, OR10, OR14-OR16),
+    "Findings" (OR17-OR21), "Log and self-check" (OR22-OR27), "Models and
+    markers" (OR28-OR32), "Resume" (OR36), "Decided without asking"
+    (OR37-OR42, OR44).
+  - **Placement calls.** OR43 ("never decided by the orchestrator") and OR45
+    (pushback, then numbered human decision) leave the "Decided without
+    asking" section for part 1, as Human decision 5 names them as human
+    gates. OR37 (what a row may settle) stays in part 2 with its table.
+    OR12 and OR13 (fresh Reviewer, no `SendMessage`) are fresh dispatch, so
+    part 1; OR14-OR16 (brief contents) are part 2. OR3 and OR4 (what a work
+    item is, first request) decide whether the pipeline starts, so part 1.
+    OR9 and OR10 (contract quote, own report) are dispatch procedure, so
+    part 2.
+  - **Header.** Each part opens with a heading line, a blank line and one
+    sentence line. For part 1 (part 2 swaps `1`/`2` and the two names):
+
+    ```
+    # Multi-agent pipeline run rules, part 1 of 2: fundamentals
+
+    Part 2 of 2 (procedure) also applies; parts arrive in any order. Part 2 not in context: tell human before any dispatch or merge. `OR<n>` = stable rule ID; cross-part reference by ID only; never renumber.
+    ```
+
+    The sentence line replaces the single `OR<n>` header line. It is a fixed
+    template, tier `core`, with no ID.
+  - **Cross-part references.** By ID only. Three rules need the other part:
+    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--stage`) and OR36
+    (resume "at first stage without marker") need the stage order in OR5
+    (part 1), so OR31 gains "Stage names: OR5." and OR36 reads "first stage,
+    in OR5 order, without marker". No part-1 rule needs part 2 to be read
+    correctly: OR6's "finding-route steps" and OR12's fresh Reviewer stand
+    as written. The words "above" and "below" do not occur in
+    `ORCHESTRATOR.md`.
+  - **OR11 wording.** Human decision 5 puts "merge into `main` only after
+    the maintainer confirms the final head SHA" in part 1. OR11 reads:
+    "Merge into `main` only after human confirms final head SHA; new commit
+    after confirmation needs new confirmation." (Maintainer question on
+    #499 if this goes beyond what was meant.)
+  - **Split marker.** One line `<!-- session-context: slot -->` between the
+    parts, the only such line in the file. It is not a list item, so the
+    dispatch hook never reads it as a rule. `session-context.sh` never
+    prints it.
+  - **`session-context.sh --slot <n>`.** `<n>` is a positive integer;
+    anything else exits 2 before any read, like the other invalid options.
+    The script builds its normal output (Claude: the CLAUDE.md warning; Codex:
+    its two lines; then a blank line and each declared file), splits it at
+    each marker line, drops the marker lines and prints only chunk n. So slot
+    1 is the warning plus part 1, slot 2 is part 2, and a slot past the last
+    chunk prints nothing and exits 0. Without `--slot` it prints every chunk
+    in order with the marker lines dropped, which Codex and the differential
+    runner's arm text use.
+  - **Wiring.** `settings/session-hooks.json` replaces the one session-context
+    command with two in the same matcher-less `SessionStart` group, so both
+    run on every source, `startup` and `compact` included (also `resume` and
+    `clear`): the same dispatcher command with `--slot 1` and `--slot 2`,
+    status messages "session context, part 1 of 2" and "part 2 of 2". An
+    adopted project gets both through its existing settings symlink.
+  - **Worst-case size** (scratch rewrite split as above, with the OR11, OR31
+    and OR36 changes, and the CLAUDE.md warning at 100-character paths, 364
+    characters): slot 1 about 4,260 (part 1 alone 3,890); slot 2 about
+    6,980. Both are under 9,000; part 2 has about 2,000 of headroom.
+  - **Inventory.** `orchestrator-rules.tsv` gains a `part` column:
+    `id<TAB>name<TAB>tier<TAB>part<TAB>covered_by`, `part` is `1` or `2`, and
+    `-` for `retired`. Moving a rule between parts is then a visible
+    inventory change.
+  - **`./check` asserts** (deterministic, from the files):
+    1. `ORCHESTRATOR.md` has exactly one marker line, so exactly 2 parts.
+    2. Each part starts with its two header lines, with `n` equal to its
+       position and `m` the other part.
+    3. Every non-retired ID occurs in exactly one part, and that part equals
+       its inventory `part`.
+    4. No `above` or `below` as a word in either part.
+    5. Worst case per slot: `session-context.sh --slot <n>` output, with the
+       warning at 100-character paths, is at most `CONTEXT_BUDGET_CHARS`
+       for n = 1..K.
+    6. The number of chunks equals K, the count of `--slot` commands in
+       `settings/session-hooks.json`, and those are `--slot 1..K`.
+    7. Slots 1..K joined equal the output without `--slot`.
+- **Rule inventory:** `skills/role-contracts/orchestrator-rules.tsv` has one
+  row per rule: `id<TAB>name<TAB>tier<TAB>part<TAB>covered_by` (`part`:
+  see "Two parts"). `name` is a short
+  kebab-case label that AC lists and tests refer to; it is not injected.
+  `tier` is one of:
+  - `judgment`: a decision only a model makes; covered by at least one
+    behavior scenario.
+  - `hook:<check>[,<check>]`: enforced by the dispatch hook; covered by the
+    hook's deterministic tests.
+  - `gate:<script>`: enforced by an existing gate; covered by that gate's
+    tests.
+  - `core`: a fact, pointer, literal template or disclaimer; covered by a
+    deterministic structure or absence check, and by a text pin (see
+    **Core-tier pins**).
+  - `retired`: the ID is gone from the core and is never reused.
+
+  `covered_by` lists the `S<n>` tests and `OB<n>` behavior scenarios that
+  verify the rule. `./check` asserts: every non-retired ID occurs exactly once
+  in `ORCHESTRATOR.md`, at the start of an item, and every ID there has a row;
+  the AC4 rule names are all present; the hook check ids equal
+  `agent-dispatch.py --list-checks`; every `judgment` row has an `OB` that
+  exists and every `OB` cites only existing IDs; every `gate:` script exists.
+  Nothing tells a session to read the inventory, and it holds no rule text.
+  The ID replaces the anchor substring of the first A41 draft.
+- **Behavior scenarios:** `test/behavior/orchestrator-scenarios.md` holds
+  `OB<n>` scenarios, each one block:
+  `### OB<n> · OR<a>[, OR<b>]`, then `Given:`, `When:` and
+  `Then: <field>=<value>; ...`. The fields form one closed schema owned by the
+  runner: `next_action` (`dispatch`, `continue_agent`, `merge`, `ask_human`,
+  `stop`, `answer_directly`, `comply_and_record`, `self_check`,
+  `record_decision`), `next_role` (the five roles or `none`),
+  `starts_pipeline`, `asks_human` (booleans), `low_finding` (`fix_in_pr`,
+  `defer`, `file_issue_now`) and `model_choice` (`same_or_stronger`,
+  `weaker`), plus an ungraded `reason`. `Then` lists only the graded fields.
+  A `./check` structure test parses the file: every field and value is in
+  the schema, and every scenario cites an existing ID.
+  - **`dispatch`, `continue_agent`, `merge` (QA finding Q2).** `dispatch`
+    starts a new agent; `continue_agent` sends a further message to an agent
+    that already exists (`SendMessage`), with `next_role` naming its role;
+    `merge` runs a PR merge now. `answer_directly` excludes all three. With
+    one value for both kinds of agent call, a mutant that drops "never
+    `SendMessage`" (OR12, OR13, OR45) grades `same`; with merge folded into
+    `answer_directly`, OR11's merge-or-not cases grade on a value that also
+    covers "explain" or "run a command". The fresh-Reviewer rule and the
+    merge gate are part 1, so their scenarios must be able to fail. The
+    runner's fixed preamble carries the scenario file's Schema definitions
+    word for word, so both arms read each value the same way.
+  - **Intended changes (QA finding Q1).** A scenario whose `Then` follows a
+    decided rule change the old text may not state is declared in the
+    file's last section, `## Intended changes`, one list item per scenario:
+    `- OB<n> (OR<a>[, OR<b>]): <change>`, continuation lines indented, the
+    item citing the decision as at least one `#<n>`. The parser reads only
+    that section. `./check` asserts: each listed `OB` exists, its `OR` list
+    equals that scenario's heading IDs, no `OB` is listed twice, and each
+    item has a `#<n>`. Whether the cited decision is real is reviewer
+    judgment. The list sits inside the stamp hash, so adding an entry needs
+    a fresh run.
+- **Differential run:** `test/behavior/orchestrator-diff.sh [--base <rev>]
+  [--runs N] [--model M] [--max-budget-usd X] [--calibrate]` compares the
+  `ORCHESTRATOR.md` at `<rev>` (default `origin/main`) with the working
+  tree's. For each scenario and arm it runs N times (default 3):
+  `claude -p --model <M> --system-prompt-file <arm text plus a fixed preamble>
+  --tools "" --strict-mcp-config --setting-sources "" --settings
+  '{"disableAllHooks":true}' --no-session-persistence --output-format json
+  --json-schema <schema>`, from an empty scratch directory, with Given and
+  When as the prompt and never Then. Hooks are disabled so the
+  session-context hook cannot inject the current file into the old arm.
+  `--bare` is not used because it requires an API key and ignores the OAuth
+  login. (Probed on Claude Code 2.1.301: `structured_output`,
+  `total_cost_usd` and the resolved model id under `modelUsage` are in the
+  JSON result.)
+  - **Majority:** per arm and graded field, the value reached by more than
+    half of the runs; none means `unstable`.
+  - **Verdict per scenario,** first match wins; "equals `Then`" means every
+    graded field's majority equals its `Then` value:
+    1. `unstable`: the new arm has no majority on a graded field.
+    2. `changed-as-intended`: the scenario is listed under Intended
+       changes, the new arm equals `Then` and the old arm does not (a
+       missing majority included).
+    3. `unstable`: the old arm has no majority on a graded field.
+    4. `same`: both arms equal `Then`.
+    5. `old-wrong`: the old arm misses `Then` (a scenario or old-text
+       defect, for a human to settle).
+    6. `diverged`: the old arm equals `Then` and the new arm does not.
+
+    A listed scenario only relaxes the old arm: the new arm must still equal
+    `Then`, so a listing cannot hide a new-text defect. A listed scenario
+    that comes out `same` is not an error, and an entry may stay after its
+    change is on `main`. Exit 0 only when every scenario is `same` or
+    `changed-as-intended`. Baseline (old against old, AC12): its pass
+    criterion is every unlisted scenario `same`; listed scenarios are
+    reported, and their expected verdict there is `old-wrong`.
+  - **Calibration (`--calibrate`):** an A/A run (old against old) measures
+    the noise floor, and a mutant arm (the new text with one `never` or `not`
+    removed in a `judgment` rule) must come out `diverged`. This shows that
+    the test catches the moved-`not` failure that Human decision 4 named.
+  - **Report:** a Markdown table (scenario, old, new, Then, verdict, resolved
+    model id, cost) for the PR. It is acceptance evidence for a rewrite, not a
+    `./check` gate.
+  - **Model:** the current Sonnet alias at its default effort; the resolved id
+    goes into the report. The orchestrator in real runs is at least that
+    capable, and a much weaker model raises the noise floor. Both arms run
+    with the same model on the same day, so model drift cancels out of the
+    comparison; `Then` catches both arms going wrong together.
+  - **Cost:** 50 scenarios × 2 arms × 3 runs = 300 calls of about
+    4,500 input and 400 output tokens, roughly USD 1.9-3.8 at list price per
+    full run (under a subscription login it counts against plan usage).
+    `--max-budget-usd` caps it (default 5).
+  - **Where it runs:** locally, on demand, when `ORCHESTRATOR.md` or the
+    scenarios change. Not in CI: it needs an API-key secret, costs money on
+    every push, and is not deterministic.
+  - **Seam:** the pure core (`orchestrator_diff.py`) turns run results into
+    verdicts. `./check` tests it with a stub `claude` named by `CLAUDE_BIN`
+    that returns canned JSON, so the majority and verdict logic is
+    deterministic and free.
+  - **Stamp (Human decision 5 point 2).** When every scenario is `same` or
+    `changed-as-intended` (the exit-0 condition), the runner writes `test/behavior/orchestrator-diff.stamp`: one line
+    `sha256=<hex> base=<rev> model=<resolved id> scenarios=<count>`, where
+    the hash is SHA-256 over the bytes of `ORCHESTRATOR.md` followed by the
+    bytes of `orchestrator-scenarios.md`. The stamp is committed. `./check`
+    recomputes the hash and fails when it does not match, so a change to
+    either file needs a fresh passing run. `./check` never runs the model;
+    it only compares hashes.
+- **Core-tier pins (review round 1, finding `core-tier-rules-unprotected`).**
+  The `core` tier had no oracle: AC7 asks for an `OB` only for `judgment`
+  rules, so inverting OR26 left every `./check` test green and only the stamp
+  noticed, and a differential run re-stamps an inverted text because no
+  scenario targets a `core` rule. Decision: the tier is kept and protected
+  by an exact-text pin, not redefined and not given `OB` scenarios.
+  - **Why not the alternatives.** Moving the seven rules to `judgment` with
+    an `OB` each is wrong in kind: they are facts and literal templates, not
+    decisions, and a model-graded scenario that a majority of three sonnet
+    runs must flip is a weak, costly oracle for a negation. It also edits the
+    scenario file, so every change to the protection would need a new
+    306-call differential run. A pin file outside the two stamped files
+    does not touch the stamp.
+  - **The pin.** `test/fixtures/orchestrator-core-pins.tsv`, columns `id`
+    and `sha256`: the SHA-256 of that rule's item text in `ORCHESTRATOR.md`
+    (the item from its `OR<n> ` to the end of the item, continuation lines
+    joined by single spaces, trailing whitespace trimmed, ID included). One
+    row per `core` row of the inventory, no more and no fewer. It lives
+    beside the stamp's files, not in them, and holds no rule text, so the
+    core stays the only place a rule is written.
+  - **Check.** The shared harness `test/fixtures/orchestrator-core.py`
+    gains a `pins` check, run by S311. It asserts: the pin file's IDs equal
+    the inventory's `core` IDs; each rule's recomputed hash equals its pin;
+    on a mismatch the error names the ID and prints the current item text,
+    so the reviewer of the pin update sees the wording change. An
+    edit to a `core` rule therefore fails `./check` until its pin is
+    deliberately updated in the same commit, which is also the commit that
+    needs a fresh stamp, so the two reviews coincide. A rule that changes
+    tier (to or from `core`) must add or remove its pin row in that commit.
+  - **Residual risk.** A pin proves the text did not change since the pin was
+    written, not that the text is right, and a careless pin update re-blesses
+    a bad edit. That is accepted: the pin turns a silent edit into a visible
+    two-file change that review sees, which is the gap the finding names.
+    Reviewer judgment on the pin diff stays the oracle for intent.
+  - **Seams for tests.** (1) real tree: `pins` passes. (2) negative controls
+    in copies, each failing by its own error name: invert the negation in
+    OR26; edit OR29 and OR44 (the literal template) by one character; delete
+    a pin row; add a pin row for a non-`core` ID; change a rule's tier to
+    `core` with no pin row; edit the pin hash only. (3) S218, S203, S238,
+    S240 and S280 keep their own checks; the pins do not replace them.
+- **Existing wording scenarios:** absence checks (no model names, tiers,
+  `--effort`, grammar copies, risk-note field lists or new markers) and
+  plumbing checks (S177-S179, S182, S184, S206 path resolution) stay
+  deterministic. Presence-of-phrase checks on `ORCHESTRATOR.md` shrink to
+  "the ID exists, has its tier and sits in the core", and the behavior they
+  protected moves to `OB` scenarios. S283's paragraph oracles and the
+  S288/S291 clause and mutation checks are replaced by the inventory and by
+  the `OB` scenarios and the calibration mutant on OR43 (removing its opening "Never" flips the never-decided list; OR40's only `never` is redundant with "deferred").
+- **Dispatch hook, Module and Interface:**
+  - **Files and wiring.** Two new files, `hooks/agent-dispatch` (bash adapter)
+    and `hooks/agent-dispatch.py` (pure core), not added to `git-guardrails`,
+    which has a different matcher, input and deletion test. Wired as a second
+    `PreToolUse` entry with `matcher` `Agent`, `timeout` 10, through the same
+    `readlink` dispatcher, so an adopted project gets it through its existing
+    symlink.
+  - **Adapter.** It honours `CLAUDE_WORKFLOW_GUARDRAILS_OFF`. It exits 0 unless
+    `answered_yes "${CLAUDE_PROJECT_DIR:-.}" process-multi-agent-roles` (the
+    one yes rule, A16). Without `python3` it warns and exits 0. Otherwise it
+    runs `python3 -I agent-dispatch.py <ORCHESTRATOR.md> <inventory>` with
+    stdin passed through. Both paths are in the clone, so the deny text is the
+    injected text.
+  - **Core.** It reads `tool_name`, `agent_id` and
+    `tool_input.{prompt,subagent_type,model}`. The tool name and field names
+    are constants that exist only here, and `--print-contract` prints them for
+    the drift test against the settings matcher. Its precedence:
+    1. A tool other than `Agent` exits 0 silently.
+    2. A non-empty `agent_id` (a call inside a subagent) exits 0 silently.
+    3. Input that is not JSON, or has no `tool_input` object, or whose
+       `prompt` is not a string, exits 0 with one stderr line.
+  - **What counts as a role dispatch.** A prompt with a line that starts
+    `ROLE SESSION:`, or a line that has `model-record-emit.sh` followed by
+    `--stage`. Anything else is allowed silently.
+  - **Checks.**
+    - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
+      Product, Architect, QA, Fullstack Developer or Reviewer.
+    - `no-fork`: `subagent_type` is not `fork`.
+    - `marker-command`: `model-record-emit.sh` with `--stage <one of the five
+      stages>`.
+    - `model`: a non-empty `model` argument.
+    - `reviewer-pr`, `reviewer-sha` and `reviewer-gate`: Reviewer only. A PR
+      number or `/pull/<n>`, a 7-40 character hex SHA, and the literal
+      `finding-carryforward-gate.sh`.
+  - **Result.** All checks pass: exit 0, no output. Any check fails: exit 2.
+    stderr lists, once each, the `ORCHESTRATOR.md` lines whose IDs the
+    inventory maps to the failed checks, then one line on how a non-role
+    prompt avoids detection.
+  - **Fail open.** If the inventory or `ORCHESTRATOR.md` is unreadable, or a
+    mapped ID has no line, the call is allowed with a stderr line.
+  - **Limits.** No network, no `gh`, no state.
+- **Not in the hook:** the two-round trigger (needs `gh`), the fresh-Reviewer
+  `SendMessage` check, deny-once and new merge gates (the follow-up issue),
+  the content quality of the contract quote, and "no paraphrase". The checks
+  test presence and shape, not correctness; that residual risk is accepted.
+- **Module / Interface / Seam / Depth:**
+  - **Deletion test.** Deleting the hook removes exactly the dispatch-shape
+    enforcement and nothing else, so the hook earns its place. Deleting the
+    differential runner leaves judgment rules protected by nothing but
+    reviewer reading, which is the failure Human decision 4 rejects.
+  - **Seams.** The hook's pure core (synthetic JSON on stdin plus two file
+    paths) and the runner's verdict core (run results in, verdicts out) are
+    the test Seams; neither needs git, a project or a model.
+  - **Adapters.** The bash adapter is the only part of the hook that knows
+    about the environment or adoption, and `claude -p` is the runner's only
+    model adapter. One real adapter each, so no runtime or provider
+    abstraction is built.
+- **Violated when:** a hook-tier rule's deny text differs from its
+  `ORCHESTRATOR.md` line; a rule has no ID or two rules share one; a
+  `judgment` rule has no behavior scenario; a slot or `pending-changes.sh`
+  output exceeds `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk
+  has no wired slot; a rule ID sits in no part or in both, or in a part other
+  than its inventory row; a part refers to the other part other than by ID;
+  the stamp hash does not match `ORCHESTRATOR.md` and the scenarios; a `core` rule's text differs from its pin, or a `core` row has no pin; `ORCHESTRATOR.md` changes reach `main` without a
+  differential report on the PR; or a rule is delivered only by a file
+  nothing injects.
+- **Revisit when:** Claude Code changes the cap or the `Agent` input shape;
+  K would have to go above 2 (then the run rules need a redesign, not a third
+  part); the A/A calibration shows more than one scenario in ten
+  `unstable` at 3 runs; or either part's worst case comes within 500
+  characters of the budget. The split is not undone when the whole core
+  would fit one slot: it exists for failure and ordering (Human decision 5).

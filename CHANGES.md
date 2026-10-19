@@ -47,6 +47,19 @@ Per entry:
   `test/cases/*.sh` (the test that exercises it). Whether `none` is honest
   for a given *Yes means* is the reviewer's judgment, not checked. Adding or
   changing this field is not a meaning change: no **Meaning version** bump.
+
+  Budget (#499, A41): Claude Code keeps at most 10,000 characters of one
+  hook's output in context. Every session-start hook output must stay within
+  `CONTEXT_BUDGET_CHARS` (9,000 characters, defined once in
+  `lib/context-budget.sh`) in its worst case: each `session-context.sh
+  --slot <n>` output (every `session-context:` entry answered yes, the
+  `CLAUDE.md` warning printed, 100-character paths) and `pending-changes.sh`
+  (nothing answered). `./check` enforces it (S309, S310). A file split into
+  slots by `<!-- session-context: slot -->` lines needs one `--slot`
+  command per chunk in `settings/session-hooks.json`. To make room when an
+  addition or extension does not fit: tighten the core text, or move a rule
+  into a hook or gate. Never move it into a file a session must choose to
+  read.
 - **PR** — the linkback (W21, F15): the PR that establishes this. That's the
   PR that actually delivers the underlying capability, not necessarily the
   PR that last touched this row. On a later rewrite, rename, or split (like
@@ -551,8 +564,13 @@ the shared parser warns if it has no `Applies if`.
   included; worth it once a change is large enough that one session's blind
   spots matter. `adopt.sh` symlinks the `role-contracts` skill
   into every adopted project either way (it globs `skills/`); only the answer
-  records whether this project follows it.
-- **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, gate: skills/pre-merge-review/model-record-gate.sh
+  records whether this project follows it. The `PreToolUse` hook
+  `hooks/agent-dispatch` denies an orchestrator's role dispatch on the
+  `Agent` tool whose shape breaks a run rule (`ROLE SESSION:` prefix, no
+  fork, `--stage` marker command, model, Reviewer PR, head SHA and
+  carry-forward gate), quoting that rule's `ORCHESTRATOR.md` line; it fails
+  open.
+- **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
 ## release-branch-workflow

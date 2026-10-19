@@ -1430,6 +1430,20 @@ of inline-only records and `<`/`>` overrides. `quality-review-before-merge`
 stays at v4 with its grammar text amended; `process-model-choice` stays
 at v2. This repo's adoption and the A18 override documentation must follow.
 
+Fitting the hook cap (#499, A41): Claude Code keeps at most 10,000
+characters of one hook's output in context, so each session-start hook
+output stays within `CONTEXT_BUDGET_CHARS` (9,000 characters, from
+`lib/context-budget.sh`) in its worst case, and `./check` enforces it.
+`ORCHESTRATOR.md` is a condensed core of rules with stable IDs `OR<n>`, in
+two self-standing parts (fundamentals, procedure), each printed by its own
+`session-context.sh --slot <n>` command, so both load at startup and after
+compaction; the inventory `orchestrator-rules.tsv` proves no rule is
+dropped. Judgment rules are covered by Given/When/Then behavior scenarios
+run as an on-demand differential test of old against new text, and a
+committed stamp of that run is compared by `./check`. A `PreToolUse` hook on
+the `Agent` tool (`hooks/agent-dispatch`) denies a role dispatch whose
+shape breaks a rule, quoting the rule's own core line, and fails open.
+
 Not part of this feature: orchestrator software, per-change-type phase
 shortening (#281), changing the role contracts' content (#369), and
 verifying the role sessions' quality (AC9 covers only that they were

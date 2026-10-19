@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# hooks/agent-dispatch — PreToolUse hook on the `Agent` tool (#499, A41).
+#
+# Denies an orchestrator's role dispatch whose shape breaks a run rule
+# (ROLE SESSION prefix, no fork, `--stage` marker command, model argument,
+# Reviewer PR/SHA/carry-forward gate), quoting the rule's own line from
+# skills/role-contracts/ORCHESTRATOR.md. The checks live in the pure core
+# hooks/agent-dispatch.py; this adapter is the only part that knows about
+# the environment and adoption.
+#
+# Wired in settings/session-hooks.json through the same readlink
+# dispatcher as git-guardrails, so an adopted project gets it through its
+# existing settings symlink. Exit 0 allows, exit 2 denies (stderr is the
+# reason). Fail-open by design: kill switch set, project not answering
+# `process-multi-agent-roles` yes, or no python3 all allow the call. No
+# network, no state.
+#
+# Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
+
+set -uo pipefail
+
+[ -z "${CLAUDE_WORKFLOW_GUARDRAILS_OFF:-}" ] || exit 0
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+wf="$(dirname "$here")"
+
+# shellcheck source=../lib/changes.sh
+. "$wf/lib/changes.sh" 2>/dev/null || exit 0
+answered_yes "${CLAUDE_PROJECT_DIR:-.}" process-multi-agent-roles || exit 0
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "agent-dispatch: python3 not found; dispatch allowed unchecked" >&2
+  exit 0
+fi
+
+exec python3 -I "$here/agent-dispatch.py" \
+  "$wf/skills/role-contracts/ORCHESTRATOR.md" \
+  "$wf/skills/role-contracts/orchestrator-rules.tsv"
