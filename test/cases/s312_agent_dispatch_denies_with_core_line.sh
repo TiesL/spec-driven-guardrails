@@ -81,6 +81,31 @@ deny_with reviewer-sha-41 "$(ad_input "$rv_base
 https://github.com/o/r/pull/42 head 0123456789abcdef0123456789abcdef012345678, finding-carryforward-gate.sh.")" OR14
 deny_with reviewer-no-gate "$(ad_input "$rv_base
 PR #42, head 0123abc4567def.")" OR14
+# Reviewer PR and head SHA must be real (review round 1, finding
+# reviewer-fields-vacuous). Reading of AC8 where A41 is silent: a PR number
+# is `/pull/<n>` or `PR <n>` / `PR #<n>` (the word PR before it); a bare
+# `#<n>` is an issue reference and does not count. A head SHA is a 7-40 hex
+# run that contains at least one letter a-f, or one introduced by `head`,
+# `SHA` or `commit`; an all-digit run with no such label (a comment id)
+# does not count. OR15 makes the comment link mandatory in later rounds, so
+# such a brief is the normal round-2 brief.
+deny_with reviewer-issue-and-comment-only "$(ad_input "$rv_base
+Work item #499. Previous round: https://github.com/x/y/issues/499#issuecomment-6269971234
+Run finding-carryforward-gate.sh first.")" OR14
+deny_with reviewer-issue-ref-with-sha "$(ad_input "$rv_base
+Work item #499, head 0123abc4567def, finding-carryforward-gate.sh first.")" OR14
+deny_with reviewer-issue-url-with-sha "$(ad_input "$rv_base
+https://github.com/o/r/issues/499 head 0123abc4567def, finding-carryforward-gate.sh first.")" OR14
+deny_with reviewer-digits-as-sha "$(ad_input "$rv_base
+PR #42, comment 6269971234, finding-carryforward-gate.sh first.")" OR14
+for pr_form in "PR #42" "PR 42" "see /pull/42"; do
+  ad_run_core "$(ad_input "$rv_base
+$pr_form, work item #499, head 0123abc4567def, finding-carryforward-gate.sh first.")"
+  [ "$ad_st" = 0 ] || fail "S312/reviewer-pr-form-'$pr_form' — a real PR reference must pass ($ad_err)"
+done
+ad_run_core "$(ad_input "$rv_base
+PR #42, head 1234567890, finding-carryforward-gate.sh first.")"
+[ "$ad_st" = 0 ] || fail "S312/reviewer-labelled-digit-sha — a SHA introduced by 'head' must pass ($ad_err)"
 # Two Reviewer checks on one ID print it once; three checks together.
 deny_with reviewer-two-on-or14 "$(ad_input "$rv_base
 nothing else")" OR14

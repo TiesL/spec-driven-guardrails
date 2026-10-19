@@ -24,6 +24,7 @@ ORCH="$R/skills/role-contracts/ORCHESTRATOR.md"
 TSV="$R/skills/role-contracts/orchestrator-rules.tsv"
 SCEN="$R/test/behavior/orchestrator-scenarios.md"
 HOOK="$R/hooks/agent-dispatch.py"
+PINS="$R/test/fixtures/orchestrator-core-pins.tsv"
 
 for f in "$TSV" "$HOOK"; do
   [ -r "$f" ] || { fail "S311 — ${f#"$R"/} is missing"; test_done; }
@@ -31,10 +32,11 @@ done
 checks="$(python3 -I "$HOOK" --list-checks 2>/dev/null | tr '\n' ' ')"
 [ -n "$checks" ] || fail "S311 — agent-dispatch.py --list-checks printed nothing"
 
-run_check() { # orch tsv scen -> harness output; status in $st
-  out="$(python3 -I "$H" check --orch "$1" --tsv "$2" --scen "$3" --repo "$R" --list-checks "$checks" 2>&1)"
+run_check() { # orch tsv scen [pins] -> harness output; status in $st
+  out="$(python3 -I "$H" check --orch "$1" --tsv "$2" --scen "$3" --pins "${4:-$PINS}" --repo "$R" --list-checks "$checks" 2>&1)"
   st=$?
 }
+[ -r "$PINS" ] || fail "S311/pins — ${PINS#"$R"/} is missing"
 run_check "$ORCH" "$TSV" "$SCEN"
 [ "$st" = 0 ] || fail "S311/real — structure check failed:
 $out"
@@ -50,12 +52,17 @@ grep -qxF '<!-- session-context: slot -->' "$ORCH" || fail "S311 — no marker l
 grep -E '^ *- .*<!-- session-context: slot -->' "$ORCH" >/dev/null && fail "S311 — the marker line is a list item"
 
 # --- negative controls ----------------------------------------------------
-neg() { # name expected-error orch tsv scen
-  run_check "$3" "$4" "$5"
+neg() { # name expected-error orch tsv scen [pins [id-named]]
+  run_check "$3" "$4" "$5" "${6:-}"
   if [ "$st" = 0 ]; then
     fail "S311/neg-$1 — the break passed"
   elif ! grep -q "^ERROR $2:" <<<"$out"; then
     fail "S311/neg-$1 — expected ERROR $2, got: $out"
+  elif [ -n "${7:-}" ]; then
+    for id in $7; do
+      named="$(grep "^ERROR $2:" <<<"$out")"
+      grep -qw "$id" <<<"$named" || fail "S311/neg-$1 — ERROR $2 does not name $id: $out"
+    done
   fi
 }
 d="$SANDBOX"
@@ -91,5 +98,79 @@ neg xref-dropped xref-or36 "$d/o-xref.md" "$TSV" "$SCEN"
 
 awk -F'\t' -v OFS='\t' '$1=="OR29"{$2="Dispatch tool takes no effort"} {print}' "$TSV" > "$d/t-text.tsv"
 neg rule-text-in-tsv row-name "$ORCH" "$d/t-text.tsv" "$SCEN"
+
+# --- core-tier pins (A41 amendment 6ccad5c) -------------------------------
+# A pin file computed here, independently of the harness, from the real
+# core and inventory: SHA-256 of each `core` rule's item text, from `OR<n> `
+# to the item's end, continuation lines joined by single spaces, trailing
+# whitespace trimmed. Header line `id<TAB>sha256`.
+pin_make() { # orch tsv -> pin file on stdout
+  python3 -I - "$1" "$2" <<'PY'
+import hashlib, re, sys
+orch, tsv = sys.argv[1:3]
+core = [l.split("\t")[0] for l in open(tsv).read().split("\n")[1:]
+        if len(l.split("\t")) > 2 and l.split("\t")[2] == "core"]
+lines = open(orch).read().split("\n")
+item = re.compile(r"^( *)- (OR\d+) ")
+print("id\tsha256")
+for rid in core:
+    for i, l in enumerate(lines):
+        m = item.match(l)
+        if m and m.group(2) == rid:
+            parts, j = [l[l.index(rid):].rstrip()], i + 1
+            while (j < len(lines) and lines[j].strip() and lines[j].startswith(" ")
+                   and not item.match(lines[j])):
+                parts.append(lines[j].strip()); j += 1
+            print("%s\t%s" % (rid, hashlib.sha256(" ".join(parts).rstrip().encode()).hexdigest()))
+            break
+PY
+}
+pin_make "$ORCH" "$TSV" > "$d/pins-base.tsv"
+[ "$(wc -l < "$d/pins-base.tsv" | tr -d ' ')" = 8 ] || fail "S311/pins — expected 7 core rules plus a header, got: $(cat "$d/pins-base.tsv")"
+pin_ids="$(cut -f1 "$d/pins-base.tsv" | tail -n +2 | tr '\n' ' ')"
+[ "$pin_ids" = 'OR24 OR25 OR26 OR27 OR29 OR32 OR44 ' ] \
+  || fail "S311/pins — core IDs are not OR24-27, OR29, OR32, OR44"
+# Real tree: the committed pin file equals the independently computed one.
+if [ -r "$PINS" ]; then
+  cmp -s "$PINS" "$d/pins-base.tsv" || fail "S311/pins-real — committed pins differ from the hash definition:
+$(diff "$PINS" "$d/pins-base.tsv")"
+fi
+# The base pins pass against the unbroken core (the controls below differ
+# from it by exactly one break).
+run_check "$ORCH" "$TSV" "$SCEN" "$d/pins-base.tsv"
+[ "$st" = 0 ] || fail "S311/pins-base — computed pins fail the real core: $out"
+
+# 2. OR26's negation inverted
+sed 's/^  - OR26 No orchestrator-written issue comment carries/  - OR26 Every orchestrator-written issue comment carries/' "$ORCH" > "$d/o-or26.md"
+neg pin-or26-inverted pin-mismatch "$d/o-or26.md" "$TSV" "$SCEN" "$d/pins-base.tsv" OR26
+grep -q 'Every orchestrator-written issue comment carries' <<<"$out" \
+  || fail "S311/neg-pin-or26-inverted — the error does not print the current item text: $out"
+# 3. OR29 and OR44 changed by one character
+sed -e 's/^- OR29 Dispatch tool takes no effort/- OR29 Dispatch tool takes no efforts/' \
+    -e 's/one prose line: `<YYYY-MM-DD>/one prose line: `<YYYY-MM-DX>/' "$ORCH" > "$d/o-or2944.md"
+neg pin-or29-or44-one-char pin-mismatch "$d/o-or2944.md" "$TSV" "$SCEN" "$d/pins-base.tsv" "OR29 OR44"
+# 4. a pin row deleted
+grep -v '^OR32	' "$d/pins-base.tsv" > "$d/p-del.tsv"
+neg pin-row-deleted pin-missing "$ORCH" "$TSV" "$SCEN" "$d/p-del.tsv" OR32
+# 5. a pin row for a non-core ID
+{ cat "$d/pins-base.tsv"; printf 'OR20\t%s\n' "$(printf 'x' | shasum -a 256 | cut -d' ' -f1)"; } > "$d/p-extra.tsv"
+neg pin-row-non-core pin-extra "$ORCH" "$TSV" "$SCEN" "$d/p-extra.tsv" OR20
+# 6. a rule's tier set to core with no pin row
+awk -F'\t' -v OFS='\t' '$1=="OR28"{$3="core"} {print}' "$TSV" > "$d/t-core.tsv"
+neg tier-core-no-pin pin-missing "$ORCH" "$d/t-core.tsv" "$SCEN" "$d/pins-base.tsv" OR28
+# 7. only the pin hash edited
+awk -F'\t' -v OFS='\t' '$1=="OR24"{$2=substr($2,2) "0"} {print}' "$d/pins-base.tsv" > "$d/p-hash.tsv"
+neg pin-hash-edited pin-mismatch "$ORCH" "$TSV" "$SCEN" "$d/p-hash.tsv" OR24
+grep -q 'No design-class finding fixed without Architect step' <<<"$out" \
+  || fail "S311/neg-pin-hash-edited — the error does not print the current item text: $out"
+# 8. the rules' own tests stay (the pins do not replace them)
+for t in s203 s218 s238 s240 s280; do
+  ls "$R"/test/cases/${t}_*.sh >/dev/null 2>&1 || fail "S311/pins-own-tests — no test case $t"
+done
+
+# Duplicate IDs in a covered_by cell (finding tsv-duplicate-covered-by; red
+# on dd3117a: the OR11 row lists S311 twice).
+dups="$(awk -F'\t' 'NR>1{n=split($5,a,","); delete seen; for(i=1;i<=n;i++){if(a[i]!="" && seen[a[i]]++){print $1" repeats "a[i]}}}' "$TSV")"
+[ -z "$dups" ] || fail "S311/tsv-duplicate-covered-by — $dups"
 
 test_done

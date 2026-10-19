@@ -5789,6 +5789,22 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   other part; a row's `part` changed; `see above` inserted in part 2; the
   part 2 header sentence removed; a `judgment` row with an empty
   `covered_by`; an `OB` citing `OR99`; a hook check renamed in the TSV only
+- Core-tier pins (review round 1, `core-tier-rules-unprotected`, A41
+  amendment 6ccad5c): `test/fixtures/orchestrator-core-pins.tsv`
+  (`id<TAB>sha256`, with a header line) holds one row per `core` inventory
+  row; the hash is SHA-256 of the rule's item text from `OR<n> ` to the end of
+  the item, continuation lines joined by single spaces, trailing whitespace
+  trimmed (the test recomputes it on its own, so the hash definition is
+  pinned too). The harness `check` takes `--pins F` and reports
+  `pin-mismatch` (names the ID, prints the current item text), `pin-missing`
+  (a `core` ID without a pin row, names the ID) and `pin-extra` (a pin row
+  for a non-`core` ID, names the ID). Negative controls, each in a copy and
+  each failing by its own name: OR26 with its negation inverted; OR29 and
+  OR44 changed by one character; a pin row deleted; a pin row for `OR20`; OR28
+  set to tier `core` with no pin row; a pin hash edited alone. Real tree: the
+  pin file exists and `check` passes. S203, S218, S238, S240 and S280 keep
+  their own tests. Duplicate `covered_by` IDs in a row fail (finding
+  `tsv-duplicate-covered-by`, red on dd3117a: the OR11 row lists S311 twice)
 - Note: S160, S180, S209, S211, S214, S215, S218, S277-S280, S288, S301 and
   S304 now assert ID, tier and part for their rules; S311 is the shared
   harness they use
@@ -5811,8 +5827,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `fork`; no `model-record-emit.sh` with `--stage <stage>`, or `--stage
   Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
   Reviewer`, no PR number or `/pull/<n>`, no 7-40 hex SHA (6 hex and 41 hex
-  both fail), no `finding-carryforward-gate.sh`; and one case breaking three
-  checks together
+  both fail), no `finding-carryforward-gate.sh`; a Reviewer brief whose only
+  number-like tokens are an issue `#n` (or `/issues/n`) and an
+  `issuecomment-<digits>` id, and one whose "SHA" is an unlabelled all-digit
+  run; and one case breaking three checks together
 - Then: exit 2; stderr holds, once each, the full core line of every rule
   whose check failed, byte-equal to that line in `ORCHESTRATOR.md` (found
   through the inventory's `hook:` column), plus one line on how a non-role
@@ -5824,6 +5842,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   output never contains it
 - Red on `main` b43ee55: no hook. Negative control: an edited core line for
   OR8 changes the deny text with it (no second copy in the script)
+- Reviewer fields (review round 1, `reviewer-fields-vacuous`), reading where
+  A41 is silent: a PR number is `/pull/<n>` or `PR <n>` / `PR #<n>`; a bare
+  `#<n>` is an issue reference and does not count. A head SHA is a 7-40 hex
+  run with at least one letter a-f, or one introduced by `head`, `SHA` or
+  `commit`; an unlabelled all-digit run does not count. Passing controls:
+  `PR #42`, `PR 42`, `/pull/42`, and `head 1234567890`, each beside a work
+  item `#499`. Red on `6ccad5c`: the issue-and-comment-only brief, the issue
+  ref with a real SHA, and the digits-as-SHA brief all exit 0
 
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
