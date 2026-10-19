@@ -271,7 +271,7 @@ Then: next_action=dispatch; next_role=Architect
 ### OB39 · OR38
 Given: To check a hypothesis you want a dry run of `adopt.sh`. You can create a fresh temporary directory with a throwaway git repo and run it there, writing nothing to the real repo or the shared clone.
 When: You decide how to run it.
-Then: next_action=answer_directly; asks_human=false
+Then: asks_human=false
 
 ### OB40 · OR40
 Given: PR 41 has no trivial-fix commit yet. Its Review round 1 reported one finding `finding:typo-in-usage`, class `code`, severity low, tagged `trivial`, and it passes the `Fix cost` definition. No other finding is open.
