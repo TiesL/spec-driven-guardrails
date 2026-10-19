@@ -9,7 +9,7 @@ OR7	dispatch-shape-no-fork	hook:no-fork	1	S180,S209,S312,S311
 OR8	dispatch-shape-role-prefix	hook:prefix	1	S312,S314,S311
 OR9	dispatch-shape-contract-quote	judgment	2	S311,OB8
 OR10	own-report-own-marker	gate:skills/pre-merge-review/model-record-gate.sh	2	S183,S311
-OR11	merge-into-main-gate	judgment	1	S207,S311,S311,OB9,OB10,OB11
+OR11	merge-into-main-gate	judgment	1	S207,S311,OB9,OB10,OB11
 OR12	fresh-reviewer-no-sendmessage	judgment	1	S209,S311,OB12
 OR13	continuing-other-roles-undecided	judgment	1	S209,S311,OB51
 OR14	review-round-brief-reviewer-fields	hook:reviewer-pr,reviewer-sha,reviewer-gate	2	S312,S311
