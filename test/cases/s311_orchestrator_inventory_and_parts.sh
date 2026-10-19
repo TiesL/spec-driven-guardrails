@@ -44,9 +44,9 @@ $out"
 # The part lists A41 fixes, from the inventory side.
 p1="$(awk -F'\t' 'NR>1 && $4=="1"{print $1}' "$TSV" | sort -V | tr '\n' ' ')"
 p2="$(awk -F'\t' 'NR>1 && $4=="2"{print $1}' "$TSV" | sort -V | tr '\n' ' ')"
-[ "$p1" = "OR1 OR2 OR3 OR4 OR5 OR6 OR7 OR8 OR11 OR12 OR13 OR33 OR34 OR35 OR43 OR45 " ] \
+[ "$p1" = "OR1 OR2 OR3 OR4 OR5 OR6 OR7 OR8 OR11 OR12 OR13 OR33 OR34 OR35 OR43 OR45 OR46 " ] \
   || fail "S311/part1 — inventory part 1 is '$p1'"
-[ "$p2" = "OR9 OR10 OR14 OR15 OR16 OR17 OR18 OR19 OR20 OR21 OR22 OR23 OR24 OR25 OR26 OR27 OR28 OR29 OR30 OR31 OR32 OR36 OR37 OR38 OR39 OR40 OR41 OR42 OR44 " ] \
+[ "$p2" = "OR9 OR10 OR14 OR15 OR16 OR17 OR18 OR19 OR20 OR21 OR22 OR23 OR24 OR25 OR26 OR27 OR28 OR29 OR30 OR31 OR32 OR36 OR37 OR38 OR39 OR40 OR41 OR42 OR44 OR47 OR48 " ] \
   || fail "S311/part2 — inventory part 2 is '$p2'"
 grep -qxF '<!-- session-context: slot -->' "$ORCH" || fail "S311 — no marker line"
 grep -E '^ *- .*<!-- session-context: slot -->' "$ORCH" >/dev/null && fail "S311 — the marker line is a list item"
