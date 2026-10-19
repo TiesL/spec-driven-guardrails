@@ -575,7 +575,7 @@ def main(argv):
     r.add_argument("--max-budget-usd", type=float, default=5.0)
     r.add_argument("--calibrate", action="store_true")
     r.add_argument("--baseline", action="store_true")
-    r.add_argument("--mutant-rule", default="OR40")
+    r.add_argument("--mutant-rule", default="OR43")
     args = ap.parse_args(argv)
     if args.cmd == "check-scenarios":
         return cmd_check_scenarios(args)

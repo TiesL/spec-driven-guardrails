@@ -14,7 +14,9 @@
 #                test/behavior/orchestrator-diff.stamp.
 #   --baseline   old against old: passes when every unlisted scenario is `same`.
 #   --calibrate  old against old (noise floor) plus a mutant arm that must
-#                come out `diverged`.
+#                come out `diverged`. --mutant-rule picks the rule whose
+#                first never/not is removed (default OR43, whose removal
+#                flips meaning; OR40's only never is redundant, #499).
 # Exit: 0 pass, 1 verdicts fail, 2 usage/input error, 3 budget cap reached.
 #
 # Bash 3.2-compatible. No `timeout` (macOS has none).
