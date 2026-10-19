@@ -5,7 +5,8 @@
 # Issue #414, AC1 and AC2 (Architect A27). Seam: the text a session loads.
 # The rule must sit in all three files; ORCHESTRATOR.md must forbid
 # continuing a Reviewer by SendMessage and by the dispatch tool's fork type,
-# and must not extend a SendMessage ban to other roles (that is #412).
+# and must not extend a SendMessage ban to other roles (#412, decided by
+# #532: OR13 permits continuing other roles under stated limits).
 #
 # Mutations that turn this red: delete only the Reviewer's 'never the
 # dispatch tool's fork type' clause (the generic 'never a fork' stays);
@@ -17,8 +18,9 @@
 # Amended by #499 (AC14, A41): the ORCHESTRATOR.md half is located by ID,
 # no longer by the Dispatch-paragraph sentences: OR7 (hook:no-fork), OR12
 # and OR13 (judgment) each start exactly one item in part 1; OR12 names
-# SendMessage and fork, OR13 names #412; every item containing SendMessage
-# is OR12's. Behaviour: OB12, OB49 (fresh Reviewer, graded against
+# SendMessage and fork, OR13 (#532) lets other roles be continued under
+# limits and leaves Reviewer to OR12; every item containing SendMessage is
+# OR12's or OR13's. Behaviour: OB12, OB49 (fresh Reviewer, graded against
 # continue_agent), OB51 (OR13).
 
 set -uo pipefail
@@ -62,14 +64,17 @@ oc_rule "S209/OR13" OR13 judgment 1
 or12="$(oc_item OR12)"
 grep -q 'SendMessage' <<<"$or12" || fail "S209/OR12 — OR12 does not name SendMessage"
 grep -q 'fork' <<<"$or12" || fail "S209/OR12 — OR12 does not name fork"
-grep -q '#412' <<<"$(oc_item OR13)" || fail "S209/OR13 — OR13 does not name #412"
+or13="$(oc_item OR13)"
+grep -q 'OR12' <<<"$or13" || fail "S209/OR13 — OR13 does not leave the Reviewer to OR12"
+grep -qi 'not decided' <<<"$or13" && fail "S209/OR13 — OR13 still says it is not decided"
 
 # AC2: nothing about other roles. Every item that mentions SendMessage is
-# OR12's (a blanket ban would pre-empt #412).
+# OR12's, or OR13's (which permits continuing other roles under limits; a
+# blanket ban would contradict it).
 while IFS= read -r id; do
-  [ "$id" = OR12 ] && continue
+  [ "$id" = OR12 ] || [ "$id" = OR13 ] && continue
   if grep -q 'SendMessage' <<<"$(oc_item "$id")"; then
-    fail "S209/AC2 — $id mentions SendMessage; only OR12 may (that is #412)"
+    fail "S209/AC2 — $id mentions SendMessage; only OR12 and OR13 may"
   fi
 done < <(python3 -I "$OC_PY" items --orch "$OC_ORCH" | cut -f1)
 

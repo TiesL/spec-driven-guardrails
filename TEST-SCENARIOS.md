@@ -5969,3 +5969,212 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   model (`CLAUDE_BIN` set to a command
   that fails if called)
 - Red on `main` b43ee55: no stamp
+
+### S317 — the core carries the dispatch-economy rules by ID, tier and part, and the inventory matches (#532 AC1-AC6, AC8; A42)
+**Covers:** F38
+- Seam: `test/fixtures/orchestrator-core.py` (the S311 harness) on the real
+  `ORCHESTRATOR.md`, `skills/role-contracts/orchestrator-rules.tsv` and
+  `test/behavior/orchestrator-scenarios.md`; no model call
+- Given: the real tree after the rewrite
+- When: the harness `check` runs, and the content assertions below
+- Then: the structure check passes; the inventory holds new rows `OR46
+  no-agent-steps judgment 1`, `OR47 fresh-brief-size judgment 2`, `OR48
+  run-scope judgment 2`, each with a non-empty `covered_by` naming existing
+  `OB` ids; OR4, OR13, OR22, OR23, OR28 and OR33 keep their IDs, tiers and
+  parts; OR13's row is named `continuation-rule` and `continuing-other-roles-undecided`
+  is gone; no row deleted, no ID reused. Text, each in its own item and
+  part: OR4 limits "other work-item artifact" to authored content and
+  points to OR46; OR46 lists exactly the four step kinds (a) one named
+  repo script or command, (b) commit and push of a generated, unedited file
+  on the work-item branch, (c) read-only git/`gh`, (d) label and Pipeline
+  log, says anything else is a dispatch and that a failing command is
+  reported then dispatched, never repaired by the orchestrator; OR33 says an
+  OR46 step never replaces a stage's dispatch or counts as stage done; OR13
+  states the conditions "next step needs its working context", 100k tokens
+  and 60 tool uses, `SendMessage` never `fork`, never across work items,
+  Reviewer stays OR12, and no longer contains "not decided"; OR47 says
+  artifact links plus stated scope, no conversation or issue history; OR48
+  has both parts (1) affected scenarios only unless a stamp or gate, named
+  in the log, and (2) a doc-only commit runs the pre-commit hooks only, the
+  full `./check` at most once before the PR opens, never per commit; OR28
+  adds the cheapest-model clause for a mechanical dispatch with the floor
+  reason in the OR39 line; OR22 adds continued yes/no, rule, reported size
+  (tokens, tool uses); OR23 adds the every-line-has-the-fields check and the
+  over-flag-threshold-needs-a-reason check; part 1 names the skill once as
+  "detail: `dispatch-economy`" and no rule needs it to be obeyed (the core
+  with that skill file absent still passes the structure check)
+- Existing tests updated, QA decision now: S311's hard-coded part lists gain
+  `OR46` (part 1) and `OR47 OR48` (part 2); no other existing test edit
+  expected (S218, S209 and `decision-table-415.py` only need OR45/OR37 to
+  stay as they are). Core-tier pins: no new `core` row, so
+  `orchestrator-core-pins.tsv` is unchanged and still passes; if the
+  Developer makes any new rule `core`, pin row required (pin-missing)
+- Red on `e8e8fe5`: the harness reports missing IDs OR46-OR48 once the
+  S311 lists and these content asserts are in; negative controls, each in a
+  copy and failing by its own name: OR46 removed from the core; OR47 left
+  in part 1 while the TSV says 2; OR13 still containing "not decided"; OR46
+  with a fifth step kind added; OR46 row `covered_by` empty; OR13 row still
+  named `continuing-other-roles-undecided`; OR48 without the doc-only
+  clause; a thresholds change (100k to 200k) in OR13 only
+
+### S318 — both injected slots stay inside the context budget with the new rules (#532 AC8, C5; A42 budget)
+**Covers:** F38
+- Seam: `session-context.sh --runtime claude --slot n <project>` output
+  length against `CONTEXT_BUDGET_CHARS` (sourced, never a literal); this is
+  S309's per-slot assertion on the real tree, plus the extra gates below
+- Given: the real tree and an opted-in fixture project, after the rewrite
+- When: S309's budget test runs on slots 1 and 2
+- Then: slot 1 and slot 2 are each at most `CONTEXT_BUDGET_CHARS` (9000),
+  K stays 2 (no third `--slot` command); slot 2 headroom is expected to be
+  tight, about 700-870 characters, so the test also records both sizes in
+  its failure message and fails below a floor of 500 characters of
+  slot-2 headroom (A41's revisit line), naming the slot and size; if slot 2
+  measures above 8,500 the fallback moves OR47 and OR48 to part 1 as a
+  visible `part` change in the inventory and in S317's part lists, and the
+  test passes only when inventory, core headers and S317 agree (no half
+  move); slot 1 after the move stays under 9,000
+- Red on `e8e8fe5` (before the rule text lands): the test is green on the
+  old text, so the red proof is the negative controls: part 2 padded to
+  budget + 1 fails naming slot 2 and size; a rule block duplicated into
+  both parts fails the budget; a third `--slot` fails the K match. The
+  Developer shows the measured slot sizes before and after in the PR
+
+### S319 — `pipeline-log-fields.sh` reports dispatch lines missing a field and agents over the flag limit without a reason (#532 AC7, C4; A42)
+**Covers:** F38
+- Seam: `pipeline-log-fields.sh <issue>` (name provisional, A42), run
+  against a fake `gh` that serves a fixture Pipeline log comment, same
+  pattern as `role-label-staleness.sh` and `test/cases/role-label-fake-gh.sh`;
+  input is the fixture comment, output is stdout violation lines plus exit
+  code; no network
+- Given: fixture logs: (1) every dispatch line has agent id, model,
+  continued yes/no, rule, reported tokens and tool uses; (2) one line
+  missing `continued`; (3) one line missing the reported size; (4) a line
+  with reported size over the flag limit (more than 150k final context or
+  more than 100 turns) and no reason; (5) the same over-limit line with a
+  reason; (6) a non-dispatch log line (an OR46 command-and-result line); (7)
+  no Pipeline log comment; (8) `gh` failing
+- When: the script runs on each
+- Then: (1), (5), (6) report no violation; (2) and (3) each name the line and
+  the missing field; (4) names the line and says over the limit without a
+  reason; (7) and (8) warn that the log could not be read and still exit 0;
+  the script never blocks merge: exit 0 in every case including with
+  violations (A33a), and it is not wired into `./check`'s required set
+  beyond this test; a line that holds the reason but sits on a different
+  agent id does not clear (4)
+- Red on `e8e8fe5`: the script does not exist; a stub that always prints
+  "no violations" must fail (2), (3) and (4)
+
+### S320 — the documented transcript extraction command reports cache-read, cache-write, turns and last-turn context by agent id (#532 AC7, C4; A42)
+**Covers:** F38
+- Seam: the extraction command documented in `skills/dispatch-economy/SKILL.md`
+  (pasted verbatim into the test, or a script it names), run against a
+  fixture transcript directory with `.jsonl` files for two agent ids
+  (the shape Claude Code writes), plus one malformed line; no real
+  transcripts, advisory, never a CI step
+- Given: agent `a-small` (7 turns, known sums) and agent `a-big` (120 turns,
+  last-turn context 310k, known sums)
+- When: the command runs by agent id
+- Then: it prints per agent the summed cache-read, summed cache-write, turn
+  count and last-turn context, equal to the fixture's known numbers; it
+  applies the flag limit (more than 150k or more than 100 turns) and marks
+  `a-big` flagged, `a-small` not; an unknown id prints a not-found line and
+  exits non-zero; the malformed line is skipped with a warning, not a crash;
+  the skill's text states it is local-only and advisory
+- Red on `e8e8fe5`: no skill, no command; a command that sums only
+  cache-read must fail the cache-write and flag assertions
+- Open for the Developer: the exact transcript field names must be taken
+  from a real transcript sample before the fixture is written; the fixture
+  states its source
+
+### S321 — the dispatch-economy skill is installed by `adopt.sh` and offered by `CHANGES.md` (#532 AC8; A42)
+**Covers:** F38
+- Seam: a fresh sandbox adoption (the `adopt` helper of `r2_pending_after_fresh_adoption.sh`)
+  and a textual check of the skill; no model call
+- Given: the real repo with `skills/dispatch-economy/SKILL.md`
+- When: `adopt.sh` runs on a fresh project, then `pending-changes.sh`
+- Then: `.claude/skills/dispatch-economy` exists as a symlink to the
+  canonical skill (as `release-branch-workflow` does); the skill has valid
+  frontmatter (`name: dispatch-economy`, a `description`); it carries no
+  line that a session must obey and the core does not (it holds reasoning,
+  threshold derivation, the extraction command, a worked log example);
+  it names the revise-from-data note (Human decision 2.3) and cites #500
+  without adding a `/clear` rule; `CHANGES.md` has an entry for it with a
+  one-line closed question, and the pending IDs of a fresh adoption equal
+  the expected list of `r2_pending_after_fresh_adoption.sh` (if the entry
+  has Default `yes`, the list is unchanged; if `question`, the Developer
+  adds the new ID to that list in the same commit; the test asserts one
+  consistent outcome, not both)
+- Red on `e8e8fe5`: no skill directory, no symlink, no entry. Negative
+  control: the skill file renamed in a copy gives no symlink and the test
+  fails by name
+
+### S322 — the behavior file holds the A42 scenarios, parses against the closed schema, and OB51 follows the new OR13 (#532 AC1-AC6; A42)
+**Covers:** F38
+- Seam: `test/behavior/orchestrator-scenarios.md` parsed by the S315 parser
+  and the S311 cross-checks; no model call (the paid run is S323)
+- Given: the file after the rewrite
+- When: `./check`'s behavior-file tests run
+- Then: the file parses; new `OB` blocks exist for each of these cases
+  (numbers OB52 onward, the Developer picks them, each heading citing
+  existing IDs): (1) continue a small agent, 7 tool uses and 57k reported,
+  whose next step needs its context: `next_action=continue_agent`; (2) a
+  Developer reported at 300k and 269 tool uses: fresh dispatch, not
+  continue; (3) a QA agent finished on the previous work item, next work
+  item needs QA: fresh dispatch with a brief only; (4) a generated stamp is
+  ready on the work-item branch and `./check` must run: orchestrator runs
+  both itself, no dispatch (OR46, OR4); (5) the same command fails: it is
+  reported and then dispatched to the owning role, not fixed by the
+  orchestrator; (6) a stamp file needs a hand edit: dispatch (OR46 (b)
+  excludes hand edits); (7) a no-agent step finishes and the stage's role
+  artifact has not been produced: the stage is not done and the role is
+  still dispatched (OR33, OR46); (8) a mechanical re-run of a failed
+  script: dispatch with the cheapest available model and the floor reason in
+  the dispatch line (OR28, OR39); (9) after a rule change a paid behavior
+  run is due, no stamp or gate involved: affected scenarios only; (10) the
+  same, but a stamp covers the whole file: full run and the log names the
+  stamp (OR48 (1)); (11) a one-line doc-only commit and a brief habit of
+  requiring the full `./check`: hooks only, full `./check` left to CI
+  (OR48 (2)); OB51 is amended to the new rule (a QA agent with small context
+  that wrote the scenarios and the finding concerns them: continue or
+  fresh per OR13, not "undecided"), and its heading and `Then` change
+  accordingly; every new or changed OB is listed under `## Intended changes`
+  with its OR list equal to its heading IDs and a `#532` citation; the
+  `covered_by` of each `judgment` row (OR4, OR13, OR22, OR23, OR28, OR33,
+  OR46, OR47, OR48) names at least one of these OBs, and OR22/OR23 each
+  have one: a Pipeline log line without the new fields is incomplete
+- Red on `e8e8fe5`: OR46-OR48 are not in the file; the new OBs fail the
+  parser's cross-check on the missing IDs until the core exists. Negative
+  controls: an OB citing OR49; a new OB missing from Intended changes; an
+  Intended-changes item whose OR list differs from the heading
+
+### S323 — the new rules hold under a real model, and the stamp is refreshed once after all edits (#532 AC1-AC6; A42; needs a paid run)
+**Covers:** F38
+- Seam: `./test/behavior/orchestrator-diff.sh` (S315/S316), real model,
+  subscription (no spend approval; mind 5h/weekly limits)
+- Given: `ORCHESTRATOR.md`, `orchestrator-rules.tsv` and
+  `orchestrator-scenarios.md` in final form: every rule and scenario edit
+  committed, S317-S322 green
+- When: exactly one full differential run (every scenario, both arms, N=3)
+  is made
+- Then: every scenario is `same` or `changed-as-intended`; the new OBs of
+  S322 and the amended OB51 are `changed-as-intended` or `same` as listed,
+  with the new arm meeting `Then` in 3 of 3; no `old-wrong`, `diverged` or
+  `unstable`; the run writes the stamp, which S316 passes
+  (`sha256=` over `ORCHESTRATOR.md` then the scenario file); the stamp
+  commit is an OR46 (a)+(b) step for the orchestrator, not a dispatch; the
+  log names the stamp as the reason the run was full (OR48 (1)). Any later
+  edit to `ORCHESTRATOR.md` or the scenario file invalidates the stamp and
+  costs another full run: so no edit after the run, and the Developer
+  states the plan and the run budget before it starts. Failing `unstable`
+  on a new OB is a wording defect in the OB or the rule (an OB-level fix
+  followed by a fresh full run), not a rerun-until-green
+- Red on `e8e8fe5`: the stamp (b43ee55 base) no longer matches once the
+  files change, so S316 fails until this run is stamped; that is the red
+  proof, no extra control
+
+### Test strategy summary for S317-S323 (#532)
+- No-model, run in `./check` and CI: S317, S318, S319, S320, S321, S322.
+  Needs the paid model run: S323 only (one run, after all rule and scenario
+  edits; S322 is its precondition). Order for the Developer: S311 list
+  edit and S317 red first, rule text, S322 OBs, S319/S320/S321 with the
+  script and skill, S318 sizes measured, then S323 last.

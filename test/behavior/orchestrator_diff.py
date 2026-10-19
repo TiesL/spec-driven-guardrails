@@ -35,6 +35,7 @@ SCHEMA = {
     "asks_human": ["true", "false"],
     "low_finding": ["fix_in_pr", "defer", "file_issue_now"],
     "model_choice": ["same_or_stronger", "weaker"],
+    "run_scope": ["affected", "full", "hooks_only", "none"],
 }
 
 HEAD_RE = re.compile(r"^### (OB\d+) · (OR\d+(?:, OR\d+)*)$")
