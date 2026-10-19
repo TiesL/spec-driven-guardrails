@@ -1230,7 +1230,8 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   - `gate:<script>`: enforced by an existing gate; covered by that gate's
     tests.
   - `core`: a fact, pointer, literal template or disclaimer; covered by a
-    deterministic structure or absence check.
+    deterministic structure or absence check, and by a text pin (see
+    **Core-tier pins**).
   - `retired`: the ID is gone from the core and is never reused.
 
   `covered_by` lists the `S<n>` tests and `OB<n>` behavior scenarios that
@@ -1340,6 +1341,46 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     recomputes the hash and fails when it does not match, so a change to
     either file needs a fresh passing run. `./check` never runs the model;
     it only compares hashes.
+- **Core-tier pins (review round 1, finding `core-tier-rules-unprotected`).**
+  The `core` tier had no oracle: AC7 asks for an `OB` only for `judgment`
+  rules, so inverting OR26 left every `./check` test green and only the stamp
+  noticed, and a differential run re-stamps an inverted text because no
+  scenario targets a `core` rule. Decision: the tier is kept and protected
+  by an exact-text pin, not redefined and not given `OB` scenarios.
+  - **Why not the alternatives.** Moving the seven rules to `judgment` with
+    an `OB` each is wrong in kind: they are facts and literal templates, not
+    decisions, and a model-graded scenario that a majority of three sonnet
+    runs must flip is a weak, costly oracle for a negation. It also edits the
+    scenario file, so every change to the protection would need a new
+    306-call differential run. A pin file outside the two stamped files
+    does not touch the stamp.
+  - **The pin.** `test/fixtures/orchestrator-core-pins.tsv`, columns `id`
+    and `sha256`: the SHA-256 of that rule's item text in `ORCHESTRATOR.md`
+    (the item from its `OR<n> ` to the end of the item, continuation lines
+    joined by single spaces, trailing whitespace trimmed, ID included). One
+    row per `core` row of the inventory, no more and no fewer. It lives
+    beside the stamp's files, not in them, and holds no rule text, so the
+    core stays the only place a rule is written.
+  - **Check.** The shared harness `test/fixtures/orchestrator-core.py`
+    gains a `pins` check, run by S311. It asserts: the pin file's IDs equal
+    the inventory's `core` IDs; each rule's recomputed hash equals its pin;
+    on a mismatch the error names the ID and prints the current item text,
+    so the reviewer of the pin update sees the wording change. An
+    edit to a `core` rule therefore fails `./check` until its pin is
+    deliberately updated in the same commit, which is also the commit that
+    needs a fresh stamp, so the two reviews coincide. A rule that changes
+    tier (to or from `core`) must add or remove its pin row in that commit.
+  - **Residual risk.** A pin proves the text did not change since the pin was
+    written, not that the text is right, and a careless pin update re-blesses
+    a bad edit. That is accepted: the pin turns a silent edit into a visible
+    two-file change that review sees, which is the gap the finding names.
+    Reviewer judgment on the pin diff stays the oracle for intent.
+  - **Seams for tests.** (1) real tree: `pins` passes. (2) negative controls
+    in copies, each failing by its own error name: invert the negation in
+    OR26; edit OR29 and OR44 (the literal template) by one character; delete
+    a pin row; add a pin row for a non-`core` ID; change a rule's tier to
+    `core` with no pin row; edit the pin hash only. (3) S218, S203, S238,
+    S240 and S280 keep their own checks; the pins do not replace them.
 - **Existing wording scenarios:** absence checks (no model names, tiers,
   `--effort`, grammar copies, risk-note field lists or new markers) and
   plumbing checks (S177-S179, S182, S184, S206 path resolution) stay
@@ -1411,7 +1452,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   output exceeds `CONTEXT_BUDGET_CHARS` in its worst case; a declared chunk
   has no wired slot; a rule ID sits in no part or in both, or in a part other
   than its inventory row; a part refers to the other part other than by ID;
-  the stamp hash does not match `ORCHESTRATOR.md` and the scenarios; `ORCHESTRATOR.md` changes reach `main` without a
+  the stamp hash does not match `ORCHESTRATOR.md` and the scenarios; a `core` rule's text differs from its pin, or a `core` row has no pin; `ORCHESTRATOR.md` changes reach `main` without a
   differential report on the PR; or a rule is delivered only by a file
   nothing injects.
 - **Revisit when:** Claude Code changes the cap or the `Agent` input shape;
