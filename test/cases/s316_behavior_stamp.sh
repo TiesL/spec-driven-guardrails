@@ -17,7 +17,7 @@ set -uo pipefail
 # shellcheck source=../fixtures/behavior-runner-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../fixtures/behavior-runner-helpers.sh"
 
-STAMP_REQUIRED=0
+STAMP_REQUIRED=1
 PY="$TEST_REPO_ROOT/test/behavior/orchestrator_diff.py"
 [ -f "$PY" ] || { fail "S316 — test/behavior/orchestrator_diff.py is missing"; test_done; }
 [ -x "$TEST_REPO_ROOT/test/behavior/orchestrator-diff.sh" ] || { fail "S316 — orchestrator-diff.sh is missing or not executable"; test_done; }
