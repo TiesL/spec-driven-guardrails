@@ -357,7 +357,7 @@ When: You decide how to get the stamp committed and `./check` run.
 Then: next_action=answer_directly; next_role=none
 
 ### OB56 · OR46
-Given: You ran `./check` yourself on PR 41's branch. One test fails, and the cause is in code the Fullstack Developer wrote.
+Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. The test is correct and the cause is a mistake in code the Fullstack Developer wrote in this PR. No review finding exists yet.
 When: You choose the next step.
 Then: next_action=dispatch; next_role=Fullstack Developer
 
