@@ -4,15 +4,17 @@ two-part ORCHESTRATOR.md core and its rule inventory (#499, A41; S311 and
 the scenarios amended by AC14). A test fixture, not a session instruction.
 
 Subcommands:
-  check --orch F --tsv F --scen F --repo D --list-checks "a b ..."
+  check --orch F --tsv F --scen F [--pins F] --repo D --list-checks "a b ..."
         every A41 structure assertion; prints "ERROR <name>: <detail>" per
-        failure, exit 1 when any
+        failure, exit 1 when any; --pins adds the core-tier pin check
+        (pin-mismatch, pin-missing, pin-extra; A41 amendment)
   item  --orch F ID     the item (its line plus indented continuation lines)
   line  --orch F ID     the item's first physical line only
   where --orch F ID     "<part> <depth>" (depth 0 = item, 1 = sub-item)
   row   --tsv F ID      "<tier>\t<part>\t<covered_by>"
   items --orch F        "<ID>\t<part>\t<depth>" per item, in file order
 """
+import hashlib
 import os
 import re
 import sys
@@ -111,7 +113,46 @@ def scenario_index(path):
     return idx
 
 
-def check(orch, tsv, scen, repo, list_checks):
+def item_hash(full):
+    """SHA-256 of the item text: from `OR<n> ` to the end, continuation lines
+    joined by single spaces, trailing whitespace trimmed, no bullet."""
+    ls = full.split("\n")
+    first = ls[0][ls[0].index("OR"):]
+    text = " ".join([first.rstrip()] + [l.strip() for l in ls[1:]]).rstrip()
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def check_pins(its, rows, pins_path):
+    errs, pins = [], {}
+    for n, line in enumerate(read(pins_path).split("\n"), 1):
+        if not line.strip():
+            continue
+        cols = line.split("\t")
+        if n == 1:
+            if cols != ["id", "sha256"]:
+                errs.append(("pin-header", "first line must be id<TAB>sha256"))
+            continue
+        if len(cols) != 2:
+            errs.append(("pin-columns", "line %d has %d columns" % (n, len(cols))))
+            continue
+        pins[cols[0]] = cols[1]
+    core = [r["id"] for r in rows if r["tier"] == "core"]
+    full = {}
+    for rid, _, _, _, f in its:
+        full.setdefault(rid, f)
+    for rid in core:
+        if rid not in pins:
+            errs.append(("pin-missing", "%s is tier core but has no pin row" % rid))
+        elif rid in full and item_hash(full[rid]) != pins[rid]:
+            errs.append(("pin-mismatch", "%s differs from its pin; current text: %s"
+                         % (rid, " ".join(l.strip() for l in full[rid].split("\n")))))
+    for rid in pins:
+        if rid not in core:
+            errs.append(("pin-extra", "%s has a pin row but is not tier core" % rid))
+    return errs
+
+
+def check(orch, tsv, scen, repo, list_checks, pins=None):
     errs = []
     text = read(orch)
     markers = [l for l in text.split("\n") if l == MARKER]
@@ -222,6 +263,8 @@ def check(orch, tsv, scen, repo, list_checks):
         p = os.path.join(repo, rel)
         if os.path.isfile(p) and "orchestrator-rules.tsv" in read(p):
             errs.append(("inventory-pointer", "%s tells a session about the inventory" % rel))
+    if pins:
+        errs += check_pins(its, rows, pins)
     return errs
 
 
@@ -233,7 +276,8 @@ def main(argv):
     cmd = argv[0] if argv else ""
     if cmd == "check":
         errs = check(arg(argv, "--orch"), arg(argv, "--tsv"), arg(argv, "--scen"),
-                     arg(argv, "--repo"), arg(argv, "--list-checks").split())
+                     arg(argv, "--repo"), arg(argv, "--list-checks").split(),
+                     arg(argv, "--pins") if "--pins" in argv else None)
         for name, detail in errs:
             print("ERROR %s: %s" % (name, detail))
         return 1 if errs else 0

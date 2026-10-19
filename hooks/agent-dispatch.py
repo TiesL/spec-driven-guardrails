@@ -39,8 +39,13 @@ PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(ROLES))
 EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*model-record-emit\.sh\b.*--stage\b")
 EMIT_WITH_STAGE = re.compile(
     r"model-record-emit\.sh\b.*--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(STAGES))
-PR_REF = re.compile(r"(#\d+|/pull/\d+|\bPR\s+\d+)")
-SHA = re.compile(r"(?<![0-9A-Za-z])[0-9a-f]{7,40}(?![0-9A-Za-z])")
+# A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
+PR_REF = re.compile(r"(/pull/\d+|\bPR\s*#?\d+)")
+# A head SHA: 7-40 hex with a letter a-f, or one introduced by head/SHA/commit
+# (an unlabelled all-digit run, such as a comment id, does not count).
+SHA = re.compile(
+    r"(?<![0-9A-Za-z])(?=[0-9]*[a-f])[0-9a-f]{7,40}(?![0-9A-Za-z])"
+    r"|\b(?:head|sha|commit)\b\W{0,3}[0-9a-f]{7,40}(?![0-9A-Za-z])", re.I)
 GATE = "finding-carryforward-gate.sh"
 ITEM = re.compile(r"^ *- (OR\d+) ")
 AVOID = ("Not a role dispatch? Start no prompt line with `ROLE SESSION:` and no "
