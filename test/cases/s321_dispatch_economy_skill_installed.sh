@@ -4,8 +4,10 @@
 #
 # Seam: a fresh sandbox adoption (adopt helper of lib.sh), pending-changes.sh,
 # and a textual check of the skill. No model call. The CHANGES.md entry has
-# Default `yes`, so a fresh adoption seeds it and the pending list of R2 is
-# unchanged (one consistent outcome: R2's expected list gains nothing).
+# Default `question` (no general preference: it matters once a project runs
+# the five-role pipeline), so a fresh adoption leaves it pending and R2's
+# expected list gains process-dispatch-economy, in the same commit (one
+# consistent outcome, asserted below).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -40,16 +42,16 @@ grep -qiE 'revis' "$SK" || fail "S321 — the skill must say the limits are revi
 grep -q '#500' "$SK" || fail "S321 — the skill must cite #500"
 grep -qE '/clear' "$SK" && ! grep -qiE 'no .?/clear.? rule|adds no .?/clear' "$SK" && fail "S321 — the skill mentions /clear without saying no /clear rule is added"
 
-# CHANGES.md entry, closed question, Default yes: seeded, so R2's pending list is unchanged.
+# CHANGES.md entry, closed question, Default question: pending after a fresh adoption, and R2 agrees.
 sec="$(awk '/^## process-dispatch-economy$/{on=1; print; next} /^## /{on=0} /^---$/{on=0} on{print}' "$R/CHANGES.md")"
 [ -n "$sec" ] || fail "S321 — CHANGES.md has no '## process-dispatch-economy' entry"
 grep -q '^- \*\*Question:\*\* .*?' <<<"$sec" || fail "S321 — the entry needs a one-line closed question"
-grep -q '^- \*\*Default:\*\* yes$' <<<"$sec" || fail "S321 — the entry's Default must be yes (R2's pending list stays unchanged)"
+grep -q '^- \*\*Default:\*\* question$' <<<"$sec" || fail "S321 — the entry's Default must be question (R2's pending list names it)"
 grep -q 'dispatch-economy' <<<"$sec" || fail "S321 — the entry must name the skill"
 pending="$(pending_ids "$project")"
-grep -q '^process-dispatch-economy$' <<<"$pending" && fail "S321 — a Default yes entry must be seeded, not pending"
+grep -q '^process-dispatch-economy$' <<<"$pending" || fail "S321 — a Default question entry must be pending after a fresh adoption"
 seeded="$(seeded_ids "$project")"
-grep -q '^process-dispatch-economy$' <<<"$seeded" || fail "S321 — fresh adoption did not seed process-dispatch-economy"
+grep -q '^process-dispatch-economy$' <<<"$seeded" && fail "S321 — a Default question entry must not be seeded"
 exp="$SANDBOX/exp"
 awk '/^cat > "\$expected" <<.IDS.$/{on=1; next} /^IDS$/{on=0} on{print}' "$R/test/cases/r2_pending_after_fresh_adoption.sh" | sort > "$exp"
 act="$SANDBOX/act"; printf '%s\n' "$pending" > "$act"

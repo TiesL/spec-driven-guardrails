@@ -597,7 +597,7 @@ the shared parser warns if it has no `Applies if`.
 ## process-dispatch-economy
 
 - **Question:** Does this project take the `dispatch-economy` skill, which explains the continue-or-fresh limits and no-agent steps of the orchestrator rules and carries the transcript extraction command?
-- **Default:** yes
+- **Default:** question
 - **Applies if:** always
 - **Yes means:** the `dispatch-economy` skill (reasoning, threshold
   derivation, local transcript extraction command, a worked log example) and
@@ -605,7 +605,8 @@ the shared parser warns if it has no `Applies if`.
   miss a field, and agents over the flag limit without a reason; reports,
   never blocks) are available to the project. `adopt.sh` symlinks the skill
   into every adopted project either way (it globs `skills/`); the answer only
-  records that the project takes it. The rules themselves (continue-or-fresh
+  records that the project takes it. No general preference: it matters once
+  a project runs the five-role pipeline. The rules themselves (continue-or-fresh
   limits, the closed list of steps the orchestrator runs without an agent,
   brief and run scope) reach a session through the `process-multi-agent-roles`
   answer and its `ORCHESTRATOR.md`, not through this entry. The script
