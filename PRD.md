@@ -355,6 +355,16 @@ checks for that project (local grep, no network); and there's an explicit
 override that loudly reports what's being skipped — the same philosophy as
 the deploy guards.
 
+**Extended with an up-to-date check (issue #516).** Parallel work items can
+take the same S/F/A number, and CI does not re-run when the base moves, so a
+stale green run could merge a duplicate. `gh pr merge` is also blocked when
+the PR's base tip is not an ancestor of its head, for `main`, `release/*`
+branches and adopted projects' bases. The message names `gh pr update-branch`
+as the remedy (a merge, no force-push); after it, the existing review-marker
+and CI checks apply to the new head. The check is ancestry only: approval
+state is not enforced here (see F55). A clash that then goes red is renumbered
+through the ordinary finding route.
+
 ### F9 — Skills infrastructure in `adopt.sh`
 
 **Per-skill symlinks in a real `.claude/skills/` directory**, plus cleanup of
@@ -1824,6 +1834,24 @@ Structural review verifies this contract is present and consistent; live
 execution across CLI and desktop remains unverified where not actually
 observed and is tracked in QA-owned follow-up #503. This release makes no
 claim of proven runtime behavioral parity.
+
+### F55 — Advance merge approval into `main` (issue #516)
+
+The maintainer may approve a merge into `main` in advance ("merge once
+everything is green"), replacing the earlier rule that confirmation comes
+only after the final head is known (Human decision 1 on #516, 2026-10-19).
+The approval holds only while the branch can be merged without further
+changes: Review approves, CI is green and every pre-merge check passes. The
+maintainer names no head SHA; the orchestrator records in the Pipeline log the
+head at which the approval was given and the head it merged. Any control that
+requires a change (a finding to fix, red CI, a failing gate) lapses the
+approval, and the orchestrator asks again after the fix. `gh pr update-branch`
+only merges the base into the branch, so the approval survives it when CI and
+the pre-merge checks are green again on the updated head. A confirmation
+relayed through the manager is the maintainer's verbatim words about that PR.
+The rule is written in CLAUDE.md / WORKFLOW wrapping-up step 4 and offered to
+adopted projects through a `CHANGES.md` entry. Merge autonomy without a
+per-PR approval stays with #511.
 
 ## Non-functional characteristics
 

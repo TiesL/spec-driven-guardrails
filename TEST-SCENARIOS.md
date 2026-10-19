@@ -6178,3 +6178,282 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   edits; S322 is its precondition). Order for the Developer: S311 list
   edit and S317 red first, rule text, S322 OBs, S319/S320/S321 with the
   script and skill, S318 sizes measured, then S323 last.
+
+## #516 — merge guard up-to-date check (A43, F8) and conditional advance approval (A43, F55)
+
+Numbering: S324 is the next free S on `main` and on every remote branch
+(verified by grep). F55 does not exist in `PRD.md` yet: the Developer adds it
+(and the F8 note for AC1-AC3) in the first commit, because `Covers:` on a
+missing F fails the traceability check. Test files:
+`test/cases/s324_merge_guard_up_to_date.sh` for S324-S329; S330-S335 are
+text/doc checks (named per scenario). `fake_gh_merge_bin` gains two `gh api`
+shapes and a `behind_by` parameter; an unhandled `gh api` call in any fake
+must exit non-zero (the fakes end in `exit 1`), so S15, S16, S65, S75, S76,
+S119 fail open as before.
+
+### S324 — the guard refuses a PR that is behind its base, for every base (#516 AC1; A43; unit via fake gh)
+**Covers:** F8
+- Seam: `gh` on `PATH` (`fake_gh_merge_bin`) answering `gh api
+  repos/{owner}/{repo}/pulls/<n>` (`base.ref`, `head.sha`) and
+  `.../compare/<base>...<head>` (`behind_by`); the guard run through
+  `PreToolUse` JSON as in S119. Marker `match` and green checks are supplied,
+  so only the new check can block
+- Given: `behind_by` = 3 (also 1, the smallest behind), with base.ref `main`;
+  the same with `release/40-epic`; the same with `develop` (a non-`main`
+  adopted base)
+- When: `gh pr merge <n>` goes through the guard
+- Then: exit 2 in all three; the message names the base, the count, and
+  `gh pr update-branch <n>`; the three cases take one code path (only the
+  fake's `base.ref` differs, no branch-name filter). The check runs before the
+  marker lookup: with no marker and `behind_by` 3 the up-to-date message is
+  the one shown
+- Red on `b1b5c43`: no function, the same PR passes the guard. Negative
+  control: a `main`-only filter in a copy fails the `release/*` and `develop`
+  cases by name
+
+### S325 — an up-to-date PR passes this check (#516 AC2; A43; unit via fake gh)
+**Covers:** F8
+- Seam: as S324
+- Given: `behind_by` = 0 (compare status `ahead`, and `identical`), marker
+  matching head, green checks; also base `release/40-epic`
+- When: `gh pr merge <n>` goes through the guard
+- Then: not blocked (exit 0); no up-to-date message. A PR that is ahead by
+  many commits but behind by 0 passes (the count is `behind_by`, not
+  `ahead_by`). Same fake with `behind_by` 1 is blocked (pairing with S324 so
+  the pass is not an artefact of the fake)
+
+### S326 — a lookup failure fails open with a warning (#516 AC1 precondition; A43; unit via fake gh)
+**Covers:** F8
+- Seam: as S324, fake answering differently per case
+- Given, one case each: `gh api` exits non-zero on the pull call; on the
+  compare call (fork head unknown to base); `behind_by` empty; `behind_by`
+  `garbage`; no PR number resolvable; `gh` absent from `PATH`
+  (`path_without_gh`)
+- When: `gh pr merge` goes through the guard with marker and CI otherwise
+  fine
+- Then: exit 0 each time; stderr holds `warning:` naming the up-to-date
+  check as skipped; the other checks still run (a missing marker in the same
+  case still blocks, proving fail-open is per check). Stdout and stderr stay
+  separate streams (#81/#224): a stderr line from the fake does not corrupt
+  the parsed `behind_by`
+
+### S327 — escape hatch and opt-out skip the check without new wiring (#516 A43 inherited gates; unit via fake gh)
+**Covers:** F8
+- Seam: as S324 plus a `WORKFLOW-ADOPTION.md` row
+- Given: `behind_by` 3, and (a) `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1`; (b) a
+  substantiated `no` on `quality-review-before-merge`; (c) neither
+- When: `gh pr merge` goes through the guard
+- Then: (a) and (b) not blocked, and (a) loudly reports what is skipped as
+  today; (c) blocked. The block message of S324 names the escape hatch like
+  the other blocks. The fake records its calls: in (a) and (b) no `gh api`
+  call is made (the check is not run and then ignored)
+
+### S328 — the guard names `gh pr update-branch` and never a force-push (#516 AC3; A43; unit via fake gh, doc check)
+**Covers:** F8
+- Seam: the block message captured in S324
+- Given: the blocked output of S324 for each base
+- When: it is searched
+- Then: it contains `gh pr update-branch`; it contains none of `--force`,
+  `push -f`, `--force-with-lease`, `reset --hard`; it says to wait for CI and
+  re-run the pre-merge review on the new head. Limit, stated: that the remedy
+  itself needs no force-push is GitHub's merge-based update and cannot be
+  proven offline; the test pins what the guard says, not what GitHub does
+
+### S329 — existing merge-guard scenarios stay green and quiet (#516 A43 testability note; regression, unit via fake gh)
+**Covers:** F8
+- Seam: the existing fakes of S15, S16, S65, S75, S76, S119 unchanged
+- Given: those fakes do not answer `gh api`
+- When: their tests run after the guard change
+- Then: all still pass; where one asserts empty stderr or exact output, the
+  Developer accounts for the new warning in that assertion (the minimal edit,
+  not a loosened assertion), or extends that fake with `behind_by` 0. This is
+  green-before and green-after, not a red-first scenario
+
+### S330 — the merge rule states the conditional advance approval and its limits (#516 AC4; A43; F55 new; doc check)
+**Covers:** F55
+- Seam: textual check of `policy/WORKFLOW.md` and the generated
+  `WORKFLOW.md`, `adapters/codex/AGENTS.md`, claude adapter (generated-file
+  sync is `./check`'s existing generator check)
+- Given: the wrapping-up step 4 and the paragraph "Confirmation is required
+  only before merge"
+- When: the test reads them
+- Then: the text states: the maintainer may approve a merge into `main` in
+  advance; it holds only while the branch is mergeable without further
+  changes, with Review approved, CI green and every pre-merge check passing;
+  no head SHA is named; the orchestrator records the approval head and the
+  merged head in the Pipeline log; merge autonomy without a per-PR approval
+  points to `#511`. The old phrases "after the final head" /
+  "confirms the final head SHA" (as a requirement for the maintainer to name a
+  head) no longer occur in any of the four generated or source files
+  (R5: grep `final head`, `head SHA`). `release-branch-workflow` is
+  unchanged: the release-branch merge into `main` still needs the maintainer
+- Red on `b1b5c43`: step 4 still requires confirmation after the final head
+- Negative controls (copies): the `#511` pointer removed; the "no head SHA"
+  sentence removed; each fails by name
+
+### S331 — the approval lapses on a required change and survives only an update-only head (#516 AC5; A43 A1; F55; doc check plus git-shape check)
+**Covers:** F55
+- Seam: (a) text of the rule, as S330; (b) the survival test as read-only git
+  on a sandbox repo: `git rev-list --parents -n1 <merged-head>` compared to the
+  approved head and the base. No script exists; the Developer either adds a
+  small helper with this test as its seam or pins the command in the rule text
+  and tests the command on fixtures (Developer's choice, stated in the commit)
+- Given (a): the rule text. Given (b): fixtures built with `git`: (i) head
+  = merge commit, first parent the approved head, second parent a base
+  commit; (ii) a fix commit on the approved head, then the base merged; (iii)
+  the base merged, then a fix commit on top; (iv) a rebase (no first-parent
+  link to the approved head); (v) a merge commit whose first parent is the
+  approved head but whose second parent is not on the base
+- When: the text is read and the shape test run
+- Then: (a) the text lists a finding to fix, red CI and a failing gate as
+  lapsing the approval, says the orchestrator asks again after the fix, says
+  `gh pr update-branch` does not lapse it when CI and the pre-merge checks are
+  green again on the new head, and states the first-parent condition; (b)
+  only (i) is "survives"; (ii)-(v) are "lapses". Fixture (iii) is the
+  falsifier: it looks like an update but carries work
+- Red on `b1b5c43`: no rule text and no test of the shape. Negative control:
+  accepting any merge commit as surviving makes (ii)-(v) fail by name
+
+### S332 — a relayed approval is the maintainer's verbatim words about that PR (#516 AC6; A43; F55; doc check)
+**Covers:** F55
+- Seam: textual check as S330, and the Pipeline-log template or example the
+  rule points to
+- Given: the rule for approvals relayed through the manager (epic #513)
+- When: the test reads it
+- Then: it says a relayed approval counts only as the maintainer's verbatim
+  words about that PR (a summary, a general "go ahead", or approval of a
+  different PR does not count), and that the Pipeline log records the head at
+  approval and the head merged (two heads, both named). The OR11 text carries
+  the same content (cross-check with S333)
+
+### S333 — OR11, the core fixture, S311 and the OB scenarios follow the new rule (#516 AC4-AC6; A43; F55; unit, no model)
+**Covers:** F55
+- Seam: `skills/role-contracts/ORCHESTRATOR.md` OR11,
+  `test/fixtures/orchestrator-core.py` (line ~227 regex),
+  `test/cases/s311_orchestrator_inventory_and_parts.sh` (the OR11 mutation,
+  line ~93), `test/behavior/orchestrator-scenarios.md`; checked by the
+  existing S311/S315 parsers, no model call
+- Given: the files after the edit
+- When: `./check`'s behavior-file and inventory tests run
+- Then: OR11's item says a merge into `main` needs the human's approval,
+  given in advance or after the work, conditional on mergeable-without-change;
+  it keeps "new commit that changes the work lapses the approval" and drops
+  "confirms the final head SHA"; `orchestrator-core.py` asserts the new
+  sentence (and no longer the old); S311's OR11 mutation mutates the new
+  sentence and still fails by name; the OR11 TSV row keeps ID, tier
+  `judgment`, part 1, and its `covered_by` lists every OB below; the intended
+  changes list in the scenarios file has an item for each changed or new OB,
+  each citing `#516`; the S311 count of OR items and the context-budget test
+  (S318) stay within budget with the longer OR11. The heading IDs of every OB
+  stay equal to their `OR` list
+- Red on `b1b5c43`: the fixture still asserts the old sentence
+- Negative control: the old sentence restored in a copy of OR11 fails the
+  fixture check by name
+
+### S334 — the behavior scenarios for the advance approval (#516 AC4-AC6; A43; F55; behavior scenarios, parsed here, run in S335)
+**Covers:** F55
+- Seam: `test/behavior/orchestrator-scenarios.md`; the Developer picks the
+  next free OB numbers; the S315 parser checks schema, this scenario checks
+  presence and the Given/Then content
+- Changed scenarios:
+  - OB9 (OR11), currently "commit after confirmation needs a new
+    confirmation": Given stays (advance approval "merge once everything is
+    green" at head 1a2b3c4; Developer pushes 5d6e7f8 to fix a flaky test; a
+    fresh Review round on 5d6e7f8 finds nothing and CI is green). Under the
+    new rule a fix for a finding or red CI lapses the approval, so Then stays
+    `next_action=ask_human; asks_human=true`. Reword the Given so the push is a
+    required change (finding or red CI), not a flaky-test tweak the maintainer
+    could argue was optional. Class: `same` (old and new arm both ask), the
+    intended-changes item is reworded, not removed
+  - OB10 (OR11), "confirmed, merge it" at head 1a2b3c4, head unchanged:
+    Then stays `merge`. Class `same`. Reword the Given to the new vocabulary
+    (the approval was given in advance; everything is green; head unchanged),
+    Then unchanged
+  - OB11 (OR11), release-branch PR: unchanged (neither arm affected)
+- New scenarios (each `OR11`, citing `#516`):
+  1. advance approval ("merge once everything is green") given; Review
+     approves, CI green, gates pass, head equals the approved head:
+     `next_action=merge; asks_human=false`. Old arm asked for the head SHA, so
+     `changed-as-intended`
+  2. advance approval given; Review reports a finding to fix: after the fix,
+     `next_action=ask_human; asks_human=true` (lapse)
+  3. advance approval given; CI on the approved head turns red and the
+     Developer fixes it: `ask_human` (lapse)
+  4. advance approval given; the base moved, `gh pr update-branch` ran, new
+     head is a merge commit whose first parent is the approved head; CI and
+     pre-merge checks green again: `merge`, `asks_human=false`
+  5. same, but CI is not yet green on the updated head: not merge (wait; the
+     closed `next_action` value the Developer picks from the existing set,
+     e.g. `wait`; if none fits, `ask_human` is wrong because no approval is
+     being asked for, so the Developer reports the missing value as a finding
+     instead of bending the scenario)
+  6. same as 4, but a fix commit sits on top of the update: `ask_human`
+     (lapse; the S331 (iii) falsifier in prose)
+  7. manager relays "the maintainer is fine with PR 41 going in" (a
+     paraphrase, not verbatim): `ask_human`; the same relay with the
+     maintainer's verbatim words about PR 41: `merge`
+  8. approval given for PR 41 verbatim, now about to merge PR 44: `ask_human`
+     (approval is per PR)
+  9. work-item PR into a `release/*` branch: unchanged OB11 behaviour, no
+     approval needed
+- Then: the file parses; each new block cites only existing IDs; the
+  Pipeline-log scenario (4/7) asserts the log line records both heads (as
+  text in the Then or in the expected `log` field if the schema has one;
+  otherwise only S332 pins it)
+- Limit: scenarios 4-6 rest on the first-parent condition, which is Human
+  decision 3b (assumed yes). If the maintainer says no, 4 loses its
+  condition and 6 is dropped
+
+### S335 — the new rule holds under a real model, and the stamp is refreshed once (#516 AC4-AC6; A43; F55; needs a paid run)
+**Covers:** F55
+- Seam: `./test/behavior/orchestrator-diff.sh` (S315/S316), real model,
+  subscription (no spend approval; mind 5h/weekly limits)
+- Given: OR11 and the scenarios in final form, S330-S334 green, and no other
+  open item changing `ORCHESTRATOR.md` or the scenario file (otherwise the
+  stamp is contested; check `git diff origin/main` first)
+- When: exactly one full differential run (every scenario, both arms, N=3)
+- Then: OB9, OB10, OB11 are `same`; the changed-as-intended new scenarios
+  (S334 1, 4, 7 verbatim) meet `Then` in 3 of 3 on the new arm; the lapse
+  scenarios are `same`; no `old-wrong`, `diverged` or `unstable`; the run
+  writes the stamp, which S316 passes; the stamp commit is an OR46 (a)+(b)
+  step; an `unstable` new OB is a wording defect fixed in the OB or OR11
+  followed by a fresh full run. No edit after the run. Red on `b1b5c43`: the
+  stamp no longer matches once OR11 changes
+
+### S336 — `CHANGES.md` offers the new rule through one entry and adoption stays consistent (#516 Part 3; A43; F55; unit, no model)
+**Covers:** F55
+- Seam: `CHANGES.md`, `pending-changes.sh`, the `adopt` helper of
+  `r2_pending_after_fresh_adoption.sh`
+- Given: the repo after the edit
+- When: `adopt.sh` runs on a fresh project, then `pending-changes.sh`
+- Then: `CHANGES.md` has exactly one new entry `process-advance-merge-approval`
+  with a one-line closed yes/no question, Default `question`, a valid
+  `Reaches session` (closed list; `reaches_session_invalid` passes), and a
+  *Yes means* that says the up-to-date check ships through the symlinked hook
+  regardless of the answer; no existing entry's meaning version changed
+  (`quality-review-before-merge` unchanged, Human decision 3a assumed); the
+  fresh-adoption pending list contains the new ID, and the expected list in
+  `r2_pending_after_fresh_adoption.sh` is updated in the same commit, one
+  consistent outcome
+- Red on `b1b5c43`: no entry
+
+### Test strategy summary for S324-S336 (#516)
+- Shape: the guard (AC1-AC3) is deterministic and cheap, tested at one seam,
+  `gh` on `PATH`, in one new file; the rule (AC4-AC6) is a judgment rule, so
+  it is pinned by text checks (what it says), a git-shape test (the one
+  falsifiable part of "survives update-branch"), and behavior scenarios (what
+  a model does), with one paid run last.
+- No-model, run in `./check` and CI: S324-S334, S336. Paid run: S335 only.
+- Falsifiers worth the most: S324 `develop`/`release/*` cases (kills a
+  `main`-only filter), S326 per-check fail-open (kills a blanket skip), S331
+  fixture (iii) (kills "any merge commit survives"), S334 scenarios 6-8 (kill
+  an approval that is general or reusable across PRs).
+- Order for the Developer: PRD F55 and F8 note; `fake_gh_merge_bin`
+  extension; S324-S328 red, then the function; S329 regression; rule text
+  (`policy/WORKFLOW.md`, regenerate) with S330-S332 red first; OR11,
+  `orchestrator-core.py`, S311 mutation, S333; OBs, S334; `CHANGES.md`, S336;
+  S335 last (one run).
+- Not tested, stated: that `gh pr update-branch` does not force-push (GitHub
+  behaviour); that the orchestrator logs the heads in a real run (S332 and
+  S334 pin the rule, not a live log); the fail-open path under a real
+  GitHub outage.
