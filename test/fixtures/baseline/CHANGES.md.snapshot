@@ -612,7 +612,7 @@ the shared parser warns if it has no `Applies if`.
   answer and its `ORCHESTRATOR.md`, not through this entry. The script
   needs `gh` and runs with this project's checkout as the working directory.
 - **Reaches session:** none
-- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/PENDING
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/536
 
 ---
 
