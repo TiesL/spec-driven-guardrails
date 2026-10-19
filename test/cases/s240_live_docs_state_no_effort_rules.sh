@@ -120,8 +120,10 @@ for sec in A24 A26; do grep -qE "^### $sec( |$)" "$arch" || fail "S240 — ARCHI
 for sec in F39 F40; do grep -qE "^### $sec( |$)" "$prd" || fail "S240 — PRD.md has no '### $sec' section: the scan would be vacuous"; done
 
 # ===== the Pipeline log keeps the after-the-fact effort note (A27, A33) ========
-plog="$(awk '/^\*\*Pipeline log\.\*\*/ { f = 1 } f { if ($0 ~ /^[ \t]*$/) exit; print }' "$orch")"
-[ -n "$plog" ] || fail "S240 — ORCHESTRATOR.md has no '**Pipeline log.**' paragraph"
+# Amended by #499 (AC14, A41): the unit is the item starting `OR22`
+# (Pipeline log), no longer the `**Pipeline log.**` paragraph.
+plog="$(python3 -I "$root/test/fixtures/orchestrator-core.py" item --orch "$orch" OR22)"
+[ -n "$plog" ] || fail "S240 — ORCHESTRATOR.md has no OR22 (Pipeline log) item"
 pflat="$(printf '%s' "$plog" | LC_ALL=C tr '\n' ' ')"
 for need in 'may note' 'effort' 'transcript' 'prose' 'after the fact|afterwards'; do
   grep -qiE -- "$need" <<<"$pflat" \

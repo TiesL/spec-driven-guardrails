@@ -3,8 +3,17 @@
 # that nothing else loads.
 #
 # Usage:
-#   ./session-context.sh [--runtime claude|codex] [/path/to/project]
+#   ./session-context.sh [--runtime claude|codex] [--slot <n>] [/path/to/project]
 #   # defaults: Claude/current directory; Codex explicitly reads the output
+#
+# --slot <n> (#499, A41): the output is split at each marker line
+# `<!-- session-context: slot -->` (a declared file may hold one), the
+# marker lines are dropped and only chunk n (1-based) is printed. Each
+# SessionStart command prints one chunk, so each hook output stays within
+# CONTEXT_BUDGET_CHARS (lib/context-budget.sh, checked by S309): slot 1 is
+# the CLAUDE.md warning plus part 1 of ORCHESTRATOR.md, slot 2 is part 2. A
+# slot past the last chunk prints nothing. Without --slot every chunk is
+# printed in order with the marker lines dropped (what Codex reads).
 #
 # Called by the SessionStart hook (settings/session-hooks.json), after
 # pending-changes.sh, with the clone resolved through the project's
@@ -13,7 +22,8 @@
 #
 # 1. For every CHANGES.md entry this project answered yes (answered_yes,
 #    lib/changes.sh) whose **Reaches session:** field declares
-#    `session-context: <path>`, print that file verbatim. A `no`,
+#    `session-context: <path>`, print that file verbatim (minus marker lines,
+#    see --slot). A `no`,
 #    unanswered or not-applicable row prints nothing: that is AC3 by
 #    construction, not a rule a session has to remember. Today the one such
 #    file is skills/role-contracts/ORCHESTRATOR.md
@@ -34,11 +44,19 @@
 set -uo pipefail
 
 runtime=claude
+slot=""
 if [ "${1:-}" = --runtime ]; then
   [ "$#" -ge 2 ] || { echo "session-context: missing runtime" >&2; exit 2; }
   runtime="$2"; shift 2
 fi
 case "$runtime" in claude|codex) ;; *) echo "session-context: unknown runtime" >&2; exit 2 ;; esac
+if [ "${1:-}" = --slot ]; then
+  [ "$#" -ge 2 ] || { echo "session-context: missing slot" >&2; exit 2; }
+  slot="$2"; shift 2
+  case "$slot" in
+    ''|*[!0-9]*|0*) echo "session-context: slot must be a positive integer" >&2; exit 2 ;;
+  esac
+fi
 [ "$#" -le 1 ] || { echo "session-context: invalid arguments" >&2; exit 2; }
 case "${1:-}" in -*) echo "session-context: invalid option" >&2; exit 2 ;; esac
 
@@ -58,6 +76,7 @@ physical() {
   printf '%s/%s' "$dir" "$(basename "$1")"
 }
 
+emit() {
 if [ "$runtime" = codex ]; then
   if ! python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status >/dev/null 2>&1; then
     echo "Warning: Codex AGENTS.md/links installation is missing, stale or conflicting; run adopt.sh --runtime codex again and verify actual instruction loading."
@@ -81,7 +100,7 @@ fi
 
 fi
 
-[ -f "$changes" ] || exit 0
+[ -f "$changes" ] || return 0
 
 printed=""
 while IFS='|' read -r id value _; do
@@ -105,4 +124,12 @@ while IFS='|' read -r id value _; do
   cat "$workflow_dir/$file"
 done < <(reaches_session_values "$changes")
 
+}
+
+# The marker line splits chunks; it is never printed.
+marker='<!-- session-context: slot -->'
+emit | awk -v m="$marker" -v n="${slot:-0}" '
+  $0 == m { chunk++; next }
+  n == 0 || chunk == n - 1 { print }
+'
 exit 0

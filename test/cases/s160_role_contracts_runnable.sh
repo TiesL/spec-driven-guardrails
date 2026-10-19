@@ -36,35 +36,35 @@ if [ "${#stage_list[@]}" -ne 5 ] || [ "${#label_list[@]}" -ne 5 ]; then
   test_done
 fi
 
-# Then: one table row per stage, in pipeline order, each naming the stage
-# as a cell of its own and carrying that stage's role:<name> label. Since
-# #371 (A16) the stage table lives in the same installed skill's
-# ORCHESTRATOR.md, the one home of the run rules, which SKILL.md points to.
+# Then: the OR5 item of the installed ORCHESTRATOR.md (part 1, tier
+# judgment; amended by #499 AC14, A41: no longer a `^|` table) lists the five
+# Stage/Role/Label/stage= tuples, each stage with its label, in the order
+# role-label-staleness.sh defines. Since #371 (A16) the run rules live in
+# that file, which SKILL.md points to. Stage-order behaviour: OB5, OB36.
 orch="$project/.claude/skills/role-contracts/ORCHESTRATOR.md"
 grep -q 'ORCHESTRATOR.md' "$skill" || fail "S160 — SKILL.md does not point to ORCHESTRATOR.md for the run rules"
-grep -n '^|' "$orch" > "$SANDBOX/rows.txt" 2>/dev/null \
-  || fail "S160 — no stage table in the installed skill's ORCHESTRATOR.md"
+# shellcheck source=../fixtures/orchestrator-core-helpers.sh disable=SC1091
+OC_ORCH="$orch"
+OC_TSV="$project/.claude/skills/role-contracts/orchestrator-rules.tsv"
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/orchestrator-core-helpers.sh"
+oc_rule "S160" OR5 judgment 1
+or5="$(oc_item OR5)"
+[ -n "$or5" ] || fail "S160 — no OR5 stage item in the installed skill's ORCHESTRATOR.md"
 prev=0
 i=0
 while [ "$i" -lt 5 ]; do
   stage="${stage_list[$i]}"
   label="${label_list[$i]}"
-  row="$(awk -F'|' -v s="$stage" -v l="$label" '
-    {
-      hit = 0
-      for (c = 2; c < NF; c++) {
-        cell = $c; gsub(/[ `*]/, "", cell)
-        if (cell == s) hit = 1
-      }
-      if (hit && index($0, l) > 0) { split($1, n, ":"); print n[1]; exit }
-    }
-  ' "$SANDBOX/rows.txt")"
-  if [ -z "$row" ]; then
-    fail "S160 — no table row names stage '$stage' together with label '$label'"
-  elif [ "$row" -le "$prev" ]; then
-    fail "S160 — stage '$stage' (line $row) is listed before an earlier stage; order must be: $stages"
+  # Tuples are `Stage/Role/`label`/stage-value`, separated by `;`.
+  pos="$(tr ';' '\n' <<<"${or5#*: }" | awk -v s="$stage" -v l="$label" '
+    { t = $0; gsub(/[ `.]/, "", t); n = split(t, f, "/")
+      if (n == 4 && f[1] == s && f[3] == l && f[4] == s) { print NR; exit } }')"
+  if [ -z "$pos" ]; then
+    fail "S160 — OR5 has no tuple naming stage '$stage' together with label '$label'"
+  elif [ "$pos" -le "$prev" ]; then
+    fail "S160 — stage '$stage' (tuple $pos) is listed before an earlier stage; order must be: $stages"
   else
-    prev="$row"
+    prev="$pos"
   fi
   i=$((i + 1))
 done

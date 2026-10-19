@@ -2100,6 +2100,16 @@ something new is being added.
   the skill; the `gh label create` command for the project's own repo is
   given and `role-label-staleness.sh` is named as what reads the labels;
   and one paragraph states that every role takes part in every change
+- Amended by #499 (AC14, A41): the `ORCHESTRATOR.md` half no longer reads
+  `^|` table rows. The item starting `OR5 ` (part 1, tier `judgment`) lists
+  the five `Stage/Role/Label/stage=` tuples; each stage of
+  `role-label-staleness.sh`'s order appears with its label in that order
+  (Discovery `role:product`, Planning `role:architect`, Test `role:qa`,
+  Implementation `role:dev`, Review `role:reviewer`). Counterexamples: two
+  tuples swapped, one label changed, `OR5` moved to part 2. The `SKILL.md`
+  checks (pointer, `model-choice`, no literal `<!-- model-record` in either
+  file, `gh label create`, `role-label-staleness.sh`, every role in every
+  change) are unchanged. Stage-order behaviour: `OB5`, `OB36`
 
 ### S161 — The evidence scripts, run by path from the clone, address the adopted project's repo
 **Covers:** F37
@@ -2366,17 +2376,33 @@ something new is being added.
 
 ### S180 — ORCHESTRATOR.md states the run rules once, short, with the recursion guard first
 **Covers:** F38
-- Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #371, A16/A18, AC1,
-  AC4-AC8; the mechanical proxy for model behaviour that cannot be asserted)
-- When: it is read
-- Then: a `ROLE SESSION:` guard is within its first five non-blank lines;
-  it says roles are fresh agents, never forks; it names the announce step,
-  `role:product` first, all five labels paired with their stage values; it
-  separates work items from questions, research, co-thinking and adoption;
-  it defines the `pipeline-override` record with decided-by, scope and
-  reason and says shortcuts are never self-granted, trivial included; it
-  says to stop and ask when dispatch is unavailable; it says how to resume
-  (with `role-label-staleness.sh`); `SKILL.md` points to it; it stays short
+- Given: `skills/role-contracts/ORCHESTRATOR.md` and its inventory
+  `skills/role-contracts/orchestrator-rules.tsv` (issue #371, A16/A18, AC1,
+  AC4-AC8; amended by #499 AC14, A41: the text is now the two-part caveman
+  core with `OR<n>` IDs)
+- When: it is read and matched against the inventory
+- Then: part 1 opens with its two header lines, and the item starting `OR1 `
+  (the `ROLE SESSION:` guard) is within part 1's first five non-blank lines;
+  each rule this scenario used to match by phrase exists as an ID with the
+  inventory tier and part named here, at the start of exactly one list item:
+  fresh agents never forks `OR7` (`hook:no-fork`, part 1), work item versus
+  question, research, co-thinking and adoption `OR3` (`judgment`, 1),
+  announce step with `role:product` first `OR4` (`judgment`, 1), the stage
+  table `OR5` (`judgment`, 1; its five stage/role/label/stage-value tuples
+  stay parseable, the S160 parse), never self-granted shortcuts, trivial
+  included `OR33` (`judgment`, 1), the override record `OR34` (`judgment`,
+  1), cannot dispatch `OR35` (`judgment`, 1), resume `OR36` (`judgment`, 2);
+  plumbing kept verbatim and checked deterministically: `OR34`'s item holds
+  the literal `<!-- pipeline-override: decided-by=` record with `scope` and
+  `reason`, `OR36`'s item names `role-label-staleness.sh`; `SKILL.md` points
+  to `ORCHESTRATOR.md`
+- The behaviour these phrases protected is checked by `OB1`-`OB7`, `OB31`-
+  `OB37` in `test/behavior/orchestrator-scenarios.md` (differential run, not
+  `./check`). "It stays short" (the 80-line cap) is replaced by the per-part
+  budget of S309; no line count is asserted. A rule in a different part from
+  the one named, or a missing ID, fails; reworded caveman text with the IDs
+  in place passes
+
 
 ### S181 — ./check rejects a CHANGES.md entry with no declared session path
 **Covers:** F38
@@ -2879,6 +2905,17 @@ something new is being added.
   `pre-merge-review`), says roles are started as a new agent never by that
   `fork` type, imposes no `SendMessage` ban on other roles, and leaves
   continuing another role for a later step to #412
+- Amended by #499 (AC14, A41): the `ORCHESTRATOR.md` half is located by ID,
+  no longer by the Dispatch-paragraph sentences (`once started`, `the
+  dispatch tool's fork type`): `OR7` (tier `hook:no-fork`), `OR12` and
+  `OR13` (tier `judgment`) each start exactly one list item in part 1;
+  `OR12`'s item names `SendMessage` and `fork`, and `OR13`'s names `#412`
+  (plumbing). Absence check kept: every `ORCHESTRATOR.md` item that contains
+  `SendMessage` is `OR12`'s, so no ban reaches other roles. Counterexamples:
+  `SendMessage` added to `OR7`'s or `OR13`'s item; `OR13` removed. The
+  `SKILL.md` and `pre-merge-review` halves are unchanged. Behaviour: `OB12`
+  and `OB49` (fresh Reviewer, graded against `continue_agent`), `OB51`
+  (`OR13`: QA may be routed either way, no human question)
 
 ### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
 **Covers:** F41
@@ -2893,15 +2930,19 @@ something new is being added.
 
 ### S211 — the limit on proving a fresh agent is stated, with the pipeline-log and self-check fallback
 **Covers:** F41
-- Given: `ORCHESTRATOR.md` (issue #414, AC5 case b)
-- When: the pipeline log and the pre-merge self-check are read
-- Then: the pipeline log has one line per dispatch with the agent id, is never a
-  `model-record` marker, and the mandatory "Before asking for a merge"
-  self-check (its result recorded as a line in the issue's Pipeline log) has a
-  line that every Review round has its own agent id and no message went to an
-  earlier Reviewer; the text states plainly that GitHub artifacts cannot show
-  whether two rounds came from different agent instances, so the line is a
-  recorded self-check, not a pass
+- Given: `ORCHESTRATOR.md` and `orchestrator-rules.tsv` (issue #414, AC5 case
+  b; amended by #499 AC14, A41)
+- When: the Pipeline log and the pre-merge self-check rules are located by ID
+- Then: `OR22` (Pipeline log) and `OR23` (self-check before asking for a
+  merge) each start exactly one list item in part 2 and have tier `judgment`;
+  `OR22`'s item carries no live `<!-- model-record` text (absence check, kept
+  deterministic); `OR24`-`OR27` are sub-items of `OR23` (S218)
+- The behaviour (one log line per dispatch, the self-check before the merge
+  question, the stated limit that GitHub cannot prove distinct agent
+  instances) moves to `OB26` and `OB27`; the wording of the limit is no
+  longer asserted (A41: a `core`/`judgment` sentence is protected by the
+  differential run and by review)
+
 
 ### S212 — in pre-merge-review a bare "fork" means only `context: fork`
 **Covers:** F41
@@ -2925,29 +2966,34 @@ something new is being added.
 
 ### S214 — each class is routed to the role that owns the fix, from any stage
 **Covers:** F42
-- Given: `skills/role-contracts/SKILL.md` and `ORCHESTRATOR.md` (issue #410,
-  AC2, A28; the fresh Reviewer is #414)
+- Given: `skills/role-contracts/SKILL.md`, `ORCHESTRATOR.md` and
+  `orchestrator-rules.tsv` (issue #410, AC2, A28; the fresh Reviewer is #414;
+  the `ORCHESTRATOR.md` half amended by #499 AC14, A41)
 - When: the loop-back route is read
-- Then: both give the route per class (`design`: Architect, QA, Developer,
-  fresh Reviewer; `code` and `test`: QA, Developer, fresh Reviewer; `spec`:
-  Product, then QA, Developer, fresh Reviewer); `ORCHESTRATOR.md` says the
-  orchestrator never relays a Reviewer's suggested fix as a decision, never
-  downgrades a class (role-contracts says so too, and neither file says
-  "nobody downgrades": the Architect may record that a finding is not a design
-  defect and route it as code) and dispatches the Architect when a design class
-  is in doubt or a finding has no class, and says a Developer or QA that finds a
-  design defect stops the change, saves the attempted patch and reports
-  class `design`
+- Then, `SKILL.md` (unchanged): it gives the route per class (`design`:
+  Architect, QA, Developer, fresh Reviewer; `code` and `test`: QA, Developer,
+  fresh Reviewer; `spec`: Product, then QA, Developer, fresh Reviewer) and
+  says a class is never downgraded
+- Then, `ORCHESTRATOR.md`: `OR17` (route by class), `OR18` (no relayed fix,
+  never downgrade, Architect when unclassed or in doubt) and `OR19` (any-stage
+  design defect) each start one list item in part 2 with tier `judgment`;
+  absence check kept: neither file says "nobody downgrades"
+- The routing behaviour moves to `OB14`-`OB20`; phrase matching on the
+  `ORCHESTRATOR.md` route is dropped
+
 
 ### S215 — two consecutive rounds with a medium-or-worse finding force an Architect step, and the count resets
 **Covers:** F42
-- Given: `ORCHESTRATOR.md` (issue #410, AC3, A28)
-- When: the two-round trigger is read
-- Then: a round counts when it has at least one open medium-or-higher finding,
-  new or carried over; two consecutive counting rounds on one PR send the
-  orchestrator to the Architect before any Developer fix; the Architect posts a
-  PR comment with a Planning marker and may conclude no design change is
-  needed; the count starts again after that recorded step
+- Given: `ORCHESTRATOR.md` and `orchestrator-rules.tsv` (issue #410, AC3,
+  A28; amended by #499 AC14, A41)
+- When: the two-round trigger is located by ID
+- Then: `OR20` starts one list item in part 2, with tier `judgment`
+- The behaviour (a round counts at an open medium-or-higher finding, new or
+  carried; two consecutive counting rounds send the orchestrator to the
+  Architect before any Developer fix; the count restarts after the recorded
+  Architect step) moves to `OB21` (counts), `OB22` (does not count) and
+  `OB23` (reset)
+
 
 ### S216 — review-rounds.sh counts Review rounds and reports Planning markers after each
 **Covers:** F42
@@ -2988,17 +3034,20 @@ something new is being added.
 
 ### S218 — the self-check lines, the stated limit and the override pointer to #415
 **Covers:** F42
-- Given: `ORCHESTRATOR.md`, its "Before asking for a merge" self-check (issue
-  #410, AC5, AC6, A28)
-- When: the self-check and the override text are read
-- Then: the self-check list says no design-class finding was fixed without an
-  Architect step and the two-round trigger either did not fire or its Architect
-  step is on the PR, and names `review-rounds.sh` and says it runs with the
-  project's checkout as the working directory (it reads that repository); the text states the limit
-  (class and severity are judgments, a script can only check that the route
-  left evidence); overriding the route is a numbered human decision on the
-  issue that names the rule overridden and follows the pushback and risk-note
-  flow of #415 (A29) without defining a format of its own
+- Given: `ORCHESTRATOR.md` and `orchestrator-rules.tsv` (issue #410, AC5,
+  AC6, A28; amended by #499 AC14, A41)
+- When: the self-check and the override rules are located by ID
+- Then: `OR24`-`OR27` are the four sub-items of `OR23`'s item, in part 2, with
+  tier `core`; `OR25`'s sub-item names `review-rounds.sh` and the project's
+  checkout as the working directory (plumbing, path resolved as in S206);
+  `OR21` (override) starts one list item in part 2 with tier `judgment`,
+  names `OR45` by ID (the cross-part reference, S311) and names `SKILL.md`
+  for the risk-note format; absence checks kept: `OR21` defines no risk-note
+  field list and no marker of its own
+- The override behaviour moves to `OB24` and `OB25`. `OR24`-`OR27` have no
+  behaviour scenario (A41's accepted gap: a flipped `not` in a self-check
+  item is caught only by review)
+
 
 ### S219 — `.github/workflows/macos.yml` is pinned whole: a closed byte alphabet, comments only in the header, the rest exactly the expected block
 **Covers:** F43
@@ -3613,6 +3662,13 @@ something new is being added.
   A27 still lists the observed effort (the two documents agree). Red today:
   five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
   sentence
+- Amended by #499 (AC14, A41): in `ORCHESTRATOR.md` the unit is the list
+  item that starts with `OR22` (Pipeline log), not the `Pipeline log.`
+  paragraph; that item still says the orchestrator may note the effort the
+  platform transcript shows, in prose, after the fact, not as a marker
+  attribute and not a check. The `OR29` item (no effort argument) is a unit
+  like any other and passes through its supersession words ("neither chosen
+  nor", "accepted risk"). The rest of S240 is unchanged
 
 ### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
 **Covers:** F39, F40
@@ -4732,6 +4788,17 @@ that evidence and the final `./check` result.
   `Disposition` and scope-expansion rules, and carries no pending or
   conditional wording. A row that drops the Disposition/scope-expansion
   rule, or keeps pending wording, fails.
+- Amended by #499 (AC14, A41): the four seeded rows are the items `OR38`
+  (scratch run), `OR39` (model, floor clear), `OR40` (low finding) and
+  `OR41` (naming, numbering) under `## Decided without asking` in part 2,
+  each with tier `judgment` and starting exactly one item; the log
+  destination is `OR37`'s "logged in Pipeline log" and `OR44`'s record.
+  `decision-table-415.py` stops reading `|` cells and bold labels; removing
+  an item fails by ID (S311). Kept deterministic: `OR40`'s item keeps
+  `Disposition` and `scope-expansion` (S288), and no item of the section
+  carries pending or conditional wording. Behaviour of the examples (scratch
+  tool, cheaper model, low disposition, next free number): `OB39`,
+  `OB28`-`OB30`, `OB40`-`OB44`, `OB45`
 
 ### S278 — the never-list excludes human and role decisions
 **Covers:** F44
@@ -4745,6 +4812,14 @@ that evidence and the final `./check` result.
   names all six categories; removing any one or moving it into an allowed
   row fails. A release-branch work-item merge is judged under its existing
   contract, without enlarging this table's authority.
+- Amended by #499 (AC14, A41): the never-list is the item `OR43` in part 1,
+  tier `judgment`, located by ID instead of the `**Never decided by the
+  orchestrator:**` label; an `OR43` moved to part 2 or removed fails (S311).
+  The six-category phrase checks are retired. Behaviour: `OB47` (version
+  bump), `OB48` (departure from a role recommendation); the merge into
+  `main` is `OB9`/`OB10` (`OR11`). Accepted gap (A41): the categories
+  spec-touching content and outward-facing publication have no `OB` and are
+  protected by review
 
 ### S279 — a row cannot waive a contract rule
 **Covers:** F44
@@ -4760,6 +4835,14 @@ that evidence and the final `./check` result.
   reuse the previous Reviewer; fix a design finding directly in code). A
   differently worded waiver row is not caught by the scan, so AC3 rests on
   the tested no-waiver sentence, and Reviewer judges any new row against it.
+- Amended by #499 (AC14, A41): the no-waiver rule is the item `OR37` in
+  part 2, tier `judgment`, which contains `OR45` (S311); its wording is no
+  longer matched (`never waive.*contract rule`). The bounded row scan is
+  kept as an absence check, applied to the items `OR38`-`OR42` and `OR44`
+  instead of table rows: an item phrased like either synthetic waiver
+  (continue or reuse the previous Reviewer; fix a design finding directly in
+  code) fails. Behaviour: `OB38` (a design finding is not self-decided to
+  be patched in code)
 
 ### S280 — a by-rule decision has an issue record, with no stage marker
 **Covers:** F44
@@ -4777,6 +4860,12 @@ that evidence and the final `./check` result.
   after a work-item merge into a release branch. A template saying only
   "until the merge" (ambiguous), a deadline at the release-branch merge,
   a log-only rule with no deadline, or any leftover pending wording fails.
+- Amended by #499 (AC14, A41): the record template is the item `OR44` in
+  part 2, with the tier and part its inventory row names, located by ID. Kept
+  deterministic: the item names the `Pipeline log`, `Decisions by rule`, the
+  objection deadline ending when the change reaches `main` and the release
+  branch case; it holds no `<!-- model-record` text and no `until the merge`
+  wording. The rendered-record checks are unchanged
 
 ### S281 — a rejected recommendation gets one pushback before a human decision
 **Covers:** F44
@@ -4818,24 +4907,25 @@ that evidence and the final `./check` result.
   tests assert the four seeds and never-list, not a fabricated count of
   all roughly 22 possible decisions.
 - Structure oracles (round 1, F44 "Structure of the injected file"; A29
-  "File structure"), on the same `ORCHESTRATOR.md`; each fails on the
-  counterexample named with it:
-  - `## Decided without asking` is the last `##` heading of the file.
-    Counterexample: a `##` heading (e.g. `## Run rules`) after it fails.
-  - The six run rules (merge self-check, model per stage, marker line, no
-    self-granted shortcuts, cannot dispatch, resume) each start a paragraph
-    before that heading, so none sits under it. Counterexample: any one
-    moved below the heading, or removed, fails.
-  - The "When a recommendation is not accepted" paragraph has a blank line
-    before and after it, so it is its own paragraph and is not adjacent to
-    the "Before asking for a merge" paragraph. Counterexample: the two
-    paragraphs on consecutive lines (the pre-fix file) fails.
-  - The file is at most 80 lines (S180's cap, unchanged). Counterexample: 81
-    lines fails. The wording of the "Limit:" sentence is not asserted.
-  - The Override paragraph contains no bare `#<digits>` reference, names
-    "When a recommendation is not accepted" and names `SKILL.md`.
-    Counterexamples: the paragraph with `(#415)` or any other bare `#<n>`;
-    without the in-file paragraph name; without `SKILL.md`.
+  "File structure"): replaced by #499 (AC14, A41). The paragraph oracles no
+  longer apply to the two-part core; what they protected is now held as
+  follows, each failing on the counterexample named with it:
+  - Placement of the run rules and of "Decided without asking" (formerly: the
+    last `##` heading, six run-rule paragraphs before it): the inventory's
+    `part` column and S311 (every non-retired ID in exactly one part, the part
+    its row names). Counterexample: `OR36` (resume) moved into part 1, or any
+    ID in both parts, fails.
+  - The recommendation-not-accepted flow as its own unit (formerly: its own
+    paragraph, not adjacent to the self-check): `OR45` starts its own list
+    item in part 1 (S311). Counterexample: `OR45` merged into the `OR23`
+    item fails.
+  - The 80-line cap (S180's): replaced by the per-part character budget of
+    S309; no line count is asserted.
+  - The Override rule cites the flow by ID: the `OR21` item contains `OR45`
+    and `SKILL.md` and no bare `#<digits>` reference. Counterexamples: the
+    item with `(#415)` or any other bare `#<n>`; without `OR45`; without
+    `SKILL.md`.
+  - The decision behaviour the rows carry moves to `OB38`-`OB50`.
 
 ### S284 — CHANGELOG.md has dated release sections that match the tags
 **Covers:** F15
@@ -5090,71 +5180,30 @@ that evidence and the final `./check` result.
 
 ### S288 — the ORCHESTRATOR.md low-finding row states the trivial-fix rule in one line and points at SKILL.md (#488 AC1, AC11)
 **Covers:** F44
-- Given: `skills/role-contracts/ORCHESTRATOR.md` (issue #488 AC1; A38). Row
-  located by the first cell, not by line number: exactly one table line
-  whose first cell matches `low.severity finding` (case-insensitive), the
-  same locator S277 uses. The rule cell is the second `|`-cell.
-- When: the row is read as decision, rule and log cells
-- Then: (a) the row is one physical line and the file's total line count is
-  at most the pre-change count (79) and at most 80 (S180/S283 cap); (b) the
-  rule cell names the `Fix cost` field and `skills/role-contracts/SKILL.md`
-  (pointer, AC2b), matched as the exact tokens `` `Fix cost` `` and
-  `SKILL.md`; (c) it contains a `trivial` clause tied to fixing in the PR
-  (regex on the one cell: `trivial` and `in the PR` in the same sentence,
-  sentence = text between `.` characters) and a clause that any other low
-  finding is deferred (`defer`); (d) cap, R6: the cell matches
-  `one` + `trivial-fix commit` + `per PR` (tolerating wording between
-  `one` and `commit` only within the same sentence), and a new low found in
-  the delta round is deferred; (e) delta re-review keeps earlier slugs
-  (`slug` appears in the cell); (f) the log cell mentions the
-  `Pipeline log` and the cell requires naming per finding fix-in-PR or
-  deferred (R8: tokens `fix` and `defer` in the log or rule cell); (g)
-  red-CI sentence, AC11: the cell, or the `Fix cost` paragraph in
-  `SKILL.md`, matches all of `revert`, `defer`, `fresh review`, and
-  `no second trivial` (either file satisfies it, whichever the Developer
-  chose); (h) the old text is gone: the row does not match
-  `never in a low-only round`, `File a low-severity finding as an issue by
-  default`, or `already required by a medium or high finding`; (i) the
-  `Disposition` and `scope-expansion` tokens are still in the cell (R5, R9).
-- Not asserted: whether a live orchestrator applies the row (Reviewer reads
-  the walkthroughs AC4, AC5, AC6, AC9, AC10; see the walkthrough-only block
-  after S289, S290 is deliberately unused). The row must not
-  restate T1-T6: the cell contains none of the numeric limits `10 changed
-  lines`, `2 files`, `1 hunk` (single definition in `SKILL.md`, A38).
-- Matching rule (avoids the #460/#464 false positives): every phrase is
-  matched inside the one located row, never against the whole file, and
-  tokens are matched with word boundaries (`\bdefer`, `\btrivial\b`), so a
-  mention elsewhere in the file cannot satisfy it. Counterexamples, each
-  fails (see S289): the row with `Fix cost` removed; the cap sentence
-  removed; the file grown to 81 lines; the row split over two lines; the
-  old `never in a low-only round` text restored.
-- Red today: (b), (c), (d), (e), (g) fail; (h) fails (old text present).
-- Loop-back after Review round 1 (#488 AC12, AC13, AC14; A38 at b2c4602),
-  clause-local. Define `clause(cell, anchor)` = the one sentence of the rule
-  cell (split on `.` not followed by `md`, and on `;`) that contains the
-  anchor; every token below is matched inside that clause only, never in the
-  cell. Clauses: (j) R3 trivial: anchor ``tagged `trivial` ``; clause
-  contains `fixed in the PR` and `passes`. (k) other lows: anchor `any other
-  low finding`; clause contains `deferred` and `absent or doubtful`. (l)
-  class route and QA red check: anchor `QA`; clause contains `red check`,
-  `Developer`, and `code` and `test` as the only eligible classes, with
-  `design` and `spec` named as deferred (a clause without the class
-  restriction fails). (m) AC12: the clause anchored on `T1` or `T2` contains
-  `after` and `red CI`, or the red-CI clause itself names the T1/T2 failure;
-  the red-CI clause keeps `revert`, `defer`, `fresh review`, `no second
-  trivial` (g, now clause-local). (n) AC14: the clause anchored on
-  `` `Disposition` `` contains `own issue` and `immediately`; the clause
-  anchored on `bundled` contains `no Disposition` (or the Developer's literal)
-  and does not contain `` `Disposition` `` as an issue-bound value. The
-  Developer pins the exact literals in one list in the test.
-- Clause-local mutations (each must fail by name): R3 clause removed while the
-  words `trivial-fix` (cap) and `defer that finding` (red-CI) remain
-  (reviewer escape 1); `any other low finding is deferred` removed while
-  another `defer` remains; class restriction `code` and `test` only dropped;
-  QA `red check` sentence removed; T1/T2-after-commit sentence removed; `own
-  issue` removed from the Disposition clause; `bundled` clause rewritten to
-  include Disposition `issue` lows; a decoy: the red-CI text moved into the
-  cap clause (right tokens, wrong clause) must fail.
+- Given: `skills/role-contracts/ORCHESTRATOR.md` and `orchestrator-rules.tsv`
+  (issue #488 AC1; A38; replaced by #499 AC14, A41: the low-finding row is now
+  the list item `OR40` in part 2, so the table-cell locator and the
+  clause-local regex oracles (c)-(g), (j)-(n) and their mutation list are
+  retired)
+- When: the item starting `OR40 ` is located (exactly one)
+- Then (deterministic, kept): (a) `OR40` has tier `judgment` and part 2, and
+  its item is one physical line; (b) it names `` `Fix cost` `` and
+  `SKILL.md` as exact tokens (the pointer, AC2b); (h) the old text is gone:
+  the item does not match `never in a low-only round`, `File a low-severity
+  finding as an issue by default` or `already required by a medium or high
+  finding`; (i) `Disposition` and `scope-expansion` are still in the item;
+  not restated: the item contains none of `10 changed lines`, `2 files`,
+  `1 hunk` (single definition in `SKILL.md`, A38)
+- The behaviour the clause oracles protected (trivial fixed in the PR, any
+  other low deferred, only `code`/`test` trivial, QA red check first, cap of
+  one trivial-fix commit, delta-round low deferred, own-issue `Disposition`)
+  moves to `OB40`-`OB44`, and the mutation proof to the calibration mutant on
+  `OR40` (S291, S315). The red-CI clause (revert, defer, fresh review, no
+  second trivial fix) has no `OB`; it stays checked in `SKILL.md`'s `Fix
+  cost` paragraph by S289, and in `ORCHESTRATOR.md` by review only
+- Counterexamples, each fails: the item with `Fix cost` removed; the item
+  split over two lines; the old `never in a low-only round` text restored;
+  a T1-T6 limit restated in the item; `OR40` moved to part 1
 
 ### S289 — SKILL.md defines `Fix cost` and `trivial` once, with T1-T6 and the numeric limits (#488 AC2, AC2b)
 **Covers:** F38, F44
@@ -5238,31 +5287,26 @@ that evidence and the final `./check` result.
 
 ### S291 — a mutation of the new low-finding rule is caught by the document tests (#488 AC3)
 **Covers:** F44
-- Given: the S288/S289 document checks and the injected-document seam that
-  `test/fixtures/decision-table-415.py` already provides (private test
-  inputs, `DT415_NEGATIVE` guard, one controlled break per rule)
+- Given: the S289 `SKILL.md` checks and the injected-document seam of
+  `test/fixtures/decision-table-415.py` (private test inputs, `DT415_NEGATIVE`
+  guard, one controlled break per rule); amended by #499 (AC14, A41)
 - When: each controlled break is applied to a copy of the document and the
   checks run on it
-- Then: every break is rejected, one at a time: row reverted to the old
-  text (`never in a low-only round`); cap sentence removed; `Fix cost`
-  pointer removed from the row; row split over two lines; file padded to 81
-  lines; in `SKILL.md`, one limit digit changed, one of T1-T6 removed, the
-  T5 disqualifier list removed, the three values reduced to two. The
-  pre-change corpus (old row) also fails, which is the red-before-green
-  proof (AC3). Each break names a distinct row of the mutation table so a
-  break that is silently accepted is reported by name, as for S277.
-- Loop-back after Review round 1 (#488 AC12-AC14): the break tables for S288
-  and S289 gain every clause-local mutation listed in those scenarios, each
-  with a distinct name. Two of them are the Reviewer's confirmed escapes: R3
-  clause removed with `trivial-fix` and `defer that finding` still present
-  (S288), and T5 disqualifiers removed with T4 still carrying `assertion` and
-  `spec` (S289). The test also asserts the clause-local design itself: a
-  decoy mutation that moves the right tokens into the wrong clause is
-  rejected, so a check that regresses to row-wide or field-wide matching is
-  caught.
-- Red today: the old-row break cannot be expressed against a new-row
-  check until the checks exist; before the Developer's change S288/S289
-  fail on the unmodified file, which is the red state.
+- Then, `SKILL.md` breaks (unchanged): every break is rejected, one at a
+  time, each naming a distinct row of the mutation table: one limit digit
+  changed, one of T1-T6 removed, the T5 disqualifier list removed (with T4
+  still carrying `assertion` and `spec`), the three values reduced to two
+- Then, `ORCHESTRATOR.md` breaks: the deterministic breaks are those S288
+  still asserts (`Fix cost` removed from `OR40`, `OR40` split over two lines,
+  old text restored, a T1-T6 limit restated), each rejected by name. The
+  clause-local breaks of #488 (R3 clause removed, cap removed, class
+  restriction dropped, the decoy) are retired: the meaning they guarded is
+  checked by the differential run, whose calibration (`--calibrate`, AC12)
+  removes one `never` or `not` from `OR40` and must report `diverged` on at
+  least one of `OB40`-`OB44` (acceptance evidence on the PR); S315 proves
+  deterministically that the verdict logic reports `diverged` for such a run
+- Red today: the S288 `OR40` checks fail on `main` b43ee55 (no `OR40` item,
+  no inventory), which is the red state for the amended part
 
 ### S292 — pre-merge-review/SKILL.md says a delta re-review limits new findings but carries every earlier slug (#488 R6)
 **Covers:** F28
@@ -5346,6 +5390,13 @@ behavioral obedience.
   adapter-only policy prose even if byte generation is consistent. A Markdown
   link alone cannot establish live loaded guidance. Automated byte/context
   checks and manual policy-loading observations are distinct evidence.
+- Amended by #499 (AC14, A41): "emits ORCHESTRATOR verbatim" now means the
+  bytes of `ORCHESTRATOR.md` with the one marker line
+  `<!-- session-context: slot -->` dropped, both parts and their header lines
+  kept; the marker line itself is never printed. `codex-455.py` compares
+  against that expectation. Counterexamples: output equal to the whole file
+  with the marker line fails; output missing part 2 fails; the not-opted-in
+  case still prints neither part
 
 ### S295 — fresh Codex CLI sessions discover and actually read guidance and skills (C455-S2; AC1, AC3)
 **Covers:** F45, F47
@@ -5504,6 +5555,10 @@ behavioral obedience.
   observations; capability/date/context may be prose, not fabricated records.
   Bounded CLI QA/Review and desktop QA dispatch evidence is partial; remaining
   fresh-role, unavailable-dispatch and stop variants remain in #503.
+- Amended by #499 (AC14, A41): the static `ORCHESTRATOR.md` check for
+  `**Cannot dispatch**` becomes: the item starting `OR35 ` exists in part 1
+  with tier `judgment` (S311). The mapping checks (`fresh`, `override`,
+  `unavailable`) are unchanged. Behaviour: `OB35`
 
 ### S302 — fresh-session resume and finding routes use durable evidence (C455-S9; AC1, AC8)
 **Covers:** F45, F52
@@ -5599,6 +5654,13 @@ behavioral obedience.
   freshness or obedience. Installation success, mocked dispatch, passing CI and
   static instruction matches never substitute for manual behavior evidence;
   no background scheduling or runtime hook enforcement is claimed.
+- Amended by #499 (AC14, A41): the static `ORCHESTRATOR.md` checks for the
+  case-sensitive literals `without requesting confirmation` and `completed
+  initial stage` become: `OR6` (continuation, part 1, tier `judgment`) and
+  `OR36` (resume, part 2, tier `judgment`) each start one item, and `OR6`'s
+  item names `main` (the merge stop). The mapping check (`continue`) is
+  unchanged. Behaviour: `OB6`, `OB7` (continuation and its stop), `OB36`,
+  `OB37` (resume)
 
 ### S305 — the carry-forward gate counts a slug as mentioned only when the round carries exactly that slug as a whole token (#453)
 **Covers:** F28
@@ -5659,6 +5721,146 @@ before making it green; QA assesses that evidence and does not execute
 tests. The `OB<n>` scenarios are not `S` rows: they are nondeterministic
 acceptance evidence (AC12), traced through the inventory's `covered_by`.
 
+### S309 — both parts are within budget in the worst case, the slots split exactly, and the wiring matches K (#499 AC4, AC6)
+**Covers:** F38
+- Given: a fixture project where every `CHANGES.md` entry that declares
+  `session-context:` is answered yes, the `CLAUDE.md` link is broken so the
+  warning prints, and the clone and project paths are each at least 100
+  characters; `settings/session-hooks.json`; `CONTEXT_BUDGET_CHARS` sourced
+  from `lib/context-budget.sh`, never a literal in the test
+- When: `session-context.sh --slot <n>` runs for n = 1..K, the unsplit
+  output is produced, and the settings are read
+- Then: for each n, `context_chars` of the output is at most the budget, and
+  a failure names the measured size, the slot and the budget; slot 1 is the
+  warning plus part 1 (starts with the warning, then the part 1 heading),
+  slot 2 is part 2 (starts with the part 2 heading); no output contains the
+  marker line `<!-- session-context: slot -->`; slots 1..K joined equal the
+  output without `--slot`, and that output is the file with the marker line
+  dropped (the Codex runtime's output likewise); `--slot 0`, `--slot -1`,
+  `--slot x` and `--slot` with no value exit 2 and read nothing (a
+  missing-file fixture shows no read happened); `--slot 3` prints nothing
+  and exits 0; the chunk count equals K, equals the number of commands in the
+  matcher-less `SessionStart` group that carry `--slot`, and those are
+  exactly `--slot 1` .. `--slot K`; the CHANGES.md **Reaches session**
+  field rules and PRD F38 state the number equal to the constant
+- Red on `main` b43ee55: one chunk of about 14,300 characters over 9,000;
+  `--slot` is an unknown option; no `lib/context-budget.sh`; one
+  session-context command. Negative controls: a fixture part padded to
+  budget + 1 fails naming slot and size; a third `--slot 3` command in the
+  settings fails the K match; a doc number different from the constant fails
+
+### S310 — worst-case pending-changes output is within the same budget (#499 AC5)
+**Covers:** F38
+- Given: a fresh git repo with an executable `check` and `deploy` and no
+  `WORKFLOW-ADOPTION.md`, so every applicable entry and NFR is pending
+- When: `pending-changes.sh` runs on it
+- Then: `context_chars` of its output is at most `CONTEXT_BUDGET_CHARS`
+  (the same sourced constant as S309); a failure names size and budget
+- Green on `main` (5,375); its red-before-green proof is a negative control:
+  the same check with the budget overridden to 5,000 for the test fails
+
+### S311 — every rule has one ID in one part, the parts stand alone, and the inventory matches the core (#499 AC2, AC3, AC7)
+**Covers:** F38
+- Given: `ORCHESTRATOR.md`, `orchestrator-rules.tsv`
+  (`id<TAB>name<TAB>tier<TAB>part<TAB>covered_by`), `agent-dispatch.py
+  --list-checks`, `test/behavior/orchestrator-scenarios.md` and the gate
+  scripts on disk
+- When: the structure test reads them
+- Then: there is exactly one marker line, so 2 parts; each part starts with
+  `# Multi-agent pipeline run rules, part <n> of 2: <fundamentals|procedure>`,
+  a blank line and the fixed sentence naming the other part, any order, and
+  "tell human before any dispatch or merge"; every non-retired ID starts
+  exactly one list item or sub-item (`OR<n>` and a space), in the part its
+  row names (part 1: OR1-OR8, OR11-OR13, OR33-OR35, OR43, OR45; part 2: OR9,
+  OR10, OR14-OR32, OR36-OR42, OR44); every `OR<n>` item has a row and every
+  row's ID is unique; a `retired` row has part `-` and its ID occurs in no
+  item; `above` and `below` do not occur as words in either part; OR21 and
+  OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
+  OR5 order`; OR11's item says merge into `main` only after the human
+  confirms the final head SHA and that a new commit after confirmation needs
+  a new confirmation; every required name of AC7 is a row name; the hook
+  tier check ids, joined over rows, equal `--list-checks`; every `gate:`
+  script exists; every `judgment` row's `covered_by` names at least one
+  existing `OB`, and every `OB` heading cites only existing IDs; the
+  inventory holds no rule text and no file tells a session to read it; the
+  marker line is no list item
+- Red on `main` b43ee55: no IDs, no inventory, no parts. Negative controls,
+  each failing by name: an ID removed from the core; an ID duplicated in the
+  other part; a row's `part` changed; `see above` inserted in part 2; the
+  part 2 header sentence removed; a `judgment` row with an empty
+  `covered_by`; an `OB` citing `OR99`; a hook check renamed in the TSV only
+- Note: S160, S180, S209, S211, S214, S215, S218, S277-S280, S288, S301 and
+  S304 now assert ID, tier and part for their rules; S311 is the shared
+  harness they use
+- Conditional (AC14): S187, S203, S207 and S210 read `ORCHESTRATOR.md`
+  paragraph by paragraph (`para_has_all`). If the rewrite leaves them green
+  they stay unchanged; if one goes red because a blank-line-free list is one
+  paragraph, QA amends it to ID, tier and part with an `OB` pointer (S187:
+  `OR28`, `OR29`; S203: `OR31`, `OR32`; S207: `OR11`; S210: `OR15`, `OR16`)
+  and Product adds it to **Covers:**. QA decides on the Developer's red
+  evidence, not before
+
+### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
+**Covers:** F38
+- Given: the hook core fed synthetic `PreToolUse` JSON (`tool_name` `Agent`,
+  no `agent_id`) with the real `ORCHESTRATOR.md` and inventory, in an
+  opted-in fixture
+- When: each case runs, one broken check at a time: the first non-blank line
+  is not `ROLE SESSION: <one of the five roles>` (missing, lower case, an
+  unknown role, the prefix on line 2 after a non-blank line); `subagent_type`
+  `fork`; no `model-record-emit.sh` with `--stage <stage>`, or `--stage
+  Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
+  Reviewer`, no PR number or `/pull/<n>`, no 7-40 hex SHA (6 hex and 41 hex
+  both fail), no `finding-carryforward-gate.sh`; and one case breaking three
+  checks together
+- Then: exit 2; stderr holds, once each, the full core line of every rule
+  whose check failed, byte-equal to that line in `ORCHESTRATOR.md` (found
+  through the inventory's `hook:` column), plus one line on how a non-role
+  prompt avoids detection; two failed checks mapped to one ID (OR14) print
+  that line once; a compliant dispatch for each of the five roles exits 0
+  with empty stdout and stderr; a prompt that only quotes a rule line, or
+  mentions `model-record-emit.sh` without `--stage` at line start, is not a
+  role dispatch and exits 0 silently; with the marker line present the deny
+  output never contains it
+- Red on `main` b43ee55: no hook. Negative control: an edited core line for
+  OR8 changes the deny text with it (no second copy in the script)
+
+### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
+**Covers:** F38
+- Given: the bash adapter and the core, behind a recording fake `gh` and a
+  PATH without network tools
+- When: each case runs: a project that does not answer yes (no file, `no`,
+  pending); `CLAUDE_WORKFLOW_GUARDRAILS_OFF` set; an otherwise
+  non-compliant role dispatch carrying a non-empty `agent_id`; an `Agent`
+  call that is not a role dispatch; a `Bash` tool call; input that is not
+  JSON, has no `tool_input` object, or a non-string `prompt`; an unreadable
+  inventory, an unreadable `ORCHESTRATOR.md`, a `hook:` row whose ID has no
+  line; no `python3` on PATH
+- Then: every case exits 0; malformed input, unreadable files, the missing
+  line and missing `python3` each write exactly one diagnostic line to
+  stderr, the others write nothing; the fake `gh` records no call; no file
+  is written outside the sandbox; each run finishes within 2 s (well inside
+  the 10 s timeout)
+- Red on `main` b43ee55: no hook
+
+### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
+**Covers:** F38
+- Given: `settings/session-hooks.json`, `agent-dispatch.py --print-contract`,
+  a captured real `Agent` `PreToolUse` input committed as a fixture with its
+  Claude Code version, an adopted fixture project whose `.claude/settings.json`
+  is the existing symlink, and the `process-multi-agent-roles` entry in
+  `CHANGES.md`
+- When: the wiring test runs
+- Then: the settings hold one `PreToolUse` entry whose `matcher` equals the
+  contract's tool name, `timeout` 10, through the `readlink` dispatcher; a
+  copy of the settings with the matcher changed fails; the captured input,
+  with the fields the contract names, is parsed by the core: as captured
+  (a compliant dispatch) it exits 0, and with its prompt's first line
+  removed it exits 2 with the OR8 line; the adopted fixture resolves the
+  hook through the symlink with no `adopt.sh` run; the entry's **Reaches
+  session** field names `hooks/agent-dispatch`, `*Yes means*` gains one
+  sentence, and its Meaning version is unchanged from `main`
+- Red on `main` b43ee55: no entry, no fixture, no field text
 
 ### S315 — the behavior file parses against the closed schema and the runner's verdict logic is right with a stub model (#499 AC11, AC12)
 **Covers:** F38

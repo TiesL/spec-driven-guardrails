@@ -34,9 +34,12 @@ lines_of() {
 
 # output_has_all_lines <file> <text>: every line (>= 8 chars) of the file
 # appears somewhere in the text, as a substring.
+# The session-context slot marker line (#499, A41) is never printed, so it
+# is not part of "the file's text" here.
 output_has_all_lines() {
   local file="$1" text="$2" line
   while IFS= read -r line; do
+    [ "$line" = '<!-- session-context: slot -->' ] && continue
     case "$text" in
       *"$line"*) ;;
       *) return 1 ;;

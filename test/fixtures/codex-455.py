@@ -21,6 +21,29 @@ def run(*args, rc=0, cwd=None):
     assert p.returncode == rc, (args, p.returncode, rc, p.stdout)
     return p.stdout
 
+SLOT_MARKER = '<!-- session-context: slot -->'
+
+
+def rule_item(orch, rid, tier, part):
+    """The one OR item of rid (with continuation lines), checked against the inventory."""
+    hits, cur = [], 1
+    lines = orch.split('\n')
+    for i, line in enumerate(lines):
+        if line == SLOT_MARKER:
+            cur += 1
+        if re.match(r'^ *- %s ' % rid, line):
+            j = i + 1
+            while j < len(lines) and lines[j].strip() and lines[j].startswith(' ') and not re.match(r'^ *- OR\d+ ', lines[j]):
+                j += 1
+            hits.append((cur, '\n'.join(lines[i:j])))
+    assert len(hits) == 1, f'{rid} starts exactly one item'
+    assert hits[0][0] == part, f'{rid} sits in part {part}'
+    rows = [l.split('\t') for l in (wf / 'skills/role-contracts/orchestrator-rules.tsv').read_text().splitlines()]
+    row = [r for r in rows if r[0] == rid]
+    assert row and row[0][2] == tier and row[0][3] == str(part), f'{rid} inventory row is {tier}, part {part}'
+    return hits[0][1]
+
+
 def project(name='project'):
     p = tmp / name
     p.mkdir()
@@ -70,9 +93,18 @@ try:
         p = project(); adopt(p)
         (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | yes | date | reason |\n')
         out = run(wf / 'session-context.sh', '--runtime', 'codex', p)
-        expect(out, (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text())
+        # Amended by #499 (AC14, A41): verbatim means the file minus its one
+        # slot marker line, both parts and their headers kept; the marker
+        # line itself is never printed.
+        orch_text = (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text()
+        assert orch_text.count(SLOT_MARKER + '\n') == 1, 'ORCHESTRATOR.md has one slot marker line'
+        expect(out, orch_text.replace(SLOT_MARKER + '\n', ''))
+        assert SLOT_MARKER not in out, 'the slot marker line was printed'
         (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | no | date | reason |\n')
-        assert (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text() not in run(wf / 'session-context.sh', '--runtime', 'codex', p)
+        out_no = run(wf / 'session-context.sh', '--runtime', 'codex', p)
+        for part in orch_text.split(SLOT_MARKER + '\n'):
+            assert part.splitlines()[0] not in out_no, 'a part printed for a project that did not opt in'
+
     elif SCENARIO in (295, 296):
         p = project(); (p / '.codex').mkdir(); (p / '.codex/config.toml').write_text('trust = "withheld"\n')
         out = adopt(p); status(p)
@@ -395,11 +427,14 @@ try:
         mapping = (wf / 'adapters/codex/INSTRUCTIONS.md').read_text()
         orch = (wf / 'skills/role-contracts/ORCHESTRATOR.md').read_text()
         expect(mapping, 'ORCHESTRATOR.md'); expect(mapping, 'fresh'); expect(mapping, 'override')
-        if SCENARIO == 301: expect(mapping, 'unavailable'); expect(orch, '**Cannot dispatch**')
+        # Amended by #499 (AC14, A41): ORCHESTRATOR.md rules located by ID,
+        # tier and part instead of bold labels and case-sensitive literals.
+        if SCENARIO == 301: expect(mapping, 'unavailable'); rule_item(orch, 'OR35', 'judgment', 1)
         if SCENARIO == 302: expect(mapping, 'durable'); expect(orch, 'open findings')
         if SCENARIO == 304:
-            expect(orch, 'without requesting confirmation'); expect(mapping, 'continue')
-            expect(orch, 'completed initial stage'); expect(orch, 'main')
+            assert '`main`' in rule_item(orch, 'OR6', 'judgment', 1), 'OR6 names main (the merge stop)'
+            expect(mapping, 'continue')
+            rule_item(orch, 'OR36', 'judgment', 2)
         print('Instruction contract only; live dispatch/resume/continuation remains unobserved.')
     elif SCENARIO == 303:
         p = project()

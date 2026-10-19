@@ -18,6 +18,13 @@
 #  downgrade   put 'nobody downgrades it' back in the Class bullet, or drop the Architect's reclassification sentence from either file, or drop 'orchestrator ... never downgrades' from role-contracts
 #  doubt          delete the "no class or doubt: dispatch the Architect" sentence
 #  any-stage      delete the step "saves the attempted patch" from the Developer/QA paragraph, or "stops the change"
+#
+# Amended by #499 (AC14, A41): the SKILL.md half is unchanged; the
+# ORCHESTRATOR.md half is located by ID: OR17 (route by class), OR18 (no
+# relayed fix, never downgrade, Architect when unclassed or in doubt) and
+# OR19 (any-stage design defect) each start one item in part 2 with tier
+# judgment. Absence check kept: neither file says "nobody downgrades". The
+# routing behaviour moved to OB14-OB20.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -25,6 +32,8 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 # shellcheck source=../fixtures/loopback-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../fixtures/loopback-helpers.sh"
+# shellcheck source=../fixtures/orchestrator-core-helpers.sh disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/../fixtures/orchestrator-core-helpers.sh"
 
 lb_files
 for f in "$LB_ROLES" "$LB_ORCH"; do
@@ -36,7 +45,7 @@ done
 # route ("QA (a red test)") must not make that row the test route.
 # shellcheck disable=SC2016  # the format string is a literal ERE
 cls() { printf '`%s`|^P \\|[[:space:]]*%s[[:space:]]*\\||^L [-*][[:space:]]+`?%s`?[[:space:]]*[:—-]' "$1" "$1" "$1"; }
-for f in "$LB_ROLES" "$LB_ORCH"; do
+for f in "$LB_ROLES"; do
   n="${f#"$TEST_REPO_ROOT"/}"
   lb_any_has_all "$f" "$(cls design)" 'Architect.*QA.*Developer.*fresh Reviewer' \
     || fail "S214/route-design — no row or sentence in $n sends a design defect to Architect, QA, Developer, fresh Reviewer, in that order"
@@ -48,13 +57,10 @@ for f in "$LB_ROLES" "$LB_ORCH"; do
     || fail "S214/route-spec — no row or sentence in $n sends a spec defect to Product, then QA, Developer, fresh Reviewer, in that order"
 done
 
-# ORCHESTRATOR.md: what the orchestrator may not do.
-lb_sentence_has_all "$LB_ORCH" '(never|must not)[^.]*relay' 'fix' 'decision' \
-  || fail "S214/no-relay — ORCHESTRATOR.md does not say the orchestrator never relays a Reviewer's suggested fix as a decision"
-lb_sentence_has_all "$LB_ORCH" '(never|must not|not)[^.]*(downgrad|lower|reclass)' 'class' \
-  || fail "S214/no-downgrade — ORCHESTRATOR.md does not say the orchestrator never downgrades a finding's class"
-lb_sentence_has_all "$LB_ORCH" '(doubt|no class|without a class|lacks? a class|has no class|missing class)' '(dispatch|send|goes? to)[^.]*Architect' \
-  || fail "S214/doubt — ORCHESTRATOR.md does not send a doubtful design class, or a finding with no class, to the Architect"
+# ORCHESTRATOR.md, by ID (#499 AC14).
+oc_rule "S214/OR17 route by class" OR17 judgment 2
+oc_rule "S214/OR18 no relay, never downgrade, Architect in doubt" OR18 judgment 2
+oc_rule "S214/OR19 any-stage design defect" OR19 judgment 2
 
 # One consistent rule on who may change a class (round 1 finding
 # class-downgrade-nobody-vs-architect): the orchestrator never downgrades; the
@@ -65,24 +71,10 @@ for f in "$LB_ROLES" "$LB_ORCH"; do
   if lb_sentence_has_all "$f" 'nobody|no one|no-one' '(downgrad|reclassif|lower)'; then
     fail "S214/downgrade — $n says nobody downgrades a class, which contradicts the Architect's reclassification"
   fi
-  lb_sentence_has_all "$f" 'Architect' '(may|can)' 'record' '(not a design defect|route (it )?as code|reclassif)' \
-    || fail "S214/downgrade — $n does not say the Architect may record that a finding is not a design defect and route it as code"
 done
+lb_sentence_has_all "$LB_ROLES" 'Architect' '(may|can)' 'record' '(not a design defect|route (it )?as code|reclassif)' \
+  || fail "S214/downgrade — role-contracts does not say the Architect may record that a finding is not a design defect and route it as code"
 lb_sentence_has_all "$LB_ROLES" 'orchestrator' '(never|not)[^.]*(downgrad|reclassif|lower)' \
   || fail "S214/downgrade — role-contracts does not say the orchestrator never downgrades a class"
-
-# From any stage: a Developer or QA that finds a design defect stops the
-# change, saves the attempted patch (A12) and reports class design; the
-# orchestrator then routes it like any finding. The block is the unit naming
-# the Developer, QA and the design defect, plus the list items right after it.
-start='^[PL] [^|].*((Developer.*QA|QA.*Developer).*design|design.*(Developer.*QA|QA.*Developer))'
-[ -n "$(lb_block "$LB_ORCH" "$start")" ] \
-  || fail "S214/any-stage — ORCHESTRATOR.md has no unit saying a Developer or QA can find a design defect"
-lb_block_has_all "$LB_ORCH" "$start" '(stops?|halts?)[^.]*(change|work)' \
-  || fail "S214/any-stage — ORCHESTRATOR.md does not say a Developer or QA that finds a design defect stops the change"
-lb_block_has_all "$LB_ORCH" "$start" '(saves?|keeps?)[^.]*(attempted )?patch|patch[^.]*(saved|kept)' \
-  || fail "S214/any-stage — ORCHESTRATOR.md does not say the stopping role saves the attempted patch (A12)"
-lb_block_has_all "$LB_ORCH" "$start" '(reports?|reporting) [^.]*(class[^.]*design|design[- ]class|as design)' \
-  || fail "S214/any-stage — ORCHESTRATOR.md does not say the stopping role reports the finding with class design"
 
 test_done
