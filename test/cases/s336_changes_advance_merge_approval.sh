@@ -25,7 +25,7 @@ q="$(grep -m1 '^- \*\*Question:\*\*' <<<"$entry")"
 grep -q '?$' <<<"$q" || fail "S336 — the Question is not one closed line ending in '?': $q"
 grep -qx -- '- \*\*Default:\*\* question' <<<"$entry" || fail "S336 — Default is not 'question'"
 grep -qx -- '- \*\*Applies if:\*\* always' <<<"$entry" || fail "S336 — Applies if is not 'always'"
-yes_means="$(awk '/^- \*\*Yes means:\*\*/{on=1} on && /^- \*\*Reaches session:\*\*/{exit} on{print}' <<<"$entry" | tr '\n' ' ')"
+yes_means="$(awk '/^- \*\*Yes means:\*\*/{on=1} on && /^- \*\*Reaches session:\*\*/{exit} on{print}' <<<"$entry" | tr '\n' ' ' | tr -s ' ')"
 for x in "in advance" "lapses" "gh pr update-branch" "hooks/git-guardrails" "regardless of this answer" "#511"; do
   grep -qF -- "$x" <<<"$yes_means" || fail "S336 — Yes means lacks '$x'"
 done

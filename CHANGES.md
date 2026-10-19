@@ -614,6 +614,30 @@ the shared parser warns if it has no `Applies if`.
 - **Reaches session:** none
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/536
 
+## process-advance-merge-approval
+
+- **Question:** May the maintainer approve a merge into `main` in advance ("merge once everything is green"), an approval that lapses on any required change?
+- **Default:** question
+- **Applies if:** always
+- **Yes means:** the maintainer may approve a PR's merge into `main` in
+  advance, and that counts as the confirmation of `WORKFLOW.md` step 4. It
+  holds only while the branch is mergeable without further changes (Review
+  approves, CI is green, every pre-merge check passes). The maintainer names
+  no head SHA; the orchestrator records the head at approval and the head
+  merged in the Pipeline log. A finding to fix, red CI or a failing gate
+  lapses the approval and the session asks again after the fix; `gh pr
+  update-branch` does not, when the new head is that one merge commit (first
+  parent the approved head) and CI and the pre-merge checks are green again.
+  A relayed approval counts only as the maintainer's verbatim words about
+  that PR. On `no`, the approval is taken only after the work. Merge autonomy
+  without a per-PR approval is #511, not this entry. Separately, the merge
+  guard's up-to-date check (refuse `gh pr merge` while the PR is behind its
+  base, remedy `gh pr update-branch`) ships through the symlinked
+  `hooks/git-guardrails` regardless of this answer, behind the same switch as
+  `quality-review-before-merge`.
+- **Reaches session:** always-loaded: WORKFLOW.md
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/issues/516
+
 ---
 
 ### Non-functional characteristics (NFRs)
