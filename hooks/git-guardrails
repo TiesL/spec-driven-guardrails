@@ -277,9 +277,14 @@ check_merge_guard() {
 
   # AC4: fail open without gh.
   if ! command -v gh >/dev/null 2>&1; then
-    echo "warning: merge-guard can't find gh and skips the review check." >&2
+    echo "warning: merge-guard can't find gh and skips the up-to-date and review checks." >&2
     return 0
   fi
+
+  # #516 (A43): before the marker lookup, so a stale PR gets the one
+  # actionable message (update-branch) before it is told to review a head
+  # that is about to change.
+  check_up_to_date_guard "$target"
 
   local call output status
   if [ -n "$target" ]; then
@@ -367,6 +372,91 @@ print("STALE")
   check_ci_guard "$target"
   check_stray_closes_guard "$target"
   check_role_play_guard "$target"
+}
+
+# #516 (A43, F8 extended): refuse a PR whose base tip is not an ancestor of
+# its head. Parallel work items can take the same S/F/A number and CI does
+# not re-run when the base moves, so a stale green run could merge a
+# duplicate; `main` has strict required checks, release branches and
+# private adopted projects do not. One code path for every base: the PR's
+# own base.ref is read, no branch-name filter.
+#
+# REST only (the #318/#355 defect class rules out GraphQL-backed
+# `gh pr view`): the PR number via resolve_stray_closes_pr_number, then
+# `pulls/<n>` for base.ref and head.sha, then `compare/<base>...<head>`,
+# whose behind_by is the server-side ancestry test (0 = the base tip is an
+# ancestor of the head). No local fetch: the checkout may not hold the PR
+# branch. Fails open with a warning on any lookup trouble (no PR number,
+# a failing call, an empty or non-numeric answer, a fork head unknown to
+# the base repo), same ground rule as the checks beside it. The escape
+# hatch and a substantiated `no` on quality-review-before-merge are
+# inherited from check_merge_guard, which returns before calling this.
+#
+# $1 is the same optional target (number/url/branch) as the other checks.
+check_up_to_date_guard() {
+  local target="$1" skip="and skips the up-to-date check."
+
+  local number
+  if ! number="$(resolve_stray_closes_pr_number "$target")"; then
+    echo "warning: merge-guard couldn't determine the PR number $skip" >&2
+    return 0
+  fi
+
+  # stdout and stderr kept separate (#81/#224): a routine stderr line
+  # from gh must not end up in the parsed answer.
+  local error_file pull_part compare_part status error_text
+  error_file="$(mktemp)" 2>/dev/null || error_file=/dev/null
+  pull_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/pulls/$number" --jq '.base.ref + "\t" + .head.sha' 2>"$error_file")"
+  status=$?
+  error_text="$(cat "$error_file" 2>/dev/null)"
+  if [ "$status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't consult the PR's base and head (no network or no access) $skip" >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
+    [ "$error_file" = /dev/null ] || rm -f "$error_file"
+    return 0
+  fi
+
+  local base_ref head_sha
+  IFS=$'\t' read -r base_ref head_sha <<<"$pull_part"
+  if [ -z "$base_ref" ] || ! [[ "$head_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    echo "warning: merge-guard couldn't interpret the PR's base and head (unexpected output from gh api) $skip" >&2
+    [ "$error_file" = /dev/null ] || rm -f "$error_file"
+    return 0
+  fi
+
+  compare_part="$(cd "$workdir" && gh api "repos/{owner}/{repo}/compare/$base_ref...$head_sha" --jq .behind_by 2>"$error_file")"
+  status=$?
+  error_text="$(cat "$error_file" 2>/dev/null)"
+  [ "$error_file" = /dev/null ] || rm -f "$error_file"
+  if [ "$status" -ne 0 ]; then
+    echo "warning: merge-guard couldn't compare the PR's head with its base '$base_ref' (no network, no access, or a head the base repo doesn't know) $skip" >&2
+    [ -n "$error_text" ] && echo "$error_text" >&2
+    return 0
+  fi
+
+  local behind="$compare_part"
+  if ! [[ "$behind" =~ ^[0-9]+$ ]]; then
+    echo "warning: merge-guard couldn't interpret how far the PR is behind '$base_ref' (unexpected output from gh api: '$behind') $skip" >&2
+    return 0
+  fi
+  [ "$behind" -eq 0 ] && return 0
+
+  block "gh pr merge while the PR is behind its base" \
+"this PR's head does not contain the tip of its base branch '$base_ref':
+       it is $behind commit(s) behind. CI and the review ran on a head that
+       never saw those commits, so a clash (for example a duplicate S/F/A
+       number) would not show. Bring the base in with a merge, which needs no
+       force-push:
+
+         gh pr update-branch $number
+
+       Then wait for CI on the new head and re-run the pre-merge review there
+       (the marker is pinned to the head commit).
+
+       Is this deliberate, use the explicit escape hatch — and report which
+       check is being skipped:
+
+         CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 <command>"
 }
 
 # #371 (A18 amendment): in a project that answers process-multi-agent-roles
@@ -929,7 +1019,7 @@ judge_segment() {
         # could also (still) be a destructive git command, and that must
         # still be judged as usual. check_merge_guard reads the flag
         # further down.
-        echo "warning: the merge guard (review marker and CI status) is explicitly skipped for this command." >&2
+        echo "warning: the merge guard (up-to-date check, review marker and CI status) is explicitly skipped for this command." >&2
         merge_guard_off=1
         shift ;;
       [A-Za-z_]*=*) shift ;;
