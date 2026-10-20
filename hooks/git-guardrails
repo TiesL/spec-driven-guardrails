@@ -679,15 +679,15 @@ for item in data:
 #
 # REST has no equivalent of `gh pr view <target>`'s own number/url/branch
 # resolution, since `gh api repos/{owner}/{repo}/pulls/<n>` needs a plain
-# PR number. `resolve_stray_closes_pr_number` below covers the two shapes
-# that matter in practice (no target -> current branch's open PR; a plain
-# PR number or a `.../pull/<n>` URL passed straight through) with a REST
-# list-and-filter call; a bare non-current branch name as an explicit
-# `gh pr merge <branch>` target is a shape neither this project's own
-# workflow (CLAUDE.md never passes one) nor the existing test coverage
-# uses, so it isn't specially resolved — it falls through to the same
-# fail-open "couldn't consult the PR" warning as any other lookup failure,
-# consistent with this guard's ground rule (when in doubt, allow).
+# PR number. `resolve_stray_closes_pr_number` below resolves every target
+# shape `gh pr merge` accepts: a plain PR number or a `.../pull/<n>` URL is
+# passed straight through; no target means the current branch, and any other
+# target is a head branch name (`owner:branch` uses the part after the
+# colon). Both branch cases go through one REST list-and-filter call on
+# `.head.ref` (A44 1, #541). Zero matches, or more than one (fork PRs can
+# share a head name), or a failing list call returns 1 and the caller fails
+# open with its own warning, consistent with this guard's ground rule (when
+# in doubt, allow); there is no first-match-wins guess between candidates.
 #
 # $1 is the same optional target (number/url/branch) as the other checks.
 resolve_stray_closes_pr_number() {
@@ -710,7 +710,9 @@ resolve_stray_closes_pr_number() {
           esac
           ;;
         *)
-          return 1 ;;
+          branch="${target#*:}"
+          [ -n "$branch" ] || return 1
+          ;;
       esac
       ;;
     *)
@@ -723,15 +725,18 @@ resolve_stray_closes_pr_number() {
   status=$?
   [ "$status" -eq 0 ] || return 1
 
-  local num ref
+  local num ref found="" count=0
   while IFS=$'\t' read -r num ref; do
     if [ "$ref" = "$branch" ]; then
-      printf '%s' "$num"
-      return 0
+      found="$num"
+      count=$((count + 1))
     fi
   done <<<"$list_part"
 
-  return 1
+  # Exactly one match or nothing: an ambiguous head name is "in doubt".
+  [ "$count" -eq 1 ] || return 1
+  printf '%s' "$found"
+  return 0
 }
 
 # Known, separate limitation this guard does NOT fix (issue #373/A15):
