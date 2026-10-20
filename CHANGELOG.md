@@ -13,6 +13,12 @@ point.
 
 ## Unreleased
 
+- **#505: the SessionStart hook creates missing skill links.** `pending-changes.sh` now calls
+  `lib/skill-links.sh` (A45), which links skills the checkout has and an adopted project lacks, create-only
+  and only into a gitignored `.claude/skills/`; it never overwrites or removes a path, and prints a
+  `Created skill link:` line plus a note that new links may only be visible from the next session. What it
+  leaves alone is still warned about, and `adopt.sh` stays the owner of refresh and cleanup. S9 rewritten,
+  S347-S354 added. Ships through the symlinked checkout; no adoption question, no `CHANGES.md` entry.
 - **Fix #453: the carry-forward gate counts a slug as mentioned only on an exact whole-token match.**
   `finding-carryforward-gate.sh` no longer lets `finding:abc` clear a dropped `ab`; a slug is the maximal
   non-whitespace run after `finding:`. New S305 (`test/cases/s305_carryforward_slug_exact.sh`); F28 and A37 state the rule.
