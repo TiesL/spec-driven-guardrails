@@ -6730,3 +6730,57 @@ shape the fake does not answer exits non-zero.
   `Bash` matcher fires (A44 assumption 4); that Codex subagents report no
   token or tool count (secondary source); that the preflight is actually run
   by a Codex session (voluntary by design).
+
+## #516 round 1, Architect amendment (1d9cf72, cb0817e): preflight reachability and no-target ambiguity
+
+Numbering: S345 and S346 are the next free S numbers on the pulled head
+`cb0817e` and on every remote branch (verified by grep). Proposed files:
+`test/cases/s345_merge_preflight_via_symlink.sh`,
+`test/cases/s346_merge_guard_no_target_ambiguity.sh`.
+
+### S345 — `merge-preflight.sh` reached through a symlinked directory still finds the guard and checks the caller's repo (A44 amendment 1; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: the preflight's stdin JSON into the real `hooks/git-guardrails`, `gh` on
+  `PATH` (`fake_gh_merge_bin`). The script is invoked as an adopted Codex
+  project does: through a directory symlink, `<project>/.guardrails/source`
+  pointing at the checkout, from a working directory that is NOT the
+  checkout (the project's own git sandbox repo)
+- Given: a sandbox project repo with the symlink `.guardrails/source` to the
+  repo root; current directory is the project; PR 41 is behind by 3
+  (`behind_by` 3, marker `match`, green checks); and a second case with
+  `behind_by` 0
+- When: `.guardrails/source/merge-preflight.sh 41` runs, once with a relative
+  path from the project root and once with the absolute symlinked path, and a
+  third time from a subdirectory of the project
+- Then: behind: exit 2, stderr names `gh pr update-branch 41` (the S324 text),
+  so the guard was found through the link, not through `$0`'s unresolved
+  path; not behind: exit 0. The JSON the guard receives carries `cwd` equal to
+  the caller's directory, not the checkout's (a stub guard in a second case
+  records it). A copy of the script alone outside any checkout (no `hooks/`
+  beside it) exits non-zero with a message that the guard was not found, not a
+  silent pass
+- Red on `cb0817e`'s predecessor behaviour if the script resolved the guard
+  with an unresolved `dirname "$0"` through a relative symlink: the guard is
+  not found and the behind PR passes or errors. Negative control: a script
+  using `dirname "$0"` without `pwd -P` fails the relative-path case by name
+
+### S346 — with no merge target, two open PRs for the current branch fail open with the existing warning (A44 amendment 3; open decision 5a; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: `gh` on `PATH` (`fake_gh_merge_bin` with the several-row list output of
+  S339), the guard through `PreToolUse` JSON, sandbox current branch
+  `feature/work`
+- Given: `gh pr merge` with no target; (a) the open-PR list holds two rows with
+  head ref `feature/work` (`41` and `52`); (b) exactly one row (`41`) with
+  `behind_by` 3; (c) one row `41` for `feature/work` plus one other row `52`
+  for `feature/other`, `behind_by` 3; marker and CI fine
+- When: the command goes through the guard
+- Then: (a) exit 0 and stderr holds the existing "couldn't determine the PR
+  number ... skips the up-to-date check" warning (same text as S326's no-PR
+  case, no new wording), and the fake is never asked for `pulls/41` or
+  `pulls/52` (no first-match-wins); (b) and (c) exit 2 naming
+  `gh pr update-branch 41` (the single match is still resolved, so the
+  change does not turn the ordinary case into fail-open). Stray-Closes and
+  role-play checks warn the same way in (a). This makes the behaviour change
+  deliberate: before, the first matching row won
+- Red on `cb0817e`'s predecessor: (a) checks PR 41 (first match) and blocks
+  with exit 2 when 41 is behind

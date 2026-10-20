@@ -14,7 +14,8 @@
 # is honored the way the guard takes it: with CLAUDE_WORKFLOW_MERGE_GUARD_OFF
 # set to a non-empty value in the environment, the synthesized command carries
 # the `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1` prefix and the guard reports the
-# skip loudly.
+# skip loudly. Its intended use is as an invocation prefix:
+# `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1 ./merge-preflight.sh <pr-number>`.
 #
 # The guard is found next to this script (hooks/git-guardrails), like the
 # other root helpers find lib/. PR number only: a branch name is a usage
