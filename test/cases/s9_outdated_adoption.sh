@@ -1,77 +1,61 @@
 #!/usr/bin/env bash
-# S9 — An outdated adoption reports itself.
-# Covers: F6
+# S9 — A stale adoption repairs itself and says so.
+# Covers: F6, F9
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
+# shellcheck source=../skill-links-fixture.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../skill-links-fixture.sh"
 
 sandbox_create
 trap sandbox_destroy EXIT
 
-repo="$(sandbox_copy_repo)"
 # This scenario itself simulates the sequence "no skills -> skills exist, not
-# yet installed". Since W9 the real checkout has a populated skills/,
-# so remove that first — otherwise this scenario already starts in the second
-# state and no longer tests its own first rule.
-rm -rf "$repo/skills"
-project="$(fresh_project target-project)"
-SPEC_DRIVEN_GUARDRAILS_DIR="$repo" "$repo/adopt.sh" "$project" >/dev/null 2>&1
+# yet installed". Since W9 the real checkout has a populated skills/, so
+# sl_make adopts from a copy whose skills/ is emptied first, then adds the
+# skills afterwards.
+sl_make s9
+project="$SL_PROJECT"
+repo="$SL_REPO"
+rm -rf "$project/.claude/skills"
 
-# Beforehand: without a skills directory in the repo, nothing should be reported.
-clean="$SANDBOX/clean.txt"
-"$repo/pending-changes.sh" "$project" > "$clean" 2>/dev/null
-if grep -qi 'missing the skill' "$clean"; then
+# Beforehand: without skills in the repo, nothing should be reported.
+sl_run
+if grep -qi 'missing the skill\|Created skill link' "$SL_OUT"; then
   fail "S9 — message appeared even though this repo has no skills at all"
 fi
 
 # Given: the repo has skills, the project has not installed them.
-mkdir -p "$repo/skills/pre-merge-review" "$repo/skills/deploy-guards"
-echo "---" > "$repo/skills/pre-merge-review/SKILL.md"
-echo "---" > "$repo/skills/deploy-guards/SKILL.md"
+sl_add_skill pre-merge-review
+sl_add_skill deploy-guards
+before="$(sl_porcelain)"
 
 # When: a session starts.
-output="$SANDBOX/output.txt"
-"$repo/pending-changes.sh" "$project" > "$output" 2>/dev/null
-status=$?
+sl_run
 
-# Then: the hook reports that adopt.sh needs to run again.
-grep -qi 'missing the skill' "$output" || {
-  fail "S9 — no message about missing skills"
-  cat "$output" >&2
-}
-grep -qi 'adopt.sh again' "$output" || fail "S9 — the message does not say what to do"
-
-# And: multiple names are distinguishable from each other. Without a separator
-# "deploy-guards pre merge review" cannot be read as two skills, one of which
-# has a space in its name.
-# Only look at the skills line: the question texts above themselves contain
-# commas, so a grep over the whole output would always match.
-skillregel="$(grep 'missing the skill' "$output")"
-case "$skillregel" in
-  *', '*) ;;
-  *) fail "S9 — multiple missing skills are not separated: $skillregel" ;;
-esac
-
-# And: the missing skills are listed by name. Without those names the
-# message is not usable — you would not know what is missing or why.
+# Then: one link per skill, one Created line each.
 for skill in pre-merge-review deploy-guards; do
-  grep -q "$skill" "$output" || fail "S9 — the message does not name the missing skill '$skill'"
+  sl_assert_created "S9" "$skill"
 done
+[ "$(grep -c '^Created skill link' "$SL_OUT")" -eq 2 ] || fail "S9 — expected exactly two Created lines"
 
-# And: the session simply continues to start — a hook must never block.
-[ "$status" -eq 0 ] || fail "S9 — pending-changes.sh gave status $status; that blocks a session"
+# And: the next-session line is printed once, after the last created link,
+# and makes no promise of same-session availability.
+line='New skill links may not be visible to this session; they are available from the next session start.'
+[ "$(grep -cxF "$line" "$SL_OUT")" -eq 1 ] || fail "S9 — next-session line not printed exactly once"
+[ "$(grep -n 'Created skill link\|^New skill links' "$SL_OUT" | tail -1 | grep -c 'New skill links')" -eq 1 ] \
+  || fail "S9 — next-session line is not after the last Created line"
 
-# After installing the skills, the message disappears again.
-mkdir -p "$project/.claude/skills"
-ln -s "$repo/skills/pre-merge-review" "$project/.claude/skills/pre-merge-review"
-ln -s "$repo/skills/deploy-guards" "$project/.claude/skills/deploy-guards"
+# And: no warning, nothing new in git status, exit 0, stderr empty.
+sl_assert_no_warning "S9"
+[ "$(sl_porcelain)" = "$before" ] || fail "S9 — git status changed: the links are not ignored"
+sl_assert_quiet "S9"
 
-after="$SANDBOX/after.txt"
-"$repo/pending-changes.sh" "$project" > "$after" 2>/dev/null
-if grep -qi 'missing the skill' "$after"; then
-  fail "S9 — the message stays even though all skills are installed"
-fi
+# And: a second run prints no Created line.
+sl_run
+sl_assert_nothing_created "S9 second run"
+sl_assert_quiet "S9 second run"
 
 test_done

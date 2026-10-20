@@ -298,13 +298,35 @@ something new is being added.
 - Then: the list of pending IDs is identical to before F6 — the new
   signal sits alongside it, not inside it
 
-### S9 — A stale adoption reports itself
-**Covers:** F6
-- Given: an adopted project with no `.claude/skills/`, while
-  `$CLAUDE_WORKFLOW_DIR/skills` has skills
-- When: a session starts
-- Then: the hook reports that `adopt.sh` needs to run again
-- And: the session just starts anyway — the message blocks nothing
+### S9 — A stale adoption repairs itself and says so
+**Covers:** F6, F9
+- Given: an adopted project (real `adopt.sh` run, so the settings link and the
+  managed `.gitignore` block exist) with no `.claude/skills/`, while the
+  workflow checkout's `skills/` has skills added after that adoption
+- When: a session starts (`pending-changes.sh <project>`)
+- Then: `.claude/skills/<name>` is a symlink to `<workflow_dir>/skills/<name>`
+  for every skill, and the hook prints exactly one `Created skill link:
+  .claude/skills/<name> -> <workflow_dir>/skills/<name>` line per link, then
+  once the line that the new links may not be visible to this session but
+  are available from the next session start (no promise of same-session
+  availability)
+- And: no "missing the skill(s)" warning is printed, `git status --porcelain`
+  in the project is unchanged (the links are ignored), the hook exits 0 and
+  stderr is empty
+- Rewritten for #505 (AC7). It used to assert the hook "reports that `adopt.sh`
+  needs to run again"; that is now true only in the cases S348 to S352
+  keep, so the warning assertions moved there
+- Fixture change (`test/cases/s9_outdated_adoption.sh`): keep the setup
+  (copy repo, `rm -rf` its `skills/`, adopt, then add the two skills) and the
+  "nothing reported while the checkout has no skills" lead-in. Replace the
+  "Then" half: the created-link and trailing-line assertions above, plus a
+  `readlink` check and a second run that prints no `Created` line. The
+  warning half (comma-separated names, `adopt.sh again`, names present, a
+  message that disappears after manual install) moves out of this file to the
+  S351 fixture, where the project is made non-ignored first. Left as is,
+  the old assertions would go red for the right reason, which is the point
+- Red on a hook that still only warns: no link exists and the warning
+  appears. Red on a hook that creates links silently: no `Created` line
 
 ### S10 — The production gate blocks a substantiation gap
 **Covers:** F6
@@ -6784,3 +6806,151 @@ Numbering: S345 and S346 are the next free S numbers on the pulled head
   deliberate: before, the first matching row won
 - Red on `cb0817e`'s predecessor: (a) checks PR 41 (first match) and blocks
   with exit 2 when 41 is behind
+
+### S347 — an absent `.claude/skills/` is created when its entries are gitignored (#505 AC2; A45 step 4, risk R1; Covers F6, F9; integration, real git and file system)
+**Covers:** F6, F9
+- Seam: `pending-changes.sh <project>` (the lib is not sourced), real `git`,
+  real file system; `sandbox_copy_repo`, `fresh_project`, real `adopt.sh`
+- Given: an adopted project (full skills install, so the managed block
+  `.claude/skills/` is in `.gitignore`), then `rm -rf <project>/.claude/skills`
+- And: the precondition is asserted inside the fixture, so it cannot rot:
+  `git check-ignore -q .claude/skills` (bare, absent directory) exits 1 while
+  `git check-ignore -q .claude/skills/<name>` exits 0. This is the trap: the
+  entry is directory-only and cannot match a path that does not exist yet
+- When: `pending-changes.sh <project>` runs
+- Then: `.claude/skills/` exists as a real directory with one link per
+  `skills/*/` of the checkout, one `Created skill link:` line each, no warning,
+  exit 0, stderr empty
+- Red on an implementation that tests the bare `.claude/skills` path with
+  `check-ignore` (or `check-ignore .claude/skills/`): it sees "not ignored",
+  creates nothing and prints the warning. Red on one that only acts when the
+  directory already exists
+- Negative control: delete the managed block from `.gitignore` first and the
+  same run creates nothing (S351)
+
+### S348 — a path that already exists at a skill name is left alone, and the other names are still created (#505 AC3; Human decision 1; Covers F6, F9; integration)
+**Covers:** F6, F9
+- Seam: as S347
+- Given: an adopted project whose `.claude/skills/` exists and is ignored; the
+  checkout has skills `a`, `b`, `c`, `d`, `e`. At `a` a real directory holding
+  a file `keep.txt`; at `b` a real file; at `c` a symlink to a different real
+  directory `elsewhere/` holding `x.txt` (foreign, live); at `d` a dangling
+  symlink; `e` is absent
+- When: the hook runs
+- Then: `a`, `b`, `c`, `d` are byte-for-byte what they were (`a` has exactly
+  `keep.txt`, no nested `a/a` link; `b` content equal; `c` and `d` have the
+  same `readlink`; `elsewhere/` still holds only `x.txt`, no link written
+  through `c`); `e` is created and reported
+- And: the warning names only `d` (the dangling link: the warning's own check
+  is `-e`, so `a`, `b`, `c` exist and are not listed, `d` keeps appearing) and
+  does not name `e`. Corrected by the Developer: the first text listed `a, b,
+  c, d`, which contradicts A45 step 3 and the unchanged `-e` warning check
+- And: `git status --porcelain` unchanged, exit 0, stderr empty
+- Red on `ln -sfn` or any replace-on-exists code (clobbers b, c, d); red on a
+  plain `ln -s` into `a` or through `c` (writes inside a directory or the
+  foreign target); red on a `-e`-only candidate test (replaces the dangling
+  `d`); red on all-or-nothing code (`e` not created because others exist)
+
+### S349 — when links cannot be created, the warning stays and the hook still exits 0 with empty stderr (#505 AC4; Covers F6, F9; integration, run as non-root)
+**Covers:** F6, F9
+- Seam: as S347. The case is skipped with a visible "skipped: root ignores
+  file modes" message when `id -u` is 0 (the permission cannot bind there)
+- Given: an adopted, ignored project with skills missing; (a) `.claude/skills/`
+  exists and is `chmod a-w`; (b) `.claude/skills/` absent and `.claude`
+  `chmod a-w`; (c) `.claude/skills/` writable, with a `ln` shim first on
+  `PATH` that fails for one skill name `b` and delegates to the real `ln`
+  otherwise (skip (c) if the implementation does not call `ln` through `PATH`)
+- When: the hook runs with stderr redirected to a file
+- Then: (a) and (b): no link created, no `Created` line, the warning names all
+  missing skills, exit 0, the stderr file is empty; (c): the other skills are
+  created and reported, `b` is in the warning, exit 0, stderr empty
+- And: the fixture restores modes in its trap so `sandbox_destroy` can clean up
+- Red on code without `2>/dev/null` on `mkdir`/`ln` (stderr not empty); red on
+  `set -e` style code (non-zero exit, or aborts before later skills); red on an
+  implementation that reports "created" before checking the `ln` result
+
+### S350 — a project that is not adopted into this checkout gets nothing created (#505 AC5; A45 step 1; Covers F6, F9; integration)
+**Covers:** F6, F9
+- Seam: as S347; a second sandbox copy of the workflow plays "another checkout"
+- Given: a project with a gitignored `.claude/skills/` entry and missing
+  skills, but whose `.claude/settings.json` is (a) absent, (b) a regular file,
+  (c) a symlink into the other checkout, not the one running the hook
+- When: `pending-changes.sh <project>` runs from the copy under test
+- Then: for each of (a), (b), (c): no `.claude/skills/` and no link appears,
+  `git status --porcelain` is identical before and after, the warning is
+  printed, exit 0, stderr empty
+- And: positive control (d): a settings symlink whose target is relative
+  (resolving into this checkout) counts as adopted and the links are created
+- Red on an adoption test of the form "settings.json exists" (fails (b) and
+  (c)); red on a literal string compare of the readlink to an absolute path
+  (fails (d)); red on a hook that creates links wherever it is run
+
+### S351 — without a gitignore entry nothing is created, per name, and the old warning text is intact (#505 AC5; Human decision 3; A45 step 4; Covers F6, F9; integration)
+**Covers:** F6, F9
+- Seam: as S347. This is the warning half moved from the old S9 fixture
+- Given: (a) an adopted project whose managed `.gitignore` block is deleted
+  (and `.claude/skills/` exists or is absent, both tried); (b) an adopted
+  project whose `.gitignore` carries `.claude/skills/*` and
+  `!.claude/skills/b`, so `b` is not ignored and `a`, `c` are; (c) an
+  adopted project whose entry is only in `.git/info/exclude`
+- When: the hook runs
+- Then: (a) no link created, nothing appears in `git status --porcelain`, the
+  warning names the missing skills joined by `, `, contains `adopt.sh again`,
+  and names each skill; the same assertions the old S9 made. After the skills
+  are installed by hand the warning disappears. (b) `a` and `c` are created
+  and reported, `b` is not created and stays in the warning. (c) the links are
+  created, since the path is ignored through the exclude file
+- And: always exit 0 and empty stderr
+- Red on a hook that creates links without an ignore test (pollutes `git
+  status` in (a)); red on a bare-directory ignore test (wrongly all-or-nothing
+  in (b)); red on a test that greps `.gitignore` for the literal block text
+  (fails (c)); red on any change to the warning wording
+
+### S352 — a `.claude/skills` that is itself a symlink or a file is left alone (#505 AC5; A45 step 2; Covers F6, F9; integration)
+**Covers:** F6, F9
+- Seam: as S347
+- Given: an adopted, ignored project with skills missing, where (a)
+  `.claude/skills` is a symlink to a real directory `outside/` (empty) and
+  (b) `.claude/skills` is a regular file with content
+- When: the hook runs
+- Then: (a) `outside/` is still empty, the symlink has the same `readlink`;
+  (b) the file content is unchanged; in both: no `Created` line, the warning
+  lists the missing skills, `git status --porcelain` unchanged, exit 0,
+  stderr empty
+- Red on `mkdir -p` followed by `ln -s` without the symlink test (writes
+  into `outside/`); red on code that removes the symlink or file first, as
+  `adopt.sh` does for a symlink (that repair is `adopt.sh`'s, not the hook's)
+
+### S353 — a second run is silent, and a skill removed upstream is neither created nor removed (#505 AC6; Covers F6, F9; integration)
+**Covers:** F6, F9
+- Seam: as S347
+- Given: the S9 end state (links created by the first run), plus in the
+  checkout a stray file `skills/README.md` (not a directory)
+- When: the hook runs a second time
+- Then: stdout holds no `Created` line, no trailing next-session line and no
+  skills warning; every link has the same `readlink` and the same inode as
+  after the first run (nothing was recreated); no link exists for `README.md`
+- And: after `rm -rf skills/x` in the checkout, where `x` was linked: the
+  dangling `.claude/skills/x` is still there (`-L` true, `-e` false), not
+  removed, not mentioned as created, exit 0
+- And: a skill `y` added and removed again before any hook run gets no link
+- Red on code that prunes dangling links (`x` disappears); red on code that
+  iterates the project's `.claude/skills/` instead of the checkout's
+  `skills/*/`; red on one that links non-directories (`README.md`); red on
+  one that recreates links every run (inode changes, `Created` lines repeat)
+
+### S354 — a link made by the hook has exactly the target `adopt.sh` makes (#505 A45 "No extraction from `adopt.sh`"; Covers F9; integration)
+**Covers:** F9
+- Seam: as S347, against two projects adopted from the same checkout copy
+- Given: project P adopted with all skills present (links made by real
+  `adopt.sh`); project Q adopted before the skills existed, then the same
+  skills added, so the hook creates Q's links
+- When: the hook runs on Q, then `readlink` is compared for every skill
+- Then: `readlink Q/.claude/skills/<name>` equals `readlink
+  P/.claude/skills/<name>` byte for byte, is absolute, has no trailing slash,
+  and resolves to the existing directory
+- And: running `adopt.sh` on Q afterwards leaves every link's `readlink`
+  unchanged
+- Red on a hook that links the loop variable of `skills/*/` unchanged (trailing
+  slash differs from `adopt.sh`'s `basename` form); red on a relative target
+  or a differently resolved path (`pwd -P` vs raw)
