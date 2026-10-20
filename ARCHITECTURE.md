@@ -1744,15 +1744,58 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
      has no target, carries `-d`/`--delete-branch`, and the post-call HEAD
      is not a `feature/`/`fix/`/`release/` branch.
 
-     The newest HEAD reflog entry (`git reflog -1 --format=%gs`) must read
-     exactly `checkout: moving from <B> to <current>`. `<B>` must match
-     `feature/`/`fix/`/`release/`, and `refs/heads/<B>` must no longer
-     exist. Then look up `gh pr view <B>` with repository forwarding, and
-     require `MERGED`, base `main` and `headRefName == <B>`.
+     Read the two newest HEAD reflog subjects
+     (`git reflog -2 --format=%gs HEAD`). Real `gh pr merge -d` (verified
+     against gh 2.102.0 and this repository's own reflog on the merges of
+     #516, #505 and #548) checks out the base, then runs
+     `git pull --ff-only <remote> <base>`, and only then deletes the head.
+     After a squash merge the local base is behind, so the pull
+     fast-forwards and writes its own entry after the checkout. The rule
+     therefore accepts exactly these two shapes, newest first:
+
+     - `pull --ff-only <remote> <current>: Fast-forward`, then
+       `checkout: moving from <B> to <current>`;
+     - `checkout: moving from <B> to <current>` as the newest entry (the
+       pull failed or had nothing to fast-forward, so it wrote nothing).
+
+     `<remote>` is one word without spaces. Any other newest entry (a
+     commit, a reset, a second checkout, a pull of a different branch, a
+     pull that did not fast-forward) makes the occurrence uncertain. Only
+     this one pull entry may be skipped, and only directly above the
+     checkout. `<B>` must match `feature/`/`fix/`/`release/`, and
+     `refs/heads/<B>` must no longer exist. Then look up `gh pr view <B>`
+     with repository forwarding, and require `MERGED`, base `main` and
+     `headRefName == <B>`.
 
      Any mismatch, missing entry, surviving branch or lookup failure stays
      uncertain: exit 0 with no stop. Never fall back to the new current
      branch's PR.
+
+  **Review round 2 amendment (`completion-reflog-fallback-masked-by-gh-pull`,
+  `completion-reflog-fallback-defeated-by-gh-pull`).** The round-1 rule
+  required the checkout to be the newest entry. That premise was wrong
+  about real `gh`: the pull entry always sits above it, so the fallback
+  never fired and the omitted form failed open. The S359 fixture modelled
+  checkout plus delete without the pull, so its positive case proved a
+  state that real `gh` does not produce. Confirmed as a design defect and
+  corrected above. Alternatives weighed in round 2:
+  - Drop the fallback and document the omitted form as uncertain. It is
+    the simplest change, but AC4 lists "current-branch omission" among
+    the merge forms that receive AC1 behaviour, and the decision-8
+    reading keeps the omitted form in scope. Choosing it would override
+    AC wording, so it is not open to Planning.
+  - Take the newest `checkout: moving from …` entry anywhere in the
+    reflog. It is looser than needed: a stale checkout from hours earlier
+    could name a branch that happens to be merged. The two-entry bound
+    ties recognition to the command that just ran.
+  - Query `gh` for the most recently merged PR, or the current user's
+    last merged PR. It cannot tell this merge from another session's or a
+    web-UI merge, and adds a broader `gh` call.
+  - A PreToolUse state file recording the branch before the merge.
+    Rejected in round 1 for the same reason as below (second event,
+    persistent latch).
+  The chosen change keeps one Module, one Interface and the same lookups;
+  it widens one string check to one optional predecessor entry.
 
   Two alternatives were rejected:
   - Parsing `gh`'s merge message: it is printed only on a TTY.
@@ -1820,8 +1863,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 
   This is a bounded shell recognizer, not an interpreter:
   - Escapes and quotes are handled during lexing, including escaped
-    punctuation and backslash-newline line continuation. Line continuation
-    is an open code finding, `completion-line-continuation-unlexed`.
+    punctuation and backslash-newline line continuation (implemented in
+    round 2; legacy guard stream unchanged).
   - Comments and heredoc bodies are data, never command evidence.
   - Active expansions, command/process substitutions, unsupported
     redirections or control syntax that the recognizer cannot safely
@@ -1857,9 +1900,13 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   - AC3 failed/queued/timeout/malformed.
   - AC4: unrelated commands with zero `gh` invocations; explicit, URL,
     branch and omitted targets; repository flags; the
-    branch-switching/deleting omitted-target fixture and its negatives
-    (surviving branch, non-checkout reflog entry, no `--delete-branch`,
-    mismatched head); compound `&&` and semicolon-final success;
+    branch-switching/deleting omitted-target fixture, which must reproduce
+    real `gh`'s checkout, `pull --ff-only` fast-forward from a bare remote
+    holding the squash commit, then delete; a checkout-only variant (pull
+    wrote nothing); and negatives (surviving branch, newest entry neither
+    the pull nor the checkout, a pull entry for a branch other than the
+    current one, a pull entry above a non-checkout entry, no
+    `--delete-branch`, mismatched head); compound `&&` and semicolon-final success;
     masked/skipped/pipeline negatives; the quote-provenance matrix; and
     redirection positives (`2>&1`, `>/dev/null`) and pipe negatives.
   - AC5: tag commands and tag publication (`git push <remote> <tag>`,
@@ -1895,8 +1942,9 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   is needed.
 
 - **Estimate and open decisions.** Architect share: about half a day for
-  the original design, ~1.5h for round 1 and ~1h for this decision-8
-  rewrite. Decision 8 reduces Implementation/QA work: removing tag code
+  the original design, ~1.5h for round 1, ~1h for the decision-8
+  rewrite and ~45min for the round-2 reflog amendment (Implementation/QA
+  delta: XS, one hook condition plus the fixture and negatives). Decision 8 reduces Implementation/QA work: removing tag code
   and scenarios is offset by the reflog fallback and redirection records,
   for a net S on top of the existing M. Codex parity for the tag note is
   Product's inference from decision 7, and the maintainer may veto it.
