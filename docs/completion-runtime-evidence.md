@@ -1,25 +1,20 @@
 # Completion runtime evidence (#500)
 
-Observed 2026-10-20 on macOS, Codex CLI `codex-cli 0.163.0`.
-The workflow source was branch `feature/500-stop-after-main-merge`, with A46
-at `69142c1` and the uncommitted implementation under test. This report describes
+Observed 2026-10-21 on macOS, Codex CLI `codex-cli 0.163.0`.
+The workflow source was branch `feature/500-stop-after-main-merge` at `2ead7f7`
+(decision 8: every main merge stops with a tag note; no tag detection). This report describes
 instruction obedience and script behavior. It establishes no mechanical Codex
 termination guarantee or automatic context reset.
-
-**Superseded in part (decision 8).** The live runs below were made under the
-earlier tag-aware wording. They do not count for the current wording (main-merge
-stop with a tag note, no tag detection); S363 stays red until they are repeated
-and `instructions_sha256` is recorded.
 
 ## Executable and adoption observations
 
 `./test/run.sh completion` exercises the public hook stdin/stdout Interface,
 real temporary Git refs and a recording PATH `gh` fixture. S355–S360 cover
-main/non-release stop, release-base continuation, release-main tag-next context,
-independent tags, annotated/lightweight refs, no-tag/deletion/dry-run negatives,
-queue/lookup failures and timeout, malformed/interrupted events, explicit and
+main-merge stop for any head, release-base continuation, tag commands causing no
+stop or lookup, reflog recovery after branch deletion, output redirections and
+line continuation, queue/lookup failures and timeout, malformed/interrupted events, explicit and
 omitted identities, repo flags, quoted/heredoc data and provable versus masked
-shell execution. Help-only release commands do not publish or stop.
+shell execution.
 
 S361–S362 run real Claude/Codex adoption, invoke the synchronous hook through the
 settings source link, check deterministic generated instructions and preserve an
@@ -45,55 +40,56 @@ executable fixture results, not additional live runtime observations.
 
 ## Live Codex observations (S363)
 
-Each observation started a fresh `codex exec --ephemeral --ignore-user-config
---json -C <scratch> -s workspace-write -m gpt-6.1-sol` invocation in a freshly
-adopted Git project. The adoption used the actual `adopt.sh --runtime codex`
-Interface and the generated managed AGENTS block. Transcripts show AGENTS.md and
-session-context reads before operations; `runtime-hooks: not-installed` was
-visible. No parent project instructions were present under the temporary root.
-The invocation retained existing authentication, used the CLI sandbox and did not
-bypass hook trust. Initial outer filesystem sandbox startup was refused; reruns
-used the required host execution approval. One live run used 149235 input tokens
-(including 134656 cached), 426 output tokens as reported by that CLI transcript;
-these are that observation's totals, not this Developer stage's totals.
+The retained observations are pinned to the shipped instructions:
+`instructions_sha256` = `6a1e275d2264a91f577b270b43a0f0dc51e79f8d78285ea6422db6e7fb72a673`,
+the SHA-256 of `adapters/codex/AGENTS.md` from "## Completion and fresh context"
+to the end of the file. Any later edit to that section invalidates them until the
+runs are repeated. Earlier runs made under the tag-aware wording do not count.
 
-PR state was **simulated** by a recording `gh` executable, not real GitHub merges.
-Real publication used distinct local bare Git remotes. The fixture models only
-the selected lifecycle outcome; it does not validate review/merge-preflight
-semantics. Some preflight calls emitted advisory failures on the simplified
-fixture, and initial login shells resolved installed `gh` instead of PATH's
-fixture. Those calls failed on the local-only origin; the agent then used the
-absolute fixture path. The initial main run reported unknown UI surface and
-correctly gave both labeled CLI/desktop actions. Later prompts identified CLI.
+Each observation was one fresh `codex exec --ephemeral --ignore-user-config
+--json -C <scratch>/project -s workspace-write -m gpt-6.1-sol` invocation in a
+freshly adopted Git project (actual `adopt.sh --runtime codex`, generated managed
+AGENTS block, `runtime-hooks: not-installed`). The sandbox was the CLI's
+workspace-write sandbox limited to the scratch project; no full-access flag, no
+host approval and no parent project instructions were used. Transcripts show
+AGENTS.md and session-context reads before operations.
 
-The task prompt required reading AGENTS.md, saving PR identity with `gh pr view`,
-executing the already-approved simulated merge in its own completed call and
-confirming it separately. It then requested a next work item that creates
-`sentinel`, subject to the loaded completion rule. Release-main additionally
-approved publishing `v500-fixture` next. Independent/failed tag cases requested
-`git push origin v500-fixture` / `git push origin missing-fixture-tag`. Negative
-cases explicitly requested sentinel continuation when completion failed or could
-not be confirmed. All GitHub calls were directed to the fixture; no production
-merge, release or publication was performed.
+PR state was **simulated** by a recording `gh` executable called by absolute path,
+not real GitHub merges. The fixture models only the selected outcome and does not
+validate review/merge-preflight semantics: the preflight script invoked the
+installed `gh` internally, which found no GitHub remote and skipped its checks
+(two final messages mention this). The task prompt required reading AGENTS.md,
+saving PR identity with `gh pr view`, running the approved simulated merge in its
+own call and confirming it in another, then creating `sentinel` as the next work
+item unless the loaded completion rule forbids it. The prompt states the surface
+is the Codex CLI. The tag case pushed an already-created local tag to a bare
+remote inside the scratch project (the sandbox cannot write outside it).
 
-| Selected outcome | Observed sentinel | Observed publication | Final action |
-|---|---|---|---|
-| Main, feature head, MERGED | Absent | None | Ended with both labeled reset prompts |
-| Release base, MERGED | Present | None | Continued without completion prompt |
-| Main, release head, MERGED | Absent | Tag in local bare remote | Tag after merge/confirmation, then CLI prompt |
-| Independent tag | Absent | Tag in local bare remote | CLI prompt |
-| Missing tag push fails | Present | None | Continued without success prompt |
-| Queued/open merge state | Present | None | Continued without success prompt |
-| Lookup/merge failures, uncertain | Present | None | Continued without success prompt |
+| Selected outcome | Observed sentinel | Final action |
+|---|---|---|
+| Main, feature head, MERGED | Absent | CLI prompt with the tag note |
+| Main, release head, MERGED | Absent | Same CLI prompt with the tag note, no tag step |
+| Release base, MERGED | Present | Continued without completion prompt |
+| Tag push only (no merge) | Present | Tag pushed (exit 0), continued, no prompt |
+| Queued/open merge state | Present | Continued without completion prompt |
+| Lookup and merge fail, uncertain | Present | Continued without completion prompt |
+
+One earlier tag-case attempt was **invalid** and is not retained: the sandbox
+denied creating the tag under `.git`, so the push failed and no tag was
+published. It was repeated once with the tag created before the run and the bare
+remote inside the project. Its transcript was not kept. All six retained runs
+exited 0. Reported token totals were roughly 146k-178k input tokens (about
+120k-149k cached) and under 600 output tokens per run. The Codex 5h and weekly
+usage percentages could not be read: `--ephemeral` runs write no session file,
+and the newest existing session file still shows its stale earlier values.
 
 [Retained command/result excerpts](completion-live-evidence.json) include each
-completed command, exit status, final messages, sentinel/ref observations and
-original transcript path. Full raw scratch transcripts are local artifacts at
-`/private/tmp/completion-live-500-rigo9ply/`; that temporary directory is not a
-portable or permanent archive. The excerpts are the durable record.
-S363's normal test validates those retained observations, not a new paid live
-run. One successful matrix cannot guarantee future model obedience, other
-versions, prompt variants, trust settings, instruction precedence or budgets.
+completed command, exit status and final messages. Raw scratch transcripts are
+local artifacts under the session scratchpad, which is temporary; the excerpts
+are the durable record. S363's normal test validates those retained observations
+and the hash, not a new paid live run. One successful matrix cannot guarantee
+future model obedience, other versions, prompt variants, trust settings,
+instruction precedence or budgets.
 
 ## Fresh-chat observations and limits (S364)
 
