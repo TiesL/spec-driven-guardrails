@@ -25,15 +25,15 @@ def successful_segments(command):
     Earlier semicolon segments and any chain involving ||, pipes, background
     or shell control syntax cannot be proved successful from PostToolUse.
     """
-    tokens = reader.tokenize(reader.without_heredocs(command))
+    tokens = reader.lexical_tokens(reader.without_heredocs(command))
     segments, operators, current = [], [], []
     for token in tokens:
-        if token in {';', '\n', '&&', '||', '|', '|&', '&', ';;'}:
+        if token.kind == 'operator':
             segments.append(current)
-            operators.append(token)
+            operators.append(token.value)
             current = []
         else:
-            current.append(token)
+            current.append(token.value)
     segments.append(current)
     while segments and not segments[-1]:
         segments.pop()

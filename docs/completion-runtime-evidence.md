@@ -30,6 +30,14 @@ an unwanted stop before the help exclusion was implemented, then passed. The
 new evidence check failed before this report existed, then passed. Added omitted
 identity and malformed-input checks passed against the inherited implementation.
 
+The quote-provenance amendment adds a separate red/green observation: the exact
+S360 input `echo ";" "gh" "pr" "merge" "500"` emitted an unwanted stop on
+`0dfd822` before the reader correction. With typed word/operator records it exits
+successfully, emits nothing and makes zero recording-fixture `gh` calls. Quoted,
+escaped and concatenated separator variants also remain data; literal quoted
+command words and real final commands retain their positive results. These are
+executable fixture results, not additional live runtime observations.
+
 ## Live Codex observations (S363)
 
 Each observation started a fresh `codex exec --ephemeral --ignore-user-config

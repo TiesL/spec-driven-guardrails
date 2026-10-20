@@ -41,7 +41,30 @@ def run(command, expected=None, state="MERGED", base="main", head="feature/500-t
         output=actual['hookSpecificOutput']
         assert output['hookEventName']=='PostToolUse' and 'tag' in output['additionalContext'] and 'stop' in output['additionalContext'], actual
     else: assert actual == expected, (command,expected,actual,result.stderr)
+    if expected is None:
+        assert result.stdout == '', (command, result.stdout)
     return [json.loads(line) for line in log.read_text().splitlines()]
+
+# S360 quote provenance: offered remote state must never turn arguments into commands.
+for command in [
+    'echo ";" "gh" "pr" "merge" "500"',
+    "echo ';' 'gh' 'pr' 'merge' '500'",
+    r'echo \; gh pr merge 500',
+    'echo "&""&" gh pr merge 500',
+    'echo "|""|" gh pr merge 500',
+    r'echo \&\& gh pr merge 500',
+    r'echo \|\| gh pr merge 500',
+    'echo ";" git push origin v1',
+    'echo "&&" gh pr merge 500',
+    'echo "||" gh pr merge 500',
+    'echo "\n" gh pr merge 500',
+    'echo ";"gh pr merge 500',
+    'echo tag # ; gh pr merge 500',
+    'printf "%s" "git push origin v1"',
+]:
+    assert run(command) == [], command
+for command in ['"gh" "pr" "merge" "500"', "'gh' pr merge 500"]:
+    run(command, stop)
 
 calls=run('gh pr merge 500', stop)
 assert calls==[['pr','view','500','--json','baseRefName,headRefName,state']],calls
@@ -81,7 +104,7 @@ for command in ['gh -R owner/repo pr merge 500','gh pr merge 500 --repo owner/re
     assert calls==[['pr','view','500','--json','baseRefName,headRefName,state','--repo','owner/repo']],calls
 for command in ['echo "gh pr merge 500"','printf "git push origin v1"','cat <<EOF\ngh pr merge 500\nEOF','echo "a; gh pr merge 500"','echo "&&"','if false; then gh pr merge 500; fi','false && gh pr merge 500 || true','gh pr merge 500 || true','gh pr merge 500; true','gh pr merge 500 | cat','echo $(gh pr merge 500)']:
     assert run(command)==[],command
-for command in ['true && gh pr merge 500','gh pr merge 500 && true','false; gh pr merge 500','echo "a;b"; gh pr merge 500','gh pr merge 501 || true; gh pr merge 500']:
+for command in ['true && gh pr merge 500','gh pr merge 500 && true','false; gh pr merge 500','echo "a;b"; gh pr merge 500','gh pr merge 501 || true; gh pr merge 500', 'gh pr merge 500;', 'gh pr merge 500\n']:
     run(command,stop)
 print('S355-S360: executable behavior passed')
 
