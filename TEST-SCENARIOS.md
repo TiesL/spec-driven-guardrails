@@ -7036,18 +7036,28 @@ principally the command matrix and the live-evidence assessment.
   follows S358 rather than stopping on guessed state
 - Given: the omitted-target canonical form `gh pr merge --squash
   --delete-branch` (also `-d`) run from `feature/500-test`, where the fixture
-  `gh pr merge` really checks out `main` and deletes the branch before the
-  event, and the PR lookup answers MERGED/main/head `feature/500-test`
+  `gh pr merge` does what real gh 2.102.0 does: checks out `main`, runs
+  `git pull --ff-only origin main` against a bare remote holding one extra
+  commit (the squash), then deletes the head, so the HEAD reflog reads
+  `pull --ff-only origin main: Fast-forward` above
+  `checkout: moving from feature/500-test to main`; the PR lookup answers
+  MERGED/main/head `feature/500-test`
 - Then: the reflog fallback yields S355's stop with exactly one lookup, for
   `feature/500-test` (with `headRefName` requested), `--repo` forwarded when
   given; the same holds for `fix/` and `release/` branches deleted that way
+- Given: the same event where the pull wrote nothing (the remote had nothing
+  to fast-forward), so the checkout is the newest HEAD reflog entry
+- Then: the same stop with exactly one lookup
 - Given, each separately (negatives), the same omitted `--delete-branch`
   event with: (a) the branch still existing, (b) the newest HEAD reflog entry
-  not a `checkout: moving from <B> to <current>` (a later commit), (c) no
+  neither the pull nor the checkout (a later commit), (c) no
   `-d`/`--delete-branch` flag, (d) a lookup whose `headRefName` differs from
-  `<B>`, (e) a switched-from branch outside `feature/`/`fix/`/`release/`
-- Then: no stop; (a), (b), (c), (e) make zero `gh` calls; the new current
-  branch's PR is never looked up in any case
+  `<B>`, (e) a switched-from branch outside `feature/`/`fix/`/`release/`,
+  (f) a newest `pull --ff-only origin <other>: Fast-forward` entry naming a
+  branch other than the current one, (g) a pull entry sitting above a
+  non-checkout entry (a `reset` between the checkout and the pull)
+- Then: no stop; (a), (b), (c), (e), (f), (g) make zero `gh` calls; the new
+  current branch's PR is never looked up in any case
 
 ### S360 — shell execution evidence distinguishes commands from data (#500 AC4; A46)
 **Covers:** F56

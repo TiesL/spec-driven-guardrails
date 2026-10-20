@@ -17,6 +17,22 @@ git("-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "--a
 git("tag", "v1")
 git("-c", "user.name=Test", "-c", "user.email=test@example.test", "tag", "-am", "annotated", "v2")
 git("branch", "branch-only")
+# Bare remote like the real one gh pulls from; `upstream` is a second clone that advances it.
+remote = box / "remote.git"
+subprocess.check_call(["git", "init", "-q", "--bare", "--initial-branch=main", str(remote)], stderr=subprocess.DEVNULL)
+git("remote", "add", "origin", str(remote))
+git("push", "-q", "origin", "main")
+upstream = box / "upstream"
+subprocess.check_call(["git", "clone", "-q", str(remote), str(upstream)], stderr=subprocess.DEVNULL)
+_squash = [0]
+def advance_remote(branch="main"):
+    """Give the bare remote one more commit on `branch`, as the squash merge does."""
+    _squash[0] += 1
+    def up(*a): subprocess.check_call(["git", "-C", str(upstream), "-c", "user.name=Test", "-c", "user.email=test@example.test", *a], stderr=subprocess.DEVNULL)
+    if branch == "main": up("checkout", "-q", "main"); up("pull", "-q", "--ff-only", "origin", "main")
+    else: up("checkout", "-q", "-B", branch, "origin/main")
+    up("commit", "--allow-empty", "-qm", "squash %d" % _squash[0])
+    up("push", "-q", "origin", branch)
 bin_dir = box / "bin"
 bin_dir.mkdir()
 gh = bin_dir / "gh"
@@ -28,6 +44,8 @@ if args[:2]==['pr','merge']:
     if os.environ.get('GH_SWITCH') and ('-d' in args or '--delete-branch' in args):
         old=subprocess.check_output(['git','symbolic-ref','--short','HEAD'],text=True).strip()
         subprocess.check_call(['git','checkout','-q','main'])
+        # Real gh then fast-forwards the base: `git pull --ff-only origin main`, before deleting the head.
+        subprocess.call(['git','pull','--ff-only','origin','main'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)  # a failed fast-forward only warns, as in gh
         if not os.environ.get('GH_KEEP_BRANCH'): subprocess.check_call(['git','branch','-q','-D',old])
     sys.exit(0)
 with open(os.environ['GH_LOG'],'a') as f: f.write(json.dumps(args)+'\\n')
@@ -59,9 +77,13 @@ def one_lookup(calls, target, fields='baseRefName,state', repo_flag=None):
     expected = [['pr','view',target,'--json',fields]+(['--repo',repo_flag] if repo_flag else [])]
     assert calls == expected, (calls, expected)
 
-def simulate_merge(command, branch, keep_branch=False, commit_after=False):
-    """Perform what real `gh pr merge -d` does to the checkout before PostToolUse fires."""
+def simulate_merge(command, branch, keep_branch=False, commit_after=False, squash=True):
+    """Perform what real `gh pr merge -d` does to the checkout before PostToolUse fires:
+    checkout main, pull --ff-only origin main (a real Fast-forward entry when the remote
+    holds the squash commit), delete the head."""
+    git('checkout','-q','main'); git('fetch','-q','origin'); git('reset','-q','--hard','origin/main')  # a clean base, like a fresh clone
     git('checkout','-q','-B',branch,'main')
+    if squash: advance_remote()
     e = dict(env, GH_SWITCH='1')
     if keep_branch: e['GH_KEEP_BRANCH']='1'
     subprocess.run([str(gh), *command.split()[1:], *([] if '-d' in command or '--delete-branch' in command else ['-d'])], cwd=repo, env=e, check=True)
@@ -146,28 +168,62 @@ with section('S359 omitted target, surviving branch'):
     assert calls and calls[0][:3]==['pr','view','feature/500-test'] and len(calls)==1,calls
     git('checkout','-q','main')
     assert run('gh pr merge')==[]
-with section('S359 reflog fallback positives and negatives'):
-    # Reflog fallback: the canonical omitted target, real gh switched to main and deleted the branch.
+# Reflog fallback: the canonical omitted target, real gh switched to main, pulled and deleted the branch.
+if True:
     def fallback(branch, command='gh pr merge --squash --delete-branch', expected=stop, head=None, calls_expected=None, **kw):
         git('checkout','-q','main')
         for b in git('branch','--format=%(refname:short)').split():
             if b not in {'main','branch-only'}: git('branch','-q','-D',b)
         simulate_merge(command, branch, **kw)
         return run(command, expected, head=head or branch)
+with section('S359 reflog positives: pull above checkout'):
     for branch in ['feature/500-test','fix/500-test','release/490-example']:
         for flag in ['--delete-branch','-d']:
             calls=fallback(branch,'gh pr merge --squash '+flag)
             assert len(calls)==1 and calls[0][:3]==['pr','view',branch] and 'baseRefName' in calls[0][4] and 'state' in calls[0][4] and 'headRefName' in calls[0][4],(branch,flag,calls)
     calls=fallback('feature/500-test','gh pr merge --squash --delete-branch --repo owner/repo')
     assert len(calls)==1 and calls[0][-2:]==['--repo','owner/repo'],calls
-    # Negatives: (a) surviving branch, (b) newest reflog entry is not the checkout, (c) no --delete-branch,
-    # (d) head mismatch, (e) switched from a branch outside feature/fix/release.
+with section('S359 reflog fixture shape'):
+    # Guard the fixture itself: real gh leaves `pull ... Fast-forward` above the checkout.
+    git('checkout','-q','main')
+    for b in git('branch','--format=%(refname:short)').split():
+        if b not in {'main','branch-only'}: git('branch','-q','-D',b)
+    simulate_merge('gh pr merge --squash --delete-branch','feature/500-test')
+    assert git('reflog','-2','--format=%gs','HEAD').splitlines()==['pull --ff-only origin main: Fast-forward','checkout: moving from feature/500-test to main'],git('reflog','-3','--format=%gs','HEAD')
+with section('S359 reflog checkout-only positive'):
+    # The remote had nothing to fast-forward, so the pull wrote no entry: the checkout is the newest.
+    calls=fallback('feature/500-test',squash=False)
+    assert git('reflog','-1','--format=%gs','HEAD')=='checkout: moving from feature/500-test to main'
+    assert len(calls)==1 and calls[0][:3]==['pr','view','feature/500-test'] and 'headRefName' in calls[0][4],calls
+with section('S359 negatives a-e'):
+    # (a) surviving branch, (b) newest reflog entry neither the pull nor the checkout (a later commit),
+    # (c) no --delete-branch, (d) head mismatch, (e) switched from a branch outside feature/fix/release.
     assert fallback('feature/500-test',expected=None,keep_branch=True)==[]
     assert fallback('feature/500-test',expected=None,commit_after=True)==[]
     assert fallback('feature/500-test','gh pr merge --squash',expected=None)==[]
     fallback('feature/500-test',expected=None,head='feature/another-pr')
     assert fallback('topic/500-test',expected=None)==[]
+with section('S359 negative: pull of another branch'):
+    # The pull entry names a branch other than the current one: uncertain, zero gh calls.
     git('checkout','-q','main')
+    for b in git('branch','--format=%(refname:short)').split():
+        if b not in {'main','branch-only'}: git('branch','-q','-D',b)
+    simulate_merge('gh pr merge --squash --delete-branch','feature/500-test',squash=False)
+    advance_remote('other')
+    git('pull','--ff-only','origin','other')
+    assert git('reflog','-2','--format=%gs','HEAD').splitlines()==['pull --ff-only origin other: Fast-forward','checkout: moving from feature/500-test to main']
+    assert run('gh pr merge --squash --delete-branch',None,head='feature/500-test')==[]
+with section('S359 negative: pull above non-checkout entry'):
+    # A pull entry sits above a non-checkout entry (a reset after the checkout): uncertain, zero gh calls.
+    git('checkout','-q','main')
+    for b in git('branch','--format=%(refname:short)').split():
+        if b not in {'main','branch-only'}: git('branch','-q','-D',b)
+    simulate_merge('gh pr merge --squash --delete-branch','feature/500-test',squash=False)
+    git('reset','-q','--hard'); advance_remote(); git('pull','--ff-only','origin','main')
+    top=git('reflog','-3','--format=%gs','HEAD').splitlines()
+    assert top[0]=='pull --ff-only origin main: Fast-forward' and top[1].startswith('reset:') and top[2].startswith('checkout: moving from feature/500-test'),top
+    assert run('gh pr merge --squash --delete-branch',None,head='feature/500-test')==[]
+git('checkout','-q','main')
 
 with section('S360 masked and provable shell evidence'):
     # S360 shell evidence.
