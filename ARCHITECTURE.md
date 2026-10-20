@@ -1683,9 +1683,9 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   tag publication uses the same human-decided stopReason, including for an
   independent tag. No `gh` call is made for a tag or unrelated command.
 
-- **Command interpretation and success evidence.** Reuse the quote-aware
-  `tokenize`/`without_heredocs` logic in `hooks/read-command.py` rather than
-  copy shell parsing or change the guard's existing stream Interface.
+- **Command interpretation and success evidence.** Reuse command reading
+  in `hooks/read-command.py`, subject to the provenance amendment below,
+  rather than copy shell parsing or change the guard's existing stream Interface.
   Keep control-operator information while judging execution, not just a
   bag of matching words. Recognize actual `gh pr merge` command positions,
   explicit number/URL/branch or omitted current-PR target, value-taking
@@ -1717,12 +1717,84 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   the canonical separate-call instruction prevents that continuation when
   followed. Web-UI and subagent merges stay excluded by human decision.
 
+- **Quote-provenance amendment (2026-10-20, finding
+  `completion-token-quote-provenance`).** The old decoded `list[str]`
+  tokenizer Interface is insufficient for completion evidence: both an
+  unquoted shell separator and a quoted argument can decode to `;`.
+  `echo ";" "gh" "pr" "merge" "500"` only prints text; finding an old
+  MERGED PR must never promote those arguments into an executed command.
+  Keep lexical provenance until command positions and success entailment
+  have been decided. The shared reader must provide typed lexical records
+  distinguishing a word from an actual control operator, with each word's
+  decoded literal value and enough source/quote/escape provenance to
+  distinguish literal content from unsupported active shell syntax.
+  Only unquoted, unescaped operator syntax can divide commands or form
+  `&&`/`||`/pipeline relations; never infer an operator from decoded value.
+  Quoted, escaped and concatenated word fragments remain one word, even
+  when their value equals punctuation. Words become command candidates
+  only at a syntactically established command position. Quoting a literal
+  command word (for example `"gh" pr merge 500`) does not by itself make
+  that word data; its position determines that. Arguments to `echo`,
+  `printf` and other commands never become command positions by resemblance.
+
+  Put this lexical knowledge in the existing reader Module, with a
+  provenance-preserving entry used by the completion Module. Its existing
+  `tokenize` caller contract and `c`/`t`/`e` NUL stream remain compatible:
+  derive their decoded projection from the same lexical reading instead
+  of maintaining a second shell lexer. Do not require existing guard
+  callers to understand completion success rules. Developer may choose
+  the private record representation; word/operator kind and literal versus
+  active-syntax provenance are required semantics, not optional heuristics.
+  Do not repair this by rejecting all quoting or all compound commands,
+  stripping quotes before scanning, or replacing quoted punctuation with
+  guessed separators. These approaches either lose required positives or
+  preserve the ambiguity that caused the finding.
+
+  This is a bounded shell recognizer, not an interpreter. Recognize the
+  existing literal simple commands, real separators and final uninterrupted
+  `&&` suffix under the success rules above. Escapes/quotes must be handled
+  during lexing, including escaped punctuation and line continuation;
+  comments and heredoc bodies are data, never command evidence. Preserve
+  the current heredoc exclusion without treating its contents as syntax.
+  Active expansions, command/process substitutions, redirections or control
+  syntax that the recognizer cannot safely classify make the affected
+  occurrence uncertain. Reject ambiguity before querying `gh`; do not
+  execute input to resolve it. A separately provable final occurrence may
+  still be considered only when its command position and relation to the
+  whole-call result are established independently. A decoded punctuation
+  argument must not affect that proof. All identity, local tag, timeout,
+  release ordering and advisory fail-open rules above remain in force.
+
+  **Design checks and QA route.** Extend S360 through the unchanged
+  executable Seam. With an old-MERGED/main feature-PR recording fixture,
+  the exact `echo ";" "gh" "pr" "merge" "500"` event must exit 0,
+  emit empty stdout and make zero `gh` calls; obtain red on `a61513f`
+  before implementing the correction. Cover single-quoted and escaped
+  separators, quoted `&&`/`||`/newline arguments, concatenated fragments,
+  quoted merge/tag prose and heredoc bodies as data. Retain genuine
+  `true && gh pr merge 500`, `gh pr merge 500 && true`,
+  `false; gh pr merge 500`, and `echo "a;b"; gh pr merge 500` positives,
+  plus masked/skipped/pipeline negatives and a separately provable final
+  occurrence. A real separator adjacent to quoted data must remain syntax;
+  test literal quoted command words in command position too. Check shared
+  reader/guard compatibility through existing public executable tests if
+  its lexer changes. QA owns scenario detail; Developer owns test code,
+  red/green results and implementation; a fresh Reviewer follows.
+  This amendment changes no Product outcome or runtime coverage claim.
+  Existing script/live evidence retains its recorded limitations and does
+  not count as a pass of the new falsifying check. No human decision is
+  needed to restore AC4's already-decided command-versus-data distinction.
+
 - **Depth, Seam, Leverage and Locality.** One completion Module hides command
   recognition, result confirmation and Claude output behind one executable
   Interface. The Seam for QA is that executable plus stdin, a temporary
   repository, and PATH-provided `gh` fixtures, exactly as runtime callers
-  enter it. Reusing the existing parser gives Leverage and Locality without
-  another shell grammar. Deletion test: deleting the Module would put the
+  enter it. Shared provenance-aware reading supplies Depth, Leverage and
+  Locality: deleting it would spread quote/operator rules across the guard
+  and completion callers. Its legacy stream and completion reading are two
+  real callers, so the two-adapters rule justifies this existing reader
+  Seam; it does not justify a new plugin lexer or parser framework.
+  Deletion test: deleting the completion Module would put the
   same recognition and result rules into settings commands and tests, so it
   earns its place. Do not invent a common runtime hook abstraction: the two
   real adapters vary in enforcement and do not satisfy one stop Interface.
