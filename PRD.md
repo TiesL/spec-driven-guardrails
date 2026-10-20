@@ -1870,33 +1870,30 @@ The rule is written in CLAUDE.md / WORKFLOW wrapping-up step 4 and offered to
 adopted projects through a `CHANGES.md` entry. Merge autonomy without a
 per-PR approval stays with #511.
 
-### F56 — End work after a successful main merge or tag publication (issue #500)
+### F56 — End work after a successful main merge (issue #500)
 
-After a successful merge into `main` from a non-`release/*` head, the current
-agent turn ends and the maintainer is told to start a fresh context before the
-next work item. This applies to agent-run `gh pr merge` commands, including
-supported explicit or current-branch targets, repository selection and
-provable compound-command forms; unrelated commands and GitHub web-UI or
-subagent merges do not trigger it. A merge into a `release/*` branch
-continues the epic. A
-`release/*` merge into `main` allows only the already-approved release tag to
-follow; successful tag publication then ends the turn and prompts a fresh
-context. Successful independent tag publication has the same stop behavior,
-including when requested after a prior merge stop. Recognized tag publication
-forms are `git push <remote> <tag>`, `git push --tags`,
-`git push --follow-tags` and `gh release create`. The maintainer performs the
-context reset. Failed or queued-only merges, failed tag publication and
-uncertain lookups do not count as successful completion. Claude Code uses its
-PostToolUse hook to stop the current turn and provide the decided instruction;
-Codex CLI/desktop ends its current work and prompts `/clear` or `/new` in CLI,
-or New chat in desktop, through its installed instructions. Codex instruction
-following has no mechanical stop or automatic context-reset guarantee. The
-behavior is available through the applicable adoption path. Verification must
-distinguish script-level behavior and generated/adopted instruction coverage
-from live runtime behavior: Claude live hook stopping is unverified in the
-Codex environment, and Codex live stopping or context reset is reported only
-for a named surface/version actually observed; unavailable live checks remain
-explicitly unverified.
+After a successful agent-run merge into `main`, whatever the head branch, the
+current agent turn ends and the maintainer is told to start a fresh context
+before the next work item. The prompt carries a short note: if a release is
+being tagged, clear after assigning the tag. Nothing detects or tracks tags in
+either runtime, and tag publication triggers no stop or prompt; whether to
+clear is the maintainer's own judgment, as with the merge confirmation. This
+applies to agent-run `gh pr merge` commands, including supported explicit or
+omitted-number targets, repository selection, and provable compound-command
+and output-redirection forms; unrelated commands and GitHub web-UI or subagent
+merges do not trigger it. A merge into a `release/*` branch continues the epic
+without the prompt. The maintainer performs the context reset. Failed or
+queued-only merges and uncertain lookups do not count as successful
+completion. Claude Code uses its PostToolUse hook to stop the current turn and
+provide the decided instruction; Codex CLI/desktop ends its current work and
+prompts `/clear` or `/new` in CLI, or New chat in desktop, through its
+installed instructions. Codex instruction following has no mechanical stop or
+automatic context-reset guarantee. The behavior is available through the
+applicable adoption path. Verification must distinguish script-level behavior
+and generated/adopted instruction coverage from live runtime behavior: Claude
+live hook stopping is unverified in the Codex environment, and Codex live
+stopping or context reset is reported only for a named surface/version
+actually observed; unavailable live checks remain explicitly unverified.
 
 ## Non-functional characteristics
 
