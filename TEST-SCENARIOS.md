@@ -6841,10 +6841,11 @@ Numbering: S345 and S346 are the next free S numbers on the pulled head
   `keep.txt`, no nested `a/a` link; `b` content equal; `c` and `d` have the
   same `readlink`; `elsewhere/` still holds only `x.txt`, no link written
   through `c`); `e` is created and reported
-- And: the warning names only `d` (the dangling link: the warning's own check
-  is `-e`, so `a`, `b`, `c` exist and are not listed, `d` keeps appearing) and
-  does not name `e`. Corrected by the Developer: the first text listed `a, b,
-  c, d`, which contradicts A45 step 3 and the unchanged `-e` warning check
+- And: the warning is unchanged from before this work: it names a skill only
+  when its path does not resolve (`-e` fails). Among these five that is only
+  the dangling `d`, so the warning line is exactly `missing the skill(s): d.`;
+  `a`, `b`, `c` resolve and are not named, and `e` was just created and is
+  not named either (#505 AC3, last clause)
 - And: `git status --porcelain` unchanged, exit 0, stderr empty
 - Red on `ln -sfn` or any replace-on-exists code (clobbers b, c, d); red on a
   plain `ln -s` into `a` or through `c` (writes inside a directory or the
