@@ -7032,19 +7032,44 @@ the command matrix and live evidence assessment.
 
 ### S360 — shell execution evidence distinguishes commands from data (#500 AC4; A46)
 **Covers:** F56
-- Given: unrelated commands, quoted prose containing merge/tag text,
-  heredoc bodies containing those strings, and quoted separators
-- When: each is consumed
-- Then: no stop and zero `gh` calls occur
-- Given: a standalone qualifying command, a successful all-`&&` chain, or a
-  qualifying final command after `;` whose status is the call's result
-- Then: separately provable successful occurrences receive S355–S357 behavior
-- Given: matching commands masked by `|| true`, an earlier semicolon segment,
-  pipeline status, or skipped conditional/short-circuit branches, with the
-  fixture deliberately offering an old MERGED PR/local tag
-- Then: those unprovable occurrences do not stop; a separate provable
-  occurrence in the same input still does. Arbitrary wrappers, substitutions,
-  aliases and scripts are not claimed as interpreted shell programs
+- Given: the external `hooks/stop-after-completion` executable, JSON events
+  on stdin and a recording `gh` on PATH offering an old MERGED/main
+  feature PR (and a local tag where tag confirmation applies)
+- When: a successful Bash PostToolUse event contains the exact command
+  `echo ";" "gh" "pr" "merge" "500"`
+- Then: exit status is 0, stdout is empty and the recording fixture observes
+  zero `gh` calls; old remote state cannot turn printed data into execution
+- Given: data-only variants with single-quoted separators
+  (`echo ';' gh pr merge 500`), escaped separators
+  (`echo \; gh pr merge 500`), concatenated word fragments
+  (`echo ""';' gh pr merge 500`), quoted `&&` and `||` arguments,
+  or an actual newline inside a quoted argument followed by merge-looking
+  arguments; also unrelated commands, quoted merge/tag prose, comments,
+  and heredoc bodies containing merge/tag text
+- When: each successful event is consumed through that same executable Seam
+- Then: exit status is 0, stdout is empty and zero `gh` calls occur;
+  decoded punctuation arguments never establish a command position
+- Given: standalone qualifying commands, literal quoted command words in
+  command position (`"gh" "pr" "merge" "500"`), real all-`&&` chains
+  (`true && gh pr merge 500`, `gh pr merge 500 && true`), or qualifying
+  final commands after real separators (`false; gh pr merge 500`,
+  `echo "a;b"; gh pr merge 500`), with successful overall status and the
+  matching confirmation fixture
+- Then: separately provable successful occurrences receive S355–S357
+  behavior; real syntax adjacent to quoted data remains effective
+- Given: matching commands masked by `|| true`, an earlier semicolon
+  segment, pipeline status, or skipped conditional/short-circuit branches,
+  with the fixture deliberately offering the old MERGED PR/local tag
+- Then: those unprovable occurrences do not stop and cause zero `gh` calls;
+  a separate independently provable final occurrence in the same input
+  still receives S355–S357 behavior. Arbitrary wrappers, expansions,
+  substitutions, aliases and scripts are not claimed as interpreted shell
+  programs; unsupported active syntax is uncertain before any lookup
+- Verification: Developer first demonstrates the exact echo falsifier red
+  against `a61513f`, then green after correction, retaining all positive
+  and negative cases above. If shared lexing changes, existing public
+  reader/guard executable regressions verify legacy compatibility; no test
+  depends on private lexical records or executes the supplied shell text
 
 ### S361 — Claude wiring reaches the executable without claiming live proof (#500 AC7–AC8; A46)
 **Covers:** F56
