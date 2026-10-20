@@ -142,3 +142,10 @@ One-host two-path fixtures cannot establish a second-machine or additional OS
 result. Version-specific discovery failures return to Architect without copied
 skill bodies. Existing Claude baseline observations in README remain historical
 baseline evidence, not a new #455 Claude dry run.
+
+## Completion lifecycle observations (#500)
+
+See [completion runtime evidence](completion-runtime-evidence.md) for the fresh
+CLI 0.163.0 sentinel matrix, real local tag publication, interactive `/new` UI
+observation and remaining desktop/Claude/reset gaps. Simulated PR state and
+instruction following are explicitly distinguished from runtime enforcement.

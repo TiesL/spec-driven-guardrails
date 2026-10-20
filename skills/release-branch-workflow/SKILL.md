@@ -111,7 +111,13 @@ above is clean and CI is green:
 - Wait for explicit confirmation.
 - The maintainer's confirmation covers both the merge itself and the version
   bump proposal in one step — don't make this two separate round-trips.
-- After merging, tag the release per the project's own tagging convention.
+- After merging into `main`, publish the already-approved release tag per the
+  project's own tagging convention in a separate completed tool call. This is
+  the sole continuation after that merge. Successful tag publication ends the
+  turn with the runtime-appropriate fresh-context prompt before the next work
+  item (Claude `/clear`; Codex CLI `/clear` or `/new`; desktop New chat).
+  A work-item merge into `release/*` continues without that stop. Complete
+  durable reporting before the merge/publication; context reset stays human.
 
 ## GitHub won't auto-close issues for you here
 

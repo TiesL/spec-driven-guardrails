@@ -39,6 +39,26 @@ This project is developed from multiple computers. Follow this workflow in every
 4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
 5. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
+### Completion ends the current work
+
+After a confirmed successful non-`release/*` merge into `main`, stop autonomous
+work and give the runtime's fresh-context instruction before the next work item.
+A merge into `release/*` continues. A `release/*` branch merged into `main`
+permits only the already-approved release tag next; successful tag publication
+then stops work. Independently requested successful tag publication also stops
+again. Recognized forms are `git push <remote> <tag>`, `git push --tags`,
+`git push --follow-tags`, and `gh release create`. Failed, queued-only or
+uncertain completion does not produce a successful-completion stop.
+
+Run each merge or publication in a distinct tool call, inspect its completed
+result before scheduling anything further, and never batch the next work item
+in a compound command, concurrent call or tool script. Finish durable reporting
+before the qualifying operation. Afterward only the release-tag exception or
+the final result and fresh-context prompt is allowed. Context reset is the
+maintainer's action; stopping ends the current turn, not the conversation.
+Production deployment can follow a fresh context with its separate approval.
+Web-UI and subagent merges are outside this completion mechanism.
+
 ## Issue labels
 
 Three independent axes, applied to every issue going forward (issue #398 — before this, the tracker carried almost no labels at all, making two concurrent sessions' work illegible from the outside):
@@ -138,3 +158,23 @@ still needs explicit human confirmation, the canonical review evidence and a
 clean merge-preflight.sh run.
 Codex specialized/indirect shell actions have no adapter runtime interception.
 Read-only status establishes structural installation, never live loading.
+
+## Completion and fresh context
+
+Before merging, save the PR number and repository plus base/head identity before
+branch deletion. After the completed merge, confirm `state == MERGED` using that
+saved number/repository. Queued `--auto` is insufficient. Use the actual completed
+tool result for publication success; failed or uncertain results do not claim
+successful completion. Follow the shared distinct tool call and durable reporting
+ordering above. This is instruction following, with no runtime hook enforcement
+or automatic context clearing; runtime-hooks stays not-installed.
+
+After a non-release main merge end the turn with: CLI — "Merged to main. Use
+/clear or /new before the next work item." Desktop — "Merged to main. Start a
+New chat before the next work item." After tag publication substitute "Tag
+published." for "Merged to main." If the surface is unknown, give both labeled
+actions. CLI `/clear` and `/new` start fresh chats after the current task ends;
+a shell terminal clear does not. Desktop New chat is `Cmd+N` on macOS or `Ctrl+N`
+on Windows/Linux. Reset remains maintainer-owned. A release-head merge into main
+allows only the approved tag next, then the same final stop/prompt; a merge into
+a release branch continues without this prompt.

@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""Advisory Claude PostToolUse completion hook; never executes shell input."""
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+spec = importlib.util.spec_from_file_location('read_command', Path(__file__).with_name('read-command.py'))
+reader = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(reader)
+STOP = {'continue': False, 'stopReason': 'Merged to main. Type /clear before the next work item.'}
+
+
+def read(args, cwd):
+    try:
+        return subprocess.check_output(args, cwd=cwd, timeout=2, stderr=subprocess.DEVNULL, text=True).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def successful_segments(command):
+    """Only a final simple command and its uninterrupted && predecessors.
+
+    Earlier semicolon segments and any chain involving ||, pipes, background
+    or shell control syntax cannot be proved successful from PostToolUse.
+    """
+    tokens = reader.tokenize(reader.without_heredocs(command))
+    segments, operators, current = [], [], []
+    for token in tokens:
+        if token in {';', '\n', '&&', '||', '|', '|&', '&', ';;'}:
+            segments.append(current)
+            operators.append(token)
+            current = []
+        else:
+            current.append(token)
+    segments.append(current)
+    while segments and not segments[-1]:
+        segments.pop()
+        if operators:
+            if operators[-1] not in {';', '\n'}:
+                return []
+            operators.pop()
+    if not segments:
+        return []
+    start = len(segments)-1
+    while start and operators[start-1] == '&&':
+        start -= 1
+    if start and operators[start-1] not in {';', '\n'}:
+        return []
+    selected = segments[start:]
+    # No interpretation of compound shell programs, expansion or wrappers.
+    if any(t in {'if','then','else','fi','for','while','do','done','case','esac','!','{','}'} or '$(' in t or '`' in t or t.startswith('(') or t.endswith(')') for s in selected for t in s):
+        return []
+    return selected
+
+
+def gh_command(words):
+    if not words or words[0] != 'gh':
+        return None
+    args, repo = [], None
+    i = 1
+    while i < len(words):
+        word = words[i]
+        if word in {'-R', '--repo'}:
+            if i+1 >= len(words):
+                return None
+            repo = words[i+1]
+            i += 2
+        elif word.startswith('--repo='):
+            repo = word.split('=',1)[1]
+            i += 1
+        else:
+            args.append(word)
+            i += 1
+    return args, repo
+
+
+def merge_result(words, cwd):
+    parsed = gh_command(words)
+    if not parsed or parsed[0][:2] != ['pr','merge']:
+        return None
+    args, repo = parsed
+    target, i = None, 2
+    values = {'--body','-b','--body-file','-F','--subject','-t','--match-head-commit','--author-email','-A'}
+    flags = {'--squash','-s','--merge','-m','--rebase','-r','--delete-branch','-d','--auto','--disable-auto','--admin'}
+    while i < len(args):
+        word = args[i]
+        if word in values:
+            if i+1 >= len(args):
+                return None
+            i += 2
+        elif word in flags or any(word.startswith(v+'=') for v in values if v.startswith('--')):
+            i += 1
+        elif word.startswith('-') or target is not None:
+            return None
+        else:
+            target = word
+            i += 1
+    omitted = target is None
+    if omitted:
+        target = read(['git','symbolic-ref','--quiet','--short','HEAD'],cwd)
+        # Branch deletion can switch to main. Never guess its current PR.
+        if not target or not target.startswith(('feature/','fix/','release/')):
+            return None
+    query = ['gh','pr','view',target,'--json','baseRefName,headRefName,state']
+    if repo:
+        query += ['--repo',repo]
+    result = read(query,cwd)
+    try:
+        info = json.loads(result)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(info,dict) or info.get('state') != 'MERGED' or info.get('baseRefName') != 'main' or not isinstance(info.get('headRefName'),str) or not info['headRefName']:
+        return None
+    if omitted and info['headRefName'] != target:
+        return None
+    if info['headRefName'].startswith('release/'):
+        return {'hookSpecificOutput': {'hookEventName':'PostToolUse','additionalContext':'Release merged to main. Publish only the already-approved release tag next, then stop and tell the maintainer: Merged to main. Type /clear before the next work item.'}}
+    return STOP
+
+
+def published_tag(words, cwd):
+    parsed = gh_command(words)
+    if parsed and parsed[0][:2] == ['release','create']:
+        args = parsed[0][2:]
+        return bool(args and not args[0].startswith('-') and not any(arg in {'--help','-h'} for arg in args))
+    if words[:2] != ['git','push']:
+        return False
+    args = words[2:]
+    if any(a in {'--delete','-d','--dry-run','-n','--mirror','--all','--prune'} or a.startswith('--delete=') for a in args):
+        return False
+    positional, i = [], 0
+    while i < len(args):
+        word = args[i]
+        if word in {'--repo','--receive-pack','--exec','--push-option','-o'}:
+            i += 2
+        elif word.startswith('-'):
+            if word not in {'--tags','--follow-tags','--force','-f','--force-with-lease','--atomic','--verbose','-v','--quiet','-q','--porcelain','--set-upstream','-u'}:
+                return False
+            i += 1
+        else:
+            positional.append(word)
+            i += 1
+    refs = positional[1:]
+    if any(':' in ref for ref in refs):
+        return False
+    if '--tags' in args:
+        return bool(read(['git','for-each-ref','--format=%(refname)','refs/tags/'],cwd))
+    if '--follow-tags' in args:
+        # Only annotated tags reachable from a pushed commit are eligible.
+        tags = read(['git','for-each-ref','--format=%(refname) %(objecttype)','refs/tags/'],cwd) or ''
+        heads = refs or ['HEAD']
+        for tag in tags.splitlines():
+            name, kind = tag.rsplit(' ',1)
+            if kind == 'tag' and any(read(['git','merge-base','--is-ancestor',name,head],cwd) is not None for head in heads):
+                return True
+    return any(not ref.startswith('refs/heads/') and read(['git','show-ref','--verify','--hash',ref if ref.startswith('refs/tags/') else 'refs/tags/'+ref],cwd) is not None for ref in refs)
+
+
+def main():
+    try:
+        event = json.load(sys.stdin)
+        if not isinstance(event,dict) or event.get('hook_event_name') != 'PostToolUse' or event.get('tool_name') != 'Bash':
+            return
+        response = event.get('tool_response')
+        if not isinstance(response,dict) or response.get('interrupted') or any(response.get(key) for key in ('backgroundTaskId','background_task_id','task_id')):
+            return
+        command = event.get('tool_input',{}).get('command')
+        cwd = event.get('cwd')
+        if not isinstance(command,str) or not isinstance(cwd,str):
+            return
+        release = None
+        for words in successful_segments(command):
+            if published_tag(words,cwd):
+                print(json.dumps(STOP))
+                return
+            result = merge_result(words,cwd)
+            if result == STOP:
+                print(json.dumps(result))
+                return
+            release = result or release
+        if release:
+            print(json.dumps(release))
+    except (ValueError,TypeError,AttributeError,OSError):
+        return
+
+
+if __name__ == '__main__':
+    main()

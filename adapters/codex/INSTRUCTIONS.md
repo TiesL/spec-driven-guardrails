@@ -61,3 +61,23 @@ still needs explicit human confirmation, the canonical review evidence and a
 clean merge-preflight.sh run.
 Codex specialized/indirect shell actions have no adapter runtime interception.
 Read-only status establishes structural installation, never live loading.
+
+## Completion and fresh context
+
+Before merging, save the PR number and repository plus base/head identity before
+branch deletion. After the completed merge, confirm `state == MERGED` using that
+saved number/repository. Queued `--auto` is insufficient. Use the actual completed
+tool result for publication success; failed or uncertain results do not claim
+successful completion. Follow the shared distinct tool call and durable reporting
+ordering above. This is instruction following, with no runtime hook enforcement
+or automatic context clearing; runtime-hooks stays not-installed.
+
+After a non-release main merge end the turn with: CLI — "Merged to main. Use
+/clear or /new before the next work item." Desktop — "Merged to main. Start a
+New chat before the next work item." After tag publication substitute "Tag
+published." for "Merged to main." If the surface is unknown, give both labeled
+actions. CLI `/clear` and `/new` start fresh chats after the current task ends;
+a shell terminal clear does not. Desktop New chat is `Cmd+N` on macOS or `Ctrl+N`
+on Windows/Linux. Reset remains maintainer-owned. A release-head merge into main
+allows only the approved tag next, then the same final stop/prompt; a merge into
+a release branch continues without this prompt.

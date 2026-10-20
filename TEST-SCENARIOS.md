@@ -6955,3 +6955,148 @@ Numbering: S345 and S346 are the next free S numbers on the pulled head
 - Red on a hook that links the loop variable of `skills/*/` unchanged (trailing
   slash differs from `adopt.sh`'s `basename` form); red on a relative target
   or a differently resolved path (`pwd -P` vs raw)
+
+
+## #500 — stop after completion (A46, F56)
+
+QA strategy: S355–S361 enter only the executable `hooks/stop-after-completion`
+with PostToolUse JSON on stdin, a temporary real Git repository and a
+PATH-provided recording `gh` fixture. Assert parsed JSON/empty stdout, exit
+status and actual fixture calls; never source private parser functions.
+Developer writes and runs the tests, showing red before implementation and
+green afterward. Existing quote/guard scenarios remain regression evidence.
+S362 uses real generation/adoption; S363–S364 require named live evidence and
+cannot be passed by static text checks. Estimated QA effort: M, principally
+the command matrix and live evidence assessment.
+
+### S355 — a confirmed non-release main merge stops Claude (#500 AC1; A46)
+**Covers:** F56
+- Given: a valid successful Bash PostToolUse event for `gh pr merge 500`,
+  and the recording fixture returns base `main`, head `feature/500-example`
+  and state `MERGED`
+- When: the executable consumes the event
+- Then: exit is 0 and JSON contains `continue: false` and exactly
+  `stopReason: "Merged to main. Type /clear before the next work item."`;
+  the PR lookup requests baseRefName, headRefName and state for that target
+- Given: the same event with base `release/490-example`
+- Then: no stop/prompt is emitted, so the epic can continue (AC2)
+
+### S356 — release-to-main permits the tag before stopping (#500 AC5; A46)
+**Covers:** F56
+- Given: the merge fixture returns base `main`, head `release/490-example`,
+  state `MERGED`
+- When: the successful merge event is consumed
+- Then: no `continue: false` is emitted; `hookSpecificOutput` names
+  `PostToolUse` and additionalContext directs only the already-approved tag
+  next and the stop after publication
+- When: a separate successful qualifying tag-publication event follows
+- Then: the hook emits the exact S355 stop JSON; it requires no persistent
+  latch or previous merge event, also covering an independently requested
+  tag after a previous stop (AC6)
+
+### S357 — all decided publication forms use local tag evidence (#500 AC6; A46)
+**Covers:** F56
+- Given: real lightweight and annotated local tags in the temporary repo
+- When: successful events separately contain `git push origin v1.2.3`,
+  `git push --tags`, `git push --follow-tags` with an eligible annotated tag,
+  and `gh release create v1.2.3` (also without a pre-existing local tag)
+- Then: every qualifying form emits S355's stop JSON and records zero `gh`
+  subprocess calls; explicit refs resolve under `refs/tags/`
+- Given: branch-only pushes, a missing tag, a branch sharing the requested
+  name without a tag, deletion refspec/`--delete`, dry-run pushes, or
+  `--follow-tags` with no eligible local tag
+- Then: no successful-publication stop occurs and no `gh` call is made
+
+### S358 — failures and uncertainty cannot masquerade as completion (#500 AC3; A46)
+**Covers:** F56
+- Given: open/queued-only `--auto` PR state, failed/timed-out lookup,
+  malformed/missing lookup fields or ambiguous identity; or malformed hook
+  JSON, wrong tool/event, interrupted/background-incomplete tool results,
+  unreadable quoting or a failed publication result
+- When: each input reaches the executable Interface using the real runtime
+  event contract (no invented portable tool_response.exit_code)
+- Then: exit is 0 with no successful-completion stop; lookup time is bounded
+- Given: an omitted-target merge whose deleted branch leaves no resolvable
+  PR identity
+- Then: uncertainty cannot select another current branch's merged PR
+
+### S359 — merge targets and repository flags preserve identity (#500 AC4; A46)
+**Covers:** F56
+- Given: successful merge forms with explicit number, URL and branch-name
+  targets, and an omitted target with an unambiguous current PR
+- When: each is consumed, including `gh -R owner/repo pr merge 500`,
+  `gh pr merge 500 --repo owner/repo`, and supported value-taking options
+- Then: the fixture records the intended target and repository, never an
+  option operand as target; confirmed main/release results follow S355/S356
+- Then: failed resolution follows S358 rather than stopping on guessed state
+
+### S360 — shell execution evidence distinguishes commands from data (#500 AC4; A46)
+**Covers:** F56
+- Given: unrelated commands, quoted prose containing merge/tag text,
+  heredoc bodies containing those strings, and quoted separators
+- When: each is consumed
+- Then: no stop and zero `gh` calls occur
+- Given: a standalone qualifying command, a successful all-`&&` chain, or a
+  qualifying final command after `;` whose status is the call's result
+- Then: separately provable successful occurrences receive S355–S357 behavior
+- Given: matching commands masked by `|| true`, an earlier semicolon segment,
+  pipeline status, or skipped conditional/short-circuit branches, with the
+  fixture deliberately offering an old MERGED PR/local tag
+- Then: those unprovable occurrences do not stop; a separate provable
+  occurrence in the same input still does. Arbitrary wrappers, substitutions,
+  aliases and scripts are not claimed as interpreted shell programs
+
+### S361 — Claude wiring reaches the executable without claiming live proof (#500 AC7–AC8; A46)
+**Covers:** F56
+- Given: repository settings and a freshly adopted Claude scratch project
+- When: the real settings source link and Bash PostToolUse registration are
+  inspected and invoked using runtime-shaped input
+- Then: the executable is registered synchronously alongside the existing
+  push hook, resolves through the adopted settings link, and returns the
+  S355/S356 behavior; existing hook registrations remain present
+- Then: this establishes wiring/script evidence only; live Claude hook
+  loading, actual termination and `/clear` remain explicitly unverified in
+  this Codex environment
+
+### S362 — generated and adopted instructions preserve lifecycle order (#500 AC1–AC8; A46)
+**Covers:** F56
+- Given: canonical policy, both runtime adapters and release-workflow skill
+- When: the real generator is run and `adopt.sh --runtime codex` installs or
+  updates a throwaway project, then its coverage inventory is inspected
+- Then: generated artifacts match the generator; adopted instructions require
+  saving PR identity/base/head before deletion, confirming MERGED afterward,
+  separate completed tool calls, durable reporting before completion and no
+  batched next work item; only release-to-main permits the required tag next
+- Then: CLI offers `/clear` or `/new`, desktop offers New chat, unknown surface
+  labels both; reset is maintainer-owned, not a shell terminal clear
+- Then: policy, Claude wording and release tagging agree; runtime-hooks stays
+  not-installed for Codex, user config is untouched, and README/CHANGELOG
+  distinguish instruction following from runtime enforcement. No new opt-out
+  or adoption question is implied by this unconditional rule
+
+### S363 — live Codex obeys the stop and negative paths (#500 AC1–AC3, AC5–AC8; A46)
+**Covers:** F56
+- Given: a fresh adopted scratch project/session on an available named Codex
+  surface/version, loaded instructions recorded, PATH fake `gh` simulating
+  remote PR state and a local bare remote for real tag publication
+- When: separate tasks exercise non-release main merge, release-base merge,
+  release-to-main then tag, independent tag and failed/queued/uncertain paths,
+  each requesting a subsequent observable sentinel action
+- Then: transcript/tool evidence shows no sentinel after qualifying merge or
+  publication, correct surface prompt, release tag before its stop, and
+  sentinel continuation on nonqualifying paths; no production merge is used
+- Then: fake remote PR state is labeled simulated; live instruction obedience
+  is distinguished from mechanical enforcement. A failed observed stop is a
+  design finding routed to Architect, not a static-test pass
+
+### S364 — actual fresh-chat observations and gaps are reported precisely (#500 AC8; A46)
+**Covers:** F56
+- Given: the live Codex evidence and available interactive surfaces
+- When: CLI `/new` or `/clear`, and desktop New chat, are exercised where
+  available after the current task ends
+- Then: each claimed reset observation names exact surface/version, action
+  and observed fresh-chat behavior; no terminal-only clear counts as reset
+- Then: unavailable desktop/CLI surfaces, loading/trust/credential limits,
+  unperformed reset actions and live Claude termination/reset are explicitly
+  unverified. Documentation, simulated GitHub state and passing scripts alone
+  cannot be described as observed live stopping or context reset

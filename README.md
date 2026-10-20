@@ -394,3 +394,18 @@ dogfooding the mechanism it specifies.
 | `wip/<slug>/` | Thinking done before a decision, for a new product or release (a "co-thinking session": Orchestrator + Product + Architect only). Directional until explicitly accepted, then promoted into a real epic; kept afterward as a record. Examples: `wip/multi-agent-development/` (epics #65/#295, released as v0.2.0) and `wip/claude-code-plugin/` (epic #282). |
 
 </details>
+
+### Completion and the next conversation (#500)
+
+Successful non-release main merges end the current turn. Release-to-main allows
+only the approved tag next, then successful publication ends the turn; release
+base merges continue. Independently published tags also stop. Claude receives a
+synchronous Bash PostToolUse completion hook via the existing settings symlink.
+Codex uses instruction following, with `runtime-hooks: not-installed`; rerun
+`adopt.sh --runtime codex <project>` and start a fresh session to load the updated
+managed block. No new adoption question or opt-out is introduced.
+
+Reset is the maintainer's action: Claude `/clear`, Codex CLI `/clear` or `/new`,
+Codex desktop New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux). A terminal
+clear is insufficient. Script/adoption tests do not prove live termination or
+context reset. Exact observations and gaps are in [completion runtime evidence](docs/completion-runtime-evidence.md).
