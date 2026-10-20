@@ -48,7 +48,7 @@ d = json.load(open(sys.argv[1]))
 print(d["tool_name"]); print(d["tool_input"]["command"]); print(d["cwd"])' "$REC/stdin" 2>&1)"
 [ "$(printf '%s\n' "$parsed" | sed -n 1p)" = "Bash" ] || fail "S342/a — tool_name is not Bash: $parsed"
 [ "$(printf '%s\n' "$parsed" | sed -n 2p)" = "gh pr merge 41" ] || fail "S342/a — command is not exactly 'gh pr merge 41': $parsed"
-want_cwd="$(cd "$weird" && pwd)"
+want_cwd="$(cd "$weird" && pwd -P)"
 [ "$(printf '%s\n' "$parsed" | sed -n '3,$p')" = "$want_cwd" ] || fail "S342/a — cwd not intact: $parsed (wanted $want_cwd)"
 
 # (h) the guard's exit code and both streams pass through, unmerged.
