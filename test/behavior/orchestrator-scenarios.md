@@ -362,7 +362,7 @@ When: You choose the next step.
 Then: next_action=dispatch; next_role=Fullstack Developer
 
 ### OB57 · OR46
-Given: The behavior runner wrote its stamp file on PR 41's branch. One field in the file has to be changed by hand before it is committed.
+Given: The behavior runner wrote its stamp file on PR 41's branch. One field in the file has to be changed by hand before it is committed. No finding is open, no test is missing or failing, and nothing needs a new test: the edit is a plain implementation change to a repo file, which the Fullstack Developer role makes.
 When: You choose how to get the changed stamp file committed.
 Then: next_action=dispatch; next_role=Fullstack Developer
 
