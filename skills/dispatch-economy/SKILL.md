@@ -63,6 +63,10 @@ extraction; this change adds no `/clear` rule.
 
 ## Transcript extraction command (local-only, advisory)
 
+Runtime: this command is Claude-only (it reads Claude Code's subagent
+transcripts). No Codex counterpart ships until the Codex rollout-file format
+is verified on a real run; until then a Codex orchestrator logs `n/a` for sizes.
+
 Claude Code writes each subagent's transcript to
 `~/.claude/projects/<project>/<session>/subagents/agent-<agent-id>.jsonl`, one
 JSON object per line. The fields used: `type` is `assistant`; `message.id`

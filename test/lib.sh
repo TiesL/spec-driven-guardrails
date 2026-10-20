@@ -241,8 +241,23 @@ fake_gitleaks_bin() {
 #      review that ran for an older commit — issue #225's AC1).
 # $2 — checks JSON answer, or empty to not build a "pr checks" branch
 #      (S15, S16, S65 don't ask about that).
+# $3 — up-to-date answer (#516, A43): the literal `behind_by` the compare
+#      call prints, or empty to build no `gh api` branch at all (every
+#      older caller: the up-to-date check then fails open, as any other
+#      unanswered lookup). When set, the fake also answers the open-PR
+#      list (PR 41 on branch feature/work) and the pull call (`$4` as
+#      base.ref, this fake's headRefOid as head.sha). Error shapes (a
+#      failing pull or compare call, an empty answer, stderr noise) are
+#      built per test with `fake_gh_bin`, per W95 above.
+# $4 — base.ref the pull call reports; default `main`.
+#
+# `pr view` and `pr checks` also answer with an explicit target in front of
+# `--json` (`gh pr merge 41` is checked as `pr view 41 --json ...`, S342).
+#
+# Every call is appended to "$SANDBOX/fakegh/calls.log", so a test can
+# prove a call was or was not made.
 fake_gh_merge_bin() {
-  local marker="${1:-}" checks_json="${2:-}"
+  local marker="${1:-}" checks_json="${2:-}" behind_by="${3:-}" base_ref="${4:-main}"
   local head_sha="1111111111111111111111111111111111111111"
   local stale_sha="2222222222222222222222222222222222222222"
   local comments_body
@@ -254,8 +269,9 @@ fake_gh_merge_bin() {
   esac
 
   local script
-  script='case "$*" in
-  "pr view --json comments,headRefOid")
+  script='printf "%s\n" "$*" >> "$(dirname "$0")/calls.log"
+case "$*" in
+  "pr view --json comments,headRefOid"|"pr view "*" --json comments,headRefOid")
     printf "%s" "{\"headRefOid\":\"'"$head_sha"'\",\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
     exit 0 ;;'
 
@@ -263,8 +279,21 @@ fake_gh_merge_bin() {
     local escaped_checks
     escaped_checks="$(printf '%s' "$checks_json" | sed 's/"/\\"/g')"
     script+='
-  "pr checks --json bucket,name")
+  "pr checks --json bucket,name"|"pr checks "*" --json bucket,name")
     printf "%s" "'"$escaped_checks"'"
+    exit 0 ;;'
+  fi
+
+  if [ -n "$behind_by" ]; then
+    script+='
+  "api repos/{owner}/{repo}/pulls --paginate --jq "*)
+    printf "41\tfeature/work\n"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/pulls/41 --jq .base.ref"*)
+    printf "%s\t%s\n" "'"$base_ref"'" "'"$head_sha"'"
+    exit 0 ;;
+  "api repos/{owner}/{repo}/compare/'"$base_ref"'...'"$head_sha"' --jq .behind_by")
+    printf "%s\n" "'"$behind_by"'"
     exit 0 ;;'
   fi
 

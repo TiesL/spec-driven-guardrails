@@ -1,5 +1,6 @@
 architecture-document
 ci-gate-on-merge
+process-advance-merge-approval
 process-context-document
 process-diagnose-bug
 process-dispatch-economy

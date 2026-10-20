@@ -5776,9 +5776,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   row's ID is unique; a `retired` row has part `-` and its ID occurs in no
   item; `above` and `below` do not occur as words in either part; OR21 and
   OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
-  OR5 order`; OR11's item says merge into `main` only after the human
-  confirms the final head SHA and that a new commit after confirmation needs
-  a new confirmation; every required name of AC7 is a row name; the hook
+  OR5 order`; OR11's item says merge into `main` only with the human's
+  approval for that PR, given after the work or in advance (#516), that an
+  advance approval lapses on a new commit that changes the work, and that a
+  head SHA is not named; every required name of AC7 is a row name; the hook
   tier check ids, joined over rows, equal `--list-checks`; every `gate:`
   script exists; every `judgment` row's `covered_by` names at least one
   existing `OB`, and every `OB` heading cites only existing IDs; the
@@ -6178,3 +6179,608 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   edits; S322 is its precondition). Order for the Developer: S311 list
   edit and S317 red first, rule text, S322 OBs, S319/S320/S321 with the
   script and skill, S318 sizes measured, then S323 last.
+
+## #516 — merge guard up-to-date check (A43, F8) and conditional advance approval (A43, F55)
+
+Numbering: S324 is the next free S on `main` and on every remote branch
+(verified by grep). F55 does not exist in `PRD.md` yet: the Developer adds it
+(and the F8 note for AC1-AC3) in the first commit, because `Covers:` on a
+missing F fails the traceability check. Test files:
+`test/cases/s324_merge_guard_up_to_date.sh` for S324-S329; S330-S335 are
+text/doc checks (named per scenario). `fake_gh_merge_bin` gains two `gh api`
+shapes and a `behind_by` parameter; an unhandled `gh api` call in any fake
+must exit non-zero (the fakes end in `exit 1`), so S15, S16, S65, S75, S76,
+S119 fail open as before.
+
+### S324 — the guard refuses a PR that is behind its base, for every base (#516 AC1; A43; unit via fake gh)
+**Covers:** F8
+- Seam: `gh` on `PATH` (`fake_gh_merge_bin`) answering `gh api
+  repos/{owner}/{repo}/pulls/<n>` (`base.ref`, `head.sha`) and
+  `.../compare/<base>...<head>` (`behind_by`); the guard run through
+  `PreToolUse` JSON as in S119. Marker `match` and green checks are supplied,
+  so only the new check can block
+- Given: `behind_by` = 3 (also 1, the smallest behind), with base.ref `main`;
+  the same with `release/40-epic`; the same with `develop` (a non-`main`
+  adopted base)
+- When: `gh pr merge <n>` goes through the guard
+- Then: exit 2 in all three; the message names the base, the count, and
+  `gh pr update-branch <n>`; the three cases take one code path (only the
+  fake's `base.ref` differs, no branch-name filter). The check runs before the
+  marker lookup: with no marker and `behind_by` 3 the up-to-date message is
+  the one shown
+- Red on `b1b5c43`: no function, the same PR passes the guard. Negative
+  control: a `main`-only filter in a copy fails the `release/*` and `develop`
+  cases by name
+
+### S325 — an up-to-date PR passes this check (#516 AC2; A43; unit via fake gh)
+**Covers:** F8
+- Seam: as S324
+- Given: `behind_by` = 0 (compare status `ahead`, and `identical`), marker
+  matching head, green checks; also base `release/40-epic`
+- When: `gh pr merge <n>` goes through the guard
+- Then: not blocked (exit 0); no up-to-date message. A PR that is ahead by
+  many commits but behind by 0 passes (the count is `behind_by`, not
+  `ahead_by`). Same fake with `behind_by` 1 is blocked (pairing with S324 so
+  the pass is not an artefact of the fake)
+
+### S326 — a lookup failure fails open with a warning (#516 AC1 precondition; A43; unit via fake gh)
+**Covers:** F8
+- Seam: as S324, fake answering differently per case
+- Given, one case each: `gh api` exits non-zero on the pull call; on the
+  compare call (fork head unknown to base); `behind_by` empty; `behind_by`
+  `garbage`; no PR number resolvable; `gh` absent from `PATH`
+  (`path_without_gh`)
+- When: `gh pr merge` goes through the guard with marker and CI otherwise
+  fine
+- Then: exit 0 each time; stderr holds `warning:` naming the up-to-date
+  check as skipped; the other checks still run (a missing marker in the same
+  case still blocks, proving fail-open is per check). Stdout and stderr stay
+  separate streams (#81/#224): a stderr line from the fake does not corrupt
+  the parsed `behind_by`
+
+### S327 — escape hatch and opt-out skip the check without new wiring (#516 A43 inherited gates; unit via fake gh)
+**Covers:** F8
+- Seam: as S324 plus a `WORKFLOW-ADOPTION.md` row
+- Given: `behind_by` 3, and (a) `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1`; (b) a
+  substantiated `no` on `quality-review-before-merge`; (c) neither
+- When: `gh pr merge` goes through the guard
+- Then: (a) and (b) not blocked, and (a) loudly reports what is skipped as
+  today; (c) blocked. The block message of S324 names the escape hatch like
+  the other blocks. The fake records its calls: in (a) and (b) no `gh api`
+  call is made (the check is not run and then ignored)
+
+### S328 — the guard names `gh pr update-branch` and never a force-push (#516 AC3; A43; unit via fake gh, doc check)
+**Covers:** F8
+- Seam: the block message captured in S324
+- Given: the blocked output of S324 for each base
+- When: it is searched
+- Then: it contains `gh pr update-branch`; it contains none of `--force`,
+  `push -f`, `--force-with-lease`, `reset --hard`; it says to wait for CI and
+  re-run the pre-merge review on the new head. Limit, stated: that the remedy
+  itself needs no force-push is GitHub's merge-based update and cannot be
+  proven offline; the test pins what the guard says, not what GitHub does
+
+### S329 — existing merge-guard scenarios stay green and quiet (#516 A43 testability note; regression, unit via fake gh)
+**Covers:** F8
+- Seam: the existing fakes of S15, S16, S65, S75, S76, S119 unchanged
+- Given: those fakes do not answer `gh api`
+- When: their tests run after the guard change
+- Then: all still pass; where one asserts empty stderr or exact output, the
+  Developer accounts for the new warning in that assertion (the minimal edit,
+  not a loosened assertion), or extends that fake with `behind_by` 0. This is
+  green-before and green-after, not a red-first scenario
+
+### S330 — the merge rule states the conditional advance approval and its limits (#516 AC4; A43; F55 new; doc check)
+**Covers:** F55
+- Seam: textual check of `policy/WORKFLOW.md` and the generated
+  `WORKFLOW.md`, `adapters/codex/AGENTS.md`, claude adapter (generated-file
+  sync is `./check`'s existing generator check)
+- Given: the wrapping-up step 4 and the paragraph "Confirmation is required
+  only before merge"
+- When: the test reads them
+- Then: the text states: the maintainer may approve a merge into `main` in
+  advance; it holds only while the branch is mergeable without further
+  changes, with Review approved, CI green and every pre-merge check passing;
+  no head SHA is named; the orchestrator records the approval head and the
+  merged head in the Pipeline log; merge autonomy without a per-PR approval
+  points to `#511`. The old phrases "after the final head" /
+  "confirms the final head SHA" (as a requirement for the maintainer to name a
+  head) no longer occur in any of the four generated or source files
+  (R5: grep `final head`, `head SHA`). `release-branch-workflow` is
+  unchanged: the release-branch merge into `main` still needs the maintainer
+- Red on `b1b5c43`: step 4 still requires confirmation after the final head
+- Negative controls (copies): the `#511` pointer removed; the "no head SHA"
+  sentence removed; each fails by name
+
+### S331 — the approval lapses on a required change and survives only an update-only head (#516 AC5; A43 A1; F55; doc check plus git-shape check)
+**Covers:** F55
+- Seam: (a) text of the rule, as S330; (b) the survival test as read-only git
+  on a sandbox repo: `git rev-list --parents -n1 <merged-head>` compared to the
+  approved head and the base. No script exists; the Developer either adds a
+  small helper with this test as its seam or pins the command in the rule text
+  and tests the command on fixtures (Developer's choice, stated in the commit)
+- Given (a): the rule text. Given (b): fixtures built with `git`: (i) head
+  = merge commit, first parent the approved head, second parent a base
+  commit; (ii) a fix commit on the approved head, then the base merged; (iii)
+  the base merged, then a fix commit on top; (iv) a rebase (no first-parent
+  link to the approved head); (v) a merge commit whose first parent is the
+  approved head but whose second parent is not on the base
+- When: the text is read and the shape test run
+- Then: (a) the text lists a finding to fix, red CI and a failing gate as
+  lapsing the approval, says the orchestrator asks again after the fix, says
+  `gh pr update-branch` does not lapse it when CI and the pre-merge checks are
+  green again on the new head, and states the first-parent condition; (b)
+  only (i) is "survives"; (ii)-(v) are "lapses". Fixture (iii) is the
+  falsifier: it looks like an update but carries work
+- Red on `b1b5c43`: no rule text and no test of the shape. Negative control:
+  accepting any merge commit as surviving makes (ii)-(v) fail by name
+
+### S332 — a relayed approval is the maintainer's verbatim words about that PR (#516 AC6; A43; F55; doc check)
+**Covers:** F55
+- Seam: textual check as S330, and the Pipeline-log template or example the
+  rule points to
+- Given: the rule for approvals relayed through the manager (epic #513)
+- When: the test reads it
+- Then: it says a relayed approval counts only as the maintainer's verbatim
+  words about that PR (a summary, a general "go ahead", or approval of a
+  different PR does not count), and that the Pipeline log records the head at
+  approval and the head merged (two heads, both named). The OR11 text carries
+  the same content (cross-check with S333)
+
+### S333 — OR11, the core fixture, S311 and the OB scenarios follow the new rule (#516 AC4-AC6; A43; F55; unit, no model)
+**Covers:** F55
+- Seam: `skills/role-contracts/ORCHESTRATOR.md` OR11,
+  `test/fixtures/orchestrator-core.py` (line ~227 regex),
+  `test/cases/s311_orchestrator_inventory_and_parts.sh` (the OR11 mutation,
+  line ~93), `test/behavior/orchestrator-scenarios.md`; checked by the
+  existing S311/S315 parsers, no model call
+- Given: the files after the edit
+- When: `./check`'s behavior-file and inventory tests run
+- Then: OR11's item says a merge into `main` needs the human's approval,
+  given in advance or after the work, conditional on mergeable-without-change;
+  it keeps "new commit that changes the work lapses the approval" and drops
+  "confirms the final head SHA"; `orchestrator-core.py` asserts the new
+  sentence (and no longer the old); S311's OR11 mutation mutates the new
+  sentence and still fails by name; the OR11 TSV row keeps ID, tier
+  `judgment`, part 1, and its `covered_by` lists every OB below; the intended
+  changes list in the scenarios file has an item for each changed or new OB,
+  each citing `#516`; the S311 count of OR items and the context-budget test
+  (S318) stay within budget with the longer OR11. The heading IDs of every OB
+  stay equal to their `OR` list
+- Red on `b1b5c43`: the fixture still asserts the old sentence
+- Negative control: the old sentence restored in a copy of OR11 fails the
+  fixture check by name
+
+### S334 — the behavior scenarios for the advance approval (#516 AC4-AC6; A43; F55; behavior scenarios, parsed here, run in S335)
+**Covers:** F55
+- Seam: `test/behavior/orchestrator-scenarios.md`; the Developer picks the
+  next free OB numbers; the S315 parser checks schema, this scenario checks
+  presence and the Given/Then content
+- Changed scenarios:
+  - OB9 (OR11), currently "commit after confirmation needs a new
+    confirmation": Given stays (advance approval "merge once everything is
+    green" at head 1a2b3c4; Developer pushes 5d6e7f8 to fix a flaky test; a
+    fresh Review round on 5d6e7f8 finds nothing and CI is green). Under the
+    new rule a fix for a finding or red CI lapses the approval, so Then stays
+    `next_action=ask_human; asks_human=true`. Reword the Given so the push is a
+    required change (finding or red CI), not a flaky-test tweak the maintainer
+    could argue was optional. Class: `same` (old and new arm both ask), the
+    intended-changes item is reworded, not removed
+  - OB10 (OR11), "confirmed, merge it" at head 1a2b3c4, head unchanged:
+    Then stays `merge`. Class `same`. Reword the Given to the new vocabulary
+    (the approval was given in advance; everything is green; head unchanged),
+    Then unchanged
+  - OB11 (OR11), release-branch PR: unchanged (neither arm affected)
+- New scenarios (each `OR11`, citing `#516`):
+  1. advance approval ("merge once everything is green") given; Review
+     approves, CI green, gates pass, head equals the approved head:
+     `next_action=merge; asks_human=false`. Old arm asked for the head SHA, so
+     `changed-as-intended`
+  2. advance approval given; Review reports a finding to fix: after the fix,
+     `next_action=ask_human; asks_human=true` (lapse)
+  3. advance approval given; CI on the approved head turns red and the
+     Developer fixes it: `ask_human` (lapse)
+  4. advance approval given; the base moved, `gh pr update-branch` ran, new
+     head is a merge commit whose first parent is the approved head; CI and
+     pre-merge checks green again: `merge`, `asks_human=false`
+  5. same, but CI is not yet green on the updated head: not merge (wait; the
+     closed `next_action` value the Developer picks from the existing set,
+     e.g. `wait`; if none fits, `ask_human` is wrong because no approval is
+     being asked for, so the Developer reports the missing value as a finding
+     instead of bending the scenario)
+  6. same as 4, but a fix commit sits on top of the update: `ask_human`
+     (lapse; the S331 (iii) falsifier in prose)
+  7. manager relays "the maintainer is fine with PR 41 going in" (a
+     paraphrase, not verbatim): `ask_human`; the same relay with the
+     maintainer's verbatim words about PR 41: `merge`
+  8. approval given for PR 41 verbatim, now about to merge PR 44: `ask_human`
+     (approval is per PR)
+  9. work-item PR into a `release/*` branch: unchanged OB11 behaviour, no
+     approval needed
+- Then: the file parses; each new block cites only existing IDs; the
+  Pipeline-log scenario (4/7) asserts the log line records both heads (as
+  text in the Then or in the expected `log` field if the schema has one;
+  otherwise only S332 pins it)
+- Limit: scenarios 4-6 rest on the first-parent condition, which is Human
+  decision 3b (assumed yes). If the maintainer says no, 4 loses its
+  condition and 6 is dropped
+
+### S335 — the new rule holds under a real model, and the stamp is refreshed once (#516 AC4-AC6; A43; F55; needs a paid run)
+**Covers:** F55
+- Seam: `./test/behavior/orchestrator-diff.sh` (S315/S316), real model,
+  subscription (no spend approval; mind 5h/weekly limits)
+- Given: OR11 and the scenarios in final form, S330-S334 green, and no other
+  open item changing `ORCHESTRATOR.md` or the scenario file (otherwise the
+  stamp is contested; check `git diff origin/main` first)
+- When: exactly one full differential run (every scenario, both arms, N=3)
+- Then: OB9, OB10, OB11 are `same`; the changed-as-intended new scenarios
+  (S334 1, 4, 7 verbatim) meet `Then` in 3 of 3 on the new arm; the lapse
+  scenarios are `same`; no `old-wrong`, `diverged` or `unstable`; the run
+  writes the stamp, which S316 passes; the stamp commit is an OR46 (a)+(b)
+  step; an `unstable` new OB is a wording defect fixed in the OB or OR11
+  followed by a fresh full run. No edit after the run. Red on `b1b5c43`: the
+  stamp no longer matches once OR11 changes
+
+### S336 — `CHANGES.md` offers the new rule through one entry and adoption stays consistent (#516 Part 3; A43; F55; unit, no model)
+**Covers:** F55
+- Seam: `CHANGES.md`, `pending-changes.sh`, the `adopt` helper of
+  `r2_pending_after_fresh_adoption.sh`
+- Given: the repo after the edit
+- When: `adopt.sh` runs on a fresh project, then `pending-changes.sh`
+- Then: `CHANGES.md` has exactly one new entry `process-advance-merge-approval`
+  with a one-line closed yes/no question, Default `question`, a valid
+  `Reaches session` (closed list; `reaches_session_invalid` passes), and a
+  *Yes means* that says the up-to-date check ships through the symlinked hook
+  regardless of the answer; no existing entry's meaning version changed
+  (`quality-review-before-merge` unchanged, Human decision 3a assumed); the
+  fresh-adoption pending list contains the new ID, and the expected list in
+  `r2_pending_after_fresh_adoption.sh` is updated in the same commit, one
+  consistent outcome
+- Red on `b1b5c43`: no entry
+
+### Test strategy summary for S324-S336 (#516)
+- Shape: the guard (AC1-AC3) is deterministic and cheap, tested at one seam,
+  `gh` on `PATH`, in one new file; the rule (AC4-AC6) is a judgment rule, so
+  it is pinned by text checks (what it says), a git-shape test (the one
+  falsifiable part of "survives update-branch"), and behavior scenarios (what
+  a model does), with one paid run last.
+- No-model, run in `./check` and CI: S324-S334, S336. Paid run: S335 only.
+- Falsifiers worth the most: S324 `develop`/`release/*` cases (kills a
+  `main`-only filter), S326 per-check fail-open (kills a blanket skip), S331
+  fixture (iii) (kills "any merge commit survives"), S334 scenarios 6-8 (kill
+  an approval that is general or reusable across PRs).
+- Order for the Developer: PRD F55 and F8 note; `fake_gh_merge_bin`
+  extension; S324-S328 red, then the function; S329 regression; rule text
+  (`policy/WORKFLOW.md`, regenerate) with S330-S332 red first; OR11,
+  `orchestrator-core.py`, S311 mutation, S333; OBs, S334; `CHANGES.md`, S336;
+  S335 last (one run).
+- Not tested, stated: that `gh pr update-branch` does not force-push (GitHub
+  behaviour); that the orchestrator logs the heads in a real run (S332 and
+  S334 pin the rule, not a live log); the fail-open path under a real
+  GitHub outage.
+
+## #516 round 1 — branch-name merge targets (A44, #541), stamp base (#542), Codex parity (A44 2a/2b)
+
+Numbering: S337 is the next free S on `main`, on the pulled branch head
+`9c9143d` and on every remote branch (verified by grep). Test files proposed:
+`test/cases/s337_merge_guard_branch_target.sh` for S337-S340;
+`s341_stamp_base_resolved.sh`; `s342_merge_preflight.sh`;
+`s343_codex_preflight_and_dispatch_mapping.sh` for S343-S344. Nothing here
+touches `ORCHESTRATOR.md` or `test/behavior/orchestrator-scenarios.md`, so no
+paid run is needed and the committed stamp stays valid.
+
+Fake extension (Developer, test-side): `fake_gh_merge_bin` answers the open-PR
+list with the single row `41<TAB>feature/work`. S337-S340 need a way to give the
+list several rows (for example a fifth parameter holding the raw list output,
+default the current row) and, for the numeric/URL cases, the same pull and
+compare answers keyed by the number. The unhandled-call rule stays: any `gh api`
+shape the fake does not answer exits non-zero.
+
+### S337 — a branch-name target is resolved and checked for being behind (#541 AC1, AC2; A44 1; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: `gh` on `PATH` (`fake_gh_merge_bin` with the list row
+  `41<TAB>feature/work`, as S324), the guard run through `PreToolUse` JSON; the
+  current branch of the sandbox repo is NOT `feature/work` (so the match must
+  come from the target, not from `symbolic-ref`). Marker `match` and green
+  checks supplied, as S324
+- Given, one case each: (a) `behind_by` 3 and target `feature/work`; (b)
+  `behind_by` 0 and target `feature/work`; (c) `behind_by` 3 and target
+  `o:feature/work` (the `owner:branch` form, A44 1a); (d) `behind_by` 3 and
+  target `feature/work` with `--squash --delete-branch` after it; (e)
+  `behind_by` 3, target `feature/work`, base `release/40-epic`
+- When: `gh pr merge <target>` goes through the guard
+- Then: (a), (c), (d), (e) exit 2, the message names the base, the count and
+  `gh pr update-branch 41` (the resolved number, not the branch name); (b)
+  exits 0 with no up-to-date message (pairs with (a), so the pass is not an
+  artefact of the fake); the call log shows the list call and then the two
+  existing `pulls/41` / `compare` calls, and no other `gh api` shape (A44: no new
+  call shape)
+- Red on `9c9143d`: (a), (c), (d), (e) exit 0 with the "couldn't determine the
+  PR number" warning. Negative control: a resolver that treats the whole
+  `o:feature/work` string as the branch fails (c) by name
+
+### S338 — numeric and URL targets still resolve as before, and an explicit target is what is checked (#541 AC3; review finding `s324-numeric-target-untested`; A44 1; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: as S337; this closes the gap round 1 named: S324-S328 only ran bare
+  `gh pr merge`
+- Given: `behind_by` 3, base `main`, and each of: target `41`;
+  `https://github.com/o/r/pull/41`; the same URL with a trailing `/files` and
+  with `?x=1`; plus `behind_by` 0 for target `41`. A last case: current branch
+  `feature/work` with the list row for `feature/work` = 41, but the target `99`
+  (the fake answers pulls/99 with `behind_by` 0 and pulls/41 with 3)
+- When: `gh pr merge <target> --squash --delete-branch` goes through the guard
+- Then: the `behind_by` 3 cases exit 2 naming `gh pr update-branch 41`;
+  `behind_by` 0 exits 0; in the last case the guard checks 99 (exit 0), not the
+  current branch's PR: an explicit target wins over the current branch. No
+  list call is made for a numeric or URL target (call log), so the branch path
+  does not run when a number is present
+- Green before and after for the number/URL part (regression guard on the
+  refactor); red on `9c9143d` only if the Developer's change breaks it. Class
+  `test`, so it is a coverage scenario, not a red-first one
+
+### S339 — an ambiguous, unknown or unreadable branch target fails open with a warning, per check (#541 AC4; A44 1b, 1c; open decision 1 assumed; unit via fake gh)
+**Covers:** F8
+- Seam: as S337 with list outputs varied: (a) two rows with the same head ref
+  (`41<TAB>feature/work` and `52<TAB>feature/work`, a fork PR sharing a head
+  name); (b) no row for the target (`feature/other`); (c) the list call exits
+  non-zero; (d) empty list; (e) target `o:feature/work` with the two-row list of
+  (a); (f) target with a branch name containing a regex-special or shell-special
+  character (`feat/a.b`, `feat/a b` quoted) and a list that has a different
+  row `featXa.b`, to show the match is an exact string compare, not a pattern
+- Given: `behind_by` 3 for any number asked, marker and CI otherwise fine
+- When: `gh pr merge <target>` goes through the guard
+- Then: exit 0 in each case; stderr holds a `warning:` that names the
+  up-to-date check as skipped; stdout and stderr stay separate streams; the
+  fake is never asked for `pulls/41` or `pulls/52` in (a), (e), (b), (d) (no
+  guess between candidates, no first-match wins); the other checks still run
+  (a missing marker in the same case still blocks, as S326, proving fail-open
+  is per check). In (f) the exact row matches, the near row does not
+- Alternative if the maintainer answers open decision 1 differently (block on
+  ambiguity): (a) and (e) flip to exit 2 and this scenario is revised; the
+  rest stands
+- Red on `9c9143d`: this passes already for (a)-(e) because everything fails
+  open today, which is why it is a pairing scenario with S337 (a stub that
+  always fails open passes S339 and fails S337). State this in the test header
+
+### S340 — the role-play check and the stray-Closes check use the same resolver for a branch target (#541 AC5; A44 1 "Interface"; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: as S337 plus the extra `gh` shapes of the two existing checks
+  (`pr view`/marker comments for role-play as in `s186`, the commits call as
+  in `s108`); the list row `41<TAB>feature/work`
+- Given: (a) role-play: a PR whose Review marker is missing a role stage
+  (the `s186` blocking fixture), target `feature/work`; (b) stray Closes: a
+  PR with a commit-level `Closes #N` not in the PR body (the `s108` blocking
+  fixture), target `feature/work`; (c) both fixtures with a numeric target
+  `41` (existing behaviour); (d) both with an ambiguous branch (two rows)
+- When: `gh pr merge <target>` goes through the guard
+- Then: (a) and (b) block exactly as with the numeric target in (c), same
+  message; (d) fails open with each check's own `warning:` (role-play and stray
+  Closes), not the up-to-date one only. This is the deliberate behaviour
+  change A44 names: the stray-Closes check starts to look at branch targets,
+  so S108's expectations for a branch target are updated in the same commit,
+  if any existing case ran one
+- Red on `9c9143d`: (a) and (b) with a branch target exit 0 with a skip warning
+- Not tested, stated: that all three share one function is a structure
+  claim; the test shows it by behaviour (three checks, one fixed list shape in
+  the call log: each check makes exactly one list call, and for an ambiguous
+  branch the three warnings appear together)
+
+### S341 — a stamp written with the default `--base` records a resolved commit SHA (#542, review finding `stamp-base-symbolic`; class code; unit with stub `CLAUDE_BIN`, no paid run)
+**Covers:** F38
+- Seam: `python3 -I test/behavior/orchestrator_diff.py run --repo <fixture>`
+  with no `--base`, using the stub `claude` and fixture builders of S315/S316
+  (`bf_reset`, `bf_case`, `bf_build`, `bf_run`). The fixture repo is a real
+  git repo with a remote ref `origin/main` (a bare clone or `git update-ref
+  refs/remotes/origin/main <sha>`) at a known commit. No model is called:
+  `CLAUDE_BIN` is the stub, and a second stub that fails if called guards the
+  `stamp-check` path
+- Given: (a) a passing run (every scenario `same` or `changed-as-intended`)
+  with the default base, where `origin/main` points at commit `C`; (b) the same
+  with `--base <full sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
+  does not resolve (`--base nosuchref`); (e) the default base when the fixture
+  has no `origin/main` at all
+- When: the run finishes and writes the stamp
+- Then: (a) the stamp line matches `^sha256=[0-9a-f]{64}
+  base=[0-9a-f]{7,40} model=\S+ scenarios=\d+$` and the `base=` value is a
+  prefix of `C` (or `C` itself; the test accepts a short SHA of at least 7
+  hex digits and checks `git rev-parse` of it equals `C`); not the string
+  `origin/main`; (b) and (c) likewise the resolved commit, not the symbolic
+  text; (d) exits 2 with a message naming the base and writes no stamp (this
+  already holds because `git show` fails; the test pins it so the new resolve
+  step cannot turn it into a stamp with `base=nosuchref`); (e) the same as
+  (d). The `run` output (`stamp written`) is unchanged; `stamp-check` still
+  accepts the new line (STAMP_RE already allows `\S+`)
+- Existing stamp, accounted for: the committed `orchestrator-diff.stamp` has
+  `base=origin/main`. It keeps passing S316 (`stamp-check` recomputes only the
+  hash and the OB count and accepts any non-space `base=`), S323 and S335 (they
+  reject only the old `base=1aba086`), so nothing must change and no paid
+  re-run is needed. What must NOT happen: `stamp-check` starting to reject a
+  symbolic `base=`, because that would force a paid run. Whether to rewrite
+  the committed line by hand to the SHA the run used is open decision 3: it
+  changes evidence the run did not write, and the hash does not cover the
+  stamp file, so S316 would not notice. Recommended: leave it; the next
+  genuine run writes a SHA
+- Red on `9c9143d`: (a) records `base=origin/main`; (b), (c) record the text
+  as given. Negative control: a runner that resolves only for the default and
+  not for an explicit `--base` fails (b) and (c) by name
+
+### S342 — `merge-preflight.sh` feeds the real guard the merge command and passes its verdict through (A44 2a; Covers F8; unit via fake gh and a recording stub guard)
+**Covers:** F8
+- Seam: the hook's stdin JSON, A44's seam. The script is run from a sandbox git
+  repo; `hooks/git-guardrails` is resolved relative to the script's own location
+  (the test copies the script next to a stub `hooks/git-guardrails` that records
+  its stdin and stdout/stderr/exit, and separately runs the real repo copy with
+  `fake_gh_merge_bin`). If the Developer resolves the guard through
+  `$SPEC_DRIVEN_GUARDRAILS_DIR` instead, the same stub is injected through
+  that variable; the Architect's A44 does not say which, so the test accepts
+  either and the header names the one chosen
+- Given: cases: (a) stub guard, `merge-preflight.sh 41`, working directory
+  `$SANDBOX/repo with space/x"y` (a path with a space and a double quote);
+  (b) real guard, `behind_by` 3, marker `match`; (c) real guard, `behind_by`
+  0, marker `match`, green checks; (d) real guard, `behind_by` 3 and
+  `CLAUDE_WORKFLOW_MERGE_GUARD_OFF=1`; (e) no argument; (f) arguments `abc`,
+  `41 42`, `feature/work`, `-1`; (g) `gh` absent from `PATH`
+  (`path_without_gh`), real guard; (h) stub guard that exits 2 with stderr
+  text `BLOCKED-BY-STUB` and stdout text `OUT-STUB`
+- When: the script runs
+- Then: (a) the recorded stdin parses as JSON (`python3 -c json.loads`), has
+  `tool_name` `Bash`, `tool_input.command` exactly `gh pr merge 41`, and `cwd`
+  equal to the working directory, quote and space intact (kills a hand-built
+  printf with no escaping); (b) exit 2, stderr names `gh pr update-branch 41`,
+  the same text S324 expects; (c) exit 0; (d) exit 0 with the loud
+  escape-hatch report the guard gives today; (e) and (f) exit non-zero with a
+  usage line on stderr that is NOT a guard block (the guard stub is not
+  called: its recorded stdin is empty) and `feature/work` is rejected: the
+  preflight takes a PR number only (A44: `<pr-number>`; a branch target is the
+  guard's job, not the wrapper's); (g) exit 0, stderr holds the guard's own
+  `warning:` about the missing `gh` (fail open, the wrapper adds no new
+  failure); (h) exit code 2 and the stub's stderr/stdout pass through byte for
+  byte, not merged into one stream and not swallowed. The script also does not
+  call `gh pr merge` itself: the call log of the fake never contains
+  `pr merge` (it only checks, never merges)
+- Red on `9c9143d`: the file does not exist. Negative control: a wrapper that
+  always exits 0 fails (b) and (h); one that echoes the guard's stderr to stdout
+  fails (h)
+
+### S343 — the Codex instructions and the generated `AGENTS.md` carry the preflight and dispatch-mapping sentences, and the generator is in sync (A44 2a, 2b; Covers F8; doc check)
+**Covers:** F8
+- Seam: textual check of `adapters/codex/INSTRUCTIONS.md` and the generated
+  `adapters/codex/AGENTS.md`, plus the generator-sync step `./check` already
+  runs; the check is a `grep` for load-bearing tokens, not for a whole
+  sentence, so a rewording that keeps the meaning stays green
+- Given: the repo after the edit
+- When: both files are searched, and the generator is run into a temp location
+- Then: both files hold (a) `merge-preflight.sh` and the pair "before
+  `gh pr merge`" and "non-zero" within one paragraph; (b) a statement that
+  this is instruction-driven and not interception (token `interception` or
+  `not intercept` next to `preflight`); (c) the Codex mapping's closing
+  paragraph on merge names both explicit human confirmation and the preflight,
+  and no longer says confirmation alone; (d) the dispatch mapping: `SendMessage`
+  with `fork` named as Claude tool names with a Codex reading, and the exact
+  token `tokens=n/a tools=n/a` with the word `never estimate` or `do not
+  estimate`; (e) the generated `AGENTS.md` is byte-identical to a fresh
+  generator run (the existing sync check fails when only `INSTRUCTIONS.md`
+  was edited, by name); (f) neither file claims the preflight is a hook or that
+  Codex hooks are installed (`runtime-hooks: not-installed` stays in the status
+  output of the Codex support scenarios S294-S304, which stay green); (g)
+  `policy/WORKFLOW.md`, `ORCHESTRATOR.md` and the behavior stamp are unchanged
+  by this item (`git diff origin/main` shows no change to the files that feed
+  the stamp hash beyond what S330-S335 already cover; this is checked as the
+  S316 stamp match, no new test)
+- Red on `9c9143d`: none of the tokens exist; the file edit without
+  regeneration fails (e)
+
+### S344 — the dispatch-economy skill says its extraction command is Claude-only, and `tokens=n/a` gives no false over-limit line (A44 2b; Covers F38; doc check plus unit via fake gh)
+**Covers:** F38
+- Seam: (1) textual check of `skills/dispatch-economy/SKILL.md` and its
+  installed copies; (2) `pipeline-log-fields.sh <issue>` against a fake `gh`
+  serving a fixture Pipeline log, the S319 pattern, no network
+- Given: (1) the skill after the edit. (2) fixture dispatch lines: (i)
+  `agent=a1 model=m continued=no rule=OR13 tokens=n/a tools=n/a` (reported
+  size unknown); (ii) `tokens=n/a tools=12`; (iii) `tokens=90k tools=n/a`; (iv)
+  `tokens=n/a tools=n/a` for one agent id together with a different agent id's
+  line over the limit and no reason; (v) `tokens=N/A` upper case; (vi)
+  `tokens=na` and `tokens=` empty; (vii) the same line (i) with `continued=yes`
+- When: the script runs on each; the skill is searched
+- Then: (1) a "Runtime" note sits at the top of the extraction section and
+  contains `Claude` plus a statement that no Codex counterpart ships until the
+  rollout-file format is verified (tokens `Claude` and `Codex` in the first
+  five lines of that section; the section heading and the command itself
+  unchanged, so S320 stays green); (2) (i), (ii), (iii) print no
+  `over the limit` line and no `missing reported size` line (`n/a` counts as
+  present, A44); (iv) prints the over-limit line only for the other agent,
+  naming that agent id; (v) is accepted as present (case-insensitive, as the
+  script lowercases `num`), or the test records the decision if the Developer
+  chooses to reject it; (vi) `tokens=` empty and `tokens=na` print `missing
+  reported size` or are accepted per the Developer's reading, but never an
+  over-limit line, and the exit code is 0 in every case (A33a); (vii)
+  `continued=yes` with unknown size prints no violation from the script, the
+  decision to treat unknown as fresh is a rule for the orchestrator (OR13), not
+  something this script checks, and the test says so in its header
+- Red on `9c9143d` for (1) only; (2) is a green-before-and-after pinning of
+  A44's claim "already accepts `n/a`". `num("n/a")` in awk evaluates to 0, so
+  it is below the limit today: the scenario would turn red if someone makes
+  `num` return a large value for non-numeric input, which is the regression it
+  guards against
+
+### Test strategy summary for S337-S344 (#516 round 1)
+- No-model, run in `./check` and CI: all of S337-S344. Nothing needs a paid
+  run, and nothing touches the files that feed the behavior stamp.
+- Falsifiers worth the most: S337 (c) and the non-current-branch Given (kill a
+  resolver that silently uses `symbolic-ref`); S339 (a) (kills first-match
+  wins on ambiguity); S338 last case (kills "current branch beats an explicit
+  target"); S341 (b)/(c) (kill resolving only the default base); S342 (a) (kills
+  hand-built JSON) and (h) (kills stream merging); S344 (iv).
+- Order for the Developer: fake extension; S337 and S340 red, then the
+  resolver change and the comment rewrite; S338/S339 pairings; S342 red, then
+  the script; `INSTRUCTIONS.md` edits, regenerate `AGENTS.md`, S343; the
+  `dispatch-economy` note, S344; S341 red, then the runner change. Stamp:
+  untouched.
+- Open decisions (QA): (1) ambiguity fails open (A44 assumption 1, worked to);
+  (2) the preflight accepts a PR number only, not a branch (the wrapper is a
+  shallow adapter; A44 is silent); (3) leave the committed `base=origin/main`
+  stamp line as is (recommended) versus hand-editing it to a SHA; (4) how the
+  preflight finds `hooks/git-guardrails` (own location versus
+  `$SPEC_DRIVEN_GUARDRAILS_DIR`) and whether `adopt.sh` installs
+  `merge-preflight.sh` into adopted projects, which decides whether a
+  templates sync check like `wait-for-ci.sh`'s is needed (S342 covers behaviour
+  only). A44 says the Codex text runs it from the repo root of this project;
+  an adopted project needs a path it can resolve.
+- Not tested, stated: Codex's live `tool_name` for shell calls and whether the
+  `Bash` matcher fires (A44 assumption 4); that Codex subagents report no
+  token or tool count (secondary source); that the preflight is actually run
+  by a Codex session (voluntary by design).
+
+## #516 round 1, Architect amendment (1d9cf72, cb0817e): preflight reachability and no-target ambiguity
+
+Numbering: S345 and S346 are the next free S numbers on the pulled head
+`cb0817e` and on every remote branch (verified by grep). Proposed files:
+`test/cases/s345_merge_preflight_via_symlink.sh`,
+`test/cases/s346_merge_guard_no_target_ambiguity.sh`.
+
+### S345 — `merge-preflight.sh` reached through a symlinked directory still finds the guard and checks the caller's repo (A44 amendment 1; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: the preflight's stdin JSON into the real `hooks/git-guardrails`, `gh` on
+  `PATH` (`fake_gh_merge_bin`). The script is invoked as an adopted Codex
+  project does: through a directory symlink, `<project>/.guardrails/source`
+  pointing at the checkout, from a working directory that is NOT the
+  checkout (the project's own git sandbox repo)
+- Given: a sandbox project repo with the symlink `.guardrails/source` to the
+  repo root; current directory is the project; PR 41 is behind by 3
+  (`behind_by` 3, marker `match`, green checks); and a second case with
+  `behind_by` 0
+- When: `.guardrails/source/merge-preflight.sh 41` runs, once with a relative
+  path from the project root and once with the absolute symlinked path, and a
+  third time from a subdirectory of the project
+- Then: behind: exit 2, stderr names `gh pr update-branch 41` (the S324 text),
+  so the guard was found through the link, not through `$0`'s unresolved
+  path; not behind: exit 0. The JSON the guard receives carries `cwd` equal to
+  the caller's directory, not the checkout's (a stub guard in a second case
+  records it). A copy of the script alone outside any checkout (no `hooks/`
+  beside it) exits non-zero with a message that the guard was not found, not a
+  silent pass
+- Red on `cb0817e`'s predecessor behaviour if the script resolved the guard
+  with an unresolved `dirname "$0"` through a relative symlink: the guard is
+  not found and the behind PR passes or errors. Negative control: a script
+  using `dirname "$0"` without `pwd -P` fails the relative-path case by name
+
+### S346 — with no merge target, two open PRs for the current branch fail open with the existing warning (A44 amendment 3; open decision 5a; Covers F8; unit via fake gh)
+**Covers:** F8
+- Seam: `gh` on `PATH` (`fake_gh_merge_bin` with the several-row list output of
+  S339), the guard through `PreToolUse` JSON, sandbox current branch
+  `feature/work`
+- Given: `gh pr merge` with no target; (a) the open-PR list holds two rows with
+  head ref `feature/work` (`41` and `52`); (b) exactly one row (`41`) with
+  `behind_by` 3; (c) one row `41` for `feature/work` plus one other row `52`
+  for `feature/other`, `behind_by` 3; marker and CI fine
+- When: the command goes through the guard
+- Then: (a) exit 0 and stderr holds the existing "couldn't determine the PR
+  number ... skips the up-to-date check" warning (same text as S326's no-PR
+  case, no new wording), and the fake is never asked for `pulls/41` or
+  `pulls/52` (no first-match-wins); (b) and (c) exit 2 naming
+  `gh pr update-branch 41` (the single match is still resolved, so the
+  change does not turn the ordinary case into fail-open). Stray-Closes and
+  role-play checks warn the same way in (a). This makes the behaviour change
+  deliberate: before, the first matching row won
+- Red on `cb0817e`'s predecessor: (a) checks PR 41 (first match) and blocks
+  with exit 2 when 41 is behind

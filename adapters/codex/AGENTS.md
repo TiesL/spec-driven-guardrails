@@ -29,14 +29,14 @@ This project is developed from multiple computers. Follow this workflow in every
 
 ## Wrapping up
 
-**Confirmation is required only before merge (step 4 below).** Committing, pushing, opening a PR, and running the review all proceed without asking — do not invent an extra approval checkpoint at any of those points, even right after being corrected on a different mistake. If something about the change is genuinely unclear, ask that specific question directly instead of adding a generic "approve to proceed?" gate.
+**Confirmation is required only before merge (step 4 below), and it may be given in advance.** Committing, pushing, opening a PR, and running the review all proceed without asking — do not invent an extra approval checkpoint at any of those points, even right after being corrected on a different mistake. If something about the change is genuinely unclear, ask that specific question directly instead of adding a generic "approve to proceed?" gate.
 
 **This confirmation requirement is for a merge into `main`.** A work-item PR targeting a release branch instead follows the `release-branch-workflow` skill's own lower-ceremony path — merge on CI-green + tests-pass, no separate confirmation per work item. Steps 1-5 below describe the `main`-bound case; a release branch's own eventual merge into `main` still needs the maintainer's explicit confirmation, same as any other merge into `main`.
 
 1. Once the change is complete and tested (and, where applicable, manually verified): open a PR with `gh pr create`. If the PR refers to an issue (`Closes #N`), put that link in the **PR description itself**, not only in a commit message: GitHub populates `closingIssuesReferences` — the field that issue-linking checks actually test against — exclusively from the PR title/body. A commit with `Closes #N` does close the issue on a merge to `main`, but such a check won't see the link while the PR is still open.
 2. **Run the quality review immediately, in parallel with CI, not gated on CI being green** — don't ask whether to, don't wait to be asked, don't wait for CI first; see the `pre-merge-review` skill. The review's marker is pinned to the commit it reviewed, so a commit that lands afterward (a fixup, or a fix for a red CI) simply needs a fresh review, whenever it runs — nothing slips through unreviewed.
 3. Before asking for merge confirmation, know that CI has actually finished — the merge guard blocks the merge otherwise, and asking prematurely just costs a round trip. Don't poll `gh pr checks` on a short fixed interval — measured against this repo's own last 10 completed CI runs (`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8 minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus "still pending" checks before CI ever finishes (issue #215). Run `./wait-for-ci.sh <pr-number>` instead of polling by hand (issue #265) — it waits 5 minutes before the first check, then every 1 minute until CI reaches a terminal state, and exits non-zero if anything failed. That interval is a documented agreement precisely so an agent can't quietly improvise a shorter one; encoding it in a script closes that gap the same way a prose-only rule can't.
-4. **Wait for TiesL's explicit confirmation** that the test succeeded and there's no regression, before merging. Never merge automatically without that confirmation.
+4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
 5. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
 ## Issue labels
@@ -110,6 +110,21 @@ initial-stage completion as completion of a later route. Separate comments do
 not establish fresh sessions. Continuation is instruction-driven; installation
 and static checks cannot prove live autonomy, session freshness or obedience.
 
+Run `.guardrails/source/merge-preflight.sh <n>` from the project checkout before
+`gh pr merge`, with the PR number as `<n>`, and do not merge on a non-zero exit. It feeds the same
+`hooks/git-guardrails` that Claude's hook runs (up-to-date, review marker, CI,
+role-play checks). This is instruction-driven, not interception: the preflight
+is not a hook, nothing makes a session run it, and runtime-hooks stays
+not-installed.
+
+Dispatch mapping: `SendMessage` and `fork` in the canonical rules are Claude
+tool names. Read `SendMessage` as Codex's continue-an-agent tool and `fork` as
+any spawn that inherits context; the rules apply unchanged. If the platform
+reports no token or tool count for a subagent, log `tokens=n/a tools=n/a`,
+treat the size as unknown, which OR13 resolves to a fresh dispatch, and never
+estimate. The transcript extraction command in `dispatch-economy` is
+Claude-only.
+
 Start a fresh CLI/desktop session after adoption/update and observe actual
 loading: global/parent and deeper instructions, AGENTS.override.md precedence
 and the combined instruction budget can suppress rules. Adoption does not
@@ -119,6 +134,7 @@ and unsupported versions must be recorded as unavailable, not observed success.
 Shared native pre-commit/commit-msg/pre-push hooks and configured CI checks retain
 coverage limits: foreign hooks, hooksPath, --no-verify, missing dependencies and
 escape hatches. Native hooks do not intercept `gh pr merge`; merge into main
-still needs explicit human confirmation and the canonical review evidence.
+still needs explicit human confirmation, the canonical review evidence and a
+clean merge-preflight.sh run.
 Codex specialized/indirect shell actions have no adapter runtime interception.
 Read-only status establishes structural installation, never live loading.

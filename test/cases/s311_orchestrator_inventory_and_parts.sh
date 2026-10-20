@@ -90,7 +90,7 @@ neg ob-cites-or99 ob-unknown-id "$ORCH" "$TSV" "$d/s-or99.md"
 awk -F'\t' -v OFS='\t' '$3=="hook:no-fork"{$3="hook:no-forks"} {print}' "$TSV" > "$d/t-hook.tsv"
 neg hook-renamed hook-checks "$ORCH" "$d/t-hook.tsv" "$SCEN"
 
-sed 's/^- OR11 \(.*\)Merge into `main` only after human confirms final head SHA; /- OR11 \1Merge into `main` after human confirms; /' "$ORCH" > "$d/o-or11.md"
+sed 's/^- OR11 \(.*\)Any new commit that changes the work lapses the approval/- OR11 \1A new commit keeps the approval/' "$ORCH" > "$d/o-or11.md"
 neg or11-weakened or11-wording "$d/o-or11.md" "$TSV" "$SCEN"
 
 sed 's/in OR5 order, //' "$ORCH" > "$d/o-xref.md"

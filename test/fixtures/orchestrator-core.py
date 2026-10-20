@@ -224,9 +224,12 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
     need("OR31", "Stage names: OR5", "xref-or31")
     need("OR36", "in OR5 order", "xref-or36")
     or11 = full.get("OR11", "")
-    if not re.search(r"Merge into `main` only after human confirms final head SHA", or11) \
-            or "new commit after confirmation needs new confirmation" not in or11:
-        errs.append(("or11-wording", "OR11 must say merge into main only after the human confirms the final head SHA, and a new commit needs a new confirmation"))
+    # #516 (A43): approval for that PR, after the work or in advance; any
+    # change lapses it; the human names no head SHA (old wording gone).
+    if not re.search(r"Merge into `main` only with human's approval for that PR, given after work or in advance", or11) \
+            or "new commit that changes the work lapses the approval" not in or11 \
+            or "final head SHA" in or11:
+        errs.append(("or11-wording", "OR11 must say merge into main only with the human's approval for that PR, given after the work or in advance, and that a new commit that changes the work lapses the approval"))
     names = {r["name"] for r in rows}
     for n in REQUIRED_NAMES:
         if n not in names:
