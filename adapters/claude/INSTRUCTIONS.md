@@ -17,11 +17,15 @@ escape hatches limit coverage. Neither native Git hooks nor CI intercept
 
 The synchronous Bash PostToolUse `stop-after-completion` hook ends qualifying
 work with `continue: false` and "Merged to main. Type /clear before the next
-work item." It allows the approved release tag after release-to-main, then stops
-on successful publication with the same decided text. Detection is local for
-tags and uses a bounded PR lookup for merges; failed/uncertain lookup is advisory
-and fails open. Omitted PR identity after branch deletion can be unresolvable;
-never guess the new current branch's PR. The hook cannot undo later commands
+work item; if you are tagging a release, tag it first." Every successful merge
+into `main` stops, release heads included; tag commands neither stop nor prompt.
+It uses a bounded PR lookup; failed/uncertain lookup is advisory and fails open.
+The canonical `gh pr merge <n> --squash --delete-branch` names the PR. An
+omitted target is resolved from the current branch, or, after `--delete-branch`
+switched to main, from the newest checkout reflog entry when that branch is gone
+and the lookup's head matches; other omitted forms fail open. Output
+redirections (`2>&1`, `>file`) keep the proof; pipes and input redirections do
+not. The hook cannot undo later commands
 already batched into the same Bash call, so the shared separate-call rule is
 required. It cannot run `/clear` or reset context. Script tests establish wiring
 and output; live hook loading/termination and `/clear` require a Claude session.

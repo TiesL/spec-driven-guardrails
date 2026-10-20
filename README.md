@@ -397,9 +397,14 @@ dogfooding the mechanism it specifies.
 
 ### Completion and the next conversation (#500)
 
-Successful non-release main merges end the current turn. Release-to-main allows
-only the approved tag next, then successful publication ends the turn; release
-base merges continue. Independently published tags also stop. Claude receives a
+Every successful merge into `main` ends the current turn, release heads
+included, and the prompt notes that a release being tagged is tagged first. Tag
+commands and publication are not detected and neither stop nor prompt; merges
+into a release branch continue. The Claude hook covers the canonical
+`gh pr merge <n> --squash --delete-branch`, an omitted target with a surviving
+branch or recovered from the checkout reflog after branch deletion, output
+redirections and line continuation. Pipes, input redirections, wrappers,
+compound shell programs and a lost branch fail open (no stop). Claude receives a
 synchronous Bash PostToolUse completion hook via the existing settings symlink.
 Codex uses instruction following, with `runtime-hooks: not-installed`; rerun
 `adopt.sh --runtime codex <project>` and start a fresh session to load the updated

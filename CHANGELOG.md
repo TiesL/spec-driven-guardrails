@@ -13,11 +13,13 @@ point.
 
 ## Unreleased
 
-- **#500: finish the turn after main merges and tag publication.** Claude's
-  synchronous Bash PostToolUse hook stops after confirmed non-release main
-  merges; release-to-main allows the approved tag next, then stops on publication.
-  Codex CLI/desktop carry the same lifecycle through instructions, without runtime
-  hook enforcement. Claude follows the settings source link; rerun `adopt.sh
+- **#500: finish the turn after merges into main.** Claude's
+  synchronous Bash PostToolUse hook stops after every confirmed merge into
+  `main` (release heads included) with a note to tag a release first; tag
+  commands are not detected. Merges into release branches continue. Codex CLI/desktop
+  carry the same lifecycle through instructions, without runtime
+  hook enforcement. Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`.
+  Claude follows the settings source link; rerun `adopt.sh
   --runtime codex <project>` and start a fresh session for Codex's managed block.
   Context reset remains human: Claude `/clear`, CLI `/clear` or `/new`, desktop
   New chat. No new CHANGES/adoption question. Script coverage and live runtime

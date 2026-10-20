@@ -86,13 +86,24 @@ class Token(NamedTuple):
     value: str
 
 
-def lexical_tokens(text):
+# Output redirections the completion reading can prove harmless: a file target
+# (`>f`, `2> f`, `>>f`, `&>f`) or an fd duplication (`2>&1`). Anything else
+# (input, here-strings, expansion in the target, `>&-`) is left to the generic
+# word rules, which treat it as uncertain.
+REDIRECT = re.compile(r"(?:\d*>>?|&>>?)[ \t]*[^\s;|&<>()$`'\"\\#]+(?=[\s;|&]|$)|\d*>&\d+(?=[\s;|&]|$)")
+
+
+def lexical_tokens(text, completion=False):
     """Read decoded words and actual operators without losing their origin.
 
     Quotes, escapes and adjacent fragments all belong to a word. The legacy
     tokenizer below deliberately drops the type; completion keeps it so shell
     data can never establish a command position. This is a bounded lexical
     reader, not an evaluator of expansion or compound shell programs.
+
+    With completion=True (the completion hook only), backslash-newline is a
+    line continuation and supported output redirections become "redirect"
+    tokens. The legacy guard stream never sets it and stays byte-identical.
     """
     tokens = []
     punctuation = ";|&\n"
@@ -117,6 +128,9 @@ def lexical_tokens(text):
                 i += 1
                 if i == len(text):
                     raise ValueError("No escaped character")
+                if completion and text[i] == "\n":
+                    i += 1
+                    continue
                 # Match the reader's established POSIX shlex decoding.
                 if text[i] not in ('"', "\\"):
                     word.append("\\")
@@ -127,6 +141,9 @@ def lexical_tokens(text):
             started = True
             quote = char
         elif char == "\\":
+            if completion and text[i + 1:i + 2] == "\n":
+                i += 2
+                continue
             started = True
             i += 1
             if i == len(text):
@@ -139,6 +156,9 @@ def lexical_tokens(text):
             i = len(text) if newline == -1 else newline
         elif char in " \t\r":
             end_word()
+        elif completion and not started and (match := REDIRECT.match(text, i)):
+            tokens.append(Token("redirect", match.group(0)))
+            i = match.end() - 1
         elif char in punctuation:
             end_word()
             end = i + 1

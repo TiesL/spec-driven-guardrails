@@ -9,7 +9,7 @@ import sys
 spec = importlib.util.spec_from_file_location('read_command', Path(__file__).with_name('read-command.py'))
 reader = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reader)
-STOP = {'continue': False, 'stopReason': 'Merged to main. Type /clear before the next work item.'}
+STOP = {'continue': False, 'stopReason': 'Merged to main. Type /clear before the next work item; if you are tagging a release, tag it first.'}
 
 
 def read(args, cwd):
@@ -25,9 +25,11 @@ def successful_segments(command):
     Earlier semicolon segments and any chain involving ||, pipes, background
     or shell control syntax cannot be proved successful from PostToolUse.
     """
-    tokens = reader.lexical_tokens(reader.without_heredocs(command))
+    tokens = reader.lexical_tokens(reader.without_heredocs(command), completion=True)
     segments, operators, current = [], [], []
     for token in tokens:
+        if token.kind == 'redirect':
+            continue
         if token.kind == 'operator':
             segments.append(current)
             operators.append(token.value)
@@ -97,13 +99,30 @@ def merge_result(words, cwd):
         else:
             target = word
             i += 1
-    omitted = target is None
-    if omitted:
+    lookup = 'baseRefName,state'
+    if target is None:
         target = read(['git','symbolic-ref','--quiet','--short','HEAD'],cwd)
-        # Branch deletion can switch to main. Never guess its current PR.
-        if not target or not target.startswith(('feature/','fix/','release/')):
+        if not target:
             return None
-    query = ['gh','pr','view',target,'--json','baseRefName,headRefName,state']
+        if not target.startswith(('feature/','fix/','release/')):
+            # `--delete-branch` leaves the checkout on main. Recover the merged
+            # branch from the checkout that just happened, and only then.
+            if not {'--delete-branch','-d'} & set(args):
+                return None
+            moved = read(['git','reflog','-1','--format=%gs','HEAD'],cwd) or ''
+            prefix, suffix = 'checkout: moving from ', ' to ' + target
+            if not (moved.startswith(prefix) and moved.endswith(suffix)):
+                return None
+            target = moved[len(prefix):-len(suffix)]
+            if not target.startswith(('feature/','fix/','release/')) or read(['git','rev-parse','--verify','--quiet','refs/heads/'+target],cwd) is not None:
+                return None
+            lookup = 'baseRefName,headRefName,state'
+            fallback = True
+        else:
+            fallback = False
+    else:
+        fallback = False
+    query = ['gh','pr','view',target,'--json',lookup]
     if repo:
         query += ['--repo',repo]
     result = read(query,cwd)
@@ -111,51 +130,11 @@ def merge_result(words, cwd):
         info = json.loads(result)
     except (TypeError, ValueError):
         return None
-    if not isinstance(info,dict) or info.get('state') != 'MERGED' or info.get('baseRefName') != 'main' or not isinstance(info.get('headRefName'),str) or not info['headRefName']:
+    if not isinstance(info,dict) or info.get('state') != 'MERGED' or info.get('baseRefName') != 'main':
         return None
-    if omitted and info['headRefName'] != target:
+    if fallback and info.get('headRefName') != target:
         return None
-    if info['headRefName'].startswith('release/'):
-        return {'hookSpecificOutput': {'hookEventName':'PostToolUse','additionalContext':'Release merged to main. Publish only the already-approved release tag next, then stop and tell the maintainer: Merged to main. Type /clear before the next work item.'}}
     return STOP
-
-
-def published_tag(words, cwd):
-    parsed = gh_command(words)
-    if parsed and parsed[0][:2] == ['release','create']:
-        args = parsed[0][2:]
-        return bool(args and not args[0].startswith('-') and not any(arg in {'--help','-h'} for arg in args))
-    if words[:2] != ['git','push']:
-        return False
-    args = words[2:]
-    if any(a in {'--delete','-d','--dry-run','-n','--mirror','--all','--prune'} or a.startswith('--delete=') for a in args):
-        return False
-    positional, i = [], 0
-    while i < len(args):
-        word = args[i]
-        if word in {'--repo','--receive-pack','--exec','--push-option','-o'}:
-            i += 2
-        elif word.startswith('-'):
-            if word not in {'--tags','--follow-tags','--force','-f','--force-with-lease','--atomic','--verbose','-v','--quiet','-q','--porcelain','--set-upstream','-u'}:
-                return False
-            i += 1
-        else:
-            positional.append(word)
-            i += 1
-    refs = positional[1:]
-    if any(':' in ref for ref in refs):
-        return False
-    if '--tags' in args:
-        return bool(read(['git','for-each-ref','--format=%(refname)','refs/tags/'],cwd))
-    if '--follow-tags' in args:
-        # Only annotated tags reachable from a pushed commit are eligible.
-        tags = read(['git','for-each-ref','--format=%(refname) %(objecttype)','refs/tags/'],cwd) or ''
-        heads = refs or ['HEAD']
-        for tag in tags.splitlines():
-            name, kind = tag.rsplit(' ',1)
-            if kind == 'tag' and any(read(['git','merge-base','--is-ancestor',name,head],cwd) is not None for head in heads):
-                return True
-    return any(not ref.startswith('refs/heads/') and read(['git','show-ref','--verify','--hash',ref if ref.startswith('refs/tags/') else 'refs/tags/'+ref],cwd) is not None for ref in refs)
 
 
 def main():
@@ -170,18 +149,10 @@ def main():
         cwd = event.get('cwd')
         if not isinstance(command,str) or not isinstance(cwd,str):
             return
-        release = None
         for words in successful_segments(command):
-            if published_tag(words,cwd):
+            if merge_result(words,cwd):
                 print(json.dumps(STOP))
                 return
-            result = merge_result(words,cwd)
-            if result == STOP:
-                print(json.dumps(result))
-                return
-            release = result or release
-        if release:
-            print(json.dumps(release))
     except (ValueError,TypeError,AttributeError,OSError):
         return
 

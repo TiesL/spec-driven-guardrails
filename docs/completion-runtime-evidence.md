@@ -6,6 +6,11 @@ at `69142c1` and the uncommitted implementation under test. This report describe
 instruction obedience and script behavior. It establishes no mechanical Codex
 termination guarantee or automatic context reset.
 
+**Superseded in part (decision 8).** The live runs below were made under the
+earlier tag-aware wording. They do not count for the current wording (main-merge
+stop with a tag note, no tag detection); S363 stays red until they are repeated
+and `instructions_sha256` is recorded.
+
 ## Executable and adoption observations
 
 `./test/run.sh completion` exercises the public hook stdin/stdout Interface,

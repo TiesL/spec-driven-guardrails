@@ -37,24 +37,23 @@ This project is developed from multiple computers. Follow this workflow in every
 2. **Run the quality review immediately, in parallel with CI, not gated on CI being green** — don't ask whether to, don't wait to be asked, don't wait for CI first; see the `pre-merge-review` skill. The review's marker is pinned to the commit it reviewed, so a commit that lands afterward (a fixup, or a fix for a red CI) simply needs a fresh review, whenever it runs — nothing slips through unreviewed.
 3. Before asking for merge confirmation, know that CI has actually finished — the merge guard blocks the merge otherwise, and asking prematurely just costs a round trip. Don't poll `gh pr checks` on a short fixed interval — measured against this repo's own last 10 completed CI runs (`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8 minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus "still pending" checks before CI ever finishes (issue #215). Run `./wait-for-ci.sh <pr-number>` instead of polling by hand (issue #265) — it waits 5 minutes before the first check, then every 1 minute until CI reaches a terminal state, and exits non-zero if anything failed. That interval is a documented agreement precisely so an agent can't quietly improvise a shorter one; encoding it in a script closes that gap the same way a prose-only rule can't.
 4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
-5. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
+5. Then merge with `gh pr merge <n> --squash --delete-branch` (name the PR number) — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
 ### Completion ends the current work
 
-After a confirmed successful non-`release/*` merge into `main`, stop autonomous
-work and give the runtime's fresh-context instruction before the next work item.
-A merge into `release/*` continues. A `release/*` branch merged into `main`
-permits only the already-approved release tag next; successful tag publication
-then stops work. Independently requested successful tag publication also stops
-again. Recognized forms are `git push <remote> <tag>`, `git push --tags`,
-`git push --follow-tags`, and `gh release create`. Failed, queued-only or
+After a confirmed successful merge into `main`, from any head including a
+`release/*` branch, stop autonomous work and give the runtime's fresh-context
+instruction before the next work item; the prompt notes that a release being
+tagged is tagged first. A merge into `release/*` continues. Tagging is a
+maintainer-requested follow-up that can happen before the reset; tag commands
+and tag publication never stop or prompt by themselves. Failed, queued-only or
 uncertain completion does not produce a successful-completion stop.
 
-Run each merge or publication in a distinct tool call, inspect its completed
+Run each merge in a distinct tool call, inspect its completed
 result before scheduling anything further, and never batch the next work item
 in a compound command, concurrent call or tool script. Finish durable reporting
-before the qualifying operation. Afterward only the release-tag exception or
-the final result and fresh-context prompt is allowed. Context reset is the
+before the merge. Afterward only the final result and fresh-context prompt is
+allowed. Context reset is the
 maintainer's action; stopping ends the current turn, not the conversation.
 Production deployment can follow a fresh context with its separate approval.
 Web-UI and subagent merges are outside this completion mechanism.
@@ -114,11 +113,15 @@ escape hatches limit coverage. Neither native Git hooks nor CI intercept
 
 The synchronous Bash PostToolUse `stop-after-completion` hook ends qualifying
 work with `continue: false` and "Merged to main. Type /clear before the next
-work item." It allows the approved release tag after release-to-main, then stops
-on successful publication with the same decided text. Detection is local for
-tags and uses a bounded PR lookup for merges; failed/uncertain lookup is advisory
-and fails open. Omitted PR identity after branch deletion can be unresolvable;
-never guess the new current branch's PR. The hook cannot undo later commands
+work item; if you are tagging a release, tag it first." Every successful merge
+into `main` stops, release heads included; tag commands neither stop nor prompt.
+It uses a bounded PR lookup; failed/uncertain lookup is advisory and fails open.
+The canonical `gh pr merge <n> --squash --delete-branch` names the PR. An
+omitted target is resolved from the current branch, or, after `--delete-branch`
+switched to main, from the newest checkout reflog entry when that branch is gone
+and the lookup's head matches; other omitted forms fail open. Output
+redirections (`2>&1`, `>file`) keep the proof; pipes and input redirections do
+not. The hook cannot undo later commands
 already batched into the same Bash call, so the shared separate-call rule is
 required. It cannot run `/clear` or reset context. Script tests establish wiring
 and output; live hook loading/termination and `/clear` require a Claude session.
