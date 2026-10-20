@@ -443,7 +443,17 @@ def cmd_run(args):
         for e in errors:
             sys.stderr.write("ERROR: %s\n" % e)
         return 2
-    p = subprocess.run(["git", "-C", repo, "show", "%s:%s" % (args.base, ORCH_REL)],
+    # The stamp records the commit the run compared against, not the ref text
+    # (#542): origin/main moves, a SHA does not. An unresolvable base stops
+    # the run before any stamp can be written.
+    rp = subprocess.run(["git", "-C", repo, "rev-parse", "--verify", "--quiet",
+                         "%s^{commit}" % args.base],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    base_sha = rp.stdout.decode("utf-8", "replace").strip()
+    if rp.returncode != 0 or not base_sha:
+        sys.stderr.write("run: cannot resolve --base %s to a commit in %s\n" % (args.base, repo))
+        return 2
+    p = subprocess.run(["git", "-C", repo, "show", "%s:%s" % (base_sha, ORCH_REL)],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if p.returncode != 0:
         sys.stderr.write("run: cannot read %s at %s: %s\n" %
@@ -520,7 +530,7 @@ def cmd_run(args):
     if ok:
         digest = stamp_hash(read(orch_path), read(scen_path))
         line = "sha256=%s base=%s model=%s scenarios=%d\n" % (
-            digest, args.base, runner.resolved or "unknown", len(scenarios))
+            digest, base_sha, runner.resolved or "unknown", len(scenarios))
         tmp = os.path.join(repo, STAMP_REL + ".tmp")
         with open(tmp, "w") as f:
             f.write(line)
