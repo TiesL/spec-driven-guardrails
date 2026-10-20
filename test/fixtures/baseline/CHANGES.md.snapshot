@@ -636,7 +636,7 @@ the shared parser warns if it has no `Applies if`.
   `hooks/git-guardrails` regardless of this answer, behind the same switch as
   `quality-review-before-merge`.
 - **Reaches session:** always-loaded: WORKFLOW.md
-- **PR:** https://github.com/TiesL/spec-driven-guardrails/issues/516
+- **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/540
 
 ---
 
