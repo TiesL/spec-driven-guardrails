@@ -33,6 +33,21 @@ initial-stage completion as completion of a later route. Separate comments do
 not establish fresh sessions. Continuation is instruction-driven; installation
 and static checks cannot prove live autonomy, session freshness or obedience.
 
+Run `.guardrails/source/merge-preflight.sh <n>` from the project checkout before
+`gh pr merge`, with the PR number as `<n>`, and do not merge on a non-zero exit. It feeds the same
+`hooks/git-guardrails` that Claude's hook runs (up-to-date, review marker, CI,
+role-play checks). This is instruction-driven, not interception: the preflight
+is not a hook, nothing makes a session run it, and runtime-hooks stays
+not-installed.
+
+Dispatch mapping: `SendMessage` and `fork` in the canonical rules are Claude
+tool names. Read `SendMessage` as Codex's continue-an-agent tool and `fork` as
+any spawn that inherits context; the rules apply unchanged. If the platform
+reports no token or tool count for a subagent, log `tokens=n/a tools=n/a`,
+treat the size as unknown, which OR13 resolves to a fresh dispatch, and never
+estimate. The transcript extraction command in `dispatch-economy` is
+Claude-only.
+
 Start a fresh CLI/desktop session after adoption/update and observe actual
 loading: global/parent and deeper instructions, AGENTS.override.md precedence
 and the combined instruction budget can suppress rules. Adoption does not
@@ -42,6 +57,7 @@ and unsupported versions must be recorded as unavailable, not observed success.
 Shared native pre-commit/commit-msg/pre-push hooks and configured CI checks retain
 coverage limits: foreign hooks, hooksPath, --no-verify, missing dependencies and
 escape hatches. Native hooks do not intercept `gh pr merge`; merge into main
-still needs explicit human confirmation and the canonical review evidence.
+still needs explicit human confirmation, the canonical review evidence and a
+clean merge-preflight.sh run.
 Codex specialized/indirect shell actions have no adapter runtime interception.
 Read-only status establishes structural installation, never live loading.

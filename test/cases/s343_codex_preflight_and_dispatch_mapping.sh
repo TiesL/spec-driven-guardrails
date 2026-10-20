@@ -22,10 +22,12 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 # paragraph_with <file> <token>: the blank-line-delimited paragraph holding token.
-paragraph_with() { awk -v RS= -v t="$2" 'index($0, t) { print; exit }' "$1"; }
+# Whitespace is flattened, so a token split across a wrapped line still matches.
+paragraph_with() { awk -v RS= -v t="$2" 'index($0, t) { print; exit }' "$1" | tr '\n' ' '; }
 
 for f in "$INS" "$GEN"; do
   name="$(basename "$f")"
+  flat="$(tr '\n' ' ' < "$f")"
   p="$(paragraph_with "$f" "merge-preflight.sh")"
   [ -n "$p" ] || { fail "S343/a/$name — no paragraph mentions merge-preflight.sh"; continue; }
   assert_contains "S343/a/$name — before gh pr merge" "before \`gh pr merge\`" "$p"
@@ -37,13 +39,13 @@ for f in "$INS" "$GEN"; do
   assert_contains "S343/c/$name — merge confirmation" "explicit human confirmation" "$m"
   assert_contains "S343/c/$name — and the preflight" "preflight" "$m"
   # (d) dispatch mapping.
-  assert_contains "S343/d/$name — SendMessage" "SendMessage" "$(cat "$f")"
-  assert_contains "S343/d/$name — fork" "fork" "$(cat "$f")"
-  assert_contains "S343/d/$name — n/a log token" "tokens=n/a tools=n/a" "$(cat "$f")"
-  case "$(cat "$f")" in *"never estimate"*|*"do not estimate"*) : ;; *) fail "S343/d/$name — no 'never estimate' / 'do not estimate'" ;; esac
+  assert_contains "S343/d/$name — SendMessage" "SendMessage" "$flat"
+  assert_contains "S343/d/$name — fork" "fork" "$flat"
+  assert_contains "S343/d/$name — n/a log token" "tokens=n/a tools=n/a" "$flat"
+  case "$flat" in *"never estimate"*|*"do not estimate"*) : ;; *) fail "S343/d/$name — no 'never estimate' / 'do not estimate'" ;; esac
   # (f) no false coverage claim.
-  case "$(cat "$f")" in *"preflight is a hook"*|*"hooks are installed"*) fail "S343/f/$name — claims hook coverage" ;; esac
-  assert_contains "S343/f/$name — still not-installed" "runtime-hooks: not-installed" "$(cat "$f")"
+  case "$flat" in *"preflight is a hook"*|*"hooks are installed"*) fail "S343/f/$name — claims hook coverage" ;; esac
+  assert_contains "S343/f/$name — still not-installed" "runtime-hooks: not-installed" "$flat"
 done
 
 # (e) AGENTS.md is exactly what the generator produces from INSTRUCTIONS.md.
