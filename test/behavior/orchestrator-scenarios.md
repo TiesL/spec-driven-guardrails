@@ -342,7 +342,7 @@ When: You choose how to get the change made.
 Then: next_action=continue_agent; next_role=QA
 
 ### OB53 · OR13
-Given: Fullstack Developer agent d9 implemented issue 40; its dispatch result reported 300k tokens and 269 tool uses. CI on PR 41 failed on one test, and the cause is a one-line code fix in code d9 wrote. d9 is still reachable by `SendMessage` and holds the context of that code.
+Given: Fullstack Developer agent d9 implemented issue 40; its dispatch result reported 300k tokens and 269 tool uses. CI on PR 41 failed on one test; QA has already added the red test for the defect, and the remaining work is the one-line code fix in code d9 wrote. d9 is still reachable by `SendMessage` and holds the context of that code.
 When: You choose how to get the fix made.
 Then: next_action=dispatch; next_role=Fullstack Developer
 
@@ -468,6 +468,10 @@ item cites its decision as at least one `#<n>`.
   Decided by the maintainer (#532 decisions 1-2).
 - OB53 (OR13): fresh dispatch instead of continue past the 100k token and
   60 tool use limits. Decided by the maintainer (#532 decisions 1-2).
+  Reworded in #516 (finding `ob53-old-wrong`): the Given now says QA has
+  already written the red test, so the Developer is the next role under OR17
+  (`code` finding: QA, Developer, fresh Reviewer) and the scenario tests only
+  the continue-or-fresh point.
 - OB54 (OR13, OR47): a new work item gets a fresh role with a brief, never a
   continued agent from another work item. Decided by the maintainer (#532
   decisions 1-2).

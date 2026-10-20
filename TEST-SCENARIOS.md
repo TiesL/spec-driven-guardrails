@@ -5776,9 +5776,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   row's ID is unique; a `retired` row has part `-` and its ID occurs in no
   item; `above` and `below` do not occur as words in either part; OR21 and
   OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
-  OR5 order`; OR11's item says merge into `main` only after the human
-  confirms the final head SHA and that a new commit after confirmation needs
-  a new confirmation; every required name of AC7 is a row name; the hook
+  OR5 order`; OR11's item says merge into `main` only with the human's
+  approval for that PR, given after the work or in advance (#516), that an
+  advance approval lapses on a new commit that changes the work, and that a
+  head SHA is not named; every required name of AC7 is a row name; the hook
   tier check ids, joined over rows, equal `--list-checks`; every `gate:`
   script exists; every `judgment` row's `covered_by` names at least one
   existing `OB`, and every `OB` heading cites only existing IDs; the
