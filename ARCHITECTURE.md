@@ -1602,3 +1602,175 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 - **Effort.** Architect: this entry, about 1 hour. Downstream: QA about 2 hours (about 8 scenarios, most reuse S9's setup); Developer about 2 hours (one lib, a 5-line call-site change, comment fix, `./check`); spec edits about 1 hour. Total S.
 - **Risks.** (R1) `git check-ignore` semantics for a directory-only pattern with an absent directory: handled by the per-name path; QA must include the absent-directory case so a regression to the bare path is caught. (R2) macOS bash 3.2: no namerefs, no `${var,,}`; the global string covers it. (R3) A project whose `.gitignore` ignores `.claude/skills/` but whose `.claude/skills` content is tracked from before: a new link is untracked and ignored, so no noise, but `adopt.sh`'s untracking is not run; unchanged from today. (R4) Codex is out of scope (#507): the module takes the workflow and project directories only and knows nothing about Claude's settings except the adoption signal in step 1, so #507 will need its own adoption signal (its own installed link), not a reuse of step 1. (R5) Report-line wording must not claim same-session availability.
 - **Violated when:** the hook overwrites, removes or repoints any existing path; creates anything in a project whose settings link does not point into this checkout; creates a link in a non-ignored `.claude/skills`; prints to stderr or exits non-zero; or `adopt.sh` and the hook disagree on the link form.
+
+### A46 — End work after a main merge or tag publication; Claude hook and Codex instruction coverage (#500)
+
+- **Authority and outcome.** Issue #500 AC1–AC8 and human decisions 1–7
+  govern this design. A successful non-`release/*` head merge into `main`
+  ends autonomous work. A `release/*` head merge into `main` permits only
+  the already-approved release tag next; its successful publication ends
+  work. Merges into `release/*` continue. Independently requested tag
+  publication ends work again, including a tag requested after an earlier
+  stop. Context reset stays the maintainer's action. A stop ends the current
+  turn, not the conversation, and is not an automatic context reset.
+
+- **Codex feasibility, established before Implementation (2026-10-20).**
+  The installed adapter supplies generated instructions, skill/source links
+  and native Git hooks. `lib/codex-adoption.py` installs no runtime hook or
+  Codex configuration; its inventory and `session-context.sh --runtime codex`
+  correctly report `runtime-hooks: not-installed`. The locally available
+  binary reports `codex-cli 0.163.0`; that is a version observation, not a
+  live stop or reset observation. The current role's shell tools likewise
+  establish no installed interception.
+  [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
+  describes `PostToolUse` feedback semantics: `continue: false` replaces
+  the tool result and permits model continuation, including nested code-mode
+  calls. Consequently wiring Claude JSON into a Codex hook would not prove
+  the requested stop. #500 uses the existing instruction-based adapter:
+  after confirming the qualifying result, Codex ends its turn with a concise
+  result and fresh-chat instruction, without beginning another work item.
+  This achieves Product's explicitly instruction-based outcome when obeyed;
+  it has no mechanical enforcement guarantee. Hook installation remains
+  separate work (#544), and is neither required nor silently claimed here.
+
+- **Codex Interface and integration.** Put the completion rule in canonical
+  `policy/WORKFLOW.md` after the merge step, with runtime-specific reset
+  wording in `adapters/claude/INSTRUCTIONS.md` and
+  `adapters/codex/INSTRUCTIONS.md`; regenerate `WORKFLOW.md` and
+  `adapters/codex/AGENTS.md`. State the release exception explicitly beside
+  the stop, and align `skills/release-branch-workflow/SKILL.md`'s existing
+  after-merge tagging instruction. Codex must identify PR base/head before
+  a merge that may delete the branch, confirm `state == MERGED` afterward
+  using the saved PR number and repository, and use the actual tool result
+  for tag success. A queued `--auto` result is insufficient. Failed or
+  uncertain results produce no successful-completion stop. Run a merge or
+  publication as a distinct tool call and inspect its completed result
+  before scheduling further work; never batch a next work item into the
+  same tool script, concurrent call or compound shell command. Do required
+  durable reporting before the qualifying operation. After it, the only
+  continuation is the release tag exception or the final result/prompt.
+  No new polling loop, persistent latch, background process or context-clear
+  shell command is introduced.
+  CLI final wording: "Merged to main. Use /clear or /new before the next
+  work item." Tag wording substitutes "Tag published." Desktop final
+  wording: "Merged to main. Start a New chat before the next work item."
+  Tag wording makes the same substitution. If the surface cannot be
+  established, give both labeled actions rather than guess.
+  [CLI commands](https://learn.chatgpt.com/docs/developer-commands?surface=cli)
+  documents fresh-chat `/clear` and `/new`; a terminal clear does not reset
+  the chat, and these commands require the current task to finish.
+  [Desktop commands](https://learn.chatgpt.com/docs/reference/commands)
+  documents New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux).
+
+- **Claude Module and Interface.** Add one executable
+  `hooks/stop-after-completion` (Python 3 is already a hook dependency),
+  registered synchronously alongside `push-after-commit` under Bash
+  `PostToolUse` in `settings/session-hooks.json`, using the existing
+  settings-link-to-source resolution. Its Interface is hook JSON on stdin,
+  JSON or empty stdout, exit 0 on all advisory/uncertain paths; it performs
+  read-only subprocess lookups with argument arrays, bounded timeouts and
+  no `eval` or shell execution of input. Malformed JSON, wrong event/tool,
+  interrupted/background-incomplete calls or unreadable quoting produce
+  no stop. The real
+  [Claude hook contract](https://code.claude.com/docs/en/hooks)
+  supplies PostToolUse after successful tools; failure is a different event.
+  Do not invent a portable `tool_response.exit_code` field.
+  On qualifying non-release merge output exactly `continue: false` with
+  `stopReason: "Merged to main. Type /clear before the next work item."`.
+  For release-to-main output `hookSpecificOutput` with
+  `hookEventName: "PostToolUse"` and `additionalContext` telling Claude to
+  publish the already-approved release tag next and then stop. Successful
+  tag publication uses the same human-decided stopReason, including for an
+  independent tag. No `gh` call is made for a tag or unrelated command.
+
+- **Command interpretation and success evidence.** Reuse the quote-aware
+  `tokenize`/`without_heredocs` logic in `hooks/read-command.py` rather than
+  copy shell parsing or change the guard's existing stream Interface.
+  Keep control-operator information while judging execution, not just a
+  bag of matching words. Recognize actual `gh pr merge` command positions,
+  explicit number/URL/branch or omitted current-PR target, value-taking
+  flags and `-R`/`--repo` in their supported positions. Query
+  `gh pr view [target] --json baseRefName,headRefName,state`, forwarding
+  repository selection; require exact `MERGED` and base `main` before
+  applying the head exception. Bound lookup latency and fail open on
+  errors, malformed output or ambiguity. An omitted PR after branch
+  deletion can be unresolvable: do not substitute the next current branch's
+  PR; document this as uncertain lookup. Codex avoids it with saved identity.
+  Resolve explicit tag refs locally with `git show-ref --verify` or
+  `git rev-parse --verify` under `refs/tags/`, including annotated tags.
+  Recognize `git push <remote> <tag>`, `--tags`, `--follow-tags`, and
+  `gh release create` in command position. Exclude deletion, dry-run and
+  branch-only pushes; `--follow-tags` without a local eligible tag is
+  insufficient. A missing local tag makes the plain push uncertain,
+  not a tag. `gh release create` is itself the decided publication form
+  and need not have a pre-existing local tag.
+  Whole-call success proves an individual command succeeded only where
+  the shell structure entails it: standalone or an all-success `&&` chain.
+  A final matching command after `;` is also covered when its result is
+  the call's result. A masked failure (`|| true`, pipeline status, earlier
+  semicolon segment) or conditional/skipped occurrence must not be turned
+  into success by matching text or finding an old merged PR/local tag.
+  Treat an unprovable occurrence as uncertainty; process any separately
+  provable occurrence. No parser promises to interpret arbitrary shell
+  programs, aliases, substitutions, wrappers or scripts. The post hook
+  cannot prevent commands already run within the same Bash invocation;
+  the canonical separate-call instruction prevents that continuation when
+  followed. Web-UI and subagent merges stay excluded by human decision.
+
+- **Depth, Seam, Leverage and Locality.** One completion Module hides command
+  recognition, result confirmation and Claude output behind one executable
+  Interface. The Seam for QA is that executable plus stdin, a temporary
+  repository, and PATH-provided `gh` fixtures, exactly as runtime callers
+  enter it. Reusing the existing parser gives Leverage and Locality without
+  another shell grammar. Deletion test: deleting the Module would put the
+  same recognition and result rules into settings commands and tests, so it
+  earns its place. Do not invent a common runtime hook abstraction: the two
+  real adapters vary in enforcement and do not satisfy one stop Interface.
+  The two-adapters rule supports the existing generated policy arrangement,
+  while Codex instructions remain a distinct adapter, not a fake hook.
+
+- **QA handoff.** Demonstrate red before green through the executable Seam:
+  each AC1–AC6 result, all four tag forms, annotated tags, no-tag
+  `--follow-tags`, failed publications, queue/open state, lookup timeout,
+  unrelated commands with zero `gh` invocations, quoted prose/heredoc,
+  compound `&&` and semicolon-final success, masked/skipped negatives,
+  repository flags and omitted-target uncertainty. Fake `gh` asserts
+  target/repository and returns states; real throwaway Git refs establish
+  tag-vs-branch behavior. Test generated/adopted instructions via the real
+  generator and `adopt.sh --runtime codex` in a throwaway project; assert
+  both CLI/desktop actions, exception ordering, untouched user config and
+  continuing truthful coverage inventory. Do not source private functions.
+  Script tests cannot establish live behavior.
+  Developer's live Codex plan: a fresh adopted scratch project, record exact
+  surface/version and loaded instructions, use a PATH-provided fake `gh`
+  and local bare remote to exercise qualifying merge, release-base continue,
+  release-main then tag and failed publication without touching production.
+  Ask for a subsequent sentinel action in the same task and observe that
+  none runs after qualifying completion; negatives must reach it. Capture
+  transcript/tool evidence and distinguish simulated remote state from real
+  GitHub merges. An interactive CLI can then exercise `/new` or `/clear`;
+  desktop New chat needs that actual surface. Record unavailable surfaces,
+  trust/credentials, interactive limitations and unperformed resets as
+  unverified, never as passes. A failed observed stop is a design finding
+  to Architect before implementation is claimed complete. Live Claude hook
+  execution is unavailable in this Codex environment and remains unverified.
+
+- **Adoption and notice.** Per A20, the existing settings symlink delivers
+  the Claude hook; the Codex managed AGENTS block updates through the normal
+  `adopt.sh --runtime codex` rerun, then a fresh session. Include a
+  `CHANGELOG.md` notice and README/runtime-dry-run coverage update. No new
+  per-project option, configuration ownership or meaning-version change is
+  proposed: the human-decided lifecycle rule is unconditional, so no new
+  `CHANGES.md` question or `WORKFLOW-ADOPTION.md` answer is required. Keep
+  `runtime-hooks: not-installed` truthful. A future opt-out or hook install
+  would require its own adoption decision. No change to ORCHESTRATOR core
+  is needed; canonical wrapping-up text reaches every adopted runtime.
+
+- **Estimate and open decisions.** Architect share: about half a day for
+  cross-runtime evidence and this design. Implementation/QA size estimate:
+  M, chiefly shell execution evidence and the live matrix; those roles own
+  their final estimates. No new human scope decision is needed for the
+  explicitly instruction-based Codex outcome in AC7. Mechanical Codex turn
+  termination or automatic clearing is not established; requiring either
+  instead would reopen human scope before Implementation. Unknown live
+  surfaces are verification limits, not permission to omit Codex support.
