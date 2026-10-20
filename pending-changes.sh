@@ -15,7 +15,8 @@
 # "hasn't applied yet": if the condition later becomes true, the question
 # surfaces on its own.
 #
-# One deliberate exception to "no network, no mutation" (W42/#114): a
+# Two deliberate exceptions to "no network, no mutation": #505 creates
+# missing skill links (lib/skill-links.sh, create-only), and (W42/#114): a
 # project still on the pre-migration filename gets a tracking issue filed
 # on its own repo, idempotently. See the block below for why.
 
@@ -29,6 +30,8 @@ changes="$workflow_dir/CHANGES.md"
 . "$workflow_dir/lib/changes.sh"
 # shellcheck source=lib/nfr.sh
 . "$workflow_dir/lib/nfr.sh"
+# shellcheck source=lib/skill-links.sh
+. "$workflow_dir/lib/skill-links.sh"
 # W42/#114: the new filename takes priority; fall back to the pre-migration
 # name so a not-yet-migrated project still gets a normal pending report
 # (in addition to the migration notice below), instead of being read as
@@ -368,34 +371,20 @@ $migration_marker"
 fi
 
 # If the project is missing skills this repo does have, the adoption is
-# out of date.
-#
-# NOTE: this message advises re-running `adopt.sh`. That only helps once
-# adopt.sh actually installs skills — that lands in W8 (#20). Until then,
-# this whole check is a no-op, because `skills/` doesn't exist yet. So
-# don't add that directory before W8, or this advises a fix that does
-# nothing.
+# out of date. Since #505 (A45) the hook first repairs what it safely can:
+# lib/skill-links.sh creates the missing links, create-only, in an adopted
+# project whose .claude/skills/ is gitignored, and says so. Whatever it
+# leaves alone (a path already there, a dangling link, not adopted, not
+# ignored, not writable) is still reported below, and adopt.sh remains the
+# owner of replacing and cleaning up links.
 # What's symlinked (WORKFLOW.md, the hook configuration) is active
 # immediately after a `git pull`; what adopt.sh installs lags behind until
 # someone re-runs it. Without this message, a project would silently keep
 # the old world.
 if [ -d "$workflow_dir/skills" ]; then
-  missing_skills=""
-  for skill_path in "$workflow_dir"/skills/*/; do
-    [ -d "$skill_path" ] || continue
-    skill="$(basename "$skill_path")"
-    if [ ! -e "$project_dir/.claude/skills/$skill" ]; then
-      # Comma-separated: a skill name with a space in it would otherwise be
-      # indistinguishable from multiple separate names.
-      if [ -n "$missing_skills" ]; then
-        missing_skills="$missing_skills, $skill"
-      else
-        missing_skills="$skill"
-      fi
-    fi
-  done
-  if [ -n "$missing_skills" ]; then
-    echo "This project is missing the skill(s): $missing_skills."
+  skill_links_create_missing "$workflow_dir" "$project_dir"
+  if [ -n "$SKILL_LINKS_NOT_CREATED" ]; then
+    echo "This project is missing the skill(s): $SKILL_LINKS_NOT_CREATED."
     echo "Run adopt.sh again from spec-driven-guardrails to install them."
   fi
 fi

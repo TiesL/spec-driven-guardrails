@@ -260,8 +260,11 @@ R9-neutral by construction.
 
 Also included here: the **outdated-adoption notice**. If the project is
 missing skills that do exist in `$CLAUDE_WORKFLOW_DIR/skills`, the hook
-reports that `adopt.sh` needs to run again. Without that, this release ships
-and three of the four projects silently keep the old world.
+no longer only reports that `adopt.sh` needs to run again: since #505 it
+creates the missing links itself and reports each one (see F9 for the
+create-only limits); the "run `adopt.sh` again" warning remains for every
+skill the hook leaves alone. Without this signal, a release ships and
+adopted projects silently keep the old world.
 
 **Decided: substantiate in phases, secured by three gates.** Clearing
 seventeen rows at once is unrealistic homework; the signal alone would then
@@ -376,6 +379,20 @@ anyway: it would make the **project's entire skills namespace owned by
 `claude-workflow`**. `tennis-admin` could then never have a skill of its own
 without de-adopting. That's exactly the coupling this repo exists to avoid.
 Moreover, only the per-skill form is documented.
+
+**Who creates which link (issue #505).** `adopt.sh` installs, refreshes and
+cleans up skill links; it stays the only owner of refreshing, repairing and
+orphan removal. The SessionStart hook (`pending-changes.sh`) additionally
+**creates missing links, create-only**, so a skill added to the workflow
+checkout after the last adoption no longer waits on someone re-running
+`adopt.sh`. It acts only in an adopted project (`.claude/settings.json`
+symlinked into the checkout) whose `.claude/skills/` is gitignored, using the
+same absolute link target as `adopt.sh` (`<workflow_dir>/skills/<name>`), and
+creates `.claude/skills/` itself if absent. It never overwrites or removes any
+existing path (a real directory, a foreign or dangling symlink), fails open to
+the existing warning, and reports each created link. A link created during
+SessionStart may be visible to the runtime only from the next session. Claude
+runtime only; the Codex equivalent is #507.
 
 The cleanup is the part that matters: skills get renamed, and an orphaned
 `.claude/skills/old-name/` isn't inert — Claude Code reports a load error for
