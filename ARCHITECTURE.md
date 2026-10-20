@@ -1838,6 +1838,126 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   would require its own adoption decision. No change to ORCHESTRATOR core
   is needed; canonical wrapping-up text reaches every adopted runtime.
 
+- **Review-round-1 amendment (2026-10-20, PR #551 head `dfcea03`).** The
+  three `design` findings below are confirmed. The rules above still apply
+  except where this amendment replaces them.
+
+  *Canonical omitted-target merge (`completion-canonical-merge-no-stop`,
+  confirmed, blocking).* `gh pr merge --squash --delete-branch` with no
+  target, run from the head branch, checks out another branch and deletes
+  the head before PostToolUse runs. The "uncertain lookup" rule above
+  therefore makes WORKFLOW.md's own step 5 a silent false continue. That
+  conflicts with AC1 and with AC4's "current-branch omission". This is a
+  design defect, not an accepted limit. Two changes, both required:
+  1. *Instruction.* Canonical step 5 in `policy/WORKFLOW.md` names the PR:
+     `gh pr merge <n> --squash --delete-branch`. Regenerate the adapters. The
+     Claude and Codex runtimes then share the saved-identity path Codex
+     already uses, and the explicit-target hook path covers it.
+  2. *Hook fallback for the omitted form, which AC4 still requires.* Use it
+     only when the parsed merge has no target, carries `-d`/`--delete-branch`,
+     and the post-call HEAD is not an eligible branch. Recover the
+     pre-merge branch from Git's own record of the switch. The newest HEAD
+     reflog entry (`git reflog -1 --format=%gs`) must read exactly
+     `checkout: moving from <B> to <current>`. `<B>` must match
+     `feature/`/`fix/`/`release/`, and `refs/heads/<B>` must no longer
+     exist. Then look up `gh pr view <B>` with the same JSON fields and
+     repository forwarding. Require `MERGED`, base `main` and
+     `headRefName == <B>` before applying the head/release rules. Any
+     mismatch, missing entry, surviving branch or lookup failure stays
+     uncertain: exit 0 with no stop. Do not fall back to the new current
+     branch's PR, and do not guess.
+
+  Alternatives rejected: parsing `gh`'s merge message, which is printed
+  only on a TTY and is not part of its Interface. Also rejected: a PreToolUse
+  capture of the branch into a state file keyed by tool-use id. That adds a
+  second hook event and a persistent latch that this design excludes.
+  Deletion test: Git's reflog is already the durable record of the
+  pre-merge branch, so a new store adds nothing. Residual risk is a stale
+  reflog entry combined with a successful omitted-target merge run from a
+  non-eligible branch. That is a false stop only when `<B>`'s PR is itself
+  MERGED into `main`, so it is accepted and documented. QA route: S359
+  gains the branch-switching case. The recording `gh` fixture performs
+  `git checkout -q main && git branch -D <B>` on `pr merge … --delete-branch`,
+  then the canonical omitted form must stop and the explicit form must
+  stop. Negatives: reflog naming a still-existing branch, a reflog entry
+  that is not a checkout, `--delete-branch` absent, and a lookup whose
+  `headRefName` differs. Red on `dfcea03` first.
+
+  *Tag publication judged from local tags
+  (`completion-tag-publication-overmatch`, confirmed).* The local tag ref
+  proves a tag exists, not that this call published it. With an annotated
+  tag reachable from every branch, ordinary `--follow-tags` pushes and
+  re-pushes of already-published tags falsely stop work, which AC6's
+  "successful tag publication" excludes. No Git-only fact, local ref or
+  ancestry check can show what the remote already had. Revised evidence,
+  still local to the event and still with no `gh` or network call (human
+  decision 4 and AC6 stay intact; this adds the command's own result
+  report to "command string and local ref", and does not override them):
+  a `git push` form counts only when the completed Bash tool result
+  (`tool_response` stdout and stderr, concatenated) contains Git's ref-update
+  report of a newly created remote tag. That is a ` * [new tag] ` line, or
+  in `--porcelain` output a `*` line whose destination is `refs/tags/…`.
+  The tag must also be one this command could publish: the named tag,
+  or any tag for `--tags`/`--follow-tags`. "Everything up-to-date", a
+  branch-only `[new branch]`, a forced update of an existing tag, `-q`/
+  `--quiet` or output redirected away are not proof, so there is no stop.
+  The local-ref rules above remain as preconditions for the named-tag form.
+  `gh release create` stays the decided form, but `--draft` (and `-d`)
+  publishes neither a release nor a tag and must not stop; a non-draft
+  success still stops without a lookup. If the live Claude tool result
+  carries no output field, the tag stop fails open (a false continue,
+  never a false stop). That is a verification limit under AC8, not a pass.
+  Do not invent fields beyond the observed `stdout`/`stderr`. QA route:
+  S357 gains a bare remote that already holds annotated `v1`.
+  `--follow-tags` branch push, `--tags` and `git push origin v1` with "up-to-date"
+  output: no stop. A genuinely new tag with a `[new tag]` report: stop. Also
+  `gh release create v9 --draft`: no stop. Red on `dfcea03` first.
+
+  *Redirections and pipes on a qualifying command
+  (`completion-merge-redirection-uncertain`, confirmed as a design gap;
+  failing safe was correct, but not handling and not disclosing a common
+  form was not).* An output redirection does not change a simple command's
+  exit status: if the redirection fails, the command does not run and the
+  call fails. So the following must not break the success proof: `N>&M`
+  with digit fds, and `>`, `>>`, `2>`, `&>`, each to one literal
+  (unexpanded) target word. The shared reader classifies these as
+  redirection records attached to the simple command. They are neither
+  words (so no extra target) nor control operators (so `&` in `>&` is
+  not background). The legacy `tokenize`/stream projection stays
+  byte-identical, so the guard is unaffected. Any other redirection form
+  (input, here-string, process substitution, expanded target, fd close)
+  stays uncertain. A pipeline stays uncertain: without `pipefail` its
+  status is the last command's. For tag pushes, stderr redirected
+  elsewhere also removes the ref-update evidence, so there is no stop. Instruction: canonical
+  completion text (all runtimes) runs each merge or publication as a
+  bare command, with no pipe, `-q` or redirection that hides its result.
+  README/CHANGELOG coverage statements must name the remaining uncertain
+  forms (pipes, unsupported redirections, wrappers) instead of claiming
+  that every main merge ends the turn. QA route: S360 adds
+  `gh pr merge 500 2>&1` and `gh pr merge 500 >/dev/null` as stops, and
+  `gh pr merge 500 | tail -3` and `gh pr merge 500 2>&1 | tail` as no-stop
+  with zero `gh` calls. Re-run the legacy-tokenizer differential.
+
+  *Routing of other round-1 findings.* `completion-draft-release-false-stop`
+  (code) is resolved by the `--draft` rule above.
+  `completion-local-tag-presence-not-publication` (code) is the same defect
+  as the tag finding. `completion-redirect-pipe-silent-continue` (design)
+  is the redirection finding. `completion-canonical-omitted-merge-no-stop`
+  and `completion-canonical-merge-never-stops` are the omitted-target
+  finding. `completion-line-continuation-unlexed` (code) depends on no new
+  design: backslash-newline was already required above. Developer fixes it
+  inside the shared lexer, keeping legacy projection parity.
+  `completion-live-evidence-unpinned` (test) and
+  `scenario-gate-preexisting-uncovered` (spec) are outside this design.
+  No Product outcome changes, and no human decision is contradicted. The
+  tag rule narrows *what counts as evidence* within decision 4's local,
+  `gh`-free detection. If the maintainer instead reads decision 4 as
+  "accept any local-tag push as publication", findings (a) and (c) of
+  the tag finding become accepted behaviour, and only `--draft` remains.
+  Amendment effort, Architect share: about 1.5 hours. Added implementation
+  and QA: S, mostly the reflog fallback and redirection records in the
+  shared reader.
+
 - **Estimate and open decisions.** Architect share: about half a day for
   cross-runtime evidence and this design. Implementation/QA size estimate:
   M, chiefly shell execution evidence and the live matrix; those roles own
