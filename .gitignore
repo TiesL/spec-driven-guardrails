@@ -9,3 +9,22 @@ CLAUDE.md
 .claude/settings.json
 .claude/skills/
 # claude-workflow: end
+# spec-driven-guardrails: begin
+/.guardrails/source
+/.guardrails/installation.json
+/.agents/skills/adopt-workflow
+/.agents/skills/adoption-registry
+/.agents/skills/check-convention
+/.agents/skills/codebase-design
+/.agents/skills/deploy-guards
+/.agents/skills/diagnose-bug
+/.agents/skills/dispatch-economy
+/.agents/skills/grilling
+/.agents/skills/model-choice
+/.agents/skills/pre-merge-review
+/.agents/skills/refactoring-triggers
+/.agents/skills/release-branch-workflow
+/.agents/skills/role-contracts
+/.agents/skills/tdd-seams
+/.agents/skills/write-spec
+# spec-driven-guardrails: end
