@@ -251,6 +251,9 @@ fake_gitleaks_bin() {
 #      built per test with `fake_gh_bin`, per W95 above.
 # $4 — base.ref the pull call reports; default `main`.
 #
+# `pr view` and `pr checks` also answer with an explicit target in front of
+# `--json` (`gh pr merge 41` is checked as `pr view 41 --json ...`, S342).
+#
 # Every call is appended to "$SANDBOX/fakegh/calls.log", so a test can
 # prove a call was or was not made.
 fake_gh_merge_bin() {
@@ -268,7 +271,7 @@ fake_gh_merge_bin() {
   local script
   script='printf "%s\n" "$*" >> "$(dirname "$0")/calls.log"
 case "$*" in
-  "pr view --json comments,headRefOid")
+  "pr view --json comments,headRefOid"|"pr view "*" --json comments,headRefOid")
     printf "%s" "{\"headRefOid\":\"'"$head_sha"'\",\"comments\":[{\"body\":\"'"$comments_body"'\"}]}"
     exit 0 ;;'
 
@@ -276,7 +279,7 @@ case "$*" in
     local escaped_checks
     escaped_checks="$(printf '%s' "$checks_json" | sed 's/"/\\"/g')"
     script+='
-  "pr checks --json bucket,name")
+  "pr checks --json bucket,name"|"pr checks "*" --json bucket,name")
     printf "%s" "'"$escaped_checks"'"
     exit 0 ;;'
   fi
