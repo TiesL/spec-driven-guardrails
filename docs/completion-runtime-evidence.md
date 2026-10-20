@@ -11,7 +11,8 @@ termination guarantee or automatic context reset.
 `./test/run.sh completion` exercises the public hook stdin/stdout Interface,
 real temporary Git refs and a recording PATH `gh` fixture. S355–S360 cover
 main-merge stop for any head, release-base continuation, tag commands causing no
-stop or lookup, reflog recovery after branch deletion, output redirections and
+stop or lookup, reflog recovery after branch deletion (the checkout entry, with or
+without gh's fast-forward pull entry above it), output redirections and
 line continuation, queue/lookup failures and timeout, malformed/interrupted events, explicit and
 omitted identities, repo flags, quoted/heredoc data and provable versus masked
 shell execution.
@@ -25,8 +26,8 @@ actual turn termination and `/clear` are **unverified** in this Codex environmen
 
 Inherited tests and implementation were already present when this fresh Developer
 session resumed. Their original red-before-green history is unavailable; no such
-history is claimed. The added `gh release create v1 --help` negative failed with
-an unwanted stop before the help exclusion was implemented, then passed. The
+history is claimed. (An earlier `gh release create v1 --help` exclusion was
+removed by decision 8: tag commands are no longer detected.) The
 new evidence check failed before this report existed, then passed. Added omitted
 identity and malformed-input checks passed against the inherited implementation.
 

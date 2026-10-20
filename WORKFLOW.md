@@ -118,8 +118,8 @@ into `main` stops, release heads included; tag commands neither stop nor prompt.
 It uses a bounded PR lookup; failed/uncertain lookup is advisory and fails open.
 The canonical `gh pr merge <n> --squash --delete-branch` names the PR. An
 omitted target is resolved from the current branch, or, after `--delete-branch`
-switched to main, from the newest checkout reflog entry when that branch is gone
-and the lookup's head matches; other omitted forms fail open. Output
+switched to main, from the checkout reflog (including gh's fast-forward pull after the
+checkout) when that branch is gone and the lookup's head matches; other omitted forms fail open. Output
 redirections (`2>&1`, `>file`) keep the proof; pipes and input redirections do
 not. The hook cannot undo later commands
 already batched into the same Bash call, so the shared separate-call rule is

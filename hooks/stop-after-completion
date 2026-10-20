@@ -2,6 +2,7 @@
 """Advisory Claude PostToolUse completion hook; never executes shell input."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -109,7 +110,12 @@ def merge_result(words, cwd):
             # branch from the checkout that just happened, and only then.
             if not {'--delete-branch','-d'} & set(args):
                 return None
-            moved = read(['git','reflog','-1','--format=%gs','HEAD'],cwd) or ''
+            # gh then fast-forwards the base with `git pull --ff-only <remote>
+            # <base>` before deleting the head: skip exactly that one leading
+            # entry, then require the checkout.
+            entries = (read(['git','reflog','-2','--format=%gs','HEAD'],cwd) or '').split('\n')
+            pulled = re.fullmatch(r'pull --ff-only \S+ ' + re.escape(target) + ': Fast-forward', entries[0])
+            moved = entries[1] if pulled and len(entries) > 1 else entries[0]
             prefix, suffix = 'checkout: moving from ', ' to ' + target
             if not (moved.startswith(prefix) and moved.endswith(suffix)):
                 return None
