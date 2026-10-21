@@ -14,6 +14,11 @@ with tempfile.TemporaryDirectory() as temp:
     wf = tmp / 'workflow'
     shutil.copytree(ROOT, wf, ignore=shutil.ignore_patterns('.git', '.guardrails', '.agents', '.claude', 'wip', '__pycache__'))
     env = dict(os.environ, SPEC_DRIVEN_GUARDRAILS_DIR=str(wf))
+    user_codex = tmp / 'user/.codex'
+    user_codex.mkdir(parents=True)
+    (user_codex / 'config.toml').write_text('model = "user-owned"\n')
+    (user_codex / 'hooks.json').write_text('{"user":"sentinel"}\n')
+    env['HOME'] = str(user_codex.parent)
     def run(*args, rc=0, cwd=None, input=None):
         p = subprocess.run(list(map(str, args)), cwd=cwd or wf, env=env, input=input, capture_output=True, text=True)
         assert p.returncode == rc, (args, p.returncode, rc, p.stdout, p.stderr)
@@ -24,8 +29,12 @@ with tempfile.TemporaryDirectory() as temp:
         run('git', 'init', '-q', '-b', 'main', p)
         return p
     def adopt(p, *args, rc=0):
-        return run(wf / 'adopt.sh', '--runtime', 'codex', *args, p, rc=rc)
+        user_before = snapshot(user_codex)
+        out = run(wf / 'adopt.sh', '--runtime', 'codex', *args, p, rc=rc)
+        assert snapshot(user_codex) == user_before, 'global configuration changed'
+        return out
     def snapshot(p):
+        if p.is_file(): return {'': ('file', p.read_bytes(), p.stat().st_mode)}
         return {str(f.relative_to(p)): ('link', os.readlink(f)) if f.is_symlink() else
                 ('file', f.read_bytes(), f.stat().st_mode) if f.is_file() else ('dir', f.stat().st_mode)
                 for f in p.rglob('*')}
@@ -57,6 +66,10 @@ with tempfile.TemporaryDirectory() as temp:
             before = snapshot(q)
             run(wf / 'adopt.sh', *args, q, rc=2)
             assert before == snapshot(q)
+        q = project('default-existing-hooks')
+        (q / '.codex').mkdir()
+        hp = q / '.codex/hooks.json'; hp.write_text('project-owned malformed hook bytes')
+        before = hp.read_bytes(); adopt(q); assert hp.read_bytes() == before
     elif scenario == 366:
         (p / '.codex').mkdir()
         foreign = {'custom': {'sentinel': 3}, 'hooks': {'Other': [], 'PreToolUse': [{'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': 'printf foreign'}]}]}}
@@ -71,6 +84,7 @@ with tempfile.TemporaryDirectory() as temp:
         # A source template update is authorized only by matching old ownership.
         template = wf / 'adapters/codex/merge-hook.json'
         template.write_text(template.read_text().replace(' --merge-only', ' --merge-only '))
+        assert 'runtime-hooks: installed' not in status(p, rc=1)
         before_command = command(p); adopt(p, '--hooks')
         assert command(p) != before_command
         for variant in ('edited', 'duplicate', 'malformed', 'shape', 'file-link', 'parent-link', 'bad-record'):
@@ -101,12 +115,13 @@ with tempfile.TemporaryDirectory() as temp:
         for token in ('runtime-hooks: installed', 'scope: Bash merge interception', 'activation: unverified'): assert token in out
         assert 'runtime-hooks: installed' in run(wf / 'session-context.sh', '--runtime', 'codex', p)
         original = (p / '.codex/hooks.json').read_bytes()
-        for variant in ('edited', 'duplicate', 'broken'):
+        for variant in ('edited', 'duplicate', 'missing', 'broken'):
             (p / '.codex/hooks.json').write_bytes(original)
             if variant == 'broken': (p / '.guardrails/source').unlink(); (p / '.guardrails/source').symlink_to(tmp / 'missing')
             else:
                 doc = hooks(p)
                 if variant == 'edited': doc['hooks']['PreToolUse'][0]['matcher'] = 'foreign'
+                elif variant == 'missing': doc['hooks']['PreToolUse'] = []
                 else: doc['hooks']['PreToolUse'] *= 2
                 (p / '.codex/hooks.json').write_text(json.dumps(doc))
             out = status(p, rc=1)
@@ -135,10 +150,11 @@ elif a and a[0]=='api':
  path=a[1]
  if '/compare/' in path: print(1 if mode=='behind' else 0)
  elif '.base.ref' in ' '.join(a): print('main\\t'+sha)
- elif path.endswith('/comments') or path.endswith('/issues/544/comments'):
+ elif path.endswith('/comments') or path.endswith('/reviews'):
   print('')
  elif path.endswith('/41'):
-  print('title\\x01body\\x03')
+  if 'created_at' in ' '.join(a): print('title\\n2026-10-21T00:00:00Z\\tbody')
+  else: print('title\\x01body\\x03')
  elif path.endswith('/commits'): print('')
  else: sys.exit(1)
 else: sys.exit(1)
@@ -153,6 +169,7 @@ else: sys.exit(1)
             return subprocess.run(args, cwd=p / 'sub', env=env, input=json.dumps(event), capture_output=True, text=True)
         if scenario == 368:
             for state, reason in (('missing-review','review marker'), ('stale-review','review marker'), ('ci',"CI isn't green"), ('behind','behind its base'), ('allowed','')):
+                event = fixture['events'][1 if state == 'allowed' else 0]
                 for cmd in ('gh pr merge 41', "printf before; gh pr merge '41' --squash"):
                     result = hook(cmd, state)
                     assert result.returncode == (0 if state == 'allowed' else 2), (state,result)

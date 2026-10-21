@@ -26,6 +26,15 @@
 
 set -uo pipefail
 
+# Codex opts into merge interception only; the ordinary Claude Interface
+# continues to judge all existing Git policies.
+merge_only=0
+case "${1:-}" in
+  --merge-only) [ "$#" -eq 1 ] || exit 2; merge_only=1 ;;
+  '') ;;
+  *) echo "git-guardrails: unknown argument: $1" >&2; exit 2 ;;
+esac
+
 # Deliberate escape hatch. A guard without an escape hatch eventually gets
 # bypassed by editing the script instead, and that's worse than a guard you
 # turn off explicitly.
@@ -1043,6 +1052,7 @@ judge_segment() {
     judge_gh_segment "$@"
     return
   fi
+  [ "$merge_only" -eq 0 ] || return 0
 
   # Skipping global git options. The path-determining ones are remembered;
   # they go along to the branch check so git itself determines the repo.
