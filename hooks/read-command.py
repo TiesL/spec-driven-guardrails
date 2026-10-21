@@ -27,7 +27,7 @@ Exit status:
 
 import json
 import re
-import shlex
+from typing import NamedTuple
 import sys
 
 # `<<` or `<<-`, followed by an optionally quoted delimiter. A here-string
@@ -81,14 +81,104 @@ def without_heredocs(text):
     return "\n".join(kept)
 
 
+class Token(NamedTuple):
+    kind: str
+    value: str
+
+
+# Output redirections the completion reading can prove harmless: a file target
+# (`>f`, `2> f`, `>>f`, `&>f`) or an fd duplication (`2>&1`). Anything else
+# (input, here-strings, expansion in the target, `>&-`) is left to the generic
+# word rules, which treat it as uncertain.
+REDIRECT = re.compile(r"(?:\d*>>?|&>>?)[ \t]*[^\s;|&<>()$`'\"\\#]+(?=[\s;|&]|$)|\d*>&\d+(?=[\s;|&]|$)")
+
+
+def lexical_tokens(text, completion=False):
+    """Read decoded words and actual operators without losing their origin.
+
+    Quotes, escapes and adjacent fragments all belong to a word. The legacy
+    tokenizer below deliberately drops the type; completion keeps it so shell
+    data can never establish a command position. This is a bounded lexical
+    reader, not an evaluator of expansion or compound shell programs.
+
+    With completion=True (the completion hook only), backslash-newline is a
+    line continuation and supported output redirections become "redirect"
+    tokens. The legacy guard stream never sets it and stays byte-identical.
+    """
+    tokens = []
+    punctuation = ";|&\n"
+    word = []
+    started = False
+    quote = None
+    i = 0
+
+    def end_word():
+        nonlocal started
+        if started:
+            tokens.append(Token("word", "".join(word)))
+            word.clear()
+            started = False
+
+    while i < len(text):
+        char = text[i]
+        if quote:
+            if char == quote:
+                quote = None
+            elif char == "\\" and quote == '"':
+                i += 1
+                if i == len(text):
+                    raise ValueError("No escaped character")
+                if completion and text[i] == "\n":
+                    i += 1
+                    continue
+                # Match the reader's established POSIX shlex decoding.
+                if text[i] not in ('"', "\\"):
+                    word.append("\\")
+                word.append(text[i])
+            else:
+                word.append(char)
+        elif char in ("'", '"'):
+            started = True
+            quote = char
+        elif char == "\\":
+            if completion and text[i + 1:i + 2] == "\n":
+                i += 2
+                continue
+            started = True
+            i += 1
+            if i == len(text):
+                raise ValueError("No escaped character")
+            word.append(text[i])
+        elif char == "#":
+            # Preserve legacy shlex comment handling, including adjacent #.
+            end_word()
+            newline = text.find("\n", i)
+            i = len(text) if newline == -1 else newline
+        elif char in " \t\r":
+            end_word()
+        elif completion and not started and (match := REDIRECT.match(text, i)):
+            tokens.append(Token("redirect", match.group(0)))
+            i = match.end() - 1
+        elif char in punctuation:
+            end_word()
+            end = i + 1
+            while end < len(text) and text[end] in punctuation:
+                end += 1
+            tokens.append(Token("operator", text[i:end]))
+            i = end - 1
+        else:
+            started = True
+            word.append(char)
+        i += 1
+    if quote:
+        raise ValueError("No closing quotation")
+    end_word()
+    return tokens
+
+
 def tokenize(text):
-    """Quote-aware tokenization; separators only count outside quotes."""
-    lexer = shlex.shlex(text, posix=True, punctuation_chars=";|&\n")
-    lexer.whitespace_split = True
-    # Remove newline from whitespace, so it remains a separator:
-    # `git a\ngit b` are two commands, not words of one.
-    lexer.whitespace = " \t\r"
-    return list(lexer)
+    """Compatible decoded tokens for the legacy guard stream."""
+    return [token.value for token in lexical_tokens(text)]
 
 
 def main():

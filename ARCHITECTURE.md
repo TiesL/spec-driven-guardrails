@@ -1602,3 +1602,352 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 - **Effort.** Architect: this entry, about 1 hour. Downstream: QA about 2 hours (about 8 scenarios, most reuse S9's setup); Developer about 2 hours (one lib, a 5-line call-site change, comment fix, `./check`); spec edits about 1 hour. Total S.
 - **Risks.** (R1) `git check-ignore` semantics for a directory-only pattern with an absent directory: handled by the per-name path; QA must include the absent-directory case so a regression to the bare path is caught. (R2) macOS bash 3.2: no namerefs, no `${var,,}`; the global string covers it. (R3) A project whose `.gitignore` ignores `.claude/skills/` but whose `.claude/skills` content is tracked from before: a new link is untracked and ignored, so no noise, but `adopt.sh`'s untracking is not run; unchanged from today. (R4) Codex is out of scope (#507): the module takes the workflow and project directories only and knows nothing about Claude's settings except the adoption signal in step 1, so #507 will need its own adoption signal (its own installed link), not a reuse of step 1. (R5) Report-line wording must not claim same-session availability.
 - **Violated when:** the hook overwrites, removes or repoints any existing path; creates anything in a project whose settings link does not point into this checkout; creates a link in a non-ignored `.claude/skills`; prints to stderr or exits non-zero; or `adopt.sh` and the hook disagree on the link form.
+
+### A46 — End work after a main merge; Claude hook and Codex instruction coverage (#500)
+
+- **Authority and outcome.** Issue #500 AC1–AC8, PRD F56 and human
+  decisions 1–8 govern this design. Decision 8 (2026-10-20) supersedes
+  the tag-detection parts of decisions 4–7 and of this entry's earlier
+  versions. A successful agent-run merge into `main` ends autonomous
+  work, whatever the head branch, including a `release/*` head. A merge
+  into `release/*` continues the epic without a prompt. Nothing detects,
+  tracks or waits for tags in either runtime, and tag publication causes
+  no stop or prompt. Every main-merge prompt carries a short tag note,
+  because neither runtime knows whether a release is being tagged. The
+  maintainer judges when to reset context, as they judge the merge
+  itself. A stop ends the current turn, not the conversation, so the
+  maintainer can still ask for a release tag in the same context. Context
+  reset is the maintainer's action, never automatic.
+
+- **Decided wording.** The tag note has the same meaning as decision 8
+  and is shorter than its sentence:
+  - Claude stopReason: "Merged to main. Type /clear before the next work
+    item; if you are tagging a release, tag it first."
+  - Codex CLI: "Merged to main. Use /clear or /new before the next work
+    item; if you are tagging a release, tag it first."
+  - Codex desktop: "Merged to main. Start a New chat before the next
+    work item; if you are tagging a release, tag it first."
+
+  If the Codex surface cannot be established, give both labelled actions
+  rather than guess. The note appears on every main-merge prompt,
+  including non-release ones.
+
+- **Codex feasibility, established before Implementation (2026-10-20).**
+  The installed adapter supplies generated instructions, skill/source links
+  and native Git hooks. `lib/codex-adoption.py` installs no runtime hook or
+  Codex configuration. Its inventory and `session-context.sh --runtime codex`
+  correctly report `runtime-hooks: not-installed`. The locally available
+  binary reports `codex-cli 0.163.0`: a version observation, not a live
+  stop or reset observation.
+  [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
+  describes `PostToolUse` feedback semantics: `continue: false` replaces
+  the tool result and permits model continuation. Wiring Claude JSON into a
+  Codex hook would therefore not prove the requested stop. #500 uses the
+  existing instruction-based adapter. After confirming the merge, Codex
+  ends its turn with a concise result and the decided prompt, without
+  beginning another work item. This meets Product's instruction-based
+  outcome when obeyed; it has no mechanical enforcement guarantee. Hook
+  installation remains separate work (#544), and is neither required nor
+  silently claimed here.
+
+- **Codex Interface and integration.** Put the completion rule in canonical
+  `policy/WORKFLOW.md` after the merge step. Put runtime-specific reset
+  wording in `adapters/claude/INSTRUCTIONS.md` and
+  `adapters/codex/INSTRUCTIONS.md`. Then regenerate `WORKFLOW.md` and
+  `adapters/codex/AGENTS.md`. Step 5 names the PR:
+  `gh pr merge <n> --squash --delete-branch`.
+
+  Codex identifies the PR number and repository before a merge that may
+  delete the branch. Afterwards it confirms `state == MERGED` and base
+  `main` using that saved identity. A queued `--auto` result is
+  insufficient. Failed or uncertain results produce no successful-completion
+  stop.
+
+  Run the merge as a distinct, bare tool call, with no pipe, `-q`, or
+  redirection that hides its result, and inspect its completed result
+  before scheduling further work. Never batch a next work item into the
+  same tool script, concurrent call or compound shell command. Do required
+  durable reporting before the merge. After a main merge the only
+  continuation is the final result and prompt.
+
+  No new polling loop, persistent latch, background process or
+  context-clear shell command is introduced.
+  [CLI commands](https://learn.chatgpt.com/docs/developer-commands?surface=cli)
+  documents fresh-chat `/clear` and `/new`; a terminal clear does not reset
+  the chat, and both require the current task to finish.
+  [Desktop commands](https://learn.chatgpt.com/docs/reference/commands)
+  documents New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux).
+
+  Re-align `skills/release-branch-workflow/SKILL.md`. After a release
+  branch's merge into `main` the turn ends with the prompt, and tagging is
+  a maintainer-requested follow-up, which may run before `/clear`. Remove
+  the "tag is the sole continuation, then stop" ordering.
+
+- **Claude Module and Interface.** Add one executable
+  `hooks/stop-after-completion` (Python 3 is already a hook dependency).
+  Register it synchronously alongside `push-after-commit` under Bash
+  `PostToolUse` in `settings/session-hooks.json`, using the existing
+  settings-link-to-source resolution.
+
+  Its Interface is hook JSON on stdin, JSON or empty stdout, and exit 0 on
+  all advisory or uncertain paths. It performs read-only subprocess lookups
+  with argument arrays, bounded timeouts and no `eval` or shell execution
+  of input. Malformed JSON, the wrong event or tool, interrupted or
+  background-incomplete calls, and unreadable quoting produce no stop. The
+  real [Claude hook contract](https://code.claude.com/docs/en/hooks)
+  supplies PostToolUse after successful tools; failure is a different event.
+  Do not invent a portable `tool_response.exit_code` field.
+
+  On a qualifying merge, output exactly `continue: false` with the decided
+  stopReason above. There is no release-specific `additionalContext`
+  output, no tag-form recognition and no local tag-ref resolution. Any
+  command that is not a recognised merge, tag commands included, makes
+  zero `gh` calls and produces no output.
+
+- **Command interpretation and success evidence.** Reuse command reading
+  in `hooks/read-command.py` rather than copy shell parsing or change the
+  guard's existing stream Interface. Keep control-operator information
+  while judging execution, not just a bag of matching words.
+
+  Recognise actual `gh pr merge` command positions: an explicit
+  number/URL/branch or an omitted current-PR target, value-taking flags, and
+  `-R`/`--repo` in their supported positions. Query
+  `gh pr view [target] --json baseRefName,state` (add `headRefName` only
+  for the reflog fallback below), forwarding repository selection. Require
+  exact `MERGED` and base `main`. The head no longer matters. Bound lookup
+  latency and fail open on errors, malformed output or ambiguity.
+
+  Success is proved only where the shell structure entails that the call's
+  success means the command's success: standalone, an all-success `&&`
+  chain, or a final command after `;` whose result is the call's result. A
+  masked failure (`|| true`, pipeline status, an earlier semicolon segment)
+  or a conditional/skipped occurrence must not be turned into success by
+  matching text or by finding an old merged PR. Treat an unprovable
+  occurrence as uncertain, and process any occurrence that can be proved
+  separately.
+
+  No parser promises to interpret arbitrary shell programs, aliases,
+  substitutions, wrappers or scripts. The post hook cannot prevent commands
+  already run in the same Bash invocation; the canonical separate-call
+  instruction prevents that continuation when followed. Web-UI and subagent
+  merges stay excluded by human decision.
+
+- **Omitted-target merge (review round 1, `completion-canonical-merge-no-stop`).**
+  `gh pr merge --squash --delete-branch` with no target, run from the head
+  branch, checks out another branch and deletes the head before PostToolUse
+  runs. Two measures cover this, and both are required.
+
+  1. **Explicit number.** Canonical step 5 names the PR (above), so both
+     runtimes use the explicit-target path.
+  2. **Reflog fallback.** AC4 still covers the omitted form, so the hook
+     has a fallback for it. The fallback applies only when the parsed merge
+     has no target, carries `-d`/`--delete-branch`, and the post-call HEAD
+     is not a `feature/`/`fix/`/`release/` branch.
+
+     Read the two newest HEAD reflog subjects
+     (`git reflog -2 --format=%gs HEAD`). Real `gh pr merge -d` (verified
+     against gh 2.102.0 and this repository's own reflog on the merges of
+     #516, #505 and #548) checks out the base, then runs
+     `git pull --ff-only <remote> <base>`, and only then deletes the head.
+     After a squash merge the local base is behind, so the pull
+     fast-forwards and writes its own entry after the checkout. The rule
+     therefore accepts exactly these two shapes, newest first:
+
+     - `pull --ff-only <remote> <current>: Fast-forward`, then
+       `checkout: moving from <B> to <current>`;
+     - `checkout: moving from <B> to <current>` as the newest entry (the
+       pull failed or had nothing to fast-forward, so it wrote nothing).
+
+     `<remote>` is one word without spaces. Any other newest entry (a
+     commit, a reset, a second checkout, a pull of a different branch, a
+     pull that did not fast-forward) makes the occurrence uncertain. Only
+     this one pull entry may be skipped, and only directly above the
+     checkout. `<B>` must match `feature/`/`fix/`/`release/`, and
+     `refs/heads/<B>` must no longer exist. Then look up `gh pr view <B>`
+     with repository forwarding, and require `MERGED`, base `main` and
+     `headRefName == <B>`.
+
+     Any mismatch, missing entry, surviving branch or lookup failure stays
+     uncertain: exit 0 with no stop. Never fall back to the new current
+     branch's PR.
+
+  **Review round 2 amendment (`completion-reflog-fallback-masked-by-gh-pull`,
+  `completion-reflog-fallback-defeated-by-gh-pull`).** The round-1 rule
+  required the checkout to be the newest entry. That premise was wrong
+  about real `gh`: the pull entry always sits above it, so the fallback
+  never fired and the omitted form failed open. The S359 fixture modelled
+  checkout plus delete without the pull, so its positive case proved a
+  state that real `gh` does not produce. Confirmed as a design defect and
+  corrected above. Alternatives weighed in round 2:
+  - Drop the fallback and document the omitted form as uncertain. It is
+    the simplest change, but AC4 lists "current-branch omission" among
+    the merge forms that receive AC1 behaviour, and the decision-8
+    reading keeps the omitted form in scope. Choosing it would override
+    AC wording, so it is not open to Planning.
+  - Take the newest `checkout: moving from …` entry anywhere in the
+    reflog. It is looser than needed: a stale checkout from hours earlier
+    could name a branch that happens to be merged. The two-entry bound
+    ties recognition to the command that just ran.
+  - Query `gh` for the most recently merged PR, or the current user's
+    last merged PR. It cannot tell this merge from another session's or a
+    web-UI merge, and adds a broader `gh` call.
+  - A PreToolUse state file recording the branch before the merge.
+    Rejected in round 1 for the same reason as below (second event,
+    persistent latch).
+  The chosen change keeps one Module, one Interface and the same lookups;
+  it widens one string check to one optional predecessor entry.
+
+  Two alternatives were rejected:
+  - Parsing `gh`'s merge message: it is printed only on a TTY.
+  - A PreToolUse state file: it adds a second event and a persistent latch,
+    and the reflog already is Git's durable record of the pre-merge branch
+    (deletion test).
+
+  The residual risk is a stale reflog entry together with a successful
+  omitted-target merge run from a non-eligible branch. It is accepted: it
+  stops only when `<B>`'s PR really is MERGED into `main`.
+
+- **Output redirections (review round 1, `completion-merge-redirection-uncertain`).**
+  An output redirection does not change a simple command's exit status: if
+  the redirection fails, the command does not run and the call fails. These
+  forms therefore keep the success proof intact:
+  - `N>&M` with digit fds;
+  - `>`, `>>`, `2>` and `&>`, each to one literal (unexpanded) target word.
+
+  The shared reader classifies them as redirection records attached to the
+  simple command. A redirection record is not a word (no extra target) and
+  not a control operator (the `&` in `>&` is not background). The legacy
+  `tokenize`/stream projection stays byte-identical, so the guard is
+  unaffected.
+
+  Any other redirection stays uncertain: input, here-string, process
+  substitution, expanded target, or fd close. A pipeline stays uncertain,
+  because without `pipefail` its status is the last command's. README and
+  CHANGELOG coverage statements name the remaining uncertain forms (pipes,
+  unsupported redirections, wrappers) instead of claiming that every main
+  merge ends the turn.
+
+- **Quote provenance (finding `completion-token-quote-provenance`).**
+  The old decoded `list[str]` tokenizer Interface is insufficient for
+  completion evidence, because an unquoted shell separator and a quoted
+  argument can both decode to `;`. `echo ";" "gh" "pr" "merge" "500"`
+  only prints text, and finding an old MERGED PR must never promote those
+  arguments into an executed command.
+
+  Keep lexical provenance until command positions and success entailment
+  have been decided. The shared reader provides typed lexical records that
+  distinguish a word from an actual control operator (and from a
+  redirection record, above). Each word carries its decoded literal value
+  and enough source/quote/escape provenance to tell literal content from
+  unsupported active shell syntax.
+
+  Only unquoted, unescaped operator syntax can divide commands or form
+  `&&`/`||`/pipeline relations; never infer an operator from a decoded
+  value. Quoted, escaped and concatenated word fragments remain one word,
+  even when their value equals punctuation. Words become command candidates
+  only at a syntactically established command position. Quoting a literal
+  command word (for example `"gh" pr merge 500`) does not by itself make
+  that word data; its position decides that. Arguments to `echo`, `printf`
+  and other commands never become command positions by resemblance.
+
+  Put this lexical knowledge in the existing reader Module, with a
+  provenance-preserving entry used by the completion Module. Its existing
+  `tokenize` caller contract and `c`/`t`/`e` NUL stream remain compatible:
+  derive their decoded projection from the same lexical reading instead of
+  maintaining a second shell lexer. Developer may choose the private record
+  representation. Word/operator/redirection kind and literal-versus-active
+  provenance are required semantics, not optional heuristics. Do not repair
+  this by rejecting all quoting or all compound commands, by stripping
+  quotes before scanning, or by replacing quoted punctuation with guessed
+  separators.
+
+  This is a bounded shell recognizer, not an interpreter:
+  - Escapes and quotes are handled during lexing, including escaped
+    punctuation and backslash-newline line continuation (implemented in
+    round 2; legacy guard stream unchanged).
+  - Comments and heredoc bodies are data, never command evidence.
+  - Active expansions, command/process substitutions, unsupported
+    redirections or control syntax that the recognizer cannot safely
+    classify make the affected occurrence uncertain.
+  - Reject ambiguity before querying `gh`, and never execute input to
+    resolve it.
+
+- **Depth, Seam, Leverage and Locality.** One completion Module hides
+  merge recognition, result confirmation and Claude output behind one
+  executable Interface. The Seam for QA is that executable plus stdin, a
+  temporary repository, and PATH-provided `gh` fixtures, exactly as runtime
+  callers enter it.
+
+  Shared provenance-aware reading supplies Depth, Leverage and Locality:
+  deleting it would spread quote/operator/redirection rules across the
+  guard and completion callers. Its legacy stream and its completion
+  reading are two real callers, so the two-adapters rule justifies this
+  existing reader Seam. It does not justify a new plugin lexer or parser
+  framework.
+
+  Deletion test: deleting the completion Module would put the same
+  recognition and result rules into settings commands and tests, so it
+  earns its place. Dropping tag detection (decision 8) removes a whole
+  recognition branch and its local-ref lookups. The Module gets shallower
+  in behaviour without losing its reason to exist.
+
+  Do not invent a common runtime hook abstraction: the two real adapters
+  differ in enforcement and do not satisfy one stop Interface.
+
+- **QA handoff.** Demonstrate red before green through the executable Seam:
+  - AC1 for any head, including `release/*`, with the exact tag-note
+    stopReason. AC2 release-base continuation.
+  - AC3 failed/queued/timeout/malformed.
+  - AC4: unrelated commands with zero `gh` invocations; explicit, URL,
+    branch and omitted targets; repository flags; the
+    branch-switching/deleting omitted-target fixture, which must reproduce
+    real `gh`'s checkout, `pull --ff-only` fast-forward from a bare remote
+    holding the squash commit, then delete; a checkout-only variant (pull
+    wrote nothing); and negatives (surviving branch, newest entry neither
+    the pull nor the checkout, a pull entry for a branch other than the
+    current one, a pull entry above a non-checkout entry, no
+    `--delete-branch`, mismatched head); compound `&&` and semicolon-final success;
+    masked/skipped/pipeline negatives; the quote-provenance matrix; and
+    redirection positives (`2>&1`, `>/dev/null`) and pipe negatives.
+  - AC5: tag commands and tag publication (`git push <remote> <tag>`,
+    `--tags`, `--follow-tags`, `gh release create`) produce no output and
+    zero `gh` calls.
+
+  Fake `gh` asserts target/repository and returns states. Test the
+  generated/adopted instructions through the real generator and
+  `adopt.sh --runtime codex` in a throwaway project. Assert both CLI and
+  desktop wording with the tag note, untouched user config and a truthful
+  coverage inventory. Do not source private functions. Script tests cannot
+  establish live behaviour.
+
+  For live Codex evidence, record the exact surface/version and loaded
+  instructions. Use a PATH fake `gh` and a local bare remote, and label the
+  simulated remote state. Observe that a subsequent sentinel action does
+  not run after a main merge (any head), and does run after a release-base
+  merge and after negatives. Record unavailable surfaces and unperformed
+  resets as unverified, never as passes. Evidence gathered under the old
+  tag design does not count for the tag-note wording. Live Claude hook
+  execution remains unverified in this Codex environment.
+
+- **Adoption and notice.** Per A20, the existing settings symlink delivers
+  the Claude hook. The Codex managed AGENTS block updates through the
+  normal `adopt.sh --runtime codex` rerun, followed by a fresh session.
+  Include a `CHANGELOG.md` notice and a README/runtime-dry-run coverage
+  update.
+
+  No new per-project option, configuration ownership or meaning-version
+  change is proposed. The lifecycle rule is unconditional, so no
+  `CHANGES.md` question or `WORKFLOW-ADOPTION.md` answer is required. Keep
+  `runtime-hooks: not-installed` truthful. No change to ORCHESTRATOR core
+  is needed.
+
+- **Estimate and open decisions.** Architect share: about half a day for
+  the original design, ~1.5h for round 1, ~1h for the decision-8
+  rewrite and ~45min for the round-2 reflog amendment (Implementation/QA
+  delta: XS, one hook condition plus the fixture and negatives). Decision 8 reduces Implementation/QA work: removing tag code
+  and scenarios is offset by the reflog fallback and redirection records,
+  for a net S on top of the existing M. Codex parity for the tag note is
+  Product's inference from decision 7, and the maintainer may veto it.
+  Mechanical Codex turn termination or automatic clearing is not
+  established; requiring either would reopen human scope before
+  Implementation.

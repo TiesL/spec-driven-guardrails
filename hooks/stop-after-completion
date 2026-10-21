@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Advisory Claude PostToolUse completion hook; never executes shell input."""
+import importlib.util
+import json
+import re
+from pathlib import Path
+import subprocess
+import sys
+
+spec = importlib.util.spec_from_file_location('read_command', Path(__file__).with_name('read-command.py'))
+reader = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(reader)
+STOP = {'continue': False, 'stopReason': 'Merged to main. Type /clear before the next work item; if you are tagging a release, tag it first.'}
+
+
+def read(args, cwd):
+    try:
+        return subprocess.check_output(args, cwd=cwd, timeout=2, stderr=subprocess.DEVNULL, text=True).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def successful_segments(command):
+    """Only a final simple command and its uninterrupted && predecessors.
+
+    Earlier semicolon segments and any chain involving ||, pipes, background
+    or shell control syntax cannot be proved successful from PostToolUse.
+    """
+    tokens = reader.lexical_tokens(reader.without_heredocs(command), completion=True)
+    segments, operators, current = [], [], []
+    for token in tokens:
+        if token.kind == 'redirect':
+            continue
+        if token.kind == 'operator':
+            segments.append(current)
+            operators.append(token.value)
+            current = []
+        else:
+            current.append(token.value)
+    segments.append(current)
+    while segments and not segments[-1]:
+        segments.pop()
+        if operators:
+            if operators[-1] not in {';', '\n'}:
+                return []
+            operators.pop()
+    if not segments:
+        return []
+    start = len(segments)-1
+    while start and operators[start-1] == '&&':
+        start -= 1
+    if start and operators[start-1] not in {';', '\n'}:
+        return []
+    selected = segments[start:]
+    # No interpretation of compound shell programs, expansion or wrappers.
+    if any(t in {'if','then','else','fi','for','while','do','done','case','esac','!','{','}'} or '$(' in t or '`' in t or t.startswith('(') or t.endswith(')') for s in selected for t in s):
+        return []
+    return selected
+
+
+def gh_command(words):
+    if not words or words[0] != 'gh':
+        return None
+    args, repo = [], None
+    i = 1
+    while i < len(words):
+        word = words[i]
+        if word in {'-R', '--repo'}:
+            if i+1 >= len(words):
+                return None
+            repo = words[i+1]
+            i += 2
+        elif word.startswith('--repo='):
+            repo = word.split('=',1)[1]
+            i += 1
+        else:
+            args.append(word)
+            i += 1
+    return args, repo
+
+
+def merge_result(words, cwd):
+    parsed = gh_command(words)
+    if not parsed or parsed[0][:2] != ['pr','merge']:
+        return None
+    args, repo = parsed
+    target, i = None, 2
+    values = {'--body','-b','--body-file','-F','--subject','-t','--match-head-commit','--author-email','-A'}
+    flags = {'--squash','-s','--merge','-m','--rebase','-r','--delete-branch','-d','--auto','--disable-auto','--admin'}
+    while i < len(args):
+        word = args[i]
+        if word in values:
+            if i+1 >= len(args):
+                return None
+            i += 2
+        elif word in flags or any(word.startswith(v+'=') for v in values if v.startswith('--')):
+            i += 1
+        elif word.startswith('-') or target is not None:
+            return None
+        else:
+            target = word
+            i += 1
+    lookup = 'baseRefName,state'
+    if target is None:
+        target = read(['git','symbolic-ref','--quiet','--short','HEAD'],cwd)
+        if not target:
+            return None
+        if not target.startswith(('feature/','fix/','release/')):
+            # `--delete-branch` leaves the checkout on main. Recover the merged
+            # branch from the checkout that just happened, and only then.
+            if not {'--delete-branch','-d'} & set(args):
+                return None
+            # gh then fast-forwards the base with `git pull --ff-only <remote>
+            # <base>` before deleting the head: skip exactly that one leading
+            # entry, then require the checkout.
+            entries = (read(['git','reflog','-2','--format=%gs','HEAD'],cwd) or '').split('\n')
+            pulled = re.fullmatch(r'pull --ff-only \S+ ' + re.escape(target) + ': Fast-forward', entries[0])
+            moved = entries[1] if pulled and len(entries) > 1 else entries[0]
+            prefix, suffix = 'checkout: moving from ', ' to ' + target
+            if not (moved.startswith(prefix) and moved.endswith(suffix)):
+                return None
+            target = moved[len(prefix):-len(suffix)]
+            if not target.startswith(('feature/','fix/','release/')) or read(['git','rev-parse','--verify','--quiet','refs/heads/'+target],cwd) is not None:
+                return None
+            lookup = 'baseRefName,headRefName,state'
+            fallback = True
+        else:
+            fallback = False
+    else:
+        fallback = False
+    query = ['gh','pr','view',target,'--json',lookup]
+    if repo:
+        query += ['--repo',repo]
+    result = read(query,cwd)
+    try:
+        info = json.loads(result)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(info,dict) or info.get('state') != 'MERGED' or info.get('baseRefName') != 'main':
+        return None
+    if fallback and info.get('headRefName') != target:
+        return None
+    return STOP
+
+
+def main():
+    try:
+        event = json.load(sys.stdin)
+        if not isinstance(event,dict) or event.get('hook_event_name') != 'PostToolUse' or event.get('tool_name') != 'Bash':
+            return
+        response = event.get('tool_response')
+        if not isinstance(response,dict) or response.get('interrupted') or any(response.get(key) for key in ('backgroundTaskId','background_task_id','task_id')):
+            return
+        command = event.get('tool_input',{}).get('command')
+        cwd = event.get('cwd')
+        if not isinstance(command,str) or not isinstance(cwd,str):
+            return
+        for words in successful_segments(command):
+            if merge_result(words,cwd):
+                print(json.dumps(STOP))
+                return
+    except (ValueError,TypeError,AttributeError,OSError):
+        return
+
+
+if __name__ == '__main__':
+    main()

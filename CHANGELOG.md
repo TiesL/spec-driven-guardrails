@@ -13,6 +13,18 @@ point.
 
 ## Unreleased
 
+- **#500: finish the turn after merges into main.** Claude's
+  synchronous Bash PostToolUse hook stops after every confirmed merge into
+  `main` (release heads included) with a note to tag a release first; tag
+  commands are not detected. Merges into release branches continue. Codex CLI/desktop
+  carry the same lifecycle through instructions, without runtime
+  hook enforcement. Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`.
+  Claude follows the settings source link; rerun `adopt.sh
+  --runtime codex <project>` and start a fresh session for Codex's managed block.
+  Context reset remains human: Claude `/clear`, CLI `/clear` or `/new`, desktop
+  New chat. No new CHANGES/adoption question. Script coverage and live runtime
+  gaps are recorded in `docs/completion-runtime-evidence.md`.
+
 - **#505: the SessionStart hook creates missing skill links.** `pending-changes.sh` now calls
   `lib/skill-links.sh` (A45), which links skills the checkout has and an adopted project lacks, create-only
   and only into a gitignored `.claude/skills/`; it never overwrites or removes a path, and prints a
