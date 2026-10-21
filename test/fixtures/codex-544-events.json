@@ -1,0 +1,45 @@
+{
+  "provenance": "A47 observed direct session: maintainer CLI; metadata Codex Desktop/vscode. Separate desktop coverage unverified. Synthetic event excluded.",
+  "events": [
+    {
+      "session_id": "captured-session",
+      "turn_id": "captured-turn-0",
+      "transcript_path": "/fixture/captured-rollout.jsonl",
+      "cwd": "/fixture/project",
+      "hook_event_name": "PreToolUse",
+      "model": "gpt-6-sol",
+      "permission_mode": "default",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "printf PROBE_DENY_544"
+      },
+      "tool_use_id": "captured-tool-0"
+    },
+    {
+      "session_id": "captured-session",
+      "turn_id": "captured-turn-1",
+      "transcript_path": "/fixture/captured-rollout.jsonl",
+      "cwd": "/fixture/project",
+      "hook_event_name": "PreToolUse",
+      "model": "gpt-6-sol",
+      "permission_mode": "default",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "printf PROBE_ALLOW_544"
+      },
+      "tool_use_id": "captured-tool-1"
+    }
+  ],
+  "outcomes": [
+    {
+      "exit": 2,
+      "stderr": "PROBE_544_REFUSAL",
+      "executed": false
+    },
+    {
+      "exit": 0,
+      "stdout": "PROBE_ALLOW_544",
+      "executed": true
+    }
+  ]
+}
