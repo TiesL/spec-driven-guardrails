@@ -1952,7 +1952,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   established; requiring either would reopen human scope before
   Implementation.
 
-### A47 — Opt-in Codex merge interception; live protocol prerequisite (#544)
+### A47 — Opt-in Codex merge interception; verified hook contract (#544)
 
 - **Authority.** [#516 Human decision 4](https://github.com/TiesL/spec-driven-guardrails/issues/516#issuecomment-6286538090)
   authorizes this separate opt-in, implementing #544 AC1–AC7. A39's promise
@@ -2004,35 +2004,44 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   structural installation are both truthful; voluntary merge-preflight remains
   required whenever interception is unavailable. No SessionStart/PostToolUse/
   SessionEnd automation is implied.
-- **Live prerequisite — FAILED TO ESTABLISH (2026-10-21).** Actual installed
-  `codex-cli 0.163.0` was exercised before implementation in
-  `/private/tmp/codex-544-probe`, with a capture hook matching `Bash` under
-  `.codex/hooks.json`. The hook would record stdin, allow `printf PROBE_ALLOW_544`
-  by exit 0 and deny `printf PROBE_DENY_544` by exit 2 plus
-  `PROBE_544_REFUSAL` on stderr. Four real `codex exec --ephemeral` runs used
-  gpt-6.1-sol: non-Git directory; Git directory with invocation-scoped project
-  trust; same with an empty `.codex/config.toml`; finally normal user config
-  loading instead of `--ignore-user-config`. All used the vetted-hook-only
-  `--dangerously-bypass-hook-trust` experiment flag. In all four, both printf
-  commands executed with exit 0 and the capture file was absent. Thus neither
-  event payload nor denial semantics has been verified; the missing callback's
-  cause is unknown. The flag is not an adoption recommendation. CLI thread IDs:
-  `01a15d16-d0c5-7172-83e5-7e57853bbfb6`,
-  `01a15d17-a34c-7db2-8001-33f79f3f300e`,
-  `01a15d19-2bcd-7d53-841d-70640a30a388`,
-  `01a15d1a-0419-79a1-9a47-b494a9fa647e`.
-- **Protocol verification gate.** [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
-  was fetched, but is only a hypothesis source. Do not implement the template
-  or assert `Bash`/`tool_input.command`/exit-2 compatibility until an actual
-  callback captures the event name, tool name, command and cwd, and observes
-  an allowed command execute and a denied command remain unexecuted with its
-  reason visible. Use harmless marker commands or a fake `gh`, never a real
-  merge. Record exact surface/version, configuration and trust state, captured
-  payload and output. Sanitize session identifiers/paths in committed fixtures.
-  If the contract differs, Architect revises this decision before implementation.
-  Desktop remains unverified unless separately exercised; CLI results must not
-  be relabeled as desktop evidence.
-- **QA handoff once the gate is satisfied.** Cover default no-config writes,
+- **Live prerequisite — SATISFIED (2026-10-21).** In the direct session
+  identified by the maintainer as Codex CLI, after reviewing and trusting the
+  exact project hook `python3 /private/tmp/codex-544-probe/probe.py`, the hook
+  captured real callbacks for both marker commands. The project
+  `.codex/hooks.json` contained `hooks.PreToolUse` with matcher `Bash` and a
+  command hook invoking that script. Captured JSON contains
+  `hook_event_name: PreToolUse`, `tool_name: Bash`,
+  `tool_input.command: printf PROBE_DENY_544` (then `printf PROBE_ALLOW_544`),
+  and `cwd: /private/tmp/codex-544-probe`; session/turn/transcript/model/
+  permission/tool-use metadata are also present. The script's exit 2 plus
+  `PROBE_544_REFUSAL` on stderr produced `Command blocked by PreToolUse hook:
+  PROBE_544_REFUSAL` before execution. Exit 0 with no output allowed the other
+  command, which printed `PROBE_ALLOW_544` and exited 0. Use this stdin JSON
+  and exit-status/stderr contract; no response JSON is required for these
+  allow/deny outcomes.
+- **Evidence and limits.** The captured event's transcript is the local rollout
+  ending `01a15d4d-f8a8-73c0-ac43-3e6a55b3290c.jsonl`; its command results
+  independently confirm the refusal and allowed output. Metadata records
+  `cli_version: 0.163.0`, `originator: Codex Desktop`, `source: vscode` and
+  event model `gpt-6-sol`. The surface labels differ from the maintainer's CLI
+  description, so this establishes the observed direct-session contract,
+  without establishing separate desktop coverage. Desktop remains unverified
+  as a separate surface. Earlier nested `codex exec` probes with no callback
+  are inconclusive about loading/activation; their cause remains unresolved
+  and they do not disprove the captured contract. The synthetic first line in
+  `events.jsonl` is a standalone script test, not runtime evidence. No further
+  paid live probe is needed for Planning.
+- **Activation and fixture contract.** [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
+  supplies configuration context; the captured callbacks and tool results
+  supply the protocol evidence. Exact-hook review/trust remains a user action;
+  installation cannot grant it, and an updated command may need review again.
+  Sanitize session identifiers and local paths in committed fixtures while
+  retaining event/tool/command/cwd and the observed allow/refuse outcomes.
+  Automated coverage must exercise that contract and shared guard refusal
+  using fake `gh`, never a real merge. Do not generalize this observation to
+  hooks disabled, trust withheld, other versions or independently untested
+  surfaces; report those as activation unavailable/unverified.
+- **QA handoff.** Cover default no-config writes,
   repeat opt-in without duplicates, preservation of JSON/inline/global hooks,
   owned-definition repair/conflict, unsafe paths, old provenance, subdirectory
   and space-containing project paths, status absent/current/drift/broken,
@@ -2040,9 +2049,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   non-merge destructive-Git commands passing merge-only mode, and unchanged
   default guard behavior. Include trust withheld/review pending/hooks disabled
   as unavailable activation, not installed enforcement. Automated fixtures
-  alone cannot replace the live gate. Architect effort: about half a day
-  including runtime investigation; overall M remains plausible after feasibility.
-- **Next stage.** Planning is held on a factual runtime verification gap, not a
-  new maintainer preference. No implementation handoff until the gate above
-  succeeds or the maintainer explicitly changes the requirement through the
-  normal recorded human-decision route.
+  alone cannot replace the live evidence above. Architect effort: about half a
+  day including runtime investigation; overall M remains plausible.
+- **Next stage.** Planning is complete. Proceed to QA test strategy/scenarios,
+  then Developer implementation under this decision; no product scope change
+  or waiver of the live prerequisite is required.
