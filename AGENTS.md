@@ -38,7 +38,26 @@ This project is developed from multiple computers. Follow this workflow in every
 2. **Run the quality review immediately, in parallel with CI, not gated on CI being green** — don't ask whether to, don't wait to be asked, don't wait for CI first; see the `pre-merge-review` skill. The review's marker is pinned to the commit it reviewed, so a commit that lands afterward (a fixup, or a fix for a red CI) simply needs a fresh review, whenever it runs — nothing slips through unreviewed.
 3. Before asking for merge confirmation, know that CI has actually finished — the merge guard blocks the merge otherwise, and asking prematurely just costs a round trip. Don't poll `gh pr checks` on a short fixed interval — measured against this repo's own last 10 completed CI runs (`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8 minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus "still pending" checks before CI ever finishes (issue #215). Run `./wait-for-ci.sh <pr-number>` instead of polling by hand (issue #265) — it waits 5 minutes before the first check, then every 1 minute until CI reaches a terminal state, and exits non-zero if anything failed. That interval is a documented agreement precisely so an agent can't quietly improvise a shorter one; encoding it in a script closes that gap the same way a prose-only rule can't.
 4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
-5. Then merge with `gh pr merge --squash --delete-branch` — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
+5. Then merge with `gh pr merge <n> --squash --delete-branch` (name the PR number) — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
+
+### Completion ends the current work
+
+After a confirmed successful merge into `main`, from any head including a
+`release/*` branch, stop autonomous work and give the runtime's fresh-context
+instruction before the next work item; the prompt notes that a release being
+tagged is tagged first. A merge into `release/*` continues. Tagging is a
+maintainer-requested follow-up that can happen before the reset; tag commands
+and tag publication never stop or prompt by themselves. Failed, queued-only or
+uncertain completion does not produce a successful-completion stop.
+
+Run each merge in a distinct tool call, inspect its completed
+result before scheduling anything further, and never batch the next work item
+in a compound command, concurrent call or tool script. Finish durable reporting
+before the merge. Afterward only the final result and fresh-context prompt is
+allowed. Context reset is the
+maintainer's action; stopping ends the current turn, not the conversation.
+Production deployment can follow a fresh context with its separate approval.
+Web-UI and subagent merges are outside this completion mechanism.
 
 ## Issue labels
 
@@ -139,4 +158,24 @@ still needs explicit human confirmation, the canonical review evidence and a
 clean merge-preflight.sh run.
 Codex specialized/indirect shell actions have no adapter runtime interception.
 Read-only status establishes structural installation, never live loading.
+
+## Completion and fresh context
+
+Before merging, save the PR number and repository plus base/head identity before
+branch deletion. After the completed merge, confirm `state == MERGED` using that
+saved number/repository. Queued `--auto` is insufficient. Use the actual completed
+tool result for merge success; failed or uncertain results do not claim
+successful completion. Follow the shared distinct tool call and durable reporting
+ordering above. This is instruction following, with no runtime hook enforcement
+or automatic context clearing; runtime-hooks stays not-installed.
+
+After a merge into main, from any head, end the turn with: CLI — "Merged to
+main. Use /clear or /new before the next work item; if you are tagging a release,
+tag it first." Desktop — "Merged to main. Start a New chat before the next work
+item; if you are tagging a release, tag it first." If the surface is unknown,
+give both labeled actions. Tag commands and publication give no stop or prompt.
+CLI `/clear` and `/new` start fresh chats after the current task ends;
+a shell terminal clear does not. Desktop New chat is `Cmd+N` on macOS or `Ctrl+N`
+on Windows/Linux. Reset remains maintainer-owned. A merge into
+a release branch continues without this prompt.
 <!-- spec-driven-guardrails: end -->
