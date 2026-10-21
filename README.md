@@ -15,7 +15,7 @@ pipeline, and an adopted project can opt into it — see
 Two things go wrong once an AI agent works on a project long enough to matter: it forgets
 what was decided and why, and it merges things nobody reviewed. `PRD.md` plus
 `TEST-SCENARIOS.md` fix the first — nothing is "decided" until it's a spec entry a test
-scenario traces back to. Claude’s Bash merge guard blocks `gh pr merge` without a review marker pinned to the current commit and green CI, subject to its documented fail-open limits. Codex follows the same review agreements through instructions and shared artifact checks; its adapter installs no runtime shell interception.
+scenario traces back to. Claude’s Bash merge guard blocks `gh pr merge` without a review marker pinned to the current commit and green CI, subject to its documented fail-open limits. Codex follows the same review agreements through instructions and shared artifact checks; its adapter defaults to no runtime shell interception, with explicit opt-in Bash merge interception available.
 
 ## How work actually moves
 
@@ -197,19 +197,36 @@ budget. [Official skill discovery](https://learn.chatgpt.com/docs/build-skills)
 documents `.agents/skills`, symlink support and reading skill bodies on invocation
 (consulted 2026-10-13). Parent/deeper instructions, instruction budget, unsupported
 versions or withheld trust may suppress guidance; report that before relying on
-it. Adoption preserves all Codex config/trust/permissions/hooks/plugin state.
+it. Default adoption preserves all Codex config/trust/permissions/hooks/plugin state.
+Explicit `adopt.sh --runtime codex --hooks [project]` owns one dedicated Bash
+PreToolUse definition in project `.codex/hooks.json`, recorded in local installation
+provenance. It preserves unrelated JSON hooks, config.toml (including inline hooks),
+user/global hooks and trust/permission/plugin settings. Repeat opt-in updates only
+the exact recorded definition; edits, duplicates, malformed data and symlink paths
+conflict before writes. Default adoption after opt-in retains the hook.
+The installed command resolves the shared guard through that project’s
+`.guardrails/source` and uses `--merge-only`; other Bash commands pass.
+Updated commands may require exact-hook review again.
 
 | Mechanism | Claude Code | Codex CLI/desktop | Shared coverage/limits |
 | --- | --- | --- | --- |
 | Session context/fetch | SessionStart configured hook | Explicit reads/fetch instructions | Network/read failures remain visible; installation is not loading |
-| Destructive Git/issue-first/merge | Bash PreToolUse configured guard | Instructions/manual checks; absent runtime interception | Non-Bash/indirect paths and Claude fail-open limits remain |
+| Destructive Git/issue-first/merge | Bash PreToolUse configured guard | Instructions/manual checks; optional Bash merge hook via --hooks | Non-Bash/indirect paths and Claude fail-open limits remain |
 | Commit/session push | PostToolUse/SessionEnd configured hooks | Explicit push instructions | Branch exceptions/post-action failures remain |
 | Native Git hooks | pre-commit/commit-msg/pre-push | Same hooks | Foreign hooks/hooksPath/--no-verify/dependencies/escape hatches; do not intercept gh pr merge |
 | Evidence/check/CI | Existing public commands | Same commands and parsers | Artifacts only; cannot prove identity, authorship, freshness or obedience |
 | Five-role dispatch | Available fresh session tool | Runtime-dependent fresh session tool | Unavailable required dispatch stops for existing human override; no role collapse |
 
-Codex status reports `runtime-hooks: not-installed; runtime shell interception unavailable`.
-Trust or existing user hooks do not change that installed coverage claim.
+Without opt-in, Codex status reports `runtime-hooks: not-installed; runtime shell interception unavailable`.
+With an exact managed definition and reachable guard it reports `runtime-hooks: installed`,
+`scope: Bash merge interception` and `activation: unverified`; drift or broken targets
+report stale/conflict. This is structural inventory, not proof of activation.
+Trust withheld, exact-hook review pending, hooks disabled, unsupported versions or
+administrator suppression can leave interception unavailable. Use the required
+`merge-preflight.sh` before merging, including when interception is unavailable.
+A47 records real Bash PreToolUse callbacks and exit-2 stderr refusal / silent exit-0
+allow in the observed direct session. The maintainer called it CLI while metadata
+says Codex Desktop/vscode; separate desktop behavior remains unverified.
 Once the opted-in workflow is authorized, its orchestrator continues ordinary
 handoffs and finding routes without new confirmations. Canonical
 `skills/role-contracts/ORCHESTRATOR.md` owns this rule and durable-artifact resume.
@@ -406,7 +423,8 @@ branch or recovered from the checkout reflog (including gh's post-checkout fast-
 redirections and line continuation. Pipes, input redirections, wrappers,
 compound shell programs and a lost branch fail open (no stop). Claude receives a
 synchronous Bash PostToolUse completion hook via the existing settings symlink.
-Codex uses instruction following, with `runtime-hooks: not-installed`; rerun
+Codex completion uses instruction following; its optional --hooks merge guard
+does not enforce the completion stop or reset. Rerun
 `adopt.sh --runtime codex <project>` and start a fresh session to load the updated
 managed block. No new adoption question or opt-out is introduced.
 

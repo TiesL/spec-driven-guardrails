@@ -78,10 +78,11 @@ physical() {
 
 emit() {
 if [ "$runtime" = codex ]; then
-  if ! python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status >/dev/null 2>&1; then
+  codex_inventory="$(python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status 2>&1)"
+  if [ "$?" -ne 0 ]; then
     echo "Warning: Codex AGENTS.md/links installation is missing, stale or conflicting; run adopt.sh --runtime codex again and verify actual instruction loading."
   fi
-  echo "runtime-hooks: not-installed; runtime shell interception unavailable"
+  printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p'
 else
 claude_md="$project_dir/CLAUDE.md"
 expected="$(physical "$workflow_dir/WORKFLOW.md")"

@@ -7200,3 +7200,99 @@ principally the command matrix and the live-evidence assessment.
   unperformed reset actions and live Claude termination/reset are explicitly
   unverified. Documentation, simulated GitHub state and passing scripts alone
   cannot be described as observed live stopping or context reset
+
+## Opt-in Codex merge interception — #544 (A47)
+
+Agreed Seams: public `adopt.sh --runtime codex [--hooks] [project]` and
+status CLI, observable installed files/provenance, and the installed command
+receiving hook stdin JSON with exit status/stderr as its result. Use disposable
+projects and PATH fake `gh` from the existing guard harness; never merge a real
+PR. Developer writes/runs red-before-green cases through these Seams, following
+`test/cases/s294_codex_support.sh` and S324's guard fixtures. No private helper
+assertions or new live paid probe is needed. Existing real-event evidence in
+A47 supplies protocol provenance, not proof that a future installation activates.
+
+### S365 — default adoption preserves hook state; opt-in installs once (#544 AC1, AC2)
+**Covers:** F45, F47, F48
+- Given: fresh and previously adopted projects, including old installation
+  provenance without hook ownership, with absent or existing hook configuration
+- When: default adoption runs, including after a successful hook opt-in
+- Then: it neither creates nor changes `.codex/hooks.json`; an earlier hook is
+  retained. Default adoption remains usable and does not imply uninstall
+- When: explicit `--runtime codex --hooks` runs twice, including from a project
+  path containing spaces and shell metacharacters
+- Then: one managed Bash PreToolUse definition invokes the reachable shared
+  guard in merge-only mode; ownership is identifiable and subsequent runs add
+  no duplicates. Old provenance upgrades explicitly without claiming foreign
+  hooks. Invalid/repeated flags and non-Codex `--hooks` exit 2 before writes
+
+### S366 — coexistence and ownership prevent silent configuration takeover (#544 AC2)
+**Covers:** F45, F47, F48
+- Given: regular project hook JSON with unrelated top-level keys, other event
+  groups and other Bash hooks, inline hooks in `.codex/config.toml`, and user
+  configuration outside the project
+- When: hook opt-in installs, repeats, or updates a previously owned definition
+- Then: unrelated JSON content survives semantically; config.toml and user
+  configuration remain byte-identical. Only the exact recorded previous managed
+  definition is updated, without replacing or consolidating foreign hooks
+- Negative variants: malformed JSON/shapes, duplicate managed definitions,
+  foreign edits to recorded ownership, invalid/unsupported provenance, symlink
+  hook file, symlink `.codex` parent, and other unsafe parents all fail before
+  any adoption writes. Snapshot the project and symlink targets before/after;
+  a failed install must not leave partially updated AGENTS, links or provenance
+- Given: an owned definition still equals its recorded value but the source
+  template changes; Then: re-opt-in updates it once. An edited owned value
+  conflicts rather than being silently repaired
+
+### S367 — status distinguishes structural presence from effective activation (#544 AC6)
+**Covers:** F47, F48, F51, F52
+- Given: absent, valid managed, edited, duplicate and broken-target installs
+- When: status runs without `--hooks`
+- Then: absent reports `runtime-hooks: not-installed`; exact reachable managed
+  state reports `runtime-hooks: installed`, `scope: Bash merge interception`
+  and `activation: unverified`. Edited/duplicate/broken state reports
+  stale/conflict, never installed; retain status exit meanings 0 current,
+  1 stale/conflict, 2 invalid/unreadable
+- Then: inventory, session-context diagnostics, generated instructions and
+  README agree on default absence and optional structural installation; they
+  retain voluntary merge-preflight when interception is unavailable and make
+  no automatic fetch/push, SessionStart/PostToolUse/SessionEnd claim
+- Negative activation variants: trust withheld, exact-hook review pending,
+  hooks disabled, unsupported version or administrator suppression remain
+  unavailable/unverified even when files are installed. Adoption changes no
+  trust/permission setting. Static fixtures cannot establish live activation
+
+### S368 — captured Bash event drives shared merge refusal and allow (#544 AC3, AC5)
+**Covers:** F8, F47, F48, F52
+- Given: sanitized fixtures derived from A47's two real events, preserving
+  `hook_event_name: PreToolUse`, `tool_name: Bash`, `tool_input.command`, `cwd`
+  and observed allow/refuse outcomes; exclude the synthetic first events line
+- When: the installed hook command receives those payload shapes with
+  `gh pr merge 41` substituted and fake gh supplying merge policy state
+- Then: missing/stale review, failing CI, stale base and missing role evidence
+  each produce exit 2 and the shared guard's refusal on stderr; a fully allowed
+  fixture exits 0 without output. No response JSON is required. A simulated
+  tool executor runs an observable sentinel only after exit 0, never after 2
+- Then: execute the installed command from a project subdirectory, also in a
+  space/metacharacter-containing project path; it resolves that project's
+  `.guardrails/source`, uses the correct cwd and evaluates the same merge
+- Negative variants: quoted merge arguments and merge in a compound command
+  remain subject to the shared parser; no duplicate parser or real gh merge
+  is used. Record fake-gh calls so denial cannot pass because no merge was read
+- Evidence limit: fixture replay proves the installed command/protocol wiring;
+  A47's observed direct session establishes runtime exit-2 refusal/exit-0 allow.
+  Preserve its CLI-versus-metadata discrepancy and separate desktop gap
+
+### S369 — merge-only mode passes non-merge Bash without widening Claude behavior (#544 AC4, AC7)
+**Covers:** F8, F47, F48, F53
+- Given: the installed hook and the same shared guard invoked without arguments
+- When: commands include ordinary printf/git status, destructive Git commands,
+  direct push to main and issue-first violations, with no gh pr merge invocation
+- Then: merge-only invocation returns 0 and does not evaluate unrelated policy;
+  the no-argument guard still refuses its existing destructive-Git, main-push
+  and issue-first negatives. A compound command containing a merge still
+  evaluates the merge rather than bypassing it as an unrelated Bash command
+- Then: Claude adoption/settings and native Git hook installation/behavior
+  retain their existing regression results. Keep S294–S304, S343 and S362's
+  default-off assertions; qualify broad no-Codex-hook wording for opt-in state,
+  without weakening default absence or native/Claude coverage

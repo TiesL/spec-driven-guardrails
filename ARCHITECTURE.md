@@ -1951,3 +1951,106 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   Mechanical Codex turn termination or automatic clearing is not
   established; requiring either would reopen human scope before
   Implementation.
+
+### A47 — Opt-in Codex merge interception; verified hook contract (#544)
+
+- **Authority.** [#516 Human decision 4](https://github.com/TiesL/spec-driven-guardrails/issues/516#issuecomment-6286538090)
+  authorizes this separate opt-in, implementing #544 AC1–AC7. A39's promise
+  not to touch Codex configuration remains the default. Only an explicit
+  `adopt.sh --runtime codex --hooks [project]` grants ownership of one hook
+  definition in project `.codex/hooks.json`; trust, permissions, user config,
+  plugins and unrelated hooks remain project/user-owned. This is a capability
+  opt-in, not mandatory new workflow policy; no CHANGES meaning bump is needed.
+- **Module / Interface.** Extend the existing Codex adoption Module
+  (`lib/codex-adoption.py` behind `adopt.sh`), retaining its complete ownership
+  preflight before writes. `--hooks` is Codex-only; repeated/invalid combinations
+  fail with exit 2 before writes. A run without `--hooks` neither creates nor
+  rewrites hook configuration, including after an earlier opted-in run; absence
+  of the flag is not an uninstall request. Status always inspects actual state.
+- **Coexistence.** Parse the regular project hooks JSON, preserve unrelated keys
+  and hook definitions semantically, and append exactly one dedicated matcher
+  group identified through local provenance plus its exact managed definition.
+  Update only a definition matching its recorded previous value; duplicates,
+  malformed JSON/shapes, foreign edits to recorded ownership, unsafe parents or
+  symlinks conflict before any writes. Preserve `.codex/config.toml` byte for
+  byte, including inline hooks; do not consolidate user hooks or change global
+  configuration. Record opt-in/definition ownership in the existing local
+  installation record with explicit backward-compatible version handling.
+  A source template supplies the canonical definition, not a whole-file symlink.
+  Resolve the guard from the adopted project's `.guardrails/source` using a
+  safely quoted project-root path, including calls launched in subdirectories.
+- **Guard Interface.** AC4 requires all non-merge Bash commands to remain usable.
+  Wiring the full guard unchanged would also enforce destructive-Git and
+  issue-first rules. Add an explicit `--merge-only` invocation mode to the
+  existing guard Module: reuse its token reader, segment/cwd handling and merge
+  decision implementation, but skip non-merge judgments in that mode. Its
+  no-argument Claude and preflight behavior remains unchanged. Do not duplicate
+  command parsing or the merge checks in a Codex-specific guard. The external
+  Seam remains hook stdin plus exit status/stderr; Claude and Codex are two real
+  adapters, satisfying the two-adapters rule. This preserves Depth, Leverage
+  and Locality: deleting the shared Module would distribute tokenization and
+  merge policy among adapters (the deletion test). No new dispatch framework.
+- **Status semantics.** `runtime-hooks: installed` means the exact managed
+  definition and its reachable target are structurally present; also print
+  `scope: Bash merge interception; activation: unverified`. Missing/not opted-in
+  reports `runtime-hooks: not-installed`; edited/duplicate/broken definitions
+  report conflict/stale, never installed. Status without `--hooks` must still
+  detect an earlier install. Retain existing status exit meanings (0 current,
+  1 stale/conflict, 2 invalid/unreadable). Installation does not establish
+  effective activation: project trust, exact-hook review, disabled hooks,
+  administrator policy and runtime support may suppress execution. Adoption
+  never grants trust or bypasses review. Clarify generated Codex instructions,
+  session-context diagnostics and README so default absence and optional
+  structural installation are both truthful; voluntary merge-preflight remains
+  required whenever interception is unavailable. No SessionStart/PostToolUse/
+  SessionEnd automation is implied.
+- **Live prerequisite — SATISFIED (2026-10-21).** In the direct session
+  identified by the maintainer as Codex CLI, after reviewing and trusting the
+  exact project hook `python3 /private/tmp/codex-544-probe/probe.py`, the hook
+  captured real callbacks for both marker commands. The project
+  `.codex/hooks.json` contained `hooks.PreToolUse` with matcher `Bash` and a
+  command hook invoking that script. Captured JSON contains
+  `hook_event_name: PreToolUse`, `tool_name: Bash`,
+  `tool_input.command: printf PROBE_DENY_544` (then `printf PROBE_ALLOW_544`),
+  and `cwd: /private/tmp/codex-544-probe`; session/turn/transcript/model/
+  permission/tool-use metadata are also present. The script's exit 2 plus
+  `PROBE_544_REFUSAL` on stderr produced `Command blocked by PreToolUse hook:
+  PROBE_544_REFUSAL` before execution. Exit 0 with no output allowed the other
+  command, which printed `PROBE_ALLOW_544` and exited 0. Use this stdin JSON
+  and exit-status/stderr contract; no response JSON is required for these
+  allow/deny outcomes.
+- **Evidence and limits.** The captured event's transcript is the local rollout
+  ending `01a15d4d-f8a8-73c0-ac43-3e6a55b3290c.jsonl`; its command results
+  independently confirm the refusal and allowed output. Metadata records
+  `cli_version: 0.163.0`, `originator: Codex Desktop`, `source: vscode` and
+  event model `gpt-6-sol`. The surface labels differ from the maintainer's CLI
+  description, so this establishes the observed direct-session contract,
+  without establishing separate desktop coverage. Desktop remains unverified
+  as a separate surface. Earlier nested `codex exec` probes with no callback
+  are inconclusive about loading/activation; their cause remains unresolved
+  and they do not disprove the captured contract. The synthetic first line in
+  `events.jsonl` is a standalone script test, not runtime evidence. No further
+  paid live probe is needed for Planning.
+- **Activation and fixture contract.** [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
+  supplies configuration context; the captured callbacks and tool results
+  supply the protocol evidence. Exact-hook review/trust remains a user action;
+  installation cannot grant it, and an updated command may need review again.
+  Sanitize session identifiers and local paths in committed fixtures while
+  retaining event/tool/command/cwd and the observed allow/refuse outcomes.
+  Automated coverage must exercise that contract and shared guard refusal
+  using fake `gh`, never a real merge. Do not generalize this observation to
+  hooks disabled, trust withheld, other versions or independently untested
+  surfaces; report those as activation unavailable/unverified.
+- **QA handoff.** Cover default no-config writes,
+  repeat opt-in without duplicates, preservation of JSON/inline/global hooks,
+  owned-definition repair/conflict, unsafe paths, old provenance, subdirectory
+  and space-containing project paths, status absent/current/drift/broken,
+  captured live event/exit contract, shared guard allow/refuse with fake `gh`,
+  non-merge destructive-Git commands passing merge-only mode, and unchanged
+  default guard behavior. Include trust withheld/review pending/hooks disabled
+  as unavailable activation, not installed enforcement. Automated fixtures
+  alone cannot replace the live evidence above. Architect effort: about half a
+  day including runtime investigation; overall M remains plausible.
+- **Next stage.** Planning is complete. Proceed to QA test strategy/scenarios,
+  then Developer implementation under this decision; no product scope change
+  or waiver of the live prerequisite is required.

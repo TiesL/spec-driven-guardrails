@@ -2,9 +2,13 @@
 
 The policy above is embedded in the managed AGENTS.md block. Claude-specific
 automatic hook statements in that policy apply to Claude's adapter. This Codex
-adapter installs no runtime hooks: context, fetch, push and guards require
-explicit instruction-following/manual actions plus shared native Git and CI
-checks. runtime-hooks: not-installed; runtime shell interception unavailable
+adapter defaults to runtime-hooks: not-installed; runtime shell interception unavailable.
+Explicit `adopt.sh --runtime codex --hooks` installs a managed Bash PreToolUse
+merge hook. Status inspects structural installation; activation remains unverified
+until the runtime invokes it. Project trust, exact-hook review, disabled hooks,
+administrator policy and runtime support may prevent activation. Adoption grants
+no trust or permissions. Context, fetch and push still require explicit actions;
+no SessionStart/PostToolUse/SessionEnd automation is installed.
 
 Before dependent work, run and read `.guardrails/source/session-context.sh --runtime codex <project>`
 from the project checkout (use `.` for <project>). Read each invoked skill's
@@ -37,8 +41,9 @@ Run `.guardrails/source/merge-preflight.sh <n>` from the project checkout before
 `gh pr merge`, with the PR number as `<n>`, and do not merge on a non-zero exit. It feeds the same
 `hooks/git-guardrails` that Claude's hook runs (up-to-date, review marker, CI,
 role-play checks). This is instruction-driven, not interception: the preflight
-is not a hook, nothing makes a session run it, and runtime-hooks stays
-not-installed.
+is not a hook and nothing makes a session run it. Without explicit --hooks
+opt-in, runtime-hooks stays not-installed; the optional hook intercepts Bash
+merge attempts only and does not replace this preflight requirement.
 
 Dispatch mapping: `SendMessage` and `fork` in the canonical rules are Claude
 tool names. Read `SendMessage` as Codex's continue-an-agent tool and `fork` as
@@ -51,7 +56,7 @@ Claude-only.
 Start a fresh CLI/desktop session after adoption/update and observe actual
 loading: global/parent and deeper instructions, AGENTS.override.md precedence
 and the combined instruction budget can suppress rules. Adoption does not
-change Codex config, trust, permissions, user hooks or plugins. Withheld trust
+change Codex config.toml, trust, permissions, unrelated user hooks or plugins. Withheld trust
 and unsupported versions must be recorded as unavailable, not observed success.
 
 Shared native pre-commit/commit-msg/pre-push hooks and configured CI checks retain
@@ -59,8 +64,12 @@ coverage limits: foreign hooks, hooksPath, --no-verify, missing dependencies and
 escape hatches. Native hooks do not intercept `gh pr merge`; merge into main
 still needs explicit human confirmation, the canonical review evidence and a
 clean merge-preflight.sh run.
-Codex specialized/indirect shell actions have no adapter runtime interception.
+Codex specialized/indirect shell actions remain outside Bash hook interception.
 Read-only status establishes structural installation, never live loading.
+
+The completion instructions below describe the default installation without
+`--hooks`. With `--hooks`, the optional Bash merge hook intercepts merge
+attempts, but does not enforce the completion stop or reset.
 
 ## Completion and fresh context
 

@@ -7,6 +7,7 @@
 #   ./adopt.sh /path/to/proj   # adopts the workflow in the given directory
 #   ./adopt.sh --user           # Claude-only user adoption trigger
 #   ./adopt.sh --runtime codex [project]  # install/update Codex CLI/desktop
+#   ./adopt.sh --runtime codex --hooks [project]  # opt into Bash merge interception
 #   ./adopt.sh --status --runtime claude|codex [project]  # read-only inventory
 #
 # Requires: environment variable SPEC_DRIVEN_GUARDRAILS_DIR, pointing at the
@@ -18,6 +19,7 @@ set -Eeuo pipefail
 runtime=claude
 runtime_seen=0
 status_mode=0
+hooks_mode=0
 user_mode=0
 project_arg=""
 project_seen=0
@@ -32,6 +34,9 @@ while [ "$#" -gt 0 ]; do
     --status)
       [ "$status_mode" -eq 0 ] || { echo "Error: repeated --status" >&2; exit 2; }
       status_mode=1; shift ;;
+    --hooks)
+      [ "$hooks_mode" -eq 0 ] || { echo "Error: repeated --hooks" >&2; exit 2; }
+      hooks_mode=1; shift ;;
     --user)
       [ "$user_mode" -eq 0 ] || { echo "Error: repeated --user" >&2; exit 2; }
       user_mode=1; shift ;;
@@ -41,6 +46,10 @@ while [ "$#" -gt 0 ]; do
       project_seen=1; project_arg="$1"; shift ;;
   esac
 done
+if [ "$hooks_mode" -eq 1 ] && { [ "$runtime" != codex ] || [ "$user_mode" -eq 1 ]; }; then
+  echo "Error: --hooks requires --runtime codex and cannot combine with --user" >&2
+  exit 2
+fi
 if [ "$user_mode" -eq 1 ] && { [ "$runtime" != claude ] || [ "$status_mode" -eq 1 ] || [ "$project_seen" -eq 1 ]; }; then
   echo "Error: --user is Claude-only and cannot combine with status/project" >&2
   exit 2
@@ -697,7 +706,9 @@ elif [ "$runtime" = codex ]; then
     exec python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" status "${shared_paths[@]}"
   fi
   trap 'echo "incomplete installation: runtime codex; inspect reported paths before retrying" >&2' ERR
-  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" install "${shared_paths[@]}"
+  codex_mode=install
+  [ "$hooks_mode" -eq 0 ] || codex_mode=install-hooks
+  python3 "$own_dir/lib/codex-adoption.py" "$CLAUDE_WORKFLOW_DIR" "$project_dir" "$codex_mode" "${shared_paths[@]}"
   # Ownership conflicts were preflighted before all writes; the Codex plan
   # installed owned native hooks and left foreign hooks untouched.
   scaffold_shared "$project_dir"

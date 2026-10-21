@@ -149,3 +149,22 @@ See [completion runtime evidence](completion-runtime-evidence.md) for the fresh
 CLI 0.163.0 sentinel matrix, real local tag publication, interactive `/new` UI
 observation and remaining desktop/Claude/reset gaps. Simulated PR state and
 instruction following are explicitly distinguished from runtime enforcement.
+
+## #544 hook protocol observation (2026-10-21)
+
+A47 records real `PreToolUse` callbacks with `tool_name: Bash`,
+`tool_input.command` and `cwd`. In the observed direct session, after exact-hook
+review/trust, exit 2 with stderr `PROBE_544_REFUSAL` prevented the harmless denied
+command from executing; silent exit 0 allowed the other marker command. The
+synthetic first capture entry is excluded. Sanitized callbacks and the observed
+outcomes are in `test/fixtures/codex-544-events.json`; replay tests establish
+protocol wiring through the installed command and shared guard, not live loading.
+
+The maintainer called this session CLI; saved metadata says CLI version 0.163.0,
+originator Codex Desktop, source vscode. This discrepancy remains explicit;
+separate desktop hook behavior remains unverified. Earlier nested probes without
+callbacks remain inconclusive. Installing with `--hooks` reports structural
+presence and `activation: unverified`; trust withheld, review pending, hooks
+disabled, unsupported runtime or administrator suppression may prevent execution.
+Adoption never grants trust or changes permissions. This observation does not
+complete the unrelated #455 dry-run scenarios above.
