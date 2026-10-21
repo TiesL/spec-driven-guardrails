@@ -163,6 +163,10 @@ clean merge-preflight.sh run.
 Codex specialized/indirect shell actions remain outside Bash hook interception.
 Read-only status establishes structural installation, never live loading.
 
+The completion instructions below describe the default installation without
+`--hooks`. With `--hooks`, the optional Bash merge hook intercepts merge
+attempts, but does not enforce the completion stop or reset.
+
 ## Completion and fresh context
 
 Before merging, save the PR number and repository plus base/head identity before
@@ -170,9 +174,8 @@ branch deletion. After the completed merge, confirm `state == MERGED` using that
 saved number/repository. Queued `--auto` is insufficient. Use the actual completed
 tool result for merge success; failed or uncertain results do not claim
 successful completion. Follow the shared distinct tool call and durable reporting
-ordering above. Completion remains instruction following, with no completion
-hook or automatic context clearing. The optional Bash merge hook does not
-enforce this stop or reset.
+ordering above. This is instruction following, with no runtime hook enforcement
+or automatic context clearing; runtime-hooks stays not-installed.
 
 After a merge into main, from any head, end the turn with: CLI — "Merged to
 main. Use /clear or /new before the next work item; if you are tagging a release,
