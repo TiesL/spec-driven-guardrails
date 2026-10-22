@@ -824,7 +824,11 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   comments and PR reviews over REST (no GraphQL, #318), compares each round
   with the one before it (#421), buffers its findings and fails open with a
   warning on any fetch or tool failure; the `finding:` slug reading is its
-  own and never in the lib: both sides read a slug as the maximal non-whitespace
+  own and never in the lib. A37d (#310): each selected Review body goes
+  through `live_text` (`lib/markdown.sh`) once before finding inspection;
+  both open findings and mentions are read from that same live body.
+  Quoted findings neither seed open obligations nor satisfy a mention.
+  Both sides read a slug as the maximal non-whitespace
   run after `finding:` and compare it whole, so a slug is mentioned only by
   exactly that token (#453). A37b (#426): a gap (open in round k-1, not
   mentioned in round k) is cleared by any later round that mentions the slug,
@@ -839,6 +843,17 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   agree with no caller-side filter. It is not a gate and not wired into the merge guard: the trigger
   turns on severity, which it cannot see. The orchestrator runs it in its
   self-check.
+- **Current-head merge-marker lookup (#310):** `check_merge_guard` in
+  `hooks/git-guardrails` reads each PR comment through the same `live_text`
+  Interface before searching for review evidence. Fence state stays within
+  each body. A quoted marker cannot authorize a merge; a live marker may
+  share a line with prose. The literal marker grammar, exact current-head
+  SHA comparison and existing warning/fail-open policy on an unreadable
+  response remain in force. A failed Markdown read is an unreadable
+  response, never absent evidence; successful empty live text is absent
+  evidence. Carry-forward likewise retains its warning/no-verdict policy
+  on a failed read. Both consumers inherit the shared Markdown Module's
+  interpretation and accepted limits rather than defining another parser.
 - **Rejected:** a `severity=` attribute on `finding:` markers (a marker
   format change, #411's); a "same component" trigger (a component judgment
   the orchestrator would make alone); wiring the round count as a gate (a
