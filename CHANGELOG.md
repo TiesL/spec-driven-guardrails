@@ -63,6 +63,10 @@ point.
 - **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
   version paragraph: SDG means this repository and workflow; an adopted project's installed copy is
   the "adopted copy"; nothing is renamed).
+- **Fix #552: the completion hook treats `$`-expansion targets as uncertain.** A `$` in the PR target or the
+  `--repo`/`-R` value (`$PR`, `${PR}`, `$1`, `--repo "$REPO"`, however quoted) now gives no reminder and no
+  `gh` lookup; literal targets and a `$` elsewhere in the command are unchanged. S360 and A46 state the rule.
+  The vestigial `if True:` around `fallback()` in `test/completion-hook.py` is removed.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
