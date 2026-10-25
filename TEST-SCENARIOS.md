@@ -6957,7 +6957,7 @@ Numbering: S345 and S346 are the next free S numbers on the pulled head
   or a differently resolved path (`pwd -P` vs raw)
 
 
-## #500 — stop after completion (A46, F56)
+## #500 — completion reminder (A46, F56; stop removed by #561)
 
 QA strategy (decision 8): S355–S361 enter only the executable
 `hooks/stop-after-completion` with PostToolUse JSON on stdin, a temporary real
@@ -6965,37 +6965,39 @@ Git repository and a PATH-provided recording `gh` fixture. Assert parsed
 JSON/empty stdout, exit status and actual fixture calls; never source private
 parser functions. Developer writes and runs the tests, showing red before
 implementation and green afterward. Existing quote/guard scenarios remain
-regression evidence. S362 uses real generation/adoption; S363–S364 require named
-live evidence and cannot be passed by static text checks. No scenario asserts
+regression evidence. S362 uses real generation/adoption; S363–S364 validate retained live
+evidence of the removed stop and name what is unverified; they cannot be passed by static text checks. No scenario asserts
 tag detection: the only tag assertion is the S357 negative. The tag note in
-every main-merge prompt is wording, not behavior. Estimated QA effort: M,
+every main-merge reminder is wording, not behavior. Estimated QA effort: M,
 principally the command matrix and the live-evidence assessment.
 
-### S355 — a confirmed main merge stops Claude with the tag note (#500 AC1, AC2; A46)
+### S355 — a confirmed main merge prints the reminder and does not stop (#500 AC1, AC2; #561 AC1; A46)
 **Covers:** F56
 - Given: a valid successful Bash PostToolUse event for `gh pr merge 500`,
   and the recording fixture returns base `main` and state `MERGED` (the
   head, if returned, is irrelevant)
 - When: the executable consumes the event
-- Then: exit is 0 and JSON contains `continue: false` and exactly
-  `stopReason: "Merged to main. Type /clear before the next work item; if you
-  are tagging a release, tag it first."` (the note is on every main-merge
-  prompt, release or not); the PR lookup requests exactly `baseRefName,state`
+- Then: exit is 0 and stdout is one JSON object whose `systemMessage` is
+  exactly "Merged to main. Type /clear before the next work item; if you
+  are tagging a release, tag it first.", with no `continue` and no
+  `stopReason` key (the note is on every main-merge reminder, release or
+  not); the PR lookup requests exactly `baseRefName,state`
   for that target and nothing else is called
 - Given: the same event with base `release/490-example`
-- Then: no stop/prompt is emitted, so the epic can continue (AC2)
+- Then: no reminder (empty stdout), so the epic continues (AC2)
 
-### S356 — a release-head merge into main stops like any main merge (#500 AC6; A46)
+### S356 — a release-head merge into main reminds like any main merge (#500 AC6; A46)
 **Covers:** F56
 - Given: the merge fixture returns base `main`, head `release/490-example`,
   state `MERGED`
 - When: the successful merge event is consumed
-- Then: the hook emits S355's exact stop JSON: `continue: false`, no
-  `hookSpecificOutput`/`additionalContext`, no "tag next" direction
+- Then: the hook emits S355's exact reminder JSON: `systemMessage` only, no
+  `continue`, no `hookSpecificOutput`/`additionalContext`, no "tag next"
+  direction
 - Then: the lookup is the same `baseRefName,state` lookup as for any other
   head; the head never changes the outcome
 
-### S357 — tag commands and tag publication cause no stop (#500 AC5; A46)
+### S357 — tag commands and tag publication cause no reminder (#500 AC5; A46)
 **Covers:** F56
 - Given: real lightweight (`v1`) and annotated (`v2`) local tags in the
   temporary repo, and a `gh` fixture that would answer MERGED/main to any
@@ -7008,7 +7010,7 @@ principally the command matrix and the live-evidence assessment.
   zero `gh` calls: nothing detects, tracks or waits for tags
 - Given: a tag command chained after a merge (`gh pr merge 500 && git push
   origin v1`)
-- Then: exactly one stop (S355's) and exactly one `gh pr view 500` call; the
+- Then: exactly one reminder (S355's) and exactly one `gh pr view 500` call; the
   tag command adds neither output nor lookup
 
 ### S358 — failures and uncertainty cannot masquerade as completion (#500 AC3; A46)
@@ -7019,7 +7021,7 @@ principally the command matrix and the live-evidence assessment.
   merge command, or unreadable quoting
 - When: each input reaches the executable Interface using the real runtime
   event contract (no invented portable tool_response.exit_code)
-- Then: exit is 0 with no successful-completion stop; lookup time is bounded
+- Then: exit is 0 with no successful-completion reminder; lookup time is bounded
 - Given: an omitted-target merge whose deleted branch leaves no resolvable
   PR identity
 - Then: uncertainty cannot select another current branch's merged PR
@@ -7033,7 +7035,7 @@ principally the command matrix and the live-evidence assessment.
 - Then: the fixture records the intended target and repository (lookup
   `baseRefName,state` only), never an option operand as target; confirmed main
   results follow S355, release-base results continue (S355); failed resolution
-  follows S358 rather than stopping on guessed state
+  follows S358 rather than reminding on guessed state
 - Given: the omitted-target canonical form `gh pr merge --squash
   --delete-branch` (also `-d`) run from `feature/500-test`, where the fixture
   `gh pr merge` does what real gh 2.102.0 does: checks out `main`, runs
@@ -7042,12 +7044,12 @@ principally the command matrix and the live-evidence assessment.
   `pull --ff-only origin main: Fast-forward` above
   `checkout: moving from feature/500-test to main`; the PR lookup answers
   MERGED/main/head `feature/500-test`
-- Then: the reflog fallback yields S355's stop with exactly one lookup, for
+- Then: the reflog fallback yields S355's reminder with exactly one lookup, for
   `feature/500-test` (with `headRefName` requested), `--repo` forwarded when
   given; the same holds for `fix/` and `release/` branches deleted that way
 - Given: the same event where the pull wrote nothing (the remote had nothing
   to fast-forward), so the checkout is the newest HEAD reflog entry
-- Then: the same stop with exactly one lookup
+- Then: the same reminder with exactly one lookup
 - Given, each separately (negatives), the same omitted `--delete-branch`
   event with: (a) the branch still existing, (b) the newest HEAD reflog entry
   neither the pull nor the checkout (a later commit), (c) no
@@ -7056,17 +7058,17 @@ principally the command matrix and the live-evidence assessment.
   (f) a newest `pull --ff-only origin <other>: Fast-forward` entry naming a
   branch other than the current one, (g) a pull entry sitting above a
   non-checkout entry (a `reset` between the checkout and the pull)
-- Then: no stop; (a), (b), (c), (e), (f), (g) make zero `gh` calls; the new
+- Then: no reminder; (a), (b), (c), (e), (f), (g) make zero `gh` calls; the new
   current branch's PR is never looked up in any case
 
-### S360 — shell execution evidence distinguishes commands from data (#500 AC4; A46)
+### S360 — shell execution evidence distinguishes commands from data (#500 AC4, #561 AC2-AC3; A46)
 **Covers:** F56
 - Given: the external `hooks/stop-after-completion` executable, JSON events
   on stdin and a recording `gh` on PATH offering an old MERGED/main
   feature PR
 - When: a successful Bash PostToolUse event contains the exact command
   `echo ";" "gh" "pr" "merge" "500"`
-- Then: exit status is 0, stdout is empty and the recording fixture observes
+- Then: exit status is 0, stdout is empty (no reminder) and the recording fixture observes
   zero `gh` calls; old remote state cannot turn printed data into execution
 - Given: data-only variants with single-quoted separators
   (`echo ';' gh pr merge 500`), escaped separators
@@ -7077,7 +7079,7 @@ principally the command matrix and the live-evidence assessment.
   and heredoc bodies containing merge text; and a backslash-newline inside
   single or double quotes before merge-looking arguments
 - When: each successful event is consumed through that same executable Seam
-- Then: exit status is 0, stdout is empty and zero `gh` calls occur;
+- Then: exit status is 0, no reminder (empty stdout) and no `gh` call;
   decoded punctuation arguments never establish a command position
 - Given: standalone qualifying commands, literal quoted command words in
   command position (`"gh" "pr" "merge" "500"`), real all-`&&` chains
@@ -7085,12 +7087,12 @@ principally the command matrix and the live-evidence assessment.
   final commands after real separators (`false; gh pr merge 500`,
   `echo "a;b"; gh pr merge 500`), with successful overall status and the
   matching confirmation fixture
-- Then: separately provable successful occurrences receive S355 behavior;
-  real syntax adjacent to quoted data remains effective
+- Then: separately provable successful occurrences receive S355 behavior:
+  the reminder, with no `continue` and no `stopReason`; real syntax adjacent to quoted data remains effective
 - Given: matching commands masked by `|| true`, an earlier semicolon
   segment, pipeline status, or skipped conditional/short-circuit branches,
   with the fixture deliberately offering the old MERGED PR
-- Then: those unprovable occurrences do not stop and cause zero `gh` calls;
+- Then: those unprovable occurrences give no reminder and cause zero `gh` calls;
   a separate independently provable final occurrence in the same input
   still receives S355 behavior. Arbitrary wrappers, expansions,
   substitutions, aliases and scripts are not claimed as interpreted shell
@@ -7100,22 +7102,25 @@ principally the command matrix and the live-evidence assessment.
   `gh pr merge 500 > /dev/null 2>&1`, `gh pr merge 500 &> /dev/null`,
   `gh pr merge 500 >> out.log`, `gh pr merge 500 2> err.log` and
   `true && gh pr merge 500 2>&1`
-- Then: each stops (S355) with exactly one lookup whose target is `500`
+- Then: each gives S355's reminder with exactly one lookup whose target is `500`
   (the redirection is neither an extra target nor a background operator)
 - Given: `gh pr merge 500 2>&1 | tail -3`, `gh pr merge 500 | cat`, and the
   unsupported forms `gh pr merge 500 < in.txt`, `gh pr merge 500 > $OUT`,
   `gh pr merge 500 <<< x` and `gh pr merge 500 2>&-`
-- Then: no stop and zero `gh` calls (a pipeline status is the last command's;
+- Then: no reminder and zero `gh` calls (a pipeline status is the last command's;
   the others are uncertain)
 - Given (line continuation, `completion-line-continuation-unlexed`):
   `gh pr merge 500 \<newline>  --squash --delete-branch`,
   `gh pr merge \<newline> 500`, `gh \<newline> pr merge 500` and
   `gh pr mer\<newline>ge 500`
-- Then: each stops (S355) with exactly one lookup, target `500`; whereas
+- Then: each gives S355's reminder with exactly one lookup, target `500`; whereas
   `echo \<newline> gh pr merge 500` stays data (zero `gh` calls)
+- Then (#561): a hook that emits `continue: false` or `stopReason` for any
+  positive case above fails the suite (in-suite mutant check)
 - Verification: Developer shows the redirection and line-continuation
   inputs red on `dfcea03`, then green after correction, retaining all
-  positive and negative cases above. The legacy stream differential
+  positive and negative cases above. #561: the positive cases show red
+  against the stopping hook, then green with the reminder. The legacy stream differential
   (`test/completion-hook.py`, "legacy differential") compares the reader's
   decoded tokens and error result with the pinned shlex tokenizer of
   `origin/main` over an exhaustive short and a seeded random alphabet that
@@ -7132,10 +7137,10 @@ principally the command matrix and the live-evidence assessment.
   PATH `gh` answering MERGED/main)
 - Then: the executable is registered synchronously alongside the existing
   push hook, resolves through the adopted settings link, and returns S355's
-  stop with the tag note; existing hook registrations remain present
+  reminder JSON with the tag note and no `continue`; existing hook registrations remain present
 - Then: this establishes wiring/script evidence only; live Claude hook
-  loading, actual termination and `/clear` remain explicitly unverified in
-  this Codex environment
+  loading, display of the `systemMessage` and `/clear` remain explicitly
+  unverified in this Codex environment
 
 ### S362 — generated and adopted instructions preserve lifecycle order (#500 AC1–AC8; A46)
 **Covers:** F56
@@ -7145,9 +7150,9 @@ principally the command matrix and the live-evidence assessment.
 - Then: generated artifacts match the generator; canonical and generated step
   5 read `gh pr merge <n> --squash --delete-branch`; adopted instructions
   require saving PR identity/base/head before deletion, confirming MERGED
-  afterward, separate completed tool calls, durable reporting before
-  completion and no batched next work item; every main merge, release head
-  included, ends with the prompt; only a merge into a release branch continues
+  afterward, durable reporting before the merge; every main merge, release
+  head included, gives the reminder and does not end the turn; a merge into a
+  release branch gives no reminder
 - Then: with whitespace collapsed, the Codex CLI wording is "Merged to main.
   Use /clear or /new before the next work item; if you are tagging a release,
   tag it first.", the desktop wording is "Merged to main. Start a New chat
@@ -7156,38 +7161,36 @@ principally the command matrix and the live-evidence assessment.
   terminal clear
 - Then: no "Tag published" substitution, no "tag next"/"sole continuation"
   ordering remains in the adopted instructions or the release-branch skill;
-  the Claude adapter quotes the S355 stopReason
+  the Claude adapter quotes the S355 reminder; no "distinct tool call", "only
+  the final result", "end the turn" or `continue: false` remains in policy,
+  adapters, generated files, README, CHANGELOG or the release-branch skill
 - Then: policy, Claude wording and release tagging agree; runtime-hooks stays
   not-installed for Codex, user config is untouched, and README/CHANGELOG
   distinguish instruction following from runtime enforcement and make no
   tag-stop claim. No new opt-out or adoption question is implied
 
-### S363 — live Codex obeys the stop and negative paths, pinned to the shipped instructions (#500 AC1–AC3, AC5–AC8; A46)
+### S363 — retained live Codex evidence is historical and not claimed for the reminder (#500 AC1–AC3, AC5–AC8; #561 AC8; A46)
 **Covers:** F56
-- Given: a fresh adopted scratch project/session on an available named Codex
-  surface/version, loaded instructions recorded, PATH fake `gh` simulating
-  remote PR state and a local bare remote for real tag pushes
-- When: separate tasks exercise non-release main merge, release-head merge
-  into main, release-base merge, a tag push after work, and queued/uncertain
-  paths, each requesting a subsequent observable sentinel action
-- Then: transcript/tool evidence shows no sentinel after either main merge
-  and the correct surface prompt with the tag note; sentinel continuation
-  after the release-base merge, the tag push (tags cause no stop), and the
-  negatives; no production merge is used
-- Then: the evidence records `instructions_sha256`, the SHA-256 of
-  `adapters/codex/AGENTS.md` from the line `## Completion and fresh context`
-  to end of file, and `test/completion-evidence.py` fails when it differs
-  from the committed file (the report quotes it). Any later edit to the shipped completion text
-  therefore invalidates the evidence until the runs are repeated. Evidence
-  gathered under the earlier tag design carries no valid hash and does not
-  count
-- Cannot detect: that the recorded transcripts are genuine (they live in a
-  temporary directory), that the model would obey again, Codex or model
-  drift beyond the recorded version string, or a non-completion edit to
-  `AGENTS.md` that changes behavior. Fake remote PR state is labeled
-  simulated; instruction obedience is distinguished from mechanical
-  enforcement. A failed observed stop is a design finding routed to
-  Architect, not a static-test pass
+- Given: the retained 2026-10-21 Codex CLI 0.163.0 observations in
+  `docs/completion-live-evidence.json`, recorded under the #500 stop text, and
+  the current `adapters/codex/AGENTS.md`
+- When: `test/completion-evidence.py` validates them
+- Then: the record is marked historical and superseded by #561; its
+  `instructions_sha256` is the hash recorded on 2026-10-21 and differs from
+  the SHA-256 of the current section from `## Completion and fresh context`
+  to end of file; the report states that the stop was removed in #561, that
+  the retained runs describe the removed stop, and that no live observation of
+  the reminder is claimed
+- Then: the retained runs stay internally consistent as a record (no sentinel
+  after either main merge; sentinel after the release-base merge, the tag push
+  and the negatives)
+- Then: a record not marked historical must match the current section hash;
+  re-pinning the historical runs to the current hash fails
+- Cannot detect: that the recorded transcripts are genuine, Codex or model
+  drift, or a non-completion edit to `AGENTS.md`; and whether Codex gives the
+  reminder and continues after a main merge, which stays unverified until a new
+  live run. Simulated remote state is labeled; instruction obedience is
+  distinguished from mechanical enforcement
 
 ### S364 — actual fresh-chat observations and gaps are reported precisely (#500 AC8; A46)
 **Covers:** F56
@@ -7199,7 +7202,8 @@ principally the command matrix and the live-evidence assessment.
 - Then: unavailable desktop/CLI surfaces, loading/trust/credential limits,
   unperformed reset actions and live Claude termination/reset are explicitly
   unverified. Documentation, simulated GitHub state and passing scripts alone
-  cannot be described as observed live stopping or context reset
+  cannot be described as observed live reminder display or context reset; the
+  retained observations of stopping describe the removed #500 behavior
 
 ## Opt-in Codex merge interception — #544 (A47)
 
