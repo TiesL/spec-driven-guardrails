@@ -1,5 +1,7 @@
 # Completion runtime evidence (#500)
 
+**Status since #561 (2026-10-25):** the stop described below was removed in #561, before it was released. Claude's hook now prints the reminder as a `systemMessage` and does not stop; Codex gives the reminder by instruction and continues. The live Codex observations below were made under the #500 stop text (hash below) and describe the removed behavior; they are retained as history. No live observation of the reminder, in Claude or Codex, is claimed.
+
 Observed 2026-10-21 on macOS, Codex CLI `codex-cli 0.163.0`.
 The workflow source was branch `feature/500-stop-after-main-merge` at `2ead7f7`
 (decision 8: every main merge stops with a tag note; no tag detection). This report describes
@@ -10,8 +12,8 @@ termination guarantee or automatic context reset.
 
 `./test/run.sh completion` exercises the public hook stdin/stdout Interface,
 real temporary Git refs and a recording PATH `gh` fixture. S355–S360 cover
-main-merge stop for any head, release-base continuation, tag commands causing no
-stop or lookup, reflog recovery after branch deletion (the checkout entry, with or
+main-merge reminder for any head, release-base continuation, tag commands causing no
+reminder or lookup, reflog recovery after branch deletion (the checkout entry, with or
 without gh's fast-forward pull entry above it), output redirections and
 line continuation, queue/lookup failures and timeout, malformed/interrupted events, explicit and
 omitted identities, repo flags, quoted/heredoc data and provable versus masked
@@ -22,7 +24,7 @@ settings source link, check deterministic generated instructions and preserve an
 existing user config through adoption/update. Codex inventory remains
 `runtime-hooks: not-installed`. Existing settings registrations remain present.
 Claude settings wiring and hook JSON are observed; live Claude hook loading,
-actual turn termination and `/clear` are **unverified** in this Codex environment.
+display of the reminder and `/clear` are **unverified** in this Codex environment.
 
 Inherited tests and implementation were already present when this fresh Developer
 session resumed. Their original red-before-green history is unavailable; no such
