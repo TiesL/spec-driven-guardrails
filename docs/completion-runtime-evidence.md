@@ -43,11 +43,11 @@ executable fixture results, not additional live runtime observations.
 
 ## Live Codex observations (S363)
 
-The retained observations are pinned to the shipped instructions:
+The retained observations are historical records, pinned to the #500 stop text:
 `instructions_sha256` = `6a1e275d2264a91f577b270b43a0f0dc51e79f8d78285ea6422db6e7fb72a673`,
-the SHA-256 of `adapters/codex/AGENTS.md` from "## Completion and fresh context"
-to the end of the file. Any later edit to that section invalidates them until the
-runs are repeated. Earlier runs made under the tag-aware wording do not count.
+the SHA-256 of the #500 version of `adapters/codex/AGENTS.md` from "## Completion
+and fresh context" to the end of the file. The shipped section has changed since
+(#561), so the hash no longer matches it; the observations are history only. Earlier runs made under the tag-aware wording do not count.
 
 Each observation was one fresh `codex exec --ephemeral --ignore-user-config
 --json -C <scratch>/project -s workspace-write -m gpt-6.1-sol` invocation in a
@@ -106,9 +106,9 @@ action, not a terminal-only clear, and not an automatic post-merge reset.
 No prior secret/token recall experiment was performed, so cross-chat history
 isolation remains unverified. CLI `/clear` was not exercised separately.
 
-Codex desktop New chat and live desktop stopping are **unverified**: no actual
+Codex desktop New chat is **unverified**: no actual
 desktop surface was used. Its instructions are covered by generation/adoption
-tests only. Claude live termination and context reset remain unverified.
+tests only. The live display of the reminder and any context reset remain unverified.
 Reset remains the maintainer's action after the task ends: Claude `/clear`,
 Codex CLI `/clear` or `/new`, desktop New chat. No observed UI action is claimed
 as proof that the adapter can force a reset or enforce a turn boundary.

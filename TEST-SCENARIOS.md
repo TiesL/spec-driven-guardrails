@@ -7200,8 +7200,8 @@ principally the command matrix and the live-evidence assessment.
 - Then: each claimed reset observation names exact surface/version, action
   and observed fresh-chat behavior; no terminal-only clear counts as reset
 - Then: unavailable desktop/CLI surfaces, loading/trust/credential limits,
-  unperformed reset actions and live Claude termination/reset are explicitly
-  unverified. Documentation, simulated GitHub state and passing scripts alone
+  unperformed reset actions and the live display of the reminder/systemMessage
+  are explicitly unverified. Documentation, simulated GitHub state and passing scripts alone
   cannot be described as observed live reminder display or context reset; the
   retained observations of stopping describe the removed #500 behavior
 
