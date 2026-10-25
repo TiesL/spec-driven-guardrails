@@ -176,13 +176,12 @@ with section('S359 omitted target, surviving branch'):
     git('checkout','-q','main')
     assert run('gh pr merge')==[]
 # Reflog fallback: the canonical omitted target, real gh switched to main, pulled and deleted the branch.
-if True:
-    def fallback(branch, command='gh pr merge --squash --delete-branch', expected=reminder, head=None, calls_expected=None, **kw):
-        git('checkout','-q','main')
-        for b in git('branch','--format=%(refname:short)').split():
-            if b not in {'main','branch-only'}: git('branch','-q','-D',b)
-        simulate_merge(command, branch, **kw)
-        return run(command, expected, head=head or branch)
+def fallback(branch, command='gh pr merge --squash --delete-branch', expected=reminder, head=None, calls_expected=None, **kw):
+    git('checkout','-q','main')
+    for b in git('branch','--format=%(refname:short)').split():
+        if b not in {'main','branch-only'}: git('branch','-q','-D',b)
+    simulate_merge(command, branch, **kw)
+    return run(command, expected, head=head or branch)
 with section('S359 reflog positives: pull above checkout'):
     for branch in ['feature/500-test','fix/500-test','release/490-example']:
         for flag in ['--delete-branch','-d']:
