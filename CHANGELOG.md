@@ -289,7 +289,7 @@ common lib (#356), and `finding-carryforward-gate.sh`'s own quoted-string false-
 **Versioning (decided 2026-09-29, issue #348):** releases from this point on are tagged with
 [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), a genuinely new convention
 — the two named-slug tags below (`personal-workflow-to-shareable-product`,
-`van-proza-naar-mechanisme`) predate it and were never treated as a numbered release scheme.
+`from-md-to-mechanism`) predate it and were never treated as a numbered release scheme.
 Starting deliberately at `v0.1.0`, not `v1.0.0`: SemVer's own `0.y.z` range means "initial
 development, anything may change," which is honest about where this project actually is
 rather than presumptuous about a stability promise it hasn't made. `1.0.0` is a future,
@@ -493,7 +493,7 @@ existing projects remain as a worked example, not as a prescription. Also
 worked out in W37 (#79) — that text in `CHANGES.md`'s intro changes along
 with it.
 
-## van-proza-naar-mechanisme — 2026-09-06
+## from-md-to-mechanism — 2026-09-06
 
 Epic [#11](https://github.com/TiesL/claude-workflow/issues/11): de conventies
 van dit repo verplaatsen van proza (tekst die onthouden moet worden) naar
