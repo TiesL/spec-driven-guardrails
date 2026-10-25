@@ -246,6 +246,36 @@ with section('S360 pipes and unsupported redirections'):
     # Pipes and unsupported redirections stay uncertain, before any lookup.
     for command in ['gh pr merge 500 2>&1 | tail -3','gh pr merge 500 | cat','gh pr merge 500 < in.txt','gh pr merge 500 > $OUT','gh pr merge 500 <<< x','gh pr merge 500 2>&-']:
         assert run(command)==[],command
+with section('S360 expansion targets'):
+    # #552: the hook never expands, so a `$` in the PR target or the --repo value is uncertain:
+    # no reminder and zero `gh pr view` calls (the fixture does not log `pr merge`). Collect every
+    # failing form so the red output names them all, not just the first.
+    failed = []
+    for command in [
+        'gh pr merge "$PR"', 'gh pr merge $PR', 'gh pr merge ${PR}', 'gh pr merge "${PR}"', 'gh pr merge $1',
+        'PR=551 && gh pr merge $PR', 'gh pr merge --squash "$PR" --delete-branch', 'gh pr merge 5$X',
+        'gh pr merge 551 --repo "$REPO"', 'gh pr merge 551 -R "$REPO"', 'gh pr merge 551 -R $REPO', 'gh pr merge 551 --repo=$REPO',
+        "gh pr merge '$PR'", r'gh pr merge \$PR',
+    ]:
+        try: assert run(command) == [], command
+        except AssertionError as exc: failed.append(command)
+    # Omitted target plus `$` repo, from a surviving branch (on main it is uncertain for another reason).
+    git('checkout','-q','-B','feature/500-test','main')
+    try:
+        try: assert run('gh pr merge --squash --delete-branch --repo "$REPO"') == [], 'omitted target, --repo "$REPO", surviving branch'
+        except AssertionError as exc: failed.append('omitted target + --repo "$REPO" on feature/500-test')
+    finally: git('checkout','-q','main')
+    # Narrowness: literal targets and a `$` elsewhere in the command stay certain (green before and after).
+    one_lookup(run('gh pr merge 551', reminder), '551')
+    one_lookup(run("gh pr merge '551'", reminder), '551')
+    one_lookup(run('gh pr merge "551"', reminder), '551')
+    one_lookup(run('gh pr merge 551 --repo owner/name', reminder), '551', repo_flag='owner/name')
+    one_lookup(run('gh pr merge 551 --body "$MSG"', reminder), '551')
+    one_lookup(run('gh pr merge 500 && echo $?', reminder), '500')
+    one_lookup(run('PR=551 && gh pr merge 551', reminder), '551')
+    for command in failed: print('  expansion form not uncertain:', command, file=sys.stderr)
+    assert not failed, ('a $ target or repo value was looked up or reminded', failed)
+
 with section('S360 line continuation'):
     # Line continuation is lexed, not a literal newline word.
     for command in ['gh pr merge 500 \\\n  --squash --delete-branch','gh pr merge \\\n 500','gh \\\n pr merge 500','gh pr mer\\\nge 500']:
