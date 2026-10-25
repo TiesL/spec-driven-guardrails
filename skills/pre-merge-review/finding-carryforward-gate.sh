@@ -31,7 +31,7 @@
 # gate reports a slug if, and only if, the latest round that mentions it leaves
 # it open and is not the last round; the line names the round after that one,
 # the round that dropped it. One line per slug. "Mentions" is `finding:<slug>`
-# anywhere in the round, and the slug is the maximal run of non-whitespace characters after
+# anywhere in the live text of the round, and the slug is the maximal run of non-whitespace characters after
 # `finding:`, compared whole: `ab` is not mentioned by `finding:abc` (#453).
 #
 # Fail-open without gh or network: warn, don't block — same ground rule
@@ -156,8 +156,17 @@ while [ -n "$rest_rounds" ]; do
   n=$((n + 1))
   body="$(printf '%s' "$body" | LC_ALL=C tr '\001' '\n')" || skip "could not decode a round (tr failed)"
   [ -n "$body" ] || skip "could not decode a round (tr printed nothing)"
-  read_open "$body"
-  read_mentions "$body"
+  # Successful empty live text means no evidence, not a failed read. Keep
+  # status and a sentinel so failed substitutions cannot become empty success.
+  live="$(live_text "$body"; printf 'x%s' "$?")"
+  case "$live" in
+    *x[0-9]*) rc="${live##*x}"; live="${live%x*}" ;;
+    *) skip "could not read live Markdown (missing capture sentinel)" ;;
+  esac
+  case "$rc" in ''|*[!0-9]*) skip "could not read live Markdown (invalid status)" ;; esac
+  [ "$rc" -eq 0 ] || skip "could not read live Markdown (exit $rc)"
+  read_open "$live"
+  read_mentions "$live"
   newc=""
   rest_c="$cands"
   while [ -n "$rest_c" ]; do

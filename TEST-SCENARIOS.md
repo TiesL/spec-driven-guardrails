@@ -7296,3 +7296,98 @@ A47 supplies protocol provenance, not proof that a future installation activates
   retain their existing regression results. Keep S294–S304, S343 and S362's
   default-off assertions; qualify broad no-Codex-hook wording for opt-in state,
   without weakening default absence or native/Claude coverage
+
+### S370 — quoted review approvals never authorize the current HEAD (#310 AC1, AC2)
+**Covers:** F8, F23
+- Seam: invoke the real `hooks/git-guardrails` with S119's Bash merge payload
+  and recording fake `gh`; all unrelated merge prerequisites are satisfied.
+- Given: otherwise identical PR responses carrying the exact current-head done
+  marker only in (a) a fenced block, (b) a matching inline backtick span, or
+  (c) a blockquote; exercise each separately, without another live approval.
+- When: the guard evaluates the merge
+- Then: each returns exit 2 and the normal missing-current-HEAD review message.
+  A live exact marker alone or beside prose permits the merge, as does a body
+  containing both a quoted example and a live marker. A live stale-SHA marker
+  still blocks. Assert the fake received the comments/head request so an
+  unrelated refusal cannot satisfy the negative case.
+- Falsifiers: raw-body search accepts any quoted arm; whole-line-only search
+  rejects prose-plus-live; dropping SHA equality accepts stale evidence.
+
+### S371 — only live finding text seeds or carries obligations (#310 AC1, AC2)
+**Covers:** F28
+- Seam: invoke the actual `finding-carryforward-gate.sh <pr-number>` with
+  S254/S305's recording REST fake. Every body below has an independently live
+  Review record outside its quoted material, so it remains a selected round.
+- Given: round 1 leaves `quote-test` live and open; round 2 carries its resolved
+  marker only in a fence, inline span or blockquote, each as a separate case
+- When: the gate compares the rounds
+- Then: exit 0 and exactly the existing missing-finding verdict for `quote-test`
+  ending ` (round 2)`, with no read warning. Repeat all three forms with an open
+  marker only quoted in round 1 and no mention in round 2: stdout is empty;
+  quoted open text creates no obligation.
+- Controls: live resolved markers alone and beside prose, exact plain-prose
+  `finding:quote-test` mentions, and quoted-plus-live duplicates carry the slug.
+  A live open marker in round 2 carries it but still requires a mention in round
+  3; omitting that mention reports round 3. A later live resolution clears an
+  earlier gap, while a later quoted resolution does not. Keep S305 whole-token
+  and multiple-marker controls, sorted verdicts and S251–S256 round semantics.
+- Falsifiers: filtering mentions alone still seeds quoted opens; filtering opens
+  alone accepts quoted resolutions; clearing state on every mention loses the
+  live-open third-round obligation.
+
+### S372 — both evidence consumers inherit the shared Markdown interpretation (#310 AC4)
+**Covers:** F8, F23, F28, F40
+- Given: S370/S371's external seams, using literal fixtures with independently
+  specified expected live/quoted evidence, for both consumers
+- When: bodies contain outer four-backtick fences with inner triple backticks,
+  tilde fences with backticks inside, a fence-ish closing line with an info
+  string (not a close), balanced inline spans alongside live evidence, an
+  unmatched backtick (literal), CRLF, and a quoted fence line followed by live
+  evidence (the blockquote must not open a fence)
+- Then: only evidence outside the shared Markdown Module's accepted enclosures
+  counts. Use S370's refusal/allow and S371's slug/round verdicts, rather than
+  comparing one consumer with the other or computing expectations with
+  `live_text`. An unclosed fence in one comment must not hide a subsequent
+  comment's live approval; valid Review bodies likewise retain separate state.
+- Falsifiers: any-backtick fence toggle, any-run close, fence-before-blockquote,
+  line-anchored approval search, or fence state shared across bodies. This is
+  consumer integration coverage; existing Markdown cases retain the parser's
+  larger grammar suite and documented limits, without widening this issue.
+
+### S373 — failed Markdown reads and successful empty text have different outcomes (#310)
+**Covers:** F8, F23, F28
+- Given: the S370/S371 seams, with controlled scratch-clone failure fixtures
+  for a missing library/source failure, a nonzero Markdown parser, merge-guard
+  child-launch failure, and carry-forward missing/corrupt capture sentinel.
+  Record that each injected failure actually ran; never alter the real clone.
+- When: a consumer cannot read Markdown
+- Then: the merge guard warns and follows its existing unreadable-response
+  fail-open path, with no false missing-current-HEAD refusal. The carry-forward
+  gate exits 0, warns on stderr and prints no verdict, including when an earlier
+  comparison would otherwise have yielded a finding (all-or-nothing output).
+- Given: successful filtering of a body containing only quoted text
+- Then: it is not a read failure: a quoted-only approval blocks normally; a
+  selected Review body with no live finding mention leaves the prior live open
+  slug missing. Keep the Review record live to establish selection. Assert
+  absence of read warnings. Preserve no-gh, network-failure and noisy-stderr
+  regression controls; empty filtered finding text is allowed even though
+  empty output from a required round-decoding tool remains S256's failed read.
+- Falsifiers: ignoring child status, accepting failed capture, falling back to
+  raw input, treating empty live text as failure, or printing partial verdicts.
+
+### S374 — adopted projects execute both corrected consumers (#310 AC3)
+**Covers:** F8, F9, F23, F28
+- Given: a scratch workflow clone outside a fresh project, with spaces in both
+  paths; run real `adopt.sh` with applicable checks enabled, as in the existing
+  adoption fixtures. The project contains no private copy of `lib/markdown.sh`.
+- When: from the adopted project's subdirectory, invoke its installed merge
+  guard path and installed carry-forward skill path with recording fake `gh`
+- Then: run S370's three quoted-only refusals and live/prose allow controls,
+  and S371's three quoted-resolution missing verdicts, three quoted-open
+  non-obligations and live/prose carry controls. Assert each installed entry
+  point actually ran and consulted the fake GitHub data. Do not substitute a
+  direct source-checkout invocation or merely inspect symlink targets.
+- Then: library resolution reaches the physical source clone despite spaces,
+  project cwd and installed links. No real GitHub merge is attempted.
+- Falsifiers: resolving `lib` from cwd/adopter, unquoted source paths, or testing
+  only installation structure while never executing either installed consumer.

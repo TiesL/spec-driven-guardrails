@@ -49,7 +49,7 @@ fi
 input="$(</dev/stdin)"
 [ -n "$input" ] || exit 0
 
-own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 reader="$own_dir/read-command.py"
 
 # MAIN_BRANCH and the REDEN_* texts come from rules.sh, shared with the
@@ -335,7 +335,7 @@ check_merge_guard() {
   # accepted for a newer one.
   local marker_status parse_status
   marker_status="$(printf '%s' "$output" | python3 -c '
-import json, re, sys
+import json, re, subprocess, sys
 
 try:
     data = json.load(sys.stdin)
@@ -352,12 +352,25 @@ if not head_sha:
     sys.exit(1)
 pattern = re.compile(r"<!-- pre-merge-review:done sha=([0-9a-fA-F]{40}) -->")
 for comment in (data.get("comments") or []):
-    for m in pattern.finditer(comment.get("body") or ""):
+    # Fixed program, positional data: comment text never becomes shell code.
+    # Bytes preserve GitHub UTF-8 independently of the invoking locale.
+    try:
+        args = ["bash", "-c", ". \"$1\" || exit; live_text \"$2\"", "markdown",
+                sys.argv[1], comment.get("body") or ""]
+        parsed = subprocess.run(
+            [arg.encode("utf-8", "surrogateescape") for arg in args],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except (OSError, ValueError):
+        sys.exit(1)
+    if parsed.returncode != 0:
+        sys.exit(1)
+    live = parsed.stdout.decode("utf-8", "surrogateescape")
+    for m in pattern.finditer(live):
         if m.group(1) == head_sha:
             print("OK")
             sys.exit(0)
 print("STALE")
-')"
+' "$own_dir/../lib/markdown.sh")"
   parse_status=$?
 
   if [ "$parse_status" -ne 0 ]; then
