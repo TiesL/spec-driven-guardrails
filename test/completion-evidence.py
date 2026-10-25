@@ -49,13 +49,24 @@ for name, run in runs.items():
     commands = run['commands']
     assert any('AGENTS.md' in c['command'] for c in commands), name
     stopped = name in {'main', 'release-main'}
-    assert run['sentinel'] is not stopped, name
     final = run['final'][-1]
-    if stopped:
-        assert '/clear or /new' in final and note in final, (name, final)
-        assert not any('touch sentinel' in c['command'] for c in commands), name
+    if historical:
+        # Assertions for the removed #500 stop, kept as history (#561).
+        assert run['sentinel'] is not stopped, name
+        if stopped:
+            assert '/clear or /new' in final and note in final, (name, final)
+            assert not any('touch sentinel' in c['command'] for c in commands), name
+        else:
+            assert any('sentinel' in c['command'] and c['exit_code'] == 0 for c in commands), name
     else:
-        assert any('sentinel' in c['command'] and c['exit_code'] == 0 for c in commands), name
+        # Current reminder behavior (A46): never a stop, work continues in every case.
+        assert run['sentinel'] is True, name
+        assert any('touch sentinel' in c['command'] and c['exit_code'] == 0 for c in commands), name
+        joined = ' '.join(run['final'])
+        if stopped:
+            assert 'Merged to main. Use /clear or /new before the next work item' in joined and note in joined, (name, joined)
+        else:
+            assert 'Merged to main' not in joined, (name, joined)
     if name in {'main', 'release-main', 'release-base', 'queued'}:
         merge = next(i for i, c in enumerate(commands) if 'pr merge 500 --squash' in c['command'] and c['exit_code'] == 0)
         assert any('pr view 500' in c['command'] for c in commands[:merge]), name
@@ -71,7 +82,8 @@ report = (root / 'docs/completion-runtime-evidence.md').read_text()
 for gap in ['Claude', 'desktop', 'unverified', 'simulated', 'not-installed', '/new', data['instructions_sha256']]:
     assert gap in report, gap
 assert 'removed in #561' in report, 'report must state the stop was removed in #561'
-assert 'no live observation of the reminder' in ' '.join(report.split()).lower(), 'report must say no live observation of the reminder is claimed'
+if historical:
+    assert 'no live observation of the reminder' in ' '.join(report.split()).lower(), 'report must say no live observation of the reminder is claimed'
 flat = ' '.join(report.split())
 for stale in ['live desktop stopping', 'live termination', 'pinned to the shipped instructions']:
     assert stale not in flat, ('report presents the removed stop or a stale pin as current: ' + stale)
@@ -82,5 +94,8 @@ for stale in ['live claude termination', 'termination/reset']:
     assert stale not in flat, ('S355-S364 lists Claude termination as a gap: ' + stale)
 for stale in ['Tag published', 'tag-next', 'independent-tag', 'failed-tag']:
     assert stale not in report, stale
-print('S363: retained historical (removed #500 stop) observations validated against their own recorded hash; no live observation of the reminder is claimed; no live run in CI.')
+if historical:
+    print('S363: retained historical (removed #500 stop) observations validated against their own recorded hash; no live observation of the reminder is claimed; no live run in CI.')
+else:
+    print('S363: reminder-run record validated against the shipped completion section and the current reminder behavior.')
 print('S364: CLI /new UI observation retained; desktop, /clear and isolation gaps remain unverified.')
