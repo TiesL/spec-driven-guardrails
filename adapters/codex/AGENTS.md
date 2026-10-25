@@ -39,22 +39,16 @@ This project is developed from multiple computers. Follow this workflow in every
 4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
 5. Then merge with `gh pr merge <n> --squash --delete-branch` (name the PR number) — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
-### Completion ends the current work
+### Completion reminder
 
 After a confirmed successful merge into `main`, from any head including a
-`release/*` branch, stop autonomous work and give the runtime's fresh-context
-instruction before the next work item; the prompt notes that a release being
-tagged is tagged first. A merge into `release/*` continues. Tagging is a
-maintainer-requested follow-up that can happen before the reset; tag commands
-and tag publication never stop or prompt by themselves. Failed, queued-only or
-uncertain completion does not produce a successful-completion stop.
-
-Run each merge in a distinct tool call, inspect its completed
-result before scheduling anything further, and never batch the next work item
-in a compound command, concurrent call or tool script. Finish durable reporting
-before the merge. Afterward only the final result and fresh-context prompt is
-allowed. Context reset is the
-maintainer's action; stopping ends the current turn, not the conversation.
+`release/*` branch, give the runtime's fresh-context reminder; it notes that a
+release being tagged is tagged first. Work continues in the same session: when
+to reset context is the maintainer's call. A merge into `release/*` gives no
+reminder. Tagging is a maintainer-requested follow-up; tag commands and tag
+publication never remind by themselves. Failed, queued-only or uncertain
+completion gives no reminder. Finish durable reporting before the merge.
+Context reset is the maintainer's action.
 Production deployment can follow a fresh context with its separate approval.
 Web-UI and subagent merges are outside this completion mechanism.
 
@@ -165,24 +159,25 @@ Read-only status establishes structural installation, never live loading.
 
 The completion instructions below describe the default installation without
 `--hooks`. With `--hooks`, the optional Bash merge hook intercepts merge
-attempts, but does not enforce the completion stop or reset.
+attempts, but does not give the completion reminder or reset context.
 
 ## Completion and fresh context
 
 Before merging, save the PR number and repository plus base/head identity before
 branch deletion. After the completed merge, confirm `state == MERGED` using that
 saved number/repository. Queued `--auto` is insufficient. Use the actual completed
-tool result for merge success; failed or uncertain results do not claim
-successful completion. Follow the shared distinct tool call and durable reporting
-ordering above. This is instruction following, with no runtime hook enforcement
-or automatic context clearing; runtime-hooks stays not-installed.
+tool result for merge success; failed or uncertain results give no reminder.
+Finish durable reporting before the merge. This is instruction following, with no
+runtime hook enforcement or automatic context clearing; runtime-hooks stays
+not-installed.
 
-After a merge into main, from any head, end the turn with: CLI — "Merged to
-main. Use /clear or /new before the next work item; if you are tagging a release,
-tag it first." Desktop — "Merged to main. Start a New chat before the next work
-item; if you are tagging a release, tag it first." If the surface is unknown,
-give both labeled actions. Tag commands and publication give no stop or prompt.
-CLI `/clear` and `/new` start fresh chats after the current task ends;
+After a confirmed merge into main, from any head, give the reminder in your
+response: CLI — "Merged to main. Use /clear or /new before the next work item; if
+you are tagging a release, tag it first." Desktop — "Merged to main. Start a New
+chat before the next work item; if you are tagging a release, tag it first." If
+the surface is unknown, give both labeled actions. The reminder is not a stop;
+continue any remaining requested work. Tag commands and publication give no
+reminder. CLI `/clear` and `/new` start fresh chats after the current task ends;
 a shell terminal clear does not. Desktop New chat is `Cmd+N` on macOS or `Ctrl+N`
-on Windows/Linux. Reset remains maintainer-owned. A merge into
-a release branch continues without this prompt.
+on Windows/Linux. Reset remains maintainer-owned. A merge into a release branch
+continues without this reminder.

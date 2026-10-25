@@ -69,24 +69,25 @@ Read-only status establishes structural installation, never live loading.
 
 The completion instructions below describe the default installation without
 `--hooks`. With `--hooks`, the optional Bash merge hook intercepts merge
-attempts, but does not enforce the completion stop or reset.
+attempts, but does not give the completion reminder or reset context.
 
 ## Completion and fresh context
 
 Before merging, save the PR number and repository plus base/head identity before
 branch deletion. After the completed merge, confirm `state == MERGED` using that
 saved number/repository. Queued `--auto` is insufficient. Use the actual completed
-tool result for merge success; failed or uncertain results do not claim
-successful completion. Follow the shared distinct tool call and durable reporting
-ordering above. This is instruction following, with no runtime hook enforcement
-or automatic context clearing; runtime-hooks stays not-installed.
+tool result for merge success; failed or uncertain results give no reminder.
+Finish durable reporting before the merge. This is instruction following, with no
+runtime hook enforcement or automatic context clearing; runtime-hooks stays
+not-installed.
 
-After a merge into main, from any head, end the turn with: CLI — "Merged to
-main. Use /clear or /new before the next work item; if you are tagging a release,
-tag it first." Desktop — "Merged to main. Start a New chat before the next work
-item; if you are tagging a release, tag it first." If the surface is unknown,
-give both labeled actions. Tag commands and publication give no stop or prompt.
-CLI `/clear` and `/new` start fresh chats after the current task ends;
+After a confirmed merge into main, from any head, give the reminder in your
+response: CLI — "Merged to main. Use /clear or /new before the next work item; if
+you are tagging a release, tag it first." Desktop — "Merged to main. Start a New
+chat before the next work item; if you are tagging a release, tag it first." If
+the surface is unknown, give both labeled actions. The reminder is not a stop;
+continue any remaining requested work. Tag commands and publication give no
+reminder. CLI `/clear` and `/new` start fresh chats after the current task ends;
 a shell terminal clear does not. Desktop New chat is `Cmd+N` on macOS or `Ctrl+N`
-on Windows/Linux. Reset remains maintainer-owned. A merge into
-a release branch continues without this prompt.
+on Windows/Linux. Reset remains maintainer-owned. A merge into a release branch
+continues without this reminder.
