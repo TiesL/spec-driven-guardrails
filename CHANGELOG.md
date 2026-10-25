@@ -13,17 +13,21 @@ point.
 
 ## Unreleased
 
-- **#500: finish the turn after merges into main.** Claude's
-  synchronous Bash PostToolUse hook stops after every confirmed merge into
-  `main` (release heads included) with a note to tag a release first; tag
-  commands are not detected. Merges into release branches continue. Codex CLI/desktop
-  carry the same lifecycle through instructions, without runtime
-  hook enforcement. Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`.
-  Claude follows the settings source link; rerun `adopt.sh
-  --runtime codex <project>` and start a fresh session for Codex's managed block.
-  Context reset remains human: Claude `/clear`, CLI `/clear` or `/new`, desktop
-  New chat. No new CHANGES/adoption question. Script coverage and live runtime
-  gaps are recorded in `docs/completion-runtime-evidence.md`.
+- **#500/#561: a reminder after merges into main.** Claude's synchronous Bash
+  PostToolUse hook prints "Merged to main. Type /clear before the next work item;
+  if you are tagging a release, tag it first." after every confirmed merge into
+  `main` (release heads included) and does not stop the session; #561 removed the
+  stop that #500 introduced before any release shipped it. Tag commands are not
+  detected and merges into release branches give no reminder. Codex CLI/desktop
+  give the same reminder through instructions, without runtime hook enforcement.
+  Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`; the rules
+  that each merge runs in a separate tool call with nothing but the final result
+  after it are dropped. Claude follows the settings source link; rerun
+  `adopt.sh --runtime codex <project>` and start a fresh session for Codex's
+  managed block. Context reset remains human: Claude `/clear`, CLI `/clear` or
+  `/new`, desktop New chat. No new CHANGES/adoption question. Script coverage, the
+  historical Codex observations and live runtime gaps are recorded in
+  `docs/completion-runtime-evidence.md`.
 
 - **#505: the SessionStart hook creates missing skill links.** `pending-changes.sh` now calls
   `lib/skill-links.sh` (A45), which links skills the checkout has and an adopted project lacks, create-only
