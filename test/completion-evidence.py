@@ -25,19 +25,18 @@ digest = hashlib.sha256(section.encode()).hexdigest()
 # A record that is not historical must still match the shipped section, so the pin
 # mechanism survives for a future live run of the reminder.
 historical = data.get('status') == 'historical'
+ORIGINAL_STOP_HASH = '6a1e275d2264a91f577b270b43a0f0dc51e79f8d78285ea6422db6e7fb72a673'  # recorded 2026-10-21 under the #500 stop text
 if historical:
+    assert data.get('superseded_by') == '#561', ('a historical record must name #561 as superseding it', data.get('superseded_by'))
+    assert data.get('instructions_sha256') == ORIGINAL_STOP_HASH, (
+        'a historical record keeps the hash recorded on 2026-10-21; it is never rewritten', data.get('instructions_sha256'))
     assert data.get('instructions_sha256') != digest, (
         'a historical record must not carry the current section hash: re-pinning would certify '
         'observations of the removed stop as made under the reminder text', digest)
 else:
     assert data.get('instructions_sha256') == digest, (
-        'live evidence is not pinned to the shipped completion instructions',
+        'a record not marked historical must match the shipped completion section',
         data.get('instructions_sha256'), digest)
-# The retained runs below assert the sentinel is withheld after a main merge, which is the
-# removed stop. Such a record can only stand as history.
-assert historical and data.get('superseded_by') == '#561', (
-    'the retained #500 stop observations must be marked status historical, superseded_by #561',
-    data.get('status'), data.get('superseded_by'))
 assert len(data.get('instructions_sha256', '')) == 64
 assert data['surface'] == 'Codex CLI exec' and data['version']
 assert 'simulated' in data['remote_state']
@@ -73,6 +72,14 @@ for gap in ['Claude', 'desktop', 'unverified', 'simulated', 'not-installed', '/n
     assert gap in report, gap
 assert 'removed in #561' in report, 'report must state the stop was removed in #561'
 assert 'no live observation of the reminder' in ' '.join(report.split()).lower(), 'report must say no live observation of the reminder is claimed'
+flat = ' '.join(report.split())
+for stale in ['live desktop stopping', 'live termination', 'pinned to the shipped instructions']:
+    assert stale not in flat, ('report presents the removed stop or a stale pin as current: ' + stale)
+scenarios = (root / 'TEST-SCENARIOS.md').read_text()
+s355_364 = scenarios[scenarios.index('### S355'):scenarios.index('## Opt-in Codex merge interception')]
+flat = ' '.join(s355_364.split()).lower()
+for stale in ['live claude termination', 'termination/reset']:
+    assert stale not in flat, ('S355-S364 lists Claude termination as a gap: ' + stale)
 for stale in ['Tag published', 'tag-next', 'independent-tag', 'failed-tag']:
     assert stale not in report, stale
 print('S363: retained historical (removed #500 stop) observations validated against their own recorded hash; no live observation of the reminder is claimed; no live run in CI.')
