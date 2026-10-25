@@ -1,9 +1,10 @@
 """Validate retained live observations, not a substitute for a new live run.
 
-S363 pins the evidence to the shipped Codex completion instructions: the recorded
-`instructions_sha256` must equal the SHA-256 of adapters/codex/AGENTS.md from the
-line "## Completion and fresh context" to the end of the file. A later edit to
-that text invalidates the evidence until the live runs are repeated. This cannot
+S363 pins evidence to the shipped Codex completion instructions: a record's
+`instructions_sha256` is the SHA-256 of adapters/codex/AGENTS.md from the line
+"## Completion and fresh context" to the end of the file. A record not marked
+`status: historical` must match the current section; a historical record (the
+removed #500 stop, superseded by #561) must differ from it. This cannot
 show that transcripts are genuine, that the model would obey again, or detect
 drift outside that section.
 """
@@ -19,9 +20,25 @@ marker = '## Completion and fresh context'
 assert marker in agents, 'completion section missing from adapters/codex/AGENTS.md'
 section = agents[agents.index(marker):]
 digest = hashlib.sha256(section.encode()).hexdigest()
-assert data.get('instructions_sha256') == digest, (
-    'live evidence is not pinned to the shipped completion instructions',
-    data.get('instructions_sha256'), digest)
+# #561: the 2026-10-21 runs observed the removed #500 stop. They stay as history: the
+# recorded hash is kept (never re-pinned to the reminder text) and the record says so.
+# A record that is not historical must still match the shipped section, so the pin
+# mechanism survives for a future live run of the reminder.
+historical = data.get('status') == 'historical'
+if historical:
+    assert data.get('instructions_sha256') != digest, (
+        'a historical record must not carry the current section hash: re-pinning would certify '
+        'observations of the removed stop as made under the reminder text', digest)
+else:
+    assert data.get('instructions_sha256') == digest, (
+        'live evidence is not pinned to the shipped completion instructions',
+        data.get('instructions_sha256'), digest)
+# The retained runs below assert the sentinel is withheld after a main merge, which is the
+# removed stop. Such a record can only stand as history.
+assert historical and data.get('superseded_by') == '#561', (
+    'the retained #500 stop observations must be marked status historical, superseded_by #561',
+    data.get('status'), data.get('superseded_by'))
+assert len(data.get('instructions_sha256', '')) == 64
 assert data['surface'] == 'Codex CLI exec' and data['version']
 assert 'simulated' in data['remote_state']
 assert 'instruction following' in data['enforcement']
@@ -54,7 +71,9 @@ for key in ['cli_clear', 'desktop_new_chat', 'claude_clear', 'history_isolation'
 report = (root / 'docs/completion-runtime-evidence.md').read_text()
 for gap in ['Claude', 'desktop', 'unverified', 'simulated', 'not-installed', '/new', data['instructions_sha256']]:
     assert gap in report, gap
+assert 'removed in #561' in report, 'report must state the stop was removed in #561'
+assert 'no live observation of the reminder' in ' '.join(report.split()).lower(), 'report must say no live observation of the reminder is claimed'
 for stale in ['Tag published', 'tag-next', 'independent-tag', 'failed-tag']:
     assert stale not in report, stale
-print('S363: retained live sentinel/ordering observations validated and pinned to the shipped instructions; no live run in CI.')
+print('S363: retained historical (removed #500 stop) observations validated against their own recorded hash; no live observation of the reminder is claimed; no live run in CI.')
 print('S364: CLI /new UI observation retained; desktop, /clear and isolation gaps remain unverified.')
