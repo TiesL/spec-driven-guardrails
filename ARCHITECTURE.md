@@ -1618,25 +1618,27 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 - **Risks.** (R1) `git check-ignore` semantics for a directory-only pattern with an absent directory: handled by the per-name path; QA must include the absent-directory case so a regression to the bare path is caught. (R2) macOS bash 3.2: no namerefs, no `${var,,}`; the global string covers it. (R3) A project whose `.gitignore` ignores `.claude/skills/` but whose `.claude/skills` content is tracked from before: a new link is untracked and ignored, so no noise, but `adopt.sh`'s untracking is not run; unchanged from today. (R4) Codex is out of scope (#507): the module takes the workflow and project directories only and knows nothing about Claude's settings except the adoption signal in step 1, so #507 will need its own adoption signal (its own installed link), not a reuse of step 1. (R5) Report-line wording must not claim same-session availability.
 - **Violated when:** the hook overwrites, removes or repoints any existing path; creates anything in a project whose settings link does not point into this checkout; creates a link in a non-ignored `.claude/skills`; prints to stderr or exits non-zero; or `adopt.sh` and the hook disagree on the link form.
 
-### A46 — End work after a main merge; Claude hook and Codex instruction coverage (#500)
+### A46 — Reminder after a main merge; Claude hook and Codex instruction coverage (#500, #561)
+
+- **#561 amendment (2026-10-25, supersedes the stop).** TiesL decided that a merge into `main` no longer ends the session's work. The hook prints the decided reminder as a PostToolUse `systemMessage` (the documented field shown to the user) and emits no `continue` or `stopReason`; work continues in the same turn. The shared rules "run each merge in a distinct tool call" and "only the final result and fresh-context prompt is allowed" are dropped: they existed only to make the stop effective. Codex follows by instruction: it gives the reminder after a confirmed main merge and does not end the turn for it. Unchanged: every successful merge into `main` (any head) reminds; a merge into `release/*` gives no reminder; tag commands and publication are not detected; failed, queued-only and uncertain results give no reminder; every path fails open with exit 0. The 2026-10-21 live Codex observations describe the removed stop and are kept as history only (S363). Text below that described the stop is rewritten; this bullet is the record of the change.
 
 - **Authority and outcome.** Issue #500 AC1–AC8, PRD F56 and human
   decisions 1–8 govern this design. Decision 8 (2026-10-20) supersedes
   the tag-detection parts of decisions 4–7 and of this entry's earlier
-  versions. A successful agent-run merge into `main` ends autonomous
-  work, whatever the head branch, including a `release/*` head. A merge
-  into `release/*` continues the epic without a prompt. Nothing detects,
+  versions. A successful agent-run merge into `main` gives the
+  fresh-context reminder, whatever the head branch, including a `release/*`
+  head; since #561 it does not end autonomous work. A merge
+  into `release/*` continues the epic without a reminder. Nothing detects,
   tracks or waits for tags in either runtime, and tag publication causes
-  no stop or prompt. Every main-merge prompt carries a short tag note,
+  no stop or prompt. Every reminder carries a short tag note,
   because neither runtime knows whether a release is being tagged. The
   maintainer judges when to reset context, as they judge the merge
-  itself. A stop ends the current turn, not the conversation, so the
-  maintainer can still ask for a release tag in the same context. Context
+  itself. Context
   reset is the maintainer's action, never automatic.
 
 - **Decided wording.** The tag note has the same meaning as decision 8
   and is shorter than its sentence:
-  - Claude stopReason: "Merged to main. Type /clear before the next work
+  - Claude `systemMessage`: "Merged to main. Type /clear before the next work
     item; if you are tagging a release, tag it first."
   - Codex CLI: "Merged to main. Use /clear or /new before the next work
     item; if you are tagging a release, tag it first."
@@ -1644,7 +1646,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
     work item; if you are tagging a release, tag it first."
 
   If the Codex surface cannot be established, give both labelled actions
-  rather than guess. The note appears on every main-merge prompt,
+  rather than guess. The note appears on every main-merge reminder,
   including non-release ones.
 
 - **Codex feasibility, established before Implementation (2026-10-20).**
@@ -1653,15 +1655,14 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   Codex configuration. Its inventory and `session-context.sh --runtime codex`
   correctly report `runtime-hooks: not-installed`. The locally available
   binary reports `codex-cli 0.163.0`: a version observation, not a live
-  stop or reset observation.
+  stop or reset observation. (Background for #500's stop:)
   [Official Hooks documentation](https://learn.chatgpt.com/docs/hooks)
   describes `PostToolUse` feedback semantics: `continue: false` replaces
   the tool result and permits model continuation. Wiring Claude JSON into a
   Codex hook would therefore not prove the requested stop. #500 uses the
   existing instruction-based adapter. After confirming the merge, Codex
-  ends its turn with a concise result and the decided prompt, without
-  beginning another work item. This meets Product's instruction-based
-  outcome when obeyed; it has no mechanical enforcement guarantee. Hook
+  gives the decided reminder in its response and may continue requested
+  work. This is instruction following with no mechanical guarantee. Hook
   installation remains separate work (#544), and is neither required nor
   silently claimed here.
 
@@ -1675,15 +1676,11 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   Codex identifies the PR number and repository before a merge that may
   delete the branch. Afterwards it confirms `state == MERGED` and base
   `main` using that saved identity. A queued `--auto` result is
-  insufficient. Failed or uncertain results produce no successful-completion
-  stop.
+  insufficient. Failed or uncertain results give no reminder.
 
-  Run the merge as a distinct, bare tool call, with no pipe, `-q`, or
-  redirection that hides its result, and inspect its completed result
-  before scheduling further work. Never batch a next work item into the
-  same tool script, concurrent call or compound shell command. Do required
-  durable reporting before the merge. After a main merge the only
-  continuation is the final result and prompt.
+  Judge merge success from the completed merge result. Do required durable
+  reporting before the merge. (#561 dropped the distinct-call and
+  only-continuation rules.)
 
   No new polling loop, persistent latch, background process or
   context-clear shell command is introduced.
@@ -1694,7 +1691,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   documents New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux).
 
   Re-align `skills/release-branch-workflow/SKILL.md`. After a release
-  branch's merge into `main` the turn ends with the prompt, and tagging is
+  branch's merge into `main` the reminder is given, and tagging is
   a maintainer-requested follow-up, which may run before `/clear`. Remove
   the "tag is the sole continuation, then stop" ordering.
 
@@ -1708,13 +1705,16 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   all advisory or uncertain paths. It performs read-only subprocess lookups
   with argument arrays, bounded timeouts and no `eval` or shell execution
   of input. Malformed JSON, the wrong event or tool, interrupted or
-  background-incomplete calls, and unreadable quoting produce no stop. The
+  background-incomplete calls, and unreadable quoting produce no reminder. The
   real [Claude hook contract](https://code.claude.com/docs/en/hooks)
   supplies PostToolUse after successful tools; failure is a different event.
   Do not invent a portable `tool_response.exit_code` field.
 
-  On a qualifying merge, output exactly `continue: false` with the decided
-  stopReason above. There is no release-specific `additionalContext`
+  On a qualifying merge, output exactly one JSON object
+  `{"systemMessage": "<decided Claude wording>"}`: no `continue`, no
+  `stopReason`, no `additionalContext`. `additionalContext` would put "Type
+  /clear" into Claude's context and invite the model to halt by itself, which
+  would bring back the ordering #561 removes. There is no release-specific `additionalContext`
   output, no tag-form recognition and no local tag-ref resolution. Any
   command that is not a recognised merge, tag commands included, makes
   zero `gh` calls and produces no output.
@@ -1742,9 +1742,9 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   separately.
 
   No parser promises to interpret arbitrary shell programs, aliases,
-  substitutions, wrappers or scripts. The post hook cannot prevent commands
-  already run in the same Bash invocation; the canonical separate-call
-  instruction prevents that continuation when followed. Web-UI and subagent
+  substitutions, wrappers or scripts. Commands already run in the same Bash
+  invocation are unaffected; since #561 that is harmless, so no separate-call
+  rule is needed. Web-UI and subagent
   merges stay excluded by human decision.
 
 - **Omitted-target merge (review round 1, `completion-canonical-merge-no-stop`).**
@@ -1783,7 +1783,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
      `headRefName == <B>`.
 
      Any mismatch, missing entry, surviving branch or lookup failure stays
-     uncertain: exit 0 with no stop. Never fall back to the new current
+     uncertain: exit 0 with no reminder. Never fall back to the new current
      branch's PR.
 
   **Review round 2 amendment (`completion-reflog-fallback-masked-by-gh-pull`,
@@ -1820,7 +1820,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 
   The residual risk is a stale reflog entry together with a successful
   omitted-target merge run from a non-eligible branch. It is accepted: it
-  stops only when `<B>`'s PR really is MERGED into `main`.
+  reminds only when `<B>`'s PR really is MERGED into `main`.
 
 - **Output redirections (review round 1, `completion-merge-redirection-uncertain`).**
   An output redirection does not change a simple command's exit status: if
@@ -1840,7 +1840,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   because without `pipefail` its status is the last command's. README and
   CHANGELOG coverage statements name the remaining uncertain forms (pipes,
   unsupported redirections, wrappers) instead of claiming that every main
-  merge ends the turn.
+  merge reminds.
 
 - **Quote provenance (finding `completion-token-quote-provenance`).**
   The old decoded `list[str]` tokenizer Interface is insufficient for
@@ -1907,11 +1907,11 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   in behaviour without losing its reason to exist.
 
   Do not invent a common runtime hook abstraction: the two real adapters
-  differ in enforcement and do not satisfy one stop Interface.
+  differ in enforcement and do not satisfy one completion Interface.
 
 - **QA handoff.** Demonstrate red before green through the executable Seam:
   - AC1 for any head, including `release/*`, with the exact tag-note
-    stopReason. AC2 release-base continuation.
+    `systemMessage` and no `continue`/`stopReason`, plus a mutant check that goes red if `continue: false` returns. AC2 release-base continuation.
   - AC3 failed/queued/timeout/malformed.
   - AC4: unrelated commands with zero `gh` invocations; explicit, URL,
     branch and omitted targets; repository flags; the
@@ -1935,14 +1935,14 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   coverage inventory. Do not source private functions. Script tests cannot
   establish live behaviour.
 
-  For live Codex evidence, record the exact surface/version and loaded
+  For the #500 live Codex evidence (historical since #561): record the exact surface/version and loaded
   instructions. Use a PATH fake `gh` and a local bare remote, and label the
   simulated remote state. Observe that a subsequent sentinel action does
   not run after a main merge (any head), and does run after a release-base
   merge and after negatives. Record unavailable surfaces and unperformed
   resets as unverified, never as passes. Evidence gathered under the old
   tag design does not count for the tag-note wording. Live Claude hook
-  execution remains unverified in this Codex environment.
+  execution remains unverified in this Codex environment. The retained runs observed the removed stop; #561 requires no new live run and claims none.
 
 - **Adoption and notice.** Per A20, the existing settings symlink delivers
   the Claude hook. The Codex managed AGENTS block updates through the
@@ -1963,9 +1963,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   and scenarios is offset by the reflog fallback and redirection records,
   for a net S on top of the existing M. Codex parity for the tag note is
   Product's inference from decision 7, and the maintainer may veto it.
-  Mechanical Codex turn termination or automatic clearing is not
-  established; requiring either would reopen human scope before
-  Implementation.
+  Automatic clearing is not
+  established; requiring it would reopen human scope.
 
 ### A47 — Opt-in Codex merge interception; verified hook contract (#544)
 

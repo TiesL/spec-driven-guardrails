@@ -1,5 +1,7 @@
 # Completion runtime evidence (#500)
 
+**Status since #561 (2026-10-25):** the stop described below was removed in #561, before it was released. Claude's hook now prints the reminder as a `systemMessage` and does not stop; Codex gives the reminder by instruction and continues. The live Codex observations below were made under the #500 stop text (hash below) and describe the removed behavior; they are retained as history. No live observation of the reminder, in Claude or Codex, is claimed.
+
 Observed 2026-10-21 on macOS, Codex CLI `codex-cli 0.163.0`.
 The workflow source was branch `feature/500-stop-after-main-merge` at `2ead7f7`
 (decision 8: every main merge stops with a tag note; no tag detection). This report describes
@@ -10,8 +12,8 @@ termination guarantee or automatic context reset.
 
 `./test/run.sh completion` exercises the public hook stdin/stdout Interface,
 real temporary Git refs and a recording PATH `gh` fixture. S355–S360 cover
-main-merge stop for any head, release-base continuation, tag commands causing no
-stop or lookup, reflog recovery after branch deletion (the checkout entry, with or
+main-merge reminder for any head, release-base continuation, tag commands causing no
+reminder or lookup, reflog recovery after branch deletion (the checkout entry, with or
 without gh's fast-forward pull entry above it), output redirections and
 line continuation, queue/lookup failures and timeout, malformed/interrupted events, explicit and
 omitted identities, repo flags, quoted/heredoc data and provable versus masked
@@ -22,7 +24,7 @@ settings source link, check deterministic generated instructions and preserve an
 existing user config through adoption/update. Codex inventory remains
 `runtime-hooks: not-installed`. Existing settings registrations remain present.
 Claude settings wiring and hook JSON are observed; live Claude hook loading,
-actual turn termination and `/clear` are **unverified** in this Codex environment.
+display of the reminder and `/clear` are **unverified** in this Codex environment.
 
 Inherited tests and implementation were already present when this fresh Developer
 session resumed. Their original red-before-green history is unavailable; no such
@@ -41,11 +43,11 @@ executable fixture results, not additional live runtime observations.
 
 ## Live Codex observations (S363)
 
-The retained observations are pinned to the shipped instructions:
+The retained observations are historical records, pinned to the #500 stop text:
 `instructions_sha256` = `6a1e275d2264a91f577b270b43a0f0dc51e79f8d78285ea6422db6e7fb72a673`,
-the SHA-256 of `adapters/codex/AGENTS.md` from "## Completion and fresh context"
-to the end of the file. Any later edit to that section invalidates them until the
-runs are repeated. Earlier runs made under the tag-aware wording do not count.
+the SHA-256 of the #500 version of `adapters/codex/AGENTS.md` from "## Completion
+and fresh context" to the end of the file. The shipped section has changed since
+(#561), so the hash no longer matches it; the observations are history only. Earlier runs made under the tag-aware wording do not count.
 
 Each observation was one fresh `codex exec --ephemeral --ignore-user-config
 --json -C <scratch>/project -s workspace-write -m gpt-6.1-sol` invocation in a
@@ -104,9 +106,9 @@ action, not a terminal-only clear, and not an automatic post-merge reset.
 No prior secret/token recall experiment was performed, so cross-chat history
 isolation remains unverified. CLI `/clear` was not exercised separately.
 
-Codex desktop New chat and live desktop stopping are **unverified**: no actual
+Codex desktop New chat is **unverified**: no actual
 desktop surface was used. Its instructions are covered by generation/adoption
-tests only. Claude live termination and context reset remain unverified.
+tests only. The live display of the reminder and any context reset remain unverified.
 Reset remains the maintainer's action after the task ends: Claude `/clear`,
 Codex CLI `/clear` or `/new`, desktop New chat. No observed UI action is claimed
 as proof that the adapter can force a reset or enforce a turn boundary.

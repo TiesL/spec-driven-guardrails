@@ -414,21 +414,21 @@ dogfooding the mechanism it specifies.
 
 ### Completion and the next conversation (#500)
 
-Every successful merge into `main` ends the current turn, release heads
-included, and the prompt notes that a release being tagged is tagged first. Tag
-commands and publication are not detected and neither stop nor prompt; merges
+Every successful merge into `main` prints a reminder and the session continues,
+release heads included; the reminder notes that a release being tagged is tagged first. Tag
+commands and publication are not detected and give no reminder; merges
 into a release branch continue. The Claude hook covers the canonical
 `gh pr merge <n> --squash --delete-branch`, an omitted target with a surviving
 branch or recovered from the checkout reflog (including gh's post-checkout fast-forward pull) after branch deletion, output
 redirections and line continuation. Pipes, input redirections, wrappers,
-compound shell programs and a lost branch fail open (no stop). Claude receives a
+compound shell programs and a lost branch fail open (no reminder). Claude receives a
 synchronous Bash PostToolUse completion hook via the existing settings symlink.
 Codex completion uses instruction following; its optional --hooks merge guard
-does not enforce the completion stop or reset. Rerun
+does not give the completion reminder or reset. Rerun
 `adopt.sh --runtime codex <project>` and start a fresh session to load the updated
 managed block. No new adoption question or opt-out is introduced.
 
 Reset is the maintainer's action: Claude `/clear`, Codex CLI `/clear` or `/new`,
 Codex desktop New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux). A terminal
-clear is insufficient. Script/adoption tests do not prove live termination or
+clear is insufficient. Script/adoption tests do not prove live reminder display or
 context reset. Exact observations and gaps are in [completion runtime evidence](docs/completion-runtime-evidence.md).
