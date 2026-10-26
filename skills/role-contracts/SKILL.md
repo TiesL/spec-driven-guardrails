@@ -58,7 +58,7 @@ the dispatching prompt's own job to state.
 
 ## Running the pipeline
 
-Every role takes part in every change: there is no phase skipping in v1 (A3). Roles work
+Every role takes part in every change: there is no phase skipping in v1 (A3) other than the human override of `ORCHESTRATOR.md` OR34. Roles work
 sequentially on one shared branch per work item. The run rules live in one file,
 [`ORCHESTRATOR.md`](ORCHESTRATOR.md), next to this one: what is a work item, the stage order
 with each stage's label and `model-record` `stage=` value, fresh dispatch (a fresh Reviewer for every Review round), the
@@ -66,6 +66,8 @@ loop-back route for a finding by its class, the human override record, what to d
 project that answers `process-multi-agent-roles` yes, the `SessionStart` hook prints that file
 into every session, so the orchestrating session gets it without being asked. The `model-record` marker's format and the model choice behind it are defined once, in
 the `model-choice` skill.
+
+**Abbreviated workflow.** The one named short track: `skip=Planning` and `skip=Test`. Discovery, Implementation and Review still run, and Review is still a fresh Reviewer. Only the human grants it, in their own words, and those words are the `reason` of the record. The orchestrator posts it before the work item's first commit or PR open (never after the merge guard fires) with `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh <issue> --scope skip=Planning --scope skip=Test --decided-by <human> --reason '<their words>'`, run from the project's checkout. The script posts one record line per scope and refuses a value the record grammar cannot hold (`"`, `<`, `>`, control bytes): the orchestrator then asks the human for other words and never edits theirs. The record is read only if the PR title or body names the issue with a closing keyword. Any other waiver is not this track and still needs the human's explicit words and its own record (OR34).
 
 The `role:<name>` labels are a hand-maintained traceability record (A5): put the label of the
 role now holding the work on the issue. They do not exist in your repo until you create them.
