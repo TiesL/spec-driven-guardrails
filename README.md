@@ -13,12 +13,12 @@ A tag is a human reference point: an adopted project follows `main` or pins a ta
 | Tag | Date | Theme |
 |---|---|---|
 | `v0.5.0` | 2026-10-26 | Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages |
-| `v0.4.0` | 2026-10-13 | Process improvements for QA (epic #408): fresh Reviewer per round, macOS CI, record v2 |
-| `v0.3.0` | 2026-10-04 | Autonomous multi-agent pipeline, adoptable and opt-in; the Reviewer must be at least as capable as the author (epic #369) |
-| `v0.2.1` | 2026-10-03 | Release-branch workflow (epic #370) |
-| `v0.2.0` | 2026-10-01 | Multi-agent roles: Product, Architect, QA, Fullstack Developer, Reviewer (epic #295) |
-| `v0.1.0` | 2026-09-29 | Dogfooding, traceability, CI |
-| `from-md-to-mechanism` | 2026-09-06 | From markdown to mechanism (epic #11); renamed from `van-proza-naar-mechanisme` on 2026-10-25 (#559) |
+| `v0.4.0` | 2026-10-13 | Process improvements for better QA. The Reviewer is fresh for every Review round, a finding-class loop-back rule applies, the merge guard is stricter, and macOS CI runs the full suite. |
+| `v0.3.0` | 2026-10-04 | Autonomous multi-agent pipeline. Opted-in sessions apply the roles automatically, and the Reviewer must be at least as capable as the Implementation model. |
+| `v0.2.1` | 2026-10-03 | Release-branch workflow. `release/<epic>-<slug>` becomes a real, adoptable mechanism. |
+| `v0.2.0` | 2026-10-01 | Multi-agent roles as scripts and skills. Five roles become executable: Product, Architect, QA, Fullstack Developer, Reviewer. |
+| `v0.1.0` | 2026-09-29 | Dogfooding, traceability, CI. The repo adopts its own workflow, requirements are traced through to code, and CI enforces it. |
+| `from-md-to-mechanism` | 2026-09-06 | From Markdown to mechanism. Conventions move out of `.md` files into hooks, scripts, check and skills. |
 
 ## The problem, and the shape of the fix
 
