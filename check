@@ -6,7 +6,9 @@
 # separate steps — one source of truth, no drift between local and CI.
 #
 # Environment: CHECK_SKIP_SHELLCHECK=1 skips the warn-only shellcheck step (used
-# by check-commit to stay inside the commit-time budget).
+# by check-commit to stay inside the commit-time budget, and set by check
+# itself for the nested suite run in step 5, which would otherwise shellcheck
+# the tree a second time).
 #
 # Usage:
 #   ./check                    # static checks + test suite
@@ -329,7 +331,7 @@ fi
 # Warning, not requiring: not every machine has it, and a missing linter
 # must not turn a green build red.
 if [ -n "${CHECK_SKIP_SHELLCHECK:-}" ]; then
-  echo "check: shellcheck skipped (CHECK_SKIP_SHELLCHECK, used by check-commit)"
+  echo "check: shellcheck skipped (CHECK_SKIP_SHELLCHECK, used by check-commit and the nested suite run)"
 elif command -v shellcheck >/dev/null 2>&1; then
   echo "check: shellcheck"
   while IFS= read -r -d '' script; do

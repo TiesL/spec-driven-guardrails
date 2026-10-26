@@ -19,17 +19,12 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 filter="${1:-}"
 
 # nproc (GNU coreutils, present on GitHub's ubuntu-latest) or sysctl (macOS)
-# — whichever this machine has, capped at 4. Not "one worker per core":
-# under load, higher parallelism was observed to turn a latent bug in
-# individual test cases (and in check-traceability.sh, which several tests
-# call) into an intermittent, different-failure-each-run flake — a
-# `printf ... | grep -q` pattern where grep's early exit on a match can
-# SIGPIPE the writer before it finishes, and `set -o pipefail` then reports
-# that SIGPIPE as the pipeline's failure instead of grep's real (successful)
-# one. Fixed at the instances this surfaced (see their own comments), but a
-# few more of the same pattern remain elsewhere in the repo (issue #218) —
-# so this cap stays as a conservative default while that cleanup is
-# outstanding, not because of a proven, unrelated resource ceiling.
+# — whichever this machine has, capped at 4. Not "one worker per core": the
+# cap is a conservative local default. Earlier, higher parallelism turned a
+# latent `printf ... | grep -q` SIGPIPE/pipefail pattern into intermittent
+# flakes; that cleanup (#218) is closed, and #226 verified TEST_JOBS=8. The cap
+# never binds on CI, whose runners have 4 vCPU (Linux) and 3 (macOS). Set
+# TEST_JOBS to override it.
 cores="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 # A non-numeric result (an unexpected nproc/sysctl output shape, not just
 # "neither is installed" — that case is already the `|| echo 4` above) falls
