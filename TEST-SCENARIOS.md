@@ -7408,3 +7408,18 @@ A47 supplies protocol provenance, not proof that a future installation activates
   project cwd and installed links. No real GitHub merge is attempted.
 - Falsifiers: resolving `lib` from cwd/adopter, unquoted source paths, or testing
   only installation structure while never executing either installed consumer.
+
+### S375 — check shellchecks the real tree once and runs the suite with the nested shellcheck skipped (#563 AC4)
+**Covers:** F38
+- Given: a sandbox project holding the real `check` and `test/run.sh`, three
+  trivial cases that record `CHECK_SKIP_SHELLCHECK`, and a recording fake
+  `shellcheck` first on PATH; the variable is unset in the launching environment.
+- When: the sandbox project's `check` runs end to end.
+- Then: `check: shellcheck` appears exactly once and the fake was asked to
+  check `check`, `test/run.sh` and a case file (the outer pass covers the real
+  tree); `Tests: N passed.` where N equals the number of case files; every case
+  saw `CHECK_SKIP_SHELLCHECK=1`; step 5 of the real `check` runs `test/run.sh`
+  with the variable on its own command line.
+- Falsifiers: running the suite without the variable, setting it before the
+  outer pass, dropping a case, or a second outer pass. The full-size check is
+  the CI log of the PR (#563 AC4).
