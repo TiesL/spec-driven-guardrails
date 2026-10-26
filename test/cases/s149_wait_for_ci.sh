@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# S149 — wait-for-ci.sh enforces the 5min-then-1min CI-polling cadence
-# (#265).
+# S149 — wait-for-ci.sh derives its CI-polling cadence from recent
+# successful runs, with a fixed fallback (#265, #562).
 # Covers: F33
 
 set -uo pipefail
