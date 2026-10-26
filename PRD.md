@@ -1335,7 +1335,7 @@ What an adopted project can do afterwards:
   `role:<name>` labels (`role:product`, `role:architect`, `role:qa`,
   `role:dev`, `role:reviewer`) the project must create in its own
   GitHub repo if it wants `role-label-staleness.sh` to say anything, and
-  that every role takes part in every change (no phase skipping in v1).
+  that every role takes part in every change (no phase skipping in v1, except the named short track: skip=Planning plus skip=Test, recorded with `pipeline-override.sh`).
 - **Optionally read the evidence.** `compliance-evidence.sh`,
   `role-label-staleness.sh` and `classify-review-depth.sh` stay at this
   repo's root (not copied, not run by any `check`), and are invoked by

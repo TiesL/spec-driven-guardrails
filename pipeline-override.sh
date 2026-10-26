@@ -23,11 +23,17 @@
 # issue with a closing keyword, such as `Closes #<issue>`; without it the
 # record is invisible to the gate.
 #
-# Values are refused, never sanitized: decided-by and reason must not be
-# blank, hold `"`, `<`, `>`, a control byte (so no multi-line text), a C1
-# control, U+2028/U+2029 or a bidi control, and are at most 100 and 1000 bytes.
-# On a refusal, ask the human for words without those characters; do not edit
-# theirs. After building the comment the script reads it back with the gate's
+# Values are refused, never sanitized: decided-by and reason must be valid
+# UTF-8, must not be blank (nothing left but white space, NBSP, other Unicode
+# spaces, zero-width characters or bidi marks), must not hold `"`, `<`, `>`, a
+# control byte (so no multi-line text), a C1 control, U+2028/U+2029 or a bidi
+# control, and are at most 100 and 1000 bytes. The bidi controls refused are
+# a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069);
+# zero-width characters and bidi marks (U+200B, U+200E, U+200F, U+061C, U+FEFF)
+# are accepted, as in A33a, so long as some other visible character remains.
+# The UTF-8 check is stricter than A33a on purpose: invalid bytes would abort
+# the awk in lib/markdown.sh. On a refusal, ask the human for words without
+# those characters; do not edit theirs. After building the comment the script reads it back with the gate's
 # own reader (lib/model-record.sh) and posts nothing unless every line reads as
 # an ok record with exactly the given values.
 #
@@ -41,12 +47,12 @@
 #   1 — the built comment failed the read-back (script and grammar drifted);
 #       nothing posted
 #   2 — usage or validation refusal; one stderr line names the field; gh not called
-#   3 — environment: lib/model-record.sh or the gh command not found/executable
+#   3 — environment: lib/model-record.sh, lib/markdown.sh or the gh command not found/executable
 #   4 — gh ran and failed; its stderr is passed through; nothing recorded
 #
 # PIPELINE_OVERRIDE_GH names the gh executable (default: gh); it is never
-# evaluated as a shell string. The lib is found from this script's real
-# directory. Bash 3.2-compatible. No eval.
+# evaluated as a shell string. The libs are found from this script's real
+# directory (a symlink to the script is followed). Bash 3.2-compatible. No eval.
 
 set -uo pipefail
 
@@ -59,8 +65,20 @@ line per scope. Run it from the project's checkout.
   scope  single-session, or skip=Discovery|Planning|Test|Implementation|Review
          (abbreviated workflow: --scope skip=Planning --scope skip=Test)
 Pass --reason in single quotes, so the shell does not expand $VAR, backticks or !.
-Values with ", <, >, a control byte, or over 100 (decided-by) / 1000 (reason)
-bytes are refused, never edited: ask the human for other words.
+A value is refused, never edited: ask the human for other words. Refused:
+  - ", <, > (a double quote, a less-than or a greater-than sign)
+  - a control byte, a tab or a line break
+  - a C1 control, or U+2028 / U+2029 (line and paragraph separators)
+  - a bidi control: a bidi embedding, override or isolate control
+    (U+202A-U+202E, U+2066-U+2069)
+  - invalid UTF-8
+  - a blank value: empty, or only white space, NBSP (U+00A0), other Unicode
+    spaces, zero-width characters or bidi marks (U+200B, U+200E, U+200F,
+    U+061C, U+FEFF)
+  - more than 100 bytes (decided-by) or 1000 bytes (reason)
+Also refused: an <issue> that is not a positive integer, any other --scope than
+the closed list above, --scope single-session combined with skip=, a repeated --scope,
+and a missing or repeated --decided-by or --reason.
 Post it before the first commit or PR open of the work item, never after the
 merge guard fires. The merge gate reads the record only if the PR title or body names
 the issue with a closing keyword, such as Closes #<issue>.
@@ -142,16 +160,54 @@ esac
 # hex), so every byte class below is matched without a locale.
 hex_of() { printf ' %s ' "$(printf '%s' "$1" | od -An -v -tx1 | tr -s ' \n' '  ' | sed 's/^ //; s/ $//')"; }
 
+# UTF8_AWK reads the hex string and prints invalid (bad UTF-8: bad lead or
+# continuation byte, overlong, surrogate, above U+10FFFF), blank (every
+# character is white space, an accepted invisible, or a Unicode space), or ok.
+# No strtonum, no locale (bash 3.2 and BSD awk).
+# shellcheck disable=SC2016 # an awk program, not shell
+UTF8_AWK='
+function hv(t,   a, b) { a = index("0123456789abcdef", substr(t, 1, 1)) - 1; b = index("0123456789abcdef", substr(t, 2, 1)) - 1; return a * 16 + b }
+{
+  n = split($0, tk, " "); blank = 1; i = 1
+  while (i <= n) {
+    b = hv(tk[i]); need = 0; lo = 128; hi = 191
+    if (b < 128) need = 0
+    else if (b >= 194 && b <= 223) need = 1
+    else if (b == 224) { need = 2; lo = 160 }
+    else if (b == 237) { need = 2; hi = 159 }
+    else if (b >= 225 && b <= 239) need = 2
+    else if (b == 240) { need = 3; lo = 144 }
+    else if (b == 244) { need = 3; hi = 143 }
+    else if (b >= 241 && b <= 243) need = 3
+    else { print "invalid"; exit }
+    ch = tk[i]
+    for (k = 1; k <= need; k++) {
+      if (i + k > n) { print "invalid"; exit }
+      c = hv(tk[i + k])
+      if (c < (k == 1 ? lo : 128) || c > (k == 1 ? hi : 191)) { print "invalid"; exit }
+      ch = ch tk[i + k]
+    }
+    i += need + 1
+    if (!(ch == "20" || ch == "c2a0" || ch == "e19a80" || ch == "e280af" || ch == "e2819f" || ch == "e38080" || ch == "d89c" || ch == "efbbbf" || (ch >= "e28080" && ch <= "e2808f"))) blank = 0
+  }
+  print (blank ? "blank" : "ok")
+}'
+
 # check_text <field> <value> <max-bytes>
 check_text() {
-  local field="$1" v="$2" max="$3" hex bytes
+  local field="$1" v="$2" max="$3" hex bytes kind
   case "${v// /}" in '') refuse "$field must not be empty or blank." ;; esac
   hex="$(hex_of "$v")"
+  kind="$(printf '%s' "$hex" | awk "$UTF8_AWK")"
+  case "$kind" in
+    invalid) refuse "$field is not valid UTF-8; ask the human for words in valid UTF-8 and do not edit theirs." ;;
+    blank) refuse "$field must not be empty or blank (only white space, NBSP, Unicode spaces or zero-width characters)." ;;
+  esac
   case "$hex" in
     *' 22 '* | *' 3c '* | *' 3e '*) refuse "$field must not contain \", < or > (the record grammar cannot hold them); ask the human for words without them and do not edit theirs." ;;
     *' '[01][0-9a-f]' '* | *' 7f '*) refuse "$field must not contain a control byte, a tab or a line break; ask the human for single-line words and do not edit theirs." ;;
     *' c2 '[89]?' '* | *' e2 80 a8 '* | *' e2 80 a9 '* | *' e2 80 a'[a-e]' '* | *' e2 81 a'[6-9]' '*)
-      refuse "$field must not contain a C1 control, a line or paragraph separator or a bidi control; ask the human for other words and do not edit theirs."
+      refuse "$field must not contain a C1 control, a line or paragraph separator or a bidi control (a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)); ask the human for other words and do not edit theirs."
       ;;
   esac
   bytes="$(printf '%s' "$v" | wc -c | tr -d ' ')"
@@ -180,9 +236,24 @@ if [ "$have_single" = 1 ] && [ "$have_skip" = 1 ]; then
 fi
 # END field-checks
 
-own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# Follow a symlinked script to its real file first (pwd -P alone resolves only
+# a symlinked directory), joining a relative target to the link's directory.
+self="${BASH_SOURCE[0]}"
+hops=0
+while [ -L "$self" ] && [ "$hops" -lt 40 ]; do
+  target="$(readlink "$self")"
+  case "$target" in
+    /*) self="$target" ;;
+    *) self="$(dirname "$self")/$target" ;;
+  esac
+  hops=$((hops + 1))
+done
+own_dir="$(cd "$(dirname "$self")" && pwd -P)"
 if [ ! -r "$own_dir/lib/model-record.sh" ]; then
   die 3 "lib/model-record.sh not found next to this script ($own_dir/lib) — nothing recorded."
+fi
+if [ ! -r "$own_dir/lib/markdown.sh" ]; then
+  die 3 "lib/markdown.sh not found next to this script ($own_dir/lib) — nothing recorded."
 fi
 # shellcheck source=lib/model-record.sh
 . "$own_dir/lib/model-record.sh"

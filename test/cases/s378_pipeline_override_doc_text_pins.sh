@@ -63,31 +63,68 @@ pin_closes() {
   done
 }
 
+# pin_help_pointer <root>: #578 AC11, OR34 and the abbreviated-workflow paragraph of
+# role-contracts/SKILL.md point to `pipeline-override.sh --help` for the refusal list.
+pin_help_pointer() {
+  local or34 para
+  # the whole OR34 bullet: its first line and the indented lines below it, up to the next bullet
+  or34="$(awk '/^- OR34 /{p=1;print;next} p&&/^- /{p=0} p' "$1/skills/role-contracts/ORCHESTRATOR.md")"
+  grep -qF 'pipeline-override.sh --help' <<<"$or34" \
+    || { echo "OR34 does not point to pipeline-override.sh --help"; return 1; }
+  para="$(grep '^\*\*Abbreviated workflow' "$1/skills/role-contracts/SKILL.md")"
+  grep -qF 'pipeline-override.sh --help' <<<"$para" \
+    || { echo "the abbreviated-workflow paragraph of skills/role-contracts/SKILL.md does not point to pipeline-override.sh --help"; return 1; }
+}
+
 fresh_copy() { rm -rf "$SANDBOX/m"; sandbox_copy_repo m >/dev/null; echo "$SANDBOX/m"; }
 sed_i() { local last="${*: -1}"; sed -i.bak "$@" && rm -f "$last.bak"; }
 
 R="$TEST_REPO_ROOT"
-for p in pin_abbrev pin_or34 pin_slot1 pin_quote pin_closes; do
+for p in pin_abbrev pin_or34 pin_slot1 pin_quote pin_closes pin_help_pointer; do
   msg="$($p "$R")" || fail "S378/$p — on the real tree: $msg"
 done
 
-# Mutation arms: each deletion must turn its pin red.
-m="$(fresh_copy)"; sed_i '/[Aa]bbreviated workflow/d' "$m/policy/WORKFLOW.md"
-pin_abbrev "$m" >/dev/null && fail "S378/abbrev-policy — deleting the policy bullet left the pin green"
-m="$(fresh_copy)"; sed_i '/[Aa]bbreviated workflow/d' "$m/skills/role-contracts/SKILL.md"
-pin_abbrev "$m" >/dev/null && fail "S378/abbrev-skill — deleting the SKILL.md paragraph left the pin green"
-m="$(fresh_copy)"; sed_i 's/skip=Test/skip=X/g' "$m/skills/role-contracts/SKILL.md"
-pin_abbrev "$m" >/dev/null && fail "S378/abbrev-skiptest — dropping skip=Test left the pin green"
-m="$(fresh_copy)"; sed_i '/^- OR34 /s/pipeline-override\.sh/the-script/g' "$m/skills/role-contracts/ORCHESTRATOR.md"
-pin_or34 "$m" >/dev/null && fail "S378/or34 — removing the script name from OR34 left the pin green"
-pin_slot1 "$m" >/dev/null && fail "S378/slot1 — removing the script name from OR34 left the slot-1 pin green"
+# arm <label> <pin> <expected-message> <mutation-command...>  (#578 AC9)
+# Control: the pin passes on a fresh, unmutated copy. Mutation: the same pin on a
+# copy changed by <mutation-command> (run with the copy's root as its first
+# argument) must fail, and its output must contain the pin's own message, so a
+# pin that is red for another reason is detected.
+arm() {
+  local label="$1" pin="$2" want="$3" m out
+  shift 3
+  m="$(fresh_copy)"
+  out="$($pin "$m" 2>&1)" || { fail "S378/$label — control: the pin fails on an unmutated copy: $out"; return; }
+  "$@" "$m" || { fail "S378/$label — the mutation could not be applied"; return; }
+  if out="$($pin "$m" 2>&1)"; then
+    fail "S378/$label — mutation not detected: the pin stayed green"
+  else
+    case "$out" in *"$want"*) : ;; *) fail "S378/$label — red for another reason: wanted '$want', got '$out'" ;; esac
+  fi
+}
+mut_sed() { # <file> <sed-expr> <root>: sed -i on <root>/<file>
+  sed_i "$2" "$3/$1"
+}
+
+arm abbrev-policy pin_abbrev "policy/WORKFLOW.md has no 'abbreviated workflow'" \
+  mut_sed policy/WORKFLOW.md '/[Aa]bbreviated workflow/d'
+arm abbrev-skill pin_abbrev "skills/role-contracts/SKILL.md has no 'abbreviated workflow'" \
+  mut_sed skills/role-contracts/SKILL.md '/[Aa]bbreviated workflow/d'
+arm abbrev-skiptest pin_abbrev "skills/role-contracts/SKILL.md: the abbreviated-workflow text lacks skip=Planning/skip=Test" \
+  mut_sed skills/role-contracts/SKILL.md 's/skip=Test/skip=X/g'
+arm or34 pin_or34 "OR34 does not name pipeline-override.sh" \
+  mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /s/pipeline-override\.sh/the-script/g'
+arm slot1 pin_slot1 "session-context.sh --slot 1 does not mention pipeline-override.sh" \
+  mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /,/^- OR35 /s/pipeline-override\.sh/the-script/g'
 for f in pipeline-override.sh skills/role-contracts/SKILL.md skills/role-contracts/ORCHESTRATOR.md; do
-  m="$(fresh_copy)"; sed_i 's/single quote/quote/g' "$m/$f"
-  pin_quote "$m" >/dev/null && fail "S378/quote-$f — removing 'single quote' left the pin green"
+  arm "quote-$f" pin_quote "$f lacks the text 'single quote'" mut_sed "$f" 's/single quote/quote/g'
 done
 for f in skills/role-contracts/SKILL.md pipeline-override.sh; do
-  m="$(fresh_copy)"; sed_i 's/Closes #/Closes /g' "$m/$f"
-  pin_closes "$m" >/dev/null && fail "S378/closes-$f — removing 'Closes #' left the pin green"
+  arm "closes-$f" pin_closes "$f lacks 'Closes #'" mut_sed "$f" 's/Closes #/Closes /g'
 done
+# #578 AC11: the pointer, removed from each place in turn
+arm help-or34 pin_help_pointer "OR34 does not point to pipeline-override.sh --help" \
+  mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /,/^- OR35 /s/pipeline-override\.sh --help/pipeline-override.sh/g'
+arm help-skill pin_help_pointer "the abbreviated-workflow paragraph of skills/role-contracts/SKILL.md does not point to pipeline-override.sh --help" \
+  mut_sed skills/role-contracts/SKILL.md '/^\*\*Abbreviated workflow/s/pipeline-override\.sh --help/pipeline-override.sh/g'
 
 test_done
