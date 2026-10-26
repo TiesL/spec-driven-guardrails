@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -13,7 +14,7 @@ ROOT = Path(sys.argv[1])
 SCENARIO = int(sys.argv[2])
 tmp = Path(tempfile.mkdtemp())
 wf = tmp / 'workflow'
-shutil.copytree(ROOT, wf, ignore=shutil.ignore_patterns('.git', '.claude', '__pycache__'))
+shutil.copytree(ROOT, wf, ignore=shutil.ignore_patterns('.git', '.claude', '.guardrails', '.agents', '__pycache__'))
 env = dict(os.environ, SPEC_DRIVEN_GUARDRAILS_DIR=str(wf))
 def run(*args, rc=0, cwd=None):
     p = subprocess.run([str(a) for a in args], cwd=cwd or wf, env=env,
@@ -70,17 +71,114 @@ def expect(out, text):
 try:
     if SCENARIO == 294:
         assert (wf / 'generate-workflow-adapters.sh').is_file(), 'missing generator'
+        # First invocation must be read-only even without ambient cache suppression.
+        cache = tmp / 'first-check-cache'; cache.mkdir()
+        launcher_dir = tmp / 'python-launcher'; launcher_dir.mkdir()
+        launcher = launcher_dir / 'python3'
+        launcher.write_text('#!/bin/sh\nexec ' + shlex.quote(str(Path(sys.executable).resolve())) +
+                            ' -X ' + shlex.quote('pycache_prefix=' + str(cache)) + ' "$@"\n')
+        launcher.chmod(0o755)
+        first_env = dict(env, PATH=str(launcher_dir) + os.pathsep + env['PATH'])
+        for key in ('PYTHONDONTWRITEBYTECODE', 'PYTHONPYCACHEPREFIX'):
+            first_env.pop(key, None)
+        assert not list(wf.rglob('*.pyc')) and not list(wf.rglob('__pycache__'))
+        assert not snapshot(cache), 'first-check cache must start empty'
+        before_first = snapshot(wf), snapshot(cache)
+        first = subprocess.run([str(wf / 'check-workflow-adapters.sh')], cwd=wf,
+                               env=first_env, capture_output=True, text=True)
+        assert first.returncode == 0, (first.returncode, first.stdout, first.stderr)
+        after_first = snapshot(wf), snapshot(cache)
+        delta = [[name for name in sorted(set(before) | set(after))
+                  if before.get(name) != after.get(name)]
+                 for before, after in zip(before_first, after_first)]
+        assert before_first == after_first, ('first checker wrote workflow/cache', delta)
+        committed = (wf / 'AGENTS.md').read_bytes().split(b'<!-- spec-driven-guardrails: begin -->', 1)[1].split(b'<!-- spec-driven-guardrails: end -->', 1)[0]
+        assert b'Abbreviated workflow' in committed and b'pipeline-override.sh' in committed
         run(wf / 'generate-workflow-adapters.sh')
         before = snapshot(wf)
         run(wf / 'generate-workflow-adapters.sh')
         assert snapshot(wf) == before, 'nondeterministic generation'
         run(wf / 'check-workflow-adapters.sh')
+        # #575: delete the short-track bullet only in the root carrier.
+        root_agents = wf / 'AGENTS.md'
+        payload = (wf / 'adapters/codex/AGENTS.md').read_bytes()
+        begin = b'<!-- spec-driven-guardrails: begin -->'
+        end = b'<!-- spec-driven-guardrails: end -->'
+        framed = begin + b'\n' + payload + end
+        root_agents.write_bytes(framed + b'\n')
+        root_agents.write_bytes(re.sub(rb'^- \*\*Abbreviated workflow\*\*[^\n]*\n', b'', root_agents.read_bytes(), flags=re.M))
+        out = run(wf / 'check-workflow-adapters.sh', rc=1)
+        expect(out, 'AGENTS.md'); expect(out, 'adapters/codex/AGENTS.md')
+        run(wf / 'generate-workflow-adapters.sh')
+        assert root_agents.read_bytes() == framed + b'\n'
+        before = snapshot(wf)
+        run(wf / 'check-workflow-adapters.sh', wf)
+        assert snapshot(wf) == before, 'checker wrote workflow'
+        for literal in ('Abbreviated workflow', 'pipeline-override.sh'):
+            run('grep', '-F', literal, root_agents)
+        assert root_agents.read_bytes() == framed + b'\n'
+        # Payload-only drift is compared to the root before regeneration.
+        codex = wf / 'adapters/codex/AGENTS.md'
+        codex.write_bytes(payload + b'PAYLOAD-ONLY\n')
+        out = run(wf / 'check-workflow-adapters.sh', rc=1)
+        expect(out, 'root AGENTS.md'); expect(out, 'adapters/codex/AGENTS.md')
+        run(wf / 'generate-workflow-adapters.sh', wf)
+        prefix = b'owner \xff\r\n'
+        suffix = b'\r\nowner \xfe no final newline'
+        root_agents.write_bytes(prefix + framed + suffix)
+        run(wf / 'check-workflow-adapters.sh')
+        root_agents.write_bytes(prefix + begin + b'\nstale\n' + end + suffix)
+        run(wf / 'generate-workflow-adapters.sh')
+        assert root_agents.read_bytes() == prefix + framed + suffix
+        before = snapshot(wf)
+        run(wf / 'generate-workflow-adapters.sh')
+        assert snapshot(wf) == before
+        adopted = project('root-framing'); adopt(adopted)
+        assert (adopted / 'AGENTS.md').read_bytes() == framed + b'\n'
+        (adopted / '.codex').mkdir()
+        (adopted / '.codex/config.toml').write_text('project config')
+        (adopted / 'WORKFLOW-ADOPTION.md').write_text('project answers')
+        adopted_before = snapshot(adopted)
+        external = tmp / 'external-root'; external.write_bytes(b'external sentinel')
+        workflow_output = wf / 'WORKFLOW.md'
+        workflow_bytes = workflow_output.read_bytes()
+        workflow_output.write_bytes(b'stale output must not be repaired on invalid root')
+        for bad in (b'unmarked', begin, end + b'\n' + begin,
+                    begin + begin + end + end, framed + b'\n' + framed,
+                    'link', 'broken-link', 'directory'):
+            root_agents.unlink()
+            if bad == 'directory': root_agents.mkdir()
+            elif bad in ('link', 'broken-link'):
+                root_agents.symlink_to(external if bad == 'link' else tmp / 'absent-target')
+            else: root_agents.write_bytes(bad)
+            before = snapshot(wf)
+            for command in ('generate', 'check'):
+                expect(run(wf / (command + '-workflow-adapters.sh'), wf, rc=2), 'AGENTS.md')
+                assert snapshot(wf) == before, 'invalid root caused writes'
+                assert external.read_bytes() == b'external sentinel'
+            if root_agents.is_dir() and not root_agents.is_symlink(): root_agents.rmdir()
+            else: root_agents.unlink()
+            root_agents.write_bytes(framed + b'\n')
+        workflow_output.write_bytes(workflow_bytes)
+        root_agents.chmod(0)
+        if os.access(root_agents, os.R_OK):
+            print('Unreadable-root fixture unavailable: runner bypasses mode permissions')
+        else:
+            for command in ('generate', 'check'):
+                run(wf / (command + '-workflow-adapters.sh'), rc=2)
+        root_agents.chmod(0o644)
+        root_agents.unlink()
+        expect(run(wf / 'check-workflow-adapters.sh', rc=1), 'missing output: root AGENTS.md')
+        run(wf / 'generate-workflow-adapters.sh')
+        assert root_agents.read_bytes() == framed + b'\n'
+        assert snapshot(adopted) == adopted_before
         policy = wf / 'policy/WORKFLOW.md'
         policy.write_bytes(policy.read_bytes() + b'\nPOLICY-SENTINEL-455\n')
         out = run(wf / 'check-workflow-adapters.sh', rc=1)
         expect(out, 'WORKFLOW.md'); expect(out, 'adapters/codex/AGENTS.md')
         run(wf / 'generate-workflow-adapters.sh')
-        for f in ('WORKFLOW.md', 'adapters/codex/AGENTS.md'):
+        assert snapshot(adopted) == adopted_before, 'generation changed adopted project'
+        for f in ('WORKFLOW.md', 'adapters/codex/AGENTS.md', 'AGENTS.md'):
             expect((wf / f).read_text(), 'POLICY-SENTINEL-455')
         for f in ('WORKFLOW.md', 'adapters/codex/AGENTS.md', 'adapters/claude/INSTRUCTIONS.md',
                   'adapters/codex/INSTRUCTIONS.md', 'skills/role-contracts/ORCHESTRATOR.md',
