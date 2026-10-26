@@ -4,11 +4,21 @@ Guardrails for an AI coding agent working past toy-project size: what was decide
 written down, and nothing merges without a traceable link back to a reviewed requirement.
 Not an agent framework — shared conventions and scripts with Claude Code and Codex CLI/desktop adapters.
 
-**v0.4.0** (see `CHANGELOG.md`): this repo builds itself with a five-role multi-agent
-pipeline, and an adopted project can opt into it — see
-[How this repo builds itself](#how-this-repo-builds-itself).
-
 **SDG** is talk-only shorthand for this repository and the workflow it provides; an adopted project's installed copy is the "adopted copy", never "SDG", and no directory, variable, script or repository name changes.
+
+## Releases and their themes
+
+A tag is a human reference point: an adopted project follows `main` or pins a tag (see "Getting started"), and `CHANGELOG.md` holds the detail per release. To see how the repo itself is built, read [How this repo builds itself](#how-this-repo-builds-itself). A release-prep change adds one row at the top of this table, with the new tag, its date and a theme agreed with the maintainer; the newest row's date and theme must match its CHANGELOG heading.
+
+| Tag | Date | Theme |
+|---|---|---|
+| `v0.5.0` | 2026-10-26 | Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages |
+| `v0.4.0` | 2026-10-13 | Process improvements for QA (epic #408): fresh Reviewer per round, macOS CI, record v2 |
+| `v0.3.0` | 2026-10-04 | Autonomous multi-agent pipeline, adoptable and opt-in; the Reviewer must be at least as capable as the author (epic #369) |
+| `v0.2.1` | 2026-10-03 | Release-branch workflow (epic #370) |
+| `v0.2.0` | 2026-10-01 | Multi-agent roles: Product, Architect, QA, Fullstack Developer, Reviewer (epic #295) |
+| `v0.1.0` | 2026-09-29 | Dogfooding, traceability, CI |
+| `from-md-to-mechanism` | 2026-09-06 | From markdown to mechanism (epic #11); renamed from `van-proza-naar-mechanisme` on 2026-10-25 (#559) |
 
 ## The problem, and the shape of the fix
 

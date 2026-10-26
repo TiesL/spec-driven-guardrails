@@ -13,6 +13,15 @@ point.
 
 ## Unreleased
 
+## v0.5.0 — Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages (2026-10-26)
+
+- **#575: this repo's root `AGENTS.md` block is generated, not hand-kept.** The managed block in the
+  root `AGENTS.md` is now generated from the rendered Codex payload and drift-checked by
+  `check-workflow-adapters.sh` (part of `./check` and CI). It gained the Abbreviated workflow bullet it
+  had been missing, and generation and Codex adoption share `lib/managed_blocks.py`. Adopter action:
+  none from #575 itself, since nothing under `adapters/` changed; for the Codex rerun see the
+  #500/#561 entry below. No new CHANGES/adoption question.
+
 - **#500/#561: a reminder after merges into main.** Claude's synchronous Bash
   PostToolUse hook prints "Merged to main. Type /clear before the next work item;
   if you are tagging a release, tag it first." after every confirmed merge into

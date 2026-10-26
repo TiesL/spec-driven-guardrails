@@ -23,9 +23,9 @@ if not re.search(r"supersed", para):
 if re.search(r"low = issue by default|never in a low-only round|a low finding is filed as an issue;", para):
     sys.exit("S293: F44 still states the old default as current")
 cl = open(f"{root}/{notice}").read()
-sec = re.search(r"(?ms)^## Unreleased\s*$(.*?)(?=^## )", cl)
+sec = re.search(r"(?ms)^## v0\.5\.0 [^\n]*$(.*?)(?=^## )", cl)
 if not sec:
-    sys.exit("S293: no Unreleased section")
+    sys.exit("S293: no v0.5.0 section")
 entries = re.split(r"(?m)^(?=- )", sec.group(1))
 hits = [e for e in entries if "#488" in e and "Fix cost" in e]
 if len(hits) != 1:
