@@ -5424,6 +5424,16 @@ behavioral obedience.
     create/append regression coverage remains applicable after extraction.
   - Given: a generated clean workflow copy with root `AGENTS.md` containing
     exactly one managed block, including the complete Codex payload/header.
+    Before the first checker invocation, use a fresh writable copy with no
+    Python bytecode/cache artifacts and no previous generation/adoption/import
+    in that copy. Explicitly unset `PYTHONDONTWRITEBYTECODE` and
+    `PYTHONPYCACHEPREFIX` for that invocation, and use an empty dedicated
+    writable cache prefix via a PATH Python launcher (`python3 -X
+    pycache_prefix=<cache> ...`), avoiding platform/ambient cache variability.
+    Snapshot the complete workflow copy and dedicated cache before and after
+    the public checker command; both snapshots must be identical, including
+    cache paths. The first invocation exits 0. A post-generation snapshot alone
+    does not prove read-only checking (finding checker-first-import-writes-bytecode).
     When: checking, then generating twice. Then: check exits 0 without any
     filesystem writes; generation leaves all three generated carriers identical
     on the second run. The committed root's managed block exactly equals the
