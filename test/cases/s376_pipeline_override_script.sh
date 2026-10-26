@@ -239,6 +239,102 @@ PO="$SANDBOX/copy-strict/pipeline-override.sh" run_po 42 --scope skip=Test --dec
 [ "$(calls)" = 0 ] || fail "S376/5 — drift: gh was called although the read-back failed"
 grep -qiF 'internal check failed' "$SANDBOX/run/err" || fail "S376/5 — stderr must say 'internal check failed'"
 
+# --- 5b. #578 AC5: invalid UTF-8 is refused (a value the record cannot hold as given) ---
+for f in reason decided-by; do
+  if [ "$f" = reason ]; then rest5=(--decided-by TiesL --reason); else rest5=(--reason fine --decided-by); fi
+  refuse "5b-$f-ff-fe" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')" --dry-run
+  refuse "5b-$f-cut-off-3-byte" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'cut \xe2\x80')" --dry-run
+  refuse "5b-$f-overlong" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'long \xc0\xaf')" --dry-run
+  refuse "5b-$f-stray-continuation" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \x80 y')" --dry-run
+  refuse "5b-$f-surrogate" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \xed\xa0\x80 y')" --dry-run
+  refuse "5b-$f-no-dry-run" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')"
+done
+# valid multi-byte text (2-, 3- and 4-byte) is still accepted, byte for byte
+byte_for_byte 5b-2byte TiesL 'caf'$'\xc3\xa9'
+byte_for_byte 5b-3byte TiesL 'to '$'\xe2\x86\x92'' done'
+byte_for_byte 5b-4byte TiesL 'ok '$'\xf0\x9f\x98\x80'
+
+# --- 5c. #578 AC6: only whitespace or invisibles counts as blank ------------------
+nbsp=$'\xc2\xa0'
+for f in reason decided-by; do
+  if [ "$f" = reason ]; then rest5=(--decided-by TiesL --reason); else rest5=(--reason fine --decided-by); fi
+  refuse "5c-$f-nbsp" "--$f" 42 "${V[@]}" "${rest5[@]}" "$nbsp" --dry-run
+  refuse "5c-$f-nbsp-x3" "--$f" 42 "${V[@]}" "${rest5[@]}" "$nbsp$nbsp$nbsp" --dry-run
+  refuse "5c-$f-space-nbsp-mix" "--$f" 42 "${V[@]}" "${rest5[@]}" " $nbsp " --dry-run
+  refuse "5c-$f-ogham-U+1680" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe1\x9a\x80' --dry-run
+  refuse "5c-$f-en-quad-U+2000" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\x80' --dry-run
+  refuse "5c-$f-em-space-U+2003" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\x83' --dry-run
+  refuse "5c-$f-hair-space-U+200A" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\x8a' --dry-run
+  refuse "5c-$f-narrow-nbsp-U+202F" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\xaf' --dry-run
+  refuse "5c-$f-medium-math-U+205F" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x81\x9f' --dry-run
+  refuse "5c-$f-ideographic-U+3000" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe3\x80\x80' --dry-run
+  refuse "5c-$f-zwsp-U+200B" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\x8b' --dry-run
+  refuse "5c-$f-lrm-U+200E" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xe2\x80\x8e' --dry-run
+  refuse "5c-$f-alm-U+061C" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xd8\x9c' --dry-run
+  refuse "5c-$f-bom-U+FEFF" "--$f" 42 "${V[@]}" "${rest5[@]}" $'\xef\xbb\xbf' --dry-run
+  refuse "5c-$f-mixed-spaces-and-invisibles" "--$f" 42 "${V[@]}" "${rest5[@]}" " $nbsp"$'\xe2\x80\x8b\xe3\x80\x80' --dry-run
+done
+# a visible character next to those characters is still accepted, byte for byte
+byte_for_byte 5c-visible-plus-nbsp TiesL "a$nbsp"
+byte_for_byte 5c-nbsp-between "Ties${nbsp}L" "x${nbsp}y"
+byte_for_byte 5c-visible-plus-zwsp TiesL $'a\xe2\x80\x8b'
+
+# --- 5d. #578 AC8: bidi range edges and their outer neighbours --------------------
+for edge in 202a:e2:80:aa 202e:e2:80:ae 2066:e2:81:a6 2069:e2:81:a9; do
+  IFS=: read -r cp b1 b2 b3 <<<"$edge"
+  v="$(printf "a\\x$b1\\x$b2\\x$b3 b")"
+  refuse "5d-bidi-U+$cp-reason" --reason 42 "${V[@]}" --decided-by TiesL --reason "$v" --dry-run
+  refuse "5d-bidi-U+$cp-decided-by" --decided-by 42 "${V[@]}" --reason fine --decided-by "$v" --dry-run
+done
+# the neighbours just outside the ranges are accepted (U+202F is a space, U+2065 is unassigned)
+byte_for_byte 5d-accept-U+202F TiesL 'a'$'\xe2\x80\xaf''b'
+byte_for_byte 5d-accept-U+2065 TiesL 'a'$'\xe2\x81\xa5''b'
+byte_for_byte 5d-accept-U+202F-decided-by 'a'$'\xe2\x80\xaf''b' 'fine'
+byte_for_byte 5d-accept-U+2065-decided-by 'a'$'\xe2\x81\xa5''b' 'fine'
+# the accepted marks and zero-width characters (A33a) stay accepted
+for cp in e2:80:8b e2:80:8e e2:80:8f d8:9c ef:bb:bf; do
+  IFS=: read -r b1 b2 b3 <<<"$cp"
+  if [ -n "$b3" ]; then v="$(printf "a\\x$b1\\x$b2\\x$b3 b")"; else v="$(printf "a\\x$b1\\x$b2 b")"; fi
+  byte_for_byte "5d-a33a-accepted-$cp" TiesL "$v"
+done
+# the wording: header and refusal message name the refused range, and say what stays accepted
+range_words='a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)'
+flat_header="$(sed -n '/^set -uo pipefail/q;s/^# \{0,1\}//p' "$SCRIPT" | tr '\n' ' ' | tr -s ' ')"
+case "$flat_header" in *"$range_words"*) : ;; *) fail "S376/5d — the script header must name '$range_words'" ;; esac
+case "$flat_header" in *'U+200B, U+200E, U+200F, U+061C, U+FEFF'*'accepted'*) : ;; *) fail "S376/5d — the script header must say that U+200B, U+200E, U+200F, U+061C, U+FEFF are accepted (A33a)" ;; esac
+run_po 42 "${V[@]}" --decided-by TiesL --reason "$(printf 'a\xe2\x80\xaeb')" --dry-run
+grep -qF "$range_words" "$SANDBOX/run/err" || fail "S376/5d — the bidi refusal message must name '$range_words', got: $(head -c 300 "$SANDBOX/run/err")"
+
+# --- 5e. #578 AC7: a symlinked script finds its lib from the real script directory ---
+direct_out="$SANDBOX/direct-body"
+PO="$SCRIPT" run_po 42 --scope skip=Test --decided-by TiesL --reason 'x' --dry-run
+cp "$SANDBOX/run/out" "$direct_out"
+mkdir -p "$SANDBOX/elsewhere/sub" "$SANDBOX/elsewhere/rel"
+ln -sf "$SCRIPT" "$SANDBOX/elsewhere/link-abs"
+ln -sf "$SANDBOX/elsewhere/link-abs" "$SANDBOX/elsewhere/sub/link-chain"
+for l in "$SANDBOX/elsewhere/link-abs" "$SANDBOX/elsewhere/sub/link-chain"; do
+  PO="$l" run_po 42 --scope skip=Test --decided-by TiesL --reason 'x' --dry-run
+  [ "$po_rc" -eq 0 ] || fail "S376/5e — symlink ${l#"$SANDBOX"/}: expected exit 0, got $po_rc (stderr: $(head -c 300 "$SANDBOX/run/err"))"
+  cmp -s "$SANDBOX/run/out" "$direct_out" || fail "S376/5e — symlink ${l#"$SANDBOX"/}: the body differs from the direct run"
+done
+# a relative link target, inside a copy that has its own lib
+mkcopy "$SANDBOX/copy-rel" || fail "S376/5e — cannot copy pipeline-override.sh (missing)"
+mkdir -p "$SANDBOX/copy-rel/bin"
+ln -s ../pipeline-override.sh "$SANDBOX/copy-rel/bin/po-link"
+PO="$SANDBOX/copy-rel/bin/po-link" run_po 42 --scope skip=Test --decided-by TiesL --reason 'x' --dry-run
+[ "$po_rc" -eq 0 ] || fail "S376/5e — relative symlink: expected exit 0, got $po_rc (stderr: $(head -c 300 "$SANDBOX/run/err"))"
+# a symlink whose real directory has no lib still exits 3, naming the lib
+rm -rf "$SANDBOX/copy-rel/lib"
+PO="$SANDBOX/copy-rel/bin/po-link" run_po 42 --scope skip=Test --decided-by TiesL --reason 'x' --dry-run
+[ "$po_rc" -eq 3 ] || fail "S376/5e — symlink to a script without its lib must exit 3, got $po_rc"
+# a missing lib/markdown.sh is exit 3 as documented (not 1), no gh call, and the message names it
+mkcopy "$SANDBOX/copy-nomd" || fail "S376/5e — cannot copy pipeline-override.sh (missing)"
+rm -f "$SANDBOX/copy-nomd/lib/markdown.sh"
+PO="$SANDBOX/copy-nomd/pipeline-override.sh" run_po 42 --scope skip=Test --decided-by TiesL --reason 'x'
+[ "$po_rc" -eq 3 ] || fail "S376/5e — missing lib/markdown.sh must give exit 3, got $po_rc (stderr: $(head -c 300 "$SANDBOX/run/err"))"
+[ "$(calls)" = 0 ] || fail "S376/5e — missing lib/markdown.sh: gh was called"
+grep -qF 'markdown.sh' "$SANDBOX/run/err" || fail "S376/5e — the exit-3 message must name lib/markdown.sh, got: $(head -c 300 "$SANDBOX/run/err")"
+
 # --- 6. AC9/AC10/AC8: usage text ---------------------------------------------
 PO="$SCRIPT" run_po --help
 usage="$(cat "$SANDBOX/run/out" "$SANDBOX/run/err")"
@@ -246,6 +342,24 @@ usage="$(cat "$SANDBOX/run/out" "$SANDBOX/run/err")"
 grep -qi 'single quote' <<<"$usage" || fail "S376/6 — usage text must tell the caller to pass --reason in single quotes (AC10)"
 grep -qF 'Closes #' <<<"$usage" || fail "S376/6 — usage text must say the gate sees the record only via a closing keyword 'Closes #<issue>' (AC9)"
 grep -qi 'before the first commit' <<<"$usage" || fail "S376/6 — usage text must say to post before the first commit or PR (AC8)"
+# #578 AC11: --help is the one list of refusal classes (OR34 points here), so it names every class
+help_class() { # <class> <text>: the usage text names the class
+  grep -qiF -- "$2" <<<"$usage" || fail "S376/6 — usage text must name the refusal class '$1' (looking for '$2')"
+}
+help_class 'double quote, <, >' '", <, >'
+help_class 'control byte' 'control byte'
+help_class 'tab or line break' 'line break'
+help_class 'C1 control' 'C1'
+help_class 'line/paragraph separator' 'U+2028'
+help_class 'line/paragraph separator' 'U+2029'
+help_class 'bidi control' 'bidi'
+help_class 'bidi range' 'U+202A-U+202E'
+help_class 'bidi range' 'U+2066-U+2069'
+help_class 'blank (also NBSP / Unicode spaces)' 'blank'
+help_class 'blank (also NBSP / Unicode spaces)' 'U+00A0'
+help_class 'invalid UTF-8' 'UTF-8'
+help_class 'length limit' '1000'
+help_class 'length limit' '100'
 
 # --- 7. Mutation arms (AC2): the tests above must go red without the checks ---
 # strip <file> <region>: replace "# BEGIN <region>" .. "# END <region>" by ':'
@@ -302,5 +416,27 @@ if mutant c field-checks read-back; then
   PO="$SANDBOX/mut-c/pipeline-override.sh" run_po 42 --scope skip=Deploy --decided-by TiesL --reason 'ok'
   [ "$(calls)" = 1 ] || fail "S376/7c — mutation not detected: scope skip=Deploy did not reach the gh stub without the checks"
 fi
+
+# (d) #578 AC8: narrowing the bidi byte pattern at any one edge must turn that edge's refusal red.
+# Contract with the script: the byte patterns appear as  a'[a-e]'  (U+202A-U+202E, e2 80 a?) and
+# a'[6-9]'  (U+2066-U+2069, e2 81 a?). A pattern that is not found fails the test (the arm cannot run).
+edge_arm() { # name from to edge-bytes(printf escapes)
+  local name="$1" from="$2" to="$3" bytes="$4" f
+  mkcopy "$SANDBOX/mut-$name" || { fail "S376/7d — cannot copy pipeline-override.sh (missing)"; return 1; }
+  f="$SANDBOX/mut-$name/pipeline-override.sh"
+  grep -qF -- "$from" "$f" || { fail "S376/7d — bidi byte pattern $from not found in pipeline-override.sh, mutation arm cannot run"; return 1; }
+  sed -i.bak "s/$(printf '%s' "$from" | sed 's/[][\.*^$/]/\\&/g')/$(printf '%s' "$to" | sed 's/[][\.*^$/&]/\\&/g')/" "$f" && rm -f "$f.bak"
+  grep -qF -- "$to" "$f" || { fail "S376/7d — mutation $name did not apply"; return 1; }
+  bash -n "$f" || { fail "S376/7d — mutant '$name' does not parse"; return 1; }
+  PO="$f" run_po 42 --scope skip=Test --decided-by TiesL --reason "$(printf "a$bytes b")" --dry-run
+  [ "$po_rc" -ne 2 ] || fail "S376/7d — mutation not detected: with $name the edge value was still refused with exit 2"
+  # the control: the same value is refused by the unmutated script
+  PO="$SCRIPT" run_po 42 --scope skip=Test --decided-by TiesL --reason "$(printf "a$bytes b")" --dry-run
+  [ "$po_rc" -eq 2 ] || fail "S376/7d — control: the unmutated script did not refuse the $name edge value (exit $po_rc)"
+}
+edge_arm lo-202a "a'[a-e]'" "a'[b-e]'" '\xe2\x80\xaa'
+edge_arm hi-202e "a'[a-e]'" "a'[a-d]'" '\xe2\x80\xae'
+edge_arm lo-2066 "a'[6-9]'" "a'[7-9]'" '\xe2\x81\xa6'
+edge_arm hi-2069 "a'[6-9]'" "a'[6-8]'" '\xe2\x81\xa9'
 
 test_done
