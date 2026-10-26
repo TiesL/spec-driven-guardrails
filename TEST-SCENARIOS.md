@@ -885,6 +885,9 @@ something new is being added.
 - Then: it has rows for `skills/`, `hooks/`, `lib/`, `nfr/`, `test/`, `check`,
   and `CHANGES-ARCHIEF.md`
 - And: the count of non-functional questions is fifteen, not five
+- And (#585): the heading `## Releases and their themes` exists, sits before
+  `## The problem, and the shape of the fix`, and the section between them
+  contains a table (a header separator row)
 
 ---
 
@@ -5068,8 +5071,8 @@ that evidence and the final `./check` result.
   that the adopter-impact and warning-visibility details match the #430
   observation. Prose beyond the fixed terms is not asserted.
 
-### S286 — the README current-version line equals the newest dated CHANGELOG release, and that release has one dated heading matching its tag
-**Covers:** F15
+### S286 — the README releases-table row for the newest dated CHANGELOG release matches that heading, and that release has one dated heading matching its tag
+**Covers:** F15, F16
 - Given: README.md, CHANGELOG.md and the git tags (issues #420 AC3, #474 AC6,
   AC8; test file `test/cases/s286_version_line_and_proposals.sh`, file name
   kept). Version-neutral by design (maintainer decision on #474, following the
@@ -5078,11 +5081,16 @@ that evidence and the final `./check` result.
   newest dated release is the first CHANGELOG.md heading matching
   `^## v[0-9]+\.[0-9]+\.[0-9]+ — .*\([0-9]{4}-[0-9]{2}-[0-9]{2}\)$`; call its
   version V. `## Unreleased` and undated headings are skipped.
-- When: README.md line 7 and the CHANGELOG.md headings are read
-- Then (arm 1): the bold token on README.md line 7 equals `**V**`. Counterexample:
-  line 7 naming an older release (red today against the cut: line 7 is
-  `**v0.3.0**` while the newest dated heading, once the cut lands, is v0.4.0;
-  the Developer shows it red by cutting CHANGELOG first, README second).
+- When: the README.md releases table and the CHANGELOG.md headings are read
+  (#585 re-pin; the hardcoded line 7 is gone)
+- Then (arm 1): README.md has exactly one table row whose first cell is V
+  (backticks allowed), its Date cell equals the CHANGELOG heading date and its
+  Theme cell equals the heading title (`## V — <title> (<date>)`). Earlier rows
+  are not asserted (free text). And no bold version token (`**vX.Y.Z**`)
+  appears before the first `## ` heading of README.md, so the removed line-7
+  paragraph cannot return. Counterexamples: row missing, row naming an older
+  version, date off by a day, theme differing from the heading title, a bold
+  version token back in the intro.
 - And (arm 2): exactly one heading begins `## V ` (count is 1, not 0 or 2).
   Counterexamples: a duplicated heading; V's heading missing its date or em
   dash (then no heading is dated and the derivation itself fails with a
@@ -5105,9 +5113,10 @@ that evidence and the final `./check` result.
   another arm also fails, the arm is not evidenced. Also run once with the
   tag unresolvable (e.g. `git tag -d v0.4.0` in the sandbox only): expect the
   skip note and exit 0, not a failure.
-- And (arm 4): the count of `v0.2.0` lines in README.md outside line 7 stays
-  4 (historical mentions unchanged). Counterexample: a historical mention
-  rewritten. Kept literal; it is history.
+- And (arm 4): README.md has exactly 5 lines mentioning `v0.2.0`: the 4
+  historical mentions plus the one releases-table row (#585). Counterexample:
+  a historical mention rewritten, or a second `v0.2.0` row or a theme cell
+  that mentions `v0.2.0`. Kept literal; it is history.
 - And (arm 5): no line in the CHANGELOG.md `## V ` section or in README.md
   that mentions V also says `propos` or `unreleased` (case-insensitive): a
   released version is no proposal. Scope is deliberately CHANGELOG `## V`
@@ -5349,7 +5358,8 @@ that evidence and the final `./check` result.
   same words elsewhere in the PRD (including F38) cannot satisfy it.
 - Then (notice part, scripted, maintainer decision on Q-A = option a): the
   adopter notice is `CHANGELOG.md` (variable `NOTICE_FILE` in the test; no
-  `CHANGES.md` entry, no meaning-version bump). Under `## Unreleased` there
+  `CHANGES.md` entry, no meaning-version bump). Under the `## v0.5.0` section (#585: the Unreleased entries moved there at
+  the release cut; a frozen record, like S285 pins v0.4.0) there
   is exactly one entry (a top-level `- ` bullet with its indented
   continuation lines) that contains `#488` and `Fix cost` in the same
   entry. S284's dated-section checks stay green; `CHANGES.md` gains no
