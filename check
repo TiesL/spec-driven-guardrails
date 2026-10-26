@@ -352,7 +352,9 @@ fi
 if [ "$run_tests" -eq 1 ]; then
   echo "check: test suite"
   if [ -x "$target/test/run.sh" ]; then
-    if ! "$target/test/run.sh"; then
+    # The suite's nested `check --no-tests` calls would each re-shellcheck the
+    # whole tree (warn-only); the pass above already shellchecked the real tree.
+    if ! CHECK_SKIP_SHELLCHECK=1 "$target/test/run.sh"; then
       exit 1
     fi
   else
