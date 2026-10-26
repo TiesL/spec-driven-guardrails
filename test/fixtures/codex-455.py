@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -70,6 +71,27 @@ def expect(out, text):
 try:
     if SCENARIO == 294:
         assert (wf / 'generate-workflow-adapters.sh').is_file(), 'missing generator'
+        # First invocation must be read-only even without ambient cache suppression.
+        cache = tmp / 'first-check-cache'; cache.mkdir()
+        launcher_dir = tmp / 'python-launcher'; launcher_dir.mkdir()
+        launcher = launcher_dir / 'python3'
+        launcher.write_text('#!/bin/sh\nexec ' + shlex.quote(str(Path(sys.executable).resolve())) +
+                            ' -X ' + shlex.quote('pycache_prefix=' + str(cache)) + ' "$@"\n')
+        launcher.chmod(0o755)
+        first_env = dict(env, PATH=str(launcher_dir) + os.pathsep + env['PATH'])
+        for key in ('PYTHONDONTWRITEBYTECODE', 'PYTHONPYCACHEPREFIX'):
+            first_env.pop(key, None)
+        assert not list(wf.rglob('*.pyc')) and not list(wf.rglob('__pycache__'))
+        assert not snapshot(cache), 'first-check cache must start empty'
+        before_first = snapshot(wf), snapshot(cache)
+        first = subprocess.run([str(wf / 'check-workflow-adapters.sh')], cwd=wf,
+                               env=first_env, capture_output=True, text=True)
+        assert first.returncode == 0, (first.returncode, first.stdout, first.stderr)
+        after_first = snapshot(wf), snapshot(cache)
+        delta = [[name for name in sorted(set(before) | set(after))
+                  if before.get(name) != after.get(name)]
+                 for before, after in zip(before_first, after_first)]
+        assert before_first == after_first, ('first checker wrote workflow/cache', delta)
         committed = (wf / 'AGENTS.md').read_bytes().split(b'<!-- spec-driven-guardrails: begin -->', 1)[1].split(b'<!-- spec-driven-guardrails: end -->', 1)[0]
         assert b'Abbreviated workflow' in committed and b'pipeline-override.sh' in committed
         run(wf / 'generate-workflow-adapters.sh')
