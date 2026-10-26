@@ -7190,6 +7190,9 @@ principally the command matrix and the live-evidence assessment.
   and the negatives)
 - Then: a record not marked historical must match the current section hash;
   re-pinning the historical runs to the current hash fails
+- Then: the mutation arms are not vacuous (#570): a mutator that aborts (e.g. main's final
+  text no longer matching) fails the case naming the aborted step, R3 runs only after a
+  `repinned` postcondition holds, and an un-repinned copy fails that postcondition
 - Cannot detect: that the recorded transcripts are genuine, Codex or model
   drift, or a non-completion edit to `AGENTS.md`; and whether Codex gives the
   reminder and continues after a main merge, which stays unverified until a new
