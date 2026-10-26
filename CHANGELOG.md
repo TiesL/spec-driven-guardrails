@@ -67,6 +67,7 @@ point.
   `--repo`/`-R` value (`$PR`, `${PR}`, `$1`, `--repo "$REPO"`, however quoted) now gives no reminder and no
   `gh` lookup; literal targets and a `$` elsewhere in the command are unchanged. S360 and A46 state the rule.
   The vestigial `if True:` around `fallback()` in `test/completion-hook.py` is removed.
+- **#562: wait-for-ci.sh derives its timing from real CI durations.** It takes the median of the last 10 successful runs of the CI workflow (WAIT_FOR_CI_WORKFLOW overrides the name), waits about 85% of it before the first check and polls at about 5% (never less often than every 30s); fewer than 3 runs or an unreadable history falls back to 300s / 60s and says so; WAIT_FOR_CI_INITIAL_WAIT / WAIT_FOR_CI_POLL_INTERVAL still win; exit-code behavior is unchanged. WORKFLOW.md step 3 no longer states a CI duration. Adopted projects get the new script by re-running adopt.sh (copies, not symlinks).
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
