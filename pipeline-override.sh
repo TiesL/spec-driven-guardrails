@@ -76,7 +76,8 @@ A value is refused, never edited: ask the human for other words. Refused:
     spaces, zero-width characters or bidi marks (U+200B, U+200E, U+200F,
     U+061C, U+FEFF)
   - more than 100 bytes (decided-by) or 1000 bytes (reason)
-Also refused: --scope single-session combined with skip=, a repeated --scope,
+Also refused: an <issue> that is not a positive integer, any other --scope than
+the closed list above, --scope single-session combined with skip=, a repeated --scope,
 and a missing or repeated --decided-by or --reason.
 Post it before the first commit or PR open of the work item, never after the
 merge guard fires. The merge gate reads the record only if the PR title or body names

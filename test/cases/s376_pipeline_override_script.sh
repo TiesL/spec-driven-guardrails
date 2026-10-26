@@ -360,6 +360,8 @@ help_class 'blank (also NBSP / Unicode spaces)' 'U+00A0'
 help_class 'invalid UTF-8' 'UTF-8'
 help_class 'length limit' '1000'
 help_class 'length limit' '100'
+help_class 'invalid issue' 'positive integer'
+help_class 'scope outside the closed list' 'any other --scope'
 
 # --- 7. Mutation arms (AC2): the tests above must go red without the checks ---
 # strip <file> <region>: replace "# BEGIN <region>" .. "# END <region>" by ':'
