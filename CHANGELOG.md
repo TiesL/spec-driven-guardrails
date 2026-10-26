@@ -67,6 +67,10 @@ point.
   `--repo`/`-R` value (`$PR`, `${PR}`, `$1`, `--repo "$REPO"`, however quoted) now gives no reminder and no
   `gh` lookup; literal targets and a `$` elsewhere in the command are unchanged. S360 and A46 state the rule.
   The vestigial `if True:` around `fallback()` in `test/completion-hook.py` is removed.
+- **Fix #563: `check` skips the redundant shellcheck in the nested suite runs.** Step 5 runs
+  `test/run.sh` with `CHECK_SKIP_SHELLCHECK=1`, so the nested `check --no-tests` calls inside the
+  suite no longer re-shellcheck the whole tree (warn-only); the outer pass already shellchecks the
+  real tree once. S375 states the rule.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
