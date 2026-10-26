@@ -13,17 +13,21 @@ point.
 
 ## Unreleased
 
-- **#500: finish the turn after merges into main.** Claude's
-  synchronous Bash PostToolUse hook stops after every confirmed merge into
-  `main` (release heads included) with a note to tag a release first; tag
-  commands are not detected. Merges into release branches continue. Codex CLI/desktop
-  carry the same lifecycle through instructions, without runtime
-  hook enforcement. Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`.
-  Claude follows the settings source link; rerun `adopt.sh
-  --runtime codex <project>` and start a fresh session for Codex's managed block.
-  Context reset remains human: Claude `/clear`, CLI `/clear` or `/new`, desktop
-  New chat. No new CHANGES/adoption question. Script coverage and live runtime
-  gaps are recorded in `docs/completion-runtime-evidence.md`.
+- **#500/#561: a reminder after merges into main.** Claude's synchronous Bash
+  PostToolUse hook prints "Merged to main. Type /clear before the next work item;
+  if you are tagging a release, tag it first." after every confirmed merge into
+  `main` (release heads included) and does not stop the session; #561 removed the
+  stop that #500 introduced before any release shipped it. Tag commands are not
+  detected and merges into release branches give no reminder. Codex CLI/desktop
+  give the same reminder through instructions, without runtime hook enforcement.
+  Workflow step 5 is now `gh pr merge <n> --squash --delete-branch`; the rules
+  that each merge runs in a separate tool call with nothing but the final result
+  after it are dropped. Claude follows the settings source link; rerun
+  `adopt.sh --runtime codex <project>` and start a fresh session for Codex's
+  managed block. Context reset remains human: Claude `/clear`, CLI `/clear` or
+  `/new`, desktop New chat. No new CHANGES/adoption question. Script coverage, the
+  historical Codex observations and live runtime gaps are recorded in
+  `docs/completion-runtime-evidence.md`.
 
 - **#505: the SessionStart hook creates missing skill links.** `pending-changes.sh` now calls
   `lib/skill-links.sh` (A45), which links skills the checkout has and an adopted project lacks, create-only
@@ -59,6 +63,40 @@ point.
 - **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
   version paragraph: SDG means this repository and workflow; an adopted project's installed copy is
   the "adopted copy"; nothing is renamed).
+- **Fix #552: the completion hook treats `$`-expansion targets as uncertain.** A `$` in the PR target or the
+  `--repo`/`-R` value (`$PR`, `${PR}`, `$1`, `--repo "$REPO"`, however quoted) now gives no reminder and no
+  `gh` lookup; literal targets and a `$` elsewhere in the command are unchanged. S360 and A46 state the rule.
+  The vestigial `if True:` around `fallback()` in `test/completion-hook.py` is removed.
+- **Fix #563: `check` skips the redundant shellcheck in the nested suite runs.** Step 5 runs
+  `test/run.sh` with `CHECK_SKIP_SHELLCHECK=1`, so the nested `check --no-tests` calls inside the
+  suite no longer re-shellcheck the whole tree (warn-only); the outer pass already shellchecks the
+  real tree once. S375 states the rule.
+- **#562: wait-for-ci.sh derives its timing from real CI durations.** It takes the median of the last 10 successful runs of the CI workflow (WAIT_FOR_CI_WORKFLOW overrides the name), waits about 85% of it before the first check and polls at about 5% (never less often than every 30s); fewer than 3 runs or an unreadable history falls back to 300s / 60s and says so; WAIT_FOR_CI_INITIAL_WAIT / WAIT_FOR_CI_POLL_INTERVAL still win; exit-code behavior is unchanged. WORKFLOW.md step 3 no longer states a CI duration. Adopted projects get the new script by re-running adopt.sh (copies, not symlinks).
+- **#564: `pipeline-override.sh` posts the pipeline-override record.** It validates the human's words
+  (refusing `"`, `<`, `>`, control bytes and over-long values instead of editing them), posts one record
+  line per `--scope` as one comment on the issue, and reads it back through the gate's reader first.
+  The named short track `abbreviated workflow` is skip Planning plus Test. OR34 now says to post the
+  override before the first commit or PR; the reminder is text only, hooks and gates are unchanged.
+- **#566: `wip/multi-runtime-orchestration/` is tracked.** The 16 files of the preparation for #513
+  (Product report, Architect report and review, `DECISIONS.md`, and `issues/` with the epic text and
+  work items W0-W10) are added byte-for-byte; nothing else changed. They were an untracked folder in
+  one clone, and `README.md` says `wip/<slug>/` thinking is kept as a record. Adopters need to do
+  nothing. No new CHANGES/adoption question.
+- **#578 (with #570 and #577; the small items of #573): test and text hardening before #513.** Two PRs.
+  PR-A (#579): `test/cases/s363_completion_evidence.sh` now fails, naming the step, when its mutator
+  aborts, so R3 can no longer pass vacuously on the historical record (#570); the `check` header and
+  skip message name the nested suite run as well as `check-commit`, and the `test/run.sh` comment states
+  why the worker cap stays 4 instead of citing the closed #218 as outstanding (#573 stays open for the
+  macOS critical path and shellcheck growth). PR-B (#580): `pipeline-override.sh` now refuses invalid
+  UTF-8 (naming the field), counts a reason of only Unicode spaces or invisible characters as blank,
+  resolves a symlinked script to find its lib and exits 3 when `lib/markdown.sh` is missing; its bidi
+  wording now says "a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)", with the
+  accepted list unchanged and all four range edges pinned (S376); S378 arms check the cause, not just a
+  red result; the S377 entry says "contains"; `PRD.md` names the short-track exception to "no phase
+  skipping". `--help` now lists every refusal class, and OR34 and the Abbreviated workflow paragraph
+  point to `pipeline-override.sh --help` instead of a partial list (#577). The behavior stamp
+  `test/behavior/orchestrator-diff.stamp` is regenerated. Ships through the symlinked checkout; adopters
+  need to do nothing. No new CHANGES/adoption question.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 

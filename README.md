@@ -381,7 +381,7 @@ dogfooding the mechanism it specifies.
 | `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTURE.md` | Spec scaffolds (`write-spec` skill). |
 | `templates/check-traceability.sh` | Link 1 of the traceability chain: every requirement has a scenario, every `Covers:` reference resolves. Offline. |
 | `templates/ci.yml` | Generic GitHub Actions CI that runs the project's own `check` (`check-convention` skill), plus a secret scan; npm setup only if a `package.json` exists. Scaffolded only once the project has an executable `check`. |
-| `templates/check-pr-issue-link.sh`, `templates/check-main-via-pr.sh`, `templates/wait-for-ci.sh` | Scaffolded alongside `ci.yml`: fail a PR that names no issue; detect a commit on `main` that didn't come through a PR; wait for CI at a fixed cadence instead of polling by hand. |
+| `templates/check-pr-issue-link.sh`, `templates/check-main-via-pr.sh`, `templates/wait-for-ci.sh` | Scaffolded alongside `ci.yml`: fail a PR that names no issue; detect a commit on `main` that didn't come through a PR; wait for CI at a cadence derived from recent successful runs instead of polling by hand. |
 | `templates/CONTEXT.md` | Optional project-jargon glossary, only if the project opts in. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates — the exception: refreshed on every `adopt.sh` run (GitHub renders them server-side, so they can't be symlinked). |
 
@@ -405,6 +405,7 @@ dogfooding the mechanism it specifies.
 | `check-no-dutch.sh`, `check-no-quote-break.sh`, `check-no-sigpipe-race.sh`, `check-scenario-file-sync.sh` | Hygiene checks run from `check`, each guarding against a specific defect that happened here once. |
 | `find-shared-vocabulary.sh`, `generate-prd-block` | Generators: shared-vocabulary candidates across adopted projects; the NFR block in `templates/PRD.md` from `nfr/`. |
 | `epic-auto-close.sh` | Closes an epic from CI once every issue naming it is closed. |
+| `pipeline-override.sh` | Posts the human's pipeline-override record on a work item's issue (OR34), e.g. the abbreviated workflow `--scope skip=Planning --scope skip=Test`. Run from the project's checkout as `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh`; see the `role-contracts` skill. |
 | `compliance-evidence.sh`, `role-label-staleness.sh`, `classify-review-depth.sh` | The multi-agent evidence scripts described in [How this repo builds itself](#how-this-repo-builds-itself). |
 | `ARCHITECTURE.md`, `PRD.md`, `TEST-SCENARIOS.md`, `CONTEXT.md`, `WORKFLOW-ADOPTION.md`, `CHANGELOG.md` | This repo's own filled-in copies — it adopts the workflow it defines. |
 | `test/` | This repo's own test suite (`run.sh`, `lib.sh`, `cases/`, `fixtures/`). |
@@ -414,21 +415,21 @@ dogfooding the mechanism it specifies.
 
 ### Completion and the next conversation (#500)
 
-Every successful merge into `main` ends the current turn, release heads
-included, and the prompt notes that a release being tagged is tagged first. Tag
-commands and publication are not detected and neither stop nor prompt; merges
+Every successful merge into `main` prints a reminder and the session continues,
+release heads included; the reminder notes that a release being tagged is tagged first. Tag
+commands and publication are not detected and give no reminder; merges
 into a release branch continue. The Claude hook covers the canonical
 `gh pr merge <n> --squash --delete-branch`, an omitted target with a surviving
 branch or recovered from the checkout reflog (including gh's post-checkout fast-forward pull) after branch deletion, output
 redirections and line continuation. Pipes, input redirections, wrappers,
-compound shell programs and a lost branch fail open (no stop). Claude receives a
+compound shell programs and a lost branch fail open (no reminder). Claude receives a
 synchronous Bash PostToolUse completion hook via the existing settings symlink.
 Codex completion uses instruction following; its optional --hooks merge guard
-does not enforce the completion stop or reset. Rerun
+does not give the completion reminder or reset. Rerun
 `adopt.sh --runtime codex <project>` and start a fresh session to load the updated
 managed block. No new adoption question or opt-out is introduced.
 
 Reset is the maintainer's action: Claude `/clear`, Codex CLI `/clear` or `/new`,
 Codex desktop New chat (`Cmd+N` on macOS, `Ctrl+N` on Windows/Linux). A terminal
-clear is insufficient. Script/adoption tests do not prove live termination or
+clear is insufficient. Script/adoption tests do not prove live reminder display or
 context reset. Exact observations and gaps are in [completion runtime evidence](docs/completion-runtime-evidence.md).

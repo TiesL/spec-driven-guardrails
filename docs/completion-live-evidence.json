@@ -1,4 +1,6 @@
 {
+  "status": "historical",
+  "superseded_by": "#561",
   "date": "2026-10-21",
   "surface": "Codex CLI exec",
   "version": "codex-cli 0.163.0",

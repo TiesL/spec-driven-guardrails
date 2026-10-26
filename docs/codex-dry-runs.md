@@ -146,7 +146,7 @@ baseline evidence, not a new #455 Claude dry run.
 ## Completion lifecycle observations (#500)
 
 See [completion runtime evidence](completion-runtime-evidence.md) for the fresh
-CLI 0.163.0 sentinel matrix, real local tag publication, interactive `/new` UI
+CLI 0.163.0 sentinel matrix of the removed #500 stop, real local tag publication, interactive `/new` UI
 observation and remaining desktop/Claude/reset gaps. Simulated PR state and
 instruction following are explicitly distinguished from runtime enforcement.
 

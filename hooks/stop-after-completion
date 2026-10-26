@@ -10,7 +10,7 @@ import sys
 spec = importlib.util.spec_from_file_location('read_command', Path(__file__).with_name('read-command.py'))
 reader = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(reader)
-STOP = {'continue': False, 'stopReason': 'Merged to main. Type /clear before the next work item; if you are tagging a release, tag it first.'}
+REMINDER = {'systemMessage': 'Merged to main. Type /clear before the next work item; if you are tagging a release, tag it first.'}
 
 
 def read(args, cwd):
@@ -100,6 +100,9 @@ def merge_result(words, cwd):
         else:
             target = word
             i += 1
+    # The hook never expands. A `$` in the target or the repo value is not a name `gh pr view` can resolve.
+    if any(w and '$' in w for w in (target, repo)):
+        return None
     lookup = 'baseRefName,state'
     if target is None:
         target = read(['git','symbolic-ref','--quiet','--short','HEAD'],cwd)
@@ -140,7 +143,7 @@ def merge_result(words, cwd):
         return None
     if fallback and info.get('headRefName') != target:
         return None
-    return STOP
+    return REMINDER
 
 
 def main():
@@ -157,7 +160,7 @@ def main():
             return
         for words in successful_segments(command):
             if merge_result(words,cwd):
-                print(json.dumps(STOP))
+                print(json.dumps(REMINDER))
                 return
     except (ValueError,TypeError,AttributeError,OSError):
         return

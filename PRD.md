@@ -899,7 +899,7 @@ red CI) still got a stale marker accepted. **Problem 2**: `WORKFLOW.md`
 had the review wait for CI to go green specifically to avoid problem 1 —
 running earlier, in parallel with CI, risked exactly that staleness if CI
 then failed and a fix commit followed. That serialization cost real time
-on every PR: CI (5.5-8min this repo, F22) then review (2-5min) in full
+on every PR: CI (F22) then review (2-5min) in full
 series.
 
 **Mechanism**: the marker becomes `<!-- pre-merge-review:done
@@ -1132,25 +1132,11 @@ resolved.
 Building this check surfaced the pre-existing S78/S79 gap this issue's
 own AC2 names (fixed directly, given real F31), plus seven more (#272).
 
-### F33 — `wait-for-ci.sh` enforces the CI-polling cadence as a script (issue #265)
+### F33 — `wait-for-ci.sh` enforces the CI-polling cadence as a script, derived from real CI durations (issues #265, #562)
 
-`WORKFLOW.md`'s merge step stated the 5-minutes-then-1-minute CI-polling
-cadence (issue #215: this repo's own CI clusters at 5.5-8 minutes, so a
-short fixed interval produces a dozen-plus premature "still pending"
-checks) as prose. That rule already lived in always-loaded context, so
-the gap wasn't discoverability — an agent could still improvise a
-different interval ad hoc, the same "agreement in prose, mechanism in a
-script" gap `check-pr-issue-link.sh`/`check-main-via-pr.sh` already
-closed for links 3 and W27.
+`WORKFLOW.md`'s merge step stated a CI-polling cadence (issue #215: a short fixed interval produces a dozen-plus premature "still pending" checks) as prose, and later as fixed numbers (5 minutes, then 1 minute) that went stale once CI got slower (#562). The rule already lived in always-loaded context, so the gap wasn't discoverability — an agent could still improvise a different interval ad hoc, the same "agreement in prose, mechanism in a script" gap `check-pr-issue-link.sh`/`check-main-via-pr.sh` already closed for links 3 and W27.
 
-`templates/wait-for-ci.sh` (scaffolded alongside those two, same
-has-check-command gate — meaningless without CI to poll) waits 5 minutes
-without checking at all, then polls `gh pr checks` every 1 minute until
-every check reaches a terminal state, printing each check's name and
-state and exiting non-zero if any of them didn't pass. Kept in sync with
-its root copy the same way as `check-traceability.sh` (#230's own
-pattern, extended here). `WORKFLOW.md`'s merge step now directs its use
-directly instead of describing the interval only as prose.
+`templates/wait-for-ci.sh` (scaffolded alongside those two, same has-check-command gate — meaningless without CI to poll) derives its timing from the median duration (`updatedAt - createdAt`) of the last 10 successful runs of the `CI` workflow (`WAIT_FOR_CI_WORKFLOW` overrides the name): it waits 85% of that median without checking at all, then polls `gh pr checks` every 5% of it (never less often than every 30 seconds) until every check reaches a terminal state, printing each check's name and state and exiting non-zero if any of them didn't pass. With fewer than 3 successful runs, or when the history can't be read, it says so on stdout and uses 5 minutes then 1 minute. `WAIT_FOR_CI_INITIAL_WAIT` and `WAIT_FOR_CI_POLL_INTERVAL` take precedence over both. Deriving the timing never changes the exit code. Kept in sync with its root copy the same way as `check-traceability.sh` (#230's own pattern, extended here). `WORKFLOW.md`'s merge step directs its use directly instead of describing the interval only as prose.
 
 ### F34 — `compliance-evidence.sh` collects pre-existing OQ9 evidence for one work item (issue #296)
 
@@ -1349,7 +1335,7 @@ What an adopted project can do afterwards:
   `role:<name>` labels (`role:product`, `role:architect`, `role:qa`,
   `role:dev`, `role:reviewer`) the project must create in its own
   GitHub repo if it wants `role-label-staleness.sh` to say anything, and
-  that every role takes part in every change (no phase skipping in v1).
+  that every role takes part in every change (no phase skipping in v1, except the named short track: skip=Planning plus skip=Test, recorded with `pipeline-override.sh`).
 - **Optionally read the evidence.** `compliance-evidence.sh`,
   `role-label-staleness.sh` and `classify-review-depth.sh` stay at this
   repo's root (not copied, not run by any `check`), and are invoked by
@@ -1432,6 +1418,17 @@ scope: `single-session` waives role-play; `skip=<Stage>` waives only that
 stage's absence. Quoted or malformed overrides waive nothing. Values,
 including `reason`, may contain no double quote, `<`, `>` or control byte;
 a live near-miss override is named once. Authorship cannot be verified.
+
+Posting the override (#564): `pipeline-override.sh` builds and posts the
+record on the work item's issue, so nobody types one. It refuses a value
+the grammar cannot hold instead of altering it, reads the built comment back
+through the gate's own reader before posting, and has a `--dry-run`. The
+named short track, the "abbreviated workflow", is `skip=Planning` plus
+`skip=Test`: Discovery, Implementation and fresh-Reviewer Review still run,
+and only TiesL grants it. The record is seen by the gate only when the PR
+title or body names the issue with a closing keyword. The reminder to post it
+before the first commit or PR is text (OR34 in the session context and the
+policy), not a hook or gate. Tests: S376, S377.
 
 Every early exit in an opted-in project emits a nonempty
 `role-play-unchecked: <reason>` on stdout: PR comments, reviews or
@@ -1870,30 +1867,31 @@ The rule is written in CLAUDE.md / WORKFLOW wrapping-up step 4 and offered to
 adopted projects through a `CHANGES.md` entry. Merge autonomy without a
 per-PR approval stays with #511.
 
-### F56 — End work after a successful main merge (issue #500)
+### F56 — Remind to start fresh after a successful main merge (issue #500, #561)
 
 After a successful agent-run merge into `main`, whatever the head branch, the
-current agent turn ends and the maintainer is told to start a fresh context
-before the next work item. The prompt carries a short note: if a release is
-being tagged, clear after assigning the tag. Nothing detects or tracks tags in
-either runtime, and tag publication triggers no stop or prompt; whether to
-clear is the maintainer's own judgment, as with the merge confirmation. This
-applies to agent-run `gh pr merge` commands, including supported explicit or
+session prints a reminder to start a fresh context before the next work item,
+and continues; it does not stop. The reminder carries a short note: if a
+release is being tagged, tag it first. Nothing detects or tracks tags in
+either runtime, and tag publication triggers no reminder; whether to clear is
+the maintainer's own judgment, as with the merge confirmation. This applies to
+agent-run `gh pr merge` commands, including supported explicit or
 omitted-number targets, repository selection, and provable compound-command
 and output-redirection forms; unrelated commands and GitHub web-UI or subagent
 merges do not trigger it. A merge into a `release/*` branch continues the epic
-without the prompt. The maintainer performs the context reset. Failed or
+without a reminder. The maintainer performs the context reset. Failed or
 queued-only merges and uncertain lookups do not count as successful
-completion. Claude Code uses its PostToolUse hook to stop the current turn and
-provide the decided instruction; Codex CLI/desktop ends its current work and
-prompts `/clear` or `/new` in CLI, or New chat in desktop, through its
-installed instructions. Codex instruction following has no mechanical stop or
-automatic context-reset guarantee. The behavior is available through the
-applicable adoption path. Verification must distinguish script-level behavior
-and generated/adopted instruction coverage from live runtime behavior: Claude
-live hook stopping is unverified in the Codex environment, and Codex live
-stopping or context reset is reported only for a named surface/version
-actually observed; unavailable live checks remain explicitly unverified.
+completion and give no reminder. Claude Code uses its PostToolUse hook to
+print the decided reminder and does not stop the session; Codex CLI/desktop
+gives the reminder, `/clear` or `/new` in CLI or New chat in desktop, through
+its installed instructions and continues. Codex instruction following has no
+mechanical guarantee and no automatic context reset. The behavior is available
+through the applicable adoption path. Verification must distinguish
+script-level behavior and generated/adopted instruction coverage from live
+runtime behavior: Claude live display of the reminder is unverified in the
+Codex environment, and Codex live reminder or context reset is reported only
+for a named surface/version actually observed; unavailable live checks remain
+explicitly unverified.
 
 ## Non-functional characteristics
 

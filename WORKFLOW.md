@@ -26,6 +26,7 @@ This project is developed from multiple computers. Follow this workflow in every
 - Commit logical steps on the feature branch.
 - Push regularly to `origin/<branch>` — never to `main`. This also happens automatically: a `SessionEnd` hook pushes the current branch when a session ends, with a guard that skips this when `main` happens to be checked out (extra safety net, since there's no branch protection — see below).
 - Commit messages carry no "Co-Authored-By" trailer — enforced via `attribution.commit: ""` in `settings/session-hooks.json`, not dependent on whether the executing session remembers to do so.
+- **Abbreviated workflow** (projects that answer `process-multi-agent-roles` yes): the one named short track, and only TiesL can grant it. Planning and Test are skipped (`skip=Planning` and `skip=Test`); Discovery, Implementation and Review still run, Review by a fresh Reviewer as ever. TiesL's own words are the recorded reason. The orchestrator posts the waiver on the work item's issue before the first commit or PR open, never after the merge guard has reported the missing stages, by running `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh` from the project's checkout (see the `role-contracts` skill). Any other shortcut (another skipped stage, `single-session`) is a separate override on TiesL's explicit words, not this track.
 
 ## Wrapping up
 
@@ -35,26 +36,20 @@ This project is developed from multiple computers. Follow this workflow in every
 
 1. Once the change is complete and tested (and, where applicable, manually verified): open a PR with `gh pr create`. If the PR refers to an issue (`Closes #N`), put that link in the **PR description itself**, not only in a commit message: GitHub populates `closingIssuesReferences` — the field that issue-linking checks actually test against — exclusively from the PR title/body. A commit with `Closes #N` does close the issue on a merge to `main`, but such a check won't see the link while the PR is still open.
 2. **Run the quality review immediately, in parallel with CI, not gated on CI being green** — don't ask whether to, don't wait to be asked, don't wait for CI first; see the `pre-merge-review` skill. The review's marker is pinned to the commit it reviewed, so a commit that lands afterward (a fixup, or a fix for a red CI) simply needs a fresh review, whenever it runs — nothing slips through unreviewed.
-3. Before asking for merge confirmation, know that CI has actually finished — the merge guard blocks the merge otherwise, and asking prematurely just costs a round trip. Don't poll `gh pr checks` on a short fixed interval — measured against this repo's own last 10 completed CI runs (`gh run list --json createdAt,updatedAt`), durations cluster at 5.5-8 minutes (one outlier at ~23min), so a 20s interval produces a dozen-plus "still pending" checks before CI ever finishes (issue #215). Run `./wait-for-ci.sh <pr-number>` instead of polling by hand (issue #265) — it waits 5 minutes before the first check, then every 1 minute until CI reaches a terminal state, and exits non-zero if anything failed. That interval is a documented agreement precisely so an agent can't quietly improvise a shorter one; encoding it in a script closes that gap the same way a prose-only rule can't.
+3. Before asking for merge confirmation, know that CI has actually finished — the merge guard blocks the merge otherwise, and asking prematurely just costs a round trip. Don't poll `gh pr checks` on a short fixed interval: a fixed short interval produces a dozen-plus "still pending" checks before CI ever finishes (issue #215), and a fixed long one drifts out of date as CI changes. Run `./wait-for-ci.sh <pr-number>` instead of polling by hand (issue #265) — it derives its timing from the median duration of this workflow's last 10 successful runs (first check at about 85% of it, then every 5% of it, at least every 30 seconds; 5 minutes then 1 minute when there are fewer than 3 such runs or the history can't be read), and exits non-zero if anything failed. That cadence is a documented agreement precisely so an agent can't quietly improvise a shorter one; encoding it in a script closes that gap the same way a prose-only rule can't.
 4. **Wait for TiesL's explicit approval of the merge**, given after the work or in advance. An advance approval ("merge once everything is green") is a valid confirmation, and it holds only while the branch is mergeable without further changes: Review approves, CI is green, and every pre-merge check passes. TiesL names no head SHA; the orchestrator records in the Pipeline log the head at which the approval was given and the head it merged. A control that requires a change (a finding to fix, red CI, a failing gate) lapses the approval: ask again after the fix. `gh pr update-branch` only merges the base into the branch, so the approval survives it once CI and the pre-merge checks are green again on the new head, and only when that new head is the one merge commit it made: `git rev-list --parents -n1 <new-head>` prints the new head, the approved head as first parent, and a second parent for which `git merge-base --is-ancestor <second-parent> origin/<base>` succeeds. Any other new commit is a change. An approval relayed through the manager (epic #513) counts only as TiesL's verbatim words about that PR; a summary, a general go-ahead, or an approval of another PR does not. A project that answers `process-advance-merge-approval` no takes the approval only after the work. Never merge without an approval. Merge autonomy without a per-PR approval is #511, not this rule.
 5. Then merge with `gh pr merge <n> --squash --delete-branch` (name the PR number) — this keeps the history on `main` clean and cleans up the branch (local and remote) immediately.
 
-### Completion ends the current work
+### Completion reminder
 
 After a confirmed successful merge into `main`, from any head including a
-`release/*` branch, stop autonomous work and give the runtime's fresh-context
-instruction before the next work item; the prompt notes that a release being
-tagged is tagged first. A merge into `release/*` continues. Tagging is a
-maintainer-requested follow-up that can happen before the reset; tag commands
-and tag publication never stop or prompt by themselves. Failed, queued-only or
-uncertain completion does not produce a successful-completion stop.
-
-Run each merge in a distinct tool call, inspect its completed
-result before scheduling anything further, and never batch the next work item
-in a compound command, concurrent call or tool script. Finish durable reporting
-before the merge. Afterward only the final result and fresh-context prompt is
-allowed. Context reset is the
-maintainer's action; stopping ends the current turn, not the conversation.
+`release/*` branch, give the runtime's fresh-context reminder; it notes that a
+release being tagged is tagged first. Work continues in the same session: when
+to reset context is the maintainer's call. A merge into `release/*` gives no
+reminder. Tagging is a maintainer-requested follow-up; tag commands and tag
+publication never remind by themselves. Failed, queued-only or uncertain
+completion gives no reminder. Finish durable reporting before the merge.
+Context reset is the maintainer's action.
 Production deployment can follow a fresh context with its separate approval.
 Web-UI and subagent merges are outside this completion mechanism.
 
@@ -111,17 +106,16 @@ those hooks; foreign hooks, hooksPath, --no-verify, missing dependencies and
 escape hatches limit coverage. Neither native Git hooks nor CI intercept
 `gh pr merge`. CI checks artifacts, not authorship, freshness or obedience.
 
-The synchronous Bash PostToolUse `stop-after-completion` hook ends qualifying
-work with `continue: false` and "Merged to main. Type /clear before the next
-work item; if you are tagging a release, tag it first." Every successful merge
-into `main` stops, release heads included; tag commands neither stop nor prompt.
+The synchronous Bash PostToolUse `stop-after-completion` hook prints "Merged to
+main. Type /clear before the next work item; if you are tagging a release, tag
+it first." as a `systemMessage` after every successful merge into `main`, release
+heads included, and does not stop the session; tag commands give no reminder.
 It uses a bounded PR lookup; failed/uncertain lookup is advisory and fails open.
 The canonical `gh pr merge <n> --squash --delete-branch` names the PR. An
 omitted target is resolved from the current branch, or, after `--delete-branch`
 switched to main, from the checkout reflog (including gh's fast-forward pull after the
 checkout) when that branch is gone and the lookup's head matches; other omitted forms fail open. Output
 redirections (`2>&1`, `>file`) keep the proof; pipes and input redirections do
-not. The hook cannot undo later commands
-already batched into the same Bash call, so the shared separate-call rule is
-required. It cannot run `/clear` or reset context. Script tests establish wiring
-and output; live hook loading/termination and `/clear` require a Claude session.
+not. Commands batched into the same Bash call are unaffected.
+It cannot run `/clear` or reset context. Script tests establish wiring and output;
+live hook loading, display of the reminder and `/clear` require a Claude session.

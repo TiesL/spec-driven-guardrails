@@ -601,7 +601,7 @@ scaffold_shared() {
         chmod +x "$project_dir/check-main-via-pr.sh"
       fi
     fi
-    # #265: enforces WORKFLOW.md's 5min-then-1min CI-polling cadence as a
+    # #265, #562: enforces WORKFLOW.md's derived CI-polling cadence as a
     # script instead of a prose instruction an agent could improvise
     # around. Same has-check-command gate as the two above — meaningless
     # without CI to poll.
