@@ -72,6 +72,11 @@ point.
   suite no longer re-shellcheck the whole tree (warn-only); the outer pass already shellchecks the
   real tree once. S375 states the rule.
 - **#562: wait-for-ci.sh derives its timing from real CI durations.** It takes the median of the last 10 successful runs of the CI workflow (WAIT_FOR_CI_WORKFLOW overrides the name), waits about 85% of it before the first check and polls at about 5% (never less often than every 30s); fewer than 3 runs or an unreadable history falls back to 300s / 60s and says so; WAIT_FOR_CI_INITIAL_WAIT / WAIT_FOR_CI_POLL_INTERVAL still win; exit-code behavior is unchanged. WORKFLOW.md step 3 no longer states a CI duration. Adopted projects get the new script by re-running adopt.sh (copies, not symlinks).
+- **#564: `pipeline-override.sh` posts the pipeline-override record.** It validates the human's words
+  (refusing `"`, `<`, `>`, control bytes and over-long values instead of editing them), posts one record
+  line per `--scope` as one comment on the issue, and reads it back through the gate's reader first.
+  The named short track `abbreviated workflow` is skip Planning plus Test. OR34 now says to post the
+  override before the first commit or PR; the reminder is text only, hooks and gates are unchanged.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 

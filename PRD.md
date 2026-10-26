@@ -1419,6 +1419,17 @@ stage's absence. Quoted or malformed overrides waive nothing. Values,
 including `reason`, may contain no double quote, `<`, `>` or control byte;
 a live near-miss override is named once. Authorship cannot be verified.
 
+Posting the override (#564): `pipeline-override.sh` builds and posts the
+record on the work item's issue, so nobody types one. It refuses a value
+the grammar cannot hold instead of altering it, reads the built comment back
+through the gate's own reader before posting, and has a `--dry-run`. The
+named short track, the "abbreviated workflow", is `skip=Planning` plus
+`skip=Test`: Discovery, Implementation and fresh-Reviewer Review still run,
+and only TiesL grants it. The record is seen by the gate only when the PR
+title or body names the issue with a closing keyword. The reminder to post it
+before the first commit or PR is text (OR34 in the session context and the
+policy), not a hook or gate. Tests: S376, S377.
+
 Every early exit in an opted-in project emits a nonempty
 `role-play-unchecked: <reason>` on stdout: PR comments, reviews or
 description fetch failure, unreadable closing issue, or reader failure.
