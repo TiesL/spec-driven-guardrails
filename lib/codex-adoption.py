@@ -12,40 +12,19 @@ import shlex
 import subprocess
 import sys
 
-BEGIN = b'<!-- spec-driven-guardrails: begin -->'
-END = b'<!-- spec-driven-guardrails: end -->'
+from managed_blocks import BEGIN, END, Conflict, block, managed, framed
 IGNORE_BEGIN = b'# spec-driven-guardrails: begin'
 IGNORE_END = b'# spec-driven-guardrails: end'
 RECORD = '.guardrails/installation.json'
 COVERAGE = 'runtime-hooks: not-installed; runtime shell interception unavailable'
 
-class Conflict(Exception):
-    pass
-
 def exists(p):
     return p.exists() or p.is_symlink()
-
-def block(data, begin, end, name):
-    if not data.count(begin) and not data.count(end): return None
-    if data.count(begin) != 1 or data.count(end) != 1:
-        raise Conflict(name + ': duplicate/unmatched/nested managed markers')
-    start = data.index(begin); stop = data.index(end)
-    if stop < start or (start and data[start-1:start] != b'\n'):
-        raise Conflict(name + ': malformed managed markers')
-    stop += len(end)
-    if data[stop:stop+1] not in (b'', b'\n', b'\r'):
-        raise Conflict(name + ': malformed managed markers')
-    return start, stop
 
 def regular(p, name):
     if p.is_symlink() or (p.exists() and not p.is_file()):
         raise Conflict(name + ': expected a regular file, symlinks are not owned')
     return p.read_bytes() if p.exists() else b''
-
-def managed(data, span, payload):
-    if span:
-        return data[:span[0]] + payload + data[span[1]:]
-    return data + (b'\n' if data and not data.endswith(b'\n') else b'') + payload + b'\n'
 
 def inventory(source, project):
     rev = subprocess.run(['git', '-C', str(source), 'rev-parse', 'HEAD'],
@@ -194,7 +173,7 @@ def main():
         data = regular(project / 'AGENTS.md', 'AGENTS.md')
         span = block(data, BEGIN, END, 'AGENTS.md')
         payload = (source / 'adapters/codex/AGENTS.md').read_bytes()
-        files['AGENTS.md'] = managed(data, span, BEGIN + b'\n' + payload + END)
+        files['AGENTS.md'] = managed(data, span, framed(payload))
         old = record_read(project)
         hook_bytes, owned_hook, coverage = hook_plan(source, project, old, install_hooks)
         if hook_bytes is not None: files['.codex/hooks.json'] = hook_bytes
