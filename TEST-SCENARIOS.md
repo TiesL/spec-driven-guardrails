@@ -5411,6 +5411,63 @@ behavioral obedience.
   with the marker line fails; output missing part 2 fails; the not-opted-in
   case still prints neither part
 
+
+- Amended by #575 (AC1–AC4, A39; root carrier regression):
+  - **Seam / strategy:** command-level filesystem integration through
+    `generate-workflow-adapters.sh [workflow-checkout]`,
+    `check-workflow-adapters.sh [workflow-checkout]` and
+    `adopt.sh --runtime codex [project]`, using isolated workflow source copies
+    and separate adoption targets. Run the regression in `test/run.sh`; do not
+    call the private block helper or derive expected bytes with that helper.
+    Use literal marker/framing expectations and independently captured payload
+    and prefix/suffix bytes as the oracle. Existing adoption ownership and
+    create/append regression coverage remains applicable after extraction.
+  - Given: a generated clean workflow copy with root `AGENTS.md` containing
+    exactly one managed block, including the complete Codex payload/header.
+    When: checking, then generating twice. Then: check exits 0 without any
+    filesystem writes; generation leaves all three generated carriers identical
+    on the second run. The committed root's managed block exactly equals the
+    Codex payload inside adoption's marker/framing bytes. Static grep pins both
+    `Abbreviated workflow` and `pipeline-override.sh` inside the root block
+    (AC1/AC4); no live Codex session is required or claimed.
+  - Given that clean copy, remove only the Abbreviated workflow bullet from
+    the root managed block. When: checking without regeneration. Then: exit 1
+    names root `AGENTS.md` and its source `adapters/codex/AGENTS.md`. Generation
+    repairs the drift; the check then exits 0. Developer first writes/runs this
+    assertion on the pre-fix tree and records its red result before changing
+    implementation: the current checker does not guard the root block.
+  - Separately, start clean and edit one line only in the committed
+    `adapters/codex/AGENTS.md` payload; do not regenerate before checking.
+    Then: exit 1 names root `AGENTS.md` as well as the payload, proving the
+    root-versus-committed-payload comparison independently of canonical-input
+    verification. Retain the canonical-policy mutation above: both payloads
+    become stale and generation refreshes both plus the root from fresh rendered
+    bytes, rather than copying a stale on-disk payload.
+  - Given a valid root block surrounded by distinctive prefix/suffix bytes
+    (including non-ASCII bytes, mixed line endings and a suffix without final
+    newline). When: generation repairs block drift. Then: compare every outside
+    byte exactly; only the managed span changes. Changing only outside-marker
+    bytes leaves checking at exit 0. Compare a separately adopted target's block
+    byte-for-byte with the generated root block to guard adoption framing.
+  - Given each existing root variant separately: unmarked regular file,
+    unmatched/reversed/nested/duplicate markers, symlink (including broken
+    symlink), or nonregular target. When: generation. Then: refuse before any
+    generated output write, preserving snapshots of WORKFLOW.md, the Codex
+    payload, root bytes/type/link target and any referenced target. Checking
+    each invalid/unreadable existing input exits 2 without writes. Exercise an
+    unreadable existing regular root where permissions are actually enforced;
+    a privileged runner must report that fixture unavailable, not claim success.
+    Given an absent root instead: checking exits 1 as missing output; generation
+    creates the correctly framed block and checking exits 0. Missing payloads
+    remain exit 1; invalid/unreadable canonical inputs remain exit 2.
+  - Given a separate adopted project with recorded block/provenance, links,
+    hooks, configuration and adoption answers. When generation addresses the
+    workflow source copy through the optional checkout argument. Then: only
+    that copy's generated carriers change; every adopted-project artifact stays
+    unchanged and its copied block remains stale until re-adoption. An arbitrary
+    adopted project is not a workflow-checkout target. Adoption itself retains
+    absent-file creation, unmarked-file append and ownership conflict behavior.
+
 ### S295 — fresh Codex CLI sessions discover and actually read guidance and skills (C455-S2; AC1, AC3)
 **Covers:** F45, F47
 - Given: a supported CLI version and locally adopted project, with individual
