@@ -1742,7 +1742,11 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   separately.
 
   No parser promises to interpret arbitrary shell programs, aliases,
-  substitutions, wrappers or scripts. Commands already run in the same Bash
+  substitutions, wrappers or scripts. Variable expansion (`$VAR`, `${VAR}`, `$1`)
+  in the PR target or the `--repo` value is uncertain like a substitution: the
+  hook does not expand it, makes no lookup with the unexpanded text, and judges
+  only those two words, so a `$` elsewhere in the command does not matter.
+  Commands already run in the same Bash
   invocation are unaffected; since #561 that is harmless, so no separate-call
   rule is needed. Web-UI and subagent
   merges stay excluded by human decision.

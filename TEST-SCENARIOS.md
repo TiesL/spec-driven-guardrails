@@ -7109,6 +7109,19 @@ principally the command matrix and the live-evidence assessment.
   `gh pr merge 500 <<< x` and `gh pr merge 500 2>&-`
 - Then: no reminder and zero `gh` calls (a pipeline status is the last command's;
   the others are uncertain)
+- Given (expansion targets, `completion-parameter-expansion-target-looked-up`): a
+  PR target or a `--repo`/`-R` value that contains `$`: `gh pr merge "$PR"`,
+  `gh pr merge $PR`, `gh pr merge ${PR}`, `gh pr merge $1`,
+  `PR=551 && gh pr merge $PR`, `gh pr merge 551 --repo "$REPO"`,
+  `gh pr merge 551 -R $REPO`, and `gh pr merge --repo "$REPO"` with no target
+  from a surviving `feature/*` branch
+- Then: no reminder (empty stdout) and zero `gh` calls: the hook does not
+  expand variables, so the unexpanded text is not a PR to look up. A `$` in the
+  target or repo value counts however it is quoted or escaped (`'$PR'`,
+  `\$PR`), because the reader keeps no quote provenance. Literal targets
+  (`551`, `'551'`, a URL, a branch) and a `$` elsewhere in the command (a
+  `--body "$MSG"` value, a later `echo $?`) are unaffected and still give S355's
+  reminder with one lookup
 - Given (line continuation, `completion-line-continuation-unlexed`):
   `gh pr merge 500 \<newline>  --squash --delete-branch`,
   `gh pr merge \<newline> 500`, `gh \<newline> pr merge 500` and
