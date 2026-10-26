@@ -1754,20 +1754,11 @@ something new is being added.
   wrongly checked against an empty PRD-ID set — that direction alone
   stays skipped, since it's genuinely inapplicable without PRD IDs
 
-### S149 — wait-for-ci.sh enforces the 5min-then-1min CI-polling cadence
+### S149 — wait-for-ci.sh derives its CI-polling cadence from recent successful runs, with a fixed fallback
 **Covers:** F33
-- Given: a PR whose CI run is initially pending
-- When: `wait-for-ci.sh <pr-number>` runs
-- Then: it doesn't query CI status before the initial wait elapses; it
-  polls repeatedly while any check is still pending, and stops once
-  every check reaches a terminal state; it exits 0 and reports "all
-  checks passed" when every terminal state is a passing one (SUCCESS,
-  SKIPPED, NEUTRAL); it exits non-zero and prints each check's name and
-  state when any terminal state isn't; with no `gh` on `PATH`, or a
-  failed lookup, it exits non-zero rather than silently reporting
-  success; a PR with zero checks at all is reported as inconclusive
-  (non-zero), not as "all checks passed" — there's nothing to have
-  passed
+- Given: a PR whose CI run is initially pending, and a `gh` whose `run list` returns the durations of the last 10 successful `CI` runs
+- When: `wait-for-ci.sh <pr-number>` runs with neither timing override set
+- Then: it doesn't query CI status before the first-check delay (85% of the median duration, integer seconds) elapses; it prints the median and both derived values before waiting; it polls every 5% of the median (at least every 30 seconds) while any check is still pending (an odd count uses the middle value, an even count the integer mean of the two middle values, one outlier doesn't move it); with fewer than 3 successful runs, or when `run list` fails or can't be parsed, it says so on stdout and waits 300 seconds, then polls every 60; `WAIT_FOR_CI_INITIAL_WAIT` / `WAIT_FOR_CI_POLL_INTERVAL` win over both; it stops once every check reaches a terminal state; it exits 0 and reports "all checks passed" when every terminal state is a passing one (SUCCESS, SKIPPED, NEUTRAL); it exits non-zero and prints each check's name and state when any terminal state isn't; with no `gh` on `PATH`, or a failed checks lookup, it exits non-zero rather than silently reporting success; a PR with zero checks at all is reported as inconclusive (non-zero), not as "all checks passed" — there's nothing to have passed; a failed history lookup never changes the exit code
 
 ### S150 — The compliance-evidence collector reports what the artifacts actually show
 **Covers:** F34

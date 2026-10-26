@@ -899,7 +899,7 @@ red CI) still got a stale marker accepted. **Problem 2**: `WORKFLOW.md`
 had the review wait for CI to go green specifically to avoid problem 1 —
 running earlier, in parallel with CI, risked exactly that staleness if CI
 then failed and a fix commit followed. That serialization cost real time
-on every PR: CI (5.5-8min this repo, F22) then review (2-5min) in full
+on every PR: CI (F22) then review (2-5min) in full
 series.
 
 **Mechanism**: the marker becomes `<!-- pre-merge-review:done
@@ -1132,25 +1132,11 @@ resolved.
 Building this check surfaced the pre-existing S78/S79 gap this issue's
 own AC2 names (fixed directly, given real F31), plus seven more (#272).
 
-### F33 — `wait-for-ci.sh` enforces the CI-polling cadence as a script (issue #265)
+### F33 — `wait-for-ci.sh` enforces the CI-polling cadence as a script, derived from real CI durations (issues #265, #562)
 
-`WORKFLOW.md`'s merge step stated the 5-minutes-then-1-minute CI-polling
-cadence (issue #215: this repo's own CI clusters at 5.5-8 minutes, so a
-short fixed interval produces a dozen-plus premature "still pending"
-checks) as prose. That rule already lived in always-loaded context, so
-the gap wasn't discoverability — an agent could still improvise a
-different interval ad hoc, the same "agreement in prose, mechanism in a
-script" gap `check-pr-issue-link.sh`/`check-main-via-pr.sh` already
-closed for links 3 and W27.
+`WORKFLOW.md`'s merge step stated a CI-polling cadence (issue #215: a short fixed interval produces a dozen-plus premature "still pending" checks) as prose, and later as fixed numbers (5 minutes, then 1 minute) that went stale once CI got slower (#562). The rule already lived in always-loaded context, so the gap wasn't discoverability — an agent could still improvise a different interval ad hoc, the same "agreement in prose, mechanism in a script" gap `check-pr-issue-link.sh`/`check-main-via-pr.sh` already closed for links 3 and W27.
 
-`templates/wait-for-ci.sh` (scaffolded alongside those two, same
-has-check-command gate — meaningless without CI to poll) waits 5 minutes
-without checking at all, then polls `gh pr checks` every 1 minute until
-every check reaches a terminal state, printing each check's name and
-state and exiting non-zero if any of them didn't pass. Kept in sync with
-its root copy the same way as `check-traceability.sh` (#230's own
-pattern, extended here). `WORKFLOW.md`'s merge step now directs its use
-directly instead of describing the interval only as prose.
+`templates/wait-for-ci.sh` (scaffolded alongside those two, same has-check-command gate — meaningless without CI to poll) derives its timing from the median duration (`updatedAt - createdAt`) of the last 10 successful runs of the `CI` workflow (`WAIT_FOR_CI_WORKFLOW` overrides the name): it waits 85% of that median without checking at all, then polls `gh pr checks` every 5% of it (never less often than every 30 seconds) until every check reaches a terminal state, printing each check's name and state and exiting non-zero if any of them didn't pass. With fewer than 3 successful runs, or when the history can't be read, it says so on stdout and uses 5 minutes then 1 minute. `WAIT_FOR_CI_INITIAL_WAIT` and `WAIT_FOR_CI_POLL_INTERVAL` take precedence over both. Deriving the timing never changes the exit code. Kept in sync with its root copy the same way as `check-traceability.sh` (#230's own pattern, extended here). `WORKFLOW.md`'s merge step directs its use directly instead of describing the interval only as prose.
 
 ### F34 — `compliance-evidence.sh` collects pre-existing OQ9 evidence for one work item (issue #296)
 

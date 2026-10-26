@@ -381,7 +381,7 @@ dogfooding the mechanism it specifies.
 | `templates/PRD.md`, `templates/TEST-SCENARIOS.md`, `templates/ARCHITECTURE.md` | Spec scaffolds (`write-spec` skill). |
 | `templates/check-traceability.sh` | Link 1 of the traceability chain: every requirement has a scenario, every `Covers:` reference resolves. Offline. |
 | `templates/ci.yml` | Generic GitHub Actions CI that runs the project's own `check` (`check-convention` skill), plus a secret scan; npm setup only if a `package.json` exists. Scaffolded only once the project has an executable `check`. |
-| `templates/check-pr-issue-link.sh`, `templates/check-main-via-pr.sh`, `templates/wait-for-ci.sh` | Scaffolded alongside `ci.yml`: fail a PR that names no issue; detect a commit on `main` that didn't come through a PR; wait for CI at a fixed cadence instead of polling by hand. |
+| `templates/check-pr-issue-link.sh`, `templates/check-main-via-pr.sh`, `templates/wait-for-ci.sh` | Scaffolded alongside `ci.yml`: fail a PR that names no issue; detect a commit on `main` that didn't come through a PR; wait for CI at a cadence derived from recent successful runs instead of polling by hand. |
 | `templates/CONTEXT.md` | Optional project-jargon glossary, only if the project opts in. |
 | `templates/ISSUE_TEMPLATE/` | GitHub issue templates — the exception: refreshed on every `adopt.sh` run (GitHub renders them server-side, so they can't be symlinked). |
 
