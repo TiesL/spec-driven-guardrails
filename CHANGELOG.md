@@ -77,6 +77,26 @@ point.
   line per `--scope` as one comment on the issue, and reads it back through the gate's reader first.
   The named short track `abbreviated workflow` is skip Planning plus Test. OR34 now says to post the
   override before the first commit or PR; the reminder is text only, hooks and gates are unchanged.
+- **#566: `wip/multi-runtime-orchestration/` is tracked.** The 16 files of the preparation for #513
+  (Product report, Architect report and review, `DECISIONS.md`, and `issues/` with the epic text and
+  work items W0-W10) are added byte-for-byte; nothing else changed. They were an untracked folder in
+  one clone, and `README.md` says `wip/<slug>/` thinking is kept as a record. Adopters need to do
+  nothing. No new CHANGES/adoption question.
+- **#578 (with #570 and #577; the small items of #573): test and text hardening before #513.** Two PRs.
+  PR-A (#579): `test/cases/s363_completion_evidence.sh` now fails, naming the step, when its mutator
+  aborts, so R3 can no longer pass vacuously on the historical record (#570); the `check` header and
+  skip message name the nested suite run as well as `check-commit`, and the `test/run.sh` comment states
+  why the worker cap stays 4 instead of citing the closed #218 as outstanding (#573 stays open for the
+  macOS critical path and shellcheck growth). PR-B (#580): `pipeline-override.sh` now refuses invalid
+  UTF-8 (naming the field), counts a reason of only Unicode spaces or invisible characters as blank,
+  resolves a symlinked script to find its lib and exits 3 when `lib/markdown.sh` is missing; its bidi
+  wording now says "a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)", with the
+  accepted list unchanged and all four range edges pinned (S376); S378 arms check the cause, not just a
+  red result; the S377 entry says "contains"; `PRD.md` names the short-track exception to "no phase
+  skipping". `--help` now lists every refusal class, and OR34 and the Abbreviated workflow paragraph
+  point to `pipeline-override.sh --help` instead of a partial list (#577). The behavior stamp
+  `test/behavior/orchestrator-diff.stamp` is regenerated. Ships through the symlinked checkout; adopters
+  need to do nothing. No new CHANGES/adoption question.
 
 ## v0.4.0 — process improvements (epic #408) (2026-10-13)
 
