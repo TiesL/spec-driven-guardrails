@@ -48,15 +48,53 @@ jp.write_text(json.dumps(data, indent=1))
 rp.write_text(rp.read_text().replace(old, digest))
 PY
 }
+# repinned <dir>: postcondition of mut_repin <dir> 1 (#570 AC2): no status key, the current
+# digest is pinned, and main carries the sentinel. Without it a skipped re-pin could leave
+# the historical record in place and R3 would then be evaluated against the wrong record.
+repinned() {
+  python3 - "$1" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+d = Path(sys.argv[1])
+agents = (d / 'adapters/codex/AGENTS.md').read_text()
+digest = hashlib.sha256(agents[agents.index('## Completion and fresh context'):].encode()).hexdigest()
+data = json.loads((d / 'docs/completion-live-evidence.json').read_text())
+ok = ('status' not in data and data['instructions_sha256'] == digest
+      and any(r['case'] == 'main' and r.get('sentinel') is True for r in data['runs']))
+sys.exit(0 if ok else 1)
+PY
+}
 mut_root="$(mktemp -d "${TMPDIR:-/tmp}/s363-mut.XXXXXX")"
 # R2: re-pinning the historical stop-era runs to the current hash must fail.
-mut_copy "$mut_root/r2"; mut_repin "$mut_root/r2" 0
-if python3 "$TEST_REPO_ROOT/test/completion-evidence.py" "$mut_root/r2" >/dev/null 2>&1; then
-  fail "R2: stop-era runs re-pinned to the current hash were accepted as reminder evidence"
+mut_copy "$mut_root/r2"
+if mut_repin "$mut_root/r2" 0 2>"$mut_root/r2.merr"; then
+  if python3 "$TEST_REPO_ROOT/test/completion-evidence.py" "$mut_root/r2" >/dev/null 2>&1; then
+    fail "R2: stop-era runs re-pinned to the current hash were accepted as reminder evidence"
+  fi
+else
+  fail "R2: mutator mut_repin aborted; R2 not evaluated: $(tail -n 1 "$mut_root/r2.merr")"
 fi
 # R3: a genuine reminder-run record under the current hash must pass.
-mut_copy "$mut_root/r3"; mut_repin "$mut_root/r3" 1
-python3 "$TEST_REPO_ROOT/test/completion-evidence.py" "$mut_root/r3" >/dev/null 2>"$mut_root/r3.err" \
-  || fail "R3: a genuine reminder-run record was rejected: $(tail -n 1 "$mut_root/r3.err")"
+mut_copy "$mut_root/r3"
+if ! mut_repin "$mut_root/r3" 1 2>"$mut_root/r3.merr"; then
+  fail "R3: mutator mut_repin aborted; R3 not evaluated: $(tail -n 1 "$mut_root/r3.merr")"
+elif ! repinned "$mut_root/r3"; then
+  fail "R3: re-pin postcondition failed; R3 not evaluated against a re-pinned record"
+else
+  python3 "$TEST_REPO_ROOT/test/completion-evidence.py" "$mut_root/r3" >/dev/null 2>"$mut_root/r3.err" \
+    || fail "R3: a genuine reminder-run record was rejected: $(tail -n 1 "$mut_root/r3.err")"
+fi
+# Negative arms (#570 AC1, AC2): the guards above must be able to fire.
+# (a) an un-repinned copy does not satisfy the postcondition, so a skipped re-pin cannot pass R3.
+mut_copy "$mut_root/n1"
+if repinned "$mut_root/n1"; then
+  fail "R3 arm: repinned accepted an un-repinned (historical) copy"
+fi
+# (b) the #570 falsifier: main's final text changed, mut_repin must abort non-zero.
+mut_copy "$mut_root/n2"
+sed -i.bak 's/Merged to main\. Use/Merged into main. Use/' "$mut_root/n2/docs/completion-live-evidence.json"
+if mut_repin "$mut_root/n2" 1 >/dev/null 2>&1; then
+  fail "R3 arm: mut_repin exited 0 although main's final text no longer matches"
+fi
 rm -rf "$mut_root"
 test_done
