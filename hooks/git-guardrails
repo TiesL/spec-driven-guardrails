@@ -208,6 +208,59 @@ check_branch_creation() {
 # regex itself lives inline in check_merge_guard's python block below, not
 # duplicated here as a second source of truth.
 
+# Prints the matched host/owner/repository, or `different`; failure means
+# unknown. Read the raw origin offline: rewrites and SSH aliases aren't
+# evidence of canonical identity, and must not trigger a network fallback.
+merge_repository_identity() {
+  python3 - "$workdir" "$1" "${GH_HOST:-github.com}" <<'PY'
+import re, subprocess, sys
+
+def config(*args):
+    return subprocess.run(["git", "-C", sys.argv[1], "config", *args],
+                          capture_output=True, text=True)
+
+def normalize(value):
+    parts = value.lower().split("/")
+    if len(parts) != 3:
+        raise ValueError()
+    host, owner, repo = parts
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+    if not re.fullmatch(r"[a-z0-9]+(?:[.-][a-z0-9]+)*", host):
+        raise ValueError()
+    if not re.fullmatch(r"[a-z0-9_-]+", owner) or not re.fullmatch(r"[a-z0-9_.-]+", repo):
+        raise ValueError()
+    if repo in (".", ".."):
+        raise ValueError()
+    return "/".join((host, owner, repo))
+
+try:
+    origin = config("--get", "remote.origin.url")
+    if origin.returncode != 0:
+        raise ValueError()
+    raw = origin.stdout.rstrip("\n")
+    rewrites = config("--get-regexp", r"^url\..*\.insteadof$")
+    if rewrites.returncode not in (0, 1):
+        raise ValueError()
+    for row in rewrites.stdout.splitlines():
+        prefix = row.split(None, 1)[1]
+        if raw.startswith(prefix):
+            raise ValueError()
+    match = (re.fullmatch(r"(?:https://|ssh://(?:[^/@:]+@)?)([^/:]+)/([^/]+/[^/]+)", raw)
+             or re.fullmatch(r"(?:[^/@:]+@)?([^/:]+):([^/]+/[^/]+)", raw))
+    if not match or "." not in match[1]:
+        raise ValueError()
+    local_repo = normalize(match[1] + "/" + match[2])
+    explicit = sys.argv[2]
+    if explicit.count("/") == 1:
+        explicit = sys.argv[3] + "/" + explicit
+    selected = normalize(explicit)
+    print(selected if selected == local_repo else "different")
+except (ValueError, IndexError, OSError):
+    sys.exit(1)
+PY
+}
+
 # Judges `gh ...` segments. Only `pr merge` is relevant; everything else
 # passes through untouched.
 #
@@ -218,18 +271,23 @@ check_branch_creation() {
 # where `gh pr view <body text>` fails and the guard, via the fail-open
 # path, lets a PR without a marker through anyway.
 judge_gh_segment() {
-  local arg
+  local arg repo="" repo_count=0 identity
 
   local positions=()
   while [ $# -gt 0 ]; do
     arg="$1"
     case "$arg" in
-      -R|--repo|-R*|--repo=*)
-        # A different repository than the working directory. When in doubt,
-        # allow: that requires knowledge about a repo this guard doesn't
-        # have, and a missed case weighs less here than a false-positive
-        # block.
-        return 0 ;;
+      -R|--repo)
+        repo_count=$((repo_count + 1))
+        repo="${2:-}"
+        shift
+        if [ $# -gt 0 ] && [[ "$1" != -* ]]; then shift; fi
+        continue ;;
+      -R*|--repo=*)
+        repo_count=$((repo_count + 1))
+        case "$arg" in -R*) repo="${arg#-R}" ;; *) repo="${arg#--repo=}" ;; esac
+        shift
+        continue ;;
       -A|--author-email|-b|--body|-F|--body-file|--match-head-commit|-t|--subject)
         [ $# -ge 2 ] || return 0
         shift 2
@@ -247,6 +305,18 @@ judge_gh_segment() {
   done
 
   [ "${positions[0]:-}" = "pr" ] && [ "${positions[1]:-}" = "merge" ] || return 0
+
+  if [ "$repo_count" -gt 0 ]; then
+    if [ "$repo_count" -ne 1 ] || ! identity="$(merge_repository_identity "$repo")"; then
+      echo "warning: merge-guard couldn't establish repository identity and skips the merge checks." >&2
+      return 0
+    fi
+    [ "$identity" = "different" ] && return 0
+    # Local exported values reach every gh call, including the delegated
+    # role gate, and are restored before the next command segment.
+    local GH_REPO="$identity" GH_HOST="${identity%%/*}"
+    export GH_REPO GH_HOST
+  fi
 
   check_merge_guard "${positions[2]:-}"
 }
@@ -1048,6 +1118,11 @@ judge_segment() {
         # further down.
         echo "warning: the merge guard (up-to-date check, review marker and CI status) is explicitly skipped for this command." >&2
         merge_guard_off=1
+        shift ;;
+      GH_HOST=*)
+        # Command-local host selection overrides the inherited default,
+        # but must be restored before judging the next segment.
+        local GH_HOST="${1#GH_HOST=}"
         shift ;;
       [A-Za-z_]*=*) shift ;;
       *) break ;;

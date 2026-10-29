@@ -7537,3 +7537,112 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - When: `adopt.sh --runtime codex` and `--runtime codex --hooks` run.
 - Then: `~/.codex` is never created, the project hook file exists after `--hooks`, and no `hooks.state` or `trust_level` entry is written in the project; at least one path the adopted project's `AGENTS.md` gives for `permission-baseline.md` exists when tested from the project root (resolvability only, not wording).
 - Falsifiers: any Codex config or trust written by adoption. Regression guard: green on the current tree.
+
+## Explicit merge repository selection (issue #593)
+
+Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh on PATH. Each scenario has its own runnable case and a plain-command fixture control; no real GitHub merge or identity lookup is performed.
+
+### S382 — Same-repository long flag preserves the current-head review refusal (#593 AC1)
+**Covers:** F8
+- Given: an origin for github.com/TiesL/spec-driven-guardrails, GH_HOST unset, passing ancestry, CI, stray-Closes and separate stage evidence, but no current-head review marker.
+- When: plain gh pr merge 41 and gh pr merge 41 --repo TiesL/spec-driven-guardrails are judged.
+- Then: both exit 2 with the current-head review-marker refusal; recorded PR lookups target 41.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S383 — All repository flag forms and positions preserve the PR target (#593 AC2)
+**Covers:** F8
+- Given: the missing-marker fixture from S382.
+- When: each of --repo value, -R value, -Rvalue and --repo=value appears before pr, between pr and merge, before target 41 and after target 41.
+- Then: all 16 commands exit 2 for the missing current-head marker; neither repository operands nor flags become the PR target.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S384 — Eligible same-repository merges run every policy check (#593 AC3)
+**Covers:** F8
+- Given: a current-head review marker, passing CI, current base, no stray Closes and all five stages in separate linked-issue comments.
+- When: the plain command and all four same-repository flag forms are judged.
+- Then: each exits 0 without warning or refusal; calls prove ancestry, review, CI, commits and delegated linked-issue checks ran on PR 41.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S385 — Host participates in repository equality (#593 AC4)
+**Covers:** F8
+- Given: a known github.com origin and the S382 missing-marker fixture.
+- When: explicit github.com/TiesL/spec-driven-guardrails and other.example/TiesL/spec-driven-guardrails are judged.
+- Then: the same host exits 2 for missing review; the other host exits 0 silently with no gh policy calls.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S386 — Origin transports, case and terminal suffix normalize consistently (#593 AC5)
+**Covers:** F8
+- Given: HTTPS, scp-style SSH and ssh:// origins, each with and without terminal .git, and passing policy except missing review.
+- When: explicit host/owner/repository values vary case in all components and terminal .git.
+- Then: each equivalent identity exits 2 for missing review without an identity warning; no gh call establishes repository identity.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S387 — Short repository selectors use GH_HOST or github.com (#593 AC6)
+**Covers:** F8
+- Given: an enterprise.example origin and the missing-marker fixture.
+- When: short selectors run with GH_HOST enterprise.example, unset and other.example, and explicit enterprise.example selectors run in each environment.
+- Then: the matching short selector and every explicit enterprise selector exit 2; the other short selectors exit 0 silently without policy calls.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S388 — Different repository identities retain the documented allow (#593 AC7)
+**Covers:** F8
+- Given: a known origin and missing-marker fixture.
+- When: explicit identities differ only in owner, repository or host.
+- Then: all exit 0 silently without policy calls; F8 states that this guard provides no merge protection for that other repository.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S389 — Unknown origin identities allow with a visible skipped-check warning (#593 AC8)
+**Covers:** F8
+- Given: separate local fixtures with absent, empty, malformed and FTP origin, an SSH alias in sandbox ssh config, and an insteadOf URL rewrite.
+- When: recognized flagged merges are judged.
+- Then: each exits 0 and visibly warns that repository identity could not be established and merge checks were skipped; no gh identity fallback or policy call occurs.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S390 — Invalid or repeated repository selections are unknown (#593 AC9)
+**Covers:** F8
+- Given: a valid origin and otherwise enabled merge guard.
+- When: flags have no operand, empty equals or quoted empty operands, malformed values or extra path components, or repeated identical/conflicting values.
+- Then: each exits 0 with the identity-and-skipped-checks warning and no gh lookup; no repository or PR target is guessed.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S391 — Failing and pending CI independently block same-repository merges (#593 AC10)
+**Covers:** F8
+- Given: current review, passing ancestry, no stray Closes and satisfied role evidence; ci-593 is separately fail and pending.
+- When: the plain command and all four same-repository flag forms are judged for both CI states.
+- Then: each exits 2 naming ci-593 and its state, without identity or policy lookup warnings.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S392 — Stale bases independently block same-repository merges (#593 AC11)
+**Covers:** F8
+- Given: current review, passing CI, no stray Closes and satisfied role evidence, but a base tip not ancestral to the head.
+- When: the plain command and all four same-repository flag forms are judged.
+- Then: each exits 2 with the behind-base refusal and gh pr update-branch 41 remedy, without identity or lookup failure.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S393 — Matched repository binds all policy lookups despite conflicting defaults (#593 AC12)
+**Covers:** F8
+- Given: a matching origin and explicit host/owner/repository selector, GH_REPO pointing to other.example/Unrelated/Default, and gh responses routing blockers only to the matched identity.
+- When: each flag form separately exercises stale ancestry, missing review, red CI, stray Closes, missing linked-issue stage evidence and an eligible control.
+- Then: each blocker refuses for its own reason; all reached repository lookups use the matched identity, including issue-state and delegated linked-issue calls; the eligible control reaches every check.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S394 — Claude, Codex merge-only and numeric preflight preserve verdicts (#593 AC13)
+**Covers:** F8
+- Given: missing review, eligible, red CI, pending CI and stale-base fixtures.
+- When: plain commands run through both guard modes and merge-preflight.sh 41, and all four flag forms run through both guard modes.
+- Then: all equivalent commands yield the same status and corresponding diagnostic; preflight accepts only the number and never executes a merge.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S395 — Identity resolution is distinct from policy and dependency failure (#593 AC14)
+**Covers:** F8
+- Given: a valid same-repository identity and separately missing gh or failed ancestry, review, CI, stray-Closes, issue-state or delegated role lookup.
+- When: plain and flagged commands exercise fail-open paths plus ancestry-failure/missing-marker, CI-failure/stray, commit-lookup-failure/role and issue-state-failure/stray combinations.
+- Then: dependency and per-check warnings preserve their existing meanings without an identity warning; an independently reached blocker still refuses, and an unconfirmed closed stray issue stays blocking.
+- Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S396 — Command-local GH_HOST overrides inherited defaults per segment (#593)
+**Covers:** F8
+- Given: a github.com origin and the missing-marker fixture from S382, with inherited GH_HOST separately other.example and github.com.
+- When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
+- Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
+- Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
