@@ -57,7 +57,8 @@ real_py="$(command -v python3)"
 mkdir -p "$SANDBOX/bin"
 cat > "$SANDBOX/bin/python3" <<SHIM
 #!/usr/bin/env bash
-echo "\$* | PYTHONDONTWRITEBYTECODE=\${PYTHONDONTWRITEBYTECODE:-unset}" >> "$SANDBOX/py.log"
+a2="\${2:-}"; a2="\${a2:0:30}"; a2="\${a2//\$'\\n'/ }"
+echo "\${1:-} \$a2 | PYTHONDONTWRITEBYTECODE=\${PYTHONDONTWRITEBYTECODE:-unset}" >> "$SANDBOX/py.log"
 exec "$real_py" "\$@"
 SHIM
 chmod +x "$SANDBOX/bin/python3"
@@ -66,6 +67,19 @@ PATH="$SANDBOX/bin:$PATH" "$TEST_REPO_ROOT/check" --no-tests "$ok" >/dev/null 2>
 grep -q 'py_compile' "$SANDBOX/py.log" && fail "S379 — check asked Python to py_compile (writes bytecode)"
 grep -q 'PYTHONDONTWRITEBYTECODE=unset' "$SANDBOX/py.log" && fail "S379 — check ran python3 without PYTHONDONTWRITEBYTECODE=1"
 [ -s "$SANDBOX/py.log" ] || fail "S379 — check never ran python3 on the project's Python file"
+
+# And (#595 AC1, L2): every python3 call in check is covered, not only the
+# syntax step. The other calls (json.tool, the SIGPIPE and quote-break
+# checks, the one-definition lint) only run on a tree that carries those
+# scripts, so run check on a copy of this repo with the same recording shim.
+full="$(sandbox_copy_repo full)"
+: > "$SANDBOX/py.log"
+PATH="$SANDBOX/bin:$PATH" CHECK_SKIP_SHELLCHECK=1 "$TEST_REPO_ROOT/check" --no-tests "$full" >/dev/null 2>&1
+# A call counts as covered with the variable set or with python3's -B flag.
+unset_calls="$(grep 'PYTHONDONTWRITEBYTECODE=unset' "$SANDBOX/py.log" | grep -v '^-B ' || true)"
+[ -z "$unset_calls" ] || fail "S379 — python3 calls in check without PYTHONDONTWRITEBYTECODE=1: $unset_calls"
+# (json.tool only runs when jq is absent, so it is not required here.)
+grep -q -- 'one-definition-lint' "$SANDBOX/py.log" || fail "S379 — the full-tree run never reached the python3 call for one-definition-lint"
 
 # And: the fix lives in check itself.
 grep -q 'PYTHONDONTWRITEBYTECODE=1' "$TEST_REPO_ROOT/check" || fail "S379 — check does not set PYTHONDONTWRITEBYTECODE=1"

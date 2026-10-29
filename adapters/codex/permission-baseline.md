@@ -164,7 +164,7 @@ prefix_rule(pattern = ["gh", "pr", "list"], decision = "allow")  # opens full-ne
 prefix_rule(pattern = ["gh", "pr", "diff"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
 prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
 prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; this command has no browser flag
 prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via a HOST/OWNER/REPO argument or GH_HOST; --web opens a browser
 ```
 
@@ -172,7 +172,7 @@ Trade-off: no prompt for these reads, but the command and its flags run with hos
 network outside the sandbox. A rule cannot forbid a flag that appears later in the command.
 Excluded on purpose: blanket `gh api` (method and field flags make it a write), aliases,
 extensions and `auth`. `--web` (opens a browser) is not excluded: a rule cannot forbid a
-flag that appears later in the command, so the comments above name it per line. The comment
+flag that appears later in the command, so the comments above name it on each command that has it (`gh run list` has none). The comment
 flags come from `gh` help [A]; none of these nine commands writes an output file [A]. With
 four of these allows applied, `gh pr view`
 and `gh pr checks` ran with no prompt and reached GitHub, while the unlisted
