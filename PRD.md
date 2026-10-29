@@ -1893,6 +1893,10 @@ Codex environment, and Codex live reminder or context reset is reported only
 for a named surface/version actually observed; unavailable live checks remain
 explicitly unverified.
 
+### F57 — Least-privilege Codex permission baseline (issue #590)
+
+A documented, TiesL-applied least-privilege baseline for Codex sessions doing SDG work (`adapters/codex/permission-baseline.md`): a runtime-neutral list of what SDG work needs, a `workspace-write` sandbox profile with network off until proven, a narrowed rules set without a blanket `gh` allow or a catch-all prompt rule, and the stated limits of what Codex cannot match. `./check` runs to the end on a read-only tree without writing bytecode. Merges into `main` stay behind explicit confirmation, `--dangerously-bypass-approvals-and-sandbox` appears only as a prohibition, and neither `adopt.sh` nor any SDG script writes Codex config or grants trust. Live enforcement results are recorded as observations outside Codex's sandbox with TiesL's go-ahead and are not a claim of enforcement until then.
+
 ## Non-functional characteristics
 
 ### Security

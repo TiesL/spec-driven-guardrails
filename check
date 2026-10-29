@@ -188,8 +188,24 @@ pyscripts="$(find "$target" -type f -name '*.py' -not -path '*/.git/*' | sort)"
 if [ -n "$pyscripts" ]; then
   if command -v python3 >/dev/null 2>&1; then
     echo "check: python syntax"
+    # In-memory compile(): reports the syntax error with file and line and
+    # never writes a .pyc (#590). PYTHONDONTWRITEBYTECODE=1 is set here, in
+    # check itself, not globally.
     for script in $pyscripts; do
-      if ! error_message="$(python3 -m py_compile "$script" 2>&1)"; then
+      if ! error_message="$(PYTHONDONTWRITEBYTECODE=1 python3 -c '
+import sys
+path = sys.argv[1]
+try:
+    with open(path, "rb") as handle:
+        source = handle.read()
+    compile(source, path, "exec")
+except SyntaxError as error:
+    sys.stderr.write("%s, line %s: %s\n" % (path, error.lineno, error.msg))
+    sys.exit(1)
+except (OSError, ValueError) as error:
+    sys.stderr.write("%s: %s\n" % (path, error))
+    sys.exit(1)
+' "$script" 2>&1)"; then
         report_error "syntax error in ${script#"$target"/}: $error_message"
       fi
     done
