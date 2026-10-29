@@ -6,11 +6,12 @@ PreToolUse JSON on stdin and the two files named on the command line.
 
 Usage:
   agent-dispatch.py <ORCHESTRATOR.md> <orchestrator-rules.tsv> < input.json
+  agent-dispatch.py --list-roles       prefix name, flag name and stage per line
   agent-dispatch.py --list-checks      the check ids, one per line
   agent-dispatch.py --print-contract   tool name and input fields, as JSON
 
 A role dispatch (a prompt line starting `ROLE SESSION:`, or a line starting
-with a `model-record-emit.sh` command that has `--stage`) that fails a check
+with a `model-record-emit.sh` command that has `--role` or `--stage`) that fails a check
 exits 2; stderr holds, once each, the ORCHESTRATOR.md line of every rule the
 inventory's `hook:` column maps a failed check to, then one line on how a
 non-role prompt avoids detection. The deny text is the injected core text:
@@ -29,16 +30,24 @@ F_PROMPT, F_SUBAGENT, F_MODEL = "prompt", "subagent_type", "model"
 FIELDS = [F_TOOL, F_AGENT, F_INPUT + "." + F_PROMPT,
           F_INPUT + "." + F_SUBAGENT, F_INPUT + "." + F_MODEL]
 
-ROLES = ("Product", "Architect", "QA", "Fullstack Developer", "Reviewer")
-STAGES = ("Discovery", "Planning", "Test", "Implementation", "Review")
-CHECKS = ["prefix", "no-fork", "marker-command", "model",
+ROLE_STAGES = (("Product", "Product", "Discovery"),
+               ("Architect", "Architect", "Planning"),
+               ("QA", "QA", "Test"),
+               ("Fullstack Developer", "Developer", "Implementation"),
+               ("Reviewer", "Reviewer", "Review"))
+CHECKS = ["prefix", "no-fork", "marker-command", "role-stage", "model",
           "reviewer-pr", "reviewer-sha", "reviewer-gate"]
 
 ROLE_LINE = re.compile(r"^ROLE SESSION:")
-PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(ROLES))
-EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*model-record-emit\.sh\b.*--stage\b")
+PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(row[0] for row in ROLE_STAGES))
+EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*model-record-emit\.sh\b.*--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
-    r"model-record-emit\.sh\b.*--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(STAGES))
+    r"model-record-emit\.sh\b.*--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
+EMIT_WITH_ROLE = re.compile(
+    r"model-record-emit\.sh\b.*--role +[\"']?(%s)(?![A-Za-z0-9_])" %
+    "|".join(row[1] for row in ROLE_STAGES))
+EMIT_COMMAND = re.compile(r"model-record-emit\.sh\b(.*)")
+EMIT_FLAG = re.compile(r"--(role|stage)(?![A-Za-z0-9_])(?:[= ]+[\"']?([^ \t\"'`]+))?")
 # A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
 PR_REF = re.compile(r"(/pull/\d+|\bPR\s*#?\d+)")
 # A head SHA: 7-40 hex with a letter a-f, or one introduced by head/SHA/commit
@@ -49,7 +58,7 @@ SHA = re.compile(
 GATE = "finding-carryforward-gate.sh"
 ITEM = re.compile(r"^ *- (OR\d+) ")
 AVOID = ("Not a role dispatch? Start no prompt line with `ROLE SESSION:` and no "
-         "line with a `model-record-emit.sh ... --stage` command.")
+         "line with a `model-record-emit.sh ... --role` or `--stage` command.")
 
 
 def note(msg):
@@ -68,8 +77,16 @@ def failed_checks(prompt, sub, model):
         failed.append("prefix")
     if sub == "fork":
         failed.append("no-fork")
-    if not any(EMIT_WITH_STAGE.search(l) for l in lines):
+    valid_emit = any(EMIT_WITH_ROLE.search(l) or EMIT_WITH_STAGE.search(l) for l in lines)
+    if not valid_emit:
         failed.append("marker-command")
+    if role:
+        _, flag_role, stage = next(row for row in ROLE_STAGES if row[0] == role)
+        flags = [flag for line in lines for command in [EMIT_COMMAND.search(line)]
+                 if command for flag in EMIT_FLAG.finditer(command.group(1))]
+        if not valid_emit or any(flag.group(2) != (flag_role if flag.group(1) == "role" else stage)
+                                 for flag in flags):
+            failed.append("role-stage")
     if not (isinstance(model, str) and model.strip()):
         failed.append("model")
     if role == "Reviewer":
@@ -103,6 +120,10 @@ def core_lines(orch_text):
 
 
 def main(argv):
+    if argv[:1] == ["--list-roles"]:
+        for row in ROLE_STAGES:
+            print(" ".join(row))
+        return 0
     if argv[:1] == ["--list-checks"]:
         print("\n".join(CHECKS))
         return 0

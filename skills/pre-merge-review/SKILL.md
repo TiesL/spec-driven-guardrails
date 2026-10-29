@@ -106,7 +106,7 @@ that clears it. The floor is judged on the model alone: effort is neither
 chosen nor checked (#424; the limit is stated in `model-choice`). Record
 which model reviewed, always, not only when it deviates from what's obvious, as a
 Review marker with `floor-basis`. Produce it with
-`.claude/skills/pre-merge-review/model-record-emit.sh --stage Review --model <your
+`.claude/skills/pre-merge-review/model-record-emit.sh --role Reviewer --model <your
 exact model id> --floor-basis '<sentence>'` and paste the output unchanged; never
 type a marker by hand. Run it from the project root: the path goes through
 the project's installed skill (the guardrails repo installs its own skills

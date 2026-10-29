@@ -132,5 +132,5 @@ grep -qE '#413|#424' <<<"$row" || fail "S238 — the --effort debt row must cite
   || fail "S238 — PRD.md's debt register still talks about the same-model effort check (deleted by #424)"
 
 grep -q -- '--role' <<<"$usage" || fail "S238/#599 — usage must advertise --role"
-grep -qE '^# +model-record-emit\.sh .*--role' "$emit" || fail "S238/#599 — header command must advertise --role"
+test_source_match -qE '^# +model-record-emit\.sh .*--role' "$emit" || fail "S238/#599 — header command must advertise --role"
 test_done
