@@ -47,7 +47,8 @@ EMIT_WITH_ROLE = re.compile(
     r"model-record-emit\.sh\b.*--role +[\"']?(%s)(?![A-Za-z0-9_])" %
     "|".join(row[1] for row in ROLE_STAGES))
 EMIT_COMMAND = re.compile(r"model-record-emit\.sh\b(.*)")
-EMIT_FLAG = re.compile(r"--(role|stage)(?![A-Za-z0-9_])(?:[= ]+[\"']?([^ \t\"'`]+))?")
+EMIT_FLAG = re.compile(
+    r"--(role|stage)(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
 # A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
 PR_REF = re.compile(r"(/pull/\d+|\bPR\s*#?\d+)")
 # A head SHA: 7-40 hex with a letter a-f, or one introduced by head/SHA/commit
@@ -82,10 +83,13 @@ def failed_checks(prompt, sub, model):
         failed.append("marker-command")
     if role:
         _, flag_role, stage = next(row for row in ROLE_STAGES if row[0] == role)
-        flags = [flag for line in lines for command in [EMIT_COMMAND.search(line)]
+        flags = [(flag.group(1), next((v for v in flag.groups()[1:] if v is not None), ""))
+                 for line in lines for command in [EMIT_COMMAND.search(line)]
                  if command for flag in EMIT_FLAG.finditer(command.group(1))]
-        if not valid_emit or any(flag.group(2) != (flag_role if flag.group(1) == "role" else stage)
-                                 for flag in flags):
+        # Keep the legacy stage scanner's prefix handling inside quoted values.
+        if not valid_emit or any((value if name == "role" else re.split(r"[ \t\"'`]", value)[0])
+                                 != (flag_role if name == "role" else stage)
+                                 for name, value in flags):
             failed.append("role-stage")
     if not (isinstance(model, str) and model.strip()):
         failed.append("model")

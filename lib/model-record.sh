@@ -44,12 +44,12 @@ role_stage() {
     Developer) stage=Implementation ;;
     Reviewer) stage=Review ;;
     *)
-      echo "role_stage: role must be one of Product Architect QA Developer Reviewer (got '$role')" >&2
+      printf 'role_stage: role must be one of Product Architect QA Developer Reviewer (got %q)\n' "$role" >&2
       return 2
       ;;
   esac
   if [ "$#" -ge 2 ] && [ "$2" != "$stage" ]; then
-    echo "role_stage: role '$role' owns stage '$stage', not supplied stage '$2'" >&2
+    printf 'role_stage: role %q owns stage %q, not supplied stage %q\n' "$role" "$stage" "$2" >&2
     return 2
   fi
   printf '%s\n' "$stage"
