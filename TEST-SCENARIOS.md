@@ -7515,3 +7515,24 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - When: the pins are read: (a) `abbreviated workflow` (any case) in `policy/WORKFLOW.md` and `skills/role-contracts/SKILL.md`, each on a line holding `skip=Planning` and `skip=Test`; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
 - Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, `skip=Test` dropped, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
 - Falsifiers: a pin that stays green when its text is deleted, a doc that drops the abbreviated workflow, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
+
+### S379 — ./check runs ok on a read-only tree without writing bytecode and still reports a syntax error with file and line (#590 AC3)
+**Covers:** F57
+- Given: a sandbox project with a valid Python file and every directory read-only, and a recording `python3` shim on PATH; a second project with a Python syntax error on line 2.
+- When: the real `check --no-tests` runs on each.
+- Then: the first finishes ok and leaves no `.pyc` or `__pycache__`, and the shim saw no `py_compile` and `PYTHONDONTWRITEBYTECODE=1` on every call; the second fails and names the file and `line 2`; `check` itself sets `PYTHONDONTWRITEBYTECODE=1` and no longer uses `py_compile`.
+- Falsifiers: an explicit `py_compile` step, the variable missing from `check`, a syntax error without file or line. A before/after snapshot is not the test: `check` already deletes `__pycache__` at the end.
+
+### S380 — the Codex permission baseline document carries the pinned content, never a bypass flag, and INSTRUCTIONS.md points to it (#590 AC0, AC1, AC4, AC5, AC6, AC9, AC14)
+**Covers:** F57
+- Given: the real tree.
+- When: `adapters/codex/permission-baseline.md`, `adapters/codex/INSTRUCTIONS.md` and the rest of the tree are read.
+- Then: the document exists with `sandbox_mode = "workspace-write"`, `approvals_reviewer = "user"`, keys marked verified or assumed, the read-secrecy statement, the needs list, trade-offs, what Codex cannot match, merge confirmation with `merge-preflight.sh` and the prefix-rule limit, and the link to needs-list item 3; its `prefix_rule` lines carry no `gh` catch-all prompt, no blanket `gh` allow and no allow for `pipeline-override.sh` or `epic-auto-close.sh`; the bypass flag appears only on lines saying never or not, and never in a fenced block; `INSTRUCTIONS.md` names the baseline document and keeps saying no SessionStart/PostToolUse/SessionEnd automation is installed.
+- Falsifiers: a missing file, a catch-all prompt rule, an automatic allow for the two scripts, the flag in a profile or example. Live enforcement (AC1, AC2, AC4, AC10, AC11, AC13) is manual evidence, not covered here.
+
+### S381 — adopt.sh with Codex options writes no Codex config under HOME and grants no trust (#590 AC8, AC12)
+**Covers:** F57
+- Given: a fresh project and a sandbox HOME without `.codex`.
+- When: `adopt.sh --runtime codex` and `--runtime codex --hooks` run.
+- Then: `~/.codex` is never created, the project hook file exists after `--hooks`, and no `hooks.state` or `trust_level` entry is written in the project.
+- Falsifiers: any Codex config or trust written by adoption. Regression guard: green on the current tree.
