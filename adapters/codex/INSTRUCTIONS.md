@@ -11,7 +11,8 @@ no trust or permissions. Context, fetch and push still require explicit actions;
 no SessionStart/PostToolUse/SessionEnd automation is installed.
 
 Least-privilege Codex permissions (sandbox profile, narrowed rules, merge limits) are a
-document TiesL applies by hand: see `adapters/codex/permission-baseline.md`.
+document TiesL applies by hand: see `.guardrails/source/adapters/codex/permission-baseline.md`
+(in the SDG repo itself: `adapters/codex/permission-baseline.md`).
 
 Before dependent work, run and read `.guardrails/source/session-context.sh --runtime codex <project>`
 from the project checkout (use `.` for <project>). Read each invoked skill's

@@ -24,6 +24,8 @@
 # Bash 3.2-compatible: no declare -A, no mapfile, no ${var,,}.
 
 set -uo pipefail
+# No python3 call in check writes bytecode (#590, #595): set once for all of them.
+export PYTHONDONTWRITEBYTECODE=1
 
 run_tests=1
 if [ "${1:-}" = "--no-tests" ]; then
