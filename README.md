@@ -214,9 +214,19 @@ provenance. It preserves unrelated JSON hooks, config.toml (including inline hoo
 user/global hooks and trust/permission/plugin settings. Repeat opt-in updates only
 the exact recorded definition; edits, duplicates, malformed data and symlink paths
 conflict before writes. Default adoption after opt-in retains the hook.
-The installed command resolves the shared guard through that project’s
-`.guardrails/source` and uses `--merge-only`; other Bash commands pass.
-Updated commands may require exact-hook review again.
+The installed command uses `.codex/sdg-guard/hooks/git-guardrails --merge-only`;
+other Bash commands pass. The seven-file copy preserves source bytes, modes and
+sibling layout, with revision and file digests in `MANIFEST`. Version-3 local
+provenance records ownership and the manifest digest; the bundle is gitignored.
+Only explicit `--hooks` refreshes it, preserving foreign `.codex/` files and
+reporting changed paths and old/new revisions. Default adoption retains the copy
+without refreshing it. Unrecorded or tampered bundles and symlinks at `.codex`,
+`sdg-guard` or inside the bundle conflict before writes.
+The first migration requires one further review and trust in `/hooks`; later
+content-only refreshes do not re-prompt. TiesL must refresh outside the sandbox.
+Bundle protection remains [A] pending live proof; the baseline keeps the merge
+hook optional and off. See [the permission baseline](adapters/codex/permission-baseline.md)
+for the live follow-up and policy, environment and PATH limits.
 
 | Mechanism | Claude Code | Codex CLI/desktop | Shared coverage/limits |
 | --- | --- | --- | --- |
@@ -229,8 +239,9 @@ Updated commands may require exact-hook review again.
 
 Without opt-in, Codex status reports `runtime-hooks: not-installed; runtime shell interception unavailable`.
 With an exact managed definition and reachable guard it reports `runtime-hooks: installed`,
-`scope: Bash merge interception` and `activation: unverified`; drift or broken targets
-report stale/conflict. This is structural inventory, not proof of activation.
+`scope: Bash merge interception` and `activation: unverified`. Bundle status distinguishes
+current, stale (warning), corrupt (conflict) and absent, with exits 0 current,
+1 stale/conflict, 2 invalid/unreadable. This is structural inventory, not proof of activation.
 Trust withheld, exact-hook review pending, hooks disabled, unsupported versions or
 administrator suppression can leave interception unavailable. Use the required
 `merge-preflight.sh` before merging, including when interception is unavailable.

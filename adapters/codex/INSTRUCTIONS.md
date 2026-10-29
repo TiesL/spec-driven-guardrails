@@ -4,7 +4,13 @@ The policy above is embedded in the managed AGENTS.md block. Claude-specific
 automatic hook statements in that policy apply to Claude's adapter. This Codex
 adapter defaults to runtime-hooks: not-installed; runtime shell interception unavailable.
 Explicit `adopt.sh --runtime codex --hooks` installs a managed Bash PreToolUse
-merge hook. Status inspects structural installation; activation remains unverified
+merge hook pointing at the self-contained `.codex/sdg-guard/` copy. Only explicit
+`--hooks` refreshes it; default adoption retains its installed revision. Status
+reports current, stale (warning), corrupt (conflict) or absent. TiesL must refresh
+outside the sandbox; never work around that protection. The first migration needs
+one further review/trust in `/hooks`; content-only refreshes are not re-prompted.
+Bundle protection remains [A] pending live proof; the merge hook is optional and off.
+Status inspects structural installation; activation remains unverified
 until the runtime invokes it. Project trust, exact-hook review, disabled hooks,
 administrator policy and runtime support may prevent activation. Adoption grants
 no trust or permissions. Context, fetch and push still require explicit actions;

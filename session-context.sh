@@ -82,7 +82,7 @@ if [ "$runtime" = codex ]; then
   if [ "$?" -ne 0 ]; then
     echo "Warning: Codex AGENTS.md/links installation is missing, stale or conflicting; run adopt.sh --runtime codex again and verify actual instruction loading."
   fi
-  printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p'
+  printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p; /^guard bundle:/p; /^Refresh must /p'
 else
 claude_md="$project_dir/CLAUDE.md"
 expected="$(physical "$workflow_dir/WORKFLOW.md")"

@@ -4,11 +4,13 @@ Build and validate the entire ownership plan before any project write. Local
 provenance authorizes exact symlink targets and, only with --hooks, one exact
 project hook definition. It never owns the entire hook file or user config.
 """
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shlex
+import stat
 import subprocess
 import sys
 
@@ -16,6 +18,7 @@ from managed_blocks import BEGIN, END, Conflict, block, managed, framed
 IGNORE_BEGIN = b'# spec-driven-guardrails: begin'
 IGNORE_END = b'# spec-driven-guardrails: end'
 RECORD = '.guardrails/installation.json'
+BUNDLE = '.codex/sdg-guard'
 COVERAGE = 'runtime-hooks: not-installed; runtime shell interception unavailable'
 
 def exists(p):
@@ -42,16 +45,24 @@ def record_read(project):
     try:
         rec = json.loads(data)
         fields = {'owner', 'version', 'runtime', 'checkout', 'links'}
-        if isinstance(rec, dict) and rec.get('version') == 2:
+        if isinstance(rec, dict) and rec.get('version') in (2, 3):
             fields.add('managed_hook')
+        if isinstance(rec, dict) and rec.get('version') == 3:
+            fields.add('guard_bundle')
         if set(rec) != fields:
             raise ValueError('unknown or missing fields')
-        if rec['owner'] != 'spec-driven-guardrails' or type(rec['version']) is not int or rec['version'] not in (1, 2) or rec['runtime'] != 'codex':
+        if rec['owner'] != 'spec-driven-guardrails' or type(rec['version']) is not int or rec['version'] not in (1, 2, 3) or rec['runtime'] != 'codex':
             raise ValueError('foreign owner/runtime/version')
         checkout = rec['checkout']
-        if rec['version'] == 2:
+        if rec['version'] in (2, 3):
             validate_group(rec['managed_hook'])
             if rec['managed_hook'].get('matcher') != 'Bash': raise ValueError('invalid managed matcher')
+        if rec['version'] == 3:
+            bundle = rec['guard_bundle']
+            if (not isinstance(bundle, dict) or set(bundle) != {'path', 'manifest_sha256'}
+                    or bundle['path'] != BUNDLE
+                    or not re.fullmatch(r'[0-9a-f]{64}', bundle['manifest_sha256'])):
+                raise ValueError('invalid bundle ownership')
         if not isinstance(checkout, str) or not os.path.isabs(checkout): raise ValueError('checkout must be absolute')
         if not isinstance(rec['links'], dict) or '.guardrails/source' not in rec['links']: raise ValueError('missing source ownership')
         for name, target in rec['links'].items():
@@ -101,7 +112,7 @@ def hook_plan(source, project, old, install):
             for group in definitions: validate_group(group)
         canonical = json.loads((source / 'adapters/codex/merge-hook.json').read_bytes())
         validate_group(canonical)
-        guard = shlex.quote(str(project / '.guardrails/source/hooks/git-guardrails'))
+        guard = shlex.quote(str(project / BUNDLE / 'hooks/git-guardrails'))
         for hook in canonical['hooks']:
             hook['command'] = hook['command'].replace('{guard}', guard)
         definitions = groups.setdefault('PreToolUse', [])
@@ -121,12 +132,86 @@ def hook_plan(source, project, old, install):
             return None, previous, 'runtime-hooks: stale/conflict; managed definition differs from source; activation: unverified'
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
         raise Conflict('.codex/hooks.json: malformed/conflicting hooks: ' + str(exc))
-    # During install the source link may be created/repaired by the same plan.
-    target = source if install else project / '.guardrails/source'
-    if not all(os.access(target / name, os.R_OK) for name in ('hooks/git-guardrails', 'hooks/read-command.py')) or not os.access(target / 'hooks/git-guardrails', os.X_OK):
-        raise Conflict('.codex/hooks.json: broken/unreachable guard target')
     output = (json.dumps(doc, indent=2, ensure_ascii=False) + '\n').encode() if install else None
     return output, canonical if install else previous, 'runtime-hooks: installed; scope: Bash merge interception; activation: unverified'
+
+def bundle_plan(source, project, old, install):
+    """Validate ownership and all bytes before planning any bundle write."""
+    root = project / BUNDLE
+    owned = old.get('guard_bundle') if old else None
+    parent = root.parent
+    if parent.is_symlink() or (exists(parent) and not parent.is_dir()):
+        raise Conflict('.codex: expected a real directory')
+    if root.is_symlink() or (exists(root) and not root.is_dir()):
+        raise Conflict(BUNDLE + ': expected a real directory')
+    if root.exists():
+        for path in root.rglob('*'):
+            if path.is_symlink():
+                raise Conflict(str(path.relative_to(project)) + ': symlink refused')
+        if owned is None:
+            raise Conflict(BUNDLE + ': unrecorded bundle conflict')
+    elif owned is not None:
+        raise Conflict(BUNDLE + ': absent recorded bundle conflict')
+    revision = subprocess.run(['git', '-C', str(source), 'rev-parse', 'HEAD'],
+                              capture_output=True, text=True)
+    revision = revision.stdout.strip() if revision.returncode == 0 else 'unavailable (unversioned checkout)'
+    names = [line.strip() for line in (source / 'adapters/codex/guard-bundle.list').read_text().splitlines()
+             if line.strip() and not line.lstrip().startswith('#')]
+    if len(names) != len(set(names)) or any(
+            Path(n).is_absolute() or '..' in Path(n).parts for n in names):
+        raise Conflict('invalid guard bundle list')
+    contents, modes, entries = {}, {}, {}
+    for name in names:
+        path = source / name
+        data = regular(path, name)
+        if not path.is_file(): raise Conflict(name + ': missing bundle source')
+        mode = stat.S_IMODE(path.stat().st_mode)
+        contents[BUNDLE + '/' + name] = data
+        modes[BUNDLE + '/' + name] = mode
+        entries[name] = {'sha256': hashlib.sha256(data).hexdigest(), 'mode': mode}
+    manifest = (json.dumps({'revision': revision, 'files': entries}, indent=2, sort_keys=True) + '\n').encode()
+    if owned is not None:
+        try:
+            raw = regular(root / 'MANIFEST', BUNDLE + '/MANIFEST')
+            if (hashlib.sha256(raw).hexdigest() != owned['manifest_sha256']
+                    or stat.S_IMODE((root / 'MANIFEST').stat().st_mode) != 0o644):
+                raise ValueError('manifest digest differs from ownership record')
+            previous = json.loads(raw)
+            actual = {str(p.relative_to(root)) for p in root.rglob('*') if not p.is_dir()}
+            if actual != set(previous['files']) | {'MANIFEST'}:
+                raise ValueError('missing or extra bundle file')
+            for name, entry in previous['files'].items():
+                if Path(name).is_absolute() or '..' in Path(name).parts:
+                    raise ValueError('invalid manifest path')
+                path = root / name
+                if (hashlib.sha256(regular(path, name)).hexdigest() != entry['sha256']
+                        or stat.S_IMODE(path.stat().st_mode) != entry['mode']):
+                    raise ValueError('bytes or mode differ: ' + name)
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            raise Conflict(BUNDLE + ': corrupt bundle conflict: ' + str(exc))
+        current = raw == manifest
+        print('guard bundle: ' + ('current' if current else 'stale (warning)'))
+        if not current:
+            print('Refresh must be run by TiesL outside the sandbox; installed rules remain active.')
+        if install and not current:
+            print('guard bundle revision: ' + previous['revision'] + ' -> ' + revision)
+            for name, entry in entries.items():
+                if previous['files'].get(name) != entry: print('bundle changed: ' + name)
+            for name in set(previous['files']) - set(entries):
+                raise Conflict(BUNDLE + ': obsolete bundle path requires explicit migration: ' + name)
+            print('Hook trust is not re-prompted for a content-only refresh.')
+    else:
+        current = False
+        print('guard bundle: absent; activation: unverified')
+    if not install:
+        return {}, {}, owned, owned is not None and not current
+    contents[BUNDLE + '/MANIFEST'] = manifest
+    modes[BUNDLE + '/MANIFEST'] = 0o644
+    record = {'path': BUNDLE, 'manifest_sha256': hashlib.sha256(manifest).hexdigest()}
+    if not old or old.get('version') != 3:
+        print('Explicit provenance upgrade to version 3; review and trust the changed command once more in /hooks.')
+    return contents, modes, record, False
+
 
 def main():
     source = Path(sys.argv[1]).resolve()
@@ -138,6 +223,8 @@ def main():
     inventory(source, project)
     conflicts = []
     files = {}
+    modes = {}
+    bundle_stale = False
     links = {}
     removals = []
     old = None
@@ -175,6 +262,8 @@ def main():
         payload = (source / 'adapters/codex/AGENTS.md').read_bytes()
         files['AGENTS.md'] = managed(data, span, framed(payload))
         old = record_read(project)
+        bundle_files, modes, owned_bundle, bundle_stale = bundle_plan(source, project, old, install_hooks)
+        files.update(bundle_files)
         hook_bytes, owned_hook, coverage = hook_plan(source, project, old, install_hooks)
         if hook_bytes is not None: files['.codex/hooks.json'] = hook_bytes
         links['.guardrails/source'] = str(source)
@@ -225,14 +314,17 @@ def main():
         ignore_span = block(ignore, IGNORE_BEGIN, IGNORE_END, '.gitignore')
         if ignore_span:
             entries = ignore[ignore_span[0]+len(IGNORE_BEGIN):ignore_span[1]-len(IGNORE_END)].decode().splitlines()
-            allowed = {'/.guardrails/source', '/' + RECORD} | {'/' + n for n in set(links) | set(previous) if n.startswith('.agents/skills/')}
+            allowed = {'/.guardrails/source', '/' + RECORD, '/' + BUNDLE} | {'/' + n for n in set(links) | set(previous) if n.startswith('.agents/skills/')}
             if any(line and line not in allowed for line in entries): raise Conflict('.gitignore: foreign entries in managed block')
         entries = sorted('/' + n for n in links if n.startswith('.agents/skills/'))
-        ignore_payload = IGNORE_BEGIN + b'\n' + ('/.guardrails/source\n/' + RECORD + '\n' + '\n'.join(entries) + '\n').encode() + IGNORE_END
+        bundle_ignore = '/' + BUNDLE + '\n' if owned_bundle is not None else ''
+        ignore_payload = IGNORE_BEGIN + b'\n' + ('/.guardrails/source\n/' + RECORD + '\n' + bundle_ignore + '\n'.join(entries) + '\n').encode() + IGNORE_END
         files['.gitignore'] = managed(ignore, ignore_span, ignore_payload)
         rec = {'owner': 'spec-driven-guardrails', 'version': 1, 'runtime': 'codex', 'checkout': str(source), 'links': links}
         if owned_hook is not None:
             rec.update(version=2, managed_hook=owned_hook)
+        if owned_bundle is not None:
+            rec.update(version=3, guard_bundle=owned_bundle)
         files[RECORD] = (json.dumps(rec, indent=2, sort_keys=True) + '\n').encode()
     except Conflict as exc:
         conflicts.append(str(exc))
@@ -242,7 +334,7 @@ def main():
         return 1
     print(coverage)
     if status:
-        stale = coverage.startswith('runtime-hooks: stale/conflict')
+        stale = bundle_stale or coverage.startswith('runtime-hooks: stale/conflict')
         for name, wanted in files.items():
             p = project / name
             if not p.exists() or p.read_bytes() != wanted:
@@ -273,11 +365,13 @@ def main():
             p.symlink_to(target); print(action + ': ' + name)
         for name, wanted in files.items():
             p = project / name
-            if p.exists() and p.read_bytes() == wanted:
+            if p.exists() and p.read_bytes() == wanted and (name not in modes or stat.S_IMODE(p.stat().st_mode) == modes[name]):
                 print('unchanged: ' + name); continue
             action = 'repaired' if p.exists() else 'created'
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_bytes(wanted); print(action + ': ' + name)
+            p.write_bytes(wanted)
+            if name in modes: p.chmod(modes[name])
+            print(action + ': ' + name)
     except OSError as exc:
         print('incomplete installation: ' + str(exc)); return 1
     print('Codex adapter installed; not live-loaded')
