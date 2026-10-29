@@ -134,10 +134,10 @@ prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")
 prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")
 prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")
 prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")
-# The three SDG scripts (exact absolute paths; replace with your checkout):
-prefix_rule(pattern = ["/ABS/THIS-SDG-CLONE/merge-preflight.sh"], decision = "allow")
-prefix_rule(pattern = ["/ABS/THIS-SDG-CLONE/classify-review-depth.sh"], decision = "allow")
-prefix_rule(pattern = ["/ABS/THIS-SDG-CLONE/wait-for-ci.sh"], decision = "allow")
+# The three SDG scripts, in the repo-relative spellings TiesL's applied rules use:
+prefix_rule(pattern = ["./wait-for-ci.sh"], decision = "allow")
+prefix_rule(pattern = [".guardrails/source/merge-preflight.sh"], decision = "allow")
+prefix_rule(pattern = [".agents/skills/pre-merge-review/model-record-emit.sh"], decision = "allow")
 ```
 
 Trade-off per allow (all [A] until tested):
@@ -147,10 +147,14 @@ Trade-off per allow (all [A] until tested):
   as output-file options may write. Flag variants must be tested; excluded on purpose:
   blanket `gh api` (method and field flags make it a write), aliases, extensions, `auth`
   and browser operations.
-- The three scripts: exact paths make the grant auditable, but a mutable script can start
-  arbitrary children outside the sandbox. They are chosen because they need network and
-  `merge-preflight.sh` needed an escalation in #575. Scripts not listed run inside the
-  sandbox as ordinary commands.
+- The three scripts (`wait-for-ci.sh`, `merge-preflight.sh`, `model-record-emit.sh`, the
+  set TiesL's applied rules carry): exact spellings make the grant auditable, but a mutable
+  script can start arbitrary children outside the sandbox. The first two need network
+  (`merge-preflight.sh` needed an escalation in #575); `model-record-emit.sh` posts nothing
+  itself but is run for every stage record. Scripts not listed, including
+  `classify-review-depth.sh`, run inside the sandbox as ordinary commands (with network off
+  it falls back to thorough depth; adding it as a fourth allow would remove that at the
+  cost of running it outside the sandbox, so it is not in the baseline).
 - Bare versus wrapped matching: the allows match bare commands. Whether they also match
   when Codex wraps a command as `/bin/zsh -lc '<command>'` is unverified [A]; the live test
   runs each allow in both forms and records allowed or prompted.
@@ -176,26 +180,68 @@ evidence and a clean `merge-preflight.sh` run. No rule makes a merge prompt-free
 
 ## Reviewing and trusting the Codex merge hook yourself
 
-Status: **[A] unverified.** No Codex Architect comment on #590 describes hook trust yet,
-so this section carries only the known facts, and it must be confirmed in W11's live test
-(AC10).
+Source: the Codex Architect's hook-trust comment on #590 (comment 6494623381), a
+recommendation for TiesL, not a decision. Marks are the Architect's: [V] verified from CLI
+help, the installed hook definition, official Codex documentation or Codex source; [A]
+inferred or not live-tested. This must still be confirmed in W11's live test (AC10); do not
+infer activation from the installed JSON, a trust entry, or the unblocked fake merge alone.
 
-Known facts:
+Two separate gates. [V] Codex CLI 0.163.0 discovers `<repo>/.codex/hooks.json` only when the
+project's `.codex/` layer is trusted, and requires separate trust for each non-managed hook
+definition. The installed SDG file (`adopt.sh --runtime codex --hooks`, from
+`adapters/codex/merge-hook.json`) defines one `PreToolUse` group, matcher `Bash`, whose
+command points to this project's `.guardrails/source/hooks/git-guardrails --merge-only`.
+`adopt.sh --runtime codex --status` reports structural installation only (`activation:
+unverified`); adoption grants no project or hook trust and writes no user config. SDG never
+writes `~/.codex/config.toml`.
 
-- `adopt.sh --runtime codex --hooks` installs the hook into the project's
-  `.codex/hooks.json` from `adapters/codex/merge-hook.json`.
-- Codex records reviewed hooks in `~/.codex/config.toml` under `[hooks.state]`, with a
-  `trusted_hash` entry; an entry exists only for hooks that were reviewed. [A]
-- An unreviewed hook was observed to be skipped: on 2026-10-27 a fake `gh pr merge 99999`
-  ran unblocked in a repo with `.codex/hooks.json` and no trust entry. The cause is likely
-  missing trust, not confirmed.
+CLI steps for TiesL [V]:
 
-What TiesL does, and what SDG does not do: TiesL reviews the hook in Codex's own hook
-review step and lets Codex write the trusted entry itself, or edits `~/.codex/config.toml`
-by hand. SDG never writes that file and never grants trust. To confirm: in a fresh session
-with the hook trusted, attempt `gh pr merge` against a nonexistent PR number and check that
-the hook blocks it; then repeat without the trust entry and record whether the hook runs or
-is silently skipped. Until that is recorded, treat the hook as not active.
+1. Inspect the exact project hook JSON and the guard program it will execute.
+2. Make sure the project is trusted: `~/.codex/config.toml` has
+   `[projects."/absolute/path/to/project"]` with `trust_level = "trusted"`, or use Codex's
+   project-trust prompt.
+3. Start a fresh interactive CLI session in that project.
+4. Type `/hooks`, choose `PreToolUse`, inspect handler, source and command, and select Trust
+   for the current definition.
+5. Verify with `/hooks` that it is trusted and enabled. The CLI hook browser is the
+   documented trust UI; `codex --help` has no `hooks` subcommand.
+
+State shape [V]; the hash is generated by Codex, never typed by hand:
+
+```toml
+[hooks.state."/ABS/PROJECT/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:<64 hex digits>"
+enabled = true   # may be present; absent means enabled
+```
+
+The key is built from source path, event, group index and handler index, and `trusted_hash`
+is compared with the current hook hash. [A] The exact persisted path spelling and hash
+value on this machine need the interactive review.
+
+What makes the hook silently skipped [V]: the handler is disabled, untrusted or modified; an
+untrusted project omits its project-local hook layer entirely; `[features] hooks = false`;
+managed `allow_managed_hooks_only = true`. A nonmatching tool name, a different execution
+path, an unsupported runtime or a hook error can also let a merge command proceed. The
+source has no warning when trust is absent, so headless `codex exec` can skip the hook with
+no tool-call diagnostic; the interactive CLI shows a startup warning and `/hooks` review.
+[A] Missing trust is a likely explanation for the 2026-10-27 fake `gh pr merge 99999` running
+unblocked, not an established cause.
+
+What the trust hash covers [V]: a normalized hook declaration (event, matcher/group, the one
+normalized handler), not the raw JSON bytes and not the executable's contents. A semantic
+change to the declaration, including its command, changes the hash and needs review again;
+formatting-only edits need not. Editing `hooks/git-guardrails` alone does not change the
+trust hash while the command string stays the same. So TiesL reviews both the declaration
+and the guard script before trusting, and changes to `hooks/git-guardrails` need review
+through the normal PR process.
+
+Still open [A]: exact desktop review controls; whether a CLI trust grant reaches an
+already-open desktop chat (open a fresh local desktop chat after CLI trust and inspect its
+hook listing); no hash-mutation probe was run on this version. For AC10, TiesL decides
+whether to run a fresh interactive CLI trust review and a safe synthetic allow/deny test
+outside Codex's sandbox, then a fresh desktop check if desktop coverage is claimed; also
+record the untrusted case (hook runs or is skipped).
 
 ## What is prohibited
 
