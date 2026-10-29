@@ -7300,28 +7300,34 @@ PR. Developer writes/runs red-before-green cases through these Seams, following
 assertions or new live paid probe is needed. Existing real-event evidence in
 A47 supplies protocol provenance, not proof that a future installation activates.
 
-### S365 — default adoption preserves hook state; opt-in installs once (#544 AC1, AC2)
+### S365 — default adoption preserves hook state; opt-in installs bundle once (#544 AC1, AC2; #594 AC1, AC5, AC10)
 **Covers:** F45, F47, F48
 - Given: fresh and previously adopted projects, including old installation
   provenance without hook ownership, with absent or existing hook configuration
 - When: default adoption runs, including after a successful hook opt-in
 - Then: it neither creates nor changes `.codex/hooks.json`; an earlier hook is
-  retained. Default adoption remains usable and does not imply uninstall
+  retained. It creates no bundle and neither refreshes nor removes an installed
+  bundle. Default adoption remains usable and does not imply uninstall
 - When: explicit `--runtime codex --hooks` runs twice, including from a project
   path containing spaces and shell metacharacters
-- Then: one managed Bash PreToolUse definition invokes the reachable shared
-  guard in merge-only mode; ownership is identifiable and subsequent runs add
-  no duplicates. Old provenance upgrades explicitly without claiming foreign
-  hooks. Invalid/repeated flags and non-Codex `--hooks` exit 2 before writes
+- Then: one managed Bash PreToolUse definition points at the installed
+  `.codex/sdg-guard/hooks/git-guardrails --merge-only`; bundle installed once,
+  repeated runs add nothing and change nothing. Ownership is identifiable,
+  opted-in provenance bumps beyond version 2; default provenance remains
+  backwards compatible. S397 checks exact files/modes/manifest, S398 default
+  bundle absence, S402 the owned version-2 migration and one-time /hooks
+  re-trust, S409 ignore/provenance details. No foreign hooks are claimed.
+  Invalid/repeated flags and non-Codex `--hooks` exit 2 before writes
 
-### S366 — coexistence and ownership prevent silent configuration takeover (#544 AC2)
+### S366 — coexistence and ownership prevent silent configuration takeover (#544 AC2; #594 AC3, AC5, AC6)
 **Covers:** F45, F47, F48
 - Given: regular project hook JSON with unrelated top-level keys, other event
   groups and other Bash hooks, inline hooks in `.codex/config.toml`, and user
   configuration outside the project
 - When: hook opt-in installs, repeats, or updates a previously owned definition
 - Then: unrelated JSON content survives semantically; config.toml and user
-  configuration remain byte-identical. Only the exact recorded previous managed
+  configuration and unrelated files in `.codex/` remain byte-identical. Only the
+  exact recorded previous managed
   definition is updated, without replacing or consolidating foreign hooks
 - Negative variants: malformed JSON/shapes, duplicate managed definitions,
   foreign edits to recorded ownership, invalid/unsupported provenance, symlink
@@ -7330,17 +7336,27 @@ A47 supplies protocol provenance, not proof that a future installation activates
   a failed install must not leave partially updated AGENTS, links or provenance
 - Given: an owned definition still equals its recorded value but the source
   template changes; Then: re-opt-in updates it once. An edited owned value
-  conflicts rather than being silently repaired
+  conflicts rather than being silently repaired. The owned update includes the
+  bundle; S401 checks content-only refresh, changed paths/revisions, unchanged
+  command and no re-trust; S402 checks the one-time command migration. S404
+  checks unrecorded or tampered `sdg-guard` conflicts before any write. S399
+  checks symlinked `.codex`, `.codex/sdg-guard` and inner symlinks, names the
+  offending path, and compares project/target snapshots before/after
 
-### S367 — status distinguishes structural presence from effective activation (#544 AC6)
+### S367 — status distinguishes structural presence from effective activation (#544 AC6; #594 AC6, AC11)
 **Covers:** F47, F48, F51, F52
-- Given: absent, valid managed, edited, duplicate and broken-target installs
+- Given: absent, valid managed, edited, duplicate and missing-definition installs;
+  bundles absent, current, stale or corrupt
 - When: status runs without `--hooks`
 - Then: absent reports `runtime-hooks: not-installed`; exact reachable managed
   state reports `runtime-hooks: installed`, `scope: Bash merge interception`
-  and `activation: unverified`. Edited/duplicate/broken state reports
+  and `activation: unverified`. Edited/duplicate/missing-definition state reports
   stale/conflict, never installed; retain status exit meanings 0 current,
-  1 stale/conflict, 2 invalid/unreadable
+  1 stale/conflict, 2 invalid/unreadable. Bundle absent/current is explicit; S403
+  checks stale warning, corrupt/missing bundle conflict, absent opt-in versus
+  missing recorded bundle, invalid exit 2, read-only status and TiesL refresh
+  outside the sandbox. All states remain `activation: unverified`; broken
+  source-link independence is checked in S400 rather than implying a broken hook
 - Then: inventory, session-context diagnostics, generated instructions and
   README agree on default absence and optional structural installation; they
   retain voluntary merge-preflight when interception is unavailable and make
@@ -7350,7 +7366,7 @@ A47 supplies protocol provenance, not proof that a future installation activates
   unavailable/unverified even when files are installed. Adoption changes no
   trust/permission setting. Static fixtures cannot establish live activation
 
-### S368 — captured Bash event drives shared merge refusal and allow (#544 AC3, AC5)
+### S368 — captured Bash event drives bundled merge refusal and allow (#544 AC3, AC5; #594 AC1, AC4)
 **Covers:** F8, F47, F48, F52
 - Given: sanitized fixtures derived from A47's two real events, preserving
   `hook_event_name: PreToolUse`, `tool_name: Bash`, `tool_input.command`, `cwd`
@@ -7363,7 +7379,9 @@ A47 supplies protocol provenance, not proof that a future installation activates
   tool executor runs an observable sentinel only after exit 0, never after 2
 - Then: execute the installed command from a project subdirectory, also in a
   space/metacharacter-containing project path; it resolves that project's
-  `.guardrails/source`, uses the correct cwd and evaluates the same merge
+  `.codex/sdg-guard` bundle, uses the correct cwd and evaluates the same merge.
+  S400 checks the absent and broken `.guardrails/source` variants with the
+  same source/bundle stdout, stderr and exit-status parity controls
 - Negative variants: quoted merge arguments and merge in a compound command
   remain subject to the shared parser; no duplicate parser or real gh merge
   is used. Record fake-gh calls so denial cannot pass because no merge was read
@@ -7371,9 +7389,11 @@ A47 supplies protocol provenance, not proof that a future installation activates
   A47's observed direct session establishes runtime exit-2 refusal/exit-0 allow.
   Preserve its CLI-versus-metadata discrepancy and separate desktop gap
 
-### S369 — merge-only mode passes non-merge Bash without widening Claude behavior (#544 AC4, AC7)
+### S369 — merge-only mode passes non-merge Bash without widening Claude behavior (#544 AC4, AC7; #594 AC4)
 **Covers:** F8, F47, F48, F53
-- Given: the installed hook and the same shared guard invoked without arguments
+- Given: the installed hook pointing at `.codex/sdg-guard` and the same shared
+  guard invoked without arguments; all existing merge-only assertions also
+  execute through the bundled copy (broader verdict parity is in S400)
 - When: commands include ordinary printf/git status, destructive Git commands,
   direct push to main and issue-first violations, with no gh pr merge invocation
 - Then: merge-only invocation returns 0 and does not evaluate unrelated policy;
@@ -7646,3 +7666,105 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
 - Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
 - Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+## Codex guard bundle (issue #594)
+
+Integration seams: explicit adoption and read-only status, installed hook stdin JSON, list-only guard execution and baseline documentation. Each numbered scenario has its own runnable case. Live AC2, AC8 and the live portion of AC3 remain a separate TiesL-run observation follow-up; no offline test claims protection or activation.
+
+### S397 — Seven-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
+**Covers:** F8, F47
+- Given: a fresh project and an isolated Codex home.
+- When: explicit Codex --hooks adoption runs twice.
+- Then: a real .codex/sdg-guard contains exactly the seven accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
+- Falsifiers: a missing or extra file, clone path, changed bytes or modes, incomplete manifest, source-target command or non-idempotent install.
+
+### S398 — Default adoption creates no guard bundle (#594 AC5)
+**Covers:** F47
+- Given: a fresh project without a bundle.
+- When: Codex adoption runs without --hooks.
+- Then: no .codex/sdg-guard is created. This unchanged-behavior control is green before implementation.
+- Falsifiers: a bundle created by default adoption.
+
+### S399 — Symlink parents and bundle entries refuse before any write (#594 AC3 offline part)
+**Covers:** F47
+- Given: separate projects with a symlink at .codex, .codex/sdg-guard or an inner bundle entry, plus foreign target data and pending AGENTS.md text.
+- When: explicit --hooks adoption runs for each.
+- Then: each exits 1, names the offending path and preserves complete project and external-target snapshots. This proves adoption preflight only, not sandbox protection.
+- Falsifiers: success, an unnamed offending path, or a write before refusal.
+
+### S400 — Installed command preserves guard verdicts without the source link (#594 AC1, AC4)
+**Covers:** F8, F47
+- Given: an installed bundle, an allowlist tool PATH, #593 recording fake gh and independently checked missing-review, red/pending-CI, stale-base, role-play and eligible fixtures.
+- When: plain and same-repository flagged merges run through source and installed command from another directory, then repeat with .guardrails/source absent and broken.
+- Then: stdout, stderr and exit status match exactly; every source control reaches its intended refusal or clean allow without lookup warnings; merge-only allows unrelated destructive Git commands and ordinary commands without executing them.
+- Falsifiers: a fixture that fails to reach its intended policy, different output or exit, dependency on the source link or an unrelated merge-only check.
+
+### S401 — Only explicit refresh updates bundle contents and reports unchanged trust declaration (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an owned bundle, a foreign .codex file and a source-file update at a new fixture source revision.
+- When: default adoption runs first, followed by explicit --hooks.
+- Then: default adoption leaves the bundle byte-identical; explicit refresh copies the changed file, preserves other bundle files, foreign data and the command string, reports the changed path and old/new revisions, says trust is not re-prompted, and returns current structural status.
+- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report or stale status after refresh.
+
+### S402 — Version-2 owned source command migrates once with a trust notice (#594 AC5, AC10)
+**Covers:** F47, F51
+- Given: a project with the exact old version-2 provenance and owned source-path hook definition and no bundle.
+- When: explicit --hooks adoption runs twice.
+- Then: the owned definition migrates to the bundle, provenance upgrades beyond 2, the first run names /hooks and review or trust, and the second run changes nothing or duplicates no definition.
+- Falsifiers: an old command or provenance retained, no one-time trust notice or repeated migration.
+
+### S403 — Structural status distinguishes absent, current, stale and corrupt bundles (#594 AC6, AC11)
+**Covers:** F47, F51
+- Given: a default installation, a current bundle, a source-only update, a content-tampered bundle, a missing listed file, a missing owned bundle and an invalid project.
+- When: --status runs independently for each state.
+- Then: status is read-only, reports absent/current with exit 0 where no bundle was opted in, stale with exit 1 for a valid older manifest, corrupt with exit 1 for tampering or a missing file, absent with exit 1 for a missing owned bundle, and invalid with exit 2; structural states always say activation: unverified; stale status directs TiesL to refresh outside the sandbox.
+- Falsifiers: conflated states, wrong exit, claimed activation, mutation or omitted outside-sandbox direction.
+
+### S404 — Unrecorded and tampered bundles conflict before adoption writes (#594 AC6)
+**Covers:** F47
+- Given: one project with unrecorded foreign bundle data and another with an installed but tampered bundle; both have pending AGENTS.md text.
+- When: explicit --hooks adoption runs.
+- Then: both exit 1 with conflict diagnostics and complete project snapshots unchanged.
+- Falsifiers: takeover, silent repair or any partial adoption write.
+
+### S405 — Codex adoption continues to write no configuration or trust (#594 AC7)
+**Covers:** F47, F57
+- Given: a disposable HOME, separate CODEX_HOME and fresh project.
+- When: default and --hooks Codex adoption run.
+- Then: HOME and CODEX_HOME remain unchanged; no project config.toml, hooks.state or trust_level is written. This unchanged-behavior control is green before implementation and leaves S381 unchanged.
+- Falsifiers: any Codex configuration or trust written by adoption.
+
+### S406 — The hand-kept list alone suffices for source guard parity (#594 AC9)
+**Covers:** F8, F47
+- Given: the seven-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
+- When: a bundle built from that list only runs from another directory with a minimal tool PATH.
+- Then: plain and same-repository flagged missing-review, CI, ancestry, role-play and eligible verdicts match source stdout, stderr and exit exactly; unrelated commands remain outside merge-only scope.
+- Falsifiers: extra listed files, omitted files, an untested fail-open fixture or any parity difference.
+
+### S407 — Removing each merge-relevant file changes a refusing verdict (#594 AC9)
+**Covers:** F8, F47
+- Given: a list-only bundle that first passes the complete parity controls.
+- When: each listed file is removed separately and restored, including the entry point; rules.sh alone is exempt because it is sourced but has no merge-only effect.
+- Then: the role-play fixture loses its exit-2 refusal for each ablation; a missing entry point is exercised through a shell so the test observes its exit rather than a Python exec error.
+- Falsifiers: a merge-relevant ablation that retains the same refusal or a fixture that never blocked before ablation.
+
+### S408 — Relative source dependencies must stay inside the declared closure (#594 AC9)
+**Covers:** F8, F47
+- Given: the hand-kept list and its actual source files.
+- When: a test-side tripwire resolves literal file paths through own_dir and dirname of BASH_SOURCE; mutation arms add an unlisted lib dependency through each form.
+- Then: the real closure is complete and each mutation reports hooks/git-guardrails and lib/not-in-bundle.sh. The list remains hand-kept; the tripwire is a regression alarm, not a generated shell dependency analysis.
+- Falsifiers: an undeclared literal dependency, or either mutation escaping detection.
+
+### S409 — Machine-local bundle is ignored and its manifest digest is owned (#594 AC10)
+**Covers:** F47
+- Given: a project after explicit bundle install.
+- When: the managed .gitignore block, installation.json and git check-ignore output are read.
+- Then: the managed block contains /.codex/sdg-guard, Git ignores a bundled guard file, provenance version exceeds 2 and records the owned path and exact MANIFEST sha256.
+- Falsifiers: an unignored bundle, an old version, an unowned path or missing manifest digest.
+
+### S410 — The pre-live baseline documents the bundle, assumptions and refresh limits (#594 AC11, AC12)
+**Covers:** F51, F57
+- Given: the baseline document before positive live protection evidence.
+- When: its bundle warning, refresh directions and live-result conditions are inspected.
+- Then: it names .codex/sdg-guard and all seven files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
+- Falsifiers: a missing bundle dependency or limit, an asserted live guarantee, premature default change or undocumented fallback.
