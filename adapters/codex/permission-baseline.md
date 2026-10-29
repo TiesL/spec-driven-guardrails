@@ -131,7 +131,7 @@ prompt, then allow) [V docs], so:
 - there is NO blanket `gh` allow;
 - there is NO automatic allow for `pipeline-override.sh` or `epic-auto-close.sh`;
 - the baseline contains NO allow that runs outside the sandbox (TiesL's decision,
-  2026-10-29). Unmatched commands fall back to the default approval [V observed, below].
+  2026-10-29). Unmatched commands fall back to the default approval [A]; one unlisted command did ([V observed], below).
 
 ```python
 # default.rules baseline, applied by TiesL. Prompt only; nothing runs outside the sandbox.
@@ -157,25 +157,29 @@ passes; the reads then run inside the sandbox with no allow. Every line says wha
 
 ```python
 # Convenience widening (optional): delete after the GitHub-only proxy proof passes.
-prefix_rule(pattern = ["gh", "issue", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "issue", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "pr", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "pr", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "pr", "diff"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; output flags may write
-prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
-prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; output flags may write
-prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "issue", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "issue", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "diff"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R HOST/OWNER/REPO or GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via a HOST/OWNER/REPO argument or GH_HOST; --web opens a browser
 ```
 
 Trade-off: no prompt for these reads, but the command and its flags run with host access and
 network outside the sandbox. A rule cannot forbid a flag that appears later in the command.
 Excluded on purpose: blanket `gh api` (method and field flags make it a write), aliases,
-extensions, `auth` and browser operations. With four of these allows applied, `gh pr view`
+extensions and `auth`. `--web` (opens a browser) is not excluded: a rule cannot forbid a
+flag that appears later in the command, so the comments above name it per line. The comment
+flags come from `gh` help [A]; none of these nine commands writes an output file [A]. With
+four of these allows applied, `gh pr view`
 and `gh pr checks` ran with no prompt and reached GitHub, while the unlisted
 `gh api rate_limit` first failed inside the sandbox ("error connecting to api.github.com")
 and then prompted for an escalation, which ran once approved [V observed]: allow rules
-bypass network-off, and unlisted commands fall back to the default approval. Whether a
+bypass network-off, and the one unlisted command tried fell back to the default approval
+(a single observation, not a general guarantee). Whether a
 listed allow also matches the wrapped `/bin/zsh -lc` form is [A] for the allows (only the
 merge prompt rule was seen to match it).
 
