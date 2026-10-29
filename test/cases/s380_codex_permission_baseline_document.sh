@@ -32,25 +32,72 @@ else
   pin "AC0 write confinement is not read secrecy" 'read secrecy' "$doc"
   pin "AC0 needs list" 'needs list' "$doc"
   pin "AC9 trade-off lines" 'trade-off' "$doc"
-  pin "AC9 unmatched Claude-side capabilities" 'cannot match' "$doc"
-  pin "AC5 merge needs explicit confirmation" 'explicit confirmation' "$doc"
+  pin "AC9 a section on what Codex cannot match" '^#+ .*cannot match' "$doc"
+  pin "AC5 merge into main needs explicit confirmation" 'main.*explicit confirmation|explicit confirmation.*main' "$doc"
   pin "AC5 merge-preflight named" 'merge-preflight\.sh' "$doc"
   pin "AC5 prefix rule limit" 'prefix rule' "$doc"
-  pin "AC14 git actions tied to needs-list item 3" 'item 3' "$doc"
+  pin "AC14 explicit git actions tied to needs-list item 3" 'explicit actions.*item 3' "$doc"
 
-  # AC4: the rules set. Lines that define rules are prefix_rule( ... ).
-  rules="$(grep 'prefix_rule(' "$doc" || true)"
-  gh_rules="$(grep -E 'pattern *= *\["gh"\]' <<< "$rules" || true)"
-  script_rules="$(grep -E 'pipeline-override|epic-auto-close' <<< "$rules" || true)"
-  if grep -q 'prompt' <<< "$gh_rules"; then
-    fail "S380 — AC4 catch-all gh prompt rule"
+  # AC4: the rules set. Every prefix_rule line in a fenced block, tagged
+  # "conv" when the block sits under a heading or opens with a comment that
+  # says "convenience widening", else "base". Output: <tag><TAB><line>.
+  tagged="$(awk '
+    /^#+ /{ head=tolower($0) }
+    /^```/{ if (inb) { inb=0; next } inb=1; first=1; conv=(head ~ /convenience widening/); next }
+    inb && first { first=0; if (tolower($0) ~ /convenience widening/) conv=1 }
+    inb && /prefix_rule\(/ { print (conv ? "conv" : "base") "\t" $0 }
+  ' "$doc")"
+  conv_rules="$(awk -F'\t' '$1=="conv"' <<< "$tagged")"
+  base_rules="$(awk -F'\t' '$1=="base"' <<< "$tagged")"
+
+  # No allow in the baseline snippet (an allow runs outside the sandbox).
+  if grep -q 'decision *= *"allow"' <<< "$base_rules"; then
+    fail "S380 — AC4 the baseline rules snippet carries an allow that runs outside the sandbox"
   fi
-  if grep -q 'allow' <<< "$gh_rules"; then
-    fail "S380 — AC4 blanket gh allow"
+  # A gh pr merge prompt rule is part of the baseline.
+  merge_rule="$(grep -E 'pattern *= *\["gh", *"pr", *"merge"\]' <<< "$base_rules" || true)"
+  if ! grep -q '"prompt"' <<< "$merge_rule"; then
+    fail "S380 — AC4 no gh pr merge prompt rule in the baseline rules"
   fi
+  # No catch-all gh prompt, no blanket gh allow, no script allowed by prefix, anywhere.
+  all_rules="$(awk -F'\t' '{print $2}' <<< "$tagged")"
+  gh_rules="$(grep -E 'pattern *= *\["gh"\]' <<< "$all_rules" || true)"
+  if [ -n "$gh_rules" ]; then
+    fail "S380 — AC4 blanket gh rule (allow or catch-all prompt): $gh_rules"
+  fi
+  script_rules="$(grep -E 'pipeline-override|epic-auto-close|wait-for-ci|merge-preflight|model-record-emit' <<< "$all_rules" || true)"
   if grep -q 'allow' <<< "$script_rules"; then
-    fail "S380 — AC4 automatic allow for pipeline-override.sh or epic-auto-close.sh"
+    fail "S380 — AC4 a script is allowed by prefix: $script_rules"
   fi
+  # The optional convenience block exists; every line in it carries a trade-off note.
+  if [ -z "$conv_rules" ]; then
+    fail "S380 — AC4 no labelled optional convenience widening block with gh read allows"
+  else
+    if ! grep -q 'gh' <<< "$conv_rules"; then
+      fail "S380 — AC4 the convenience block carries no gh read allow"
+    fi
+    thin="$(awk -F'\t' '{ n=index($2,"#"); c=(n ? substr($2,n+1) : ""); gsub(/^ +| +$/,"",c); if (length(c) < 15) print $2 }' <<< "$conv_rules")"
+    if [ -n "$thin" ]; then
+      fail "S380 — AC9 convenience line without a trade-off note: $thin"
+    fi
+    pin "AC4 the block is optional" 'optional' "$doc"
+    pin "AC4 the block is to be deleted after the proxy proof" 'delete[d]?.*(proof|proxy)|(proof|proxy).*delete' "$doc"
+  fi
+
+  # AC2: the Network section says the convenience block bypasses network_access = false.
+  net="$(awk '/^#+ /{ s=($0 ~ /Network/) } s' "$doc")"
+  if ! grep -Eiq 'convenience.*bypass|bypass.*convenience' <<< "$net"; then
+    fail "S380 — AC2 the Network section does not say the convenience block bypasses network_access = false"
+  fi
+
+  # AC1: approvals_reviewer = "user" above the first [table] header, and the doc says so.
+  toml="$(awk '/^```toml/{f=1; next} /^```/{f=0} f' "$doc")"
+  first_table="$(grep -n '^\[' <<< "$toml" | head -n 1 | cut -d: -f1)"
+  reviewer_line="$(grep -n '^approvals_reviewer *= *"user"' <<< "$toml" | head -n 1 | cut -d: -f1)"
+  if [ -z "$reviewer_line" ] || { [ -n "$first_table" ] && [ "$reviewer_line" -gt "$first_table" ]; }; then
+    fail "S380 — AC1 approvals_reviewer = \"user\" is not above the first [table] header"
+  fi
+  pin "AC1 the doc says the key goes above the first table header" 'above the first.*(table|header)' "$doc"
 
   # AC6: no line inside a fenced block carries the flag.
   fenced="$(awk '/^```/{f=!f; next} f' "$doc")"
