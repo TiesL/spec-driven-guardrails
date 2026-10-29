@@ -10,6 +10,9 @@ administrator policy and runtime support may prevent activation. Adoption grants
 no trust or permissions. Context, fetch and push still require explicit actions;
 no SessionStart/PostToolUse/SessionEnd automation is installed.
 
+Least-privilege Codex permissions (sandbox profile, narrowed rules, merge limits) are a
+document TiesL applies by hand: see `adapters/codex/permission-baseline.md`.
+
 Before dependent work, run and read `.guardrails/source/session-context.sh --runtime codex <project>`
 from the project checkout (use `.` for <project>). Read each invoked skill's
 SKILL.md through `.agents/skills/<name>/SKILL.md` before following it. These are
