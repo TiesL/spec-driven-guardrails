@@ -2746,7 +2746,7 @@ something new is being added.
 - Then: one paragraph of `ORCHESTRATOR.md` (A26 amended: nobody types a
   marker) gives each role the `model-record-emit.sh` command in its dispatch
   prompt, found through `SPEC_DRIVEN_GUARDRAILS_DIR` or the installed skill, with
-  `--stage` filled in and no `--effort` (#424: nothing says to pass it or to
+  `--role` filled in (#599, A48) and no `--effort` (#424: nothing says to pass it or to
   fill it with `unknown`), names the requested model, has the role add `--model` with its own
   exact id (the Reviewer also `--floor-basis`) and paste the output unchanged
   as the first line of its report; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
@@ -2805,6 +2805,7 @@ something new is being added.
   judgement (stubs). Kill table: drop `<` or `>`, count characters, drop one C1
   or bidi or separator entry, a locale-dependent control test, drop or widen
   the flag-name rule, change the literal line
+- Issue #599 amendment: All five --role forms also print the same literal markers as the kept stage-only controls, with empty stderr, and the unchanged reader accepts them (#599 AC1/AC7).
 
 ### S206 — the script paths named in finding B5 resolve from an adopted project
 **Covers:** F37, F40
@@ -2880,6 +2881,7 @@ something new is being added.
   an unresolved documented path is a clean assertion failure. Exact helper
   stdout/status controls must first fail against the frozen helper, then pass;
   returning whole matching lines instead of tokens must make them red.
+- Issue #599 amendment: Keep the adopted-project --stage run and stale --effort control. The --role Architect form prints the identical marker with empty stderr; a scratch mutation that makes --role required is caught by the kept stage-only oracle (#599 AC3).
 
 ### S207 — merging is human-only only for main, and the text says so once
 **Covers:** F38
@@ -3632,6 +3634,7 @@ something new is being added.
   removes `--effort` from `model-record-emit.sh` (#413 or #424) and no longer
   carries the rows on the same-model effort check or on a self-reported
   effort
+- Issue #599 amendment: The emitter header command and usage advertise --role, while retaining the existing no-effort assertions (#599 AC4/AC6).
 
 ### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v2 in #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
 **Covers:** F9, F26, F39
@@ -5865,7 +5868,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   OR10, OR14-OR32, OR36-OR42, OR44); every `OR<n>` item has a row and every
   row's ID is unique; a `retired` row has part `-` and its ID occurs in no
   item; `above` and `below` do not occur as words in either part; OR21 and
-  OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
+  OR37 contain `OR45`, OR31 contains `--role`, cites `OR5` and states
+  role/stage agreement with the prefix (#599, A48), OR36 contains `in
   OR5 order`; OR11's item says merge into `main` only with the human's
   approval for that PR, given after the work or in advance (#516), that an
   advance approval lapses on a new commit that changes the work, and that a
@@ -5906,6 +5910,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `OR28`, `OR29`; S203: `OR31`, `OR32`; S207: `OR11`; S210: `OR15`, `OR16`)
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
+- Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -5915,8 +5920,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - When: each case runs, one broken check at a time: the first non-blank line
   is not `ROLE SESSION: <one of the five roles>` (missing, lower case, an
   unknown role, the prefix on line 2 after a non-blank line); `subagent_type`
-  `fork`; no `model-record-emit.sh` with `--stage <stage>`, or `--stage
-  Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
+  `fork`; no `model-record-emit.sh` with a valid `--role <Role>` or
+  backward-compatible `--stage <stage>`, or `--stage Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
   Reviewer`, no PR number or `/pull/<n>`, no 7-40 hex SHA (6 hex and 41 hex
   both fail), no `finding-carryforward-gate.sh`; a Reviewer brief whose only
   number-like tokens are an issue `#n` (or `/issues/n`) and an
@@ -5928,7 +5933,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   prompt avoids detection; two failed checks mapped to one ID (OR14) print
   that line once; a compliant dispatch for each of the five roles exits 0
   with empty stdout and stderr; a prompt that only quotes a rule line, or
-  mentions `model-record-emit.sh` without `--stage` at line start, is not a
+  mentions `model-record-emit.sh` without `--role` or `--stage` at line start, is not a
   role dispatch and exits 0 silently; with the marker line present the deny
   output never contains it
 - Red on `main` b43ee55: no hook. Negative control: an edited core line for
@@ -5941,6 +5946,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `PR #42`, `PR 42`, `/pull/42`, and `head 1234567890`, each beside a work
   item `#499`. Red on `6ccad5c`: the issue-and-comment-only brief, the issue
   ref with a real SHA, and the digits-as-SHA brief all exit 0
+- Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
 
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
@@ -5959,6 +5965,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   is written outside the sandbox; each run finishes within 2 s (well inside
   the 10 s timeout)
 - Red on `main` b43ee55: no hook
+- Issue #599 amendment: Repeat adoption, kill-switch, subagent and unreadable-core allow arms with a role-only emit line; fail-open diagnostics and silent scope exclusions remain unchanged (#599 AC5).
 
 ### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
 **Covers:** F38
@@ -7646,3 +7653,59 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
 - Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
 - Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
+**Covers:** F40
+- Given: an opted-in Agent dispatch, the five prefix roles, and the public hook CLI.
+- When: each role-only prompt, stage-only control, missing/invalid flag form and a role-only line without a prefix is checked.
+- Then: all five compliant roles silently pass; missing or invalid forms name OR31; a role-only line without a prefix names OR8. AVOID mentions both flags; --roles and --role=Product alone do not trigger detection.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S413 — The #595 prompt is denied before dispatch (#599 AC5, AC8)
+**Covers:** F40
+- Given: ROLE SESSION: Product and the old --stage Planning command from #595.
+- When: that prompt, --role Product --stage Planning, and a prefix/flag role mismatch are checked.
+- Then: each is denied with OR31 exactly once and empty stdout; Fullstack Developer with --role Developer silently passes.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S414 — Role and stage disagreements refuse before marker validation (#599 AC1, AC2, AC7)
+**Covers:** F40
+- Given: all five roles and stages, literal expected markers, and the public emitter CLI.
+- When: all 20 off-diagonal pairs, all five diagonal pairs in either flag order, either form alone, and competing failures run.
+- Then: mismatches exit 2 with empty stdout and one reason naming role, supplied stage and expected stage; parse errors precede mismatch, which precedes marker validation. Matching Reviewer without floor-basis reaches marker_emit's unchanged reason. Successful markers are byte-identical, with empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S415 — Stage-only prompts retain merge-base behavior (#599 AC3, AC7)
+**Covers:** F40
+- Given: the merge-base emitter and library in a disposable copy, all five stage-only commands and the kept S206 adopted-project control.
+- When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged. S206 separately exercises adoption and kills the same regression.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
+**Covers:** F40
+- Given: the emitter argv boundary, including a single quoted Fullstack Developer argument.
+- When: product, Fullstack, Fullstack Developer, every stage name, empty role, equals/plural flags, repeated/value-less flags, neither role nor stage, flag-name values, and Developer with floor-basis run.
+- Then: each bad call exits 2, prints no stdout and one stderr reason; required flags and role are named where relevant. A successful role-only command has empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S417 — Every emit line agrees with its prefix, including quoted commands by current default (#599 AC8)
+**Covers:** F40
+- Given: a compliant prompt plus another role's quoted emit command, or several emit lines with one mismatch.
+- When: the hook checks the brief, and separately a stage-only emit line without any ROLE SESSION prefix.
+- Then: the quoted command is denied under the current default pending TiesL's decision; this arm is clearly isolated so that one scenario expectation can be flipped. Several emit lines with one mismatch are denied by OR31. No prefix yields OR8 alone; the cross-check is inapplicable.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
+**Covers:** F40
+- Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
+- When: their public outputs are compared and one stage in each map source is independently mutated in scratch copies.
+- Then: all rows agree, including Fullstack Developer to Developer; each single-source mutation fails the oracle. The inventory still equals --list-checks through S311.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S419 — Instructing docs pin role commands and retain grammar ownership (#599 AC6, AC7)
+**Covers:** F40
+- Given: OR31, the instructing model-choice and pre-merge-review commands, S203/S238/S311 pins, and the unchanged marker grammar owners.
+- When: the docs and independently mutated copies are checked.
+- Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.

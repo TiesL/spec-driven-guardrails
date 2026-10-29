@@ -665,16 +665,18 @@ the next free numbers after A23.
   tokenizer (retired by V8, #429); unless the line
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
-- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
-  --model <id> [--floor-basis <sentence>]`, next to the gate (a legacy
-  `--effort` is accepted and ignored with one stderr line, A33, #424).
+- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --role <Role>
+  --model <id> [--floor-basis <sentence>]` (A48; backward-compatible
+  `--stage <Stage>` remains accepted, alone or with `--role`), next to the
+  gate (a legacy `--effort` is accepted and ignored with one stderr line, A33, #424).
   It only parses flags (unknown, missing, repeated or value-less flag, or a
-  positional argument: exit 2); the rules live in `marker_emit`. It finds
+  positional argument: exit 2); the role map and mismatch rule live in
+  `role_stage`, and marker validation stays in `marker_emit` (A48). It finds
   the lib from its own real directory (`pwd -P`), so it works through an
   adopted project's symlinked `.claude/skills`; without the lib, exit 3.
 - **Who fills what:** the orchestrator gives the command in each dispatch
-  prompt with `--stage` and names the model it requested (it no longer
-  passes `--effort`: removed by A33, #424); the role adds `--model`
+  prompt with `--role` filled in and names the model it requested (it no
+  longer passes `--effort`: removed by A33, #424); the role adds `--model`
   with its own exact id (the Reviewer also `--floor-basis`) and pastes the
   output unchanged as the first line of its report (human decision on
   #402). A role whose prompt has no command runs the wrapper itself and
@@ -956,7 +958,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Reader:** `rec_scan_bundle <kind> <bundle>` and `rec_scan <kind> <body>` print one row per candidate line, `<body-index> TAB <ok|near-miss|quoted> TAB <stage-or-?> TAB <line-or-reason>`; indices count from 1 and no field is empty. One awk pass per bundle, the one program in `lib/markdown.sh` (mode `rec`), so a record is quoted where `live_text` would blank it (a fence, state reset at every U+001E; a blockquote; a code span) plus indented code (an indent of 4 or a tab), which only rec mode quotes: `live_text` keeps those lines. Every row ends in an ASCII byte (the text of a near-miss or quoted row is wrapped in quotes, so `read` never splits a UTF-8 sequence); consumers may rely on this. The strict pattern then classifies each live candidate in bash. Text before the opener, or 1-3 leading spaces, is a near-miss.
 - **Fields:** `rec_field <line> <name>` is a left-to-right walk, one `<blanks>name="value"` per step, first occurrence wins, so a value ending in ` floor-basis=` is never an attribute.
 - **Failure:** grep exit 1 is "no hit"; grep or awk exit 2 or more, or `[[ =~ ]]` result 2, prints nothing on stdout, one line on stderr and returns non-zero. Every external command carries `LC_ALL=C` (S235) and grep is `grep -a`.
-- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names (`--model --floor-basis`); a value that merely starts with `--` is allowed.
+- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names, including `--role` (A48); a value that merely starts with `--` is allowed.
 - **Not in this slice:** no caller moves yet (the gate, collector and staleness script kept the former parser until V6 to V8); the old functions are deleted with the last caller.
 - **Violated when:** a script outside `lib/` carries its own record pattern; a near-miss is read as a record; a reader failure becomes "no record".
 
@@ -1203,9 +1205,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     The sentence line replaces the single `OR<n>` header line. It is a fixed
     template, tier `core`, with no ID.
   - **Cross-part references.** By ID only. Three rules need the other part:
-    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--stage`) and OR36
-    (resume "at first stage without marker") need the stage order in OR5
-    (part 1), so OR31 gains "Stage names: OR5." and OR36 reads "first stage,
+    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--role`, amended by
+    A48) and OR36 (resume "at first stage without marker") need the stage
+    order in OR5 (part 1), so OR31 refers to OR5 for the role-to-stage
+    mapping (A48) and OR36 reads "first stage,
     in OR5 order, without marker". No part-1 rule needs part 2 to be read
     correctly: OR6's "finding-route steps" and OR12's fresh Reviewer stand
     as written. The words "above" and "below" do not occur in
@@ -1448,14 +1451,16 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     3. Input that is not JSON, or has no `tool_input` object, or whose
        `prompt` is not a string, exits 0 with one stderr line.
   - **What counts as a role dispatch.** A prompt with a line that starts
-    `ROLE SESSION:`, or a line that has `model-record-emit.sh` followed by
-    `--stage`. Anything else is allowed silently.
+    `ROLE SESSION:`, or an emit-command line detected through `--role`
+    or `--stage` (A48). Anything else is allowed silently.
   - **Checks.**
     - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
       Product, Architect, QA, Fullstack Developer or Reviewer.
     - `no-fork`: `subagent_type` is not `fork`.
-    - `marker-command`: `model-record-emit.sh` with `--stage <one of the five
-      stages>`.
+    - `marker-command`: `model-record-emit.sh` with a valid `--role <Role>`
+      or the backward-compatible `--stage <Stage>` form (A48).
+    - `role-stage`: emit role and stage agree with the prefix role,
+      under A48; mapped with `marker-command` to OR31.
     - `model`: a non-empty `model` argument.
     - `reviewer-pr`, `reviewer-sha` and `reviewer-gate`: Reviewer only. A PR
       number or `/pull/<n>`, a 7-40 character hex SHA, and the literal
@@ -2094,3 +2099,65 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 - **Next stage.** Planning is complete. Proceed to QA test strategy/scenarios,
   then Developer implementation under this decision; no product scope change
   or waiver of the live prerequisite is required.
+
+### A48 — The emit command takes a role; the dispatch hook checks its role and stage (#599; amends A26 and A41)
+
+- **Why:** on #595 Product was given `--stage Planning`. The emitter
+  produced a valid marker for the wrong stage; the missing stage was
+  found only at merge. Human decisions D1-D7 on #599 put stage derivation
+  in the emitter and role agreement in the dispatch hook.
+- **Wrapper (amends A26):** `model-record-emit.sh --role <Role>
+  --model <id> [--floor-basis <sentence>]`. The orchestrator fills in
+  `--role`; the role supplies its model and, for Reviewer, its
+  floor-basis. Exact-case flag values are Product, Architect, QA,
+  Developer and Reviewer, mapping to Discovery, Planning, Test,
+  Implementation and Review. `Fullstack Developer` is not an emitter
+  value, even quoted; the hook alone maps that prefix to Developer.
+  `--stage` alone and with `--role` remain accepted indefinitely;
+  retirement needs a later decision.
+- **Map and refusal order:** `role_stage <role> [<stage>]` in
+  `lib/model-record.sh`, next to `marker_emit`, owns the map and the
+  mismatch refusal; the wrapper remains a flag parser. Flag-parse errors
+  come first, then role/stage disagreement, then `marker_emit`'s own
+  reasons. A mismatch returns 2, prints nothing on stdout and one stderr
+  line naming the role, supplied stage and expected stage. Matching flags
+  produce the same marker as either form alone, in either order.
+  Missing, repeated, value-less or unknown flags and invalid role values
+  are refused with exit 2, empty stdout and one stderr reason; neither
+  role nor stage supplied is also an error. `--role` joins the usage and
+  flag-name-as-value checks; `--role=Product` is refused.
+- **Hook detection and marker command (amends A41):** the emit-line
+  detection trigger and AVOID text cover `--role` as well as `--stage`,
+  with the same word guard: `--roles` and `--role=X` do not count.
+  `marker-command` accepts a valid `--role <Role>` or the existing valid
+  `--stage <Stage>` form; neither valid form, or an invalid role alone,
+  fails it. The existing `--stage=X` recognition gap is unchanged and is
+  not copied to `--role`.
+- **Role agreement:** with a valid `ROLE SESSION:` prefix, `role-stage`
+  passes only if at least one valid emit-command line exists and every
+  emit-command line carrying `--role` or `--stage`, including quoted
+  commands, agrees with the prefix role through the map.
+  Without a prefix the prefix check already fails and this cross-check
+  does not apply. Thus Product with Architect, Product with Planning,
+  contradictory flags, or several emit lines with one mismatch are
+  denied. The OR31 inventory mapping becomes
+  `hook:marker-command,role-stage`; OR31 states the match rule because
+  its own core line is the deny text.
+- **Drift guard:** the Python hook keeps one tuple of (prefix name, flag
+  name, stage), replacing ROLES and STAGES, and exposes it through
+  `--list-roles`. A drift test compares all five rows with `role_stage`
+  and OR5, including Fullstack Developer to Developer; changing any one
+  source alone fails the test. The inventory's hook check IDs still
+  equal `--list-checks`.
+- **Delivery and limits:** the hook, OR31 and instructing docs land in
+  one PR. Instructing commands use `--role`; backward-compatible
+  `--stage` is labelled as such. OR31 stays within the context budget
+  and its edit requires the differential behavior run and fresh stamp.
+  Marker output, grammar, stage names, gate, collector and legacy
+  `--effort` behavior are unchanged. The hook's existing fail-open
+  policy is unchanged. The emitter cannot see the session: a role can
+  still lie about its role or model.
+- **Violated when:** a mismatch emits a marker; a correct role-only
+  dispatch is denied; an old stage-only emitter command stops working;
+  the hook misses a prefix mismatch; the three role maps drift; or
+  OR31's deny text omits the agreement rule.

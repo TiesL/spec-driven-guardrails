@@ -141,4 +141,12 @@ $(printf '%s' "$good_dev" | tail -n +2)")" "$SANDBOX/orch.md"
 grep -q 'EDITED-499' <<<"$ad_err" || fail "S312/edited — deny text is not read from the core"
 grep -q 'Start every dispatch prompt' "$AD_CORE" && fail "S312/copy — agent-dispatch.py holds a copy of the OR8 text"
 
+# #599: keep the old stage-only controls; add all five role-only arms.
+for role in Product Architect QA "Fullstack Developer" Reviewer; do
+  ad_run_core "$(ad_input "$(ad_role_prompt "$role")")"
+  [ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] || fail "S312/#599/compliant-$role — role-only dispatch must silently pass"
+done
+deny_with wrong-stage-595 "$(ad_input "$(ad_prompt Product Planning)")" OR31
+deny_with wrong-role "$(ad_input "$(ad_role_prompt Product Architect)")" OR31
+deny_with invalid-role "$(ad_input "$(ad_role_prompt Product Fullstack)")" OR31
 test_done
