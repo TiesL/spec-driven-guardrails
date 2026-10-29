@@ -80,6 +80,22 @@ else
     if [ -n "$thin" ]; then
       fail "S380 — AC9 convenience line without a trade-off note: $thin"
     fi
+    # #595 AC4 (L9): a comment names only flags the command really has. The
+    # flag set comes from the local `gh <command> --help` (offline).
+    if command -v gh >/dev/null 2>&1; then
+      while IFS= read -r rule; do
+        [ -n "$rule" ] || continue
+        cmd="$(sed -E 's/^[^[]*\[("[^]]*")\].*$/\1/' <<< "$rule" | tr -d '",' | sed 's/^ *//')"
+        comment="${rule#*#}"
+        help_flags="$(gh ${cmd#gh } --help 2>&1 | grep -oE -- '--[a-z][a-z-]*' | sort -u || true)"
+        [ -n "$help_flags" ] || { fail "S380 — AC4 no gh help flags for '$cmd'"; continue; }
+        for cflag in $(grep -oE -- '--[a-z][a-z-]*' <<< "$comment" | sort -u); do
+          grep -qx -- "$cflag" <<< "$help_flags" || fail "S380 — AC4 the comment for '$cmd' names $cflag, which that command does not have"
+        done
+      done <<< "$(awk -F'\t' '{print $2}' <<< "$conv_rules")"
+    else
+      echo "S380: gh not installed, AC4 flag comparison skipped" >&2
+    fi
     pin "AC4 the block is optional" 'optional' "$doc"
     pin "AC4 the block is to be deleted after the proxy proof" 'delete[d]?.*(proof|proxy)|(proof|proxy).*delete' "$doc"
   fi
@@ -97,6 +113,24 @@ else
   if [ -z "$reviewer_line" ] || { [ -n "$first_table" ] && [ "$reviewer_line" -gt "$first_table" ]; }; then
     fail "S380 — AC1 approvals_reviewer = \"user\" is not above the first [table] header"
   fi
+  # #595 AC3 (L6): every key of the sandbox-config snippet (the first toml
+  # block) carries a [V]/[A] mark on its own line or on its table header.
+  # Presence only; whether a mark is true is not judged here.
+  unmarked_keys() { # stdin: toml text; prints each key without a mark
+    awk '
+      /^\[/ { tmark = ($0 ~ /\[[VA]/); next }
+      /^[A-Za-z_][A-Za-z0-9_.]* *=/ { if ($0 !~ /\[[VA]/ && !tmark) { k=$0; sub(/ *=.*/, "", k); print k } }
+    '
+  }
+  missing_marks="$(unmarked_keys <<< "$(awk '/^```toml/{n++} n==1' "$doc" | sed '1d;/^```$/,$d')")"
+  [ -z "$missing_marks" ] || fail "S380 — AC3 snippet key without a [V]/[A] mark: $missing_marks"
+  # Mutation arm: the pin must see a mark removed from one key and name it.
+  mutated="$(sed '/^exclude_slash_tmp/s/\[[VA][^#]*//' "$doc" | awk '/^```toml/{n++} n==1' | sed '1d;/^```$/,$d')"
+  seen="$(unmarked_keys <<< "$mutated")"
+  case "$seen" in
+    *exclude_slash_tmp*) ;;
+    *) fail "S380 — AC3 mutation arm: a snippet key with its mark removed was not named (got: '$seen')" ;;
+  esac
   pin "AC1 the doc says the key goes above the first table header" 'above the first.*(table|header)' "$doc"
 
   # AC6: no line inside a fenced block carries the flag.
