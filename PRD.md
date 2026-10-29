@@ -368,6 +368,12 @@ and CI checks apply to the new head. The check is ancestry only: approval
 state is not enforced here (see F55). A clash that then goes red is renumbered
 through the ordinary finding route.
 
+**Explicit repository selection (issue #593).** For a recognized `gh pr merge`, `--repo <value>`, `-R <value>`, `-R<value>` and `--repo=<value>` do not exempt a merge whose repository matches the checkout’s origin. Determine checkout identity offline from `remote.origin.url`, supporting HTTPS, scp-style SSH and `ssh://` remotes. Normalize to host/owner/repository, compare case-insensitively and remove an optional terminal `.git` suffix. Explicit `HOST/OWNER/REPO` supplies its host; `OWNER/REPO` uses `GH_HOST` when set, otherwise `github.com`.
+
+A matching identity receives the existing merge checks, subject to their existing opt-outs and failure rules. Bind every downstream lookup, including delegated role checks, to that identity despite conflicting gh defaults. A demonstrably different identity is allowed: this guard provides no merge protection for that other repository. If identity cannot be established, allow with a visible warning that repository identity could not be established and merge checks were skipped; do not use a network fallback for identity resolution.
+
+Claude’s hook and Codex’s `--merge-only` mode use the same guard. `merge-preflight.sh <pr-number>` retains its numeric-only Interface and returns the same policy verdict for the equivalent plain merge command.
+
 ### F9 — Skills infrastructure in `adopt.sh`
 
 **Per-skill symlinks in a real `.claude/skills/` directory**, plus cleanup of
