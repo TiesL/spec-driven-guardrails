@@ -7638,3 +7638,10 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: plain and flagged commands exercise fail-open paths plus ancestry-failure/missing-marker, CI-failure/stray, commit-lookup-failure/role and issue-state-failure/stray combinations.
 - Then: dependency and per-check warnings preserve their existing meanings without an identity warning; an independently reached blocker still refuses, and an unconfirmed closed stray issue stays blocking.
 - Falsifiers: silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S396 — Command-local GH_HOST overrides inherited defaults per segment (#593)
+**Covers:** F8
+- Given: a github.com origin and the missing-marker fixture from S382, with inherited GH_HOST separately other.example and github.com.
+- When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
+- Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
+- Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.

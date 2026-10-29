@@ -1,4 +1,4 @@
-"""S382-S395: repository selection at the public merge-guard boundary.
+"""S382-S396: repository selection at the public merge-guard boundary.
 
 The only Git writes are initialization/configuration of a disposable fixture.
 No commit, checkout, fetch, merge or real gh is executed. Fake gh records argv
@@ -339,6 +339,24 @@ def main():
             for failure, kind in (("ancestry", "missing"), ("ci", "stray"), ("stray", "role"), ("issue", "stray")):
                 run(failure + "/block/" + flag, command="gh pr merge 41 " + flag,
                     kind=kind, failure=failure)
+    elif ac == 15:
+        for mode in ("claude", "codex"):
+            merge = "gh pr merge 41 --repo " + SHORT
+            run(mode + "/local-origin", command="GH_HOST=github.com " + merge,
+                host="other.example", mode=mode, binding=True)
+            run(mode + "/local-other", command="GH_HOST=other.example " + merge,
+                host="github.com", mode=mode, different=True)
+            run(mode + "/compound-local-origin",
+                command="GH_HOST=other.example " + merge +
+                        " && GH_HOST=github.com " + merge,
+                host="other.example", mode=mode, binding=True)
+            # The first merge has an explicit foreign host and is allowed.
+            # Its local github.com default must not make the second merge
+            # match the origin: that segment inherits other.example.
+            run(mode + "/compound-no-leak",
+                command="GH_HOST=github.com gh pr merge 41 --repo other.example/" +
+                        SHORT + " && " + merge,
+                host="other.example", mode=mode, different=True)
     for message in failures:
         print("    FAIL: " + message, file=sys.stderr)
     print(f"S{scenario}: {runs} fixture runs, {len(failures)} failing assertions")
