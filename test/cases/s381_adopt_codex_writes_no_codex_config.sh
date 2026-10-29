@@ -28,4 +28,16 @@ if [ -n "$trust_hits" ]; then
   fail "S381 — adopt.sh wrote a trust entry"
 fi
 
+# AC2 of #595 (L3): the baseline pointer in the adopted project's AGENTS.md
+# resolves from the project root. Only resolvability is pinned, not the
+# wording: at least one written path to the baseline file must exist there.
+resolved=0
+tokens="$(grep -oE '[A-Za-z0-9_./-]*permission-baseline\.md' "$proj/AGENTS.md" 2>/dev/null | sort -u || true)"
+[ -n "$tokens" ] || fail "S381 — the adopted AGENTS.md does not mention permission-baseline.md"
+while IFS= read -r token; do
+  [ -n "$token" ] || continue
+  [ -f "$proj/$token" ] && resolved=1
+done <<< "$tokens"
+[ "$resolved" -eq 1 ] || fail "S381 — no pointer path to permission-baseline.md resolves from the adopted project root (found: $(tr '\n' ' ' <<< "$tokens"))"
+
 test_done
