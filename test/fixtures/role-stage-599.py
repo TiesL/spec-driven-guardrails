@@ -17,8 +17,12 @@ ORCH = 'skills/role-contracts/ORCHESTRATOR.md'
 HOOK = 'hooks/agent-dispatch.py'
 TSV = 'skills/role-contracts/orchestrator-rules.tsv'
 failures = []
+assertions = 0
+TERMINATORS = ['', ';', ',', ')', '`', '"', "'"]
 
 def check(ok, reason):
+    global assertions
+    assertions += 1
     if not ok:
         failures.append(reason)
         print('FAIL: ' + reason)
@@ -38,6 +42,13 @@ def prompt(prefix, flags):
     return ('ROLE SESSION: ' + prefix + '\n\nQuoted contract.\n/c/model-record-emit.sh ' + flags +
             '\nPR #42, head 0123abcdef, finding-carryforward-gate.sh 42\n')
 
+def terminated_prompt(flags, suffix):
+    text = prompt('Product', flags + suffix)
+    # Closing quotes/backticks belong to a quoted command in the dispatch brief.
+    if suffix in ['`', '"', "'"]:
+        text = text.replace('/c/model-record-emit.sh', suffix + '/c/model-record-emit.sh', 1)
+    return text
+
 def hook(text, root=ROOT):
     data = {'tool_name': 'Agent', 'tool_input': {'prompt': text, 'model': 'test-model', 'subagent_type': 'general-purpose'}}
     return run(['python3', '-I', root / HOOK, root / ORCH, root / TSV], root, json.dumps(data).encode())
@@ -45,13 +56,15 @@ def hook(text, root=ROOT):
 def rule(n, root=ROOT):
     return next(l.encode() for l in (root / ORCH).read_text().splitlines() if l.startswith('- ' + n + ' '))
 
-def allowed(p, label):
-    r=hook(p)
-    check((r.returncode,r.stdout,r.stderr)==(0,b'',b''), label + ': expected silent allow')
+def allowed(p, label, root=ROOT):
+    r=hook(p,root)
+    check((r.returncode,r.stdout,r.stderr)==(0,b'',b''), label + ': expected silent allow' +
+          ' (exit %s, stdout %s bytes, stderr %s lines)' % (r.returncode,len(r.stdout),len(r.stderr.splitlines())))
 
 def denied(p, ids, label):
     r=hook(p); lines=r.stderr.splitlines()
-    check(r.returncode==2 and not r.stdout, label + ': expected exit 2 and empty stdout')
+    check(r.returncode==2 and not r.stdout, label + ': expected exit 2 and empty stdout' +
+          ' (exit %s, stdout %s bytes)' % (r.returncode,len(r.stdout)))
     expected=[rule(i) for i in ids]
     check(lines[:-1]==expected and len(lines)==len(expected)+1, label + ': expected only ' + ','.join(ids) + ' core lines once plus AVOID')
     check(bool(lines) and b'--role' in lines[-1] and b'--stage' in lines[-1], label + ': AVOID must cover role and stage')
@@ -59,7 +72,8 @@ def denied(p, ids, label):
 def refusal(args, label, words=(), root=ROOT):
     r=emit(args,root)
     check(r.returncode==2 and r.stdout==b'' and len(r.stderr.splitlines())==1,
-          label + ': expected exit 2, empty stdout, one stderr reason')
+          label + ': expected exit 2, empty stdout, one stderr reason' +
+          ' (exit %s, stdout %s bytes, stderr %s lines)' % (r.returncode,len(r.stdout),len(r.stderr.splitlines())))
     for w in words:
         check(w.lower().encode() in r.stderr.lower(), label + ': reason must name ' + w)
     return r
@@ -84,6 +98,36 @@ def dispatch():
     for flags in ['--roles Product','--role=Product']:
         allowed('/c/model-record-emit.sh '+flags,'detection word guard '+flags)
     allowed(prompt('Product','--stage=Discovery'),'kept legacy --stage=X hook recognition gap')
+    # Use the actual local main hook AND its policy inputs, never a reconstructed
+    # parser. Read-only git show keeps the adopted clone and main untouched.
+    baseline=copy('main-dispatch')
+    for path in [HOOK,ORCH,TSV]:
+        r=run(['git','show','main:'+path])
+        if not check(r.returncode==0,'main baseline git show '+path):
+            return
+        (baseline/path).write_bytes(r.stdout)
+    for suffix in TERMINATORS:
+        label='terminator '+repr(suffix or 'EOL')
+        text=terminated_prompt('--stage Discovery',suffix)
+        allowed(text,'main stage '+label,baseline)
+        allowed(text,'current stage '+label)
+        allowed(terminated_prompt('--role Product',suffix),'current role '+label)
+    for quote in ['"', "'"]:
+        allowed(prompt('Product','--role '+quote+'Product'+quote),'properly quoted role '+quote)
+        allowed(prompt('Product','--stage '+quote+'Discovery'+quote),'properly quoted stage '+quote)
+        for value in ['Product Architect','Product ']:
+            label='quoted role '+repr(quote+value+quote)
+            denied(prompt('Product','--role '+quote+value+quote),['OR31'],label)
+            refusal(['--role',value,'--model','m'],label+' emitter control',['role'])
+    # Observations only: main already accepts these invalid stage arguments.
+    # Do not silently promote that pre-existing gap into a new hook rule.
+    for value in ['Discovery extra','Discovery ']:
+        text=prompt('Product','--stage "'+value+'"')
+        a,b=hook(text,baseline),hook(text)
+        print('QUESTION: quoted stage '+repr(value)+': main exit='+str(a.returncode)+
+              ', current exit='+str(b.returncode)+'; main silent='+str(not a.stdout and not a.stderr)+
+              ', current silent='+str(not b.stdout and not b.stderr)+'; no hook oracle pinned')
+        refusal(['--stage',value,'--model','m'],'quoted stage emitter control '+repr(value),['stage'])
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
@@ -91,6 +135,9 @@ def agreement():
     denied(prompt('Product','--role Product --stage Planning'),['OR31'],'contradictory flags')
     denied(prompt('Product','--role Architect'),['OR31'],'prefix versus role')
     allowed(prompt('Fullstack Developer','--role Developer'),'Fullstack Developer alias')
+    for suffix in TERMINATORS:
+        for flags in ['--stage Planning','--role Architect']:
+            denied(terminated_prompt(flags,suffix),['OR31'],'mismatch '+flags+' terminator '+repr(suffix or 'EOL'))
 
 def pairs():
     for _,role,expected in ROWS:
@@ -156,6 +203,13 @@ def bad_inputs():
         refusal(['--stage','Planning','--model',flag],'model flag-as-value '+flag,['value'])
     r=emit(['--role','Product','--model','m'])
     check((r.returncode,r.stderr)==(0,b''),'success stderr empty')
+    r=refusal(['--role','Product\nArchitect','--model','m'],'newline role',['role'])
+    check(r.stderr.count(b'Product')>=2 and r.stderr.count(b'Architect')>=2,
+          'newline role: reason must retain both offending input components beyond the allowed-role list')
+    r=refusal(['--role','Product','--stage','Discovery\nArchitect','--model','m'],
+              'newline supplied stage',['Product','Discovery','Architect'])
+    check(r.stderr.count(b'Discovery')>=2,
+          'newline supplied stage: reason must retain supplied Discovery as well as expected Discovery')
 
 def quoted():
     # CURRENT DEFAULT PENDING TiesL's decision: flip this ONE assertion if quoted
@@ -256,4 +310,5 @@ def docs():
 
 {'dispatch':dispatch,'agreement':agreement,'pairs':pairs,'compatibility':compatibility,
  'bad':bad_inputs,'quoted':quoted,'drift':drift,'docs':docs}[sys.argv[1]]()
+print('Assertions: '+str(assertions-len(failures))+' passed, '+str(len(failures))+' failed')
 sys.exit(bool(failures))

@@ -7657,14 +7657,14 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 ### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
 **Covers:** F40
 - Given: an opted-in Agent dispatch, the five prefix roles, and the public hook CLI.
-- When: each role-only prompt, stage-only control, missing/invalid flag form and a role-only line without a prefix is checked.
-- Then: all five compliant roles silently pass; missing or invalid forms name OR31; a role-only line without a prefix names OR8. AVOID mentions both flags; --roles and --role=Product alone do not trigger detection.
+- When: each role-only prompt, stage-only control, missing/invalid flag form and a role-only line without a prefix is checked; matching Product/Discovery values end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote; role values Product Architect and Product followed by a space are quoted as single arguments.
+- Then: all five compliant roles and matching terminated commands silently pass; stage terminator controls also pass against the actual local main hook and its policy inputs. Missing or invalid forms, including both invalid quoted role values, exit 2 with empty stdout and OR31 exactly once plus AVOID; properly quoted Product and Discovery pass. Emitter controls reject the complete invalid quoted arguments. A role-only line without a prefix names OR8. AVOID mentions both flags; --roles and --role=Product alone do not trigger detection. Invalid quoted stage values Discovery extra and Discovery followed by a space are observed against main and current hooks, with no hook oracle pinned pending a decision about that pre-existing gap.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S413 — The #595 prompt is denied before dispatch (#599 AC5, AC8)
 **Covers:** F40
 - Given: ROLE SESSION: Product and the old --stage Planning command from #595.
-- When: that prompt, --role Product --stage Planning, and a prefix/flag role mismatch are checked.
+- When: that prompt, --role Product --stage Planning, and a prefix/flag role mismatch are checked; Planning/Architect mismatches also end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote.
 - Then: each is denied with OR31 exactly once and empty stdout; Fullstack Developer with --role Developer silently passes.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
@@ -7685,8 +7685,8 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
 **Covers:** F40
 - Given: the emitter argv boundary, including a single quoted Fullstack Developer argument.
-- When: product, Fullstack, Fullstack Developer, every stage name, empty role, equals/plural flags, repeated/value-less flags, neither role nor stage, flag-name values, and Developer with floor-basis run.
-- Then: each bad call exits 2, prints no stdout and one stderr reason; required flags and role are named where relevant. A successful role-only command has empty stderr.
+- When: product, Fullstack, Fullstack Developer, every stage name, empty role, equals/plural flags, repeated/value-less flags, neither role nor stage, flag-name values, and Developer with floor-basis run; an invalid role contains Product then a newline then Architect, and Product receives a supplied stage containing Discovery then a newline then Architect.
+- Then: each bad call exits 2, prints no stdout and one stderr reason; required flags and role are named where relevant. Both newline diagnostics retain the offending input components in a safe single-line form, including the expected and supplied stage for a mismatch. A successful role-only command has empty stderr.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S417 — Every emit line agrees with its prefix, including quoted commands by current default (#599 AC8)
