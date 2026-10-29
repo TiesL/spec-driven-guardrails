@@ -9,9 +9,11 @@ How keys are marked:
 
 - **[V]** verified: read in source, help output or official documentation. Verified means
   the key exists and parses. It does not mean the runtime enforces it.
-- **[A]** assumed: not yet shown by a live run. No live probe has succeeded so far (nested
-  probes inside Codex's own sandbox failed at initialization with "Operation not permitted"
-  on 2026-10-27), so every enforcement claim below is [A].
+- **[A]** assumed: not yet shown by a live run. Nested probes inside Codex's own sandbox
+  failed at initialization ("Operation not permitted", 2026-10-27), so every enforcement
+  claim below is [A] unless it is marked **[V observed]**.
+- **[V observed]**: seen in TiesL's own interactive Codex sessions (Codex CLI 0.163.0,
+  2026-10-29). An observation of one run, not a guarantee. See "Live observations".
 
 Parsing is not enforcement. A config that starts without an error proves the keys are
 accepted, nothing more. Effective values and denials are manual evidence, see "Live proof".
@@ -66,7 +68,7 @@ chooses the location.
 # Every key: parsing [V docs/startup], effective enforcement [A pending live proof]
 sandbox_mode = "workspace-write"          # [V] key, [A] enforcement
 approval_policy = "on-request"            # [V] key, [A] enforcement
-approvals_reviewer = "user"               # [V] key, [A] enforcement
+approvals_reviewer = "user"               # [V] key, [V observed] needed, see Notes
 
 [sandbox_workspace_write]
 network_access = false                    # [V] key, [A] enforcement; off until proven (see Network)
@@ -87,6 +89,11 @@ Notes:
   scratch path at launch; there is no Codex key for it and no blanket temp root.
 - [A] Scripts that hard-code `/tmp` must be audited and made to honor `TMPDIR` before the
   tight baseline is called usable.
+- Set `approvals_reviewer = "user"` explicitly. Codex's automatic approval reviewer
+  (feature `guardian_approval`) is on by default, and left default it rejected a prompt
+  without asking TiesL [V observed]. In `config.toml` the key must sit above the first table header.
+  Appending it at the end of the file puts it inside the last table, where it does nothing
+  useful. The snippet above shows the order.
 - `approvals_reviewer = "user"` on purpose. `auto_review` and `--approve-for-me` are the
   nearest automatic-classifier analog [V docs/help], but automated review is not TiesL's
   merge confirmation and does not review actions already permitted inside the sandbox.
@@ -97,69 +104,80 @@ Notes:
 
 - Network off is the default of this baseline: `network_access = false` and no proxy table.
   Trade-off: strongest confinement, but the review-depth classifier cannot read PR metadata
-  (it falls back to thorough depth) and `merge-preflight.sh` needs an approval each time.
-  That is a gap against the PR-metadata need, not a pass.
+  (it falls back to thorough depth), and `wait-for-ci.sh` and `merge-preflight.sh` prompt
+  once per run. That is a gap against the PR-metadata need, not a pass.
 - `network_access = true` alone is too broad. The GitHub-only proxy table is part of the
   baseline only if, outside Codex's sandbox and with TiesL's go-ahead, an allowed GitHub
   request succeeds and an unrelated destination is blocked. Otherwise fall back to network
   off and record the gap. Trade-off: the proxy limits destinations, not GitHub
   repositories, methods or write authority; use a narrowly scoped GitHub credential that
   TiesL provisions.
+- The optional "Convenience widening" block below bypasses `network_access = false`: its gh
+  allows run outside the sandbox with the host's full network, beyond the proxy's
+  destination list too. It is optional and is deleted once the GitHub-only proxy proof passes.
 - No wildcard hosts, SSH, local-network or socket access, or upstream-proxy widening.
 - Command network restrictions do not cover model/auth traffic, connectors, browser or
   other independent surfaces; never use those to evade a denial.
 
 ## Narrowed rules snippet
 
-An allow rule runs the command outside the sandbox [V docs]. It is not an in-sandbox
-whitelist. Ordinary permitted commands run inside the sandbox without any rule. Codex
-applies the most restrictive matching rule [V TiesL's observation, #590 body], so:
+An allow rule runs the command outside the sandbox [V docs: Codex rules documentation]. It
+is not an in-sandbox whitelist. Ordinary permitted commands run inside the sandbox without
+any rule. When several rules match, the most restrictive decision wins (forbidden, then
+prompt, then allow) [V docs], so:
 
-- there is NO catch-all prompt rule for `gh` beside the narrow allows (it would override
-  them and make them prompt again);
+- there is NO catch-all prompt rule for `gh` beside the narrow rules (it would override
+  them);
 - there is NO blanket `gh` allow;
 - there is NO automatic allow for `pipeline-override.sh` or `epic-auto-close.sh`;
-- there is no `gh pr merge` rule. It is omitted unless the live tests show it adds value;
-  it would only make intent visible, not guard merges. Unmatched `gh` commands fall back to
-  the default approval [A].
+- the baseline contains NO allow that runs outside the sandbox (TiesL's decision,
+  2026-10-29). Unmatched commands fall back to the default approval [V observed, below].
 
 ```python
-# default.rules snippet, applied by TiesL. Each allow runs OUTSIDE the sandbox.
-prefix_rule(pattern = ["gh", "issue", "view"], decision = "allow")
-prefix_rule(pattern = ["gh", "issue", "list"], decision = "allow")
-prefix_rule(pattern = ["gh", "pr", "view"], decision = "allow")
-prefix_rule(pattern = ["gh", "pr", "list"], decision = "allow")
-prefix_rule(pattern = ["gh", "pr", "diff"], decision = "allow")
-prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")
-prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")
-prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")
-prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")
-# The three SDG scripts, in the repo-relative spellings TiesL's applied rules use:
-prefix_rule(pattern = ["./wait-for-ci.sh"], decision = "allow")
-prefix_rule(pattern = [".guardrails/source/merge-preflight.sh"], decision = "allow")
-prefix_rule(pattern = [".agents/skills/pre-merge-review/model-record-emit.sh"], decision = "allow")
+# default.rules baseline, applied by TiesL. Prompt only; nothing runs outside the sandbox.
+prefix_rule(pattern = ["gh", "pr", "merge"], decision = "prompt")
 ```
 
-Trade-off per allow (all [A] until tested):
+The merge prompt rule makes intent visible; it is not a semantic merge guard (a prefix rule
+cannot see base-branch identity or confirmation provenance). It matched the wrapped form
+`/bin/zsh -lc 'gh pr merge ...'` ("requires approval by policy") [V observed].
 
-- Read-only `gh` allows (`issue`, `pr`, `run`, `repo` view/list/diff/checks): no prompt for
-  reads, but the command and its flags run with host access outside the sandbox; flags such
-  as output-file options may write. Flag variants must be tested; excluded on purpose:
-  blanket `gh api` (method and field flags make it a write), aliases, extensions, `auth`
-  and browser operations.
-- The three scripts (`wait-for-ci.sh`, `merge-preflight.sh`, `model-record-emit.sh`, the
-  set TiesL's applied rules carry): exact spellings make the grant auditable, but a mutable
-  script can start arbitrary children outside the sandbox. The first two need network
-  (`merge-preflight.sh` needed an escalation in #575); `model-record-emit.sh` posts nothing
-  itself but is run for every stage record. Scripts not listed, including
-  `classify-review-depth.sh`, run inside the sandbox as ordinary commands (with network off
-  it falls back to thorough depth; adding it as a fourth allow would remove that at the
-  cost of running it outside the sandbox, so it is not in the baseline).
-- Bare versus wrapped matching: the allows match bare commands. Whether they also match
-  when Codex wraps a command as `/bin/zsh -lc '<command>'` is unverified [A]; the live test
-  runs each allow in both forms and records allowed or prompted.
+No script is allowed by prefix. Why, in short: Codex matches the command text, not the
+file, and the scripts live in writable roots, so an allow is a sandbox escape (a session can
+write a file at that path and run it unsandboxed). `model-record-emit.sh` needs no network
+and runs in the sandbox. `wait-for-ci.sh` and `merge-preflight.sh` prompt once per run while
+network is off and run in the sandbox once the GitHub-only proxy is proven.
+`classify-review-depth.sh` is treated the same way.
 
-An adopter who adds more outside-sandbox allows has widened beyond this baseline.
+### Convenience widening (optional)
+
+This block is optional. Applying it widens the baseline: each allow runs outside the sandbox
+and bypasses `network_access = false`. Delete the block once the GitHub-only proxy proof
+passes; the reads then run inside the sandbox with no allow. Every line says what it opens.
+
+```python
+# Convenience widening (optional): delete after the GitHub-only proxy proof passes.
+prefix_rule(pattern = ["gh", "issue", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "issue", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "pr", "diff"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; output flags may write
+prefix_rule(pattern = ["gh", "pr", "checks"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "run", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+prefix_rule(pattern = ["gh", "run", "list"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; output flags may write
+prefix_rule(pattern = ["gh", "repo", "view"], decision = "allow")  # opens full-network gh outside sandbox; host via -R/--hostname/GH_HOST; --web opens a browser
+```
+
+Trade-off: no prompt for these reads, but the command and its flags run with host access and
+network outside the sandbox. A rule cannot forbid a flag that appears later in the command.
+Excluded on purpose: blanket `gh api` (method and field flags make it a write), aliases,
+extensions, `auth` and browser operations. With four of these allows applied, `gh pr view`
+and `gh pr checks` ran with no prompt and reached GitHub, while the unlisted
+`gh api rate_limit` first failed inside the sandbox ("error connecting to api.github.com")
+and then prompted for an escalation, which ran once approved [V observed]: allow rules
+bypass network-off, and unlisted commands fall back to the default approval. Whether a
+listed allow also matches the wrapped `/bin/zsh -lc` form is [A] for the allows (only the
+merge prompt rule was seen to match it).
 
 ## Merge into main: what covers it and what cannot
 
@@ -172,7 +190,8 @@ evidence and a clean `merge-preflight.sh` run. No rule makes a merge prompt-free
 - Bash-only merge hook (`adapters/codex/merge-hook.json`): intercepts Bash merge attempts
   only; specialized or indirect shell actions, API and connector paths stay outside it. It
   works only when trusted (see next section).
-- `merge-preflight.sh <n>`: checks up-to-date, review marker, CI and role-play checks.
+- `merge-preflight.sh <n>`: (a fresh session with AGENTS.md loaded ran it before a merge and
+  it blocked with exit 2 for a PR without a review marker [V observed]) checks up-to-date, review marker, CI and role-play checks.
   It is instruction-driven, not interception: nothing makes a session run it.
 - A mechanical human-only merge barrier across shell, API and connectors needs restrictive
   managed controls or a dedicated human merge credential. That is beyond this item.
@@ -236,6 +255,10 @@ trust hash while the command string stays the same. So TiesL reviews both the de
 and the guard script before trusting, and changes to `hooks/git-guardrails` need review
 through the normal PR process.
 
+Live observations of the hook [V observed, Codex CLI 0.163.0, TiesL's own interactive
+sessions, 2026-10-29]: see "Live observations" below. The review of the hook command and of
+the guard script is TiesL's own; trust covers the declaration, not the script contents.
+
 Still open [A]: exact desktop review controls; whether a CLI trust grant reaches an
 already-open desktop chat (open a fresh local desktop chat after CLI trust and inspect its
 hook listing); no hash-mutation probe was run on this version. For AC10, TiesL decides
@@ -266,6 +289,35 @@ Stated, not hidden. Compared with Claude Code's side, Codex cannot match:
 - interception of specialized or indirect shell actions by the Bash-only hook.
 - an in-sandbox command whitelist: rules grant execution outside the sandbox.
 
+## Live observations
+
+All [V observed]: Codex CLI 0.163.0, TiesL's own interactive sessions, 2026-10-29. These are
+observations of single runs, not guarantees.
+
+- Hook review screen: event PreToolUse, matcher Bash, source project config
+  `.codex/hooks.json`, command `.guardrails/source/hooks/git-guardrails --merge-only`, mode
+  Sync, timeout 600s, status "New hook - review required"; the prompt says hooks can run
+  outside the sandbox after you trust them. After Trust, `/hooks` shows PreToolUse Installed
+  1 Active 1. A fresh session started in the project folder loads it; a session started in
+  the parent folder sees no hook and no AGENTS.md.
+- With the hook trusted, `gh pr merge 592` (no `--repo`) was blocked by the hook before any
+  approval prompt ("Blocked by git-guardrails ... without a review marker for the current
+  commit"). With `--repo TiesL/spec-driven-guardrails` the guard let the command through
+  (bug #593), so AC10 passes for the plain form only.
+- Before trust, the untrusted project hook sat unreviewed: a fake merge ran past it to the
+  rule prompt.
+- A prompt rule `["gh", "pr", "merge"]` matched the `/bin/zsh -lc 'gh pr merge ...'` form.
+- With `approvals_reviewer` left default, the automatic approval reviewer rejected the prompt
+  without asking TiesL and `/status` showed "Permissions: Workspace (granular)". With
+  `-c 'approvals_reviewer="user"'` the prompt reached TiesL and `/status` showed "Workspace
+  (Ask for approval)".
+- The gh read allows ran outside the sandbox with network (see "Convenience widening").
+- A fresh session with AGENTS.md loaded ran `merge-preflight.sh` before a merge; the
+  preflight blocked with exit 2 for a PR without a review marker.
+
+Not measured, still [A]: effective sandbox values, the GitHub-only proxy, write denial
+outside the writable roots, child inheritance, desktop controls.
+
 ## Live proof (manual evidence, outside Codex's own sandbox)
 
 The following need live runs outside Codex's own sandbox, only with TiesL's go-ahead and
@@ -273,6 +325,7 @@ against a throwaway scratch target, recorded as observations (surface, version, 
 outcome): effective values of the keys above; network proxy allow and block; bare versus
 `/bin/zsh -lc` rule matching and flag variants; the merge hook in a fresh session with and
 without trust; write allowed in the project and scratch, denied outside, protected `.git`
-behavior, child inheritance, and whether `/tmp`-bound scripts honor `TMPDIR`. Do not run
-Codex with config overrides on a work machine for this and do not touch `~/.codex` or
-`~/.claude` from SDG. Until these are recorded, every enforcement statement here is [A].
+behavior, child inheritance, and whether `/tmp`-bound scripts honor `TMPDIR`. The procedure
+is TiesL's own interactive session with one-time `-c` overrides: no permanent config
+change, and SDG writes nothing to `~/.codex` or `~/.claude`. Until these are recorded,
+every enforcement statement here that is not marked [V observed] is [A].
