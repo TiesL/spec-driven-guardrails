@@ -377,18 +377,30 @@ elif SCENARIO == 408:
         for name in names:
             text = (WF / name).read_text()
             refs = re.findall(r'\$\{?own_dir\}?/([\w./-]+)', text)
-            refs += re.findall(r'\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)/([\w./-]+)', text)
+            # Literal script-relative dependencies; do not execute shell text.
+            script = r'(?:\$0|\$BASH_SOURCE(?:\[0\])?|\$\{BASH_SOURCE(?:\[0\])?\})'
+            refs += re.findall(r'\$\(dirname\s+["\']?' + script + r'["\']?\)/([\w./-]+)', text)
+            refs += re.findall(r'\$\{BASH_SOURCE(?:\[0\])?%{1,2}/\*\}/([\w./-]+)', text)
             for ref in refs:
                 resolved = os.path.normpath(str(Path(name).parent / ref))
                 if resolved not in names: unknown.append((name, resolved))
         return unknown
     require(not tripwire(), f'closure tripwire found unlisted source dependency: {tripwire()}')
-    for anchor in ('$own_dir', '${own_dir}', '$(dirname "${BASH_SOURCE[0]}")'):
-        target = WF / 'hooks/git-guardrails'; original = target.read_text()
-        target.write_text(original + '\n. "' + anchor + '/../lib/not-in-bundle.sh"\n')
-        require(('hooks/git-guardrails', 'lib/not-in-bundle.sh') in tripwire(),
-                f'tripwire mutation survived: {anchor}')
-        target.write_text(original)
+    anchors = ('$own_dir', '${own_dir}', '$(dirname "${BASH_SOURCE[0]}")',
+               '$(dirname "$0")', '$(dirname "$BASH_SOURCE")',
+               '$(dirname "${BASH_SOURCE}")', '$(dirname "$BASH_SOURCE[0]")',
+               '${BASH_SOURCE%/*}', '${BASH_SOURCE[0]%/*}')
+    for anchor in anchors:
+        for directive in ('.', 'source'):
+            target = WF / 'hooks/git-guardrails'; original = target.read_text()
+            try:
+                target.write_text(original + '\n' + directive + ' "' + anchor + '/../lib/not-in-bundle.sh"\n')
+                found = tripwire()
+                require(('hooks/git-guardrails', 'lib/not-in-bundle.sh') in found,
+                        f'tripwire mutation survived: {directive} {anchor}: lib/not-in-bundle.sh')
+                print(f'S408: rejected {directive} {anchor}: {found}')
+            finally:
+                target.write_text(original)
     list_files()
 elif SCENARIO == 409:
     adopt('--hooks')
@@ -418,6 +430,62 @@ elif SCENARIO == 410:
         (r'(?:negative|fails?)[\s\S]{0,1000}(?:content hash|untrusted)', 'live negative fallback'),
         (r'(?:positive|observed)[\s\S]{0,1000}(?:default|optional and off)', 'positive-live default condition')):
         require(re.search(pattern, text, re.I), f'baseline omits {message}')
+elif SCENARIO == 411:
+    adopt('--hooks')
+    invoke = guard_fixture()
+    baseline = invoke(command(), kind='missing', installed=True)
+    require(baseline[0] == 2 and 'without a review marker for the current commit' in baseline[2],
+            f'missing-review control did not reach policy refusal: {baseline}')
+    backup = TMP / 'installed-before-refresh'
+    shutil.copytree(PROJECT, backup, symlinks=True)
+    for name in FILES:
+        path = WF / name
+        path.write_bytes(path.read_bytes() + b'\n# interrupted refresh fixture\n')
+    (WF / '.git/HEAD').write_text(NEW_REV + '\n')
+    # Inject only in the disposable adoption interpreter, never product code.
+    # A partial write models interruption after opening/truncating a bundle file.
+    injection = TMP / 'write-failure'
+    injection.mkdir()
+    (injection / 'sitecustomize.py').write_text("""
+import os
+from pathlib import Path
+original = Path.write_bytes
+project = Path(os.environ['FAIL_PROJECT'])
+name = os.environ['FAIL_BUNDLE_FILE']
+def interrupted(self, data):
+    if self.is_relative_to(project / '.codex') and str(self).endswith('/' + name):
+        original(self, b'')
+        Path(os.environ['FAIL_RECEIPT']).write_text(name)
+        raise OSError('injected bundle write interruption: ' + name)
+    return original(self, data)
+Path.write_bytes = interrupted
+""")
+    failures = []
+    for name in FILES:
+        shutil.rmtree(PROJECT)
+        shutil.copytree(backup, PROJECT, symlinks=True)
+        receipt = TMP / 'interruption-receipt'
+        if receipt.exists(): receipt.unlink()
+        env = dict(ENV, PYTHONPATH=str(injection), FAIL_PROJECT=str(PROJECT),
+                   FAIL_BUNDLE_FILE=name, FAIL_RECEIPT=str(receipt))
+        result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT, env=env)
+        require(receipt.exists() and receipt.read_text() == name,
+                f'{name}: injection did not reach bundle write: {result.stdout}{result.stderr}')
+        require(result.returncode != 0 and 'injected bundle write interruption' in result.stdout + result.stderr,
+                f'{name}: injection did not report failed refresh: {result.stdout}{result.stderr}')
+        actual = invoke(command(), kind='missing', installed=True)
+        if actual != baseline:
+            failures.append(f'{name}: interrupted refresh changed missing-review verdict: {actual} != {baseline}')
+        recovery = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT)
+        if recovery.returncode != 0:
+            failures.append(f'{name}: explicit recovery refused (exit {recovery.returncode}): '
+                            + recovery.stdout + recovery.stderr)
+        else:
+            status(0, 'current')
+            recovered = invoke(command(), kind='missing', installed=True)
+            require(recovered == baseline, f'{name}: recovered bundle changed policy: {recovered}')
+        print(f'S411: exercised interrupted write and recovery for {name}')
+    require(not failures, '\n'.join(failures))
 else:
     raise AssertionError(f'unknown scenario {SCENARIO}')
 print(f'S{SCENARIO}: passed')

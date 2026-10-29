@@ -7751,9 +7751,9 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 ### S408 — Relative source dependencies must stay inside the declared closure (#594 AC9)
 **Covers:** F8, F47
 - Given: the hand-kept list and its actual source files.
-- When: a test-side tripwire resolves literal file paths through own_dir and dirname of BASH_SOURCE; mutation arms add an unlisted lib dependency through each form.
+- When: a test-side tripwire resolves literal file paths through own_dir, dirname of $0 or BASH_SOURCE (including BASH_SOURCE[0]), and BASH_SOURCE directory parameter expansion; mutation arms add an unlisted lib dependency through every form with both source and dot directives.
 - Then: the real closure is complete and each mutation reports hooks/git-guardrails and lib/not-in-bundle.sh. The list remains hand-kept; the tripwire is a regression alarm, not a generated shell dependency analysis.
-- Falsifiers: an undeclared literal dependency, or either mutation escaping detection.
+- Falsifiers: an undeclared literal dependency, or any mutation escaping detection.
 
 ### S409 — Machine-local bundle is ignored and its manifest digest is owned (#594 AC10)
 **Covers:** F47
@@ -7768,3 +7768,10 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: its bundle warning, refresh directions and live-result conditions are inspected.
 - Then: it names .codex/sdg-guard and all seven files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
 - Falsifiers: a missing bundle dependency or limit, an asserted live guarantee, premature default change or undocumented fallback.
+
+### S411 — Interrupted bundle refresh preserves policy and permits explicit recovery (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
+- When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
+- Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
+- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
