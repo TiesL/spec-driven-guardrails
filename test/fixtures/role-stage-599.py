@@ -1032,12 +1032,9 @@ def quoted():
 def drift_errors(root):
     errors=[]
     r=run(['python3','-I',root/HOOK,'--list-roles'],root)
-    # Output delimiter is deliberately not pinned; the public rows carry three fields,
-    # and the prefix is the only two-word field. No new JSON interface is assumed.
-    rows=[]
-    for line in r.stdout.decode().splitlines():
-        m=re.fullmatch(r'(Product|Architect|QA|Fullstack Developer|Reviewer)\s+(Product|Architect|QA|Developer|Reviewer)\s+(Discovery|Planning|Test|Implementation|Review)',line)
-        if m:rows.append(m.groups())
+    rows=[tuple(line.split('\t')) for line in r.stdout.decode().splitlines()]
+    if any(len(row)!=3 for row in rows):
+        errors.append('hook --list-roles: exactly three tab-separated fields per line required')
     if r.returncode or r.stderr or rows!=ROWS:errors.append('hook rows')
     for prefix,role,stage in ROWS:
         r=run(['bash','-c','. "$1/lib/model-record.sh"; role_stage "$2"','fixture',str(root),role],root)
@@ -1048,9 +1045,26 @@ def drift_errors(root):
     return errors
 
 def drift():
-    check(not drift_errors(ROOT),'AC9 role rows, role_stage and OR5 must agree: '+str(drift_errors(ROOT)))
+    errors=drift_errors(ROOT)
+    check(not errors,'AC9 role rows, role_stage and OR5 must agree: '+str(errors))
+    # Conforming scratch output keeps mutation controls independent of a red
+    # working hook. A space inside Fullstack Developer remains part of field 1.
+    def delimiter(root, value):
+        p=root/HOOK
+        s,count=re.subn(r'(?m)^(\s*)print\(([\'\"])(?: |\\t)\2\.join\(row\)\)$',
+                        lambda m: m[1]+'print('+repr(value)+'.join(row))',p.read_text())
+        assert count==1, 'AC9 mutation unavailable: --list-roles row join not found'
+        p.write_text(s)
+    conforming=copy('drift-tabs')
+    delimiter(conforming,'\t')
+    check(not drift_errors(conforming),'AC9 three tab-separated fields including Fullstack Developer must pass')
+    delimiter(conforming,' ')
+    check('hook --list-roles: exactly three tab-separated fields per line required' in drift_errors(conforming),
+          'AC9 must kill one-space join mutation with the three-tab-separated-fields pin')
     for path,kind in [(HOOK,'hook'),('lib/model-record.sh','lib'),(ORCH,'OR5')]:
-        mutant=copy('drift-'+kind);p=mutant/path;s=p.read_text()
+        mutant=copy('drift-'+kind)
+        delimiter(mutant,'\t')
+        p=mutant/path;s=p.read_text()
         # Change a stage token in the map source, not a comment or another interface.
         if kind=='OR5':
             lines=s.splitlines(True);hits=[i for i,l in enumerate(lines) if l.startswith('- OR5 ')];assert len(hits)==1

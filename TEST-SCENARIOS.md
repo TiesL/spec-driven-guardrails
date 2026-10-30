@@ -7717,8 +7717,8 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 ### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
 **Covers:** F40
 - Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
-- When: their public outputs are compared and one stage in each map source is independently mutated in scratch copies.
-- Then: all rows agree, including Fullstack Developer to Developer; each single-source mutation fails the oracle. The inventory still equals --list-checks through S311.
+- When: the hook output is parsed by tab and compared with the other public outputs; one stage in each map source and the hook's tab join to a one-space join are independently mutated in scratch copies.
+- Then: every hook output line has exactly three tab-separated fields (prefix name, flag name, stage), preserving the space within Fullstack Developer as part of the first field. All rows agree, including Fullstack Developer to Developer; a conforming tab-separated scratch output passes, and the one-space join fails the field-format pin. Each single-source map mutation fails the oracle independently of the working hook's delimiter. The inventory still equals --list-checks through S311.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S419 — Instructing docs pin role commands and retain grammar ownership (#599 AC6, AC7)
