@@ -756,7 +756,112 @@ def lock_environment_scenario(kind):
     complete(invoke, baseline)
 
 
-if SCENARIO == 440:
+def descendant_lock_scenario():
+    import fcntl
+    import time
+    # This observer runs in the disposable writer interpreter, after the real
+    # atomic replacement. It never changes the workflow source or lock state.
+    injection = TMP / 'descendant-injection'
+    injection.mkdir()
+    (injection / 'sitecustomize.py').write_text(r'''
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+project = Path(os.environ['DESC_PROJECT'])
+control = Path(os.environ['DESC_CONTROL'])
+original_replace = os.replace
+def wait(name):
+    deadline = time.monotonic() + 20
+    while not (control / name).exists():
+        if time.monotonic() > deadline:
+            os._exit(87)
+        time.sleep(0.02)
+def replace(src, dst, *args, **kwargs):
+    result = original_replace(src, dst, *args, **kwargs)
+    if Path(dst) == project / '.guardrails/installation.json':
+        doc = json.loads(Path(dst).read_text())
+        if (doc.get('guard_bundle_transaction') or {}).get('phase') == 'preparing':
+            fd = int(os.environ['SDG_ADOPTION_LOCK_FD'])
+            (control / 'paused').write_text(str(fd))
+            wait('launch')
+            env = {k: v for k, v in os.environ.items()
+                   if not k.startswith('DESC_') and k != 'PYTHONPATH'}
+            child = subprocess.run([os.environ['DESC_ADOPT'], '--runtime', 'codex',
+                                    '--hooks', str(project)], env=env,
+                                   pass_fds=(fd,), capture_output=True, text=True, timeout=10)
+            (control / 'result').write_text(json.dumps(dict(
+                rc=child.returncode, stdout=child.stdout, stderr=child.stderr)))
+            wait('release')
+    return result
+os.replace = replace
+''')
+    adopt('--hooks')
+    status(0, 'current')
+    print('GREEN control: normal serializer re-execution completed adoption', flush=True)
+    changed_source()
+    control = TMP / 'descendant-control'
+    control.mkdir()
+    env = dict(ENV, PYTHONPATH=str(injection), DESC_PROJECT=str(PROJECT),
+               DESC_CONTROL=str(control), DESC_ADOPT=str(WF / 'adopt.sh'))
+    first = subprocess.Popen([str(WF / 'adopt.sh'), '--runtime', 'codex', '--hooks', str(PROJECT)],
+                             cwd=WF, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    def await_file(name):
+        deadline = time.monotonic() + 12
+        while not (control / name).exists() and first.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.02)
+        require((control / name).exists(), f'descendant harness never reached {name}')
+        require(first.poll() is None, f'first writer exited before {name}')
+    def locked():
+        fd = os.open(PROJECT, os.O_RDONLY)
+        try:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return
+            raise AssertionError('first writer does not hold the target project lock')
+        finally:
+            os.close(fd)
+    try:
+        await_file('paused')
+        require(record()['guard_bundle_transaction']['phase'] == 'preparing',
+                'first writer did not pause after preparing record replacement')
+        locked()
+        before = snapshot(PROJECT)
+        (control / 'launch').touch()
+        await_file('result')
+        result = json.loads((control / 'result').read_text())
+        locked()
+        after = snapshot(PROJECT)
+        changed = sorted(name for name in before.keys() | after.keys()
+                         if before.get(name) != after.get(name))
+        print(f'descendant writer exit {result["rc"]}; project unchanged={not changed}; '
+              f'changed files={changed}', flush=True)
+    finally:
+        (control / 'release').touch()
+        first_out, first_err = first.communicate(timeout=15)
+    print(f'first writer after release exit {first.returncode}: {first_out}{first_err}', flush=True)
+    # Always exercise the normal public path again, including recovery after
+    # the current defect, before reporting the overlapping-writer assertion.
+    adopt('--hooks')
+    status(0, 'current')
+    if result['rc'] == 0 and changed:
+        require(first.returncode == 1 and
+                'manifest digest or mode differs from ownership record' in first_out + first_err,
+                f'defective overlap did not produce the predictable first-writer conflict: '
+                f'{first.returncode}: {first_out}{first_err}')
+    require(result['rc'] == 1,
+            f'descendant overlapping writer expected exit 1, got {result["rc"]}; '
+            f'project unchanged={not changed}; changed files={changed}')
+    require(not changed, f'descendant overlapping writer changed project files: {changed}')
+    require(first.returncode == 0,
+            f'first writer failed after refused descendant: {first_out}{first_err}')
+
+
+if SCENARIO == 444:
+    descendant_lock_scenario()
+elif SCENARIO == 440:
     current_directory_adoption()
 elif SCENARIO in (441, 442, 443):
     lock_environment_scenario({441: 'invalid', 442: 'stale', 443: 'unrelated'}[SCENARIO])

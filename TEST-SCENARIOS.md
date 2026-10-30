@@ -7916,3 +7916,10 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: the second explicit-hook writer inherits that live descriptor and its number in SDG_ADOPTION_LOCK_FD.
 - Then: it exits nonzero without changing any target project files; the legitimate inherited-lock writer still completes successfully after release, with current bundle status and intact installed policy.
 - Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S444 — Descendant inherited descriptor cannot authorize overlapping adoption (#594 AC5, AC6; A47)
+**Covers:** F47, F51
+- Given: a normally adopted temporary project and a changed workflow source; a fixture interpreter observer pauses the first explicit-hook refresh immediately after the preparing record replacement, with its real target lock independently confirmed held.
+- When: that active writer launches a descendant explicit-hook adoption carrying its actual inherited locking descriptor and environment, while the first writer stays paused; the fixture snapshots the entire project before and after the descendant, then releases the first writer.
+- Then: the descendant exits 1 and every project file remains byte-identical, including modes, links and directory entries; the first writer completes with exit 0 after release. Normal adoption through the serializer's intended re-execution succeeds both before the overlap and afterward, ending with current bundle status.
+- Falsifiers: an unreached pause, an unheld lock, a first writer that exits before the descendant completes, descendant success or any project mutation, failure of the released first writer, or failure of normal serializer re-execution. On the defective implementation the descendant exits 0 and changes installation.json; the released first writer predictably refuses with exit 1 for a manifest ownership conflict, and a normal explicit retry succeeds.
