@@ -118,6 +118,10 @@ generalizes into for every role.
 **Write/action scope (A4):** the work-item issue body, a `PRD.md` epic section, or an Epic
 issue — never application code, test code, or a pull request.
 
+**Historical claims:** apply `write-spec`'s identified main/merge-base checks and
+evidence to current, existing or unchanged-behavior clauses; unverified claims
+remain unresolved.
+
 **Evidence / gates it produces:** requirements, acceptance criteria, business case, product
 validation (may use e.g. a value proposition canvas or a goal-oriented roadmap as optional
 tools to arrive at these — not a required artifact type of its own; the actual artifact stays
@@ -153,6 +157,10 @@ decomposition. See `DEEPENING.md` in the `codebase-design` skill for dependency-
 
 **Write/action scope (A4):** `ARCHITECTURE.md` decision entries and its own design-review
 comment — never direct edits to application source.
+
+**AC consistency:** name each AC the design contradicts or narrows, the clause and
+proposed difference, or explicitly state none. A difference is a recommendation
+awaiting the proper spec decision, never an implicit amendment of Product's ACs.
 
 **Evidence / gates it produces:** specification/design, architecture review, recorded
 decisions — where useful, as diagrams (sequence, flow, component) in Mermaid.
@@ -190,6 +198,20 @@ Product's prioritization (§ Product, above), for the testing share of the work.
 writes no test code itself (Fullstack Developer does, see Responsibilities above) and no application
 code.
 
+**Before Implementation**, publish `git diff --full-index <base> -- TEST-SCENARIOS.md`
+against the base in a tilde fence in your own work-item issue report comment.
+Record the full base SHA, `base_sha256` and `result_sha256`; include deletions and
+whitespace. Read the raw comment body and verify the published artifact before
+handoff using the comparison contract below. The fallback is base64 of the same
+unified diff; both hashes still verify. An explicit empty diff for an unchanged
+file has equal hashes. Above GitHub's 65,536-character comment limit, handoff is
+unresolved and triggers the pushed-ref alternative; its publication contract is
+not settled here, so stop rather than truncate or substitute local evidence.
+Each changed handoff gets a new linked report explicitly superseding and retaining
+prior reports. On resume select the applicable artifact from durable records;
+missing, unreadable, truncated or unusable evidence leaves handoff unresolved.
+Apply `write-spec`'s historical-claim checks and evidence; QA writes no test code.
+
 **Evidence / gates it produces:** test strategy, test scenarios/seams, an assessment of test
 results against those scenarios (not the raw results themselves — those come from CI/
 Fullstack Developer, see Responsibilities above), QA assessment.
@@ -217,7 +239,9 @@ by your own tests — are yours to add freely; the external seam is Architect's 
 **Write/action scope (A4):** application code, test code, and docs within Architect's
 decomposition, on the work item's shared branch, and the pull request itself — opens/updates
 it as the vehicle for the other three; never introduces a new *external* seam Architect didn't
-decide (internal seams stay its own call, as above).
+decide (internal seams stay its own call, as above). Developer-authored docs edits
+exclude `PRD.md`, `ARCHITECTURE.md` and `TEST-SCENARIOS.md`. Committing owner-authored
+text with implementing tests does not transfer authorship or permission to rewrite it.
 
 **Evidence / gates it produces:** implementation, red/green tests, documentation, pull
 request.
@@ -244,6 +268,10 @@ test *strategy* was adequate, same principle as QA's entry above and the
 `pre-merge-review` skill, which reviews evidence rather than re-executing it. Estimate effort for
 Product's prioritization (§ Product, above), for the review share of the work — the gate
 itself takes time and belongs in the total, same as every other role's share.
+
+**Checks scenario provenance** against the applicable QA artifact, comparison log
+and finding/resolution links, as well as actual test fidelity. Missing evidence
+or an unresolved comparison blocks approval.
 
 **Verifies the actual test code faithfully implements QA's scenarios/strategy** — not just
 that tests exist and pass. Extends the already-decided split between mechanical and semantic checks (the
@@ -295,6 +323,127 @@ pass already earned. A **request-changes** verdict never posts the marker, same 
 
 ---
 
+## QA scenario comparison
+
+OR46(c) inputs: repository identity (`owner/repo`), selected QA report comment ID,
+full Developer head SHA and applicable base SHA. Select the report from durable
+handoff records, including supersession links; never infer it from the local tree.
+Use `git show <base>:TEST-SCENARIOS.md`, reconstruct outside the repository with
+`git apply`, and verify both hashes before comparing the whole committed file.
+If the branch merged main after handoff, re-apply the verified diff to the new base
+and compare the whole file byte for byte. Record that base and reconstructed result
+identity too; an apply conflict leaves the handoff unresolved. Exit 0 means match,
+1 different, 2 unusable evidence; only 0 permits Review. This checks bytes, not
+authorship or semantic correctness. No repository writes or reconciliation patch.
+
+Every differing hunk needs a disclosed finding and owning-role resolution. Any
+scenario change resolved after Developer requires a new QA artifact explicitly
+superseding the prior one and a matching comparison before Review. Resolution
+alone is insufficient. Unexplained or unauthorized differences stop handoff and
+follow OR17/A28. The scenario/file sync gate and QA's scope stay unchanged.
+
+QA's raw report uses one occurrence of each metadata line `base: <full SHA>`,
+`base_sha256: <hash>`, `result_sha256: <hash>`, `empty: yes|no`, plus one tilde
+fence opening `~~~diff` (or `~~~base64` for the transport fallback), closing `~~~`.
+The payload is the exact unified diff, with no commentary inside the fence; an
+empty diff uses `empty: yes` and an empty payload. Retain the original report if
+publishing a fallback or superseding artifact. Both file hashes must still verify.
+The command below reads the raw published comment, verifies its recorded base and
+result, then compares against the applicable base. Replace the four arguments
+with the recorded identities; run from the project checkout. QA can verify its
+published artifact with head and applicable base both set to its recorded base;
+exit 1 then means reconstruction succeeded but that base lacks QA's changes,
+not a successful post-Developer comparison.
+
+```bash
+python3 - owner/repo COMMENT_ID FULL_DEVELOPER_HEAD_SHA APPLICABLE_BASE_SHA <<'PY'
+import base64, hashlib, json, os, pathlib, re, subprocess, sys, tempfile
+
+def run(args, **kw):
+    return subprocess.run(args, check=True, stdout=subprocess.PIPE, **kw).stdout
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+try:
+    repo, comment, head, applicable = sys.argv[1:]
+    assert re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo)
+    assert comment.isdecimal()
+    for value in (head, applicable):
+        assert re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})', value)
+    assert run(['gh', 'repo', 'view', '--json', 'nameWithOwner', '--jq',
+                '.nameWithOwner']).decode().strip().lower() == repo.lower()
+    report = json.loads(run(['gh', 'api', f'repos/{repo}/issues/comments/{comment}']))
+    assert report['issue_url'].lower().startswith(
+        f'https://api.github.com/repos/{repo}/issues/'.lower())
+    body = report['body']
+    assert len(body) <= 65536
+    def field(name, pattern):
+        values = re.findall(r'^' + name + r': (' + pattern + r')$', body, re.M)
+        assert len(values) == 1, 'missing or duplicate ' + name
+        return values[0]
+    original = field('base', r'(?:[0-9a-f]{40}|[0-9a-f]{64})')
+    base_hash = field('base_sha256', r'[0-9a-f]{64}')
+    result_hash = field('result_sha256', r'[0-9a-f]{64}')
+    empty = field('empty', r'yes|no') == 'yes'
+    fences = re.findall(r'^~~~(diff|base64)\n(.*?)^~~~$', body, re.M | re.S)
+    assert len(fences) == 1, 'missing or ambiguous diff fence'
+    kind, payload = fences[0]
+    patch = (base64.b64decode(''.join(payload.split()), validate=True)
+             if kind == 'base64' else payload.encode('utf-8'))
+    assert empty == (patch == b''), 'empty diff must be explicit'
+    if patch:
+        assert patch.startswith(b'diff --git a/TEST-SCENARIOS.md b/TEST-SCENARIOS.md\n')
+        assert patch.count(b'diff --git ') == 1, 'only the scenario file is allowed'
+    def read(revision):
+        return run(['git', 'show', f'{revision}:TEST-SCENARIOS.md'])
+    # Reject a mismatched checkout/ref before reconstruction.
+    for revision in (original, applicable):
+        run(['git', 'merge-base', '--is-ancestor', revision, head])
+    old = read(original)
+    assert sha(old) == base_hash, 'base hash mismatch'
+    env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+    with tempfile.TemporaryDirectory(prefix='qa-provenance-') as tmp:
+        path = pathlib.Path(tmp) / 'TEST-SCENARIOS.md'
+        def reconstruct(data):
+            path.write_bytes(data)
+            if patch:
+                run(['git', 'apply', '--whitespace=nowarn', '-'], input=patch,
+                    cwd=tmp, env=env)
+            return path.read_bytes()
+        expected = reconstruct(old)
+        assert sha(expected) == result_hash, 'result hash mismatch'
+        current_base = read(applicable)
+        if applicable != original:
+            expected = reconstruct(current_base)
+        committed = read(head)
+        status = int(committed != expected)
+        print(f'artifact={report["html_url"]} original_base={original} '
+              f'original_base_sha256={base_hash} original_qa_sha256={result_hash} '
+              f'base={applicable} base_sha256={sha(current_base)} '
+              f'qa_sha256={sha(expected)} head={head} '
+              f'committed_sha256={sha(committed)} exit={status} '
+              f'result={"different" if status else "match"}')
+        if status:
+            actual = pathlib.Path(tmp) / 'committed'
+            actual.write_bytes(committed)
+            subprocess.run(['diff', '-u', str(path), str(actual)], check=False)
+except Exception as error:
+    print(f'exit=2 result=unresolved: {error}', file=sys.stderr)
+    sys.exit(2)
+sys.exit(status)
+PY
+```
+
+After Developer returns with a committed head, log each invocation, including
+failed attempts, in the Pipeline log. Use this exact line shape:
+
+`QA provenance: command=<exact invocation>; artifact=<comment URL>; base=<SHA>; base_sha256=<hash>; qa_sha256=<hash>; head=<SHA>; committed_sha256=<hash>; exit=<status>; result=match|different|unresolved; findings=<links or none>; supersedes=<artifact URL or none>`
+
+Unknown identities use `unavailable`. For a main merge also retain the original
+base/result identities and log the applicable new base and reconstructed result
+hash. Link prior differences and owning-role resolutions even after a new match.
+
 ## Shared, across all five roles
 
 **When your recommendation is not accepted (TiesL/spec-driven-guardrails#415).** Before the decision is recorded,
@@ -345,6 +494,14 @@ the five-role pipeline the orchestrating session does that, never a dispatched r
 added 2026-09-29) — never committed or pushed, alongside the work item's own tracking
 artifact, so a human or resumed session can find and act on it. Covers the halted path A11
 doesn't: an unresolved dispute, a blocked gate, or an ambiguity nothing in scope can settle.
+
+**A design defect or spec/scenario conflict stops the affected change until the
+owning-role route resolves it** (OR19/OR17/A28). Keep `PRD.md`, `ARCHITECTURE.md` and
+`TEST-SCENARIOS.md` byte-identical at detection, including earlier legitimate owner
+edits. Save the attempted patch under A12 before any revert; report the finding
+class, falsifying check and evidence. Disclosure does not authorize an oracle edit.
+Wrong or ambiguous requirements are `spec`, faulty tests are `test`, structural
+decisions are `design`; unresolved classification follows OR18.
 
 **Reporting a defect or finding (QA, Reviewer): minimal content structure, decided
 2026-09-25.** Neither role had one specified before this — closing that gap now rather than
