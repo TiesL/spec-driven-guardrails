@@ -21,6 +21,7 @@ one stderr line. No network, no state.
 """
 import json
 import re
+import shlex
 import sys
 
 # The contract: the only place the tool name and input field names exist.
@@ -43,10 +44,8 @@ PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(row[0] for 
 EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*model-record-emit\.sh\b.*--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
     r"model-record-emit\.sh\b.*--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
-EMIT_WITH_ROLE = re.compile(
-    r"model-record-emit\.sh\b.*--role +[\"']?(%s)(?![A-Za-z0-9_])" %
-    "|".join(row[1] for row in ROLE_STAGES))
 EMIT_COMMAND = re.compile(r"model-record-emit\.sh\b(.*)")
+ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
 EMIT_FLAG = re.compile(
     r"--(role|stage)(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
 # A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
@@ -67,6 +66,30 @@ def note(msg):
     return 0
 
 
+def emit_roles(line):
+    command = EMIT_COMMAND.search(line)
+    if not command:
+        return []
+    tail = command.group(1)
+    # Dispatch prose may wrap the whole command in quotes or backticks.
+    wrapper = line.lstrip()[:1]
+    if wrapper in ('"', "'", '`') and tail.rstrip().endswith(wrapper):
+        tail = tail.rstrip()[:-1]
+    roles = []
+    for flag in ROLE_FLAG.finditer(tail):
+        separator = flag.group(1)
+        value = ""
+        if separator:
+            lexer = shlex.shlex(tail[flag.end():], posix=True,
+                                punctuation_chars=";,()&|<>`")
+            lexer.whitespace_split = True
+            lexer.commenters = ""
+            # Read one complete shell word, including concatenated segments.
+            value = lexer.get_token() or ""
+        roles.append((value, bool(separator) and "=" not in separator))
+    return roles
+
+
 def failed_checks(prompt, sub, model):
     lines = prompt.split("\n")
     first = next((l for l in lines if l.strip()), "")
@@ -78,14 +101,19 @@ def failed_checks(prompt, sub, model):
         failed.append("prefix")
     if sub == "fork":
         failed.append("no-fork")
-    valid_emit = any(EMIT_WITH_ROLE.search(l) or EMIT_WITH_STAGE.search(l) for l in lines)
+    roles = [entry for line in lines for entry in emit_roles(line)]
+    valid_emit = (any(recognized and value in {row[1] for row in ROLE_STAGES}
+                      for value, recognized in roles)
+                  or any(EMIT_WITH_STAGE.search(l) for l in lines))
     if not valid_emit:
         failed.append("marker-command")
     if role:
         _, flag_role, stage = next(row for row in ROLE_STAGES if row[0] == role)
         flags = [(flag.group(1), next((v for v in flag.groups()[1:] if v is not None), ""))
                  for line in lines for command in [EMIT_COMMAND.search(line)]
-                 if command for flag in EMIT_FLAG.finditer(command.group(1))]
+                 if command for flag in EMIT_FLAG.finditer(command.group(1))
+                 if flag.group(1) == "stage"]
+        flags.extend(("role", value) for value, _ in roles)
         # Keep the legacy stage scanner's prefix handling inside quoted values.
         if not valid_emit or any((value if name == "role" else re.split(r"[ \t\"'`]", value)[0])
                                  != (flag_role if name == "role" else stage)
@@ -156,7 +184,10 @@ def main(argv):
     lines = prompt.split("\n")
     if not any(ROLE_LINE.match(l) or EMIT_AT_START.match(l) for l in lines):
         return 0
-    failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL))
+    try:
+        failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL))
+    except ValueError:
+        return note("cannot parse role shell word")
     if not failed:
         return 0
     try:
