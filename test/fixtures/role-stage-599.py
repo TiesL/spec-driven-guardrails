@@ -119,6 +119,41 @@ def dispatch():
             label='quoted role '+repr(quote+value+quote)
             denied(prompt('Product','--role '+quote+value+quote),['OR31'],label)
             refusal(['--role',value,'--model','m'],label+' emitter control',['role'])
+    # Literal shell spellings exercise the public prompt boundary. Confirm Bash's
+    # complete argv independently so a truncated scanner cannot define the oracle.
+    concatenated = [
+        ('Product', 'Product', '"Product"" Architect"', 'Product Architect'),
+        ('Product', 'Product', "'Product'' '", 'Product '),
+        ('Product', 'Product', '"Product"\\ Architect', 'Product Architect'),
+    ] + [(prefix, role, '"' + role + '"" extra"', role + ' extra')
+         for prefix, role, _ in ROWS if role != 'Product']
+    for prefix, role, spelling, value in concatenated:
+        label = 'concatenated role ' + role + ' ' + repr(spelling)
+        shell = run(['bash', '-c', 'set -- ' + spelling +
+                     '; printf "%s\\n" "$#"; printf "%s" "$1"'])
+        check((shell.returncode, shell.stdout, shell.stderr) ==
+              (0, b'1\n' + value.encode(), b''), label + ': Bash must join one complete argument')
+        denied(prompt(prefix, '--role ' + spelling), ['OR31'], label)
+        refusal(['--role', value, '--model', 'm'], label + ' emitter control', ['role'])
+    # Bash joins this to the exact allowed role, so the correct verdict is allow.
+    spelling = '"Prod""uct"'
+    shell = run(['bash', '-c', 'set -- ' + spelling +
+                 '; printf "%s\\n" "$#"; printf "%s" "$1"'])
+    check((shell.returncode, shell.stdout, shell.stderr) == (0, b'1\nProduct', b''),
+          'concatenated valid role: Bash must join Product')
+    allowed(prompt('Product', '--role ' + spelling), 'concatenated valid role ' + spelling)
+    r = emit(['--role', 'Product', '--model', 'm'])
+    check((r.returncode, r.stderr) == (0, b'') and bool(r.stdout),
+          'concatenated valid role emitter control: complete Product must succeed')
+    # Stage concatenations are observations only, including their main behavior.
+    for spelling in ['"Discovery"" extra"', "'Discovery'' '", '"Discovery"\\ extra']:
+        text = prompt('Product', '--stage ' + spelling)
+        a, b = hook(text, baseline), hook(text)
+        print('OBSERVATION: concatenated stage ' + repr(spelling) +
+              ': main exit=' + str(a.returncode) + ', current exit=' + str(b.returncode) +
+              '; main stdout bytes=' + str(len(a.stdout)) + ', stderr lines=' + str(len(a.stderr.splitlines())) +
+              '; current stdout bytes=' + str(len(b.stdout)) + ', stderr lines=' + str(len(b.stderr.splitlines())) +
+              '; no stage hook oracle pinned')
     # Observations only: main already accepts these invalid stage arguments.
     # Do not silently promote that pre-existing gap into a new hook rule.
     for value in ['Discovery extra','Discovery ']:
