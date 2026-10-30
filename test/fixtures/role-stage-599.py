@@ -1,4 +1,5 @@
 """Public CLI/dispatch/doc seams for #599. No product writes; mutations use scratch copies."""
+import ast
 import json
 import os
 from pathlib import Path
@@ -292,25 +293,25 @@ def round7_dispatch():
         ('many continued units', prefix + (good + ' ' + chr(92) + '\n --stage Discovery\n') * 10000 + wrong, 'OR31'),
     ]:
         expect(text, expected, label, 'performance', timed=True)
-    # Five deliberately faulty public-input transformations. Require each
-    # oracle to reject its injected defect; never patch the working hook.
+    # Five deliberately faulty scratch mutations. Require each oracle to
+    # reject its injected defect; never patch the working hook. A48 retains
+    # STAGE_FLAG: disabling it must expose ignored legacy-stage mismatches
+    # both mid-line and in a later unit, regardless of the unit reader used.
     mutants = [
         ('implicit quote continuation',
          'prompt = ti.get(F_PROMPT)',
          'prompt = ti.get(F_PROMPT).replace(chr(10), " ")',
          prefix + C + ' --role Product --model "x\ny"\n', 'unchecked'),
         ('skipped mid-line mismatch',
-         'commands = emit_commands(prompt)',
-         'commands = emit_commands(chr(10).join(l for l in prompt.splitlines() if not l.startswith("cd x && ")))',
-         prefix + good + '\ncd x && ' + wrong + '\n', 'OR31'),
+         'STAGE_FLAG', 're.compile(r"(?!)")',
+         prefix + good + '\ncd x && ' + C + ' --stage Planning --model m\n', 'OR31'),
         ('ignored prompt cap',
          'prompt = ti.get(F_PROMPT)',
          'prompt = ti.get(F_PROMPT)[:4 * 1024 * 1024]',
          prefix + good + '\n' + 'x' * prompt_cap, 'unchecked'),
         ('swallowed later unit',
-         'commands = emit_commands(prompt)',
-         'commands = emit_commands(prompt.split("LATER_UNIT")[0])',
-         prefix + good + '\nLATER_UNIT\n' + wrong + '\n', 'OR31'),
+         'STAGE_FLAG', 're.compile(r"(?!)")',
+         prefix + good + '\nLATER_UNIT\n' + C + ' --stage Planning --model m\n', 'OR31'),
         ('missing unchecked diagnostic',
          'print("agent-dispatch: %s; dispatch allowed unchecked" % msg, file=sys.stderr)',
          'pass  # MUTANT: silent fail-open',
@@ -320,9 +321,25 @@ def round7_dispatch():
         root = copy('round7-mutant-' + name.replace(' ', '-'))
         path = root / HOOK
         source = path.read_text()
-        if not check(old in source, 'mutation anchor available: ' + name):
-            continue
-        path.write_text(source.replace(old, new, 1))
+        if old == 'STAGE_FLAG':
+            # Locate the specified assignment structurally, not by its
+            # formatting, regex spelling or the removed tokenizer's text.
+            assignment = next((node for node in ast.parse(source).body
+                               if isinstance(node, ast.Assign) and
+                               any(isinstance(target, ast.Name) and target.id == old
+                                   for target in node.targets)), None)
+            if not check(assignment is not None, 'mutation anchor available: ' + name):
+                continue
+            value = assignment.value
+            lines = source.splitlines(keepends=True)
+            start = sum(len(line.encode()) for line in lines[:value.lineno - 1]) + value.col_offset
+            end = sum(len(line.encode()) for line in lines[:value.end_lineno - 1]) + value.end_col_offset
+            source_bytes = source.encode()
+            path.write_bytes(source_bytes[:start] + new.encode() + source_bytes[end:])
+        else:
+            if not check(old in source, 'mutation anchor available: ' + name):
+                continue
+            path.write_text(source.replace(old, new, 1))
         result = hook(text, root, timeout=2.5)
         if expected == 'unchecked':
             lines = result.stderr.splitlines()
