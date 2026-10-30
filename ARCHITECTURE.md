@@ -2200,8 +2200,10 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   unquoted semicolon, comma, parentheses, ampersand, pipe and angle brackets
   separate words too, preserving existing terminator controls. They do
   not execute anything or stop the scan of later flags on that unit.
-  A whitespace-delimited unquoted hash starts a comment through the end
-  of its physical line, so a comment apostrophe never opens a quote or
+  An unquoted hash at a word start after unescaped whitespace starts a
+  comment through the end of its physical line; backslash-escaped whitespace
+  is part of the shell word, not a word separator, so a hash after it does
+  not start a comment. A comment apostrophe never opens a quote or
   enables continuation; remove that comment before testing continuation.
   Inline command wrappers are presentation: if the script's pathname has
   an immediately preceding single quote, double quote or backtick and the
@@ -2261,12 +2263,14 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   dollar-quote/localized-quote spellings, parameter expansion, command
   substitution, shell evaluation or commands embedded inside a quoted
   shell-program argument. Shell-like words are read literally; neither
-  expansion nor Bash equivalence is promised. The open finding
-  `role-shell-interpretation-policy`, including tab separators and shell
-  spellings that Bash resolves to Product, stays documented for TiesL's
-  decision; option B does not decide it. Keep observation coverage and
-  the current unsupported role-tab behavior, rather than silently widening
-  the accepted shell language. A malformed relevant unit or resource cap
+  expansion nor Bash equivalence is promised. Per the temporary panel
+  decision (2026-10-30, vote 2-1), four role spellings are denied and
+  unsupported: dollar-single-quote Product, dollar-double-quote Product,
+  Product followed by an empty command substitution, and a tab between
+  flag and value. Keep observation coverage for these spellings.
+  The quoted OR31 text goes unchecked, and a prose mention with a guarded
+  flag spelling and no ROLE SESSION line is denied, both by design.
+  A malformed relevant unit or resource cap
   can bypass all checks with a visible unchecked diagnostic; this is the
   existing fail-open trade-off, not a security enforcement guarantee.
 - **Removed and retained:** [A] Remove `emit_commands`' whole-prompt shell
@@ -2277,7 +2281,12 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   (prefix name, flag name, stage) tuple, `--list-roles`, `STAGE_FLAG`,
   `--list-checks`, `--print-contract`, rule-line lookup, fail-open notes,
   prefix/no-fork checks and Reviewer PR/SHA/gate searches on raw prompt
-  text. The wrapper and `lib/model-record.sh` do not change for option B.
+  text. Per the temporary panel decision (2026-10-30, vote 2-1),
+  `hooks/agent-dispatch.py --list-roles` outputs three tab-separated fields
+  per line: prefix name (which may contain a space), flag name, then stage.
+  The hook's join changes from one space to one tab; drift test S418
+  parses by tab and pins this output contract. The wrapper and
+  `lib/model-record.sh` do not change for option B.
 - **Product handoff, F40 wording (proposal only):** [V] The current text
   says: "The dispatch hook denies a prompt whose emit role or stage does
   not match its `ROLE SESSION:` role, including an old prompt that
@@ -2323,7 +2332,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   diagnostics unchanged. S417 keeps all-unit mismatches and missing-prefix
   behavior; clarify that fences remain checked under option B and retain
   the separately open quoted-example policy. S418 keeps tuple/library/OR5
-  drift tests. S419 keeps instructing-doc and grammar-owner pins, with
+  drift tests, parsing the hook's three-field output by tab. S419 keeps
+  instructing-doc and grammar-owner pins, with
   OR31 and its existing stamp untouched.
 - **QA handoff, new cases:** [A] Add the round-7 bullet, numbered, dollar
   prompt, blockquote, `Run:`, `cd ... &&` and `bash -c` introduction shapes
@@ -2363,8 +2373,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   establish runtime headroom for these proposed caps; it is not verified
   by this design. Product must adopt the narrowed F40 promise before
   implementation; QA must replace the obsolete hook oracles explicitly.
-  The shell-interpretation policy and quoted-example exemption remain
-  human decisions; option B changes neither by implication. Marker output,
+  The general quoted-example exemption remains a human decision; option B
+  does not change it by implication. Marker output,
   grammar, stage names, gate, collector and legacy effort behavior stay
   unchanged. OR31, ORCHESTRATOR, inventory, behavior scenarios and stamp
   need no edit for this amendment, so no new S274 run is prescribed here.
