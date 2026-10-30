@@ -228,6 +228,117 @@ def round4_dispatch(baseline):
                           ', stdout bytes=' + str(len(result.stdout)) +
                           ', stderr=' + repr(result.stderr.decode()) + '; no stage hook oracle pinned')
 
+def round5_quoted_forms():
+    # Quote kind x one or two literal line breaks x with or without that quote
+    # kind escaped around the break, as a balanced half fraction: every pair of
+    # these factors appears, at half the runtime of the full 2x2x2 product.
+    forms = []
+    for quote in ['"', "'"]:
+        for breaks in [1, 2]:
+            for escaped in [(quote == '"') == (breaks == 2)]:
+                value = '\n'.join(['one', 'two', 'three'][:breaks + 1])
+                if escaped:
+                    value = 'a ' + quote + value + quote + ' z'
+                if quote == '"':
+                    spelling = '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+                else:
+                    spelling = "'" + value.replace("'", "'" + chr(92) + "''") + "'"
+                label = ('double' if quote == '"' else 'single') + ' quotes, ' + \
+                        str(breaks) + ' newline(s)' + (', escaped quotes' if escaped else '')
+                forms.append((label, spelling, value))
+    return forms
+
+def round5_dispatch():
+    # A quoted argument containing literal newlines does not end the command;
+    # later flags, continued or not, still belong to it. Generate every
+    # combination so a variant of the class cannot hide between examples.
+    from concurrent.futures import ThreadPoolExecutor
+    from itertools import permutations
+    kinds = [  # (label, flag spelling, argv, expected hook verdict, emitter reason words)
+        ('stage mismatch', '--stage Planning', ['--stage', 'Planning'], 'deny', ['Product', 'Planning', 'Discovery']),
+        ('repeated role', '--role Architect', ['--role', 'Architect'], 'deny', ['twice']),
+        ('matching stage', '--stage Discovery', ['--stage', 'Discovery'], 'allow', []),
+    ]
+    seps = [('space', ' '), ('cont1', ' ' + chr(92) + '\n'), ('cont3', (' ' + chr(92) + '\n') * 3)]
+    cases = []
+    for qlabel, spelling, value in round5_quoted_forms():
+        for klabel, xflag, xargv, verdict, words in kinds:
+            tokens = {'R': ('--role Product', ['--role', 'Product']), 'X': (xflag, xargv),
+                      'M': ('--model ' + spelling, ['--model', value])}
+            for order in permutations('RXM'):
+                for (s1, sep1) in seps:
+                    for (s2, sep2) in seps:
+                        flags = tokens[order[0]][0] + sep1 + tokens[order[1]][0] + sep2 + tokens[order[2]][0]
+                        argv = sum((tokens[t][1] for t in order), [])
+                        cases.append({'kind': klabel, 'quote': qlabel, 'order': ''.join(order),
+                                      'seps': s1 + '+' + s2, 'flags': flags, 'argv': argv,
+                                      'verdict': verdict, 'words': words})
+    def shell(case):
+        return run(['bash', '-c', 'set -- ' + case['flags'] + '; printf "%s\\0" "$@"'])
+    started = time.monotonic()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        shells = list(pool.map(shell, cases))
+        hooks = list(pool.map(lambda c: hook(prompt('Product', c['flags'])), cases))
+        argvs = sorted({tuple(c['argv']) for c in cases})
+        emitted = dict(zip(argvs, pool.map(lambda a: emit(list(a)), argvs)))
+        plain = {a: tuple('m' if i > 0 and a[i - 1] == '--model' else x for i, x in enumerate(a)) for a in argvs}
+        emitted_plain = dict(zip(argvs, pool.map(lambda a: emit(list(plain[a])), argvs)))
+    print('TIMING: round-5 quoted multiline matrix: %d cases, %.3f s' % (len(cases), time.monotonic() - started))
+    or31 = rule('OR31')
+    groups = {}
+    shown = {}
+    def record(ok, group, label):
+        # One assertion per case; print the first few failures per group only.
+        global assertions
+        assertions += 1
+        tally = groups.setdefault(group, [0, 0])
+        tally[1] += 1
+        if not ok:
+            tally[0] += 1
+            failures.append(label)
+            shown[group] = shown.get(group, 0) + 1
+            if shown[group] <= 2:
+                print('FAIL: ' + label)
+    for case, sh, r in zip(cases, shells, hooks):
+        label = ('round-5 ' + case['kind'] + ', ' + case['quote'] + ', order ' + case['order'] +
+                 ', separators ' + case['seps'])
+        check((sh.returncode, sh.stdout, sh.stderr) ==
+              (0, b''.join(x.encode() + b'\0' for x in case['argv']), b''), label + ': Bash complete argv')
+        if case['verdict'] == 'allow':
+            ok = (r.returncode, r.stdout, r.stderr) == (0, b'', b'')
+        else:
+            lines = r.stderr.splitlines()
+            ok = (r.returncode == 2 and not r.stdout and len(lines) == 2 and lines[0] == or31
+                  and b'--role' in lines[1] and b'--stage' in lines[1])
+        continued = 'no continuation' if case['seps'] == 'space+space' else 'with continuation'
+        record(ok, (case['kind'], 'all'), label + ': expected ' +
+               ('silent allow' if case['verdict'] == 'allow' else 'exit 2, empty stdout, OR31 once plus AVOID') +
+               ' (exit %s, stdout %s bytes, stderr %s lines)' % (r.returncode, len(r.stdout), len(r.stderr.splitlines())))
+        for group in ['order ' + case['order'], 'separators ' + case['seps'], case['quote'], continued]:
+            tally = groups.setdefault((case['kind'], group), [0, 0])
+            tally[0] += not ok
+            tally[1] += 1
+    # Emitter controls on the exact Bash argv, and with the quoted value replaced
+    # by a valid model so the refusal or success is about role and stage.
+    kind_of = {tuple(c['argv']): next(k for k in kinds if k[0] == c['kind']) for c in cases}
+    for argv in argvs:
+        kind = kind_of[argv]
+        label = 'round-5 emitter control ' + repr(list(argv))
+        for result, name in [(emitted[argv], 'quoted value'), (emitted_plain[argv], 'valid model')]:
+            if kind[3] == 'deny':
+                check(result.returncode == 2 and not result.stdout and
+                      all(w.lower().encode() in result.stderr.lower() for w in kind[4]),
+                      label + ' ' + name + ': expected refusal naming ' + ', '.join(kind[4]))
+            elif name == 'valid model':
+                check(result.returncode == 0 and bool(result.stdout) and not result.stderr,
+                      label + ' valid model: matching role and stage must succeed')
+            else:
+                check(result.returncode == 2 and not result.stdout and b'model' in result.stderr
+                      and b'role' not in result.stderr.lower() and b'stage' not in result.stderr.lower(),
+                      label + ' quoted value: only the model value may be refused')
+    for (kind, group), (red, total) in sorted(groups.items()):
+        print('RESULT: round-5 %s, %s: %d/%d %s' % (kind, group, red, total, 'RED' if red else 'GREEN'))
+
 def dispatch():
     for prefix,role,stage in ROWS:
         allowed(prompt(prefix,'--role '+role),role+' role-only')
@@ -303,6 +414,7 @@ def dispatch():
         refusal(['--stage',value,'--model','m'],'quoted stage emitter control '+repr(value),['stage'])
     round3_dispatch(baseline)
     round4_dispatch(baseline)
+    round5_dispatch()
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
