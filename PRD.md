@@ -1594,11 +1594,23 @@ dispatch hook checks lines mentioning model-record-emit.sh and their
 explicitly continued lines within A48's bounds. Within this supported
 brief format, a parsed emit role or legacy stage that disagrees with the
 ROLE SESSION role denies the dispatch, including a stage-only command.
+Shell spellings that bash resolves to a role but that are not plain spelled
+roles are denied and unsupported: dollar-single-quote Product,
+dollar-double-quote Product, Product followed by an empty command
+substitution, and a tab between the flag and value; a deny is expected in
+these cases.
+A brief quoting the OR31 rule text produces an unchecked diagnostic (the
+dispatch is allowed), while a prose mention of the script together with a
+guarded flag spelling in a brief without a ROLE SESSION line is denied,
+both by design.
 Prose outside those lines is not shell input. Quoted examples and fenced
 commands are checked too. Literal quoted multiline values and shell
 evaluation are outside this check. Malformed or over-limit input allows
 the dispatch with an unchecked diagnostic under the existing fail-open
 policy.
+Observed today, as on main: a quoted legacy stage value with extra text
+(for example "Discovery extra" or a trailing space) is allowed unchecked;
+denying it is a follow-up.
 
 The marker format and grammar are written down in one place:
 `model-choice` points to A31 and states the two reader rules (whole
