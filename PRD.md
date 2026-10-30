@@ -1856,9 +1856,10 @@ mechanically proven behavioral compliance.
 installed bundle from observed sandbox protection. Until the live result
 is recorded, protection remains [A]. A stale bundle continues enforcing
 its installed rules until explicitly refreshed; status warns about
-staleness and reports corruption as a conflict. Documentation and status
-say that TiesL must refresh outside the sandbox; SDG does not work around
-that protection.
+staleness, reports corruption as a conflict and distinguishes valid
+interrupted refreshes as recovery pending. Documentation and status say
+that TiesL must refresh or recover outside the sandbox; SDG does not work
+around that protection.
 
 The first migration to the bundle changes the hook command and requires
 one further review and trust in `/hooks`. A later content-only refresh
@@ -2014,11 +2015,19 @@ two, so the shared parser must not get slower because of that.
 ### Deployability
 
 Strongly relevant, and unusual in form. "Rolling out" means: merging to
-`main`. Consumers follow `main` live via symlink, so every merge is
-immediately active in four projects, with no opt-in and no rollback path
-other than a revert. There's no staging between merge and use — that raises
-the bar for F1. What `adopt.sh` installs lags behind instead, until someone
-re-runs it; F6 makes that self-reporting.
+`main` for symlinked consumers. These consumers follow `main` live, so every
+merge is immediately active in four projects, with no opt-in and no rollback
+path other than a revert. For these consumers, there's no staging between
+merge and use — that raises the bar for F1. Copied files installed by
+`adopt.sh` lag behind until explicitly refreshed; F6 makes that
+self-reporting.
+
+The Codex guard bundle refreshes only with explicit `--hooks`, using
+verified staging and atomic directory exchange (F47). An interrupted
+refresh reports recovery pending; only another explicit `--hooks` run
+authorizes recovery. Interrupted preparation rebuilds from the source
+available at retry time. Refresh and recovery require quiescent hook
+execution.
 
 ### Privacy
 
