@@ -699,7 +699,8 @@ shared_seed_selection() {
 }
 
 project_dir="${project_arg:-.}"
-# Keep the process-owned directory lock across all project adoption writes.
+# Keep the directory lock across all project adoption writes; consume the
+# serializer's one-time handoff only in its intended re-execution.
 if [ "$user_mode" -eq 0 ] && [ "$status_mode" -eq 0 ]; then
   if ! python3 "$own_dir/lib/codex-adoption.py" --lock-held "$project_dir"; then
     exec python3 "$own_dir/lib/codex-adoption.py" --serialize "$project_dir" "$own_dir/adopt.sh" ${adoption_args[@]+"${adoption_args[@]}"}

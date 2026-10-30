@@ -439,7 +439,7 @@ def refresh_bundle(source, project, old, contents, modes, exchange):
 
 
 def inherited_lock_held(project):
-    """Verify the inherited open description owns this project's flock."""
+    """Consume the serializer's handoff only in its re-executed shell."""
     try:
         fd = int(os.environ.get('SDG_ADOPTION_LOCK_FD', ''))
         if fd < 0: return False
@@ -460,7 +460,13 @@ def inherited_lock_held(project):
             # Contention alone could be another writer. Only the inherited
             # locking description can also obtain the exclusive lock here.
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            return True
+            handoff = int(os.environ.get('SDG_ADOPTION_REEXEC_FD', ''))
+            if handoff < 0 or not stat.S_ISFIFO(os.fstat(handoff).st_mode):
+                return False
+            os.set_blocking(handoff, False)
+            # exec preserves the serializer's PID. Reading consumes the only
+            # handoff, so even a descendant inheriting both FDs cannot reuse it.
+            return os.read(handoff, 32) == str(os.getppid()).encode('ascii')
         finally:
             os.close(probe)
     except (OSError, ValueError, OverflowError):
@@ -480,6 +486,11 @@ def main():
             return 1
         os.set_inheritable(fd, True)
         os.environ['SDG_ADOPTION_LOCK_FD'] = str(fd)
+        handoff, sender = os.pipe()
+        os.write(sender, str(os.getpid()).encode('ascii'))
+        os.close(sender)
+        os.set_inheritable(handoff, True)
+        os.environ['SDG_ADOPTION_REEXEC_FD'] = str(handoff)
         os.execv(sys.argv[3], sys.argv[3:])
     source = Path(sys.argv[1]).resolve()
     project = Path(sys.argv[2]).resolve()
