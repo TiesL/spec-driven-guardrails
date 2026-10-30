@@ -7646,3 +7646,77 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
 - Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
 - Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+## Oracle conflict stops and durable QA handoff (#547, #546; A49)
+
+### S460 — Conflict detection preserves the oracle and routes the finding
+
+**Covers:** F59
+
+- Given: A Developer or QA detects a design defect or spec/scenario conflict, with legitimate owner edits already present.
+- When: The loaded OR19 and Shared contracts are inspected, including deletion controls.
+- Then: They require a stop before changing any protected byte at detection, A12 patch preservation before revert, a classified finding with falsifying check and OR17/A28 ownership route; wrong requirements are spec, faulty tests test, structural decisions design, unresolved class OR18. Disclosure gives no edit permission.
+- Evidence boundary: The loaded instruction is a text seam only; live stop/patch/hash behavior remains required in the shared final behavior run under AC6.
+
+### S461 — Developer docs scope explicitly excludes authored spec edits
+
+**Covers:** F59
+
+- Given: Developer has its general docs permission and may commit owner-authored scenarios alongside tests.
+- When: The Developer A4 contract is read and each exclusion is removed in a mutation control.
+- Then: It explicitly excludes Developer-authored changes to PRD.md, ARCHITECTURE.md and TEST-SCENARIOS.md; committing owner-authored text does not transfer authorship.
+- Evidence boundary: A generic docs permission or disclosure cannot override any exclusion.
+
+### S462 — Historical clauses carry falsifying evidence at both main identities
+
+**Covers:** F59
+
+- Given: Product or QA asserts current, existing or unchanged behavior; observed main and the PR merge base may differ.
+- When: The write-spec instruction is checked through its loaded text seam.
+- Then: Owner-routed reconciliation replaces unconditional spec updates; each historical clause records observed main SHA, merge-base SHA separately when different, falsifying command/check, observable expected result and Product/QA run evidence or concrete lookup. Preservation runs on the merge base; unverified evidence remains unresolved and relevant main changes require revalidation before merge.
+- Evidence boundary: These are new evidence requirements, not a claim that an existing historical behavior was observed; no historical oracle is invented by this test.
+
+### S463 — Architect exposes narrowed ACs and preservation assertions stay green on old code
+
+**Covers:** F59
+
+- Given: Design may narrow an AC, and a preservation assertion may fail against the recorded main merge base.
+- When: Architect and tdd-seams contracts are checked, retaining new-behavior red-before-green.
+- Then: Architect names each contradicted or narrowed AC or explicitly none; preserved behavior must be green on the merge base, with red routed as a spec finding and stop, never repaired by rewriting the oracle. New behavior still requires red-before-green.
+- Evidence boundary: Text pins do not substitute for the shared paid behavior run; existing S68 stays unchanged.
+
+### S464 — QA publishes a verified reconstructible scenario artifact before handoff
+
+**Covers:** F60
+
+- Given: QA completes a changed or unchanged scenario handoff.
+- When: The QA report contract is read through the loaded skill seam.
+- Then: It requires git diff --full-index of TEST-SCENARIOS.md in a tilde fence before Implementation, full base SHA and both file hashes, raw comment verification, base64 of the same diff as fallback with both hashes checked, explicit equal hashes for empty diff, and unresolved over-limit evidence triggering the pushed-ref alternative.
+- Evidence boundary: No publication contract is invented for the still-unspecified pushed-ref alternative.
+
+### S465 — Resume and Review use the applicable QA provenance artifact
+
+**Covers:** F60
+
+- Given: Multiple QA reports exist or the original working tree is unavailable.
+- When: QA, OR15 and Reviewer text are checked with per-obligation controls.
+- Then: A changed handoff links a new report explicitly superseding and retaining prior reports; missing/unreadable evidence leaves resume unresolved. OR15 adds the applicable QA artifact, comparison log and finding/resolution links while retaining existing fields; Reviewer verifies provenance and test fidelity. QA still writes no test code.
+- Evidence boundary: Existing scenario/file sync and S210 remain unchanged; no gate relaxation or scope expansion is part of this functionality.
+
+### S466 — OR46 comparison is read-only and logs complete provenance
+
+**Covers:** F60
+
+- Given: Developer returned a committed head and a selected QA report; a main merge or owner-resolved change may have occurred.
+- When: Loaded OR46(c) and detailed role-contract comparison instructions are checked.
+- Then: Inputs identify repository, selected report, full head and applicable base; git show and git apply reconstruct outside the repository with both hashes verified. Whole-file byte comparison returns 0 match, 1 different, 2 unusable; only 0 permits Review. Main merges require re-application, differences require findings and owning-role resolution plus a new QA artifact and matching comparison. Each attempt logs the exact A49 QA provenance fields, using unavailable for unknown identities.
+- Evidence boundary: The command belongs in role-contract text; the orchestrator authors no reconciliation patch. Detailed instruction syntax is pinned here, not duplicated into the injected core.
+
+### S467 — Comparison reference rejects byte changes and unusable artifacts
+
+**Covers:** F60
+
+- Given: Independent literal byte fixtures model raw-comment extracted evidence and read-only git-show results, including a later explicitly selected base and superseding reports.
+- When: The fixture-level reference applies a full-index unified diff with git apply in a temporary directory outside any repository.
+- Then: Equal, deletion/whitespace-preserving, explicit-empty, verified base64-recovery, latest-artifact and main-reapply cases return 0; one-byte, CRLF, whitespace and outside-hunk changes return 1. Missing/truncated/corrupt artifacts, either bad hash, implicit empty, over-limit, stale/missing selected report and failed re-apply return 2. Protected working files and git index remain byte-identical; temporary output is removed.
+- Evidence boundary: The loaded contract must require this operation, so the test is red while that text is absent. This reference is not a production command, comment parser, publication mechanism or proof of live obedience; new-base selection and over-limit publication remain unresolved.
