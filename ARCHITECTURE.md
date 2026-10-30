@@ -2159,8 +2159,12 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   old installation, `preparing`, `ready`, exchanged while still `ready`,
   `cleanup`, and complete new installation. Serialize adoption writers
   exclusively from preflight through recovery and final record replacement;
-  an overlapping writer must refuse before writes, including unrelated
-  adoption writes. Use serialization released on process termination so an
+  an accidentally overlapping writer must refuse before writes, including
+  unrelated adoption writes. Serialization prevents accidental overlap of
+  adoption writers; a same-user process that deliberately forges the
+  re-execution handoff is outside the threat model (such a process can already
+  edit the installation record, MANIFEST and hooks directly).
+  Use serialization released on process termination so an
   interrupted writer does not require unsafe lock-file deletion. Complete
   existing preflight, including unrelated ownership checks, before any write.
   Every installation-record transition uses a complete temporary regular file
