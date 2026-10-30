@@ -401,13 +401,14 @@ and two items progress at once, while every human gate stays where it is today.
   is recorded `operator-started` and the manager starts nothing on that issue (lease).
 - **AC-3 (cap).** Given 2 running sessions and a third queued item, when nothing pauses, then
   the third is not started; when one item pauses on a decision, then it is started **[Q11]**.
-- **AC-4 (relay).** Given a worker stops with a question, when the manager detects it, then a
-  numbered decision comment with the worker's recommended answer appears on the issue and the
-  maintainer's phone gets a push within 5 minutes, and only that item pauses **[Q7]**.
-- **AC-5 (answer).** Given the maintainer answers on the issue or in the manager chat, when the
-  manager picks it up, then the decision is recorded verbatim with "relayed by manager session
-  <id>" and the item resumes with the answer; a comment not from the maintainer's account is
-  never taken as an answer **[Q7]**.
+- **AC-4 (relay).** Given a worker stops with a question, when the manager detects it,
+  then an open numbered decision comment with the worker's recommended answer appears on the
+  issue, the maintainer gets a Claude Code push, and only that item pauses. A freshly started
+  manager re-pushes every open decision.
+- **AC-5 (answer).** Given an open decision, when the maintainer answers in the manager chat,
+  then the answer is recorded verbatim with "relayed by manager session <id>" and the item
+  resumes; a GitHub comment is never taken as an answer; a decision already closed by a record on
+  the issue (for instance from an attended session) is not asked or relayed again.
 - **AC-6 (short limit).** Given a stage hits a limit whose reset is ≤ X, when the manager reads
   the ledger, then the item waits and resumes on the same runtime after the reset with no human
   action, and the wait is logged.
