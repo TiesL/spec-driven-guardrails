@@ -374,6 +374,14 @@ A matching identity receives the existing merge checks, subject to their existin
 
 Claude’s hook and Codex’s `--merge-only` mode use the same guard. `merge-preflight.sh <pr-number>` retains its numeric-only Interface and returns the same policy verdict for the equivalent plain merge command.
 
+**Codex guard bundle (issue #594).** The optional Codex hook runs
+`.codex/sdg-guard/hooks/git-guardrails --merge-only` from the adopted
+project. At the same source revision, the bundled and source guards produce
+identical stdout, stderr and exit status for the same merge inputs. The
+bundle remains runnable with `.guardrails/source` absent or broken. Existing
+merge policy, opt-outs and fail-open behavior remain unchanged; merge-only
+mode does not acquire unrelated Git checks.
+
 ### F9 — Skills infrastructure in `adopt.sh`
 
 **Per-skill symlinks in a real `.claude/skills/` directory**, plus cleanup of
@@ -1836,6 +1844,29 @@ instructions and relevant shared skills, including grilling and role-contracts.
 Adoption supports machine-local setup without requiring Claude-only files or a
 committed machine-specific absolute path.
 
+**Optional Codex guard bundle (issue #594).** Explicit
+`adopt.sh --runtime codex --hooks` installs a self-contained, machine-local
+bundle in the real directory `.codex/sdg-guard/`, with the seven guard files
+byte-identical to source, their modes and relative layout preserved, and a
+`MANIFEST` recording each file's sha256 and mode and the source revision.
+The managed hook command points at this bundle. Repeated adoption of the
+same state adds no duplicates or changes. The bundle is gitignored, and
+installation provenance version 4 records ownership, the committed manifest digest and a strictly validated refresh transaction containing old/new manifest digests, staging path and phase. Versions 1-3 remain readable; upgrade is explicit.
+
+Only explicit `--hooks` refreshes the bundle, using verified staging and atomic directory exchange. Unsupported exchange refuses refresh. Refresh and recovery require quiescent hook execution. Default adoption neither creates, refreshes nor removes the bundle, and neither default adoption nor status recovers or cleans up a pending transaction. A second explicit `--hooks` run authorizes recovery.
+If preparation is interrupted and the source changes before recovery,
+the explicit retry discards transaction-owned staging data and rebuilds
+from the source available at retry time, recording the new target digest.
+A refresh preserves foreign files in
+`.codex/` and reports changed files and the old and new source revisions.
+A symlink at `.codex`, `.codex/sdg-guard` or inside the bundle is refused
+before any adoption write, with the offending path named. An unrecorded or
+tampered bundle conflicts before any write rather than being taken over.
+
+Status distinguishes current, stale, corrupt and absent bundles, and reports a valid interrupted refresh as recovery pending while retaining applicable current/stale content classification. Exit meanings remain: 0 complete and current, including valid default absence; 1 stale, conflict or recovery pending; 2 invalid or unreadable. Structural
+status always reports `activation: unverified`; installation alone proves
+neither activation nor sandbox protection.
+
 ### F48 — Codex desktop guidance discovery (issue #455 AC4)
 
 A user beginning work in the same adopted project with Codex desktop can
@@ -1861,6 +1892,23 @@ Codex-specific behavior, Claude-specific behavior and limitations for hooks
 and dispatch. Practical parity means consistent workflow and check outcomes;
 documentation makes no unverified claim of identical runtime automation or
 mechanically proven behavioral compliance.
+
+**Codex bundle limits (issue #594).** Documentation distinguishes an
+installed bundle from observed sandbox protection. Until the live result
+is recorded, protection remains [A]. A stale bundle continues enforcing
+its installed rules until explicitly refreshed; status warns about
+staleness, reports corruption as a conflict and distinguishes valid
+interrupted refreshes as recovery pending. Documentation and status say
+that TiesL must refresh or recover outside the sandbox; SDG does not work
+around that protection.
+
+The first migration to the bundle changes the hook command and requires
+one further review and trust in `/hooks`. A later content-only refresh
+does not force fresh trust: its output says trust is not re-prompted.
+The bundle does not protect the `quality-review-before-merge` row in
+`WORKFLOW-ADOPTION.md`, escape-hatch environment variables or tools supplied
+through PATH. These limits remain explicit; offline checks do not prove
+live protection or activation.
 
 ### F52 — Accurate Codex workflow evidence and deferred live observations (issue #455 AC8)
 
@@ -1944,6 +1992,28 @@ explicitly unverified.
 
 A documented, TiesL-applied least-privilege baseline for Codex sessions doing SDG work (`adapters/codex/permission-baseline.md`): a runtime-neutral list of what SDG work needs, a `workspace-write` sandbox profile with network off until proven, a narrowed rules set without a blanket `gh` allow or a catch-all prompt rule, and the stated limits of what Codex cannot match. `./check` runs to the end on a read-only tree without writing bytecode. Merges into `main` stay behind explicit confirmation, `--dangerously-bypass-approvals-and-sandbox` appears only as a prohibition, and neither `adopt.sh` nor any SDG script writes Codex config or grants trust. Live enforcement results are recorded as observations outside Codex's sandbox with TiesL's go-ahead and are not a claim of enforcement until then.
 
+**Guard-bundle baseline (issue #594).** The trusted-hook warning describes
+the installed bundle and names all seven files: `hooks/git-guardrails`,
+`hooks/read-command.py`, `hooks/rules.sh`, `lib/markdown.sh`,
+`lib/changes.sh`, `lib/model-record.sh` and
+`skills/pre-merge-review/model-record-gate.sh`. Before live proof is
+recorded, the baseline keeps "merge hook optional and off" and marks
+bundle protection [A]. Neither adoption nor refresh writes Codex config
+or grants trust.
+
+Live proof is a separate QA-owned, TiesL-run follow-up and does not block
+the code merge. Its observations identify surface, version, command and
+outcome, covering changes inside the bundle, creation of files in
+`.codex`, rename, replacement, deletion and recreation of `.codex`
+itself, and creation when initially absent, both with SDG as the project
+and with a clone present only as a writable root. A trusted bundled hook
+blocking a plain merge is the positive control; symlink protection is
+recorded informationally, while adoption continues to refuse symlinks.
+Only a recorded positive result changes the baseline default. A negative
+result routes to the Architect's choice between a content hash in the
+command and leaving the hook untrusted; neither fallback is introduced
+by this first cut.
+
 ## Non-functional characteristics
 
 ### Security
@@ -1986,11 +2056,19 @@ two, so the shared parser must not get slower because of that.
 ### Deployability
 
 Strongly relevant, and unusual in form. "Rolling out" means: merging to
-`main`. Consumers follow `main` live via symlink, so every merge is
-immediately active in four projects, with no opt-in and no rollback path
-other than a revert. There's no staging between merge and use — that raises
-the bar for F1. What `adopt.sh` installs lags behind instead, until someone
-re-runs it; F6 makes that self-reporting.
+`main` for symlinked consumers. These consumers follow `main` live, so every
+merge is immediately active in four projects, with no opt-in and no rollback
+path other than a revert. For these consumers, there's no staging between
+merge and use — that raises the bar for F1. Copied files installed by
+`adopt.sh` lag behind until explicitly refreshed; F6 makes that
+self-reporting.
+
+The Codex guard bundle refreshes only with explicit `--hooks`, using
+verified staging and atomic directory exchange (F47). An interrupted
+refresh reports recovery pending; only another explicit `--hooks` run
+authorizes recovery. Interrupted preparation rebuilds from the source
+available at retry time. Refresh and recovery require quiescent hook
+execution.
 
 ### Privacy
 

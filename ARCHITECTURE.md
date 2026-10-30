@@ -2024,6 +2024,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   A source template supplies the canonical definition, not a whole-file symlink.
   Resolve the guard from the adopted project's `.guardrails/source` using a
   safely quoted project-root path, including calls launched in subdirectories.
+  The #594 amendment below supersedes this source-path resolution for the
+  installed command and extends the provenance and status rules for bundles.
 - **Guard Interface.** AC4 requires all non-merge Bash commands to remain usable.
   Wiring the full guard unchanged would also enforce destructive-Git and
   issue-first rules. Add an explicit `--merge-only` invocation mode to the
@@ -2100,6 +2102,248 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   then Developer implementation under this decision; no product scope change
   or waiver of the live prerequisite is required.
 
+#### A47 amendment — staged guard bundle publication and explicit recovery (#594, PR #600)
+
+- **Authority and numbering.** TiesL accepted the Architect's staged bundle,
+  atomic exchange and transaction recommendation in full on 2026-10-30. This
+  amends the existing Codex guard decision A47, the highest A-number on this
+  branch at c2f218a. It allocates no new number and cannot clash with A48
+  planned by #599. PRD F47 and S397-S411 describe the affected behavior;
+  Product must update F47 and QA must extend the interruption scenarios.
+- **Module / Interface.** Keep publication and recovery in the existing
+  Codex adoption Module behind the `adopt.sh` Interface. Its Depth hides the
+  transaction at the existing adoption and read-only status Seam, preserving
+  Leverage and Locality for callers. A separate transaction framework would
+  spread this knowledge across callers rather than pass the deletion test;
+  no new Adapter abstraction is justified by the two-adapters rule.
+  The installed command targets the real, machine-local directory
+  `.codex/sdg-guard/`, containing exactly the seven declared guard files and
+  MANIFEST, with source bytes, modes and bundle-relative layout preserved.
+  MANIFEST records file sha256 values, modes and source revision. Ownership
+  anchors its exact sha256 independently in `.guardrails/installation.json`.
+  The bundle stays gitignored; foreign `.codex/` files are preserved. Repeating
+  the same complete installation is a no-op. Content refresh reports changed
+  files and old/new revisions, retains the command string and does not renew
+  hook review/trust. Adoption grants neither trust nor permissions.
+- **Publication mechanism and support limit.** Construct and fully verify a
+  staging directory on the same filesystem as the active directory, then
+  exchange the two real directories atomically. Use macOS `renameatx_np`
+  with `RENAME_SWAP`, or Linux `renameat2` with `RENAME_EXCHANGE`. These are
+  proposed mechanisms, unverified on this machine; this decision records no
+  successful platform probe. Refuse refresh if the platform or filesystem
+  cannot supply the exchange, leaving the active bundle unchanged. Never
+  fall back to two renames, in-place overwrites or per-file replacement of
+  the active bundle: those expose a missing path or mixed generation.
+  Check support before starting the transaction where possible; a runtime
+  unsupported-exchange error leaves the ready transaction for explicit retry,
+  without publishing or silently switching mechanisms.
+- **Provenance version 4.** Continue strict reading of versions 1, 2 and 3
+  with their existing schemas; explicit bundle adoption upgrades to version 4
+  with a reported provenance upgrade. Default adoption and status must not
+  upgrade an older bundle record implicitly. Version 4 has exactly the
+  version-3 fields `owner`, `version`, `runtime`, `checkout`, `links`,
+  `managed_hook`, `guard_bundle`, plus `guard_bundle_transaction`. Preserve
+  existing ownership, link and hook validation. Version is the integer 4;
+  `guard_bundle` still has exactly `path` and `manifest_sha256`, with path
+  `.codex/sdg-guard` and a lowercase 64-hex digest. The transaction is null
+  in a complete installation, otherwise an object with exactly `phase`,
+  `staging_path`, `old_manifest_sha256` and `new_manifest_sha256`. Both
+  digests are lowercase 64-hex strings; the phase is exactly `preparing`,
+  `ready` or `cleanup`. The staging path is one reserved project-relative
+  sibling of the active directory beneath the real `.codex` directory,
+  named `.sdg-guard-stage-` followed by a nonempty ASCII alphanumeric token.
+  Reject absolute paths, traversal, alternate spellings, unknown or missing
+  fields, wrong types and unknown phases. Bind cleanup and recovery to this
+  exact path, never a wildcard or a directory discovered by scanning.
+  In `preparing` and `ready`, the committed ownership digest equals the old
+  digest; in `cleanup`, it equals the new digest. Reject inconsistent records.
+  No-op refresh needs no transaction; equal old/new digests do not authorize
+  an ambiguous exchange. Metadata is an authorization anchor, not permission
+  to accept arbitrary self-consistent manifests or changed active bytes.
+- **State machine and writer serialization.** The refresh states are complete
+  old installation, `preparing`, `ready`, exchanged while still `ready`,
+  `cleanup`, and complete new installation. Serialize adoption writers
+  exclusively from preflight through recovery and final record replacement;
+  an accidentally overlapping writer must refuse before writes, including
+  unrelated adoption writes. Serialization prevents accidental overlap of
+  adoption writers; a same-user process that deliberately forges the
+  re-execution handoff is outside the threat model (such a process can already
+  edit the installation record, MANIFEST and hooks directly).
+  Use serialization released on process termination so an
+  interrupted writer does not require unsafe lock-file deletion. Complete
+  existing preflight, including unrelated ownership checks, before any write.
+  Every installation-record transition uses a complete temporary regular file
+  and atomic replacement, so interruption exposes either complete record.
+  This is an interrupted-process design; it makes no additional claim about
+  power-loss durability of filesystem or storage caches.
+- **Preparation and its interruption points.** From the validated old state,
+  atomically write the `preparing` record with both digests and the exact
+  reserved staging path before constructing staging. If interrupted before
+  record replacement, the old record and active bundle remain coherent; after
+  replacement, an absent or incomplete stage is authorized preparation data.
+  Write the seven files with their original relative names and modes and
+  construct MANIFEST there, leaving active contents untouched. Before or
+  during those writes, interruption leaves the old executable policy intact.
+  On explicit recovery, discard only validated transaction-owned preparation
+  data and rebuild; incomplete staging is never an executable generation.
+  Refuse unexpected paths and symlinks rather than following them recursively.
+- **Readiness and exchange interruption points.** Fully validate staged
+  inventory, MANIFEST digest and mode, and each file's bytes and mode against
+  the intended new generation before atomically recording `ready`. An
+  interruption during that record replacement leaves either `preparing`,
+  which can rebuild staging, or `ready`, which requires complete validation
+  of both generations before publication. Exchange active and staging once.
+  Interruption at the exchange leaves either old-active/new-staged or
+  new-active/old-staged, both with complete contents. The `ready` record
+  authorizes recognizing either arrangement only by full validation against
+  its exact old and new digests. Names or a self-consistent MANIFEST alone
+  cannot establish which arrangement exists. Recovery exchanges only the
+  former arrangement; it must not exchange the latter back to the old state.
+- **Ownership commit and cleanup interruption points.** After validating the
+  published new generation, atomically commit its ownership digest together
+  with phase `cleanup`. An interruption at that replacement leaves either
+  `ready` with new active and complete old staged, or `cleanup` with new
+  committed ownership. Only after this commit remove the transaction-owned
+  old generation, then atomically clear the transaction to null. During
+  cleanup, validate the new active bundle fully and permit only the recorded
+  old inventory, matching bytes and modes for entries still present, beneath
+  the exact staging path. Missing old entries, including an already removed
+  stage, are compatible with interrupted cleanup; changed entries, extra
+  paths and symlinks are conflicts. Interruption during deletion therefore
+  permits idempotent cleanup without authorizing changes to active contents.
+  Interruption while clearing metadata leaves either a resumable `cleanup`
+  record or a complete installation. Successful refresh leaves no transient
+  staging artifacts, preserving S401's final snapshot.
+- **Recovery trigger and validation.** An explicit second
+  `adopt.sh --runtime codex --hooks` run authorizes recovery. Reconcile the
+  recorded transaction before planning a further refresh, even if current
+  source has changed since preparation. Repeat the same validation and
+  state transitions on every retry; interruption during recovery has the
+  same interpretation as interruption during the original transition.
+  Unknown phases, malformed transactions, impossible arrangements and an
+  active bundle matching neither authorized generation conflict before
+  writes. Existing symlink and tamper refusals remain unchanged, including
+  `.codex`, the active bundle, all inner entries and transaction paths; name
+  the offending path. Never take over an unrecorded bundle or treat active
+  tampering as recoverable just because transaction metadata exists.
+  Default adoption and `--status` never recover, remove staging data or clear
+  metadata. A pending transaction is preserved rather than overwritten by
+  otherwise ordinary adoption work.
+- **Status and exit meanings.** For a valid interrupted transaction report
+  `recovery pending` and exit 1, preserving its current or stale content
+  classification where applicable. Pending recovery is distinct from corrupt
+  or tampered contents. Retain current, stale, corrupt and absent states:
+  exit 0 requires a complete current installation, including the valid
+  default state with no opted-in bundle; stale, conflict and recovery pending
+  exit 1; invalid or unreadable input exits 2. A missing owned bundle remains
+  an absent conflict, not the valid default absence. Malformed transaction
+  provenance is an ownership conflict under the existing record policy.
+  Status remains read-only, says `activation: unverified` and directs TiesL
+  to perform explicit refresh/recovery outside the sandbox. Neither this
+  decision nor structural status proves live protection or activation.
+- **Quiescent refresh limit.** TiesL must refresh while no hook is executing
+  and prevent hook execution until refresh or recovery completes. Atomic
+  exchange guarantees complete published directory contents across process
+  interruptions; it does not pin a generation for a concurrently running
+  script that later resolves sibling dependencies through the exchanged
+  pathname. Writer serialization does not coordinate hook execution. Do not
+  claim concurrent hooks are safe. Supporting that requires a separate
+  generation-pinning or execution-coordination design.
+- **S411 compatibility and QA handoff.** Preserve staging filenames ending
+  in each original bundle-relative path under the project's `.codex` so
+  S411's `Path.write_bytes` partial-write injector reaches all seven files.
+  Do not evade it by changing write primitives or suffixes; do not change
+  S411 or its assertions. Each injection must be confirmed, refresh must
+  fail, and the installed command must retain the exact missing-review exit
+  2, stdout and stderr. Explicit retry must recover to current status with
+  the same verdict. S411 covers preparation writes, not all transaction
+  transitions. QA must add preparation-record, ready-record, exchange,
+  ownership-commit and cleanup interruption cases, interruption during
+  recovery, active tampering despite metadata, malformed transactions,
+  symlinks, unsupported exchange and overlapping writers. Preserve S397-S410,
+  including closure sufficiency/necessity, trust/config limits and parity.
+- **Other adopted files.** Most adopted files are symlinks into the SDG
+  clone and do not require copied-content refresh. The guard bundle is the
+  copy addressed here. Issue templates are `cp -f` copies; their lower-risk
+  refresh behavior is outside this decision's scope.
+- **Interrupted preparation: rebuild and retarget (accepted by
+  TiesL on 2026-10-30 under OR43; spec-visible: yes).** In `preparing` only, discard the
+  validated transaction-owned staging data and rebuild from the current
+  source instead of retaining a pinned historical source generation. This
+  changes documented recovery behavior and the intended digest/source
+  provenance that a retry may publish. Keep PRD unchanged
+  here; Product owns any resulting spec update. No new status or exit meaning
+  is proposed. The existing Module and Interface retain this recovery logic;
+  no new external Seam or persisted source snapshot is needed.
+  - Validate the old active generation against the committed old digest and
+    validate the exact staging path and any preparation entries under the
+    existing ownership, inventory and symlink rules before discarding them:
+    only regular files at the seven declared relative paths plus MANIFEST and
+    their real parent directories are disposable preparation data. Partial
+    file bytes are not executable or publication evidence; cleanup of this
+    incomplete data needs no historical source bytes. Never require an
+    incomplete stage to reconstruct the previously intended
+    new bytes. Never discard a `ready` or `cleanup` generation by this rule:
+    those phases recover their recorded generations without using current
+    source, then plan any further refresh as already specified.
+  - Remove preparation data completely before changing the intended digest.
+    An interruption before or during removal leaves `preparing`, the unchanged
+    old active generation and an absent or partial stage; the next explicit
+    retry validates and repeats removal. After removal, determine the current
+    source generation, including its MANIFEST, revision, bytes and modes.
+    Atomically replace the whole `preparing` record with its new intended
+    MANIFEST digest, preserving the old digest and exact staging path, before
+    writing any replacement staging contents. An interruption before or during
+    replacement leaves either complete record with no stage; either can
+    restart this procedure without reconstructing its recorded target.
+  - Build and fully verify staging against that newly recorded generation
+    before recording `ready`. Interruption while building or validating leaves
+    `preparing` and can repeat discard and retarget. If source changes during
+    planning/building, do not mark a mismatching or mixed generation ready;
+    leave preparation pending for explicit retry. Revision and file evidence
+    must describe the same planned source generation. Interruption at the
+    `ready` replacement follows the existing two-record outcome: `preparing`
+    may rebuild, while `ready` preserves its exact verified generation even
+    if source later changes. If the rebuilt target digest equals the old
+    digest, verify the old active generation, remove any rebuilt staging
+    under the same preparation rules, and atomically clear the transaction
+    only after staging is absent instead of exchanging equal generations;
+    interruption leaves either resumable preparation or the complete old
+    installation. No historical source retention is required by this choice.
+- **Cleanup evidence: delete MANIFEST last (internal to the accepted design;
+  spec-visible: no).** Preserve the old generation's complete MANIFEST bytes
+  and mode at the exact recorded staging path until all other old entries and
+  directories have been removed. On each cleanup attempt, fully validate the
+  committed new active generation first, then authenticate the remaining old
+  MANIFEST against `old_manifest_sha256` and its required mode. Its inventory
+  supplies the expected paths, bytes and modes for every remaining old file;
+  validate the complete remaining tree before deleting anything. Missing old
+  payload entries are allowed, but changed entries, unexpected paths and
+  symlinks still conflict. Use individual removals, never an unordered
+  recursive deletion that might remove MANIFEST early. No transaction schema,
+  copied inventory or transaction-owned trash directory is needed.
+  - Before the first deletion, interruption retains the complete old
+    generation. During payload-file deletion or removal of empty nested
+    directories, interruption retains the authenticated MANIFEST and a subset
+    of its inventory. A retry checks remaining files against that evidence
+    and resumes; validation does not depend on already deleted payload bytes.
+    Remove nested directories bottom-up, rejecting unexpected entries rather
+    than following them or deleting them as cleanup data.
+  - Only when MANIFEST is the sole remaining entry may it be unlinked, using
+    one unlink rather than truncating or rewriting it. Interruption at this
+    point leaves either the intact authenticated MANIFEST or an empty staging
+    directory. A missing MANIFEST is compatible with cleanup only when that
+    exact staging directory is empty or already absent; any other remaining
+    entry is a conflict because its validation evidence is gone. The empty
+    case needs no old inventory to authorize removal of the recorded empty
+    directory. Interruption at that removal leaves an empty or absent stage;
+    both permit idempotent completion after validating the new active bundle.
+  - Clear the transaction atomically only after staging is absent. An
+    interruption leaves either `cleanup` with an absent stage or a complete
+    installation, as already specified. This ordering refines internal
+    deletion mechanics without changing status, exits, provenance schema or
+    documented user recovery behavior. It retains validation evidence for
+    every old entry that could still require validation.
 ### A48 — The emit command takes a role; the dispatch hook checks its role and stage (#599; amends A26 and A41)
 
 - **Why:** on #595 Product was given `--stage Planning`. The emitter

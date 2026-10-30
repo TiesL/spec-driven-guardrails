@@ -55,7 +55,9 @@ fi
 nep="$SANDBOX/nepworkflow"
 mkdir -p "$nep/lib" "$nep/templates"
 cp "$TEST_REPO_ROOT/lib/changes.sh" "$TEST_REPO_ROOT/lib/nfr.sh" \
-  "$TEST_REPO_ROOT/lib/claude-status.py" "$nep/lib/"
+  "$TEST_REPO_ROOT/lib/claude-status.py" \
+  "$TEST_REPO_ROOT/lib/codex-adoption.py" \
+  "$TEST_REPO_ROOT/lib/managed_blocks.py" "$nep/lib/"
 cp "$TEST_REPO_ROOT/adopt.sh" "$nep/"
 echo "# Werkwijze" > "$nep/WORKFLOW.md"
 cp "$source" "$nep/CHANGES.md"
