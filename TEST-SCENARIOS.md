@@ -5932,9 +5932,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   through the inventory's `hook:` column), plus one line on how a non-role
   prompt avoids detection; two failed checks mapped to one ID (OR14) print
   that line once; a compliant dispatch for each of the five roles exits 0
-  with empty stdout and stderr; a prompt that only quotes a rule line, or
-  mentions `model-record-emit.sh` without `--role` or `--stage` at line start, is not a
-  role dispatch and exits 0 silently; with the marker line present the deny
+  with empty stdout and stderr; quoted OR8/OR1 rule lines without an emit
+  mention, or a mention of `model-record-emit.sh` without guarded role/stage
+  flag spellings, are not role dispatches and exit 0 silently. A48 detects
+  guarded flag spellings even in prose: the original script mention with
+  `--stage matters?` denies with OR8, OR7, OR31 and OR30; quoting OR8,
+  OR31 and OR1 retains exit 0 with empty stdout and exactly one unchecked
+  diagnostic because OR31's script wrapper is unmatched at the unit end
+  (A48's unmatched-wrapper rule). With the marker line present the deny
   output never contains it
 - Red on `main` b43ee55: no hook. Negative control: an edited core line for
   OR8 changes the deny text with it (no second copy in the script)
