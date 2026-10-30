@@ -227,6 +227,8 @@ exchanges directories using macOS renameatx_np/RENAME_SWAP or Linux
 renameat2/RENAME_EXCHANGE through Python ctypes. Unsupported exchange refuses
 refresh; there is no fallback publication mechanism. Adoption writers are
 serialized, and installation-record updates use atomic replacement.
+Serialization prevents accidental overlap of adoption writers; a same-user process
+that deliberately forges the re-execution handoff is outside the threat model.
 Unrecorded or tampered bundles and symlinks at `.codex`,
 `sdg-guard` or inside the bundle conflict before writes.
 The first migration requires one further review and trust in `/hooks`; later
