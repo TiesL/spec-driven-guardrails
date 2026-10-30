@@ -10,8 +10,8 @@ Usage:
   agent-dispatch.py --list-checks      the check ids, one per line
   agent-dispatch.py --print-contract   tool name and input fields, as JSON
 
-A role dispatch (a prompt line starting `ROLE SESSION:`, or a line starting
-with a `model-record-emit.sh` command that has `--role` or `--stage`) that fails a check
+A role dispatch (a prompt line starting `ROLE SESSION:`, or a line mentioning
+a `model-record-emit.sh` command that has `--role` or `--stage`) that fails a check
 exits 2; stderr holds, once each, the ORCHESTRATOR.md line of every rule the
 inventory's `hook:` column maps a failed check to, then one line on how a
 non-role prompt avoids detection. The deny text is the injected core text:
@@ -35,23 +35,27 @@ ROLE_STAGES = (("Product", "Product", "Discovery"),
                ("QA", "QA", "Test"),
                ("Fullstack Developer", "Developer", "Implementation"),
                ("Reviewer", "Reviewer", "Review"))
-MAX_ROLE_LENGTH = max(len(row[1]) for row in ROLE_STAGES)
 CHECKS = ["prefix", "no-fork", "marker-command", "role-stage", "model",
           "reviewer-pr", "reviewer-sha", "reviewer-gate"]
 
 ROLE_LINE = re.compile(r"^ROLE SESSION:")
 PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(row[0] for row in ROLE_STAGES))
-EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*?model-record-emit\.sh\b")
 EMIT_DISPATCH_FLAG = re.compile(r"--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
     r"--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
 EMIT_WORD = re.compile(r"model-record-emit\.sh\b")
-# A later line inside a quote's span that starts with an emit command.
-EMIT_LINE = re.compile(r"\n[^\S\n]*[`$\"']?\S*?model-record-emit\.sh\b")
-# Unquoted characters that end a plain run inside an emit command, and the
-# characters that matter inside double quotes.
-SPECIAL = re.compile(r"[ \t\r\n'\"\\;,()&|<>`]")
-DQ_SPECIAL = re.compile(r"[\"\\]")
+# A48 bounds apply before argument splitting, including original unit text.
+MAX_INPUT_BYTES = 32 * 1024 * 1024
+MAX_PROMPT_CHARS = 4 * 1024 * 1024
+MAX_UNIT_CHARS = 64 * 1024
+MAX_UNIT_LINES = 32
+KNOWN_FLAGS = {"--role", "--stage", "--model", "--floor-basis", "--effort"}
+CONTINUABLE = re.compile(r"\s*(?:--(?:role|stage|model|floor-basis|effort)(?=[=\s]|$)|\\$)")
+PATH_WRAPPER = re.compile(r"([\"'`])[^\s\"'`]*$")
+WORD_SPECIAL = re.compile(r"[\s'\"\\;,()&|<>]")
+DOUBLE_SPECIAL = re.compile(r'["\\\\]')
+QUOTE_SPECIAL = re.compile(r"['\"\\#]")
+
 ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
 STAGE_FLAG = re.compile(
     r"--stage(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
@@ -69,217 +73,186 @@ AVOID = ("Not a role dispatch? Start no prompt line with `ROLE SESSION:` and no 
 
 
 def note(msg):
+    msg = " ".join(msg[:200].split())
     print("agent-dispatch: %s; dispatch allowed unchecked" % msg, file=sys.stderr)
     return 0
 
 
-def wrapper_close(text, start, wrapper):
-    # Index of a closing wrapper quote or backtick ending the physical line
-    # that starts at start (only trailing whitespace after it), else -1.
-    end = text.find("\n", start)
-    last = start + len(text[start:end if end >= 0 else len(text)].rstrip()) - 1
-    return last if wrapper and last >= start and text[last] == wrapper else -1
+def uncomment(line, quote):
+    """Strip a physical-line comment before testing its continuation marker.
 
-
-def emit_commands(prompt):
-    """Each emit command as one shell word stream: (at line start, text, word
-    starts, malformed). The text runs from after the script name to the
-    command end, an unquoted newline that is no continuation, a closing
-    wrapper at a line end or the end of the prompt, with the quotes and escapes kept and the
-    backslash-newline continuations outside single quotes removed. A literal
-    newline inside quotes stays inside its word. Quote, escape and word rules
-    are role_word's; `;,()&|<>` end a word, as before, not the command. A quote
-    that never closes keeps the earlier line scope: the command ends at the
-    end of that line, and role_word reports a role value left open; when that
-    line ends in a backslash, the command is malformed (a continued flag would
-    be lost). A quote whose span holds a line starting with an emit command is
-    taken as never closed (a prose apostrophe), so that line is its own
-    command. One pass: each command starts after the previous one ends, and a
-    double quote opened after one that never closed is known not to close
-    either."""
-    n = len(prompt)
-    commands = []
-    pos = 0
-    dq_dead = n + 1
+    Quote state belongs only to an explicitly continued unit. Escapes skip
+    the next character; a hash starts a comment only after whitespace.
+    """
+    i = 0
     while True:
-        m = EMIT_WORD.search(prompt, pos)
-        if not m:
-            return commands
-        line_start = prompt.rfind("\n", 0, m.start()) + 1
-        head = prompt[line_start:m.end()]
-        wrapper = head.lstrip()[:1]
-        wrapper = wrapper if wrapper in ("'", '"', "`") else ""
-        close = wrapper_close(prompt, line_start, wrapper) if wrapper else -1
-        parts, starts = [], []
-        length = 0
-        in_word = False
-        malformed = False
-        i = m.end()
-        while i < n:
-            found = SPECIAL.search(prompt, i)
-            j = found.start() if found else n
-            if j > i:
-                if not in_word:
-                    starts.append(length)
-                    in_word = True
-                parts.append(prompt[i:j])
-                length += j - i
-                i = j
-                continue
-            c = prompt[i]
-            if c == "\n" or i == close:
-                break
-            if c == "\\" and prompt.startswith("\n", i + 1):
-                i += 2
-                if wrapper:
-                    close = wrapper_close(prompt, i, wrapper)
-                continue
-            if c in " \t\r;,()&|<>":
-                parts.append(c)
-                length += 1
-                in_word = False
-                i += 1
-                continue
-            if not in_word:
-                starts.append(length)
-                in_word = True
-            if c in ("'", '"'):
-                quote_start, k = i, -1
-                mark = (len(parts), length)
-                if c == "'":
-                    k = prompt.find("'", i + 1)
-                    if k >= 0:
-                        parts.append(prompt[i:k + 1])
-                        length += k + 1 - i
-                elif i < dq_dead:
-                    copied = scan = i
-                    while True:
-                        d = DQ_SPECIAL.search(prompt, scan) if scan <= n else None
-                        if not d:
-                            dq_dead = i
-                            break
-                        d = d.start()
-                        if prompt[d] == '"' and d > i:
-                            k = d
-                            break
-                        if prompt[d] == "\\" and prompt.startswith("\n", d + 1):
-                            parts.append(prompt[copied:d])
-                            length += d - copied
-                            copied = d + 2
-                        scan = d + (1 if d == i else 2)
-                    if k >= 0:
-                        parts.append(prompt[copied:k + 1])
-                        length += k + 1 - copied
-                unclosed = k < 0
-                if k >= 0 and EMIT_LINE.search(prompt, i, k):
-                    k = -1
-                if k < 0:
-                    # Never closed: keep the line scope, up to its wrapper.
-                    del parts[mark[0]:]
-                    length = mark[1]
-                    end = prompt.find("\n", i)
-                    end = n if end < 0 else end
-                    malformed = unclosed and end < n and prompt[end - 1] == "\\"
-                    parts.append(prompt[i:close if close > i else end])
-                    i = end
-                    break
-                i = k + 1
-                if wrapper and "\n" in prompt[quote_start:i]:
-                    close = wrapper_close(prompt, prompt.rfind("\n", quote_start, i) + 1, wrapper)
-                continue
-            # A backslash escapes the next character, kept for role_word; a
-            # backtick is a literal word character unless it closes the wrapper.
-            step = 2 if c == "\\" and i + 1 < n else 1
-            parts.append(prompt[i:i + step])
-            length += step
-            i += step
-        commands.append((bool(EMIT_AT_START.match(head)), "".join(parts), starts, malformed))
-        pos = i
-
-
-def role_word(text, start):
-    # Scan once, retaining at most the longest valid role. Continue scanning
-    # after overflow so genuinely malformed quoting keeps its fail-open policy.
-    value = []
-    length = 0
-    quote = ""
-    i = start
-    while i < len(text) and text[i] in " \t\r\n":
-        i += 1
-    while i < len(text):
-        c = text[i]
-        if not quote and (c in " \t\r\n;,()&|<>"):
-            break
-        if c in ("'", '"'):
+        match = QUOTE_SPECIAL.search(line, i)
+        if not match:
+            return line, quote
+        i = match.start()
+        c = line[i]
+        if c == "\\" and quote != "'":
+            i += 2
+            continue
+        if c == "#" and not quote and (i == 0 or line[i - 1].isspace()):
+            return line[:i], quote
+        if c in ("'", '\"'):
             if not quote:
                 quote = c
-                i += 1
-                continue
-            if quote == c:
+            elif quote == c:
                 quote = ""
-                i += 1
-                continue
-        if c == "\\" and quote != "'":
-            i += 1
-            if i == len(text):
-                raise ValueError("No escaped character")
-            c = text[i]
-            if c == "\n":
-                i += 1
-                continue
-            if quote == '"' and c not in ('"', "\\"):
-                length += 1
-                if length <= MAX_ROLE_LENGTH:
-                    value.append("\\")
-        # Expansion spellings, including backticks, remain literal: the hook
-        # executes nothing and never validates only the prefix before them.
-        length += 1
-        if length <= MAX_ROLE_LENGTH:
-            value.append(c)
         i += 1
-    if quote:
-        raise ValueError("No closing quotation")
-    return ("".join(value) if length <= MAX_ROLE_LENGTH else ""), i
 
 
-def emit_flags(commands):
-    # The --role and --stage words of every emit command, judged from the
-    # word's own start. A flag's value word is not judged as a flag itself.
+def emit_units(prompt):
+    """Collect independent emit-line suffixes, joining explicit continuations.
+
+    The original physical text counts toward the unit cap, even text before
+    the script and comments. Only collected suffixes can reach the splitter.
+    """
+    lines = prompt.replace("\r\n", "\n").split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
+        match = EMIT_WORD.search(line)
+        if not match:
+            continue
+        size = len(line)
+        if size > MAX_UNIT_CHARS:
+            raise ValueError("emit unit exceeds character cap")
+        suffix = line[match.end():]
+        wrapper_match = PATH_WRAPPER.search(line[:match.start()])
+        wrapper = wrapper_match.group(1) if wrapper_match else ""
+        eligible = bool(CONTINUABLE.match(suffix))
+        parts = []
+        quote = ""
+        count = 1
+        while True:
+            text, quote = uncomment(suffix, quote)
+            slashes = len(text) - len(text.rstrip("\\"))
+            continued = eligible and slashes % 2 == 1
+            parts.append(text[:-1] if continued else text)
+            if not continued:
+                break
+            if count == MAX_UNIT_LINES or i == len(lines) or (i == len(lines) - 1 and not lines[i]):
+                raise ValueError("emit continuation exceeds line cap or reaches EOF")
+            suffix = lines[i]
+            i += 1
+            count += 1
+            size += 1 + len(suffix)
+            if size > MAX_UNIT_CHARS:
+                raise ValueError("emit unit exceeds character cap")
+        text = "".join(parts)
+        # Bare/prose mentions have no argument syntax and open no quote state.
+        if not (EMIT_DISPATCH_FLAG.search(text) or "--role=" in text):
+            continue
+        if wrapper:
+            text = text.rstrip()
+            if not text.endswith(wrapper):
+                raise ValueError("unmatched emit wrapper")
+            text = text[:-1]
+        yield text
+
+
+def unit_words(text):
+    """Bounded POSIX-style words, with decoded values and raw source spans.
+
+    Punctuation separates words, backticks are literal, and no shell syntax
+    is executed or expanded. Each source character is visited once.
+    """
+    words = []
+    i = 0
+    while i < len(text):
+        if text[i].isspace() or text[i] in ";,()&|<>":
+            i += 1
+            continue
+        start = i
+        value = []
+        while i < len(text):
+            match = WORD_SPECIAL.search(text, i)
+            end = match.start() if match else len(text)
+            value.append(text[i:end])
+            i = end
+            if i == len(text) or text[i].isspace() or text[i] in ";,()&|<>":
+                break
+            c = text[i]
+            if c == "\\":
+                if i + 1 == len(text):
+                    raise ValueError("dangling escape")
+                value.append(text[i + 1])
+                i += 2
+            elif c == "'":
+                end = text.find("'", i + 1)
+                if end < 0:
+                    raise ValueError("unbalanced quote")
+                value.append(text[i + 1:end])
+                i = end + 1
+            else:
+                i += 1
+                while True:
+                    match = DOUBLE_SPECIAL.search(text, i)
+                    end = match.start() if match else len(text)
+                    value.append(text[i:end])
+                    i = end
+                    if i == len(text):
+                        raise ValueError("unbalanced quote")
+                    if text[i] == '\"':
+                        i += 1
+                        break
+                    if i + 1 == len(text):
+                        raise ValueError("dangling escape")
+                    if text[i + 1] not in ('\"', "\\"):
+                        value.append("\\")
+                    value.append(text[i + 1])
+                    i += 2
+        words.append(("".join(value), start, i))
+    return words
+
+
+def emit_flags(units):
     roles, stages, stage_valid = [], [], False
-    for _, text, starts, _ in commands:
-        cursor = 0
-        for start in starts:
-            if start < cursor:
-                continue
-            flag = ROLE_FLAG.match(text, start)
-            if flag:
-                separator = flag.group(1)
-                value, cursor = (role_word(text, flag.end())
-                                 if separator else ("", flag.end()))
-                roles.append((value, bool(separator) and "=" not in separator))
-                continue
-            flag = STAGE_FLAG.match(text, start)
-            if flag:
-                stages.append(next((v for v in flag.groups() if v is not None), ""))
+    for text in units:
+        words = unit_words(text)
+        i = 0
+        while i < len(words):
+            value, start, end = words[i]
+            raw = text[start:end]
+            role_flag = ROLE_FLAG.match(raw)
+            stage_flag = STAGE_FLAG.match(text, start)
+            has_value = (i + 1 < len(words) and words[i + 1][0].split("=", 1)[0] not in KNOWN_FLAGS)
+            if role_flag:
+                separator = role_flag.group(1)
+                recognized = bool(separator) and "=" not in separator
+                # Literal spaces only: preserve the unsupported role-tab form.
+                if raw == "--role":
+                    separator = text[end:words[i + 1][1]] if has_value else ""
+                    recognized = bool(separator) and all(c == " " for c in separator)
+                    role_value = words[i + 1][0] if has_value else ""
+                else:
+                    role_value = value[len("--role"):].lstrip("= ")
+                roles.append((role_value if recognized else "", recognized))
+            elif stage_flag:
+                stages.append(next((v for v in stage_flag.groups() if v is not None), ""))
                 stage_valid = stage_valid or bool(EMIT_WITH_STAGE.match(text, start))
-                cursor = flag.end()
+            if raw in KNOWN_FLAGS and has_value:
+                i += 1
+            i += 1
     return roles, stages, stage_valid
 
 
-def failed_checks(prompt, sub, model, commands):
+def failed_checks(prompt, sub, model, units):
     lines = prompt.split("\n")
     first = next((l for l in lines if l.strip()), "")
     role_line = next((l for l in lines if ROLE_LINE.match(l)), "")
     m = PREFIX.match(role_line)
     role = m.group(1) if m else ""
-    if any(malformed for _, _, _, malformed in commands):
-        raise ValueError("Continued line after an unclosed quote")
     failed = []
     if not PREFIX.match(first):
         failed.append("prefix")
     if sub == "fork":
         failed.append("no-fork")
-    roles, stages, stage_valid = emit_flags(commands)
+    roles, stages, stage_valid = emit_flags(units)
     valid_emit = (any(recognized and value in {row[1] for row in ROLE_STAGES}
                       for value, recognized in roles) or stage_valid)
     if not valid_emit:
@@ -340,7 +313,10 @@ def main(argv):
         print("usage: agent-dispatch.py <ORCHESTRATOR.md> <inventory.tsv>", file=sys.stderr)
         return 0
     try:
-        data = json.loads(sys.stdin.read())
+        raw = sys.stdin.buffer.read(MAX_INPUT_BYTES + 1)
+        if len(raw) > MAX_INPUT_BYTES:
+            return note("input exceeds byte cap")
+        data = json.loads(raw.decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
         return note("input is not JSON")
     if not isinstance(data, dict):
@@ -355,13 +331,14 @@ def main(argv):
     prompt = ti.get(F_PROMPT)
     if not isinstance(prompt, str):
         return note("%s.%s is not a string" % (F_INPUT, F_PROMPT))
-    commands = emit_commands(prompt)
+    if len(prompt) > MAX_PROMPT_CHARS:
+        return note("prompt exceeds character cap")
+    units = list(emit_units(prompt))
     if not (any(ROLE_LINE.match(l) for l in prompt.split("\n")) or
-            any(at_start and EMIT_DISPATCH_FLAG.search(text)
-                for at_start, text, _, _ in commands)):
+            any(EMIT_DISPATCH_FLAG.search(text) for text in units)):
         return 0
     try:
-        failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL), commands)
+        failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL), units)
     except ValueError:
         return note("cannot parse role shell word")
     if not failed:
@@ -371,8 +348,8 @@ def main(argv):
             orch = f.read()
         with open(argv[1], encoding="utf-8") as f:
             tsv = f.read()
-    except (OSError, UnicodeDecodeError) as e:
-        return note("cannot read %s" % getattr(e, "filename", "a rule file"))
+    except (OSError, UnicodeDecodeError):
+        return note("cannot read rule files")
     cmap, lines_by_id = check_map(tsv), core_lines(orch)
     ids = []
     for c in failed:
@@ -390,4 +367,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        result = main(sys.argv[1:])
+    except Exception:
+        result = note("cannot parse dispatch input")
+    sys.exit(result)
