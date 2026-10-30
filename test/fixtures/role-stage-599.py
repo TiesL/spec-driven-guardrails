@@ -244,10 +244,31 @@ def round7_dispatch():
         expect(prefix + good + tail + '\n' + wrong + '\n', 'OR31', 'comment ' + repr(tail), 'comments')
     expect((prefix + good + ' ' + chr(92) + '\n--stage Planning\n').replace('\n', '\r\n'),
            'OR31', 'CRLF continuation', 'continuations')
-    for count in [1, 2, 3, 4]:
-        # Odd runs continue; even runs leave a literal backslash argument.
-        expect(prefix + good + ' ' + chr(92) * count + '\n--stage Planning\n',
-               'OR31' if count % 2 else 'allow', 'trailing backslash count ' + str(count), 'continuations')
+    for count in [1, 2, 3, 4, 5]:
+        # A48: "Remove the last backslash and the line ending; preserve all
+        # other characters and spacing." Bash is the argv oracle: odd runs
+        # continue, but counts 3/5 attach literal backslashes to --stage.
+        # Even runs end the command and leave --stage as a separate command.
+        label = 'trailing backslash count ' + str(count)
+        flags = '--role Product --model m ' + chr(92) * count + '\n--stage Planning\n'
+        argv = ['--role', 'Product', '--model', 'm']
+        argv += ([chr(92) * (count // 2) + '--stage', 'Planning'] if count % 2 else
+                 [chr(92) * (count // 2)])
+        sh = run(['bash', '-c', 'capture() { printf "%s\\0" "$@"; }; capture ' + flags, 'oracle'])
+        check(sh.returncode == (0 if count % 2 else 127) and
+              sh.stdout == b''.join(x.encode() + b'\0' for x in argv) and
+              (sh.stderr == b'' if count % 2 else
+               sh.stderr.endswith(b'--stage: command not found\n')),
+              label + ': Bash complete argv and continuation boundary')
+        r = refusal(argv, label + ' real emitter argv',
+                    ['Discovery', 'Planning'] if count == 1 else ['unknown argument', argv[4]])
+        shell_emit = run(['bash', '-c', '"$1" ' + flags, 'oracle', ROOT / EMIT])
+        check((shell_emit.returncode, shell_emit.stdout, shell_emit.stderr) ==
+              (2 if count % 2 else 127, b'', r.stderr + sh.stderr),
+              label + ': real emitter with identical physical lines')
+        print('ORACLE: ' + label + ': argv=' + repr(argv) +
+              ', emitter exit=' + str(r.returncode) + ', stderr=' + repr(r.stderr.decode()))
+        expect(prefix + C + ' ' + flags, 'OR31' if count == 1 else 'allow', label, 'continuations')
     expect(prefix + good + ' ' + chr(92) + ' \n--stage Planning\n', 'allow',
            'trailing space prevents continuation', 'continuations')
     expect(prefix + good + ' ' + chr(92), 'unchecked', 'dangling EOF continuation', 'malformed')
