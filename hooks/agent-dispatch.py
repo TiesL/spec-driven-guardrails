@@ -82,9 +82,10 @@ def uncomment(line, quote):
     """Strip a physical-line comment before testing its continuation marker.
 
     Quote state belongs only to an explicitly continued unit. Escapes skip
-    the next character; a hash starts a comment only after whitespace.
+    the next character; a hash starts a comment only after unescaped whitespace.
     """
     i = 0
+    escaped = -1
     while True:
         match = QUOTE_SPECIAL.search(line, i)
         if not match:
@@ -92,9 +93,10 @@ def uncomment(line, quote):
         i = match.start()
         c = line[i]
         if c == "\\" and quote != "'":
+            escaped = i + 1
             i += 2
             continue
-        if c == "#" and not quote and (i == 0 or line[i - 1].isspace()):
+        if c == "#" and not quote and (i == 0 or (line[i - 1].isspace() and escaped != i - 1)):
             return line[:i], quote
         if c in ("'", '\"'):
             if not quote:
@@ -301,7 +303,7 @@ def core_lines(orch_text):
 def main(argv):
     if argv[:1] == ["--list-roles"]:
         for row in ROLE_STAGES:
-            print(" ".join(row))
+            print("\t".join(row))
         return 0
     if argv[:1] == ["--list-checks"]:
         print("\n".join(CHECKS))
