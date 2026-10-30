@@ -2126,38 +2126,252 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   are refused with exit 2, empty stdout and one stderr reason; neither
   role nor stage supplied is also an error. `--role` joins the usage and
   flag-name-as-value checks; `--role=Product` is refused.
-- **Hook detection and marker command (amends A41):** the emit-line
-  detection trigger and AVOID text cover `--role` as well as `--stage`,
-  with the same word guard: `--roles` and `--role=X` do not count.
-  `marker-command` accepts a valid `--role <Role>` or the existing valid
-  `--stage <Stage>` form; neither valid form, or an invalid role alone,
-  fails it. The existing `--stage=X` recognition gap is unchanged and is
-  not copied to `--role`.
-- **Role agreement:** with a valid `ROLE SESSION:` prefix, `role-stage`
-  passes only if at least one valid emit-command line exists and every
-  emit-command line carrying `--role` or `--stage`, including quoted
-  commands, agrees with the prefix role through the map.
-  Without a prefix the prefix check already fails and this cross-check
-  does not apply. Thus Product with Architect, Product with Planning,
-  contradictory flags, or several emit lines with one mismatch are
-  denied. The OR31 inventory mapping becomes
-  `hook:marker-command,role-stage`; OR31 states the match rule because
-  its own core line is the deny text.
-- **Drift guard:** the Python hook keeps one tuple of (prefix name, flag
-  name, stage), replacing ROLES and STAGES, and exposes it through
-  `--list-roles`. A drift test compares all five rows with `role_stage`
-  and OR5, including Fullstack Developer to Developer; changing any one
-  source alone fails the test. The inventory's hook check IDs still
-  equal `--list-checks`.
-- **Delivery and limits:** the hook, OR31 and instructing docs land in
-  one PR. Instructing commands use `--role`; backward-compatible
-  `--stage` is labelled as such. OR31 stays within the context budget
-  and its edit requires the differential behavior run and fresh stamp.
-  Marker output, grammar, stage names, gate, collector and legacy
-  `--effort` behavior are unchanged. The hook's existing fail-open
-  policy is unchanged. The emitter cannot see the session: a role can
-  still lie about its role or model.
-- **Violated when:** a mismatch emits a marker; a correct role-only
-  dispatch is denied; an old stage-only emitter command stops working;
-  the hook misses a prefix mismatch; the three role maps drift; or
-  OR31's deny text omits the agreement rule.
+- **Planning amendment, option B (PR #601 round 7):** [V] TiesL has
+  chosen emit-command lines instead of treating the whole prompt as shell,
+  as supplied in this Planning brief. [V] At bc84a4f the implementation's
+  `emit_commands` carries quote state across prompt lines, with rollback
+  and quote-span exceptions; the supplied round-7 review records prose
+  swallowing mid-line commands and a malformed-prose fail-open path.
+  These are evidence for replacing that design, not for another quote-span
+  exception. [A] The rules below are the recommended replacement contract,
+  not a claim that the current hook implements them. Existing wrapper,
+  role map and emitter refusal rules above remain unchanged.
+- **Module and Interface:** [A] Keep the A41 pure hook core and its stdin
+  JSON/public CLI Seam. The line reader and argument reader are private
+  implementation details of that Module. No new adapter, parser framework
+  or shell dependency. Depth and Leverage come from checking every brief
+  through that one Interface; Locality keeps parsing and diagnostics here.
+  The deletion test removes the problematic whole-prompt shell machinery
+  rather than moving it into callers. The two-adapters rule gives no reason
+  to add another Seam.
+- **Physical line and continuation contract:** [A] An emit unit starts at
+  any physical line containing the existing `EMIT_WORD` script-name match,
+  wherever the mention occurs. Ignore text before its first match: bullets,
+  numbering, a shell prompt, `cd ... &&`, and prose introductions are not
+  shell input. The argument text starts immediately after that match.
+  A bare mention contributes no marker command and is not shell-split.
+  It cannot open a quote affecting another line. Continuation collection
+  is eligible only if the suffix, after leading whitespace, starts with
+  a known emitter flag (`--role`, `--stage`, `--model`, `--floor-basis`
+  or `--effort`, including equals spellings), or consists only of
+  whitespace and the continuation marker. A prose-only mention ending in
+  a path backslash therefore cannot absorb the following command. A
+  noncontinued suffix containing a guarded role/stage flag is still
+  inspected even if introduced by words after the script mention.
+  For an eligible command, join the following physical line only when the
+  current line ends with an odd run of backslash characters, immediately
+  before its line ending. Remove the last backslash and the line ending;
+  preserve all other characters and spacing. Normalize CRLF to LF first.
+  Trailing spaces after the backslash do not continue. An open quote alone
+  never continues a unit. This is a brief-format convention, not a shell
+  parser: even a backslash inside single quotes follows this physical rule;
+  literal quoted multiline values are outside the supported format.
+  Stop at the first line without that continuation marker, at EOF, or at
+  32 physical lines total including the starting line. A dangling EOF
+  continuation or a request for line 33 is unchecked, never silently
+  truncated and validated. Consumed continuation lines are not separately
+  scanned; the next unconsumed line starts with fresh state.
+- **Bounded reading and failure:** [A] Limit a decoded prompt to 4 Mi
+  characters and each unit, including its original continuation text, to
+  64 Ki characters. Check limits before shell splitting; do not truncate
+  a role to a valid prefix. Read stdin with a 32 MiB byte cap before JSON
+  decoding, allowing up to six JSON bytes per decoded character plus
+  envelope space; exceeding either input cap is unchecked. These are
+  conservative proposed engineering limits, not measured guarantees.
+  Scan once in order, without rescanning suffixes of the whole prompt.
+  Each unit is split at most once; bounded token storage cannot exceed its
+  character bound. No recursion, subprocess, expansion or command execution.
+  [V] The settings hook timeout is 10 seconds; timeout allows a dispatch.
+  [A] Size/continuation limits, unbalanced quotes, a dangling escape, bad
+  JSON/encoding, unreadable policy input and unexpected parser exceptions
+  must return exit 0, empty stdout and exactly one bounded stderr diagnostic
+  ending in "dispatch allowed unchecked". Do not print prompt contents or
+  a traceback. The runtime's timeout itself may prevent this diagnostic;
+  it is never evidence of successful validation. Guard the complete core
+  entry path, including unit collection, against ordinary exceptions so
+  malformed input cannot crash a dispatch. No broad catch converts an
+  intentional exit-2 denial to allow. A malformed relevant unit makes the
+  entire dispatch unchecked, even beside an otherwise denying unit, as
+  the existing malformed-input policy does; there is no partial success.
+- **Argument reader:** [A] Use a bounded shlex-style split of a relevant
+  unit's argument text only, with POSIX single/double quotes, adjacent
+  quoted pieces and backslash escapes. Retain decoded words and their raw
+  spellings for the legacy stage reader. Whitespace separates words;
+  unquoted semicolon, comma, parentheses, ampersand, pipe and angle brackets
+  separate words too, preserving existing terminator controls. They do
+  not execute anything or stop the scan of later flags on that unit.
+  A whitespace-delimited unquoted hash starts a comment through the end
+  of its physical line, so a comment apostrophe never opens a quote or
+  enables continuation; remove that comment before testing continuation.
+  Inline command wrappers are presentation: if the script's pathname has
+  an immediately preceding single quote, double quote or backtick and the
+  last non-whitespace character of the unit is the same character, remove
+  that one outer pair before splitting. Other quotes remain argument
+  syntax; unmatched wrappers use the malformed-input diagnostic.
+  Backticks inside arguments remain literal characters. Unknown words
+  are ignored; known flag values are consumed as whole words, so text
+  such as `--model "x --role Architect"` is not another role flag.
+  A second script mention on the same unit does not reset parsing; later
+  top-level flags are still inspected. Real briefs should put each command
+  on its own line and avoid explanatory prose after its arguments.
+- **Flags, detection and agreement:** [A] A prefix line still detects a
+  role dispatch. Without one, any emit unit with the existing guarded
+  role/stage flag spelling also detects it, including mid-line and fenced
+  commands; `--roles` and `--role=Product` alone still do not detect one.
+  Bare mention lines without those spellings are skipped before splitting.
+  Within parsed units, read every top-level `--role` and its next complete
+  decoded word. Another known flag is not a role value: record the missing
+  role value and inspect that next flag independently. Only literal spaces
+  between role flag and value qualify
+  for the existing recognized role form; tab-separated roles remain an
+  explicitly documented unsupported spelling. Missing values, invalid
+  complete values and equals-role forms cannot supply a valid role and,
+  when a prefix exists, cannot be masked by a matching command elsewhere.
+  Repeated role/stage occurrences are all checked, with no last-wins rule;
+  duplicate matching flags may pass this shape hook but the emitter still
+  rejects duplicates. Read `--stage` with the unchanged `STAGE_FLAG` on
+  its raw flag/value spelling, only at top-level flag positions, preserving
+  its current quoted-prefix and equals-stage recognition gaps. Do not
+  accidentally tighten stage parsing by applying decoded-role equality
+  to it. Consume `--model`, `--floor-basis` and legacy `--effort` values as
+  complete words to avoid finding flags inside them. Equals-value spellings
+  of those non-role flags are opaque words too. A unit's `--model` value
+  is not compared with the dispatch tool's model: the existing `model`
+  check still requires a nonblank string in `tool_input.model` only.
+  `marker-command` needs at least one valid role or legacy stage form.
+  With a valid prefix, `role-stage` checks all recognized role/stage
+  occurrences across all parsed units against its mapped role/stage;
+  any disagreement fails, including contradictory flags on one unit.
+  Without a prefix this cross-check is inapplicable and OR8 applies.
+  Exit 2, empty stdout, each mapped core rule line once, then AVOID;
+  `marker-command` and `role-stage` still map to OR31. OR31's current
+  text and inventory mapping stay unchanged in this amendment.
+- **Prose, fences and accepted limits:** [A] Prose, apostrophes and quotes
+  on other physical lines have no shell meaning and cannot swallow or
+  leak into a unit. On an emit unit, only the suffix described above is
+  parsed; an apostrophe in trailing explanatory prose can therefore make
+  that unit unchecked. Fences, quoted examples and prose introductions
+  do not exempt emit units: a mismatching example still denies. A quoted
+  value containing a later emit-line mention is an accepted cost of option
+  B, not a reason to restore cross-line quote tracking: without explicit
+  continuations the opening line is malformed/unchecked and later
+  unconsumed emit lines are independent. With explicit continuations a
+  quoted script mention may be consumed as value text. No correctness
+  claim is made for literal quoted multiline values, here-documents,
+  dollar-quote/localized-quote spellings, parameter expansion, command
+  substitution, shell evaluation or commands embedded inside a quoted
+  shell-program argument. Shell-like words are read literally; neither
+  expansion nor Bash equivalence is promised. The open finding
+  `role-shell-interpretation-policy`, including tab separators and shell
+  spellings that Bash resolves to Product, stays documented for TiesL's
+  decision; option B does not decide it. Keep observation coverage and
+  the current unsupported role-tab behavior, rather than silently widening
+  the accepted shell language. A malformed relevant unit or resource cap
+  can bypass all checks with a visible unchecked diagnostic; this is the
+  existing fail-open trade-off, not a security enforcement guarantee.
+- **Removed and retained:** [A] Remove `emit_commands`' whole-prompt shell
+  tokenizer, quote-span lookahead, `EMIT_LINE` exceptions, `dq_dead`,
+  rollback bookkeeping and whole-prompt word-start collection. Do not
+  preserve an unused alternate tokenizer. Replace the custom unbounded
+  role-word scan with the bounded unit reader above. Keep the single
+  (prefix name, flag name, stage) tuple, `--list-roles`, `STAGE_FLAG`,
+  `--list-checks`, `--print-contract`, rule-line lookup, fail-open notes,
+  prefix/no-fork checks and Reviewer PR/SHA/gate searches on raw prompt
+  text. The wrapper and `lib/model-record.sh` do not change for option B.
+- **Product handoff, F40 wording (proposal only):** [V] The current text
+  says: "The dispatch hook denies a prompt whose emit role or stage does
+  not match its `ROLE SESSION:` role, including an old prompt that
+  supplies only a stage." [A] Replace with: "The dispatch hook checks
+  lines mentioning model-record-emit.sh and their explicitly continued
+  lines within A48's bounds. Within this supported brief format, a parsed
+  emit role or legacy stage that disagrees with the ROLE SESSION role
+  denies the dispatch, including a stage-only command. Prose outside
+  those lines is not shell input. Quoted examples and fenced commands
+  are checked too. Literal quoted multiline values and shell evaluation
+  are outside this check. Malformed or over-limit input allows the
+  dispatch with an unchecked diagnostic under the existing fail-open
+  policy." Add after the instruction to put the command in every prompt:
+  "Put the command on one physical line, or use explicit trailing
+  backslash continuations within A48's limits." Clarify F40's mechanical
+  verification paragraph that agreement is verified only for this format,
+  not for every shell-equivalent prompt. Product owns these PRD edits;
+  this Planning step edits ARCHITECTURE.md only.
+- **QA handoff, existing cases:** [V] S412 currently accumulates round-2
+  through round-6 dispatch expectations in fixture functions `dispatch`,
+  `round3_dispatch`, `round4_dispatch`, `round5_dispatch` and
+  `round6_dispatch`. [A] No whole scenario S412-S419 is removed.
+  In S412, retire the round-3 literal-newline quoted-role denial oracles:
+  without explicit continuation those opening units are now malformed
+  and unchecked. Retire the entire round-5 648-case hook-verdict matrix
+  in `round5_dispatch`, which requires literal newlines inside quotes to
+  retain following flags as shell argv. Keep its emitter argv/refusal
+  coverage separately if useful; the emitter contract did not change.
+  Retire the same whole-shell expectations in round-6
+  `round6_quoted_apostrophes`; replace them with format-limit checks.
+  Replace the million-character-role effective-denial oracle with a fast
+  unchecked-size diagnostic, and retain the million-character ordinary
+  prose fast missing-command denial. Keep bounded complete-role checks,
+  adjacent quote/escape checks, ordinary malformed-input diagnostic,
+  role/stage terminators and wrappers, role-only and detection controls,
+  and the one/three-line explicit-continuation round-4 controls. Keep the
+  round-6 prose and realistic-brief verdicts, with historical comparisons
+  only where available; they test line isolation, not whole-shell
+  semantics. Strengthen the unterminated-continuation check to the chosen
+  exit-0 single unchecked diagnostic, rather than either deny or note.
+  S413 keeps #595 and mismatch denials plus wrapper/terminator controls;
+  S414-S416 keep emitter ordering, compatibility, refusal and safe newline
+  diagnostics unchanged. S417 keeps all-unit mismatches and missing-prefix
+  behavior; clarify that fences remain checked under option B and retain
+  the separately open quoted-example policy. S418 keeps tuple/library/OR5
+  drift tests. S419 keeps instructing-doc and grammar-owner pins, with
+  OR31 and its existing stamp untouched.
+- **QA handoff, new cases:** [A] Add the round-7 bullet, numbered, dollar
+  prompt, blockquote, `Run:`, `cd ... &&` and `bash -c` introduction shapes
+  with correct, missing-prefix and mismatching commands; apostrophes
+  before/after/on non-emit prose lines must not change their verdicts.
+  Include malformed bare prose mentions followed by a wrong command.
+  Add independent emit units before/after malformed prose, mismatches in
+  every unit position, and multiple top-level commands on one line.
+  Pin consumed value text containing role/stage flags, comments containing
+  apostrophes and continuation-like text, matching wrappers and genuinely
+  unbalanced unit quotes. Add explicit continuations inside double quotes,
+  concatenation within role values, CRLF, odd/even trailing backslashes,
+  trailing whitespace, EOF continuation, exactly 32 and 33 physical lines,
+  and no implicit continuation for either quote kind. Cover quoted values
+  that contain script mentions both with and without explicit continuation
+  as accepted limits, never as proof of shell equivalence. Pin new byte,
+  prompt and unit size boundaries on either side, prompt-cap handling even
+  without a prefix, and fast rejection of over-limit work before splitting.
+  Require the single unchecked diagnostic for malformed relevant units,
+  including when another unit disagrees; no crash, traceback or prompt leak.
+  Retain under-3-second effective-denial probes for large invalid roles
+  within the supported unit cap, ordinary million-character prose, and
+  adversarial quotes/continuations/many units within all caps. A killed
+  process or 10-second timeout is a failed performance check, never a deny.
+  Observe unsupported shell/tab cases and legacy stage-prefix/equals gaps
+  separately from supported-format verdicts. Mutations must expose an
+  implicit quote continuation, skipped mid-line mismatch, ignored size
+  bound, swallowed later unit, or missing unchecked diagnostic through
+  the existing public JSON/CLI Seam.
+- **Delivery, evidence and remaining decisions:** [V] This Planning review
+  read the named hook, A48, F40, S412-S419, complete fixture and the supplied
+  round-7/round-6 review files. Additional ground truth: A41 for the core
+  Interface, `hooks/agent-dispatch` and `settings/session-hooks.json` for
+  adapter/timeout, AGENTS.md and the installed role-contracts,
+  codebase-design and adoption-registry skills for scope and conventions.
+  No fixture, emitter, behavior test or S274 was run. [A] Developer must
+  establish runtime headroom for these proposed caps; it is not verified
+  by this design. Product must adopt the narrowed F40 promise before
+  implementation; QA must replace the obsolete hook oracles explicitly.
+  The shell-interpretation policy and quoted-example exemption remain
+  human decisions; option B changes neither by implication. Marker output,
+  grammar, stage names, gate, collector and legacy effort behavior stay
+  unchanged. OR31, ORCHESTRATOR, inventory, behavior scenarios and stamp
+  need no edit for this amendment, so no new S274 run is prescribed here.
+  [V] No marker was emitted in this stage, per the explicit task constraint.
+- **Violated when:** [A] prose on an unrelated line changes a parsed emit
+  command's verdict; a supported-format mismatch silently passes; a
+  correct supported role-only dispatch is denied; bounds truncate a value
+  into validity; malformed input crashes or silently passes without the
+  unchecked diagnostic; an old emitter stage-only command stops working;
+  the three role maps drift; or denial stops quoting the unchanged OR31.

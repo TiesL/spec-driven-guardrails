@@ -1582,9 +1582,7 @@ passed or recorded (#424, A33).
 As amended by #599: `--stage` alone remains accepted for old prompts,
 and may also be supplied with `--role`. If the role and stage disagree,
 the command exits 2, prints nothing on stdout and gives one stderr reason
-naming the role, the supplied stage and the stage that role owns. The
-dispatch hook denies a prompt whose emit role or stage does not match its
-`ROLE SESSION:` role, including an old prompt that supplies only a stage.
+naming the role, the supplied stage and the stage that role owns. The dispatch hook checks lines mentioning model-record-emit.sh and their explicitly continued lines within A48's bounds. Within this supported brief format, a parsed emit role or legacy stage that disagrees with the ROLE SESSION role denies the dispatch, including a stage-only command. Prose outside those lines is not shell input. Quoted examples and fenced commands are checked too. Literal quoted multiline values and shell evaluation are outside this check. Malformed or over-limit input allows the dispatch with an unchecked diagnostic under the existing fail-open policy.
 
 The marker format and grammar are written down in one place:
 `model-choice` points to A31 and states the two reader rules (whole
