@@ -32,13 +32,13 @@ done
 
 # --- AC1 (A26 amended): the orchestrator hands the role a COMMAND, not a line ---
 # one paragraph: the wrapper `model-record-emit.sh`, found through
-# $SPEC_DRIVEN_GUARDRAILS_DIR or the project's installed skill, with --stage and
-# --stage filled in (no --effort any more, #424); the role adds
+# $SPEC_DRIVEN_GUARDRAILS_DIR or the project's installed skill, with --role and
+# --role filled in (no --effort any more, #424); the role adds
 # --model with its own exact id (the Reviewer also --floor-basis) and pastes
 # the output unchanged as the first line of its report; the requested model is
 # named; nobody types a marker by hand
-para_has_all "$orch" 'model-record-emit\.sh' '--stage' '(dispatch )?prompt' \
-  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md gives the role the model-record-emit.sh command with --stage in the dispatch prompt"
+para_has_all "$orch" 'model-record-emit\.sh' '--role' '(dispatch )?prompt' \
+  || fail "S203/AC1 — no paragraph of ORCHESTRATOR.md gives the role the model-record-emit.sh command with --role in the dispatch prompt"
 # #424: the command carries no --effort and nothing says to fill it
 ! grep -qE -- '--effort' "$orch" \
   || fail "S203/#424 — ORCHESTRATOR.md still tells the orchestrator to pass --effort: $(grep -n -- '--effort' "$orch" | head -2 | cut -c1-160)"

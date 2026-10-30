@@ -349,4 +349,18 @@ run C "$alone/model-record-emit.sh" --stage Planning --model claude-opus-5-5
 [ "$rc" -eq 3 ] && [ -z "$out" ] || fail "S204 — without lib/model-record.sh: expected exit 3 and empty stdout, got rc=$rc out='$out'"
 test_source_match -q 'model-record' <<<"$err" || fail "S204 — the missing-lib message must name lib/model-record.sh, got: '$err'"
 
+# #599: role form keeps the literal marker and existing reader grammar.
+for pair in Product:Discovery Architect:Planning QA:Test Developer:Implementation Reviewer:Review; do
+  role="${pair%:*}"; st="${pair#*:}"
+  args=(--model claude-opus-5-5)
+  [ "$role" != Reviewer ] || args+=(--floor-basis 'same model, higher judgment')
+  run C "$emit" --stage "$st" "${args[@]}"
+  saved="$out"
+  run C "$emit" --role "$role" "${args[@]}"
+  [ "$rc" = 0 ] && [ -z "$err" ] && [ "$out" = "$saved" ] || fail "S204/#599/$role — role output must equal stage output with silent stderr"
+  if [ "$rc" = 0 ]; then
+    rh_scan "S204/#599/$role" C model-record "$out"
+    [ "$RH_N" = 1 ] && [ "$(rh_classes)" = ok ] && [ "${RH_STG[0]}" = "$st" ] || fail "S204/#599/$role — unchanged reader must accept role-derived marker"
+  fi
+done
 test_done

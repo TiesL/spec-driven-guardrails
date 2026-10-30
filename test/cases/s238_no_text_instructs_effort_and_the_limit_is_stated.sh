@@ -95,7 +95,7 @@ for f in "$pmr" "$mc" "$rc" "$orch"; do
   ! grep -q -- '--effort' "$f" || fail "S238/AC5 — ${f#"$root"/} still has --effort in it: $(grep -n -- '--effort' "$f" | cut -c1-120 | head -1)"
 done
 # the emitter's own usage line no longer advertises it
-usage="$(test_source_match -E '^# +model-record-emit\.sh --stage|^usage=' "$emit")"
+usage="$(test_source_match -E '^# +model-record-emit\.sh --role|^usage=' "$emit")"
 [ -n "$usage" ] || fail "S238 — could not find the emitter's usage line"
 ! grep -q -- '--effort' <<<"$usage" || fail "S238/AC5 — the emitter's usage line still advertises --effort: $usage"
 err="$(LC_ALL=C "$emit" 2>&1 >/dev/null)"
@@ -131,4 +131,6 @@ grep -qE '#413|#424' <<<"$row" || fail "S238 — the --effort debt row must cite
 ! grep -qiE 'same-model effort check' <<<"$debt" \
   || fail "S238 — PRD.md's debt register still talks about the same-model effort check (deleted by #424)"
 
+grep -q -- '--role' <<<"$usage" || fail "S238/#599 — usage must advertise --role"
+test_source_match -qE '^# +model-record-emit\.sh .*--role' "$emit" || fail "S238/#599 — header command must advertise --role"
 test_done
