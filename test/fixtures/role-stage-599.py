@@ -111,6 +111,230 @@ def historical_baseline(name, paths, merge_base=False):
         (baseline / path).write_bytes(result.stdout)
     return baseline
 
+def unchecked(result, label):
+    lines = result.stderr.splitlines()
+    check(result.returncode == 0 and not result.stdout and len(lines) == 1 and
+          len(result.stderr) <= 1024 and lines[0].endswith(b'dispatch allowed unchecked') and
+          result.stderr.count(b'dispatch allowed unchecked') == 1 and
+          b'Traceback' not in result.stderr and b'PRIVATE_PROMPT_SENTINEL' not in result.stderr,
+          label + ': expected exit 0, empty stdout, exactly one bounded diagnostic ending '
+          'dispatch allowed unchecked; got ' + verdict(result))
+
+
+def round7_dispatch():
+    C = '/c/model-record-emit.sh'
+    prefix = 'ROLE SESSION: Product\n'
+    good = C + ' --role Product --model m'
+    wrong = C + ' --role Architect --model m'
+    started = time.monotonic()
+    groups = {}
+
+    def expect(text, expected, label, group='prose', data=None, paths=None, timed=False):
+        before = len(failures)
+        tick = time.monotonic()
+        try:
+            if data is not None or paths is not None:
+                result = run(['python3', '-I', ROOT / HOOK] +
+                             (paths or [ROOT / ORCH, ROOT / TSV]),
+                             data=data if data is not None else payload(text), timeout=2.5)
+            else:
+                result = hook(text, timeout=2.5)
+        except subprocess.TimeoutExpired:
+            check(False, label + ': hook exceeded 2.5 s; timeout is not validation')
+        else:
+            if expected == 'unchecked':
+                unchecked(result, label)
+            elif expected == 'allow':
+                check((result.returncode, result.stdout, result.stderr) == (0, b'', b''),
+                      label + ': expected silent allow, got ' + verdict(result))
+            else:
+                denied(text, expected.split(','), label, result=result)
+        elapsed = time.monotonic() - tick
+        if timed:
+            print('TIMING: round-7 ' + label + ': %.3f s' % elapsed)
+            check(elapsed < 3, label + ': must finish under 3 s')
+        tally = groups.setdefault(group, [0, 0])
+        tally[0] += len(failures) > before
+        tally[1] += 1
+
+    def payload(text):
+        return json.dumps({'tool_name': 'Agent', 'tool_input': {
+            'prompt': text, 'model': 'test-model', 'subagent_type': 'general-purpose'}}).encode()
+
+    # Presentation before a script mention has no shell semantics. Exercise
+    # every shape both with and without a prefix, and role/stage disagreement.
+    introductions = ['- ', '1. ', '$ ', '> ', 'Run: ', 'cd x && ', 'bash -c ',
+                     'First line of the report: output of ']
+    prose_pairs = [('', ''),
+                   ("Don't retype model-record-emit.sh as your report's first line:\n", "Don't edit it.\n"),
+                   ('An unmatched " before the command.\n', 'An unmatched " after it.\n'),
+                   ('A ` before it.\n', 'A ` after it.\n'),
+                   ("model-record-emit.sh prose-only path\\\n", "It's prose.\n")]
+    for intro in introductions:
+        for before, after in prose_pairs:
+            for prefixed, flags, expected in [
+                (True, '--role Product', 'allow'), (False, '--role Product', 'OR8'),
+                (True, '--role Architect', 'OR31'), (True, '--stage Planning', 'OR31')]:
+                text = (prefix if prefixed else '') + before + intro + C + ' ' + flags + ' --model m\n' + after
+                expect(text, expected, 'round-7 ' + repr(intro) + ' ' + repr(before) + ' ' + flags +
+                       (' prefixed' if prefixed else ' missing prefix'))
+    for pos in range(3):
+        commands = [good] * 3
+        commands[pos] = wrong
+        expect(prefix + "Don't open a shell quote.\n" + '\n'.join(commands) +
+               '\nAn unmatched " follows.\n', 'OR31', 'mismatch unit position ' + str(pos))
+    expect(prefix + good + '; ' + wrong + '\n', 'OR31', 'multiple top-level commands on one line')
+    expect(prefix + C + ' explanation --role Architect\n', 'OR31', 'guarded flag after suffix prose')
+    # Synthetic briefs contain no actual external commands; only the public hook runs.
+    briefs = [
+        ('Architect', "ROLE SESSION: Architect\nRead A48 and F40. Don't edit product code.\n"
+         "Run model-record-emit.sh as the report's first line:\nRun: " + C +
+         " --role Architect --model m\nDon't paraphrase its output.\n", 'allow'),
+        ('QA report first line', "ROLE SESSION: QA\nRead the Reviewer's findings.\n"
+         "First line of the report: output of " + C + " --stage Review --model m\n"
+         "Don't edit product files.\n", 'OR31'),
+        ('Reviewer', "ROLE SESSION: Reviewer\nReview PR #601 at head fe0fbbf.\n"
+         "Run finding-carryforward-gate.sh 601. Don't merge.\n- " + C +
+         " --role Reviewer --model m --floor-basis 'same capability'\nIt's checked.\n", 'allow'),
+        ('QA control', "ROLE SESSION: QA\nDon't change the implementation.\n"
+         "First line of the report: output of " + C + " --role QA --model m\nIt's mandatory.\n", 'allow')]
+    for label, text, expected in briefs:
+        expect(text, expected, 'synthetic ' + label, 'briefs')
+
+    # Independently confirm complete argv using real Bash, then use the real
+    # emitter as the marker oracle. These contain no expansion spellings.
+    supported = [
+        ('consumed flags in model', '--role Product --model "x --role Architect --stage Planning"',
+         ['--role', 'Product', '--model', 'x --role Architect --stage Planning'], 'allow'),
+        ('opaque equals model', '--role Product --model="x --role Architect"',
+         ['--role', 'Product', '--model=x --role Architect'], 'allow'),
+        ('adjacent continued role', '--role "Prod' + chr(92) + '\nuct" --model m',
+         ['--role', 'Product', '--model', 'm'], 'allow'),
+        ('continued role mismatch', '--role "Prod' + chr(92) + '\nuct Architect" --model m',
+         ['--role', 'Product Architect', '--model', 'm'], 'OR31'),
+    ]
+    for label, flags, argv, expected in supported:
+        sh = run(['bash', '-c', 'set -- ' + flags + '; printf "%s\\0" "$@"'])
+        check((sh.returncode, sh.stdout, sh.stderr) ==
+              (0, b''.join(x.encode() + b'\0' for x in argv), b''), label + ': Bash complete argv')
+        expect(prefix + C + ' ' + flags + '\n', expected, label, 'arguments')
+        r = emit(argv)
+        control = emit(['--stage', 'Discovery'] + argv[2:]) if expected == 'allow' else None
+        if expected == 'allow':
+            check((r.returncode, r.stdout, r.stderr) ==
+                  (control.returncode, control.stdout, control.stderr), label + ': real emitter legacy marker oracle')
+        else:
+            check(r.returncode == 2 and not r.stdout and len(r.stderr.splitlines()) == 1,
+                  label + ': emitter rejects complete invalid role')
+    for flag in ['--model', '--floor-basis', '--effort']:
+        expect(prefix + good + ' ' + flag + ' "--role Architect --stage Planning"\n',
+               'allow', 'consumed ' + flag + ' flags', 'arguments')
+        expect(prefix + good + ' ' + flag + '="--role Architect --stage Planning"\n',
+               'allow', 'opaque equals ' + flag, 'arguments')
+    for wrapper in ["'", '"', '`']:
+        expect(prefix + 'Run: ' + wrapper + good + wrapper + '\n', 'allow', 'mid-line wrapper ' + wrapper, 'arguments')
+        expect(prefix + 'Run: ' + wrapper + wrong + wrapper + '\n', 'OR31', 'wrong mid-line wrapper ' + wrapper, 'arguments')
+    for wrapper in ["'", '"', '`']:
+        expect(prefix + 'Run: ' + wrapper + good + '\n', 'unchecked',
+               'unmatched presentation wrapper ' + wrapper, 'malformed')
+    expect(prefix + good + '\n' + C + ' --role --stage Discovery\n', 'OR31',
+           'missing role cannot hide beside matching command', 'arguments')
+    for tail in [" # don't edit", " # don't edit \\", " # don't edit ' \" `"]:
+        expect(prefix + good + tail + '\n' + wrong + '\n', 'OR31', 'comment ' + repr(tail), 'comments')
+    expect((prefix + good + ' ' + chr(92) + '\n--stage Planning\n').replace('\n', '\r\n'),
+           'OR31', 'CRLF continuation', 'continuations')
+    for count in [1, 2, 3, 4]:
+        # Odd runs continue; even runs leave a literal backslash argument.
+        expect(prefix + good + ' ' + chr(92) * count + '\n--stage Planning\n',
+               'OR31' if count % 2 else 'allow', 'trailing backslash count ' + str(count), 'continuations')
+    expect(prefix + good + ' ' + chr(92) + ' \n--stage Planning\n', 'allow',
+           'trailing space prevents continuation', 'continuations')
+    expect(prefix + good + ' ' + chr(92), 'unchecked', 'dangling EOF continuation', 'malformed')
+    for count in [32, 33]:
+        text = prefix + good + (' ' + chr(92) + '\n') * (count - 1) + ' --stage Discovery\n'
+        expect(text, 'allow' if count == 32 else 'unchecked', 'physical line cap ' + str(count), 'limits', timed=True)
+    for quote in ["'", '"']:
+        text = prefix + C + ' --role Product --model ' + quote + 'PRIVATE_PROMPT_SENTINEL\nx' + quote + '\n'
+        expect(text, 'unchecked', 'no implicit continuation ' + quote, 'malformed')
+        expect(text + wrong + '\n', 'unchecked', 'malformed unit beside mismatch ' + quote, 'malformed')
+        expect(prefix + wrong + '\n' + text[len(prefix):], 'unchecked', 'mismatch before malformed ' + quote, 'malformed')
+        # A script mention is ordinary consumed value text when explicitly continued.
+        text = prefix + C + ' --role Product --model ' + quote + 'x ' + chr(92) + '\n' + wrong + quote + '\n'
+        expect(text, 'allow', 'consumed continued script mention ' + quote, 'continuations')
+    expect(prefix + good + ' --model "PRIVATE_PROMPT_SENTINEL\n', 'unchecked', 'unbalanced model quote', 'malformed')
+    expect('', 'unchecked', 'bad JSON', 'malformed', data=b'{')
+    expect('', 'unchecked', 'bad encoding', 'malformed', data=b'\xff')
+    expect(prefix + wrong, 'unchecked', 'unreadable policy', 'malformed', paths=[TMP / 'absent-policy', ROOT / TSV])
+
+    # Inclusive caps use literal lengths, independent of implementation constants.
+    unit_cap, prompt_cap, byte_cap = 64 * 1024, 4 * 1024 * 1024, 32 * 1024 * 1024
+    for delta in [-1, 0, 1]:
+        # Count the entire original unit, including a continuation and its newline.
+        seed = good + ' ' + chr(92) + '\n --model '
+        single = good + ' --model '
+        text = prefix + single + 'x' * (unit_cap + delta - len(single))
+        expect(text, 'allow' if delta <= 0 else 'unchecked', 'single-line unit cap ' + str(unit_cap + delta), 'limits', timed=True)
+        text = prefix + seed + 'x' * (unit_cap + delta - len(seed))
+        expect(text, 'allow' if delta <= 0 else 'unchecked', 'unit cap ' + str(unit_cap + delta), 'limits', timed=True)
+        text = prefix + good + '\n'
+        text += 'x' * (prompt_cap + delta - len(text))
+        expect(text, 'allow' if delta <= 0 else 'unchecked', 'prompt cap ' + str(prompt_cap + delta), 'limits', timed=True)
+        text = 'x' * (prompt_cap + delta)
+        expect(text, 'allow' if delta <= 0 else 'unchecked', 'no-prefix prompt cap ' + str(prompt_cap + delta), 'limits', timed=True)
+        data = payload(prefix + good)
+        data += b' ' * (byte_cap + delta - len(data))
+        expect('', 'allow' if delta <= 0 else 'unchecked', 'stdin byte cap ' + str(byte_cap + delta),
+               'limits', data=data, timed=True)
+    for label, text, expected in [
+        ('bounded invalid role', prefix + C + ' --role ' + 'X' * 60000, 'OR31'),
+        ('adversarial quote pieces', prefix + C + ' --role ' + '"X"' * 18000, 'OR31'),
+        ('many units', prefix + (good + '\n') * 20000 + wrong, 'OR31'),
+        ('many continued units', prefix + (good + ' ' + chr(92) + '\n --stage Discovery\n') * 10000 + wrong, 'OR31'),
+    ]:
+        expect(text, expected, label, 'performance', timed=True)
+    # Five deliberately faulty public-input transformations. Require each
+    # oracle to reject its injected defect; never patch the working hook.
+    mutants = [
+        ('implicit quote continuation',
+         'prompt = ti.get(F_PROMPT)',
+         'prompt = ti.get(F_PROMPT).replace(chr(10), " ")',
+         prefix + C + ' --role Product --model "x\ny"\n', 'unchecked'),
+        ('skipped mid-line mismatch',
+         'commands = emit_commands(prompt)',
+         'commands = emit_commands(chr(10).join(l for l in prompt.splitlines() if not l.startswith("cd x && ")))',
+         prefix + good + '\ncd x && ' + wrong + '\n', 'OR31'),
+        ('ignored prompt cap',
+         'prompt = ti.get(F_PROMPT)',
+         'prompt = ti.get(F_PROMPT)[:4 * 1024 * 1024]',
+         prefix + good + '\n' + 'x' * prompt_cap, 'unchecked'),
+        ('swallowed later unit',
+         'commands = emit_commands(prompt)',
+         'commands = emit_commands(prompt.split("LATER_UNIT")[0])',
+         prefix + good + '\nLATER_UNIT\n' + wrong + '\n', 'OR31'),
+        ('missing unchecked diagnostic',
+         'print("agent-dispatch: %s; dispatch allowed unchecked" % msg, file=sys.stderr)',
+         'pass  # MUTANT: silent fail-open',
+         prefix + C + ' --role "PRIVATE_PROMPT_SENTINEL\n', 'unchecked'),
+    ]
+    for name, old, new, text, expected in mutants:
+        root = copy('round7-mutant-' + name.replace(' ', '-'))
+        path = root / HOOK
+        source = path.read_text()
+        if not check(old in source, 'mutation anchor available: ' + name):
+            continue
+        path.write_text(source.replace(old, new, 1))
+        result = hook(text, root, timeout=2.5)
+        if expected == 'unchecked':
+            lines = result.stderr.splitlines()
+            accepted = (result.returncode == 0 and not result.stdout and len(lines) == 1 and
+                        lines[0].endswith(b'dispatch allowed unchecked'))
+        else:
+            accepted = verdict(result) == 'deny ' + expected
+        check(not accepted, 'round-7 oracle must kill mutation: ' + name)
+    for group, (red, total) in sorted(groups.items()):
+        print('RESULT: round-7 %s: %d/%d %s' % (group, red, total, 'RED' if red else 'GREEN'))
+    print('TIMING: round-7 total %.3f s' % (time.monotonic() - started))
+
 def round3_dispatch(baseline):
     # Controlled Bash snippets are fixture data only. The hook receives the
     # literal spelling; expansion here establishes argv independently of it.
@@ -130,7 +354,10 @@ def round3_dispatch(baseline):
         check((shell.returncode, shell.stdout, shell.stderr) ==
               (0, b'1\n' + value.encode(), b''), label + ': Bash complete argument')
         text = prompt('Product', '--role ' + spelling)
-        if valid:
+        if 'literal newline' in label:
+            unchecked(hook(text), label + ': unsupported literal multiline role')
+            refusal(['--role', value, '--model', 'm'], label + ' emitter control', ['role'])
+        elif valid:
             result = hook(text)
             # Pin the requested allow verdict. Invalid neighbours below must
             # prove validation; an allow alone cannot establish it ran.
@@ -147,8 +374,8 @@ def round3_dispatch(baseline):
             print('OBSERVATION: main ' + label + ': exit=' + str(result.returncode) +
                   ', stdout bytes=' + str(len(result.stdout)) +
                   ', stderr=' + repr(result.stderr.decode()))
-    # Truly malformed input retains the general fail-open policy, unlike the
-    # well-formed multiline words above. Pin its single visible diagnostic.
+    # Unsupported literal multiline units and malformed input retain the
+    # fail-open policy. Pin the single visible diagnostic.
     text = prompt('Product', '--role "Product')
     result = hook(text)
     check(result.returncode == 0 and not result.stdout and
@@ -160,11 +387,9 @@ def round3_dispatch(baseline):
         result = hook(text, baseline)
         print('OBSERVATION: main genuinely unterminated quote: exit=' + str(result.returncode) +
               ', stdout bytes=' + str(len(result.stdout)) + ', stderr=' + repr(result.stderr.decode()))
-    # The 1 MB role takes ~17 s with the reviewed lexer, versus tens of ms
-    # for an ordinary line. A linear validator has ample CI headroom at this
-    # size. Kill at 2.5 s, leaving a 0.5 s margin below the asserted 3 s budget
-    # and 7 s below the configured fail-open runtime timeout. A killed process
-    # has not denied anything: timeout must fail, never count as exit 2.
+    # A48 replaces oversized-role denial with a fast unchecked diagnostic.
+    # Ordinary prose still receives a fast missing-command denial. A killed
+    # process is never validation; both probes retain the 2.5 s deadline.
     for label, text in [
         ('million-character invalid role', prompt('Product', '--role ' + 'X' * 1_000_000)),
         ('million-character ordinary line control', 'ROLE SESSION: Product\n' + 'X' * 1_000_000 + '\n'),
@@ -179,7 +404,10 @@ def round3_dispatch(baseline):
         elapsed = time.monotonic() - started
         print('TIMING: ' + label + ': %.3f s' % elapsed)
         check(elapsed < 3.0, label + ': wall time must be under 3 s (%.3f s)' % elapsed)
-        denied(text, ['OR31'], label, result=result)
+        if 'invalid role' in label:
+            unchecked(result, label + ': over unit cap')
+        else:
+            denied(text, ['OR31'], label, result=result)
 
 def round4_dispatch(baseline):
     # Whole-command continuation is distinct from a continuation inside a value.
@@ -248,10 +476,9 @@ def round5_quoted_forms():
                 forms.append((label, spelling, value))
     return forms
 
-def round5_dispatch():
-    # A quoted argument containing literal newlines does not end the command;
-    # later flags, continued or not, still belong to it. Generate every
-    # combination so a variant of the class cannot hide between examples.
+def round5_emitter_controls():
+    # A48 retires the whole-shell hook matrix, not the emitter contract.
+    # Retain its Bash argv and emitter controls independently of the hook.
     from concurrent.futures import ThreadPoolExecutor
     from itertools import permutations
     kinds = [  # (label, flag spelling, argv, expected hook verdict, emitter reason words)
@@ -278,46 +505,15 @@ def round5_dispatch():
     started = time.monotonic()
     with ThreadPoolExecutor(max_workers=8) as pool:
         shells = list(pool.map(shell, cases))
-        hooks = list(pool.map(lambda c: hook(prompt('Product', c['flags'])), cases))
         argvs = sorted({tuple(c['argv']) for c in cases})
         emitted = dict(zip(argvs, pool.map(lambda a: emit(list(a)), argvs)))
         plain = {a: tuple('m' if i > 0 and a[i - 1] == '--model' else x for i, x in enumerate(a)) for a in argvs}
         emitted_plain = dict(zip(argvs, pool.map(lambda a: emit(list(plain[a])), argvs)))
     print('TIMING: round-5 quoted multiline matrix: %d cases, %.3f s' % (len(cases), time.monotonic() - started))
-    or31 = rule('OR31')
-    groups = {}
-    shown = {}
-    def record(ok, group, label):
-        # One assertion per case; print the first few failures per group only.
-        global assertions
-        assertions += 1
-        tally = groups.setdefault(group, [0, 0])
-        tally[1] += 1
-        if not ok:
-            tally[0] += 1
-            failures.append(label)
-            shown[group] = shown.get(group, 0) + 1
-            if shown[group] <= 2:
-                print('FAIL: ' + label)
-    for case, sh, r in zip(cases, shells, hooks):
-        label = ('round-5 ' + case['kind'] + ', ' + case['quote'] + ', order ' + case['order'] +
-                 ', separators ' + case['seps'])
+    for case, sh in zip(cases, shells):
         check((sh.returncode, sh.stdout, sh.stderr) ==
-              (0, b''.join(x.encode() + b'\0' for x in case['argv']), b''), label + ': Bash complete argv')
-        if case['verdict'] == 'allow':
-            ok = (r.returncode, r.stdout, r.stderr) == (0, b'', b'')
-        else:
-            lines = r.stderr.splitlines()
-            ok = (r.returncode == 2 and not r.stdout and len(lines) == 2 and lines[0] == or31
-                  and b'--role' in lines[1] and b'--stage' in lines[1])
-        continued = 'no continuation' if case['seps'] == 'space+space' else 'with continuation'
-        record(ok, (case['kind'], 'all'), label + ': expected ' +
-               ('silent allow' if case['verdict'] == 'allow' else 'exit 2, empty stdout, OR31 once plus AVOID') +
-               ' (exit %s, stdout %s bytes, stderr %s lines)' % (r.returncode, len(r.stdout), len(r.stderr.splitlines())))
-        for group in ['order ' + case['order'], 'separators ' + case['seps'], case['quote'], continued]:
-            tally = groups.setdefault((case['kind'], group), [0, 0])
-            tally[0] += not ok
-            tally[1] += 1
+              (0, b''.join(x.encode() + b'\0' for x in case['argv']), b''),
+              'round-5 retained emitter matrix: Bash complete argv ' + repr(case['argv']))
     # Emitter controls on the exact Bash argv, and with the quoted value replaced
     # by a valid model so the refusal or success is about role and stage.
     kind_of = {tuple(c['argv']): next(k for k in kinds if k[0] == c['kind']) for c in cases}
@@ -336,8 +532,6 @@ def round5_dispatch():
                 check(result.returncode == 2 and not result.stdout and b'model' in result.stderr
                       and b'role' not in result.stderr.lower() and b'stage' not in result.stderr.lower(),
                       label + ' quoted value: only the model value may be refused')
-    for (kind, group), (red, total) in sorted(groups.items()):
-        print('RESULT: round-5 %s, %s: %d/%d %s' % (kind, group, red, total, 'RED' if red else 'GREEN'))
 
 PREVIOUS_HEAD = '2d93c25'  # last head before the whole-prompt shell word stream (round 5)
 
@@ -458,7 +652,7 @@ def round6_quoted_apostrophes():
                     flags = '--role Product --model ' + spelling + sep + flag
                     text = ('ROLE SESSION: Product\n' + before + '/c/model-record-emit.sh ' + flags + '\n' + after)
                     cases.append({'flags': flags, 'argv': ['--role', 'Product', '--model', value] + argv,
-                                  'text': text, 'expected': expected,
+                                  'text': text, 'expected': 'unchecked',
                                   'label': 'round-6 quoted %s, %s, %s, %s' % (vlabel, klabel, slabel, plabel)})
     return cases
 
@@ -470,13 +664,14 @@ def round6_dispatch(previous):
     quoted_cases = round6_quoted_apostrophes()
     pinned = prose + briefs
     with ThreadPoolExecutor(max_workers=8) as pool:
-        current = list(pool.map(lambda c: verdict(hook(c['text'])), pinned + quoted_cases))
+        current = list(pool.map(lambda c: verdict(hook(c['text'])), pinned))
+        quoted_results = list(pool.map(lambda c: hook(c['text']), quoted_cases))
         before = (list(pool.map(lambda c: verdict(hook(c['text'], previous)), pinned))
                   if previous is not None else [None] * len(pinned))
         shells = list(pool.map(lambda c: run(['bash', '-c', 'set -- ' + c['flags'] + '; printf "%s\\0" "$@"']),
                                quoted_cases))
     groups = {}
-    for case, now, then in zip(pinned + quoted_cases, current, before + [None] * len(quoted_cases)):
+    for case, now, then in zip(pinned, current, before):
         if then is not None:
             # Same verdict as before the structural change: the recorded
             # expectation is the previous head's verdict, checked here.
@@ -492,6 +687,8 @@ def round6_dispatch(previous):
             tally = groups.setdefault(key, [0, 0])
             tally[0] += not ok
             tally[1] += 1
+    for case, result in zip(quoted_cases, quoted_results):
+        unchecked(result, case['label'] + ': no implicit quoted continuation')
     for case, sh in zip(quoted_cases, shells):
         check((sh.returncode, sh.stdout, sh.stderr) ==
               (0, b''.join(x.encode() + b'\0' for x in case['argv']), b''), case['label'] + ': Bash complete argv')
@@ -528,8 +725,7 @@ def round6_dispatch(previous):
         print('RESULT: ' + label + ': ' + ('RED' if len(failures) > before_count else 'GREEN'))
     # role-unterminated-continuation: a quote that never closes, with a continued
     # flag after it. Bash itself fails here, so the existing malformed-input
-    # rule applies: deny, or allow with exactly one unchecked diagnostic, but
-    # never a silent allow.
+    # rule requires exit 0 and exactly one unchecked diagnostic.
     for qlabel, quote in [('double', '"'), ('single', "'")]:
         text = 'ROLE SESSION: Product\n' + C + ' --role Product --model ' + quote + 'x ' + chr(92) + '\n--stage Planning\n'
         label = 'round-6 unterminated %s-quoted model with continued stage' % qlabel
@@ -539,7 +735,7 @@ def round6_dispatch(previous):
         lines = r.stderr.splitlines()
         noted = (r.returncode == 0 and not r.stdout and len(lines) == 1 and b'dispatch allowed unchecked' in lines[0])
         before_count = len(failures)
-        check(noted or verdict(r).startswith('deny '), label + ': expected deny or exactly one '
+        check(noted, label + ': expected exit 0 and exactly one '
               '"dispatch allowed unchecked" diagnostic, not a silent allow; got ' + verdict(r))
         print('RESULT: ' + label + ': ' + ('RED' if len(failures) > before_count else 'GREEN'))
         if previous is not None:
@@ -625,8 +821,9 @@ def dispatch():
         refusal(['--stage',value,'--model','m'],'quoted stage emitter control '+repr(value),['stage'])
     round3_dispatch(baseline)
     round4_dispatch(baseline)
-    round5_dispatch()
+    round5_emitter_controls()
     round6_dispatch(previous_head_baseline())
+    round7_dispatch()
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
@@ -804,7 +1001,10 @@ def docs():
         p=root/path;s=p.read_text();assert old in s;p.write_text(s.replace(old,new))
         check(bool(doc_errors(root)),'AC6 must kill doc mutation '+path+' '+old);p.write_text(s)
 
+fixture_started = time.monotonic()
 {'dispatch':dispatch,'agreement':agreement,'pairs':pairs,'compatibility':compatibility,
  'bad':bad_inputs,'quoted':quoted,'drift':drift,'docs':docs}[sys.argv[1]]()
+if sys.argv[1] == 'dispatch':
+    print('TIMING: S412 total %.3f s' % (time.monotonic() - fixture_started))
 print('Assertions: '+str(assertions-len(failures))+' passed, '+str(len(failures))+' failed')
 sys.exit(bool(failures))
