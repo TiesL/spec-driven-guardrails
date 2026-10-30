@@ -67,6 +67,37 @@ def note(msg):
     return 0
 
 
+def join_emit_continuations(prompt):
+    # Remove shell line continuations before the shared command scans. Follow
+    # role_word's quote/escape rules; single-quoted backslashes stay literal.
+    if "\\\n" not in prompt:
+        return prompt
+    parts = []
+    copied = consumed = 0
+    for command in EMIT_COMMAND.finditer(prompt):
+        if command.start() < consumed:
+            continue
+        i = command.start(1)
+        quote = ""
+        while i < len(prompt) and prompt[i] != "\n":
+            c = prompt[i]
+            if c in ("'", '"'):
+                if not quote:
+                    quote = c
+                elif quote == c:
+                    quote = ""
+            if c == "\\" and quote != "'":
+                if prompt[i + 1:i + 2] == "\n":
+                    parts.append(prompt[copied:i])
+                    copied = i + 2
+                i += 2
+            else:
+                i += 1
+        consumed = i
+    parts.append(prompt[copied:])
+    return "".join(parts)
+
+
 def role_word(text, start, wrapper_end):
     # Scan once, retaining at most the longest valid role. Continue scanning
     # after overflow so genuinely malformed quoting keeps its fail-open policy.
@@ -231,6 +262,7 @@ def main(argv):
     prompt = ti.get(F_PROMPT)
     if not isinstance(prompt, str):
         return note("%s.%s is not a string" % (F_INPUT, F_PROMPT))
+    prompt = join_emit_continuations(prompt)
     lines = prompt.split("\n")
     if not any(ROLE_LINE.match(l) or
                (EMIT_AT_START.match(l) and
