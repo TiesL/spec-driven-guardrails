@@ -15,6 +15,9 @@
 
 set -Eeuo pipefail
 
+# Prevent Python bytecode writes, including during read-only status.
+export PYTHONDONTWRITEBYTECODE=1
+
 # Parse the complete public Interface before any project writes.
 runtime=claude
 runtime_seen=0
