@@ -207,7 +207,456 @@ def parity(target, invoke, installed=False):
                 f'merge-only bundle acquired unrelated check: {cmd}')
 
 
-if SCENARIO == 397:
+
+# A47 fault injection lives only in the disposable interpreter. Events name
+# persisted records and filesystem operations, never private product functions.
+INJECTOR = r"""
+import ctypes
+import errno
+import json
+import os
+from pathlib import Path
+import time
+project = Path(os.environ['FAULT_PROJECT'])
+receipt = Path(os.environ['FAULT_RECEIPT'])
+point = os.environ['FAULT_POINT']
+side = os.environ.get('FAULT_SIDE', 'before')
+record = project / '.guardrails/installation.json'
+def hit(event, when):
+    if event != point or when != side:
+        return
+    receipt.write_text(event + ':' + when)
+    if os.environ.get('FAULT_PAUSE'):
+        deadline = time.monotonic() + 12
+        while not Path(os.environ['FAULT_RELEASE']).exists():
+            if time.monotonic() > deadline:
+                os._exit(87)
+            time.sleep(0.02)
+        return
+    os._exit(86)
+def stage_path(value):
+    try:
+        return Path(os.fsdecode(value)).is_relative_to(project / '.codex') and '.sdg-guard-stage-' in os.fsdecode(value)
+    except TypeError:
+        return False
+for operation in ('replace', 'rename'):
+    original = getattr(os, operation)
+    def replacement(src, dst, *args, _original=original, **kwargs):
+        event = None
+        if Path(os.fsdecode(dst)) == record:
+            try:
+                doc = json.loads(Path(src).read_text())
+                tx = doc.get('guard_bundle_transaction')
+                event = 'record-' + (tx['phase'] if tx else 'clear')
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+        hit(event, 'before')
+        result = _original(src, dst, *args, **kwargs)
+        hit(event, 'after')
+        return result
+    setattr(os, operation, replacement)
+original_write = Path.write_bytes
+def write(self, data):
+    if stage_path(self) and str(self).endswith('/hooks/rules.sh'):
+        hit('stage-write', 'before')
+        result = original_write(self, data)
+        hit('stage-write', 'after')
+        return result
+    return original_write(self, data)
+Path.write_bytes = write
+for operation in ('unlink', 'remove', 'rmdir'):
+    original = getattr(os, operation)
+    def removal(path, *args, _original=original, _operation=operation, **kwargs):
+        event = None
+        if stage_path(path):
+            path = Path(path)
+            event = ('delete-stage' if _operation == 'rmdir' and path.name.startswith('.sdg-guard-stage-')
+                     else 'delete-directory' if _operation == 'rmdir'
+                     else 'delete-manifest' if path.name == 'MANIFEST' else 'delete-payload')
+            # A47's retained evidence is an independent deletion-order oracle.
+            if path.name == 'MANIFEST':
+                remaining = list(path.parent.iterdir())
+                if remaining != [path]:
+                    receipt.write_text('MANIFEST removed before old payload/directories')
+                    os._exit(88)
+        hit(event, 'before')
+        result = _original(path, *args, **kwargs)
+        hit(event, 'after')
+        return result
+    setattr(os, operation, removal)
+# Intercept the two A47 platform exchanges, including libc syscall fallback.
+# Proxies preserve ctypes argtypes/restype assignment and native return values.
+class Exchange:
+    def __init__(self, native):
+        object.__setattr__(self, 'native', native)
+    def __setattr__(self, name, value):
+        setattr(self.native, name, value)
+    def __call__(self, *args):
+        paths = []
+        for arg in args:
+            value = getattr(arg, 'value', arg)
+            if isinstance(value, bytes):
+                paths.append(os.fsdecode(value))
+        active = str(project / '.codex/sdg-guard')
+        relevant = active in paths and any('.sdg-guard-stage-' in p for p in paths)
+        if relevant:
+            if point == 'unsupported-exchange':
+                receipt.write_text('unsupported-exchange')
+                ctypes.set_errno(errno.ENOSYS)
+                return -1
+            hit('exchange', 'before')
+        result = self.native(*args)
+        if relevant and result == 0:
+            hit('exchange', 'after')
+        return result
+original_get = ctypes.CDLL.__getattr__
+def get(self, name):
+    value = original_get(self, name)
+    if name in ('renameatx_np', 'renameat2', 'syscall'):
+        value = Exchange(value)
+        setattr(self, name, value)
+    return value
+ctypes.CDLL.__getattr__ = get
+"""
+
+
+def record_path():
+    return PROJECT / '.guardrails/installation.json'
+
+
+def record():
+    return json.loads(record_path().read_text())
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def changed_source(revision=NEW_REV):
+    path = WF / 'hooks/rules.sh'
+    path.write_bytes(path.read_bytes() + ('\n# generation ' + revision + '\n').encode())
+    (WF / '.git/HEAD').write_text(revision + '\n')
+
+
+def policy_control():
+    adopt('--hooks')
+    invoke = guard_fixture()
+    baseline = invoke(command(), kind='missing', installed=True)
+    require(baseline[0] == 2 and 'without a review marker for the current commit' in baseline[2],
+            f'missing-review control did not reach policy refusal: {baseline}')
+    print('GREEN control: installed missing-review refusal has exit 2', flush=True)
+    return invoke, baseline
+
+
+def policy_same(invoke, baseline, label):
+    actual = invoke(command(), kind='missing', installed=True)
+    require(actual == baseline, f'{label}: interrupted policy stdout/stderr/exit changed: {actual} != {baseline}')
+
+
+def fault_env(point, side='before', pause=False):
+    injection = TMP / 'transaction-injection'
+    injection.mkdir(exist_ok=True)
+    (injection / 'sitecustomize.py').write_text(INJECTOR)
+    receipt = TMP / 'transaction-receipt'
+    receipt.unlink(missing_ok=True)
+    release = TMP / 'writer-release'
+    release.unlink(missing_ok=True)
+    return dict(ENV, PYTHONPATH=str(injection), FAULT_PROJECT=str(PROJECT),
+                FAULT_POINT=point, FAULT_SIDE=side, FAULT_RECEIPT=str(receipt),
+                FAULT_PAUSE='1' if pause else '', FAULT_RELEASE=str(release))
+
+
+def interrupt(point, side, invoke, baseline):
+    env = fault_env(point, side)
+    result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT, env=env)
+    policy_same(invoke, baseline, point + ':' + side)
+    receipt = Path(env['FAULT_RECEIPT'])
+    require(receipt.exists() and receipt.read_text() == point + ':' + side,
+            f'{point}:{side}: required transaction interruption point not reached')
+    require(result.returncode != 0, f'{point}:{side}: interrupted refresh reported success')
+    print(f'injected {point}:{side}; exact installed policy preserved', flush=True)
+
+
+def complete(invoke, baseline):
+    adopt('--hooks')
+    status(0, 'current')
+    rec = record()
+    require(rec['version'] == 4 and rec['guard_bundle_transaction'] is None,
+            'successful explicit retry did not clear version-4 transaction')
+    require(not list((PROJECT / '.codex').glob('.sdg-guard-stage-*')),
+            'successful explicit retry left staging artifacts')
+    require(rec['guard_bundle']['manifest_sha256'] == digest(bundle() / 'MANIFEST'),
+            'committed digest does not authenticate active MANIFEST')
+    policy_same(invoke, baseline, 'completed retry')
+
+
+def seed_transaction(phase='preparing', arrangement='old', partial=False):
+    """Build genuine manifests through adoption, then seed specified A47 state.
+
+    No product helpers or historical source snapshot are used for recovery.
+    """
+    old = TMP / 'old-generation'
+    shutil.copytree(bundle(), old)
+    changed_source()
+    other = TMP / 'new-project'; other.mkdir(); git_metadata(other)
+    adopt('--hooks', project=other)
+    new = other / '.codex/sdg-guard'
+    stage = PROJECT / '.codex/.sdg-guard-stage-QA594'
+    if arrangement == 'old':
+        shutil.copytree(new, stage)
+    else:
+        shutil.copytree(old, stage)
+        shutil.rmtree(bundle())
+        shutil.copytree(new, PROJECT / '.codex/sdg-guard')
+    tx = dict(phase=phase, staging_path=str(stage.relative_to(PROJECT)),
+              old_manifest_sha256=digest(old / 'MANIFEST'),
+              new_manifest_sha256=digest(new / 'MANIFEST'))
+    rec = record()
+    rec.update(version=4, guard_bundle_transaction=tx)
+    rec['guard_bundle']['manifest_sha256'] = tx['new_manifest_sha256' if phase == 'cleanup' else 'old_manifest_sha256']
+    record_path().write_text(json.dumps(rec))
+    if partial:
+        (stage / 'hooks/rules.sh').write_bytes(b'')
+    return stage, tx
+
+
+def pending_read_only(flags, classification, invoke, baseline):
+    before = snapshot(PROJECT)
+    result = run(WF / 'adopt.sh', '--runtime', 'codex', *flags, PROJECT)
+    out = result.stdout + result.stderr
+    require(result.returncode == 1 and 'recovery pending' in out.lower(),
+            f'{flags}: valid transaction must report recovery pending with exit 1: {out}')
+    require(re.search(r'(?:bundle|sdg-guard)[^\n]*\b' + classification + r'\b', out, re.I),
+            f'{flags}: pending transaction lost {classification} content classification: {out}')
+    require('activation: unverified' in out, 'pending status omits unverified activation')
+    require('TiesL' in out and 'outside' in out and 'sandbox' in out,
+            'pending status omits explicit recovery by TiesL outside sandbox')
+    require(snapshot(PROJECT) == before, f'{flags}: pending transaction or staging changed')
+    policy_same(invoke, baseline, 'read-only pending')
+
+
+def conflict_unchanged(label, offending=None):
+    before = snapshot(PROJECT)
+    result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT)
+    out = result.stdout + result.stderr
+    require(result.returncode == 1 and 'conflict' in out.lower(), f'{label}: expected ownership conflict exit 1: {out}')
+    if offending:
+        require(offending in out, f'{label}: refusal omitted offending path {offending}: {out}')
+    require(snapshot(PROJECT) == before, f'{label}: conflict wrote project files')
+
+
+def transaction_scenario():
+    import time
+    invoke, baseline = policy_control()
+    if SCENARIO in (420, 421, 423, 424):
+        points = {420: ('record-preparing',), 421: ('record-ready',),
+                  423: ('record-cleanup',),
+                  424: ('delete-payload', 'delete-directory', 'delete-manifest', 'delete-stage', 'record-clear')}[SCENARIO]
+        backup = TMP / 'initial-project'; shutil.copytree(PROJECT, backup, symlinks=True)
+        old_digest = digest(bundle() / 'MANIFEST')
+        changed_source()
+        for point in points:
+            for side in ('before', 'after'):
+                shutil.rmtree(PROJECT); shutil.copytree(backup, PROJECT, symlinks=True)
+                interrupt(point, side, invoke, baseline)
+                rec = record(); tx = rec.get('guard_bundle_transaction')
+                if point in ('record-preparing', 'record-ready'):
+                    require(digest(bundle() / 'MANIFEST') == old_digest,
+                            point + ': active generation changed before exchange')
+                if point == 'record-preparing':
+                    require(tx is None if side == 'before' else tx and tx['phase'] == 'preparing',
+                            'preparation record interruption exposed neither expected complete record')
+                if point == 'record-ready':
+                    require(tx and tx['phase'] == ('preparing' if side == 'before' else 'ready'),
+                            'ready record interruption exposed wrong phase')
+                    require(digest(PROJECT / tx['staging_path'] / 'MANIFEST') == tx['new_manifest_sha256'],
+                            'ready record did not retain verified new staging')
+                if point == 'record-cleanup':
+                    require(tx and tx['phase'] == ('ready' if side == 'before' else 'cleanup'),
+                            'ownership replacement exposed wrong phase')
+                    require(digest(bundle() / 'MANIFEST') == tx['new_manifest_sha256'],
+                            'ownership commit occurred before new active generation')
+                    require(digest(PROJECT / tx['staging_path'] / 'MANIFEST') == tx['old_manifest_sha256'],
+                            'ownership commit did not preserve complete old staging')
+                if tx:
+                    committed = tx['new_manifest_sha256' if tx['phase'] == 'cleanup' else 'old_manifest_sha256']
+                    require(rec['guard_bundle']['manifest_sha256'] == committed,
+                            'record phase and committed ownership digest disagree')
+                if point.startswith('delete-'):
+                    require(tx and tx['phase'] == 'cleanup', 'old generation removed before ownership commit')
+                    stage = PROJECT / tx['staging_path']
+                    if point in ('delete-payload', 'delete-directory'):
+                        require(digest(stage / 'MANIFEST') == tx['old_manifest_sha256'],
+                                'cleanup removed old MANIFEST before payload/directories')
+                    if point == 'delete-stage' or (point == 'delete-manifest' and side == 'after'):
+                        require(not stage.exists() or not list(stage.iterdir()), 'MANIFEST removed before old stage was empty')
+                if point == 'record-clear':
+                    require(not list((PROJECT / '.codex').glob('.sdg-guard-stage-*')),
+                            'transaction cleared before old stage was absent')
+                complete(invoke, baseline)
+    elif SCENARIO == 422:
+        backup = TMP / 'initial-project'; shutil.copytree(PROJECT, backup, symlinks=True)
+        old_digest = digest(bundle() / 'MANIFEST'); changed_source()
+        for side in ('before', 'after'):
+            shutil.rmtree(PROJECT); shutil.copytree(backup, PROJECT, symlinks=True)
+            interrupt('exchange', side, invoke, baseline)
+            tx = record()['guard_bundle_transaction']; stage = PROJECT / tx['staging_path']
+            require(tx['phase'] == 'ready', 'exchange interruption lost ready record')
+            require(digest(bundle() / 'MANIFEST') == (old_digest if side == 'before' else tx['new_manifest_sha256']),
+                    'exchange interruption left wrong active generation')
+            require(digest(stage / 'MANIFEST') == (tx['new_manifest_sha256'] if side == 'before' else old_digest),
+                    'exchange interruption left wrong staged generation')
+            complete(invoke, baseline)
+    elif SCENARIO == 425:
+        stage, tx = seed_transaction(partial=True)
+        interrupt('stage-write', 'after', invoke, baseline)
+        require(record()['guard_bundle_transaction']['phase'] == 'preparing', 'interrupted recovery lost preparing phase')
+        complete(invoke, baseline)
+    elif SCENARIO == 426:
+        stage, tx = seed_transaction(partial=True)
+        changed_source('3' * 40)
+        interrupt('record-ready', 'before', invoke, baseline)
+        new_tx = record()['guard_bundle_transaction']
+        require(new_tx['phase'] == 'preparing' and new_tx['new_manifest_sha256'] != tx['new_manifest_sha256'],
+                'retry did not record new target digest from current source')
+        require(new_tx['old_manifest_sha256'] == tx['old_manifest_sha256'] and new_tx['staging_path'] == tx['staging_path'],
+                'retry changed old digest or exact staging path')
+        require(digest(stage / 'MANIFEST') == new_tx['new_manifest_sha256'], 'rebuilt stage differs from retargeted digest')
+        require('3' * 40 in (stage / 'MANIFEST').read_text(), 'retry retained historical source revision')
+        require((stage / 'hooks/rules.sh').read_bytes() == (WF / 'hooks/rules.sh').read_bytes(), 'retry retained historical source bytes')
+        complete(invoke, baseline)
+    elif SCENARIO == 427:
+        stage, tx = seed_transaction()
+        target = bundle() / 'hooks/rules.sh'; target.write_bytes(target.read_bytes() + b'\n# tampering\n')
+        conflict_unchanged('tampered active despite transaction', '.codex/sdg-guard')
+        policy_same(invoke, baseline, 'tamper refusal')
+        # Restore fixture tampering, then prove explicit recovery is still possible.
+        shutil.copy2(TMP / 'old-generation/hooks/rules.sh', target)
+        complete(invoke, baseline)
+    elif SCENARIO == 428:
+        stage, tx = seed_transaction()
+        pending_read_only(('--status',), 'stale', invoke, baseline)
+        good = record()
+        mutations = [[], {}, dict(tx, phase='unknown'), dict(tx, phase=3),
+                     dict(tx, staging_path='/tmp/foreign'), dict(tx, staging_path='.codex/../foreign'),
+                     dict(tx, staging_path='.codex/.sdg-guard-stage-'), dict(tx, staging_path='.codex/.sdg-guard-stage-a/b'),
+                     dict(tx, old_manifest_sha256='A' * 64), dict(tx, new_manifest_sha256=3),
+                     dict(tx, extra=True), {k: v for k, v in tx.items() if k != 'phase'},
+                     dict(tx, new_manifest_sha256=tx['old_manifest_sha256'])]
+        for bad in mutations:
+            rec = dict(good, guard_bundle_transaction=bad)
+            record_path().write_text(json.dumps(rec))
+            conflict_unchanged('malformed transaction ' + repr(bad))
+        rec = dict(good); rec['guard_bundle'] = dict(good['guard_bundle'], manifest_sha256='0' * 64)
+        record_path().write_text(json.dumps(rec)); conflict_unchanged('inconsistent committed digest')
+        record_path().write_text(json.dumps(good)); complete(invoke, baseline)
+    elif SCENARIO == 429:
+        stage, tx = seed_transaction(partial=True)
+        outside = TMP / 'foreign-target'; outside.mkdir(); (outside / 'sentinel').write_text('foreign')
+        baseline_tree = snapshot(outside)
+        for parent in (stage, bundle()):
+            target = parent / 'hooks/rules.sh'; saved = target.read_bytes(); mode = stat.S_IMODE(target.stat().st_mode)
+            target.unlink(); target.symlink_to(outside / 'sentinel')
+            conflict_unchanged('symlink transaction entry', str(target.relative_to(PROJECT)))
+            require(snapshot(outside) == baseline_tree, 'transaction followed external symlink')
+            target.unlink(); target.write_bytes(saved); target.chmod(mode)
+        # The stage itself must also never be followed or removed.
+        saved_stage = TMP / 'saved-stage'; stage.rename(saved_stage); stage.symlink_to(outside, target_is_directory=True)
+        conflict_unchanged('symlink stage', tx['staging_path'])
+        require(snapshot(outside) == baseline_tree, 'stage symlink target changed')
+        stage.unlink(); saved_stage.rename(stage)
+        complete(invoke, baseline)
+    elif SCENARIO == 430:
+        old = snapshot(bundle()); changed_source()
+        env = fault_env('unsupported-exchange')
+        result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT, env=env)
+        receipt = Path(env['FAULT_RECEIPT'])
+        require(receipt.exists(), 'unsupported atomic exchange injector not reached')
+        require(result.returncode == 1, 'unsupported exchange must refuse refresh with exit 1')
+        require(snapshot(bundle()) == old, 'unsupported exchange changed active bundle')
+        policy_same(invoke, baseline, 'unsupported exchange')
+        complete(invoke, baseline)
+    elif SCENARIO == 431:
+        changed_source(); env = fault_env('record-preparing', 'after', pause=True)
+        child = subprocess.Popen([str(WF / 'adopt.sh'), '--runtime', 'codex', '--hooks', str(PROJECT)],
+                                 cwd=WF, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            deadline = time.monotonic() + 6
+            receipt = Path(env['FAULT_RECEIPT'])
+            while not receipt.exists() and child.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.02)
+            require(receipt.exists(), 'overlapping-writer control never reached locked preparing transition')
+            before = snapshot(PROJECT)
+            for flags in ((), ('--hooks',)):
+                result = run(WF / 'adopt.sh', '--runtime', 'codex', *flags, PROJECT)
+                require(result.returncode == 1, f'overlapping writer {flags} did not refuse')
+                require(snapshot(PROJECT) == before, f'overlapping writer {flags} wrote adoption files')
+            policy_same(invoke, baseline, 'paused writer')
+        finally:
+            Path(env['FAULT_RELEASE']).touch()
+            child.communicate(timeout=15)
+        complete(invoke, baseline)
+    elif SCENARIO in (432, 433):
+        phase = 'preparing' if SCENARIO == 432 else 'cleanup'
+        stage, tx = seed_transaction(phase, 'old' if phase == 'preparing' else 'new', partial=phase == 'preparing')
+        for flags in ((), ('--status',)):
+            pending_read_only(flags, 'stale' if phase == 'preparing' else 'current', invoke, baseline)
+        complete(invoke, baseline)
+    elif SCENARIO == 434:
+        historical = TMP / 'historical-start'
+        shutil.copytree(PROJECT, historical, symlinks=True)
+        failures = []
+        for version in (1, 2, 3):
+            shutil.rmtree(PROJECT)
+            # Construct each exact historical schema from an actual installation.
+            shutil.copytree(historical, PROJECT, symlinks=True)
+            rec = record()
+            rec.pop('guard_bundle_transaction', None); rec['version'] = version
+            if version < 3:
+                rec.pop('guard_bundle', None); shutil.rmtree(bundle())
+                ignore = PROJECT / '.gitignore'
+                ignore.write_text(ignore.read_text().replace('/.codex/sdg-guard\n', ''))
+                old_group = {'matcher': 'Bash', 'hooks': [{'type': 'command', 'command':
+                    shlex.quote(str(PROJECT / '.guardrails/source/hooks/git-guardrails')) + ' --merge-only'}]}
+                if version == 1:
+                    rec.pop('managed_hook', None); (PROJECT / '.codex/hooks.json').unlink()
+                else:
+                    rec['managed_hook'] = old_group
+                    (PROJECT / '.codex/hooks.json').write_text(json.dumps({'hooks': {'PreToolUse': [old_group]}}))
+            record_path().write_text(json.dumps(rec, indent=2, sort_keys=True) + '\n')
+            before = snapshot(PROJECT)
+            # Version 2's owned source-path command is readable but stale.
+            out = adopt('--status', rc=1 if version == 2 else 0)
+            require('malformed/foreign provenance' not in out, f'version {version}: historical record rejected')
+            require(snapshot(PROJECT) == before, f'version {version}: status upgraded provenance')
+            adopt()
+            require(record()['version'] == version, f'version {version}: default adoption upgraded provenance')
+            print(f'GREEN control: version {version} read without implicit upgrade', flush=True)
+            out = adopt('--hooks')
+            if record()['version'] != 4:
+                failures.append(f'version {version}: explicit bundle adoption did not upgrade to version 4')
+                continue
+            require('upgrade' in out.lower() and '4' in out, f'version {version}: upgrade not reported')
+            complete(invoke, baseline)
+        require(not failures, '; '.join(failures))
+    elif SCENARIO == 435:
+        status(0, 'current')
+        # Valid default absence and invalid input remain separate exit controls.
+        absent = TMP / 'default-project'; absent.mkdir(); git_metadata(absent)
+        adopt(project=absent); adopt('--status', project=absent)
+        invalid = TMP / 'not-a-project'; invalid.mkdir()
+        result = run(WF / 'adopt.sh', '--runtime', 'codex', '--status', invalid)
+        require(result.returncode == 2, 'invalid input did not exit 2')
+        changed_source(); status(1, 'stale')
+        # Seed helper expects unchanged old source; it still creates a distinct new digest.
+        stage, tx = seed_transaction()
+        pending_read_only(('--status',), 'stale', invoke, baseline)
+        complete(invoke, baseline)
+
+
+if SCENARIO >= 420:
+    transaction_scenario()
+elif SCENARIO == 397:
     adopt('--hooks')
     b = bundle()
     require({str(p.relative_to(b)) for p in b.rglob('*') if p.is_file()} == set(FILES) | {'MANIFEST'},

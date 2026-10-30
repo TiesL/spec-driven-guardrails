@@ -7775,3 +7775,115 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
 - Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
+
+### S420 — Preparation record replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops immediately before and after preparing record replacement.
+- Then: either complete record leaves the old policy intact and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S421 — Ready record replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops before and after ready record replacement.
+- Then: preparing or ready is resumable with unchanged installed policy and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S422 — Atomic exchange interruption preserves both arrangements (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops before and after atomic directory exchange.
+- Then: old-active/new-staged and new-active/old-staged are identified by exact digests; recovery publishes new once and never swaps back. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S423 — Ownership commit replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a refresh with verified new staging.
+- When: explicit refresh stops before and after cleanup ownership record replacement.
+- Then: ready or cleanup preserves policy and explicit retry commits the new digest and reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S424 — Cleanup deletion and metadata clearing interruptions (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an exchanged new generation with transaction-owned old staging.
+- When: refresh stops before and after payload deletion, nested directory removal, old MANIFEST unlink, stage removal and metadata clearing.
+- Then: old MANIFEST remains authenticated until payload and directories are gone, metadata clears only after staging is absent, and every explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S425 — Interrupted recovery is itself recoverable (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a validated preparing record with incomplete staged bytes.
+- When: explicit recovery stops during a replacement stage write and another explicit retry runs.
+- Then: both interruptions preserve the installed policy and the final retry clears transaction and staging and reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S426 — Preparation retry retargets the current source (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: incomplete preparation and source changed again before retry.
+- When: explicit retry stops just before recording ready.
+- Then: preparing records a different new target digest while retaining old digest and exact stage path; rebuilt bytes and revision match current source and next explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S427 — Transaction metadata does not authorize active tampering (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: valid preparing metadata and a tampered active file.
+- When: explicit recovery runs.
+- Then: exit 1 conflict names the active path and preserves all files; after fixture tampering is restored explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S428 — Malformed transaction metadata conflicts before writes (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid pending transaction checked by read-only status.
+- When: unknown phases, wrong types, missing or extra fields, unsafe staging paths, invalid or equal digests and inconsistent committed ownership are supplied.
+- Then: each explicit recovery refuses with exit 1 conflict before writes; restoring valid metadata permits explicit recovery. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S429 — Staging and active symlinks are refused without following (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid incomplete preparation and an external sentinel.
+- When: staged entries, active entries and the exact stage directory are independently replaced by symlinks.
+- Then: exit 1 conflicts name each offending path and preserve the project and external target; restoring regular paths permits explicit recovery. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S430 — Unsupported atomic exchange preserves the active bundle (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a current bundle and changed source.
+- When: the native atomic exchange reports ENOSYS during explicit refresh.
+- Then: refresh refuses with exit 1, active bytes and policy remain identical, and explicit retry without the fault reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S431 — Overlapping adoption writers refuse before writes (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: one refresh paused after preparing record replacement.
+- When: default and explicit-hook writers attempt adoption before the first writer is released.
+- Then: overlapping writers exit 1 without any adoption writes; installed policy remains intact and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S432 — Default adoption and status preserve stale pending preparation (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid preparing record and incomplete stage beside a stale active bundle.
+- When: default adoption and status run independently.
+- Then: both exit 1 with recovery pending and stale classification, unverified activation and outside-sandbox recovery directions, preserving every file; explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S433 — Default adoption and status preserve current pending cleanup (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid cleanup record beside a current new active bundle and old staged generation.
+- When: default adoption and status run independently.
+- Then: both exit 1 with recovery pending and current classification without recovery or cleanup; explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S434 — Versions 1 through 3 remain readable and upgrade explicitly (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: separate exact version-1, version-2 and version-3 historical provenance records.
+- When: status, default adoption and explicit hook adoption run in order.
+- Then: status is read-only, default adoption retains each old version, and explicit hook adoption reports upgrade to version 4 with null transaction and current status. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S435 — Transaction status retains exit meanings zero one and two (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: current, default-absent, invalid, stale and valid pending installations.
+- When: status inspects each independently and explicit recovery completes pending state.
+- Then: current and valid default absence exit 0, stale and recovery pending exit 1, invalid input exits 2, and explicit retry ends current with exit 0. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
