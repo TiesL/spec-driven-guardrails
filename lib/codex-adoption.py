@@ -438,7 +438,38 @@ def refresh_bundle(source, project, old, contents, modes, exchange):
     finish_exchange(project, rec, exchange)
 
 
+def inherited_lock_held(project):
+    """Verify the inherited open description owns this project's flock."""
+    try:
+        fd = int(os.environ.get('SDG_ADOPTION_LOCK_FD', ''))
+        if fd < 0: return False
+        inherited = os.fstat(fd)
+        probe = os.open(project, os.O_RDONLY)
+        try:
+            target = os.fstat(probe)
+            if (inherited.st_dev, inherited.st_ino) != (target.st_dev, target.st_ino):
+                return False
+            # A fresh description must contend. Success means the inherited
+            # descriptor was open but did not hold a lock; release on close.
+            try:
+                fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                pass
+            else:
+                return False
+            # Contention alone could be another writer. Only the inherited
+            # locking description can also obtain the exclusive lock here.
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        finally:
+            os.close(probe)
+    except (OSError, ValueError, OverflowError):
+        return False
+
+
 def main():
+    if sys.argv[1] == '--lock-held':
+        return 0 if inherited_lock_held(Path(sys.argv[2]).resolve()) else 1
     if sys.argv[1] == '--serialize':
         project = Path(sys.argv[2]).resolve()
         fd = os.open(project, os.O_RDONLY)

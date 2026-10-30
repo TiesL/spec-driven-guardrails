@@ -700,8 +700,10 @@ shared_seed_selection() {
 
 project_dir="${project_arg:-.}"
 # Keep the process-owned directory lock across all project adoption writes.
-if [ "$user_mode" -eq 0 ] && [ "$status_mode" -eq 0 ] && [ -z "${SDG_ADOPTION_LOCK_FD:-}" ]; then
-  exec python3 "$own_dir/lib/codex-adoption.py" --serialize "$project_dir" "$own_dir/adopt.sh" "${adoption_args[@]}"
+if [ "$user_mode" -eq 0 ] && [ "$status_mode" -eq 0 ]; then
+  if ! python3 "$own_dir/lib/codex-adoption.py" --lock-held "$project_dir"; then
+    exec python3 "$own_dir/lib/codex-adoption.py" --serialize "$project_dir" "$own_dir/adopt.sh" ${adoption_args[@]+"${adoption_args[@]}"}
+  fi
 fi
 if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
