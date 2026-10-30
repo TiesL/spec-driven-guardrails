@@ -654,7 +654,113 @@ def transaction_scenario():
         complete(invoke, baseline)
 
 
-if SCENARIO >= 420:
+def current_directory_adoption():
+    failures = []
+    env = dict(ENV)
+    env.pop('SDG_ADOPTION_LOCK_FD', None)
+    for runtime, flags in (('claude', ()), ('codex', ('--runtime', 'codex'))):
+        project = TMP / ('no-project-argument-' + runtime)
+        project.mkdir(); git_metadata(project)
+        before_home = snapshot(Path(env['HOME']))
+        before_codex = snapshot(Path(env['CODEX_HOME']))
+        result = run('/bin/bash', WF / 'adopt.sh', *flags, cwd=project, env=env)
+        if result.returncode != 0:
+            failures.append(f'{runtime}: current-directory adoption expected exit 0, got '
+                            f'{result.returncode}: {result.stdout}{result.stderr}')
+            continue
+        for name in ('PRD.md', 'TEST-SCENARIOS.md', 'WORKFLOW-ADOPTION.md', '.gitignore'):
+            require((project / name).is_file(), f'{runtime}: adoption omitted {name}')
+        for name in ('pre-commit', 'commit-msg', 'pre-push'):
+            require(os.access(project / '.git/hooks' / name, os.X_OK),
+                    f'{runtime}: adoption omitted executable native hook {name}')
+        if runtime == 'claude':
+            require((project / 'CLAUDE.md').resolve() == WF / 'WORKFLOW.md',
+                    'claude: adoption omitted workflow instructions')
+            require((project / '.claude/settings.json').resolve() == WF / 'settings/session-hooks.json',
+                    'claude: adoption omitted settings link')
+        else:
+            source = project / '.guardrails/source'
+            require(source.is_symlink() and source.resolve() == WF,
+                    'codex: adoption did not link workflow source')
+            require('spec-driven-guardrails: begin' in (project / 'AGENTS.md').read_text(),
+                    'codex: adoption omitted managed instructions')
+            require(json.loads((project / '.guardrails/installation.json').read_text())['runtime'] == 'codex',
+                    'codex: adoption omitted runtime provenance')
+            require(not (project / '.codex/sdg-guard').exists(),
+                    'codex: default adoption installed opt-in guard bundle')
+        require(snapshot(Path(env['HOME'])) == before_home and
+                snapshot(Path(env['CODEX_HOME'])) == before_codex,
+                f'{runtime}: project adoption changed user configuration')
+        print(f'GREEN control: {runtime} current-directory adoption postconditions', flush=True)
+    require(not failures, '; '.join(failures))
+
+
+def lock_environment_scenario(kind):
+    import fcntl
+    import time
+    invoke, baseline = policy_control()
+    # Normal public adoption already exercised the serializer's inherited FD.
+    status(0, 'current')
+    print('GREEN control: legitimate internally inherited lock completed adoption', flush=True)
+    changed_source(); env = fault_env('record-preparing', 'after', pause=True)
+    child = subprocess.Popen([str(WF / 'adopt.sh'), '--runtime', 'codex', '--hooks', str(PROJECT)],
+                             cwd=WF, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    fd = None
+    try:
+        deadline = time.monotonic() + 6
+        receipt = Path(env['FAULT_RECEIPT'])
+        while not receipt.exists() and child.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.02)
+        require(receipt.exists() and receipt.read_text() == 'record-preparing:after',
+                'overlapping-writer control never reached locked preparing transition')
+        require(child.poll() is None, 'lock holder exited before second writer')
+        # Confirm the target really is locked, independently of its environment.
+        target_fd = os.open(PROJECT, os.O_RDONLY)
+        try:
+            try:
+                fcntl.flock(target_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                pass
+            else:
+                raise AssertionError('paused writer is not holding the target project lock')
+        finally:
+            os.close(target_fd)
+        pass_fds = ()
+        value = '999999'
+        if kind == 'stale':
+            fd = os.open(TMP, os.O_RDONLY)
+            value = str(fd); os.close(fd); fd = None
+        elif kind == 'unrelated':
+            other = TMP / 'unrelated-project'; other.mkdir(); git_metadata(other)
+            fd = os.open(other, os.O_RDONLY)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            value = str(fd); pass_fds = (fd,)
+        before = snapshot(PROJECT)
+        result = subprocess.run([str(WF / 'adopt.sh'), '--runtime', 'codex', '--hooks', str(PROJECT)],
+                                cwd=WF, env=dict(ENV, SDG_ADOPTION_LOCK_FD=value),
+                                pass_fds=pass_fds, capture_output=True, text=True, timeout=10)
+        unchanged = snapshot(PROJECT) == before
+        print(f'{kind} descriptor: second writer exit {result.returncode}; '
+              f'project unchanged={unchanged}', flush=True)
+    finally:
+        Path(env['FAULT_RELEASE']).touch()
+        first_out, first_err = child.communicate(timeout=15)
+        if fd is not None:
+            os.close(fd)
+    require(result.returncode != 0,
+            f'{kind} SDG_ADOPTION_LOCK_FD={value}: overlapping writer expected nonzero exit, '
+            f'got {result.returncode}; project unchanged={unchanged}')
+    require(unchanged, f'{kind} SDG_ADOPTION_LOCK_FD={value}: overlapping writer changed project files')
+    require(child.returncode == 0,
+            f'legitimate inherited-lock writer failed after release: {first_out}{first_err}')
+    complete(invoke, baseline)
+
+
+if SCENARIO == 440:
+    current_directory_adoption()
+elif SCENARIO in (441, 442, 443):
+    lock_environment_scenario({441: 'invalid', 442: 'stale', 443: 'unrelated'}[SCENARIO])
+elif SCENARIO >= 420:
     transaction_scenario()
 elif SCENARIO == 397:
     adopt('--hooks')

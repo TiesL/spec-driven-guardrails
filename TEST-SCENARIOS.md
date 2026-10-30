@@ -7887,3 +7887,32 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: status inspects each independently and explicit recovery completes pending state.
 - Then: current and valid default absence exit 0, stale and recovery pending exit 1, invalid input exits 2, and explicit retry ends current with exit 0. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
 - Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+
+### S440 — Current-directory adoption works under Bash 3.2 (#594 AC5, AC6)
+**Covers:** F47
+- Given: separate valid temporary projects and a copied workflow checkout, with no inherited adoption lock environment.
+- When: /bin/bash runs the copied adopt.sh with zero arguments for Claude and only --runtime codex for Codex, from each project directory.
+- Then: both runs exit 0 and install workflow instructions, shared scaffolding, source links and executable native hooks; Codex records runtime provenance and leaves the opt-in bundle absent; neither run changes user configuration.
+- Falsifiers: an empty-array unbound-variable failure, nonzero adoption exit, missing adoption postcondition, or user configuration write.
+
+### S441 — Invalid environment descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a legitimate explicit-hook writer paused at S431's preparing transition while holding the target project lock, and an independently verified current installation through normal inherited-lock adoption.
+- When: a second explicit-hook writer receives SDG_ADOPTION_LOCK_FD=999999.
+- Then: the second writer exits nonzero without changing any project files; releasing the legitimate writer lets it complete successfully, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S442 — Stale environment descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: the same verified locked-writer harness as S441, with a descriptor opened and closed before the second writer starts.
+- When: the second explicit-hook writer receives that closed descriptor number in SDG_ADOPTION_LOCK_FD.
+- Then: it exits nonzero without changing any project files; the legitimate inherited-lock writer still completes successfully after release, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S443 — Unrelated inherited descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: the same verified locked-writer harness as S441, and an open, exclusively locked descriptor for a different temporary project directory.
+- When: the second explicit-hook writer inherits that live descriptor and its number in SDG_ADOPTION_LOCK_FD.
+- Then: it exits nonzero without changing any target project files; the legitimate inherited-lock writer still completes successfully after release, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
