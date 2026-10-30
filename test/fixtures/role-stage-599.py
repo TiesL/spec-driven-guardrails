@@ -122,6 +122,80 @@ def unchecked(result, label):
           'dispatch allowed unchecked; got ' + verdict(result))
 
 
+def round8_escaped_whitespace():
+    # Real Bash defines word/comment boundaries; the real emitter defines
+    # role/stage agreement. Never obtain an expected verdict from the hook.
+    slash = chr(92)
+    cases = [
+        ('model escaped space', '--model', 'build' + slash + ' #601', 'build #601', True),
+        ('model genuine comment', '--model', 'build #601', 'build', False),
+        ('model escaped tab', '--model', 'build' + slash + '\t#601', 'build\t#601', True),
+        ('model two backslashes', '--model', 'build' + slash * 2 + ' #601', 'build' + slash, False),
+        ('model three backslashes', '--model', 'build' + slash * 3 + ' #601', 'build' + slash + ' #601', True),
+        ('model single-quoted escaped space', '--model', "'build" + slash + " #601'", 'build' + slash + ' #601', True),
+        ('model double-quoted escaped space', '--model', '"build' + slash + ' #601"', 'build' + slash + ' #601', True),
+    ]
+    for flag in ['--floor-basis', '--effort']:
+        cases += [
+            (flag + ' escaped space', flag, 'build' + slash + ' #601', 'build #601', True),
+            (flag + ' genuine comment', flag, 'build #601', 'build', False),
+        ]
+    red = green = 0
+    for name, flag, spelling, value, stage_survives in cases:
+        label = 'round-8 ' + name
+        base = ['--role', 'Product'] + (['--model', 'm'] if flag != '--model' else [])
+        flags = ' '.join(base) + ' ' + flag + ' ' + spelling + ' ' + slash + '\n--stage Planning\n'
+        argv = base + [flag, value] + (['--stage', 'Planning'] if stage_survives else [])
+        sh = run(['bash', '-c', 'capture() { printf "%s\\0" "$@"; }; capture ' + flags, 'oracle'])
+        if not check(sh.stdout == b''.join(x.encode() + b'\0' for x in argv) and
+                     sh.returncode == (0 if stage_survives else 127) and
+                     (sh.stderr == b'' if stage_survives else
+                      sh.stderr.endswith(b'--stage: command not found\n')),
+                     label + ': Bash complete argv and physical comment boundary'):
+            continue
+        # Use Bash's actual decoded argv for the emitter, after pinning it
+        # independently above. Even a malformed fixture cannot supply RED.
+        decoded = [x.decode() for x in sh.stdout.split(b'\0')[:-1]]
+        oracle = emit(decoded)
+        if stage_survives:
+            valid_oracle = check(oracle.returncode == 2 and not oracle.stdout and
+                                 len(oracle.stderr.splitlines()) == 1 and
+                                 b'Discovery' in oracle.stderr and b'Planning' in oracle.stderr,
+                                 label + ': real emitter refuses Product/Planning mismatch')
+        else:
+            control = emit(['--stage', 'Discovery'] + decoded[2:])
+            # Comment controls can still fail emitter-only validation:
+            # a literal backslash is invalid in a model, and Product cannot
+            # carry floor-basis. Neither changes role/stage agreement (A48).
+            reason = (b'model must be one token' if name == 'model two backslashes' else
+                      b'only a Review marker carries a floor-basis' if flag == '--floor-basis' else None)
+            valid_oracle = check((oracle.returncode, oracle.stdout, oracle.stderr) ==
+                                 (control.returncode, control.stdout, control.stderr) and
+                                 (oracle.returncode == 2 and not oracle.stdout and reason in oracle.stderr
+                                  if reason else oracle.returncode == 0 and bool(oracle.stdout)),
+                                 label + ': real emitter matches Discovery control, including value validation')
+        shell_emit = run(['bash', '-c', '"$1" ' + flags, 'oracle', ROOT / EMIT])
+        same_lines = check((shell_emit.returncode, shell_emit.stdout, shell_emit.stderr) ==
+                           (oracle.returncode if stage_survives else 127,
+                            oracle.stdout, oracle.stderr + sh.stderr),
+                           label + ': real emitter on identical physical lines')
+        print('ORACLE: ' + label + ': argv=' + repr(decoded) +
+              ', emitter exit=' + str(oracle.returncode) +
+              ', shell exit=' + str(shell_emit.returncode) +
+              ', stderr=' + repr(oracle.stderr.decode()))
+        if not (valid_oracle and same_lines):
+            continue
+        text = 'ROLE SESSION: Product\n/c/model-record-emit.sh ' + flags
+        before = len(failures)
+        if b'role Product owns stage Discovery, not supplied stage Planning' in oracle.stderr:
+            denied(text, ['OR31'], label)
+        else:
+            allowed(text, label)
+        red += len(failures) > before
+        green += len(failures) == before
+    print('ROUND-8 escaped-whitespace: %d red, %d green cases' % (red, green))
+
+
 def round7_dispatch():
     C = '/c/model-record-emit.sh'
     prefix = 'ROLE SESSION: Product\n'
@@ -862,6 +936,7 @@ def dispatch():
     round5_emitter_controls()
     round6_dispatch(previous_head_baseline())
     round7_dispatch()
+    round8_escaped_whitespace()
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
