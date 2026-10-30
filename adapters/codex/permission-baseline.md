@@ -254,9 +254,17 @@ Source: the accepted Architect recommendation on #594, building on #590.
   establish installation and guard parity, never this protection. Adoption refuses
   symlinked `.codex`, `sdg-guard` and any inner symlink before writes. An unrecorded
   or tampered bundle conflicts before writes; foreign files beside it survive.
+- Refresh uses verified staging and atomic directory exchange; unsupported
+  exchange refuses refresh. TiesL must keep hooks quiescent throughout refresh
+  or recovery; exchange does not pin a generation for a concurrent hook.
+  A pending transaction exits 1 and needs a second explicit `--hooks` run.
+  Default adoption and status never recover or clean up. Interrupted preparation
+  discards validated staging and rebuilds from the source at retry time,
+  recording its new target digest.
 - Only explicit `--hooks` refreshes the bundle. Default adoption neither creates,
   refreshes nor removes it. Status distinguishes current, stale (warning), corrupt
-  (conflict) and absent; exits remain 0 current, 1 stale/conflict, 2 invalid/unreadable.
+  (conflict), absent and recovery pending; exits remain 0 complete/current,
+  1 stale/conflict/recovery pending, 2 invalid/unreadable.
   Activation remains unverified. A stale copy still enforces its installed rules.
   TiesL must refresh outside the sandbox; SDG never works around the protection.
 - The first migration changes the command string: review and trust it once more in

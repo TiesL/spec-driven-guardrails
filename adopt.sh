@@ -16,6 +16,7 @@
 set -Eeuo pipefail
 
 # Parse the complete public Interface before any project writes.
+adoption_args=("$@")
 runtime=claude
 runtime_seen=0
 status_mode=0
@@ -698,6 +699,10 @@ shared_seed_selection() {
 }
 
 project_dir="${project_arg:-.}"
+# Keep the process-owned directory lock across all project adoption writes.
+if [ "$user_mode" -eq 0 ] && [ "$status_mode" -eq 0 ] && [ -z "${SDG_ADOPTION_LOCK_FD:-}" ]; then
+  exec python3 "$own_dir/lib/codex-adoption.py" --serialize "$project_dir" "$own_dir/adopt.sh" "${adoption_args[@]}"
+fi
 if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
 elif [ "$runtime" = codex ]; then

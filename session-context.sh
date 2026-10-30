@@ -80,7 +80,7 @@ emit() {
 if [ "$runtime" = codex ]; then
   codex_inventory="$(python3 "$workflow_dir/lib/codex-adoption.py" "$workflow_dir" "$project_dir" status 2>&1)"
   if [ "$?" -ne 0 ]; then
-    echo "Warning: Codex AGENTS.md/links installation is missing, stale or conflicting; run adopt.sh --runtime codex again and verify actual instruction loading."
+    echo "Warning: Codex installation is missing, stale, conflicting or recovery pending; run adopt.sh --runtime codex again and verify actual instruction loading."
   fi
   printf '%s\n' "$codex_inventory" | sed -n '/^runtime-hooks:/p; /^guard bundle:/p; /^Refresh must /p'
 else
