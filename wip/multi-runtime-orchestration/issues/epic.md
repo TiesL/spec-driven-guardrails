@@ -24,9 +24,10 @@ visible so they do not spoil it.
 - A limit ledger: Claude 5h/7d % via a user-level statusline tee, Codex via rollout `rate_limits`;
   % per item logged.
 - Limits: reset ≤ X waits (X configurable, default 60 min); longer moves the item to a fresh
-  orchestrator on the other runtime from artifacts, never a runtime-specific item, a non-small
-  item to Codex only with weekly headroom, Reviewer follows Implementation's runtime. On a Claude
-  limit or outage, Claude-side coordination including the manager waits.
+  orchestrator on the other runtime from artifacts, never a runtime-specific item. In v1 the
+  automatic move is Codex → Claude only; a manual move of a non-small item to Codex requires weekly
+  headroom. Reviewer follows Implementation's runtime. On a Claude limit or outage, Claude-side
+  coordination including the manager waits.
 - Wake via launchd (macOS only, stated as a limitation).
 - Decision relay: numbered decision comment + Claude Code push; answers only in the manager chat;
   only the asking item pauses.
