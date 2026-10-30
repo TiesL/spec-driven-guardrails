@@ -106,6 +106,21 @@ Least-privilege Codex permissions (sandbox profile, narrowed rules, merge limits
 document TiesL applies by hand: see `.guardrails/source/adapters/codex/permission-baseline.md`
 (in the SDG repo itself: `adapters/codex/permission-baseline.md`).
 
+Before dependent work, run `.guardrails/source/adopt.sh --runtime codex --status .`
+from the project checkout. Surface each `stale/broken/missing: .agents/skills/<name>`
+line with the remedy: rerun ordinary Codex adoption (`adopt.sh --runtime codex`).
+If status is unavailable or nonzero, report the gap or printed diagnostics and
+continue the session. A nonzero status can indicate structural drift; it does not
+establish live skill discovery or current-session loading. Never repair, create
+or remove paths from this instruction; `adopt.sh` remains the sole owner of
+repair, refresh and removal. This read-only check installs no hook and writes no
+Codex config or trust. Newly linked skills may require a fresh session.
+The status check is not mechanically enforced: instruction suppression or
+noncompliance (parent/deeper instructions, AGENTS.override.md, instruction budget,
+model choice) can prevent it. Remote/cloud sessions remain unverified. Live
+CLI/local desktop behavior and discovery after the remedy are separate manual
+observations, unverified until observed.
+
 Before dependent work, run and read `.guardrails/source/session-context.sh --runtime codex <project>`
 from the project checkout (use `.` for <project>). Read each invoked skill's
 SKILL.md through `.agents/skills/<name>/SKILL.md` before following it. These are
