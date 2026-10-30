@@ -46,13 +46,15 @@ EMIT_DISPATCH_FLAG = re.compile(r"--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
     r"--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
 EMIT_WORD = re.compile(r"model-record-emit\.sh\b")
+# A later line inside a quote's span that starts with an emit command.
+EMIT_LINE = re.compile(r"\n[^\S\n]*[`$\"']?\S*?model-record-emit\.sh\b")
 # Unquoted characters that end a plain run inside an emit command, and the
 # characters that matter inside double quotes.
 SPECIAL = re.compile(r"[ \t\r\n'\"\\;,()&|<>`]")
 DQ_SPECIAL = re.compile(r"[\"\\]")
 ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
-EMIT_FLAG = re.compile(
-    r"--(role|stage)(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
+STAGE_FLAG = re.compile(
+    r"--stage(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
 # A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
 PR_REF = re.compile(r"(/pull/\d+|\bPR\s*#?\d+)")
 # A head SHA: 7-40 hex with a letter a-f, or one introduced by head/SHA/commit
@@ -81,16 +83,20 @@ def wrapper_close(text, start, wrapper):
 
 def emit_commands(prompt):
     """Each emit command as one shell word stream: (at line start, text, word
-    starts). The text runs from after the script name to the command end, an
-    unquoted newline that is no continuation, a closing wrapper at a line end
-    or the end of the prompt, with the quotes and escapes kept and the
+    starts, malformed). The text runs from after the script name to the
+    command end, an unquoted newline that is no continuation, a closing
+    wrapper at a line end or the end of the prompt, with the quotes and escapes kept and the
     backslash-newline continuations outside single quotes removed. A literal
     newline inside quotes stays inside its word. Quote, escape and word rules
     are role_word's; `;,()&|<>` end a word, as before, not the command. A quote
     that never closes keeps the earlier line scope: the command ends at the
-    end of that line, and role_word reports a role value left open. One pass: each command starts
-    after the previous one ends, and a double quote opened after one that
-    never closed is known not to close either."""
+    end of that line, and role_word reports a role value left open; when that
+    line ends in a backslash, the command is malformed (a continued flag would
+    be lost). A quote whose span holds a line starting with an emit command is
+    taken as never closed (a prose apostrophe), so that line is its own
+    command. One pass: each command starts after the previous one ends, and a
+    double quote opened after one that never closed is known not to close
+    either."""
     n = len(prompt)
     commands = []
     pos = 0
@@ -107,6 +113,7 @@ def emit_commands(prompt):
         parts, starts = [], []
         length = 0
         in_word = False
+        malformed = False
         i = m.end()
         while i < n:
             found = SPECIAL.search(prompt, i)
@@ -138,6 +145,7 @@ def emit_commands(prompt):
                 in_word = True
             if c in ("'", '"'):
                 quote_start, k = i, -1
+                mark = (len(parts), length)
                 if c == "'":
                     k = prompt.find("'", i + 1)
                     if k >= 0:
@@ -162,10 +170,16 @@ def emit_commands(prompt):
                     if k >= 0:
                         parts.append(prompt[copied:k + 1])
                         length += k + 1 - copied
+                unclosed = k < 0
+                if k >= 0 and EMIT_LINE.search(prompt, i, k):
+                    k = -1
                 if k < 0:
                     # Never closed: keep the line scope, up to its wrapper.
+                    del parts[mark[0]:]
+                    length = mark[1]
                     end = prompt.find("\n", i)
                     end = n if end < 0 else end
+                    malformed = unclosed and end < n and prompt[end - 1] == "\\"
                     parts.append(prompt[i:close if close > i else end])
                     i = end
                     break
@@ -179,7 +193,7 @@ def emit_commands(prompt):
             parts.append(prompt[i:i + step])
             length += step
             i += step
-        commands.append((bool(EMIT_AT_START.match(head)), "".join(parts), starts))
+        commands.append((bool(EMIT_AT_START.match(head)), "".join(parts), starts, malformed))
         pos = i
 
 
@@ -232,7 +246,7 @@ def emit_flags(commands):
     # The --role and --stage words of every emit command, judged from the
     # word's own start. A flag's value word is not judged as a flag itself.
     roles, stages, stage_valid = [], [], False
-    for _, text, starts in commands:
+    for _, text, starts, _ in commands:
         cursor = 0
         for start in starts:
             if start < cursor:
@@ -244,9 +258,9 @@ def emit_flags(commands):
                                  if separator else ("", flag.end()))
                 roles.append((value, bool(separator) and "=" not in separator))
                 continue
-            flag = EMIT_FLAG.match(text, start)
-            if flag and flag.group(1) == "stage":
-                stages.append(next((v for v in flag.groups()[1:] if v is not None), ""))
+            flag = STAGE_FLAG.match(text, start)
+            if flag:
+                stages.append(next((v for v in flag.groups() if v is not None), ""))
                 stage_valid = stage_valid or bool(EMIT_WITH_STAGE.match(text, start))
                 cursor = flag.end()
     return roles, stages, stage_valid
@@ -258,6 +272,8 @@ def failed_checks(prompt, sub, model, commands):
     role_line = next((l for l in lines if ROLE_LINE.match(l)), "")
     m = PREFIX.match(role_line)
     role = m.group(1) if m else ""
+    if any(malformed for _, _, _, malformed in commands):
+        raise ValueError("Continued line after an unclosed quote")
     failed = []
     if not PREFIX.match(first):
         failed.append("prefix")
@@ -342,7 +358,7 @@ def main(argv):
     commands = emit_commands(prompt)
     if not (any(ROLE_LINE.match(l) for l in prompt.split("\n")) or
             any(at_start and EMIT_DISPATCH_FLAG.search(text)
-                for at_start, text, _ in commands)):
+                for at_start, text, _, _ in commands)):
         return 0
     try:
         failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL), commands)
