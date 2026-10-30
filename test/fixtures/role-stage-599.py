@@ -181,6 +181,53 @@ def round3_dispatch(baseline):
         check(elapsed < 3.0, label + ': wall time must be under 3 s (%.3f s)' % elapsed)
         denied(text, ['OR31'], label, result=result)
 
+def round4_dispatch(baseline):
+    # Whole-command continuation is distinct from a continuation inside a value.
+    # Independently establish Bash argv before asserting the hook's verdict.
+    for depth in [1, 3]:
+        join = (' ' + chr(92) + '\n') * depth
+        cases = [
+            ('stage mismatch on continuation', '--role Product', '--stage Planning',
+             ['--role', 'Product', '--stage', 'Planning'], ['Product', 'Planning', 'Discovery']),
+            ('stage mismatch on first line', '--stage Planning', '--role Product',
+             ['--stage', 'Planning', '--role', 'Product'], ['Product', 'Planning', 'Discovery']),
+            ('repeated role mismatch on continuation', '--role Product', '--role Architect',
+             ['--role', 'Product', '--role', 'Architect'], ['twice']),
+            ('repeated role mismatch on first line', '--role Architect', '--role Product',
+             ['--role', 'Architect', '--role', 'Product'], ['twice']),
+        ]
+        for label, first, last, args, reason in cases:
+            label = 'continued command depth ' + str(depth) + ' ' + label
+            flags = first + join + last + ' --model m'
+            expected = args + ['--model', 'm']
+            shell = run(['bash', '-c', 'set -- ' + flags + '; printf "%s\\0" "$@"'])
+            check((shell.returncode, shell.stdout, shell.stderr) ==
+                  (0, b''.join(x.encode() + b'\0' for x in expected), b''),
+                  label + ': Bash complete argv')
+            before = len(failures)
+            denied(prompt('Product', flags), ['OR31'], label)
+            print('RESULT: ' + label + ': hook ' + ('RED' if len(failures) > before else 'GREEN'))
+            refusal(expected, label + ' emitter control', reason)
+        flags = '--role Product' + join + '--stage Discovery --model m'
+        allowed(prompt('Product', flags), 'continued matching command depth ' + str(depth))
+        result = emit(['--role', 'Product', '--stage', 'Discovery', '--model', 'm'])
+        check(result.returncode == 0 and bool(result.stdout) and not result.stderr,
+              'continued matching command depth ' + str(depth) + ': emitter control')
+        # Legacy stage recognition is explicitly observation-only, including
+        # whether the stage flag is before or after the continuation.
+        for stage in ['Discovery', 'Planning']:
+            for first, last in [('--stage ' + stage, '--model m'),
+                                ('--model m', '--stage ' + stage)]:
+                text = prompt('Product', first + join + last)
+                for name, root in [('current', ROOT), ('main', baseline)]:
+                    if root is None:
+                        continue
+                    result = hook(text, root)
+                    print('OBSERVATION: ' + name + ' continued stage-only depth ' + str(depth) +
+                          ' ' + repr(first + join + last) + ': exit=' + str(result.returncode) +
+                          ', stdout bytes=' + str(len(result.stdout)) +
+                          ', stderr=' + repr(result.stderr.decode()) + '; no stage hook oracle pinned')
+
 def dispatch():
     for prefix,role,stage in ROWS:
         allowed(prompt(prefix,'--role '+role),role+' role-only')
@@ -255,6 +302,7 @@ def dispatch():
                   ', current silent='+str(not b.stdout and not b.stderr)+'; no hook oracle pinned')
         refusal(['--stage',value,'--model','m'],'quoted stage emitter control '+repr(value),['stage'])
     round3_dispatch(baseline)
+    round4_dispatch(baseline)
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
