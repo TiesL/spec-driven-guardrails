@@ -21,7 +21,6 @@ one stderr line. No network, no state.
 """
 import json
 import re
-import shlex
 import sys
 
 # The contract: the only place the tool name and input field names exist.
@@ -36,14 +35,16 @@ ROLE_STAGES = (("Product", "Product", "Discovery"),
                ("QA", "QA", "Test"),
                ("Fullstack Developer", "Developer", "Implementation"),
                ("Reviewer", "Reviewer", "Review"))
+MAX_ROLE_LENGTH = max(len(row[1]) for row in ROLE_STAGES)
 CHECKS = ["prefix", "no-fork", "marker-command", "role-stage", "model",
           "reviewer-pr", "reviewer-sha", "reviewer-gate"]
 
 ROLE_LINE = re.compile(r"^ROLE SESSION:")
 PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(row[0] for row in ROLE_STAGES))
-EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*model-record-emit\.sh\b.*--(?:role\b(?!=)|stage\b)")
+EMIT_AT_START = re.compile(r"^\s*[`$\"']?\S*?model-record-emit\.sh\b")
+EMIT_DISPATCH_FLAG = re.compile(r"--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
-    r"model-record-emit\.sh\b.*--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
+    r"--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
 EMIT_COMMAND = re.compile(r"model-record-emit\.sh\b(.*)")
 ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
 EMIT_FLAG = re.compile(
@@ -66,27 +67,75 @@ def note(msg):
     return 0
 
 
-def emit_roles(line):
-    command = EMIT_COMMAND.search(line)
-    if not command:
-        return []
-    tail = command.group(1)
-    # Dispatch prose may wrap the whole command in quotes or backticks.
-    wrapper = line.lstrip()[:1]
-    if wrapper in ('"', "'", '`') and tail.rstrip().endswith(wrapper):
-        tail = tail.rstrip()[:-1]
+def role_word(text, start, wrapper_end):
+    # Scan once, retaining at most the longest valid role. Continue scanning
+    # after overflow so genuinely malformed quoting keeps its fail-open policy.
+    value = []
+    length = 0
+    quote = ""
+    i = start
+    while i < len(text) and text[i] in " \t\r\n":
+        i += 1
+    while i < len(text) and i != wrapper_end:
+        c = text[i]
+        if not quote and (c in " \t\r\n;,()&|<>"):
+            break
+        if c in ("'", '"'):
+            if not quote:
+                quote = c
+                i += 1
+                continue
+            if quote == c:
+                quote = ""
+                i += 1
+                continue
+        if c == "\\" and quote != "'":
+            i += 1
+            if i == len(text):
+                raise ValueError("No escaped character")
+            c = text[i]
+            if c == "\n":
+                i += 1
+                continue
+            if quote == '"' and c not in ('"', "\\"):
+                length += 1
+                if length <= MAX_ROLE_LENGTH:
+                    value.append("\\")
+        # Expansion spellings, including backticks, remain literal: the hook
+        # executes nothing and never validates only the prefix before them.
+        length += 1
+        if length <= MAX_ROLE_LENGTH:
+            value.append(c)
+        i += 1
+    if quote:
+        raise ValueError("No closing quotation")
+    return ("".join(value) if length <= MAX_ROLE_LENGTH else ""), i
+
+
+def emit_roles(prompt):
     roles = []
-    for flag in ROLE_FLAG.finditer(tail):
-        separator = flag.group(1)
-        value = ""
-        if separator:
-            lexer = shlex.shlex(tail[flag.end():], posix=True,
-                                punctuation_chars=";,()&|<>`")
-            lexer.whitespace_split = True
-            lexer.commenters = ""
-            # Read one complete shell word, including concatenated segments.
-            value = lexer.get_token() or ""
-        roles.append((value, bool(separator) and "=" not in separator))
+    consumed = 0
+    for command in EMIT_COMMAND.finditer(prompt):
+        if command.start() < consumed:
+            continue
+        line_start = prompt.rfind("\n", 0, command.start()) + 1
+        wrapper = prompt[line_start:command.start()].lstrip()[:1]
+        end = command.end()
+        trimmed_end = end
+        while trimmed_end > command.start() and prompt[trimmed_end - 1].isspace():
+            trimmed_end -= 1
+        wrapper_end = (trimmed_end - 1 if wrapper in ('"', "'", '`')
+                       and prompt[trimmed_end - 1:trimmed_end] == wrapper else -1)
+        cursor = command.start(1)
+        while cursor < end:
+            flag = ROLE_FLAG.search(prompt, cursor, end)
+            if not flag:
+                break
+            separator = flag.group(1)
+            value, consumed = (role_word(prompt, flag.end(), wrapper_end)
+                               if separator else ("", flag.end()))
+            roles.append((value, bool(separator) and "=" not in separator))
+            cursor = max(flag.end(), consumed)
     return roles
 
 
@@ -101,10 +150,11 @@ def failed_checks(prompt, sub, model):
         failed.append("prefix")
     if sub == "fork":
         failed.append("no-fork")
-    roles = [entry for line in lines for entry in emit_roles(line)]
+    roles = emit_roles(prompt)
     valid_emit = (any(recognized and value in {row[1] for row in ROLE_STAGES}
                       for value, recognized in roles)
-                  or any(EMIT_WITH_STAGE.search(l) for l in lines))
+                  or any(EMIT_WITH_STAGE.search(command.group(1))
+                         for command in EMIT_COMMAND.finditer(prompt)))
     if not valid_emit:
         failed.append("marker-command")
     if role:
@@ -182,7 +232,10 @@ def main(argv):
     if not isinstance(prompt, str):
         return note("%s.%s is not a string" % (F_INPUT, F_PROMPT))
     lines = prompt.split("\n")
-    if not any(ROLE_LINE.match(l) or EMIT_AT_START.match(l) for l in lines):
+    if not any(ROLE_LINE.match(l) or
+               (EMIT_AT_START.match(l) and
+                EMIT_DISPATCH_FLAG.search(l, EMIT_AT_START.match(l).end()))
+               for l in lines):
         return 0
     try:
         failed = failed_checks(prompt, ti.get(F_SUBAGENT), ti.get(F_MODEL))
