@@ -121,16 +121,33 @@ done
 ad_run_core "$(ad_input "$(ad_prompt Reviewer | sed 's|PR #42|https://github.com/o/r/pull/42|')")"
 [ "$ad_st" = 0 ] || fail "S312/compliant-pull-url — /pull/<n> must satisfy the PR check ($ad_err)"
 
-# Not a role dispatch: quoting the rule text, or naming the emit script
-# with no --stage command; silent exit 0.
+# A48: "Without one, any emit unit with the existing guarded role/stage
+# flag spelling also detects it, including mid-line and fenced commands";
+# "Fences, quoted examples and prose introductions do not exempt emit units:
+# a mismatching example still denies."
+# Keep the original inputs. OR31's backtick-wrapped script mention has no
+# matching wrapper at the unit's end: A48's unmatched-wrapper rule makes
+# this unit unchecked, rather than a silently allowed non-dispatch.
 quoted="$(ad_core_line OR8)
 $(ad_core_line OR31)
 $(ad_core_line OR1)"
 ad_run_core "$(ad_input "Summarise these rules for me:
 $quoted" fork -)"
-[ "$ad_st" = 0 ] && [ -z "$ad_err" ] || fail "S312/quote — quoting rule lines counted as a role dispatch ($ad_st: $ad_err)"
-ad_run_core "$(ad_input "Explain what model-record-emit.sh does and why --stage matters? No, just the script." fork -)"
-[ "$ad_st" = 0 ] && [ -z "$ad_err" ] || fail "S312/mention — a mention without a --stage command counted as a role dispatch ($ad_st: $ad_err)"
+[ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ "$(printf '%s\n' "$ad_err" | wc -l | tr -d ' ')" = 1 ] \
+  && [[ "$ad_err" == agent-dispatch:*'; dispatch allowed unchecked' ]] \
+  || fail "S312/quote — expected exit 0, empty stdout and one unchecked diagnostic ($ad_st: $ad_err)"
+deny_with mention "$(ad_input "Explain what model-record-emit.sh does and why --stage matters? No, just the script." fork -)" OR8 OR7 OR31 OR30
+
+# Still not a dispatch: OR8/OR1 rule text is not a ROLE SESSION prefix,
+# and a script mention with no guarded flag spelling stays silent.
+ad_run_core "$(ad_input "Summarise these rules for me:
+$(ad_core_line OR8)
+$(ad_core_line OR1)" fork -)"
+[ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] \
+  || fail "S312/quote-no-emit — rule text without an emit mention must silently allow ($ad_st: $ad_err)"
+ad_run_core "$(ad_input "Explain what model-record-emit.sh does. No, just the script." fork -)"
+[ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] \
+  || fail "S312/mention-no-flag — a mention without guarded flags must silently allow ($ad_st: $ad_err)"
 
 # Negative control: an edited OR8 core line changes the deny text with it.
 sed 's/^- OR8 Start every dispatch prompt/- OR8 EDITED-499 Start every dispatch prompt/' "$AD_ORCH" > "$SANDBOX/orch.md"
@@ -141,4 +158,12 @@ $(printf '%s' "$good_dev" | tail -n +2)")" "$SANDBOX/orch.md"
 grep -q 'EDITED-499' <<<"$ad_err" || fail "S312/edited — deny text is not read from the core"
 grep -q 'Start every dispatch prompt' "$AD_CORE" && fail "S312/copy — agent-dispatch.py holds a copy of the OR8 text"
 
+# #599: keep the old stage-only controls; add all five role-only arms.
+for role in Product Architect QA "Fullstack Developer" Reviewer; do
+  ad_run_core "$(ad_input "$(ad_role_prompt "$role")")"
+  [ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] || fail "S312/#599/compliant-$role — role-only dispatch must silently pass"
+done
+deny_with wrong-stage-595 "$(ad_input "$(ad_prompt Product Planning)")" OR31
+deny_with wrong-role "$(ad_input "$(ad_role_prompt Product Architect)")" OR31
+deny_with invalid-role "$(ad_input "$(ad_role_prompt Product Fullstack)")" OR31
 test_done

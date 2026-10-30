@@ -1024,6 +1024,8 @@ instruction had no mechanical check behind it. Each stage now carries a
 `<!-- model-record: stage=<Stage> model="..." -->` marker (effort left the marker in #424).
 `model-record-gate.sh <pr-number>` checks the PR description, PR comments
 and reviews, and the comments of every issue it closes for all five stages.
+Stage records evidence the declared stage, not the role actually running;
+F40 limits what the dispatch hook checks about that declaration.
 As amended by #427 (A31a, A37), it reads live candidates through
 `rec_scan_bundle`: only `ok` records count as stage presence. Every
 near-miss is named once, including its stage (`?` if unreadable); quoted
@@ -1473,6 +1475,9 @@ run as an on-demand differential test of old against new text, and a
 committed stamp of that run is compared by `./check`. A `PreToolUse` hook on
 the `Agent` tool (`hooks/agent-dispatch`) denies a role dispatch whose
 shape breaks a rule, quoting the rule's own core line, and fails open.
+For emit role/stage agreement (F40, OR31), this covers only A48's
+supported brief format and bounds; malformed or over-limit input leaves
+the dispatch unchecked under the fail-open policy.
 
 Not part of this feature: orchestrator software, per-change-type phase
 shortening (#281), changing the role contracts' content (#369), and
@@ -1571,16 +1576,48 @@ marker had no parseable quoted `model=`, while the collector said
 silent in the other.
 
 Requirement: (1) nobody types a marker. One command,
-`skills/pre-merge-review/model-record-emit.sh` (`marker_emit` in
-`lib/model-record.sh`, A26), prints the one valid line, checked by parsing
-it back, or nothing. The orchestrator puts that command into every
-dispatch prompt with the stage filled in (effort is no longer passed or
-recorded: removed by #424, A33); the role adds its own exact model id (and, for
-Review, its `floor-basis`) and pastes the output unchanged as the first
-line of its report. The marker format and grammar are written down in one
-place: `model-choice` points to A31 and states the two reader rules
-(whole column-0 line; no double quote, `<`, `>` or control byte in values);
-`ORCHESTRATOR.md` carries no copy. (2) As amended by #427 (A31a, A37),
+`skills/pre-merge-review/model-record-emit.sh` (A26, amended by A48),
+prints the one valid line, checked by parsing it back, or nothing. The
+orchestrator puts that command into every dispatch prompt with the role
+filled in; the emitter derives the stage from that role. Put each command
+on its own physical line, or use explicit trailing backslash continuations
+within A48's limits; keep explanatory prose off the argument suffix.
+The role adds its own exact model id (and, for Review, its `floor-basis`)
+and pastes the output unchanged as the first line of its report. Effort
+is no longer passed or recorded (#424, A33).
+
+As amended by #599: `--stage` alone remains accepted for old prompts,
+and may also be supplied with `--role`. If the role and stage disagree,
+the command exits 2, prints nothing on stdout and gives one stderr reason
+naming the role, the supplied stage and the stage that role owns. The
+dispatch hook checks lines mentioning model-record-emit.sh and their
+explicitly continued lines within A48's bounds. Within this supported
+brief format, a parsed emit role or legacy stage that disagrees with the
+ROLE SESSION role denies the dispatch, including a stage-only command.
+Shell spellings that bash resolves to a role but that are not plain spelled
+roles are denied and unsupported: dollar-single-quote Product,
+dollar-double-quote Product, Product followed by an empty command
+substitution, and a tab between the flag and value; a deny is expected in
+these cases.
+A brief quoting the OR31 rule text produces an unchecked diagnostic (the
+dispatch is allowed), while a prose mention of the script together with a
+guarded flag spelling in a brief without a ROLE SESSION line is denied,
+both by design.
+Prose outside those lines is not shell input. Quoted examples and fenced
+commands are checked too. Literal quoted multiline values and shell
+evaluation are outside this check. Malformed or over-limit input allows
+the dispatch with an unchecked diagnostic under the existing fail-open
+policy.
+Observed today, as on main: a quoted legacy stage value with extra text
+(for example "Discovery extra" or a trailing space) is allowed unchecked;
+denying it is a follow-up.
+
+The marker format and grammar are written down in one place:
+`model-choice` points to A31 and states the two reader rules (whole
+column-0 line; no double quote, `<`, `>` or control byte in values);
+`ORCHESTRATOR.md` carries no copy.
+
+(2) As amended by #427 (A31a, A37),
 the gate names every live near-miss once, of any stage, including an
 unquoted, empty or missing `model` and a quoted `stage="..."`. It reports
 the latest unreadable candidate without using an earlier record, as F27
@@ -1603,22 +1640,26 @@ value content and must not hide a whole-line record (#404 item 5).
 Acceptance criteria: full text in issue #402.
 
 What is mechanically verified: that `ORCHESTRATOR.md` tells the
-orchestrator to pass the emit command per stage and contains no second
-copy of the grammar; that every line the emitter prints reads back
+orchestrator to pass the emit command with the role filled in and contains
+no second copy of the grammar; that every line the emitter prints reads back
 through the parser in both locales, and every refused input prints
 nothing; that the gate names near-misses and applies the presence/latest
-rules in F27 and the role-play/unchecked rules in F38. Plain non-candidate
-text and quoted records produce no near-miss diagnostic. What stays
-judgment and is not checked: whether the orchestrator in a real session actually pastes
-the marker line (model behaviour, shown only by a re-run on the scratch
-repo); whether the model name a role records is the model it really ran
-on (a pasted marker can carry a made-up name); and whether every role
+rules in F27 and the role-play/unchecked rules in F38; and that the
+dispatch hook checks emit role/stage agreement only within A48's supported
+brief format and bounds, not for every shell-equivalent prompt.
+Plain non-candidate text and quoted records produce no near-miss
+diagnostic. What stays judgment and is not checked: whether the
+orchestrator in a real session actually pastes the marker line (model
+behaviour, shown only by a re-run on the scratch repo); whether the role
+or model name supplied to the emitter is the role or model actually
+running (a role can still lie about either); and whether every role
 session follows the instruction.
 
 Not part of the original #402 fix: the role-played-in-fence issue (#400,
 now included in #427 through F38), the
 dispatch tool having no effort argument (A25), interactive-mode and fork
-dispatch coverage, and verifying marker contents beyond parseability.
+dispatch coverage, and verifying the actual role or model from marker
+contents.
 
 ### F41 — Every Review round is a fresh Reviewer dispatch (issue #414)
 

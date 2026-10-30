@@ -33,6 +33,28 @@ normalize_model() {
 # U+001E frames raw bodies; callers remove it inside each body first.
 MARKER_SEP=$'\036'
 
+# role_stage <role> [<stage>] (#599, A48): derive the stage, refusing a
+# supplied stage that disagrees. No marker is printed on refusal.
+role_stage() {
+  local role="${1-}" stage
+  case "$role" in
+    Product) stage=Discovery ;;
+    Architect) stage=Planning ;;
+    QA) stage=Test ;;
+    Developer) stage=Implementation ;;
+    Reviewer) stage=Review ;;
+    *)
+      printf 'role_stage: role must be one of Product Architect QA Developer Reviewer (got %q)\n' "$role" >&2
+      return 2
+      ;;
+  esac
+  if [ "$#" -ge 2 ] && [ "$2" != "$stage" ]; then
+    printf 'role_stage: role %q owns stage %q, not supplied stage %q\n' "$role" "$stage" "$2" >&2
+    return 2
+  fi
+  printf '%s\n' "$stage"
+}
+
 # marker_emit <Stage> <model> [<floor-basis>] (#402, A26): THE way
 # to produce a marker line; nobody types one. Prints exactly one line,
 #   <!-- model-record: stage=<Stage> model="<model>"[ floor-basis="<sentence>"] -->

@@ -29,7 +29,7 @@ OR27	merge-self-check-risk-note	core	2	S218,S311
 OR28	model-per-stage	judgment	2	S187,S311,OB28,OB29,OB59
 OR29	no-effort-argument	core	2	S238,S240,S311
 OR30	model-argument	hook:model	2	S312,S311
-OR31	marker-command-stage	hook:marker-command	2	S203,S312,S311
+OR31	marker-command-stage	hook:marker-command,role-stage	2	S203,S312,S311
 OR32	marker-line	core	2	S203,S206,S311
 OR33	no-self-granted-shortcuts	judgment	1	S180,S311,OB4,OB5,OB31,OB34,OB58
 OR34	pipeline-override-record	judgment	1	S180,S311,OB32,OB33,OB34

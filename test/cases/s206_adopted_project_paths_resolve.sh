@@ -132,4 +132,19 @@ for f in "$orch"; do
   done < <(grep -oiE '(run|runs|running|invoke|invokes|execute)[[:space:]]+`[^`[:space:]]*/[A-Za-z0-9_-]+\.sh' <<<"$flat" | sed -E 's/^.*`//' | sort -u)
 done
 
+# #599: keep every --stage-only adopted-project control above.
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --role Architect --model claude-opus-5-5 2>"$SANDBOX/role-err")"
+rc=$?
+[ "$rc" = 0 ] && [ ! -s "$SANDBOX/role-err" ] && [ "$out" = '<!-- model-record: stage=Planning model="claude-opus-5-5" -->' ] || fail "S206/#599 — adopted-project --role Architect must equal the kept --stage Planning control"
+# Mutate only the disposable clone: require --role even on an old prompt.
+python3 -I - "$clone/skills/pre-merge-review/model-record-emit.sh" <<'PYM'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]);s=p.read_text();needle='while [ $# -gt 0 ]; do'
+assert needle in s
+s=s.replace(needle,"""case " $* " in *" --role "*) : ;; *) echo 'MUTANT role required' >&2; exit 2 ;; esac
+"""+needle,1);p.write_text(s)
+PYM
+out="$(cd "$project" && .claude/skills/pre-merge-review/model-record-emit.sh --stage Planning --model claude-opus-5-5 2>"$SANDBOX/mutant-err")"
+[ $? = 2 ] && [ -z "$out" ] && grep -qx 'MUTANT role required' "$SANDBOX/mutant-err" || fail "S206/#599/mutation — the kept adopted-project stage control must detect a role-required regression"
 test_done

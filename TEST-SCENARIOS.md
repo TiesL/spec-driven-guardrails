@@ -2746,7 +2746,7 @@ something new is being added.
 - Then: one paragraph of `ORCHESTRATOR.md` (A26 amended: nobody types a
   marker) gives each role the `model-record-emit.sh` command in its dispatch
   prompt, found through `SPEC_DRIVEN_GUARDRAILS_DIR` or the installed skill, with
-  `--stage` filled in and no `--effort` (#424: nothing says to pass it or to
+  `--role` filled in (#599, A48) and no `--effort` (#424: nothing says to pass it or to
   fill it with `unknown`), names the requested model, has the role add `--model` with its own
   exact id (the Reviewer also `--floor-basis`) and paste the output unchanged
   as the first line of its report; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
@@ -2805,6 +2805,7 @@ something new is being added.
   judgement (stubs). Kill table: drop `<` or `>`, count characters, drop one C1
   or bidi or separator entry, a locale-dependent control test, drop or widen
   the flag-name rule, change the literal line
+- Issue #599 amendment: All five --role forms also print the same literal markers as the kept stage-only controls, with empty stderr, and the unchanged reader accepts them (#599 AC1/AC7).
 
 ### S206 — the script paths named in finding B5 resolve from an adopted project
 **Covers:** F37, F40
@@ -2880,6 +2881,7 @@ something new is being added.
   an unresolved documented path is a clean assertion failure. Exact helper
   stdout/status controls must first fail against the frozen helper, then pass;
   returning whole matching lines instead of tokens must make them red.
+- Issue #599 amendment: Keep the adopted-project --stage run and stale --effort control. The --role Architect form prints the identical marker with empty stderr; a scratch mutation that makes --role required is caught by the kept stage-only oracle (#599 AC3).
 
 ### S207 — merging is human-only only for main, and the text says so once
 **Covers:** F38
@@ -3632,6 +3634,7 @@ something new is being added.
   removes `--effort` from `model-record-emit.sh` (#413 or #424) and no longer
   carries the rows on the same-model effort check or on a self-reported
   effort
+- Issue #599 amendment: The emitter header command and usage advertise --role, while retaining the existing no-effort assertions (#599 AC4/AC6).
 
 ### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v2 in #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
 **Covers:** F9, F26, F39
@@ -5865,7 +5868,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   OR10, OR14-OR32, OR36-OR42, OR44); every `OR<n>` item has a row and every
   row's ID is unique; a `retired` row has part `-` and its ID occurs in no
   item; `above` and `below` do not occur as words in either part; OR21 and
-  OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
+  OR37 contain `OR45`, OR31 contains `--role`, cites `OR5` and states
+  role/stage agreement with the prefix (#599, A48), OR36 contains `in
   OR5 order`; OR11's item says merge into `main` only with the human's
   approval for that PR, given after the work or in advance (#516), that an
   advance approval lapses on a new commit that changes the work, and that a
@@ -5906,6 +5910,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `OR28`, `OR29`; S203: `OR31`, `OR32`; S207: `OR11`; S210: `OR15`, `OR16`)
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
+- Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -5915,8 +5920,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - When: each case runs, one broken check at a time: the first non-blank line
   is not `ROLE SESSION: <one of the five roles>` (missing, lower case, an
   unknown role, the prefix on line 2 after a non-blank line); `subagent_type`
-  `fork`; no `model-record-emit.sh` with `--stage <stage>`, or `--stage
-  Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
+  `fork`; no `model-record-emit.sh` with a valid `--role <Role>` or
+  backward-compatible `--stage <stage>`, or `--stage Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
   Reviewer`, no PR number or `/pull/<n>`, no 7-40 hex SHA (6 hex and 41 hex
   both fail), no `finding-carryforward-gate.sh`; a Reviewer brief whose only
   number-like tokens are an issue `#n` (or `/issues/n`) and an
@@ -5927,9 +5932,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   through the inventory's `hook:` column), plus one line on how a non-role
   prompt avoids detection; two failed checks mapped to one ID (OR14) print
   that line once; a compliant dispatch for each of the five roles exits 0
-  with empty stdout and stderr; a prompt that only quotes a rule line, or
-  mentions `model-record-emit.sh` without `--stage` at line start, is not a
-  role dispatch and exits 0 silently; with the marker line present the deny
+  with empty stdout and stderr; quoted OR8/OR1 rule lines without an emit
+  mention, or a mention of `model-record-emit.sh` without guarded role/stage
+  flag spellings, are not role dispatches and exit 0 silently. A48 detects
+  guarded flag spellings even in prose: the original script mention with
+  `--stage matters?` denies with OR8, OR7, OR31 and OR30; quoting OR8,
+  OR31 and OR1 retains exit 0 with empty stdout and exactly one unchecked
+  diagnostic because OR31's script wrapper is unmatched at the unit end
+  (A48's unmatched-wrapper rule). With the marker line present the deny
   output never contains it
 - Red on `main` b43ee55: no hook. Negative control: an edited core line for
   OR8 changes the deny text with it (no second copy in the script)
@@ -5941,6 +5951,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `PR #42`, `PR 42`, `/pull/42`, and `head 1234567890`, each beside a work
   item `#499`. Red on `6ccad5c`: the issue-and-comment-only brief, the issue
   ref with a real SHA, and the digits-as-SHA brief all exit 0
+- Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
 
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
@@ -5959,6 +5970,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   is written outside the sandbox; each run finishes within 2 s (well inside
   the 10 s timeout)
 - Red on `main` b43ee55: no hook
+- Issue #599 amendment: Repeat adoption, kill-switch, subagent and unreadable-core allow arms with a role-only emit line; fail-open diagnostics and silent scope exclusions remain unchanged (#599 AC5).
 
 ### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
 **Covers:** F38
@@ -7646,3 +7658,72 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
 - Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
 - Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
+**Covers:** F40
+- Given: an opted-in Agent dispatch, the five prefix roles, and the public hook CLI.
+- When: each role-only prompt, stage-only control, missing/invalid flag form and a role-only line without a prefix is checked; matching Product/Discovery values end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote; role values Product Architect and Product followed by a space are quoted as single arguments.
+- Then: all five compliant roles and matching terminated commands silently pass; stage terminator controls also pass against the actual main hook and its policy inputs when main or origin/main is available. In shallow clones without that history, the fixture explicitly reports skipping only historical comparisons; all current-hook verdicts and emitter controls still run. Missing or invalid forms, including both invalid quoted role values, exit 2 with empty stdout and OR31 exactly once plus AVOID; properly quoted Product and Discovery pass. Emitter controls reject the complete invalid quoted arguments. A role-only line without a prefix names OR8. AVOID mentions both flags; --roles and --role=Product alone do not trigger detection. Invalid quoted stage values Discovery extra and Discovery followed by a space are observed against main and current hooks, with no hook oracle pinned pending a decision about that pre-existing gap.
+- Round-2 concatenation controls: Bash confirms that adjacent double-quoted pieces, adjacent single-quoted pieces and a quoted piece followed by an escaped space form one complete argument. Product concatenated with Architect or a trailing space, and Architect/QA/Developer/Reviewer each concatenated with extra text, must exit 2 with empty stdout and OR31 exactly once plus AVOID. Emitter controls reject the complete invalid arguments. The split spelling "Prod""uct" forms the valid Product argument and must silently pass. Existing properly quoted role and unquoted terminator controls remain pinned. The same three invalid concatenation forms for Discovery are observations against main and current hooks only; no stage hook expectation is pinned.
+- Round-3 complete-value checks: Bash independently confirms that Product immediately followed by a backtick command substitution, a dollar command substitution or a parameter expansion forms the single invalid argument ProductArchitect. Each literal prompt spelling must deny with exit 2, empty stdout and OR31 once plus AVOID; existing trailing-terminator controls remain allowed. Invalid roles joined using quoted or unquoted explicit backslash-newline continuation receive the same denial. Literal newlines inside single or double quotes without explicit continuation are outside A48: those units allow with exactly one unchecked diagnostic, while the real emitter still refuses their complete invalid role argv. A double-quoted continuation joining Prod and uct must allow with empty stdout; any diagnostic is reported, so this allow alone is not evidence of validation. A genuinely unterminated quote retains exit 0, empty stdout and one parse-failure diagnostic saying the dispatch was allowed unchecked. Main verdicts for each form are reported when history is available.
+- Round-3 deadline checks: a one-million-character role exceeds the 64 Ki unit cap and must allow with empty stdout and exactly one bounded diagnostic ending in dispatch allowed unchecked in under 3 seconds of measured wall time. A 2.5-second subprocess deadline leaves a scheduling margin and makes a timeout an explicit failure, never an effective denial. A one-million-character ordinary line under a Product prefix, without an emitter command, must receive the same fast OR31 denial; this isolates value parsing from ordinary prompt size.
+- Round-4 command-continuation checks: Bash independently confirms the complete argv across one and three backslash-newline continuations between flags. Product with Planning, and repeated role flags Product and Architect, must deny with exit 2, empty stdout and OR31 exactly once plus AVOID, with the mismatching flag on either the first physical line or the continuation line. Emitter controls reject the same complete argv for the mismatch or repeated-role reason. Product followed by Discovery across either continuation depth must silently allow and its emitter control must succeed. Continued stage-only Discovery and Planning forms, with the stage flag on either the first line or the continuation line, are reported against current and main hooks as observations only; no stage hook expectation is pinned. Shallow clones explicitly skip only unavailable historical comparisons.
+- Round-5 retained emitter controls: retire only the 648 whole-shell hook verdicts per A48. Keep the independently Bash-confirmed argv and real emitter controls for all quote forms, flag orders and separator combinations: mismatch and repeated-role refusals remain pinned; invalid multiline models reach model validation, and replacing them with a valid model succeeds when roles and stages match.
+- Round-6 prose quote checks: prose is not shell, so an apostrophe or double quote in a sentence that mentions model-record-emit.sh, or an apostrophe in a trailing bash comment on a command line, must not hide the line-start emit commands after it. Each prose verdict is pinned to the verdict of 2d93c25, the head before the whole-prompt shell word stream; every case records that verdict, the fixture checks the record against 2d93c25 when that commit is available, and a shallow clone reports skipping only that comparison. The Reviewer's four briefs are pinned verbatim: a Product brief with the mention "as your report's first line", a line-start --role Product command and "Don't type it by hand." denies with OR8 alone without a ROLE SESSION line and silently allows with ROLE SESSION: Product; a hidden --role Architect command before "Don't ..." and a matching command after it denies with OR31, as does the Reviewer variant with a hidden --stage Planning; a command ending in "# don't edit", then --stage Planning, then "It's done." denies with OR31. The generated variants combine the opener (apostrophe after the mention, apostrophes before and after, three apostrophes, a lone double quote, a backtick-quoted mention, the comment apostrophe, and balanced apostrophe and double-quote controls), the brief kind (missing prefix OR8, correct allow, hidden role or stage mismatch OR31), one or two line-start commands inside the span with the mismatch at each position, and with or without a correct command after the closing prose line. Five short synthetic briefs shaped like real QA, Developer and Reviewer dispatches are replayed the same way. Literal quoted multiline model values without explicit continuation are outside A48, including apostrophes or the other quote kind inside them; replace those whole-shell hook verdicts with exactly one unchecked diagnostic, retaining Bash argv checks. Red and green counts per prose opener, kind, span, tail and brief group are reported with runtime.
+- Round-6 unterminated continuation: a model value opening either quote kind followed by a backslash, newline and stage Planning without a closing quote must allow with exit 0, empty stdout and exactly one unchecked diagnostic; neither denial nor silent allow satisfies the selected malformed-input policy. Previous-head verdicts remain observations only.
+- Round-7 line isolation: bullet, numbered, dollar prompt, blockquote, Run:, cd x &&, bash -c and report-first-line introductions contain matching, wrong-role, wrong-stage and missing-prefix commands. Apostrophes, unmatched double quotes and backticks on other prose lines, including bare emitter mentions and prose-only path backslashes, cannot change verdicts. Independent units before and after malformed prose, each possible mismatch position and two top-level commands on one line remain checked. Four synthetic Architect, QA and Reviewer briefs pin matching and mismatching report instructions. Fences remain checked; the separately open quoted-example policy is unchanged.
+- Round-7 arguments and continuations: Bash establishes complete argv for consumed flags inside model values, opaque equals spellings and adjacent double-quoted pieces joined by explicit continuation; the real emitter provides marker or refusal controls. All model, floor-basis and effort value words consume embedded role/stage text. Mid-line single/double/backtick wrappers match and unmatched wrappers are unchecked; comments containing apostrophes, quotes, backticks or continuation-like text do not swallow later units. CRLF, odd/even backslash runs, trailing whitespace, dangling EOF, exactly 32 and 33 physical lines, and script mentions consumed within explicitly continued quoted values pin the physical-line convention. Neither quote kind implicitly continues; malformed relevant units make the whole dispatch unchecked even before or after a mismatch.
+- Round-7 trailing-backslash oracle: pin counts 1 through 5 with real Bash argv and the real emitter on the identical physical lines. One continues to the stage flag and the emitter refuses the Product/Planning mismatch; the hook requires OR31. Three and five continue with one and two literal backslashes attached to the stage flag name, respectively; the emitter rejects an unknown argument and the hook silently allows. Two and four end the emitter command with one and two standalone literal backslashes, respectively; the emitter rejects an unknown argument, Bash attempts the following stage line as a separate command and exits 127, and the hook silently allows. These expectations follow A48: "Remove the last backslash and the line ending; preserve all other characters and spacing."
+- Round-7 limits and malformed input: at one character below, exactly at and one character above the 64 Ki original-unit and 4 Mi decoded-prompt caps, and one byte below, at and above the 32 MiB stdin cap, pin inclusive limits and fast unchecked handling before splitting. Prompt caps apply without a prefix too. Invalid JSON/encoding, unbalanced unit quotes and unreadable policy inputs return exit 0 and empty stdout with exactly one diagnostic, bounded to 1024 bytes, ending in dispatch allowed unchecked, without traceback or the private prompt sentinel. No partial validation counts as success. Scratch mutations must be killed for implicit quote continuation, skipped mid-line mismatch, ignored prompt cap, swallowed later unit and suppressed unchecked diagnostic. For the mid-line and later-unit controls, structurally locate the A48-retained STAGE_FLAG assignment and replace its value with a never-matching regex in the scratch hook; a matching role command followed by a wrong legacy stage in each placement must still require OR31. These controls share the disabled-stage-recognition mutation and independently test the two placements, without depending on the removed whole-prompt tokenizer or its source text.
+- Round-7 performance: measure each boundary input, a 60000-character invalid role, 18000 adjacent quoted pieces, 20000 ordinary units and 10000 continued units, all within the supported caps where applicable. Each subprocess has a 2.5-second deadline and must finish under 3 seconds; a kill or the 10-second runtime timeout is a failure, never a denial. Report every measured runtime. Unsupported shell interpretation remains observational; no new shell-equivalence or role-tab oracle is introduced.
+- Round-8 escaped-whitespace comments (blocking role-escaped-space-comment only): use real Bash argv and the real emitter on identical physical lines, with ROLE SESSION: Product, a value ending in hash 601, an explicit continuation and then --stage Planning. Pin an escaped space and escaped tab in the model, one/two/three backslashes before the space, escaped space inside single and double quotes, and escaped spaces in floor-basis and legacy effort values. Bash must preserve the hash inside the value for escaped whitespace, odd backslash runs and quoted values; the emitter must refuse the surviving Product/Planning mismatch, and the hook must deny with exit 2, empty stdout and OR31 exactly once plus AVOID. Ordinary-space controls for model, floor-basis and effort, and the two-backslash model control, must instead let the hash start a genuine comment: Bash attempts the next stage line separately (exit 127), and the hook silently allows. Check emitter output against the corresponding legacy Discovery control for genuine comments: model and effort ordinary-space controls succeed, while the literal-backslash model and Product floor-basis controls retain their unrelated emitter value-validation refusals. Neither refusal is a role/stage mismatch or a hook denial oracle. Derive hook expectations only after the Bash argv and real-emitter oracles pass; report each oracle and red/green case counts. Do not add wrapper-comment or unsupported shell-interpretation policy tests.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S413 — The #595 prompt is denied before dispatch (#599 AC5, AC8)
+**Covers:** F40
+- Given: ROLE SESSION: Product and the old --stage Planning command from #595.
+- When: that prompt, --role Product --stage Planning, and a prefix/flag role mismatch are checked; Planning/Architect mismatches also end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote.
+- Then: each is denied with OR31 exactly once and empty stdout; Fullstack Developer with --role Developer silently passes.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S414 — Role and stage disagreements refuse before marker validation (#599 AC1, AC2, AC7)
+**Covers:** F40
+- Given: all five roles and stages, literal expected markers, and the public emitter CLI.
+- When: all 20 off-diagonal pairs, all five diagonal pairs in either flag order, either form alone, and competing failures run.
+- Then: mismatches exit 2 with empty stdout and one reason naming role, supplied stage and expected stage; parse errors precede mismatch, which precedes marker validation. Matching Reviewer without floor-basis reaches marker_emit's unchanged reason. Successful markers are byte-identical, with empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S415 — Stage-only prompts retain merge-base behavior (#599 AC3, AC7)
+**Covers:** F40
+- Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
+- When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged against that baseline. If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
+**Covers:** F40
+- Given: the emitter argv boundary, including a single quoted Fullstack Developer argument.
+- When: product, Fullstack, Fullstack Developer, every stage name, empty role, equals/plural flags, repeated/value-less flags, neither role nor stage, flag-name values, and Developer with floor-basis run; an invalid role contains Product then a newline then Architect, and Product receives a supplied stage containing Discovery then a newline then Architect.
+- Then: each bad call exits 2, prints no stdout and one stderr reason; required flags and role are named where relevant. Both newline diagnostics retain the offending input components in a safe single-line form, including the expected and supplied stage for a mismatch. A successful role-only command has empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S417 — Every emit line agrees with its prefix, including quoted commands by current default (#599 AC8)
+**Covers:** F40
+- Given: a compliant prompt plus another role's quoted emit command, or several emit lines with one mismatch.
+- When: the hook checks the brief, and separately a stage-only emit line without any ROLE SESSION prefix.
+- Then: Option B continues checking fenced emit units; the separately open quoted-example exemption remains a decision for TiesL. the quoted command is denied under the current default pending TiesL's decision; this arm is clearly isolated so that one scenario expectation can be flipped. Several emit lines with one mismatch are denied by OR31. No prefix yields OR8 alone; the cross-check is inapplicable.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
+**Covers:** F40
+- Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
+- When: the hook output is parsed by tab and compared with the other public outputs; one stage in each map source and the hook's tab join to a one-space join are independently mutated in scratch copies.
+- Then: every hook output line has exactly three tab-separated fields (prefix name, flag name, stage), preserving the space within Fullstack Developer as part of the first field. All rows agree, including Fullstack Developer to Developer; a conforming tab-separated scratch output passes, and the one-space join fails the field-format pin. Each single-source map mutation fails the oracle independently of the working hook's delimiter. The inventory still equals --list-checks through S311.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S419 — Instructing docs pin role commands and retain grammar ownership (#599 AC6, AC7)
+**Covers:** F40
+- Given: OR31, the instructing model-choice and pre-merge-review commands, S203/S238/S311 pins, and the unchanged marker grammar owners.
+- When: the docs and independently mutated copies are checked.
+- Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
