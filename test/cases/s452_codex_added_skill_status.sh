@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# S439 — #507 codex current skill status.
+# S452 — #507 codex added skill status.
 # Covers: F58
 set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 sandbox_create
 trap sandbox_destroy EXIT
-python3 -B "$TEST_REPO_ROOT/test/fixtures/codex-507.py" "$TEST_REPO_ROOT" 439
+python3 -B "$TEST_REPO_ROOT/test/fixtures/codex-507.py" "$TEST_REPO_ROOT" 452

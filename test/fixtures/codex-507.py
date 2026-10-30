@@ -58,13 +58,23 @@ with tempfile.TemporaryDirectory() as directory:
         return p
 
     def status(p, rc=0, launcher=None):
+        # Adoption may suppress bytecode, but status must prove read-only behavior
+        # itself, even when the caller enables writes and has no warmed cache.
+        status_env = dict(env)
+        status_env.pop('PYTHONDONTWRITEBYTECODE', None)
+        status_env['PYTHONPYCACHEPREFIX'] = tempfile.mkdtemp(prefix='status-cache-', dir=tmp)
         before = snapshot(tmp)
         result = run([launcher or wf / 'adopt.sh', '--runtime', 'codex', '--status', '.'],
-                     p, env, rc)
-        assert snapshot(tmp) == before, 'status changed project, checkout or external sentinel tree'
+                     p, status_env, rc)
+        after = snapshot(tmp)
+        created = sorted(after.keys() - before.keys())
+        evidence = sorted(set(created[:8] + [name for name in created if 'managed_blocks' in name]))
+        assert after == before, ('status changed complete temporary tree with bytecode generation '
+                                 'enabled and a cold cache; created ' + str(len(created)) +
+                                 ' paths: ' + repr(evidence))
         return result
 
-    if SCENARIO == 436:
+    if SCENARIO == 450:
         checks = [
             ('status command before dependent work', r'\.guardrails/source/adopt\.sh --runtime codex --status \..{0,200}before dependent work|before dependent work.{0,200}\.guardrails/source/adopt\.sh --runtime codex --status \.'),
             ('surface each stale/broken/missing skill line', r'(surface|report|show).{0,100}(each|every).{0,100}stale/broken/missing: \.agents/skills/'),
@@ -82,7 +92,7 @@ with tempfile.TemporaryDirectory() as directory:
             except AssertionError as exc:
                 errors.append(str(exc))
         assert not errors, '\n'.join(errors)
-    elif SCENARIO == 437:
+    elif SCENARIO == 451:
         checker = wf / 'check-workflow-adapters.sh'
         before = snapshot(tmp)
         run([checker], ROOT, env)
@@ -102,7 +112,7 @@ with tempfile.TemporaryDirectory() as directory:
             assert snapshot(tmp) == before, 'generation drift checker repaired drift'
             target.write_bytes(original)
         run([checker], ROOT, env)
-    elif SCENARIO == 438:
+    elif SCENARIO == 452:
         p = project('added-skill')
         assert 'stale/broken/missing: .agents/skills/' not in status(p)
         for name in ('new-skill-507-a', 'new-skill-507-b'):
@@ -113,7 +123,7 @@ with tempfile.TemporaryDirectory() as directory:
         for name in ('new-skill-507-a', 'new-skill-507-b'):
             assert 'stale/broken/missing: .agents/skills/' + name in out, out
             assert not os.path.lexists(p / '.agents/skills' / name), 'status repaired missing link'
-    elif SCENARIO == 439:
+    elif SCENARIO == 453:
         p = project('current')
         out = status(p, launcher=p / '.guardrails/source/adopt.sh')
         assert 'stale/broken/missing: .agents/skills/' not in out, out
@@ -121,7 +131,7 @@ with tempfile.TemporaryDirectory() as directory:
             if skill.is_dir():
                 assert 'unchanged: .agents/skills/' + skill.name in out, out
         assert 'structural installation only; not live-loaded' in out, out
-    elif SCENARIO == 440:
+    elif SCENARIO == 454:
         for case in ('absent-record', 'malformed-record', 'missing-source',
                      'foreign-file', 'foreign-directory', 'foreign-link', 'broken-link'):
             p = project(case)
@@ -183,7 +193,7 @@ with tempfile.TemporaryDirectory() as directory:
         finally:
             script.chmod(mode)
             handle.close()
-    elif SCENARIO == 441:
+    elif SCENARIO == 455:
         architecture = (wf / 'ARCHITECTURE.md').read_text()
         a39 = re.search(r'^### A39\b.*?(?=^### |\Z)', architecture, re.M | re.S).group()
         checks = [

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# S441 — #507 codex drift limitations.
+# S451 — #507 codex drift generation.
 # Covers: F58
 set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 sandbox_create
 trap sandbox_destroy EXIT
-python3 -B "$TEST_REPO_ROOT/test/fixtures/codex-507.py" "$TEST_REPO_ROOT" 441
+python3 -B "$TEST_REPO_ROOT/test/fixtures/codex-507.py" "$TEST_REPO_ROOT" 451
