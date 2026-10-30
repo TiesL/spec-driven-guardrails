@@ -1810,20 +1810,19 @@ byte-identical to source, their modes and relative layout preserved, and a
 `MANIFEST` recording each file's sha256 and mode and the source revision.
 The managed hook command points at this bundle. Repeated adoption of the
 same state adds no duplicates or changes. The bundle is gitignored, and
-installation provenance records its ownership and manifest digest; older
-provenance upgrades explicitly.
+installation provenance version 4 records ownership, the committed manifest digest and a strictly validated refresh transaction containing old/new manifest digests, staging path and phase. Versions 1-3 remain readable; upgrade is explicit.
 
-Only explicit `--hooks` refreshes the bundle. Default adoption neither
-creates, refreshes nor removes it. A refresh preserves foreign files in
+Only explicit `--hooks` refreshes the bundle, using verified staging and atomic directory exchange. Unsupported exchange refuses refresh. Refresh and recovery require quiescent hook execution. Default adoption neither creates, refreshes nor removes the bundle, and neither default adoption nor status recovers or cleans up a pending transaction. A second explicit `--hooks` run authorizes recovery.
+If preparation is interrupted and the source changes before recovery,
+the explicit retry discards transaction-owned staging data and rebuilds
+from the source available at retry time, recording the new target digest.
+A refresh preserves foreign files in
 `.codex/` and reports changed files and the old and new source revisions.
 A symlink at `.codex`, `.codex/sdg-guard` or inside the bundle is refused
 before any adoption write, with the offending path named. An unrecorded or
 tampered bundle conflicts before any write rather than being taken over.
 
-Status distinguishes a current bundle, a stale bundle whose contents still
-match its manifest, a corrupt bundle whose contents differ from its
-manifest or lack a file, and an absent bundle. Existing exit meanings
-remain: 0 current, 1 stale or conflict, 2 invalid or unreadable. Structural
+Status distinguishes current, stale, corrupt and absent bundles, and reports a valid interrupted refresh as recovery pending while retaining applicable current/stale content classification. Exit meanings remain: 0 complete and current, including valid default absence; 1 stale, conflict or recovery pending; 2 invalid or unreadable. Structural
 status always reports `activation: unverified`; installation alone proves
 neither activation nor sandbox protection.
 
