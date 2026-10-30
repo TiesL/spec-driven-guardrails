@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 ROOT = Path(sys.argv[2])
 TMP = Path(sys.argv[3])
@@ -28,9 +29,9 @@ def check(ok, reason):
         print('FAIL: ' + reason)
     return ok
 
-def run(args, root=ROOT, data=None):
+def run(args, root=ROOT, data=None, timeout=None):
     return subprocess.run([str(x) for x in args], cwd=root, input=data,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=timeout)
 
 def emit(args, root=ROOT):
     return run([root / EMIT] + args, root)
@@ -49,9 +50,9 @@ def terminated_prompt(flags, suffix):
         text = text.replace('/c/model-record-emit.sh', suffix + '/c/model-record-emit.sh', 1)
     return text
 
-def hook(text, root=ROOT):
+def hook(text, root=ROOT, timeout=None):
     data = {'tool_name': 'Agent', 'tool_input': {'prompt': text, 'model': 'test-model', 'subagent_type': 'general-purpose'}}
-    return run(['python3', '-I', root / HOOK, root / ORCH, root / TSV], root, json.dumps(data).encode())
+    return run(['python3', '-I', root / HOOK, root / ORCH, root / TSV], root, json.dumps(data).encode(), timeout=timeout)
 
 def rule(n, root=ROOT):
     return next(l.encode() for l in (root / ORCH).read_text().splitlines() if l.startswith('- ' + n + ' '))
@@ -61,8 +62,9 @@ def allowed(p, label, root=ROOT):
     check((r.returncode,r.stdout,r.stderr)==(0,b'',b''), label + ': expected silent allow' +
           ' (exit %s, stdout %s bytes, stderr %s lines)' % (r.returncode,len(r.stdout),len(r.stderr.splitlines())))
 
-def denied(p, ids, label):
-    r=hook(p); lines=r.stderr.splitlines()
+def denied(p, ids, label, result=None):
+    r = hook(p) if result is None else result
+    lines=r.stderr.splitlines()
     check(r.returncode==2 and not r.stdout, label + ': expected exit 2 and empty stdout' +
           ' (exit %s, stdout %s bytes)' % (r.returncode,len(r.stdout)))
     expected=[rule(i) for i in ids]
@@ -87,6 +89,98 @@ def copy(name):
     shutil.copytree(ROOT/'lib',dest/'lib')
     return dest
 
+def historical_baseline(name, paths, merge_base=False):
+    # S336 uses the merge base when available; S286 reports an unavailable
+    # historical arm explicitly. Do not require local branches/history in CI.
+    for ref in ['main', 'origin/main']:
+        args = (['git', 'merge-base', 'HEAD', ref] if merge_base else
+                ['git', 'rev-parse', '--verify', ref + '^{commit}'])
+        result = run(args)
+        if result.returncode == 0:
+            revision = result.stdout.decode().strip()
+            break
+    else:
+        print('SKIP: ' + name + ': main/origin/main history unavailable; '
+              'only historical comparisons skipped (full clones run them)')
+        return None
+    baseline = copy(name)
+    for path in paths:
+        result = run(['git', 'show', revision + ':' + path])
+        if not check(result.returncode == 0, name + ' git show ' + path):
+            return None
+        (baseline / path).write_bytes(result.stdout)
+    return baseline
+
+def round3_dispatch(baseline):
+    # Controlled Bash snippets are fixture data only. The hook receives the
+    # literal spelling; expansion here establishes argv independently of it.
+    forms = [
+        ('adjacent backtick substitution', 'Product`printf Architect`', 'ProductArchitect', False),
+        ('adjacent dollar substitution', 'Product$(printf Architect)', 'ProductArchitect', False),
+        ('adjacent parameter expansion', 'Product${X}', 'ProductArchitect', False),
+        ('double-quoted literal newline', '"Product\nArchitect"', 'Product\nArchitect', False),
+        ('single-quoted literal newline', "'Product\nArchitect'", 'Product\nArchitect', False),
+        ('unquoted backslash newline invalid', 'Product' + chr(92) + '\nArchitect', 'ProductArchitect', False),
+        ('quoted backslash newline invalid', '"Product' + chr(92) + '\nArchitect"', 'ProductArchitect', False),
+        ('quoted backslash newline valid', '"Prod' + chr(92) + '\nuct"', 'Product', True),
+    ]
+    for label, spelling, value, valid in forms:
+        shell = run(['bash', '-c', 'X=Architect; set -- ' + spelling +
+                     '; printf "%s\\n" "$#"; printf "%s" "$1"'])
+        check((shell.returncode, shell.stdout, shell.stderr) ==
+              (0, b'1\n' + value.encode(), b''), label + ': Bash complete argument')
+        text = prompt('Product', '--role ' + spelling)
+        if valid:
+            result = hook(text)
+            # Pin the requested allow verdict. Invalid neighbours below must
+            # prove validation; an allow alone cannot establish it ran.
+            check(result.returncode == 0 and not result.stdout, label + ': expected allow and empty stdout')
+            print('OBSERVATION: ' + label + ': current stderr=' + repr(result.stderr.decode()))
+            result = emit(['--role', value, '--model', 'm'])
+            check(result.returncode == 0 and bool(result.stdout) and not result.stderr,
+                  label + ': complete valid role emitter control')
+        else:
+            denied(text, ['OR31'], label)
+            refusal(['--role', value, '--model', 'm'], label + ' emitter control', ['role'])
+        if baseline is not None:
+            result = hook(text, baseline)
+            print('OBSERVATION: main ' + label + ': exit=' + str(result.returncode) +
+                  ', stdout bytes=' + str(len(result.stdout)) +
+                  ', stderr=' + repr(result.stderr.decode()))
+    # Truly malformed input retains the general fail-open policy, unlike the
+    # well-formed multiline words above. Pin its single visible diagnostic.
+    text = prompt('Product', '--role "Product')
+    result = hook(text)
+    check(result.returncode == 0 and not result.stdout and
+          len(result.stderr.splitlines()) == 1 and
+          b'cannot parse role shell word' in result.stderr and
+          b'dispatch allowed unchecked' in result.stderr,
+          'genuinely unterminated quote: allow with one unchecked diagnostic')
+    if baseline is not None:
+        result = hook(text, baseline)
+        print('OBSERVATION: main genuinely unterminated quote: exit=' + str(result.returncode) +
+              ', stdout bytes=' + str(len(result.stdout)) + ', stderr=' + repr(result.stderr.decode()))
+    # The 1 MB role takes ~17 s with the reviewed lexer, versus tens of ms
+    # for an ordinary line. A linear validator has ample CI headroom at this
+    # size. Kill at 2.5 s, leaving a 0.5 s margin below the asserted 3 s budget
+    # and 7 s below the configured fail-open runtime timeout. A killed process
+    # has not denied anything: timeout must fail, never count as exit 2.
+    for label, text in [
+        ('million-character invalid role', prompt('Product', '--role ' + 'X' * 1_000_000)),
+        ('million-character ordinary line control', 'ROLE SESSION: Product\n' + 'X' * 1_000_000 + '\n'),
+    ]:
+        started = time.monotonic()
+        try:
+            result = hook(text, timeout=2.5)
+        except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - started
+            check(False, label + ': no effective denial before 2.5 s deadline (%.3f s)' % elapsed)
+            continue
+        elapsed = time.monotonic() - started
+        print('TIMING: ' + label + ': %.3f s' % elapsed)
+        check(elapsed < 3.0, label + ': wall time must be under 3 s (%.3f s)' % elapsed)
+        denied(text, ['OR31'], label, result=result)
+
 def dispatch():
     for prefix,role,stage in ROWS:
         allowed(prompt(prefix,'--role '+role),role+' role-only')
@@ -98,18 +192,12 @@ def dispatch():
     for flags in ['--roles Product','--role=Product']:
         allowed('/c/model-record-emit.sh '+flags,'detection word guard '+flags)
     allowed(prompt('Product','--stage=Discovery'),'kept legacy --stage=X hook recognition gap')
-    # Use the actual local main hook AND its policy inputs, never a reconstructed
-    # parser. Read-only git show keeps the adopted clone and main untouched.
-    baseline=copy('main-dispatch')
-    for path in [HOOK,ORCH,TSV]:
-        r=run(['git','show','main:'+path])
-        if not check(r.returncode==0,'main baseline git show '+path):
-            return
-        (baseline/path).write_bytes(r.stdout)
+    baseline = historical_baseline('main-dispatch', [HOOK, ORCH, TSV])
     for suffix in TERMINATORS:
         label='terminator '+repr(suffix or 'EOL')
         text=terminated_prompt('--stage Discovery',suffix)
-        allowed(text,'main stage '+label,baseline)
+        if baseline is not None:
+            allowed(text,'main stage '+label,baseline)
         allowed(text,'current stage '+label)
         allowed(terminated_prompt('--role Product',suffix),'current role '+label)
     for quote in ['"', "'"]:
@@ -148,6 +236,8 @@ def dispatch():
     # Stage concatenations are observations only, including their main behavior.
     for spelling in ['"Discovery"" extra"', "'Discovery'' '", '"Discovery"\\ extra']:
         text = prompt('Product', '--stage ' + spelling)
+        if baseline is None:
+            continue
         a, b = hook(text, baseline), hook(text)
         print('OBSERVATION: concatenated stage ' + repr(spelling) +
               ': main exit=' + str(a.returncode) + ', current exit=' + str(b.returncode) +
@@ -158,11 +248,13 @@ def dispatch():
     # Do not silently promote that pre-existing gap into a new hook rule.
     for value in ['Discovery extra','Discovery ']:
         text=prompt('Product','--stage "'+value+'"')
-        a,b=hook(text,baseline),hook(text)
-        print('QUESTION: quoted stage '+repr(value)+': main exit='+str(a.returncode)+
-              ', current exit='+str(b.returncode)+'; main silent='+str(not a.stdout and not a.stderr)+
-              ', current silent='+str(not b.stdout and not b.stderr)+'; no hook oracle pinned')
+        if baseline is not None:
+            a,b=hook(text,baseline),hook(text)
+            print('QUESTION: quoted stage '+repr(value)+': main exit='+str(a.returncode)+
+                  ', current exit='+str(b.returncode)+'; main silent='+str(not a.stdout and not a.stderr)+
+                  ', current silent='+str(not b.stdout and not b.stderr)+'; no hook oracle pinned')
         refusal(['--stage',value,'--model','m'],'quoted stage emitter control '+repr(value),['stage'])
+    round3_dispatch(baseline)
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
@@ -195,20 +287,17 @@ def pairs():
     refusal(['--role','Product','--stage','Planning','--model','m','--bogus','x'],'parse before mismatch',['unknown','--bogus'])
 
 def compatibility():
-    baseline=copy('baseline')
-    base=run(['git','merge-base','HEAD','main']).stdout.decode().strip()
-    check(bool(base),'baseline merge-base must resolve')
-    for f in [EMIT,'lib/model-record.sh']:
-        r=run(['git','show',base+':'+f]);check(r.returncode==0,'baseline git show '+f)
-        (baseline/f).write_bytes(r.stdout)
-    for _,role,stage in ROWS:
-        for extra in [[],['--effort','low']]:
-            args=['--stage',stage]+model(role)+extra
+    baseline = historical_baseline('baseline', [EMIT, 'lib/model-record.sh',
+        'skills/pre-merge-review/model-record-gate.sh', 'compliance-evidence.sh'], merge_base=True)
+    if baseline is not None:
+        for _,role,stage in ROWS:
+            for extra in [[],['--effort','low']]:
+                args=['--stage',stage]+model(role)+extra
+                a,b=emit(args),emit(args,baseline)
+                check((a.returncode,a.stdout,a.stderr)==(b.returncode,b.stdout,b.stderr),role+' stage-only baseline bytes/status/effort')
+        for args in [[],['--stage','wrong','--model','m'],['--stage','Review','--model','m'],['--stage']]:
             a,b=emit(args),emit(args,baseline)
-            check((a.returncode,a.stdout,a.stderr)==(b.returncode,b.stdout,b.stderr),role+' stage-only baseline bytes/status/effort')
-    for args in [[],['--stage','wrong','--model','m'],['--stage','Review','--model','m'],['--stage']]:
-        a,b=emit(args),emit(args,baseline)
-        check((a.returncode,a.stdout)==(b.returncode,b.stdout),'legacy refusal exit/stdout '+str(args))
+            check((a.returncode,a.stdout)==(b.returncode,b.stdout),'legacy refusal exit/stdout '+str(args))
     # Kill a mandatory-role regression while keeping the original stage-only control.
     mutant=copy('role-required'); p=mutant/EMIT
     s=p.read_text();needle='while [ $# -gt 0 ]; do';assert needle in s
@@ -218,8 +307,8 @@ def compatibility():
     # The gate and collector remain byte-identical to the merge-base; reader grammar is
     # exercised by S204, not duplicated here as an implementation-text oracle.
     for f in ['skills/pre-merge-review/model-record-gate.sh','compliance-evidence.sh']:
-        r=run(['git','show',base+':'+f])
-        check(r.returncode==0 and r.stdout==(ROOT/f).read_bytes(),'AC7 unchanged '+f)
+        if baseline is not None:
+            check((baseline/f).read_bytes()==(ROOT/f).read_bytes(),'AC7 unchanged '+f)
 
 def bad_inputs():
     for value in ['product','Fullstack','Fullstack Developer','Discovery','Planning','Test','Implementation','Review','']:
