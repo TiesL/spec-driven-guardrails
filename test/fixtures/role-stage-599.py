@@ -339,6 +339,217 @@ def round5_dispatch():
     for (kind, group), (red, total) in sorted(groups.items()):
         print('RESULT: round-5 %s, %s: %d/%d %s' % (kind, group, red, total, 'RED' if red else 'GREEN'))
 
+PREVIOUS_HEAD = '2d93c25'  # last head before the whole-prompt shell word stream (round 5)
+
+def previous_head_baseline():
+    # The prose cases below are pinned to the verdicts of the head before the
+    # structural change. Each case also records that verdict, so a shallow
+    # clone without this commit still runs every current-hook assertion.
+    if run(['git', 'rev-parse', '--verify', PREVIOUS_HEAD + '^{commit}']).returncode:
+        print('SKIP: round-6 previous head ' + PREVIOUS_HEAD + ' unavailable; '
+              'only its comparisons skipped, recorded expectations still pinned')
+        return None
+    base = copy('previous-head')
+    result = run(['git', 'show', PREVIOUS_HEAD + ':' + HOOK])
+    if not check(result.returncode == 0, 'round-6 git show ' + PREVIOUS_HEAD + ':' + HOOK):
+        return None
+    (base / HOOK).write_bytes(result.stdout)
+    return base
+
+def verdict(r):
+    # 'allow', 'deny OR8,OR31' (core lines once each, then AVOID) or 'other ...'.
+    lines = r.stderr.splitlines()
+    if (r.returncode, r.stdout, r.stderr) == (0, b'', b''):
+        return 'allow'
+    if (r.returncode == 2 and not r.stdout and lines and b'--role' in lines[-1] and b'--stage' in lines[-1]
+            and all(re.match(rb'- OR\d+ ', l) for l in lines[:-1])):
+        ids = [l.split()[1].decode() for l in lines[:-1]]
+        if len(set(ids)) == len(ids) and all(rule(i) == l for i, l in zip(ids, lines[:-1])):
+            return 'deny ' + ','.join(ids)
+    return 'other (exit %s, stdout %s bytes, stderr %r)' % (r.returncode, len(r.stdout), r.stderr.decode()[:160])
+
+def round6_prose_cases():
+    # Prose is not shell: an apostrophe or double quote in a sentence that
+    # mentions the emitter must not hide the line-start commands after it.
+    # (label, opener line or None, closer line, quote opened)
+    C = '/c/model-record-emit.sh'
+    openers = [
+        ('apostrophe after mention', "Run model-record-emit.sh and paste its output as your report's first line:", "Don't type it by hand."),
+        ('apostrophe before and after mention', "Don't retype it: run model-record-emit.sh and paste it as the report's first line:", "Don't type it by hand."),
+        ('several apostrophes after mention', "Run model-record-emit.sh; don't edit it, it's the report's first line:", "It's checked."),
+        ('double quote after mention', 'Run model-record-emit.sh and paste its output under "Model record:', 'That ends the block".'),
+        ('backtick mention, apostrophe after', "Run `model-record-emit.sh` and paste its output as your report's first line:", "Don't type it by hand."),
+        ('apostrophe in trailing comment', None, "It's done."),
+        ('control: balanced apostrophes after mention', "Run model-record-emit.sh; don't edit it, it's fixed:", "Don't type it by hand."),
+        ('control: balanced double quotes after mention', 'Run model-record-emit.sh and paste the "Model record" line:', 'That ends the block.'),
+    ]
+    good, wrong = {'role': '--role Product --model m', 'stage': '--stage Discovery --model m'}, \
+                  {'role': '--role Architect --model m', 'stage': '--stage Planning --model m'}
+    kinds = [  # (label, prefix line, mismatch flag kind or None, recorded verdict)
+        ('missing prefix', False, None, 'deny OR8'),
+        ('correct brief', True, None, 'allow'),
+        ('hidden role mismatch', True, 'role', 'deny OR31'),
+        ('hidden stage mismatch', True, 'stage', 'deny OR31'),
+    ]
+    cases = []
+    for olabel, opener, closer in openers:
+        for klabel, prefixed, mismatch, expected in kinds:
+            for span in [1, 2]:
+                for position in ([None] if mismatch is None else range(span)):
+                    for tail in [False, True]:
+                        cmds = [C + ' ' + (wrong[mismatch] if i == position else good['role'])
+                                for i in range(span)]
+                        lines = ['ROLE SESSION: Product'] if prefixed else []
+                        lines.append('You are Product for #12.')
+                        if opener is None:
+                            # The opener is a correct command whose bash comment holds the apostrophe.
+                            lines.append(C + ' ' + good['role'] + "   # don't edit")
+                        else:
+                            lines.append(opener)
+                        lines += cmds + [closer] + ([C + ' ' + good['role']] if tail else [])
+                        cases.append({'opener': olabel, 'kind': klabel, 'span': span, 'tail': tail,
+                                      'position': position, 'expected': expected,
+                                      'text': '\n'.join(lines) + '\n',
+                                      'label': 'round-6 prose %s, %s, %d command(s) in span%s, %s' % (
+                                          olabel, klabel, span,
+                                          '' if position is None else ', mismatch at %d' % position,
+                                          'correct command after' if tail else 'nothing after')})
+    return cases
+
+def round6_briefs():
+    # Short synthetic briefs shaped like real orchestrator dispatches: prose
+    # with apostrophes around the line-start command. (label, text, recorded verdict)
+    C = '/c/skills/pre-merge-review/model-record-emit.sh'
+    qa = ("ROLE SESSION: QA\nYou are the QA role (stage Test). Don't run git write commands.\n"
+          "Read the Reviewer's findings first. The report's first line is the output of\n"
+          "model-record-emit.sh, which you'll run as:\n%s\n"
+          "Don't paraphrase it; it's checked by the gate.\n")
+    dev = ("ROLE SESSION: Fullstack Developer\nFix the Reviewer's finding on PR #601.\n"
+           "First line of the report: model-record-emit.sh output (it's mandatory):\n%s\n"
+           "Then run the tests. Don't push; the orchestrator's session does.\n")
+    rev = ("Review PR #601 at head 4ef7c95d398e. Run finding-carryforward-gate.sh 601 first.\n"
+           "Paste model-record-emit.sh's output as the review's first line:\n%s\n"
+           "Don't approve on a red gate.\n")
+    return [
+        ('QA brief, matching role', qa % (C + ' --role QA --model <id>'), 'allow'),
+        ('QA brief, stage of another role', qa % (C + ' --stage Planning --model <id>'), 'deny OR31'),
+        ('Developer brief, matching role with comment', dev % (C + " --role Developer --model <id>  # don't edit"), 'allow'),
+        ('Developer brief, role of another role', dev % (C + ' --role Architect --model <id>'), 'deny OR31'),
+        ('Reviewer brief without prefix', rev % (C + ' --role Reviewer --model <id> --floor-basis x'), 'deny OR8'),
+    ]
+
+def round6_quoted_apostrophes():
+    # A legitimately quoted multi-line --model value containing the other
+    # quote kind stays one argument; Bash establishes the argv. The prose
+    # around it may open quotes of its own: the verdict must not change.
+    values = [('double quotes with an apostrophe', '"it' + "'" + 's\nfine"', "it's\nfine"),
+              ('double quotes with two apostrophes', '"don' + "'" + 't\nit' + "'" + 's\nok"', "don't\nit's\nok"),
+              ('single quotes with a double quote', "'say \"hi\nthere'", 'say "hi\nthere')]
+    kinds = [('stage mismatch', '--stage Planning', ['--stage', 'Planning'], 'deny OR31'),
+             ('repeated role', '--role Architect', ['--role', 'Architect'], 'deny OR31'),
+             ('matching stage', '--stage Discovery', ['--stage', 'Discovery'], 'allow')]
+    proses = [('no prose', '', ''),
+              ('apostrophe prose around', "Run model-record-emit.sh as your report's first line:\n", "Don't type it by hand.\n")]
+    cases = []
+    for vlabel, spelling, value in values:
+        for klabel, flag, argv, expected in kinds:
+            for slabel, sep in [('space', ' '), ('cont1', ' ' + chr(92) + '\n')]:
+                for plabel, before, after in proses:
+                    flags = '--role Product --model ' + spelling + sep + flag
+                    text = ('ROLE SESSION: Product\n' + before + '/c/model-record-emit.sh ' + flags + '\n' + after)
+                    cases.append({'flags': flags, 'argv': ['--role', 'Product', '--model', value] + argv,
+                                  'text': text, 'expected': expected,
+                                  'label': 'round-6 quoted %s, %s, %s, %s' % (vlabel, klabel, slabel, plabel)})
+    return cases
+
+def round6_dispatch(previous):
+    from concurrent.futures import ThreadPoolExecutor
+    started = time.monotonic()
+    prose = round6_prose_cases()
+    briefs = [{'label': 'round-6 brief ' + l, 'text': t, 'expected': e} for l, t, e in round6_briefs()]
+    quoted_cases = round6_quoted_apostrophes()
+    pinned = prose + briefs
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        current = list(pool.map(lambda c: verdict(hook(c['text'])), pinned + quoted_cases))
+        before = (list(pool.map(lambda c: verdict(hook(c['text'], previous)), pinned))
+                  if previous is not None else [None] * len(pinned))
+        shells = list(pool.map(lambda c: run(['bash', '-c', 'set -- ' + c['flags'] + '; printf "%s\\0" "$@"']),
+                               quoted_cases))
+    groups = {}
+    for case, now, then in zip(pinned + quoted_cases, current, before + [None] * len(quoted_cases)):
+        if then is not None:
+            # Same verdict as before the structural change: the recorded
+            # expectation is the previous head's verdict, checked here.
+            check(then == case['expected'], case['label'] + ': recorded expectation ' + case['expected'] +
+                  ' must equal previous head ' + PREVIOUS_HEAD + ' verdict ' + then)
+        ok = check(now == case['expected'], case['label'] + ': expected ' + case['expected'] + ', got ' + now)
+        if 'opener' in case:
+            keys = ['opener ' + case['opener'], 'kind ' + case['kind'], 'span %d' % case['span'],
+                    'tail ' + ('command' if case['tail'] else 'none')]
+        else:
+            keys = ['briefs' if case in briefs else 'quoted apostrophe values']
+        for key in keys:
+            tally = groups.setdefault(key, [0, 0])
+            tally[0] += not ok
+            tally[1] += 1
+    for case, sh in zip(quoted_cases, shells):
+        check((sh.returncode, sh.stdout, sh.stderr) ==
+              (0, b''.join(x.encode() + b'\0' for x in case['argv']), b''), case['label'] + ': Bash complete argv')
+    # The comment is bash's, not part of the argv: independent of the hook.
+    sh = run(['bash', '-c', "set -- --role Product --model m   # don't edit\nprintf '%s\\0' \"$@\""])
+    check((sh.returncode, sh.stdout) == (0, b'--role\0Product\0--model\0m\0'), 'round-6 Bash: trailing comment is no argument')
+    for key, (red, total) in sorted(groups.items()):
+        print('RESULT: round-6 %s: %d/%d %s' % (key, red, total, 'RED' if red else 'GREEN'))
+    print('TIMING: round-6 prose, brief and quoted-apostrophe cases: %d cases, %.3f s' % (
+        len(pinned) + len(quoted_cases), time.monotonic() - started))
+    # The Reviewer's four scenarios verbatim, pinned to the previous head's verdicts.
+    C = '/c/model-record-emit.sh'
+    a = ("You are Product for #12.\nRun model-record-emit.sh and paste its output as your report's first line:\n"
+         + C + " --role Product --model <id>\nDon't type it by hand.\n")
+    reviewer = [
+        ('(a) missing prefix', a, 'deny OR8'),
+        ('(b) correct brief', 'ROLE SESSION: Product\n' + a, 'allow'),
+        ('(c) role mismatch', "ROLE SESSION: Product\nRun model-record-emit.sh and paste its output as your report's first line:\n"
+         + C + " --role Architect --model m\nDon't type it by hand.\n" + C + ' --role Product --model m\n', 'deny OR31'),
+        ('(c) Reviewer variant', "ROLE SESSION: Reviewer\nPR #42, head 0123abcdef, finding-carryforward-gate.sh 42\n"
+         "Run model-record-emit.sh and paste its output as your report's first line:\n" + C +
+         " --stage Planning --model m\nDon't type it by hand.\n" + C + ' --role Reviewer --model m --floor-basis x\n', 'deny OR31'),
+        ('(d) comment apostrophe', 'ROLE SESSION: Product\n' + C + " --role Product --model m   # don't edit\n" +
+         C + " --stage Planning --model m\nIt's done.\n", 'deny OR31'),
+    ]
+    for label, text, expected in reviewer:
+        label = 'round-6 Reviewer scenario ' + label
+        if previous is not None:
+            then = verdict(hook(text, previous))
+            check(then == expected, label + ': recorded ' + expected + ' must equal previous head verdict ' + then)
+        before_count = len(failures)
+        now = verdict(hook(text))
+        check(now == expected, label + ': expected ' + expected + ', got ' + now)
+        print('RESULT: ' + label + ': ' + ('RED' if len(failures) > before_count else 'GREEN'))
+    # role-unterminated-continuation: a quote that never closes, with a continued
+    # flag after it. Bash itself fails here, so the existing malformed-input
+    # rule applies: deny, or allow with exactly one unchecked diagnostic, but
+    # never a silent allow.
+    for qlabel, quote in [('double', '"'), ('single', "'")]:
+        text = 'ROLE SESSION: Product\n' + C + ' --role Product --model ' + quote + 'x ' + chr(92) + '\n--stage Planning\n'
+        label = 'round-6 unterminated %s-quoted model with continued stage' % qlabel
+        sh = run(['bash', '-n', '-c', 'set -- --role Product --model ' + quote + 'x ' + chr(92) + '\n--stage Planning'])
+        check(sh.returncode != 0, label + ': Bash must reject the unterminated quote')
+        r = hook(text)
+        lines = r.stderr.splitlines()
+        noted = (r.returncode == 0 and not r.stdout and len(lines) == 1 and b'dispatch allowed unchecked' in lines[0])
+        before_count = len(failures)
+        check(noted or verdict(r).startswith('deny '), label + ': expected deny or exactly one '
+              '"dispatch allowed unchecked" diagnostic, not a silent allow; got ' + verdict(r))
+        print('RESULT: ' + label + ': ' + ('RED' if len(failures) > before_count else 'GREEN'))
+        if previous is not None:
+            print('OBSERVATION: previous head ' + label + ': ' + verdict(hook(text, previous)))
+    # Observation only: the same double quote without the backslash was a silent
+    # allow on the previous head as well; no oracle pinned.
+    text = 'ROLE SESSION: Product\n' + C + ' --role Product --model "x \n--stage Planning\n'
+    print('OBSERVATION: unterminated double quote, newline without backslash: current ' + verdict(hook(text)) +
+          ('' if previous is None else '; previous head ' + verdict(hook(text, previous))))
+
 def dispatch():
     for prefix,role,stage in ROWS:
         allowed(prompt(prefix,'--role '+role),role+' role-only')
@@ -415,6 +626,7 @@ def dispatch():
     round3_dispatch(baseline)
     round4_dispatch(baseline)
     round5_dispatch()
+    round6_dispatch(previous_head_baseline())
 
 def agreement():
     # #595: preserve the legacy prompt shape; denial must come from OR31.
