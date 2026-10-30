@@ -1903,6 +1903,18 @@ explicitly unverified.
 
 A documented, TiesL-applied least-privilege baseline for Codex sessions doing SDG work (`adapters/codex/permission-baseline.md`): a runtime-neutral list of what SDG work needs, a `workspace-write` sandbox profile with network off until proven, a narrowed rules set without a blanket `gh` allow or a catch-all prompt rule, and the stated limits of what Codex cannot match. `./check` runs to the end on a read-only tree without writing bytecode. Merges into `main` stay behind explicit confirmation, `--dangerously-bypass-approvals-and-sandbox` appears only as a prohibition, and neither `adopt.sh` nor any SDG script writes Codex config or grants trust. Live enforcement results are recorded as observations outside Codex's sandbox with TiesL's go-ahead and are not a claim of enforcement until then.
 
+### F58 — Codex session reports skills missing since adoption (issue #507)
+
+A Codex CLI or local desktop session in an adopted project is instructed to
+run the read-only `adopt.sh --runtime codex --status` before dependent work
+and to report each stale, broken or missing skill link together with the
+remedy of rerunning ordinary Codex adoption. The check never creates,
+overwrites or removes a path, installs no hook and changes no Codex config or
+trust; `adopt.sh` remains the sole owner of repair. A status line shows
+structural drift, not live skill loading. Instruction suppression or
+noncompliance and remote/cloud sessions are stated limitations, and live CLI
+and desktop behavior is recorded as observation, not proven.
+
 ## Non-functional characteristics
 
 ### Security
