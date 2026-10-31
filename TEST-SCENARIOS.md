@@ -8134,12 +8134,22 @@ and S380's #590 live-evidence boundary.
 - Then: Equal, deletion/whitespace-preserving, explicit-empty, verified base64-recovery, latest-artifact and main-reapply cases return 0; one-byte, CRLF, whitespace and outside-hunk changes return 1. Missing/truncated/corrupt artifacts, either bad hash, implicit empty, over-limit, stale/missing selected report and failed re-apply return 2. Protected working files and git index remain byte-identical; temporary output is removed.
 - Evidence boundary: The loaded contract must require this operation, so the test is red while that text is absent. This reference is not a production command, comment parser, publication mechanism or proof of live obedience; new-base selection and over-limit publication remain unresolved.
 
-### S468 — Published comparison command distinguishes matching and differing committed bytes
+### S468 — Published comparison command handles comment transport, re-application and unusable evidence
 
 **Covers:** F60
 
-- Given: The exact executable bash fence in the role-contract QA scenario comparison section, an offline raw-comment transport fixture, and a temporary real Git repository containing a base and two Developer heads with independently specified matching and one-byte-different scenario bytes.
+- Given: The exact executable bash fence in the role-contract QA scenario comparison section, offline raw-comment transport with LF or GitHub-web-edit CRLF line endings, and a temporary real Git object graph with original, later applicable, conflicting and unrelated bases and independently specified Developer bytes.
 - When: The extracted command runs unchanged except for its four documented identity arguments, reconstructing the QA artifact outside the repository.
-- Then: Matching bytes return exit 0 and result match; differing bytes return exit 1 and result different. Output identifies the artifact, base, head and independently expected file hashes. The fixture working tree and Git metadata stay byte-identical.
-- Falsifier: Replacing the extracted command's comparison in memory with an unconditional match must fail the same differing-byte assertion with expected exit 1, got 0; the test fails if that mutation survives.
+- Then: LF and CRLF comment bodies each reconstruct matching bytes with exit 0 and one-byte-different committed bytes with exit 1. Re-applying to a later applicable base preserves unrelated main changes for both exit 0 and 1. Either hash mismatch, apply conflict, missing or duplicate base field, and original or applicable base not ancestral to the head return exit 2 with result unresolved. Successful comparison output identifies the artifact, original and applicable bases, head and independently expected file hashes. The fixture working tree and Git metadata stay byte-identical.
+- Falsifier: Replacing the extracted command's comparison in memory with an unconditional match must fail the differing-byte assertion with expected exit 1, got 0. Reconstructing from the old base instead of the current base must fail the re-apply match assertion with expected exit 0, got 1. The test fails if either mutation survives; independent cases continue after a failure so all branches report.
 - Evidence boundary: Only gh transport is substituted; Git reads and patch application execute for real. This checks the published command, not live orchestrator obedience or publication. No Git write command or network is required to construct the temporary repository.
+
+### S469 — Valid skip=Test record exempts QA provenance with narrow Developer scope
+
+**Covers:** F59, F60
+
+- Given: The settled A49 exception for a valid OR34 skip=Test pipeline-override record; a single-session record alone does not exempt.
+- When: Scoped text pins inspect OR46 in ORCHESTRATOR.md, Reviewer and Fullstack Developer in role-contracts/SKILL.md, with independent compliant witnesses and per-clause deletion controls.
+- Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
+- Behavior seam: OB79 dispatches Reviewer without QA or a human question for the waived handoff; OB80 (no record) and OB81 (single-session only) dispatch QA; OB82 routes a Developer spec conflict to Product despite a valid Test waiver.
+- Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.

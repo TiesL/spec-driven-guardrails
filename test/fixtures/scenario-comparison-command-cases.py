@@ -18,9 +18,9 @@ command = blocks[0]
 arguments = 'owner/repo COMMENT_ID FULL_DEVELOPER_HEAD_SHA APPLICABLE_BASE_SHA'
 assert command.count(arguments) == 1, 'comparison invocation changed'
 
-old = b'title\nexpected: old\nfooter\n'
-expected = b'title\nexpected: new\nfooter\n'
-different = b'title\nexpected: now\nfooter\n'
+old = b'title\npreamble\nbefore\nexpected: old\nafter\nfooter\n'
+expected = b'title\npreamble\nbefore\nexpected: new\nafter\nfooter\n'
+different = b'title\npreamble\nbefore\nexpected: now\nafter\nfooter\n'
 
 
 def sha(data):
@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory(prefix='qa-command-test-') as tmp:
     patch = (f'diff --git a/TEST-SCENARIOS.md b/TEST-SCENARIOS.md\n'
              f'index {old_blob}..{new_blob} 100644\n'
              '--- a/TEST-SCENARIOS.md\n+++ b/TEST-SCENARIOS.md\n'
-             '@@ -1,3 +1,3 @@\n title\n-expected: old\n+expected: new\n footer\n')
+             '@@ -3,3 +3,3 @@\n before\n-expected: old\n+expected: new\n after\n')
     report_url = 'https://github.com/owner/repo/issues/40#issuecomment-123'
     report = dict(html_url=report_url,
                   issue_url='https://api.github.com/repos/owner/repo/issues/40',
@@ -90,35 +90,99 @@ with tempfile.TemporaryDirectory(prefix='qa-command-test-') as tmp:
     env.update(PATH=str(bindir) + os.pathsep + os.environ['PATH'],
                QA_COMMAND_REPORT=str(report_file), GIT_CONFIG_NOSYSTEM='1',
                GIT_CONFIG_GLOBAL=os.devnull)
+    current_old = b'new main preface\n' + old
+    current_expected = b'new main preface\n' + expected
+    current_different = b'new main preface\n' + different
+    current_base, _ = commit(current_old, base)
+    reapplied, _ = commit(current_expected, current_base)
+    reapplied_different, _ = commit(current_different, current_base)
+    conflict_base, _ = commit(old.replace(b'expected: old', b'expected: conflict'), base)
+    conflict_head, _ = commit(b'conflicting developer head\n', conflict_base)
+    unrelated, _ = commit(b'unrelated root\n')
     before = snapshot(repo)
 
-    def check(source, head, status, result, committed):
-        script = source.replace(arguments, f'owner/repo 123 {head} {base}')
+    def check(source, head, status, result, committed=None, applicable=base,
+              base_bytes=old, qa_bytes=expected, body=None, error=None):
+        selected = dict(report)
+        if body is not None:
+            selected['body'] = body
+        report_file.write_text(json.dumps(selected))
+        script = source.replace(arguments, f'owner/repo 123 {head} {applicable}')
         process = subprocess.run([shutil.which('bash'), '-c', script], cwd=repo,
                                  env=env, capture_output=True, text=True, timeout=10)
+        assert snapshot(repo) == before, 'comparison wrote to fixture repository'
         assert process.returncode == status, (
             f'expected exit {status}, got {process.returncode}: '
             f'{process.stdout}{process.stderr}')
-        for field in (f'artifact={report_url}', f'base={base}',
-                      f'base_sha256={sha(old)}', f'qa_sha256={sha(expected)}',
-                      f'head={head}', f'committed_sha256={sha(committed)}',
+        if status == 2:
+            assert 'exit=2 result=unresolved' in process.stdout + process.stderr, process.stdout + process.stderr
+            if error:
+                assert error in process.stdout + process.stderr, process.stdout + process.stderr
+            return
+        for field in (f'artifact={report_url}', f'original_base={base}',
+                      f'original_base_sha256={sha(old)}',
+                      f'original_qa_sha256={sha(expected)}',
+                      f'base={applicable}', f'base_sha256={sha(base_bytes)}',
+                      f'qa_sha256={sha(qa_bytes)}', f'head={head}',
+                      f'committed_sha256={sha(committed)}',
                       f'exit={status} result={result}'):
             assert field in process.stdout, f'missing {field}: {process.stdout}'
-        assert snapshot(repo) == before, 'comparison wrote to fixture repository'
 
-    check(command, matching, 0, 'match', expected)
-    print('PASS command/match')
-    check(command, differing, 1, 'different', different)
-    print('PASS command/one-byte-different')
-    # Run the same oracle on an in-memory defect in the published command.
-    comparison = 'status = int(committed != expected)'
-    assert command.count(comparison) == 1, 'mutation anchor changed'
-    mutant = command.replace(comparison, 'status = 0')
-    try:
-        check(mutant, differing, 1, 'different', different)
-    except AssertionError as error:
-        assert 'expected exit 1, got 0:' in str(error), str(error)
-        print('PASS command/unconditional-match-control rejected: expected exit 1, got 0')
-    else:
-        raise AssertionError('unconditional-match mutation escaped the byte oracle')
+    failures = []
+
+    def case(label, **kwargs):
+        try:
+            check(command, **kwargs)
+        except AssertionError as error:
+            failures.append(label)
+            print(f'FAIL command/{label}: {error}')
+        else:
+            print(f'PASS command/{label}')
+
+    case('match', head=matching, status=0, result='match', committed=expected)
+    case('one-byte-different', head=differing, status=1, result='different', committed=different)
+    crlf = report['body'].replace('\n', '\r\n')
+    case('crlf-comment-match', head=matching, status=0, result='match', committed=expected, body=crlf)
+    case('crlf-comment-one-byte-different', head=differing, status=1,
+         result='different', committed=different, body=crlf)
+    case('main-reapply-match', head=reapplied, status=0, result='match',
+         committed=current_expected, applicable=current_base,
+         base_bytes=current_old, qa_bytes=current_expected)
+    case('main-reapply-one-byte-different', head=reapplied_different, status=1,
+         result='different', committed=current_different, applicable=current_base,
+         base_bytes=current_old, qa_bytes=current_expected)
+    for name, value in [('base_sha256', sha(old)), ('result_sha256', sha(expected))]:
+        case(name + '-mismatch', head=matching, status=2, result='unresolved',
+             body=report['body'].replace(f'{name}: {value}', f'{name}: ' + '0' * 64),
+             error=('base' if name == 'base_sha256' else 'result') + ' hash mismatch')
+    case('apply-conflict', head=conflict_head, applicable=conflict_base,
+         status=2, result='unresolved', error='patch does not apply')
+    case('missing-base', head=matching, status=2, result='unresolved',
+         body=report['body'].replace(f'base: {base}\n', ''), error='missing or duplicate base')
+    case('duplicate-base', head=matching, status=2, result='unresolved',
+         body=f'base: {base}\n' + report['body'], error='missing or duplicate base')
+    case('original-not-ancestor', head=unrelated, status=2, result='unresolved',
+         error='merge-base')
+    case('applicable-not-ancestor', head=matching, applicable=current_base,
+         status=2, result='unresolved', error='merge-base')
+
+    def mutation(label, anchor, replacement, rejected_status, **kwargs):
+        assert command.count(anchor) == 1, f'{label}: mutation anchor changed'
+        try:
+            check(command.replace(anchor, replacement), **kwargs)
+        except AssertionError as error:
+            diagnostic = f'expected exit {kwargs["status"]}, got {rejected_status}:'
+            assert diagnostic in str(error), str(error)
+            print(f'PASS command/{label}-control rejected: {diagnostic}')
+        else:
+            raise AssertionError(label + ' mutation escaped the byte oracle')
+
+    mutation('unconditional-match', 'status = int(committed != expected)', 'status = 0', rejected_status=0,
+             head=differing, status=1, result='different', committed=different)
+    mutation('reconstruct-old-base', 'expected = reconstruct(current_base)',
+             'expected = reconstruct(old)', rejected_status=1, head=reapplied, status=0, result='match',
+             committed=current_expected, applicable=current_base,
+             base_bytes=current_old, qa_bytes=current_expected)
     assert snapshot(repo) == before, 'mutation wrote to fixture repository'
+    if failures:
+        raise SystemExit('failed published command cases: ' + ', '.join(failures))

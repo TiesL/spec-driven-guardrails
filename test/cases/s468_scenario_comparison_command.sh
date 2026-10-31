@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S468 — the published comparison command discriminates committed bytes
+# S468 — published command handles bytes, CRLF transport and changed bases
 # Covers: F60
 set -uo pipefail
 # shellcheck source=../lib.sh

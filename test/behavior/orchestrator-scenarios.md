@@ -475,6 +475,26 @@ Given: Review round 1 is due on PR 41. A logged comparison returned exit 1, resu
 When: You choose the next step before starting Review round 1.
 Then: next_action=dispatch; next_role=QA
 
+### OB79 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked work-item issue has a valid human skip=Test pipeline-override record, posted before the first commit or PR and recognized by the merge guard. No QA scenario artifact exists. The Pipeline log records `QA provenance: result=not-applicable; skip=https://github.com/owner/repo/issues/40#issuecomment-123; head=9f8e7d6` linking that record. No finding is open and the Review brief has all other required fields.
+When: You choose the next step after the Developer returns, respecting the recorded Test waiver.
+Then: next_action=dispatch; next_role=Reviewer; asks_human=false
+
+### OB80 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked issue has no skip=Test record or any other override. No QA scenario artifact exists. No finding is open; QA must supply the missing handoff, and no existing agent needs to be continued.
+When: You choose the next step after the Developer returns, before starting Review.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
+### OB81 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked issue has a valid single-session pipeline-override record but no skip=Test record. No QA scenario artifact exists. No finding is open; QA must supply the missing handoff, and no existing agent needs to be continued.
+When: You choose the next step after the Developer returns, before starting Review.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
+### OB82 · OR19, OR17, OR34
+Given: During Implementation of issue 40, a valid skip=Test pipeline-override record is present on the issue. The Developer reports a spec/scenario conflict of class `spec`: AC3 contradicts TEST-SCENARIOS.md, and proposes changing existing scenario text under the Test waiver. The affected change is still in progress; no owning-role resolution exists, and no existing agent needs to be continued.
+When: You choose the next step before the Developer changes the scenario to fit its code.
+Then: next_action=dispatch; next_role=Product; asks_human=false
+
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
@@ -558,3 +578,7 @@ item cites its decision as at least one `#<n>`.
 - OB78 (OR15, OR17, OR46): owner resolution alone cannot accept an unauthorized
   scenario difference; QA must issue a superseding artifact and the comparison
   must match before Review (#546, #547, A49 panel Q3).
+- OB79 (OR34, OR46): a valid skip=Test record exempts the QA artifact and
+  comparison, so its linked not-applicable log allows Review (#547, A49 panel).
+- OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict
+  stop or authorize editing existing scenario text (#547, A49 panel).
