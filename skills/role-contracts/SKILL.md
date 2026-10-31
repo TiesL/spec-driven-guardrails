@@ -242,6 +242,9 @@ it as the vehicle for the other three; never introduces a new *external* seam Ar
 decide (internal seams stay its own call, as above). Developer-authored docs edits
 exclude `PRD.md`, `ARCHITECTURE.md` and `TEST-SCENARIOS.md`. Committing owner-authored
 text with implementing tests does not transfer authorship or permission to rewrite it.
+Only under a valid `skip=Test` record (OR34), the Developer may append new
+`### <ID>` entries and scenario text for test files it adds in this work item;
+existing scenario text stays byte-identical. OR19 and the A49 conflict stop still apply.
 
 **Evidence / gates it produces:** implementation, red/green tests, documentation, pull
 request.
@@ -271,7 +274,10 @@ itself takes time and belongs in the total, same as every other role's share.
 
 **Checks scenario provenance** against the applicable QA artifact, comparison log
 and finding/resolution links, as well as actual test fidelity. Missing evidence
-or an unresolved comparison blocks approval.
+or an unresolved comparison blocks approval. Under a valid `skip=Test` record
+(OR34), verifies that record and the not-applicable log line for the reviewed head
+instead of requiring the QA artifact and comparison; judges Developer-added
+scenario entries as test fidelity.
 
 **Verifies the actual test code faithfully implements QA's scenarios/strategy** — not just
 that tests exist and pass. Extends the already-decided split between mechanical and semantic checks (the
@@ -381,6 +387,7 @@ try:
         f'https://api.github.com/repos/{repo}/issues/'.lower())
     body = report['body']
     assert len(body) <= 65536
+    body = body.replace('\r', '')
     def field(name, pattern):
         values = re.findall(r'^' + name + r': (' + pattern + r')$', body, re.M)
         assert len(values) == 1, 'missing or duplicate ' + name
