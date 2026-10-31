@@ -3,6 +3,7 @@
 #
 # Usage:
 #   review-rounds.sh <pr-number> [<issue-number>]
+#   Reads the repository selected by the working directory.
 #
 # Prints, in time order:
 #   review-round: <n> at=<timestamp>   one per Review round
@@ -34,7 +35,7 @@
 set -uo pipefail
 export LC_ALL=C  # A32c: every command and bash's own matching reads GitHub text as bytes; enforced by S235
 
-usage() { echo "usage: review-rounds.sh <pr-number> [<issue-number>] (numbers must be positive integers)" >&2; exit 0; }
+usage() { echo "usage: review-rounds.sh <pr-number> [<issue-number>] (numbers must be positive integers; repository selected by the working directory)" >&2; exit 0; }
 [ $# -ge 1 ] && [ $# -le 2 ] || usage
 for a in "$@"; do
   case "$a" in
@@ -61,8 +62,15 @@ fi
 rows=""
 failed=0
 fetch() { # <endpoint> <timefield> <source> <what>
-  local out
-  if out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null)"; then
+  local out rc
+  # The completion sentinel distinguishes an empty response from a failed capture.
+  out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null; printf 'x%s' "$?")"
+  case "$out" in
+    *x[0-9]*) rc="${out##*x}"; out="${out%x*}" ;;
+    *) rc=2 ;;
+  esac
+  case "$rc" in ''|*[!0-9]*) rc=2 ;; esac
+  if [ "$rc" -eq 0 ]; then
     [ -z "$out" ] || rows="$rows$out"$'\n'
   else
     echo "warning: review-rounds could not read $4 (no network or no access), so no count is printed." >&2
@@ -76,7 +84,13 @@ if [ -n "$issue_number" ]; then
 fi
 [ "$failed" -eq 0 ] || exit 0
 
-if ! result="$(rr_rounds <<<"$rows")"; then
+result="$(rr_rounds <<<"$rows"; printf 'x%s' "$?")"
+case "$result" in
+  *x[0-9]*) rc="${result##*x}"; result="${result%x*}" ;;
+  *) rc=2 ;;
+esac
+case "$rc" in ''|*[!0-9]*) rc=2 ;; esac
+if [ "$rc" -ne 0 ]; then
   echo "warning: review-rounds could not read the markers (the marker reader failed), so no count is printed." >&2
   exit 0
 fi

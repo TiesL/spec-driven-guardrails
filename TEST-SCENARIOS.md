@@ -2926,28 +2926,17 @@ something new is being added.
 
 ### S209 — every Review round is a fresh Reviewer dispatch, and the orchestrator may not continue one
 **Covers:** F41
-- Given: `skills/role-contracts/SKILL.md` (Reviewer section),
-  `skills/role-contracts/ORCHESTRATOR.md` and `skills/pre-merge-review/SKILL.md`
-  (issue #414, AC1, AC2)
-- When: each is read for the rule on repeat Review rounds
-- Then: each states that every Review round is a new dispatch of a fresh agent
-  and that a Reviewer is never continued or resumed; `ORCHESTRATOR.md` forbids
-  it for the Reviewer explicitly, in one sentence naming both `SendMessage`
-  and the dispatch tool's `fork` type (also in the Reviewer contract and
-  `pre-merge-review`), says roles are started as a new agent never by that
-  `fork` type, imposes no `SendMessage` ban on other roles, and leaves
-  continuing another role for a later step to #412
-- Amended by #499 (AC14, A41): the `ORCHESTRATOR.md` half is located by ID,
-  no longer by the Dispatch-paragraph sentences (`once started`, `the
-  dispatch tool's fork type`): `OR7` (tier `hook:no-fork`), `OR12` and
-  `OR13` (tier `judgment`) each start exactly one list item in part 1;
-  `OR12`'s item names `SendMessage` and `fork`, and `OR13`'s names `#412`
-  (plumbing). Absence check kept: every `ORCHESTRATOR.md` item that contains
-  `SendMessage` is `OR12`'s, so no ban reaches other roles. Counterexamples:
-  `SendMessage` added to `OR7`'s or `OR13`'s item; `OR13` removed. The
-  `SKILL.md` and `pre-merge-review` halves are unchanged. Behaviour: `OB12`
-  and `OB49` (fresh Reviewer, graded against `continue_agent`), `OB51`
-  (`OR13`: QA may be routed either way, no human question)
+- Given: the Reviewer contract, `pre-merge-review/SKILL.md`, and
+  `ORCHESTRATOR.md` (issue #414 AC1/AC2; #499 AC14; #611)
+- When: their current text is checked
+- Then: each carrier explicitly bans Reviewer continuation by both
+  `SendMessage` and the dispatch tool's `fork` type. An exception permitting
+  either mechanism fails even with all the old keywords retained (S475).
+  `OR7`, `OR12` and `OR13` each start one item in part 1 with their assigned
+  tiers; only `OR12` and `OR13` may mention `SendMessage`. `OR13` leaves
+  Reviewer to `OR12` and permits other roles under #532's limits.
+- Behaviour: `OB12`, `OB49` and `OB51`; these text checks do not prove agent
+  freshness or live obedience.
 
 ### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
 **Covers:** F41
@@ -3005,11 +2994,13 @@ something new is being added.
 - Then, `SKILL.md` (unchanged): it gives the route per class (`design`:
   Architect, QA, Developer, fresh Reviewer; `code` and `test`: QA, Developer,
   fresh Reviewer; `spec`: Product, then QA, Developer, fresh Reviewer) and
-  says a class is never downgraded
+  says the orchestrator never downgrades a class while the Architect may
+  record that a finding is not a design defect and route it as code
 - Then, `ORCHESTRATOR.md`: `OR17` (route by class), `OR18` (no relayed fix,
   never downgrade, Architect when unclassed or in doubt) and `OR19` (any-stage
   design defect) each start one list item in part 2 with tier `judgment`;
-  absence check kept: neither file says "nobody downgrades"
+  neither file says "nobody downgrades"; both affirmatively permit Architect
+  reclassification. Inverting either permission fails (S476, #611)
 - The routing behaviour moves to `OB14`-`OB20`; phrase matching on the
   `ORCHESTRATOR.md` route is dropped
 
@@ -3047,6 +3038,8 @@ something new is being added.
   bodies without such a first marker and quoted example markers count for
   nothing; zero rounds gives `review-rounds: 0`; it always exits 0
 
+- #610: Each 39/41-hex, missing-delimiter, code-span and indented legacy marker is tested alone and counts zero rounds; a live 40-hex marker remains a round.
+
 ### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
 **Covers:** F42
 - Given: `review-rounds.sh` behind a recording fake `gh` (issue #410, AC4,
@@ -3064,6 +3057,8 @@ something new is being added.
   into no hook, check or gate (a gate sourcing `lib/review-rounds.sh`, or naming the
   script in a comment, is not wiring). Edited for #426 (the definition moved to the lib)
 
+- #610: The script header and runtime usage independently name the working-directory repository.
+
 ### S218 — the self-check lines, the stated limit and the override pointer to #415
 **Covers:** F42
 - Given: `ORCHESTRATOR.md` and `orchestrator-rules.tsv` (issue #410, AC5,
@@ -3071,7 +3066,8 @@ something new is being added.
 - When: the self-check and the override rules are located by ID
 - Then: `OR24`-`OR27` are the four sub-items of `OR23`'s item, in part 2, with
   tier `core`; `OR25`'s sub-item names `review-rounds.sh` and the project's
-  checkout as the working directory (plumbing, path resolved as in S206);
+  checkout as the affirmative working directory. Replacing it with the
+  guardrails clone while forbidding the project checkout fails (S477, #611);
   `OR21` (override) starts one list item in part 2 with tier `judgment`,
   names `OR45` by ID (the cross-part reference, S311) and names `SKILL.md`
   for the risk-note format; absence checks kept: `OR21` defines no risk-note
@@ -3569,6 +3565,8 @@ something new is being added.
   the separate genuine native K3 invalid/truncated-byte and multibyte controls;
   a structural lint rejection does not replace native behavioral evidence.
 
+- #610: The real-tree locale mutant targets the numeric grep -acE site. The inventory floor permits removal of the redundant plain grep.
+
 ### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
 **Covers:** F39, F40
 - Given: `skills/pre-merge-review/model-record-emit.sh` (issue #424, V3 of the
@@ -3984,6 +3982,8 @@ something new is being added.
   Preserve the canned-none/canned-Review controls and call-log witness. The
   negative witness must alter the reached kind, not simply erase the log;
   omitting inversion or counting must be caught by exact stdout/status checks.
+
+- #610: Isolated legacy controls reject 41-hex SHAs, missing closing delimiters, code spans and indented code as well as the existing 39-hex and fenced examples.
 
 ### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
 **Covers:** F28, F42
@@ -4912,7 +4912,9 @@ that evidence and the final `./check` result.
   pushback. If the recommending role is Reviewer, this dispatch is a fresh
   Reviewer under S209. A synthetic trace with decision-before-pushback,
   two pushbacks after the maintainer holds the position, a missing link,
-  or reuse of the Reviewer fails. Non-Reviewer reuse remains #412's choice.
+  or reuse of the Reviewer fails. Non-Reviewer continuation follows #532.
+  `OR45` itself must dispatch the recommending role once for reasoned pushback before recording the decision;
+  deletion or reversed ordering fails despite keywords elsewhere (S478, #611).
 
 ### S282 — an overrule leaves an Architect risk note with the #410 reference
 **Covers:** F44
@@ -4926,7 +4928,10 @@ that evidence and the final `./check` result.
   role was overruled, the flow dispatches the Architect for this note.
   The contracts explicitly say this is the risk-note format referenced
   by #410 AC6/S218. A missing field, missing decision link, or note only
-  in the orchestrator's markerless log fails.
+  in the orchestrator's markerless log fails. The Architect format requires the
+  literal `**Decision**` field linking the numbered human decision. `OR45`
+  itself must dispatch the Architect for a non-Architect overrule; deletion
+  or negation of that dispatch fails despite keywords elsewhere (S479, #611).
 
 ### S283 — completeness remains a review limit and the full check passes
 **Covers:** F44
@@ -8176,6 +8181,84 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S470 — Independent round-reader mutations are killed by targeted assertions
+**Covers:** F42
+- Given: temporary copies of the round Module and an independent control for each assertion (#610).
+- When: sorting is skipped, Planning spends a number, SHA length or closing delimiter is relaxed, matching reads the raw body, or the live-capture/numeric-count failure guard is removed, one mutation at a time.
+- Then: each mutated copy fails its exact output/status assertion while the corresponding unchanged control passes. Silent failure injections terminate before the live sentinel or suppress the numeric count. The redundant plain legacy grep must be absent.
+
+### S471 — Completion sentinels distinguish failed captures from empty success
+**Covers:** F42, F28
+- Given: temporary copies of both round consumers and shell functions standing in for gh or rr_rounds (#610).
+- When: a function returns 0 with empty output, the capture completes; when it exits the substitution with status 0, the caller-owned completion sentinel cannot run.
+- Then: successful empty fetches and zero rounds stay quiet (the reporter prints review-rounds: 0). Each failed capture warns, exits 0, and prints no verdict. Each failure assertion has a matching successful-empty control for the same consumer and capture.
+
+### S472 — Whole-value commit-check budget validation refuses before execution (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook through a symlink, a local stub answering only read-only git discovery, and an executable check-commit that records its start.
+- When: the budget contains a leading or trailing newline, two numeric lines, junk beside a numeric line, zero, a negative integer, a leading-zero value (01), 1000000, a 20-digit value or a much larger integer.
+- Then: the hook refuses, never starts the check, names COMMIT_CHECK_BUDGET and never reports an elapsed timeout. Zero and negative values are preservation controls; newline and oversized values are new regression coverage.
+- Mutation controls: each assertion independently rejects an inverted status, inverted start marker, removed diagnostic or added timeout diagnostic. These are observation mutations, not simulated passing product behavior.
+
+### S473 — Watchdog sleep failure cannot permit a failing check (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook, a check that records its start then fails with identifiable output after two seconds, and a PATH sleep stub that fails after observing the start marker. The check uses real sleep independently.
+- When: the hook runs with a valid ten-second budget.
+- Then: check execution and sleep injection are both observed, the hook refuses, the real failure output remains visible and no elapsed timeout is claimed.
+- Mutation controls: every assertion rejects its own inverted status/marker or corrupted diagnostic observation.
+
+### S474 — Valid commit-check outcomes survive budget hardening (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook and portable check fixtures, with no injected sleep failure.
+- When: successful checks use budgets 1, 30 and 999999, a real failure completes within a ten-second budget, and a four-second check exceeds a one-second budget.
+- Then: completion allows without timeout, real failure refuses with its output and no timeout, and actual timeout allows with an exceeded-budget warning pointing to CI. Every case confirms that the check started.
+- Mutation controls: every status, start-marker and diagnostic assertion rejects its own corrupted observation. The harness uses Bash 3.2 constructs and can select another Bash via BUDGET_BASH; native Linux execution is separate evidence.
+
+### S475 — Reviewer continuation bans reject keyword-preserving mutations
+**Covers:** F41
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  invert each of the three carriers to permit SendMessage, and separately permit fork in OR12
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S476 — Architect reclassification permission rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  negate the permission separately in SKILL.md and OR18
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S477 — project checkout working directory rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  replace the OR25 directory with the guardrails clone and forbid the project checkout, or insert never before the checkout
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S478 — OR45 pushback obligation rejects keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete the recommending-role pushback sentence or change before to after
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S479 — OR45 risk-note dispatch and literal Decision field reject keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete or negate the Architect dispatch in OR45, or delete the literal Decision field from the Architect format
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
 
 ### S480 — S285 rejects substring negators, later conflicting counts and meaning-version prefixes (#613)
 **Covers:** F15

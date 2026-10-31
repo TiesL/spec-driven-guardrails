@@ -200,12 +200,13 @@ elif scenario == "s281":
     shared = shared.split("**When your recommendation is not accepted", 1)[1].split("\n\n", 1)[0]
     for pattern in (r"once", r"before the decision is recorded", r"arguments", r"cost", r"numbered human decision links the pushback", r"fresh Reviewer"):
         require(re.search(pattern, shared, re.I), f"pushback rule {pattern}")
-    require("pushback" in orch and "before" in orch, "orchestrator flow")
+    require(re.search(r"Dispatch recommending role once for reasoned pushback before decision recorded;", norm(rule("OR45"))), "OR45: recommending role pushback before decision")
 elif scenario == "s282":
     architect = section(roles, "Architect")
-    for pattern in (r"Risk note", r"Decision", r"What is accepted", r"Likely consequence", r"Early signal", r"Revisit when", r"#410", r"Planning"):
+    for pattern in (r"Risk note", r"What is accepted", r"Likely consequence", r"Early signal", r"Revisit when", r"#410", r"Planning"):
         require(re.search(pattern, architect, re.I), f"Architect risk note {pattern}")
-    require("risk note" in orch.lower() and "Architect" in orch, "Architect dispatch")
+    require("**Decision** linking the numbered human decision" in norm(architect), "literal Decision field and decision link")
+    require(re.search(r"Non-Architect role's overrule: dispatch Architect for issue risk note\.", norm(rule("OR45"))), "OR45: Architect risk-note dispatch")
 elif scenario == "s283":
     # Structure oracles replaced by #499 (AC14, A41): placement by the
     # inventory part column, OR45 its own item in part 1, OR21 cites OR45.
