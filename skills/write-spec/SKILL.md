@@ -23,9 +23,16 @@ description: >
 3. Every work-item issue has its own Given/When/Then acceptance criteria
    and refers to the matching scenarios in `TEST-SCENARIOS.md` — so every
    issue is directly usable to test the built software against.
-4. `PRD.md`/`TEST-SCENARIOS.md` are living documents: update them as soon
-   as the implementation diverges from them (as already happens in
-   tennis-registration and tennis-invoicing).
+4. Implementation divergence requires owning-role reconciliation, never
+   rewriting the oracle to fit code. Spec/scenario conflicts follow OR19
+   and the stop/preservation rule in `role-contracts`.
+
+Each current/existing/unchanged-behavior clause needs a falsifying command or
+check, observable expected result and Product/QA run evidence or concrete evidence
+lookup. Record the observed main SHA and the PR's main merge-base SHA separately
+when different. Preservation assertions run on that merge base. Unverified claims
+remain unresolved; revalidate relevant main changes before merge. A contradicted
+historical claim is a spec finding, not an accepted oracle.
 
 For the substantiation requirement when drafting or revising
 `PRD.md`/`ARCHITECTURE.md` — see the `adoption-registry` skill.

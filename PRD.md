@@ -2026,6 +2026,64 @@ structural drift, not live skill loading. Instruction suppression or
 noncompliance and remote/cloud sessions are stated limitations, and live CLI
 and desktop behavior is recorded as observation, not proven.
 
+### F59 — Stop on spec and scenario conflicts before changing the oracle (issue #547)
+
+**Temporary panel settlement, 2026-10-30; TiesL may overrule.**
+A Developer or QA that finds a design, spec or scenario conflict stops the
+change, preserves the spec and scenario text byte-identically at detection,
+saves the attempted patch under A12 and reports the finding's class and a
+falsifying check. The existing class route determines who resolves it; the
+Developer's docs scope explicitly excludes `PRD.md`, `ARCHITECTURE.md` and
+`TEST-SCENARIOS.md`, except that under a valid `skip=Test` pipeline-override
+record (OR34) the Developer may append new `### <ID>` entries and their scenario
+text for test files it adds in this work item; existing scenario text stays
+byte-identical (skip=Test exemption: panel 2026-10-31, PR #605). This exception does not waive the conflict stop. Clauses
+asserting current or unchanged behavior carry a
+falsifying check with an observable expected result and evidence run or looked
+up by Product or QA. Evidence records both the observed `main` SHA and the
+PR's merge-base SHA, separately when they differ; the preservation assertion
+runs on the merge base. Unverified or contradictory claims remain unresolved,
+and relevant behavior changes on `main` require revalidation before merge.
+The Architect's design review names every AC the design contradicts or
+narrows, or explicitly states none. An assertion of preserved behavior must
+be green on the recorded merge base; red there is a spec finding, not
+permission to change the scenario or assertion to fit the implementation.
+These are instruction and evidence requirements, not proof of live compliance.
+
+### F60 — Preserve QA's exact scenario diff across the Developer handoff (issue #546)
+
+**Temporary panel settlement, 2026-10-30; TiesL may overrule.**
+The QA-artifact, OR46(c) comparison and Reviewer approval-block requirements
+below do not apply under a valid `skip=Test` pipeline-override record (OR34)
+(skip=Test exemption: panel 2026-10-31, PR #605).
+Instead, the orchestrator logs a not-applicable line with the record link and
+head; the Reviewer verifies that record and log line for the reviewed head.
+A `single-session` override does not grant this exemption.
+Before the Developer handoff, QA durably records its exact `TEST-SCENARIOS.md`
+changes on the work-item issue as a git-format unified diff produced with
+`git diff --full-index`, in a tilde fence, identifying the path, base SHA,
+`base_sha256` and `result_sha256`. Reconstruction applies the diff to
+`git show <base>:TEST-SCENARIOS.md` outside the repository and verifies both
+file hashes; any mismatch fails closed. Base64 of the same unified diff is
+the transport fallback if a hash fails in transit. An artifact exceeding the
+65,536-character comment limit leaves the handoff unresolved and triggers
+consideration of the pushed-ref alternative; this entry does not specify that
+alternative. Empty diffs are explicit. A local working tree alone is insufficient.
+After the Developer returns, the orchestrator performs a read-only OR46(c)
+comparison of the whole committed scenario file byte for byte against the
+reconstructed QA file and logs the command, artifact link, compared identities
+and result. If the branch merged `main` after handoff, QA's unified diff must
+be re-applied to the new base before comparing the whole file; an apply failure
+leaves the handoff unresolved. Every difference must match a disclosed finding
+and its resolution through the owning role; disclosure alone does not authorize
+an oracle change. Any owner-resolved scenario change after the Developer step
+requires a new QA artifact and a matching comparison before Review. New QA
+artifacts explicitly supersede prior artifacts while retaining their evidence.
+Missing or unusable evidence leaves the handoff unresolved. The Reviewer brief
+links the applicable QA artifact and comparison evidence so Review can verify
+scenario provenance as well as test fidelity. `check-scenario-file-sync.sh`
+retains its existing requirements, and QA gains no test-code scope.
+
 ## Non-functional characteristics
 
 ### Security
