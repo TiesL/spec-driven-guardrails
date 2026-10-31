@@ -8167,3 +8167,24 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S472 — Whole-value commit-check budget validation refuses before execution (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook through a symlink, a local stub answering only read-only git discovery, and an executable check-commit that records its start.
+- When: the budget contains a leading or trailing newline, two numeric lines, junk beside a numeric line, zero, a negative integer, a leading-zero value (01), 1000000, a 20-digit value or a much larger integer.
+- Then: the hook refuses, never starts the check, names COMMIT_CHECK_BUDGET and never reports an elapsed timeout. Zero and negative values are preservation controls; newline and oversized values are new regression coverage.
+- Mutation controls: each assertion independently rejects an inverted status, inverted start marker, removed diagnostic or added timeout diagnostic. These are observation mutations, not simulated passing product behavior.
+
+### S473 — Watchdog sleep failure cannot permit a failing check (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook, a check that records its start then fails with identifiable output after two seconds, and a PATH sleep stub that fails after observing the start marker. The check uses real sleep independently.
+- When: the hook runs with a valid ten-second budget.
+- Then: check execution and sleep injection are both observed, the hook refuses, the real failure output remains visible and no elapsed timeout is claimed.
+- Mutation controls: every assertion rejects its own inverted status/marker or corrupted diagnostic observation.
+
+### S474 — Valid commit-check outcomes survive budget hardening (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook and portable check fixtures, with no injected sleep failure.
+- When: successful checks use budgets 1, 30 and 999999, a real failure completes within a ten-second budget, and a four-second check exceeds a one-second budget.
+- Then: completion allows without timeout, real failure refuses with its output and no timeout, and actual timeout allows with an exceeded-budget warning pointing to CI. Every case confirms that the check started.
+- Mutation controls: every status, start-marker and diagnostic assertion rejects its own corrupted observation. The harness uses Bash 3.2 constructs and can select another Bash via BUDGET_BASH; native Linux execution is separate evidence.
