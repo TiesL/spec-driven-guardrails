@@ -2014,6 +2014,18 @@ result routes to the Architect's choice between a content hash in the
 command and leaving the hook untrusted; neither fallback is introduced
 by this first cut.
 
+### F58 — Codex session reports skills missing since adoption (issue #507)
+
+A Codex CLI or local desktop session in an adopted project is instructed to
+run the read-only `adopt.sh --runtime codex --status` before dependent work
+and to report each stale, broken or missing skill link together with the
+remedy of rerunning ordinary Codex adoption. The check never creates,
+overwrites or removes a path, installs no hook and changes no Codex config or
+trust; `adopt.sh` remains the sole owner of repair. A status line shows
+structural drift, not live skill loading. Instruction suppression or
+noncompliance and remote/cloud sessions are stated limitations, and live CLI
+and desktop behavior is recorded as observation, not proven.
+
 ## Non-functional characteristics
 
 ### Security

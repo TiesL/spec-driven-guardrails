@@ -8003,3 +8003,59 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: that active writer launches a descendant explicit-hook adoption carrying its actual inherited locking descriptor and environment, while the first writer stays paused; the fixture snapshots the entire project before and after the descendant, then releases the first writer.
 - Then: the descendant exits 1 and every project file remains byte-identical, including modes, links and directory entries; the first writer completes with exit 0 after release. Normal adoption through the serializer's intended re-execution succeeds both before the overlap and afterward, ending with current bundle status.
 - Falsifiers: an unreached pause, an unheld lock, a first writer that exits before the descendant completes, descendant success or any project mutation, failure of the released first writer, or failure of normal serializer re-execution. On the defective implementation the descendant exits 0 and changes installation.json; the released first writer predictably refuses with exit 1 for a manifest ownership conflict, and a normal explicit retry succeeds.
+
+## Codex session skill drift reporting — #507
+
+The automated Seams are the Codex instruction text, the existing generation
+checker and the public adoption status command. These checks establish structural
+state only. AC5 and AC6 remain manual live-session variants: separately on fresh
+CLI and local desktop sessions, record attributed or raw evidence of running
+status before dependent work, surfacing every missing skill and the adoption
+remedy, continuing after an unavailable/nonzero check, then rerunning ordinary
+adoption and observing discovery in a fresh session. Both surfaces and the remedy
+are currently unverified; automated passes never count as passing these manual
+variants. This follows the mixed automated/manual evidence format of S295-S304
+and S380's #590 live-evidence boundary.
+
+### S450 — Codex instructions pin the read-only status check and report-and-continue rule (#507 AC1, AC4)
+**Covers:** F58
+- Given: the canonical Codex mapping and its generated payload and root managed AGENTS.md copy.
+- When: the instruction text is read with whitespace normalized.
+- Then: each carries the project-relative status command before dependent work, reporting each stale/broken/missing skill line, the ordinary Codex adoption remedy, reporting unavailable/nonzero status and continuing, structural drift distinguished from current-session loading, no session repair/create/delete of paths, and adopt.sh as sole repair owner.
+- Falsifiers: any carrier missing one of these instructions. Static text is not live compliance evidence; AC4's continuation observation remains manual and unverified.
+
+### S451 — The existing generation check rejects Codex instruction and copy drift without repairing it (#507 AC1)
+**Covers:** F58
+- Given: an isolated canonical checkout whose generated files are current.
+- When: check-workflow-adapters.sh runs on the unchanged tree and separately after mutation of the Codex mapping, the generated Codex payload, and the root managed block.
+- Then: the clean control exits 0; each mutation exits 1 naming drift in the affected generated carrier; snapshots remain identical across each check; restoring the original bytes restores exit 0.
+- Falsifiers: accepted drift, a checker that repairs it, a failed clean control, or a duplicate generator used as the oracle.
+
+### S452 — Status reports every canonical skill added after Codex adoption without writes (#507 AC2)
+**Covers:** F58
+- Given: an isolated project adopted for Codex, with a clean status control, then two canonical skills added to its isolated workflow checkout.
+- When: adopt.sh --runtime codex --status . runs from that project.
+- Then: status exits 1 and prints stale/broken/missing: .agents/skills/<name> for each added skill; the project, checkout and external sentinel tree snapshot is identical before and after, including hidden paths, directories, link text, modes and file bytes.
+- Falsifiers: a missing diagnostic, wrong exit, any write, or creation of a missing link.
+
+### S453 — Current Codex links give no missing-skill warning and no write (#507 AC3)
+**Covers:** F58
+- Given: an isolated Codex-adopted project with current links for every canonical skill, bytecode generation enabled, and an empty isolated Python cache.
+- When: .guardrails/source/adopt.sh --runtime codex --status . runs from the project.
+- Then: status exits 0, lists each skill unchanged, prints no stale/broken/missing: .agents/skills/ line, states structural installation only and not live-loaded, and preserves the complete temporary tree snapshot, including the cold cache, hidden paths, directories, link text, modes and file bytes; it creates nothing.
+- Falsifiers: a spurious skill warning, wrong exit, a missing unchanged line or any write. Live discovery is unverified.
+
+### S454 — Reachable status failures preserve files and report their documented diagnostics (#507 AC4)
+**Covers:** F58
+- Given: separate adopted projects with absent or malformed installation.json, missing .guardrails/source, or a regular file, directory, foreign live symlink or foreign broken symlink at a canonical skill path.
+- When: the canonical status command runs from each project.
+- Then: each exits 1 without writes; absent provenance reports stale/missing installation.json, malformed provenance reports its conflict, missing source reports stale/broken/missing source, real skill paths report project-owned file/directory conflicts, and redirected links report foreign/broken unrecorded/manually redirected link conflicts. External sentinel targets are unchanged too.
+- Then: the instructed project-relative launcher with missing source is unavailable (shell exit 127); an unreadable status script is unavailable (shell exit 126 and Permission denied) where permissions are enforced; both preserve the fixture snapshot. A runner bypassing permissions records the unreadable variant unverified rather than claiming it passed.
+- Falsifiers: wrong diagnostic/exit, any mutation, or treating inability to start the launcher as a status scanner verdict. Live session continuation remains manual and unverified; S450 pins its instruction.
+
+### S455 — A39 and Codex instructions state the drift check's evidence limits (#507 AC7)
+**Covers:** F58
+- Given: the A39 amendment and the canonical Codex instructions.
+- When: each is read independently with whitespace normalized.
+- Then: each names instruction suppression/noncompliance, parent/deeper instructions, AGENTS.override.md, instruction budget and model choice, says the check is not mechanically enforced, and marks remote/cloud sessions unverified.
+- Falsifiers: a missing limitation in either owner or a static test represented as live proof. AC5/AC6 observations and remedy discovery remain manual and unverified per surface.
