@@ -44,6 +44,6 @@ OR42	decided-row-notice-location	judgment	2	S279,S311,OB46
 OR43	never-decided-list	judgment	1	S278,S311,OB47,OB48
 OR44	record-template	core	2	S280,S311
 OR45	recommendation-not-accepted	judgment	1	S281,S283,S311,OB24,OB25,OB49,OB50
-OR46	no-agent-steps	judgment	1	S311,S317,OB55,OB56,OB57,OB58
+OR46	no-agent-steps	judgment	1	S311,S317,S466,OB55,OB56,OB57,OB58
 OR47	fresh-brief-size	judgment	2	S311,S317,OB54
 OR48	run-scope	judgment	2	S311,S317,OB60,OB61,OB62

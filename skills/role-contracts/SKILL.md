@@ -325,6 +325,9 @@ pass already earned. A **request-changes** verdict never posts the marker, same 
 
 ## QA scenario comparison
 
+Perform this OR46(c) comparison only before starting a Review round. An approved
+Review with passing checks needs no merge-time repeat.
+
 OR46(c) inputs: repository identity (`owner/repo`), selected QA report comment ID,
 full Developer head SHA and applicable base SHA. Select the report from durable
 handoff records, including supersession links; never infer it from the local tree.
