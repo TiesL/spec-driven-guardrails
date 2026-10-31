@@ -8133,3 +8133,13 @@ and S380's #590 live-evidence boundary.
 - When: The fixture-level reference applies a full-index unified diff with git apply in a temporary directory outside any repository.
 - Then: Equal, deletion/whitespace-preserving, explicit-empty, verified base64-recovery, latest-artifact and main-reapply cases return 0; one-byte, CRLF, whitespace and outside-hunk changes return 1. Missing/truncated/corrupt artifacts, either bad hash, implicit empty, over-limit, stale/missing selected report and failed re-apply return 2. Protected working files and git index remain byte-identical; temporary output is removed.
 - Evidence boundary: The loaded contract must require this operation, so the test is red while that text is absent. This reference is not a production command, comment parser, publication mechanism or proof of live obedience; new-base selection and over-limit publication remain unresolved.
+
+### S468 — Published comparison command distinguishes matching and differing committed bytes
+
+**Covers:** F60
+
+- Given: The exact executable bash fence in the role-contract QA scenario comparison section, an offline raw-comment transport fixture, and a temporary real Git repository containing a base and two Developer heads with independently specified matching and one-byte-different scenario bytes.
+- When: The extracted command runs unchanged except for its four documented identity arguments, reconstructing the QA artifact outside the repository.
+- Then: Matching bytes return exit 0 and result match; differing bytes return exit 1 and result different. Output identifies the artifact, base, head and independently expected file hashes. The fixture working tree and Git metadata stay byte-identical.
+- Falsifier: Replacing the extracted command's comparison in memory with an unconditional match must fail the same differing-byte assertion with expected exit 1, got 0; the test fails if that mutation survives.
+- Evidence boundary: Only gh transport is substituted; Git reads and patch application execute for real. This checks the published command, not live orchestrator obedience or publication. No Git write command or network is required to construct the temporary repository.
