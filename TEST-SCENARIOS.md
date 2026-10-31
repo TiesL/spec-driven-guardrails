@@ -3038,6 +3038,8 @@ something new is being added.
   bodies without such a first marker and quoted example markers count for
   nothing; zero rounds gives `review-rounds: 0`; it always exits 0
 
+- #610: Each 39/41-hex, missing-delimiter, code-span and indented legacy marker is tested alone and counts zero rounds; a live 40-hex marker remains a round.
+
 ### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
 **Covers:** F42
 - Given: `review-rounds.sh` behind a recording fake `gh` (issue #410, AC4,
@@ -3054,6 +3056,8 @@ something new is being added.
   no `rr_rounds` itself (the one definition is in the lib, A37, T1) and is wired
   into no hook, check or gate (a gate sourcing `lib/review-rounds.sh`, or naming the
   script in a comment, is not wiring). Edited for #426 (the definition moved to the lib)
+
+- #610: The script header and runtime usage independently name the working-directory repository.
 
 ### S218 — the self-check lines, the stated limit and the override pointer to #415
 **Covers:** F42
@@ -3561,6 +3565,8 @@ something new is being added.
   the separate genuine native K3 invalid/truncated-byte and multibyte controls;
   a structural lint rejection does not replace native behavioral evidence.
 
+- #610: The real-tree locale mutant targets the numeric grep -acE site. The inventory floor permits removal of the redundant plain grep.
+
 ### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
 **Covers:** F39, F40
 - Given: `skills/pre-merge-review/model-record-emit.sh` (issue #424, V3 of the
@@ -3976,6 +3982,8 @@ something new is being added.
   Preserve the canned-none/canned-Review controls and call-log witness. The
   negative witness must alter the reached kind, not simply erase the log;
   omitting inversion or counting must be caught by exact stdout/status checks.
+
+- #610: Isolated legacy controls reject 41-hex SHAs, missing closing delimiters, code spans and indented code as well as the existing 39-hex and fenced examples.
 
 ### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
 **Covers:** F28, F42
@@ -8164,6 +8172,39 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S470 — Independent round-reader mutations are killed by targeted assertions
+**Covers:** F42
+- Given: temporary copies of the round Module and an independent control for each assertion (#610).
+- When: sorting is skipped, Planning spends a number, SHA length or closing delimiter is relaxed, matching reads the raw body, or the live-capture/numeric-count failure guard is removed, one mutation at a time.
+- Then: each mutated copy fails its exact output/status assertion while the corresponding unchanged control passes. Silent failure injections terminate before the live sentinel or suppress the numeric count. The redundant plain legacy grep must be absent.
+
+### S471 — Completion sentinels distinguish failed captures from empty success
+**Covers:** F42, F28
+- Given: temporary copies of both round consumers and shell functions standing in for gh or rr_rounds (#610).
+- When: a function returns 0 with empty output, the capture completes; when it exits the substitution with status 0, the caller-owned completion sentinel cannot run.
+- Then: successful empty fetches and zero rounds stay quiet (the reporter prints review-rounds: 0). Each failed capture warns, exits 0, and prints no verdict. Each failure assertion has a matching successful-empty control for the same consumer and capture.
+
+### S472 — Whole-value commit-check budget validation refuses before execution (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook through a symlink, a local stub answering only read-only git discovery, and an executable check-commit that records its start.
+- When: the budget contains a leading or trailing newline, two numeric lines, junk beside a numeric line, zero, a negative integer, a leading-zero value (01), 1000000, a 20-digit value or a much larger integer.
+- Then: the hook refuses, never starts the check, names COMMIT_CHECK_BUDGET and never reports an elapsed timeout. Zero and negative values are preservation controls; newline and oversized values are new regression coverage.
+- Mutation controls: each assertion independently rejects an inverted status, inverted start marker, removed diagnostic or added timeout diagnostic. These are observation mutations, not simulated passing product behavior.
+
+### S473 — Watchdog sleep failure cannot permit a failing check (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook, a check that records its start then fails with identifiable output after two seconds, and a PATH sleep stub that fails after observing the start marker. The check uses real sleep independently.
+- When: the hook runs with a valid ten-second budget.
+- Then: check execution and sleep injection are both observed, the hook refuses, the real failure output remains visible and no elapsed timeout is claimed.
+- Mutation controls: every assertion rejects its own inverted status/marker or corrupted diagnostic observation.
+
+### S474 — Valid commit-check outcomes survive budget hardening (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook and portable check fixtures, with no injected sleep failure.
+- When: successful checks use budgets 1, 30 and 999999, a real failure completes within a ten-second budget, and a four-second check exceeds a one-second budget.
+- Then: completion allows without timeout, real failure refuses with its output and no timeout, and actual timeout allows with an exceeded-budget warning pointing to CI. Every case confirms that the check started.
+- Mutation controls: every status, start-marker and diagnostic assertion rejects its own corrupted observation. The harness uses Bash 3.2 constructs and can select another Bash via BUDGET_BASH; native Linux execution is separate evidence.
 
 ### S475 — Reviewer continuation bans reject keyword-preserving mutations
 **Covers:** F41
