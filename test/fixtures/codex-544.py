@@ -19,6 +19,18 @@ with tempfile.TemporaryDirectory() as temp:
     (user_codex / 'config.toml').write_text('model = "user-owned"\n')
     (user_codex / 'hooks.json').write_text('{"user":"sentinel"}\n')
     env['HOME'] = str(user_codex.parent)
+    env['CODEX_HOME'] = str(user_codex)
+    env['GIT_CONFIG_NOSYSTEM'] = '1'
+    env['GIT_CONFIG_GLOBAL'] = os.devnull
+    # Adoption records the source revision without a real checkout or Git writes.
+    (wf / '.git/objects').mkdir(parents=True)
+    (wf / '.git/refs').mkdir()
+    (wf / '.git/HEAD').write_text('1' * 40 + '\n')
+    (wf / '.git/config').write_text('[core]\nrepositoryformatversion = 0\nbare = false\n')
+    failures = []
+    def feature(ok, message):
+        print(('GREEN: ' if ok else 'RED: ') + message, flush=True)
+        if not ok: failures.append(message)
     def run(*args, rc=0, cwd=None, input=None):
         p = subprocess.run(list(map(str, args)), cwd=cwd or wf, env=env, input=input, capture_output=True, text=True)
         assert p.returncode == rc, (args, p.returncode, rc, p.stdout, p.stderr)
@@ -26,7 +38,13 @@ with tempfile.TemporaryDirectory() as temp:
     def project(name):
         p = tmp / name
         p.mkdir()
-        run('git', 'init', '-q', '-b', 'main', p)
+        # Scratch Git metadata only; never execute a Git write command.
+        g = p / '.git'
+        (g / 'objects').mkdir(parents=True)
+        (g / 'refs/heads').mkdir(parents=True)
+        (g / 'hooks').mkdir()
+        (g / 'HEAD').write_text('ref: refs/heads/main\n')
+        (g / 'config').write_text('[core]\nrepositoryformatversion = 0\nbare = false\n')
         return p
     def adopt(p, *args, rc=0):
         user_before = snapshot(user_codex)
@@ -56,8 +74,12 @@ with tempfile.TemporaryDirectory() as temp:
         adopt(p, '--hooks')
         doc = hooks(p)
         assert doc['hooks']['PreToolUse'][0]['matcher'] == 'Bash'
-        assert '--merge-only' in command(p) and '.guardrails/source/hooks/git-guardrails' in command(p)
-        assert json.loads((p / '.guardrails/installation.json').read_text())['version'] == 2
+        assert '--merge-only' in command(p)
+        feature('.codex/sdg-guard/hooks/git-guardrails' in command(p) and '.guardrails/source' not in command(p),
+                'S365: command points at bundle in merge-only mode')
+        feature(json.loads((p / '.guardrails/installation.json').read_text())['version'] > 2,
+                'S365: opted-in provenance version is bumped beyond 2')
+        # Exact bundle installation and repeat identity are exercised in S397.
         before = snapshot(p)
         adopt(p, '--hooks'); assert before == snapshot(p), 'repeat differs'
         adopt(p); assert before == snapshot(p), 'default uninstalls or rewrites opted-in state'
@@ -70,12 +92,15 @@ with tempfile.TemporaryDirectory() as temp:
         (q / '.codex').mkdir()
         hp = q / '.codex/hooks.json'; hp.write_text('project-owned malformed hook bytes')
         before = hp.read_bytes(); adopt(q); assert hp.read_bytes() == before
+        assert not (q / '.codex/sdg-guard').exists(), 'default adoption created bundle'
+        print('GREEN: S365: unchanged default absence, version-1 default provenance, repeat/default snapshots, invalid flags, foreign hook bytes and global config', flush=True)
     elif scenario == 366:
         (p / '.codex').mkdir()
         foreign = {'custom': {'sentinel': 3}, 'hooks': {'Other': [], 'PreToolUse': [{'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': 'printf foreign'}]}]}}
         (p / '.codex/hooks.json').write_text(json.dumps(foreign))
         (p / '.codex/config.toml').write_text('[hooks]\ninline = "sentinel"\n')
         config = (p / '.codex/config.toml').read_bytes()
+        unrelated = p / '.codex/foreign.txt'; unrelated.write_text('foreign sentinel\n')
         adopt(p, '--hooks'); adopt(p, '--hooks')
         actual = hooks(p)
         assert actual['custom'] == foreign['custom'] and actual['hooks']['Other'] == []
@@ -87,6 +112,10 @@ with tempfile.TemporaryDirectory() as temp:
         assert 'runtime-hooks: installed' not in status(p, rc=1)
         before_command = command(p); adopt(p, '--hooks')
         assert command(p) != before_command
+        before = snapshot(p); adopt(p, '--hooks'); assert snapshot(p) == before, 'owned update repeated'
+        assert unrelated.read_text() == 'foreign sentinel\n', 'unrelated .codex file changed'
+        # Bundle refresh/migration and new ownership/symlink variants live in
+        # S401/S402, S404 and S399 respectively; do not duplicate them here.
         for variant in ('edited', 'duplicate', 'malformed', 'shape', 'file-link', 'parent-link', 'bad-record'):
             q = project('conflict-' + variant); adopt(q, '--hooks')
             hp = q / '.codex/hooks.json'
@@ -108,27 +137,32 @@ with tempfile.TemporaryDirectory() as temp:
             assert 'conflict:' in adopt(q, '--hooks', rc=1)
             assert snapshot(q) == before, variant
             if outside_before is not None: assert snapshot(tmp / ('outside-' + variant)) == outside_before
+            print('GREEN: S366: ' + variant + ' conflict before writes; project and target snapshots unchanged', flush=True)
+        print('GREEN: S366: unrelated JSON, inline/user config, foreign files, owned update once and stale template status', flush=True)
     elif scenario == 367:
+        # S403 owns absent/current/stale/corrupt bundle labels and exits 0/1/2.
         adopt(p); assert 'runtime-hooks: not-installed' in status(p)
         adopt(p, '--hooks')
         out = status(p)
         for token in ('runtime-hooks: installed', 'scope: Bash merge interception', 'activation: unverified'): assert token in out
         assert 'runtime-hooks: installed' in run(wf / 'session-context.sh', '--runtime', 'codex', p)
         original = (p / '.codex/hooks.json').read_bytes()
-        for variant in ('edited', 'duplicate', 'missing', 'broken'):
+        # Source-link absence no longer defines hook reachability: S400 tests it.
+        # Bundle stale/corrupt/missing and invalid exit 2 are covered in S403.
+        for variant in ('edited', 'duplicate', 'missing'):
             (p / '.codex/hooks.json').write_bytes(original)
-            if variant == 'broken': (p / '.guardrails/source').unlink(); (p / '.guardrails/source').symlink_to(tmp / 'missing')
-            else:
-                doc = hooks(p)
-                if variant == 'edited': doc['hooks']['PreToolUse'][0]['matcher'] = 'foreign'
-                elif variant == 'missing': doc['hooks']['PreToolUse'] = []
-                else: doc['hooks']['PreToolUse'] *= 2
-                (p / '.codex/hooks.json').write_text(json.dumps(doc))
+            doc = hooks(p)
+            if variant == 'edited': doc['hooks']['PreToolUse'][0]['matcher'] = 'foreign'
+            elif variant == 'missing': doc['hooks']['PreToolUse'] = []
+            else: doc['hooks']['PreToolUse'] *= 2
+            (p / '.codex/hooks.json').write_text(json.dumps(doc))
             out = status(p, rc=1)
             assert 'runtime-hooks: installed' not in out and ('conflict' in out or 'stale' in out)
+            print('GREEN: S367: ' + variant + ' status exit 1, never installed, no writes', flush=True)
         for path in ('README.md', 'adapters/codex/INSTRUCTIONS.md'):
             text = (wf / path).read_text()
             for token in ('--hooks', 'activation', 'trust', 'merge-preflight'): assert token in text, (path, token)
+        print('GREEN: S367: installed scope, activation unverified, session-context, read-only status and documentation assertions', flush=True)
     elif scenario in (368, 369):
         adopt(p, '--hooks')
         (p / 'sub').mkdir()
@@ -184,6 +218,9 @@ else: sys.exit(1)
             (p / 'WORKFLOW-ADOPTION.md').write_text('| process-multi-agent-roles | yes | date | reason |\n')
             result = hook('gh pr merge 41')
             assert result.returncode == 2 and 'role' in result.stderr.lower(), result
+            print('GREEN: S368: captured-event policy refusals/allow, fake-gh cwd, sentinel, compound/quoted merge and role gate', flush=True)
+            feature('.codex/sdg-guard/hooks/git-guardrails' in installed and '.guardrails/source' not in installed,
+                    'S368: installed command resolves bundle from project subdirectory (absent/broken source in S400)')
         else:
             for cmd in ('printf hello', 'git status', 'git reset --hard', 'git clean -fd', 'git push origin main', 'git checkout -b feature/no-issue'):
                 result = hook(cmd)
@@ -196,4 +233,8 @@ else: sys.exit(1)
             settings = json.loads((q / '.claude/settings.json').read_text())
             assert '--merge-only' not in json.dumps(settings)
             for h in ('pre-commit','commit-msg','pre-push'): assert (q / '.git/hooks' / h).resolve() == wf / 'hooks' / h
+            print('GREEN: S369: installed merge-only non-merge pass, ordinary guard negatives, compound merge refusal, Claude/native hooks', flush=True)
+            feature('.codex/sdg-guard/hooks/git-guardrails' in installed and '.guardrails/source' not in installed,
+                    'S369: unchanged merge-only assertions also execute through bundled copy')
+    assert not failures, '; '.join(failures)
     print('S%d: passed' % scenario)

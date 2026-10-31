@@ -665,16 +665,18 @@ the next free numbers after A23.
   tokenizer (retired by V8, #429); unless the line
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
-- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --stage <Stage>
-  --model <id> [--floor-basis <sentence>]`, next to the gate (a legacy
-  `--effort` is accepted and ignored with one stderr line, A33, #424).
+- **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --role <Role>
+  --model <id> [--floor-basis <sentence>]` (A48; backward-compatible
+  `--stage <Stage>` remains accepted, alone or with `--role`), next to the
+  gate (a legacy `--effort` is accepted and ignored with one stderr line, A33, #424).
   It only parses flags (unknown, missing, repeated or value-less flag, or a
-  positional argument: exit 2); the rules live in `marker_emit`. It finds
+  positional argument: exit 2); the role map and mismatch rule live in
+  `role_stage`, and marker validation stays in `marker_emit` (A48). It finds
   the lib from its own real directory (`pwd -P`), so it works through an
   adopted project's symlinked `.claude/skills`; without the lib, exit 3.
 - **Who fills what:** the orchestrator gives the command in each dispatch
-  prompt with `--stage` and names the model it requested (it no longer
-  passes `--effort`: removed by A33, #424); the role adds `--model`
+  prompt with `--role` filled in and names the model it requested (it no
+  longer passes `--effort`: removed by A33, #424); the role adds `--model`
   with its own exact id (the Reviewer also `--floor-basis`) and pastes the
   output unchanged as the first line of its report (human decision on
   #402). A role whose prompt has no command runs the wrapper itself and
@@ -956,7 +958,7 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Reader:** `rec_scan_bundle <kind> <bundle>` and `rec_scan <kind> <body>` print one row per candidate line, `<body-index> TAB <ok|near-miss|quoted> TAB <stage-or-?> TAB <line-or-reason>`; indices count from 1 and no field is empty. One awk pass per bundle, the one program in `lib/markdown.sh` (mode `rec`), so a record is quoted where `live_text` would blank it (a fence, state reset at every U+001E; a blockquote; a code span) plus indented code (an indent of 4 or a tab), which only rec mode quotes: `live_text` keeps those lines. Every row ends in an ASCII byte (the text of a near-miss or quoted row is wrapped in quotes, so `read` never splits a UTF-8 sequence); consumers may rely on this. The strict pattern then classifies each live candidate in bash. Text before the opener, or 1-3 leading spaces, is a near-miss.
 - **Fields:** `rec_field <line> <name>` is a left-to-right walk, one `<blanks>name="value"` per step, first occurrence wins, so a value ending in ` floor-basis=` is never an attribute.
 - **Failure:** grep exit 1 is "no hit"; grep or awk exit 2 or more, or `[[ =~ ]]` result 2, prints nothing on stdout, one line on stderr and returns non-zero. Every external command carries `LC_ALL=C` (S235) and grep is `grep -a`.
-- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names (`--model --floor-basis`); a value that merely starts with `--` is allowed.
+- **Emitter (A33a):** `marker_emit` reads its own line back through `rec_scan` and `rec_field` and, during V4 migration, also through the former parser. V8 (#429) retires that additional round trip after the last caller moves. Its floor-basis deny-list: `"`, `<`, `>`, C0 and DEL, the C1 controls, U+2028/2029 and the bidirectional controls U+202A-202E and U+2066-2069. Limits are 500 bytes (floor-basis) and 200 bytes (model). The wrapper refuses a value equal to one of its flag names, including `--role` (A48); a value that merely starts with `--` is allowed.
 - **Not in this slice:** no caller moves yet (the gate, collector and staleness script kept the former parser until V6 to V8); the old functions are deleted with the last caller.
 - **Violated when:** a script outside `lib/` carries its own record pattern; a near-miss is read as a record; a reader failure becomes "no record".
 
@@ -1031,6 +1033,12 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   manual loading checks. The block contains no absolute path and directs an
   explicit read of `.guardrails/source/session-context.sh --runtime codex <project>`
   output and required skill files.
+  Per TiesL's #507 decision (2026-10-29, F58), the Codex mapping in
+  `adapters/codex/INSTRUCTIONS.md`, regenerated into the managed AGENTS.md payload,
+  instructs CLI/local desktop sessions to run the status Interface below before
+  dependent work. The check is not mechanically enforced: instruction suppression
+  or noncompliance (parent/deeper instructions, AGENTS.override.md, instruction
+  budget, model choice) can prevent it. Remote/cloud sessions remain unverified.
 - **Skill/link ownership:** install individual `.agents/skills/<name>` links to
   the same canonical skills used by Claude; `.agents/skills` must be a real
   directory or absent. Child regular files/directories and foreign symlinks
@@ -1052,6 +1060,16 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   and links to recorded/canonical targets, names stale/broken/foreign paths and
   config/hook coverage. Exit 0 structurally current, 1 incomplete/conflicting/stale,
   2 invalid/unreadable; never claims live loading.
+  For #507, run `.guardrails/source/adopt.sh --runtime codex --status .` from
+  the project checkout; surface each `stale/broken/missing: .agents/skills/<name>`
+  line with the remedy: rerun ordinary Codex adoption (`adopt.sh --runtime codex`).
+  If status is unavailable or nonzero, report the gap or printed diagnostics and
+  continue the session. Never repair, create or remove paths from this instruction;
+  `adopt.sh` remains the sole owner of repair/refresh/removal. The check installs
+  no hook and writes no Codex config or trust. A status line establishes structural
+  drift, not live skill discovery or current-session loading; newly linked skills
+  may require a fresh session. Live CLI/local desktop behavior and discovery after
+  the remedy remain separate manual observations, unverified until observed.
   `check-workflow-adapters.sh [workflow-checkout]`, included in `check` including
   static mode and CI, recomputes without writes, compares exact generated bytes,
   verifies both mappings/canonical owners and names every missing/mismatching
@@ -1203,9 +1221,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     The sentence line replaces the single `OR<n>` header line. It is a fixed
     template, tier `core`, with no ID.
   - **Cross-part references.** By ID only. Three rules need the other part:
-    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--stage`) and OR36
-    (resume "at first stage without marker") need the stage order in OR5
-    (part 1), so OR31 gains "Stage names: OR5." and OR36 reads "first stage,
+    OR21 and OR37 (part 2) already say "OR45"; OR31 (`--role`, amended by
+    A48) and OR36 (resume "at first stage without marker") need the stage
+    order in OR5 (part 1), so OR31 refers to OR5 for the role-to-stage
+    mapping (A48) and OR36 reads "first stage,
     in OR5 order, without marker". No part-1 rule needs part 2 to be read
     correctly: OR6's "finding-route steps" and OR12's fresh Reviewer stand
     as written. The words "above" and "below" do not occur in
@@ -1448,14 +1467,16 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
     3. Input that is not JSON, or has no `tool_input` object, or whose
        `prompt` is not a string, exits 0 with one stderr line.
   - **What counts as a role dispatch.** A prompt with a line that starts
-    `ROLE SESSION:`, or a line that has `model-record-emit.sh` followed by
-    `--stage`. Anything else is allowed silently.
+    `ROLE SESSION:`, or an emit-command line detected through `--role`
+    or `--stage` (A48). Anything else is allowed silently.
   - **Checks.**
     - `prefix`: the first non-blank line is `ROLE SESSION: ` followed by one of
       Product, Architect, QA, Fullstack Developer or Reviewer.
     - `no-fork`: `subagent_type` is not `fork`.
-    - `marker-command`: `model-record-emit.sh` with `--stage <one of the five
-      stages>`.
+    - `marker-command`: `model-record-emit.sh` with a valid `--role <Role>`
+      or the backward-compatible `--stage <Stage>` form (A48).
+    - `role-stage`: emit role and stage agree with the prefix role,
+      under A48; mapped with `marker-command` to OR31.
     - `model`: a non-empty `model` argument.
     - `reviewer-pr`, `reviewer-sha` and `reviewer-gate`: Reviewer only. A PR
       number or `/pull/<n>`, a 7-40 character hex SHA, and the literal
@@ -2019,6 +2040,8 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
   A source template supplies the canonical definition, not a whole-file symlink.
   Resolve the guard from the adopted project's `.guardrails/source` using a
   safely quoted project-root path, including calls launched in subdirectories.
+  The #594 amendment below supersedes this source-path resolution for the
+  installed command and extends the provenance and status rules for bundles.
 - **Guard Interface.** AC4 requires all non-merge Bash commands to remain usable.
   Wiring the full guard unchanged would also enforce destructive-Git and
   issue-first rules. Add an explicit `--merge-only` invocation mode to the
@@ -2094,6 +2117,534 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
 - **Next stage.** Planning is complete. Proceed to QA test strategy/scenarios,
   then Developer implementation under this decision; no product scope change
   or waiver of the live prerequisite is required.
+
+#### A47 amendment — staged guard bundle publication and explicit recovery (#594, PR #600)
+
+- **Authority and numbering.** TiesL accepted the Architect's staged bundle,
+  atomic exchange and transaction recommendation in full on 2026-10-30. This
+  amends the existing Codex guard decision A47, the highest A-number on this
+  branch at c2f218a. It allocates no new number and cannot clash with A48
+  planned by #599. PRD F47 and S397-S411 describe the affected behavior;
+  Product must update F47 and QA must extend the interruption scenarios.
+- **Module / Interface.** Keep publication and recovery in the existing
+  Codex adoption Module behind the `adopt.sh` Interface. Its Depth hides the
+  transaction at the existing adoption and read-only status Seam, preserving
+  Leverage and Locality for callers. A separate transaction framework would
+  spread this knowledge across callers rather than pass the deletion test;
+  no new Adapter abstraction is justified by the two-adapters rule.
+  The installed command targets the real, machine-local directory
+  `.codex/sdg-guard/`, containing exactly the seven declared guard files and
+  MANIFEST, with source bytes, modes and bundle-relative layout preserved.
+  MANIFEST records file sha256 values, modes and source revision. Ownership
+  anchors its exact sha256 independently in `.guardrails/installation.json`.
+  The bundle stays gitignored; foreign `.codex/` files are preserved. Repeating
+  the same complete installation is a no-op. Content refresh reports changed
+  files and old/new revisions, retains the command string and does not renew
+  hook review/trust. Adoption grants neither trust nor permissions.
+- **Publication mechanism and support limit.** Construct and fully verify a
+  staging directory on the same filesystem as the active directory, then
+  exchange the two real directories atomically. Use macOS `renameatx_np`
+  with `RENAME_SWAP`, or Linux `renameat2` with `RENAME_EXCHANGE`. These are
+  proposed mechanisms, unverified on this machine; this decision records no
+  successful platform probe. Refuse refresh if the platform or filesystem
+  cannot supply the exchange, leaving the active bundle unchanged. Never
+  fall back to two renames, in-place overwrites or per-file replacement of
+  the active bundle: those expose a missing path or mixed generation.
+  Check support before starting the transaction where possible; a runtime
+  unsupported-exchange error leaves the ready transaction for explicit retry,
+  without publishing or silently switching mechanisms.
+- **Provenance version 4.** Continue strict reading of versions 1, 2 and 3
+  with their existing schemas; explicit bundle adoption upgrades to version 4
+  with a reported provenance upgrade. Default adoption and status must not
+  upgrade an older bundle record implicitly. Version 4 has exactly the
+  version-3 fields `owner`, `version`, `runtime`, `checkout`, `links`,
+  `managed_hook`, `guard_bundle`, plus `guard_bundle_transaction`. Preserve
+  existing ownership, link and hook validation. Version is the integer 4;
+  `guard_bundle` still has exactly `path` and `manifest_sha256`, with path
+  `.codex/sdg-guard` and a lowercase 64-hex digest. The transaction is null
+  in a complete installation, otherwise an object with exactly `phase`,
+  `staging_path`, `old_manifest_sha256` and `new_manifest_sha256`. Both
+  digests are lowercase 64-hex strings; the phase is exactly `preparing`,
+  `ready` or `cleanup`. The staging path is one reserved project-relative
+  sibling of the active directory beneath the real `.codex` directory,
+  named `.sdg-guard-stage-` followed by a nonempty ASCII alphanumeric token.
+  Reject absolute paths, traversal, alternate spellings, unknown or missing
+  fields, wrong types and unknown phases. Bind cleanup and recovery to this
+  exact path, never a wildcard or a directory discovered by scanning.
+  In `preparing` and `ready`, the committed ownership digest equals the old
+  digest; in `cleanup`, it equals the new digest. Reject inconsistent records.
+  No-op refresh needs no transaction; equal old/new digests do not authorize
+  an ambiguous exchange. Metadata is an authorization anchor, not permission
+  to accept arbitrary self-consistent manifests or changed active bytes.
+- **State machine and writer serialization.** The refresh states are complete
+  old installation, `preparing`, `ready`, exchanged while still `ready`,
+  `cleanup`, and complete new installation. Serialize adoption writers
+  exclusively from preflight through recovery and final record replacement;
+  an accidentally overlapping writer must refuse before writes, including
+  unrelated adoption writes. Serialization prevents accidental overlap of
+  adoption writers; a same-user process that deliberately forges the
+  re-execution handoff is outside the threat model (such a process can already
+  edit the installation record, MANIFEST and hooks directly).
+  Use serialization released on process termination so an
+  interrupted writer does not require unsafe lock-file deletion. Complete
+  existing preflight, including unrelated ownership checks, before any write.
+  Every installation-record transition uses a complete temporary regular file
+  and atomic replacement, so interruption exposes either complete record.
+  This is an interrupted-process design; it makes no additional claim about
+  power-loss durability of filesystem or storage caches.
+- **Preparation and its interruption points.** From the validated old state,
+  atomically write the `preparing` record with both digests and the exact
+  reserved staging path before constructing staging. If interrupted before
+  record replacement, the old record and active bundle remain coherent; after
+  replacement, an absent or incomplete stage is authorized preparation data.
+  Write the seven files with their original relative names and modes and
+  construct MANIFEST there, leaving active contents untouched. Before or
+  during those writes, interruption leaves the old executable policy intact.
+  On explicit recovery, discard only validated transaction-owned preparation
+  data and rebuild; incomplete staging is never an executable generation.
+  Refuse unexpected paths and symlinks rather than following them recursively.
+- **Readiness and exchange interruption points.** Fully validate staged
+  inventory, MANIFEST digest and mode, and each file's bytes and mode against
+  the intended new generation before atomically recording `ready`. An
+  interruption during that record replacement leaves either `preparing`,
+  which can rebuild staging, or `ready`, which requires complete validation
+  of both generations before publication. Exchange active and staging once.
+  Interruption at the exchange leaves either old-active/new-staged or
+  new-active/old-staged, both with complete contents. The `ready` record
+  authorizes recognizing either arrangement only by full validation against
+  its exact old and new digests. Names or a self-consistent MANIFEST alone
+  cannot establish which arrangement exists. Recovery exchanges only the
+  former arrangement; it must not exchange the latter back to the old state.
+- **Ownership commit and cleanup interruption points.** After validating the
+  published new generation, atomically commit its ownership digest together
+  with phase `cleanup`. An interruption at that replacement leaves either
+  `ready` with new active and complete old staged, or `cleanup` with new
+  committed ownership. Only after this commit remove the transaction-owned
+  old generation, then atomically clear the transaction to null. During
+  cleanup, validate the new active bundle fully and permit only the recorded
+  old inventory, matching bytes and modes for entries still present, beneath
+  the exact staging path. Missing old entries, including an already removed
+  stage, are compatible with interrupted cleanup; changed entries, extra
+  paths and symlinks are conflicts. Interruption during deletion therefore
+  permits idempotent cleanup without authorizing changes to active contents.
+  Interruption while clearing metadata leaves either a resumable `cleanup`
+  record or a complete installation. Successful refresh leaves no transient
+  staging artifacts, preserving S401's final snapshot.
+- **Recovery trigger and validation.** An explicit second
+  `adopt.sh --runtime codex --hooks` run authorizes recovery. Reconcile the
+  recorded transaction before planning a further refresh, even if current
+  source has changed since preparation. Repeat the same validation and
+  state transitions on every retry; interruption during recovery has the
+  same interpretation as interruption during the original transition.
+  Unknown phases, malformed transactions, impossible arrangements and an
+  active bundle matching neither authorized generation conflict before
+  writes. Existing symlink and tamper refusals remain unchanged, including
+  `.codex`, the active bundle, all inner entries and transaction paths; name
+  the offending path. Never take over an unrecorded bundle or treat active
+  tampering as recoverable just because transaction metadata exists.
+  Default adoption and `--status` never recover, remove staging data or clear
+  metadata. A pending transaction is preserved rather than overwritten by
+  otherwise ordinary adoption work.
+- **Status and exit meanings.** For a valid interrupted transaction report
+  `recovery pending` and exit 1, preserving its current or stale content
+  classification where applicable. Pending recovery is distinct from corrupt
+  or tampered contents. Retain current, stale, corrupt and absent states:
+  exit 0 requires a complete current installation, including the valid
+  default state with no opted-in bundle; stale, conflict and recovery pending
+  exit 1; invalid or unreadable input exits 2. A missing owned bundle remains
+  an absent conflict, not the valid default absence. Malformed transaction
+  provenance is an ownership conflict under the existing record policy.
+  Status remains read-only, says `activation: unverified` and directs TiesL
+  to perform explicit refresh/recovery outside the sandbox. Neither this
+  decision nor structural status proves live protection or activation.
+- **Quiescent refresh limit.** TiesL must refresh while no hook is executing
+  and prevent hook execution until refresh or recovery completes. Atomic
+  exchange guarantees complete published directory contents across process
+  interruptions; it does not pin a generation for a concurrently running
+  script that later resolves sibling dependencies through the exchanged
+  pathname. Writer serialization does not coordinate hook execution. Do not
+  claim concurrent hooks are safe. Supporting that requires a separate
+  generation-pinning or execution-coordination design.
+- **S411 compatibility and QA handoff.** Preserve staging filenames ending
+  in each original bundle-relative path under the project's `.codex` so
+  S411's `Path.write_bytes` partial-write injector reaches all seven files.
+  Do not evade it by changing write primitives or suffixes; do not change
+  S411 or its assertions. Each injection must be confirmed, refresh must
+  fail, and the installed command must retain the exact missing-review exit
+  2, stdout and stderr. Explicit retry must recover to current status with
+  the same verdict. S411 covers preparation writes, not all transaction
+  transitions. QA must add preparation-record, ready-record, exchange,
+  ownership-commit and cleanup interruption cases, interruption during
+  recovery, active tampering despite metadata, malformed transactions,
+  symlinks, unsupported exchange and overlapping writers. Preserve S397-S410,
+  including closure sufficiency/necessity, trust/config limits and parity.
+- **Other adopted files.** Most adopted files are symlinks into the SDG
+  clone and do not require copied-content refresh. The guard bundle is the
+  copy addressed here. Issue templates are `cp -f` copies; their lower-risk
+  refresh behavior is outside this decision's scope.
+- **Interrupted preparation: rebuild and retarget (accepted by
+  TiesL on 2026-10-30 under OR43; spec-visible: yes).** In `preparing` only, discard the
+  validated transaction-owned staging data and rebuild from the current
+  source instead of retaining a pinned historical source generation. This
+  changes documented recovery behavior and the intended digest/source
+  provenance that a retry may publish. Keep PRD unchanged
+  here; Product owns any resulting spec update. No new status or exit meaning
+  is proposed. The existing Module and Interface retain this recovery logic;
+  no new external Seam or persisted source snapshot is needed.
+  - Validate the old active generation against the committed old digest and
+    validate the exact staging path and any preparation entries under the
+    existing ownership, inventory and symlink rules before discarding them:
+    only regular files at the seven declared relative paths plus MANIFEST and
+    their real parent directories are disposable preparation data. Partial
+    file bytes are not executable or publication evidence; cleanup of this
+    incomplete data needs no historical source bytes. Never require an
+    incomplete stage to reconstruct the previously intended
+    new bytes. Never discard a `ready` or `cleanup` generation by this rule:
+    those phases recover their recorded generations without using current
+    source, then plan any further refresh as already specified.
+  - Remove preparation data completely before changing the intended digest.
+    An interruption before or during removal leaves `preparing`, the unchanged
+    old active generation and an absent or partial stage; the next explicit
+    retry validates and repeats removal. After removal, determine the current
+    source generation, including its MANIFEST, revision, bytes and modes.
+    Atomically replace the whole `preparing` record with its new intended
+    MANIFEST digest, preserving the old digest and exact staging path, before
+    writing any replacement staging contents. An interruption before or during
+    replacement leaves either complete record with no stage; either can
+    restart this procedure without reconstructing its recorded target.
+  - Build and fully verify staging against that newly recorded generation
+    before recording `ready`. Interruption while building or validating leaves
+    `preparing` and can repeat discard and retarget. If source changes during
+    planning/building, do not mark a mismatching or mixed generation ready;
+    leave preparation pending for explicit retry. Revision and file evidence
+    must describe the same planned source generation. Interruption at the
+    `ready` replacement follows the existing two-record outcome: `preparing`
+    may rebuild, while `ready` preserves its exact verified generation even
+    if source later changes. If the rebuilt target digest equals the old
+    digest, verify the old active generation, remove any rebuilt staging
+    under the same preparation rules, and atomically clear the transaction
+    only after staging is absent instead of exchanging equal generations;
+    interruption leaves either resumable preparation or the complete old
+    installation. No historical source retention is required by this choice.
+- **Cleanup evidence: delete MANIFEST last (internal to the accepted design;
+  spec-visible: no).** Preserve the old generation's complete MANIFEST bytes
+  and mode at the exact recorded staging path until all other old entries and
+  directories have been removed. On each cleanup attempt, fully validate the
+  committed new active generation first, then authenticate the remaining old
+  MANIFEST against `old_manifest_sha256` and its required mode. Its inventory
+  supplies the expected paths, bytes and modes for every remaining old file;
+  validate the complete remaining tree before deleting anything. Missing old
+  payload entries are allowed, but changed entries, unexpected paths and
+  symlinks still conflict. Use individual removals, never an unordered
+  recursive deletion that might remove MANIFEST early. No transaction schema,
+  copied inventory or transaction-owned trash directory is needed.
+  - Before the first deletion, interruption retains the complete old
+    generation. During payload-file deletion or removal of empty nested
+    directories, interruption retains the authenticated MANIFEST and a subset
+    of its inventory. A retry checks remaining files against that evidence
+    and resumes; validation does not depend on already deleted payload bytes.
+    Remove nested directories bottom-up, rejecting unexpected entries rather
+    than following them or deleting them as cleanup data.
+  - Only when MANIFEST is the sole remaining entry may it be unlinked, using
+    one unlink rather than truncating or rewriting it. Interruption at this
+    point leaves either the intact authenticated MANIFEST or an empty staging
+    directory. A missing MANIFEST is compatible with cleanup only when that
+    exact staging directory is empty or already absent; any other remaining
+    entry is a conflict because its validation evidence is gone. The empty
+    case needs no old inventory to authorize removal of the recorded empty
+    directory. Interruption at that removal leaves an empty or absent stage;
+    both permit idempotent completion after validating the new active bundle.
+  - Clear the transaction atomically only after staging is absent. An
+    interruption leaves either `cleanup` with an absent stage or a complete
+    installation, as already specified. This ordering refines internal
+    deletion mechanics without changing status, exits, provenance schema or
+    documented user recovery behavior. It retains validation evidence for
+    every old entry that could still require validation.
+### A48 — The emit command takes a role; the dispatch hook checks its role and stage (#599; amends A26 and A41)
+
+- **Why:** on #595 Product was given `--stage Planning`. The emitter
+  produced a valid marker for the wrong stage; the missing stage was
+  found only at merge. Human decisions D1-D7 on #599 put stage derivation
+  in the emitter and role agreement in the dispatch hook.
+- **Wrapper (amends A26):** `model-record-emit.sh --role <Role>
+  --model <id> [--floor-basis <sentence>]`. The orchestrator fills in
+  `--role`; the role supplies its model and, for Reviewer, its
+  floor-basis. Exact-case flag values are Product, Architect, QA,
+  Developer and Reviewer, mapping to Discovery, Planning, Test,
+  Implementation and Review. `Fullstack Developer` is not an emitter
+  value, even quoted; the hook alone maps that prefix to Developer.
+  `--stage` alone and with `--role` remain accepted indefinitely;
+  retirement needs a later decision.
+- **Map and refusal order:** `role_stage <role> [<stage>]` in
+  `lib/model-record.sh`, next to `marker_emit`, owns the map and the
+  mismatch refusal; the wrapper remains a flag parser. Flag-parse errors
+  come first, then role/stage disagreement, then `marker_emit`'s own
+  reasons. A mismatch returns 2, prints nothing on stdout and one stderr
+  line naming the role, supplied stage and expected stage. Matching flags
+  produce the same marker as either form alone, in either order.
+  Missing, repeated, value-less or unknown flags and invalid role values
+  are refused with exit 2, empty stdout and one stderr reason; neither
+  role nor stage supplied is also an error. `--role` joins the usage and
+  flag-name-as-value checks; `--role=Product` is refused.
+- **Planning amendment, option B (PR #601 round 7):** [V] TiesL has
+  chosen emit-command lines instead of treating the whole prompt as shell,
+  as supplied in this Planning brief. [V] At bc84a4f the implementation's
+  `emit_commands` carries quote state across prompt lines, with rollback
+  and quote-span exceptions; the supplied round-7 review records prose
+  swallowing mid-line commands and a malformed-prose fail-open path.
+  These are evidence for replacing that design, not for another quote-span
+  exception. [A] The rules below are the recommended replacement contract,
+  not a claim that the current hook implements them. Existing wrapper,
+  role map and emitter refusal rules above remain unchanged.
+- **Module and Interface:** [A] Keep the A41 pure hook core and its stdin
+  JSON/public CLI Seam. The line reader and argument reader are private
+  implementation details of that Module. No new adapter, parser framework
+  or shell dependency. Depth and Leverage come from checking every brief
+  through that one Interface; Locality keeps parsing and diagnostics here.
+  The deletion test removes the problematic whole-prompt shell machinery
+  rather than moving it into callers. The two-adapters rule gives no reason
+  to add another Seam.
+- **Physical line and continuation contract:** [A] An emit unit starts at
+  any physical line containing the existing `EMIT_WORD` script-name match,
+  wherever the mention occurs. Ignore text before its first match: bullets,
+  numbering, a shell prompt, `cd ... &&`, and prose introductions are not
+  shell input. The argument text starts immediately after that match.
+  A bare mention contributes no marker command and is not shell-split.
+  It cannot open a quote affecting another line. Continuation collection
+  is eligible only if the suffix, after leading whitespace, starts with
+  a known emitter flag (`--role`, `--stage`, `--model`, `--floor-basis`
+  or `--effort`, including equals spellings), or consists only of
+  whitespace and the continuation marker. A prose-only mention ending in
+  a path backslash therefore cannot absorb the following command. A
+  noncontinued suffix containing a guarded role/stage flag is still
+  inspected even if introduced by words after the script mention.
+  For an eligible command, join the following physical line only when the
+  current line ends with an odd run of backslash characters, immediately
+  before its line ending. Remove the last backslash and the line ending;
+  preserve all other characters and spacing. Normalize CRLF to LF first.
+  Trailing spaces after the backslash do not continue. An open quote alone
+  never continues a unit. This is a brief-format convention, not a shell
+  parser: even a backslash inside single quotes follows this physical rule;
+  literal quoted multiline values are outside the supported format.
+  Stop at the first line without that continuation marker, at EOF, or at
+  32 physical lines total including the starting line. A dangling EOF
+  continuation or a request for line 33 is unchecked, never silently
+  truncated and validated. Consumed continuation lines are not separately
+  scanned; the next unconsumed line starts with fresh state.
+- **Bounded reading and failure:** [A] Limit a decoded prompt to 4 Mi
+  characters and each unit, including its original continuation text, to
+  64 Ki characters. Check limits before shell splitting; do not truncate
+  a role to a valid prefix. Read stdin with a 32 MiB byte cap before JSON
+  decoding, allowing up to six JSON bytes per decoded character plus
+  envelope space; exceeding either input cap is unchecked. These are
+  conservative proposed engineering limits, not measured guarantees.
+  Scan once in order, without rescanning suffixes of the whole prompt.
+  Each unit is split at most once; bounded token storage cannot exceed its
+  character bound. No recursion, subprocess, expansion or command execution.
+  [V] The settings hook timeout is 10 seconds; timeout allows a dispatch.
+  [A] Size/continuation limits, unbalanced quotes, a dangling escape, bad
+  JSON/encoding, unreadable policy input and unexpected parser exceptions
+  must return exit 0, empty stdout and exactly one bounded stderr diagnostic
+  ending in "dispatch allowed unchecked". Do not print prompt contents or
+  a traceback. The runtime's timeout itself may prevent this diagnostic;
+  it is never evidence of successful validation. Guard the complete core
+  entry path, including unit collection, against ordinary exceptions so
+  malformed input cannot crash a dispatch. No broad catch converts an
+  intentional exit-2 denial to allow. A malformed relevant unit makes the
+  entire dispatch unchecked, even beside an otherwise denying unit, as
+  the existing malformed-input policy does; there is no partial success.
+- **Argument reader:** [A] Use a bounded shlex-style split of a relevant
+  unit's argument text only, with POSIX single/double quotes, adjacent
+  quoted pieces and backslash escapes. Retain decoded words and their raw
+  spellings for the legacy stage reader. Whitespace separates words;
+  unquoted semicolon, comma, parentheses, ampersand, pipe and angle brackets
+  separate words too, preserving existing terminator controls. They do
+  not execute anything or stop the scan of later flags on that unit.
+  An unquoted hash at a word start after unescaped whitespace starts a
+  comment through the end of its physical line; backslash-escaped whitespace
+  is part of the shell word, not a word separator, so a hash after it does
+  not start a comment. A comment apostrophe never opens a quote or
+  enables continuation; remove that comment before testing continuation.
+  Inline command wrappers are presentation: if the script's pathname has
+  an immediately preceding single quote, double quote or backtick and the
+  last non-whitespace character of the unit is the same character, remove
+  that one outer pair before splitting. Other quotes remain argument
+  syntax; unmatched wrappers use the malformed-input diagnostic.
+  Backticks inside arguments remain literal characters. Unknown words
+  are ignored; known flag values are consumed as whole words, so text
+  such as `--model "x --role Architect"` is not another role flag.
+  A second script mention on the same unit does not reset parsing; later
+  top-level flags are still inspected. Real briefs should put each command
+  on its own line and avoid explanatory prose after its arguments.
+- **Flags, detection and agreement:** [A] A prefix line still detects a
+  role dispatch. Without one, any emit unit with the existing guarded
+  role/stage flag spelling also detects it, including mid-line and fenced
+  commands; `--roles` and `--role=Product` alone still do not detect one.
+  Bare mention lines without those spellings are skipped before splitting.
+  Within parsed units, read every top-level `--role` and its next complete
+  decoded word. Another known flag is not a role value: record the missing
+  role value and inspect that next flag independently. Only literal spaces
+  between role flag and value qualify
+  for the existing recognized role form; tab-separated roles remain an
+  explicitly documented unsupported spelling. Missing values, invalid
+  complete values and equals-role forms cannot supply a valid role and,
+  when a prefix exists, cannot be masked by a matching command elsewhere.
+  Repeated role/stage occurrences are all checked, with no last-wins rule;
+  duplicate matching flags may pass this shape hook but the emitter still
+  rejects duplicates. Read `--stage` with the unchanged `STAGE_FLAG` on
+  its raw flag/value spelling, only at top-level flag positions, preserving
+  its current quoted-prefix and equals-stage recognition gaps. Do not
+  accidentally tighten stage parsing by applying decoded-role equality
+  to it. Consume `--model`, `--floor-basis` and legacy `--effort` values as
+  complete words to avoid finding flags inside them. Equals-value spellings
+  of those non-role flags are opaque words too. A unit's `--model` value
+  is not compared with the dispatch tool's model: the existing `model`
+  check still requires a nonblank string in `tool_input.model` only.
+  `marker-command` needs at least one valid role or legacy stage form.
+  With a valid prefix, `role-stage` checks all recognized role/stage
+  occurrences across all parsed units against its mapped role/stage;
+  any disagreement fails, including contradictory flags on one unit.
+  Without a prefix this cross-check is inapplicable and OR8 applies.
+  Exit 2, empty stdout, each mapped core rule line once, then AVOID;
+  `marker-command` and `role-stage` still map to OR31. OR31's current
+  text and inventory mapping stay unchanged in this amendment.
+- **Prose, fences and accepted limits:** [A] Prose, apostrophes and quotes
+  on other physical lines have no shell meaning and cannot swallow or
+  leak into a unit. On an emit unit, only the suffix described above is
+  parsed; an apostrophe in trailing explanatory prose can therefore make
+  that unit unchecked. Fences, quoted examples and prose introductions
+  do not exempt emit units: a mismatching example still denies. A quoted
+  value containing a later emit-line mention is an accepted cost of option
+  B, not a reason to restore cross-line quote tracking: without explicit
+  continuations the opening line is malformed/unchecked and later
+  unconsumed emit lines are independent. With explicit continuations a
+  quoted script mention may be consumed as value text. No correctness
+  claim is made for literal quoted multiline values, here-documents,
+  dollar-quote/localized-quote spellings, parameter expansion, command
+  substitution, shell evaluation or commands embedded inside a quoted
+  shell-program argument. Shell-like words are read literally; neither
+  expansion nor Bash equivalence is promised. Per the temporary panel
+  decision (2026-10-30, vote 2-1), four role spellings are denied and
+  unsupported: dollar-single-quote Product, dollar-double-quote Product,
+  Product followed by an empty command substitution, and a tab between
+  flag and value. Keep observation coverage for these spellings.
+  The quoted OR31 text goes unchecked, and a prose mention with a guarded
+  flag spelling and no ROLE SESSION line is denied, both by design.
+  A malformed relevant unit or resource cap
+  can bypass all checks with a visible unchecked diagnostic; this is the
+  existing fail-open trade-off, not a security enforcement guarantee.
+- **Removed and retained:** [A] Remove `emit_commands`' whole-prompt shell
+  tokenizer, quote-span lookahead, `EMIT_LINE` exceptions, `dq_dead`,
+  rollback bookkeeping and whole-prompt word-start collection. Do not
+  preserve an unused alternate tokenizer. Replace the custom unbounded
+  role-word scan with the bounded unit reader above. Keep the single
+  (prefix name, flag name, stage) tuple, `--list-roles`, `STAGE_FLAG`,
+  `--list-checks`, `--print-contract`, rule-line lookup, fail-open notes,
+  prefix/no-fork checks and Reviewer PR/SHA/gate searches on raw prompt
+  text. Per the temporary panel decision (2026-10-30, vote 2-1),
+  `hooks/agent-dispatch.py --list-roles` outputs three tab-separated fields
+  per line: prefix name (which may contain a space), flag name, then stage.
+  The hook's join changes from one space to one tab; drift test S418
+  parses by tab and pins this output contract. The wrapper and
+  `lib/model-record.sh` do not change for option B.
+- **Product handoff, F40 wording (proposal only):** [V] The current text
+  says: "The dispatch hook denies a prompt whose emit role or stage does
+  not match its `ROLE SESSION:` role, including an old prompt that
+  supplies only a stage." [A] Replace with: "The dispatch hook checks
+  lines mentioning model-record-emit.sh and their explicitly continued
+  lines within A48's bounds. Within this supported brief format, a parsed
+  emit role or legacy stage that disagrees with the ROLE SESSION role
+  denies the dispatch, including a stage-only command. Prose outside
+  those lines is not shell input. Quoted examples and fenced commands
+  are checked too. Literal quoted multiline values and shell evaluation
+  are outside this check. Malformed or over-limit input allows the
+  dispatch with an unchecked diagnostic under the existing fail-open
+  policy." Add after the instruction to put the command in every prompt:
+  "Put the command on one physical line, or use explicit trailing
+  backslash continuations within A48's limits." Clarify F40's mechanical
+  verification paragraph that agreement is verified only for this format,
+  not for every shell-equivalent prompt. Product owns these PRD edits;
+  this Planning step edits ARCHITECTURE.md only.
+- **QA handoff, existing cases:** [V] S412 currently accumulates round-2
+  through round-6 dispatch expectations in fixture functions `dispatch`,
+  `round3_dispatch`, `round4_dispatch`, `round5_dispatch` and
+  `round6_dispatch`. [A] No whole scenario S412-S419 is removed.
+  In S412, retire the round-3 literal-newline quoted-role denial oracles:
+  without explicit continuation those opening units are now malformed
+  and unchecked. Retire the entire round-5 648-case hook-verdict matrix
+  in `round5_dispatch`, which requires literal newlines inside quotes to
+  retain following flags as shell argv. Keep its emitter argv/refusal
+  coverage separately if useful; the emitter contract did not change.
+  Retire the same whole-shell expectations in round-6
+  `round6_quoted_apostrophes`; replace them with format-limit checks.
+  Replace the million-character-role effective-denial oracle with a fast
+  unchecked-size diagnostic, and retain the million-character ordinary
+  prose fast missing-command denial. Keep bounded complete-role checks,
+  adjacent quote/escape checks, ordinary malformed-input diagnostic,
+  role/stage terminators and wrappers, role-only and detection controls,
+  and the one/three-line explicit-continuation round-4 controls. Keep the
+  round-6 prose and realistic-brief verdicts, with historical comparisons
+  only where available; they test line isolation, not whole-shell
+  semantics. Strengthen the unterminated-continuation check to the chosen
+  exit-0 single unchecked diagnostic, rather than either deny or note.
+  S413 keeps #595 and mismatch denials plus wrapper/terminator controls;
+  S414-S416 keep emitter ordering, compatibility, refusal and safe newline
+  diagnostics unchanged. S417 keeps all-unit mismatches and missing-prefix
+  behavior; clarify that fences remain checked under option B and retain
+  the separately open quoted-example policy. S418 keeps tuple/library/OR5
+  drift tests, parsing the hook's three-field output by tab. S419 keeps
+  instructing-doc and grammar-owner pins, with
+  OR31 and its existing stamp untouched.
+- **QA handoff, new cases:** [A] Add the round-7 bullet, numbered, dollar
+  prompt, blockquote, `Run:`, `cd ... &&` and `bash -c` introduction shapes
+  with correct, missing-prefix and mismatching commands; apostrophes
+  before/after/on non-emit prose lines must not change their verdicts.
+  Include malformed bare prose mentions followed by a wrong command.
+  Add independent emit units before/after malformed prose, mismatches in
+  every unit position, and multiple top-level commands on one line.
+  Pin consumed value text containing role/stage flags, comments containing
+  apostrophes and continuation-like text, matching wrappers and genuinely
+  unbalanced unit quotes. Add explicit continuations inside double quotes,
+  concatenation within role values, CRLF, odd/even trailing backslashes,
+  trailing whitespace, EOF continuation, exactly 32 and 33 physical lines,
+  and no implicit continuation for either quote kind. Cover quoted values
+  that contain script mentions both with and without explicit continuation
+  as accepted limits, never as proof of shell equivalence. Pin new byte,
+  prompt and unit size boundaries on either side, prompt-cap handling even
+  without a prefix, and fast rejection of over-limit work before splitting.
+  Require the single unchecked diagnostic for malformed relevant units,
+  including when another unit disagrees; no crash, traceback or prompt leak.
+  Retain under-3-second effective-denial probes for large invalid roles
+  within the supported unit cap, ordinary million-character prose, and
+  adversarial quotes/continuations/many units within all caps. A killed
+  process or 10-second timeout is a failed performance check, never a deny.
+  Observe unsupported shell/tab cases and legacy stage-prefix/equals gaps
+  separately from supported-format verdicts. Mutations must expose an
+  implicit quote continuation, skipped mid-line mismatch, ignored size
+  bound, swallowed later unit, or missing unchecked diagnostic through
+  the existing public JSON/CLI Seam.
+- **Delivery, evidence and remaining decisions:** [V] This Planning review
+  read the named hook, A48, F40, S412-S419, complete fixture and the supplied
+  round-7/round-6 review files. Additional ground truth: A41 for the core
+  Interface, `hooks/agent-dispatch` and `settings/session-hooks.json` for
+  adapter/timeout, AGENTS.md and the installed role-contracts,
+  codebase-design and adoption-registry skills for scope and conventions.
+  No fixture, emitter, behavior test or S274 was run. [A] Developer must
+  establish runtime headroom for these proposed caps; it is not verified
+  by this design. Product must adopt the narrowed F40 promise before
+  implementation; QA must replace the obsolete hook oracles explicitly.
+  The general quoted-example exemption remains a human decision; option B
+  does not change it by implication. Marker output,
+  grammar, stage names, gate, collector and legacy effort behavior stay
+  unchanged. OR31, ORCHESTRATOR, inventory, behavior scenarios and stamp
+  need no edit for this amendment, so no new S274 run is prescribed here.
+  [V] No marker was emitted in this stage, per the explicit task constraint.
+- **Violated when:** [A] prose on an unrelated line changes a parsed emit
+  command's verdict; a supported-format mismatch silently passes; a
+  correct supported role-only dispatch is denied; bounds truncate a value
+  into validity; malformed input crashes or silently passes without the
+  unchecked diagnostic; an old emitter stage-only command stops working;
+  the three role maps drift; or denial stops quoting the unchanged OR31.
 
 ### A49 — Preserve the oracle at a conflict and across the QA handoff (#547, #546; F59, F60; amends A4, A12, A28, A41, A42)
 

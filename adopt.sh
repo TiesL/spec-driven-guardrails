@@ -7,7 +7,7 @@
 #   ./adopt.sh /path/to/proj   # adopts the workflow in the given directory
 #   ./adopt.sh --user           # Claude-only user adoption trigger
 #   ./adopt.sh --runtime codex [project]  # install/update Codex CLI/desktop
-#   ./adopt.sh --runtime codex --hooks [project]  # opt into Bash merge interception
+#   ./adopt.sh --runtime codex --hooks [project]  # install/refresh the local Bash merge guard bundle
 #   ./adopt.sh --status --runtime claude|codex [project]  # read-only inventory
 #
 # Requires: environment variable SPEC_DRIVEN_GUARDRAILS_DIR, pointing at the
@@ -15,7 +15,11 @@
 
 set -Eeuo pipefail
 
+# Prevent Python bytecode writes, including during read-only status.
+export PYTHONDONTWRITEBYTECODE=1
+
 # Parse the complete public Interface before any project writes.
+adoption_args=("$@")
 runtime=claude
 runtime_seen=0
 status_mode=0
@@ -698,6 +702,13 @@ shared_seed_selection() {
 }
 
 project_dir="${project_arg:-.}"
+# Keep the directory lock across all project adoption writes; consume the
+# serializer's one-time handoff only in its intended re-execution.
+if [ "$user_mode" -eq 0 ] && [ "$status_mode" -eq 0 ]; then
+  if ! python3 "$own_dir/lib/codex-adoption.py" --lock-held "$project_dir"; then
+    exec python3 "$own_dir/lib/codex-adoption.py" --serialize "$project_dir" "$own_dir/adopt.sh" ${adoption_args[@]+"${adoption_args[@]}"}
+  fi
+fi
 if [ "$user_mode" -eq 1 ]; then
   adopt_user_trigger
 elif [ "$runtime" = codex ]; then

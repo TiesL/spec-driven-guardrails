@@ -116,4 +116,14 @@ grep -Eq '\bgh\b|curl|urllib|socket|http' "$AD_CORE" && fail "S313/network — t
 grep -Eq '(^|[^-])\bgh\b|curl|wget' "$AD_ADAPTER" && fail "S313/network — the adapter names gh or a network tool"
 grep -Eq "open\([^)]*['\"][wa]" "$AD_CORE" && fail "S313/state — the core opens a file for writing"
 
+# #599: role-only detection retains every out-of-scope allow policy.
+bad_role="$(ad_input 'Hello
+/c/model-record-emit.sh --role Product' fork -)"
+for proj in "$none_proj" "$no_proj" "$pend_proj"; do
+  allows role-not-opted-in 0 "$proj" "$bad_role"
+done
+allows role-guardrails-off 0 "$yes_proj" "$bad_role" CLAUDE_WORKFLOW_GUARDRAILS_OFF=1
+allows role-subagent 0 "$yes_proj" "$(ad_input '/c/model-record-emit.sh --role Product' fork - agent-7f3)"
+ad_run_core "$bad_role" "$SANDBOX/missing-orch" "$AD_TSV"
+[ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ "$(printf '%s\n' "$ad_err" | grep -c .)" = 1 ] || fail "S313/#599 — detected role-only dispatch with unreadable core must allow with one diagnostic"
 test_done

@@ -2746,7 +2746,7 @@ something new is being added.
 - Then: one paragraph of `ORCHESTRATOR.md` (A26 amended: nobody types a
   marker) gives each role the `model-record-emit.sh` command in its dispatch
   prompt, found through `SPEC_DRIVEN_GUARDRAILS_DIR` or the installed skill, with
-  `--stage` filled in and no `--effort` (#424: nothing says to pass it or to
+  `--role` filled in (#599, A48) and no `--effort` (#424: nothing says to pass it or to
   fill it with `unknown`), names the requested model, has the role add `--model` with its own
   exact id (the Reviewer also `--floor-basis`) and paste the output unchanged
   as the first line of its report; `ORCHESTRATOR.md` restates no grammar (no quoted-attribute
@@ -2805,6 +2805,7 @@ something new is being added.
   judgement (stubs). Kill table: drop `<` or `>`, count characters, drop one C1
   or bidi or separator entry, a locale-dependent control test, drop or widen
   the flag-name rule, change the literal line
+- Issue #599 amendment: All five --role forms also print the same literal markers as the kept stage-only controls, with empty stderr, and the unchanged reader accepts them (#599 AC1/AC7).
 
 ### S206 — the script paths named in finding B5 resolve from an adopted project
 **Covers:** F37, F40
@@ -2880,6 +2881,7 @@ something new is being added.
   an unresolved documented path is a clean assertion failure. Exact helper
   stdout/status controls must first fail against the frozen helper, then pass;
   returning whole matching lines instead of tokens must make them red.
+- Issue #599 amendment: Keep the adopted-project --stage run and stale --effort control. The --role Architect form prints the identical marker with empty stderr; a scratch mutation that makes --role required is caught by the kept stage-only oracle (#599 AC3).
 
 ### S207 — merging is human-only only for main, and the text says so once
 **Covers:** F38
@@ -3632,6 +3634,7 @@ something new is being added.
   removes `--effort` from `model-record-emit.sh` (#413 or #424) and no longer
   carries the rows on the same-model effort check or on a self-reported
   effort
+- Issue #599 amendment: The emitter header command and usage advertise --role, while retaining the existing no-effort assertions (#599 AC4/AC6).
 
 ### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v2 in #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
 **Covers:** F9, F26, F39
@@ -5865,7 +5868,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   OR10, OR14-OR32, OR36-OR42, OR44); every `OR<n>` item has a row and every
   row's ID is unique; a `retired` row has part `-` and its ID occurs in no
   item; `above` and `below` do not occur as words in either part; OR21 and
-  OR37 contain `OR45`, OR31 contains `Stage names: OR5`, OR36 contains `in
+  OR37 contain `OR45`, OR31 contains `--role`, cites `OR5` and states
+  role/stage agreement with the prefix (#599, A48), OR36 contains `in
   OR5 order`; OR11's item says merge into `main` only with the human's
   approval for that PR, given after the work or in advance (#516), that an
   advance approval lapses on a new commit that changes the work, and that a
@@ -5906,6 +5910,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `OR28`, `OR29`; S203: `OR31`, `OR32`; S207: `OR11`; S210: `OR15`, `OR16`)
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
+- Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -5915,8 +5920,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - When: each case runs, one broken check at a time: the first non-blank line
   is not `ROLE SESSION: <one of the five roles>` (missing, lower case, an
   unknown role, the prefix on line 2 after a non-blank line); `subagent_type`
-  `fork`; no `model-record-emit.sh` with `--stage <stage>`, or `--stage
-  Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
+  `fork`; no `model-record-emit.sh` with a valid `--role <Role>` or
+  backward-compatible `--stage <stage>`, or `--stage Testing`; `tool_input.model` absent, and empty; for `ROLE SESSION:
   Reviewer`, no PR number or `/pull/<n>`, no 7-40 hex SHA (6 hex and 41 hex
   both fail), no `finding-carryforward-gate.sh`; a Reviewer brief whose only
   number-like tokens are an issue `#n` (or `/issues/n`) and an
@@ -5927,9 +5932,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   through the inventory's `hook:` column), plus one line on how a non-role
   prompt avoids detection; two failed checks mapped to one ID (OR14) print
   that line once; a compliant dispatch for each of the five roles exits 0
-  with empty stdout and stderr; a prompt that only quotes a rule line, or
-  mentions `model-record-emit.sh` without `--stage` at line start, is not a
-  role dispatch and exits 0 silently; with the marker line present the deny
+  with empty stdout and stderr; quoted OR8/OR1 rule lines without an emit
+  mention, or a mention of `model-record-emit.sh` without guarded role/stage
+  flag spellings, are not role dispatches and exit 0 silently. A48 detects
+  guarded flag spellings even in prose: the original script mention with
+  `--stage matters?` denies with OR8, OR7, OR31 and OR30; quoting OR8,
+  OR31 and OR1 retains exit 0 with empty stdout and exactly one unchecked
+  diagnostic because OR31's script wrapper is unmatched at the unit end
+  (A48's unmatched-wrapper rule). With the marker line present the deny
   output never contains it
 - Red on `main` b43ee55: no hook. Negative control: an edited core line for
   OR8 changes the deny text with it (no second copy in the script)
@@ -5941,6 +5951,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   `PR #42`, `PR 42`, `/pull/42`, and `head 1234567890`, each beside a work
   item `#499`. Red on `6ccad5c`: the issue-and-comment-only brief, the issue
   ref with a real SHA, and the digits-as-SHA brief all exit 0
+- Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
 
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
@@ -5959,6 +5970,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   is written outside the sandbox; each run finishes within 2 s (well inside
   the 10 s timeout)
 - Red on `main` b43ee55: no hook
+- Issue #599 amendment: Repeat adoption, kill-switch, subagent and unreadable-core allow arms with a role-only emit line; fail-open diagnostics and silent scope exclusions remain unchanged (#599 AC5).
 
 ### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
 **Covers:** F38
@@ -7300,28 +7312,34 @@ PR. Developer writes/runs red-before-green cases through these Seams, following
 assertions or new live paid probe is needed. Existing real-event evidence in
 A47 supplies protocol provenance, not proof that a future installation activates.
 
-### S365 — default adoption preserves hook state; opt-in installs once (#544 AC1, AC2)
+### S365 — default adoption preserves hook state; opt-in installs bundle once (#544 AC1, AC2; #594 AC1, AC5, AC10)
 **Covers:** F45, F47, F48
 - Given: fresh and previously adopted projects, including old installation
   provenance without hook ownership, with absent or existing hook configuration
 - When: default adoption runs, including after a successful hook opt-in
 - Then: it neither creates nor changes `.codex/hooks.json`; an earlier hook is
-  retained. Default adoption remains usable and does not imply uninstall
+  retained. It creates no bundle and neither refreshes nor removes an installed
+  bundle. Default adoption remains usable and does not imply uninstall
 - When: explicit `--runtime codex --hooks` runs twice, including from a project
   path containing spaces and shell metacharacters
-- Then: one managed Bash PreToolUse definition invokes the reachable shared
-  guard in merge-only mode; ownership is identifiable and subsequent runs add
-  no duplicates. Old provenance upgrades explicitly without claiming foreign
-  hooks. Invalid/repeated flags and non-Codex `--hooks` exit 2 before writes
+- Then: one managed Bash PreToolUse definition points at the installed
+  `.codex/sdg-guard/hooks/git-guardrails --merge-only`; bundle installed once,
+  repeated runs add nothing and change nothing. Ownership is identifiable,
+  opted-in provenance bumps beyond version 2; default provenance remains
+  backwards compatible. S397 checks exact files/modes/manifest, S398 default
+  bundle absence, S402 the owned version-2 migration and one-time /hooks
+  re-trust, S409 ignore/provenance details. No foreign hooks are claimed.
+  Invalid/repeated flags and non-Codex `--hooks` exit 2 before writes
 
-### S366 — coexistence and ownership prevent silent configuration takeover (#544 AC2)
+### S366 — coexistence and ownership prevent silent configuration takeover (#544 AC2; #594 AC3, AC5, AC6)
 **Covers:** F45, F47, F48
 - Given: regular project hook JSON with unrelated top-level keys, other event
   groups and other Bash hooks, inline hooks in `.codex/config.toml`, and user
   configuration outside the project
 - When: hook opt-in installs, repeats, or updates a previously owned definition
 - Then: unrelated JSON content survives semantically; config.toml and user
-  configuration remain byte-identical. Only the exact recorded previous managed
+  configuration and unrelated files in `.codex/` remain byte-identical. Only the
+  exact recorded previous managed
   definition is updated, without replacing or consolidating foreign hooks
 - Negative variants: malformed JSON/shapes, duplicate managed definitions,
   foreign edits to recorded ownership, invalid/unsupported provenance, symlink
@@ -7330,17 +7348,27 @@ A47 supplies protocol provenance, not proof that a future installation activates
   a failed install must not leave partially updated AGENTS, links or provenance
 - Given: an owned definition still equals its recorded value but the source
   template changes; Then: re-opt-in updates it once. An edited owned value
-  conflicts rather than being silently repaired
+  conflicts rather than being silently repaired. The owned update includes the
+  bundle; S401 checks content-only refresh, changed paths/revisions, unchanged
+  command and no re-trust; S402 checks the one-time command migration. S404
+  checks unrecorded or tampered `sdg-guard` conflicts before any write. S399
+  checks symlinked `.codex`, `.codex/sdg-guard` and inner symlinks, names the
+  offending path, and compares project/target snapshots before/after
 
-### S367 — status distinguishes structural presence from effective activation (#544 AC6)
+### S367 — status distinguishes structural presence from effective activation (#544 AC6; #594 AC6, AC11)
 **Covers:** F47, F48, F51, F52
-- Given: absent, valid managed, edited, duplicate and broken-target installs
+- Given: absent, valid managed, edited, duplicate and missing-definition installs;
+  bundles absent, current, stale or corrupt
 - When: status runs without `--hooks`
 - Then: absent reports `runtime-hooks: not-installed`; exact reachable managed
   state reports `runtime-hooks: installed`, `scope: Bash merge interception`
-  and `activation: unverified`. Edited/duplicate/broken state reports
+  and `activation: unverified`. Edited/duplicate/missing-definition state reports
   stale/conflict, never installed; retain status exit meanings 0 current,
-  1 stale/conflict, 2 invalid/unreadable
+  1 stale/conflict, 2 invalid/unreadable. Bundle absent/current is explicit; S403
+  checks stale warning, corrupt/missing bundle conflict, absent opt-in versus
+  missing recorded bundle, invalid exit 2, read-only status and TiesL refresh
+  outside the sandbox. All states remain `activation: unverified`; broken
+  source-link independence is checked in S400 rather than implying a broken hook
 - Then: inventory, session-context diagnostics, generated instructions and
   README agree on default absence and optional structural installation; they
   retain voluntary merge-preflight when interception is unavailable and make
@@ -7350,7 +7378,7 @@ A47 supplies protocol provenance, not proof that a future installation activates
   unavailable/unverified even when files are installed. Adoption changes no
   trust/permission setting. Static fixtures cannot establish live activation
 
-### S368 — captured Bash event drives shared merge refusal and allow (#544 AC3, AC5)
+### S368 — captured Bash event drives bundled merge refusal and allow (#544 AC3, AC5; #594 AC1, AC4)
 **Covers:** F8, F47, F48, F52
 - Given: sanitized fixtures derived from A47's two real events, preserving
   `hook_event_name: PreToolUse`, `tool_name: Bash`, `tool_input.command`, `cwd`
@@ -7363,7 +7391,9 @@ A47 supplies protocol provenance, not proof that a future installation activates
   tool executor runs an observable sentinel only after exit 0, never after 2
 - Then: execute the installed command from a project subdirectory, also in a
   space/metacharacter-containing project path; it resolves that project's
-  `.guardrails/source`, uses the correct cwd and evaluates the same merge
+  `.codex/sdg-guard` bundle, uses the correct cwd and evaluates the same merge.
+  S400 checks the absent and broken `.guardrails/source` variants with the
+  same source/bundle stdout, stderr and exit-status parity controls
 - Negative variants: quoted merge arguments and merge in a compound command
   remain subject to the shared parser; no duplicate parser or real gh merge
   is used. Record fake-gh calls so denial cannot pass because no merge was read
@@ -7371,9 +7401,11 @@ A47 supplies protocol provenance, not proof that a future installation activates
   A47's observed direct session establishes runtime exit-2 refusal/exit-0 allow.
   Preserve its CLI-versus-metadata discrepancy and separate desktop gap
 
-### S369 — merge-only mode passes non-merge Bash without widening Claude behavior (#544 AC4, AC7)
+### S369 — merge-only mode passes non-merge Bash without widening Claude behavior (#544 AC4, AC7; #594 AC4)
 **Covers:** F8, F47, F48, F53
-- Given: the installed hook and the same shared guard invoked without arguments
+- Given: the installed hook pointing at `.codex/sdg-guard` and the same shared
+  guard invoked without arguments; all existing merge-only assertions also
+  execute through the bundled copy (broader verdict parity is in S400)
 - When: commands include ordinary printf/git status, destructive Git commands,
   direct push to main and issue-first violations, with no gh pr merge invocation
 - Then: merge-only invocation returns 0 and does not evaluate unrelated policy;
@@ -7646,6 +7678,387 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 - When: both Claude hook and --merge-only modes judge short selectors with a command-local GH_HOST matching or differing from the origin; a compound command joins a local other.example merge and a local github.com merge with &&; another joins a local github.com merge selecting an explicit other.example repository and an unassigned short-selector merge inheriting other.example.
 - Then: local github.com overrides inherited other.example and exits 2 with the current-head review refusal; local other.example overrides inherited github.com and exits 0 silently without policy calls; the first compound command exits 2 for missing review on the second segment; the second compound command exits 0 silently without policy calls, proving the first segment's assignment does not leak. All reached policy lookups target the origin repository and PR 41.
 - Falsifiers: inherited host taking precedence over a command-local assignment, an assignment leaking across &&, silently bypassed checks, a wrong PR/repository, or a refusal caused by a fixture/lookup failure rather than the policy under test.
+
+## Codex guard bundle (issue #594)
+
+Integration seams: explicit adoption and read-only status, installed hook stdin JSON, list-only guard execution and baseline documentation. Each numbered scenario has its own runnable case. Live AC2, AC8 and the live portion of AC3 remain a separate TiesL-run observation follow-up; no offline test claims protection or activation.
+
+### S397 — Seven-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
+**Covers:** F8, F47
+- Given: a fresh project and an isolated Codex home.
+- When: explicit Codex --hooks adoption runs twice.
+- Then: a real .codex/sdg-guard contains exactly the seven accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
+- Falsifiers: a missing or extra file, clone path, changed bytes or modes, incomplete manifest, source-target command or non-idempotent install.
+
+### S398 — Default adoption creates no guard bundle (#594 AC5)
+**Covers:** F47
+- Given: a fresh project without a bundle.
+- When: Codex adoption runs without --hooks.
+- Then: no .codex/sdg-guard is created. This unchanged-behavior control is green before implementation.
+- Falsifiers: a bundle created by default adoption.
+
+### S399 — Symlink parents and bundle entries refuse before any write (#594 AC3 offline part)
+**Covers:** F47
+- Given: separate projects with a symlink at .codex, .codex/sdg-guard or an inner bundle entry, plus foreign target data and pending AGENTS.md text.
+- When: explicit --hooks adoption runs for each.
+- Then: each exits 1, names the offending path and preserves complete project and external-target snapshots. This proves adoption preflight only, not sandbox protection.
+- Falsifiers: success, an unnamed offending path, or a write before refusal.
+
+### S400 — Installed command preserves guard verdicts without the source link (#594 AC1, AC4)
+**Covers:** F8, F47
+- Given: an installed bundle, an allowlist tool PATH, #593 recording fake gh and independently checked missing-review, red/pending-CI, stale-base, role-play and eligible fixtures.
+- When: plain and same-repository flagged merges run through source and installed command from another directory, then repeat with .guardrails/source absent and broken.
+- Then: stdout, stderr and exit status match exactly; every source control reaches its intended refusal or clean allow without lookup warnings; merge-only allows unrelated destructive Git commands and ordinary commands without executing them.
+- Falsifiers: a fixture that fails to reach its intended policy, different output or exit, dependency on the source link or an unrelated merge-only check.
+
+### S401 — Only explicit refresh updates bundle contents and reports unchanged trust declaration (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an owned bundle, a foreign .codex file and a source-file update at a new fixture source revision.
+- When: default adoption runs first, followed by explicit --hooks.
+- Then: default adoption leaves the bundle byte-identical; explicit refresh copies the changed file, preserves other bundle files, foreign data and the command string, reports the changed path and old/new revisions, says trust is not re-prompted, and returns current structural status.
+- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report or stale status after refresh.
+
+### S402 — Version-2 owned source command migrates once with a trust notice (#594 AC5, AC10)
+**Covers:** F47, F51
+- Given: a project with the exact old version-2 provenance and owned source-path hook definition and no bundle.
+- When: explicit --hooks adoption runs twice.
+- Then: the owned definition migrates to the bundle, provenance upgrades beyond 2, the first run names /hooks and review or trust, and the second run changes nothing or duplicates no definition.
+- Falsifiers: an old command or provenance retained, no one-time trust notice or repeated migration.
+
+### S403 — Structural status distinguishes absent, current, stale and corrupt bundles (#594 AC6, AC11)
+**Covers:** F47, F51
+- Given: a default installation, a current bundle, a source-only update, a content-tampered bundle, a missing listed file, a missing owned bundle and an invalid project.
+- When: --status runs independently for each state.
+- Then: status is read-only, reports absent/current with exit 0 where no bundle was opted in, stale with exit 1 for a valid older manifest, corrupt with exit 1 for tampering or a missing file, absent with exit 1 for a missing owned bundle, and invalid with exit 2; structural states always say activation: unverified; stale status directs TiesL to refresh outside the sandbox.
+- Falsifiers: conflated states, wrong exit, claimed activation, mutation or omitted outside-sandbox direction.
+
+### S404 — Unrecorded and tampered bundles conflict before adoption writes (#594 AC6)
+**Covers:** F47
+- Given: one project with unrecorded foreign bundle data and another with an installed but tampered bundle; both have pending AGENTS.md text.
+- When: explicit --hooks adoption runs.
+- Then: both exit 1 with conflict diagnostics and complete project snapshots unchanged.
+- Falsifiers: takeover, silent repair or any partial adoption write.
+
+### S405 — Codex adoption continues to write no configuration or trust (#594 AC7)
+**Covers:** F47, F57
+- Given: a disposable HOME, separate CODEX_HOME and fresh project.
+- When: default and --hooks Codex adoption run.
+- Then: HOME and CODEX_HOME remain unchanged; no project config.toml, hooks.state or trust_level is written. This unchanged-behavior control is green before implementation and leaves S381 unchanged.
+- Falsifiers: any Codex configuration or trust written by adoption.
+
+### S406 — The hand-kept list alone suffices for source guard parity (#594 AC9)
+**Covers:** F8, F47
+- Given: the seven-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
+- When: a bundle built from that list only runs from another directory with a minimal tool PATH.
+- Then: plain and same-repository flagged missing-review, CI, ancestry, role-play and eligible verdicts match source stdout, stderr and exit exactly; unrelated commands remain outside merge-only scope.
+- Falsifiers: extra listed files, omitted files, an untested fail-open fixture or any parity difference.
+
+### S407 — Removing each merge-relevant file changes a refusing verdict (#594 AC9)
+**Covers:** F8, F47
+- Given: a list-only bundle that first passes the complete parity controls.
+- When: each listed file is removed separately and restored, including the entry point; rules.sh alone is exempt because it is sourced but has no merge-only effect.
+- Then: the role-play fixture loses its exit-2 refusal for each ablation; a missing entry point is exercised through a shell so the test observes its exit rather than a Python exec error.
+- Falsifiers: a merge-relevant ablation that retains the same refusal or a fixture that never blocked before ablation.
+
+### S408 — Relative source dependencies must stay inside the declared closure (#594 AC9)
+**Covers:** F8, F47
+- Given: the hand-kept list and its actual source files.
+- When: a test-side tripwire resolves literal file paths through own_dir, dirname of $0 or BASH_SOURCE (including BASH_SOURCE[0]), and BASH_SOURCE directory parameter expansion; mutation arms add an unlisted lib dependency through every form with both source and dot directives.
+- Then: the real closure is complete and each mutation reports hooks/git-guardrails and lib/not-in-bundle.sh. The list remains hand-kept; the tripwire is a regression alarm, not a generated shell dependency analysis.
+- Falsifiers: an undeclared literal dependency, or any mutation escaping detection.
+
+### S409 — Machine-local bundle is ignored and its manifest digest is owned (#594 AC10)
+**Covers:** F47
+- Given: a project after explicit bundle install.
+- When: the managed .gitignore block, installation.json and git check-ignore output are read.
+- Then: the managed block contains /.codex/sdg-guard, Git ignores a bundled guard file, provenance version exceeds 2 and records the owned path and exact MANIFEST sha256.
+- Falsifiers: an unignored bundle, an old version, an unowned path or missing manifest digest.
+
+### S410 — The pre-live baseline documents the bundle, assumptions and refresh limits (#594 AC11, AC12)
+**Covers:** F51, F57
+- Given: the baseline document before positive live protection evidence.
+- When: its bundle warning, refresh directions and live-result conditions are inspected.
+- Then: it names .codex/sdg-guard and all seven files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
+- Falsifiers: a missing bundle dependency or limit, an asserted live guarantee, premature default change or undocumented fallback.
+
+### S411 — Interrupted bundle refresh preserves policy and permits explicit recovery (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
+- When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
+- Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
+- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
+
+### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
+**Covers:** F40
+- Given: an opted-in Agent dispatch, the five prefix roles, and the public hook CLI.
+- When: each role-only prompt, stage-only control, missing/invalid flag form and a role-only line without a prefix is checked; matching Product/Discovery values end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote; role values Product Architect and Product followed by a space are quoted as single arguments.
+- Then: all five compliant roles and matching terminated commands silently pass; stage terminator controls also pass against the actual main hook and its policy inputs when main or origin/main is available. In shallow clones without that history, the fixture explicitly reports skipping only historical comparisons; all current-hook verdicts and emitter controls still run. Missing or invalid forms, including both invalid quoted role values, exit 2 with empty stdout and OR31 exactly once plus AVOID; properly quoted Product and Discovery pass. Emitter controls reject the complete invalid quoted arguments. A role-only line without a prefix names OR8. AVOID mentions both flags; --roles and --role=Product alone do not trigger detection. Invalid quoted stage values Discovery extra and Discovery followed by a space are observed against main and current hooks, with no hook oracle pinned pending a decision about that pre-existing gap.
+- Round-2 concatenation controls: Bash confirms that adjacent double-quoted pieces, adjacent single-quoted pieces and a quoted piece followed by an escaped space form one complete argument. Product concatenated with Architect or a trailing space, and Architect/QA/Developer/Reviewer each concatenated with extra text, must exit 2 with empty stdout and OR31 exactly once plus AVOID. Emitter controls reject the complete invalid arguments. The split spelling "Prod""uct" forms the valid Product argument and must silently pass. Existing properly quoted role and unquoted terminator controls remain pinned. The same three invalid concatenation forms for Discovery are observations against main and current hooks only; no stage hook expectation is pinned.
+- Round-3 complete-value checks: Bash independently confirms that Product immediately followed by a backtick command substitution, a dollar command substitution or a parameter expansion forms the single invalid argument ProductArchitect. Each literal prompt spelling must deny with exit 2, empty stdout and OR31 once plus AVOID; existing trailing-terminator controls remain allowed. Invalid roles joined using quoted or unquoted explicit backslash-newline continuation receive the same denial. Literal newlines inside single or double quotes without explicit continuation are outside A48: those units allow with exactly one unchecked diagnostic, while the real emitter still refuses their complete invalid role argv. A double-quoted continuation joining Prod and uct must allow with empty stdout; any diagnostic is reported, so this allow alone is not evidence of validation. A genuinely unterminated quote retains exit 0, empty stdout and one parse-failure diagnostic saying the dispatch was allowed unchecked. Main verdicts for each form are reported when history is available.
+- Round-3 deadline checks: a one-million-character role exceeds the 64 Ki unit cap and must allow with empty stdout and exactly one bounded diagnostic ending in dispatch allowed unchecked in under 3 seconds of measured wall time. A 2.5-second subprocess deadline leaves a scheduling margin and makes a timeout an explicit failure, never an effective denial. A one-million-character ordinary line under a Product prefix, without an emitter command, must receive the same fast OR31 denial; this isolates value parsing from ordinary prompt size.
+- Round-4 command-continuation checks: Bash independently confirms the complete argv across one and three backslash-newline continuations between flags. Product with Planning, and repeated role flags Product and Architect, must deny with exit 2, empty stdout and OR31 exactly once plus AVOID, with the mismatching flag on either the first physical line or the continuation line. Emitter controls reject the same complete argv for the mismatch or repeated-role reason. Product followed by Discovery across either continuation depth must silently allow and its emitter control must succeed. Continued stage-only Discovery and Planning forms, with the stage flag on either the first line or the continuation line, are reported against current and main hooks as observations only; no stage hook expectation is pinned. Shallow clones explicitly skip only unavailable historical comparisons.
+- Round-5 retained emitter controls: retire only the 648 whole-shell hook verdicts per A48. Keep the independently Bash-confirmed argv and real emitter controls for all quote forms, flag orders and separator combinations: mismatch and repeated-role refusals remain pinned; invalid multiline models reach model validation, and replacing them with a valid model succeeds when roles and stages match.
+- Round-6 prose quote checks: prose is not shell, so an apostrophe or double quote in a sentence that mentions model-record-emit.sh, or an apostrophe in a trailing bash comment on a command line, must not hide the line-start emit commands after it. Each prose verdict is pinned to the verdict of 2d93c25, the head before the whole-prompt shell word stream; every case records that verdict, the fixture checks the record against 2d93c25 when that commit is available, and a shallow clone reports skipping only that comparison. The Reviewer's four briefs are pinned verbatim: a Product brief with the mention "as your report's first line", a line-start --role Product command and "Don't type it by hand." denies with OR8 alone without a ROLE SESSION line and silently allows with ROLE SESSION: Product; a hidden --role Architect command before "Don't ..." and a matching command after it denies with OR31, as does the Reviewer variant with a hidden --stage Planning; a command ending in "# don't edit", then --stage Planning, then "It's done." denies with OR31. The generated variants combine the opener (apostrophe after the mention, apostrophes before and after, three apostrophes, a lone double quote, a backtick-quoted mention, the comment apostrophe, and balanced apostrophe and double-quote controls), the brief kind (missing prefix OR8, correct allow, hidden role or stage mismatch OR31), one or two line-start commands inside the span with the mismatch at each position, and with or without a correct command after the closing prose line. Five short synthetic briefs shaped like real QA, Developer and Reviewer dispatches are replayed the same way. Literal quoted multiline model values without explicit continuation are outside A48, including apostrophes or the other quote kind inside them; replace those whole-shell hook verdicts with exactly one unchecked diagnostic, retaining Bash argv checks. Red and green counts per prose opener, kind, span, tail and brief group are reported with runtime.
+- Round-6 unterminated continuation: a model value opening either quote kind followed by a backslash, newline and stage Planning without a closing quote must allow with exit 0, empty stdout and exactly one unchecked diagnostic; neither denial nor silent allow satisfies the selected malformed-input policy. Previous-head verdicts remain observations only.
+- Round-7 line isolation: bullet, numbered, dollar prompt, blockquote, Run:, cd x &&, bash -c and report-first-line introductions contain matching, wrong-role, wrong-stage and missing-prefix commands. Apostrophes, unmatched double quotes and backticks on other prose lines, including bare emitter mentions and prose-only path backslashes, cannot change verdicts. Independent units before and after malformed prose, each possible mismatch position and two top-level commands on one line remain checked. Four synthetic Architect, QA and Reviewer briefs pin matching and mismatching report instructions. Fences remain checked; the separately open quoted-example policy is unchanged.
+- Round-7 arguments and continuations: Bash establishes complete argv for consumed flags inside model values, opaque equals spellings and adjacent double-quoted pieces joined by explicit continuation; the real emitter provides marker or refusal controls. All model, floor-basis and effort value words consume embedded role/stage text. Mid-line single/double/backtick wrappers match and unmatched wrappers are unchecked; comments containing apostrophes, quotes, backticks or continuation-like text do not swallow later units. CRLF, odd/even backslash runs, trailing whitespace, dangling EOF, exactly 32 and 33 physical lines, and script mentions consumed within explicitly continued quoted values pin the physical-line convention. Neither quote kind implicitly continues; malformed relevant units make the whole dispatch unchecked even before or after a mismatch.
+- Round-7 trailing-backslash oracle: pin counts 1 through 5 with real Bash argv and the real emitter on the identical physical lines. One continues to the stage flag and the emitter refuses the Product/Planning mismatch; the hook requires OR31. Three and five continue with one and two literal backslashes attached to the stage flag name, respectively; the emitter rejects an unknown argument and the hook silently allows. Two and four end the emitter command with one and two standalone literal backslashes, respectively; the emitter rejects an unknown argument, Bash attempts the following stage line as a separate command and exits 127, and the hook silently allows. These expectations follow A48: "Remove the last backslash and the line ending; preserve all other characters and spacing."
+- Round-7 limits and malformed input: at one character below, exactly at and one character above the 64 Ki original-unit and 4 Mi decoded-prompt caps, and one byte below, at and above the 32 MiB stdin cap, pin inclusive limits and fast unchecked handling before splitting. Prompt caps apply without a prefix too. Invalid JSON/encoding, unbalanced unit quotes and unreadable policy inputs return exit 0 and empty stdout with exactly one diagnostic, bounded to 1024 bytes, ending in dispatch allowed unchecked, without traceback or the private prompt sentinel. No partial validation counts as success. Scratch mutations must be killed for implicit quote continuation, skipped mid-line mismatch, ignored prompt cap, swallowed later unit and suppressed unchecked diagnostic. For the mid-line and later-unit controls, structurally locate the A48-retained STAGE_FLAG assignment and replace its value with a never-matching regex in the scratch hook; a matching role command followed by a wrong legacy stage in each placement must still require OR31. These controls share the disabled-stage-recognition mutation and independently test the two placements, without depending on the removed whole-prompt tokenizer or its source text.
+- Round-7 performance: measure each boundary input, a 60000-character invalid role, 18000 adjacent quoted pieces, 20000 ordinary units and 10000 continued units, all within the supported caps where applicable. Each subprocess has a 2.5-second deadline and must finish under 3 seconds; a kill or the 10-second runtime timeout is a failure, never a denial. Report every measured runtime. Unsupported shell interpretation remains observational; no new shell-equivalence or role-tab oracle is introduced.
+- Round-8 escaped-whitespace comments (blocking role-escaped-space-comment only): use real Bash argv and the real emitter on identical physical lines, with ROLE SESSION: Product, a value ending in hash 601, an explicit continuation and then --stage Planning. Pin an escaped space and escaped tab in the model, one/two/three backslashes before the space, escaped space inside single and double quotes, and escaped spaces in floor-basis and legacy effort values. Bash must preserve the hash inside the value for escaped whitespace, odd backslash runs and quoted values; the emitter must refuse the surviving Product/Planning mismatch, and the hook must deny with exit 2, empty stdout and OR31 exactly once plus AVOID. Ordinary-space controls for model, floor-basis and effort, and the two-backslash model control, must instead let the hash start a genuine comment: Bash attempts the next stage line separately (exit 127), and the hook silently allows. Check emitter output against the corresponding legacy Discovery control for genuine comments: model and effort ordinary-space controls succeed, while the literal-backslash model and Product floor-basis controls retain their unrelated emitter value-validation refusals. Neither refusal is a role/stage mismatch or a hook denial oracle. Derive hook expectations only after the Bash argv and real-emitter oracles pass; report each oracle and red/green case counts. Do not add wrapper-comment or unsupported shell-interpretation policy tests.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S413 — The #595 prompt is denied before dispatch (#599 AC5, AC8)
+**Covers:** F40
+- Given: ROLE SESSION: Product and the old --stage Planning command from #595.
+- When: that prompt, --role Product --stage Planning, and a prefix/flag role mismatch are checked; Planning/Architect mismatches also end at EOL or with semicolon, comma, closing parenthesis, backtick, single quote or double quote.
+- Then: each is denied with OR31 exactly once and empty stdout; Fullstack Developer with --role Developer silently passes.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S414 — Role and stage disagreements refuse before marker validation (#599 AC1, AC2, AC7)
+**Covers:** F40
+- Given: all five roles and stages, literal expected markers, and the public emitter CLI.
+- When: all 20 off-diagonal pairs, all five diagonal pairs in either flag order, either form alone, and competing failures run.
+- Then: mismatches exit 2 with empty stdout and one reason naming role, supplied stage and expected stage; parse errors precede mismatch, which precedes marker validation. Matching Reviewer without floor-basis reaches marker_emit's unchanged reason. Successful markers are byte-identical, with empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S415 — Stage-only prompts retain merge-base behavior (#599 AC3, AC7)
+**Covers:** F40
+- Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
+- When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged against that baseline. If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
+**Covers:** F40
+- Given: the emitter argv boundary, including a single quoted Fullstack Developer argument.
+- When: product, Fullstack, Fullstack Developer, every stage name, empty role, equals/plural flags, repeated/value-less flags, neither role nor stage, flag-name values, and Developer with floor-basis run; an invalid role contains Product then a newline then Architect, and Product receives a supplied stage containing Discovery then a newline then Architect.
+- Then: each bad call exits 2, prints no stdout and one stderr reason; required flags and role are named where relevant. Both newline diagnostics retain the offending input components in a safe single-line form, including the expected and supplied stage for a mismatch. A successful role-only command has empty stderr.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S417 — Every emit line agrees with its prefix, including quoted commands by current default (#599 AC8)
+**Covers:** F40
+- Given: a compliant prompt plus another role's quoted emit command, or several emit lines with one mismatch.
+- When: the hook checks the brief, and separately a stage-only emit line without any ROLE SESSION prefix.
+- Then: Option B continues checking fenced emit units; the separately open quoted-example exemption remains a decision for TiesL. the quoted command is denied under the current default pending TiesL's decision; this arm is clearly isolated so that one scenario expectation can be flipped. Several emit lines with one mismatch are denied by OR31. No prefix yields OR8 alone; the cross-check is inapplicable.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
+**Covers:** F40
+- Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
+- When: the hook output is parsed by tab and compared with the other public outputs; one stage in each map source and the hook's tab join to a one-space join are independently mutated in scratch copies.
+- Then: every hook output line has exactly three tab-separated fields (prefix name, flag name, stage), preserving the space within Fullstack Developer as part of the first field. All rows agree, including Fullstack Developer to Developer; a conforming tab-separated scratch output passes, and the one-space join fails the field-format pin. Each single-source map mutation fails the oracle independently of the working hook's delimiter. The inventory still equals --list-checks through S311.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S419 — Instructing docs pin role commands and retain grammar ownership (#599 AC6, AC7)
+**Covers:** F40
+- Given: OR31, the instructing model-choice and pre-merge-review commands, S203/S238/S311 pins, and the unchanged marker grammar owners.
+- When: the docs and independently mutated copies are checked.
+- Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
+- Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+### S420 — Preparation record replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops immediately before and after preparing record replacement.
+- Then: either complete record leaves the old policy intact and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S421 — Ready record replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops before and after ready record replacement.
+- Then: preparing or ready is resumable with unchanged installed policy and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S422 — Atomic exchange interruption preserves both arrangements (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: old complete installation and changed source.
+- When: explicit refresh stops before and after atomic directory exchange.
+- Then: old-active/new-staged and new-active/old-staged are identified by exact digests; recovery publishes new once and never swaps back. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S423 — Ownership commit replacement interruption (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a refresh with verified new staging.
+- When: explicit refresh stops before and after cleanup ownership record replacement.
+- Then: ready or cleanup preserves policy and explicit retry commits the new digest and reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S424 — Cleanup deletion and metadata clearing interruptions (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: an exchanged new generation with transaction-owned old staging.
+- When: refresh stops before and after payload deletion, nested directory removal, old MANIFEST unlink, stage removal and metadata clearing.
+- Then: old MANIFEST remains authenticated until payload and directories are gone, metadata clears only after staging is absent, and every explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S425 — Interrupted recovery is itself recoverable (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a validated preparing record with incomplete staged bytes.
+- When: explicit recovery stops during a replacement stage write and another explicit retry runs.
+- Then: both interruptions preserve the installed policy and the final retry clears transaction and staging and reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S426 — Preparation retry retargets the current source (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: incomplete preparation and source changed again before retry.
+- When: explicit retry stops just before recording ready.
+- Then: preparing records a different new target digest while retaining old digest and exact stage path; rebuilt bytes and revision match current source and next explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S427 — Transaction metadata does not authorize active tampering (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: valid preparing metadata and a tampered active file.
+- When: explicit recovery runs.
+- Then: exit 1 conflict names the active path and preserves all files; after fixture tampering is restored explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S428 — Malformed transaction metadata conflicts before writes (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid pending transaction checked by read-only status.
+- When: unknown phases, wrong types, missing or extra fields, unsafe staging paths, invalid or equal digests and inconsistent committed ownership are supplied.
+- Then: each explicit recovery refuses with exit 1 conflict before writes; restoring valid metadata permits explicit recovery. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S429 — Staging and active symlinks are refused without following (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid incomplete preparation and an external sentinel.
+- When: staged entries, active entries and the exact stage directory are independently replaced by symlinks.
+- Then: exit 1 conflicts name each offending path and preserve the project and external target; restoring regular paths permits explicit recovery. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S430 — Unsupported atomic exchange preserves the active bundle (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a current bundle and changed source.
+- When: the native atomic exchange reports ENOSYS during explicit refresh.
+- Then: refresh refuses with exit 1, active bytes and policy remain identical, and explicit retry without the fault reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S431 — Overlapping adoption writers refuse before writes (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: one refresh paused after preparing record replacement.
+- When: default and explicit-hook writers attempt adoption before the first writer is released.
+- Then: overlapping writers exit 1 without any adoption writes; installed policy remains intact and explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S432 — Default adoption and status preserve stale pending preparation (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid preparing record and incomplete stage beside a stale active bundle.
+- When: default adoption and status run independently.
+- Then: both exit 1 with recovery pending and stale classification, unverified activation and outside-sandbox recovery directions, preserving every file; explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S433 — Default adoption and status preserve current pending cleanup (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a valid cleanup record beside a current new active bundle and old staged generation.
+- When: default adoption and status run independently.
+- Then: both exit 1 with recovery pending and current classification without recovery or cleanup; explicit retry reaches current. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S434 — Versions 1 through 3 remain readable and upgrade explicitly (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: separate exact version-1, version-2 and version-3 historical provenance records.
+- When: status, default adoption and explicit hook adoption run in order.
+- Then: status is read-only, default adoption retains each old version, and explicit hook adoption reports upgrade to version 4 with null transaction and current status. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+### S435 — Transaction status retains exit meanings zero one and two (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: current, default-absent, invalid, stale and valid pending installations.
+- When: status inspects each independently and explicit recovery completes pending state.
+- Then: current and valid default absence exit 0, stale and recovery pending exit 1, invalid input exits 2, and explicit retry ends current with exit 0. Every injected interruption retains the exact missing-review exit 2, stdout and stderr; successful explicit retry removes staging and clears metadata.
+- Falsifiers: an unreached injection, a changed policy verdict, wrong exit or classification, unauthorized write, or failed explicit recovery.
+
+
+### S440 — Current-directory adoption works under Bash 3.2 (#594 AC5, AC6)
+**Covers:** F47
+- Given: separate valid temporary projects and a copied workflow checkout, with no inherited adoption lock environment.
+- When: /bin/bash runs the copied adopt.sh with zero arguments for Claude and only --runtime codex for Codex, from each project directory.
+- Then: both runs exit 0 and install workflow instructions, shared scaffolding, source links and executable native hooks; Codex records runtime provenance and leaves the opt-in bundle absent; neither run changes user configuration.
+- Falsifiers: an empty-array unbound-variable failure, nonzero adoption exit, missing adoption postcondition, or user configuration write.
+
+### S441 — Invalid environment descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: a legitimate explicit-hook writer paused at S431's preparing transition while holding the target project lock, and an independently verified current installation through normal inherited-lock adoption.
+- When: a second explicit-hook writer receives SDG_ADOPTION_LOCK_FD=999999.
+- Then: the second writer exits nonzero without changing any project files; releasing the legitimate writer lets it complete successfully, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S442 — Stale environment descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: the same verified locked-writer harness as S441, with a descriptor opened and closed before the second writer starts.
+- When: the second explicit-hook writer receives that closed descriptor number in SDG_ADOPTION_LOCK_FD.
+- Then: it exits nonzero without changing any project files; the legitimate inherited-lock writer still completes successfully after release, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S443 — Unrelated inherited descriptor cannot bypass writer lock (#594 AC5, AC6)
+**Covers:** F47, F51
+- Given: the same verified locked-writer harness as S441, and an open, exclusively locked descriptor for a different temporary project directory.
+- When: the second explicit-hook writer inherits that live descriptor and its number in SDG_ADOPTION_LOCK_FD.
+- Then: it exits nonzero without changing any target project files; the legitimate inherited-lock writer still completes successfully after release, with current bundle status and intact installed policy.
+- Falsifiers: an unreached pause or unheld target lock, successful overlapping adoption, any overlapping project write, or failure of legitimate inherited-lock adoption.
+
+### S444 — Descendant inherited descriptor cannot authorize overlapping adoption (#594 AC5, AC6; A47)
+**Covers:** F47, F51
+- Given: a normally adopted temporary project and a changed workflow source; a fixture interpreter observer pauses the first explicit-hook refresh immediately after the preparing record replacement, with its real target lock independently confirmed held.
+- When: that active writer launches a descendant explicit-hook adoption carrying its actual inherited locking descriptor and environment, while the first writer stays paused; the fixture snapshots the entire project before and after the descendant, then releases the first writer.
+- Then: the descendant exits 1 and every project file remains byte-identical, including modes, links and directory entries; the first writer completes with exit 0 after release. Normal adoption through the serializer's intended re-execution succeeds both before the overlap and afterward, ending with current bundle status.
+- Falsifiers: an unreached pause, an unheld lock, a first writer that exits before the descendant completes, descendant success or any project mutation, failure of the released first writer, or failure of normal serializer re-execution. On the defective implementation the descendant exits 0 and changes installation.json; the released first writer predictably refuses with exit 1 for a manifest ownership conflict, and a normal explicit retry succeeds.
+
+## Codex session skill drift reporting — #507
+
+The automated Seams are the Codex instruction text, the existing generation
+checker and the public adoption status command. These checks establish structural
+state only. AC5 and AC6 remain manual live-session variants: separately on fresh
+CLI and local desktop sessions, record attributed or raw evidence of running
+status before dependent work, surfacing every missing skill and the adoption
+remedy, continuing after an unavailable/nonzero check, then rerunning ordinary
+adoption and observing discovery in a fresh session. Both surfaces and the remedy
+are currently unverified; automated passes never count as passing these manual
+variants. This follows the mixed automated/manual evidence format of S295-S304
+and S380's #590 live-evidence boundary.
+
+### S450 — Codex instructions pin the read-only status check and report-and-continue rule (#507 AC1, AC4)
+**Covers:** F58
+- Given: the canonical Codex mapping and its generated payload and root managed AGENTS.md copy.
+- When: the instruction text is read with whitespace normalized.
+- Then: each carries the project-relative status command before dependent work, reporting each stale/broken/missing skill line, the ordinary Codex adoption remedy, reporting unavailable/nonzero status and continuing, structural drift distinguished from current-session loading, no session repair/create/delete of paths, and adopt.sh as sole repair owner.
+- Falsifiers: any carrier missing one of these instructions. Static text is not live compliance evidence; AC4's continuation observation remains manual and unverified.
+
+### S451 — The existing generation check rejects Codex instruction and copy drift without repairing it (#507 AC1)
+**Covers:** F58
+- Given: an isolated canonical checkout whose generated files are current.
+- When: check-workflow-adapters.sh runs on the unchanged tree and separately after mutation of the Codex mapping, the generated Codex payload, and the root managed block.
+- Then: the clean control exits 0; each mutation exits 1 naming drift in the affected generated carrier; snapshots remain identical across each check; restoring the original bytes restores exit 0.
+- Falsifiers: accepted drift, a checker that repairs it, a failed clean control, or a duplicate generator used as the oracle.
+
+### S452 — Status reports every canonical skill added after Codex adoption without writes (#507 AC2)
+**Covers:** F58
+- Given: an isolated project adopted for Codex, with a clean status control, then two canonical skills added to its isolated workflow checkout.
+- When: adopt.sh --runtime codex --status . runs from that project.
+- Then: status exits 1 and prints stale/broken/missing: .agents/skills/<name> for each added skill; the project, checkout and external sentinel tree snapshot is identical before and after, including hidden paths, directories, link text, modes and file bytes.
+- Falsifiers: a missing diagnostic, wrong exit, any write, or creation of a missing link.
+
+### S453 — Current Codex links give no missing-skill warning and no write (#507 AC3)
+**Covers:** F58
+- Given: an isolated Codex-adopted project with current links for every canonical skill, bytecode generation enabled, and an empty isolated Python cache.
+- When: .guardrails/source/adopt.sh --runtime codex --status . runs from the project.
+- Then: status exits 0, lists each skill unchanged, prints no stale/broken/missing: .agents/skills/ line, states structural installation only and not live-loaded, and preserves the complete temporary tree snapshot, including the cold cache, hidden paths, directories, link text, modes and file bytes; it creates nothing.
+- Falsifiers: a spurious skill warning, wrong exit, a missing unchanged line or any write. Live discovery is unverified.
+
+### S454 — Reachable status failures preserve files and report their documented diagnostics (#507 AC4)
+**Covers:** F58
+- Given: separate adopted projects with absent or malformed installation.json, missing .guardrails/source, or a regular file, directory, foreign live symlink or foreign broken symlink at a canonical skill path.
+- When: the canonical status command runs from each project.
+- Then: each exits 1 without writes; absent provenance reports stale/missing installation.json, malformed provenance reports its conflict, missing source reports stale/broken/missing source, real skill paths report project-owned file/directory conflicts, and redirected links report foreign/broken unrecorded/manually redirected link conflicts. External sentinel targets are unchanged too.
+- Then: the instructed project-relative launcher with missing source is unavailable (shell exit 127); an unreadable status script is unavailable (shell exit 126 and Permission denied) where permissions are enforced; both preserve the fixture snapshot. A runner bypassing permissions records the unreadable variant unverified rather than claiming it passed.
+- Falsifiers: wrong diagnostic/exit, any mutation, or treating inability to start the launcher as a status scanner verdict. Live session continuation remains manual and unverified; S450 pins its instruction.
+
+### S455 — A39 and Codex instructions state the drift check's evidence limits (#507 AC7)
+**Covers:** F58
+- Given: the A39 amendment and the canonical Codex instructions.
+- When: each is read independently with whitespace normalized.
+- Then: each names instruction suppression/noncompliance, parent/deeper instructions, AGENTS.override.md, instruction budget and model choice, says the check is not mechanically enforced, and marks remote/cloud sessions unverified.
+- Falsifiers: a missing limitation in either owner or a static test represented as live proof. AC5/AC6 observations and remedy discovery remain manual and unverified per surface.
 
 ## Oracle conflict stops and durable QA handoff (#547, #546; A49)
 

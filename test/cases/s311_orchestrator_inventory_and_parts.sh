@@ -173,4 +173,16 @@ done
 dups="$(awk -F'\t' 'NR>1{n=split($5,a,","); delete seen; for(i=1;i<=n;i++){if(a[i]!="" && seen[a[i]]++){print $1" repeats "a[i]}}}' "$TSV")"
 [ -z "$dups" ] || fail "S311/tsv-duplicate-covered-by — $dups"
 
+# #599: OR31 owns both checks, without dropping inventory equality checks.
+row="$(awk -F '\t' '$1=="OR31"{print $3}' "$TSV")"
+[ "$row" = 'hook:marker-command,role-stage' ] || fail "S311/#599 — OR31 hook tier must be hook:marker-command,role-stage"
+for needle in '--role' OR5; do
+  python3 -I - "$ORCH" "$d/o-or31.md" "$needle" <<'PYM'
+from pathlib import Path
+import sys
+p,out,needle=sys.argv[1:]
+s=Path(p).read_text();s='\n'.join(l.replace(needle,'REMOVED-599') if l.startswith('- OR31 ') else l for l in s.split('\n'));Path(out).write_text(s)
+PYM
+  neg "or31-$needle" xref-or31 "$d/o-or31.md" "$TSV" "$SCEN"
+done
 test_done

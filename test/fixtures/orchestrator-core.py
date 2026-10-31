@@ -221,7 +221,10 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
             errs.append((name, "%s must contain %r" % (rid, needle)))
     need("OR21", "OR45", "xref-or21")
     need("OR37", "OR45", "xref-or37")
-    need("OR31", "Stage names: OR5", "xref-or31")
+    need("OR31", "OR5", "xref-or31")
+    need("OR31", "--role", "xref-or31")
+    if not re.search(r"agree|match", full.get("OR31", ""), re.I):
+        errs.append(("xref-or31", "OR31 must state emit role/stage agreement with the prefix role"))
     need("OR36", "in OR5 order", "xref-or36")
     or11 = full.get("OR11", "")
     # #516 (A43): approval for that PR, after the work or in advance; any

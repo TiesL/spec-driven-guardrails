@@ -56,3 +56,10 @@ ad_run_core() {
   ad_err="$(cat "$e")"
   rm -f "$e"
 }
+
+# ad_role_prompt <prefix role> [flag role]: role-only form, kept beside ad_prompt.
+ad_role_prompt() {
+  local role="$1" flag_role="${2:-$1}"
+  [ "$flag_role" != "Fullstack Developer" ] || flag_role=Developer
+  ad_prompt "$role" | sed "s/--stage [A-Za-z]*/--role $flag_role/"
+}

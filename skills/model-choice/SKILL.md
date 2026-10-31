@@ -96,15 +96,16 @@ that has to keep working after new models ship; a record is a fact about
 one past invocation, and doesn't need to age well.
 
 **Machine-readable form (#241).** Produce the marker line with
-`.claude/skills/pre-merge-review/model-record-emit.sh --stage <Stage> --model <id>
+`.claude/skills/pre-merge-review/model-record-emit.sh --role <Role> --model <id>
 [--floor-basis '<sentence>']`, run from the project root (the
 project's installed skill; the guardrails repo installs its own the same
 way), and paste its output unchanged as
 the first line of your report; never type a marker by hand (#402: hand-typed
 lines with an unquoted value or a quoted stage were unreadable). The
 command prints the one valid line, after parsing it back, or nothing and a
-reason. This section is the one place the format is written down; the
-templates below are what the command prints. Prose alone made this
+reason. `--stage <Stage>` remains accepted for old prompts, alone or with
+`--role`; a role/stage mismatch is refused. This section is the one place
+the format is written down; the templates below are what the command prints. Prose alone made this
 unenforceable in practice: only the Review stage ever actually got a model
 recorded (`portfolio-mgt-agents`, #238). Every stage's record is now also a
 marker, in whichever comment (issue, for Discovery; PR, for the rest) that

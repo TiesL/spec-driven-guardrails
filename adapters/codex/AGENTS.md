@@ -95,7 +95,19 @@ The policy above is embedded in the managed AGENTS.md block. Claude-specific
 automatic hook statements in that policy apply to Claude's adapter. This Codex
 adapter defaults to runtime-hooks: not-installed; runtime shell interception unavailable.
 Explicit `adopt.sh --runtime codex --hooks` installs a managed Bash PreToolUse
-merge hook. Status inspects structural installation; activation remains unverified
+merge hook pointing at the self-contained `.codex/sdg-guard/` copy. Only explicit
+`--hooks` refreshes it; default adoption retains its installed revision. Status
+reports current, stale (warning), corrupt (conflict), absent or recovery pending
+(exit 1). Only a second explicit `--hooks` run recovers a pending refresh; default
+adoption and status never recover or clean up staging. Interrupted preparation
+rebuilds from the source available at retry time and records its new target digest.
+Refresh verifies staging and atomically exchanges directories; unsupported exchange
+refuses refresh. TiesL must refresh or recover outside the sandbox with no hook
+executing, and prevent hook execution until completion. Exchange does not pin a
+generation for concurrent hooks. Never work around that protection. The first migration needs
+one further review/trust in `/hooks`; content-only refreshes are not re-prompted.
+Bundle protection remains [A] pending live proof; the merge hook is optional and off.
+Status inspects structural installation; activation remains unverified
 until the runtime invokes it. Project trust, exact-hook review, disabled hooks,
 administrator policy and runtime support may prevent activation. Adoption grants
 no trust or permissions. Context, fetch and push still require explicit actions;
@@ -104,6 +116,21 @@ no SessionStart/PostToolUse/SessionEnd automation is installed.
 Least-privilege Codex permissions (sandbox profile, narrowed rules, merge limits) are a
 document TiesL applies by hand: see `.guardrails/source/adapters/codex/permission-baseline.md`
 (in the SDG repo itself: `adapters/codex/permission-baseline.md`).
+
+Before dependent work, run `.guardrails/source/adopt.sh --runtime codex --status .`
+from the project checkout. Surface each `stale/broken/missing: .agents/skills/<name>`
+line with the remedy: rerun ordinary Codex adoption (`adopt.sh --runtime codex`).
+If status is unavailable or nonzero, report the gap or printed diagnostics and
+continue the session. A nonzero status can indicate structural drift; it does not
+establish live skill discovery or current-session loading. Never repair, create
+or remove paths from this instruction; `adopt.sh` remains the sole owner of
+repair, refresh and removal. This read-only check installs no hook and writes no
+Codex config or trust. Newly linked skills may require a fresh session.
+The status check is not mechanically enforced: instruction suppression or
+noncompliance (parent/deeper instructions, AGENTS.override.md, instruction budget,
+model choice) can prevent it. Remote/cloud sessions remain unverified. Live
+CLI/local desktop behavior and discovery after the remedy are separate manual
+observations, unverified until observed.
 
 Before dependent work, run and read `.guardrails/source/session-context.sh --runtime codex <project>`
 from the project checkout (use `.` for <project>). Read each invoked skill's
