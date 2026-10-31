@@ -2034,7 +2034,11 @@ change, preserves the spec and scenario text byte-identically at detection,
 saves the attempted patch under A12 and reports the finding's class and a
 falsifying check. The existing class route determines who resolves it; the
 Developer's docs scope explicitly excludes `PRD.md`, `ARCHITECTURE.md` and
-`TEST-SCENARIOS.md`. Clauses asserting current or unchanged behavior carry a
+`TEST-SCENARIOS.md`, except that under a valid `skip=Test` pipeline-override
+record (OR34) the Developer may append new `### <ID>` entries and their scenario
+text for test files it adds in this work item; existing scenario text stays
+byte-identical. This exception does not waive the conflict stop. Clauses
+asserting current or unchanged behavior carry a
 falsifying check with an observable expected result and evidence run or looked
 up by Product or QA. Evidence records both the observed `main` SHA and the
 PR's merge-base SHA, separately when they differ; the preservation assertion
@@ -2049,6 +2053,11 @@ These are instruction and evidence requirements, not proof of live compliance.
 ### F60 — Preserve QA's exact scenario diff across the Developer handoff (issue #546)
 
 **Temporary panel settlement, 2026-10-30; TiesL may overrule.**
+The QA-artifact, OR46(c) comparison and Reviewer approval-block requirements
+below do not apply under a valid `skip=Test` pipeline-override record (OR34).
+Instead, the orchestrator logs a not-applicable line with the record link and
+head; the Reviewer verifies that record and log line for the reviewed head.
+A `single-session` override does not grant this exemption.
 Before the Developer handoff, QA durably records its exact `TEST-SCENARIOS.md`
 changes on the work-item issue as a git-format unified diff produced with
 `git diff --full-index`, in a tilde fence, identifying the path, base SHA,
