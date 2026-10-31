@@ -1781,9 +1781,19 @@ something new is being added.
   the model-only floor on self-reported model strings (#424; S237); the merge-confirmation row is
   `unverifiable-from-artifacts` whether the PR is merged or open; a red,
   pending, unknown-bucket or absent CI check is never `evidenced`; a
-  stale review marker is `not-evidenced` while an unparseable one is
-  `indeterminate`; a failed checks or issue-comments lookup degrades its
-  own row to `indeterminate` and exits 0, while a failed PR lookup exits
+  stale-only review done marker is `not-evidenced` when the evidence corpus
+  was fully read, and `indeterminate` after a partial lookup failure because
+  a matching marker may be unread; an unparseable done marker is
+  `indeterminate`. A failed PR-comments, PR-reviews or closing-issue-comments
+  lookup makes gates 1 and 2 `indeterminate`: unread candidates may supersede
+  the recorded stages or Implementation/Review models, even when readable
+  markers agree or differ. Gate 3 is `indeterminate` for absent or stale-only
+  done evidence under that failure, but an observed done marker matching
+  `headRefOid` stays `evidenced` (S150 Arm B, Arm C, Arm D and presence arm;
+  S276). A failed checks lookup makes gate 4 `indeterminate`; a partial
+  evidence-corpus lookup failure leaves the independent CI, traceability
+  and merge-confirmation gates unchanged. These partial failures exit 0,
+  while a failed PR lookup exits
   4 with no table; with no `gh` on `PATH` it exits 3 with nothing on
   stdout; the run makes no `gh` write call and the script's source
   contains none
@@ -1798,7 +1808,11 @@ something new is being added.
   ahead of `PATH`
 - Then: no gate counts such an occurrence as live evidence; a gate whose
   only matches were quoted reports `not-evidenced` and says in words that
-  quoted occurrences were seen and ignored; bare marker-shaped prose
+  quoted occurrences were seen and ignored. Q14's bare-message comparison
+  uses the current collector wording and space-separated missing-stage list;
+  removing only the ignored-quotation suffix from its actual rendered cell
+  must fail each wording assertion independently, while the unchanged cell
+  passes both (#609); bare marker-shaped prose
   reports `not-evidenced` rather than `indeterminate`, while a malformed
   marker inside real delimiters still reports `indeterminate`; a real
   model-record candidate posted inline with prose is a named near-miss
