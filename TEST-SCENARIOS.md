@@ -2926,28 +2926,17 @@ something new is being added.
 
 ### S209 — every Review round is a fresh Reviewer dispatch, and the orchestrator may not continue one
 **Covers:** F41
-- Given: `skills/role-contracts/SKILL.md` (Reviewer section),
-  `skills/role-contracts/ORCHESTRATOR.md` and `skills/pre-merge-review/SKILL.md`
-  (issue #414, AC1, AC2)
-- When: each is read for the rule on repeat Review rounds
-- Then: each states that every Review round is a new dispatch of a fresh agent
-  and that a Reviewer is never continued or resumed; `ORCHESTRATOR.md` forbids
-  it for the Reviewer explicitly, in one sentence naming both `SendMessage`
-  and the dispatch tool's `fork` type (also in the Reviewer contract and
-  `pre-merge-review`), says roles are started as a new agent never by that
-  `fork` type, imposes no `SendMessage` ban on other roles, and leaves
-  continuing another role for a later step to #412
-- Amended by #499 (AC14, A41): the `ORCHESTRATOR.md` half is located by ID,
-  no longer by the Dispatch-paragraph sentences (`once started`, `the
-  dispatch tool's fork type`): `OR7` (tier `hook:no-fork`), `OR12` and
-  `OR13` (tier `judgment`) each start exactly one list item in part 1;
-  `OR12`'s item names `SendMessage` and `fork`, and `OR13`'s names `#412`
-  (plumbing). Absence check kept: every `ORCHESTRATOR.md` item that contains
-  `SendMessage` is `OR12`'s, so no ban reaches other roles. Counterexamples:
-  `SendMessage` added to `OR7`'s or `OR13`'s item; `OR13` removed. The
-  `SKILL.md` and `pre-merge-review` halves are unchanged. Behaviour: `OB12`
-  and `OB49` (fresh Reviewer, graded against `continue_agent`), `OB51`
-  (`OR13`: QA may be routed either way, no human question)
+- Given: the Reviewer contract, `pre-merge-review/SKILL.md`, and
+  `ORCHESTRATOR.md` (issue #414 AC1/AC2; #499 AC14; #611)
+- When: their current text is checked
+- Then: each carrier explicitly bans Reviewer continuation by both
+  `SendMessage` and the dispatch tool's `fork` type. An exception permitting
+  either mechanism fails even with all the old keywords retained (S475).
+  `OR7`, `OR12` and `OR13` each start one item in part 1 with their assigned
+  tiers; only `OR12` and `OR13` may mention `SendMessage`. `OR13` leaves
+  Reviewer to `OR12` and permits other roles under #532's limits.
+- Behaviour: `OB12`, `OB49` and `OB51`; these text checks do not prove agent
+  freshness or live obedience.
 
 ### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
 **Covers:** F41
@@ -3005,11 +2994,13 @@ something new is being added.
 - Then, `SKILL.md` (unchanged): it gives the route per class (`design`:
   Architect, QA, Developer, fresh Reviewer; `code` and `test`: QA, Developer,
   fresh Reviewer; `spec`: Product, then QA, Developer, fresh Reviewer) and
-  says a class is never downgraded
+  says the orchestrator never downgrades a class while the Architect may
+  record that a finding is not a design defect and route it as code
 - Then, `ORCHESTRATOR.md`: `OR17` (route by class), `OR18` (no relayed fix,
   never downgrade, Architect when unclassed or in doubt) and `OR19` (any-stage
   design defect) each start one list item in part 2 with tier `judgment`;
-  absence check kept: neither file says "nobody downgrades"
+  neither file says "nobody downgrades"; both affirmatively permit Architect
+  reclassification. Inverting either permission fails (S476, #611)
 - The routing behaviour moves to `OB14`-`OB20`; phrase matching on the
   `ORCHESTRATOR.md` route is dropped
 
@@ -3071,7 +3062,8 @@ something new is being added.
 - When: the self-check and the override rules are located by ID
 - Then: `OR24`-`OR27` are the four sub-items of `OR23`'s item, in part 2, with
   tier `core`; `OR25`'s sub-item names `review-rounds.sh` and the project's
-  checkout as the working directory (plumbing, path resolved as in S206);
+  checkout as the affirmative working directory. Replacing it with the
+  guardrails clone while forbidding the project checkout fails (S477, #611);
   `OR21` (override) starts one list item in part 2 with tier `judgment`,
   names `OR45` by ID (the cross-part reference, S311) and names `SKILL.md`
   for the risk-note format; absence checks kept: `OR21` defines no risk-note
@@ -4912,7 +4904,9 @@ that evidence and the final `./check` result.
   pushback. If the recommending role is Reviewer, this dispatch is a fresh
   Reviewer under S209. A synthetic trace with decision-before-pushback,
   two pushbacks after the maintainer holds the position, a missing link,
-  or reuse of the Reviewer fails. Non-Reviewer reuse remains #412's choice.
+  or reuse of the Reviewer fails. Non-Reviewer continuation follows #532.
+  `OR45` itself must dispatch the recommending role once for reasoned pushback before recording the decision;
+  deletion or reversed ordering fails despite keywords elsewhere (S478, #611).
 
 ### S282 — an overrule leaves an Architect risk note with the #410 reference
 **Covers:** F44
@@ -4926,7 +4920,10 @@ that evidence and the final `./check` result.
   role was overruled, the flow dispatches the Architect for this note.
   The contracts explicitly say this is the risk-note format referenced
   by #410 AC6/S218. A missing field, missing decision link, or note only
-  in the orchestrator's markerless log fails.
+  in the orchestrator's markerless log fails. The Architect format requires the
+  literal `**Decision**` field linking the numbered human decision. `OR45`
+  itself must dispatch the Architect for a non-Architect overrule; deletion
+  or negation of that dispatch fails despite keywords elsewhere (S479, #611).
 
 ### S283 — completeness remains a review limit and the full check passes
 **Covers:** F44
@@ -8167,3 +8164,48 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S475 — Reviewer continuation bans reject keyword-preserving mutations
+**Covers:** F41
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  invert each of the three carriers to permit SendMessage, and separately permit fork in OR12
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S476 — Architect reclassification permission rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  negate the permission separately in SKILL.md and OR18
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S477 — project checkout working directory rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  replace the OR25 directory with the guardrails clone and forbid the project checkout, or insert never before the checkout
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S478 — OR45 pushback obligation rejects keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete the recommending-role pushback sentence or change before to after
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S479 — OR45 risk-note dispatch and literal Decision field reject keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete or negate the Architect dispatch in OR45, or delete the literal Decision field from the Architect format
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.

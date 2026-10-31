@@ -78,4 +78,8 @@ while IFS= read -r id; do
   fi
 done < <(python3 -I "$OC_PY" items --orch "$OC_ORCH" | cut -f1)
 
+# #611: permission and ban direction must survive keyword-preserving inversions.
+python3 "$TEST_REPO_ROOT/test/fixtures/role-contract-611.py" "$TEST_REPO_ROOT" reviewer \
+  || fail "S209 — directional reviewer contract"
+
 test_done
