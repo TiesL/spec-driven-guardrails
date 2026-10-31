@@ -2037,7 +2037,7 @@ Developer's docs scope explicitly excludes `PRD.md`, `ARCHITECTURE.md` and
 `TEST-SCENARIOS.md`, except that under a valid `skip=Test` pipeline-override
 record (OR34) the Developer may append new `### <ID>` entries and their scenario
 text for test files it adds in this work item; existing scenario text stays
-byte-identical. This exception does not waive the conflict stop. Clauses
+byte-identical (skip=Test exemption: panel 2026-10-31, PR #605). This exception does not waive the conflict stop. Clauses
 asserting current or unchanged behavior carry a
 falsifying check with an observable expected result and evidence run or looked
 up by Product or QA. Evidence records both the observed `main` SHA and the
@@ -2054,7 +2054,8 @@ These are instruction and evidence requirements, not proof of live compliance.
 
 **Temporary panel settlement, 2026-10-30; TiesL may overrule.**
 The QA-artifact, OR46(c) comparison and Reviewer approval-block requirements
-below do not apply under a valid `skip=Test` pipeline-override record (OR34).
+below do not apply under a valid `skip=Test` pipeline-override record (OR34)
+(skip=Test exemption: panel 2026-10-31, PR #605).
 Instead, the orchestrator logs a not-applicable line with the record link and
 head; the Reviewer verifies that record and log line for the reviewed head.
 A `single-session` override does not grant this exemption.
