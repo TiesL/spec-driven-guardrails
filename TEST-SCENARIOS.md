@@ -5052,8 +5052,10 @@ that evidence and the final `./check` result.
   `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
   still states it can evade (anchor against drift). No entry line mentioning
   the reader, the lint or `CommonMark` contains a sentence (delimited by
-  `.`, `!` or `?`) with the whole word `complete`, `exhaustive` or `guarantee`
-  unless that same sentence contains a whole-word negator, case-insensitively:
+  `.`, `!` or `?`) with a word starting with `complete`, `exhaustive` or `guarantee`
+  (including suffixes such as `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively`, but excluding `incomplete`) unless that
+  same sentence contains a whole-word negator, case-insensitively:
   `not`, `no`, `never`, `neither`, `cannot`, `outside`. A word boundary is the
   start/end or a character other than an alphanumeric or underscore; `Known`,
   `another` and `nothing` are not negators.
@@ -8184,8 +8186,13 @@ and S380's #590 live-evidence boundary.
 - Then: unchanged notes pass. Each false claim fails with the completeness
   diagnostic: "Known: the strict reader is complete.", "The strict reader is
   complete for another shape.", "The lint is complete and nothing is missing."
+  Inflected claims using `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively` also fail with that diagnostic; adding
+  a whole-word `not` to each same sentence makes it pass. `incomplete` passes.
   Every whole-word negator listed in S285 passes, including `outside`; the
-  scenario negator list equals the test list.
+  scenario negator list equals the test list. A disposable scenario and test
+  extended with `seldom` must pass and report that the added negator was
+  exercised; a hard-coded loop that omits it fails this control.
 - And: later conflicting counts ("Two answers", "2 questions", "30 questions",
   "13 answers", and adjacent "3 answers 2 questions") after the existing
   matching count fail with a count diagnostic;

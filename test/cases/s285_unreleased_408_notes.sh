@@ -105,7 +105,7 @@ while IFS= read -r l; do
   [ -n "$l" ] || continue
   grep -Eiq 'reader|lint|commonmark' <<<"$l" || continue
   while IFS= read -r sentence; do
-    grep -Eiq '(^|[^[:alnum:]_])(complete|exhaustive|guarantee)([^[:alnum:]_]|$)' <<<"$sentence" || continue
+    grep -Eiq '(^|[^[:alnum:]_])(complete|exhaustive|guarantee)' <<<"$sentence" || continue
     grep -Eiq "(^|[^[:alnum:]_])($negators)([^[:alnum:]_]|$)" <<<"$sentence" \
       || fail "S285 — completeness claim in compatibility entry: $sentence"
   done < <(printf '%s\n' "$l" | tr '.!?' '\n')

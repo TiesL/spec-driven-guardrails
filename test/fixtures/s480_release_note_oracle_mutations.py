@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix="s480-") as directory:
     fixture = pathlib.Path(directory)
     for name in ("test/lib.sh", "test/cases/s285_unreleased_408_notes.sh",
                  "lib/git-env.sh", "lib/markdown.sh", "lib/one-definition-lint.py",
-                 "CHANGES.md"):
+                 "CHANGES.md", "TEST-SCENARIOS.md"):
         target = fixture / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(root / name, target)
@@ -52,7 +52,18 @@ with tempfile.TemporaryDirectory(prefix="s480-") as directory:
                      "The strict reader is complete for another shape.",
                      "The lint is complete and nothing is missing."):
         check(sentence, append(sentence), False, "completeness claim")
-    for word in ("not", "no", "never", "cannot", "outside", "neither"):
+    for sentence in ("The strict reader guarantees every shape.",
+                     "The lint is guaranteed to find all duplicates.",
+                     "The reader handles CommonMark completely.",
+                     "The reader has completeness for CommonMark.",
+                     "The lint is exhaustively correct."):
+        check("inflected claim: " + sentence, append(sentence), False,
+              "completeness claim")
+        check("negated inflected claim: " + sentence,
+              append("Not true: " + sentence), True)
+    check("incomplete is not a completeness claim",
+          append("The reader is incomplete."), True)
+    for word in test_negators:
         check("whole-word negator " + word,
               append("The reader: " + word + " complete."), True)
     for sentence in ("Two answers are new.", "2 questions need confirmation.",
@@ -65,3 +76,24 @@ with tempfile.TemporaryDirectory(prefix="s480-") as directory:
               original.replace("meaning version 2 (", "meaning version 2" + suffix + " ("),
               False, "meaning version 2'")
     assert not failures, failures
+
+    # Extend both documented and implemented rules in the disposable copy.
+    # Require the nested CLI run to report the added case, so a hard-coded
+    # iteration cannot silently pass by omitting it.
+    if "--extended-negator-control" not in sys.argv:
+        scenario_path = fixture / "TEST-SCENARIOS.md"
+        scenario_path.write_text(scenario_path.read_text().replace(
+            "`not`, `no`, `never`, `neither`, `cannot`, `outside`.",
+            "`not`, `no`, `never`, `neither`, `cannot`, `outside`, `seldom`."))
+        test_path = fixture / "test/cases/s285_unreleased_408_notes.sh"
+        test_path.write_text(source.replace(
+            "negators='" + "|".join(test_negators) + "'",
+            "negators='" + "|".join(test_negators + ["seldom"]) + "'"))
+        (fixture / "CHANGELOG.md").write_text(original)
+        result = subprocess.run(
+            [sys.executable, "-B", str(pathlib.Path(__file__).resolve()),
+             str(fixture), "--extended-negator-control"],
+            capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "S480 PASS: whole-word negator seldom\n" in result.stdout, result.stdout
+        print("S480 PASS: added scenario/test negator seldom is exercised")
