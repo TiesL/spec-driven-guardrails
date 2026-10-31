@@ -7,6 +7,10 @@ Architect's recommendation on #513 (comment 6446954419).
 
 How keys are marked:
 
+Each snippet key must carry a mark on its own line or be covered by a table header
+that explicitly covers its nested keys. A covering table header may use [A] only,
+never [V]; its nested keys are marked assumed without per-key marks.
+
 - **[V]** verified: read in source, help output or official documentation. Verified means
   the key exists and parses. It does not mean the runtime enforces it.
 - **[A]** assumed: not yet shown by a live run. Nested probes inside Codex's own sandbox
@@ -65,7 +69,7 @@ Codex 0.163.0 help shows `-p sdg-workspace` layering `$CODEX_HOME/sdg-workspace.
 chooses the location.
 
 ```toml
-# Every key: parsing [V docs/startup], effective enforcement [A pending live proof]
+# Individually marked keys: parsing [V docs/startup], effective enforcement [A pending live proof]
 sandbox_mode = "workspace-write"          # [V] key, [A] enforcement
 approval_policy = "on-request"            # [V] key, [A] enforcement
 approvals_reviewer = "user"               # [V] key, [V observed] needed, see Notes
@@ -78,7 +82,7 @@ writable_roots = ["/ABS/SESSION-SCRATCH", "/ABS/THIS-SDG-CLONE"]   # [V] key, [A
 
 # Conditional: only after the proof in "Network" below passes, set network_access = true
 # above and add this table. Both together or neither.
-[features.network_proxy]                  # [A] nested keys not shown to be enforced
+[features.network_proxy]                  # [A] covers its nested keys; not shown to be enforced
 enabled = true
 domains = { "api.github.com" = "allow", "github.com" = "allow" }
 ```
