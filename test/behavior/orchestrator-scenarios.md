@@ -456,7 +456,7 @@ When: You choose the next step before allowing the Developer to implement agains
 Then: next_action=dispatch; next_role=QA; asks_human=false
 
 ### OB75 · OR15, OR46
-Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. Durable handoff records contain no QA scenario artifact reference, so no artifact comparison can be run or logged. QA must supply the missing handoff, and no existing agent needs to be continued.
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in the ordinary five-role workflow, with completion records for Discovery, Planning, Test and Implementation and no pipeline override. Durable handoff records contain no QA scenario artifact reference and no comparison result. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
 When: You choose the next step before starting Review round 1.
 Then: next_action=dispatch; next_role=QA
 
@@ -481,12 +481,12 @@ When: You choose the next step after the Developer returns, respecting the recor
 Then: next_action=dispatch; next_role=Reviewer; asks_human=false
 
 ### OB80 · OR34, OR46
-Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked issue has no skip=Test record or any other override. No QA scenario artifact exists. No finding is open; QA must supply the missing handoff, and no existing agent needs to be continued.
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in the ordinary five-role workflow, with completion records for Discovery, Planning, Test and Implementation. The linked issue has no skip=Test record or any other override. No QA scenario artifact exists; durable handoff records contain no artifact reference or comparison result. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
 When: You choose the next step after the Developer returns, before starting Review.
 Then: next_action=dispatch; next_role=QA; asks_human=false
 
 ### OB81 · OR34, OR46
-Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked issue has a valid single-session pipeline-override record but no skip=Test record. No QA scenario artifact exists. No finding is open; QA must supply the missing handoff, and no existing agent needs to be continued.
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in a single-session workflow, with completion records for Discovery, Planning, Test and Implementation. The linked issue has a valid human single-session pipeline-override record, posted before the first commit or PR and recognized by the merge guard, but no skip=Test record. No QA scenario artifact exists; durable handoff records contain no artifact reference or comparison result. The Pipeline log records `QA provenance: result=not-applicable; skip=https://github.com/owner/repo/issues/40#issuecomment-123; head=9f8e7d6` linking that single-session record. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
 When: You choose the next step after the Developer returns, before starting Review.
 Then: next_action=dispatch; next_role=QA; asks_human=false
 
@@ -580,5 +580,12 @@ item cites its decision as at least one `#<n>`.
   must match before Review (#546, #547, A49 panel Q3).
 - OB79 (OR34, OR46): a valid skip=Test record exempts the QA artifact and
   comparison, so its linked not-applicable log allows Review (#547, A49 panel).
+- OB80 (OR34, OR46): completed stage records without an override do not
+  replace the missing QA artifact; return to QA before Review. The base core
+  has no artifact prerequisite in its Review handoff (#546, #547, A49).
+- OB81 (OR34, OR46): a single-session record and a not-applicable log citing
+  it do not replace the missing QA artifact; return to QA before Review.
+  The base core has no artifact prerequisite, while an exemption extended to
+  single-session would also admit Review here (#546, #547, A49 panel Q3).
 - OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict
   stop or authorize editing existing scenario text (#547, A49 panel).
