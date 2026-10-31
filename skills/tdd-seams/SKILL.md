@@ -25,6 +25,12 @@ itself (see "Rood vóór groen" in `TEST-SCENARIOS.md`) — every new scenario
 starts red, except the regression scenarios R1–R9, which are supposed to
 be green.
 
+Preserved-behavior assertions must be green on the PR's recorded main merge base;
+red there is a spec finding requiring the OR19 stop and evidence preservation.
+Never rewrite the scenario, oracle or expected value to fit the implementation.
+New behavior still needs red-before-green; preservation failure is not that proof.
+See `write-spec` for historical evidence and revision identities.
+
 ## Three anti-patterns, named
 
 **Implementation-coupled.** The test knows internal details (a private

@@ -443,6 +443,58 @@ Given: Yesterday the maintainer wrote on PR 41: "merge once everything is green"
 When: You decide your next step on PR 44.
 Then: next_action=ask_human; asks_human=true
 
+## Oracle conflict stops and QA provenance
+
+### OB73 · OR19, OR17
+Given: During Implementation of issue 40, the Developer reports a spec/scenario conflict of class `spec`: AC3 contradicts TEST-SCENARIOS.md. The affected change is still in progress; no owning-role resolution exists, and no existing agent needs to be continued.
+When: You choose the next step before the Developer changes the scenario to fit its code.
+Then: next_action=dispatch; next_role=Product; asks_human=false
+
+### OB74 · OR19, OR17
+Given: During Test of issue 40, QA reports a spec/scenario conflict of class `test`: a faulty preservation scenario contradicts the requirement. The affected change is still in progress; no owning-role resolution exists, and no existing agent needs to be continued.
+When: You choose the next step before allowing the Developer to implement against a rewritten scenario.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
+### OB75 · OR15, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in the ordinary five-role workflow, with completion records for Discovery, Planning, Test and Implementation and no pipeline override. Durable handoff records contain no QA scenario artifact reference and no comparison result. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
+When: You choose the next step before starting Review round 1.
+Then: next_action=dispatch; next_role=QA
+
+### OB76 · OR15, OR17, OR46
+Given: Review round 1 is due on PR 41. Comparison of the applicable QA scenario artifact to the Developer's committed head returned exit 1, result different, and was logged. The differing hunk has an unresolved finding of class `spec`; no other finding is open, and no existing agent needs to be continued.
+When: You choose the next step before starting Review round 1.
+Then: next_action=dispatch; next_role=Product
+
+### OB77 · OR15, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The applicable QA scenario artifact is linked, its comparison against that head returned exit 0, result match, and the exact invocation, identities, hashes and result are recorded in the Pipeline log. No finding is open; the Review brief has all required artifact fields.
+When: You start Review round 1.
+Then: next_action=dispatch; next_role=Reviewer; asks_human=false
+
+### OB78 · OR15, OR17, OR46
+Given: Review round 1 is due on PR 41. A logged comparison returned exit 1, result different, for an unauthorized scenario-text difference. The owning-role route has since resolved the finding, but QA has not issued a new artifact superseding the prior one and no matching comparison exists. The Developer says the resolution alone makes the handoff ready. No existing agent needs to be continued.
+When: You choose the next step before starting Review round 1.
+Then: next_action=dispatch; next_role=QA
+
+### OB79 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6. The linked work-item issue has a valid human skip=Test pipeline-override record, posted before the first commit or PR and recognized by the merge guard. No QA scenario artifact exists. The Pipeline log records `QA provenance: result=not-applicable; skip=https://github.com/owner/repo/issues/40#issuecomment-123; head=9f8e7d6` linking that record. No finding is open and the Review brief has all other required fields.
+When: You choose the next step after the Developer returns, respecting the recorded Test waiver.
+Then: next_action=dispatch; next_role=Reviewer; asks_human=false
+
+### OB80 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in the ordinary five-role workflow, with completion records for Discovery, Planning, Test and Implementation. The linked issue has no skip=Test record or any other override. No QA scenario artifact exists; durable handoff records contain no artifact reference or comparison result. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
+When: You choose the next step after the Developer returns, before starting Review.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
+### OB81 · OR34, OR46
+Given: Review round 1 is due on PR 41 at the Developer's committed head 9f8e7d6 in a single-session workflow, with completion records for Discovery, Planning, Test and Implementation. The linked issue has a valid human single-session pipeline-override record, posted before the first commit or PR and recognized by the merge guard, but no skip=Test record. No QA scenario artifact exists; durable handoff records contain no artifact reference or comparison result. The Pipeline log records `QA provenance: result=not-applicable; skip=https://github.com/owner/repo/issues/40#issuecomment-123; head=9f8e7d6` linking that single-session record. No finding is open, the Review brief has all other required fields, and no existing agent needs to be continued.
+When: You choose the next step after the Developer returns, before starting Review.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
+### OB82 · OR19, OR17, OR34
+Given: During Implementation of issue 40, a valid skip=Test pipeline-override record is present on the issue. The Developer reports a spec/scenario conflict of class `spec`: AC3 contradicts TEST-SCENARIOS.md, and proposes changing existing scenario text under the Test waiver. The affected change is still in progress; no owning-role resolution exists, and no existing agent needs to be continued.
+When: You choose the next step before the Developer changes the scenario to fit its code.
+Then: next_action=dispatch; next_role=Product; asks_human=false
+
 ## Intended changes
 
 Scenarios whose `Then` follows a decided rule change that the old text may not
@@ -513,3 +565,27 @@ item cites its decision as at least one `#<n>`.
   Decided by the maintainer (#516 Human decision 1, AC6).
 - OB72 (OR11): an approval is for one PR and never carries to another.
   Decided by the maintainer (#516 Human decision 1, AC6).
+- OB73 (OR19, OR17): a Developer spec/scenario conflict stops the affected
+  change and follows the spec owner route before any oracle edit (#547, A49).
+- OB74 (OR19, OR17): a QA spec/scenario conflict stops the affected change
+  and follows the test owner route before Developer continues (#547, A49).
+- OB75 (OR15, OR46): missing QA artifact evidence blocks Review and returns
+  the handoff to QA (#546, #547, A49).
+- OB76 (OR15, OR17, OR46): a differing comparison blocks Review and follows
+  the disclosed finding's class route (#546, #547, A49).
+- OB77 (OR15, OR46): a matching comparison logged with the applicable QA
+  artifact permits the fresh Review dispatch (#546, #547, A49).
+- OB78 (OR15, OR17, OR46): owner resolution alone cannot accept an unauthorized
+  scenario difference; QA must issue a superseding artifact and the comparison
+  must match before Review (#546, #547, A49 panel Q3).
+- OB79 (OR34, OR46): a valid skip=Test record exempts the QA artifact and
+  comparison, so its linked not-applicable log allows Review (#547, A49 panel).
+- OB80 (OR34, OR46): completed stage records without an override do not
+  replace the missing QA artifact; return to QA before Review. The base core
+  has no artifact prerequisite in its Review handoff (#546, #547, A49).
+- OB81 (OR34, OR46): a single-session record and a not-applicable log citing
+  it do not replace the missing QA artifact; return to QA before Review.
+  The base core has no artifact prerequisite, while an exemption extended to
+  single-session would also admit Review here (#546, #547, A49 panel Q3).
+- OB82 (OR19, OR17, OR34): the skip=Test exemption does not waive the conflict
+  stop or authorize editing existing scenario text (#547, A49 panel).
