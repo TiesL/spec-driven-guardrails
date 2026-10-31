@@ -190,4 +190,12 @@ for f in $(cd "$TEST_REPO_ROOT" && grep -rlE 'review-rounds' hooks settings chec
 done
 [ -z "$wired" ] || fail "S217/not-gate — review-rounds is referenced from a hook, check or gate script (A28: it is not a gate): $wired"
 
+# #610: both the header and runtime help identify the repository.
+header="$(sed -n '1,/^set -/p' "$RR_SCRIPT")"
+grep -qiE 'working.directory.*repositor|repositor.*working.directory' <<< "$header" \
+  || fail "S217/repository-header — header must name the working-directory repository"
+rr_run
+grep -qiE 'working.directory.*repositor|repositor.*working.directory' <<< "$rr_err" \
+  || fail "S217/repository-help — usage must name the working-directory repository"
+
 test_done
