@@ -5023,16 +5023,19 @@ that evidence and the final `./check` result.
   containing "absorbed" (case-insensitive). Counterexample: any one line
   missing the word.
 - And: the compatibility entry (the `- **Compatibility and limits (#408).**`
-  bullet inside Unreleased, up to the next top-level bullet) names every
+  bullet inside v0.4.0, up to the next top-level bullet) names every
   question whose `Meaning version:` differs between `git show
   v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
-  `meaning version <new number>`. A question differs when its `## <name>`
+  `meaning version <new number>` with a whole-number match (2 must not
+  accept 20 or 21). A question differs when its `## <name>`
   section has a `Meaning version:` number in the new file that is absent from
   or unequal to the old file's. Today that set is
   `quality-review-before-merge` (4), `process-model-choice` (2) and
   `process-multi-agent-roles` (2); the test derives it, it does not list it.
   Any count the entry states in words or digits ("two answers", "3
-  questions") equals the set size. Counterexamples: the set computed from the
+  questions") equals the set size, including later counts after a matching first
+  count; numeric prefixes and conflicting later counts fail. Counterexamples:
+  the set computed from the
   working tree alone or hard-coded; `process-model-choice` omitted; the entry
   saying "two" while three differ; a bump invented for a question whose number
   did not change. If tag `v0.3.0` does not resolve to a commit, the test
@@ -5048,8 +5051,12 @@ that evidence and the final `./check` result.
   tracked) appears in the entry. Lint: the entry contains `one-definition` and
   `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
   still states it can evade (anchor against drift). No entry line mentioning
-  the reader, the lint or `CommonMark` contains `complete`, `exhaustive` or
-  `guarantee` unless it also contains `not`, `no `, `cannot` or `outside`.
+  the reader, the lint or `CommonMark` contains a sentence (delimited by
+  `.`, `!` or `?`) with the whole word `complete`, `exhaustive` or `guarantee`
+  unless that same sentence contains a whole-word negator, case-insensitively:
+  `not`, `no`, `never`, `neither`, `cannot`, `outside`. A word boundary is the
+  start/end or a character other than an alphanumeric or underscore; `Known`,
+  `another` and `nothing` are not negators.
   Counterexamples: the entry without `ordered-item-after-paragraph`; a lint
   sentence without the evasion limit; "the strict reader is complete";
   a header limit added without an entry mention. A pointer such as "see
@@ -8167,3 +8174,22 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S480 — S285 rejects substring negators, later conflicting counts and meaning-version prefixes (#613)
+**Covers:** F15
+- Given: a disposable copy of S285 and its input files, with read-only access
+  to the clone's v0.3.0 tag; the historical release notes remain unchanged.
+- When: S285 runs against the unchanged notes, then each mutated compatibility
+  entry, through its normal shell CLI.
+- Then: unchanged notes pass. Each false claim fails with the completeness
+  diagnostic: "Known: the strict reader is complete.", "The strict reader is
+  complete for another shape.", "The lint is complete and nothing is missing."
+  Every whole-word negator listed in S285 passes, including `outside`; the
+  scenario negator list equals the test list.
+- And: later conflicting counts ("Two answers", "2 questions", "30 questions",
+  "13 answers", and adjacent "3 answers 2 questions") after the existing
+  matching count fail with a count diagnostic;
+  multiple matching word and digit counts pass. Replacing expected meaning
+  version 2 with 20 or 21 fails with the meaning-version diagnostic.
+- Counterexample: any mutation passes, a valid control fails, or a mutation
+  fails only because a different S285 prerequisite is missing.

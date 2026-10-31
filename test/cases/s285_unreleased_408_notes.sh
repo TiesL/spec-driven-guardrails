@@ -66,20 +66,26 @@ else
       grep -qF -- "$q" <<<"$entry" \
         || fail "S285 — compatibility entry does not name '$q' (meaning version changed since v0.3.0)"
       ql="$(grep -F -- "$q" <<<"$entry")"
-      grep -qF -- "meaning version $v" <<<"$ql" \
+      grep -qE -- "meaning version $v([^[:alnum:]_]|$)" <<<"$ql" \
         || fail "S285 — compatibility entry has no '$q' line with 'meaning version $v' (read from CHANGES.md)"
     fi
   done <<<"$new"
   [ "$n_changed" -gt 0 ] || fail "S285 — oracle found no changed meaning versions since v0.3.0"
-  stated="$(grep -oiE '(^|[^a-z])(one|two|three|four|five|six|seven|eight|nine|[0-9]+) (answers|questions)' <<<"$entry" | head -n 1 | awk '{print tolower($(NF-1))}')"
-  if [ -n "$stated" ]; then
-    num="$stated"; i=0
-    for w in one two three four five six seven eight nine; do i=$((i + 1)); [ "$w" = "$stated" ] && num="$i"; done
-    [ "$num" = "$n_changed" ] \
-      || fail "S285 — compatibility entry states $stated answers/questions; $n_changed changed:$changed"
-  else
-    fail "S285 — compatibility entry states no count of answers/questions to re-confirm"
-  fi
+  stated="$(python3 -c '
+import re, sys
+pattern = r"(?<![\w])(?:one|two|three|four|five|six|seven|eight|nine|[0-9]+) (?:answers|questions)(?![\w])"
+for match in re.finditer(pattern, sys.stdin.read(), re.I):
+    print(match.group().split()[0].lower())
+' <<<"$entry")"
+  [ -n "$stated" ] || fail "S285 — compatibility entry states no count of answers/questions to re-confirm"
+  while IFS= read -r count; do
+    [ -n "$count" ] || continue
+    num="$count"; i=0
+    for w in one two three four five six seven eight nine; do i=$((i + 1)); [ "$w" = "$count" ] && num="$i"; done
+    # Compare decimal values, including leading zeroes, without shell octal parsing.
+    awk -v n="$num" -v expected="$n_changed" 'BEGIN { exit !(n + 0 == expected) }' \
+      || fail "S285 — compatibility entry states $count answers/questions; $n_changed changed:$changed"
+  done <<<"$stated"
 fi
 
 # Accepted limits are named, not pointed at.
@@ -93,12 +99,16 @@ grep -qF -- 'one-definition' <<<"$entry" || fail "S285 — compatibility entry d
 grep -qiF -- 'evade' <<<"$entry" || fail "S285 — compatibility entry does not say the lint can be evaded"
 grep -qiF -- 'evade' "$r/lib/one-definition-lint.py" \
   || fail "S285 — lib/one-definition-lint.py docstring no longer says the lint can be evaded"
+# Same whole-word negator list as S285's scenario, within one sentence.
+negators='not|no|never|neither|cannot|outside'
 while IFS= read -r l; do
   [ -n "$l" ] || continue
   grep -Eiq 'reader|lint|commonmark' <<<"$l" || continue
-  grep -Eiq 'complete|exhaustive|guarantee' <<<"$l" || continue
-  grep -Eiq '(not|no|never|nothing|neither)[^.]*(complete|exhaustive|guarantee)|(complete|exhaustive|guarantee)[^.]*(not|never)' <<<"$l" \
-    || fail "S285 — completeness claim in compatibility entry: $l"
+  while IFS= read -r sentence; do
+    grep -Eiq '(^|[^[:alnum:]_])(complete|exhaustive|guarantee)([^[:alnum:]_]|$)' <<<"$sentence" || continue
+    grep -Eiq "(^|[^[:alnum:]_])($negators)([^[:alnum:]_]|$)" <<<"$sentence" \
+      || fail "S285 — completeness claim in compatibility entry: $sentence"
+  done < <(printf '%s\n' "$l" | tr '.!?' '\n')
 done <<<"$entry"
 
 grep -qF -- '--effort' <<<"$unrel" || fail "S285 — v0.4.0 section does not mention --effort"
