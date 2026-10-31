@@ -213,7 +213,7 @@ Two separate gates. [V] Codex CLI 0.163.0 discovers `<repo>/.codex/hooks.json` o
 project's `.codex/` layer is trusted, and requires separate trust for each non-managed hook
 definition. The installed SDG file (`adopt.sh --runtime codex --hooks`, from
 `adapters/codex/merge-hook.json`) defines one `PreToolUse` group, matcher `Bash`, whose
-command points to this project's `.guardrails/source/hooks/git-guardrails --merge-only`.
+command points to this project's `.codex/sdg-guard/hooks/git-guardrails --merge-only`.
 `adopt.sh --runtime codex --status` reports structural installation only (`activation:
 unverified`); adoption grants no project or hook trust and writes no user config. SDG never
 writes `~/.codex/config.toml`.
@@ -230,41 +230,61 @@ CLI steps for TiesL [V]:
 5. Verify with `/hooks` that it is trusted and enabled. The CLI hook browser is the
    documented trust UI; `codex --help` has no `hooks` subcommand.
 
-### Warning: a trusted hook runs code the session can edit, outside the sandbox
+### Warning: bundle protection still needs live proof
 
-Source: the Architect's recommendation on #590 (comment 6495791438), a recommendation for
-TiesL, not a decision.
+Source: the accepted Architect recommendation on #594, building on #590.
 
-- **Default of this baseline: the merge hook is optional and off.** Leave it untrusted, or
-  disabled in `/hooks`, until a protected guard copy exists (below). Merges then rest on
-  TiesL's explicit confirmation, the `["gh","pr","merge"]` prompt rule, `merge-preflight.sh`,
-  and git hooks and CI on committed changes.
-- [A] A trusted hook runs outside the sandbox. This is inferred from Codex's review-screen
-  text ("hooks can run outside the sandbox after you trust them", [V observed]); the
-  documentation does not say whether it always does.
-- [V source] The guard script (`.guardrails/source/hooks/git-guardrails`) and the files it
-  loads (`hooks/read-command.py`, `hooks/rules.sh`, `lib/markdown.sh`, `lib/changes.sh`,
-  `skills/pre-merge-review/model-record-gate.sh`) sit in the SDG clone, which is inside the
-  writable roots (the project root when working on SDG, otherwise a `writable_roots`
-  entry). A session can edit them, and [A] its code then runs outside the sandbox on the
-  next Bash call, with no prompt.
-- The hook matches every Bash call (matcher `Bash`; `--merge-only` is decided inside the
-  script). So this is general code execution outside the sandbox, not only a way to switch
-  off the merge gate.
-- A trusted hook is therefore an explicit exception to the baseline decision "nothing runs
-  outside the sandbox". It applies only if TiesL chooses to trust the hook. The gain is a
-  machine check of the review marker before the merge prompt ([V observed] it blocked
-  `gh pr merge 592`), which is small next to TiesL's own confirmation and the prompt rule.
-- What still stands in front of a merge: TiesL's explicit confirmation, the
-  `["gh","pr","merge"]` prompt rule, `merge-preflight.sh`, and git hooks and CI on committed
-  changes. What these cannot cover: uncommitted working-copy edits (a PR review does not see
-  them), and anything an edited script does besides merging.
-- The real fix is a separate work item (to be filed): `adopt.sh --hooks` copies a
-  self-contained guard bundle (the guard plus every file listed above) into
-  `<project>/.codex/` as a real directory, and the hook command points at that copy. Codex
-  docs say `.codex` is read-only to the sandbox inside writable roots; [A] that needs a live
-  test on macOS, including that a symlinked `.codex` gets no such protection. The new command
-  string changes the trust hash, so the declaration is reviewed again.
+- **Default of this baseline: merge hook optional and off.** Leave it untrusted,
+  or disabled in `/hooks`, until a positive live result is recorded [V observed]. Only
+  then does the baseline default change. Merges continue to require TiesL's explicit
+  confirmation, the `["gh","pr","merge"]` prompt rule, `merge-preflight.sh`, and git
+  hooks and CI on committed changes.
+- [A] A trusted hook runs outside the sandbox, inferred from the review-screen text.
+  The hook matches every Bash call; `--merge-only` is decided inside the program.
+  Trust therefore authorizes execution of this code, beyond the merge policy itself.
+- `adopt.sh --runtime codex --hooks` installs a self-contained copy in the real directory
+  `<project>/.codex/sdg-guard/`. Its seven files are `hooks/git-guardrails`,
+  `hooks/read-command.py`, `hooks/rules.sh`, `lib/markdown.sh`, `lib/changes.sh`,
+  `lib/model-record.sh` and `skills/pre-merge-review/model-record-gate.sh`, keeping
+  sibling `hooks/`, `lib/` and `skills/pre-merge-review/` directories. `MANIFEST`
+  records source revision, sha256 and mode; installation provenance owns its digest.
+  The copy runs independently of `.guardrails/source`. Source edits reach the hook
+  only after a reviewed merge and explicit refresh by TiesL outside the sandbox.
+- [A] Codex protects `.codex` and its contents inside writable roots. Offline tests
+  establish installation and guard parity, never this protection. Adoption refuses
+  symlinked `.codex`, `sdg-guard` and any inner symlink before writes. An unrecorded
+  or tampered bundle conflicts before writes; foreign files beside it survive.
+- Refresh uses verified staging and atomic directory exchange; unsupported
+  exchange refuses refresh. TiesL must keep hooks quiescent throughout refresh
+  or recovery; exchange does not pin a generation for a concurrent hook.
+  A pending transaction exits 1 and needs a second explicit `--hooks` run.
+  Default adoption and status never recover or clean up. Interrupted preparation
+  discards validated staging and rebuilds from the source at retry time,
+  recording its new target digest.
+- Only explicit `--hooks` refreshes the bundle. Default adoption neither creates,
+  refreshes nor removes it. Status distinguishes current, stale (warning), corrupt
+  (conflict), absent and recovery pending; exits remain 0 complete/current,
+  1 stale/conflict/recovery pending, 2 invalid/unreadable.
+  Activation remains unverified. A stale copy still enforces its installed rules.
+  TiesL must refresh outside the sandbox; SDG never works around the protection.
+- The first migration changes the command string: review and trust it once more in
+  `/hooks`. A later content-only refresh reports changed paths and old/new revisions;
+  hook trust is not re-prompted. Neither operation writes Codex config or grants trust.
+- The bundle does not cover the `quality-review-before-merge` row in
+  `WORKFLOW-ADOPTION.md`, `CLAUDE_WORKFLOW_GUARDRAILS_OFF` and
+  `CLAUDE_WORKFLOW_MERGE_GUARD_OFF` escape-hatch variables, or external PATH tools
+  such as python3, gh and git. Linked worktrees lack the required `.git` directory;
+  each adopted full clone needs its own bundle.
+
+Live proof is a separate QA-owned, TiesL-run follow-up and does not block the code
+merge. Record surface, version, command and outcome, once with SDG as the project
+and once with its clone only a writable root. Try edits, truncation, deletion,
+addition and renames inside the bundle; file creation in `.codex`; rename,
+replacement, deletion and recreation of `.codex` itself; and creation when initially
+absent. A trusted bundled hook must still block a plain merge before the prompt as
+the positive control. Record symlink protection informationally. A negative result
+for contents or the directory routes to the Architect's choice of a content hash
+in the command or leaving the hook untrusted. Neither fallback is in this first cut.
 
 State shape [V]; the hash is generated by Codex, never typed by hand:
 

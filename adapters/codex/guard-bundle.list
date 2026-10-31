@@ -1,0 +1,7 @@
+hooks/git-guardrails
+hooks/read-command.py
+hooks/rules.sh
+lib/markdown.sh
+lib/changes.sh
+lib/model-record.sh
+skills/pre-merge-review/model-record-gate.sh

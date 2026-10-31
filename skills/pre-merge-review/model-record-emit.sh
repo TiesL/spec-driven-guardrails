@@ -3,9 +3,9 @@
 # `model-record` marker line, so nobody types one (#402, A26).
 #
 # Usage:
-#   model-record-emit.sh --stage <Stage> --model <id> [--floor-basis <sentence>]
+#   model-record-emit.sh --role <Role> [--stage <Stage>] --model <id> [--floor-basis <sentence>]
 #
-# The orchestrator puts this command in each dispatch prompt with --stage
+# The orchestrator puts this command in each dispatch prompt with --role
 # filled in; the role adds --model with its own exact model id (the
 # Reviewer also adds --floor-basis, in single quotes) and pastes the output,
 # unchanged, as the first line of its report. The format itself is owned by
@@ -15,9 +15,9 @@
 # no longer recorded, and a stale prompt in an adopted project keeps working;
 # one stderr line says so. The next release removes the flag (PRD debt row).
 #
-# This script only parses its flags. Every rule lives in marker_emit
-# (lib/model-record.sh), which prints the one valid line after parsing it
-# back, or nothing.
+# --stage alone remains accepted for old prompts; with --role it must agree.
+# This script only parses its flags. role_stage owns the role map and mismatch
+# rule; marker_emit validates and round-trips the marker (lib/model-record.sh).
 #
 # Exit codes:
 #   0 — the line is on stdout
@@ -42,14 +42,14 @@ fi
 # shellcheck source=../../lib/model-record.sh
 . "$own_dir/../../lib/model-record.sh"
 
-usage="usage: model-record-emit.sh --stage <Stage> --model <id> [--floor-basis <sentence>]"
-stage="" model="" fb=""
-have_stage=0 have_model=0 have_fb=0 saw_effort=0
+usage="usage: model-record-emit.sh --role <Role> [--stage <Stage>] --model <id> [--floor-basis <sentence>]"
+role="" stage="" model="" fb=""
+have_role=0 have_stage=0 have_model=0 have_fb=0 saw_effort=0
 
 while [ $# -gt 0 ]; do
   flag="$1"
   case "$flag" in
-    --stage | --model | --effort | --floor-basis) : ;;
+    --role | --stage | --model | --effort | --floor-basis) : ;;
     *)
       echo "model-record-emit: unknown argument '$flag'. $usage" >&2
       exit 2
@@ -65,12 +65,16 @@ while [ $# -gt 0 ]; do
   # flag (`--model --floor-basis`), never a value (A33a, #404 item 3); a value
   # that merely starts with `--` is allowed
   case "$value" in
-    --stage | --model | --effort | --floor-basis)
+    --role | --stage | --model | --effort | --floor-basis)
       echo "model-record-emit: $flag's value is '$value', which is one of this command's flags: a value is missing. $usage" >&2
       exit 2
       ;;
   esac
   case "$flag" in
+    --role)
+      [ "$have_role" -eq 0 ] || { echo "model-record-emit: --role given twice" >&2; exit 2; }
+      have_role=1 role="$value"
+      ;;
     --stage)
       [ "$have_stage" -eq 0 ] || { echo "model-record-emit: --stage given twice" >&2; exit 2; }
       have_stage=1 stage="$value"
@@ -89,13 +93,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-for need in stage model; do
-  have_var="have_$need"
-  if [ "${!have_var}" -eq 0 ]; then
-    echo "model-record-emit: --$need is required. $usage" >&2
-    exit 2
+if [ "$have_role" -eq 0 ] && [ "$have_stage" -eq 0 ]; then
+  echo "model-record-emit: --role or --stage is required. $usage" >&2
+  exit 2
+fi
+if [ "$have_model" -eq 0 ]; then
+  echo "model-record-emit: --model is required. $usage" >&2
+  exit 2
+fi
+if [ "$have_role" -eq 1 ]; then
+  if [ "$have_stage" -eq 1 ]; then
+    stage="$(role_stage "$role" "$stage")" || exit 2
+  else
+    stage="$(role_stage "$role")" || exit 2
   fi
-done
+fi
 
 if [ "$have_fb" -eq 1 ]; then
   line="$(marker_emit "$stage" "$model" "$fb")" || exit 2

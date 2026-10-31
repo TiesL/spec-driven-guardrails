@@ -67,7 +67,7 @@ Part 1 of 2 (fundamentals) also applies; parts arrive in any order. Part 1 not i
 - OR28 Before each dispatch, assess stage's floor on own demands per `model-choice`: what would too-weak model get wrong? Cheapest model clearing it, per stage, never one model for whole run. Review at least as capable as Implementation's recorded model. Different model not required. Choose at dispatch. A mechanical dispatch (no judgment: re-run, rebase, rename) takes cheapest available model; floor reason in dispatch line (OR39).
 - OR29 Dispatch tool takes no effort argument: effort neither chosen nor recorded in markers. Same model at lower effort meets floor: accepted risk ("The limit", `model-choice`).
 - OR30 Pass chosen model as dispatch tool's `model` argument; name it in prompt.
-- OR31 Give role `model-record-emit.sh` command with `--stage` filled in. Stage names: OR5.
+- OR31 Give role `model-record-emit.sh` command with `--role` filled in (OR5). Emit role and stage must match the prefix role.
 - OR32 Marker never typed by hand: `model-record-emit.sh` produces it; `model-choice` owns format ("Machine-readable form"). Path: `$SPEC_DRIVEN_GUARDRAILS_DIR/skills/pre-merge-review/model-record-emit.sh`; unset: `.claude/skills/pre-merge-review/model-record-emit.sh` (Claude) or `.agents/skills/pre-merge-review/model-record-emit.sh` (Codex), via `pwd -P`. Role adds `--model` own exact model id (Reviewer also `--floor-basis`, one shell-quoted sentence), pastes output unchanged as report's first line.
 
 ## Resume
