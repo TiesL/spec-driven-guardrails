@@ -1,0 +1,11 @@
+# S380 convenience-comment vocabulary, pinned by #614; not installed gh help.
+# Add a command/flag only after reviewing its semantics; run list deliberately excludes --web.
+gh issue view	--web
+gh issue list	--web
+gh pr view	--web
+gh pr list	--web
+gh pr diff	--web
+gh pr checks	--web
+gh run view	--web
+gh run list	--json
+gh repo view	--web

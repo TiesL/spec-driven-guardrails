@@ -7582,7 +7582,7 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - Given: the real tree.
 - When: `adapters/codex/permission-baseline.md`, `adapters/codex/INSTRUCTIONS.md` and the rest of the tree are read.
 - Then: the document exists with `sandbox_mode = "workspace-write"`, keys marked verified or assumed, the read-secrecy statement, the needs list, trade-offs, a "cannot match" section, merge confirmation with `merge-preflight.sh` and the prefix-rule limit, and the link to needs-list item 3; `approvals_reviewer = "user"` sits above the first `[table]` header of the snippet and the text says so; the `prefix_rule` lines of the baseline snippet (everything outside a block labelled "convenience widening") carry no allow at all, include a `["gh", "pr", "merge"]` prompt rule, and no rule anywhere is a bare `["gh"]` rule or allows `pipeline-override.sh`, `epic-auto-close.sh`, `wait-for-ci.sh`, `merge-preflight.sh` or `model-record-emit.sh`; a labelled optional convenience block holds the `gh` read allows, each line with a trade-off comment of at least 15 characters, the document says it is optional and deleted after the proxy proof, and the Network section says the block bypasses `network_access = false`; the bypass flag appears only on lines saying never or not, and never in a fenced block; `INSTRUCTIONS.md` names the baseline document and keeps saying no SessionStart/PostToolUse/SessionEnd automation is installed.
-- And (#595): every key of the sandbox-config snippet carries a `[V]`/`[A]` mark on its line or its table header (a mutation arm removes one mark and the pin must name the key), and each convenience-block comment names only `--flags` that the local `gh <command> --help` lists (offline; skipped when `gh` is absent).
+- And (#595): every key of the sandbox-config snippet carries a `[V]`/`[A]` mark in its own line comment or inherits `[A]` from a table-header comment explicitly saying `covers all nested keys` or `covers its nested keys`; a header may not confer `[V]` or `[V observed]`. A mutation arm removes one own-line mark and must name the key. Each convenience-block comment names only `--flags` in the repository-owned command-specific vocabulary `test/fixtures/permission-baseline-flags.tsv`, with no installed `gh` help lookup or absent-gh skip (#614, superseding the local-help and unrestricted-header forms from #595).
 - Falsifiers: a key without a mark, a comment naming a flag the command lacks (today `--web` on `gh run list`), a missing file, an allow in the baseline snippet, a script allowed by prefix, no merge prompt rule, `gh` allows outside the labelled block or without a trade-off per line, a Network section silent about the bypass, the reviewer key below a table header, the flag in a profile or example. Live enforcement (AC1, AC2, AC4, AC10, AC11, AC13) is manual evidence, not covered here.
 
 ### S381 — adopt.sh with Codex options writes no Codex config under HOME and grants no trust (#590 AC8, AC12; #595 AC2)
@@ -8208,3 +8208,34 @@ and S380's #590 live-evidence boundary.
 - When: successful checks use budgets 1, 30 and 999999, a real failure completes within a ten-second budget, and a four-second check exceeds a one-second budget.
 - Then: completion allows without timeout, real failure refuses with its output and no timeout, and actual timeout allows with an exceeded-budget warning pointing to CI. Every case confirms that the check started.
 - Mutation controls: every status, start-marker and diagnostic assertion rejects its own corrupted observation. The harness uses Bash 3.2 constructs and can select another Bash via BUDGET_BASH; native Linux execution is separate evidence.
+
+
+### S490 — Only an explicitly covering assumed header marks nested keys (#614 AC1)
+**Covers:** F57
+- Given: isolated copies of S380 and a compliant document witness with `[features.network_proxy] # [A] covers all nested keys`.
+- When: an unmarked `foo` is added, the coverage phrase or header mark is removed, or a new unmarked table starts.
+- Then: explicit coverage (`covers all nested keys` or `covers its nested keys`) passes; each missing-coverage variant fails and names `foo`; coverage does not leak into another table. Each status and named-key assertion rejects its own inverted-status or removed-diagnostic observation mutant.
+
+### S491 — Verified table headers cannot confer marks (#614 AC1)
+**Covers:** F57
+- Given: the same command seam and a covering-header witness.
+- When: the header mark becomes `[V]`, `[V observed]` or mixed `[A] [V]`, with a nested unmarked `foo`.
+- Then: each variant fails and names `foo`; independently marking every nested key on its own line passes. Each assertion has an inverted-status control and each diagnostic assertion a removed-name control.
+
+### S492 — Permission flag vocabulary is independent of installed gh (#614 AC1)
+**Covers:** F57
+- Given: isolated S380 copies with PATH containing only required tools plus empty-help, permissive-help or absent gh; real gh cannot be reached.
+- When: the valid document and a comment naming `--nonexistent-command-flag` are checked under each PATH.
+- Then: all valid documents pass, all invalid comments fail and name the nonexistent flag, and no gh call is made. The command-specific repository inventory is copied with the test. Every status, diagnostic and no-call assertion rejects its own inverted-status, erased-name or added-call observation mutant.
+
+### S493 — Existing mark and command-flag falsifiers remain effective (#614 AC1)
+**Covers:** F57
+- Given: independent compliant document controls and deterministic offline gh help for preservation comparison.
+- When: the `exclude_slash_tmp` own-line mark is removed, or the `gh run list` comment gains `--web`.
+- Then: controls pass; each mutated document fails and names its removed mark key or invalid flag. Each assertion rejects its own status mutant and each named diagnostic rejects its own erased-name mutant. These preservation cases are green before changing S380.
+
+### S494 — S380 has no unjustified shellcheck diagnostics (#614 AC1)
+**Covers:** F57
+- Given: shellcheck when installed, S380 and a separate shell fixture with an unquoted expansion.
+- When: shellcheck runs with `-s bash -x` on S380 and checks the fixture.
+- Then: S380 is clean (or carries narrow justified suppressions), while the fixture fails with SC2086, proving info-level checking is active. A missing shellcheck emits an explicit skip; the work-item verification separately records installed-shellcheck results.
