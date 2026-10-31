@@ -166,9 +166,17 @@ references stay valid.
   - `git_local_env_assert_clear` returns non-zero, naming the first one
     still set.
 - **Callers:**
-  1. `hooks/pre-commit` clears the list only for the `check-commit` child,
-     inside the command substitution. git's own commit flow (including a
-     partial commit's temporary index) and the hook's branch and issue
+  1. `hooks/pre-commit` clears the list only in the background subshell
+     that execs `check-commit`, separate from the watchdog's background
+     process group (A22). Before starting the check, validate the whole
+     budget string: newline-containing, zero, negative or oversized (A22) values
+     must be refused. Only a successful budget `sleep` may set the timeout
+     flag and trigger timeout termination; sleep failure is not elapsed
+     timeout and must not turn a failing check into an allowed commit.
+     A22 retains the budget default, check outcomes and timeout policy.
+     The accepted Ctrl-C cleanup debt (#383 C: one empty temporary file
+     per interrupted commit) remains outside #615. git's own commit flow
+     (including a partial commit's temporary index) and the hook's branch and issue
      checks keep the real values; `project_dir` is computed before the
      clear, so the committing worktree's own `check-commit` runs. If
      `lib/git-env.sh` is missing, the hook warns and **skips** `check-commit`
@@ -247,7 +255,7 @@ blocked indefinitely. Numbering continues after A19/A20.
 
 ### A22 — A 30 s budget, enforced portably, where a timeout fails open
 - **Constant:** `COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET-30}"` (default only when unset: an empty value is rejected) in
-  `hooks/pre-commit`, overridable from the environment for tests.
+  `hooks/pre-commit`, overridable from the environment for tests; maximum 999999 seconds.
 - **Mechanism (bash 3.2, no `timeout`/`perl`):** `set -m` so each background
   job has its own process group; `check-commit` runs in one, a watchdog
   (`sleep $budget; touch flag; kill -TERM -- -pid`) in another; the hook
@@ -259,8 +267,10 @@ blocked indefinitely. Numbering continues after A19/A20.
   the watchdog is stopped as soon as the leader dies, the hook also KILLs
   the group after the `wait` whenever the flag is set: a grandchild that
   ignores TERM outlives its leader otherwise.
-- **Budget validation:** `COMMIT_CHECK_BUDGET` must match `^[1-9][0-9]*$`.
-  Anything else (empty, 0, negative, non-numeric) blocks the commit with a
+- **Budget validation:** check `COMMIT_CHECK_BUDGET` once against the whole string
+  with `^[1-9][0-9]{0,5}$`: 1 to the maximum above, without leading zeros.
+  Anything else (empty, newline-containing, zero, negative, non-numeric or oversized)
+  is refused, never clamped, and blocks the commit with a
   message naming the variable, before `check-commit` runs: a bad value would
   otherwise make `sleep` fail at once and read a real failure as a timeout.
 - **On timeout:** the commit goes through with one warning naming the budget

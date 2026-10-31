@@ -674,7 +674,10 @@ coverage has to come from three local-and-CI-based layers:
   it visible. `pre-commit` does not run the full `./check` (#378): a project
   opts in by having an executable `check-commit` at its root, the fast static
   subset, which the hook runs under a 30 s budget (`COMMIT_CHECK_BUDGET`, a
-  positive integer; anything else is rejected, never read as a timeout). A
+  positive integer of at most six digits (1 to 999999 seconds), without a
+  leading zero, checked once against the whole string; anything else,
+  including an oversized value, is rejected, never clamped or read as a
+  timeout). A
   static failure blocks, a timeout (TERM, a short grace, then KILL to the
   whole process group) lets the commit through with a warning, red tests never block, and
   the full suite runs in CI (`CHANGES.md` `ci-commit-check`).
