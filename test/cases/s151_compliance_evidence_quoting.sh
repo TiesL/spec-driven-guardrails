@@ -489,16 +489,41 @@ assert_table_shape "S151 Q11" "$output_q11"
 # Q14 — Q1's fixture: not-evidenced AND the Evidence cell must say quoted
 # occurrences were seen and ignored, not read as a bare "no marker found".
 evidence_q14="$(row_evidence "$output_q1" 1)"
-case "$evidence_q14" in
-  # Substring guaranteed to survive cell()'s 300-char truncation on this
-  # fixture (4 missing stages makes the full wording long enough to be
-  # cut, with "…" appended, per cell()'s existing contract — the tail
-  # end of the suffix isn't asserted here for that reason).
-  *"marker-shaped text matching this gate does appear on PR #279"*) : ;;
-  *) fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell doesn't say quoted occurrences were seen and ignored: $evidence_q14" ;;
-esac
-bare_q14='no model-record marker found for stage(s) Discovery, Planning, Test, Implementation, searched in PR #279'"'"'s body/comments/reviews and its closing issue(s)'
-[ "$evidence_q14" != "$bare_q14" ] || fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell reads as a bare 'no marker found', with no mention of the quoted occurrences that do exist"
+# Keep these predicates separate: the prefix assertion must not mask a
+# vacuous bare-message comparison (#609 / #338 Q14).
+q14_has_quoted_wording() {
+  case "$1" in
+    # This prefix survives cell()'s 300-character truncation; the tail of
+    # the ignored-quotation suffix does not.
+    *"marker-shaped text matching this gate does appear on PR #279"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+bare_q14='no model-record for stage(s) Discovery Planning Test Implementation'
+q14_is_not_bare() {
+  [ "$1" != "$bare_q14" ]
+}
+q14_has_quoted_wording "$evidence_q14" || fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell doesn't say quoted occurrences were seen and ignored: $evidence_q14"
+q14_is_not_bare "$evidence_q14" || fail "S151 Q14 (AC4 wording) — gate 1's Evidence cell reads as a bare 'no marker found', with no mention of the quoted occurrences that do exist"
+
+# One mutation control per predicate, applied to the actual rendered cell:
+# remove ONLY the quotation suffix, preserving today's missing-stage wording
+# and separators. No collector source edit or second oracle is involved.
+q14_without_suffix="${evidence_q14%% — *}"
+if [ "$q14_without_suffix" = "$evidence_q14" ]; then
+  fail "S151 Q14 mutation setup — no quotation suffix was removed"
+else
+  if q14_has_quoted_wording "$q14_without_suffix"; then
+    fail "S151 Q14 prefix mutation — missing ignored-quotation wording was accepted"
+  else
+    printf '    S151 Q14 prefix mutation: rejected missing ignored-quotation wording\n'
+  fi
+  if q14_is_not_bare "$q14_without_suffix"; then
+    fail "S151 Q14 bare-message mutation — missing ignored-quotation wording was accepted; bare_q14 does not match current collector wording: $q14_without_suffix"
+  else
+    printf '    S151 Q14 bare-message mutation: rejected missing ignored-quotation wording\n'
+  fi
+fi
 
 # =========================================================================
 # AC7 / D8 — bare prose is not a marker at all, and quoted_suffix() must
