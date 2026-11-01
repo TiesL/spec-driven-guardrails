@@ -41,7 +41,7 @@ pin_or34() {
 # pin_slot1 <root>: the session text a project gets in slot 1 names the script.
 pin_slot1() {
   local proj="$SANDBOX/slotproj"
-  rm -rf "$proj"; mkdir -p "$proj"; git -C "$proj" init -q -b main
+  rm -rf "$proj"; mkdir -p "$proj"
   write_adoption "$proj/WORKFLOW-ADOPTION.md" process-multi-agent-roles yes
   local out
   out="$("$1/session-context.sh" --slot 1 "$proj" 2>/dev/null)"
@@ -126,5 +126,7 @@ arm help-or34 pin_help_pointer "OR34 does not point to pipeline-override.sh --he
   mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /,/^- OR35 /s/pipeline-override\.sh --help/pipeline-override.sh/g'
 arm help-skill pin_help_pointer "the abbreviated-workflow paragraph of skills/role-contracts/SKILL.md does not point to pipeline-override.sh --help" \
   mut_sed skills/role-contracts/SKILL.md '/^\*\*Abbreviated workflow/s/pipeline-override\.sh --help/pipeline-override.sh/g'
+
+python3 "$TEST_REPO_ROOT/test/fixtures/override-616.py" 498 || fail "S378 — blank wording pins (#616)"
 
 test_done

@@ -23,7 +23,7 @@ filter="${1:-}"
 # cap is a conservative local default. Earlier, higher parallelism turned a
 # latent `printf ... | grep -q` SIGPIPE/pipefail pattern into intermittent
 # flakes; that cleanup (#218) is closed, and #226 verified TEST_JOBS=8. The cap
-# never binds on CI, whose runners have 4 vCPU (Linux) and 3 (macOS). Set
+# is assumed not to bind on CI: assumed 4 vCPU (Linux) and 3 (macOS). Set
 # TEST_JOBS to override it.
 cores="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 # A non-numeric result (an unexpected nproc/sysctl output shape, not just
