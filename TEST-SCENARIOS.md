@@ -3095,9 +3095,12 @@ something new is being added.
   step `run: /bin/bash test/run.sh`)
 - Then: the file exists, passes D1, and the D2 comparison is identical; any
   other content is red. A D1 failure prints the first three offending lines
-  through `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251` is
-  visible); a D2 failure prints the diff through the same `sed -n l` (POSIX,
-  so it shows the bytes on BSD and GNU alike; `cat -A` is not used). No YAML
+  through unfolded `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251`
+  is visible); a D2 failure prints the first 20 logical diff records through
+  the same unfolded byte renderer (POSIX tools on BSD and GNU alike;
+  `cat -A` is not used). Each finding occupies one physical line, without
+  folded continuations; unfolding precedes the record limit (S520 retains a
+  1300-character diff line and its following end marker). No YAML
   is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
   suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
   `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
@@ -3131,6 +3134,42 @@ something new is being added.
   permanent arm; it was proven once in a throwaway clone and reported in the
   PR. A hardlink needs no check (git has no hardlink mode; the blob is pinned
   by content)
+
+### S520 — long S219 diagnostics retain logical lines on native and folding tools
+**Covers:** F43
+- Given: three long CRLF header lines and an ASCII pinned-block mismatch with
+  a 1300-character diff line followed by a distinct end marker, passed through
+  `CI_MACOS_YML_UNDER_TEST` to S219 (S222 uses the unchanged real Linux workflow).
+- When: the case runs with native sed and a shim that forces 60-column `l`
+  folds after normalizing any native folds.
+- Then: each candidate is rejected with exactly one physical diagnostic line;
+  all three escaped CRLF records survive in full, and the 1300-character diff
+  record and its following marker survive before the 20-logical-record limit. No folded
+  `\~` continuation appears. Removing unfolding in a temporary copy must make
+  both D1 and D2 assertions fail under the forced-folding shim. A second mutant
+  that limits to 20 folded records before awk unfolds them must fail the D2
+  full-record/end-marker assertion under the same shim. No CI policy,
+  encoded-job defense or action-pinning change is claimed (#442 scope).
+
+### S521 — the two scoped CHANGELOG bullets reconcile width and transcript prose
+**Covers:** F43
+- Given: the Fix #468 and Fix #467 CHANGELOG entries (#486; #498 wording only).
+- When: whitespace-normalized #468 text and physical widths are checked, and
+  #467's warning-visibility clause is read within its own bullet.
+- Then: #468 retains every word and stays within 100 columns; #467 says
+  `stream transcript`. Independent mutations collapse #468 into one line,
+  change its recurrence-guard number, or restore #467's `hook transcript`;
+  each is rejected. Other #498 findings are outside this batch.
+
+### S522 — the selected #573 skip wording is already resolved
+**Covers:** F43
+- Given: the current `check` header and shellcheck skip message (resolved by
+  #578 PR-A, #579; no product edit is needed).
+- When: the header and emitted-message source are inspected separately.
+- Then: both name the nested suite run, and the message also names
+  `check-commit`. Removing the nested-run wording from either independently
+  is rejected. This checks the selected prose only; cap, scheduling, S274,
+  outer-shellcheck growth and macOS performance are outside this batch.
 
 ### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
 **Covers:** F43
