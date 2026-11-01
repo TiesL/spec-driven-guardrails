@@ -39,7 +39,7 @@ CHECKS = ["prefix", "no-fork", "marker-command", "role-stage", "model",
           "reviewer-pr", "reviewer-sha", "reviewer-gate"]
 
 ROLE_LINE = re.compile(r"^ROLE SESSION:")
-PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9])" % "|".join(row[0] for row in ROLE_STAGES))
+PREFIX = re.compile(r"^ROLE SESSION: (%s)(?![A-Za-z0-9_-])" % "|".join(row[0] for row in ROLE_STAGES))
 EMIT_DISPATCH_FLAG = re.compile(r"--(?:role\b(?!=)|stage\b)")
 EMIT_WITH_STAGE = re.compile(
     r"--stage[= ]+[\"']?(%s)(?![A-Za-z0-9])" % "|".join(row[2] for row in ROLE_STAGES))
@@ -59,13 +59,12 @@ QUOTE_SPECIAL = re.compile(r"['\"\\#]")
 ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
 STAGE_FLAG = re.compile(
     r"--stage(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
-# A PR number is /pull/<n> or `PR <n>` / `PR #<n>`; a bare #<n> is an issue.
-PR_REF = re.compile(r"(/pull/\d+|\bPR\s*#?\d+)")
-# A head SHA: 7-40 hex with a letter a-f, or one introduced by head/SHA/commit
-# (an unlabelled all-digit run, such as a comment id, does not count).
+# A bare #<n> is an issue; PR labels and pull URLs identify pull requests.
+PR_REF = re.compile(r"(/pull/\d+|\b(?:PR|pull request)\s*:?\s*#?\d+)", re.I)
+# Only labelled head evidence counts; old/previous references are historical.
 SHA = re.compile(
-    r"(?<![0-9A-Za-z])(?=[0-9]*[a-f])[0-9a-f]{7,40}(?![0-9A-Za-z])"
-    r"|\b(?:head|sha|commit)\b\W{0,3}[0-9a-f]{7,40}(?![0-9A-Za-z])", re.I)
+    r"\b(?:(old|previous)\s+)?(?:head|sha|commit)\b\W{0,3}"
+    r"[0-9a-f]{7,40}(?![0-9A-Za-z])", re.I)
 GATE = "finding-carryforward-gate.sh"
 ITEM = re.compile(r"^ *- (OR\d+) ")
 AVOID = ("Not a role dispatch? Start no prompt line with `ROLE SESSION:` and no "
@@ -130,7 +129,13 @@ def emit_units(prompt):
         parts = []
         quote = ""
         count = 1
+        wrapper_closed = False
         while True:
+            # Presentation wrappers enclose comments too. Remove the closing
+            # wrapper before a comment can discard it from the argument text.
+            if wrapper and suffix.rstrip().endswith(wrapper):
+                suffix = suffix.rstrip()[:-1]
+                wrapper_closed = True
             text, quote = uncomment(suffix, quote)
             slashes = len(text) - len(text.rstrip("\\"))
             continued = eligible and slashes % 2 == 1
@@ -149,11 +154,8 @@ def emit_units(prompt):
         # Bare/prose mentions have no argument syntax and open no quote state.
         if not (EMIT_DISPATCH_FLAG.search(text) or "--role=" in text):
             continue
-        if wrapper:
-            text = text.rstrip()
-            if not text.endswith(wrapper):
-                raise ValueError("unmatched emit wrapper")
-            text = text[:-1]
+        if wrapper and not wrapper_closed:
+            raise ValueError("unmatched emit wrapper")
         yield text
 
 
@@ -273,7 +275,7 @@ def failed_checks(prompt, sub, model, units):
     if role == "Reviewer":
         if not PR_REF.search(prompt):
             failed.append("reviewer-pr")
-        if not SHA.search(prompt):
+        if not any(not match.group(1) for match in SHA.finditer(prompt)):
             failed.append("reviewer-sha")
         if GATE not in prompt:
             failed.append("reviewer-gate")
