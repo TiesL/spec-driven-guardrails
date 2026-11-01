@@ -32,6 +32,12 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
+# POSIX sed l may fold on BSD or GNU. Its logical records end in $, while
+# folded pieces end in backslash; join those pieces before limiting records.
+s219_unfolded_bytes() {
+  LC_ALL=C sed -n l | LC_ALL=C awk '/\\$/ { sub(/\\$/, ""); printf "%s", $0; next } { print }'
+}
+
 # --- S219: the whole of macos.yml is the pinned block -----------------------
 macos_yml="${CI_MACOS_YML_UNDER_TEST:-$TEST_REPO_ROOT/.github/workflows/macos.yml}"
 # File kind first (A35d-2): -L before -f (-f follows links), before any read.
@@ -77,15 +83,15 @@ PINNED
   if [ -n "$bad_lines" ]; then
     shown=""
     for n in $bad_lines; do
-      shown="$shown line $n: $(LC_ALL=C sed -n "${n}l" "$macos_yml")"
+      shown="$shown line $n: $(LC_ALL=C sed -n "${n}p" "$macos_yml" | s219_unfolded_bytes)"
     done
-    fail "S219 — $macos_yml has bytes outside LF and printable ASCII (first offending lines through sed -n l):$shown"
+    fail "S219 — $macos_yml has bytes outside LF and printable ASCII (first offending lines through unfolded sed -n l):$shown"
   else
     # D2: strip the leading header only; everything from the first
     # non-comment line on is compared byte for byte.
     LC_ALL=C awk 'started || !/^[[:space:]]*(#|$)/ { started = 1; print }' "$macos_yml" > "$SANDBOX/actual.yml"
     if ! cmp -s "$SANDBOX/expected.yml" "$SANDBOX/actual.yml"; then
-      fail "S219 — from the first non-comment line on, $macos_yml is not the pinned block (comments and blank lines are allowed only in the header before name:; diff, expected then actual): $(diff "$SANDBOX/expected.yml" "$SANDBOX/actual.yml" | LC_ALL=C sed -n l | head -20 | tr '\n' '~')"
+      fail "S219 — from the first non-comment line on, $macos_yml is not the pinned block (comments and blank lines are allowed only in the header before name:; diff, expected then actual): $(diff "$SANDBOX/expected.yml" "$SANDBOX/actual.yml" | s219_unfolded_bytes | head -20 | tr '\n' '~')"
     fi
   fi
 fi

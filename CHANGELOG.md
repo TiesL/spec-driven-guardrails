@@ -48,7 +48,7 @@ point.
   `finding-carryforward-gate.sh` no longer lets `finding:abc` clear a dropped `ab`; a slug is the maximal
   non-whitespace run after `finding:`. New S305 (`test/cases/s305_carryforward_slug_exact.sh`); F28 and A37 state the rule.
 - **Fix #467: warning-visibility wording after #430 acceptance.** `ARCHITECTURE.md` (A34), `CHANGES.md`,
-  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the hook transcript
+  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the stream transcript
   only and did not reach the agent as command output in the #430 AC3 run. Text only; no behavior changed.
 - **Fix #477: S286 arm 5 no longer claims a bare `git grep` of the version token hits only two
   files.** `TEST-SCENARIOS.md` states the arm's scope as a property and gives a path-scoped command
@@ -66,7 +66,10 @@ point.
 - **Fix #473: S287 shellcheck SC2154 warnings cleared.** `test/cases/s287_issue_review_is_no_pr_round.sh`
   initialises `rr_out` and `rr_status` after `rr_setup` (non-zero status, so an unset one fails).
   No assertion changed.
-- **Fix #468: trailing whitespace removed from three test files.** `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at EOF). No behavior change. Recurrence guard: #484.
+- **Fix #468: trailing whitespace removed from three test files.**
+  `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and
+  `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at
+  EOF). No behavior change. Recurrence guard: #484.
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
 - **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the
