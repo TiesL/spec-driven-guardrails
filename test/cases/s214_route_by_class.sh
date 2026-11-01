@@ -77,4 +77,8 @@ lb_sentence_has_all "$LB_ROLES" 'Architect' '(may|can)' 'record' '(not a design 
 lb_sentence_has_all "$LB_ROLES" 'orchestrator' '(never|not)[^.]*(downgrad|reclassif|lower)' \
   || fail "S214/downgrade — role-contracts does not say the orchestrator never downgrades a class"
 
+# #611: permission and ban direction must survive keyword-preserving inversions.
+python3 "$TEST_REPO_ROOT/test/fixtures/role-contract-611.py" "$TEST_REPO_ROOT" reclassification \
+  || fail "S214 — directional reclassification contract"
+
 test_done
