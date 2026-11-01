@@ -60,7 +60,7 @@ ROLE_FLAG = re.compile(r"--role(?![A-Za-z0-9_])([= ]+)?")
 STAGE_FLAG = re.compile(
     r"--stage(?![A-Za-z0-9_])(?:[= ]+(?:\"([^\"]*)\"|'([^']*)'|([^ \t\"'`;,()&|<>]+)))?")
 # A bare #<n> is an issue; PR labels and pull URLs identify pull requests.
-PR_REF = re.compile(r"(/pull/\d+|\b(?:PR|pull request)\s*:?\s*#?\d+)", re.I)
+PR_REF = re.compile(r"(/pull/\d+|\b(?:PR|pull request)\s*(?::\s*)?#?\d+)", re.I)
 # Only labelled head evidence counts; old/previous references are historical.
 SHA = re.compile(
     r"\b(?:(old|previous)\s+)?(?:head|sha|commit)\b\W{0,3}"
@@ -155,7 +155,10 @@ def emit_units(prompt):
         if not (EMIT_DISPATCH_FLAG.search(text) or "--role=" in text):
             continue
         if wrapper and not wrapper_closed:
-            raise ValueError("unmatched emit wrapper")
+            text = text.rstrip()
+            if not text.endswith(wrapper):
+                raise ValueError("unmatched emit wrapper")
+            text = text[:-1]
         yield text
 
 
