@@ -7813,7 +7813,36 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned bundle, a foreign .codex file and a source-file update at a new fixture source revision.
 - When: default adoption runs first, followed by explicit --hooks.
 - Then: default adoption leaves the bundle byte-identical; explicit refresh copies the changed file, preserves other bundle files, foreign data and the command string, reports the changed path and old/new revisions, says trust is not re-prompted, and returns current structural status.
-- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report or stale status after refresh.
+- Cold-status check (#621): with bytecode enabled and a cold checkout, standalone status after refresh preserves the complete installation/checkout inventory and bytes and reports current.
+- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report, cold-status writes or stale status after refresh.
+
+### S515 — Cold Codex context is byte-for-byte read-only (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold temporary default Codex installation and checkout; child Python confirms bytecode enabled and no cache prefix.
+- When: session-context.sh --runtime codex runs with inherited Python suppression removed.
+- Then: the complete temporary tree inventory, modes, symlinks and bytes remain unchanged, including checkout imports, while absent-bundle, runtime-hooks and unverified-activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S516 — Cold stale-bundle context remains read-only and diagnostic (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold owned bundle with distinct updated source and bytecode enabled in the child interpreter.
+- When: Codex context invokes its status backend.
+- Then: the complete temporary tree remains unchanged and stale-bundle, warning, outside-sandbox recovery, runtime-hooks and activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S517 — Standalone cold status suppresses bytecode (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold default Codex installation with child bytecode enabled.
+- When: adopt.sh --runtime codex --status runs.
+- Then: the complete tree inventory and bytes remain unchanged and status diagnostics appear; removing suppression in the disposable adoption script must fail this assertion.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S518 — Linux native bundle exchange has executable evidence (#621 AC1)
+**Covers:** F47, F51
+- Given: a Linux host with distinct old active and new source bundle trees.
+- When: explicit --hooks refresh executes the real native exchange and a disposable observer interrupts immediately after it.
+- Then: the complete old tree is at the actual staging path and new source bytes and manifest are active; pending status is current with exit 1, explicit recovery clears staging and returns current with exit 0; print actual platform, paths, exit and digests; on other platforms explicitly print SKIP naming the platform and Linux requirement.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
 
 ### S402 — Version-2 owned source command migrates once with a trust notice (#594 AC5, AC10)
 **Covers:** F47, F51
@@ -7883,7 +7912,15 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
-- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
+- Native-refusal checks (#621): repeat with ENOSYS and EACCES at exchange; require unchanged old active contents, verified new staging and ready recovery record, read-only stale status, and successful explicit retry; print platform, paths and results (S519).
+- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, unsafe native-refusal state, or stale status or changed policy after recovery.
+
+### S519 — Unsupported or refused exchange preserves safe recovery (#621 AC1)
+**Covers:** F47, F51
+- Given: distinct old installed and new source bundle trees on the actual platform.
+- When: explicit refresh receives native ENOSYS and EACCES failures in separate disposable trials, then retries without injection.
+- Then: the injector is reached, refresh exits 1 with exchange-refusal diagnostics, the entire old active tree remains unchanged, verified new staging and a ready transaction survive, status is stale and read-only with exit 1, and explicit retry activates new bytes, removes staging and clears the transaction with current status; print actual platform, active/staging paths and results. S411 also runs these refusal/recovery checks; native refusal and recovery run on macOS as well as Linux.
+- Falsifiers: unobserved injection, silent success, lost or modified generations, status writes or a failed explicit recovery. A changed active generation must be rejected by the old-tree oracle.
 
 ### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
 **Covers:** F40
