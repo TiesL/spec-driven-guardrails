@@ -7929,6 +7929,15 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Then: matching commands and flags inside comments allow silently. The independent contradiction denies with exit 2, empty stdout, OR31's exact core line once and the avoidance line only. Genuinely unmatched wrappers allow with empty stdout and exactly one bounded agent-dispatch diagnostic ending in dispatch allowed unchecked, including beside a contradiction; malformed units never count as partial validation.
 - Mutation controls: every silent allow rejects a scratch regression marking valid input unchecked; each contradiction rejects role-stage disabled; each unmatched input rejects a scratch hook suppressing the unchecked diagnostic. Full-output oracles and the red-baseline qualification are as in S505.
 
+### S509 — Outside wrapper comments and hostile PR whitespace preserve checks (#618)
+**Covers:** F40
+- Given: the real dispatch-hook CLI, rule core and inventory; a baseline hook obtained read-only from commit 3047418 in a temporary file (recorded expectations if history is unavailable).
+- When: QA emit commands use backtick, single-quote and double-quote presentation wrappers, with comments outside, inside, or absent, each with a fork, an Architect contradiction, and a valid control.
+- Then: the outside-comment backtick form denies forks with exact OR7 and contradictions with exact OR31; its valid control allows silently. Single/double quotes with outside comments retain allowed unchecked behavior. Inside comments and no-comment controls retain checks; S508 continues pinning genuinely unmatched wrappers. Compare each preserved verdict against the base CLI; inner comments use S508's intentionally strengthened behavior instead of the older base.
+- When: a forked Reviewer brief contains PR or pull request followed by 200000 spaces without a number, or that run precedes a real PR #533; short-run controls and a valid non-forked Reviewer also run.
+- Then: every invocation finishes in under 2 seconds measured through subprocess with a 2-second deadline that kills and reaps on expiry. Missing PR briefs deny with exact OR7 plus OR14; the later real PR denies with exact OR7, matching the base. Timeout, crash and unchecked are failures. Short controls retain those verdicts and the valid Reviewer allows silently.
+- Mutation controls: each assertion rejects a scratch hook erasing its denial or unchecked diagnostic, or marking its silent allow unchecked. Each long-whitespace assertion instead rejects a scratch hook delayed beyond the real deadline. Every invocation uses the same full-output and timing oracle; mutations on already-red product assertions remain qualified as in S505.
+
 ### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
 **Covers:** F40
 - Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
