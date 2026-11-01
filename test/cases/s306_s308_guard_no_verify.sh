@@ -33,7 +33,11 @@ with tempfile.TemporaryDirectory() as tmp:
         errors = []
         if result.returncode != expected: errors.append(f'exit {result.returncode}, expected {expected}')
         if flag and (flag not in result.stderr or 'CLAUDE_WORKFLOW_GUARDRAILS_OFF=1' not in result.stderr): errors.append('missing bypass diagnostic')
-        if warning and 'warning:' not in result.stderr: errors.append('missing warning')
+        if warning and not any(
+            'warning:' in line and 'CLAUDE_WORKFLOW_GUARDRAILS_OFF' in line
+            and ('disabled' in line or 'turned off' in line)
+            for line in result.stderr.splitlines()
+        ): errors.append('missing named workflow escape warning')
         if errors: failures.append(f'{command!r} [{cwd.name}]: {", ".join(errors)}; stderr={result.stderr!r}')
     direct = [('git commit --no-verify', '--no-verify'), ('git commit -n', '-n'), ('git push --no-verify origin HEAD', '--no-verify')]
     def blocked(command, flag='--no-verify', **kwargs): check(command, 2, flag, **kwargs)
