@@ -2,6 +2,7 @@
 # S411 — Interrupted bundle refresh preserves policy and permits explicit recovery.
 # Covers: F47, F51
 # Issue #594 AC5, AC6. Public seams and isolated fixture: test/fixtures/codex-594.py.
+# #621 also checks native ENOSYS/EACCES refusal, retained generations and retry.
 set -uo pipefail
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
