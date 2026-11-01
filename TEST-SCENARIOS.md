@@ -7562,6 +7562,36 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - Then: a valid call runs `gh issue comment <n> --body-file -` exactly once, the body is one column-0 record per scope in the order given, a blank line and one plain-text line quoting the reason, every record reads as `ok` with the exact values, and the success output echoes the reason and says the PR needs `Closes #<n>`; every refusal exits 2 with empty stdout, one stderr line naming the field and no `gh` call; there is no environment fallback; dry-run prints exactly the body a real run posts, with one stderr line, no `gh` call (also when `gh` would fail or is absent); exit 4 for a failing `gh` (stderr passed through, "nothing recorded"), 3 for an absent `gh` or an absent `lib/model-record.sh` or `lib/markdown.sh` (not 1), 1 ("internal check failed") when the read-back differs; a symlinked script finds its lib from the real script directory and gives the same dry-run body as a direct run, and a symlink to a script without its lib still exits 3; the script header and the bidi refusal message name the refused range as "a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)", and the header says U+200B, U+200E, U+200F, U+061C, U+FEFF are accepted; the usage text says single quotes, the closing keyword and "before the first commit", and is the one list of refusal classes (it names the double quote, `<`, `>`, control bytes, line breaks, C1, U+2028/U+2029, bidi controls and the two ranges, blank including U+00A0, invalid UTF-8 and the 100/1000 byte limits). Mutation arms on a sandbox copy: with only the field checks removed the read-back still exits 1, with only the read-back removed the checks still exit 2, with both removed a hostile value reaches the stub; four more copies each narrow the bidi byte pattern by one at one edge (`a[a-e]` to `a[b-e]` and `a[a-d]`, `a[6-9]` to `a[7-9]` and `a[6-8]`), and each must stop that edge's value from being refused with exit 2, while the unmutated script refuses it.
 - Falsifiers: sanitizing, trimming or truncating instead of refusing, posting before validating, one comment per scope, a default or environment fallback, a dry-run that calls `gh`, the same exit code for different failures, a net that exists only in the pre-checks, a test that cannot see validation being dropped, a bidi range narrowed at one edge with no row going red, an NBSP-only reason recorded as a reason, invalid UTF-8 reaching the record, a symlinked script that cannot find its lib, a missing `lib/markdown.sh` that exits 1, a `--help` that lists fewer refusal classes than the script enforces.
 
+### S495 — physical symlink parents resolve before relative targets (#616 AC1)
+**Covers:** F38
+- Given: a -> x/y, x/y/po -> ../real/pipeline-override.sh and an unrelated real directory beside a; direct, absolute, chained, relative and PATH controls.
+- When: dry runs execute through each link.
+- Then: exit 0 and byte-identical bodies; a changed body fails the equality oracle.
+
+### S496 — invalid UTF-8 boundary checks kill mutants (#616 AC1)
+**Covers:** F38
+- Given: S376 named invalid-UTF-8 checks for E0/F0 overlong, above-max F4, F5/F8 leads and DFFF in both fields, and valid D7FF/E000/10FFFF edges.
+- When: each E0/F0/F4/ED/F5/F8 bound or refusal-class wording is mutated separately in a scratch copy and S376 runs.
+- Then: the corresponding named class assertion fails; valid boundaries and unmutated invalid rows pass, and independently narrowing each valid edge makes its acceptance assertion fail.
+
+### S497 — four accepted characters remain byte-preserved (#616 AC1)
+**Covers:** F38
+- Given: U+2060, U+00AD, U+3164 and U+2800, alone and following text in either field.
+- When: the CLI runs and a separate scratch mutant adds each character to the blank set.
+- Then: the original preserves bytes; each new blank refusal and each output-byte mutation is detected.
+
+### S498 — blank wording names the implemented set (#616 AC1)
+**Covers:** F38
+- Given: script header, CLI help and blank diagnostics.
+- When: the wording and each listed code point are inspected, then individually removed from the observed text.
+- Then: header/help say listed zero-width characters and enumerate U+200B/U+200E/U+200F/U+061C/U+FEFF; blank diagnostics name bidi marks; each wording/deletion mutant fails its pin.
+
+### S499 — n2 abort reasons and vCPU attribution are falsifiable (#616 AC1)
+**Covers:** F56
+- Given: S363 n2 stderr and the runner CPU comment.
+- When: n2 alone raises an unrelated AssertionError or RuntimeError, and attribution is deleted.
+- Then: S363 reports n2 aborted for the wrong reason while its R3 control still passes; runner figures are explicitly assumed or sourced to GitHub runner specs, and removing that qualification fails.
+
 ### S377 — a record from pipeline-override.sh satisfies the real merge gate, and only when the gate can see it (#564 AC6, AC9, AC10)
 **Covers:** F38
 - Given: an opted-in project, a fake `gh` with a PR and its work-item issue, Discovery on the issue, Implementation and Review on the PR, no Planning and no Test marker, and the script's `--dry-run` body as a comment on the issue.
