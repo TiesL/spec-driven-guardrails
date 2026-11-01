@@ -53,7 +53,7 @@ extraction; this change adds no `/clear` rule.
 
 ## What is checkable where
 
-- GitHub-visible: `pipeline-log-fields.sh <issue>` reads the Pipeline log
+- GitHub-visible: `"$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-log-fields.sh" <issue>` reads the Pipeline log
   comment and prints dispatch lines that miss a field and agents reported over
   the flag limit without a `reason=`. It reports and exits 0; it does not block
   a merge. The log is a recorded self-check, not proof.
@@ -146,4 +146,4 @@ One line per dispatch, at dispatch, fields as `key=value` (OR22):
 Line one carries a reason because 310k tokens is over the flag limit; line two
 is a continuation that stayed under both continue limits; line three is a
 no-agent step, so it has no `agent=` and the script skips it. Run
-`pipeline-log-fields.sh <issue>` to list lines that miss a field.
+`"$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-log-fields.sh" <issue>` to list lines that miss a field.

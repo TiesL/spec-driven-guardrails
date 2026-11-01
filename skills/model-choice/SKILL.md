@@ -159,7 +159,8 @@ Quoted records supply neither presence nor latest candidates. Re-post a
 corrected line using the emitter. The gate, the collector and the
 staleness script all read records through this reader.
 
-`skills/pre-merge-review/model-record-gate.sh <pr-number>` checks that all
+`skills/pre-merge-review/model-record-gate.sh <pr-number>` (resolved per
+`pre-merge-review`, "Command paths") checks that all
 five stages have at least one marker, searched across both the PR's
 comments and the comments of every issue it closes — a finding, same
 non-blocking shape as every other `pre-merge-review` gate, for any stage

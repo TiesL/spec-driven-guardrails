@@ -344,7 +344,7 @@ blocking would repeat that failure pattern.
 
 **Extended with a CI check (issue #81).** Six CI runs in a row failed
 unnoticed after PR #76 — PR #76, #78, and (initially) #80 were all merged
-red, because nothing in the merge flow looked at it: this repo has no branch
+red, because nothing in the merge flow looked at it: this repo then had no branch
 protection (private, no paid plan) and `gh pr merge` doesn't itself warn on
 failing checks. The same gate that checks the review marker now also checks
 `gh pr checks` on the PR: any check that isn't `pass` or `skipping` (failing,
@@ -643,10 +643,9 @@ those commands would reach the hook. The same `git reset --hard` in TiesL's
 own terminal window, in an IDE, or on a second machine without `adopt.sh`
 goes through unchecked.
 
-Server-side branch protection would be the right place for this, but that
-door is closed: GitHub literally answers, on a private repo, *"Upgrade to
-GitHub Pro or make this repository public."* As long as that's the case,
-coverage has to come from three local-and-CI-based layers:
+On a free private repo, server-side branch protection is unavailable (see
+README.md, "What it costs, and where it doesn't hold"). Coverage there has
+to come from three local-and-CI-based layers:
 
 - **`templates/ci.yml` validates pull requests and `main`** (W24). The
   template used `on: push: branches-ignore: [main]` and therefore validated
@@ -2319,9 +2318,9 @@ epics still apply, detached from the execution history in which they arose.
 - The guardrails hook is machine-local: a new machine without an `adopt.sh`
   run doesn't have it. The same applies to the git hooks from F17 — those
   don't travel with a clone.
-- Server-side branch protection isn't available: GitHub requires a paid plan
-  for that on a private repo. W27 is therefore after-the-fact detection, not
-  prevention; the command has already run by then.
+- Server-side branch protection requires a paid plan on a private repo; this
+  public repo has it on `main` (see README.md). W27 remains after-the-fact
+  detection, not prevention; the command has already run by then.
 - Models share training data, so `pre-merge-review` too raises the floor
   without ruling out blind spots — that caveat is already in the
   `pre-merge-review` skill.
