@@ -103,7 +103,7 @@ neg rule-text-in-tsv row-name "$ORCH" "$d/t-text.tsv" "$SCEN"
 # A pin file computed here, independently of the harness, from the real
 # core and inventory: SHA-256 of each `core` rule's item text, from `OR<n> `
 # to the item's end, continuation lines joined by single spaces, trailing
-# whitespace trimmed. Header line `id<TAB>sha256`.
+# whitespace trimmed, prefixed by depth=<depth> and a newline. Header line `id<TAB>sha256`.
 pin_make() { # orch tsv -> pin file on stdout
   python3 -I - "$1" "$2" <<'PY'
 import hashlib, re, sys
@@ -121,7 +121,7 @@ for rid in core:
             while (j < len(lines) and lines[j].strip() and lines[j].startswith(" ")
                    and not item.match(lines[j])):
                 parts.append(lines[j].strip()); j += 1
-            print("%s\t%s" % (rid, hashlib.sha256(" ".join(parts).rstrip().encode()).hexdigest()))
+            print("%s\t%s" % (rid, hashlib.sha256(("depth=%d\n" % (len(m.group(1)) // 2) + " ".join(parts).rstrip()).encode()).hexdigest()))
             break
 PY
 }

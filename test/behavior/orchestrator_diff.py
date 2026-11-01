@@ -320,6 +320,38 @@ def stamp_hash(orch_bytes, scen_bytes):
 STAMP_RE = re.compile(r"^sha256=([0-9a-f]{64}) base=(\S+) model=(\S+) scenarios=(\d+)$")
 
 
+
+def valid_model(model):
+    """A resolved Claude model ID, not an alias or an evidence placeholder."""
+    return (isinstance(model, str)
+            and re.fullmatch(r"claude-[a-z0-9]+(?:[.-][a-z0-9]+)*", model) is not None
+            and not any(word in model.split("-") for word in
+                        ("unknown", "none", "null", "placeholder", "stub"))
+            # The offline adapter deliberately uses this resolved test ID.
+            or model == "claude-stub-1")
+
+
+def resolved_base(repo, base, require_sha=False):
+    """Resolve locally and require membership in origin/main's ancestry."""
+    if require_sha and not re.fullmatch(r"[0-9a-f]{7,40}|[0-9a-f]{64}", base):
+        raise ValueError("base %s must be a resolved commit SHA" % base)
+
+    def resolve(ref):
+        p = subprocess.run(["git", "-C", repo, "rev-parse", "--verify", "--quiet",
+                            "%s^{commit}" % ref], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if p.returncode:
+            raise ValueError("cannot resolve base/ref %s to a commit" % ref)
+        return p.stdout.decode("utf-8").strip()
+
+    sha = resolve(base)
+    main = resolve("origin/main")
+    p = subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", sha, main],
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if p.returncode:
+        raise ValueError("base %s is not an ancestor of origin/main" % base)
+    return sha
+
+
 # --- adapter -----------------------------------------------------------------
 
 def run_claude(arm_file, prompt, model, scratch):
@@ -342,7 +374,10 @@ def run_claude(arm_file, prompt, model, scratch):
         sys.stderr.write("run: not JSON (exit %d): %s\n" % (p.returncode, p.stdout[:200]))
         return None, 0.0, None
     cost = float(data.get("total_cost_usd") or 0.0)
-    models = list((data.get("modelUsage") or {}).keys())
+    usage = data.get("modelUsage")
+    if not isinstance(usage, dict) or not usage or not all(valid_model(m) for m in usage):
+        raise ValueError("model metadata must contain resolved model IDs")
+    models = list(usage)
     out = data.get("structured_output")
     if data.get("is_error") or not isinstance(out, dict):
         return None, cost, (models[0] if models else None)
@@ -414,6 +449,14 @@ def cmd_stamp_check(args):
     if not m or "\n" in line:
         print("stamp-check: malformed stamp: %s" % line)
         return 1
+    try:
+        resolved_base(repo, m.group(2), require_sha=True)
+    except ValueError as error:
+        print("stamp-check: %s" % error)
+        return 1
+    if not valid_model(m.group(3)):
+        print("stamp-check: invalid model metadata: %s" % m.group(3))
+        return 1
     orch = read(os.path.join(repo, ORCH_REL))
     scen = read(os.path.join(repo, SCEN_REL))
     if stamp_hash(orch, scen) != m.group(1):
@@ -443,15 +486,10 @@ def cmd_run(args):
         for e in errors:
             sys.stderr.write("ERROR: %s\n" % e)
         return 2
-    # The stamp records the commit the run compared against, not the ref text
-    # (#542): origin/main moves, a SHA does not. An unresolvable base stops
-    # the run before any stamp can be written.
-    rp = subprocess.run(["git", "-C", repo, "rev-parse", "--verify", "--quiet",
-                         "%s^{commit}" % args.base],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    base_sha = rp.stdout.decode("utf-8", "replace").strip()
-    if rp.returncode != 0 or not base_sha:
-        sys.stderr.write("run: cannot resolve --base %s to a commit in %s\n" % (args.base, repo))
+    try:
+        base_sha = resolved_base(repo, args.base)
+    except ValueError as error:
+        sys.stderr.write("run: %s\n" % error)
         return 2
     p = subprocess.run(["git", "-C", repo, "show", "%s:%s" % (base_sha, ORCH_REL)],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -513,6 +551,9 @@ def cmd_run(args):
             return 0 if detected else 1
         rows = run_pairs(runner, scenarios, intended, old_file,
                          write_arm("arm-new.txt", new_text), args.baseline)
+    except ValueError as e:
+        sys.stderr.write("run: %s\n" % e)
+        return 2
     except Budget as e:
         sys.stderr.write("run: %s\n" % e)
         footer(runner, sys.stderr)
