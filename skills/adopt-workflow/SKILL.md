@@ -21,9 +21,9 @@ Check at the start of a session in a directory that is a git repository:
    without asking again.
 4. Otherwise: ask TiesL once whether this project should use the shared
    personal workflow (`spec-driven-guardrails`).
-   - **Yes** → run `spec-driven-guardrails/adopt.sh` from the root of this
+   - **Yes** → run `"$SPEC_DRIVEN_GUARDRAILS_DIR/adopt.sh"` from the root of this
      project (requires `SPEC_DRIVEN_GUARDRAILS_DIR` to be set as an
-     environment variable — see `spec-driven-guardrails/README.md` if it
+     environment variable — see `$SPEC_DRIVEN_GUARDRAILS_DIR/README.md` if it
      isn't yet).
    - **No** → leave the project alone: the project's own conventions
      remain leading, or there's no specific workflow agreement.

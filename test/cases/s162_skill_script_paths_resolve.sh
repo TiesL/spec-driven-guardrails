@@ -21,36 +21,17 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 clone="$(sandbox_copy_repo clone)"
-project="$(fresh_project adopter)"
-SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >/dev/null 2>&1
-
-found_any=0
-for skill in "$project"/.claude/skills/*/SKILL.md; do
-  [ -r "$skill" ] || continue
-  found_any=1
-  name="$(basename "$(dirname "$skill")")"
-
-  # ./<name>.sh, not preceded by a path character (so a/b/./x.sh or
-  # $VAR/./x.sh don't count as a bare relative invocation).
-  grep -oE '(^|[^A-Za-z0-9_./$}-])\./[A-Za-z0-9_-]+\.sh' "$skill" \
-    | sed 's/^[^.]*\.\///' | sort -u > "$SANDBOX/rel.txt"
-  while IFS= read -r script; do
-    [ -n "$script" ] || continue
-    [ -x "$project/$script" ] \
-      || fail "S162 — skill '$name' runs ./$script, which an adopted project does not have"
-  done < "$SANDBOX/rel.txt"
-
-  # $SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh or ${SPEC_DRIVEN_GUARDRAILS_DIR}/<path>.sh
-  grep -oE '\$\{?SPEC_DRIVEN_GUARDRAILS_DIR\}?/[A-Za-z0-9_./-]+\.sh' "$skill" \
-    | sed 's/^[^/]*\///' | sort -u > "$SANDBOX/clone.txt"
-  while IFS= read -r script; do
-    [ -n "$script" ] || continue
-    [ -x "$clone/$script" ] \
-      || fail "S162 — skill '$name' runs \$SPEC_DRIVEN_GUARDRAILS_DIR/$script, which the clone does not have"
-  done < "$SANDBOX/clone.txt"
-done
-
-[ "$found_any" -eq 1 ] || fail "S162 — no installed skills found in the adopted project"
+# A directory with .git is enough for adoption; no git writes are needed.
+project="$SANDBOX/adopter"
+mkdir -p "$project/.git/objects" "$project/.git/refs"
+printf 'ref: refs/heads/main\n' > "$project/.git/HEAD"
+SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >"$SANDBOX/adopt.log" 2>&1
+[ "$?" -eq 0 ] || { cat "$SANDBOX/adopt.log"; fail "S162 — adoption failed"; test_done; }
+[ -d "$project/.claude/skills/pre-merge-review" ] || fail "S162 — no installed skills"
+python3 "$TEST_REPO_ROOT/test/fixtures/adopter-docs-622.py" paths "$TEST_REPO_ROOT" "$project" "$clone" \
+  || fail "S162 — a documented installed-skill invocation dangles"
+python3 "$TEST_REPO_ROOT/test/fixtures/adopter-docs-622.py" path-controls "$TEST_REPO_ROOT" \
+  || fail "S162 — path mutation controls failed"
 
 # And: pre-merge-review still tells the reviewer to run the classifier,
 # now by a path that resolves (rather than by dropping the step).

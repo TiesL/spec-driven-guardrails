@@ -72,7 +72,7 @@ the `model-choice` skill.
 The `role:<name>` labels are a hand-maintained traceability record (A5): put the label of the
 role now holding the work on the issue. They do not exist in your repo until you create them.
 Create them once, idempotently, in this project's own repo (needs `gh`) if you want the
-`role-label-staleness.sh` script (run from `$SPEC_DRIVEN_GUARDRAILS_DIR`, see below) to say
+`role-label-staleness.sh` script (run by path from the project's checkout, see below) to say
 anything:
 
 ```bash

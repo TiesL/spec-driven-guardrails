@@ -675,6 +675,7 @@ the next free numbers after A23.
   tokenizer (retired by V8, #429); unless the line
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
+- **#622 amendment (2026-11-01):** The current round trip uses `rec_scan` and `rec_field` to verify one well-formed marker of the same stage with the same model and floor-basis; effort is neither emitted nor compared (A33, V8). The preceding round-trip description is historical.
 - **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --role <Role>
   --model <id> [--floor-basis <sentence>]` (A48; backward-compatible
   `--stage <Stage>` remains accepted, alone or with `--role`), next to the
