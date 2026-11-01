@@ -1107,7 +1107,7 @@ judge_segment() {
         # The escape hatch as the block message prescribes it. It must be
         # able to appear in the command text: a command that hasn't started
         # yet can, by definition, not influence this guard's environment.
-        echo "warning: git-guardrails is explicitly turned off for this command." >&2
+        echo "warning: git-guardrails is explicitly turned off via CLAUDE_WORKFLOW_GUARDRAILS_OFF for this command." >&2
         return 0 ;;
       CLAUDE_WORKFLOW_MERGE_GUARD_OFF=*)
         # AC6 (F8): a deliberate, loud escape hatch specific to the merge

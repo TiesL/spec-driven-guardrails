@@ -8350,3 +8350,17 @@ and S380's #590 live-evidence boundary.
   version 2 with 20 or 21 fails with the meaning-version diagnostic.
 - Counterexample: any mutation passes, a valid control fails, or a mutation
   fails only because a different S285 prerequisite is missing.
+
+### S485 — Clean-empty carry-forward checks require warning-free stderr (#612 AC1)
+**Covers:** F28
+- Given: S305's actual `check()` helper and each of its clean-empty case labels, with a substituted successful gate observation (exit 0, empty stdout).
+- When: stderr is empty, the helper passes; injecting a fail-open warning into stderr while preserving status and stdout makes the helper fail and identify stderr.
+- Then: every clean-empty assertion has its own green control and warning-only mutation. The real S305 cases continue to exercise the gate with recording fake REST data; removing its stderr assertion must turn this oracle check red.
+- Evidence boundary: this tests S305's assertion, not a second implementation of the gate or a claim that empty output alone proves successful lookup.
+
+### S486 — Workflow escape warning assertions reject unnamed and unrelated warnings (#612 AC1)
+**Covers:** F7
+- Given: S306-S308's actual JSON-seam `check()` helper for commit --no-verify, commit -n and push --no-verify, using both process-environment and command-prefix escapes with values 1 and yes.
+- When: only the captured hook observation is substituted, an allowed result with a warning naming CLAUDE_WORKFLOW_GUARDRAILS_OFF and stating the guard is disabled passes.
+- Then: each command/form/value has independent mutations removing the variable name, replacing the warning with unrelated warning text, removing the warning marker, or keeping the variable in an unrelated warning. Every mutation fails the named-warning assertion while its unchanged control passes. S308's real-hook checks enforce this same oracle, so a command-prefix warning omitting the variable is red until the Developer changes the product diagnostic.
+- Evidence boundary: the meta-test exercises the real test helper; S306-S308 separately executes the real hook and checks allowed status and diagnostic together. No product source is changed by this test.
