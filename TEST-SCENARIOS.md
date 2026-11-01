@@ -3099,7 +3099,8 @@ something new is being added.
   is visible); a D2 failure prints the first 20 logical diff records through
   the same unfolded byte renderer (POSIX tools on BSD and GNU alike;
   `cat -A` is not used). Each finding occupies one physical line, without
-  folded continuations; unfolding precedes the record limit. No YAML
+  folded continuations; unfolding precedes the record limit (S520 retains a
+  1300-character diff line and its following end marker). No YAML
   is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
   suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
   `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
@@ -3137,15 +3138,17 @@ something new is being added.
 ### S520 — long S219 diagnostics retain logical lines on native and folding tools
 **Covers:** F43
 - Given: three long CRLF header lines and an ASCII pinned-block mismatch with
-  a 900-character diff line followed by a distinct end marker, passed through
+  a 1300-character diff line followed by a distinct end marker, passed through
   `CI_MACOS_YML_UNDER_TEST` to S219 (S222 uses the unchanged real Linux workflow).
 - When: the case runs with native sed and a shim that forces 60-column `l`
   folds after normalizing any native folds.
 - Then: each candidate is rejected with exactly one physical diagnostic line;
-  all three escaped CRLF records survive in full, and the long diff record and
-  its following marker survive before the 20-logical-record limit. No folded
+  all three escaped CRLF records survive in full, and the 1300-character diff
+  record and its following marker survive before the 20-logical-record limit. No folded
   `\~` continuation appears. Removing unfolding in a temporary copy must make
-  both D1 and D2 assertions fail under the forced-folding shim. No CI policy,
+  both D1 and D2 assertions fail under the forced-folding shim. A second mutant
+  that limits to 20 folded records before awk unfolds them must fail the D2
+  full-record/end-marker assertion under the same shim. No CI policy,
   encoded-job defense or action-pinning change is claimed (#442 scope).
 
 ### S521 — the two scoped CHANGELOG bullets reconcile width and transcript prose

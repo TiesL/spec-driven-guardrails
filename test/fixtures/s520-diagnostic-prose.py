@@ -63,7 +63,8 @@ with tempfile.TemporaryDirectory(prefix='s520-') as tmp:
     shim = work / 'bin'
     shim.mkdir()
     # Normalize the native sed's own wraps, then force 60-column wrapping.
-    # This exercises GNU's default-unfolded output as well as BSD's folds.
+    # GNU sed l also wraps by default (70 columns, configurable with -l N);
+    # the shim forces the same 60-column fold on GNU and BSD.
     sed = shim / 'sed'
     sed.write_text('#!' + sys.executable + '\n' + '''import subprocess, sys
 p = subprocess.run([REAL, *sys.argv[1:]], stdout=subprocess.PIPE)
@@ -83,7 +84,7 @@ sys.exit(p.returncode)
     original = (root / '.github/workflows/macos.yml').read_bytes()
     candidates = {
         'D1': b'# ' + b'A' * 250 + b'\r\n# ' + b'B' * 250 + b'\r\n# ' + b'C' * 250 + b'\r\n' + original,
-        'D2': original + b'# ' + b'D' * 900 + b'\n# END-OF-LONG-DIFF\n',
+        'D2': original + b'# ' + b'D' * 1300 + b'\n# END-OF-LONG-DIFF\n',
     }
 
     def diagnostic(code, arm, forced):
@@ -106,7 +107,7 @@ sys.exit(p.returncode)
                 require(f'line {n}: # ' + char * 250 + r'\r$' in output,
                         'S520: entire escaped offending line retained')
         else:
-            require('D' * 900 + '$' in output and '# END-OF-LONG-DIFF$' in output,
+            require('D' * 1300 + '$' in output and '# END-OF-LONG-DIFF$' in output,
                     'S520: diff limit counts logical records, not folds')
 
     mutant = re.sub(r'(s219_unfolded_bytes\(\) \{\n).*?(\n\})',
@@ -121,6 +122,18 @@ sys.exit(p.returncode)
             print(f'S520 {arm}: native/forced green; folding mutant rejected')
         else:
             raise AssertionError(f'S520 {arm}: folding mutant survived')
+
+    head_first = source.replace('LC_ALL=C sed -n l | LC_ALL=C awk',
+                                'LC_ALL=C sed -n l | head -20 | LC_ALL=C awk', 1)
+    require(head_first != source, 'S520: head-first mutation applied')
+    try:
+        diagnostic(head_first, 'D2', True)
+    except AssertionError as error:
+        require(str(error) == 'S520: diff limit counts logical records, not folds',
+                'S520: head-first mutant rejected for truncated diff records')
+        print('S520 D2: head-first mutant rejected')
+    else:
+        raise AssertionError('S520 D2: head-first mutant survived')
 
 changelog = (root / 'CHANGELOG.md').read_text()
 prose(changelog)
