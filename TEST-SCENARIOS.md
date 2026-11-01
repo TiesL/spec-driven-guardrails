@@ -2165,12 +2165,34 @@ something new is being added.
   installed skill's `SKILL.md` (issue #369: the human decision that
   `pre-merge-review`'s `./classify-review-depth.sh` path is fixed here,
   Architect finding V4)
-- When: each `./<name>.sh` and `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh`
-  invocation in those skills is resolved
+- When: shell invocations in fenced commands and argument-bearing inline
+  commands are resolved, including bare `skills/`, `templates/`, installed
+  `.claude/skills/` and physical guardrails checkout paths
 - Then: every `./<name>.sh` exists, executable, at the adopted project's
   root; every `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh` exists, executable,
   in the clone; and `pre-merge-review` still runs the classifier, as
   `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`
+
+### S525 — Installed invocation resolver rejects dangling paths (#622 AC1)
+**Covers:** F37
+- Given: S162's installed-skill command resolver and independent executable
+  controls in an adopted-project layout and a physical guardrails checkout.
+- When: installed, project-relative and checkout-qualified invocations are
+  resolved in fenced and inline commands; each target is made dangling.
+- Then: executable controls resolve and every dangling mutant fails;
+  bare `skills/`, `templates/` and root script invocations cannot escape the scan.
+  Explicit physical-checkout conventions, delegated conventions, local checkout
+  variables and qualified basename references have independent dangling controls;
+  removing a required convention or binding also fails. S162 applies the same
+  resolver to every actually installed SKILL.md.
+
+### S526 — Protection framing agrees with README (#622 AC1; #367 residual)
+**Covers:** F37
+- Given: README, canonical workflow policy and PRD.
+- Then: each qualifies the paid-plan limitation as private-repository specific
+  and states the public-repository protection exception. Independent mutations
+  dropping the private qualifier or public exception, negating public protection
+  or restoring either unqualified no-protection claim fail; qualified controls pass.
 
 ### S163 — The README says the multi-agent workflow is adoptable, and what adopting it takes
 **Covers:** F37
@@ -3732,6 +3754,10 @@ something new is being added.
   A27 still lists the observed effort (the two documents agree). Red today:
   five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
   sentence
+- #622 scope clarification: the heuristic catches recognized comparison,
+  field and --effort shapes; it can miss “at least as high as” rewordings and
+  live instructions inside already-marked superseded paragraphs. These are
+  known limits, not a claim of arbitrary-wording detection.
 - Amended by #499 (AC14, A41): in `ORCHESTRATOR.md` the unit is the list
   item that starts with `OR22` (Pipeline log), not the `Pipeline log.`
   paragraph; that item still says the orchestrator may note the effort the
@@ -3739,6 +3765,29 @@ something new is being added.
   attribute and not a check. The `OR29` item (no effort argument) is a unit
   like any other and passes through its supersession words ("neither chosen
   nor", "accepted risk"). The rest of S240 is unchanged
+
+### S527 — A26 has a dated current model-only round-trip amendment (#622 AC1)
+**Covers:** F39, F40
+- Given: the retained historical A26 decision.
+- Then: a dated amendment states the current round-trip checks of stage, model
+  and floor-basis and excludes effort. A positive amendment control passes;
+  independently removing its date, amendment label, each checked field or effort
+  exclusion fails. Red until the Architect adds the amendment.
+
+### S528 — S240 names caught shapes and known limits (#622 AC1)
+**Covers:** F39, F40
+- Given: the S240 test header, describing its heuristic oracle.
+- Then: it names recognized compared/--effort shapes, the missed “at least as
+  high as” rewording and instructions inside a superseded paragraph; it does
+  not claim “whatever its wording”. Each omitted shape/limit/qualification and
+  a restored overclaim independently fail a positive header control.
+
+### S529 — Gate header names the guard and fits its surrounding width (#622 AC1)
+**Covers:** F40
+- Given: the model-record-gate.sh leading header.
+- Then: it says the guard prints the warning and every header line fits 79
+  columns. A positive header passes; independently naming a hook or inserting
+  an 80-column line fails. Assertions cover comments only.
 
 ### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
 **Covers:** F39, F40
