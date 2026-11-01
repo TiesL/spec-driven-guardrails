@@ -6020,6 +6020,27 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   ref with a real SHA, and the digits-as-SHA brief all exit 0
 - Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
 
+### S505 — Exact role prefixes reject QA-lead (#618 AC1)
+**Covers:** F40
+- Given: the public dispatch-hook CLI with the real rule inventory and core, a QA emitter and an explicit model.
+- When: the first line is ROLE SESSION: QA-lead, then the same prompt is changed to the exact QA role.
+- Then: the suffixed role denies with exit 2, empty stdout, OR8's exact core line once and the avoidance line only; the exact role allows silently. This strengthens the role-name boundary; it does not change inline detection.
+- Mutation controls: each denial must reject a scratch hook with its named check disabled, and each silent allow must reject that check forced to fail. Each assertion uses the same CLI and full-output oracle on its mutant. Mutation rejection on a red baseline is reported separately and becomes discrimination evidence only after the product assertion is green.
+
+### S506 — Reviewer head evidence excludes incidental and historical hex (#618 AC1)
+**Covers:** F40
+- Given: a Reviewer brief with a valid PR, emitter, model and carryforward-gate reference.
+- When: its only hex evidence is a UUID scratch path, the word defaced, an unlabelled hex artifact, a previous head, an old SHA or a previous commit.
+- Then: each denies with exit 2, empty stdout, OR14's exact core line once and the avoidance line only. Adding a separately explicit current head allows silently for each input. Explicit head, SHA and commit labels retain 7-to-40-character hex support, including a labelled all-digit SHA. These shape checks do not establish actual repository head identity. This supersedes S312's permissive incidental-hex reading for the #618 residual.
+- Mutation controls: every denial rejects a scratch hook with reviewer-sha disabled; every silent allow rejects reviewer-sha forced to fail. Full-output oracles and the red-baseline qualification are as in S505.
+
+### S507 — Reviewer PR references accept the supported spellings (#618 AC1)
+**Covers:** F40
+- Given: a Reviewer brief with explicit head, gate, model and emitter evidence.
+- When: the PR reference is pull request #533, pr #533, PR: #533, PR #533, PR 533 or a /pull/533 URL; independently it is replaced by a work-item number, issues URL or bare #533.
+- Then: each PR form allows silently; each issue-only form denies with exit 2, empty stdout, OR14's exact core line once and the avoidance line only.
+- Mutation controls: every allow rejects reviewer-pr forced to fail in a scratch hook; every denial rejects reviewer-pr disabled. Full-output oracles and the red-baseline qualification are as in S505.
+
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
 - Given: the bash adapter and the core, behind a recording fake `gh` and a
@@ -7976,6 +7997,22 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: the hook checks the brief, and separately a stage-only emit line without any ROLE SESSION prefix.
 - Then: Option B continues checking fenced emit units; the separately open quoted-example exemption remains a decision for TiesL. the quoted command is denied under the current default pending TiesL's decision; this arm is clearly isolated so that one scenario expectation can be flipped. Several emit lines with one mismatch are denied by OR31. No prefix yields OR8 alone; the cross-check is inapplicable.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+### S508 — Presentation wrappers are removed before trailing comments (#618 AC1)
+**Covers:** F40
+- Given: a QA command in a matching single-quote, double-quote or backtick presentation wrapper, with a trailing physical-line comment inside that wrapper.
+- When: each wrapper form runs alone, with an independent Architect command on the following line, and with an apparent contradictory role flag in the comment; separately the closing wrapper is removed, with and without the independent contradiction.
+- Then: matching commands and flags inside comments allow silently. The independent contradiction denies with exit 2, empty stdout, OR31's exact core line once and the avoidance line only. Genuinely unmatched wrappers allow with empty stdout and exactly one bounded agent-dispatch diagnostic ending in dispatch allowed unchecked, including beside a contradiction; malformed units never count as partial validation.
+- Mutation controls: every silent allow rejects a scratch regression marking valid input unchecked; each contradiction rejects role-stage disabled; each unmatched input rejects a scratch hook suppressing the unchecked diagnostic. Full-output oracles and the red-baseline qualification are as in S505.
+
+### S509 — Outside wrapper comments and hostile PR whitespace preserve checks (#618)
+**Covers:** F40
+- Given: the real dispatch-hook CLI, rule core and inventory; a baseline hook obtained read-only from commit 3047418 in a temporary file (recorded expectations if history is unavailable).
+- When: QA emit commands use backtick, single-quote and double-quote presentation wrappers, with comments outside, inside, or absent, each with a fork, an Architect contradiction, and a valid control.
+- Then: the outside-comment backtick form denies forks with exact OR7 and contradictions with exact OR31; its valid control allows silently. Single/double quotes with outside comments retain allowed unchecked behavior. Inside comments and no-comment controls retain checks; S508 continues pinning genuinely unmatched wrappers. Compare each preserved verdict against the base CLI; inner comments use S508's intentionally strengthened behavior instead of the older base.
+- When: a forked Reviewer brief contains PR or pull request followed by 200000 spaces without a number, or that run precedes a real PR #533; short-run controls and a valid non-forked Reviewer also run.
+- Then: every invocation finishes in under 2 seconds measured through subprocess with a 2-second deadline that kills and reaps on expiry. Missing PR briefs deny with exact OR7 plus OR14; the later real PR denies with exact OR7, matching the base. Timeout, crash and unchecked are failures. Short controls retain those verdicts and the valid Reviewer allows silently.
+- Mutation controls: each assertion rejects a scratch hook erasing its denial or unchecked diagnostic, or marking its silent allow unchecked. Each long-whitespace assertion instead rejects a scratch hook delayed beyond the real deadline. Every invocation uses the same full-output and timing oracle; mutations on already-red product assertions remain qualified as in S505.
 
 ### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
 **Covers:** F40
