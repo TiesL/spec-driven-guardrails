@@ -5028,16 +5028,19 @@ that evidence and the final `./check` result.
   containing "absorbed" (case-insensitive). Counterexample: any one line
   missing the word.
 - And: the compatibility entry (the `- **Compatibility and limits (#408).**`
-  bullet inside Unreleased, up to the next top-level bullet) names every
+  bullet inside v0.4.0, up to the next top-level bullet) names every
   question whose `Meaning version:` differs between `git show
   v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
-  `meaning version <new number>`. A question differs when its `## <name>`
+  `meaning version <new number>` with a whole-number match (2 must not
+  accept 20 or 21). A question differs when its `## <name>`
   section has a `Meaning version:` number in the new file that is absent from
   or unequal to the old file's. Today that set is
   `quality-review-before-merge` (4), `process-model-choice` (2) and
   `process-multi-agent-roles` (2); the test derives it, it does not list it.
   Any count the entry states in words or digits ("two answers", "3
-  questions") equals the set size. Counterexamples: the set computed from the
+  questions") equals the set size, including later counts after a matching first
+  count; numeric prefixes and conflicting later counts fail. Counterexamples:
+  the set computed from the
   working tree alone or hard-coded; `process-model-choice` omitted; the entry
   saying "two" while three differ; a bump invented for a question whose number
   did not change. If tag `v0.3.0` does not resolve to a commit, the test
@@ -5053,8 +5056,14 @@ that evidence and the final `./check` result.
   tracked) appears in the entry. Lint: the entry contains `one-definition` and
   `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
   still states it can evade (anchor against drift). No entry line mentioning
-  the reader, the lint or `CommonMark` contains `complete`, `exhaustive` or
-  `guarantee` unless it also contains `not`, `no `, `cannot` or `outside`.
+  the reader, the lint or `CommonMark` contains a sentence (delimited by
+  `.`, `!` or `?`) with a word starting with `complete`, `exhaustive` or `guarantee`
+  (including suffixes such as `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively`, but excluding `incomplete`) unless that
+  same sentence contains a whole-word negator, case-insensitively:
+  `not`, `no`, `never`, `neither`, `cannot`, `outside`. A word boundary is the
+  start/end or a character other than an alphanumeric or underscore; `Known`,
+  `another` and `nothing` are not negators.
   Counterexamples: the entry without `ordered-item-after-paragraph`; a lint
   sentence without the evasion limit; "the strict reader is complete";
   a header limit added without an entry mention. A pointer such as "see
@@ -8250,3 +8259,27 @@ and S380's #590 live-evidence boundary.
 - Then: unchanged text passes; every mutation makes the corresponding contract
   test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
   No product file in the checkout is modified by this check.
+
+### S480 — S285 rejects substring negators, later conflicting counts and meaning-version prefixes (#613)
+**Covers:** F15
+- Given: a disposable copy of S285 and its input files, with read-only access
+  to the clone's v0.3.0 tag; the historical release notes remain unchanged.
+- When: S285 runs against the unchanged notes, then each mutated compatibility
+  entry, through its normal shell CLI.
+- Then: unchanged notes pass. Each false claim fails with the completeness
+  diagnostic: "Known: the strict reader is complete.", "The strict reader is
+  complete for another shape.", "The lint is complete and nothing is missing."
+  Inflected claims using `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively` also fail with that diagnostic; adding
+  a whole-word `not` to each same sentence makes it pass. `incomplete` passes.
+  Every whole-word negator listed in S285 passes, including `outside`; the
+  scenario negator list equals the test list. A disposable scenario and test
+  extended with `seldom` must pass and report that the added negator was
+  exercised; a hard-coded loop that omits it fails this control.
+- And: later conflicting counts ("Two answers", "2 questions", "30 questions",
+  "13 answers", and adjacent "3 answers 2 questions") after the existing
+  matching count fail with a count diagnostic;
+  multiple matching word and digit counts pass. Replacing expected meaning
+  version 2 with 20 or 21 fails with the meaning-version diagnostic.
+- Counterexample: any mutation passes, a valid control fails, or a mutation
+  fails only because a different S285 prerequisite is missing.
