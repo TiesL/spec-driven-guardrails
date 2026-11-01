@@ -5954,9 +5954,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Core-tier pins (review round 1, `core-tier-rules-unprotected`, A41
   amendment 6ccad5c): `test/fixtures/orchestrator-core-pins.tsv`
   (`id<TAB>sha256`, with a header line) holds one row per `core` inventory
-  row; the hash is SHA-256 of the rule's item text from `OR<n> ` to the end of
-  the item, continuation lines joined by single spaces, trailing whitespace
-  trimmed (the test recomputes it on its own, so the hash definition is
+  row; the hash is SHA-256 of `depth=<depth>` plus a newline and the rule's
+  item text from `OR<n> ` to the end of the item, continuation lines joined
+  by single spaces, trailing whitespace trimmed (the test recomputes it on
+  its own, so the hash definition is
   pinned too). The harness `check` takes `--pins F` and reports
   `pin-mismatch` (names the ID, prints the current item text), `pin-missing`
   (a `core` ID without a pin row, names the ID) and `pin-extra` (a pin row
@@ -5978,6 +5979,33 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
 - Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
+
+### S510 — loose continuation cannot escape a core pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins, copied to an isolated fixture
+- When: a non-indented instruction is added after OR26, either directly or
+  separated by a blank line, and the structure harness checks the copy
+- Then: the unmodified control passes; each mutation fails with
+  `item-loose-continuation` naming OR26; headings still delimit items
+- Red on 18239c9: both mutations pass the harness.
+
+### S511 — duplicate pin rows refuse without silently replacing a pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: an identical or conflicting OR26 pin row is inserted before or
+  after the existing row
+- Then: every duplicate fails with `pin-duplicate` naming OR26, regardless
+  of row order; the unique original pins pass
+- Red on 18239c9: an identical duplicate passes.
+
+### S512 — pin hashes bind core sub-item depth (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: each of OR24, OR25, OR26 and OR27 is independently dedented to a
+  top-level item while its text stays identical
+- Then: every mutation fails `pin-mismatch` naming the affected rule;
+  wrapping OR26 as an indented continuation at its original depth passes
+- Red on 18239c9: dedented sub-items pass.
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -6138,18 +6166,19 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   #499 QA, so the file half is green as soon as the parser lands; its red
   proof is the negative controls)
 
-### S316 — the committed stamp matches the hash, and a stale stamp fails (#499 AC13)
+### S316 — stamp hash, count and write behavior are checked in isolated fixtures (#499 AC13; #619)
 **Covers:** F38
-- Given: `test/behavior/orchestrator-diff.stamp`, `ORCHESTRATOR.md` and the
-  scenario file; the stub runner of S315
-- When: `./check`'s stamp test runs, and the stub runner finishes a run in
+- Given: an isolated fixture repo containing a stamp, `ORCHESTRATOR.md`
+  and scenarios; the stub runner of S315; no dependency on the current
+  committed stamp (B10c regenerates that evidence last)
+- When: the fixture stamp test runs, and the stub runner finishes a run in
   which every scenario is `same` or `changed-as-intended` (one listed
   scenario `changed-as-intended`), a run with one `diverged`, and a run in
   which a listed scenario's new arm misses `Then`
-- Then: the stamp is one line `sha256=<64 hex> base=<rev> model=<id>
+- Then: the stamp is one line `sha256=<64 hex> base=<resolved SHA> model=<id>
   scenarios=<count>`; the test recomputes SHA-256 over the bytes of
   `ORCHESTRATOR.md` followed by the bytes of the scenario file and passes
-  only when it equals the stamp; `scenarios` equals the number of `OB`
+  only when it equals the stamp and base/model validation passes (S513/S514); `scenarios` equals the number of `OB`
   blocks; a fixture with one byte changed in either file, and a fixture
   with the files hashed in the other order, fails, and so does a fixture
   whose only change is one item added under `## Intended changes` (the list
@@ -6160,6 +6189,31 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   model (`CLAUDE_BIN` set to a command
   that fails if called)
 - Red on `main` b43ee55: no stamp
+
+### S513 — stamp bases must resolve into origin/main ancestry (#619, #535)
+**Covers:** F38
+- Seam: `orchestrator_diff.py run` with a recording CLI stub, and `stamp-check`
+- Given: an isolated git graph containing an ancestor, an origin/main tip,
+  a branch-only descendant and an unrelated root; matching hash/count stamps
+- When: stamp validation receives each commit, a nonexistent SHA, a symbolic
+  stamp base or a malformed base; or origin/main is missing
+- Then: only resolved ancestor/tip stamp bases pass. Missing, branch-only and
+  unrelated bases refuse; run also refuses these bases without replacing an
+  existing stamp. A run may resolve its symbolic input, but stores the SHA.
+  Neither path uses the current committed stamp or calls a real model.
+- Red on 18239c9: stamp-check accepts branch-only, missing and symbolic bases.
+
+### S514 — meaningful model metadata and requested repetitions (#619, #535)
+**Covers:** F38
+- Given: isolated fixture stamps and a recording CLI stub with two scenarios
+- When: stamp model metadata is malformed, an alias or a placeholder; run
+  modelUsage is absent, empty, malformed or contains a placeholder; a valid
+  stub run requests 1, 3 or 5 repetitions per arm
+- Then: invalid metadata refuses without replacing an existing stamp; valid
+  runs execute exactly the requested number for each scenario/arm pair, as
+  observed in the stub's call log. Matching stamps pass, count mismatches
+  fail, and the existing four-field stamp format has no provenance field.
+- Red on 18239c9: placeholder model metadata passes stamp validation.
 
 ### S317 — the core carries the dispatch-economy rules by ID, tier and part, and the inventory matches (#532 AC1-AC6, AC8; A42)
 **Covers:** F38
@@ -6766,7 +6820,7 @@ shape the fake does not answer exits non-zero.
   `stamp-check` path
 - Given: (a) a passing run (every scenario `same` or `changed-as-intended`)
   with the default base, where `origin/main` points at commit `C`; (b) the same
-  with `--base <full sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
+  with `--base <full ancestor sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
   does not resolve (`--base nosuchref`); (e) the default base when the fixture
   has no `origin/main` at all
 - When: the run finishes and writes the stamp
@@ -6778,18 +6832,10 @@ shape the fake does not answer exits non-zero.
   text; (d) exits 2 with a message naming the base and writes no stamp (this
   already holds because `git show` fails; the test pins it so the new resolve
   step cannot turn it into a stamp with `base=nosuchref`); (e) the same as
-  (d). The `run` output (`stamp written`) is unchanged; `stamp-check` still
-  accepts the new line (STAMP_RE already allows `\S+`)
-- Existing stamp, accounted for: the committed `orchestrator-diff.stamp` has
-  `base=origin/main`. It keeps passing S316 (`stamp-check` recomputes only the
-  hash and the OB count and accepts any non-space `base=`), S323 and S335 (they
-  reject only the old `base=1aba086`), so nothing must change and no paid
-  re-run is needed. What must NOT happen: `stamp-check` starting to reject a
-  symbolic `base=`, because that would force a paid run. Whether to rewrite
-  the committed line by hand to the SHA the run used is open decision 3: it
-  changes evidence the run did not write, and the hash does not cover the
-  stamp file, so S316 would not notice. Recommended: leave it; the next
-  genuine run writes a SHA
+  (d). The `run` output (`stamp written`) is unchanged. Issue #619 supersedes
+  the former allowance for symbolic stamp bases: `stamp-check` now requires
+  a resolved SHA in origin/main's ancestry (S513). The committed stamp is
+  left to the final B10c run; this test uses only isolated fixture stamps.
 - Red on `9c9143d`: (a) records `base=origin/main`; (b), (c) record the text
   as given. Negative control: a runner that resolves only for the default and
   not for an explicit `--base` fails (b) and (c) by name

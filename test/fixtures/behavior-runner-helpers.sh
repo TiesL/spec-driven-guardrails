@@ -115,6 +115,7 @@ bf_build() {
   } >"$BF_REPO/$BF_ORCH_REL"
   git -C "$BF_REPO" add -A >/dev/null 2>&1
   git -C "$BF_REPO" commit -q -m old >/dev/null 2>&1 || true
+  git -C "$BF_REPO" update-ref refs/remotes/origin/main HEAD
   {
     echo "# Fixture run rules"
     echo
@@ -129,7 +130,7 @@ bf_build() {
 # the stub; sets bf_out, bf_err, bf_status.
 bf_run() {
   local errf="$BF_DIR/run.err"
-  bf_out="$(CLAUDE_BIN="$BF_STUB" STUB_DIR="$STUB_DIR" "$TEST_REPO_ROOT/test/behavior/orchestrator-diff.sh" --repo "$BF_REPO" --base HEAD "$@" 2>"$errf")"
+  bf_out="$(CLAUDE_BIN="$BF_STUB" STUB_DIR="$STUB_DIR" python3 -I "$TEST_REPO_ROOT/test/behavior/orchestrator_diff.py" run --repo "$BF_REPO" --base HEAD "$@" 2>"$errf")"
   bf_status=$?
   bf_err="$(cat "$errf")"
 }

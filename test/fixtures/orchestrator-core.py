@@ -115,11 +115,13 @@ def scenario_index(path):
 
 def item_hash(full):
     """SHA-256 of the item text: from `OR<n> ` to the end, continuation lines
-    joined by single spaces, trailing whitespace trimmed, no bullet."""
+    joined by single spaces, trailing whitespace trimmed, no bullet; prefixed
+    by depth=<item depth> and a newline so reparenting changes the hash."""
     ls = full.split("\n")
     first = ls[0][ls[0].index("OR"):]
     text = " ".join([first.rstrip()] + [l.strip() for l in ls[1:]]).rstrip()
-    return hashlib.sha256(text.encode()).hexdigest()
+    depth = len(ls[0]) - len(ls[0].lstrip(" "))
+    return hashlib.sha256(("depth=%d\n" % (depth // 2) + text).encode()).hexdigest()
 
 
 def check_pins(its, rows, pins_path):
@@ -134,6 +136,9 @@ def check_pins(its, rows, pins_path):
             continue
         if len(cols) != 2:
             errs.append(("pin-columns", "line %d has %d columns" % (n, len(cols))))
+            continue
+        if cols[0] in pins:
+            errs.append(("pin-duplicate", "%s has multiple pin rows (line %d)" % (cols[0], n)))
             continue
         pins[cols[0]] = cols[1]
     core = [r["id"] for r in rows if r["tier"] == "core"]
@@ -170,6 +175,17 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
         for l in lines:
             if re.search(r"\b(above|below)\b", l, re.I):
                 errs.append(("above-below", "part %d says above/below: %s" % (no, l.strip()[:60])))
+    # Unindented prose after an item used to escape both extraction and pins.
+    # Blank lines do not legitimize it; headings and part markers end ownership.
+    owner = None
+    for line in text.split("\n"):
+        match = ITEM_RE.match(line)
+        if match:
+            owner = match.group(2)
+        elif line.startswith("#") or line == MARKER:
+            owner = None
+        elif owner and line.strip() and not line.startswith((" ", "\t")):
+            errs.append(("item-loose-continuation", "%s has loose continuation: %s" % (owner, line)))
     its = items(text)
     rows, terrs = read_tsv(tsv)
     errs += terrs
@@ -177,7 +193,7 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
     for r in rows:
         if r["id"] in by_id:
             errs.append(("row-duplicate", "%s has two rows" % r["id"]))
-        by_id[r["id"]] = r
+        by_id.setdefault(r["id"], r)
         if not re.match(r"^OR\d+$", r["id"]):
             errs.append(("row-id", "bad id %r" % r["id"]))
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", r["name"]):
@@ -214,7 +230,9 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
     for ref in set(re.findall(r"\bOR\d+\b", text)):
         if ref not in by_id:
             errs.append(("ref-unknown", "%s is cited in the core but has no row" % ref))
-    full = {rid: f for rid, _, _, _, f in its}
+    full = {}
+    for rid, _, _, _, f in its:
+        full.setdefault(rid, f)
 
     def need(rid, needle, name):
         if needle not in full.get(rid, ""):
