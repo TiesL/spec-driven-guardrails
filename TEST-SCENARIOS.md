@@ -2159,18 +2159,47 @@ something new is being added.
   from the working directory's remote. QA verified that by hand for #369
   against a real adopted project (recorded in QA's issue comment)
 
-### S162 — Every script an installed skill tells the agent to run exists where the skill says
+### S162 — Installed skill and workflow policy paths resolve from an adopted project
 **Covers:** F37
-- Given: a fresh project adopted from a sandbox clone, and every
-  installed skill's `SKILL.md` (issue #369: the human decision that
-  `pre-merge-review`'s `./classify-review-depth.sh` path is fixed here,
-  Architect finding V4)
-- When: each `./<name>.sh` and `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh`
-  invocation in those skills is resolved
-- Then: every `./<name>.sh` exists, executable, at the adopted project's
-  root; every `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh` exists, executable,
-  in the clone; and `pre-merge-review` still runs the classifier, as
-  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`
+- Given: a fresh project adopted from a sandbox clone, every installed
+  skill's `SKILL.md`, and canonical `policy/WORKFLOW.md` (issue #369:
+  the classifier path fixed under Architect finding V4).
+- When: fenced script invocations, inline script invocations with or without
+  arguments, and bare `skills/` and `templates/` file references are resolved.
+- Then: `./` script paths resolve in the adopted project;
+  `$SPEC_DRIVEN_GUARDRAILS_DIR` checkout paths resolve in the physical clone;
+  `.claude/skills/` paths resolve through installed skills. Bare `skills/`
+  script paths require a clone qualifier or checkout convention; bare
+  `templates/` file/directory references resolve in the clone. Script targets
+  are executable files; other scanned targets exist. Policy mutations adding
+  `./wait-for-ci.sh` or a dangling `templates/` file fail paths mode in the
+  policy document. `pre-merge-review` still runs the classifier as
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`.
+
+### S525 — Installed invocation resolver rejects dangling paths (#622 AC1)
+**Covers:** F37
+- Given: S162's resolver and independent executable controls in an
+  adopted-project layout and a physical guardrails checkout.
+- When: [s525_adopter_docs_path_controls.sh](test/cases/s525_adopter_docs_path_controls.sh)
+  resolves installed, project-relative and checkout-qualified controls in
+  fenced and inline commands, including argumentless inline paths.
+- Then: the executable positive controls resolve; their dangling mutations
+  fail, as does a non-executable project script. Argumentless bare `skills/`
+  script controls detect a dangling target and removal of their clone
+  qualifier; a qualified existing script passes. An argumentless bare
+  `templates/` file passes when present and fails when dangling.
+  Explicit and delegated physical-checkout conventions, local checkout
+  variables and qualified basename references have dangling controls;
+  removing a required convention or binding fails. The tested unqualified
+  bare script invocations with arguments fail too.
+
+### S526 — Protection framing agrees with README (#622 AC1; #367 residual)
+**Covers:** F37
+- Given: README, canonical workflow policy and PRD.
+- Then: each qualifies the paid-plan limitation as private-repository specific
+  and states the public-repository protection exception. Independent mutations
+  dropping the private qualifier or public exception, negating public protection
+  or restoring either unqualified no-protection claim fail; qualified controls pass.
 
 ### S163 — The README says the multi-agent workflow is adoptable, and what adopting it takes
 **Covers:** F37
@@ -3732,6 +3761,10 @@ something new is being added.
   A27 still lists the observed effort (the two documents agree). Red today:
   five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
   sentence
+- #622 scope clarification: the heuristic catches recognized comparison,
+  field and --effort shapes; it can miss “at least as high as” rewordings and
+  live instructions inside already-marked superseded paragraphs. These are
+  known limits, not a claim of arbitrary-wording detection.
 - Amended by #499 (AC14, A41): in `ORCHESTRATOR.md` the unit is the list
   item that starts with `OR22` (Pipeline log), not the `Pipeline log.`
   paragraph; that item still says the orchestrator may note the effort the
@@ -3739,6 +3772,29 @@ something new is being added.
   attribute and not a check. The `OR29` item (no effort argument) is a unit
   like any other and passes through its supersession words ("neither chosen
   nor", "accepted risk"). The rest of S240 is unchanged
+
+### S527 — A26 has a dated current model-only round-trip amendment (#622 AC1)
+**Covers:** F39, F40
+- Given: the retained historical A26 decision.
+- Then: a dated amendment states the current round-trip checks of stage, model
+  and floor-basis and excludes effort. A positive amendment control passes;
+  independently removing its date, amendment label, each checked field or effort
+  exclusion fails. Red until the Architect adds the amendment.
+
+### S528 — S240 names caught shapes and known limits (#622 AC1)
+**Covers:** F39, F40
+- Given: the S240 test header, describing its heuristic oracle.
+- Then: it names recognized compared/--effort shapes, the missed “at least as
+  high as” rewording and instructions inside a superseded paragraph; it does
+  not claim “whatever its wording”. Each omitted shape/limit/qualification and
+  a restored overclaim independently fail a positive header control.
+
+### S529 — Gate header names the guard and fits its surrounding width (#622 AC1)
+**Covers:** F40
+- Given: the model-record-gate.sh leading header.
+- Then: it says the guard prints the warning and every header line fits 79
+  columns. A positive header passes; independently naming a hook or inserting
+  an 80-column line fails. Assertions cover comments only.
 
 ### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
 **Covers:** F39, F40
@@ -8040,7 +8096,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
 - When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
-- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged against that baseline. If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector code stays unchanged against that baseline; comment-only and blank-line differences are ignored (scratch controls: a changed or inserted code line still fails, a comment or blank-line-only change passes). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)

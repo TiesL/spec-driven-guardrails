@@ -28,7 +28,9 @@
 # historical `model=x effort=low` example). So a rewrite that deletes the
 # sentence, rephrases it as past tense with a pointer to A33, or marks it
 # amended passes; one that leaves "effort compared / field-checked / passed
-# with --effort" as unmarked present tense fails whatever its wording.
+# with --effort" as unmarked present tense fails for those recognized shapes.
+# Known limits: it may miss "at least as high as" rewordings and a live
+# instruction inside an already-marked superseded paragraph (inherited mark).
 #
 # PIPELINE LOG (second half): ORCHESTRATOR.md's "Pipeline log" paragraph keeps
 # the sentence A33 (#411 Phase 1b 3/7, "ORCHESTRATOR.md:21 bullet") and A27
