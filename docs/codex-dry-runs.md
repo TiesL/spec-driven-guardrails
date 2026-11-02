@@ -99,8 +99,8 @@ scenario and do not close `runtime-dry-runs-unobserved`.
   traces were not available, so the prompt wording and the `fork_turns` call
   are parent testimony ([operator record](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155405547)).
   This is not a desktop pass, a five-stage chain or continuation evidence. The
-  parent's later Developer dispatch ended with `usage_limit_exceeded` and
-  produced no report, so no desktop Developer or Review leg is credited.
+  desktop task made no commit, push, GitHub post or merge, and no desktop
+  Developer or Review leg was observed, so none is credited.
 
 Limits, as stated by QA:
 
