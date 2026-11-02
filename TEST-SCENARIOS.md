@@ -6010,9 +6010,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Core-tier pins (review round 1, `core-tier-rules-unprotected`, A41
   amendment 6ccad5c): `test/fixtures/orchestrator-core-pins.tsv`
   (`id<TAB>sha256`, with a header line) holds one row per `core` inventory
-  row; the hash is SHA-256 of the rule's item text from `OR<n> ` to the end of
-  the item, continuation lines joined by single spaces, trailing whitespace
-  trimmed (the test recomputes it on its own, so the hash definition is
+  row; the hash is SHA-256 of `depth=<depth>` plus a newline and the rule's
+  item text from `OR<n> ` to the end of the item, continuation lines joined
+  by single spaces, trailing whitespace trimmed (the test recomputes it on
+  its own, so the hash definition is
   pinned too). The harness `check` takes `--pins F` and reports
   `pin-mismatch` (names the ID, prints the current item text), `pin-missing`
   (a `core` ID without a pin row, names the ID) and `pin-extra` (a pin row
@@ -6034,6 +6035,41 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
 - Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
+
+### S510 — loose continuation cannot escape a core pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins, copied to an isolated fixture
+- When: a non-indented instruction is added after OR26, either directly or
+  separated by a blank line; a tab-led instruction follows OR26 directly;
+  or a space-indented continuation paragraph follows a blank line; or a
+  `#619 ...` line, a `#Never ...` line or a seven-hash line follows OR26
+  directly (CommonMark lazy continuations, not ATX headings), and the
+  structure harness checks the copy
+- Then: the unmodified control passes; each mutation fails with
+  `item-loose-continuation` naming OR26; the control is repeated for each
+  mutation and a contiguous space-indented wrap still passes with the same
+  pins; a real ATX heading (`## Heading` plus plain text) right after OR26
+  still ends ownership and passes; headings still delimit items
+- Red on 18239c9: all four mutations pass the harness. Red on 6bf9fce: the
+  `#619`, `#Never` and seven-hash mutations pass the harness (exit 0).
+
+### S511 — duplicate pin rows refuse without silently replacing a pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: an identical or conflicting OR26 pin row is inserted before or
+  after the existing row
+- Then: every duplicate fails with `pin-duplicate` naming OR26, regardless
+  of row order; the unique original pins pass
+- Red on 18239c9: an identical duplicate passes.
+
+### S512 — pin hashes bind core sub-item depth (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: each of OR24, OR25, OR26 and OR27 is independently dedented to a
+  top-level item while its text stays identical
+- Then: every mutation fails `pin-mismatch` naming the affected rule;
+  wrapping OR26 as an indented continuation at its original depth passes
+- Red on 18239c9: dedented sub-items pass.
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -6194,18 +6230,19 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   #499 QA, so the file half is green as soon as the parser lands; its red
   proof is the negative controls)
 
-### S316 — the committed stamp matches the hash, and a stale stamp fails (#499 AC13)
+### S316 — stamp hash, count and write behavior are checked in isolated fixtures (#499 AC13; #619)
 **Covers:** F38
-- Given: `test/behavior/orchestrator-diff.stamp`, `ORCHESTRATOR.md` and the
-  scenario file; the stub runner of S315
-- When: `./check`'s stamp test runs, and the stub runner finishes a run in
+- Given: an isolated fixture repo containing a stamp, `ORCHESTRATOR.md`
+  and scenarios; the stub runner of S315; no dependency on the current
+  committed stamp (B10c regenerates that evidence last)
+- When: the fixture stamp test runs, and the stub runner finishes a run in
   which every scenario is `same` or `changed-as-intended` (one listed
   scenario `changed-as-intended`), a run with one `diverged`, and a run in
   which a listed scenario's new arm misses `Then`
-- Then: the stamp is one line `sha256=<64 hex> base=<rev> model=<id>
+- Then: the stamp is one line `sha256=<64 hex> base=<resolved SHA> model=<id>
   scenarios=<count>`; the test recomputes SHA-256 over the bytes of
   `ORCHESTRATOR.md` followed by the bytes of the scenario file and passes
-  only when it equals the stamp; `scenarios` equals the number of `OB`
+  only when it equals the stamp and base/model validation passes (S513/S514); `scenarios` equals the number of `OB`
   blocks; a fixture with one byte changed in either file, and a fixture
   with the files hashed in the other order, fails, and so does a fixture
   whose only change is one item added under `## Intended changes` (the list
@@ -6215,7 +6252,37 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   misses `Then` each leave the old stamp untouched; the test never calls a
   model (`CLAUDE_BIN` set to a command
   that fails if called)
-- Red on `main` b43ee55: no stamp
+- Fixture-only: matching stamps pass; stale hash/count, malformed stamps and
+  unsuccessful runs exercise refusal and preservation without a real model.
+
+### S513 — stamp bases must resolve into origin/main ancestry (#619, #535)
+**Covers:** F38
+- Seam: `orchestrator_diff.py run` with a recording CLI stub, and `stamp-check`
+- Given: an isolated git graph containing an ancestor, an origin/main tip,
+  a branch-only descendant and an unrelated root; matching hash/count stamps
+- When: stamp validation receives each commit, a nonexistent SHA, a symbolic
+  stamp base, an abbreviated SHA, a short or full-length hex-named ref, or
+  a malformed base; or origin/main is missing
+- Then: only full 40- or 64-character SHAs equal to their resolved
+  ancestor/tip commit pass. Missing, branch-only and
+  unrelated bases refuse; run also refuses these bases without replacing an
+  existing stamp. A run may resolve its symbolic input, but stores the SHA.
+  Abbreviated and hex-ref stamp bases refuse; each has a passing full
+  ancestor SHA control. Abbreviated run inputs still write the full SHA.
+  Neither path uses the current committed stamp or calls a real model.
+- Red on 18239c9: stamp-check accepts branch-only, missing and symbolic bases.
+
+### S514 — meaningful model metadata and requested repetitions (#619, #535)
+**Covers:** F38
+- Given: isolated fixture stamps and a recording CLI stub with two scenarios
+- When: stamp model metadata is malformed, an alias or a placeholder; run
+  modelUsage is absent, empty, malformed or contains a placeholder; a valid
+  stub run requests 1, 3 or 5 repetitions per arm
+- Then: invalid metadata refuses without replacing an existing stamp; valid
+  runs execute exactly the requested number for each scenario/arm pair, as
+  observed in the stub's call log. Matching stamps pass, count mismatches
+  fail, and the existing four-field stamp format has no provenance field.
+- Red on 18239c9: placeholder model metadata passes stamp validation.
 
 ### S317 — the core carries the dispatch-economy rules by ID, tier and part, and the inventory matches (#532 AC1-AC6, AC8; A42)
 **Covers:** F38
@@ -6822,7 +6889,7 @@ shape the fake does not answer exits non-zero.
   `stamp-check` path
 - Given: (a) a passing run (every scenario `same` or `changed-as-intended`)
   with the default base, where `origin/main` points at commit `C`; (b) the same
-  with `--base <full sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
+  with `--base <full ancestor sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
   does not resolve (`--base nosuchref`); (e) the default base when the fixture
   has no `origin/main` at all
 - When: the run finishes and writes the stamp
@@ -6834,18 +6901,10 @@ shape the fake does not answer exits non-zero.
   text; (d) exits 2 with a message naming the base and writes no stamp (this
   already holds because `git show` fails; the test pins it so the new resolve
   step cannot turn it into a stamp with `base=nosuchref`); (e) the same as
-  (d). The `run` output (`stamp written`) is unchanged; `stamp-check` still
-  accepts the new line (STAMP_RE already allows `\S+`)
-- Existing stamp, accounted for: the committed `orchestrator-diff.stamp` has
-  `base=origin/main`. It keeps passing S316 (`stamp-check` recomputes only the
-  hash and the OB count and accepts any non-space `base=`), S323 and S335 (they
-  reject only the old `base=1aba086`), so nothing must change and no paid
-  re-run is needed. What must NOT happen: `stamp-check` starting to reject a
-  symbolic `base=`, because that would force a paid run. Whether to rewrite
-  the committed line by hand to the SHA the run used is open decision 3: it
-  changes evidence the run did not write, and the hash does not cover the
-  stamp file, so S316 would not notice. Recommended: leave it; the next
-  genuine run writes a SHA
+  (d). The `run` output (`stamp written`) is unchanged. Issue #619 supersedes
+  the former allowance for symbolic stamp bases: `stamp-check` now requires
+  a resolved SHA in origin/main's ancestry (S513). The committed stamp is
+  left to the final B10c run; this test uses only isolated fixture stamps.
 - Red on `9c9143d`: (a) records `base=origin/main`; (b), (c) record the text
   as given. Negative control: a runner that resolves only for the default and
   not for an explicit `--base` fails (b) and (c) by name
@@ -7890,7 +7949,36 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned bundle, a foreign .codex file and a source-file update at a new fixture source revision.
 - When: default adoption runs first, followed by explicit --hooks.
 - Then: default adoption leaves the bundle byte-identical; explicit refresh copies the changed file, preserves other bundle files, foreign data and the command string, reports the changed path and old/new revisions, says trust is not re-prompted, and returns current structural status.
-- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report or stale status after refresh.
+- Cold-status check (#621): with bytecode enabled and a cold checkout, standalone status after refresh preserves the complete installation/checkout inventory and bytes and reports current.
+- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report, cold-status writes or stale status after refresh.
+
+### S515 — Cold Codex context is byte-for-byte read-only (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold temporary default Codex installation and checkout; child Python confirms bytecode enabled and no cache prefix.
+- When: session-context.sh --runtime codex runs with inherited Python suppression removed.
+- Then: the complete temporary tree inventory, modes, symlinks and bytes remain unchanged, including checkout imports, while absent-bundle, runtime-hooks and unverified-activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S516 — Cold stale-bundle context remains read-only and diagnostic (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold owned bundle with distinct updated source and bytecode enabled in the child interpreter.
+- When: Codex context invokes its status backend.
+- Then: the complete temporary tree remains unchanged and stale-bundle, warning, outside-sandbox recovery, runtime-hooks and activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S517 — Standalone cold status suppresses bytecode (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold default Codex installation with child bytecode enabled.
+- When: adopt.sh --runtime codex --status runs.
+- Then: the complete tree inventory and bytes remain unchanged and status diagnostics appear; removing suppression in the disposable adoption script must fail this assertion.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S518 — Linux native bundle exchange has executable evidence (#621 AC1)
+**Covers:** F47, F51
+- Given: a Linux host with distinct old active and new source bundle trees.
+- When: explicit --hooks refresh executes the real native exchange and a disposable observer interrupts immediately after it.
+- Then: the complete old tree is at the actual staging path and new source bytes and manifest are active; pending status is current with exit 1, explicit recovery clears staging and returns current with exit 0; print actual platform, paths, exit and digests; on other platforms explicitly print SKIP naming the platform and Linux requirement.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
 
 ### S402 — Version-2 owned source command migrates once with a trust notice (#594 AC5, AC10)
 **Covers:** F47, F51
@@ -7960,7 +8048,15 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
-- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
+- Native-refusal checks (#621): repeat with ENOSYS and EACCES at exchange; require unchanged old active contents, verified new staging and ready recovery record, read-only stale status, and successful explicit retry; print platform, paths and results (S519).
+- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, unsafe native-refusal state, or stale status or changed policy after recovery.
+
+### S519 — Unsupported or refused exchange preserves safe recovery (#621 AC1)
+**Covers:** F47, F51
+- Given: distinct old installed and new source bundle trees on the actual platform.
+- When: explicit refresh receives native ENOSYS and EACCES failures in separate disposable trials, then retries without injection.
+- Then: the injector is reached, refresh exits 1 with exchange-refusal diagnostics, the entire old active tree remains unchanged, verified new staging and a ready transaction survive, status is stale and read-only with exit 1, and explicit retry activates new bytes, removes staging and clears the transaction with current status; print actual platform, active/staging paths and results. S411 also runs these refusal/recovery checks; native refusal and recovery run on macOS as well as Linux.
+- Falsifiers: unobserved injection, silent success, lost or modified generations, status writes or a failed explicit recovery. A changed active generation must be rejected by the old-tree oracle.
 
 ### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
 **Covers:** F40
