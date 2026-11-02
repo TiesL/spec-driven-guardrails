@@ -293,7 +293,7 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("- OR36 ", "- XR36 ", "OR36 removed"),
             ("<!-- session-context: slot -->", "- OR36 Resume, copied into part 1.\n<!-- session-context: slot -->", "OR36 in both parts"),
             ("- OR45 ", "  OR45 ", "OR45 merged into the item before it"),
-            ("so A29 flow (OR45) applies", "so A29 flow (#415) applies", "bare #n in OR21, OR45 dropped"),
+            ("so OR45 applies", "so #415 applies", "bare #n in OR21, OR45 dropped"),
             ("(format in `SKILL.md`;", "(format elsewhere;", "SKILL.md dropped from OR21"),
         ],
     }
