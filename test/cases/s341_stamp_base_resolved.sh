@@ -5,8 +5,7 @@
 # Seam: the runner (`orchestrator-diff.sh run`) with the stub `claude` and the
 # fixture builders of S315/S316. No model is called. The fixture repo gets a
 # remote-tracking ref origin/main at a known commit so the default --base
-# resolves. `stamp-check` keeps accepting any non-space base= (the committed
-# stamp still says base=origin/main; S316/S323/S335 cover that).
+# resolves. Validation additionally requires ancestry in origin/main (#619).
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -32,7 +31,7 @@ ST="$BF_REPO/$BF_STAMP_REL"
 # run_diff <extra args...>: sets st_out, st_err, st_status. No --base unless given.
 run_diff() {
   rm -f "$ST" "$STUB_DIR"/n "$STUB_DIR"/call-* "$STUB_DIR"/cnt-*   # fresh stub counters per run
-  st_out="$(CLAUDE_BIN="$BF_STUB" STUB_DIR="$STUB_DIR" "$TEST_REPO_ROOT/test/behavior/orchestrator-diff.sh" --repo "$BF_REPO" --runs 3 "$@" 2>"$BF_DIR/run.err")"
+  st_out="$(CLAUDE_BIN="$BF_STUB" STUB_DIR="$STUB_DIR" python3 -I "$TEST_REPO_ROOT/test/behavior/orchestrator_diff.py" run --repo "$BF_REPO" --runs 3 "$@" 2>"$BF_DIR/run.err")"
   st_status=$?
   st_err="$(cat "$BF_DIR/run.err")"
 }
@@ -57,8 +56,9 @@ check_resolved a "$prev"
 assert_contains "S341/a — run output unchanged" "stamp written" "$st_out"
 
 # (b) explicit full SHA.
-run_diff --base "$tip"
-check_resolved b "$tip"
+run_diff --base "$prev"
+[ "$st_status" -eq 0 ] || fail "S341/b — explicit ancestor SHA failed: $st_err"
+check_resolved b "$prev"
 
 # (c) explicit symbolic ref other than the default.
 run_diff --base HEAD~1
