@@ -5346,7 +5346,7 @@ that evidence and the final `./check` result.
   other low deferred, only `code`/`test` trivial, QA red check first, cap of
   one trivial-fix commit, delta-round low deferred, own-issue `Disposition`)
   moves to `OB40`-`OB44`, and the mutation proof to the calibration mutant on
-  `OR40` (S291, S315). The red-CI clause (revert, defer, fresh review, no
+  `OR43` (S291, S315; #620). The red-CI clause (revert, defer, fresh review, no
   second trivial fix) has no `OB`; it stays checked in `SKILL.md`'s `Fix
   cost` paragraph by S289, and in `ORCHESTRATOR.md` by review only
 - Counterexamples, each fails: the item with `Fix cost` removed; the item
@@ -5450,8 +5450,10 @@ that evidence and the final `./check` result.
   clause-local breaks of #488 (R3 clause removed, cap removed, class
   restriction dropped, the decoy) are retired: the meaning they guarded is
   checked by the differential run, whose calibration (`--calibrate`, AC12)
-  removes one `never` or `not` from `OR40` and must report `diverged` on at
-  least one of `OB40`-`OB44` (acceptance evidence on the PR); S315 proves
+  uses the `OR43` mutant (removing its opening "Never") and must report
+  `diverged` on at least one of the scenarios listing `OR43` (`OB47`, `OB48`,
+  `OB83`), expected `OB48` (acceptance evidence on the PR). `OR40` behavior is covered by `OB40`-`OB44`, not by the
+  calibration mutant (#620; #499 AC14 is stale on this point); S315 proves
   deterministically that the verdict logic reports `diverged` for such a run
 - Red today: the S288 `OR40` checks fail on `main` b43ee55 (no `OR40` item,
   no inventory), which is the red state for the amended part
@@ -6152,18 +6154,21 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Red on `main` b43ee55: no hook
 - Issue #599 amendment: Repeat adoption, kill-switch, subagent and unreadable-core allow arms with a role-only emit line; fail-open diagnostics and silent scope exclusions remain unchanged (#599 AC5).
 
-### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
+### S314 — the hook is wired once, drift is caught, and transcript-derived input passes through it (#499 AC10; #620)
 **Covers:** F38
 - Given: `settings/session-hooks.json`, `agent-dispatch.py --print-contract`,
-  a captured real `Agent` `PreToolUse` input committed as a fixture with its
-  Claude Code version, an adopted fixture project whose `.claude/settings.json`
+  a transcript-derived `Agent` `PreToolUse` input (tool_name, tool_input,
+  tool_use_id verbatim from Claude Code 2.1.301; envelope rebuilt in the
+  documented shape) committed as a fixture with its Claude Code version, an adopted fixture project whose `.claude/settings.json`
   is the existing symlink, and the `process-multi-agent-roles` entry in
   `CHANGES.md`
 - When: the wiring test runs
 - Then: the settings hold one `PreToolUse` entry whose `matcher` equals the
   contract's tool name, `timeout` 10, through the `readlink` dispatcher; a
-  copy of the settings with the matcher changed fails; the captured input,
-  with the fields the contract names, is parsed by the core: as captured
+  copy of the settings with the matcher changed fails; the transcript-derived
+  input (envelope rebuilt in the documented shape; it cannot show that a real
+  top-level call lacks `agent_id`), with the fields the contract names, is
+  parsed by the core: as recorded
   (a compliant dispatch) it exits 0, and with its prompt's first line
   removed it exits 2 with the OR8 line; the adopted fixture resolves the
   hook through the symlink with no `adopt.sh` run; the entry's **Reaches
@@ -8590,3 +8595,27 @@ and S380's #590 live-evidence boundary.
 - Given: shellcheck when installed, S380 and a separate shell fixture with an unquoted expansion.
 - When: shellcheck runs with `-s bash -x` on S380 and checks the fixture.
 - Then: S380 is clean (or carries narrow justified suppressions), while the fixture fails with SC2086, proving info-level checking is active. A missing shellcheck emits an explicit skip; the work-item verification separately records installed-shellcheck results.
+
+### S530 — S314 and its fixture describe the hook input as transcript-derived with a rebuilt envelope (#620; #535 fixture-called-captured)
+**Covers:** F38
+- Given: the S314 section of TEST-SCENARIOS.md, the header comment of `test/cases/s314_agent_dispatch_wiring_and_real_input.sh` and the files under `test/fixtures/agent-dispatch/`.
+- When: the wording check scans each text for "captured real" or "real captured".
+- Then: a text that says so also says "envelope rebuilt", and the S314 section says "transcript-derived". A scratch copy of the S314 section that says "captured real" without "envelope rebuilt" fails, the corrected wording passes, and removing "transcript-derived" from the corrected wording fails. Red until the S314 test header comment is reworded (Developer).
+
+### S531 — no test, scenario or fixture names OR40 as the calibration mutant (#620; #535 stale-or40-mutant-references)
+**Covers:** F38
+- Given: `test/cases/s291_low_rule_mutations.sh`, `test/fixtures/decision-table-415.py`, the S288 and S291 sections of TEST-SCENARIOS.md and the A41 section of ARCHITECTURE.md outside the #620 amendment (which states that #499 AC14 is stale).
+- When: each text, comment markers removed and lines joined, is scanned for "OR40 calibration" or "calibration" followed within 100 characters (no period or semicolon between) by `OR40`.
+- Then: no text matches. A scratch copy of each of the four sources with one such phrase added fails the scan, and the unchanged scratch copies pass the scan whenever the real files do. Red until the Developer rewords the OR40 mentions in s291 lines 7-9 and decision-table-415.py lines 104-106.
+
+### S532 — OB83 is in the inventory under OR43 and OR45 and graded dispatch to QA (#620; #535 rule-qualifiers-dropped coverage)
+**Covers:** F38
+- Given: `skills/role-contracts/orchestrator-rules.tsv` and `test/behavior/orchestrator-scenarios.md`.
+- When: the covered_by column of OR43 and OR45 and the OB83 block are read.
+- Then: both rules list OB83, and the OB83 block heads "OR43, OR45" and ends in `next_action=dispatch; next_role=QA; asks_human=false`. Scratch copies with OB83 dropped from either rule, or with the Then changed to `ask_human`, fail. Red until the Developer adds OB83 to both inventory rows.
+
+### S533 — OR32 keeps the "Resolve absolute path once" qualifier (#620; #535 rule-qualifiers-dropped)
+**Covers:** F38
+- Given: `skills/role-contracts/ORCHESTRATOR.md` OR32 and `test/fixtures/orchestrator-core-pins.tsv`.
+- When: the OR32 item is read.
+- Then: it contains "Resolve absolute path once" and is one physical line. A scratch copy with the phrase deleted fails. Green now (the text is in the tree); the pin hash itself is guarded by S311, S317, S322 and S333, which stay red until the Developer regenerates the OR32 pin.

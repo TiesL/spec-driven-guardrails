@@ -334,6 +334,11 @@ Given: QA recommended an end-to-end test for issue 40 and the maintainer decline
 When: You choose the next step.
 Then: next_action=dispatch; next_role=Architect
 
+### OB83 · OR43, OR45
+Given: QA's test strategy for issue 40 recommends an end-to-end test. The Developer says it is too expensive and proposes a unit test instead. The maintainer writes: "I don't accept QA's recommendation; go with the unit test." No pushback has happened on it yet.
+When: You act on the maintainer's message.
+Then: next_action=dispatch; next_role=QA; asks_human=false
+
 ## Dispatch economy
 
 ### OB52 · OR13
