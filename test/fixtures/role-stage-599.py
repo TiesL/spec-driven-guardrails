@@ -90,6 +90,17 @@ def copy(name):
     shutil.copytree(ROOT/'lib',dest/'lib')
     return dest
 
+def code_only(data):
+    # AC7 normaliser: drop lines whose first non-blank char is '#' and blank lines;
+    # the shebang is kept; trailing comments on code lines are untouched.
+    out=[]
+    for l in data.splitlines():
+        t=l.strip()
+        if not t or (t.startswith(b'#') and not l.startswith(b'#!')):
+            continue
+        out.append(l)
+    return out
+
 def historical_baseline(name, paths, merge_base=False):
     # S336 uses the merge base when available; S286 reports an unavailable
     # historical arm explicitly. Do not require local branches/history in CI.
@@ -986,11 +997,25 @@ def compatibility():
     p.write_text(s.replace(needle,'case " $* " in *" --role "*) : ;; *) echo "MUTANT role required" >&2; exit 2 ;; esac\n'+needle,1))
     r=emit(['--stage','Planning','--model','m'],mutant)
     check(r.returncode==2 and not r.stdout and r.stderr==b'MUTANT role required\n','stage-only oracle must kill role-required mutation')
-    # The gate and collector remain byte-identical to the merge-base; reader grammar is
+    # The gate and collector code remain unchanged against the merge-base; comment-only
+    # and blank-line differences are ignored (panel decision, #622). Reader grammar is
     # exercised by S204, not duplicated here as an implementation-text oracle.
     for f in ['skills/pre-merge-review/model-record-gate.sh','compliance-evidence.sh']:
         if baseline is not None:
-            check((baseline/f).read_bytes()==(ROOT/f).read_bytes(),'AC7 unchanged '+f)
+            check(code_only((baseline/f).read_bytes())==code_only((ROOT/f).read_bytes()),'AC7 unchanged code '+f)
+        # Mutation controls on a scratch copy (working tree untouched).
+        real=(ROOT/f).read_bytes()
+        lines=real.splitlines(keepends=True)
+        code=[i for i,l in enumerate(lines) if l.strip() and not l.lstrip().startswith(b'#')]
+        i=code[-1]
+        for label,mut in [('inserted code line',lines[:i]+[b'echo MUTANT\n']+lines[i:]),
+                          ('changed code line',lines[:i]+[lines[i].rstrip(b'\n')+b' MUTANT\n']+lines[i+1:]),
+                          ('added trailing comment on code line',lines[:i]+[lines[i].rstrip(b'\n')+b' # x\n']+lines[i+1:])]:
+            m=TMP/('ac7-'+label.replace(' ','-')+'-'+Path(f).name); m.write_bytes(b''.join(mut))
+            check(code_only(m.read_bytes())!=code_only(real),'AC7 control: '+label+' in '+f+' must FAIL the pin')
+        extra=[lines[0],b'# added comment\n',b'\n',b'   # indented comment\n']+lines[1:]+[b'\n',b'# tail comment\n']
+        m=TMP/('ac7-comment-only-'+Path(f).name); m.write_bytes(b''.join(extra))
+        check(code_only(m.read_bytes())==code_only(real),'AC7 control: comment/blank-only change in '+f+' must PASS the pin')
 
 def bad_inputs():
     for value in ['product','Fullstack','Fullstack Developer','Discovery','Planning','Test','Implementation','Review','']:

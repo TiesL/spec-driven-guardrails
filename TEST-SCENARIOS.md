@@ -2159,32 +2159,39 @@ something new is being added.
   from the working directory's remote. QA verified that by hand for #369
   against a real adopted project (recorded in QA's issue comment)
 
-### S162 — Every script an installed skill tells the agent to run exists where the skill says
+### S162 — Installed skill and workflow policy paths resolve from an adopted project
 **Covers:** F37
-- Given: a fresh project adopted from a sandbox clone, and every
-  installed skill's `SKILL.md` (issue #369: the human decision that
-  `pre-merge-review`'s `./classify-review-depth.sh` path is fixed here,
-  Architect finding V4)
-- When: shell invocations in fenced commands and argument-bearing inline
-  commands are resolved, including bare `skills/`, `templates/`, installed
-  `.claude/skills/` and physical guardrails checkout paths
-- Then: every `./<name>.sh` exists, executable, at the adopted project's
-  root; every `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh` exists, executable,
-  in the clone; and `pre-merge-review` still runs the classifier, as
-  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`
+- Given: a fresh project adopted from a sandbox clone, every installed
+  skill's `SKILL.md`, and canonical `policy/WORKFLOW.md` (issue #369:
+  the classifier path fixed under Architect finding V4).
+- When: fenced script invocations, inline script invocations with or without
+  arguments, and bare `skills/` and `templates/` file references are resolved.
+- Then: `./` script paths resolve in the adopted project;
+  `$SPEC_DRIVEN_GUARDRAILS_DIR` checkout paths resolve in the physical clone;
+  `.claude/skills/` paths resolve through installed skills. Bare `skills/`
+  script paths require a clone qualifier or checkout convention; bare
+  `templates/` file/directory references resolve in the clone. Script targets
+  are executable files; other scanned targets exist. Policy mutations adding
+  `./wait-for-ci.sh` or a dangling `templates/` file fail paths mode in the
+  policy document. `pre-merge-review` still runs the classifier as
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`.
 
 ### S525 — Installed invocation resolver rejects dangling paths (#622 AC1)
 **Covers:** F37
-- Given: S162's installed-skill command resolver and independent executable
-  controls in an adopted-project layout and a physical guardrails checkout.
-- When: installed, project-relative and checkout-qualified invocations are
-  resolved in fenced and inline commands; each target is made dangling.
-- Then: executable controls resolve and every dangling mutant fails;
-  bare `skills/`, `templates/` and root script invocations cannot escape the scan.
-  Explicit physical-checkout conventions, delegated conventions, local checkout
-  variables and qualified basename references have independent dangling controls;
-  removing a required convention or binding also fails. S162 applies the same
-  resolver to every actually installed SKILL.md.
+- Given: S162's resolver and independent executable controls in an
+  adopted-project layout and a physical guardrails checkout.
+- When: [s525_adopter_docs_path_controls.sh](test/cases/s525_adopter_docs_path_controls.sh)
+  resolves installed, project-relative and checkout-qualified controls in
+  fenced and inline commands, including argumentless inline paths.
+- Then: the executable positive controls resolve; their dangling mutations
+  fail, as does a non-executable project script. Argumentless bare `skills/`
+  script controls detect a dangling target and removal of their clone
+  qualifier; a qualified existing script passes. An argumentless bare
+  `templates/` file passes when present and fails when dangling.
+  Explicit and delegated physical-checkout conventions, local checkout
+  variables and qualified basename references have dangling controls;
+  removing a required convention or binding fails. The tested unqualified
+  bare script invocations with arguments fail too.
 
 ### S526 — Protection framing agrees with README (#622 AC1; #367 residual)
 **Covers:** F37
@@ -7993,7 +8000,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
 - When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
-- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged against that baseline. If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector code stays unchanged against that baseline; comment-only and blank-line differences are ignored (scratch controls: a changed or inserted code line still fails, a comment or blank-line-only change passes). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)

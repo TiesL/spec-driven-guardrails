@@ -9,12 +9,13 @@ def invocations(text):
     # Metadata descriptions are not instructions to the adopted project's agent.
     if text.startswith('---\n'):
         text = text.split('---\n', 2)[-1]
-    # Commands with arguments inside code spans, plus executable fenced lines.
+    # Inline script invocations and bare skills/templates file references,
+    # including argumentless spans, plus executable fenced lines.
     for span in re.findall(r'`([^`\n]*(?:\n[^`\n]+)?)`', text):
         match = re.match(r'\s*(?:bash\s+)?("?[^\s`]+\.sh"?)\s+\S', span)
         if match:
             yield match[1].strip('"')
-        elif re.fullmatch(r'"?(?:\./|\.claude/|\.agents/|\$\{?SPEC_DRIVEN_GUARDRAILS_DIR\}?/)[^\s`]+\.sh"?', span):
+        elif re.fullmatch(r'"?(?:(?:\./|\.claude/|\.agents/|\$\{?SPEC_DRIVEN_GUARDRAILS_DIR\}?/)[^\s`]+\.sh|(?:skills/|templates/|\$\{?SPEC_DRIVEN_GUARDRAILS_DIR\}?/templates/)[^\s`<>]+)"?', span):
             yield span.strip('"')
     fenced = False
     for line in text.splitlines():
@@ -41,6 +42,13 @@ def path_errors(text, project, clone):
                           and 'physical guardrails checkout' in owner_text
                           and '$SPEC_DRIVEN_GUARDRAILS_DIR/<path>' in owner_text)
     commands = list(invocations(text))
+    # Prose file pointers may explicitly locate a path in the guardrails clone.
+    # Keep that scope at the paragraph, independent of document line numbers.
+    clone_mentions = {
+        command for paragraph in re.split(r'\n\s*\n', text)
+        if 'in the guardrails clone' in paragraph
+        for command in invocations(paragraph)
+    }
     qualified = {Path(command).name: command for command in commands if '/' in command}
     for command in commands:
         # A --help reference may use the basename of an explicitly qualified
@@ -51,11 +59,14 @@ def path_errors(text, project, clone):
             target = clone / command[prefix.end():]
         elif command.startswith('$wf/') and 'wf="${SPEC_DRIVEN_GUARDRAILS_DIR:-}"' in text:
             target = clone / command[len('$wf/'):]
+        elif command in clone_mentions or (command.startswith('templates/') and not command.endswith('.sh')):
+            target = clone / command
         elif physical_paths and command.startswith(('skills/', 'templates/')):
             target = clone / command
         else:
             target = project / command
-        if not target.is_file() or not os.access(target, os.X_OK):
+        if (not target.exists() or (command.endswith('.sh')
+                                    and (not target.is_file() or not os.access(target, os.X_OK)))):
             errors.append(command)
     return errors
 
@@ -114,9 +125,11 @@ def main():
     mode, root = sys.argv[1], Path(sys.argv[2])
     if mode == 'paths':
         project, clone = Path(sys.argv[3]), Path(sys.argv[4])
-        for skill in sorted((project / '.claude/skills').glob('*/SKILL.md')):
-            errors = path_errors(skill.read_text(), project, clone)
-            assert not errors, f'{skill.parent.name}: unresolved invocations: {errors}'
+        documents = [clone / 'policy/WORKFLOW.md']
+        documents.extend(sorted((project / '.claude/skills').glob('*/SKILL.md')))
+        for document in documents:
+            errors = path_errors(document.read_text(), project, clone)
+            assert not errors, f'{document}: unresolved invocations: {errors}'
         return
     if mode == 'path-controls':
         import tempfile
@@ -157,6 +170,21 @@ def main():
             check_controls(check, good, [('variable target dangling', good.replace('run.sh', 'missing.sh')),
                                        ('variable binding absent', good.replace('wf="${SPEC_DRIVEN_GUARDRAILS_DIR:-}"', ''))])
             check_controls(check, '`./check.sh`', [('no-argument dangling', '`./missing.sh`')])
+            good = convention + '`skills/review/run.sh`'
+            check_controls(check, good, [
+                ('argumentless bare script dangling', good.replace('run.sh', 'model-record-emitX.sh')),
+            ])
+            good = '`skills/review/run.sh` in the guardrails clone'
+            check_controls(check, good, [
+                ('argumentless bare script unqualified', good.replace(' in the guardrails clone', '')),
+                ('argumentless unqualified dangling script', '`skills/review/model-record-emitX.sh`'),
+            ])
+            template = clone / 'templates/example.md'
+            template.parent.mkdir(parents=True)
+            template.write_text('Example template\n')
+            check_controls(check, '`templates/example.md`', [
+                ('argumentless template dangling', '`templates/missing.md`'),
+            ])
             for bad in ('`skills/review/run.sh <pr>`', '```\ntemplates/check.sh <pr>\n```', '`review.sh <pr>`'):
                 assert not check(bad), 'bare invocation escaped: ' + bad
         return
