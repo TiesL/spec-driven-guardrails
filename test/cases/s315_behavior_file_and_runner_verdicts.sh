@@ -233,7 +233,7 @@ bf_build
 bf_run --runs 3 --baseline
 [ "$bf_status" -ne 0 ] || fail "S315/baseline — an unlisted old-wrong must fail the baseline"
 
-# Calibration: A/A noise floor plus a mutant (one never/not removed in OR40).
+# Calibration: A/A noise floor plus a mutant (one never/not removed in the stub rule OR40; the real calibration mutant is OR43 in the real file, S291).
 bf_reset
 bf_case 1 c dispatch 0 dispatch,dispatch,dispatch dispatch,dispatch,dispatch stop,stop,stop
 bf_build
