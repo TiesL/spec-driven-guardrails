@@ -1162,8 +1162,12 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 #### A39 amendment — release-evidence boundary after #455-D4 (Architect, 2026-11-02, #623)
 
 Corrects stale A39 text; adds no behavior and changes no Interface, Seam or
-adoption semantics. Original decision text above is kept; this amendment wins
-where they differ.
+adoption semantics. This amendment is a
+[panel decision, flagged for the maintainer's acceptance](https://github.com/TiesL/spec-driven-guardrails/issues/623#issuecomment-6576047872).
+Two sentences of the A39 text above (in the Decision / scope and Revisit when
+bullets) were reworded in place, each with a pointer here; the superseded
+wording is quoted in the Boundary bullet below. This amendment wins where they
+differ.
 
 - **Boundary (supersedes "release evidence still requires real ... dry runs"
   and "supplement the F52/F53 human dry runs").** Per maintainer decision
@@ -1182,9 +1186,9 @@ where they differ.
   stays `unobserved`. Hypothetical route answers show guidance understanding,
   not dispatch. [docs/codex-dry-runs.md](docs/codex-dry-runs.md) is the record;
   it must not describe a leg as pending once the Pipeline log shows it ran.
-- **Reference scope.** Only #455 scenario references cite A39 (S294-S304 block
-  and its section heading); references to the low-finding decision (#488) stay
-  A38.
+- **Reference scope.** #455 scenario references (the S294-S304 block and its
+  section heading), S455 and the #575 amendment cite A39; references to the
+  low-finding decision (#488) stay A38.
 
 ### A41 — Run rules get stable IDs, a condensed core in two self-standing parts and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
 
