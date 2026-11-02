@@ -41,7 +41,6 @@ Part 1 of 2 (fundamentals) also applies; parts arrive in any order. Part 1 not i
 - OR14 Reviewer dispatch prompt names PR number, its head SHA, `finding-carryforward-gate.sh` command.
 - OR15 Review round brief, artifacts: PR number/head SHA, diff command, issue, prior round's findings link/open `finding:` slugs, `finding-carryforward-gate.sh`. At Review start: QA artifact/comparison log; finding/resolution links if any. May link fix commits/Developer comments.
 - OR16 Brief never holds earlier Reviewer's conversation, its summary, or your paraphrase of its findings. Carried-forward findings = inputs new Reviewer re-checks against new head, not memory.
-
 - OR47 Fresh dispatch of any role: brief = artifact links plus stated scope; no conversation history, no pasted issue history. OR15/OR16 stay Reviewer's fields.
 - OR48 Run scope. (1) Paid behavior-test run after change: affected scenarios only, unless stamp or gate needs full run; then log names that stamp or gate. (2) Local checks before commit on work-item branch: only those changed files can affect; doc-only commit = pre-commit hooks only. Full `./check` at most once before PR opens, never per commit (CI runs it). Brief names checks it requires, never defaults to full suite.
 
@@ -49,13 +48,13 @@ Part 1 of 2 (fundamentals) also applies; parts arrive in any order. Part 1 not i
 
 - OR17 Loop-back (A28): route every finding by class to role owning fix, whichever stage found it, roles in order. `design`: Architect, QA, Developer, fresh Reviewer. `code`: QA (red test for defect), Developer, fresh Reviewer. `test`: QA, Developer, fresh Reviewer. `spec`: Product, then Architect if design affected, QA, Developer, fresh Reviewer.
 - OR18 Never relay Reviewer's suggested fix as decision; next brief links findings. Never downgrade class. No class, or design class doubted: dispatch Architect; Architect may record not design defect, route as code.
-- OR19 If Developer/QA reports design defect or spec/scenario conflict: stop affected change pending owner resolution; specs byte-identical at detection. A12 patch before revert; class/falsifying check; OR17/A28.
+- OR19 If Developer/QA reports design defect or spec/scenario conflict: stop affected change pending owner resolution; specs byte-identical at detection. A12 patch before revert; class/falsifying check; OR17.
 - OR20 Two-round trigger. Round counts when it reports at least one open finding, severity medium or high, new or carried over. Two consecutive counting rounds on one PR: dispatch Architect for redesign step before any Developer fix. Architect records it as PR comment with Planning marker; may conclude no design change needed. Count starts again after that recorded step.
-- OR21 Override: maintainer says patch design defect in code, not loop-back: waives loop-back route, so A29 flow (OR45) applies. Architect pushes back once; numbered human decision names rule overridden (loop-back, A28), links pushback; Architect writes risk note (format in `SKILL.md`; none here, no marker).
+- OR21 Override: maintainer says patch design defect in code, not loop-back: waives loop-back route, so OR45 applies. Architect pushes back once; numbered human decision names rule overridden (loop-back, A28), links pushback; Architect writes risk note (format in `SKILL.md`; none here, no marker).
 
 ## Log and self-check
 
-- OR22 Pipeline log: one comment per work-item issue, headed "Pipeline log", you write and edit; never `model-record` marker. One line per dispatch, at dispatch: stage, round (Review), returned agent id, model requested. Dispatch line also: `continued=yes|no rule=OR13|OR46 tokens=<n>k tools=<n>` (reported size: tokens, tool uses; copied by you). May note effort platform transcript shows, prose, after the fact; not marker attribute, not check (A27, A33, A33a).
+- OR22 Pipeline log: one comment per work-item issue, headed "Pipeline log", you write and edit; never `model-record` marker. One line per dispatch, at dispatch: stage, round (Review), returned agent id, model requested. Dispatch line also: `continued=yes|no rule=OR13|OR46 tokens=<n>k tools=<n>` (reported size: tokens, tool uses; copied by you). May note effort platform transcript shows, prose, after the fact; not marker attribute, not check (A27, A33).
 - OR23 Before asking for merge: run self-check, record result as Pipeline log line. Every Review round in log has own agent id; no message to earlier Reviewer. GitHub artifacts cannot show rounds came from different agent instances: recorded self-check, not pass. Also states: every dispatch line has OR22 fields; any agent reported over flag threshold (150k tokens or 100 tool uses) has logged `reason=` (`$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-log-fields.sh <issue>` reports both). Class, severity = judgments; script only checks route left evidence. Also records:
   - OR24 No design-class finding fixed without Architect step before fix commit.
   - OR25 Two-round trigger did not fire, or its Architect step on PR. Count: `$SPEC_DRIVEN_GUARDRAILS_DIR/review-rounds.sh <pr> [<issue>]`, working directory = project's checkout (in guardrails repo it counts that repo's PR with same number).
@@ -68,7 +67,7 @@ Part 1 of 2 (fundamentals) also applies; parts arrive in any order. Part 1 not i
 - OR29 Dispatch tool takes no effort argument: effort neither chosen nor recorded in markers. Same model at lower effort meets floor: accepted risk ("The limit", `model-choice`).
 - OR30 Pass chosen model as dispatch tool's `model` argument; name it in prompt.
 - OR31 Give role `model-record-emit.sh` command with `--role` filled in (OR5). Emit role and stage must match the prefix role.
-- OR32 Marker never typed by hand: `model-record-emit.sh` produces it; `model-choice` owns format ("Machine-readable form"). Path: `$SPEC_DRIVEN_GUARDRAILS_DIR/skills/pre-merge-review/model-record-emit.sh`; unset: `.claude/skills/pre-merge-review/model-record-emit.sh` (Claude) or `.agents/skills/pre-merge-review/model-record-emit.sh` (Codex), via `pwd -P`. Role adds `--model` own exact model id (Reviewer also `--floor-basis`, one shell-quoted sentence), pastes output unchanged as report's first line.
+- OR32 Marker never typed by hand: `model-record-emit.sh` produces it; `model-choice` owns format ("Machine-readable form"). Resolve absolute path once: `$SPEC_DRIVEN_GUARDRAILS_DIR/skills/pre-merge-review/model-record-emit.sh`; unset: `.claude/skills/pre-merge-review/model-record-emit.sh` (Claude) or `.agents/skills/pre-merge-review/model-record-emit.sh` (Codex), via `pwd -P`. Role adds `--model` own exact model id (Reviewer also `--floor-basis`, one shell-quoted sentence), pastes output unchanged as report's first line.
 
 ## Resume
 

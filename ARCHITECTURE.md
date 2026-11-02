@@ -1560,6 +1560,37 @@ where they differ.
   `unstable` at 3 runs; or either part's worst case comes within 500
   characters of the budget. The split is not undone when the whole core
   would fit one slot: it exists for failure and ordering (Human decision 5).
+- **#620 amendment (B10c, #535, #537; temporary panel decision flagged for the
+  maintainer, panel record on #620):**
+  - **Qualifiers.** OR32 again resolves the emit command's "absolute path
+    once" (1aba086^, the text before #533); it is `core`, so its pin changes.
+    The 22 characters are offset in part 2 by pure redundancy, so S318's slot 2
+    stays 8,499: OR19 "OR17/A28" to "OR17" (OR17 names A28), OR21 "A29 flow
+    (OR45)" to "OR45", OR22 "A33, A33a" to "A33" (A33a is part of A33), one
+    blank line. OR22's "in its step comment" (a732b1c, #447) is not restored:
+    superseded by A27 (effort is a Pipeline-log field), S240 and OR4 (no
+    orchestrator comment text but the Pipeline log). OR44's "any orchestrator
+    record" is not restored for lack of room; OR22 and OR26 cover the
+    Pipeline log and orchestrator-written issue comments, not an orchestrator
+    record elsewhere, such as a PR comment (deferred, #641).
+  - **Hook fixture provenance.** `agent-pretooluse-2.1.301.json` is
+    transcript-derived, not a hook-stdin capture: `tool_name`, `tool_input`
+    and `tool_use_id` are verbatim from a Claude Code 2.1.301 transcript; the
+    envelope (`session_id`, `transcript_path`, `cwd`, `permission_mode`,
+    `hook_event_name`) is rebuilt in the documented hook-input shape. #499
+    AC10's "captured real input" reads as this. Limit: the fixture cannot
+    show that a real top-level call lacks `agent_id`.
+  - **Calibration mutant.** OR43, as stated above; #499 AC14's "calibration
+    mutant on OR40" and the S288/S291 comments that repeat it are stale.
+  - **Pre-pushback coverage.** OB48 keeps the state after pushback, OB24 and
+    OB49 the Architect and Reviewer states before it. OB83 covers QA before
+    pushback: the maintainer declines QA's recommendation in favour of the
+    Developer's substitute, no pushback yet; the route is OR45's dispatch of
+    QA, never a recorded decision or a direct approval. The state where only
+    the Developer asks is not graded: `ask_human` and `dispatch` both follow
+    the rules there and flapped (#536).
+  - **Budget note.** Slot 1 (8,668) is already inside the 500-character
+    revisit window above, and A42's OR47/OR48 fallback no longer has room.
 
 ### A42 — Dispatch economy: continue-or-fresh rule, closed list of no-agent steps, brief and run scope in the injected core; detail in a skill (#532, folds in #412)
 
