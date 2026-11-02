@@ -333,7 +333,7 @@ def valid_model(model):
 
 def resolved_base(repo, base, require_sha=False):
     """Resolve locally and require membership in origin/main's ancestry."""
-    if require_sha and not re.fullmatch(r"[0-9a-f]{7,40}|[0-9a-f]{64}", base):
+    if require_sha and not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", base):
         raise ValueError("base %s must be a resolved commit SHA" % base)
 
     def resolve(ref):
@@ -344,6 +344,8 @@ def resolved_base(repo, base, require_sha=False):
         return p.stdout.decode("utf-8").strip()
 
     sha = resolve(base)
+    if require_sha and sha != base:
+        raise ValueError("base %s must equal its resolved commit SHA" % base)
     main = resolve("origin/main")
     p = subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", sha, main],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)

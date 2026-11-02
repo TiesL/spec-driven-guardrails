@@ -5984,10 +5984,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 **Covers:** F38
 - Given: the real core and pins, copied to an isolated fixture
 - When: a non-indented instruction is added after OR26, either directly or
-  separated by a blank line, and the structure harness checks the copy
+  separated by a blank line; a tab-led instruction follows OR26 directly;
+  or a space-indented continuation paragraph follows a blank line, and the
+  structure harness checks the copy
 - Then: the unmodified control passes; each mutation fails with
-  `item-loose-continuation` naming OR26; headings still delimit items
-- Red on 18239c9: both mutations pass the harness.
+  `item-loose-continuation` naming OR26; the control is repeated for each
+  mutation and a contiguous space-indented wrap still passes with the same
+  pins; headings still delimit items
+- Red on 18239c9: all four mutations pass the harness.
 
 ### S511 — duplicate pin rows refuse without silently replacing a pin (#619, #535)
 **Covers:** F38
@@ -6188,7 +6192,8 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   misses `Then` each leave the old stamp untouched; the test never calls a
   model (`CLAUDE_BIN` set to a command
   that fails if called)
-- Red on `main` b43ee55: no stamp
+- Fixture-only: matching stamps pass; stale hash/count, malformed stamps and
+  unsuccessful runs exercise refusal and preservation without a real model.
 
 ### S513 — stamp bases must resolve into origin/main ancestry (#619, #535)
 **Covers:** F38
@@ -6196,10 +6201,14 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Given: an isolated git graph containing an ancestor, an origin/main tip,
   a branch-only descendant and an unrelated root; matching hash/count stamps
 - When: stamp validation receives each commit, a nonexistent SHA, a symbolic
-  stamp base or a malformed base; or origin/main is missing
-- Then: only resolved ancestor/tip stamp bases pass. Missing, branch-only and
+  stamp base, an abbreviated SHA, a short or full-length hex-named ref, or
+  a malformed base; or origin/main is missing
+- Then: only full 40- or 64-character SHAs equal to their resolved
+  ancestor/tip commit pass. Missing, branch-only and
   unrelated bases refuse; run also refuses these bases without replacing an
   existing stamp. A run may resolve its symbolic input, but stores the SHA.
+  Abbreviated and hex-ref stamp bases refuse; each has a passing full
+  ancestor SHA control. Abbreviated run inputs still write the full SHA.
   Neither path uses the current committed stamp or calls a real model.
 - Red on 18239c9: stamp-check accepts branch-only, missing and symbolic bases.
 

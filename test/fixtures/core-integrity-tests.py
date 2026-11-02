@@ -44,10 +44,15 @@ def pins(directory, mode):
 
     require(check(orch, pintext), True)
     if mode == 'loose':
-        for suffix in ('\nNever run the self-check.', '\n\nNever run the self-check.'):
+        for suffix in ('\nNever run the self-check.', '\n\nNever run the self-check.',
+                       '\n\tNever run the self-check.',
+                       '\n\n    Never run the self-check.'):
             text = orch.replace('  - OR26 No orchestrator-written issue comment carries `model-record` marker.',
                                 '  - OR26 No orchestrator-written issue comment carries `model-record` marker.' + suffix)
+            require(check(orch, pintext), True)
             require(check(text, pintext), False, 'ERROR item-loose-continuation: OR26')
+        # A space-indented, contiguous wrap remains covered by the same pin.
+        require(check(orch.replace('comment carries', 'comment\n    carries'), pintext), True)
     elif mode == 'duplicate':
         row = next(x for x in pintext.splitlines() if x.startswith('OR26\t'))
         for extra in (row, 'OR26\t' + '0' * 64):
@@ -133,10 +138,24 @@ def run(repo, base, env, n=3):
 
 def bases(directory):
     repo, ancestor, tip, branch, env = fixture(directory)
-    for base in (ancestor, ancestor[:12], tip):
+    for base in (ancestor, tip):
         stamp(repo, base)
         require(stamp_check(repo), True, 'stamp matches')
         require(run(repo, base, env), True, 'stamp written')
+    # A hex-named ref resolves to an ancestor but is not that commit's SHA.
+    hex_refs = ('abcdef1', 'a' * 64)
+    for ref in hex_refs:
+        (repo / '.git/refs/heads' / ref).write_text(ancestor + '\n')
+        assert git(repo, 'rev-parse', '--verify', ref + '^{commit}') == ancestor
+    for base in (ancestor[:12], *hex_refs):
+        stamp(repo, base)
+        require(stamp_check(repo), False, 'base')
+        stamp(repo, ancestor)
+        require(stamp_check(repo), True, 'stamp matches')
+    # Run inputs may still be abbreviated; the written stamp must be resolved.
+    require(run(repo, ancestor[:12], env), True, 'stamp written')
+    assert ('base=' + ancestor + ' ') in (repo / STAMP).read_text()
+    require(stamp_check(repo), True, 'stamp matches')
     # branch-only, nonexistent SHA, symbolic base, malformed SHA.
     for base in (branch, 'f' * 40, 'origin/main', 'nosuchref', ''):
         stamp(repo, base)

@@ -116,7 +116,7 @@ def scenario_index(path):
 def item_hash(full):
     """SHA-256 of the item text: from `OR<n> ` to the end, continuation lines
     joined by single spaces, trailing whitespace trimmed, no bullet; prefixed
-    by depth=<item depth> and a newline so reparenting changes the hash."""
+    by depth=<item depth> and a newline so depth changes alter the hash."""
     ls = full.split("\n")
     first = ls[0][ls[0].index("OR"):]
     text = " ".join([first.rstrip()] + [l.strip() for l in ls[1:]]).rstrip()
@@ -175,16 +175,21 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
         for l in lines:
             if re.search(r"\b(above|below)\b", l, re.I):
                 errs.append(("above-below", "part %d says above/below: %s" % (no, l.strip()[:60])))
-    # Unindented prose after an item used to escape both extraction and pins.
-    # Blank lines do not legitimize it; headings and part markers end ownership.
+    # Only contiguous space-indented lines enter items() and its pin hash.
+    # Reject other continuations; headings and part markers end ownership.
     owner = None
+    after_blank = False
     for line in text.split("\n"):
         match = ITEM_RE.match(line)
         if match:
             owner = match.group(2)
+            after_blank = False
         elif line.startswith("#") or line == MARKER:
             owner = None
-        elif owner and line.strip() and not line.startswith((" ", "\t")):
+            after_blank = False
+        elif owner and not line.strip():
+            after_blank = True
+        elif owner and (after_blank or not line.startswith(" ") or line.startswith("\t")):
             errs.append(("item-loose-continuation", "%s has loose continuation: %s" % (owner, line)))
     its = items(text)
     rows, terrs = read_tsv(tsv)
