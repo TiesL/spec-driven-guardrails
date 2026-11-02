@@ -5252,7 +5252,8 @@ that evidence and the final `./check` result.
   future "proposed vX" PR title); AC8 was amended to this narrower scope by
   Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
   wording in `skills/` and root documents is not covered by a standing scan.
-  Elsewhere the token appears only as quoted data in
+  Outside that scope (CHANGELOG `## V` section and README.md), the token
+  appears only as quoted data in
   TEST-SCENARIOS.md and `test/`, which are excluded for that reason. As of the
   review of #477 (verified at a7a5f48)
   `git grep -l 'v0\.4\.0' -- . ':!TEST-SCENARIOS.md' ':!test'` lists exactly
@@ -5450,7 +5451,7 @@ that evidence and the final `./check` result.
   clause-local breaks of #488 (R3 clause removed, cap removed, class
   restriction dropped, the decoy) are retired: the meaning they guarded is
   checked by the differential run, whose calibration (`--calibrate`, AC12)
-  uses the `OR43` mutant (removing its opening "Never") and must report
+  uses a calibration mutant on `OR43` in the real file (removing its opening "Never"; S315 exercises the runner with a stub rule) and must report
   `diverged` on at least one of the scenarios listing `OR43` (`OB47`, `OB48`,
   `OB83`), expected `OB48` (acceptance evidence on the PR). `OR40` behavior is covered by `OB40`-`OB44`, not by the
   calibration mutant (#620; #499 AC14 is stale on this point); S315 proves

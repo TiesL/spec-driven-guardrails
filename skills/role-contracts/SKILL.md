@@ -73,7 +73,7 @@ The `role:<name>` labels are a hand-maintained traceability record (A5): put the
 role now holding the work on the issue. They do not exist in your repo until you create them.
 Create them once, idempotently, in this project's own repo (needs `gh`) if you want the
 `role-label-staleness.sh` script (run as `"$SPEC_DRIVEN_GUARDRAILS_DIR/role-label-staleness.sh"`
-from the project's checkout, see below) to say
+by path, with the project's checkout as the working directory, see below) to say
 anything:
 
 ```bash

@@ -73,7 +73,7 @@ wiring_ok "$SANDBOX/drift.json" >/dev/null 2>&1 && fail "S314/drift — a change
 
 # The fixture carries every field the contract names, and is the platform's
 # real tool name.
-python3 -I - "$FIX" "$contract" <<'PY' || fail "S314/fields — the captured input lacks a contract field"
+python3 -I - "$FIX" "$contract" <<'PY' || fail "S314/fields — the transcript-derived input lacks a contract field"
 import json, sys
 d = json.load(open(sys.argv[1])); c = json.loads(sys.argv[2])
 assert d["tool_name"] == c["tool_name"], "tool_name"

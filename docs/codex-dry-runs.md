@@ -57,10 +57,12 @@ retains the full outstanding runtime campaign listed above.
 
 ## Feature-adopted continuation observations (2026-10-15 and 2026-10-16)
 
-These are bounded live observations from the Pipeline log and the
-[QA assessment after Review round 5](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209140880),
-which inspected the raw traces. They do not complete any full manual acceptance
-scenario and do not close `runtime-dry-runs-unobserved`.
+These are bounded live observations from the Pipeline log. The
+[QA assessment after Review round 5](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209140880)
+inspected the raw traces of the Codex CLI entry and of the Claude entry up to
+its QA dispatch; the later Claude legs and the desktop entry were added after
+it and are attributed in their own bullets. They do not complete any full manual
+acceptance scenario and do not close `runtime-dry-runs-unobserved`.
 
 - **Codex CLI 0.162.1, 2026-10-15, QA to fresh Review.** Parent session
   `01a140ee-fdad-7580-b585-0765f4dfe18f` in isolated clone
@@ -87,9 +89,14 @@ scenario and do not close `runtime-dry-runs-unobserved`.
   agent `a36621c839c3fa3dc`, not fork, artifact-only brief
   ([report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209700217)),
   then a Planning step (`ab3da0586e0499aa0`), all dispatched by the same parent
-  without a routine confirmation pause, per the Pipeline log. These later legs
-  are recorded in the Pipeline log and the linked reports; this Developer role
-  has not inspected the raw traces, so they receive bounded credit only.
+  without a routine confirmation pause, per the Pipeline log. QA assessment 6209140880
+  saw this entry only up to the QA dispatch. These later legs are recorded in the
+  Pipeline log and the linked reports; a later
+  [QA assessment](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6211325167)
+  separately checked the parent's four actual Agent calls (QA, Developer,
+  Reviewer, Architect) in its transcript, which confirms the dispatch order only,
+  and this Developer role has not inspected the raw traces, so the later legs
+  receive bounded credit only.
 - **Codex desktop (MacBook), 2026-10-16, QA dispatch.** Parent session
   `01a143ba-c5d0-7c33-8a7c-26e5c4f6502d` reported fresh QA child
   `01a143bd-5e7c-71a2-9948-6ebbfcda98e4` (`fork_turns: none`, model `gpt-6-sol`)
@@ -102,12 +109,16 @@ scenario and do not close `runtime-dry-runs-unobserved`.
   desktop task made no commit, push, GitHub post or merge, and no desktop
   Developer or Review leg was observed, so none is credited.
 
-Limits, as stated by QA:
+Limits. The first three bullets are as stated by QA assessment 6209140880 for the
+two parents it inspected (CLI `01a140ee`, Claude `f821800a`); the desktop entry
+and the later Claude legs are outside what it saw:
 
-- Both parent prompts explicitly instructed continuing to the next ordinary stage
-  without routine confirmation. This is the runtime following guidance plus an
-  explicit operator instruction, partial S304 evidence only; it does not show
-  continuation driven by guidance alone.
+- Both of those parent prompts (CLI and Claude) explicitly instructed continuing
+  to the next ordinary stage without routine confirmation. This is the runtime
+  following guidance plus an explicit operator instruction, partial S304 evidence
+  only; it does not show continuation driven by guidance alone. QA assessment
+  6211325167 notes the Claude parent's prompt also instructed continuation across
+  the later legs it checked.
 - The CLI parent stopped at the finding-route boundary after Review round 5
   without dispatching the test-class QA. Cause is not isolated (prompt said
   "the next ordinary stage", singular; Pipeline-log writes also failed). It is
