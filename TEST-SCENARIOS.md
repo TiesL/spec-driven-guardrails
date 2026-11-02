@@ -5985,13 +5985,17 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Given: the real core and pins, copied to an isolated fixture
 - When: a non-indented instruction is added after OR26, either directly or
   separated by a blank line; a tab-led instruction follows OR26 directly;
-  or a space-indented continuation paragraph follows a blank line, and the
+  or a space-indented continuation paragraph follows a blank line; or a
+  `#619 ...` line, a `#Never ...` line or a seven-hash line follows OR26
+  directly (CommonMark lazy continuations, not ATX headings), and the
   structure harness checks the copy
 - Then: the unmodified control passes; each mutation fails with
   `item-loose-continuation` naming OR26; the control is repeated for each
   mutation and a contiguous space-indented wrap still passes with the same
-  pins; headings still delimit items
-- Red on 18239c9: all four mutations pass the harness.
+  pins; a real ATX heading (`## Heading` plus plain text) right after OR26
+  still ends ownership and passes; headings still delimit items
+- Red on 18239c9: all four mutations pass the harness. Red on 6bf9fce: the
+  `#619`, `#Never` and seven-hash mutations pass the harness (exit 0).
 
 ### S511 — duplicate pin rows refuse without silently replacing a pin (#619, #535)
 **Covers:** F38

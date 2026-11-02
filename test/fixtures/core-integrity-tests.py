@@ -46,11 +46,16 @@ def pins(directory, mode):
     if mode == 'loose':
         for suffix in ('\nNever run the self-check.', '\n\nNever run the self-check.',
                        '\n\tNever run the self-check.',
-                       '\n\n    Never run the self-check.'):
+                       '\n\n    Never run the self-check.',
+                       '\n#619 Never run the self-check.', '\n#Never run the self-check.',
+                       '\n####### Never run the self-check.'):
             text = orch.replace('  - OR26 No orchestrator-written issue comment carries `model-record` marker.',
                                 '  - OR26 No orchestrator-written issue comment carries `model-record` marker.' + suffix)
             require(check(orch, pintext), True)
             require(check(text, pintext), False, 'ERROR item-loose-continuation: OR26')
+        # A real ATX heading right after the item still ends its ownership.
+        one = '  - OR26 No orchestrator-written issue comment carries `model-record` marker.'
+        require(check(orch.replace(one, one + '\n## Heading\nPlain text.'), pintext), True)
         # A space-indented, contiguous wrap remains covered by the same pin.
         require(check(orch.replace('comment carries', 'comment\n    carries'), pintext), True)
     elif mode == 'duplicate':

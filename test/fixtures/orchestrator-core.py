@@ -176,7 +176,8 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
             if re.search(r"\b(above|below)\b", l, re.I):
                 errs.append(("above-below", "part %d says above/below: %s" % (no, l.strip()[:60])))
     # Only contiguous space-indented lines enter items() and its pin hash.
-    # Reject other continuations; headings and part markers end ownership.
+    # Reject other continuations; only ATX headings (1-6 hashes then space, tab
+    # or end of line) and part markers end ownership.
     owner = None
     after_blank = False
     for line in text.split("\n"):
@@ -184,7 +185,7 @@ def check(orch, tsv, scen, repo, list_checks, pins=None):
         if match:
             owner = match.group(2)
             after_blank = False
-        elif line.startswith("#") or line == MARKER:
+        elif re.match(r"#{1,6}(?:[ \t]|$)", line) or line == MARKER:
             owner = None
             after_blank = False
         elif owner and not line.strip():
