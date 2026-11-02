@@ -3120,7 +3120,8 @@ something new is being added.
   the block written inline in the case (triggers `pull_request` and `push` to
   `main`; one job `macos` on `macos-latest` with `permissions: contents:
   read`, `env` `LANG` and `LC_ALL` both `en_US.UTF-8`, and the four steps
-  checkout, platform tools first on PATH, `brew install mawk`, and the suite
+  checkout (`actions/checkout@v4` with `fetch-depth: 0`, so the release tag
+  is present for S285), platform tools first on PATH, `brew install mawk`, and the suite
   step `run: /bin/bash test/run.sh`)
 - Then: the file exists, passes D1, and the D2 comparison is identical; any
   other content is red. A D1 failure prints the first three offending lines
@@ -5140,9 +5141,9 @@ that evidence and the final `./check` result.
   saying "two" while three differ; a bump invented for a question whose number
   did not change. If tag `v0.3.0` does not resolve to a commit, the test
   fails with a message naming the tag and "fetch tags / fetch-depth: 0", never
-  skips or passes: `ci.yml` checks out with `fetch-depth: 0`, but `macos.yml`
-  runs `test/run.sh` on a shallow checkout, so that workflow must fetch tags
-  too. Counterexample: the test passing in a clone without the tag.
+  skips or passes: `ci.yml` and `macos.yml` both check out with
+  `fetch-depth: 0` (the pinned block of S219), so the tag is present in CI.
+  Counterexample: the test passing in a clone without the tag.
 - And: the compatibility entry names the accepted limits and does not call the
   strict reader or the lint complete. Reader: every limit name the header of
   `lib/markdown.sh` lists as an accepted-limit bullet
@@ -5251,13 +5252,12 @@ that evidence and the final `./check` result.
   future "proposed vX" PR title); AC8 was amended to this narrower scope by
   Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
   wording in `skills/` and root documents is not covered by a standing scan.
-  The arm's scope is the places that state the current version, CHANGELOG.md
-  and README.md; elsewhere the token appears only as quoted data in
+  Elsewhere the token appears only as quoted data in
   TEST-SCENARIOS.md and `test/`, which are excluded for that reason. As of the
   review of #477 (verified at a7a5f48)
   `git grep -l 'v0\.4\.0' -- . ':!TEST-SCENARIOS.md' ':!test'` lists exactly
-  those two files; a new hit there is a prompt to extend arm 5's scope, not a
-  contradiction. Counterexample: the surviving "v0.4.0 is a
+  CHANGELOG.md and README.md; a new file in that command's output is a prompt
+  to extend arm 5's scope, not a contradiction. Counterexample: the surviving "v0.4.0 is a
   proposal only" line (red today only if arm 1 is first made green; show it
   red by placing the cut heading above the unchanged bullets). `Unreleased`
   as the heading itself is outside the section and unaffected.
@@ -5492,7 +5492,7 @@ that evidence and the final `./check` result.
   `#488` line.
 - Red today: the F44 paragraph has no supersession sentence; no notice.
 
-## Codex support and shared workflow parity — #455 (A38)
+## Codex support and shared workflow parity — #455 (A39)
 
 These eleven durable scenarios map the planning aliases C455-S1–C455-S10 plus
 S304 to F45–F54 and issue #455 AC1–AC10. Public command Interfaces, project
@@ -5516,7 +5516,7 @@ behavioral obedience.
 
 ### S294 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
 **Covers:** F45, F46
-- Given: A38's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
+- Given: A39's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
   owners (including role-contracts/ORCHESTRATOR and model-choice), CHANGES.md
   version ownership, and the two mappings `adapters/claude/INSTRUCTIONS.md`
   and `adapters/codex/INSTRUCTIONS.md`.
@@ -5658,7 +5658,7 @@ behavioral obedience.
 ### S297 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
 **Covers:** F47, F48, F51
 - Given: isolated projects with absent/unmarked/sound-block AGENTS.md,
-  project-owned bytes/config/skills/adoption answers, and A38 ownership fixtures.
+  project-owned bytes/config/skills/adoption answers, and A39 ownership fixtures.
 - When: `SPEC_DRIVEN_GUARDRAILS_DIR=<local-checkout> adopt.sh
   [--runtime claude|codex] [project]` runs and repeats, followed by read-only
   `adopt.sh --status --runtime claude|codex [project]`.
@@ -5730,7 +5730,7 @@ behavioral obedience.
 
 ### S300 — coverage claims distinguish absent Codex interception from Claude and shared gates (C455-S7; AC6, AC7, AC9)
 **Covers:** F50, F51, F53
-- Given: A38's inventory of Claude runtime hooks, initial Codex adapter, native
+- Given: A39's inventory of Claude runtime hooks, initial Codex adapter, native
   Git hooks and shared check/evidence/CI mechanisms.
 - When: inspect adoption/status/docs and exercise each claimed mechanism through
   its public event/command, including intercepted and bypass paths.
@@ -8058,6 +8058,8 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Then: the injector is reached, refresh exits 1 with exchange-refusal diagnostics, the entire old active tree remains unchanged, verified new staging and a ready transaction survive, status is stale and read-only with exit 1, and explicit retry activates new bytes, removes staging and clears the transaction with current status; print actual platform, active/staging paths and results. S411 also runs these refusal/recovery checks; native refusal and recovery run on macOS as well as Linux.
 - Falsifiers: unobserved injection, silent success, lost or modified generations, status writes or a failed explicit recovery. A changed active generation must be rejected by the old-tree oracle.
 
+## Role-aware emit command and dispatch hook (issue #599; A48)
+
 ### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
 **Covers:** F40
 - Given: an opted-in Agent dispatch, the five prefix roles, and the public hook CLI.
@@ -8142,6 +8144,9 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: the docs and independently mutated copies are checked.
 - Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+## Codex guard bundle continued (issue #594)
+
 ### S420 — Preparation record replacement interruption (#594 AC5, AC6)
 **Covers:** F47, F51
 - Given: old complete installation and changed source.

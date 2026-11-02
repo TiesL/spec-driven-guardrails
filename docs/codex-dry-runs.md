@@ -15,14 +15,14 @@ checks remain a separate evidence class; this refresh does not re-certify them.
 | Surface | Bounded observation | Outstanding acceptance observations |
 | --- | --- | --- |
 | Codex CLI | Partial, 0.162.1: original macOS host fresh session `01a13f38-8b7e-7092-b7fe-181b4984b34b` reportedly read AGENTS, context, role-contracts and ORCHESTRATOR at feature HEAD `f71d9fd`. Independent MacBook terminal transcripts record actual reads in unopted session `01a13fc1-66b1-7242-90e2-abc215059404` and opted-in session `01a13fc5-30d2-7893-b793-85c00f49175d`. Answers describe routes/continuation/stops; no roles were dispatched in these three sessions. The later inspected session `01a140ee-fdad-7580-b585-0765f4dfe18f` (continuation section) does record actual fresh dispatch. | S295, S298–S302, S304 remain partial/unobserved. Observed since this row's evidence (see continuation section, bounded credit only): matching skill (role-contracts) used in dependent work (S295); fresh unforked QA plus Review children from artifacts (S301); fresh-session resume from artifacts with an open later finding (S302); one QA → fresh Review handoff under an explicit continuation instruction (partial S304). Still unobserved: nonmatching skill use; precedence/budget negatives; Product, Architect and Developer dispatch and the full chain from Product; unavailable dispatch stop; design/spec routes, two-round Architect step/reset outside the bounded desktop pipeline, low-only/interrupted controls, stale-label and malformed-evidence negatives; neutral-prompt continuation; genuine decision/override/main-merge stops |
-| Codex desktop | Partial maintainer testimony: MacBook desktop 26.1007.71326, task `Run read-only #455 dry run`, session `01a13fe1-661a-7453-ba78-1d1067e9d801`, reported AGENTS/context/skill/ORCHESTRATOR reads and correct hypothetical route guidance, with no trust warning. Version, title and session id were supplied by the maintainer; raw tool transcript was not supplied. Original host computer-use app selection was denied separately. | S296, S298–S302, S304 unobserved: full configuration and actual action transcript; restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld and suppressed/unavailable guidance; actual dispatch, artifact-based resume, routes, continuation and stops |
-| Claude Code | Partial authenticated 2.1.300 feature-adopted scratch loading: session `266ec384-7614-4b36-8dd1-26f06426c7eb` read skill/ORCHESTRATOR and compared saved SessionStart output with `--add-dir /private/tmp/sdg-455`. Without that allowed directory, symlink reads were denied. Explicit CLI `--resume` returned the same id. Earlier 2.1.296 authentication failure is historical; the real-main-checkout session lacked role-contracts. | S303 remains partial. SessionStart delivery, artifact-based route selection and one fresh QA dispatch were observed on 2.1.301 (continuation section; Developer and fresh Reviewer legs pending). Unobserved: repeated adoption and legacy backups live; representative Bash PreToolUse/PostToolUse/SessionEnd and guarded Git/native-hook/bypass/CI behavior; fresh Review and finding loop-back. Process resumption alone does not establish workflow recovery. |
+| Codex desktop | Partial maintainer testimony: MacBook desktop 26.1007.71326, task `Run read-only #455 dry run`, session `01a13fe1-661a-7453-ba78-1d1067e9d801`, reported AGENTS/context/skill/ORCHESTRATOR reads and correct hypothetical route guidance, with no trust warning. Version, title and session id were supplied by the maintainer; raw tool transcript was not supplied. Original host computer-use app selection was denied separately. Separately, a bounded dispatch observation (2026-10-16, feature HEAD `8f1b421`, continuation section): MacBook desktop parent `01a143ba-c5d0-7c33-8a7c-26e5c4f6502d` reportedly dispatched fresh QA child `01a143bd-5e7c-71a2-9948-6ebbfcda98e4` (`fork_turns: none`, model `gpt-6-sol`); QA's own return credits partial S296/S301 only. | S296, S298–S302, S304 remain unobserved apart from that bounded credit: full configuration and actual action transcript; restarted fresh session after adoption/update; matching/nonmatching skills; trust enabled/withheld and suppressed/unavailable guidance; actual dispatch, artifact-based resume, routes, continuation and stops |
+| Claude Code | Partial authenticated 2.1.300 feature-adopted scratch loading: session `266ec384-7614-4b36-8dd1-26f06426c7eb` read skill/ORCHESTRATOR and compared saved SessionStart output with `--add-dir /private/tmp/sdg-455`. Without that allowed directory, symlink reads were denied. Explicit CLI `--resume` returned the same id. Earlier 2.1.296 authentication failure is historical; the real-main-checkout session lacked role-contracts. | S303 remains partial. SessionStart delivery, artifact-based route selection and one fresh QA dispatch were observed on 2.1.301, followed by a Developer dispatch (`ae5a263445134aa7d`) and a fresh Review round 6 dispatch (`a36621c839c3fa3dc`) per the Pipeline log (continuation section; bounded credit, not a pass). Unobserved: repeated adoption and legacy backups live; representative Bash PreToolUse/PostToolUse/SessionEnd and guarded Git/native-hook/bypass/CI behavior; a Review-finding loop-back beyond the recorded Planning dispatch (`ab3da0586e0499aa0`). Process resumption alone does not establish workflow recovery. |
 | second machine | Partial, a real second machine, the maintainer's MacBook Air, macOS 26.6.2, feature HEAD `f71d9fd`: maintainer Terminal observations cover absent local installation, initial/repeated adoption/status, moving the workflow checkout, stale owned-link/provenance diagnostics and repair, clean status, preserved adoption/owner bytes by `cmp`, local source resolution, and subsequent fresh CLI loading. Both hosts are macOS. | S298 remains partial: previously adopted shared-project transfer/clone from A to B (B's project was new); actual workflow version/revision update with before/after status and stale copied-block/readoption behavior; committed-artifact inspection for machine-path absence. Owned local-checkout relocation is observed, not this transfer/update variant. |
 
 The linked operator record gives dated commands, outputs, configuration, source
 state, local paths and session identifiers where available. Its MacBook CLI and
-adoption observations are attributed to maintainer terminal transcripts. This
-Developer has not independently inspected those raw attachments. The original
+adoption observations are attributed to maintainer terminal transcripts. The
+Developer role that wrote this record has not independently inspected those raw attachments. The original
 host's `/private/tmp/455-cli-live-output.txt` is a last answer, not a raw tool
 transcript. Desktop observations are a maintainer-provided task answer, not
 independent trace verification. Hypothetical route answers establish guidance
@@ -82,8 +82,25 @@ scenario and do not close `runtime-dry-runs-unobserved`.
   `review-rounds.sh` and `role-label-staleness.sh`, selected the test-class route
   and dispatched QA (`general-purpose`, not fork, agent `aed68537d71ebd512`,
   [report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209140880)),
-  then the documentation-step Developer dispatch (agent `ae5a263445134aa7d`, per the Pipeline log). The route's fresh
-  Reviewer leg had not happened when this was written.
+  then the documentation-step Developer dispatch (agent `ae5a263445134aa7d`, per the Pipeline log; docs-only commit `8f1b421`).
+  The route's fresh Reviewer leg followed: Review round 6 at `8f1b421`, general-purpose
+  agent `a36621c839c3fa3dc`, not fork, artifact-only brief
+  ([report](https://github.com/TiesL/spec-driven-guardrails/pull/489#issuecomment-6209700217)),
+  then a Planning step (`ab3da0586e0499aa0`), all dispatched by the same parent
+  without a routine confirmation pause, per the Pipeline log. These later legs
+  are recorded in the Pipeline log and the linked reports; this Developer role
+  has not inspected the raw traces, so they receive bounded credit only.
+- **Codex desktop (MacBook), 2026-10-16, QA dispatch.** Parent session
+  `01a143ba-c5d0-7c33-8a7c-26e5c4f6502d` reported fresh QA child
+  `01a143bd-5e7c-71a2-9948-6ebbfcda98e4` (`fork_turns: none`, model `gpt-6-sol`)
+  at feature HEAD `8f1b421`. The child's return, supplied verbatim by the
+  maintainer, starts with its Test marker and credits partial S296/S301 only.
+  The dispatch-prompt attachment was encrypted and the MacBook-local native
+  traces were not available, so the prompt wording and the `fork_turns` call
+  are parent testimony ([operator record](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155405547)).
+  This is not a desktop pass, a five-stage chain or continuation evidence. The
+  desktop task made no commit, push, GitHub post or merge, and no desktop
+  Developer or Review leg was observed, so none is credited.
 
 Limits, as stated by QA:
 
@@ -113,8 +130,7 @@ chain starting from Product, an unavailable-dispatch stop, design/spec routes,
 low-only and interrupted controls, stale-label and malformed-latest-evidence
 negatives, decision/override/merge-confirmation stops (never merging) and
 precedence/budget negatives;
-completion of the Claude route (Developer, fresh Reviewer) with live hook,
-native-hook and CI behavior and repeated adoption with legacy backup; and
+the remaining Claude route variants (live hook, native-hook and CI behavior and repeated adoption with legacy backup); and
 second-machine shared-project transfer, workflow revision update and
 committed-artifact inspection.
 

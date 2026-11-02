@@ -979,8 +979,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Decision / scope:** implements F45–F54 using the completed `v0.4.0`
   workflow meaning. Records the [Architect planning decision](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6144735967)
   without redesigning roles, evidence or adoption semantics. This checkout
-  descends from `v0.4.0`; release evidence still requires real Claude, Codex
-  CLI/desktop and second-machine dry runs, not a structural installation claim.
+  descends from `v0.4.0`; a structural installation claim is not runtime
+  evidence. (As first written this required real Claude, Codex CLI/desktop and
+  second-machine dry runs for release; superseded 2026-11-02, see the A39
+  amendment below.)
 - **Canonical owners:** the Workflow policy Module owns `policy/WORKFLOW.md`,
   extracted from current WORKFLOW.md without semantic edits. `skills/<name>/`
   remains the sole skill-content owner, including role-contracts/ORCHESTRATOR
@@ -1153,8 +1155,36 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   Codex mappings; no speculative CLI/desktop/plugin Module or dispatch framework.
 - **Revisit when:** observed supported-runtime discovery/loading failures,
   changed Codex hook capabilities, or actual drift/ownership failures require a
-  new contract. Structural checks supplement the F52/F53 human dry runs; they
-  cannot certify practical runtime behavior.
+  new contract. Structural checks supplement the live runtime observations
+  (F52/F53); they cannot certify practical runtime behavior. (The original text
+  made those observations a release gate; superseded 2026-11-02, see below.)
+
+#### A39 amendment — release-evidence boundary after #455-D4 (Architect, 2026-11-02, #623)
+
+Corrects stale A39 text; adds no behavior and changes no Interface, Seam or
+adoption semantics. Original decision text above is kept; this amendment wins
+where they differ.
+
+- **Boundary (supersedes "release evidence still requires real ... dry runs"
+  and "supplement the F52/F53 human dry runs").** Per maintainer decision
+  [#455-D4](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155086172),
+  the unobserved live variants (Codex CLI and desktop, Claude Code, second
+  machine) are not a #455 pre-release gate. They are owned by QA in
+  [#503](https://github.com/TiesL/spec-driven-guardrails/issues/503) and are
+  collected during actual work. The deferral preserves the five-role contract,
+  the real merge confirmation and the rule that an observed failure remains a
+  defect to assess; D4 does not waive `cli-continuation-stopped-at-route-boundary`.
+- **Evidence classes stay distinct.** Structural checks (filesystem fixtures,
+  CI) establish wiring, never practical runtime behavior. A source-backed
+  dispatch observation (for example a recorded parent/child session with
+  `fork_turns: none` and the child's own return) earns bounded credit for the
+  variant actually observed, never a scenario pass. A claim with no source
+  stays `unobserved`. Hypothetical route answers show guidance understanding,
+  not dispatch. [docs/codex-dry-runs.md](docs/codex-dry-runs.md) is the record;
+  it must not describe a leg as pending once the Pipeline log shows it ran.
+- **Reference scope.** Only #455 scenario references cite A39 (S294-S304 block
+  and its section heading); references to the low-finding decision (#488) stay
+  A38.
 
 ### A41 — Run rules get stable IDs, a condensed core in two self-standing parts and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
 
@@ -2371,6 +2401,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
     deletion mechanics without changing status, exits, provenance schema or
     documented user recovery behavior. It retains validation evidence for
     every old entry that could still require validation.
+
 ### A48 — The emit command takes a role; the dispatch hook checks its role and stage (#599; amends A26 and A41)
 
 - **Why:** on #595 Product was given `--stage Planning`. The emitter
