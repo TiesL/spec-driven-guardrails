@@ -6,7 +6,7 @@ fx="$TEST_REPO_ROOT/test/fixtures/decision-table-415.py"
 # Red-before-green proof: the pre-change row (issue #415 decision 1) must fail the S288 checks.
 # Amended by #499 (AC14, A41): the row is the OR40 item; the old text is put
 # into that item. The clause-local breaks are retired (their meaning is
-# checked by the differential run's OR40 calibration mutant, S315).
+# checked by the differential run's OR43 calibration mutant, S315).
 old_row='- OR40 File a low-severity finding as an issue by default. A narrow text-only fix may go in the PR only during a round already required by a medium or high finding, never in a low-only round. An out-of-scope finding keeps its recorded `Disposition` and scope-expansion rules.'
 old_doc="$(OLD_ROW="$old_row" python3 -I - "$TEST_REPO_ROOT/skills/role-contracts/ORCHESTRATOR.md" <<'PY'
 import os, re, sys

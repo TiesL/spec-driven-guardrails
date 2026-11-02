@@ -102,7 +102,7 @@ if scenario == "s277":
 elif scenario == "s288":
     # #488 AC1; replaced by #499 AC14 (A41): the low-finding row is the item
     # OR40 in part 2; the table-cell locator and clause-local oracles are
-    # retired, their behaviour moved to OB40-OB44 and the OR40 calibration
+    # retired, their behaviour moved to OB40-OB44 and the OR43 calibration
     # mutant. Kept deterministic: (a) tier, part, one physical line; (b) the
     # pointer; (h) old text gone; (i) Disposition and scope-expansion; no
     # restated T1-T6 limits.
