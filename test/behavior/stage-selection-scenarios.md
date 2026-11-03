@@ -81,7 +81,7 @@ step, or escalate/retain required work. A panel cannot supply Planning's marker.
 
 ### S537 — never-skippable roles and scrutiny (AC1/AC3)
 
-Positive: retain orchestrator, fresh Reviewer and another role seeing the change.
+Positive: unconditionally retain orchestrator, fresh Reviewer, Discovery and another role seeing the change. A directive hedged with "where practical", "ordinarily", "may" or "unless" is insufficient.
 Change one fact at a time: omit orchestrator; reuse author as Reviewer; remove
 all other-role scrutiny; propose skip=Review. Each case retains/escalates the
 protected work with no panel-derived posting. Review is not a selectable stage.
@@ -181,6 +181,7 @@ stage skip or doc-only label: reject reduction. Selection changes presence only.
 
 Positive: catalogue rows carry a human-role identity (`maintainer` or the project's
 human decision-maker), recoverable source link, scopes and exact conditions;
+the test-only/doc-only conditions are limited to batches of epic TiesL/spec-driven-guardrails#608 only, with per-item human authority required outside that scope. Executable tests/scripts and any executable production code still require Implementation. Abbreviated requires a per-item human grant in their own words or durable grant words, never a self-link. Omit #609 or label every catalogue mention as an earlier record that predates the executable-test rule;
 the person named in `decided-by` is supplied at posting time, as pinned by the
 pipeline-override fixtures; only evidence whose applicability is verified may support
 posting. Remove only the human source, or make conditions unverifiable: obtain

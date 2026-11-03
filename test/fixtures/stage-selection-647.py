@@ -1,7 +1,8 @@
 """#647 mechanical subset only; no authorization or runtime-obedience claim.
 Source-data seam: canonical Running section. Real-copy mutation controls run
-only after the corresponding assertion passes; missing implementation is RED,
-never replaced with synthetic rules to claim a production pass.
+after passing source assertions; permissive-rewrite controls also run on RED
+source where applicable. Missing implementation stays RED, never replaced with
+synthetic rules to claim a production pass.
 """
 import hashlib
 import os
@@ -134,6 +135,73 @@ def norm(text):
 def pin(text, pattern):
     return re.search(pattern.lower(), norm(text)) is not None
 
+def controlled_oracle(text, predicate, label, mutants):
+    """Same predicate checks production and every named weakening.
+
+    Controls still run when production is RED; that does not claim a positive
+    production witness. Each transform must change the actual source copy.
+    """
+    check(predicate(text), label)
+    for name, mutate in mutants:
+        weakened = mutate(text)
+        if weakened == text:
+            print('PENDING: ' + label + '/' + name + ' needs implementation witness')
+            continue
+        detected = not predicate(weakened)
+        check(detected, label + '/' + name + ' rejected')
+        if detected:
+            print('CONTROL: ' + label + '/' + name + ' rejected')
+
+
+def protected_work(text):
+    # Anchor the entire directive, including its prefix/suffix: positive
+    # keywords alone survive "Where practical, preserve ..." (Review M7).
+    return bool(re.search(
+        r'(?:^|[.!?] )preserve the orchestrator, review by a fresh reviewer, '
+        r'discovery and at least one role other than the author seeing the change\.', norm(text)))
+
+
+def late_record(text):
+    return pin(text, r'a late record remains late; seek specific human resolution, '
+                     r'never claim retroactive compliance\.')
+
+
+def class_scope(value):
+    return (pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
+            and pin(value, r'outside.{0,80}(?:scope|epic|batches).{0,100}requires? '
+                           r'(?:explicit )?per-item human authority'))
+
+
+def executable_conditions(value):
+    # Existing conditions invoke the unconditional protected-work checks;
+    # explicit equivalent wording is also accepted. Both tests and production
+    # code must be represented in this cell, not merely elsewhere in the file.
+    return (pin(value, r'no executable production code.{0,160}protected-work checks come first, '
+                       r'including executable tests/scripts and ac-dependent implementation')
+            or pin(value, r'executable tests(?:/scripts)? and (?:any )?executable production code '
+                          r'(?:still )?require implementation'))
+
+
+def grant_source(value):
+    explicit = pin(value, r'per-item human grant in (?:their|the human.s) own words is required')
+    durable = bool(re.search(r'\[[^]]*(?:grant|human words)[^]]*\]\(https://[^)]+\)', value, re.I))
+    self_link = bool(re.search(r'\]\((?:SKILL\.md)?#|\]\(skills/role-contracts/SKILL\.md', value, re.I))
+    return (explicit or durable) and not self_link
+
+
+def historical_example(text):
+    section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    # Every paragraph/row mentioning the old record must label its limitation.
+    units = re.split(r'\n\s*\n|(?=^\|)', section, flags=re.M)
+    return all(pin(unit, r'earlier record.{0,100}predates the executable-test rule')
+               for unit in units if '#609' in unit)
+
+
+def installed_skill_reference(text):
+    return ('skills/role-contracts/SKILL.md' not in text
+            and pin(text, r'installed role-contracts skill')
+            and 'stage-selection panel' in text.lower())
+
 def source_checks(root, ident, tmp):
     # An unmodified sandbox copy is the positive control, never a hand-written
     # implementation of decisions. Each mutant changes only this asserted text.
@@ -141,6 +209,16 @@ def source_checks(root, ident, tmp):
     target.mkdir(parents=True)
     shutil.copy2(root / 'skills/role-contracts/SKILL.md', target / 'SKILL.md')
     text = running(tmp / 'copy')
+    if ident == 537:
+        controlled_oracle(text, protected_work, 'S537/unconditional protected work', [
+            ('M7-' + hedge, lambda value, hedge=hedge: value.replace(
+                'Preserve the orchestrator', hedge + ', preserve the orchestrator', 1))
+            for hedge in ['Where practical', 'Ordinarily', 'May', 'Unless authorized']])
+    if ident == 545:
+        controlled_oracle(text, late_record, 'S545/late never retroactively compliant', [
+            ('M10', lambda value: re.sub(
+                r'A late record remains late;.*?retroactive compliance\.',
+                'A late record may be accepted when the panel agrees.', value, flags=re.S))])
     for label, pattern in RULES[ident]:
         diagnostic = f'S{ident}/{label}'
         if not pin(text, pattern):
@@ -248,8 +326,8 @@ def catalogue(text):
     fields = {'human': r'human|identity|decided.by',
               'source link': r'source|words', 'scope': r'scope|skip',
               'conditions': r'condition|eligib'}
-    headers = [line for line in rows if all(re.search(pattern, line, re.I)
-               for pattern in fields.values())]
+    headers = [line for line in rows if re.match(r'^\|\s*Class\s*\|', line, re.I)
+               and all(re.search(pattern, line, re.I) for pattern in fields.values())]
     check(len(headers) == 1, 'S548/catalogue distinct human/source/scope/conditions header')
     if len(headers) != 1:
         return
@@ -271,6 +349,9 @@ def catalogue(text):
         mutated[indices[label]] = ''
         check(not any(re.search(fields[label], cell, re.I) for cell in mutated),
               'S548/catalogue header deletion ' + label)
+    controlled_oracle(text, historical_example, 'S548/#609 historical status', [
+        ('eligible-example', lambda value: value +
+            '\n\nTiesL/spec-driven-guardrails#609 is an eligible example record.')])
     for name in ['Abbreviated', 'test-only']:
         selected = [line for line in rows if name.lower() in line.lower()]
         check(len(selected) == 1, 'S548/catalogue row ' + name)
@@ -289,6 +370,22 @@ def catalogue(text):
                       'source link': lambda value: bool(re.search(r'\[[^]]+\]\([^)]*\)', value)),
                       'scope': lambda value: 'skip=' in value,
                       'conditions': lambda value: bool(value.strip(' `-'))}
+        if name == 'Abbreviated':
+            # A policy self-link is guidance, not a per-item human grant.
+            controlled_oracle(values[indices['source link']], grant_source,
+                              'S548/Abbreviated human grant source', [
+                ('self-link', lambda value: value + ' [Standing paragraph above](SKILL.md#running-the-pipeline)')])
+            predicates['source link'] = grant_source
+        else:
+            conditions = values[indices['conditions']]
+            controlled_oracle(conditions, class_scope, 'S548/#608 batch scope and outside authority', [
+                ('M8', lambda value: 'mostly documentation or tests'),
+                ('scope-deleted', lambda value: re.sub(r'(?i)(?:only|limited to).*?#608', '', value)),
+                ('authority-deleted', lambda value: re.sub(r'(?i)per-item human authority', '', value))])
+            controlled_oracle(conditions, executable_conditions, 'S548/executable work requires Implementation', [
+                ('M8', lambda value: 'mostly documentation or tests'),
+                ('executable-tests-deleted', lambda value: re.sub(r'(?i)executable tests(?:/scripts)?', '', value)),
+                ('production-code-deleted', lambda value: re.sub(r'(?i)executable production code', '', value))])
         for label, predicate in predicates.items():
             value = values[indices[label]]
             check(predicate(value), 'S548/catalogue ' + name + '/' + label)
@@ -307,10 +404,13 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
     source_checks(ROOT, ident, tmp)
     if ident == 534:
         for path, needles in {
-            'policy/WORKFLOW.md': ['- **Abbreviated workflow**', 'skills/role-contracts/SKILL.md', 'Stage-selection panel', 'pipeline-override.sh'],
+            'policy/WORKFLOW.md': ['- **Abbreviated workflow**', 'role-contracts', 'Stage-selection panel', 'pipeline-override.sh'],
             'README.md': ['skills/role-contracts/SKILL.md', 'Stage-selection panel'],
         }.items():
             reference_control(ROOT / path, needles)
+        policy = (ROOT / 'policy/WORKFLOW.md').read_text()
+        controlled_oracle(policy, installed_skill_reference, 'S534/installed skill policy pointer', [
+            ('repo-relative-link', lambda value: value + '\n[Running](skills/role-contracts/SKILL.md#running-the-pipeline)')])
         projection_controls(tmp)
     if ident == 544:
         cli(tmp)
