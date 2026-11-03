@@ -13,6 +13,8 @@ point.
 
 ## Unreleased
 
+## v0.5.1 — Many low severity review findings resolved. See CHANGELOG.md for the improvements made (2026-11-03)
+
 - **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is
   now checked as a whole string: 1 to 999999 seconds. A 7+ digit value (accepted before) and a
   multi-line value (accepted before when any one line was a positive integer) are blocked with
