@@ -35,14 +35,14 @@ point.
   refusal for a blank `decided-by` or `reason` now reads "only white space, NBSP, Unicode spaces,
   listed zero-width characters or bidi marks"; the set of values refused is unchanged. Adopter
   action: none.
-- **Fix #610/#627: failed round captures warn or skip instead of reading as empty.**
-  `review-rounds.sh` (warns, prints no count) and
-  `skills/pre-merge-review/finding-carryforward-gate.sh` (skips) now take the exit status of the
+- **Fix #610/#627: a round capture cut off before its status warns or skips, not reads as
+  empty.** `review-rounds.sh` (warns, prints no count) and
+  `skills/pre-merge-review/finding-carryforward-gate.sh` (skips) now read the exit status of the
   `gh api` capture and of the round reader through a completion sentinel; a capture that ends
-  without it is no longer counted as zero rounds or an empty result. In `lib/review-rounds.sh` a
-  done marker on an indented (four spaces or tab) line no longer counts as a round.
-  `review-rounds.sh` usage says the repository comes from the working directory. Adopter action:
-  none.
+  without it is no longer counted as zero rounds. A failed `gh` and a genuinely empty result
+  behave as before. In `lib/review-rounds.sh` a done marker on an indented (four spaces or tab)
+  line no longer counts as a round. `review-rounds.sh` usage says the repository comes from the
+  working directory. Adopter action: none.
 - **Fix #614/#631: `adapters/codex/permission-baseline.md` states its mark rule.** Each snippet
   key needs its own mark, or a table header whose comment says it covers its nested keys; such a
   header uses `[A]`, never `[V]`. Wording only here; this repo's S380 test enforces it. Adopter
