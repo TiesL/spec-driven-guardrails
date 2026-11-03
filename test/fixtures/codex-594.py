@@ -19,7 +19,7 @@ ROOT = Path(sys.argv[1]).resolve()
 SCENARIO = int(sys.argv[2])
 TMP = Path(os.environ['SANDBOX']).resolve()
 FILES = ('hooks/git-guardrails', 'hooks/read-command.py', 'hooks/rules.sh',
-         'lib/markdown.sh', 'lib/changes.sh', 'lib/model-record.sh',
+         'lib/markdown.sh', 'lib/changes.sh', 'lib/model-record.sh', 'lib/model-record-epic.py',
          'skills/pre-merge-review/model-record-gate.sh')
 OLD_REV = '1' * 40
 NEW_REV = '2' * 40
@@ -113,7 +113,7 @@ def list_files():
     require(len(candidates) == 1, 'multiple candidate guard bundle lists')
     path, names = candidates[0]
     require(len(names) == len(set(names)) and set(names) == set(FILES),
-            f'bundle list must contain exactly the seven accepted paths: {names}')
+            f'bundle list must contain exactly the eight accepted paths: {names}')
     return names
 
 

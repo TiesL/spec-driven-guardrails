@@ -7922,11 +7922,11 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 
 Integration seams: explicit adoption and read-only status, installed hook stdin JSON, list-only guard execution and baseline documentation. Each numbered scenario has its own runnable case. Live AC2, AC8 and the live portion of AC3 remain a separate TiesL-run observation follow-up; no offline test claims protection or activation.
 
-### S397 — Seven-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
+### S397 — Eight-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
 **Covers:** F8, F47
 - Given: a fresh project and an isolated Codex home.
 - When: explicit Codex --hooks adoption runs twice.
-- Then: a real .codex/sdg-guard contains exactly the seven accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
+- Then: a real .codex/sdg-guard contains exactly the eight accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
 - Falsifiers: a missing or extra file, clone path, changed bytes or modes, incomplete manifest, source-target command or non-idempotent install.
 
 ### S398 — Default adoption creates no guard bundle (#594 AC5)
@@ -8016,7 +8016,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 
 ### S406 — The hand-kept list alone suffices for source guard parity (#594 AC9)
 **Covers:** F8, F47
-- Given: the seven-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
+- Given: the eight-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
 - When: a bundle built from that list only runs from another directory with a minimal tool PATH.
 - Then: plain and same-repository flagged missing-review, CI, ancestry, role-play and eligible verdicts match source stdout, stderr and exit exactly; unrelated commands remain outside merge-only scope.
 - Falsifiers: extra listed files, omitted files, an untested fail-open fixture or any parity difference.
@@ -8046,12 +8046,12 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F51, F57
 - Given: the baseline document before positive live protection evidence.
 - When: its bundle warning, refresh directions and live-result conditions are inspected.
-- Then: it names .codex/sdg-guard and all seven files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
+- Then: it names .codex/sdg-guard and all eight files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
 - Falsifiers: a missing bundle dependency or limit, an asserted live guarantee, premature default change or undocumented fallback.
 
 ### S411 — Interrupted bundle refresh preserves policy and permits explicit recovery (#594 AC5, AC6)
 **Covers:** F47, F51
-- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
+- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all eight bundle files at a new source revision.
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
 - Native-refusal checks (#621): repeat with ENOSYS and EACCES at exchange; require unchanged old active contents, verified new staging and ready recovery record, read-only stale status, and successful explicit retry; print platform, paths and results (S519).
@@ -8104,7 +8104,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
 - When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
-- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector code stays unchanged against that baseline; comment-only and blank-line differences are ignored (scratch controls: a changed or inserted code line still fails, a comment or blank-line-only change passes). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The collector code stays unchanged against that baseline, and every merge-base code line of the gate survives (the gate may gain code, as #651 A52 did, but no #599-era code line may be deleted or edited except the closed list of lines the epic path replaced); comment-only and blank-line differences are ignored (scratch controls: a changed or inserted collector line, and a changed or deleted gate line, still fail; an added gate line and a comment or blank-line-only change pass). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)

@@ -622,6 +622,7 @@ def scenario(n, t):
         a = world()
         a['issues/655'] = issue(655, a.pop('issues/608')['body'])
         a['issues/655/comments'] = a.pop('issues/608/comments')
+        a['issues/655/timeline'] = a.pop('issues/608/timeline')
         a['pulls/648']['body'] = 'Closes #655\nCloses #651\nCloses #647'
         a['pulls/648']['head']['ref'] = 'release/655-bundle'
         a['issues/651/comments'] = []; a['issues/647/comments'] = comments(skip('skip=Test'))
@@ -791,9 +792,14 @@ exec "$EPIC_REAL_AWK" "$@"
         for key in ('issues/608', 'issues/609', 'pulls/1609', 'pulls/648'):
             changes = ('updated_at', 'body', 'state') + (('base', 'head', 'merged_at') if key.startswith('pulls/') else ())
             for change in changes:
-                a = world(); a['_fault'] = {'key': key, 'after': 1 if key == 'issues/609' else 2,
-                                           'mode': 'changed', 'change': change}
+                # A52: every participating detail is read once (cached) and re-read once before
+                # publishing, so the changed object must appear from the second read on.
+                a = world(); a['_fault'] = {'key': key, 'after': 2, 'mode': 'changed', 'change': change}
                 t.run(a, 'unchecked', label='snapshot changed ' + key + '/' + change)
+        # Control: a change visible from the first read is a genuinely open child, not a
+        # snapshot change, so the gate blocks on it (the recheck cannot see a difference).
+        a = world(); a['_fault'] = {'key': 'issues/609', 'after': 1, 'mode': 'changed', 'change': 'state'}
+        t.run(a, 'block', ('#609',), 'control: child open from the first read blocks')
     elif n == 574:
         d['issues/609/comments'] = []
         d['_fault'] = {'key': 'pulls/1610/reviews', 'status': 404}
