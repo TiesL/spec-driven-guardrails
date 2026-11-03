@@ -24,7 +24,7 @@ This project is developed from multiple computers. Follow this workflow in every
 - Commit logical steps on the feature branch.
 - Push regularly to `origin/<branch>` — never to `main`. This also happens automatically: a `SessionEnd` hook pushes the current branch when a session ends, with a guard that skips this when `main` happens to be checked out (extra safety net).
 - Commit messages carry no "Co-Authored-By" trailer — enforced via `attribution.commit: ""` in `settings/session-hooks.json`, not dependent on whether the executing session remembers to do so.
-- **Abbreviated workflow** and class waivers: read the canonical [Running the pipeline](skills/role-contracts/SKILL.md#running-the-pipeline), including [Stage-selection panel](skills/role-contracts/SKILL.md#stage-selection-panel) and Standing human class decisions, before selecting stages or using `pipeline-override.sh`.
+- **Abbreviated workflow** and class waivers: read Running the pipeline in the installed `role-contracts` skill, including Stage-selection panel and Standing human class decisions, before selecting stages or using `pipeline-override.sh`.
 
 ## Wrapping up
 

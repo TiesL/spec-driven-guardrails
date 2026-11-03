@@ -158,15 +158,13 @@ The panel record is not the human source. Do not invent words or a third class.
 
 | Class | Human | Source link | Authorized scopes | Exact conditions |
 | --- | --- | --- | --- | --- |
-| Abbreviated | maintainer | [Standing paragraph above](SKILL.md#running-the-pipeline) | `skip=Planning`, `skip=Test` together | Only the maintainer grants the named track, in their own words, used unchanged as reason. Discovery, Implementation and fresh Review run; all panel protections, eligibility and advance-record rules apply. |
-| test-only/doc-only | maintainer | [TiesL/spec-driven-guardrails#608 standing decision](https://github.com/TiesL/spec-driven-guardrails/issues/608), 2026-11-02 orchestrator handoff; [TiesL/spec-driven-guardrails#609 example record](https://github.com/TiesL/spec-driven-guardrails/issues/609) | `skip=Implementation` | Item changes only documentation or only tests, no executable production code; protected-work checks come first, including executable tests/scripts and AC-dependent Implementation. |
+| Abbreviated | maintainer | Per-item human grant in their own words is required; link its durable words before posting. | `skip=Planning`, `skip=Test` together | Only the maintainer grants the named track, in their own words, used unchanged as reason. Discovery, Implementation and fresh Review run; all panel protections, eligibility and advance-record rules apply. |
+| test-only/doc-only | maintainer | [TiesL/spec-driven-guardrails#608 standing decision](https://github.com/TiesL/spec-driven-guardrails/issues/608), 2026-11-02 orchestrator handoff | `skip=Implementation` | Standing decision applies only to batches of epic TiesL/spec-driven-guardrails#608; outside that scope requires per-item human authority. Executable tests/scripts and any executable production code still require Implementation. Protected-work checks come first. |
 
 The verified TiesL/spec-driven-guardrails#608 standing words are: "Test-only and doc-only batches may skip the
-Implementation stage: yes". The TiesL/spec-driven-guardrails#609 example's per-item reason, "Skipping implementation
-for B1 is approved", does not replace those standing words for another item.
-The Abbreviated paragraph above and its existing WORKFLOW rule are the supplied
-standing evidence for that track; use the maintainer's own grant words, never a policy paraphrase
-as reason. If recoverable words or applicability cannot be verified, do not post.
+Implementation stage: yes".
+For Abbreviated, obtain the maintainer's per-item grant in their own words; use
+those words, never a policy paraphrase, as reason. If recoverable words or applicability cannot be verified, do not post.
 OR34 remains a frozen compatibility synopsis; maintain class rules only here.
 
 The `role:<name>` labels are a hand-maintained traceability record (A5): put the label of the
