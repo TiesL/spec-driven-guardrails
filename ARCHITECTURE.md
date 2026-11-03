@@ -3013,8 +3013,11 @@ constant number of shell subprocesses per phase.
   Never printed in this path: `no record found for stage` for Discovery,
   Planning, Test or Implementation in any context; a child-context `waived
   stage absence` line; any unprefixed `model-record:` line. Release Review
-  keeps its legacy diagnostics (missing record, missing floor-basis,
-  release-wide `skip=Review` waiver), release-attributed. Kept diagnostics:
+  keeps its legacy floor-basis and release-wide `skip=Review` waiver
+  diagnostics, release-attributed. A missing release Review record is
+  reported only as the attributed line `role-played: epic #E release PR #P
+  stages missing: Review` (panel 4 Q3 accepted); no `no record found` line
+  appears anywhere in the inheritance path. Kept diagnostics:
   record near-miss, latest-unreadable, override near-miss, and a child
   single-session waiver note. Order on block: membership findings sorted by
   child, then PR, then detail; then child `role-played:` lines in ascending
@@ -3109,7 +3112,18 @@ constant number of shell subprocesses per phase.
   help if needed to describe inherited child reads, pre-merge-review skill
   documentation, CHANGES.md and CHANGELOG.md (one #651 entry after #647).
   `merge-preflight.sh`, shared record/Markdown libs, epic-auto-close.sh,
-  ORCHESTRATOR.md and generated adapters need no edits. Architect effort:
+  ORCHESTRATOR.md and generated adapters need no edits. Round-2 amendment:
+  the new `lib/model-record-epic.py` is part of the Codex guard bundle
+  closure, because the installed guard copy of the gate calls it; without it
+  that copy reports `role-play-unchecked` instead of blocking (tests S408 and
+  S368 fail). The helper therefore joins the bundle list: Developer adds
+  `lib/model-record-epic.py` to `adapters/codex/guard-bundle.list`
+  (production), and QA adds it to the `FILES` tuple in
+  `test/fixtures/codex-594.py` (test; the "seven accepted paths" check
+  becomes eight). This supersedes the claim that adapters need no edits. S415's AC7
+  byte-compare of the gate against the merge-base is intentionally
+  superseded for #651, because the gate changes on purpose; QA retires or
+  re-scopes that pin. Architect effort:
   small design; traversal/fixture implementation effort belongs to Dev/QA.
   AC consistency: none of AC1–AC14 is contradicted or narrowed; AC5 specifies
   the no-PR exception to AC1, AC6/AC13 retain release-wide override precedence
