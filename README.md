@@ -12,6 +12,7 @@ A tag is a human reference point: an adopted project follows `main` or pins a ta
 
 | Tag | Date | Theme |
 |---|---|---|
+| `v0.5.1` | 2026-11-03 | Many low severity review findings resolved. See CHANGELOG.md for the improvements made |
 | `v0.5.0` | 2026-10-26 | Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages |
 | `v0.4.0` | 2026-10-13 | Process improvements for better QA. The Reviewer is fresh for every Review round, a finding-class loop-back rule applies, the merge guard is stricter, and macOS CI runs the full suite. |
 | `v0.3.0` | 2026-10-04 | Autonomous multi-agent pipeline. Opted-in sessions apply the roles automatically, and the Reviewer must be at least as capable as the Implementation model. |
