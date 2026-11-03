@@ -580,7 +580,11 @@ the shared parser warns if it has no `Applies if`.
   fork, `--stage` marker command, model, Reviewer PR, head SHA and
   carry-forward gate), quoting that rule's `ORCHESTRATOR.md` line; it fails
   open.
-- **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
+  #647 adds the canonical [Stage-selection panel](skills/role-contracts/SKILL.md#stage-selection-panel)
+  and Standing human class decisions under Running the pipeline. Read them before
+  selecting stages or posting a waiver; policy and README reference that source.
+  Existing opt-in applies; no gate/core change or new adoption question.
+- **Reaches session:** always-loaded: WORKFLOW.md, session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
 ## release-branch-workflow

@@ -299,7 +299,7 @@ agent roles rather than one session doing everything: **Product** (are we buildi
 thing?), **Architect** (are we building it the right way?), **QA** (how will we know it
 works?), **Fullstack Developer** (builds it, tests included), and **Reviewer** (independent
 final gate). Each role gets a quotable contract — responsibilities, what it may write, and
-Reviewer's security triggers — in the `role-contracts` skill (`skills/role-contracts/SKILL.md`).
+Reviewer's security triggers — in the installed `role-contracts` skill.
 When roles disagree, the conflict escalates to a human instead of being settled by whichever role
 spoke last.
 
@@ -445,7 +445,7 @@ dogfooding the mechanism it specifies.
 | `check-no-dutch.sh`, `check-no-quote-break.sh`, `check-no-sigpipe-race.sh`, `check-scenario-file-sync.sh` | Hygiene checks run from `check`, each guarding against a specific defect that happened here once. |
 | `find-shared-vocabulary.sh`, `generate-prd-block` | Generators: shared-vocabulary candidates across adopted projects; the NFR block in `templates/PRD.md` from `nfr/`. |
 | `epic-auto-close.sh` | Closes an epic from CI once every issue naming it is closed. |
-| `pipeline-override.sh` | Posts the human's pipeline-override record on a work item's issue (OR34), e.g. the abbreviated workflow `--scope skip=Planning --scope skip=Test`. Run from the project's checkout as `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh`; see the `role-contracts` skill. |
+| `pipeline-override.sh` | Posts human waiver records (OR34). From the project checkout run `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh`; first read Running the pipeline in the installed `role-contracts` skill, including Stage-selection panel and Standing human class decisions. |
 | `compliance-evidence.sh`, `role-label-staleness.sh`, `classify-review-depth.sh` | The multi-agent evidence scripts described in [How this repo builds itself](#how-this-repo-builds-itself). |
 | `ARCHITECTURE.md`, `PRD.md`, `TEST-SCENARIOS.md`, `CONTEXT.md`, `WORKFLOW-ADOPTION.md`, `CHANGELOG.md` | This repo's own filled-in copies — it adopts the workflow it defines. |
 | `test/` | This repo's own test suite (`run.sh`, `lib.sh`, `cases/`, `fixtures/`). |
