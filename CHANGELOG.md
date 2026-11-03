@@ -15,8 +15,9 @@ point.
 
 - **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is
   now checked as a whole string: 1 to 999999 seconds. A 7+ digit value (accepted before) and a
-  multi-line value (its first line passed before) are blocked with "positive integer of at most
-  six digits", before `check-commit` runs; a zero, negative or non-numeric value stays refused.
+  multi-line value (accepted before when any one line was a positive integer) are blocked with
+  "positive integer of at most six digits", before `check-commit` runs; a zero, negative or
+  non-numeric value stays refused.
   A watchdog `sleep` that fails no longer counts as a timeout. Adopter action: none for the
   symlinked hook. A project with its own pre-existing `pre-commit` hook (`adopt.sh` leaves it
   alone, S51) does not get this change; it applies only where `check-commit` is present.
