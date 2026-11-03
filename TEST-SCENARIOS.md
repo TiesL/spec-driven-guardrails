@@ -8620,3 +8620,188 @@ and S380's #590 live-evidence boundary.
 - Given: `skills/role-contracts/ORCHESTRATOR.md` OR32 and `test/fixtures/orchestrator-core-pins.tsv`.
 - When: the OR32 item is read.
 - Then: it contains "Resolve absolute path once" and is one physical line. A scratch copy with the phrase deleted fails. Green now (the text is in the tree); the pin hash itself is guarded by S311, S317, S322 and S333, which stay red until the Developer regenerates the OR32 pin.
+
+## Epic child inheritance (#651; A52–A53)
+
+Offline CLI fixtures use the existing sandbox/adoption helpers and real jq at the PATH gh seam.
+The normalized #608 fixture is synthetic, not a claim of live historical evidence.
+
+### S549 — The normalized 19-child #608 fixture
+**Covers:** F64
+- Given: 7 implemented children, 10 Implementation-waived children and dispositions #617/#625, each with all four child skips.
+- When: the real gate reads complete child evidence, then #617 loses its evidence.
+- Then: complete coverage passes; removing #617 coverage blocks naming child #617 and Implementation. The historical shorthand 7+10+1 is superseded by the corrected 7+10+2 count; no child is dropped.
+
+### S550 — All records and verified PR sources
+**Covers:** F64
+- Given: two children with separate stage comments.
+- When: Discovery/Planning/Test/Implementation are supplied by child issue comments or verified closing PR description, comments and reviews.
+- Then: every source combination passes with no role-played or unchecked line. Quoted, fenced or inline-only child Test records block naming that child and Test; inline records retain near-miss context.
+
+### S551 — Every inherited stage waived on every child
+**Covers:** F64
+- Given: closed no-PR children with four live valid child skips.
+- When: the gate evaluates the epic.
+- Then: coverage passes without model-records or fabricated epic evidence.
+
+### S552 — Every child must cover every stage
+**Covers:** F64
+- Given: one fully covered child and one child missing a stage; the release itself has all four records.
+- When: each inherited stage is independently removed from each child.
+- Then: all eight counter-arms block naming the actual child and stage; release records and a quorum cannot hide it.
+
+### S553 — An epic ledger cannot forge evidence
+**Covers:** F64, F65
+- Given: ledger links and recorded claims without ok child records.
+- When: the gate reads the children.
+- Then: it blocks naming both children; ledger prose is never evidence.
+
+### S554 — Review belongs to the release PR
+**Covers:** F64
+- Given: child and epic Review records but no release Review.
+- When: the gate evaluates the release, then receives Review without floor-basis.
+- Then: missing release Review blocks; a release Review without basis retains the missing-floor-basis diagnostic.
+
+### S555 — No-PR dispositions require child skips
+**Covers:** F64
+- Given: a child with a completely read empty closing-PR candidate set.
+- When: four valid skips are replaced by disposition prose or even four records.
+- Then: skips pass; prose or records without the required child skips block naming the child.
+
+### S556 — Membership requires exactly one live Epic field
+**Covers:** F65
+- Given: a listed child with absent, conflicting, repeated, quoted or fenced Epic fields.
+- When: the gate reconciles membership.
+- Then: each malformed membership case blocks naming that child.
+
+### S557 — Work items and field sets must agree
+**Covers:** F65
+- Given: extra list/field members, duplicate or malformed checklist rows, a foreign reference, missing or repeated Work items sections.
+- When: the gate compares complete live sets.
+- Then: each case blocks naming the epic, never a vacuous or guessed pass.
+
+### S558 — Merged release PRs must close only members
+**Covers:** F65
+- Given: a release PR closing an unlisted issue, mixing a child with an unlisted issue, merely mentioning a child or using a foreign closing reference.
+- When: membership is cross-checked.
+- Then: each case blocks naming the offending PR.
+
+### S559 — Closed children and merged release PRs are required
+**Covers:** F65
+- Given: an open child, open/unmerged closing PR or a PR merged to another base.
+- When: the gate evaluates membership.
+- Then: each case blocks naming the child; a merged PR does not infer child closure.
+
+### S560 — All closing PRs must reconcile
+**Covers:** F65
+- Given: two PRs closing the same child.
+- When: both are merged into the release, then the timeline reveals a second PR with another base.
+- Then: the valid pair passes and the wrong-base pair blocks naming child and PR. Foreign timeline sources are ignored without fetching them; a same-repository mere mention is not a closing PR.
+
+### S561 — Late fields count and empty sets block
+**Covers:** F65
+- Given: late updated fields, CRLF and horizontal whitespace, uppercase X and star bullets, a later level-two section.
+- When: the gate reads current membership and separately an empty set.
+- Then: normalized late members pass; unrelated next-section rows are ignored; empty membership blocks naming the epic.
+
+### S562 — Waivers stay local and structurally valid
+**Covers:** F64, F66
+- Given: blank authority/reason, quoted/fenced/malformed/wrong-stage waivers, prose panel votes and a valid waiver on a different issue.
+- When: a child lacks Test and its PR closes another issue with a skip.
+- Then: invalid or other-child evidence never covers Test; an extraneous closing issue is a membership defect.
+
+### S563 — Standing classes receive ordinary validation
+**Covers:** F64
+- Given: Abbreviated Planning/Test skips and a test-only Implementation skip, with separate records for the other stages.
+- When: the gate reads the child comments.
+- Then: both valid standing-class shapes pass; no new evidence type or panel-authored authority is needed.
+
+### S564 — Single-session and one-text isolation
+**Covers:** F64, F66
+- Given: a child single-session alone, then four records in one body plus four stage skips.
+- When: the gate evaluates the child and then receives child single-session with those records.
+- Then: single-session alone supplies no missing inherited stages; stage skips do not waive one-text findings; single-session with complete records waives that finding only.
+
+### S565 — Ordinary and manual epic paths retain literal legacy bytes
+**Covers:** F66
+- Given: an ordinary PR and a release with a partial manual epic skip.
+- When: the gate runs against the same literal marker fixture.
+- Then: stdout exactly matches the fixed pre-change missing-stage and waiver lines including final LF, stderr is empty, and the manual skip selects the whole legacy path. Near-miss, closing-reference 404, each legacy fetch failure and release single-session outputs are also compared byte for byte to main merge base 626694237d1dc6dfe9b99d8838fba4c7f75f843f.
+
+### S566 — A skip on any closing issue is release-wide
+**Covers:** F66
+- Given: a release closing #608, #651 and #647, with skip=Test on #647 and both children missing Test.
+- When: the gate evaluates coverage, then one child becomes open.
+- Then: the release-wide skip covers Test for all children; membership still blocks the open child. The actual bundle uses Closes #655, Closes #651 and Closes #647 and must log its actual applicable waiver stages.
+
+### S567 — Only eligible release PRs inherit
+**Covers:** F65, F66
+- Given: same-repository release/608-inheritance targeting default branch trunk with Closes #608.
+- When: closing keyword case varies; non-release, foreign-head, wrong-target and no-Closes variants run.
+- Then: eligible default-branch and mixed-case forms inherit; other shapes retain legacy missing-stage behavior.
+
+### S568 — Later pages are read at every collection seam
+**Covers:** F66
+- Given: 100 noise objects before real issues, PRs, timeline events, comments or reviews.
+- When: the gate traverses explicit per_page=100 pages through page 2.
+- Then: complete fixtures pass and endpoint logs prove page 2 was read, including release comments/reviews.
+
+### S569 — Exact collection and response caps are unchecked
+**Covers:** F66
+- Given: 5000 issue objects, 1000 PRs/events/comments/reviews, 100 children an 8 MiB response, 1200 aggregate calls or 64 MiB aggregate responses.
+- When: each exact cap is reached independently.
+- Then: role-play-unchecked is emitted, never a checked pass or role-played block.
+
+### S570 — A delayed REST subprocess is bounded
+**Covers:** F66
+- Given: a timeline REST response delayed eleven seconds and an awk scan delayed 121 seconds after PR detail acquisition.
+- When: the gate runs with its production ten-second read deadline.
+- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The external 135-second test watchdog is a failure, never a passing timeout oracle.
+
+### S571 — Each REST endpoint fails open visibly
+**Covers:** F66
+- Given: injected HTTP 404 and 500 at repository, epic, issue list, release PR list, child timeline/detail/comments, closing PR detail/comments/reviews and release detail/comments/reviews.
+- When: the real gate traverses each independent fault.
+- Then: every fault returns unchecked without a stale blocking line, including 404 in new traversal.
+
+### S572 — Malformed and mistyped REST data cannot establish coverage
+**Covers:** F66
+- Given: broken JSON at collection/detail endpoints, object instead of array, numeric comment body or string issue number, a missing private helper or an unavailable Python interpreter.
+- When: the gate decodes the transport.
+- Then: it returns unchecked without a guessed membership or missing-stage block.
+
+### S573 — Details are rechecked before publishing
+**Covers:** F66
+- Given: epic, participating child, closing PR or release detail changes updated_at, body or state at recheck (child list snapshot followed by detail; second detail read for PRs and epic); PR variants also change base, head or merged_at while keeping updated_at unchanged.
+- When: the gate completes traversal and rechecks details.
+- Then: it discards the result and returns unchecked; a checked pass from the old snapshot fails.
+
+### S574 — A late failure discards buffered findings
+**Covers:** F66
+- Given: a child lacks all stages and a later child closing PR reviews request returns 404.
+- When: the traversal reaches the later failure.
+- Then: only unchecked can decide the result; no buffered child or dependent legacy role-played finding escapes.
+
+### S575 — Ledger bookkeeping is documented outside the core
+**Covers:** F65
+- Given: release-branch-workflow skill text.
+- When: content clauses are checked with clause-deletion mutation controls.
+- Then: normalization, late membership, child count, ledger as view, open-child refusal and unchecked cannot justify epic ledger complete: yes are explicit.
+
+### S576 — Gate guarantees and bounded traversal are documented
+**Covers:** F66
+- Given: pre-merge-review skill text.
+- When: content clauses and clause-deletion controls run.
+- Then: forgeable records/overrides, lack of authentication, 100-child/1200-call/120-second bounds and cap-to-unchecked behavior are explicit.
+
+### S577 — Release-wide skips and amendments are explicit
+**Covers:** F65, F66
+- Given: release-branch-workflow skill text and the settled bundle specification.
+- When: content clauses and deletion controls run.
+- Then: any closing-issue skip affects the whole release; A18 and membership amendments require maintainer acceptance; #647 precedes #651. New skill prose uses maintainer rather than a person name.
+
+### S578 — The real gate and merge hook expose actionable epic findings
+**Covers:** F64, F66
+- Given: a complete epic and the same fixture missing child #609 evidence; the merge hook block remedy.
+- When: the gate CLI and the real merge hook run, with the existing v2 review-marker input shape.
+- Then: positive coverage passes; removing child evidence blocks naming epic and child; hook advice names epic, child and pipeline-override. Independent output mutations reject unchecked-as-pass, missing diagnostics and leaked stale blocks.
