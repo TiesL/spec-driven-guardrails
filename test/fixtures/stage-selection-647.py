@@ -153,6 +153,19 @@ def controlled_oracle(text, predicate, label, mutants):
             print('CONTROL: ' + label + '/' + name + ' rejected')
 
 
+def rewrite_control(text, predicate, label, old, new):
+    """A reviewed rewrite must apply exactly once, independently of other arms."""
+    check(predicate(text), label + '/unmodified PASS')
+    count = text.count(old)
+    check(count == 1, label + '/exactly one replacement')
+    weakened = text.replace(old, new, 1)
+    check(weakened != text, label + '/mutation applied')
+    check(not predicate(weakened), label + '/rejected by source predicate')
+    if count == 1 and weakened != text and not predicate(weakened):
+        print('CONTROL: ' + label + ' unmodified PASS; rewrite rejected')
+    return weakened
+
+
 def protected_work(text):
     # Anchor the entire directive, including its prefix/suffix: positive
     # keywords alone survive "Where practical, preserve ..." (Review M7).
@@ -167,7 +180,8 @@ def late_record(text):
 
 
 def class_scope(value):
-    return (pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
+    return (not pin(value, r'\bnot only\b|\bor a unanimous panel\b')
+            and pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
             and pin(value, r'outside.{0,80}(?:scope|epic|batches).{0,100}requires? '
                            r'(?:explicit )?per-item human authority'))
 
@@ -186,7 +200,7 @@ def grant_source(value):
     explicit = pin(value, r'per-item human grant in (?:their|the human.s) own words is required')
     durable = bool(re.search(r'\[[^]]*(?:grant|human words)[^]]*\]\(https://[^)]+\)', value, re.I))
     self_link = bool(re.search(r'\]\((?:SKILL\.md)?#|\]\(skills/role-contracts/SKILL\.md', value, re.I))
-    return (explicit or durable) and not self_link
+    return (explicit or durable) and not self_link and not pin(value, r'\bunless\b')
 
 
 def historical_example(text):
@@ -198,9 +212,30 @@ def historical_example(text):
 
 
 def installed_skill_reference(text):
-    return ('skills/role-contracts/SKILL.md' not in text
-            and pin(text, r'installed role-contracts skill')
-            and 'stage-selection panel' in text.lower())
+    # Limit consultation/timing checks to the policy entry point. Other prose
+    # may discuss optional actions without weakening this directive.
+    bullets = re.findall(r'^- \*\*Abbreviated workflow\*\*[^\n]*(?:\n[ \t]+[^\n]+)*', text, re.M | re.I)
+    return (len(bullets) == 1
+            and 'skills/role-contracts/SKILL.md' not in text
+            and pin(bullets[0], r'installed role-contracts skill')
+            and pin(bullets[0], r'stage-selection panel')
+            and pin(bullets[0], r'read running the pipeline')
+            and pin(bullets[0], r'before selecting stages or using pipeline-override\.sh')
+            and not pin(bullets[0], r'\boptionally\b|\bafter using\b'))
+
+
+POST_TABLE_GRANT = ("For Abbreviated, obtain the maintainer's per-item grant in their own words; use "
+                    "those words, never a policy paraphrase, as reason.")
+
+
+def post_table_grant(text):
+    section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    # The row or earlier Abbreviated definition cannot satisfy this assertion.
+    lines = section.splitlines()
+    last_row = max((i for i, line in enumerate(lines) if line.startswith('|')), default=-1)
+    prose = ' '.join(' '.join(lines[last_row + 1:]).split())
+    return POST_TABLE_GRANT in prose
+
 
 def source_checks(root, ident, tmp):
     # An unmodified sandbox copy is the positive control, never a hand-written
@@ -274,6 +309,33 @@ def projection_controls(tmp):
               'S534/projection drift diagnostic ' + name + ': ' + result.stdout)
         target.write_bytes(original)
     print('CONTROL: S534 unmodified projections PASS; three single-output drift mutants rejected')
+    # N5/N6 change policy semantics, not projection consistency. Start afresh
+    # for each arm; the unchanged generator must propagate the actual mutation.
+    policy_path = copy / 'policy/WORKFLOW.md'
+    original_policy = policy_path.read_text()
+    outputs = ['WORKFLOW.md', 'adapters/codex/AGENTS.md', 'AGENTS.md']
+    for name, old, new in [
+            ('N5', 'read Running the pipeline', 'optionally skim Running the pipeline'),
+            ('N6', 'before selecting stages or using `pipeline-override.sh`',
+             'after using `pipeline-override.sh`')]:
+        for path in ['policy/WORKFLOW.md', *outputs]:
+            shutil.copy2(ROOT / path, copy / path)
+        before = {path: (copy / path).read_bytes() for path in outputs}
+        weakened = rewrite_control(original_policy, installed_skill_reference,
+                                   'S534/' + name, old, new)
+        policy_path.write_text(weakened)
+        generated = subprocess.run([str(ROOT / 'generate-workflow-adapters.sh'), str(copy)],
+                                   capture_output=True, text=True)
+        check(generated.returncode == 0, 'S534/' + name + '/regenerate: ' + generated.stdout + generated.stderr)
+        consistent = run()
+        check(consistent.returncode == 0, 'S534/' + name + '/consistent projections: ' + consistent.stdout)
+        for path in outputs:
+            projection = (copy / path).read_bytes()
+            check(projection != before[path] and new.encode() in projection,
+                  'S534/' + name + '/propagated to ' + path)
+            check(not installed_skill_reference(projection.decode()),
+                  'S534/' + name + '/policy predicate rejects ' + path)
+
 
 def cli(tmp):
     # Same narrow PIPELINE_OVERRIDE_GH Adapter as S376; no real gh/network.
@@ -322,6 +384,15 @@ def catalogue(text):
     # Inspect distinct cells, so a link mentioning conditions cannot fill an
     # empty eligibility field. No prose about evidence gaps is pinned.
     section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    # Find the real bytes of the whitespace-folded sentence for the rewrite;
+    # never substitute canonical words before checking the original source.
+    matches = re.findall(r'\s+'.join(map(re.escape, POST_TABLE_GRANT.split())), text)
+    check(len(matches) == 1, 'S548/N4/one post-table sentence')
+    original_grant = matches[0] if len(matches) == 1 else POST_TABLE_GRANT
+    rewrite_control(text, post_table_grant, 'S548/N4', original_grant,
+                    'For Abbreviated, the panel may apply the track without a per-item grant')
+    check(post_table_grant(text.replace(original_grant, POST_TABLE_GRANT.replace(' ', '\n'))),
+          'S548/post-table grant accepts whitespace reflow')
     rows = [line for line in section.splitlines() if line.startswith('|')]
     fields = {'human': r'human|identity|decided.by',
               'source link': r'source|words', 'scope': r'scope|skip',
@@ -349,6 +420,8 @@ def catalogue(text):
         mutated[indices[label]] = ''
         check(not any(re.search(fields[label], cell, re.I) for cell in mutated),
               'S548/catalogue header deletion ' + label)
+    check(grant_source('[human grant words](https://example.invalid/grant)'),
+          'S548/Abbreviated durable grant source remains supported')
     controlled_oracle(text, historical_example, 'S548/#609 historical status', [
         ('eligible-example', lambda value: value +
             '\n\nTiesL/spec-driven-guardrails#609 is an eligible example record.')])
@@ -375,6 +448,8 @@ def catalogue(text):
             controlled_oracle(values[indices['source link']], grant_source,
                               'S548/Abbreviated human grant source', [
                 ('self-link', lambda value: value + ' [Standing paragraph above](SKILL.md#running-the-pipeline)')])
+            rewrite_control(values[indices['source link']], grant_source, 'S548/N3',
+                            'is required', 'is required unless the panel is unanimous')
             predicates['source link'] = grant_source
         else:
             conditions = values[indices['conditions']]
@@ -382,6 +457,13 @@ def catalogue(text):
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('scope-deleted', lambda value: re.sub(r'(?i)(?:only|limited to).*?#608', '', value)),
                 ('authority-deleted', lambda value: re.sub(r'(?i)per-item human authority', '', value))])
+            check(class_scope(conditions.replace('applies only to', 'is limited to')),
+                  'S548/class scope accepts equivalent limited-to wording')
+            rewrite_control(conditions, class_scope, 'S548/N1',
+                            'applies only to batches', 'applies not only to batches')
+            rewrite_control(conditions, class_scope, 'S548/N2',
+                            'requires per-item human authority',
+                            'requires per-item human authority or a unanimous panel')
             controlled_oracle(conditions, executable_conditions, 'S548/executable work requires Implementation', [
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('executable-tests-deleted', lambda value: re.sub(r'(?i)executable tests(?:/scripts)?', '', value)),
@@ -420,6 +502,11 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
             mutant = pointer.sub('', row[0])
             check(not pointer.search(mutant), 'S534/README pointer mutant')
         policy = (ROOT / 'policy/WORKFLOW.md').read_text()
+        check(installed_skill_reference(policy + '\nOptionally consult unrelated guidance after using other tools.\n'),
+              'S534/consultation excludes unrelated prose')
+        check(installed_skill_reference(policy.replace('read Running the pipeline',
+                                                       'read   Running the pipeline')),
+              'S534/consultation accepts whitespace reflow')
         controlled_oracle(policy, installed_skill_reference, 'S534/installed skill policy pointer', [
             ('repo-relative-link', lambda value: value + '\n[Running](skills/role-contracts/SKILL.md#running-the-pipeline)')])
         projection_controls(tmp)
