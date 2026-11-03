@@ -405,9 +405,20 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
     if ident == 534:
         for path, needles in {
             'policy/WORKFLOW.md': ['- **Abbreviated workflow**', 'role-contracts', 'Stage-selection panel', 'pipeline-override.sh'],
-            'README.md': ['skills/role-contracts/SKILL.md', 'Stage-selection panel'],
         }.items():
             reference_control(ROOT / path, needles)
+        # README is a repo-root document: it may point at the canonical source by
+        # repo-relative path or by the installed skill name (both resolve for its
+        # reader); it must name Stage-selection panel and one of the two pointers.
+        readme = (ROOT / 'README.md').read_text()
+        for needle in ['Stage-selection panel']:
+            reference_control(ROOT / 'README.md', [needle])
+        pointer = re.compile(r'skills/role-contracts/SKILL\.md|installed `?role-contracts`? skill', re.I)
+        row = [l for l in readme.splitlines() if 'pipeline-override.sh' in l and l.startswith('|')]
+        check(bool(row) and bool(pointer.search(row[0])), 'S534/README canonical-source pointer in the pipeline-override.sh row')
+        if row:
+            mutant = pointer.sub('', row[0])
+            check(not pointer.search(mutant), 'S534/README pointer mutant')
         policy = (ROOT / 'policy/WORKFLOW.md').read_text()
         controlled_oracle(policy, installed_skill_reference, 'S534/installed skill policy pointer', [
             ('repo-relative-link', lambda value: value + '\n[Running](skills/role-contracts/SKILL.md#running-the-pipeline)')])

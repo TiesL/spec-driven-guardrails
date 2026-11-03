@@ -26,7 +26,10 @@ pin_abbrev() {
   f=policy/WORKFLOW.md
   line="$(grep -i 'abbreviated workflow' "$1/$f" 2>/dev/null)"
   [ -n "$line" ] || { echo "$f has no 'abbreviated workflow'"; return 1; }
-  for needle in skills/role-contracts/SKILL.md 'Stage-selection panel' pipeline-override.sh; do
+  # adopted projects have no repo-relative skills path (S534): the policy names the installed skill
+  grep -qF 'installed `role-contracts` skill' <<<"$line" \
+    || { echo "$f: the abbreviated-workflow reference lacks the installed role-contracts skill"; return 1; }
+  for needle in 'Stage-selection panel' pipeline-override.sh; do
     grep -qF "$needle" <<<"$line" || { echo "$f: the abbreviated-workflow reference lacks $needle"; return 1; }
   done
   f=skills/role-contracts/SKILL.md
@@ -111,10 +114,12 @@ mut_sed() { # <file> <sed-expr> <root>: sed -i on <root>/<file>
 
 arm abbrev-policy pin_abbrev "policy/WORKFLOW.md has no 'abbreviated workflow'" \
   mut_sed policy/WORKFLOW.md '/[Aa]bbreviated workflow/d'
-for needle in skills/role-contracts/SKILL.md 'Stage-selection panel' pipeline-override.sh; do
+for needle in 'Stage-selection panel' pipeline-override.sh; do
   arm "abbrev-reference-$needle" pin_abbrev "policy/WORKFLOW.md: the abbreviated-workflow reference lacks $needle" \
     mut_sed policy/WORKFLOW.md "/[Aa]bbreviated workflow/s|$needle|removed|g"
 done
+arm abbrev-reference-installed-skill pin_abbrev "policy/WORKFLOW.md: the abbreviated-workflow reference lacks the installed role-contracts skill" \
+  mut_sed policy/WORKFLOW.md '/[Aa]bbreviated workflow/s|installed `role-contracts` skill|skill|g'
 arm abbrev-skill pin_abbrev "skills/role-contracts/SKILL.md has no 'abbreviated workflow'" \
   mut_sed skills/role-contracts/SKILL.md '/[Aa]bbreviated workflow/d'
 arm abbrev-skiptest pin_abbrev "skills/role-contracts/SKILL.md: the abbreviated-workflow text lacks skip=Planning/skip=Test" \
