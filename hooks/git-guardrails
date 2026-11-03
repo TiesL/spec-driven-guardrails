@@ -591,9 +591,30 @@ check_role_play_guard() {
   fi
   findings="$(LC_ALL=C grep '^role-played: ' <<<"$output")"
   [ -n "$findings" ] || return 0
+  # Epic release findings (A52): keep only context naming the release PR or
+  # a child named in a role-played line, so a missing child stays visible.
+  local epic_block=0 named=' ' rest
+  while IFS= read -r line; do
+    case "$line" in
+      'role-played: epic #'*)
+        epic_block=1
+        rest="${line#role-played: epic #*[0-9] }"
+        case "$rest" in 'child #'*) rest="${rest#child #}"; named="$named${rest%% *} ";; esac;;
+    esac
+  done <<<"$findings"
   context=""
   while IFS= read -r line; do
-    case "$line" in 'model-record: '*) context="$context$line"$'\n';; esac
+    case "$line" in 'model-record: '*) :;; *) continue;; esac
+    if [ "$epic_block" -eq 1 ]; then
+      case "$line" in 'model-record: epic #'*) :;; *) continue;; esac
+      rest="${line#model-record: epic #*[0-9] }"
+      case "$rest" in
+        'release PR #'*) :;;
+        'child #'*) rest="${rest#child #}"; case "$named" in *" ${rest%% *} "*) :;; *) continue;; esac;;
+        *) continue;;
+      esac
+    fi
+    context="$context$line"$'\n'
   done <<<"$output"
 
   block "gh pr merge on a role-played run" \

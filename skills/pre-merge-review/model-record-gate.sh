@@ -50,6 +50,7 @@ if [ ! -r "$own_dir/../../lib/model-record.sh" ]; then reader_failed; fi
 
 # Whole evaluation is buffered by the private supervisor, including these
 # shell scans. The watchdog is independent of the per-REST read deadline.
+# The helper returns ordered, attributed rows; the worker only prints them.
 if [ "$pr_number" = --epic-worker ]; then
   epic_tmp="$2"; number="$3"; remaining="$4"
   helper="$own_dir/../../lib/model-record-epic.py"
@@ -68,54 +69,39 @@ if [ "$pr_number" = --epic-worker ]; then
       fi
       exit 0;;
   esac
-  while IFS=$'\t' read -r kind name child epic detail; do
-    if [ "$kind" = note ]; then
-      printf 'model-record: closing reference #%s does not exist and was ignored\n' "$name"
-      continue
-    fi
-    if [ "$kind" = context ]; then
-      bash "$own_dir/model-record-gate.sh" --epic-evaluate "$epic_tmp/$name" > "$epic_tmp/result" || exit 1
-      # Empty TSV columns collapse in Bash read. Release has no child id.
-      if [ "$name" = release ]; then
-        cat "$epic_tmp/result"
-      else
-        while IFS= read -r result; do
-          case "$result" in
-            'role-played: '*) printf 'role-played: epic #%s child #%s %s\n' "$epic" "$child" "${result#role-played: }";;
-            *) printf '%s\n' "$result";;
-          esac
-        done < "$epic_tmp/result"
-      fi
-    elif [ "$kind" = finding ]; then
-      # Membership fields are optional; use a non-whitespace delimiter.
-      : # Printed below from a separate, unambiguous manifest projection.
-    else
-      exit 1
-    fi
+  while IFS= read -r row; do
+    case "$row" in
+      $'out\t'*) printf '%s\n' "${row#out$'\t'}";;
+      $'unchecked\t'*) unchecked "${row#unchecked$'\t'}";;
+      *) exit 1;;
+    esac
   done < "$epic_tmp/rows"
-  python3 -I "$helper" findings "$epic_tmp" > "$epic_tmp/findings" || exit 1
-  while IFS='|' read -r epic child pull detail; do
-    printf 'role-played: epic #%s%s%s %s\n' "$epic" "${child:+ child #$child}" "${pull:+ PR #$pull}" "$detail"
-  done < "$epic_tmp/findings"
   exit 0
 fi
+# Batched private modes: bodies framed by the record separator byte (removed
+# from bodies by the helper), one framed result per body, in order.
 if [ "$pr_number" = --epic-closing ]; then
-  input="$(cat)" || exit 1
   closing_keyword_ere='\b(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+\b'
-  # No-match is a complete empty set, whereas parser errors are failures.
-  matches="$(LC_ALL=C grep -oiE "$closing_keyword_ere" <<<"$input")"
-  rc=$?
-  [ "$rc" -le 1 ] || exit 1
-  if [ -n "$matches" ]; then
-    LC_ALL=C grep -oE '[0-9]+' <<<"$matches" | LC_ALL=C sort -un
-  fi
+  while IFS= read -r -d $'\036' input; do
+    # No-match is a complete empty set, whereas parser errors are failures.
+    matches="$(LC_ALL=C grep -oiE "$closing_keyword_ere" <<<"$input")"
+    rc=$?
+    [ "$rc" -le 1 ] || exit 1
+    if [ -n "$matches" ]; then
+      numbers="$(LC_ALL=C grep -oE '[0-9]+' <<<"$matches" | LC_ALL=C sort -un)" || exit 1
+      printf '%s' "${numbers//$'\n'/ }"
+    fi
+    printf '\036'
+  done
   exit 0
 fi
 # Private A52 modes are called only by the bounded traversal worker.
 if [ "$pr_number" = --epic-live ]; then
-  input="$(cat)" || exit 1
-  live_text "$input"
-  exit $?
+  while IFS= read -r -d $'\036' input; do
+    live_text "$input" || exit 1
+    printf '\036'
+  done
+  exit 0
 fi
 if [ "$pr_number" = --epic-overrides ]; then
   input="$(cat)" || exit 1
@@ -313,9 +299,18 @@ while IFS= read -r row; do
     body_present[$((idx * 5 + s))]=1
   fi
 done <<<"$scan"
+# Inheritance contexts (A52) print no "no record found" line: an absent
+# stage is named once, by the attributed role-played stages-missing line.
+names_absence() {
+  [ "$epic_mode" -eq 0 ] || [ "$kind" = legacy ]
+}
+child_context=0
+if [ "$epic_mode" -eq 1 ]; then
+  case "$kind" in child|disposition) child_context=1;; esac
+fi
 for s in 0 1 2 3 4; do
   stage="${stages[$s]}"
-  if [ "${present[$s]}" -eq 0 ]; then
+  if [ "${present[$s]}" -eq 0 ] && names_absence; then
     findings="$findings""model-record: no record found for stage $stage (missing model-choice marker)"$'\n'
   fi
   if [ "${latest_class[$s]}" = near-miss ]; then
@@ -324,7 +319,7 @@ for s in 0 1 2 3 4; do
 done
 # Review's own basis is required even without Implementation. Different
 # models cannot be ranked by the gate; same-model legacy effort is ignored.
-if [ "${latest_class[4]}" = ok ]; then
+if [ "${latest_class[4]}" = ok ] && [ "$child_context" -eq 0 ]; then
   basis="$(rec_field "${latest_line[4]}" floor-basis)" || reader_failed
   case "$basis" in *[![:space:]]*) :;; *) findings="$findings""model-record: stage=Review marker has no floor-basis (why Review's model clears Implementation's)"$'\n';; esac
 fi
@@ -380,7 +375,10 @@ for ((idx=1; idx<=body_count; idx++)); do
   done
   if [ "$n" -ge 2 ]; then in_one_text="$in_one_text$names (${body_labels[$idx]})"$'\n'; fi
 done
-if [ "$epic_mode" -eq 1 ] && [ "${kind:-}" != release ] && [ "${child_single:-0}" -eq 1 ]; then in_one_text=''; fi
+if [ "$child_context" -eq 1 ] && [ "${child_single:-0}" -eq 1 ] && [ -n "$in_one_text" ]; then
+  echo 'model-record: a pipeline-override (scope=single-session) waived the role-play findings'
+  in_one_text=''
+fi
 missing=''; waived=''
 for s in 0 1 2 3 4; do
   [ "${present[$s]}" -eq 0 ] || continue
@@ -395,5 +393,5 @@ while IFS= read -r text; do
   [ -z "$text" ] || echo "role-played: stages in one text: $text"
 done <<<"$in_one_text"
 [ -z "$missing" ] || echo "role-played: stages missing: $missing"
-[ -z "$waived" ] || echo "model-record: a pipeline-override waived stage absence:$waived"
+[ -z "$waived" ] || [ "$child_context" -eq 1 ] || echo "model-record: a pipeline-override waived stage absence:$waived"
 exit 0

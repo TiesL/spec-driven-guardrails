@@ -148,16 +148,31 @@ and closing-PR bases, and reads each child's issue and verified closing PR
 evidence separately. A ledger is a view, not evidence. Manual epic overrides
 and release-wide single-session retain legacy output; a skip on any closing
 issue retains its release-wide effect, including inherited stage absence.
+Every output line names its epic and the child or release PR it concerns; a
+clean pass prints one line with the number of children checked.
+
+Discovery never reads all repository issues. Membership candidates are the
+issues cross-referenced in the epic's own timeline, the issues in its Work
+items list and the issues closed by merged release-branch PRs; each
+candidate's current body decides whether it carries the Epic field. The one
+residual gap: an issue whose Epic field produced no cross-referenced event in
+the epic's timeline, that is not listed and that no merged release PR closes,
+is not found. List every child, including a late-added one, under the epic's
+Work items so the gate never depends on that timeline event. On an epic
+release PR a closing reference that returns HTTP 404 is unchecked
+(`role-play-unchecked`), never silently ignored.
 
 Traversal uses explicit pages of 100 and finite limits: 100 children;
-5,000 issue objects; 1,000 closed PRs, timeline events per child, comments or
-reviews per collection; 1,200 total REST calls; 8 MiB per response and
-64 MiB total. Each subprocess/read has 10 seconds; the whole evaluation,
-including shell scans, has 120 seconds. Equality with a cap, timeout, reader
-failure, retrieval error or changed detail snapshot yields
-`role-play-unchecked`, discarding all partial blocking findings. Collections
-are complete only after a short page; there are no retries. Details are
-rechecked before publishing, but mutable comments are not an atomic snapshot.
+200 membership candidates; 1,000 comments or reviews per collection;
+1,000 closed PRs; 1,000 timeline events per child or on the epic; 40 REST calls
+attributable to one child; 1,200 total REST calls; 8 MiB per response and
+64 MiB total. Reads and context scans run at most 8 concurrent subprocesses.
+Each subprocess/read has 10 seconds; the whole evaluation, including shell
+scans, has 120 seconds. Equality with a cap, timeout, reader failure,
+retrieval error or changed detail snapshot yields `role-play-unchecked`,
+discarding all partial blocking findings. Collections are complete only after
+a short page; there are no retries. Details are rechecked before publishing,
+but mutable comments are not an atomic snapshot.
 
 Any session able to post records can forge model-records and human override
 lines. This validates structure and consistency; it does not authenticate
