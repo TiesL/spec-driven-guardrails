@@ -2774,6 +2774,20 @@ Temporary, panel decision: panel 1, 2026-11-03, D3-D7; subject to maintainer acc
 D1–D9; temporary panel choices remain subject to maintainer acceptance (OR43).
 #647 lands first; A50–A51 belong to that work item. This entry reserves no
 other IDs and does not implement the gate or amend Product's requirements.
+Amended in place after Review round 1 on PR #658 (findings
+real-scale-timeout-unchecked, closing-404-forces-legacy,
+epic-output-unattributed-noise, s548-gate-hash-pin-red,
+child-override-source-untested): discovery no longer scans every repository
+issue, reads run in a bounded pool, and output is attributed.
+[V] Measured 2026-11-03 on TiesL/spec-driven-guardrails: one `gh api` detail
+read 0.48–0.53 s, a 100-object page 0.97 s; 40 detail reads took 19.6 s
+serially, 4.8 s with 4 and 2.8 s with 8 concurrent reads. The repository has
+658 issue/PR objects (7 pages, 389 issues). One private gate subprocess
+(`--epic-live`/`--epic-closing`) costs about 0.155 s, so the old per-issue scan
+spent about 60 s in subprocesses alone. The old worker made about 210 gh
+calls plus about 430 shell subprocesses for the 19-child shape (above 120 s
+serially); the design below needs about 213 gh calls, 8 at a time, and a
+constant number of shell subprocesses per phase.
 
 - **Module, Interface and Locality.** Keep `model-record-gate.sh <pr-number>`
   as the one public Interface: findings on stdout, exit 0, only `role-played: `
@@ -2786,6 +2800,19 @@ other IDs and does not implement the gate or amend Product's requirements.
   no Python copy of Markdown or record grammar. Missing Python/helper or a
   malformed manifest is unchecked in the inheritance path. Bash remains 3.2:
   indexed arrays, no associative arrays, mapfile or lowercase expansions.
+  The private shell modes `--epic-live` and `--epic-closing` take many bodies
+  per call, framed by the record separator byte (removed from bodies first),
+  and return one framed result per body in order; a count mismatch is
+  unchecked. The helper therefore spawns a constant number of shell
+  subprocesses per phase instead of one per body. The helper runs gh reads
+  and `--epic-evaluate` context scans in one bounded pool of 8 concurrent
+  subprocesses (`concurrent.futures.ThreadPoolExecutor`, stdlib); each keeps
+  its own process group. Only the main thread installs signal handlers; it
+  tracks live process groups under a lock and kills them all on SIGTERM,
+  deadline or the first failure, cancelling queued work. Counters and caches
+  are lock-protected. Results are merged in sorted context/child/PR order,
+  never completion order, so output is deterministic. The gate's worker only
+  formats the ordered results.
   The deletion test puts transport/set complexity back into the gate; the
   helper earns Depth by hiding traversal behind one manifest, rather than
   exposing one wrapper per endpoint. Leverage and Locality stay in this Module.
@@ -2811,14 +2838,26 @@ other IDs and does not implement the gate or amend Product's requirements.
   tracking epic never inherits. Before new reads, inspect cached comments of
   the captured epic: any valid manual override there selects the complete
   legacy evaluation/output, even a partial skip. A release-wide single-session
-  also selects legacy evaluation. No extra inheritance messages in either
+  also selects legacy evaluation. A closing reference that returns HTTP 404
+  never selects the legacy path. Order for a release-shaped PR closing #E:
+  decide eligibility (head, `Closes #E`, base equals the default branch)
+  without regard to 404s; a non-eligible PR keeps legacy output with the
+  existing 404 note. For an eligible PR: a 404 on #E itself is unchecked; then
+  a valid manual epic override or release-wide single-session selects legacy
+  (its 404 notes unchanged); otherwise any other closing-reference 404 is
+  unchecked, exactly `role-play-unchecked: closing reference #N on epic
+  release PR #P does not exist (HTTP 404)` (lowest N first), with the usual
+  stderr warning and no `role-played:` line (AC7, AC11). Rationale: the
+  legacy path blocks with "stages missing" even when every child is covered,
+  which is neither a checked result nor a visible fail-open. No extra inheritance messages in either
   compatibility path; ordinary PRs retain byte-identical stdout/stderr.
 - **REST reads (all read-only).** Beyond the existing PR detail/comments/
   reviews and closing-issue comments, request `gh api` with these endpoints
   (replace R with the verified base repository's owner/name; E, C and P are
   validated positive integers). All collection calls use explicit pages,
   `per_page=100&page=k`, k starting at 1, rather than unbounded `--paginate`:
-  `repos/R/issues/E`; `repos/R/issues?state=all&per_page=100&page=k`;
+  `repos/R/issues/E`; `repos/R/issues/E/timeline?per_page=100&page=k`;
+  `repos/R/issues/N` for each membership candidate N;
   `repos/R/pulls?state=closed&base=B&per_page=100&page=k`;
   `repos/R/issues/C/timeline?per_page=100&page=k`;
   `repos/R/pulls/P`; `repos/R/issues/C/comments?per_page=100&page=k`;
@@ -2830,8 +2869,31 @@ other IDs and does not implement the gate or amend Product's requirements.
   object/array shape and typed IDs, bodies, timestamps and repository identity.
   Cache details, issue comments and PR evidence by repository/number; no
   duplicate reads just because the release PR also closes a child.
-- **Discovery, then cross-check.** Enumerate all issue pages (open and closed;
-  discard objects with `pull_request`). Pass bodies through the existing
+- **Discovery, then cross-check.** Never enumerate all repository issues
+  (`issues?state=all` is no longer called). Build a candidate set K, the union
+  of: (1) every `cross-referenced` event in the epic's own complete timeline
+  whose `source.issue` has the same-repository URL
+  `https://api.github.com/repos/R/issues/N` and no `pull_request`; (2) every
+  #C in the epic's Work items section; (3) every same-repository issue named
+  by the closing grammar in a merged release-branch PR. Fetch each candidate's
+  detail once (cached; it is the child detail too) and read the field from that
+  current body, never from the timeline's embedded copy. Membership is the
+  subset of K whose live body has the field. Completeness argument: a live
+  `**Epic:** #E` line mentions #E, and GitHub records a cross-referenced
+  event in E's timeline for such a mention, on creation and on a later edit,
+  so late-added members (maintainer decision 2) are candidates. [V] On #608
+  all 19 children (609–625, 643, 649) and on #655 both fielded children
+  (#647, #651) appear as such events; a repository search for the field
+  returned the same children plus mere mentions. [A] GitHub creates the event
+  for every same-repository mention reliably and within seconds; a missing or
+  delayed event for an unlisted issue that no merged release PR closes is the
+  one residual gap (see AC consistency), stated in the skill text. Search,
+  sub-issues and labels stay out: they are not the field, the search index is
+  eventually consistent and loosely tokenized, and they would add a second
+  failure surface. A timeline-only candidate whose detail returns HTTP 404 or
+  410 cannot carry a live field and is ignored; every other candidate read
+  failure, and any 404 for a listed or PR-closed candidate, is unchecked.
+  Pass bodies through the existing
   `live_text` before parsing structural fields. The sole membership signal is
   one whole line `**Epic:** #E`, allowing surrounding horizontal whitespace
   and trailing whitespace, with CRLF normalized by `live_text`. Repeated or
@@ -2843,7 +2905,7 @@ other IDs and does not implement the gate or amend Product's requirements.
   accept `*` bullets and optional trailing description. Reject duplicates,
   foreign-repository links substituted for #C, malformed checklist rows or
   missing/ambiguous section as membership findings, naming E and C if known.
-  Compare this list with the complete field-derived set; both directions
+  Compare this list with the field-derived set over K; both directions
   must agree and the set must be nonempty. Empty sets cannot pass vacuously.
   Issues gaining the field after branch opening count now; no historical
   freeze or edits to closed #608 children are inferred.
@@ -2891,11 +2953,36 @@ other IDs and does not implement the gate or amend Product's requirements.
   cannot provide it. Existing applicable release-wide overrides still apply
   as A53 specifies; the separate head-pinned approval gate is unchanged.
 - **Caps, completeness and failure transaction.** New traversal: 100 children;
-  5,000 repository issue objects including discarded PR objects; 1,000 closed
+  200 membership candidates; 1,000 epic timeline events; 1,000 closed
   PR objects; 1,000 timeline events per child; 1,000 comments or reviews per
-  collection; 1,200 total REST calls; 8 MiB per response and 64 MiB total;
-  10 seconds per subprocess/read and 120 seconds for the whole inheritance
-  evaluation, including parsing/scanning. Equality with any cap is unchecked,
+  collection; 40 REST calls attributable to one child (its detail, timeline,
+  comments, candidate-PR details, closing-PR comments/reviews and rechecks);
+  1,200 total REST calls; 8 concurrent subprocesses; 8 MiB per response and
+  64 MiB total; 10 seconds per subprocess/read and 120 seconds for the whole
+  inheritance evaluation, including parsing/scanning. Call budget for the
+  normalized 19-child #608 shape: about 23 fixed reads (initial detail,
+  release comments/reviews, three closing issues, repository, release and epic
+  detail, one epic timeline page, one merged-PR page, about 10 non-child
+  candidates, two rechecks) plus about 10 per child (detail, one timeline
+  page, one comments page, about two cross-referenced PR details, closing-PR
+  comments and reviews, three rechecks): about 213 calls. [V] inputs: #608
+  timeline 63 events, child timelines 8–21 events with 1–2 PR references,
+  17 merged PRs into `release/608-deferred-review-lows`. Estimate: 213/8
+  × 0.5 s ≈ 14 s idle and × 1.1 s ≈ 30 s under load, plus about 20 context
+  scans of 0.5–1.7 s each run 8 at a time, well inside 120 s. A 100-child
+  epic (about 1,000 calls) can exceed 120 s at 1 s per call and is then
+  visibly unchecked; that is accepted, not a pass. The 120-second deadline
+  stays, because the merge hook's runtime limit is far longer: the Claude
+  `git-guardrails` PreToolUse Bash entry sets no `timeout` [V], so the
+  runtime default applies, [A] 600 s for command hooks in current Claude Code
+  (2.1.309 installed [V]); the Codex merge hook showed 600 s [V, adapters/
+  codex/permission-baseline.md]; `merge-preflight.sh` has no limit. The hook
+  runs its review-marker, CI and stray-closes checks first (a few seconds),
+  then this gate (at most 120 s plus the 2-second kill grace). Keep the
+  deadline at or below a quarter of the hook's runtime limit; a runtime that
+  cancels the hook first would let the merge proceed without the unchecked
+  warning, which is a silent fail-open this design avoids by margin, not by
+  mechanism. Equality with any cap is unchecked,
   even if the last page could be complete. These limits include release PR
   comments/reviews and closing-issue comments reused in inheritance, not just
   newly discovered children. Start the traversal budget at detail acquisition.
@@ -2914,9 +3001,35 @@ other IDs and does not implement the gate or amend Product's requirements.
   404 in the new traversal, cap or timeout, discard buffered inheritance
   AND dependent legacy role-play findings; call the existing `unchecked`
   routine and exit 0. Never leave a partial `role-played:` block behind.
-  The ordinary legacy closing-reference 404 note/ignore behavior stays.
+  The ordinary legacy closing-reference 404 note/ignore behavior stays for
+  non-eligible PRs and the manual-override path (see Recognition).
   With complete data, membership defects or uncovered stages produce
   `role-played: epic #E child #C ...` (or name P/E where C is unavailable).
+- **Output in the inheritance path (stdout; stderr stays empty unless
+  unchecked).** Every line names its context. Release-context lines read
+  `<prefix>epic #E release PR #P <rest>` and child-context lines read
+  `<prefix>epic #E child #C <rest>`, where `<prefix>` is `role-played: ` or
+  `model-record: ` and `<rest>` is the existing legacy text after that prefix.
+  Never printed in this path: `no record found for stage` for Discovery,
+  Planning, Test or Implementation in any context; a child-context `waived
+  stage absence` line; any unprefixed `model-record:` line. Release Review
+  keeps its legacy diagnostics (missing record, missing floor-basis,
+  release-wide `skip=Review` waiver), release-attributed. Kept diagnostics:
+  record near-miss, latest-unreadable, override near-miss, and a child
+  single-session waiver note. Order on block: membership findings sorted by
+  child, then PR, then detail; then child `role-played:` lines in ascending
+  child order; then release `role-played:` lines; then all `model-record:`
+  lines in the same context order. Order on pass: the attributed diagnostics,
+  then one release line per release-wide skip of an inherited stage,
+  `model-record: epic #E release PR #P a pipeline-override waived inherited
+  stage absence for all children: skip=<Stage>` (AC13), then exactly one
+  final line `model-record: epic #E inherited Discovery, Planning, Test and
+  Implementation checked for N children`. A clean pass of N children thus
+  prints only that final line. The merge hook keeps all `role-played:` lines
+  first; when any of them starts with `role-played: epic #`, its context
+  lists only `model-record:` lines naming the release PR or a child named in
+  a `role-played:` line, so a missing child is never behind other children's
+  context. Without such a line the hook output is unchanged.
 - **Bookkeeping outside the core (AC9).** Extend
   `skills/release-branch-workflow/SKILL.md`, not ORCHESTRATOR.md. Document
   field/list normalization before the release PR, late-field membership,
@@ -2935,7 +3048,8 @@ other IDs and does not implement the gate or amend Product's requirements.
   authenticated human authority or proof of executed stages. Any session
   able to post records can forge model-records and human override lines.
   Removing a child field alone is caught by list/PR reconciliation; a
-  coordinated rewrite of every membership source is not prevented. Network
+  coordinated rewrite of every membership source is not prevented. Discovery
+  trusts GitHub's cross-reference events for unlisted, PR-less members. Network
   failure and deliberate cap exhaustion fail open visibly, as required.
   Read-only checks do not guarantee a simultaneous GitHub snapshot.
 - **QA Seams and content handoff.** Reserve S549–S578, with literal expected
@@ -2959,8 +3073,34 @@ other IDs and does not implement the gate or amend Product's requirements.
   Product's F64 content: inherited stages, universal child coverage and
   release Review; F65: membership/reconciliation and ledger responsibility;
   F66: bounded unchecked behavior, compatibility/waivers and stated trust
-  limits. This is a content list, not PRD text. QA allocates the 30 IDs and
+  limits, including the timeline-discovery residual. This is a content list, not PRD text. QA allocates the 30 IDs and
   test groupings; the bundle's panel-2 exception governs QA test-code scope.
+  Round-1 test changes, inside S549–S578 (no new IDs): the fixture gh serves
+  the epic timeline and candidate details and strictly rejects
+  `issues?state=all`. S549 asserts the literal one-line pass output and that
+  #617's removal blocks with attributed lines only. S557/S561 discover
+  unlisted and late-fielded members only through epic timeline events.
+  S562 adds two source-isolation arms with valid membership: a valid
+  `skip=Test` on the child's closing PR (description, comment, review) and
+  on another listed child closed by the same PR each leave the child blocked
+  for Test. S568 pages the epic timeline (100 noise events first). S569
+  replaces the issue-object cap with the epic-timeline, candidate and
+  per-child call caps. S570 adds the scale arm: the normalized fixture plus
+  300 unrelated issues, 0.8 s per gh call, ends checked under 120 s, never
+  reads an unrelated issue, and the fixture observes more than one and at
+  most 8 concurrent gh calls. S571 replaces the issue-list endpoint with the
+  epic timeline and candidate detail, and adds an eligible release with
+  `Closes #9999` (404) giving the exact unchecked line. S565 keeps the
+  ordinary and manual-override 404 notes byte-identical. S576 documents the
+  pool, discovery and residual. S578 asserts the hook's attributed context.
+  #647's S548 frozen-hash table keeps its eight other entries; the gate entry
+  becomes a structural assertion that #647 left waiver authority unchanged:
+  the gate source still accepts exactly the six override scopes
+  (single-session and the five `skip=` stages), still requires non-blank
+  decided-by and reason, and recognizes no panel authority, each with its
+  own deletion or addition mutation control. Gate behavior compatibility is
+  S565's job; S548's title and Then clause say "unchanged waiver authority"
+  instead of "unchanged gate script".
 - **Ownership and consistency.** Architect: A52–A53 only. Product: PRD F64–F66
   and issue/dependency text (`**Epic:** #655`, #647 before #651). QA:
   TEST-SCENARIOS S549–S578, corresponding test cases/fixtures under panel 2.
@@ -2973,7 +3113,14 @@ other IDs and does not implement the gate or amend Product's requirements.
   small design; traversal/fixture implementation effort belongs to Dev/QA.
   AC consistency: none of AC1–AC14 is contradicted or narrowed; AC5 specifies
   the no-PR exception to AC1, AC6/AC13 retain release-wide override precedence
-  over otherwise universal inheritance. The reserved #608 fixture counts in
+  over otherwise universal inheritance. Round-1 amendment: AC8 is narrowed,
+  not contradicted. Its falsifier "another membership mismatch passes
+  silently" holds except for one residual: an issue whose field produced no
+  cross-referenced event in E's timeline [A], that is not in Work items and
+  that no merged release PR closes. The alternative, scanning every issue,
+  makes AC1 unattainable at real scale; this narrowing awaits Product's
+  spec decision. AC11 receives the concrete limits it asked Planning for;
+  AC7 is strengthened by the 404 rule. The reserved #608 fixture counts in
   issue prose omit one of the 19 children in their 7+10+1 shorthand; QA must
   model the enumerated 19-child set, not silently drop the remaining child.
 
