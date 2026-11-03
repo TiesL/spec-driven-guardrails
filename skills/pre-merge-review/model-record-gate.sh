@@ -10,9 +10,9 @@
 #
 # Findings are stdout, exit 0. In projects answering process-multi-agent-roles
 # yes, only `role-played: ` blocks a merge. Every incomplete check emits
-# `role-play-unchecked: ` and fails open. A closing-reference HTTP 404 gives a note and is
-# ignored, except on an eligible epic release PR (A52), where it is
-# `role-play-unchecked: `. The guard shows near-misses as context.
+# `role-play-unchecked: ` and fails open. A closing-reference HTTP 404 gives
+# a note and is ignored, except on an eligible epic release PR (A52), where
+# it is `role-play-unchecked: `. The guard shows near-misses as context.
 #
 # Limits: cannot verify emitter provenance, model identity/capability, agent
 # identity, basis honesty, override authorship or work-item attribution.
