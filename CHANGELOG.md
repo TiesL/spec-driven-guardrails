@@ -13,6 +13,8 @@ point.
 
 ## Unreleased
 
+- **#647:** centralize stage selection and standing human class decisions in the role-contracts skill, with managed policy references.
+
 ## v0.5.1 — Many low severity review findings resolved. See CHANGELOG.md for the improvements made (2026-11-03)
 
 - **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is

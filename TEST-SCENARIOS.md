@@ -7783,9 +7783,9 @@ A47 supplies protocol provenance, not proof that a future installation activates
 ### S378 — the pipeline-override texts the docs must carry are pinned, each with a mutation arm (#564 AC7, AC9, AC10, doc-text pins; #578 AC9, AC11)
 **Covers:** F38
 - Given: the real tree, and for each pin a fresh sandbox copy with exactly that text removed; an opted-in project (`process-multi-agent-roles` yes) for the session text.
-- When: the pins are read: (a) `abbreviated workflow` (any case) in `policy/WORKFLOW.md` and `skills/role-contracts/SKILL.md`, each on a line holding `skip=Planning` and `skip=Test`; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
-- Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, `skip=Test` dropped, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
-- Falsifiers: a pin that stays green when its text is deleted, a doc that drops the abbreviated workflow, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
+- When: the pins are read: (a) the policy `- **Abbreviated workflow**` bullet names the installed `role-contracts` skill (never a repo-relative path, S534), its `Stage-selection panel` and `pipeline-override.sh`; only the canonical skill carries the full `skip=Planning` and `skip=Test` definition; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
+- Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, each canonical scope dropped separately, each policy reference target removed separately, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
+- Falsifiers: a pin that stays green when its text is deleted, a policy reference that drops the installed skill name or panel entry point, a canonical definition that drops either Abbreviated scope, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
 
 ### S379 — ./check runs ok on a read-only tree without writing bytecode and still reports a syntax error with file and line (#590 AC3; #595 AC1)
 **Covers:** F57
@@ -8620,3 +8620,108 @@ and S380's #590 live-evidence boundary.
 - Given: `skills/role-contracts/ORCHESTRATOR.md` OR32 and `test/fixtures/orchestrator-core-pins.tsv`.
 - When: the OR32 item is read.
 - Then: it contains "Resolve absolute path once" and is one physical line. A scratch copy with the phrase deleted fails. Green now (the text is in the tree); the pin hash itself is guarded by S311, S317, S322 and S333, which stay red until the Developer regenerates the OR32 pin.
+
+### S534 — canonical source and managed references (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S534 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires canonical panel subsection, canonical class subsection. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. Policy must name the installed `role-contracts` skill and Stage-selection panel, with no repo-relative `skills/role-contracts/SKILL.md` link; reintroducing that link fails a control. README.md is a repo-root document: its `pipeline-override.sh` row must name Stage-selection panel and point to the canonical source by either the repo-relative path or the installed skill name; removing the pointer fails a control.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S535 — complete separate panel record (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S535 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires ordinary panel record, stable identity and question, named participants and positions, vote dissent outcome exact stages, human-source link, Discovery eligibility protections evidence. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S536 — separate Discovery before consultation (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S536 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires Discovery separate marker before panel, issue text cannot substitute, consultation is not Planning. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S537 — orchestrator fresh Review and independent scrutiny (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S537 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires orchestrator protected, fresh Review protected, independent scrutiny, Review skip escalates. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The entire protected-work directive is unconditional: prefixes `where practical`, `ordinarily`, `may`, and `unless` are rejected by individual M7 controls.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S538 — AC-dependent Test and executable Implementation (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S538 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires scenario AC requires Test, executable diff requires Implementation, executable tests and scripts included, protections before classification. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S539 — eligible unanimous Abbreviated pair and A49 (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S539 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires unanimous in-class selection, Abbreviated exact pair, A49 valid Test exemption, append-only scenario scope, Abbreviated refuses scenario AC conflict. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S540 — doc-only class cannot bypass protected work (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S540 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires doc-only conditions and permitted scope, configuration outside verified conditions, class cannot override protections. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S541 — test-only class includes executable-test refusal (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S541 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires test-only verified conditions, executable tests still require Implementation. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S542 — split skip escalates while retained work stays (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S542 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires 2-1 skip escalates, majority retains and records dissent, missing participants cannot skip. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S543 — unsupported scope and single-session need human authority (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S543 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires outside-class per-item authority, single-session not panel default, panel record alone insufficient, single-session no QA exemption. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S544 — human posting preserves exact words and issue linkage (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S544 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires only orchestrator posts human identity, unchanged single-quoted human reason, unrepresentable words not rewritten, verify returned text, closing issue linkage. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S545 — advance selection ordering survives history changes (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S545 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires both records precede both deadlines, initial base and commit identity, times and identities, tie and unknown not timely, late editing cannot backdate, inherited commits excluded, history rewrite retains deadline. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. A late record remains late, seeks specific human resolution and never claims retroactive compliance; M10 replaces that sentence with panel acceptance and must fail the same oracle.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S546 — merge approval discloses all decisions and risks (#647; A50/A51)
+**Covers:** F63
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S546 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires every decision record and outcome, retained escalated superseded resolutions, risk and limit explicit acceptance, temporary acceptance OR43 and dependency, dependency removal disclosed. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S547 — review depth retained or raised never reduced (#647; A50/A51)
+**Covers:** F63
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S547 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires retain A13 depth or raise force-thorough, never lower depth, stage presence only. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S548 — unchanged gate script and core with authority limits (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S548 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires forgeability without authentication, records forgeable, unverifiable evidence blocks posting, panel-name acceptance not permission. Each catalogue row has distinct human-role identity (`maintainer` or the project's human decision-maker), source-link, scope and condition cells; a person name alone cannot fill the role cell. The actual human `decided-by` is supplied at posting time and remains covered by the pipeline-override fixtures. Deleting any evidence cell or replacing the human role with a person, panel or orchestrator identity fails its own control. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The test-only/doc-only conditions cell limits the standing decision to batches of epic TiesL/spec-driven-guardrails#608 only; outside that scope requires per-item human authority. That cell also retains Implementation for executable tests/scripts and any executable production code. M8 (`mostly documentation or tests`) fails both predicates; independent scope, authority, executable-test and production-code deletions are controls. Abbreviated source evidence requires a per-item human grant in their own words (or a durable link to grant words), never a policy self-link. Any #609 mention in the catalogue must label it an earlier record that predates the executable-test rule, or be absent; a restored eligible-example claim fails a control.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.

@@ -336,3 +336,13 @@ naar 31). `tennis-registration` en `tennis-invoicing` (geen
 gedragswijziging (#248's hele punt: CI-scaffolding moet niet aannemen dat
 elk project npm gebruikt), geen ongemerkte drift — vandaar hier
 vastgelegd in plaats van alleen de gouden sets stilzwijgend aangepast.
+
+## Updated for #647
+
+`CHANGES.md.snapshot` is refreshed for the amendment to the existing
+`process-multi-agent-roles` entry (A50/A51): its Yes means text now references
+the canonical Stage-selection panel and standing human decisions, and its
+Reaches session field adds `always-loaded: WORKFLOW.md`. The existing PR
+provenance, ID, applicability and meaning version remain unchanged. This is
+the prose/delivery refresh required by S90, not a new adoption question or
+a predicate change; the four projects' expected pending sets are unchanged.
