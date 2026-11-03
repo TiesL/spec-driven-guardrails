@@ -1441,9 +1441,10 @@ Posting the override (#564): `pipeline-override.sh` builds and posts the
 record on the work item's issue, so nobody types one. It refuses a value
 the grammar cannot hold instead of altering it, reads the built comment back
 through the gate's own reader before posting, and has a `--dry-run`. The
-named short track, the "abbreviated workflow", is `skip=Planning` plus
-`skip=Test`: Discovery, Implementation and fresh-Reviewer Review still run,
-and only TiesL grants it. The record is seen by the gate only when the PR
+named short track, the "abbreviated workflow", and its human authority,
+scopes and conditions are defined in `skills/role-contracts/SKILL.md`,
+"Running the pipeline"; F61-F63 describe stage selection under that source.
+The record is seen by the gate only when the PR
 title or body names the issue with a closing keyword. The reminder to post it
 before the first commit or PR is text (OR34 in the session context and the
 policy), not a hook or gate. Tests: S376, S377.
@@ -2085,6 +2086,125 @@ Missing or unusable evidence leaves the handoff unresolved. The Reviewer brief
 links the applicable QA artifact and comparison evidence so Review can verify
 scenario provenance as well as test fidelity. `check-scenario-file-sync.sh`
 retains its existing requirements, and QA gains no test-code scope.
+
+### F61 — Select stages without skipping protected work (issue #647)
+
+After Discovery and before the first work-item commit or PR opening,
+Product, Architect and the orchestrator each state which stages the item's
+ACs and proposed diff require. This consultation is not Planning and
+supplies no Planning marker. Only Planning, Test and Implementation are
+selectable, within an applicable standing human class decision (F62).
+A unanimous eligible selection may be applied by the orchestrator. A
+majority to retain work retains it, with dissent recorded. Missing
+participants or evidence leave selection unresolved: continue the full
+required pipeline or resolve the question before skipping work.
+
+The orchestrator on every work item and panel, Review by a fresh Reviewer,
+Discovery with its own separate model-record, every AC-dependent stage,
+and scrutiny by at least one role other than the author can never be
+skipped through this mechanism. Issue text cannot replace Discovery's
+marker. An AC adding a scenario requires Test; a diff touching executable
+code requires Implementation, including executable tests and scripts.
+These protections are checked before class eligibility; a documentation
+or test-only name does not establish permission to skip work.
+
+A 2-1 vote to skip, any recommendation outside a standing class, an
+unverifiable human source or class condition, or any proposal to skip
+Review goes to the maintainer without a panel-derived waiver posting.
+Review remains outside the selectable stages. A request conflicting with
+protected work also escalates; neither a vote nor a class default amends
+these protections. A `single-session` waiver is not a panel class and
+cannot be derived from a vote. Other skips outside an applicable class
+require explicit per-item human authority under OR34.
+
+Acceptance criteria: #647 **AC1** (protected work and eligible stages)
+and **AC3** (escalation).
+
+### F62 — Apply human authority with separate, timely selection records (issue #647)
+
+The single source for stage-selection procedure and standing human class
+rules is "Running the pipeline" in `skills/role-contracts/SKILL.md`,
+including its "Stage-selection panel", "Standing human class decisions"
+and Abbreviated workflow text. Other instructions reference that source
+or reproduce it through managed generation; they do not independently
+redefine class rules. The panel reads that source, the item's ACs,
+Discovery report, proposed file scope and applicable human source.
+The issue and panel record alone are not the procedure.
+
+The two named classes are the Abbreviated workflow and the test-only/doc-only
+`skip=Implementation` class. Each needs the human identity, original
+words or a durable link from which those words can be recovered, permitted
+scopes and exact eligibility conditions. Original human words and class
+eligibility remain unresolved in the accepted offline design; the panel-1
+record and policy paraphrases do not supply that authority. An unresolved
+class cannot authorize a posting: obtain its evidence or an explicit
+per-item human waiver. Do not invent documentation/test exceptions or
+silently remove a scope from the named Abbreviated pair. Class conditions
+never override F61. If the human source conflicts with those protections,
+stop the application and refer the conflict to Product and the maintainer.
+
+The issue gets a separate ordinary comment containing `temporary, panel decision`,
+a stable decision ID, the question, the three named participants' positions,
+the vote including dissent, the outcome with exact selected stages, and a
+link to the standing human words applied. It includes class-eligibility and
+protected-work evidence and links Discovery. An out-of-class recommendation
+states that no standing words apply and links the per-item human decision
+before any waiver posting. If #645 lands, its shared record definition
+replaces this minimal definition through an explicit follow-up preserving
+the required information; #647 does not depend on its availability.
+
+The panel never writes or authorizes an override marker. Only the
+orchestrator posts through `pipeline-override.sh` from the project checkout,
+with the human as `decided-by`, that human's unchanged words as the
+single-quoted `reason`, and exactly the authorized scopes. A panel name is
+not human authority. Script validation or acceptance of a command does not
+authorize the orchestrator to post it. Words the script cannot represent
+require new human words, never rewriting, sanitizing or truncation. The
+orchestrator verifies the returned text and links the waiver comment in the
+panel record or Pipeline log. The PR title or body must link the issue with
+`Closes #<issue>`. A panel record alone never waives missing work.
+A valid `skip=Test` preserves F60/A49's QA-artifact and comparison exemption
+and the Developer's append-only scope for new scenario entries and text;
+`single-session` alone grants no such exemption.
+
+Both the completed panel record and applicable waiver posting must precede
+both the first work-item commit and PR opening. This includes spec-only,
+test-only, empty and later-squashed commits across sessions; inherited base
+or release commits do not start that deadline. The Pipeline log retains the
+initial base SHA, first work-item commit identity (or `none yet`), record
+identities and creation times, and PR identity and creation time when known.
+Unknown ordering or equal times leave timeliness unresolved. A late record
+or later edit cannot establish advance selection; publish a superseding
+record at its actual time and seek a specific human resolution. Rebase,
+squash or deletion does not reset the deadline or erase the original evidence.
+
+Records are forgeable by any session, including human-looking `decided-by`
+values. Links and timestamps provide evidence, not authentication. This
+mechanism relies on posting discipline, human authority and independent
+scrutiny; it adds no panel-identity check or change to the merge gate or
+posting script. Offline text and CLI checks cannot prove human authorship,
+class applicability or live instruction-following; those limits remain
+visible even when such checks pass.
+
+Acceptance criteria: #647 **AC2** (human authority and separate records),
+**AC4** (one source and evidenced class conditions) and **AC5** (advance timing).
+
+### F63 — Disclose every panel decision and preserve review depth (issue #647)
+
+A merge-approval request lists every panel decision relevant to the work,
+linking each record and outcome, including retained-work, escalated and
+superseded decisions and their resolutions. Decisions widening a limit or
+accepting a risk are flagged for explicit maintainer acceptance. This includes
+the temporary spec decisions for #647 and removal of #645 as a dependency.
+Panel agreement and a merge into a release branch do not establish that
+acceptance; OR43 and the release/main merge-approval rules still apply.
+
+Stage selection changes stage presence only. It retains A13's required
+review depth or raises it with `--force-thorough`; neither a waiver nor a
+doc-only label may lower that depth.
+
+Acceptance criteria: #647 **AC6** (complete decision disclosure) and
+**AC7** (review depth retained or raised).
 
 ## Non-functional characteristics
 

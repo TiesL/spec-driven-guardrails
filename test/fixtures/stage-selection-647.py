@@ -1,0 +1,316 @@
+"""#647 mechanical subset only; no authorization or runtime-obedience claim.
+Source-data seam: canonical Running section. Real-copy mutation controls run
+only after the corresponding assertion passes; missing implementation is RED,
+never replaced with synthetic rules to claim a production pass.
+"""
+import hashlib
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[2]
+RULES = {534: [('canonical panel subsection', '### Stage-selection panel'),
+       ('canonical class subsection', '### Standing human class decisions')],
+ 535: [('ordinary panel record',
+        '(?:ordinary|separate).{0,80}(?:comment|record).{0,120}temporary, panel decision'),
+       ('stable identity and question', '(?:stable )?decision ID.{0,80}question'),
+       ('named participants and positions',
+        'Product.{0,60}Architect.{0,60}orchestrator.{0,100}positions'),
+       ('vote dissent outcome exact stages',
+        'vote.{0,60}dissent.{0,80}outcome.{0,100}(?:exact|selected) stages'),
+       ('human-source link', 'link.{0,80}(?:standing human|human words)'),
+       ('Discovery eligibility protections evidence',
+        '(?:eligibility|protected-work).{0,200}(?:Discovery|discovery report)')],
+ 536: [('Discovery separate marker before panel',
+        '(?:after|before).{0,100}Discovery.{0,120}(?:separate|own).{0,40}model-record'),
+       ('issue text cannot substitute',
+        'issue text.{0,70}(?:never|cannot|not).{0,60}(?:substitut|replac)'),
+       ('consultation is not Planning', 'consultation.{0,60}(?:not|never).{0,40}Planning')],
+ 537: [('orchestrator protected', '(?:preserve|retain|never.skip).{0,80}orchestrator'),
+       ('fresh Review protected', '(?:preserve|retain|never.skip).{0,180}fresh Reviewer'),
+       ('independent scrutiny', '(?:at least one|another).{0,50}role other than the author'),
+       ('Review skip escalates',
+        '(?:skip Review|skip=Review).{0,120}(?:maintainer|escalat|refer)')],
+ 538: [('scenario AC requires Test', 'AC.{0,60}(?:add|new).{0,40}scenario.{0,60}requires Test'),
+       ('executable diff requires Implementation',
+        '(?:diff|change).{0,80}executable.{0,60}requires Implementation'),
+       ('executable tests and scripts included', 'including executable tests and scripts'),
+       ('protections before classification',
+        '(?:checks|protections).{0,60}(?:precede|before).{0,30}class')],
+ 539: [('unanimous in-class selection',
+        'unanimous.{0,80}(?:eligible|in-class).{0,80}(?:orchestrator|appl)'),
+       ('Abbreviated exact pair', 'Abbreviated.{0,220}skip=Planning.{0,80}skip=Test'),
+       ('A49 valid Test exemption', 'valid skip=Test.{0,100}A49.{0,100}exemption'),
+       ('append-only scenario scope', 'append-only.{0,100}scenario'),
+       ('Abbreviated refuses scenario AC conflict',
+        'Abbreviated.{0,80}(?:unavailable|cannot|refus).{0,100}(?:Test|scenario)')],
+ 540: [('doc-only conditions and permitted scope',
+        'doc-only.{0,120}skip=Implementation.{0,130}(?:verified|human) conditions'),
+       ('configuration outside verified conditions',
+        'configuration.{0,140}(?:conditions|eligib|Implementation)'),
+       ('class cannot override protections',
+        '(?:conditions|class).{0,90}(?:never override|cannot override|subject '
+        'to).{0,70}(?:protect|AC1)')],
+ 541: [('test-only verified conditions',
+        'test-only.{0,140}skip=Implementation.{0,140}(?:verified|human) conditions'),
+       ('executable tests still require Implementation',
+        'executable tests.{0,100}(?:require|retain).{0,30}Implementation')],
+ 542: [('2-1 skip escalates', '2-1.{0,50}(?:vote|skip).{0,160}(?:maintainer|escalat|refer)'),
+       ('majority retains and records dissent',
+        'majority.{0,40}retain.{0,100}dissent.{0,40}record'),
+       ('missing participants cannot skip',
+        'missing participants.{0,150}(?:full|required) pipeline')],
+ 543: [('outside-class per-item authority',
+        'outside.{0,80}class.{0,130}(?:per-item|explicit).{0,80}human'),
+       ('single-session not panel default',
+        'single-session.{0,150}(?:not panel|never derives|not a panel)'),
+       ('panel record alone insufficient',
+        'panel record alone.{0,60}(?:never|cannot|not).{0,50}waiv'),
+       ('single-session no QA exemption',
+        'single-session alone.{0,80}(?:no|not).{0,40}QA.{0,40}exemption')],
+ 544: [('only orchestrator posts human identity',
+        '(?:only the orchestrator|orchestrator alone).{0,200}human.{0,80}--decided-by'),
+       ('unchanged single-quoted human reason', 'unchanged.{0,80}single.quot.{0,60}--reason'),
+       ('unrepresentable words not rewritten',
+        'unrepresentable.{0,150}never.{0,80}(?:sanitiz|rewrit|truncat)'),
+       ('verify returned text', 'verify.{0,60}returned text'),
+       ('closing issue linkage', '(?:title or body|title/body).{0,80}Closes #')],
+ 545: [('both records precede both deadlines',
+        '(?:panel|decision).{0,100}(?:posting|waiver).{0,100}precede.{0,120}first.{0,40}commit.{0,80}PR'),
+       ('initial base and commit identity', 'initial base SHA.{0,120}(?:first|none yet)'),
+       ('times and identities', '(?:identities|identity).{0,80}creation times?'),
+       ('tie and unknown not timely',
+        '(?:unknown|equal).{0,120}(?:tie|equal|unknown).{0,80}(?:not timely|unresolved)'),
+       ('late editing cannot backdate', 'edit.{0,80}late.{0,80}(?:cannot|not).{0,40}backdate'),
+       ('inherited commits excluded', 'inherited.{0,80}commits.{0,40}(?:excluded|do not)'),
+       ('history rewrite retains deadline',
+        'rebas.{0,90}squash.{0,90}(?:not reset|retain).{0,50}deadline')],
+ 546: [('every decision record and outcome',
+        'merge-approval.{0,160}every.{0,100}decision.{0,80}(?:record link|link).{0,60}outcome'),
+       ('retained escalated superseded resolutions',
+        'retained.{0,60}escalated.{0,60}superseded.{0,70}resolution'),
+       ('risk and limit explicit acceptance',
+        'widening.{0,60}limit.{0,80}risk.{0,80}explicit acceptance'),
+       ('temporary acceptance OR43 and dependency', 'OR43'),
+       ('dependency removal disclosed', '(?:removal|remov).{0,60}#645')],
+ 547: [('retain A13 depth or raise force-thorough',
+        '(?:retain|preserve).{0,40}A13.{0,80}depth.{0,80}--force-thorough'),
+       ('never lower depth', 'never lower.{0,60}(?:waiver|depth)'),
+       ('stage presence only', 'stage presence only')],
+ 548: [('forgeability without authentication',
+        '(?:cannot authenticate|not authentication|not authenticate)'),
+       ('records forgeable', '(?:session.{0,40}forge|forgeable)'),
+       ('unverifiable evidence blocks posting',
+        '(?:unverif|missing).{0,70}(?:source|conditions|evidence).{0,160}(?:no '
+        'posting|without.{0,30}posting|before.{0,20}skip)'),
+       ('panel-name acceptance not permission', 'panel name.{0,160}not permission')]}
+SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e3837105d5bb9faa64505',
+ 'lib/model-record.sh': '0348c95cd8f1347cf893b688c65dec9e2ba2d6dbe65826d72e40d7144875e870',
+ 'pipeline-override.sh': 'a107b7379b33e5f25225a9f8c5bce54fd93727f85f9c496d1e590d7bdb4b4998',
+ 'skills/pre-merge-review/model-record-gate.sh': '05fa545d7d44e7e4d23e468a9abbd113dcdfbb5e5493d1b80766267783fd6925',
+ 'skills/role-contracts/ORCHESTRATOR.md': 'a85d1ca59e0b06e87a1a77b0b640033fbf7c9de5d4d010e84d538645c2cabe88',
+ 'skills/role-contracts/orchestrator-rules.tsv': 'a41764d85b4392adcf557389d5d69d84fb8445750cff7bcfe8a1ad4771cd3f99',
+ 'test/behavior/orchestrator-diff.stamp': 'c77f2e8db29dbbfc0081a3c6720f48f8ed5f481abce21316c083db5470dca568',
+ 'test/behavior/orchestrator-scenarios.md': 'c2eaf345bf0e847e51914145dcce7be37a6eda1a5e14a06bd1a8222a0abfca40',
+ 'test/fixtures/orchestrator-core-pins.tsv': 'c530682a65901dec340095667a78303308c3e184d24031a343623189b68ac667'}
+errors = []
+
+def check(ok, label):
+    if not ok:
+        errors.append(label)
+        print('FAIL: ' + label)
+
+def running(root):
+    text = (root / 'skills/role-contracts/SKILL.md').read_text()
+    return text.split('## Running the pipeline\n', 1)[1].split('\n---', 1)[0]
+
+def norm(text):
+    return re.sub(r'\s+', ' ', text.replace('`', '').replace('**', '')).lower()
+
+def pin(text, pattern):
+    return re.search(pattern.lower(), norm(text)) is not None
+
+def source_checks(root, ident, tmp):
+    # An unmodified sandbox copy is the positive control, never a hand-written
+    # implementation of decisions. Each mutant changes only this asserted text.
+    target = tmp / 'copy/skills/role-contracts'
+    target.mkdir(parents=True)
+    shutil.copy2(root / 'skills/role-contracts/SKILL.md', target / 'SKILL.md')
+    text = running(tmp / 'copy')
+    for label, pattern in RULES[ident]:
+        diagnostic = f'S{ident}/{label}'
+        if not pin(text, pattern):
+            check(False, diagnostic + ' missing from canonical Running section; real-copy mutation control pending implementation')
+            continue
+        mutable = norm(text)
+        mutant, count = re.subn(pattern.lower(), '', mutable)
+        check(count > 0 and mutant != mutable, diagnostic + '/mutation applied')
+        check(not pin(mutant, pattern), diagnostic + '/deletion detected')
+        print('CONTROL: ' + diagnostic + ' unmodified PASS; deletion rejected')
+
+def reference_control(path, needles):
+    text = path.read_text()
+    for needle in needles:
+        label = str(path.relative_to(ROOT)) + '/' + needle
+        check(needle.lower() in text.lower(), 'S534/reference ' + label)
+        if needle.lower() in text.lower():
+            mutant = re.sub(re.escape(needle), '', text, flags=re.I)
+            check(needle.lower() not in mutant.lower(), 'S534/reference mutant ' + label)
+
+def projection_controls(tmp):
+    # Exercise the existing check command against real unmodified data, then
+    # one drift at a time. Generated files in the checkout are never edited.
+    copy = tmp / 'projections'
+    names = ['policy/WORKFLOW.md', 'skills/role-contracts/SKILL.md',
+             'skills/role-contracts/ORCHESTRATOR.md', 'skills/model-choice/SKILL.md',
+             'CHANGES.md', 'adapters/claude/INSTRUCTIONS.md',
+             'adapters/codex/INSTRUCTIONS.md', 'WORKFLOW.md',
+             'adapters/codex/AGENTS.md', 'AGENTS.md']
+    for name in names:
+        target = copy / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / name, target)
+    def run():
+        return subprocess.run([str(ROOT / 'check-workflow-adapters.sh'), str(copy)],
+                              capture_output=True, text=True)
+    baseline = run()
+    check(baseline.returncode == 0, 'S534/unmodified projection copy: ' + baseline.stdout)
+    if baseline.returncode:
+        return
+    for name in ['WORKFLOW.md', 'adapters/codex/AGENTS.md', 'AGENTS.md']:
+        target = copy / name
+        original = target.read_bytes()
+        if name == 'AGENTS.md':
+            mutated = original.replace(b'<!-- spec-driven-guardrails: begin -->',
+                                       b'<!-- spec-driven-guardrails: begin -->\nprojection drift', 1)
+        else:
+            mutated = original + b'\nprojection drift\n'
+        check(mutated != original, 'S534/projection mutation applied ' + name)
+        target.write_bytes(mutated)
+        result = run()
+        check(result.returncode == 1 and 'drift: ' in result.stdout and name in result.stdout,
+              'S534/projection drift diagnostic ' + name + ': ' + result.stdout)
+        target.write_bytes(original)
+    print('CONTROL: S534 unmodified projections PASS; three single-output drift mutants rejected')
+
+def cli(tmp):
+    # Same narrow PIPELINE_OVERRIDE_GH Adapter as S376; no real gh/network.
+    stub = tmp / 'gh'
+    calls = tmp / 'calls'
+    body = tmp / 'body'
+    stub.write_text('#!/bin/bash\nprintf "%s\\n" "$*" >> "$CAPTURE_CALLS"\ncat > "$CAPTURE_BODY"\necho https://example.invalid/issues/647#issuecomment-1\n')
+    stub.chmod(0o755)
+    env = dict(os.environ, PIPELINE_OVERRIDE_GH=str(stub), CAPTURE_CALLS=str(calls), CAPTURE_BODY=str(body))
+    def post(issue, reason, scopes, human="SyntheticHuman"):
+        args = [str(ROOT / 'pipeline-override.sh'), str(issue)]
+        for scope in scopes:
+            args += ['--scope', scope]
+        return subprocess.run(args + ['--decided-by', human, '--reason', reason], env=env, capture_output=True)
+    reason = '  synthetic standing words `tick` $literal  '
+    result = post(647, reason, ['skip=Planning', 'skip=Test'])
+    check(result.returncode == 0, 'S544/CLI accepted legal synthetic evidence')
+    def captured_matches(expected_issue, expected_reason):
+        lines = body.read_text().splitlines()
+        markers = [f'<!-- pipeline-override: decided-by="SyntheticHuman" scope="{scope}" reason="{expected_reason}" -->'
+                   for scope in ['skip=Planning', 'skip=Test']]
+        return (calls.read_text().splitlines()[-1] == f'issue comment {expected_issue} --body-file -'
+                and lines[:2] == markers and lines[2:3] == [''])
+    check(captured_matches(647, reason), 'S544/CLI exact issue human reason scopes')
+    check(len(calls.read_text().splitlines()) == 1, 'S544/CLI one comment')
+    check(b'Closes #647' in result.stdout and b'issuecomment-1' in result.stdout,
+          'S544/CLI returned comment and closing linkage')
+    result = post(648, reason, ['skip=Planning', 'skip=Test'])
+    check(result.returncode == 0 and not captured_matches(647, reason),
+          'S544/CLI wrong-issue posting detected by same oracle')
+    result = post(647, reason.strip(), ['skip=Planning', 'skip=Test'])
+    check(result.returncode == 0 and not captured_matches(647, reason),
+          'S544/CLI altered-reason posting detected by same oracle')
+    result = post(647, reason, ['skip=Planning', 'skip=Test'], human='panel')
+    check(result.returncode == 0 and not captured_matches(647, reason),
+          'S544/CLI panel-name mismatch detected; acceptance is not authority')
+    result = post(647, reason, ['skip=Planning', 'skip=Test', 'skip=Implementation'])
+    check(result.returncode == 0 and not captured_matches(647, reason),
+          'S544/CLI extra-scope posting detected')
+    before = calls.read_bytes()
+    result = post(647, 'cannot "represent" this', ['skip=Test'])
+    check(result.returncode == 2 and calls.read_bytes() == before, 'S544/CLI refusal without posting or rewriting')
+    print('CONTROL: S544 CLI exact reason, issue mismatch, unrepresentable words PASS')
+
+def catalogue(text):
+    # Inspect distinct cells, so a link mentioning conditions cannot fill an
+    # empty eligibility field. No prose about evidence gaps is pinned.
+    section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    rows = [line for line in section.splitlines() if line.startswith('|')]
+    fields = {'human': r'human|identity|decided.by',
+              'source link': r'source|words', 'scope': r'scope|skip',
+              'conditions': r'condition|eligib'}
+    headers = [line for line in rows if all(re.search(pattern, line, re.I)
+               for pattern in fields.values())]
+    check(len(headers) == 1, 'S548/catalogue distinct human/source/scope/conditions header')
+    if len(headers) != 1:
+        return
+    header = headers[0]
+    cells = [cell.strip() for cell in header.strip('|').split('|')]
+    indices = {}
+    for label, pattern in fields.items():
+        found = [i for i, cell in enumerate(cells) if re.search(pattern, cell, re.I)]
+        check(len(found) == 1, 'S548/catalogue header ' + label)
+        if len(found) == 1:
+            indices[label] = found[0]
+    if len(indices) != 4:
+        return
+    check(len(set(indices.values())) == 4, 'S548/catalogue independent evidence columns')
+    if len(set(indices.values())) != 4:
+        return
+    for label in fields:
+        mutated = cells.copy()
+        mutated[indices[label]] = ''
+        check(not any(re.search(fields[label], cell, re.I) for cell in mutated),
+              'S548/catalogue header deletion ' + label)
+    for name in ['Abbreviated', 'test-only']:
+        selected = [line for line in rows if name.lower() in line.lower()]
+        check(len(selected) == 1, 'S548/catalogue row ' + name)
+        if len(selected) != 1:
+            continue
+        row = selected[0]
+        check(not any(name.lower() in line.lower() for line in rows if line != row),
+              'S548/catalogue row deletion ' + name)
+        values = [cell.strip() for cell in row.strip('|').split('|')]
+        check(len(values) == len(cells), 'S548/catalogue row shape ' + name)
+        if len(values) != len(cells):
+            continue
+        predicates = {'human': lambda value: value == 'TiesL',
+                      'source link': lambda value: bool(re.search(r'\[[^]]+\]\([^)]*\)', value)),
+                      'scope': lambda value: 'skip=' in value,
+                      'conditions': lambda value: bool(value.strip(' `-'))}
+        for label, predicate in predicates.items():
+            value = values[indices[label]]
+            check(predicate(value), 'S548/catalogue ' + name + '/' + label)
+            if predicate(value):
+                check(not predicate(''), 'S548/catalogue field deletion ' + name + '/' + label)
+
+ident = int(sys.argv[1])
+with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
+    tmp = Path(scratch)
+    source_checks(ROOT, ident, tmp)
+    if ident == 534:
+        for path, needles in {
+            'policy/WORKFLOW.md': ['- **Abbreviated workflow**', 'skills/role-contracts/SKILL.md', 'Stage-selection panel', 'pipeline-override.sh'],
+            'README.md': ['skills/role-contracts/SKILL.md', 'Stage-selection panel'],
+        }.items():
+            reference_control(ROOT / path, needles)
+        projection_controls(tmp)
+    if ident == 544:
+        cli(tmp)
+    if ident == 548:
+        catalogue(running(ROOT))
+        for path, digest in SNAPSHOTS.items():
+            content = (ROOT / path).read_bytes()
+            check(hashlib.sha256(content).hexdigest() == digest, 'S548/unchanged ' + path)
+            check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
+        print('CONTROL: S548 frozen production hashes and byte mutants PASS')
+sys.exit(bool(errors))

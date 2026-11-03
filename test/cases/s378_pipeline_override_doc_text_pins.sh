@@ -20,16 +20,20 @@ set -uo pipefail
 sandbox_create
 trap sandbox_destroy EXIT
 
-# pin_abbrev <root>: policy/WORKFLOW.md and role-contracts/SKILL.md both name the
-# abbreviated workflow (any case) on a line that holds skip=Planning and skip=Test.
+# pin_abbrev <root>: policy is the entry point; only the skill defines scopes.
 pin_abbrev() {
-  local f line
-  for f in policy/WORKFLOW.md skills/role-contracts/SKILL.md; do
-    line="$(grep -i 'abbreviated workflow' "$1/$f" 2>/dev/null)"
-    [ -n "$line" ] || { echo "$f has no 'abbreviated workflow'"; return 1; }
-    grep -q 'skip=Planning' <<<"$line" && grep -q 'skip=Test' <<<"$line" \
-      || { echo "$f: the abbreviated-workflow text lacks skip=Planning/skip=Test"; return 1; }
+  local line f
+  f=policy/WORKFLOW.md
+  line="$(grep -i 'abbreviated workflow' "$1/$f" 2>/dev/null)"
+  [ -n "$line" ] || { echo "$f has no 'abbreviated workflow'"; return 1; }
+  for needle in skills/role-contracts/SKILL.md 'Stage-selection panel' pipeline-override.sh; do
+    grep -qF "$needle" <<<"$line" || { echo "$f: the abbreviated-workflow reference lacks $needle"; return 1; }
   done
+  f=skills/role-contracts/SKILL.md
+  line="$(grep -i 'abbreviated workflow' "$1/$f" 2>/dev/null)"
+  [ -n "$line" ] || { echo "$f has no 'abbreviated workflow'"; return 1; }
+  grep -q 'skip=Planning' <<<"$line" && grep -q 'skip=Test' <<<"$line" \
+    || { echo "$f: the abbreviated-workflow text lacks skip=Planning/skip=Test"; return 1; }
 }
 # pin_or34 <root>: OR34 names the script.
 pin_or34() {
@@ -107,10 +111,16 @@ mut_sed() { # <file> <sed-expr> <root>: sed -i on <root>/<file>
 
 arm abbrev-policy pin_abbrev "policy/WORKFLOW.md has no 'abbreviated workflow'" \
   mut_sed policy/WORKFLOW.md '/[Aa]bbreviated workflow/d'
+for needle in skills/role-contracts/SKILL.md 'Stage-selection panel' pipeline-override.sh; do
+  arm "abbrev-reference-$needle" pin_abbrev "policy/WORKFLOW.md: the abbreviated-workflow reference lacks $needle" \
+    mut_sed policy/WORKFLOW.md "/[Aa]bbreviated workflow/s|$needle|removed|g"
+done
 arm abbrev-skill pin_abbrev "skills/role-contracts/SKILL.md has no 'abbreviated workflow'" \
   mut_sed skills/role-contracts/SKILL.md '/[Aa]bbreviated workflow/d'
 arm abbrev-skiptest pin_abbrev "skills/role-contracts/SKILL.md: the abbreviated-workflow text lacks skip=Planning/skip=Test" \
   mut_sed skills/role-contracts/SKILL.md 's/skip=Test/skip=X/g'
+arm abbrev-skipplanning pin_abbrev "skills/role-contracts/SKILL.md: the abbreviated-workflow text lacks skip=Planning/skip=Test" \
+  mut_sed skills/role-contracts/SKILL.md 's/skip=Planning/skip=X/g'
 arm or34 pin_or34 "OR34 does not name pipeline-override.sh" \
   mut_sed skills/role-contracts/ORCHESTRATOR.md '/^- OR34 /s/pipeline-override\.sh/the-script/g'
 arm slot1 pin_slot1 "session-context.sh --slot 1 does not mention pipeline-override.sh" \
