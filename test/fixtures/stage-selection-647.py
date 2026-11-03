@@ -283,7 +283,9 @@ def catalogue(text):
         check(len(values) == len(cells), 'S548/catalogue row shape ' + name)
         if len(values) != len(cells):
             continue
-        predicates = {'human': lambda value: value == 'TiesL',
+        predicates = {'human': lambda value: bool(re.search(
+                          r'\b(?:maintainer|(?:project(?:\'s)? )?human decision[- ]maker)\b',
+                          value, re.I)),
                       'source link': lambda value: bool(re.search(r'\[[^]]+\]\([^)]*\)', value)),
                       'scope': lambda value: 'skip=' in value,
                       'conditions': lambda value: bool(value.strip(' `-'))}
@@ -292,6 +294,12 @@ def catalogue(text):
             check(predicate(value), 'S548/catalogue ' + name + '/' + label)
             if predicate(value):
                 check(not predicate(''), 'S548/catalogue field deletion ' + name + '/' + label)
+            if label == 'human':
+                for invalid in ['TiesL', 'panel', 'orchestrator', '[source](https://example.invalid)']:
+                    check(not predicate(invalid),
+                          'S548/catalogue rejects non-role identity ' + name + '/' + invalid)
+                for role in ['maintainer', "project's human decision-maker"]:
+                    check(predicate(role), 'S548/catalogue accepts human role ' + name + '/' + role)
 
 ident = int(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:

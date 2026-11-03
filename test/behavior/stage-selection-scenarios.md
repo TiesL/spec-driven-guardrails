@@ -179,8 +179,10 @@ stage skip or doc-only label: reject reduction. Selection changes presence only.
 
 ### S548 — authority and threat limits (AC2/AC4)
 
-Positive: catalogue rows carry human identity, recoverable source link, scopes
-and exact conditions; only evidence whose applicability is verified may support
+Positive: catalogue rows carry a human-role identity (`maintainer` or the project's
+human decision-maker), recoverable source link, scopes and exact conditions;
+the person named in `decided-by` is supplied at posting time, as pinned by the
+pipeline-override fixtures; only evidence whose applicability is verified may support
 posting. Remove only the human source, or make conditions unverifiable: obtain
 evidence/per-item authority, no class posting. Do not pin missing-evidence prose
 or use panel records as original human words. Retain the exact production hashes
