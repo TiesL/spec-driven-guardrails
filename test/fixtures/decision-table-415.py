@@ -102,7 +102,7 @@ if scenario == "s277":
 elif scenario == "s288":
     # #488 AC1; replaced by #499 AC14 (A41): the low-finding row is the item
     # OR40 in part 2; the table-cell locator and clause-local oracles are
-    # retired, their behaviour moved to OB40-OB44 and the OR40 calibration
+    # retired, their behaviour moved to OB40-OB44 and the OR43 calibration
     # mutant. Kept deterministic: (a) tier, part, one physical line; (b) the
     # pointer; (h) old text gone; (i) Disposition and scope-expansion; no
     # restated T1-T6 limits.
@@ -200,12 +200,13 @@ elif scenario == "s281":
     shared = shared.split("**When your recommendation is not accepted", 1)[1].split("\n\n", 1)[0]
     for pattern in (r"once", r"before the decision is recorded", r"arguments", r"cost", r"numbered human decision links the pushback", r"fresh Reviewer"):
         require(re.search(pattern, shared, re.I), f"pushback rule {pattern}")
-    require("pushback" in orch and "before" in orch, "orchestrator flow")
+    require(re.search(r"Dispatch recommending role once for reasoned pushback before decision recorded;", norm(rule("OR45"))), "OR45: recommending role pushback before decision")
 elif scenario == "s282":
     architect = section(roles, "Architect")
-    for pattern in (r"Risk note", r"Decision", r"What is accepted", r"Likely consequence", r"Early signal", r"Revisit when", r"#410", r"Planning"):
+    for pattern in (r"Risk note", r"What is accepted", r"Likely consequence", r"Early signal", r"Revisit when", r"#410", r"Planning"):
         require(re.search(pattern, architect, re.I), f"Architect risk note {pattern}")
-    require("risk note" in orch.lower() and "Architect" in orch, "Architect dispatch")
+    require("**Decision** linking the numbered human decision" in norm(architect), "literal Decision field and decision link")
+    require(re.search(r"Non-Architect role's overrule: dispatch Architect for issue risk note\.", norm(rule("OR45"))), "OR45: Architect risk-note dispatch")
 elif scenario == "s283":
     # Structure oracles replaced by #499 (AC14, A41): placement by the
     # inventory part column, OR45 its own item in part 1, OR21 cites OR45.
@@ -292,7 +293,7 @@ if not os.environ.get("DT415_NEGATIVE"):
             ("- OR36 ", "- XR36 ", "OR36 removed"),
             ("<!-- session-context: slot -->", "- OR36 Resume, copied into part 1.\n<!-- session-context: slot -->", "OR36 in both parts"),
             ("- OR45 ", "  OR45 ", "OR45 merged into the item before it"),
-            ("so A29 flow (OR45) applies", "so A29 flow (#415) applies", "bare #n in OR21, OR45 dropped"),
+            ("so OR45 applies", "so #415 applies", "bare #n in OR21, OR45 dropped"),
             ("(format in `SKILL.md`;", "(format elsewhere;", "SKILL.md dropped from OR21"),
         ],
     }

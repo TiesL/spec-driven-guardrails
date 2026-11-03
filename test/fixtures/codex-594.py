@@ -859,7 +859,212 @@ os.replace = replace
             f'first writer failed after refused descendant: {first_out}{first_err}')
 
 
-if SCENARIO == 444:
+
+def cold_environment():
+    # The test interpreter uses -B, but children must receive neither that flag
+    # nor an inherited bytecode cache/prefix/startup suppression mechanism.
+    env = {k: v for k, v in ENV.items() if not k.startswith('PYTHON')}
+    env['PYTHONPATH'] = ''
+    # Apple's system Python defaults to a HOME cache prefix. Explicitly select
+    # ordinary adjacent caches, without disabling writes, on every platform.
+    bindir = TMP / 'cold-python-bin'
+    bindir.mkdir(exist_ok=True)
+    shim = bindir / 'python3'
+    shim.write_text('#!/bin/sh\nexec ' + shlex.quote(shutil.which('python3')) +
+                    ' -X pycache_prefix= "$@"\n')
+    shim.chmod(0o755)
+    env['PATH'] = str(bindir) + os.pathsep + ENV['PATH']
+    probe = run('python3', '-c',
+                'import sys; print(sys.dont_write_bytecode); print(sys.pycache_prefix)', env=env)
+    require(probe.returncode == 0 and probe.stdout == 'False\nNone\n',
+            f'cold child did not enable ordinary local bytecode: {probe}')
+    for path in list(WF.rglob('__pycache__')):
+        shutil.rmtree(path)
+    for path in list(WF.rglob('*.pyc')):
+        path.unlink()
+    return env
+
+
+def readonly_probe(env, standalone=False):
+    before = snapshot(TMP)
+    args = (WF / 'adopt.sh', '--runtime', 'codex', '--status', PROJECT) if standalone else (
+        WF / 'session-context.sh', '--runtime', 'codex', PROJECT)
+    result = run(*args, env=env)
+    out = result.stdout + result.stderr
+    expected_rc = 1 if standalone and SCENARIO == 516 else 0
+    require(result.returncode == expected_rc, f'read-only CLI exit: {result.returncode}: {out}')
+    state = 'stale' if SCENARIO == 516 else 'absent'
+    require(re.search(r'guard bundle: ' + state + r'\b', out), f'missing bundle diagnostic: {out}')
+    runtime_state = 'installed' if SCENARIO == 516 else 'not-installed'
+    require('runtime-hooks: ' + runtime_state in out and 'activation: unverified' in out,
+            f'missing runtime/activation diagnostics: {out}')
+    if SCENARIO == 516:
+        require('Warning: Codex installation' in out and 'outside' in out and 'sandbox' in out,
+                f'missing stale warning/recovery directions: {out}')
+    after = snapshot(TMP)
+    changed = sorted(k for k in before.keys() | after.keys() if before.get(k) != after.get(k))
+    print(f'bytecode evidence platform={sys.platform} installation={PROJECT} checkout={WF} '
+          f'exit={result.returncode} changed={changed}', flush=True)
+    require(not changed, f'read-only CLI changed complete installation/checkout inventory or bytes: {changed}')
+
+
+def killed(label, action):
+    try:
+        action()
+    except AssertionError as error:
+        print(f'KILLED {label}: {error}', flush=True)
+    else:
+        raise AssertionError('mutation survived: ' + label)
+
+
+def bytecode_scenario():
+    adopt('--hooks') if SCENARIO == 516 else adopt()
+    if SCENARIO == 516:
+        changed_source()
+    env = cold_environment()
+    # Public CLI fault controls mutate only the disposable workflow. A clean
+    # suppressed run establishes diagnostics before writes/omissions are injected.
+    standalone = SCENARIO == 517
+    suppressed = dict(env, PYTHONDONTWRITEBYTECODE='1')
+    readonly_probe(suppressed, standalone)
+    target = WF / ('adopt.sh' if standalone else 'session-context.sh')
+    original = target.read_text()
+    anchor = 'set -Eeuo pipefail' if standalone else 'set -uo pipefail'
+    require(anchor in original, 'CLI mutation anchor absent')
+    try:
+        for label, command in (
+            ('new hidden file', 'touch "' + str(PROJECT / '.unexpected') + '"'),
+            ('existing bytes', 'printf x >> "' + str(PROJECT / 'AGENTS.md') + '"')):
+            target.write_text(original.replace(anchor, command + '\n' + anchor, 1))
+            saved = (PROJECT / 'AGENTS.md').read_bytes()
+            killed(label, lambda: readonly_probe(suppressed, standalone))
+            (PROJECT / '.unexpected').unlink(missing_ok=True)
+            (PROJECT / 'AGENTS.md').write_bytes(saved)
+        # Keep the real backend invocation but suppress its visible diagnostics.
+        target.write_text(original.replace(anchor, 'exec >/dev/null 2>&1\n' + anchor, 1))
+        killed('diagnostics omitted', lambda: readonly_probe(suppressed, standalone))
+    finally:
+        target.write_text(original)
+    if standalone:
+        try:
+            require('export PYTHONDONTWRITEBYTECODE=1' in original, 'status suppression mutation anchor absent')
+            target.write_text(original.replace('export PYTHONDONTWRITEBYTECODE=1',
+                                               'unset PYTHONDONTWRITEBYTECODE', 1))
+            killed('status bytecode suppression removed', lambda: readonly_probe(env, True))
+        finally:
+            target.write_text(original)
+            cold_environment()
+    readonly_probe(env, standalone)
+
+
+def exchange_evidence(label, result, stage, **observed):
+    print(f'exchange evidence platform={sys.platform} active={bundle()} staging={stage} '
+          f'result={label} exit={result.returncode} observed={observed} '
+          f'diagnostics={result.stdout + result.stderr!r}', flush=True)
+
+
+def native_linux_exchange():
+    if not sys.platform.startswith('linux'):
+        print(f'SKIP S518: actual platform={sys.platform}; real renameat2 RENAME_EXCHANGE '
+              f'refresh requires Linux; checkout={WF} installation={PROJECT}', flush=True)
+        return False
+    adopt('--hooks')
+    old = snapshot(bundle())
+    changed_source()
+    expected_project = TMP / 'expected-new-project'
+    expected_project.mkdir(); git_metadata(expected_project)
+    adopt('--hooks', project=expected_project)
+    expected_new = snapshot(expected_project / '.codex/sdg-guard')
+    require(old != expected_new, 'exchange fixture generations must differ')
+    # Pause immediately after the real libc exchange, before cleanup can erase
+    # the old generation. Compare every path, mode and byte in both directories.
+    env = fault_env('exchange', 'after')
+    result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT, env=env)
+    tx = record().get('guard_bundle_transaction')
+    require(tx and tx['phase'] == 'ready', 'native exchange did not retain recoverable ready record')
+    stage = PROJECT / tx['staging_path']
+    exchange_evidence('native-after-exchange', result, stage,
+                      receipt=Path(env['FAULT_RECEIPT']).read_text() if Path(env['FAULT_RECEIPT']).exists() else 'absent',
+                      active_digest=digest(bundle() / 'MANIFEST'), stage_digest=digest(stage / 'MANIFEST'))
+    require(result.returncode == 86 and Path(env['FAULT_RECEIPT']).read_text() == 'exchange:after',
+            'real native exchange never completed')
+    def exchanged_trees():
+        require(snapshot(stage) == old, 'native exchange did not move complete old tree to staging')
+        require(snapshot(bundle()) == expected_new, 'native exchange did not activate complete expected new tree')
+    exchanged_trees()
+    require((bundle() / 'hooks/rules.sh').read_bytes() == (WF / 'hooks/rules.sh').read_bytes(),
+            'native exchange did not activate distinct new source bytes')
+    require(digest(bundle() / 'MANIFEST') == tx['new_manifest_sha256'] and
+            tx['new_manifest_sha256'] != tx['old_manifest_sha256'], 'native exchange manifest mismatch')
+    # Assert both generation oracles reject corruption in the observed trees.
+    new = snapshot(bundle())
+    for root, label in ((stage, 'old staged tree corrupted'), (bundle(), 'new active tree corrupted')):
+        path = root / 'hooks/rules.sh'
+        saved = path.read_bytes()
+        try:
+            path.write_bytes(saved + b'\n# exchange mutation\n')
+            killed(label, exchanged_trees)
+        finally:
+            path.write_bytes(saved)
+    status(1, 'current')  # valid new generation, transaction recovery still pending
+    recovery = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT)
+    require(recovery.returncode == 0, f'explicit recovery failed: {recovery.stdout}{recovery.stderr}')
+    status_out = status(0, 'current')
+    require(snapshot(bundle()) == new, 'recovery changed already exchanged new generation')
+    require(record()['guard_bundle_transaction'] is None and not stage.exists(), 'recovery did not clean old tree')
+    exchange_evidence('recovered-current', recovery, stage, status=status_out)
+    return True
+
+
+def refused_exchange():
+    adopt('--hooks')
+    old = snapshot(bundle())
+    changed_source()
+    backup = TMP / 'refusal-baseline'
+    shutil.copytree(PROJECT, backup, symlinks=True)
+    for error in ('ENOSYS', 'EACCES'):
+        shutil.rmtree(PROJECT); shutil.copytree(backup, PROJECT, symlinks=True)
+        env = fault_env('unsupported-exchange')
+        injector = Path(env['PYTHONPATH']) / 'sitecustomize.py'
+        injector.write_text(INJECTOR.replace('ctypes.set_errno(errno.ENOSYS)',
+                                            'ctypes.set_errno(errno.' + error + ')'))
+        result = run(WF / 'adopt.sh', '--runtime', 'codex', '--hooks', PROJECT, env=env)
+        tx = record().get('guard_bundle_transaction')
+        require(tx and tx['phase'] == 'ready', error + ': refusal lost recoverable ready record')
+        stage = PROJECT / tx['staging_path']
+        exchange_evidence(error, result, stage, active_unchanged=snapshot(bundle()) == old)
+        require(Path(env['FAULT_RECEIPT']).read_text() == 'unsupported-exchange', 'refusal injector not reached')
+        require(result.returncode == 1 and 'exchange refused' in result.stdout + result.stderr,
+                error + ': refused exchange did not report failure')
+        def active_unchanged():
+            require(snapshot(bundle()) == old, error + ': refusal changed old active tree')
+        active_unchanged()
+        target = bundle() / 'hooks/rules.sh'; saved = target.read_bytes()
+        try:
+            target.write_bytes(saved + b'\n# unsafe refusal mutation\n')
+            killed(error + ' unsafe active-tree control', active_unchanged)
+        finally:
+            target.write_bytes(saved)
+        require(digest(stage / 'MANIFEST') == tx['new_manifest_sha256'], 'refusal lost staged new tree')
+        require((stage / 'hooks/rules.sh').read_bytes() == (WF / 'hooks/rules.sh').read_bytes(),
+                'refusal lost staged new bytes')
+        status(1, 'stale')
+        adopt('--hooks'); status(0, 'current')
+        require((bundle() / 'hooks/rules.sh').read_bytes() == (WF / 'hooks/rules.sh').read_bytes(),
+                'explicit retry did not activate new generation')
+        require(record()['guard_bundle_transaction'] is None and not stage.exists(), 'retry left pending state')
+        print(f'exchange recovery evidence platform={sys.platform} active={bundle()} '
+              f'staging={stage} error={error} retry=current transaction=cleared stage_exists={stage.exists()}', flush=True)
+
+
+if SCENARIO in (515, 516, 517):
+    bytecode_scenario()
+elif SCENARIO == 518:
+    if not native_linux_exchange():
+        sys.exit(0)
+elif SCENARIO == 519:
+    refused_exchange()
+elif SCENARIO == 444:
     descendant_lock_scenario()
 elif SCENARIO == 440:
     current_directory_adoption()
@@ -942,6 +1147,12 @@ elif SCENARIO == 401:
     require(all(s in out for s in ('hooks/rules.sh', OLD_REV, NEW_REV)), 'refresh omits changed path or old/new revisions')
     require(re.search(r'trust[^\n]*(?:not re-prompted|not reprompted)', out, re.I), 'refresh omits trust is not re-prompted')
     status(0, 'current')
+    cold = cold_environment()
+    before_all = snapshot(TMP)
+    result = run(WF / 'adopt.sh', '--runtime', 'codex', '--status', PROJECT, env=cold)
+    require(result.returncode == 0 and 'guard bundle: current' in result.stdout, 'cold refresh status missing')
+    require(snapshot(TMP) == before_all, 'cold refresh status wrote installation/checkout')
+    print(f'S401 cold status platform={sys.platform} checkout={WF} project={PROJECT} exit={result.returncode}')
 elif SCENARIO == 402:
     adopt('--hooks')
     recpath = PROJECT / '.guardrails/installation.json'
@@ -1146,6 +1357,8 @@ Path.write_bytes = interrupted
             require(recovered == baseline, f'{name}: recovered bundle changed policy: {recovered}')
         print(f'S411: exercised interrupted write and recovery for {name}')
     require(not failures, '\n'.join(failures))
+    # Broaden existing recovery evidence to both refused native exchanges.
+    refused_exchange()
 else:
     raise AssertionError(f'unknown scenario {SCENARIO}')
 print(f'S{SCENARIO}: passed')

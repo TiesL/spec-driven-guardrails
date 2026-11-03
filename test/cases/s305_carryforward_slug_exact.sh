@@ -56,6 +56,9 @@ check() {
   rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "${args[@]}"
   rr_script_run "$GATE" "$RR_PR"
   [ "$rr_status" -eq 0 ] || fail "S305/$label — exit $rr_status, stderr: $rr_err"
+  if [ -z "$want" ]; then
+    [ -z "$rr_err" ] || fail "S305/$label — clean empty result requires empty stderr, got: $rr_err"
+  fi
   got="$(printf '%s\n' "$rr_out" | LC_ALL=C sed -n -E 's/^finding-carryforward: ([^ ]+) was open in the previous round and is missing from this one \(round ([0-9]+)\)$/\1:\2/p' | LC_ALL=C sort | LC_ALL=C tr '\n' ' ')"
   got="${got% }"
   [ "$got" = "$want" ] || fail "S305/$label — expected reported '[$want]', got '[$got]' (stdout: $(printf '%s' "$rr_out" | LC_ALL=C tr '\n' '|'); stderr: $rr_err)"

@@ -74,6 +74,12 @@ refuse() {
   [ "$(calls)" = 0 ] || fail "S376/$label — gh was called for a refused input"
 }
 
+# Invalid UTF-8 must fail for that class, even if a later guard also refuses it.
+invalid_utf8() {
+  refuse "$@"
+  grep -qF 'is not valid UTF-8' "$SANDBOX/run/err" || fail "S376/$1 — invalid-UTF-8 class missing"
+}
+
 # --- 0. The script exists and is executable ---------------------------------
 [ -x "$SCRIPT" ] || fail "S376/0 — pipeline-override.sh is missing or not executable at the repo root"
 
@@ -242,17 +248,31 @@ grep -qiF 'internal check failed' "$SANDBOX/run/err" || fail "S376/5 — stderr 
 # --- 5b. #578 AC5: invalid UTF-8 is refused (a value the record cannot hold as given) ---
 for f in reason decided-by; do
   if [ "$f" = reason ]; then rest5=(--decided-by TiesL --reason); else rest5=(--reason fine --decided-by); fi
-  refuse "5b-$f-ff-fe" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')" --dry-run
-  refuse "5b-$f-cut-off-3-byte" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'cut \xe2\x80')" --dry-run
-  refuse "5b-$f-overlong" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'long \xc0\xaf')" --dry-run
-  refuse "5b-$f-stray-continuation" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \x80 y')" --dry-run
-  refuse "5b-$f-surrogate" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \xed\xa0\x80 y')" --dry-run
-  refuse "5b-$f-no-dry-run" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')"
+  invalid_utf8 "5b-$f-ff-fe" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')" --dry-run
+  invalid_utf8 "5b-$f-cut-off-3-byte" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'cut \xe2\x80')" --dry-run
+  invalid_utf8 "5b-$f-overlong" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'long \xc0\xaf')" --dry-run
+  invalid_utf8 "5b-$f-stray-continuation" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \x80 y')" --dry-run
+  invalid_utf8 "5b-$f-surrogate" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'x \xed\xa0\x80 y')" --dry-run
+  invalid_utf8 "5b-$f-no-dry-run" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf 'bad \xff\xfe')"
+  while IFS='|' read -r name bytes; do
+    invalid_utf8 "5b-$f-$name" "--$f" 42 "${V[@]}" "${rest5[@]}" "$(printf '%b' "$bytes")" --dry-run
+  done <<'BOUNDS'
+e0-overlong|\xe0\x80\xaf
+f0-overlong|\xf0\x80\x80\xaf
+above-max|\xf4\x90\x80\x80
+f5-lead|\xf5\x80\x80\x80
+f8-lead|\xf8\x80\x80\x80\x80
+dfff-surrogate|\xed\xbf\xbf
+BOUNDS
 done
 # valid multi-byte text (2-, 3- and 4-byte) is still accepted, byte for byte
 byte_for_byte 5b-2byte TiesL 'caf'$'\xc3\xa9'
 byte_for_byte 5b-3byte TiesL 'to '$'\xe2\x86\x92'' done'
 byte_for_byte 5b-4byte TiesL 'ok '$'\xf0\x9f\x98\x80'
+
+byte_for_byte 5b-d7ff TiesL $'\xed\x9f\xbf'
+byte_for_byte 5b-e000 TiesL $'\xee\x80\x80'
+byte_for_byte 5b-max TiesL $'\xf4\x8f\xbf\xbf'
 
 # --- 5c. #578 AC6: only whitespace or invisibles counts as blank ------------------
 nbsp=$'\xc2\xa0'

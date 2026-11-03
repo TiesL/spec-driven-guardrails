@@ -41,6 +41,10 @@ Every Review round, including a re-review after a fix commit, is a new dispatch 
 
 A re-review after a trivial-fix commit (`Fix cost`, `role-contracts`) limits new findings to the fix delta, but its brief still lists every earlier slug so `finding-carryforward-gate.sh` is not tripped: a fixed low is reported `status=resolved`, a deferred low `status=open`.
 
+**Command paths.** Bare `skills/` and `templates/` paths below are relative to
+the physical guardrails checkout, not the adopted project. Invoke them as
+`"$SPEC_DRIVEN_GUARDRAILS_DIR/<path>"` from the project's checkout.
+
 ## Review depth: quick vs thorough
 
 Every PR gets at least the single isolated Reviewer run above (`context: fork`) —

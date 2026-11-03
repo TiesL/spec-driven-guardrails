@@ -89,7 +89,8 @@ rr_rounds() {
         [ "$rc" -eq 0 ] || { _rr_fail live_text "$rc"; return "$rc"; }
         # grep -c, not -q: a here-string that cannot be made returns 1 like "no hit", but
         # it prints no count, and a count is what tells the two apart (as in rec_scan).
-        hit="$(LC_ALL=C grep -acE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live")"
+        # live_text preserves indentation; exclude code lines (four spaces or a tab).
+        hit="$(LC_ALL=C grep -acE '^ {0,3}([^[:blank:]].*)?<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live")"
         rc=$?
         case "$hit" in
           "" | *[!0-9]*) _rr_fail grep "$rc (no numeric hit count)"; return 2 ;;
@@ -98,9 +99,6 @@ rr_rounds() {
           _rr_fail grep "$rc"; return 2
         fi
         if [ "$rc" -eq 0 ]; then
-          # cross-check the count with a plain match: both must agree before it is a round
-          LC_ALL=C grep -aqE '<!--[[:space:]]*pre-merge-review:done[[:space:]]+sha=[0-9a-fA-F]{40}[[:space:]]*-->' <<<"$live" \
-            || { _rr_fail grep "disagreement between count and match"; return 2; }
           kind=R
         fi
         ;;

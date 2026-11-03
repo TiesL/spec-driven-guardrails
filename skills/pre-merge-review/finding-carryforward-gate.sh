@@ -68,15 +68,27 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || skip "could not
 
 rows=""
 fetch() { # <endpoint> <timefield> <source>
-  local out
-  out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null)" \
-    || skip "couldn't consult PR #$pr_number (no network or no access)"
+  local out rc
+  # Empty responses are valid only when the capture reached its completion sentinel.
+  out="$(gh api "$1" --paginate --jq "$(rr_rows_jq "$2" "$3")" 2>/dev/null; printf 'x%s' "$?")"
+  case "$out" in
+    *x[0-9]*) rc="${out##*x}"; out="${out%x*}" ;;
+    *) skip "couldn't consult PR #$pr_number (missing capture sentinel)" ;;
+  esac
+  case "$rc" in ''|*[!0-9]*) skip "couldn't consult PR #$pr_number (invalid status)" ;; esac
+  [ "$rc" -eq 0 ] || skip "couldn't consult PR #$pr_number (no network or no access)"
   [ -z "$out" ] || rows="$rows$out"$'\n'
 }
 fetch "repos/{owner}/{repo}/issues/$pr_number/comments" created_at comment
 fetch "repos/{owner}/{repo}/pulls/$pr_number/reviews" submitted_at review
 
-rounds="$(rr_rounds <<<"$rows")" || skip "couldn't read the review rounds"
+rounds="$(rr_rounds <<<"$rows"; printf 'x%s' "$?")"
+case "$rounds" in
+  *x[0-9]*) rc="${rounds##*x}"; rounds="${rounds%x*}" ;;
+  *) skip "couldn't read the review rounds (missing capture sentinel)" ;;
+esac
+case "$rc" in ''|*[!0-9]*) skip "couldn't read the review rounds (invalid status)" ;; esac
+[ "$rc" -eq 0 ] || skip "couldn't read the review rounds"
 
 NL=$'\n'
 tab=$'\t'

@@ -166,9 +166,17 @@ references stay valid.
   - `git_local_env_assert_clear` returns non-zero, naming the first one
     still set.
 - **Callers:**
-  1. `hooks/pre-commit` clears the list only for the `check-commit` child,
-     inside the command substitution. git's own commit flow (including a
-     partial commit's temporary index) and the hook's branch and issue
+  1. `hooks/pre-commit` clears the list only in the background subshell
+     that execs `check-commit`, separate from the watchdog's background
+     process group (A22). Before starting the check, validate the whole
+     budget string: newline-containing, zero, negative or oversized (A22) values
+     must be refused. Only a successful budget `sleep` may set the timeout
+     flag and trigger timeout termination; sleep failure is not elapsed
+     timeout and must not turn a failing check into an allowed commit.
+     A22 retains the budget default, check outcomes and timeout policy.
+     The accepted Ctrl-C cleanup debt (#383 C: one empty temporary file
+     per interrupted commit) remains outside #615. git's own commit flow
+     (including a partial commit's temporary index) and the hook's branch and issue
      checks keep the real values; `project_dir` is computed before the
      clear, so the committing worktree's own `check-commit` runs. If
      `lib/git-env.sh` is missing, the hook warns and **skips** `check-commit`
@@ -247,7 +255,7 @@ blocked indefinitely. Numbering continues after A19/A20.
 
 ### A22 — A 30 s budget, enforced portably, where a timeout fails open
 - **Constant:** `COMMIT_CHECK_BUDGET="${COMMIT_CHECK_BUDGET-30}"` (default only when unset: an empty value is rejected) in
-  `hooks/pre-commit`, overridable from the environment for tests.
+  `hooks/pre-commit`, overridable from the environment for tests; maximum 999999 seconds.
 - **Mechanism (bash 3.2, no `timeout`/`perl`):** `set -m` so each background
   job has its own process group; `check-commit` runs in one, a watchdog
   (`sleep $budget; touch flag; kill -TERM -- -pid`) in another; the hook
@@ -259,8 +267,10 @@ blocked indefinitely. Numbering continues after A19/A20.
   the watchdog is stopped as soon as the leader dies, the hook also KILLs
   the group after the `wait` whenever the flag is set: a grandchild that
   ignores TERM outlives its leader otherwise.
-- **Budget validation:** `COMMIT_CHECK_BUDGET` must match `^[1-9][0-9]*$`.
-  Anything else (empty, 0, negative, non-numeric) blocks the commit with a
+- **Budget validation:** check `COMMIT_CHECK_BUDGET` once against the whole string
+  with `^[1-9][0-9]{0,5}$`: 1 to the maximum above, without leading zeros.
+  Anything else (empty, newline-containing, zero, negative, non-numeric or oversized)
+  is refused, never clamped, and blocks the commit with a
   message naming the variable, before `check-commit` runs: a bad value would
   otherwise make `sleep` fail at once and read a real failure as a timeout.
 - **On timeout:** the commit goes through with one warning naming the budget
@@ -665,6 +675,7 @@ the next free numbers after A23.
   tokenizer (retired by V8, #429); unless the line
   reads back as exactly one well-formed marker of that stage with the same
   model, effort and floor-basis, it is refused, never printed.
+- **#622 amendment (2026-11-01):** The current round trip uses `rec_scan` and `rec_field` to verify one well-formed marker of the same stage with the same model and floor-basis; effort is neither emitted nor compared (A33, V8). The preceding round-trip description is historical.
 - **Wrapper:** `skills/pre-merge-review/model-record-emit.sh --role <Role>
   --model <id> [--floor-basis <sentence>]` (A48; backward-compatible
   `--stage <Stage>` remains accepted, alone or with `--role`), next to the
@@ -968,8 +979,10 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
 - **Decision / scope:** implements F45–F54 using the completed `v0.4.0`
   workflow meaning. Records the [Architect planning decision](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6144735967)
   without redesigning roles, evidence or adoption semantics. This checkout
-  descends from `v0.4.0`; release evidence still requires real Claude, Codex
-  CLI/desktop and second-machine dry runs, not a structural installation claim.
+  descends from `v0.4.0`; a structural installation claim is not runtime
+  evidence. (As first written this required real Claude, Codex CLI/desktop and
+  second-machine dry runs for release; superseded 2026-11-02, see the A39
+  amendment below.)
 - **Canonical owners:** the Workflow policy Module owns `policy/WORKFLOW.md`,
   extracted from current WORKFLOW.md without semantic edits. `skills/<name>/`
   remains the sole skill-content owner, including role-contracts/ORCHESTRATOR
@@ -1142,8 +1155,40 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   Codex mappings; no speculative CLI/desktop/plugin Module or dispatch framework.
 - **Revisit when:** observed supported-runtime discovery/loading failures,
   changed Codex hook capabilities, or actual drift/ownership failures require a
-  new contract. Structural checks supplement the F52/F53 human dry runs; they
-  cannot certify practical runtime behavior.
+  new contract. Structural checks supplement the live runtime observations
+  (F52/F53); they cannot certify practical runtime behavior. (The original text
+  made those observations a release gate; superseded 2026-11-02, see below.)
+
+#### A39 amendment — release-evidence boundary after #455-D4 (Architect, 2026-11-02, #623)
+
+Corrects stale A39 text; adds no behavior and changes no Interface, Seam or
+adoption semantics. This amendment is a
+[panel decision, flagged for the maintainer's acceptance](https://github.com/TiesL/spec-driven-guardrails/issues/623#issuecomment-6576047872).
+Two sentences of the A39 text above (in the Decision / scope and Revisit when
+bullets) were reworded in place, each with a pointer here; the superseded
+wording is quoted in the Boundary bullet below. This amendment wins where they
+differ.
+
+- **Boundary (supersedes "release evidence still requires real ... dry runs"
+  and "supplement the F52/F53 human dry runs").** Per maintainer decision
+  [#455-D4](https://github.com/TiesL/spec-driven-guardrails/issues/455#issuecomment-6155086172),
+  the unobserved live variants (Codex CLI and desktop, Claude Code, second
+  machine) are not a #455 pre-release gate. They are owned by QA in
+  [#503](https://github.com/TiesL/spec-driven-guardrails/issues/503) and are
+  collected during actual work. The deferral preserves the five-role contract,
+  the real merge confirmation and the rule that an observed failure remains a
+  defect to assess; D4 does not waive `cli-continuation-stopped-at-route-boundary`.
+- **Evidence classes stay distinct.** Structural checks (filesystem fixtures,
+  CI) establish wiring, never practical runtime behavior. A source-backed
+  dispatch observation (for example a recorded parent/child session with
+  `fork_turns: none` and the child's own return) earns bounded credit for the
+  variant actually observed, never a scenario pass. A claim with no source
+  stays `unobserved`. Hypothetical route answers show guidance understanding,
+  not dispatch. [docs/codex-dry-runs.md](docs/codex-dry-runs.md) is the record;
+  it must not describe a leg as pending once the Pipeline log shows it ran.
+- **Reference scope.** #455 scenario references (the S294-S304 block and its
+  section heading), S455 and the #575 amendment cite A39; references to the
+  low-finding decision (#488) stay A38.
 
 ### A41 — Run rules get stable IDs, a condensed core in two self-standing parts and behavior tests; session-context output fits the hook cap; the `Agent` dispatch hook quotes the core (#499)
 
@@ -1519,6 +1564,37 @@ A29 #415, A30 #409); each is recorded in its own item's PR.
   `unstable` at 3 runs; or either part's worst case comes within 500
   characters of the budget. The split is not undone when the whole core
   would fit one slot: it exists for failure and ordering (Human decision 5).
+- **#620 amendment (B10c, #535, #537; temporary panel decision flagged for the
+  maintainer, panel record on #620):**
+  - **Qualifiers.** OR32 again resolves the emit command's "absolute path
+    once" (1aba086^, the text before #533); it is `core`, so its pin changes.
+    The 22 characters are offset in part 2 by pure redundancy, so S318's slot 2
+    stays 8,499: OR19 "OR17/A28" to "OR17" (OR17 names A28), OR21 "A29 flow
+    (OR45)" to "OR45", OR22 "A33, A33a" to "A33" (A33a is part of A33), one
+    blank line. OR22's "in its step comment" (a732b1c, #447) is not restored:
+    superseded by A27 (effort is a Pipeline-log field), S240 and OR4 (no
+    orchestrator comment text but the Pipeline log). OR44's "any orchestrator
+    record" is not restored for lack of room; OR22 and OR26 cover the
+    Pipeline log and orchestrator-written issue comments, not an orchestrator
+    record elsewhere, such as a PR comment (deferred, #641).
+  - **Hook fixture provenance.** `agent-pretooluse-2.1.301.json` is
+    transcript-derived, not a hook-stdin capture: `tool_name`, `tool_input`
+    and `tool_use_id` are verbatim from a Claude Code 2.1.301 transcript; the
+    envelope (`session_id`, `transcript_path`, `cwd`, `permission_mode`,
+    `hook_event_name`) is rebuilt in the documented hook-input shape. #499
+    AC10's "captured real input" reads as this. Limit: the fixture cannot
+    show that a real top-level call lacks `agent_id`.
+  - **Calibration mutant.** OR43, as stated above; #499 AC14's "calibration
+    mutant on OR40" and the S288/S291 comments that repeat it are stale.
+  - **Pre-pushback coverage.** OB48 keeps the state after pushback, OB24 and
+    OB49 the Architect and Reviewer states before it. OB83 covers QA before
+    pushback: the maintainer declines QA's recommendation in favour of the
+    Developer's substitute, no pushback yet; the route is OR45's dispatch of
+    QA, never a recorded decision or a direct approval. The state where only
+    the Developer asks is not graded: `ask_human` and `dispatch` both follow
+    the rules there and flapped (#536).
+  - **Budget note.** Slot 1 (8,668) is already inside the 500-character
+    revisit window above, and A42's OR47/OR48 fallback no longer has room.
 
 ### A42 — Dispatch economy: continue-or-fresh rule, closed list of no-agent steps, brief and run scope in the injected core; detail in a skill (#532, folds in #412)
 
@@ -2360,6 +2436,7 @@ All three are class design; none changes a `hooks/git-guardrails` Interface or a
     deletion mechanics without changing status, exits, provenance schema or
     documented user recovery behavior. It retains validation evidence for
     every old entry that could still require validation.
+
 ### A48 — The emit command takes a role; the dispatch hook checks its role and stage (#599; amends A26 and A41)
 
 - **Why:** on #595 Product was given `--stage Planning`. The emitter

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# S314 — the hook is wired once, drift is caught, and real captured input
-# passes through it (#499 AC10)
+# S314 — the hook is wired once, drift is caught, and transcript-derived input
+# (tool_name, tool_input and tool_use_id verbatim from Claude Code 2.1.301, the
+# envelope rebuilt) passes through it (#499 AC10)
 # Covers: F38
 #
 # Seam: settings/session-hooks.json read as data, `agent-dispatch.py
@@ -32,7 +33,7 @@ trap sandbox_destroy EXIT
 FIX="$TEST_REPO_ROOT/test/fixtures/agent-dispatch/agent-pretooluse-2.1.301.json"
 SETTINGS="$TEST_REPO_ROOT/settings/session-hooks.json"
 [ -r "$AD_CORE" ] || { fail "S314 — hooks/agent-dispatch.py is missing"; test_done; }
-[ -r "$FIX" ] || { fail "S314 — the captured input fixture is missing"; test_done; }
+[ -r "$FIX" ] || { fail "S314 — the transcript-derived input fixture is missing"; test_done; }
 
 contract="$(python3 -I "$AD_CORE" --print-contract 2>/dev/null)"
 [ -n "$contract" ] || fail "S314 — --print-contract printed nothing"
@@ -72,7 +73,7 @@ wiring_ok "$SANDBOX/drift.json" >/dev/null 2>&1 && fail "S314/drift — a change
 
 # The fixture carries every field the contract names, and is the platform's
 # real tool name.
-python3 -I - "$FIX" "$contract" <<'PY' || fail "S314/fields — the captured input lacks a contract field"
+python3 -I - "$FIX" "$contract" <<'PY' || fail "S314/fields — the transcript-derived input lacks a contract field"
 import json, sys
 d = json.load(open(sys.argv[1])); c = json.loads(sys.argv[2])
 assert d["tool_name"] == c["tool_name"], "tool_name"

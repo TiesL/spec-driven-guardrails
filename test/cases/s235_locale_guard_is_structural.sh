@@ -220,8 +220,8 @@ real_sites="$(sites_of "$ROOT")"
 echo "    S235: the lint checked $real_sites external text-command sites in $LL_LIBS" >&2
 [ "$real_sites" -gt 0 ] || fail "S235 L2 — the lint checked 0 sites in the libs (a lint that scans nothing is red)"
 # Current inventory: markdown2; normalize_model5; record reader2;
-# review-rounds4 (tr, two grep sites, sort). Preserve a meaningful floor.
-[ "$real_sites" -ge 13 ] || fail "S235 L2 — the lint checked only $real_sites sites; the current three-lib inventory has 13 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
+# review-rounds3 (tr, numeric grep, sort). Preserve a meaningful floor.
+[ "$real_sites" -ge 12 ] || fail "S235 L2 — the lint checked only $real_sites sites; the current three-lib inventory has 12 (a tokenizer regression, or a lib shrank: update this floor on purpose)"
 
 # =========================================================================
 # 2. L3 on the REAL tree (needs a green real baseline)
@@ -243,7 +243,7 @@ else
   kill_mutant "$ROOT" "real:record-count-grep" lib/model-record.sh "LC_ALL=C grep -aEc" "grep -aEc"
   kill_mutant "$ROOT" "real:record-scan-awk" lib/model-record.sh "LC_ALL=C awk -v mode=rec" "awk -v mode=rec"
   kill_mutant "$ROOT" "real:review-rounds-sort" lib/review-rounds.sh "LC_ALL=C sort -t" "sort -t"
-  kill_mutant "$ROOT" "real:review-rounds-grep" lib/review-rounds.sh "LC_ALL=C grep -aqE" "grep -aqE"
+  kill_mutant "$ROOT" "real:review-rounds-grep" lib/review-rounds.sh "LC_ALL=C grep -acE" "grep -acE"
   kill_mutant "$ROOT" "real:review-rounds-tr" lib/review-rounds.sh "LC_ALL=C tr '\\001'" "tr '\\001'"
 fi
 

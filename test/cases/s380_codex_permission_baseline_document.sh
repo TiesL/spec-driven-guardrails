@@ -80,22 +80,24 @@ else
     if [ -n "$thin" ]; then
       fail "S380 — AC9 convenience line without a trade-off note: $thin"
     fi
-    # #595 AC4 (L9): a comment names only flags the command really has. The
-    # flag set comes from the local `gh <command> --help` (offline).
-    if command -v gh >/dev/null 2>&1; then
-      while IFS= read -r rule; do
-        [ -n "$rule" ] || continue
-        cmd="$(sed -E 's/^[^[]*\[("[^]]*")\].*$/\1/' <<< "$rule" | tr -d '",' | sed 's/^ *//')"
-        comment="${rule#*#}"
-        help_flags="$(gh ${cmd#gh } --help 2>&1 | grep -oE -- '--[a-z][a-z-]*' | sort -u || true)"
-        [ -n "$help_flags" ] || { fail "S380 — AC4 no gh help flags for '$cmd'"; continue; }
-        for cflag in $(grep -oE -- '--[a-z][a-z-]*' <<< "$comment" | sort -u); do
-          grep -qx -- "$cflag" <<< "$help_flags" || fail "S380 — AC4 the comment for '$cmd' names $cflag, which that command does not have"
-        done
-      done <<< "$(awk -F'\t' '{print $2}' <<< "$conv_rules")"
-    else
-      echo "S380: gh not installed, AC4 flag comparison skipped" >&2
-    fi
+    # #614: repository-owned, deliberately bounded inventory of flags that
+    # convenience comments may name. No installed gh/version/help dependency.
+    # This is a comment vocabulary, not an exhaustive gh capability claim.
+    flag_inventory="$TEST_REPO_ROOT/test/fixtures/permission-baseline-flags.tsv"
+    while IFS= read -r rule; do
+      [ -n "$rule" ] || continue
+      cmd="$(sed -E 's/^[^[]*\[("[^]]*")\].*$/\1/' <<< "$rule" | tr -d '",' | sed 's/^ *//')"
+      comment="${rule#*#}"
+      allowed_flags="$(awk -F '\t' -v cmd="$cmd" '$1 == cmd { print $2 }' "$flag_inventory")"
+      if [ -z "$allowed_flags" ]; then
+        fail "S380 — AC4 no repository flag inventory for '$cmd'"
+        continue
+      fi
+      while IFS= read -r cflag; do
+        [ -n "$cflag" ] || continue
+        grep -qx -- "$cflag" <<< "$allowed_flags" || fail "S380 — AC4 the comment for '$cmd' names $cflag, which the repository flag inventory does not permit"
+      done <<< "$(grep -oE -- '--[a-z][a-z-]*' <<< "$comment" | sort -u)"
+    done <<< "$(awk -F'\t' '{print $2}' <<< "$conv_rules")"
     pin "AC4 the block is optional" 'optional' "$doc"
     pin "AC4 the block is to be deleted after the proxy proof" 'delete[d]?.*(proof|proxy)|(proof|proxy).*delete' "$doc"
   fi
@@ -114,12 +116,20 @@ else
     fail "S380 — AC1 approvals_reviewer = \"user\" is not above the first [table] header"
   fi
   # #595 AC3 (L6): every key of the sandbox-config snippet (the first toml
-  # block) carries a [V]/[A] mark on its own line or on its table header.
-  # Presence only; whether a mark is true is not judged here.
+  # block) carries a [V]/[A] mark in its own comment, or inherits [A]
+  # from a table-header comment saying "covers all nested keys" or "covers its nested keys" (#614).
+  # No verified header inheritance. Truth of marks remains manual evidence.
   unmarked_keys() { # stdin: toml text; prints each key without a mark
     awk '
-      /^\[/ { tmark = ($0 ~ /\[[VA]/); next }
-      /^[A-Za-z_][A-Za-z0-9_.]* *=/ { if ($0 !~ /\[[VA]/ && !tmark) { k=$0; sub(/ *=.*/, "", k); print k } }
+      /^\[/ {
+        c=$0; sub(/^[^#]*(#|$)/, "", c)
+        tmark = (c ~ /\[A\]/ && c !~ /\[V(\]|[[:space:]])/ && c ~ /covers (all|its) nested keys/)
+        next
+      }
+      /^[A-Za-z_][A-Za-z0-9_.]* *=/ {
+        c=$0; sub(/^[^#]*(#|$)/, "", c)
+        if (c !~ /\[(V|A)(\]|[[:space:]])/ && !tmark) { k=$0; sub(/ *=.*/, "", k); print k }
+      }
     '
   }
   missing_marks="$(unmarked_keys <<< "$(awk '/^```toml/{n++} n==1' "$doc" | sed '1d;/^```$/,$d')")"

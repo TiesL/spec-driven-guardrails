@@ -25,11 +25,11 @@
 #
 # Values are refused, never sanitized: decided-by and reason must be valid
 # UTF-8, must not be blank (nothing left but white space, NBSP, other Unicode
-# spaces, zero-width characters or bidi marks), must not hold `"`, `<`, `>`, a
+# spaces, listed zero-width characters or bidi marks), must not hold `"`, `<`, `>`, a
 # control byte (so no multi-line text), a C1 control, U+2028/U+2029 or a bidi
 # control, and are at most 100 and 1000 bytes. The bidi controls refused are
 # a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069);
-# zero-width characters and bidi marks (U+200B, U+200E, U+200F, U+061C, U+FEFF)
+# listed zero-width characters and bidi marks (U+200B, U+200E, U+200F, U+061C, U+FEFF)
 # are accepted, as in A33a, so long as some other visible character remains.
 # The UTF-8 check is stricter than A33a on purpose: invalid bytes would abort
 # the awk in lib/markdown.sh. On a refusal, ask the human for words without
@@ -73,7 +73,7 @@ A value is refused, never edited: ask the human for other words. Refused:
     (U+202A-U+202E, U+2066-U+2069)
   - invalid UTF-8
   - a blank value: empty, or only white space, NBSP (U+00A0), other Unicode
-    spaces, zero-width characters or bidi marks (U+200B, U+200E, U+200F,
+    spaces, listed zero-width characters or bidi marks (U+200B, U+200E, U+200F,
     U+061C, U+FEFF)
   - more than 100 bytes (decided-by) or 1000 bytes (reason)
 Also refused: an <issue> that is not a positive integer, any other --scope than
@@ -201,7 +201,7 @@ check_text() {
   kind="$(printf '%s' "$hex" | awk "$UTF8_AWK")"
   case "$kind" in
     invalid) refuse "$field is not valid UTF-8; ask the human for words in valid UTF-8 and do not edit theirs." ;;
-    blank) refuse "$field must not be empty or blank (only white space, NBSP, Unicode spaces or zero-width characters)." ;;
+    blank) refuse "$field must not be empty or blank (only white space, NBSP, Unicode spaces, listed zero-width characters or bidi marks)." ;;
   esac
   case "$hex" in
     *' 22 '* | *' 3c '* | *' 3e '*) refuse "$field must not contain \", < or > (the record grammar cannot hold them); ask the human for words without them and do not edit theirs." ;;
@@ -237,14 +237,14 @@ fi
 # END field-checks
 
 # Follow a symlinked script to its real file first (pwd -P alone resolves only
-# a symlinked directory), joining a relative target to the link's directory.
+# a symlinked directory), joining a relative target to the link's physical directory.
 self="${BASH_SOURCE[0]}"
 hops=0
 while [ -L "$self" ] && [ "$hops" -lt 40 ]; do
   target="$(readlink "$self")"
   case "$target" in
     /*) self="$target" ;;
-    *) self="$(dirname "$self")/$target" ;;
+    *) self="$(cd "$(dirname "$self")" && pwd -P)/$target" ;;
   esac
   hops=$((hops + 1))
 done

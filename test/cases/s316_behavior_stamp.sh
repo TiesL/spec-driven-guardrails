@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-# S316 — the committed stamp matches the hash, and a stale stamp fails (#499 AC13)
+# S316 — fixture stamp hash/count and write behavior (#499 AC13; #619)
 # Covers: F38
 #
 # Seam: `orchestrator_diff.py stamp-check` (what ./check runs; it never calls a
 # model) and the runner's stamp writer with the stub `claude` of S315.
 #
-# Pre-stamp state: A41 is silent on a tree with no stamp yet. Until the first
-# passing differential run commits one, the real-tree check reports "no stamp
-# yet" and passes. STAMP_REQUIRED below flips it to a failure; the rewrite phase
-# turns it on together with the committed stamp.
+# Fixture-only: the real stamp is refreshed last in B10c.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -17,26 +14,12 @@ set -uo pipefail
 # shellcheck source=../fixtures/behavior-runner-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../fixtures/behavior-runner-helpers.sh"
 
-STAMP_REQUIRED=1
 PY="$TEST_REPO_ROOT/test/behavior/orchestrator_diff.py"
 [ -f "$PY" ] || { fail "S316 — test/behavior/orchestrator_diff.py is missing"; test_done; }
-[ -x "$TEST_REPO_ROOT/test/behavior/orchestrator-diff.sh" ] || { fail "S316 — orchestrator-diff.sh is missing or not executable"; test_done; }
 command -v python3 >/dev/null 2>&1 || { fail "S316 — python3 is needed"; test_done; }
 sandbox_create
 trap sandbox_destroy EXIT
 bf_init "$SANDBOX/bf"
-
-# Real tree.
-real_out="$(python3 -I "$PY" stamp-check --repo "$TEST_REPO_ROOT" 2>&1)"
-real_status=$?
-if [ -f "$TEST_REPO_ROOT/$BF_STAMP_REL" ]; then
-  [ "$real_status" -eq 0 ] || fail "S316/real — the committed stamp does not match ORCHESTRATOR.md + scenarios: $real_out"
-elif [ "$STAMP_REQUIRED" = 1 ]; then
-  fail "S316/real — no stamp committed"
-else
-  grep -q 'no stamp yet' <<<"$real_out" || fail "S316/real — expected 'no stamp yet', got: $real_out"
-  [ "$real_status" -eq 0 ] || fail "S316/real — a tree without a stamp must not fail before the first run (status $real_status)"
-fi
 
 # Fixture: a passing run writes the stamp.
 bf_reset

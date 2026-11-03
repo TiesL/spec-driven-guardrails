@@ -41,7 +41,7 @@ if reminder:
         if run['case'] in ('main', 'release-main'):
             run['sentinel'] = True
             run['commands'].append({'command': "/bin/zsh -lc 'touch sentinel'", 'exit_code': 0})
-            assert 'Merged to main. Use /clear or /new before the next work item' in ' '.join(run['final'])
+            assert 'Merged to main. Use /clear or /new before the next work item' in ' '.join(run['final']), 'main final text does not match reminder'
         else:
             assert 'Merged to main' not in ' '.join(run['final']), run['case']
 jp.write_text(json.dumps(data, indent=1))
@@ -93,8 +93,10 @@ fi
 # (b) the #570 falsifier: main's final text changed, mut_repin must abort non-zero.
 mut_copy "$mut_root/n2"
 sed -i.bak 's/Merged to main\. Use/Merged into main. Use/' "$mut_root/n2/docs/completion-live-evidence.json"
-if mut_repin "$mut_root/n2" 1 >/dev/null 2>&1; then
+if mut_repin "$mut_root/n2" 1 >"$mut_root/n2.out" 2>"$mut_root/n2.err"; then
   fail "R3 arm: mut_repin exited 0 although main's final text no longer matches"
+elif ! grep -qxF 'AssertionError: main final text does not match reminder' "$mut_root/n2.err"; then
+  fail "R3 arm: n2 aborted for the wrong reason: $(tail -n 1 "$mut_root/n2.err")"
 fi
 rm -rf "$mut_root"
 test_done

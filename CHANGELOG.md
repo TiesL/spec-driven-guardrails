@@ -13,6 +13,42 @@ point.
 
 ## Unreleased
 
+- **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is
+  now checked as a whole string: 1 to 999999 seconds. A 7+ digit value (accepted before) and a
+  multi-line value (accepted before when any one line was a positive integer) are blocked with
+  "positive integer of at most six digits", before `check-commit` runs; a zero, negative or
+  non-numeric value stays refused.
+  A watchdog `sleep` that fails no longer counts as a timeout. Adopter action: none for the
+  symlinked hook. A project with its own pre-existing `pre-commit` hook (`adopt.sh` leaves it
+  alone, S51) does not get this change; it applies only where `check-commit` is present.
+- **Fix #618/#634: the reviewer dispatch hook demands labelled head evidence.**
+  `hooks/agent-dispatch.py` refuses a Reviewer prompt whose only head evidence is an unlabelled
+  hex run or a SHA labelled `old` or `previous` (both accepted before); it needs
+  `head`/`sha`/`commit` followed by the SHA. `PR <n>`, `PR: <n>` and `pull request <n>` count as a
+  PR reference, case-insensitively. A `ROLE SESSION: <Role>` line followed by `-` or `_` is no
+  longer that role's prefix. A closing emit wrapper is now removed before a trailing comment is
+  stripped. Adopter action: none (symlinked hook).
+- **Fix #612/#632: the `git-guardrails` escape warning names its variable.** The warning for the
+  command-prefix form now says "turned off via CLAUDE_WORKFLOW_GUARDRAILS_OFF", as the
+  process-environment form already did. Adopter action: none.
+- **Fix #616/#633: `pipeline-override.sh` finds itself through a symlink and words the blank
+  refusal exactly.** A relative symlink target is joined to the link's physical directory. The
+  refusal for a blank `decided-by` or `reason` now reads "only white space, NBSP, Unicode spaces,
+  listed zero-width characters or bidi marks"; the set of values refused is unchanged. Adopter
+  action: none.
+- **Fix #610/#627: a round capture cut off before its status warns or skips, not reads as
+  empty.** `review-rounds.sh` (warns, prints no count) and
+  `skills/pre-merge-review/finding-carryforward-gate.sh` (skips) now read the exit status of the
+  `gh api` capture and of the round reader through a completion sentinel; a capture that ends
+  without it is no longer counted as zero rounds. A failed `gh` and a genuinely empty result
+  behave as before. In `lib/review-rounds.sh` a done marker on an indented (four spaces or tab)
+  line no longer counts as a round. `review-rounds.sh` usage says the repository comes from the
+  working directory. Adopter action: none.
+- **Fix #614/#631: `adapters/codex/permission-baseline.md` states its mark rule.** Each snippet
+  key needs its own mark, or a table header whose comment says it covers its nested keys; such a
+  header uses `[A]`, never `[V]`. Wording only here; this repo's S380 test enforces it. Adopter
+  action: none.
+
 ## v0.5.0 — Faster CI, context-clear hint after merge to main (Claude Code and Codex), script to deliberately waive workflow stages (2026-10-26)
 
 - **#575: this repo's root `AGENTS.md` block is generated, not hand-kept.** The managed block in the
@@ -48,7 +84,7 @@ point.
   `finding-carryforward-gate.sh` no longer lets `finding:abc` clear a dropped `ab`; a slug is the maximal
   non-whitespace run after `finding:`. New S305 (`test/cases/s305_carryforward_slug_exact.sh`); F28 and A37 state the rule.
 - **Fix #467: warning-visibility wording after #430 acceptance.** `ARCHITECTURE.md` (A34), `CHANGES.md`,
-  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the hook transcript
+  `PRD.md` and `model-record-gate.sh` state that the merge-guard warning was seen in the stream transcript
   only and did not reach the agent as command output in the #430 AC3 run. Text only; no behavior changed.
 - **Fix #477: S286 arm 5 no longer claims a bare `git grep` of the version token hits only two
   files.** `TEST-SCENARIOS.md` states the arm's scope as a property and gives a path-scoped command
@@ -66,7 +102,10 @@ point.
 - **Fix #473: S287 shellcheck SC2154 warnings cleared.** `test/cases/s287_issue_review_is_no_pr_round.sh`
   initialises `rr_out` and `rr_status` after `rr_setup` (non-zero status, so an unset one fails).
   No assertion changed.
-- **Fix #468: trailing whitespace removed from three test files.** `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at EOF). No behavior change. Recurrence guard: #484.
+- **Fix #468: trailing whitespace removed from three test files.**
+  `test/cases/s276_collector_unread_latest_authority.sh` (trailing space, line 65) and
+  `test/fixtures/ce-review-helpers.sh`, `test/fixtures/role-label-fake-gh.sh` (extra blank line at
+  EOF). No behavior change. Recurrence guard: #484.
 - **Fix #478: Windows not supported yet, recorded.** `README.md` (limits list: use WSL) and
   `PRD.md` ("Out of scope": decision and how to support it later).
 - **Fix #479: "SDG" defined as talk-only shorthand, recorded.** `README.md` (one line after the

@@ -1781,9 +1781,19 @@ something new is being added.
   the model-only floor on self-reported model strings (#424; S237); the merge-confirmation row is
   `unverifiable-from-artifacts` whether the PR is merged or open; a red,
   pending, unknown-bucket or absent CI check is never `evidenced`; a
-  stale review marker is `not-evidenced` while an unparseable one is
-  `indeterminate`; a failed checks or issue-comments lookup degrades its
-  own row to `indeterminate` and exits 0, while a failed PR lookup exits
+  stale-only review done marker is `not-evidenced` when the evidence corpus
+  was fully read, and `indeterminate` after a partial lookup failure because
+  a matching marker may be unread; an unparseable done marker is
+  `indeterminate`. A failed PR-comments, PR-reviews or closing-issue-comments
+  lookup makes gates 1 and 2 `indeterminate`: unread candidates may supersede
+  the recorded stages or Implementation/Review models, even when readable
+  markers agree or differ. Gate 3 is `indeterminate` for absent or stale-only
+  done evidence under that failure, but an observed done marker matching
+  `headRefOid` stays `evidenced` (S150 Arm B, Arm C, Arm D and presence arm;
+  S276). A failed checks lookup makes gate 4 `indeterminate`; a partial
+  evidence-corpus lookup failure leaves the independent CI, traceability
+  and merge-confirmation gates unchanged. These partial failures exit 0,
+  while a failed PR lookup exits
   4 with no table; with no `gh` on `PATH` it exits 3 with nothing on
   stdout; the run makes no `gh` write call and the script's source
   contains none
@@ -1798,7 +1808,11 @@ something new is being added.
   ahead of `PATH`
 - Then: no gate counts such an occurrence as live evidence; a gate whose
   only matches were quoted reports `not-evidenced` and says in words that
-  quoted occurrences were seen and ignored; bare marker-shaped prose
+  quoted occurrences were seen and ignored. Q14's bare-message comparison
+  uses the current collector wording and space-separated missing-stage list;
+  removing only the ignored-quotation suffix from its actual rendered cell
+  must fail each wording assertion independently, while the unchanged cell
+  passes both (#609); bare marker-shaped prose
   reports `not-evidenced` rather than `indeterminate`, while a malformed
   marker inside real delimiters still reports `indeterminate`; a real
   model-record candidate posted inline with prose is a named near-miss
@@ -2145,18 +2159,47 @@ something new is being added.
   from the working directory's remote. QA verified that by hand for #369
   against a real adopted project (recorded in QA's issue comment)
 
-### S162 — Every script an installed skill tells the agent to run exists where the skill says
+### S162 — Installed skill and workflow policy paths resolve from an adopted project
 **Covers:** F37
-- Given: a fresh project adopted from a sandbox clone, and every
-  installed skill's `SKILL.md` (issue #369: the human decision that
-  `pre-merge-review`'s `./classify-review-depth.sh` path is fixed here,
-  Architect finding V4)
-- When: each `./<name>.sh` and `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh`
-  invocation in those skills is resolved
-- Then: every `./<name>.sh` exists, executable, at the adopted project's
-  root; every `$SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh` exists, executable,
-  in the clone; and `pre-merge-review` still runs the classifier, as
-  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`
+- Given: a fresh project adopted from a sandbox clone, every installed
+  skill's `SKILL.md`, and canonical `policy/WORKFLOW.md` (issue #369:
+  the classifier path fixed under Architect finding V4).
+- When: fenced script invocations, inline script invocations with or without
+  arguments, and bare `skills/` and `templates/` file references are resolved.
+- Then: `./` script paths resolve in the adopted project;
+  `$SPEC_DRIVEN_GUARDRAILS_DIR` checkout paths resolve in the physical clone;
+  `.claude/skills/` paths resolve through installed skills. Bare `skills/`
+  script paths require a clone qualifier or checkout convention; bare
+  `templates/` file/directory references resolve in the clone. Script targets
+  are executable files; other scanned targets exist. Policy mutations adding
+  `./wait-for-ci.sh` or a dangling `templates/` file fail paths mode in the
+  policy document. `pre-merge-review` still runs the classifier as
+  `$SPEC_DRIVEN_GUARDRAILS_DIR/classify-review-depth.sh`.
+
+### S525 — Installed invocation resolver rejects dangling paths (#622 AC1)
+**Covers:** F37
+- Given: S162's resolver and independent executable controls in an
+  adopted-project layout and a physical guardrails checkout.
+- When: [s525_adopter_docs_path_controls.sh](test/cases/s525_adopter_docs_path_controls.sh)
+  resolves installed, project-relative and checkout-qualified controls in
+  fenced and inline commands, including argumentless inline paths.
+- Then: the executable positive controls resolve; their dangling mutations
+  fail, as does a non-executable project script. Argumentless bare `skills/`
+  script controls detect a dangling target and removal of their clone
+  qualifier; a qualified existing script passes. An argumentless bare
+  `templates/` file passes when present and fails when dangling.
+  Explicit and delegated physical-checkout conventions, local checkout
+  variables and qualified basename references have dangling controls;
+  removing a required convention or binding fails. The tested unqualified
+  bare script invocations with arguments fail too.
+
+### S526 — Protection framing agrees with README (#622 AC1; #367 residual)
+**Covers:** F37
+- Given: README, canonical workflow policy and PRD.
+- Then: each qualifies the paid-plan limitation as private-repository specific
+  and states the public-repository protection exception. Independent mutations
+  dropping the private qualifier or public exception, negating public protection
+  or restoring either unqualified no-protection claim fail; qualified controls pass.
 
 ### S163 — The README says the multi-agent workflow is adoptable, and what adopting it takes
 **Covers:** F37
@@ -2912,28 +2955,17 @@ something new is being added.
 
 ### S209 — every Review round is a fresh Reviewer dispatch, and the orchestrator may not continue one
 **Covers:** F41
-- Given: `skills/role-contracts/SKILL.md` (Reviewer section),
-  `skills/role-contracts/ORCHESTRATOR.md` and `skills/pre-merge-review/SKILL.md`
-  (issue #414, AC1, AC2)
-- When: each is read for the rule on repeat Review rounds
-- Then: each states that every Review round is a new dispatch of a fresh agent
-  and that a Reviewer is never continued or resumed; `ORCHESTRATOR.md` forbids
-  it for the Reviewer explicitly, in one sentence naming both `SendMessage`
-  and the dispatch tool's `fork` type (also in the Reviewer contract and
-  `pre-merge-review`), says roles are started as a new agent never by that
-  `fork` type, imposes no `SendMessage` ban on other roles, and leaves
-  continuing another role for a later step to #412
-- Amended by #499 (AC14, A41): the `ORCHESTRATOR.md` half is located by ID,
-  no longer by the Dispatch-paragraph sentences (`once started`, `the
-  dispatch tool's fork type`): `OR7` (tier `hook:no-fork`), `OR12` and
-  `OR13` (tier `judgment`) each start exactly one list item in part 1;
-  `OR12`'s item names `SendMessage` and `fork`, and `OR13`'s names `#412`
-  (plumbing). Absence check kept: every `ORCHESTRATOR.md` item that contains
-  `SendMessage` is `OR12`'s, so no ban reaches other roles. Counterexamples:
-  `SendMessage` added to `OR7`'s or `OR13`'s item; `OR13` removed. The
-  `SKILL.md` and `pre-merge-review` halves are unchanged. Behaviour: `OB12`
-  and `OB49` (fresh Reviewer, graded against `continue_agent`), `OB51`
-  (`OR13`: QA may be routed either way, no human question)
+- Given: the Reviewer contract, `pre-merge-review/SKILL.md`, and
+  `ORCHESTRATOR.md` (issue #414 AC1/AC2; #499 AC14; #611)
+- When: their current text is checked
+- Then: each carrier explicitly bans Reviewer continuation by both
+  `SendMessage` and the dispatch tool's `fork` type. An exception permitting
+  either mechanism fails even with all the old keywords retained (S475).
+  `OR7`, `OR12` and `OR13` each start one item in part 1 with their assigned
+  tiers; only `OR12` and `OR13` may mention `SendMessage`. `OR13` leaves
+  Reviewer to `OR12` and permits other roles under #532's limits.
+- Behaviour: `OB12`, `OB49` and `OB51`; these text checks do not prove agent
+  freshness or live obedience.
 
 ### S210 — a later round's brief is built from artifacts, and carried-forward findings are inputs
 **Covers:** F41
@@ -2991,11 +3023,13 @@ something new is being added.
 - Then, `SKILL.md` (unchanged): it gives the route per class (`design`:
   Architect, QA, Developer, fresh Reviewer; `code` and `test`: QA, Developer,
   fresh Reviewer; `spec`: Product, then QA, Developer, fresh Reviewer) and
-  says a class is never downgraded
+  says the orchestrator never downgrades a class while the Architect may
+  record that a finding is not a design defect and route it as code
 - Then, `ORCHESTRATOR.md`: `OR17` (route by class), `OR18` (no relayed fix,
   never downgrade, Architect when unclassed or in doubt) and `OR19` (any-stage
   design defect) each start one list item in part 2 with tier `judgment`;
-  absence check kept: neither file says "nobody downgrades"
+  neither file says "nobody downgrades"; both affirmatively permit Architect
+  reclassification. Inverting either permission fails (S476, #611)
 - The routing behaviour moves to `OB14`-`OB20`; phrase matching on the
   `ORCHESTRATOR.md` route is dropped
 
@@ -3033,6 +3067,8 @@ something new is being added.
   bodies without such a first marker and quoted example markers count for
   nothing; zero rounds gives `review-rounds: 0`; it always exits 0
 
+- #610: Each 39/41-hex, missing-delimiter, code-span and indented legacy marker is tested alone and counts zero rounds; a live 40-hex marker remains a round.
+
 ### S217 — review-rounds.sh is read-only, REST-only, never blocks, and a failed fetch is a visible warning
 **Covers:** F42
 - Given: `review-rounds.sh` behind a recording fake `gh` (issue #410, AC4,
@@ -3050,6 +3086,8 @@ something new is being added.
   into no hook, check or gate (a gate sourcing `lib/review-rounds.sh`, or naming the
   script in a comment, is not wiring). Edited for #426 (the definition moved to the lib)
 
+- #610: The script header and runtime usage independently name the working-directory repository.
+
 ### S218 — the self-check lines, the stated limit and the override pointer to #415
 **Covers:** F42
 - Given: `ORCHESTRATOR.md` and `orchestrator-rules.tsv` (issue #410, AC5,
@@ -3057,7 +3095,8 @@ something new is being added.
 - When: the self-check and the override rules are located by ID
 - Then: `OR24`-`OR27` are the four sub-items of `OR23`'s item, in part 2, with
   tier `core`; `OR25`'s sub-item names `review-rounds.sh` and the project's
-  checkout as the working directory (plumbing, path resolved as in S206);
+  checkout as the affirmative working directory. Replacing it with the
+  guardrails clone while forbidding the project checkout fails (S477, #611);
   `OR21` (override) starts one list item in part 2 with tier `judgment`,
   names `OR45` by ID (the cross-part reference, S311) and names `SKILL.md`
   for the risk-note format; absence checks kept: `OR21` defines no risk-note
@@ -3081,13 +3120,17 @@ something new is being added.
   the block written inline in the case (triggers `pull_request` and `push` to
   `main`; one job `macos` on `macos-latest` with `permissions: contents:
   read`, `env` `LANG` and `LC_ALL` both `en_US.UTF-8`, and the four steps
-  checkout, platform tools first on PATH, `brew install mawk`, and the suite
+  checkout (`actions/checkout@v4` with `fetch-depth: 0`, so the release tag
+  is present for S285), platform tools first on PATH, `brew install mawk`, and the suite
   step `run: /bin/bash test/run.sh`)
 - Then: the file exists, passes D1, and the D2 comparison is identical; any
   other content is red. A D1 failure prints the first three offending lines
-  through `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251` is
-  visible); a D2 failure prints the diff through the same `sed -n l` (POSIX,
-  so it shows the bytes on BSD and GNU alike; `cat -A` is not used). No YAML
+  through unfolded `LC_ALL=C sed -n l` (so a `\r`, `\357\273\277` or `\303\251`
+  is visible); a D2 failure prints the first 20 logical diff records through
+  the same unfolded byte renderer (POSIX tools on BSD and GNU alike;
+  `cat -A` is not used). Each finding occupies one physical line, without
+  folded continuations; unfolding precedes the record limit (S520 retains a
+  1300-character diff line and its following end marker). No YAML
   is parsed and no list of bad spellings is kept. Red: a skipped or swallowed
   suite (a `|| true` or `; exit 0` continuation, quoted or `?` keys,
   `if`/`continue-on-error`, a top-level `defaults`, a decoy job in a block
@@ -3121,6 +3164,42 @@ something new is being added.
   permanent arm; it was proven once in a throwaway clone and reported in the
   PR. A hardlink needs no check (git has no hardlink mode; the blob is pinned
   by content)
+
+### S520 — long S219 diagnostics retain logical lines on native and folding tools
+**Covers:** F43
+- Given: three long CRLF header lines and an ASCII pinned-block mismatch with
+  a 1300-character diff line followed by a distinct end marker, passed through
+  `CI_MACOS_YML_UNDER_TEST` to S219 (S222 uses the unchanged real Linux workflow).
+- When: the case runs with native sed and a shim that forces 60-column `l`
+  folds after normalizing any native folds.
+- Then: each candidate is rejected with exactly one physical diagnostic line;
+  all three escaped CRLF records survive in full, and the 1300-character diff
+  record and its following marker survive before the 20-logical-record limit. No folded
+  `\~` continuation appears. Removing unfolding in a temporary copy must make
+  both D1 and D2 assertions fail under the forced-folding shim. A second mutant
+  that limits to 20 folded records before awk unfolds them must fail the D2
+  full-record/end-marker assertion under the same shim. No CI policy,
+  encoded-job defense or action-pinning change is claimed (#442 scope).
+
+### S521 — the two scoped CHANGELOG bullets reconcile width and transcript prose
+**Covers:** F43
+- Given: the Fix #468 and Fix #467 CHANGELOG entries (#486; #498 wording only).
+- When: whitespace-normalized #468 text and physical widths are checked, and
+  #467's warning-visibility clause is read within its own bullet.
+- Then: #468 retains every word and stays within 100 columns; #467 says
+  `stream transcript`. Independent mutations collapse #468 into one line,
+  change its recurrence-guard number, or restore #467's `hook transcript`;
+  each is rejected. Other #498 findings are outside this batch.
+
+### S522 — the selected #573 skip wording is already resolved
+**Covers:** F43
+- Given: the current `check` header and shellcheck skip message (resolved by
+  #578 PR-A, #579; no product edit is needed).
+- When: the header and emitted-message source are inspected separately.
+- Then: both name the nested suite run, and the message also names
+  `check-commit`. Removing the nested-run wording from either independently
+  is rejected. This checks the selected prose only; cap, scheduling, S274,
+  outer-shellcheck growth and macOS performance are outside this batch.
 
 ### S222 — regression: the Linux job is unchanged and ci.yml has no macOS mention
 **Covers:** F43
@@ -3555,6 +3634,8 @@ something new is being added.
   the separate genuine native K3 invalid/truncated-byte and multibyte controls;
   a structural lint rejection does not replace native behavioral evidence.
 
+- #610: The real-tree locale mutant targets the numeric grep -acE site. The inventory floor permits removal of the redundant plain grep.
+
 ### S236 — model-record-emit.sh no longer writes effort, and still accepts `--effort` for one release, ignoring it with one stderr line
 **Covers:** F39, F40
 - Given: `skills/pre-merge-review/model-record-emit.sh` (issue #424, V3 of the
@@ -3681,6 +3762,10 @@ something new is being added.
   A27 still lists the observed effort (the two documents agree). Red today:
   five A24/A26 items, seven F39/F40 units and the dropped Pipeline log
   sentence
+- #622 scope clarification: the heuristic catches recognized comparison,
+  field and --effort shapes; it can miss “at least as high as” rewordings and
+  live instructions inside already-marked superseded paragraphs. These are
+  known limits, not a claim of arbitrary-wording detection.
 - Amended by #499 (AC14, A41): in `ORCHESTRATOR.md` the unit is the list
   item that starts with `OR22` (Pipeline log), not the `Pipeline log.`
   paragraph; that item still says the orchestrator may note the effort the
@@ -3688,6 +3773,29 @@ something new is being added.
   attribute and not a check. The `OR29` item (no effort argument) is a unit
   like any other and passes through its supersession words ("neither chosen
   nor", "accepted risk"). The rest of S240 is unchanged
+
+### S527 — A26 has a dated current model-only round-trip amendment (#622 AC1)
+**Covers:** F39, F40
+- Given: the retained historical A26 decision.
+- Then: a dated amendment states the current round-trip checks of stage, model
+  and floor-basis and excludes effort. A positive amendment control passes;
+  independently removing its date, amendment label, each checked field or effort
+  exclusion fails. Red until the Architect adds the amendment.
+
+### S528 — S240 names caught shapes and known limits (#622 AC1)
+**Covers:** F39, F40
+- Given: the S240 test header, describing its heuristic oracle.
+- Then: it names recognized compared/--effort shapes, the missed “at least as
+  high as” rewording and instructions inside a superseded paragraph; it does
+  not claim “whatever its wording”. Each omitted shape/limit/qualification and
+  a restored overclaim independently fail a positive header control.
+
+### S529 — Gate header names the guard and fits its surrounding width (#622 AC1)
+**Covers:** F40
+- Given: the model-record-gate.sh leading header.
+- Then: it says the guard prints the warning and every header line fits 79
+  columns. A positive header passes; independently naming a hook or inserting
+  an 80-column line fails. Assertions cover comments only.
 
 ### S241 — lib/ no longer mentions effort in any form, and no comment carries a doubled semicolon
 **Covers:** F39, F40
@@ -3970,6 +4078,8 @@ something new is being added.
   Preserve the canned-none/canned-Review controls and call-log witness. The
   negative witness must alter the reached kind, not simply erase the log;
   omitting inversion or counting must be caught by exact stdout/status checks.
+
+- #610: Isolated legacy controls reject 41-hex SHAs, missing closing delimiters, code spans and indented code as well as the existing 39-hex and fenced examples.
 
 ### S251 — the carry-forward gate compares each Review round with the one immediately before it, request-changes rounds without a done marker included; a human comment is no round
 **Covers:** F28, F42
@@ -4898,7 +5008,9 @@ that evidence and the final `./check` result.
   pushback. If the recommending role is Reviewer, this dispatch is a fresh
   Reviewer under S209. A synthetic trace with decision-before-pushback,
   two pushbacks after the maintainer holds the position, a missing link,
-  or reuse of the Reviewer fails. Non-Reviewer reuse remains #412's choice.
+  or reuse of the Reviewer fails. Non-Reviewer continuation follows #532.
+  `OR45` itself must dispatch the recommending role once for reasoned pushback before recording the decision;
+  deletion or reversed ordering fails despite keywords elsewhere (S478, #611).
 
 ### S282 — an overrule leaves an Architect risk note with the #410 reference
 **Covers:** F44
@@ -4912,7 +5024,10 @@ that evidence and the final `./check` result.
   role was overruled, the flow dispatches the Architect for this note.
   The contracts explicitly say this is the risk-note format referenced
   by #410 AC6/S218. A missing field, missing decision link, or note only
-  in the orchestrator's markerless log fails.
+  in the orchestrator's markerless log fails. The Architect format requires the
+  literal `**Decision**` field linking the numbered human decision. `OR45`
+  itself must dispatch the Architect for a non-Architect overrule; deletion
+  or negation of that dispatch fails despite keywords elsewhere (S479, #611).
 
 ### S283 — completeness remains a review limit and the full check passes
 **Covers:** F44
@@ -5009,23 +5124,26 @@ that evidence and the final `./check` result.
   containing "absorbed" (case-insensitive). Counterexample: any one line
   missing the word.
 - And: the compatibility entry (the `- **Compatibility and limits (#408).**`
-  bullet inside Unreleased, up to the next top-level bullet) names every
+  bullet inside v0.4.0, up to the next top-level bullet) names every
   question whose `Meaning version:` differs between `git show
   v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
-  `meaning version <new number>`. A question differs when its `## <name>`
+  `meaning version <new number>` with a whole-number match (2 must not
+  accept 20 or 21). A question differs when its `## <name>`
   section has a `Meaning version:` number in the new file that is absent from
   or unequal to the old file's. Today that set is
   `quality-review-before-merge` (4), `process-model-choice` (2) and
   `process-multi-agent-roles` (2); the test derives it, it does not list it.
   Any count the entry states in words or digits ("two answers", "3
-  questions") equals the set size. Counterexamples: the set computed from the
+  questions") equals the set size, including later counts after a matching first
+  count; numeric prefixes and conflicting later counts fail. Counterexamples:
+  the set computed from the
   working tree alone or hard-coded; `process-model-choice` omitted; the entry
   saying "two" while three differ; a bump invented for a question whose number
   did not change. If tag `v0.3.0` does not resolve to a commit, the test
   fails with a message naming the tag and "fetch tags / fetch-depth: 0", never
-  skips or passes: `ci.yml` checks out with `fetch-depth: 0`, but `macos.yml`
-  runs `test/run.sh` on a shallow checkout, so that workflow must fetch tags
-  too. Counterexample: the test passing in a clone without the tag.
+  skips or passes: `ci.yml` and `macos.yml` both check out with
+  `fetch-depth: 0` (the pinned block of S219), so the tag is present in CI.
+  Counterexample: the test passing in a clone without the tag.
 - And: the compatibility entry names the accepted limits and does not call the
   strict reader or the lint complete. Reader: every limit name the header of
   `lib/markdown.sh` lists as an accepted-limit bullet
@@ -5034,8 +5152,14 @@ that evidence and the final `./check` result.
   tracked) appears in the entry. Lint: the entry contains `one-definition` and
   `evade` (case-insensitive), and the `lib/one-definition-lint.py` docstring
   still states it can evade (anchor against drift). No entry line mentioning
-  the reader, the lint or `CommonMark` contains `complete`, `exhaustive` or
-  `guarantee` unless it also contains `not`, `no `, `cannot` or `outside`.
+  the reader, the lint or `CommonMark` contains a sentence (delimited by
+  `.`, `!` or `?`) with a word starting with `complete`, `exhaustive` or `guarantee`
+  (including suffixes such as `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively`, but excluding `incomplete`) unless that
+  same sentence contains a whole-word negator, case-insensitively:
+  `not`, `no`, `never`, `neither`, `cannot`, `outside`. A word boundary is the
+  start/end or a character other than an alphanumeric or underscore; `Known`,
+  `another` and `nothing` are not negators.
   Counterexamples: the entry without `ordered-item-after-paragraph`; a lint
   sentence without the evasion limit; "the strict reader is complete";
   a header limit added without an entry mention. A pointer such as "see
@@ -5128,13 +5252,13 @@ that evidence and the final `./check` result.
   future "proposed vX" PR title); AC8 was amended to this narrower scope by
   Product on #474 (comment 6141632547), and the absence of v0.4.0-as-proposal
   wording in `skills/` and root documents is not covered by a standing scan.
-  The arm's scope is the places that state the current version, CHANGELOG.md
-  and README.md; elsewhere the token appears only as quoted data in
+  Outside that scope (CHANGELOG `## V` section and README.md), the token
+  appears only as quoted data in
   TEST-SCENARIOS.md and `test/`, which are excluded for that reason. As of the
   review of #477 (verified at a7a5f48)
   `git grep -l 'v0\.4\.0' -- . ':!TEST-SCENARIOS.md' ':!test'` lists exactly
-  those two files; a new hit there is a prompt to extend arm 5's scope, not a
-  contradiction. Counterexample: the surviving "v0.4.0 is a
+  CHANGELOG.md and README.md; a new file in that command's output is a prompt
+  to extend arm 5's scope, not a contradiction. Counterexample: the surviving "v0.4.0 is a
   proposal only" line (red today only if arm 1 is first made green; show it
   red by placing the cut heading above the unchanged bullets). `Unreleased`
   as the heading itself is outside the section and unaffected.
@@ -5223,7 +5347,7 @@ that evidence and the final `./check` result.
   other low deferred, only `code`/`test` trivial, QA red check first, cap of
   one trivial-fix commit, delta-round low deferred, own-issue `Disposition`)
   moves to `OB40`-`OB44`, and the mutation proof to the calibration mutant on
-  `OR40` (S291, S315). The red-CI clause (revert, defer, fresh review, no
+  `OR43` (S291, S315; #620). The red-CI clause (revert, defer, fresh review, no
   second trivial fix) has no `OB`; it stays checked in `SKILL.md`'s `Fix
   cost` paragraph by S289, and in `ORCHESTRATOR.md` by review only
 - Counterexamples, each fails: the item with `Fix cost` removed; the item
@@ -5327,8 +5451,10 @@ that evidence and the final `./check` result.
   clause-local breaks of #488 (R3 clause removed, cap removed, class
   restriction dropped, the decoy) are retired: the meaning they guarded is
   checked by the differential run, whose calibration (`--calibrate`, AC12)
-  removes one `never` or `not` from `OR40` and must report `diverged` on at
-  least one of `OB40`-`OB44` (acceptance evidence on the PR); S315 proves
+  uses a calibration mutant on `OR43` in the real file (removing its opening "Never"; S315 exercises the runner with a stub rule) and must report
+  `diverged` on at least one of the scenarios listing `OR43` (`OB47`, `OB48`,
+  `OB83`), expected `OB48` (acceptance evidence on the PR). `OR40` behavior is covered by `OB40`-`OB44`, not by the
+  calibration mutant (#620; #499 AC14 is stale on this point); S315 proves
   deterministically that the verdict logic reports `diverged` for such a run
 - Red today: the S288 `OR40` checks fail on `main` b43ee55 (no `OR40` item,
   no inventory), which is the red state for the amended part
@@ -5369,7 +5495,7 @@ that evidence and the final `./check` result.
   `#488` line.
 - Red today: the F44 paragraph has no supersession sentence; no notice.
 
-## Codex support and shared workflow parity — #455 (A38)
+## Codex support and shared workflow parity — #455 (A39)
 
 These eleven durable scenarios map the planning aliases C455-S1–C455-S10 plus
 S304 to F45–F54 and issue #455 AC1–AC10. Public command Interfaces, project
@@ -5393,7 +5519,7 @@ behavioral obedience.
 
 ### S294 — canonical policy and both adapters expose one workflow and detect drift (C455-S1; AC1, AC2)
 **Covers:** F45, F46
-- Given: A38's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
+- Given: A39's canonical `policy/WORKFLOW.md`, canonical `skills/<name>/`
   owners (including role-contracts/ORCHESTRATOR and model-choice), CHANGES.md
   version ownership, and the two mappings `adapters/claude/INSTRUCTIONS.md`
   and `adapters/codex/INSTRUCTIONS.md`.
@@ -5535,7 +5661,7 @@ behavioral obedience.
 ### S297 — public adoption, status and ownership are idempotent and fail visibly (C455-S4; AC3, AC4, AC7)
 **Covers:** F47, F48, F51
 - Given: isolated projects with absent/unmarked/sound-block AGENTS.md,
-  project-owned bytes/config/skills/adoption answers, and A38 ownership fixtures.
+  project-owned bytes/config/skills/adoption answers, and A39 ownership fixtures.
 - When: `SPEC_DRIVEN_GUARDRAILS_DIR=<local-checkout> adopt.sh
   [--runtime claude|codex] [project]` runs and repeats, followed by read-only
   `adopt.sh --status --runtime claude|codex [project]`.
@@ -5607,7 +5733,7 @@ behavioral obedience.
 
 ### S300 — coverage claims distinguish absent Codex interception from Claude and shared gates (C455-S7; AC6, AC7, AC9)
 **Covers:** F50, F51, F53
-- Given: A38's inventory of Claude runtime hooks, initial Codex adapter, native
+- Given: A39's inventory of Claude runtime hooks, initial Codex adapter, native
   Git hooks and shared check/evidence/CI mechanisms.
 - When: inspect adoption/status/docs and exercise each claimed mechanism through
   its public event/command, including intercepted and bypass paths.
@@ -5887,9 +6013,10 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Core-tier pins (review round 1, `core-tier-rules-unprotected`, A41
   amendment 6ccad5c): `test/fixtures/orchestrator-core-pins.tsv`
   (`id<TAB>sha256`, with a header line) holds one row per `core` inventory
-  row; the hash is SHA-256 of the rule's item text from `OR<n> ` to the end of
-  the item, continuation lines joined by single spaces, trailing whitespace
-  trimmed (the test recomputes it on its own, so the hash definition is
+  row; the hash is SHA-256 of `depth=<depth>` plus a newline and the rule's
+  item text from `OR<n> ` to the end of the item, continuation lines joined
+  by single spaces, trailing whitespace trimmed (the test recomputes it on
+  its own, so the hash definition is
   pinned too). The harness `check` takes `--pins F` and reports
   `pin-mismatch` (names the ID, prints the current item text), `pin-missing`
   (a `core` ID without a pin row, names the ID) and `pin-extra` (a pin row
@@ -5911,6 +6038,41 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   and Product adds it to **Covers:**. QA decides on the Developer's red
   evidence, not before
 - Issue #599 amendment: OR31 maps to hook:marker-command,role-stage, and hook check IDs still equal --list-checks. Removing --role or the OR5 cross-reference from OR31 fails xref-or31 (#599 AC6/AC8).
+
+### S510 — loose continuation cannot escape a core pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins, copied to an isolated fixture
+- When: a non-indented instruction is added after OR26, either directly or
+  separated by a blank line; a tab-led instruction follows OR26 directly;
+  or a space-indented continuation paragraph follows a blank line; or a
+  `#619 ...` line, a `#Never ...` line or a seven-hash line follows OR26
+  directly (CommonMark lazy continuations, not ATX headings), and the
+  structure harness checks the copy
+- Then: the unmodified control passes; each mutation fails with
+  `item-loose-continuation` naming OR26; the control is repeated for each
+  mutation and a contiguous space-indented wrap still passes with the same
+  pins; a real ATX heading (`## Heading` plus plain text) right after OR26
+  still ends ownership and passes; headings still delimit items
+- Red on 18239c9: all four mutations pass the harness. Red on 6bf9fce: the
+  `#619`, `#Never` and seven-hash mutations pass the harness (exit 0).
+
+### S511 — duplicate pin rows refuse without silently replacing a pin (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: an identical or conflicting OR26 pin row is inserted before or
+  after the existing row
+- Then: every duplicate fails with `pin-duplicate` naming OR26, regardless
+  of row order; the unique original pins pass
+- Red on 18239c9: an identical duplicate passes.
+
+### S512 — pin hashes bind core sub-item depth (#619, #535)
+**Covers:** F38
+- Given: the real core and pins copied to fixtures
+- When: each of OR24, OR25, OR26 and OR27 is independently dedented to a
+  top-level item while its text stays identical
+- Then: every mutation fails `pin-mismatch` naming the affected rule;
+  wrapping OR26 as an indented continuation at its original depth passes
+- Red on 18239c9: dedented sub-items pass.
 
 ### S312 — the dispatch hook denies each non-compliant role dispatch with the core's own line (#499 AC8)
 **Covers:** F38
@@ -5953,6 +6115,27 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   ref with a real SHA, and the digits-as-SHA brief all exit 0
 - Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
 
+### S505 — Exact role prefixes reject QA-lead (#618 AC1)
+**Covers:** F40
+- Given: the public dispatch-hook CLI with the real rule inventory and core, a QA emitter and an explicit model.
+- When: the first line is ROLE SESSION: QA-lead, then the same prompt is changed to the exact QA role.
+- Then: the suffixed role denies with exit 2, empty stdout, OR8's exact core line once and the avoidance line only; the exact role allows silently. This strengthens the role-name boundary; it does not change inline detection.
+- Mutation controls: each denial must reject a scratch hook with its named check disabled, and each silent allow must reject that check forced to fail. Each assertion uses the same CLI and full-output oracle on its mutant. Mutation rejection on a red baseline is reported separately and becomes discrimination evidence only after the product assertion is green.
+
+### S506 — Reviewer head evidence excludes incidental and historical hex (#618 AC1)
+**Covers:** F40
+- Given: a Reviewer brief with a valid PR, emitter, model and carryforward-gate reference.
+- When: its only hex evidence is a UUID scratch path, the word defaced, an unlabelled hex artifact, a previous head, an old SHA or a previous commit.
+- Then: each denies with exit 2, empty stdout, OR14's exact core line once and the avoidance line only. Adding a separately explicit current head allows silently for each input. Explicit head, SHA and commit labels retain 7-to-40-character hex support, including a labelled all-digit SHA. These shape checks do not establish actual repository head identity. This supersedes S312's permissive incidental-hex reading for the #618 residual.
+- Mutation controls: every denial rejects a scratch hook with reviewer-sha disabled; every silent allow rejects reviewer-sha forced to fail. Full-output oracles and the red-baseline qualification are as in S505.
+
+### S507 — Reviewer PR references accept the supported spellings (#618 AC1)
+**Covers:** F40
+- Given: a Reviewer brief with explicit head, gate, model and emitter evidence.
+- When: the PR reference is pull request #533, pr #533, PR: #533, PR #533, PR 533 or a /pull/533 URL; independently it is replaced by a work-item number, issues URL or bare #533.
+- Then: each PR form allows silently; each issue-only form denies with exit 2, empty stdout, OR14's exact core line once and the avoidance line only.
+- Mutation controls: every allow rejects reviewer-pr forced to fail in a scratch hook; every denial rejects reviewer-pr disabled. Full-output oracles and the red-baseline qualification are as in S505.
+
 ### S313 — the dispatch hook allows everything outside its scope and fails open (#499 AC9)
 **Covers:** F38
 - Given: the bash adapter and the core, behind a recording fake `gh` and a
@@ -5972,18 +6155,21 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 - Red on `main` b43ee55: no hook
 - Issue #599 amendment: Repeat adoption, kill-switch, subagent and unreadable-core allow arms with a role-only emit line; fail-open diagnostics and silent scope exclusions remain unchanged (#599 AC5).
 
-### S314 — the hook is wired once, drift is caught, and real captured input passes through it (#499 AC10)
+### S314 — the hook is wired once, drift is caught, and transcript-derived input passes through it (#499 AC10; #620)
 **Covers:** F38
 - Given: `settings/session-hooks.json`, `agent-dispatch.py --print-contract`,
-  a captured real `Agent` `PreToolUse` input committed as a fixture with its
-  Claude Code version, an adopted fixture project whose `.claude/settings.json`
+  a transcript-derived `Agent` `PreToolUse` input (tool_name, tool_input,
+  tool_use_id verbatim from Claude Code 2.1.301; envelope rebuilt in the
+  documented shape) committed as a fixture with its Claude Code version, an adopted fixture project whose `.claude/settings.json`
   is the existing symlink, and the `process-multi-agent-roles` entry in
   `CHANGES.md`
 - When: the wiring test runs
 - Then: the settings hold one `PreToolUse` entry whose `matcher` equals the
   contract's tool name, `timeout` 10, through the `readlink` dispatcher; a
-  copy of the settings with the matcher changed fails; the captured input,
-  with the fields the contract names, is parsed by the core: as captured
+  copy of the settings with the matcher changed fails; the transcript-derived
+  input (envelope rebuilt in the documented shape; it cannot show that a real
+  top-level call lacks `agent_id`), with the fields the contract names, is
+  parsed by the core: as recorded
   (a compliant dispatch) it exits 0, and with its prompt's first line
   removed it exits 2 with the OR8 line; the adopted fixture resolves the
   hook through the symlink with no `adopt.sh` run; the entry's **Reaches
@@ -6050,18 +6236,19 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   #499 QA, so the file half is green as soon as the parser lands; its red
   proof is the negative controls)
 
-### S316 — the committed stamp matches the hash, and a stale stamp fails (#499 AC13)
+### S316 — stamp hash, count and write behavior are checked in isolated fixtures (#499 AC13; #619)
 **Covers:** F38
-- Given: `test/behavior/orchestrator-diff.stamp`, `ORCHESTRATOR.md` and the
-  scenario file; the stub runner of S315
-- When: `./check`'s stamp test runs, and the stub runner finishes a run in
+- Given: an isolated fixture repo containing a stamp, `ORCHESTRATOR.md`
+  and scenarios; the stub runner of S315; no dependency on the current
+  committed stamp (B10c regenerates that evidence last)
+- When: the fixture stamp test runs, and the stub runner finishes a run in
   which every scenario is `same` or `changed-as-intended` (one listed
   scenario `changed-as-intended`), a run with one `diverged`, and a run in
   which a listed scenario's new arm misses `Then`
-- Then: the stamp is one line `sha256=<64 hex> base=<rev> model=<id>
+- Then: the stamp is one line `sha256=<64 hex> base=<resolved SHA> model=<id>
   scenarios=<count>`; the test recomputes SHA-256 over the bytes of
   `ORCHESTRATOR.md` followed by the bytes of the scenario file and passes
-  only when it equals the stamp; `scenarios` equals the number of `OB`
+  only when it equals the stamp and base/model validation passes (S513/S514); `scenarios` equals the number of `OB`
   blocks; a fixture with one byte changed in either file, and a fixture
   with the files hashed in the other order, fails, and so does a fixture
   whose only change is one item added under `## Intended changes` (the list
@@ -6071,7 +6258,37 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   misses `Then` each leave the old stamp untouched; the test never calls a
   model (`CLAUDE_BIN` set to a command
   that fails if called)
-- Red on `main` b43ee55: no stamp
+- Fixture-only: matching stamps pass; stale hash/count, malformed stamps and
+  unsuccessful runs exercise refusal and preservation without a real model.
+
+### S513 — stamp bases must resolve into origin/main ancestry (#619, #535)
+**Covers:** F38
+- Seam: `orchestrator_diff.py run` with a recording CLI stub, and `stamp-check`
+- Given: an isolated git graph containing an ancestor, an origin/main tip,
+  a branch-only descendant and an unrelated root; matching hash/count stamps
+- When: stamp validation receives each commit, a nonexistent SHA, a symbolic
+  stamp base, an abbreviated SHA, a short or full-length hex-named ref, or
+  a malformed base; or origin/main is missing
+- Then: only full 40- or 64-character SHAs equal to their resolved
+  ancestor/tip commit pass. Missing, branch-only and
+  unrelated bases refuse; run also refuses these bases without replacing an
+  existing stamp. A run may resolve its symbolic input, but stores the SHA.
+  Abbreviated and hex-ref stamp bases refuse; each has a passing full
+  ancestor SHA control. Abbreviated run inputs still write the full SHA.
+  Neither path uses the current committed stamp or calls a real model.
+- Red on 18239c9: stamp-check accepts branch-only, missing and symbolic bases.
+
+### S514 — meaningful model metadata and requested repetitions (#619, #535)
+**Covers:** F38
+- Given: isolated fixture stamps and a recording CLI stub with two scenarios
+- When: stamp model metadata is malformed, an alias or a placeholder; run
+  modelUsage is absent, empty, malformed or contains a placeholder; a valid
+  stub run requests 1, 3 or 5 repetitions per arm
+- Then: invalid metadata refuses without replacing an existing stamp; valid
+  runs execute exactly the requested number for each scenario/arm pair, as
+  observed in the stub's call log. Matching stamps pass, count mismatches
+  fail, and the existing four-field stamp format has no provenance field.
+- Red on 18239c9: placeholder model metadata passes stamp validation.
 
 ### S317 — the core carries the dispatch-economy rules by ID, tier and part, and the inventory matches (#532 AC1-AC6, AC8; A42)
 **Covers:** F38
@@ -6678,7 +6895,7 @@ shape the fake does not answer exits non-zero.
   `stamp-check` path
 - Given: (a) a passing run (every scenario `same` or `changed-as-intended`)
   with the default base, where `origin/main` points at commit `C`; (b) the same
-  with `--base <full sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
+  with `--base <full ancestor sha>`; (c) with `--base HEAD~1`; (d) a run where `--base`
   does not resolve (`--base nosuchref`); (e) the default base when the fixture
   has no `origin/main` at all
 - When: the run finishes and writes the stamp
@@ -6690,18 +6907,10 @@ shape the fake does not answer exits non-zero.
   text; (d) exits 2 with a message naming the base and writes no stamp (this
   already holds because `git show` fails; the test pins it so the new resolve
   step cannot turn it into a stamp with `base=nosuchref`); (e) the same as
-  (d). The `run` output (`stamp written`) is unchanged; `stamp-check` still
-  accepts the new line (STAMP_RE already allows `\S+`)
-- Existing stamp, accounted for: the committed `orchestrator-diff.stamp` has
-  `base=origin/main`. It keeps passing S316 (`stamp-check` recomputes only the
-  hash and the OB count and accepts any non-space `base=`), S323 and S335 (they
-  reject only the old `base=1aba086`), so nothing must change and no paid
-  re-run is needed. What must NOT happen: `stamp-check` starting to reject a
-  symbolic `base=`, because that would force a paid run. Whether to rewrite
-  the committed line by hand to the SHA the run used is open decision 3: it
-  changes evidence the run did not write, and the hash does not cover the
-  stamp file, so S316 would not notice. Recommended: leave it; the next
-  genuine run writes a SHA
+  (d). The `run` output (`stamp written`) is unchanged. Issue #619 supersedes
+  the former allowance for symbolic stamp bases: `stamp-check` now requires
+  a resolved SHA in origin/main's ancestry (S513). The committed stamp is
+  left to the final B10c run; this test uses only isolated fixture stamps.
 - Red on `9c9143d`: (a) records `base=origin/main`; (b), (c) record the text
   as given. Negative control: a runner that resolves only for the default and
   not for an explicit `--base` fails (b) and (c) by name
@@ -7534,6 +7743,36 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - Then: a valid call runs `gh issue comment <n> --body-file -` exactly once, the body is one column-0 record per scope in the order given, a blank line and one plain-text line quoting the reason, every record reads as `ok` with the exact values, and the success output echoes the reason and says the PR needs `Closes #<n>`; every refusal exits 2 with empty stdout, one stderr line naming the field and no `gh` call; there is no environment fallback; dry-run prints exactly the body a real run posts, with one stderr line, no `gh` call (also when `gh` would fail or is absent); exit 4 for a failing `gh` (stderr passed through, "nothing recorded"), 3 for an absent `gh` or an absent `lib/model-record.sh` or `lib/markdown.sh` (not 1), 1 ("internal check failed") when the read-back differs; a symlinked script finds its lib from the real script directory and gives the same dry-run body as a direct run, and a symlink to a script without its lib still exits 3; the script header and the bidi refusal message name the refused range as "a bidi embedding, override or isolate control (U+202A-U+202E, U+2066-U+2069)", and the header says U+200B, U+200E, U+200F, U+061C, U+FEFF are accepted; the usage text says single quotes, the closing keyword and "before the first commit", and is the one list of refusal classes (it names the double quote, `<`, `>`, control bytes, line breaks, C1, U+2028/U+2029, bidi controls and the two ranges, blank including U+00A0, invalid UTF-8 and the 100/1000 byte limits). Mutation arms on a sandbox copy: with only the field checks removed the read-back still exits 1, with only the read-back removed the checks still exit 2, with both removed a hostile value reaches the stub; four more copies each narrow the bidi byte pattern by one at one edge (`a[a-e]` to `a[b-e]` and `a[a-d]`, `a[6-9]` to `a[7-9]` and `a[6-8]`), and each must stop that edge's value from being refused with exit 2, while the unmutated script refuses it.
 - Falsifiers: sanitizing, trimming or truncating instead of refusing, posting before validating, one comment per scope, a default or environment fallback, a dry-run that calls `gh`, the same exit code for different failures, a net that exists only in the pre-checks, a test that cannot see validation being dropped, a bidi range narrowed at one edge with no row going red, an NBSP-only reason recorded as a reason, invalid UTF-8 reaching the record, a symlinked script that cannot find its lib, a missing `lib/markdown.sh` that exits 1, a `--help` that lists fewer refusal classes than the script enforces.
 
+### S495 — physical symlink parents resolve before relative targets (#616 AC1)
+**Covers:** F38
+- Given: a -> x/y, x/y/po -> ../real/pipeline-override.sh and an unrelated real directory beside a; direct, absolute, chained, relative and PATH controls.
+- When: dry runs execute through each link.
+- Then: exit 0 and byte-identical bodies; a changed body fails the equality oracle.
+
+### S496 — invalid UTF-8 boundary checks kill mutants (#616 AC1)
+**Covers:** F38
+- Given: S376 named invalid-UTF-8 checks for E0/F0 overlong, above-max F4, F5/F8 leads and DFFF in both fields, and valid D7FF/E000/10FFFF edges.
+- When: each E0/F0/F4/ED/F5/F8 bound or refusal-class wording is mutated separately in a scratch copy and S376 runs.
+- Then: the corresponding named class assertion fails; valid boundaries and unmutated invalid rows pass, and independently narrowing each valid edge makes its acceptance assertion fail.
+
+### S497 — four accepted characters remain byte-preserved (#616 AC1)
+**Covers:** F38
+- Given: U+2060, U+00AD, U+3164 and U+2800, alone and following text in either field.
+- When: the CLI runs and a separate scratch mutant adds each character to the blank set.
+- Then: the original preserves bytes; each new blank refusal and each output-byte mutation is detected.
+
+### S498 — blank wording names the implemented set (#616 AC1)
+**Covers:** F38
+- Given: script header, CLI help and blank diagnostics.
+- When: the wording and each listed code point are inspected, then individually removed from the observed text.
+- Then: header/help say listed zero-width characters and enumerate U+200B/U+200E/U+200F/U+061C/U+FEFF; blank diagnostics name bidi marks; each wording/deletion mutant fails its pin.
+
+### S499 — n2 abort reasons and vCPU attribution are falsifiable (#616 AC1)
+**Covers:** F56
+- Given: S363 n2 stderr and the runner CPU comment.
+- When: n2 alone raises an unrelated AssertionError or RuntimeError, and attribution is deleted.
+- Then: S363 reports n2 aborted for the wrong reason while its R3 control still passes; runner figures are explicitly assumed or sourced to GitHub runner specs, and removing that qualification fails.
+
 ### S377 — a record from pipeline-override.sh satisfies the real merge gate, and only when the gate can see it (#564 AC6, AC9, AC10)
 **Covers:** F38
 - Given: an opted-in project, a fake `gh` with a PR and its work-item issue, Discovery on the issue, Implementation and Review on the PR, no Planning and no Test marker, and the script's `--dry-run` body as a comment on the issue.
@@ -7560,7 +7799,7 @@ A47 supplies protocol provenance, not proof that a future installation activates
 - Given: the real tree.
 - When: `adapters/codex/permission-baseline.md`, `adapters/codex/INSTRUCTIONS.md` and the rest of the tree are read.
 - Then: the document exists with `sandbox_mode = "workspace-write"`, keys marked verified or assumed, the read-secrecy statement, the needs list, trade-offs, a "cannot match" section, merge confirmation with `merge-preflight.sh` and the prefix-rule limit, and the link to needs-list item 3; `approvals_reviewer = "user"` sits above the first `[table]` header of the snippet and the text says so; the `prefix_rule` lines of the baseline snippet (everything outside a block labelled "convenience widening") carry no allow at all, include a `["gh", "pr", "merge"]` prompt rule, and no rule anywhere is a bare `["gh"]` rule or allows `pipeline-override.sh`, `epic-auto-close.sh`, `wait-for-ci.sh`, `merge-preflight.sh` or `model-record-emit.sh`; a labelled optional convenience block holds the `gh` read allows, each line with a trade-off comment of at least 15 characters, the document says it is optional and deleted after the proxy proof, and the Network section says the block bypasses `network_access = false`; the bypass flag appears only on lines saying never or not, and never in a fenced block; `INSTRUCTIONS.md` names the baseline document and keeps saying no SessionStart/PostToolUse/SessionEnd automation is installed.
-- And (#595): every key of the sandbox-config snippet carries a `[V]`/`[A]` mark on its line or its table header (a mutation arm removes one mark and the pin must name the key), and each convenience-block comment names only `--flags` that the local `gh <command> --help` lists (offline; skipped when `gh` is absent).
+- And (#595): every key of the sandbox-config snippet carries a `[V]`/`[A]` mark in its own line comment or inherits `[A]` from a table-header comment explicitly saying `covers all nested keys` or `covers its nested keys`; a header may not confer `[V]` or `[V observed]`. A mutation arm removes one own-line mark and must name the key. Each convenience-block comment names only `--flags` in the repository-owned command-specific vocabulary `test/fixtures/permission-baseline-flags.tsv`, with no installed `gh` help lookup or absent-gh skip (#614, superseding the local-help and unrestricted-header forms from #595).
 - Falsifiers: a key without a mark, a comment naming a flag the command lacks (today `--web` on `gh run list`), a missing file, an allow in the baseline snippet, a script allowed by prefix, no merge prompt rule, `gh` allows outside the labelled block or without a trade-off per line, a Network section silent about the bypass, the reviewer key below a table header, the flag in a profile or example. Live enforcement (AC1, AC2, AC4, AC10, AC11, AC13) is manual evidence, not covered here.
 
 ### S381 — adopt.sh with Codex options writes no Codex config under HOME and grants no trust (#590 AC8, AC12; #595 AC2)
@@ -7716,7 +7955,36 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned bundle, a foreign .codex file and a source-file update at a new fixture source revision.
 - When: default adoption runs first, followed by explicit --hooks.
 - Then: default adoption leaves the bundle byte-identical; explicit refresh copies the changed file, preserves other bundle files, foreign data and the command string, reports the changed path and old/new revisions, says trust is not re-prompted, and returns current structural status.
-- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report or stale status after refresh.
+- Cold-status check (#621): with bytecode enabled and a cold checkout, standalone status after refresh preserves the complete installation/checkout inventory and bytes and reports current.
+- Falsifiers: implicit refresh or removal, foreign-file loss, changed command, missing refresh report, cold-status writes or stale status after refresh.
+
+### S515 — Cold Codex context is byte-for-byte read-only (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold temporary default Codex installation and checkout; child Python confirms bytecode enabled and no cache prefix.
+- When: session-context.sh --runtime codex runs with inherited Python suppression removed.
+- Then: the complete temporary tree inventory, modes, symlinks and bytes remain unchanged, including checkout imports, while absent-bundle, runtime-hooks and unverified-activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S516 — Cold stale-bundle context remains read-only and diagnostic (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold owned bundle with distinct updated source and bytecode enabled in the child interpreter.
+- When: Codex context invokes its status backend.
+- Then: the complete temporary tree remains unchanged and stale-bundle, warning, outside-sandbox recovery, runtime-hooks and activation diagnostics appear.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S517 — Standalone cold status suppresses bytecode (#621 AC1)
+**Covers:** F47, F51
+- Given: a cold default Codex installation with child bytecode enabled.
+- When: adopt.sh --runtime codex --status runs.
+- Then: the complete tree inventory and bytes remain unchanged and status diagnostics appear; removing suppression in the disposable adoption script must fail this assertion.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
+
+### S518 — Linux native bundle exchange has executable evidence (#621 AC1)
+**Covers:** F47, F51
+- Given: a Linux host with distinct old active and new source bundle trees.
+- When: explicit --hooks refresh executes the real native exchange and a disposable observer interrupts immediately after it.
+- Then: the complete old tree is at the actual staging path and new source bytes and manifest are active; pending status is current with exit 1, explicit recovery clears staging and returns current with exit 0; print actual platform, paths, exit and digests; on other platforms explicitly print SKIP naming the platform and Linux requirement.
+- Falsifiers: missing diagnostics, any unexpected write or mismatched generation; mutation controls must reject changed inventory/bytes or substituted generations where runnable.
 
 ### S402 — Version-2 owned source command migrates once with a trust notice (#594 AC5, AC10)
 **Covers:** F47, F51
@@ -7786,7 +8054,17 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
-- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, or stale status or changed policy after recovery.
+- Native-refusal checks (#621): repeat with ENOSYS and EACCES at exchange; require unchanged old active contents, verified new staging and ready recovery record, read-only stale status, and successful explicit retry; print platform, paths and results (S519).
+- Falsifiers: an injection that never reaches its target write, changed policy behavior after interruption, recovery refused as corrupt/tampered data, unsafe native-refusal state, or stale status or changed policy after recovery.
+
+### S519 — Unsupported or refused exchange preserves safe recovery (#621 AC1)
+**Covers:** F47, F51
+- Given: distinct old installed and new source bundle trees on the actual platform.
+- When: explicit refresh receives native ENOSYS and EACCES failures in separate disposable trials, then retries without injection.
+- Then: the injector is reached, refresh exits 1 with exchange-refusal diagnostics, the entire old active tree remains unchanged, verified new staging and a ready transaction survive, status is stale and read-only with exit 1, and explicit retry activates new bytes, removes staging and clears the transaction with current status; print actual platform, active/staging paths and results. S411 also runs these refusal/recovery checks; native refusal and recovery run on macOS as well as Linux.
+- Falsifiers: unobserved injection, silent success, lost or modified generations, status writes or a failed explicit recovery. A changed active generation must be rejected by the old-tree oracle.
+
+## Role-aware emit command and dispatch hook (issue #599; A48)
 
 ### S412 — Role-only dispatches pass and invalid forms stay fail-closed (#599 AC5, AC8)
 **Covers:** F40
@@ -7826,7 +8104,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
 - When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
-- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector stay unchanged against that baseline. If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector code stays unchanged against that baseline; comment-only and blank-line differences are ignored (scratch controls: a changed or inserted code line still fails, a comment or blank-line-only change passes). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
@@ -7843,6 +8121,22 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Then: Option B continues checking fenced emit units; the separately open quoted-example exemption remains a decision for TiesL. the quoted command is denied under the current default pending TiesL's decision; this arm is clearly isolated so that one scenario expectation can be flipped. Several emit lines with one mismatch are denied by OR31. No prefix yields OR8 alone; the cross-check is inapplicable.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
+### S508 — Presentation wrappers are removed before trailing comments (#618 AC1)
+**Covers:** F40
+- Given: a QA command in a matching single-quote, double-quote or backtick presentation wrapper, with a trailing physical-line comment inside that wrapper.
+- When: each wrapper form runs alone, with an independent Architect command on the following line, and with an apparent contradictory role flag in the comment; separately the closing wrapper is removed, with and without the independent contradiction.
+- Then: matching commands and flags inside comments allow silently. The independent contradiction denies with exit 2, empty stdout, OR31's exact core line once and the avoidance line only. Genuinely unmatched wrappers allow with empty stdout and exactly one bounded agent-dispatch diagnostic ending in dispatch allowed unchecked, including beside a contradiction; malformed units never count as partial validation.
+- Mutation controls: every silent allow rejects a scratch regression marking valid input unchecked; each contradiction rejects role-stage disabled; each unmatched input rejects a scratch hook suppressing the unchecked diagnostic. Full-output oracles and the red-baseline qualification are as in S505.
+
+### S509 — Outside wrapper comments and hostile PR whitespace preserve checks (#618)
+**Covers:** F40
+- Given: the real dispatch-hook CLI, rule core and inventory; a baseline hook obtained read-only from commit 3047418 in a temporary file (recorded expectations if history is unavailable).
+- When: QA emit commands use backtick, single-quote and double-quote presentation wrappers, with comments outside, inside, or absent, each with a fork, an Architect contradiction, and a valid control.
+- Then: the outside-comment backtick form denies forks with exact OR7 and contradictions with exact OR31; its valid control allows silently. Single/double quotes with outside comments retain allowed unchecked behavior. Inside comments and no-comment controls retain checks; S508 continues pinning genuinely unmatched wrappers. Compare each preserved verdict against the base CLI; inner comments use S508's intentionally strengthened behavior instead of the older base.
+- When: a forked Reviewer brief contains PR or pull request followed by 200000 spaces without a number, or that run precedes a real PR #533; short-run controls and a valid non-forked Reviewer also run.
+- Then: every invocation finishes in under 2 seconds measured through subprocess with a 2-second deadline that kills and reaps on expiry. Missing PR briefs deny with exact OR7 plus OR14; the later real PR denies with exact OR7, matching the base. Timeout, crash and unchecked are failures. Short controls retain those verdicts and the valid Reviewer allows silently.
+- Mutation controls: each assertion rejects a scratch hook erasing its denial or unchecked diagnostic, or marking its silent allow unchecked. Each long-whitespace assertion instead rejects a scratch hook delayed beyond the real deadline. Every invocation uses the same full-output and timing oracle; mutations on already-red product assertions remain qualified as in S505.
+
 ### S418 — Hook, emitter library and OR5 role maps cannot drift (#599 AC9)
 **Covers:** F40
 - Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
@@ -7856,6 +8150,9 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - When: the docs and independently mutated copies are checked.
 - Then: OR31 supplies --role, cites OR5 and states agreement; instructing commands use --role and stage-only mentions are labelled backward-compatible. ORCHESTRATOR carries no marker grammar or second stage table. Each removed instruction fails its oracle. S311 moves the OR31 cross-reference pin and pins both hook checks; S318 remains the context-budget guard.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
+
+## Codex guard bundle continued (issue #594)
+
 ### S420 — Preparation record replacement interruption (#594 AC5, AC6)
 **Covers:** F47, F51
 - Given: old complete installation and changed source.
@@ -8153,3 +8450,173 @@ and S380's #590 live-evidence boundary.
 - Then: OR46 exempts the QA artifact, comparison and associated Reviewer approval block only under the valid record and requires the exact line `QA provenance: result=not-applicable; skip=<record URL>; head=<SHA>`. Reviewer verifies that record and log line for the reviewed head. Developer may append new `### <ID>` entries and scenario text only for test files it adds in this work item under that record, keeping existing scenario text byte-identical; OR19 and the conflict stop still apply. Removing any pinned clause from its compliant witness fails that obligation while controls remain green.
 - Behavior seam: OB79 specifies Reviewer for a valid Test waiver with a linked not-applicable log; OB80 specifies QA for a missing artifact without an override despite completed stage records. OB81 specifies QA for a missing artifact despite completed stages and a single-session record with a not-applicable log citing it; extending the exemption to single-session would instead admit Reviewer. OB82 specifies Product for a Developer spec conflict despite a valid Test waiver. These are scenario oracles and a mutant prediction by construction, not executed behavior evidence.
 - Evidence boundary: These pins establish loaded instruction text, not obedience. OR15 in part 2 is deliberately not pinned or expanded. The Developer owns rule-inventory registration; the coordinated differential run must supply fresh behavior evidence later.
+
+### S470 — Independent round-reader mutations are killed by targeted assertions
+**Covers:** F42
+- Given: temporary copies of the round Module and an independent control for each assertion (#610).
+- When: sorting is skipped, Planning spends a number, SHA length or closing delimiter is relaxed, matching reads the raw body, or the live-capture/numeric-count failure guard is removed, one mutation at a time.
+- Then: each mutated copy fails its exact output/status assertion while the corresponding unchanged control passes. Silent failure injections terminate before the live sentinel or suppress the numeric count. The redundant plain legacy grep must be absent.
+
+### S471 — Completion sentinels distinguish failed captures from empty success
+**Covers:** F42, F28
+- Given: temporary copies of both round consumers and shell functions standing in for gh or rr_rounds (#610).
+- When: a function returns 0 with empty output, the capture completes; when it exits the substitution with status 0, the caller-owned completion sentinel cannot run.
+- Then: successful empty fetches and zero rounds stay quiet (the reporter prints review-rounds: 0). Each failed capture warns, exits 0, and prints no verdict. Each failure assertion has a matching successful-empty control for the same consumer and capture.
+
+### S472 — Whole-value commit-check budget validation refuses before execution (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook through a symlink, a local stub answering only read-only git discovery, and an executable check-commit that records its start.
+- When: the budget contains a leading or trailing newline, two numeric lines, junk beside a numeric line, zero, a negative integer, a leading-zero value (01), 1000000, a 20-digit value or a much larger integer.
+- Then: the hook refuses, never starts the check, names COMMIT_CHECK_BUDGET and never reports an elapsed timeout. Zero and negative values are preservation controls; newline and oversized values are new regression coverage.
+- Mutation controls: each assertion independently rejects an inverted status, inverted start marker, removed diagnostic or added timeout diagnostic. These are observation mutations, not simulated passing product behavior.
+
+### S473 — Watchdog sleep failure cannot permit a failing check (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook, a check that records its start then fails with identifiable output after two seconds, and a PATH sleep stub that fails after observing the start marker. The check uses real sleep independently.
+- When: the hook runs with a valid ten-second budget.
+- Then: check execution and sleep injection are both observed, the hook refuses, the real failure output remains visible and no elapsed timeout is claimed.
+- Mutation controls: every assertion rejects its own inverted status/marker or corrupted diagnostic observation.
+
+### S474 — Valid commit-check outcomes survive budget hardening (#615 AC1)
+**Covers:** F17
+- Given: the real pre-commit hook and portable check fixtures, with no injected sleep failure.
+- When: successful checks use budgets 1, 30 and 999999, a real failure completes within a ten-second budget, and a four-second check exceeds a one-second budget.
+- Then: completion allows without timeout, real failure refuses with its output and no timeout, and actual timeout allows with an exceeded-budget warning pointing to CI. Every case confirms that the check started.
+- Mutation controls: every status, start-marker and diagnostic assertion rejects its own corrupted observation. The harness uses Bash 3.2 constructs and can select another Bash via BUDGET_BASH; native Linux execution is separate evidence.
+
+### S475 — Reviewer continuation bans reject keyword-preserving mutations
+**Covers:** F41
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  invert each of the three carriers to permit SendMessage, and separately permit fork in OR12
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S476 — Architect reclassification permission rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  negate the permission separately in SKILL.md and OR18
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S477 — project checkout working directory rejects keyword-preserving mutations
+**Covers:** F42
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  replace the OR25 directory with the guardrails clone and forbid the project checkout, or insert never before the checkout
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S478 — OR45 pushback obligation rejects keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete the recommending-role pushback sentence or change before to after
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S479 — OR45 risk-note dispatch and literal Decision field reject keyword-preserving mutations
+**Covers:** F44
+- Given: the current contract documents and their actual contract tests (#611)
+- When: a private offline copy runs the unchanged documents, then separately
+  delete or negate the Architect dispatch in OR45, or delete the literal Decision field from the Architect format
+- Then: unchanged text passes; every mutation makes the corresponding contract
+  test fail. Mutation anchors must exist uniquely, so stale mutations fail too.
+  No product file in the checkout is modified by this check.
+
+### S480 — S285 rejects substring negators, later conflicting counts and meaning-version prefixes (#613)
+**Covers:** F15
+- Given: a disposable copy of S285 and its input files, with read-only access
+  to the clone's v0.3.0 tag; the historical release notes remain unchanged.
+- When: S285 runs against the unchanged notes, then each mutated compatibility
+  entry, through its normal shell CLI.
+- Then: unchanged notes pass. Each false claim fails with the completeness
+  diagnostic: "Known: the strict reader is complete.", "The strict reader is
+  complete for another shape.", "The lint is complete and nothing is missing."
+  Inflected claims using `guarantees`, `guaranteed`, `completely`,
+  `completeness` and `exhaustively` also fail with that diagnostic; adding
+  a whole-word `not` to each same sentence makes it pass. `incomplete` passes.
+  Every whole-word negator listed in S285 passes, including `outside`; the
+  scenario negator list equals the test list. A disposable scenario and test
+  extended with `seldom` must pass and report that the added negator was
+  exercised; a hard-coded loop that omits it fails this control.
+- And: later conflicting counts ("Two answers", "2 questions", "30 questions",
+  "13 answers", and adjacent "3 answers 2 questions") after the existing
+  matching count fail with a count diagnostic;
+  multiple matching word and digit counts pass. Replacing expected meaning
+  version 2 with 20 or 21 fails with the meaning-version diagnostic.
+- Counterexample: any mutation passes, a valid control fails, or a mutation
+  fails only because a different S285 prerequisite is missing.
+
+### S485 — Clean-empty carry-forward checks require warning-free stderr (#612 AC1)
+**Covers:** F28
+- Given: S305's actual `check()` helper and each of its clean-empty case labels, with a substituted successful gate observation (exit 0, empty stdout).
+- When: stderr is empty, the helper passes; injecting a fail-open warning into stderr while preserving status and stdout makes the helper fail and identify stderr.
+- Then: every clean-empty assertion has its own green control and warning-only mutation. The real S305 cases continue to exercise the gate with recording fake REST data; removing its stderr assertion must turn this oracle check red.
+- Evidence boundary: this tests S305's assertion, not a second implementation of the gate or a claim that empty output alone proves successful lookup.
+
+### S486 — Workflow escape warning assertions reject unnamed and unrelated warnings (#612 AC1)
+**Covers:** F7
+- Given: S306-S308's actual JSON-seam `check()` helper for commit --no-verify, commit -n and push --no-verify, using both process-environment and command-prefix escapes with values 1 and yes.
+- When: only the captured hook observation is substituted, an allowed result with a warning naming CLAUDE_WORKFLOW_GUARDRAILS_OFF and stating the guard is disabled passes.
+- Then: each command/form/value has independent mutations removing the variable name, replacing the warning with unrelated warning text, removing the warning marker, or keeping the variable in an unrelated warning. Every mutation fails the named-warning assertion while its unchanged control passes. S308's real-hook checks enforce this same oracle, so a command-prefix warning omitting the variable is red until the Developer changes the product diagnostic.
+- Evidence boundary: the meta-test exercises the real test helper; S306-S308 separately executes the real hook and checks allowed status and diagnostic together. No product source is changed by this test.
+
+### S490 — Only an explicitly covering assumed header marks nested keys (#614 AC1)
+**Covers:** F57
+- Given: isolated copies of S380 and a compliant document witness with `[features.network_proxy] # [A] covers all nested keys`.
+- When: an unmarked `foo` is added, the coverage phrase or header mark is removed, or a new unmarked table starts.
+- Then: explicit coverage (`covers all nested keys` or `covers its nested keys`) passes; each missing-coverage variant fails and names `foo`; coverage does not leak into another table. Each status and named-key assertion rejects its own inverted-status or removed-diagnostic observation mutant.
+
+### S491 — Verified table headers cannot confer marks (#614 AC1)
+**Covers:** F57
+- Given: the same command seam and a covering-header witness.
+- When: the header mark becomes `[V]`, `[V observed]` or mixed `[A] [V]`, with a nested unmarked `foo`.
+- Then: each variant fails and names `foo`; independently marking every nested key on its own line passes. Each assertion has an inverted-status control and each diagnostic assertion a removed-name control.
+
+### S492 — Permission flag vocabulary is independent of installed gh (#614 AC1)
+**Covers:** F57
+- Given: isolated S380 copies with PATH containing only required tools plus empty-help, permissive-help or absent gh; real gh cannot be reached.
+- When: the valid document and a comment naming `--nonexistent-command-flag` are checked under each PATH.
+- Then: all valid documents pass, all invalid comments fail and name the nonexistent flag, and no gh call is made. The command-specific repository inventory is copied with the test. Every status, diagnostic and no-call assertion rejects its own inverted-status, erased-name or added-call observation mutant.
+
+### S493 — Existing mark and command-flag falsifiers remain effective (#614 AC1)
+**Covers:** F57
+- Given: independent compliant document controls and deterministic offline gh help for preservation comparison.
+- When: the `exclude_slash_tmp` own-line mark is removed, or the `gh run list` comment gains `--web`.
+- Then: controls pass; each mutated document fails and names its removed mark key or invalid flag. Each assertion rejects its own status mutant and each named diagnostic rejects its own erased-name mutant. These preservation cases are green before changing S380.
+
+### S494 — S380 has no unjustified shellcheck diagnostics (#614 AC1)
+**Covers:** F57
+- Given: shellcheck when installed, S380 and a separate shell fixture with an unquoted expansion.
+- When: shellcheck runs with `-s bash -x` on S380 and checks the fixture.
+- Then: S380 is clean (or carries narrow justified suppressions), while the fixture fails with SC2086, proving info-level checking is active. A missing shellcheck emits an explicit skip; the work-item verification separately records installed-shellcheck results.
+
+### S530 — S314 and its fixture describe the hook input as transcript-derived with a rebuilt envelope (#620; #535 fixture-called-captured)
+**Covers:** F38
+- Given: the S314 section of TEST-SCENARIOS.md, the header comment of `test/cases/s314_agent_dispatch_wiring_and_real_input.sh` and the files under `test/fixtures/agent-dispatch/`.
+- When: the wording check scans each text for "captured real" or "real captured".
+- Then: a text that says so also says "envelope rebuilt", and the S314 section says "transcript-derived". A scratch copy of the S314 section that says "captured real" without "envelope rebuilt" fails, the corrected wording passes, and removing "transcript-derived" from the corrected wording fails. Red until the S314 test header comment is reworded (Developer).
+
+### S531 — no test, scenario or fixture names OR40 as the calibration mutant (#620; #535 stale-or40-mutant-references)
+**Covers:** F38
+- Given: `test/cases/s291_low_rule_mutations.sh`, `test/fixtures/decision-table-415.py`, the S288 and S291 sections of TEST-SCENARIOS.md and the A41 section of ARCHITECTURE.md outside the #620 amendment (which states that #499 AC14 is stale).
+- When: each text, comment markers removed and lines joined, is scanned for "OR40 calibration" or "calibration" followed within 100 characters (no period or semicolon between) by `OR40`.
+- Then: no text matches. A scratch copy of each of the four sources with one such phrase added fails the scan, and the unchanged scratch copies pass the scan whenever the real files do. Red until the Developer rewords the OR40 mentions in s291 lines 7-9 and decision-table-415.py lines 104-106.
+
+### S532 — OB83 is in the inventory under OR43 and OR45 and graded dispatch to QA (#620; #535 rule-qualifiers-dropped coverage)
+**Covers:** F38
+- Given: `skills/role-contracts/orchestrator-rules.tsv` and `test/behavior/orchestrator-scenarios.md`.
+- When: the covered_by column of OR43 and OR45 and the OB83 block are read.
+- Then: both rules list OB83, and the OB83 block heads "OR43, OR45" and ends in `next_action=dispatch; next_role=QA; asks_human=false`. Scratch copies with OB83 dropped from either rule, or with the Then changed to `ask_human`, fail. Red until the Developer adds OB83 to both inventory rows.
+
+### S533 — OR32 keeps the "Resolve absolute path once" qualifier (#620; #535 rule-qualifiers-dropped)
+**Covers:** F38
+- Given: `skills/role-contracts/ORCHESTRATOR.md` OR32 and `test/fixtures/orchestrator-core-pins.tsv`.
+- When: the OR32 item is read.
+- Then: it contains "Resolve absolute path once" and is one physical line. A scratch copy with the phrase deleted fails. Green now (the text is in the tree); the pin hash itself is guarded by S311, S317, S322 and S333, which stay red until the Developer regenerates the OR32 pin.

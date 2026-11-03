@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S162 — Every script an installed skill tells the agent to run exists where the skill says.
+# S162 — Installed skill and workflow policy paths resolve from an adopted project.
 # Covers: F37
 #
 # Issue #369, the human decision that pre-merge-review's classify-review-depth.sh
@@ -8,9 +8,11 @@
 # installed skills, read through .claude/skills/ in a freshly adopted
 # project, checked against what exists in that project and in the clone.
 #
-# A ./<name>.sh invocation must exist at the adopted project's root; a
-# $SPEC_DRIVEN_GUARDRAILS_DIR/<name>.sh one must exist, executable, in the
-# clone.
+# Scan installed SKILL.md files and policy/WORKFLOW.md: ./ script paths,
+# $SPEC_DRIVEN_GUARDRAILS_DIR checkout paths, bare skills/ and templates/
+# references, and installed .claude/skills/ paths. Scripts must be executable;
+# template files/directories must exist. Clone-qualified prose and explicit
+# checkout conventions resolve in the physical clone; local scripts in the project.
 
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
@@ -21,36 +23,33 @@ sandbox_create
 trap sandbox_destroy EXIT
 
 clone="$(sandbox_copy_repo clone)"
-project="$(fresh_project adopter)"
-SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >/dev/null 2>&1
+# A directory with .git is enough for adoption; no git writes are needed.
+project="$SANDBOX/adopter"
+mkdir -p "$project/.git/objects" "$project/.git/refs"
+printf 'ref: refs/heads/main\n' > "$project/.git/HEAD"
+SPEC_DRIVEN_GUARDRAILS_DIR="$clone" "$clone/adopt.sh" "$project" >"$SANDBOX/adopt.log" 2>&1
+[ "$?" -eq 0 ] || { cat "$SANDBOX/adopt.log"; fail "S162 — adoption failed"; test_done; }
+[ -d "$project/.claude/skills/pre-merge-review" ] || fail "S162 — no installed skills"
+python3 "$TEST_REPO_ROOT/test/fixtures/adopter-docs-622.py" paths "$TEST_REPO_ROOT" "$project" "$clone" \
+  || fail "S162 — a documented installed-skill or workflow-policy path dangles"
+python3 "$TEST_REPO_ROOT/test/fixtures/adopter-docs-622.py" path-controls "$TEST_REPO_ROOT" \
+  || fail "S162 — path mutation controls failed"
 
-found_any=0
-for skill in "$project"/.claude/skills/*/SKILL.md; do
-  [ -r "$skill" ] || continue
-  found_any=1
-  name="$(basename "$(dirname "$skill")")"
-
-  # ./<name>.sh, not preceded by a path character (so a/b/./x.sh or
-  # $VAR/./x.sh don't count as a bare relative invocation).
-  grep -oE '(^|[^A-Za-z0-9_./$}-])\./[A-Za-z0-9_-]+\.sh' "$skill" \
-    | sed 's/^[^.]*\.\///' | sort -u > "$SANDBOX/rel.txt"
-  while IFS= read -r script; do
-    [ -n "$script" ] || continue
-    [ -x "$project/$script" ] \
-      || fail "S162 — skill '$name' runs ./$script, which an adopted project does not have"
-  done < "$SANDBOX/rel.txt"
-
-  # $SPEC_DRIVEN_GUARDRAILS_DIR/<path>.sh or ${SPEC_DRIVEN_GUARDRAILS_DIR}/<path>.sh
-  grep -oE '\$\{?SPEC_DRIVEN_GUARDRAILS_DIR\}?/[A-Za-z0-9_./-]+\.sh' "$skill" \
-    | sed 's/^[^/]*\///' | sort -u > "$SANDBOX/clone.txt"
-  while IFS= read -r script; do
-    [ -n "$script" ] || continue
-    [ -x "$clone/$script" ] \
-      || fail "S162 — skill '$name' runs \$SPEC_DRIVEN_GUARDRAILS_DIR/$script, which the clone does not have"
-  done < "$SANDBOX/clone.txt"
+# Policy scope controls use the same paths-mode CLI as the real scan.
+# Each mutation must be detected in the policy, even when installed skills pass.
+policy="$clone/policy/WORKFLOW.md"
+cp "$policy" "$SANDBOX/policy.good"
+for mutant in './wait-for-ci.sh' 'templates/missing-622.md'; do
+  cp "$SANDBOX/policy.good" "$policy"
+  printf '\nRun `%s`.\n' "$mutant" >> "$policy"
+  if python3 "$TEST_REPO_ROOT/test/fixtures/adopter-docs-622.py" paths "$TEST_REPO_ROOT" "$project" "$clone" >"$SANDBOX/mutation.log" 2>&1; then
+    fail "S162 — workflow-policy mutation escaped: $mutant"
+  elif ! grep -F 'policy/WORKFLOW.md: unresolved invocations:' "$SANDBOX/mutation.log" >/dev/null; then
+    cat "$SANDBOX/mutation.log"
+    fail "S162 — mutation failed outside workflow policy: $mutant"
+  fi
 done
-
-[ "$found_any" -eq 1 ] || fail "S162 — no installed skills found in the adopted project"
+cp "$SANDBOX/policy.good" "$policy"
 
 # And: pre-merge-review still tells the reviewer to run the classifier,
 # now by a path that resolves (rather than by dropping the step).

@@ -186,4 +186,18 @@ rr_run "$RR_PR" "$RR_ISSUE"
 [ "$(rr_lines '^review-rounds: ')" = "review-rounds: 1" ] || fail "S216/quoted — a quoted Review example before a live Planning marker made a round: $(rr_lines '^review-rounds: ')"
 [ "$(rr_lines '^planning-after: ')" = "planning-after: 1" ] || fail "S216/quoted — the live Planning marker after a quoted Review example was not reported: $(rr_lines '^planning-after: ')"
 
+# #610: isolate legacy grammar from model-record candidates.
+for bad in \
+  "<!-- pre-merge-review:done sha=111111111111111111111111111111111111111 -->" \
+  "<!-- pre-merge-review:done sha=11111111111111111111111111111111111111111 -->" \
+  "<!-- pre-merge-review:done sha=1111111111111111111111111111111111111111" \
+  "${BT}${done_m}${BT}" \
+  "Example:${NL}${NL}    ${done_m}"; do
+  rr_reset
+  rr_json "$FAKE_GH_DATA/comments-$RR_PR.json" created_at "$T1" "$bad"
+  rr_run "$RR_PR"
+  [ "$rr_status" -eq 0 ] && [ "$(rr_lines '^review-rounds: ')" = "review-rounds: 0" ] \
+    || fail "S216/legacy-isolated — non-live or malformed legacy marker counted: $bad"
+done
+
 test_done

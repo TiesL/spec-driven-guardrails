@@ -139,6 +139,10 @@ one "fenced done marker" 0 "Example:${NL}\`\`\`${NL}${done_m}${NL}\`\`\`"
 one "done marker in prose" 0 "The words pre-merge-review:done in prose, and a decoy: <!-- pre-merge-review:done"
 one "done marker without a sha" 0 "<!-- pre-merge-review:done -->"
 one "done marker with a 39-hex sha" 0 "<!-- pre-merge-review:done sha=ddddddddddddddddddddddddddddddddddddddd -->"
+one "done marker with a 41-hex sha" 0 "<!-- pre-merge-review:done sha=${RR_SHA40}d -->"
+one "done marker without closing delimiter" 0 "<!-- pre-merge-review:done sha=${RR_SHA40}"
+one "done marker in a code span" 0 "${BT}${done_m}${BT}"
+one "done marker in an indented block" 0 "Example:${NL}${NL}    ${done_m}"
 one "done marker in a blockquote" 0 "> <!-- pre-merge-review:done sha=${RR_SHA40} -->"
 
 # =========================================================================
