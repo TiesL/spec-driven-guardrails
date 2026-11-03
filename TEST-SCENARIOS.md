@@ -8026,6 +8026,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: a list-only bundle that first passes the complete parity controls.
 - When: each listed file is removed separately and restored, including the entry point; rules.sh alone is exempt because it is sourced but has no merge-only effect.
 - Then: the role-play fixture loses its exit-2 refusal for each ablation; a missing entry point is exercised through a shell so the test observes its exit rather than a Python exec error.
+- Release-shaped arm (#651, A52): lib/model-record-epic.py is read only for release-shaped heads (the legacy path falls back to plain gh), so its ablation is observed on a release PR whose child lacks a Test record: the complete bundle reports the block, the ablated bundle reports unchecked instead.
 - Falsifiers: a merge-relevant ablation that retains the same refusal or a fixture that never blocked before ablation.
 
 ### S408 — Relative source dependencies must stay inside the declared closure (#594 AC9)
