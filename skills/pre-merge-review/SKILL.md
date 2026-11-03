@@ -140,6 +140,31 @@ as a live `pipeline-override` marker (`scope="single-session"` or
 network the gate and the guard let the merge through, as every gate here
 does.
 
+For a same-repository `release/<epic>-<slug>` PR targeting the default
+branch and explicitly closing its epic, the gate derives four stages from
+every child and requires Review on the release PR itself. It reconciles live
+Epic fields, the Work items checklist and merged release PRs, checks closure
+and closing-PR bases, and reads each child's issue and verified closing PR
+evidence separately. A ledger is a view, not evidence. Manual epic overrides
+and release-wide single-session retain legacy output; a skip on any closing
+issue retains its release-wide effect, including inherited stage absence.
+
+Traversal uses explicit pages of 100 and finite limits: 100 children;
+5,000 issue objects; 1,000 closed PRs, timeline events per child, comments or
+reviews per collection; 1,200 total REST calls; 8 MiB per response and
+64 MiB total. Each subprocess/read has 10 seconds; the whole evaluation,
+including shell scans, has 120 seconds. Equality with a cap, timeout, reader
+failure, retrieval error or changed detail snapshot yields
+`role-play-unchecked`, discarding all partial blocking findings. Collections
+are complete only after a short page; there are no retries. Details are
+rechecked before publishing, but mutable comments are not an atomic snapshot.
+
+Any session able to post records can forge model-records and human override
+lines. This validates structure and consistency; it does not authenticate
+authorship or prove that stages ran. Coordinated rewrites of all membership
+sources are not prevented. Deliberate cap exhaustion and network failure
+remain visible fail-open conditions.
+
 The rest of this procedure (isolated context, `scope.sh`,
 `scenario-gate.sh`, the marker) doesn't change with the model choice:
 that's a separate knob, not a package deal — a different model choice is

@@ -598,11 +598,15 @@ check_role_play_guard() {
 
   block "gh pr merge on a role-played run" \
 "this project answers process-multi-agent-roles yes, and
-       model-record-gate.sh finds that one session played the pipeline's
-       roles instead of dispatching them:
+       model-record-gate.sh finds incomplete or combined pipeline roles,
+       or epic/child evidence or membership findings:
 
 $(printf '%s\n' "$findings" "$context" | sed 's/^/       /')
 
+       For an epic/child finding, correct the named child evidence or
+       membership and closing PR state. The epic ledger is not evidence.
+       A child skip needs its own valid human pipeline-override; do not
+       invent an epic override to conceal missing child evidence.
        Re-post a whole record line using
        skills/pre-merge-review/model-record-emit.sh when a record is a
        near-miss. Dispatch each stage as its own role session, or, if the

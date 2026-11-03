@@ -13,6 +13,8 @@ point.
 
 ## Unreleased
 
+- **TiesL/spec-driven-guardrails#651:** derive epic release stage coverage from reconciled child evidence, with bounded offline-testable traversal and visible unchecked failures; document ledger bookkeeping and the A18/membership amendments.
+
 ## v0.5.1 — Many low severity review findings resolved. See CHANGELOG.md for the improvements made (2026-11-03)
 
 - **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is
