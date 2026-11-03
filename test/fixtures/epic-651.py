@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Offline REST adapter and CLI assertions for A52. No production imports."""
+import fcntl
 import json
 import shutil
 import os
@@ -42,29 +43,95 @@ def pr(n, child, base):
     return p
 
 
+def add_child(d, c, epic=608, base='release/608-inheritance', records=True, with_pr=True, listed=True):
+    """One member: live field, epic timeline event (stale embedded copy), list row, closing PR."""
+    d[f'issues/{c}'] = issue(c, f'**Epic:** #{epic}')
+    d[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES)) if records else []
+    d[f'issues/{c}/timeline'] = []
+    d[f'issues/{epic}/timeline'].append({'id': c, 'created_at': STAMP, 'event': 'cross-referenced',
+        'source': {'type': 'issue', 'issue': issue(c, f'stale copy mentions #{epic}')}})
+    if listed:
+        d[f'issues/{epic}']['body'] += f'- [x] #{c} work\n'
+    if with_pr:
+        p = pr(c + 1000, c, base)
+        d['pulls'].append(p)
+        d[f'pulls/{c + 1000}'] = p
+        d[f'issues/{c + 1000}/comments'] = []
+        d[f'pulls/{c + 1000}/reviews'] = []
+        d[f'issues/{c}/timeline'].append({'id': c, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'issue': dict(p, pull_request={
+            'url': f'https://api.github.com/repos/{REPO}/pulls/{c + 1000}'})}})
+
+
+def plain(d, n):
+    """An issue that carries no Epic field (a listed or closed-by-PR non-member), readable in full."""
+    d[f'issues/{n}'] = issue(n, 'no Epic field')
+    d[f'issues/{n}/comments'] = []
+    d[f'issues/{n}/timeline'] = []
+
+
+def mention(d, n, body='unrelated', epic=608):
+    """A timeline-only candidate: it mentions the epic but carries no Epic field."""
+    d[f'issues/{n}'] = issue(n, body)
+    d[f'issues/{n}/comments'] = []
+    d[f'issues/{epic}/timeline'].append({'id': n, 'created_at': STAMP, 'event': 'cross-referenced',
+        'source': {'type': 'issue', 'issue': issue(n, '**Epic:** #' + str(epic) if body == 'embedded' else 'mentions')}})
+
+
 def world(children=(609, 610)):
-    data = {'': {'full_name': REPO, 'default_branch': 'trunk'}, 'issues': [], 'pulls': []}
+    # No issue collection exists: the repository's issue list must never be read.
+    data = {'': {'full_name': REPO, 'default_branch': 'trunk'}, 'pulls': []}
     data['pulls/648'] = pr(648, 608, 'trunk')
     data['pulls/648']['head']['ref'] = 'release/608-inheritance'
     data['issues/648/comments'] = []
     data['compare/trunk...' + 'a' * 40] = {'behind_by': 0}
     data['pulls/648/commits'] = []
     data['pulls/648/reviews'] = comments(marker('Review'))
-    data['issues/608'] = issue(608, '## Work items\n' + ''.join(f'- [x] #{c} work\n' for c in children))
+    data['issues/608'] = issue(608, '## Work items\n')
     data['issues/608/comments'] = []
+    # Epic timeline noise that is never a candidate: a PR source, a foreign
+    # repository source, a label and a source-less event.
+    pr_src = dict(issue(4001, 'mentions #608'), pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/4001'})
+    foreign = dict(issue(4002, 'mentions #608'), url='https://api.github.com/repos/other/project/issues/4002')
+    data['issues/608/timeline'] = [
+        {'id': 1, 'created_at': STAMP, 'event': 'labeled'},
+        {'id': 2, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'type': 'issue', 'issue': pr_src}},
+        {'id': 3, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'type': 'issue', 'issue': foreign}},
+        {'id': 4, 'created_at': STAMP, 'event': 'cross-referenced'}]
     for c in children:
-        obj = issue(c, '**Epic:** #608')
-        data['issues'].append(obj)
-        data[f'issues/{c}'] = obj
-        data[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES))
-        p = pr(c + 1000, c, 'release/608-inheritance')
-        data['pulls'].append(p)
-        data[f'pulls/{c + 1000}'] = p
-        data[f'issues/{c + 1000}/comments'] = []
-        data[f'pulls/{c + 1000}/reviews'] = []
-        data[f'issues/{c}/timeline'] = [{'id': c, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'issue': dict(p, pull_request={
-            'url': f'https://api.github.com/repos/{REPO}/pulls/{c + 1000}'})}}]
+        add_child(data, c)
     return data
+
+
+def violate(message):
+    """Record a forbidden read where the gate cannot swallow it, then fail the call."""
+    with open(os.environ['EPIC_LOG'] + '.viol', 'a') as f:
+        f.write(message + '\n')
+    sys.exit(message)
+
+
+class Locked:
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        self.f = open(self.path + '.lock', 'a+')
+        fcntl.flock(self.f, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *exc):
+        self.f.close()
+
+
+def concurrency(delta):
+    path = os.environ['EPIC_LOG'] + '.conc'
+    with Locked(path):
+        try:
+            state = json.loads(Path(path).read_text())
+        except (OSError, ValueError):
+            state = {'active': 0, 'max': 0}
+        state['active'] += delta
+        state['max'] = max(state['max'], state['active'])
+        Path(path).write_text(json.dumps(state))
 
 
 def serve():
@@ -92,18 +159,33 @@ def serve():
         data = json.load(f)
     with open(os.environ['EPIC_LOG'], 'a') as f:
         f.write(json.dumps([endpoint, args]) + '\n')
+    concurrency(1)
+    try:
+        respond(data, endpoint, args)
+    finally:
+        concurrency(-1)
+
+
+def respond(data, endpoint, args):
     path, _, query = endpoint.partition('?')
     match = re.fullmatch(r'repos/(?:fixture/project|\{owner\}/\{repo\})(?:/(.*))?', path)
     if not match:
-        sys.exit('unexpected endpoint: ' + endpoint)
+        violate('unexpected endpoint: ' + endpoint)
     key = match[1] or ''
+    if key == 'issues':
+        violate('forbidden repository issue scan: ' + endpoint)
+    if key in data.get('_forbidden', ()):
+        violate('forbidden read of unrelated object: ' + endpoint)
     if key == 'pulls/648': Path(os.environ['EPIC_LOG'] + '.detail').touch()
     q = parse_qs(query)
     page = int(q.get('page', ['1'])[0])
     counter = Path(os.environ['EPIC_LOG'] + '.counts')
-    counts = json.loads(counter.read_text()) if counter.exists() else {}
-    counts[key] = counts.get(key, 0) + 1
-    counter.write_text(json.dumps(counts))
+    with Locked(str(counter)):
+        counts = json.loads(counter.read_text()) if counter.exists() else {}
+        counts[key] = counts.get(key, 0) + 1
+        counter.write_text(json.dumps(counts))
+    if data.get('_delay'):
+        time.sleep(data['_delay'])
     fault = data.get('_fault', {})
     active = key == fault.get('key') and page == fault.get('page', 1) and counts[key] >= fault.get('after', 1)
     if active:
@@ -116,9 +198,15 @@ def serve():
             print('{broken'); return
         elif mode == 'oversize':
             sys.stdout.write('[' + ' ' * (8 * 1024 * 1024 - 2) + ']'); return
+    if any(re.fullmatch(r'(?:issues|pulls)/' + m + r'(?:/.*)?', key) for m in data.get('_missing', ())):
+        sys.exit('gh: Not Found (HTTP 404)')
+    if key not in data and re.fullmatch(r'issues/\d+', key) and key + '/comments' in data:
+        data[key] = issue(int(key.split('/')[1]), '')  # a PR or closing issue read as an issue object
     if key not in data:
-        sys.exit('unexpected endpoint: ' + endpoint)
+        violate('unexpected endpoint: ' + endpoint)
     value = data[key]
+    if isinstance(value, dict) and '_pad' in value:
+        value = dict(value, body=value['body'] + 'x' * value['_pad'])
     if active and fault.get('mode') == 'changed':
         value = json.loads(json.dumps(value))
         change = fault.get('change', 'updated_at')
@@ -145,12 +233,24 @@ def serve():
     print(raw)
 
 
-def accepts(out, err, kind, names=()):
+ATTRIBUTED = re.compile(r'(?:role-played|model-record): epic #\d+ (?:release PR #\d+|child #\d+) |'
+                        r'model-record: epic #\d+ inherited Discovery, Planning, Test and Implementation checked for \d+ children$')
+
+
+def accepts(out, err, kind, names=(), absent=(), attributed=False, exact=None, line=None):
     blocks = '\n'.join(x for x in out.splitlines() if x.startswith('role-played: '))
+    if attributed and kind != 'unchecked':
+        if 'no record found' in out or any(x and not ATTRIBUTED.match(x) for x in out.splitlines()):
+            return False
+    if exact is not None and out != exact:
+        return False
+    if any(x in out for x in absent):
+        return False
     if kind == 'pass':
         return not blocks and 'role-play-unchecked:' not in out and not err
     if kind == 'unchecked':
-        return 'role-play-unchecked: ' in out and not blocks
+        return ('role-play-unchecked: ' in out and not blocks and (line is None or line in out.splitlines())
+                and 'warning:' in err)
     return bool(blocks) and all(x in blocks for x in names) and 'role-play-unchecked:' not in out
 
 
@@ -171,23 +271,47 @@ class Check:
         assert not accepts('role-played: epic #608 child #609\n', '', 'block', ('#609', 'Test'))
         assert not accepts('', '', 'unchecked')
         assert not accepts('role-play-unchecked: error\nrole-played: stale\n', '', 'unchecked')
+        # Output-shape controls: attribution, literal pass line, absent text, exact unchecked line.
+        final = 'model-record: epic #608 inherited Discovery, Planning, Test and Implementation checked for 19 children\n'
+        assert accepts(final, '', 'pass', attributed=True, exact=final)
+        assert not accepts('model-record: no record found for stage Test (missing model-choice marker)\n' + final, '', 'pass', attributed=True)
+        assert not accepts('model-record: child #609 near-miss\n' + final, '', 'pass', attributed=True)
+        assert not accepts('model-record: epic #608 child #609 waived stage absence\n' + final, '', 'pass', exact=final)
+        assert not accepts(final.replace('19', '18'), '', 'pass', exact=final)
+        assert accepts('role-played: epic #608 child #617 stages missing: Test\nmodel-record: epic #608 release PR #648 near-miss\n', '', 'block', ('#617',), attributed=True)
+        assert not accepts('role-played: epic #608 child #617 stages missing: Test\nmodel-record: no record found for stage Test\n', '', 'block', ('#617',), attributed=True)
+        assert not accepts('role-played: epic #608 child #609 Test\nrole-played: epic #608 child #610 Test\n', '', 'block', ('#609',), absent=('#610',))
+        wanted = 'role-play-unchecked: closing reference #9999 on epic release PR #648 does not exist (HTTP 404)'
+        assert accepts(wanted + '\n', 'warning: x', 'unchecked', line=wanted)
+        assert not accepts(wanted.replace('9999', '9998') + '\n', 'warning: x', 'unchecked', line=wanted)
+        assert not accepts(wanted + '\n', '', 'unchecked', line=wanted)
+        assert not accepts(wanted + '\nrole-played: stages missing: Test\n', 'warning: x', 'unchecked', line=wanted)
 
-    def run(self, d, kind='pass', names=(), label='', gate=None):
+    def run(self, d, kind='pass', names=(), label='', gate=None, attributed=True, absent=(), exact=None, line=None):
         self.arms += 1
         Path(self.env['EPIC_DATA']).write_text(json.dumps(d))
-        for suffix in ('', '.counts', '.detail', '.slow'):
+        for suffix in ('', '.counts', '.detail', '.slow', '.viol', '.conc', '.counts.lock', '.conc.lock'):
             Path(self.env['EPIC_LOG'] + suffix).unlink(missing_ok=True)
         cmd = ['bash', str(gate or self.root / 'skills/pre-merge-review/model-record-gate.sh'), '648']
         try:
             p = subprocess.run(cmd, cwd=self.sandbox / 'project', env=self.env, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=135)
-            ok = p.returncode == 0 and accepts(p.stdout, p.stderr, kind, names)
+            ok = p.returncode == 0 and accepts(p.stdout, p.stderr, kind, names, absent, attributed, exact, line)
             if not ok:
-                self.failures.append(f'{label}: expected {kind} {names}; exit={p.returncode}; stdout={p.stdout!r}; stderr={p.stderr!r}')
+                self.failures.append(f'{label}: expected {kind} {names}; exit={p.returncode}; stdout={p.stdout[:1500]!r}; stderr={p.stderr[:600]!r}')
+            viol = Path(self.env['EPIC_LOG'] + '.viol')
+            if viol.exists():
+                self.failures.append(f'{label}: forbidden REST read: ' + '; '.join(sorted(set(viol.read_text().splitlines()))[:3]))
             return p
         except subprocess.TimeoutExpired:
             self.failures.append(label + ': external 135s watchdog fired; gate did not bound traversal')
             return None
+
+    def concurrent(self):
+        try:
+            return json.loads(Path(self.env['EPIC_LOG'] + '.conc').read_text())['max']
+        except (OSError, ValueError, KeyError):
+            return 0
 
     def doc(self, path, groups):
         text = (self.root / path).read_text()
@@ -199,8 +323,11 @@ class Check:
             'require maintainer acceptance.'
             if 'release-branch' in path else
             'Any session can forge model-records and human overrides. This does not authenticate authorship. '
-            'Limits: 100 children; 1200 calls; 120 seconds; 64 MiB; 10 seconds; 5000 issue objects; '
-            '1000 comments, reviews and timeline events. A cap yields role-play-unchecked.'
+            'Limits: 100 children; 200 candidates; 40 calls for one child; 1200 calls; 8 concurrent reads; '
+            '120 seconds; 64 MiB; 10 seconds; 1000 comments or reviews per collection; 1000 timeline events. '
+            'A cap yields role-play-unchecked. A closing reference with HTTP 404 on an epic release PR is unchecked. '
+            'Residual gap: a missing or delayed cross-referenced timeline event hides an unlisted member. '
+            'Discovery never reads every issue in the repository.'
         ).lower()
         for group in groups:
             assert re.search(group, control), 'compliant documentation control failed: ' + group
@@ -225,24 +352,68 @@ def disposition(d, c):
     d[f'issues/{c}/comments'] = comments(*(skip('skip=' + s) for s in STAGES))
 
 
+def context_problems(gate_out, hook_err):
+    """The hook shows all role-played lines first and only model-record lines for the release PR
+    or a child named in a role-played line; a missing child is never behind other children's context."""
+    problems = []
+    named = set(re.findall(r'role-played: epic #\d+ child #(\d+) ', gate_out))
+    shown = [x.strip() for x in hook_err.splitlines()]
+    for line in gate_out.splitlines():
+        if line.startswith('role-played: ') and line not in shown:
+            problems.append('role-played line missing from the hook message: ' + line)
+    for line in gate_out.splitlines():
+        m = re.match(r'model-record: epic #\d+ (release PR #\d+|child #(\d+)) ', line)
+        if not m: continue
+        wanted = m[1].startswith('release') or m[2] in named
+        if wanted and line not in shown: problems.append('context line dropped: ' + line)
+        if not wanted and line in shown: problems.append('context line for an unnamed child leaked: ' + line)
+    return problems
+
+
+def hook_filter(t, gate_out, hook_err):
+    gate_context = [x for x in gate_out.splitlines() if x.startswith('model-record: epic #608 child #610 ')]
+    release_context = [x for x in gate_out.splitlines() if x.startswith('model-record: epic #608 release PR #648 ')]
+    if not gate_context or not release_context:
+        t.failures.append('hook-filter fixture ineffective: the gate printed no attributed near-miss for child #610 and the release PR')
+    problems = context_problems(gate_out, hook_err)
+    t.failures.extend('hook context filter: ' + x for x in problems)
+    # Controls: the same inputs with a leaked unnamed-child line, or a dropped release line, are rejected.
+    sample = ('role-played: epic #608 child #609 stages missing: Test\n'
+              'model-record: epic #608 child #610 near-miss\nmodel-record: epic #608 release PR #648 near-miss\n')
+    good = 'role-played: epic #608 child #609 stages missing: Test\nmodel-record: epic #608 release PR #648 near-miss\n'
+    assert not context_problems(sample, good)
+    assert context_problems(sample, sample)
+    assert context_problems(sample, good.replace('model-record: epic #608 release PR #648 near-miss\n', ''))
+    assert context_problems(sample, good.split('\n', 1)[1])
+
+
+def normalized_608():
+    children = tuple(range(609, 626)) + (643, 649)
+    d = world(children)
+    waived = (609, 611, 613, 614, 619, 622, 623, 624, 643, 649)
+    implemented = (610, 612, 615, 616, 618, 620, 621)
+    assert len(set(children)) == 19 and len(implemented) + len(waived) + 2 == 19
+    for c in implemented:
+        d[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES[:3]))
+        d[f'issues/{c+1000}/comments'] = comments(marker('Implementation'))
+    for c in waived:
+        d[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES[:3]), skip('skip=Implementation'))
+    for c in (617, 625):
+        disposition(d, c)
+    return d
+
+
 def scenario(n, t):
     d = world()
     if n == 549:
-        children = tuple(range(609, 626)) + (643, 649)
-        d = world(children)
-        waived = (609, 611, 613, 614, 619, 622, 623, 624, 643, 649)
-        implemented = (610, 612, 615, 616, 618, 620, 621)
-        assert len(set(children)) == 19 and len(implemented) + len(waived) + 2 == 19
-        for c in implemented:
-            d[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES[:3]))
-            d[f'issues/{c+1000}/comments'] = comments(marker('Implementation'))
-        for c in waived:
-            d[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES[:3]), skip('skip=Implementation'))
-        for c in (617, 625):
-            disposition(d, c)
-        t.run(d, label='normalized 7 implemented + 10 waived + 2 dispositions')
+        d = normalized_608()
+        final = 'model-record: epic #608 inherited Discovery, Planning, Test and Implementation checked for 19 children\n'
+        t.run(d, label='normalized 7 implemented + 10 waived + 2 dispositions: literal one-line pass', exact=final)
         d['issues/617/comments'] = []
-        t.run(d, 'block', ('epic #608', 'child #617', 'Implementation'), 'one of all 19 uncovered')
+        p = t.run(d, 'block', ('epic #608', 'child #617', 'Implementation'), 'one of all 19 uncovered',
+                  absent=('child #609', 'child #625', 'no record found'))
+        if p and 'role-played: epic #608 child #617 stages missing: Discovery, Planning, Test, Implementation\n' not in p.stdout:
+            t.failures.append('removal block lacks the attributed legacy stages-missing text for child #617')
     elif n == 550:
         for source in ('issue', 'description', 'comment', 'review'):
             a = world()
@@ -297,12 +468,15 @@ def scenario(n, t):
             a = world(); a['issues/609']['body'] = body
             t.run(a, 'block', ('#609',), 'missing/conflicting/repeated/quoted field ' + repr(body))
     elif n == 557:
-        for arm in ('extra-list', 'extra-field', 'duplicate', 'foreign', 'missing-section', 'ambiguous-section', 'malformed-row'):
+        for arm in ('extra-list', 'extra-field', 'timeline-only-member', 'duplicate', 'foreign', 'missing-section', 'ambiguous-section', 'malformed-row'):
             a = world()
             if arm == 'extra-field':
                 a['issues/608']['body'] = '## Work items\n- [x] #609'
+            elif arm == 'timeline-only-member':
+                # Field present and discoverable only through the epic timeline: not listed, no closing PR.
+                add_child(a, 611, listed=False, with_pr=False)
             elif arm == 'extra-list':
-                a['issues/608']['body'] += '- [x] #611\n'
+                a['issues/608']['body'] += '- [x] #611\n'; plain(a, 611)
             elif arm == 'duplicate':
                 a['issues/608']['body'] += '- [x] #609\n'
             elif arm == 'foreign':
@@ -312,11 +486,17 @@ def scenario(n, t):
             elif arm == 'ambiguous-section':
                 a['issues/608']['body'] += '\n## Work items\n- [x] #609'
             else:
-                a['issues/608']['body'] += '- [maybe] #611\n'
-            t.run(a, 'block', ('epic #608',), arm)
+                a['issues/608']['body'] += '- [maybe] #611\n'; plain(a, 611)
+            names = ('epic #608', '#611') if arm == 'timeline-only-member' else ('epic #608',)
+            t.run(a, 'block', names, arm)
+        # Timeline candidates without a live field are not members, whatever the stale embedded copy says.
+        a = world(); mention(a, 4100); mention(a, 4101, 'embedded')
+        t.run(a, label='mentions and stale embedded field copies are not members')
+        # A same-repository issue with a live field and no timeline event is the documented residual gap.
     elif n == 558:
         for body in ('Closes #611', 'Closes #609\nCloses #611', 'mentions #609', 'Closes other/repo#609'):
             a = world(); a['pulls/1609']['body'] = body
+            if '#611' in body: plain(a, 611)
             t.run(a, 'block', ('#1609',), body)
     elif n == 559:
         for state in ('open-child', 'open-pr', 'unmerged', 'wrong-base'):
@@ -338,10 +518,10 @@ def scenario(n, t):
         foreign['pull_request'] = {'url': 'https://api.github.com/repos/other/project/pulls/9999'}
         a['issues/609/timeline'].append({'id': 9999, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'issue': foreign}})
         t.run(a, label='foreign timeline sources are ignored without a fetch')
-        mention = pr(1809, 609, 'trunk'); mention['body'] = 'mentions #609'
-        a = world(); a['pulls/1809'] = mention
+        mentioned = pr(1809, 609, 'trunk'); mentioned['body'] = 'mentionss #609'
+        a = world(); a['pulls/1809'] = mentioned
         a['issues/609/timeline'].append({'id': 1809, 'created_at': STAMP, 'event': 'cross-referenced',
-            'source': {'issue': dict(mention, pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/1809'})}})
+            'source': {'issue': dict(mentioned, pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/1809'})}})
         t.run(a, label='timeline mention is not a wrong-base closing PR')
         extra['base']['ref'] = 'trunk'
         d['issues/609/timeline'].append({'id': 1709, 'created_at': STAMP, 'event': 'cross-referenced', 'source': {'issue': dict(extra, pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/1709'})}})
@@ -351,6 +531,8 @@ def scenario(n, t):
         d['issues/609']['body'] = ' \t**Epic:** #608\r\n'
         d['issues/608']['body'] = '## Work items\n* [X] #609 late\n- [ ] #610\n## Other\n- [x] #999 ignored'
         t.run(d, label='late membership and live structural normalization')
+        late = world(); add_child(late, 611)
+        t.run(late, label='member whose field arrives later is found through its epic timeline event')
         t.run(world(()), 'block', ('epic #608',), 'empty cannot pass vacuously')
     elif n == 562:
         for body in (skip('skip=Test').replace('maintainer', ' '), skip('skip=Test').replace('standing class decision', ' '), '> ' + skip('skip=Test'), '```\n' + skip('skip=Test') + '\n```', skip('skip=Planning'), skip('skip=Test').replace(' -->', ' broken -->'), 'panel voted to skip Test'):
@@ -358,9 +540,20 @@ def scenario(n, t):
             a['issues/610/comments'].append(comments(skip('skip=Test'))[0])
             t.run(a, 'block', ('child #609', 'Test'), 'invalid or wrong-child waiver ' + repr(body))
         a = world(); a['issues/609/comments'] = comments(*(marker(s) for s in STAGES if s != 'Test'))
-        a['pulls/1609']['body'] += '\nCloses #999'; a['issues/999/comments'] = comments(skip('skip=Test'))
+        a['pulls/1609']['body'] += '\nCloses #999'; plain(a, 999); a['issues/999/comments'] = comments(skip('skip=Test'))
         # #999 is a membership defect too; it must never supply #609's Test.
         t.run(a, 'block', ('#999',), 'no recursive waiver laundering')
+        # Valid membership, valid skip=Test, wrong source: the child stays blocked for Test.
+        for source in ('description', 'comment', 'review'):
+            a = world(); a['issues/609/comments'] = comments(*(marker(s) for s in STAGES if s != 'Test'))
+            if source == 'description': a['pulls/1609']['body'] += '\n' + skip('skip=Test')
+            elif source == 'comment': a['issues/1609/comments'] = comments(skip('skip=Test'))
+            else: a['pulls/1609/reviews'] = comments(skip('skip=Test'))
+            t.run(a, 'block', ('child #609', 'Test'), 'skip on the child own closing PR ' + source, absent=('child #610',))
+        a = world(); a['issues/609/comments'] = comments(*(marker(s) for s in STAGES if s != 'Test'))
+        a['pulls/1609']['body'] = 'Closes #609\nCloses #610'
+        a['issues/610/comments'] = comments(*(marker(s) for s in STAGES if s != 'Test'), skip('skip=Test'))
+        t.run(a, 'block', ('child #609', 'Test'), 'skip on another listed child closed by the same PR', absent=('child #610',))
     elif n == 563:
         d['issues/609/comments'] = comments(marker('Discovery'), marker('Implementation'), skip('skip=Planning'), skip('skip=Test'))
         t.run(d, label='Abbreviated standing human class')
@@ -379,7 +572,7 @@ def scenario(n, t):
             a = world()
             if not manual: a['pulls/648']['head']['ref'] = 'feature/651-work'
             else: a['issues/608/comments'] = comments(skip('skip=Implementation'))
-            p = t.run(a, 'block', ('Planning',), 'legacy byte contract')
+            p = t.run(a, 'block', ('Planning',), 'legacy byte contract', attributed=False)
             expected = ''.join(f'model-record: no record found for stage {s} (missing model-choice marker)\n' for s in STAGES)
             expected += 'role-played: stages missing: Discovery, Planning, Test' + ('' if manual else ', Implementation') + '\n'
             if manual: expected += 'model-record: a pipeline-override waived stage absence: skip=Implementation\n'
@@ -392,12 +585,20 @@ def scenario(n, t):
         old_gate.write_bytes(subprocess.run(['git', 'show', base + ':skills/pre-merge-review/model-record-gate.sh'],
                                            cwd=t.root, capture_output=True, check=True).stdout)
         for manual in (False, True):
-            for arm in ('clean', 'near-miss', '404', 'comments-fail', 'reviews-fail', 'detail-fail', 'release-single'):
+            for arm in ('clean', 'near-miss', '404', '404-other', '404-single', 'comments-fail', 'reviews-fail', 'detail-fail', 'release-single'):
+                if arm == '404-single' and manual: continue
                 a = world()
-                if not manual: a['pulls/648']['head']['ref'] = 'feature/651-work'
+                if arm == '404-single': pass  # eligible release, no epic override
+                elif not manual: a['pulls/648']['head']['ref'] = 'feature/651-work'
                 else: a['issues/608/comments'] = comments(skip('skip=Implementation'))
                 if arm == 'near-miss': a['issues/648/comments'] = comments('inline ' + marker('Test'))
+                elif arm == '404' and manual: continue  # a 404 on the epic itself is unchecked (S571)
                 elif arm == '404': a['_fault'] = {'key': 'issues/608/comments', 'status': 404}
+                elif arm in ('404-other', '404-single'):
+                    # An ordinary PR, a manual epic override and an eligible release-wide single-session all
+                    # keep the legacy path and its 404 note for a nonexistent closing reference.
+                    a['pulls/648']['body'] += '\nCloses #9999'; a['_missing'] = ['9999']
+                    if arm == '404-single': a['issues/648/comments'] = comments(skip('single-session'))
                 elif arm in ('comments-fail', 'reviews-fail', 'detail-fail'):
                     key = {'comments-fail': 'issues/648/comments', 'reviews-fail': 'pulls/648/reviews', 'detail-fail': 'pulls/648'}[arm]
                     a['_fault'] = {'key': key}
@@ -438,13 +639,12 @@ def scenario(n, t):
             elif arm == 'foreign': a['pulls/648']['head']['repo']['full_name'] = 'other/project'
             elif arm == 'wrong-target': a['pulls/648']['base']['ref'] = 'main'
             elif arm == 'no-closes': a['pulls/648']['body'] = 'See #608'
-            t.run(a, 'pass' if arm in ('default', 'case') else 'block', () if arm in ('default', 'case') else ('stages missing:',), arm)
+            t.run(a, 'pass' if arm in ('default', 'case') else 'block', () if arm in ('default', 'case') else ('stages missing:',), arm,
+                  attributed=arm in ('default', 'case'))
     elif n == 568:
-        for key in ('issues', 'pulls', 'issues/609/timeline', 'issues/609/comments', 'pulls/1609/reviews', 'issues/648/comments', 'pulls/648/reviews'):
+        for key in ('issues/608/timeline', 'pulls', 'issues/609/timeline', 'issues/609/comments', 'pulls/1609/reviews', 'issues/648/comments', 'pulls/648/reviews'):
             a = world()
-            if key == 'issues':
-                a[key] = [issue(3000+i, 'unrelated') for i in range(100)] + a[key]
-            elif key == 'pulls':
+            if key == 'pulls':
                 a[key] = [pr(3000+i, 609, 'elsewhere') for i in range(100)] + a[key]
             elif key.endswith('timeline'):
                 a[key] = [{'id': 1, 'created_at': STAMP, 'event': 'labeled'} for _ in range(100)] + a[key]
@@ -456,24 +656,43 @@ def scenario(n, t):
             log = Path(t.env['EPIC_LOG']).read_text()
             if not any(key in ep and 'page=2' in ep for ep, _ in map(json.loads, log.splitlines())):
                 t.failures.append(key + ': no explicit page 2; collection completeness unproved')
-        a = world()
-        a['issues'] = [issue(3000+i, 'unrelated') for i in range(100)] + a['issues']
-        a['issues/610/comments'] = []
-        t.run(a, 'block', ('child #610', 'Test'), 'uncovered child on page 2 cannot be ignored')
+        # A member discoverable only on epic timeline page 2 cannot be ignored.
+        a = world(); add_child(a, 611, listed=False)
+        a['issues/608/timeline'] = [{'id': 1, 'created_at': STAMP, 'event': 'labeled'} for _ in range(100)] + a['issues/608/timeline']
+        t.run(a, 'block', ('epic #608', '#611'), 'unlisted member on epic timeline page 2')
         log = list(map(json.loads, Path(t.env['EPIC_LOG']).read_text().splitlines()))
+        if not any('issues/608/timeline' in ep and 'page=2' in ep for ep, _ in log):
+            t.failures.append('epic timeline page 2 was not read')
         for ep, args in log:
             if '--paginate' in args:
                 t.failures.append('inheritance collection used unbounded --paginate: ' + ep)
     elif n == 569:
-        for key, count in (('issues', 5000), ('pulls', 1000), ('issues/609/timeline', 1000), ('issues/609/comments', 1000), ('pulls/1609/reviews', 1000), ('issues/648/comments', 1000), ('pulls/648/reviews', 1000)):
+        for key, count in (('pulls', 1000), ('issues/609/timeline', 1000), ('issues/609/comments', 1000), ('pulls/1609/reviews', 1000), ('issues/648/comments', 1000), ('pulls/648/reviews', 1000)):
             a = world()
-            if key == 'issues': a[key] += [issue(3000+i, 'unrelated') for i in range(count-len(a[key]))]
-            elif key == 'pulls': a[key] += [pr(3000+i, 609, 'elsewhere') for i in range(count-len(a[key]))]
+            if key == 'pulls': a[key] += [pr(3000+i, 609, 'elsewhere') for i in range(count-len(a[key]))]
             elif key.endswith('timeline'): a[key] += [{'id': 1, 'created_at': STAMP, 'event': 'labeled'} for _ in range(count-len(a[key]))]
             else: a[key] = comments(*(['noise'] * count))
             t.run(a, 'unchecked', label=f'exact cap {key}={count}')
+        # Epic timeline events: 1,000 is unchecked (a full final page cannot prove completeness), 999 is not.
+        for count, kind in ((1000, 'unchecked'), (999, 'pass')):
+            a = world(); a['issues/608/timeline'] += [{'id': 1, 'created_at': STAMP, 'event': 'labeled'} for _ in range(count-len(a['issues/608/timeline']))]
+            t.run(a, kind, label=f'epic timeline events={count}')
+        # Membership candidates (field-bearing or not): 200 is unchecked, 199 is not.
+        for count, kind in ((200, 'unchecked'), (199, 'pass')):
+            a = world()
+            for i in range(count - 2): mention(a, 4200 + i)
+            t.run(a, kind, label=f'candidates={count}')
         t.run(world(tuple(range(609, 709))), 'unchecked', label='exact child cap 100')
-        a = world(); a['_fault'] = {'key': 'issues', 'mode': 'oversize'}
+        # Calls attributable to one child: 40 REST calls (detail, timeline, comments, candidate-PR details, closing-PR evidence).
+        for extra, kind in ((20, 'unchecked'), (5, 'pass')):
+            a = world()
+            for i in range(extra):
+                p = pr(5000 + i, 609, 'release/608-inheritance'); a['pulls'].append(p); a[f'pulls/{5000+i}'] = p
+                a[f'issues/{5000+i}/comments'] = []; a[f'pulls/{5000+i}/reviews'] = []
+                a['issues/609/timeline'].append({'id': 5000 + i, 'created_at': STAMP, 'event': 'cross-referenced',
+                    'source': {'issue': dict(p, pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/{5000+i}'})}})
+            t.run(a, kind, label=f'calls for one child with {extra} extra closing PRs')
+        a = world(); a['_fault'] = {'key': 'issues/608/timeline', 'mode': 'oversize'}
         t.run(a, 'unchecked', label='8 MiB response cap')
         a = world(tuple(range(609, 708)))
         for c in range(609, 708):
@@ -482,8 +701,9 @@ def scenario(n, t):
         calls = Path(t.env['EPIC_LOG']).read_text().splitlines()
         if len(calls) > 1200: t.failures.append('aggregate REST budget exceeded 1200 calls')
         a = world()
-        a['issues'] += [issue(3000+i, 'x' * 70000) for i in range(1000)]
-        t.run(a, 'unchecked', label='64 MiB aggregate response budget; each page under 8 MiB')
+        for i in range(10):
+            mention(a, 4300 + i); a[f'issues/{4300+i}']['_pad'] = 7500000
+        t.run(a, 'unchecked', label='64 MiB aggregate response budget; each response under 8 MiB')
 
     elif n == 570:
         d['_fault'] = {'key': 'issues/609/timeline', 'mode': 'delay'}
@@ -510,17 +730,46 @@ exec "$EPIC_REAL_AWK" "$@"
         if not Path(t.env['EPIC_LOG'] + '.slow').exists():
             t.failures.append('shell-scan timeout injection was never reached')
         t.env['PATH'] = saved
+        # Scale arm: the normalized 19-child fixture, 300 unrelated issues and 0.8 s per gh call
+        # finishes checked inside the 120 s deadline, never reads an unrelated issue and overlaps its reads.
+        a = normalized_608()
+        unrelated = [f'issues/{6000+i}' for i in range(300)]
+        for key in unrelated:
+            a[key] = issue(int(key.split('/')[1]), 'unrelated'); a[key + '/comments'] = []
+        a['_forbidden'] = unrelated + [k + '/comments' for k in unrelated]; a['_delay'] = 0.8
+        start = time.monotonic()
+        t.run(a, label='scale: 19 children, 300 unrelated issues, 0.8 s per gh call')
+        elapsed = time.monotonic() - start
+        if elapsed >= 120: t.failures.append(f'scale arm took {elapsed:.0f}s, not under the 120s deadline')
+        peak = t.concurrent()
+        if not 1 < peak <= 8: t.failures.append(f'scale arm observed {peak} concurrent gh calls; expected more than 1 and at most 8')
+        print(f'S570 scale arm: {elapsed:.0f}s, peak {peak} concurrent gh calls')
 
     elif n == 571:
-        for key in ('', 'issues/608', 'issues', 'pulls', 'issues/609/timeline', 'pulls/1609', 'issues/609/comments', 'issues/1609/comments', 'pulls/1609/reviews', 'issues/648/comments', 'pulls/648/reviews', 'pulls/648'):
+        for key in ('', 'issues/608', 'issues/608/comments', 'issues/608/timeline', 'issues/609', 'pulls', 'issues/609/timeline', 'pulls/1609', 'issues/609/comments', 'issues/1609/comments', 'pulls/1609/reviews', 'issues/648/comments', 'pulls/648/reviews', 'pulls/648'):
             for status in (404, 500):
                 a = world(); a['_fault'] = {'key': key, 'status': status}
                 t.run(a, 'unchecked', label=f'{key} HTTP {status}')
+        # A timeline-only candidate that is gone (404/410) cannot carry a live field; any other failure is unchecked.
+        for status, kind in ((404, 'pass'), (410, 'pass'), (500, 'unchecked')):
+            a = world(); mention(a, 4400); a['_fault'] = {'key': 'issues/4400', 'status': status}
+            t.run(a, kind, label=f'timeline-only candidate HTTP {status}')
+        # An eligible release PR whose closing reference does not exist is unchecked, never the legacy path.
+        wanted = 'role-play-unchecked: closing reference #9999 on epic release PR #648 does not exist (HTTP 404)'
+        a = world(); a['pulls/648']['body'] += '\nCloses #9999'; a['_missing'] = ['9999']
+        t.run(a, 'unchecked', label='eligible release, covered children, Closes #9999 is 404', line=wanted)
+        a = world(); a['pulls/648']['body'] += '\nCloses #9999\nCloses #9998'; a['_missing'] = ['9998', '9999']
+        p = t.run(a, 'unchecked', label='lowest nonexistent closing reference first',
+                  line=wanted.replace('9999', '9998'))
+        if p and not p.stdout.startswith(wanted.replace('9999', '9998') + '\n'):
+            t.failures.append('lowest nonexistent closing reference is not reported first: ' + repr(p.stdout))
+        a = world(); a['pulls/648']['body'] += '\nCloses #9999'; a['_missing'] = ['9999']; a['issues/609/comments'] = []
+        t.run(a, 'unchecked', label='404 closing reference wins over a missing-child block', line=wanted)
     elif n == 572:
-        for key in ('issues', 'pulls', 'issues/609/comments', 'pulls/1609/reviews', 'issues/609/timeline', 'issues/608', 'pulls/1609'):
+        for key in ('issues/608/timeline', 'pulls', 'issues/609/comments', 'pulls/1609/reviews', 'issues/609/timeline', 'issues/608', 'issues/609', 'pulls/1609'):
             a = world(); a['_fault'] = {'key': key, 'mode': 'malformed'}
             t.run(a, 'unchecked', label='malformed JSON ' + key)
-        for key, value in (('issues', {}), ('issues/609/comments', [{'body': 42, 'created_at': STAMP}]), ('pulls/1609', dict(d['pulls/1609'], number='1609'))):
+        for key, value in (('issues/608/timeline', {}), ('issues/609/comments', [{'body': 42, 'created_at': STAMP}]), ('pulls/1609', dict(d['pulls/1609'], number='1609'))):
             a = world(); a[key] = value
             t.run(a, 'unchecked', label='wrong JSON type ' + key)
         # Missing helper at the existing public CLI; all shared readers preserved.
@@ -552,7 +801,7 @@ exec "$EPIC_REAL_AWK" "$@"
     elif n == 575:
         t.doc('skills/release-branch-workflow/SKILL.md', (r'epic ledger complete: (?:`)?yes', r'child count', r'ledger.{0,200}(?:view|not evidence|never.{0,30}evidence)', r'open.{0,160}(?:no|refus|cannot)', r'(?:late|gain).{0,100}(?:epic|field|member)', r'(?:unchecked).{0,100}(?:yes|complete)', r'(?:normaliz|normalis).{0,200}(?:field|work items)'))
     elif n == 576:
-        t.doc('skills/pre-merge-review/SKILL.md', (r'(?:forge).{0,160}(?:override|model.record)', r'(?:not|cannot|does not).{0,60}authenticat', r'100.{0,30}children', r'1[,.]?200.{0,50}(?:calls|requests)', r'120.{0,30}seconds', r'64.{0,15}(?:mib|megabytes)', r'10.{0,30}seconds', r'5[,.]?000.{0,40}(?:issue|object)', r'1[,.]?000.{0,60}(?:comment|review|timeline|pr)', r'(?:cap|limit).{0,160}role-play-unchecked'))
+        t.doc('skills/pre-merge-review/SKILL.md', (r'(?:forge).{0,160}(?:override|model.record)', r'(?:not|cannot|does not).{0,60}authenticat', r'100.{0,30}children', r'200.{0,40}candidates', r'40.{0,60}(?:calls|requests|reads).{0,30}child|child.{0,60}40.{0,30}(?:calls|requests|reads)', r'1[,.]?200.{0,50}(?:calls|requests)', r'(?:8|eight).{0,40}concurrent', r'120.{0,30}seconds', r'64.{0,15}(?:mib|megabytes)', r'10.{0,30}seconds', r'1[,.]?000.{0,40}(?:comments|reviews)', r'1[,.]?000.{0,30}timeline', r'(?:cap|limit).{0,160}role-play-unchecked', r'closing reference.{0,160}404.{0,100}unchecked', r'(?:residual|gap).{0,200}(?:timeline|cross-referenced)', r'(?:never|not|no).{0,60}(?:every|all) (?:the )?(?:repository )?issues?'))
     elif n == 577:
         t.doc('skills/release-branch-workflow/SKILL.md', (r'(?:any|each).{0,100}(?:closes|closing).{0,160}(?:whole|release.wide)', r'(?:a18|override amendment)', r'(?:membership).{0,100}(?:amendment|maintainer acceptance)'))
         prd = (t.root / 'PRD.md').read_text()
@@ -571,20 +820,24 @@ exec "$EPIC_REAL_AWK" "$@"
             if clause not in text: t.failures.append('merge-hook block remedy omits ' + clause)
         for broken in (False, True):
             a = world()
-            if broken: a['issues/609/comments'] = []
-            t.run(a, 'block' if broken else 'pass', ('epic #608', 'child #609') if broken else (),
-                  'real CLI missing child' if broken else 'real CLI positive')
+            if broken:
+                # Child #609 is missing; child #610 and the release PR carry kept near-miss diagnostics.
+                a['issues/609/comments'] = []
+                a['issues/610/comments'] = comments(*(marker(s) for s in STAGES), 'inline ' + marker('Test'))
+                a['issues/648/comments'] = comments('inline ' + marker('Review'))
+            p = t.run(a, 'block' if broken else 'pass', ('epic #608', 'child #609') if broken else (),
+                      'real CLI missing child' if broken else 'real CLI positive')
             payload = json.dumps({'tool_name': 'Bash', 'cwd': str(t.sandbox / 'project'),
                                   'tool_input': {'command': 'gh pr merge 648'}})
-            p = subprocess.run(['bash', str(hook)], input=payload, cwd=t.sandbox / 'project',
+            h = subprocess.run(['bash', str(hook)], input=payload, cwd=t.sandbox / 'project',
                                env=t.env, text=True, capture_output=True, timeout=135)
             want = 2 if broken else 0
-            if 'unexpected' in p.stderr or 'skips the' in p.stderr:
-                t.failures.append('real hook fixture did not establish its other gates: ' + p.stderr)
-            if p.returncode != want:
-                t.failures.append(f'real hook broken={broken}: exit={p.returncode}, expected {want}: {p.stderr}')
-            if broken and not all(word in p.stderr for word in ('epic #608', 'child #609')):
-                t.failures.append('real hook loses epic/child diagnostics')
+            if 'unexpected' in h.stderr or 'skips the' in h.stderr:
+                t.failures.append('real hook fixture did not establish its other gates: ' + h.stderr)
+            if h.returncode != want:
+                t.failures.append(f'real hook broken={broken}: exit={h.returncode}, expected {want}: {h.stderr}')
+            if broken:
+                hook_filter(t, p.stdout if p else '', h.stderr)
     else:
         raise AssertionError(n)
 

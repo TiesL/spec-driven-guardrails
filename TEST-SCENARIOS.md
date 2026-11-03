@@ -8719,11 +8719,11 @@ and S380's #590 live-evidence boundary.
 - Then: the mechanical subset requires retain A13 depth or raise force-thorough, never lower depth, stage presence only. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
 - Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
 
-### S548 — unchanged gate script and core with authority limits (#647; A50/A51)
+### S548 — unchanged waiver authority and core with authority limits (#647; A50/A51)
 **Covers:** F62
 - Given: the canonical Running section, proposed AC/diff/class evidence and the paired S548 inputs in `test/behavior/stage-selection-scenarios.md`.
 - When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
-- Then: the mechanical subset requires forgeability without authentication, records forgeable, unverifiable evidence blocks posting, panel-name acceptance not permission. Each catalogue row has distinct human-role identity (`maintainer` or the project's human decision-maker), source-link, scope and condition cells; a person name alone cannot fill the role cell. The actual human `decided-by` is supplied at posting time and remains covered by the pipeline-override fixtures. Deleting any evidence cell or replacing the human role with a person, panel or orchestrator identity fails its own control. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The test-only/doc-only conditions cell limits the standing decision to batches of epic TiesL/spec-driven-guardrails#608 only; outside that scope requires per-item human authority. That cell also retains Implementation for executable tests/scripts and any executable production code. M8 (`mostly documentation or tests`) fails both predicates; independent scope, authority, executable-test and production-code deletions are controls. Abbreviated source evidence requires a per-item human grant in their own words (or a durable link to grant words), never a policy self-link. Any #609 mention in the catalogue must label it an earlier record that predates the executable-test rule, or be absent; a restored eligible-example claim fails a control.
+- Then: the mechanical subset requires forgeability without authentication, records forgeable, unverifiable evidence blocks posting, panel-name acceptance not permission. Each catalogue row has distinct human-role identity (`maintainer` or the project's human decision-maker), source-link, scope and condition cells; a person name alone cannot fill the role cell. The actual human `decided-by` is supplied at posting time and remains covered by the pipeline-override fixtures. The frozen SHA-256 table keeps its eight non-gate entries; the gate entry is replaced (A52, review finding s548-gate-hash-pin-red) by a structural unchanged-waiver-authority assertion on `skills/pre-merge-review/model-record-gate.sh`: every override read accepts exactly the six scopes (`single-session` and the five `skip=` stages), every read keeps its non-blank `decided-by` and `reason` guards, and no code line recognizes panel, orchestrator or vote authority. Deleting or adding a scope, deleting either guard and adding panel authority each fails its own mutation control. Gate behavior compatibility is S565's job, not S548's. Deleting any evidence cell or replacing the human role with a person, panel or orchestrator identity fails its own control. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The test-only/doc-only conditions cell limits the standing decision to batches of epic TiesL/spec-driven-guardrails#608 only; outside that scope requires per-item human authority. That cell also retains Implementation for executable tests/scripts and any executable production code. M8 (`mostly documentation or tests`) fails both predicates; independent scope, authority, executable-test and production-code deletions are controls. Abbreviated source evidence requires a per-item human grant in their own words (or a durable link to grant words), never a policy self-link. Any #609 mention in the catalogue must label it an earlier record that predates the executable-test rule, or be absent; a restored eligible-example claim fails a control.
 - Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
 
 ## Epic child inheritance (#651; A52–A53)
@@ -8733,9 +8733,9 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S549 — The normalized 19-child #608 fixture
 **Covers:** F64
-- Given: 7 implemented children, 10 Implementation-waived children and dispositions #617/#625, each with all four child skips.
+- Given: 7 implemented children, 10 Implementation-waived children and dispositions #617/#625, each with all four child skips. The fixture serves the epic timeline, candidate details and child evidence, and rejects `issues?state=all` (and any repository issue list) outright.
 - When: the real gate reads complete child evidence, then #617 loses its evidence.
-- Then: complete coverage passes; removing #617 coverage blocks naming child #617 and Implementation. The historical shorthand 7+10+1 is superseded by the corrected 7+10+2 count; no child is dropped.
+- Then: complete coverage passes with the literal one-line stdout `model-record: epic #608 inherited Discovery, Planning, Test and Implementation checked for 19 children` and empty stderr (no `no record found` line, no unattributed or waived-stage line); removing #617 coverage blocks with the single attributed line `role-played: epic #608 child #617 stages missing: Discovery, Planning, Test, Implementation`, every output line attributed to the epic and a child or release PR, and no other child named. The historical shorthand 7+10+1 is superseded by the corrected 7+10+2 count; no child is dropped.
 
 ### S550 — All records and verified PR sources
 **Covers:** F64
@@ -8781,9 +8781,9 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S557 — Work items and field sets must agree
 **Covers:** F65
-- Given: extra list/field members, duplicate or malformed checklist rows, a foreign reference, missing or repeated Work items sections.
-- When: the gate compares complete live sets.
-- Then: each case blocks naming the epic, never a vacuous or guessed pass.
+- Given: extra list/field members, a field-bearing member found only through an epic timeline cross-reference (unlisted, no closing PR), duplicate or malformed checklist rows, a foreign reference, missing or repeated Work items sections; and timeline noise (a label, a PR source, a foreign-repository source, a candidate with a stale embedded field copy).
+- When: the gate compares complete live sets discovered from the epic timeline, the Work items list and merged release PRs.
+- Then: each defect blocks naming the epic (the timeline-only member also names #611), never a vacuous or guessed pass; mentions and stale embedded copies are not members because the live body decides.
 
 ### S558 — Merged release PRs must close only members
 **Covers:** F65
@@ -8805,15 +8805,15 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S561 — Late fields count and empty sets block
 **Covers:** F65
-- Given: late updated fields, CRLF and horizontal whitespace, uppercase X and star bullets, a later level-two section.
+- Given: late updated fields, a member whose field arrives later and is known only through its epic timeline event, CRLF and horizontal whitespace, uppercase X and star bullets, a later level-two section.
 - When: the gate reads current membership and separately an empty set.
 - Then: normalized late members pass; unrelated next-section rows are ignored; empty membership blocks naming the epic.
 
 ### S562 — Waivers stay local and structurally valid
 **Covers:** F64, F66
-- Given: blank authority/reason, quoted/fenced/malformed/wrong-stage waivers, prose panel votes and a valid waiver on a different issue.
+- Given: blank authority/reason, quoted/fenced/malformed/wrong-stage waivers, prose panel votes and a valid waiver on a different issue; with valid membership, a valid `skip=Test` on the child's own closing PR (description, comment or review) and on another listed child closed by the same PR.
 - When: a child lacks Test and its PR closes another issue with a skip.
-- Then: invalid or other-child evidence never covers Test; an extraneous closing issue is a membership defect.
+- Then: invalid or other-child evidence never covers Test; an extraneous closing issue is a membership defect; a skip on the child's PR or on a sibling closed by the same PR leaves that child blocked for Test, naming it and not the sibling. Deleting the child-override source filter, or reading overrides from other issues closed by the PR, turns this scenario red (both survived the earlier arms).
 
 ### S563 — Standing classes receive ordinary validation
 **Covers:** F64
@@ -8831,7 +8831,7 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 **Covers:** F66
 - Given: an ordinary PR and a release with a partial manual epic skip.
 - When: the gate runs against the same literal marker fixture.
-- Then: stdout exactly matches the fixed pre-change missing-stage and waiver lines including final LF, stderr is empty, and the manual skip selects the whole legacy path. Near-miss, closing-reference 404, each legacy fetch failure and release single-session outputs are also compared byte for byte to main merge base 626694237d1dc6dfe9b99d8838fba4c7f75f843f.
+- Then: stdout exactly matches the fixed pre-change missing-stage and waiver lines including final LF, stderr is empty, and the manual skip selects the whole legacy path. Near-miss, closing-reference 404 notes (ordinary PR, manual epic override and an eligible release with a release-wide single-session, each closing a nonexistent #9999), each legacy fetch failure and release single-session outputs are also compared byte for byte to main merge base 626694237d1dc6dfe9b99d8838fba4c7f75f843f.
 
 ### S566 — A skip on any closing issue is release-wide
 **Covers:** F66
@@ -8847,27 +8847,27 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S568 — Later pages are read at every collection seam
 **Covers:** F66
-- Given: 100 noise objects before real issues, PRs, timeline events, comments or reviews.
+- Given: 100 noise objects before real closed PRs, epic and child timeline events, comments or reviews, and an unlisted member that appears only on epic timeline page 2.
 - When: the gate traverses explicit per_page=100 pages through page 2.
-- Then: complete fixtures pass and endpoint logs prove page 2 was read, including release comments/reviews.
+- Then: complete fixtures pass and endpoint logs prove page 2 was read, including release comments/reviews and the epic timeline; the page-2 member blocks; no `--paginate` call is made.
 
 ### S569 — Exact collection and response caps are unchecked
 **Covers:** F66
-- Given: 5000 issue objects, 1000 PRs/events/comments/reviews, 100 children an 8 MiB response, 1200 aggregate calls or 64 MiB aggregate responses.
-- When: each exact cap is reached independently.
-- Then: role-play-unchecked is emitted, never a checked pass or role-played block.
+- Given: 1000 closed PRs, child timeline events, comments or reviews, 1,000 epic timeline events, 200 membership candidates, 100 children, more than 40 REST calls for one child, an 8 MiB response, 1200 aggregate calls or 64 MiB aggregate responses (the issue-object cap is gone: no issue list exists).
+- When: each exact cap is reached independently; 999 epic timeline events, 199 candidates and 5 extra closing PRs for one child are the below-cap controls.
+- Then: role-play-unchecked is emitted at equality, never a checked pass or role-played block; the below-cap controls pass.
 
 ### S570 — A delayed REST subprocess is bounded
 **Covers:** F66
-- Given: a timeline REST response delayed eleven seconds and an awk scan delayed 121 seconds after PR detail acquisition.
-- When: the gate runs with its production ten-second read deadline.
-- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The external 135-second test watchdog is a failure, never a passing timeout oracle.
+- Given: a timeline REST response delayed eleven seconds and an awk scan delayed 121 seconds after PR detail acquisition; and the scale arm: the normalized 19-child fixture plus 300 unrelated issues, every gh call delayed 0.8 seconds.
+- When: the gate runs with its production ten-second read deadline and one pool of at most eight concurrent reads.
+- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The scale arm finishes checked (the one-line pass) in under 120 seconds, reads no unrelated issue, and the fixture observes more than 1 and at most 8 concurrent gh calls. The external 135-second test watchdog is a failure, never a passing timeout oracle.
 
 ### S571 — Each REST endpoint fails open visibly
 **Covers:** F66
-- Given: injected HTTP 404 and 500 at repository, epic, issue list, release PR list, child timeline/detail/comments, closing PR detail/comments/reviews and release detail/comments/reviews.
+- Given: injected HTTP 404 and 500 at repository, epic detail/comments/timeline, candidate detail, release PR list, child timeline/detail/comments, closing PR detail/comments/reviews and release detail/comments/reviews; a timeline-only candidate that is gone (404/410 or 500); an eligible release PR closing a nonexistent #9999 (and #9998), with covered and with missing children.
 - When: the real gate traverses each independent fault.
-- Then: every fault returns unchecked without a stale blocking line, including 404 in new traversal.
+- Then: every fault returns unchecked without a stale blocking line, including 404 in new traversal; a gone timeline-only candidate is ignored (404/410) but a 500 is unchecked; the eligible release with a nonexistent closing reference ends exactly `role-play-unchecked: closing reference #N on epic release PR #P does not exist (HTTP 404)` (lowest N first, usual stderr warning, no `role-played:` line, not the legacy path).
 
 ### S572 — Malformed and mistyped REST data cannot establish coverage
 **Covers:** F66
@@ -8897,7 +8897,7 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 **Covers:** F66
 - Given: pre-merge-review skill text.
 - When: content clauses and clause-deletion controls run.
-- Then: forgeable records/overrides, lack of authentication, 100-child/1200-call/120-second bounds and cap-to-unchecked behavior are explicit.
+- Then: forgeable records/overrides, lack of authentication, the 100-child, 200-candidate, 40-calls-per-child, 1,200-call, 8-concurrent, 10-second, 120-second, 64 MiB, 1,000-comment/review and 1,000-timeline-event bounds, cap-to-unchecked behavior, the unchecked closing-reference 404 rule, the timeline-discovery residual gap and the absence of any scan of every repository issue are explicit.
 
 ### S577 — Release-wide skips and amendments are explicit
 **Covers:** F65, F66
@@ -8907,6 +8907,6 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S578 — The real gate and merge hook expose actionable epic findings
 **Covers:** F64, F66
-- Given: a complete epic and the same fixture missing child #609 evidence; the merge hook block remedy.
+- Given: a complete epic and the same fixture missing child #609 evidence, with kept near-miss diagnostics on child #610 and on the release PR; the merge hook block remedy.
 - When: the gate CLI and the real merge hook run, with the existing v2 review-marker input shape.
-- Then: positive coverage passes; removing child evidence blocks naming epic and child; hook advice names epic, child and pipeline-override. Independent output mutations reject unchecked-as-pass, missing diagnostics and leaked stale blocks.
+- Then: positive coverage passes; removing child evidence blocks naming epic and child; hook advice names epic, child and pipeline-override. The hook shows every `role-played:` line first and, of the gate's `model-record:` lines, only those naming the release PR or a child named in a `role-played:` line (the #610 line is absent, the release line present); controls reject a leaked unnamed-child line and a dropped release line. Independent output mutations reject unchecked-as-pass, missing diagnostics and leaked stale blocks.
