@@ -2738,3 +2738,241 @@ Settled choices below are temporary panel decisions (2026-10-30, Q2–Q6), subje
 - **QA test strategy, through agreed Seams.** QA specifies scenarios; Developer writes/runs test code. Loaded skill/core text covers stop, A4 exclusions, historical evidence, Architect's consistency line and the preservation exception. The comparison Interface covers equal, one-byte difference, CRLF/whitespace, missing or truncated artifact, and superseded handoff. Use independent byte fixtures; assert no repository writes.
 - **Existing pins and behavior evidence.** OR19 changes touch S214 (`s214_route_by_class.sh`, including its Shared-text assertions and OR19 inventory location), S311 (`s311_orchestrator_inventory_and_parts.sh`, inventory and OB coverage), and OB20. OR15 changes touch S210 (`s210_review_brief_from_artifacts.sh`), S311's `OR15 Review round brief` mutation anchor, and OB13; preserve its existing carry-forward fields. Update `skills/role-contracts/orchestrator-rules.tsv` coverage/name and add affected OB cases without renumbering IDs. OR15 and OR19 are judgment-tier, so their wording has no SHA pin in `test/fixtures/orchestrator-core-pins.tsv`; do not regenerate unrelated core pins to make checks pass. Keep S68's red-before-green anchor while adding the preservation exception. S318 must measure both injected slots against `CONTEXT_BUDGET_CHARS=9000`, retain 500 characters of headroom for slot 2 and the OR47/OR48 fallback consistency; if they move, update S311's part lists and inventory together. Put detailed artifact syntax/command in role-contracts rather than bloating the injected core. Text pins alone do not establish obedience: extend `test/behavior/orchestrator-scenarios.md` for spec-conflict stops, missing artifact, comparison/logging and unauthorized-diff routes; run `test/behavior/orchestrator-diff.sh --base <identified-main-SHA>` once for the final coordinated text and commit its fresh `test/behavior/orchestrator-diff.stamp`. The current runner has no scenario filter and its stamp covers the core plus the entire scenario file, so log that stamp requirement as OR48's reason for the full shared run, including coordinated #528 wording only if actually included. Any subsequent core/scenario change requires fresh matching evidence. No behavior run, S274 or full check is part of this Planning session.
 - **Scope and cost.** Adoption/meaning-version decisions and #530 restructuring remain outside this amendment. Architect effort is small; Developer/QA estimate fixtures and the shared paid behavior run separately.
+
+
+### A52 — Epic release PRs derive stage coverage from their children (#651; F64–F66)
+
+[A] Planning design, 2026-11-03, for the settled #651 AC1–AC14 and panel-1
+D1–D9; temporary panel choices remain subject to maintainer acceptance (OR43).
+#647 lands first; A50–A51 belong to that work item. This entry reserves no
+other IDs and does not implement the gate or amend Product's requirements.
+
+- **Module, Interface and Locality.** Keep `model-record-gate.sh <pr-number>`
+  as the one public Interface: findings on stdout, exit 0, only `role-played: `
+  blocks. Its Module owns inheritance and stage decisions. Add one private
+  helper, `lib/model-record-epic.py`, for bounded REST traversal, JSON decoding,
+  cached data and set comparisons. Invoke with `python3 -I`, argument arrays,
+  no shell evaluation. It returns a versioned JSON manifest in a temporary
+  directory, never marker syntax or final gate findings. The gate applies
+  `live_text`, `rec_scan_bundle` and `rec_field` from the existing shell libs;
+  no Python copy of Markdown or record grammar. Missing Python/helper or a
+  malformed manifest is unchecked in the inheritance path. Bash remains 3.2:
+  indexed arrays, no associative arrays, mapfile or lowercase expansions.
+  The deletion test puts transport/set complexity back into the gate; the
+  helper earns Depth by hiding traversal behind one manifest, rather than
+  exposing one wrapper per endpoint. Leverage and Locality stay in this Module.
+  The real `gh` and the fixture `gh` are the two Adapters at the existing PATH
+  Seam. No new configuration port or changes to the shared record reader.
+- **Recognition and compatibility.** Extend the existing PR-detail `--jq`
+  projection with a separately framed metadata row for `.head.ref`,
+  `.head.repo.full_name`, `.base.ref`, `.base.repo.full_name`; retain the old
+  title and time/body rows exactly and strip metadata before record scanning.
+  Acquire this detail first into a private buffer so release-shaped retrievals
+  can take the bounded path before comments/reviews are fetched. Defer its
+  error reporting to the legacy comments/reviews/detail failure precedence
+  on ordinary PRs; neither a speculative read nor metadata appears in output.
+  Use `@json` for metadata, not raw ref text. Missing head metadata in old
+  synthetic fixtures is a non-release shape. Real malformed metadata for a
+  release-shaped head is unchecked. Only an opted-in PR with a same-repository
+  head matching `^release/([1-9][0-9]*)-[A-Za-z0-9][A-Za-z0-9-]*$`, targeting
+  the repository's default branch, and an explicit case-insensitive
+  `Closes #<captured epic>` in title/body enters inheritance. Obtain the
+  default branch from `gh api 'repos/{owner}/{repo}'`; do not hardcode main.
+  The existing closing-reference parser still handles all its current
+  keywords for ordinary evidence/overrides. A non-release work-item PR or a
+  tracking epic never inherits. Before new reads, inspect cached comments of
+  the captured epic: any valid manual override there selects the complete
+  legacy evaluation/output, even a partial skip. A release-wide single-session
+  also selects legacy evaluation. No extra inheritance messages in either
+  compatibility path; ordinary PRs retain byte-identical stdout/stderr.
+- **REST reads (all read-only).** Beyond the existing PR detail/comments/
+  reviews and closing-issue comments, request `gh api` with these endpoints
+  (replace R with the verified base repository's owner/name; E, C and P are
+  validated positive integers). All collection calls use explicit pages,
+  `per_page=100&page=k`, k starting at 1, rather than unbounded `--paginate`:
+  `repos/R/issues/E`; `repos/R/issues?state=all&per_page=100&page=k`;
+  `repos/R/pulls?state=closed&base=B&per_page=100&page=k`;
+  `repos/R/issues/C/timeline?per_page=100&page=k`;
+  `repos/R/pulls/P`; `repos/R/issues/C/comments?per_page=100&page=k`;
+  `repos/R/issues/P/comments?per_page=100&page=k`;
+  `repos/R/pulls/P/reviews?per_page=100&page=k`.
+  B is the exact release head ref, URL-encoded with Python `urllib.parse.quote`
+  (`safe=''`). Use `-H 'Accept: application/vnd.github+json'`, no GraphQL,
+  search index or `gh pr list` limit. Python `json.loads` requires the expected
+  object/array shape and typed IDs, bodies, timestamps and repository identity.
+  Cache details, issue comments and PR evidence by repository/number; no
+  duplicate reads just because the release PR also closes a child.
+- **Discovery, then cross-check.** Enumerate all issue pages (open and closed;
+  discard objects with `pull_request`). Pass bodies through the existing
+  `live_text` before parsing structural fields. The sole membership signal is
+  one whole line `**Epic:** #E`, allowing surrounding horizontal whitespace
+  and trailing whitespace, with CRLF normalized by `live_text`. Repeated or
+  conflicting Epic fields on a listed/associated child block and name C.
+  No labels, sub-issue links, ledger rows or search hits establish membership.
+  Independently parse the epic's single `## Work items` section, ending at
+  the next heading of level 1 or 2, from its live text. Accept bullet rows
+  `- [ ] #C description` / `- [x] #C description` (also uppercase X);
+  accept `*` bullets and optional trailing description. Reject duplicates,
+  foreign-repository links substituted for #C, malformed checklist rows or
+  missing/ambiguous section as membership findings, naming E and C if known.
+  Compare this list with the complete field-derived set; both directions
+  must agree and the set must be nonempty. Empty sets cannot pass vacuously.
+  Issues gaining the field after branch opening count now; no historical
+  freeze or edits to closed #608 children are inferred.
+- **Closing PRs and release reconciliation.** From the complete closed-PR
+  collection select `.merged_at != null` with exact `.base.ref == B` and
+  matching base repository. Read title/body and parse the existing closing
+  keyword grammar; only same-repository `#C` references count. Every merged
+  release PR must close at least one field/list child; every issue it closes
+  must be in that set. Otherwise block, naming P and each mismatched C.
+  From each child's complete timeline collect `cross-referenced` source
+  issues carrying `pull_request` and a same-repository URL, deduplicate P,
+  fetch PR detail and verify a real closing keyword for C in title/body.
+  Timeline references alone are not closing evidence; other-repository
+  sources and mere mentions contribute nothing. Union these candidates with
+  the release-list matches, so hand-closed release children are discoverable
+  even if no automatic close event exists. A closing PR that is open,
+  unmerged, or merged to another base is a mismatch naming C/P, not a
+  disposition. Several closing PRs are permitted only when all are merged
+  to B; scan their combined evidence once each. A fully read empty candidate
+  set is the no-PR case; inability to retrieve candidates is unchecked.
+  Every child must be closed. An open child is named and blocks, irrespective
+  of records. Do not infer issue closure from a merged release-branch PR.
+- **Per-child coverage.** Inherit Discovery, Planning, Test and Implementation,
+  never Review. For each unwaived inherited stage every child needs an ok
+  record in its own issue comments or verified closing PR description,
+  comments or reviews, or a valid `skip=<Stage>` in that child's own issue
+  comments. Preserve source isolation: never recursively read other issues
+  closed by a child's PR to obtain that child's skip. Use the gate's current
+  time/source/line ordering and classification, near-miss diagnostics and
+  per-body multi-stage rule within each child; never concatenate different
+  children's bodies into one text. Child-local skips waive absence, not a
+  multi-stage body. A child single-session can waive its multi-stage finding
+  as today, but is not itself a `skip=<Stage>` and does not create missing
+  inherited stage coverage. For a closed no-PR disposition child require
+  child-issue human skips for the four inherited stages; prose, panel votes
+  and a ledger claim do not substitute for these overrides (AC5).
+  Validate via `rec_scan_bundle`/`rec_field`: ok, live, nonblank decided-by
+  and reason, exact required scope. Standing-class skips have no exemption
+  from validation. Do not introduce timestamp/authorship rules the current
+  gate does not enforce. Keep record candidate handling as implemented today;
+  do not use this feature to repair unrelated latest-record behavior.
+  A release's own inherited-stage marker cannot hide an uncovered child.
+  Release Review must be an ok Review record, including floor-basis, on that
+  release PR's description/comments/reviews; child or epic Review records
+  cannot provide it. Existing applicable release-wide overrides still apply
+  as A53 specifies; the separate head-pinned approval gate is unchanged.
+- **Caps, completeness and failure transaction.** New traversal: 100 children;
+  5,000 repository issue objects including discarded PR objects; 1,000 closed
+  PR objects; 1,000 timeline events per child; 1,000 comments or reviews per
+  collection; 1,200 total REST calls; 8 MiB per response and 64 MiB total;
+  10 seconds per subprocess/read and 120 seconds for the whole inheritance
+  evaluation, including parsing/scanning. Equality with any cap is unchecked,
+  even if the last page could be complete. These limits include release PR
+  comments/reviews and closing-issue comments reused in inheritance, not just
+  newly discovered children. Start the traversal budget at detail acquisition.
+  Pages continue until a page with
+  fewer than 100 objects; a full final allowed page cannot establish a pass.
+  Python uses monotonic deadlines, bounded streamed stdout/stderr and process
+  groups, killing/reaping a timed-out gh group. Bound the whole new evaluation
+  with an A22-style Bash watchdog and buffer all results until it completes;
+  the watchdog covers shell scans too and its own failure is unchecked.
+  No automatic retries. Bounds are constants, not production environment
+  bypasses; tests may use a private clock/process Seam in the helper.
+  Re-read E and participating issue/PR details before publishing; changed
+  bodies, state, merge/base/head identity or updated_at invalidate the
+  snapshot as unchecked. Mutable comment history is not authenticated or
+  atomically frozen by this recheck. On any fetch/parse/reader failure,
+  404 in the new traversal, cap or timeout, discard buffered inheritance
+  AND dependent legacy role-play findings; call the existing `unchecked`
+  routine and exit 0. Never leave a partial `role-played:` block behind.
+  The ordinary legacy closing-reference 404 note/ignore behavior stays.
+  With complete data, membership defects or uncovered stages produce
+  `role-played: epic #E child #C ...` (or name P/E where C is unavailable).
+- **Bookkeeping outside the core (AC9).** Extend
+  `skills/release-branch-workflow/SKILL.md`, not ORCHESTRATOR.md. Document
+  field/list normalization before the release PR, late-field membership,
+  child issue closure after release-branch merges, and a running epic ledger
+  of child/stage/record-or-waiver URL, refreshed at each child merge and
+  finally rechecked before requesting approval. The ledger is a human view,
+  never gate evidence. OR23's existing Pipeline log receives child count and
+  `epic ledger complete: yes|no`; yes requires complete evidence, all children
+  closed and every closing PR merged to B, except no-PR dispositions with
+  the required child skips. Unchecked gate output cannot justify yes. Record
+  the release's exact closing-reference set and the A53 waiver effect.
+  Amend the skill's frozen-membership and completion wording consistently;
+  label that policy change for maintainer acceptance. No core character,
+  inventory/pin or paid core behavior-run change is proposed here.
+- **Threat model (AC10).** This is structural evidence validation, not
+  authenticated human authority or proof of executed stages. Any session
+  able to post records can forge model-records and human override lines.
+  Removing a child field alone is caught by list/PR reconciliation; a
+  coordinated rewrite of every membership source is not prevented. Network
+  failure and deliberate cap exhaustion fail open visibly, as required.
+  Read-only checks do not guarantee a simultaneous GitHub snapshot.
+- **QA Seams and content handoff.** Reserve S549–S578, with literal expected
+  stdout/stderr at the existing gate CLI and merge-preflight/hook Interface.
+  Extend the data-driven PATH gh fixture with raw JSON pages, endpoint/query
+  logging, injected errors/delays and strict rejection of unexpected calls;
+  apply real jq to projections, as existing gate fixtures do. No live GitHub.
+  Cover the normalized #608 shape (all 19 listed children; explicitly fill
+  every inherited stage, including disposition waivers), all-record/mixed/
+  all-waived paths, each missing child/stage, ledger-only forgery, no-PR
+  with/without skips, child Review versus release Review, repeated/missing/
+  conflicting fields, extra list/field/merged-PR members, open/unmerged/
+  wrong-base children, multiple closing PRs, late fields and empty sets.
+  Include quoted/malformed/wrong-child/wrong-stage waivers, standing-class
+  skips, Abbreviated, child and release single-session, manual epic override,
+  multi-Closes release-wide skips, one-text separation, pagination beyond
+  page 1, exact caps, timeouts, each endpoint failure/404, malformed JSON,
+  changed snapshot and no leaked block after late failure. Keep S230, S231,
+  S261–S263 and S377 unchanged and green; compare legacy output byte for byte
+  for ordinary PRs and the manual-epic path, including near-misses/404 notes.
+  Product's F64 content: inherited stages, universal child coverage and
+  release Review; F65: membership/reconciliation and ledger responsibility;
+  F66: bounded unchecked behavior, compatibility/waivers and stated trust
+  limits. This is a content list, not PRD text. QA allocates the 30 IDs and
+  test groupings; the bundle's panel-2 exception governs QA test-code scope.
+- **Ownership and consistency.** Architect: A52–A53 only. Product: PRD F64–F66
+  and issue/dependency text (`**Epic:** #655`, #647 before #651). QA:
+  TEST-SCENARIOS S549–S578, corresponding test cases/fixtures under panel 2.
+  Developer: gate, private helper, hooks/git-guardrails block message only,
+  release-branch-workflow skill, pipeline-override.sh explanatory comments/
+  help if needed to describe inherited child reads, pre-merge-review skill
+  documentation, CHANGES.md and CHANGELOG.md (one #651 entry after #647).
+  `merge-preflight.sh`, shared record/Markdown libs, epic-auto-close.sh,
+  ORCHESTRATOR.md and generated adapters need no edits. Architect effort:
+  small design; traversal/fixture implementation effort belongs to Dev/QA.
+  AC consistency: none of AC1–AC14 is contradicted or narrowed; AC5 specifies
+  the no-PR exception to AC1, AC6/AC13 retain release-wide override precedence
+  over otherwise universal inheritance. The reserved #608 fixture counts in
+  issue prose omit one of the 19 children in their 7+10+1 shorthand; QA must
+  model the enumerated 19-child set, not silently drop the remaining child.
+
+### A53 — A18 override semantics retain compatibility for epic inheritance (#651)
+
+[A] This decision amends A18's override paragraph by reference; retain its
+historical text in place. Grammar and human-only OR34 authority do not change.
+A valid manual override on the epic keeps the entire legacy gate path and its
+byte-identical output (A52); this includes partial skips and single-session.
+Otherwise inheritance adds evidence reads, not a new waiver type. A valid skip
+already visible in the release PR's legacy evidence pool, including a skip on
+ANY issue named by a closing keyword, waives that stage's absence for the whole
+release PR. For an inherited stage it also removes the per-child missing-stage
+obligation at that release gate; it does not grant a waiver on the child issue
+or change the child's own gate. Membership reconciliation still runs in the
+inheritance path. A skip does not waive multi-stage-text findings. Review is
+not inherited; a release-wide skip=Review or single-session retains its legacy
+waiver effect, although standing panel policy cannot authorize skipping Review.
+Child-local evidence fetched only for inheritance never joins the release-wide
+override pool. A child single-session alone supplies no inherited missing stage.
+
+[V] The bundle record requires `Closes #655`, `Closes #651`, `Closes #647` on
+its release PR. Therefore a skip on #647 or #651 already affects the whole
+release PR; record exactly which stages this waives in the Pipeline log and
+approval request. Test that compatibility explicitly (AC13), rather than claim
+that the release mechanically requires child coverage for a waived stage.
+[A] Maintainer acceptance under OR43 must name the A18 amendment and the
+release-membership amendment, alongside all temporary panel decisions and the
+panel-2 QA scope departure. No new override author, marker or orchestrator-core
+rule is introduced.
