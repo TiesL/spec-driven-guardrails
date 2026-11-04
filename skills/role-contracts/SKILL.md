@@ -69,6 +69,104 @@ the `model-choice` skill.
 
 **Abbreviated workflow.** The one named short track: `skip=Planning` and `skip=Test`. Discovery, Implementation and Review still run, and Review is still a fresh Reviewer; under the valid `skip=Test` record, no QA artifact or comparison applies and the Developer adds new scenario entries plus scenario text per the Fullstack Developer scope (A4) in the role contracts. Only the human grants it, in their own words, and those words are the `reason` of the record. The orchestrator posts it before the work item's first commit or PR open (never after the merge guard fires) with `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh <issue> --scope skip=Planning --scope skip=Test --decided-by <human> --reason '<their words>'`, run from the project's checkout, with `--reason` in single quotes. The script posts one record line per scope and refuses a value it cannot record as given (full list: `pipeline-override.sh --help`): the orchestrator then asks the human for other words and never edits theirs. The record is read only if the PR title or body carries the literal `Closes #<issue>`. Any other waiver is not this track and still needs the human's explicit words and its own record (OR34).
 
+### Stage-selection panel
+
+The panel brief must ask participants to read this subsection, Standing human class
+decisions and the Abbreviated workflow above, the issue's ACs, Discovery report,
+proposed file scope and applicable human source. Issue/panel text alone is not the procedure.
+After Discovery with its own separate model-record, and before any work-item commit
+or PR opening, Product, Architect and the orchestrator take positions on required
+stages. Issue text never substitutes for Discovery. This consultation is not Planning
+and supplies no Planning marker. Only Planning, Test and Implementation are selectable.
+
+Preserve the orchestrator, Review by a fresh Reviewer, Discovery and at least one
+role other than the author seeing the change. Preserve every AC-dependent stage:
+an AC adding a scenario requires Test; a diff touching executable code requires
+Implementation, including executable tests and scripts. Executable tests still
+require Implementation. These checks precede class classification; labels alone
+establish no eligibility. Class conditions never override these protections (AC1).
+Abbreviated selection is unavailable if its Test skip violates those protections.
+Doc-only and test-only may use skip=Implementation only within verified human
+conditions and with no AC-dependent or executable-diff Implementation requirement.
+Configuration changes outside those conditions require Implementation or referral;
+never infer blanket configuration eligibility. If human source conflicts with
+protected work, stop application and refer to Product/the maintainer.
+
+A unanimous eligible in-class selection may be applied by the orchestrator.
+A 2-1 vote to skip, a recommendation outside a class, unverifiable source or
+conditions, or a proposal to skip Review is referred to the maintainer without
+panel-derived posting. A majority to retain work retains it; dissent is recorded.
+Missing participants or evidence leave selection unresolved: continue the full
+required pipeline or resolve before a skip. Do not silently trim the named
+Abbreviated pair; a different scope requires separate applicable human authority.
+Outside an applicable class obtain an explicit per-item human waiver under OR34.
+Unsupported skip=X and single-session are not panel defaults. This mechanism never
+derives skipped Discovery or Review from a vote. A panel record alone never waives
+missing work. A valid skip=Test preserves A49's QA-artifact/comparison exemption
+and Developer append-only new scenario entries/text scope; single-session alone
+supplies no QA-provenance exemption. The A49 conflict stop still applies.
+
+Post a separate ordinary issue comment containing `temporary, panel decision`,
+a stable decision ID, question, named Product, Architect and orchestrator positions,
+vote including dissent, and outcome with exact selected stages. Link the standing
+human words applied; include class-eligibility and protected-work evidence and link
+Discovery. For out-of-class recommendations state no standing words apply and link
+the per-item human decision before posting. If TiesL/spec-driven-guardrails#645 lands, adopt its shared record
+by explicit follow-up preserving this information; do not assume it already exists.
+
+The panel never writes or authorizes an override marker. Only the orchestrator
+runs `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh` from the guardrails clone,
+with the project checkout as working directory, naming the human as
+`--decided-by`, with their unchanged words as the single-quoted `--reason` and
+only authorized scopes (invocation and refusal help above). Unrepresentable words
+require new human words, never sanitizing, rewriting or truncating theirs. Preserve
+the script's validation/round trip, verify the returned text and save/link the waiver
+comment in the panel record or Pipeline log. The PR title or body must carry
+`Closes #<issue>`. Script acceptance of a panel name is not permission to post it.
+Any session can forge records; links, timestamps and human-looking identities are
+not authentication. Posting discipline and independent scrutiny mitigate this;
+there is no new gate, parser, hook or script check. A reference does not prove live
+loading, applicability, human authorship or obedience.
+
+Both the completed panel decision and waiver posting must precede both the first
+work-item commit and PR creation. Count spec-only, test-only, empty and later-squashed
+commits across sessions; inherited base/release commits are excluded. In the Pipeline
+log retain the initial base SHA, first work-item commit identity (or `none yet`),
+decision/waiver comment identities and creation times, and PR identity/creation time
+when available. Compare the earlier deadline to the later required record creation.
+Unknown order or a tie is unresolved, not timely. Editing a late comment cannot
+backdate completion: publish a superseding record at its actual time. Rebasing,
+squashing or deleting the first commit does not reset the deadline; retain original
+identities. A late record remains late; seek specific human resolution, never claim
+retroactive compliance. This adds no timestamp merge gate.
+
+At merge-approval preparation list every relevant panel decision, record link and
+outcome, including retained-work, escalated and superseded decisions with resolution
+links. Flag each decision widening a limit or accepting risk for explicit acceptance,
+including these temporary spec decisions and removal of TiesL/spec-driven-guardrails#645 as a dependency.
+OR43 still applies: unanimity or a release-branch merge does not establish maintainer
+acceptance. Existing release/main merge rules remain. Selection changes stage presence
+only. Retain A13's required review depth or raise it with `--force-thorough`; never
+lower depth through a waiver or doc-only label.
+
+### Standing human class decisions
+
+Only these two classes are evidenced. Check protected work first, then verify the
+human source and exact conditions for the item. Unverified or missing source or
+conditions means no posting: obtain evidence or explicit per-item human authority.
+The panel record is not the human source. Do not invent words or a third class.
+
+| Class | Human | Source link | Authorized scopes | Exact conditions |
+| --- | --- | --- | --- | --- |
+| Abbreviated | maintainer | Per-item human grant in their own words is required; link its durable words before posting. | `skip=Planning`, `skip=Test` together | Only the maintainer grants the named track, in their own words, used unchanged as reason. Discovery, Implementation and fresh Review run; all panel protections, eligibility and advance-record rules apply. |
+| test-only/doc-only | maintainer | [TiesL/spec-driven-guardrails#608 standing decision](https://github.com/TiesL/spec-driven-guardrails/issues/608), 2026-11-02 orchestrator handoff | `skip=Implementation` | Standing decision applies only to batches of epic TiesL/spec-driven-guardrails#608; outside that scope requires per-item human authority. Executable tests/scripts and any executable production code still require Implementation. Protected-work checks come first. |
+
+The verified TiesL/spec-driven-guardrails#608 standing words are: "Test-only and doc-only batches may skip the
+Implementation stage: yes".
+For Abbreviated, obtain the maintainer's per-item grant in their own words; use
+those words, never a policy paraphrase, as reason. If recoverable words or applicability cannot be verified, do not post.
+OR34 remains a frozen compatibility synopsis; maintain class rules only here.
+
 The `role:<name>` labels are a hand-maintained traceability record (A5): put the label of the
 role now holding the work on the issue. They do not exist in your repo until you create them.
 Create them once, idempotently, in this project's own repo (needs `gh`) if you want the

@@ -183,7 +183,7 @@ elif a[:2] == ['pr','checks']: print(json.dumps([{'name':'check','bucket':'fail'
 elif a and a[0]=='api':
  path=a[1]
  if '/compare/' in path: print(1 if mode=='behind' else 0)
- elif '.base.ref' in ' '.join(a): print('main\\t'+sha)
+ elif '--jq' in a and a[a.index('--jq')+1] == '.base.ref + "\\\\t" + .head.sha': print('main\\t'+sha)
  elif path.endswith('/comments') or path.endswith('/reviews'):
   print('')
  elif path.endswith('/41'):

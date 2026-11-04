@@ -121,12 +121,12 @@ st=$?
 [ "$st" = 2 ] || fail "S314/adopted — the hook did not run through the symlink (exit $st: $(cat "$SANDBOX/err"))"
 
 # CHANGES.md: Reaches session names the hook, Yes means gains the sentence,
-# Meaning version unchanged (2, as on main).
+# Meaning v3 records stage selection/inheritance while retaining dispatch wiring.
 entry="$(awk '/^## process-multi-agent-roles$/{f=1; next} f && /^## /{exit} f' "$TEST_REPO_ROOT/CHANGES.md")"
 grep -q '^- \*\*Reaches session:\*\* .*hook: hooks/agent-dispatch' <<<"$entry" \
   || fail "S314/changes — Reaches session does not name hook: hooks/agent-dispatch"
 yes_means="$(awk '/^- \*\*Yes means:\*\*/{f=1} f && /^- \*\*Reaches session/{exit} f' <<<"$entry")"
 grep -q 'hooks/agent-dispatch' <<<"$yes_means" || fail "S314/changes — Yes means does not mention the dispatch hook"
-grep -q '^- \*\*Meaning version:\*\* 2 —' <<<"$entry" || fail "S314/changes — Meaning version changed"
+grep -q '^- \*\*Meaning version:\*\* 3 —' <<<"$entry" || fail "S314/changes — Meaning version must be 3"
 
 test_done

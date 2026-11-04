@@ -2482,8 +2482,8 @@ something new is being added.
   documents the field and its five keywords; `process-multi-agent-roles`
   declares `session-context: skills/role-contracts/ORCHESTRATOR.md` and
   `gate: skills/pre-merge-review/model-record-gate.sh`. The historical #371
-  no-bump decision does not prohibit the approved #427 Meaning version 2;
-  S265 checks that version and its semantics. Removing any Reaches session
+  no-bump decision does not prohibit the approved #427 Meaning version 2 or
+  #663 Meaning version 3; S265 checks the current version and retained semantics. Removing any Reaches session
   field or either declared route must still fail this scenario.
 
 ### S183 — strict live evidence determines role-play only in opted-in projects
@@ -3717,7 +3717,7 @@ something new is being added.
   effort
 - Issue #599 amendment: The emitter header command and usage advertise --role, while retaining the existing no-effort assertions (#599 AC4/AC6).
 
-### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v2 in #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
+### S239 — process-model-choice moves to meaning v2 and quality-review-before-merge to v4, each once; process-multi-agent-roles moves to v3 in #663, retaining #427; this repo's own rows re-confirm; adopters answered under the old version are re-surfaced
 **Covers:** F9, F26, F39
 - Given: `CHANGES.md`, this repo's `WORKFLOW-ADOPTION.md`, and fixture projects
   run through `pending-changes.sh` (issue #424, AC4; A33a, the adoption-registry
@@ -3725,7 +3725,7 @@ something new is being added.
 - When: the entries and rows are read, and `pending-changes.sh <project>` runs
 - Then: `quality-review-before-merge` is at Meaning version 4 (its text is
   S191), `process-model-choice` at 2 and `process-multi-agent-roles` at
-  2 (#427 guard slice, S265); the `process-model-choice` entry cites
+  3 (#663 stage-selection/inheritance, retaining #427 guard slice, S265); the `process-model-choice` entry cites
   #424 and #413, says in its Meaning version note that effort is no longer
   recorded, and its "Yes means" says the floor is judged on the model and
   effort is neither chosen nor checked, that the same model at a lower effort
@@ -4498,20 +4498,21 @@ real GitHub storage behavior. NUL is outside the Bash string transport Seam.
   pending-changes CLI with fixture adopters answered at old/current meaning.
 - When: document contract tests read those sections and
   `pending-changes.sh <fixture-project>` runs.
-- Then: process-multi-agent-roles is Meaning version 2, its “Yes means” names
+- Then: process-multi-agent-roles is Meaning version 3 (#663), its “Yes means” names
   refusal of inline-only records and `<`/`>` override values, and own adoption
-  row reconfirms v2 with reasoning. Old v1 (implicit or explicit) resurfaces
-  as meaning changed v1 -> v2, current v2 is quiet.
+  row retains the historical #427 v2 reconfirmation. Old v1 (implicit or explicit)
+  and v2 fixture adopters resurface as meaning changed to v3; current v3 is quiet.
+  The v3 note names stage-selection, epic stage inheritance and the retained #427 rules.
   quality-review-before-merge remains v4, with whole-line/column-0 and no
   double-quote/angle/control-in-values grammar added, and own v4 adoption is
-  retained. process-model-choice stays v2. No second bump to v5/v3.
+  retained. process-model-choice stays v2. No bump of those two entries to v5/v3.
   model-choice points to A31 and states both reader rules; A18 override grammar
   follows the strict values/line rules. No permissive legacy grammar is current.
-- Falsifiers: omit/over-bump meaning, leave own adoption at old meaning,
+- Falsifiers: omit/over-bump meaning, remove the historical #427 adoption reconfirmation,
   suppress old-adopter resurfacing, or leave permissive grammar in A18/model-choice.
 - Test mapping: new `test/cases/s265_gate_meaning_and_docs.sh`; amend existing
   S191/S239 document tests and the usual S90 snapshot if it carries changed
-  text. These are Developer edits; QA changes only scenario contracts.
+  text. #663 panel 2 authorizes QA edits to these tests and scenario contracts.
 
 ### S266 — small K2 through fake gh preserves body framing under U+001E injections
 **Covers:** F27, F38, F39, F40
@@ -5126,20 +5127,20 @@ that evidence and the final `./check` result.
 - And: the compatibility entry (the `- **Compatibility and limits (#408).**`
   bullet inside v0.4.0, up to the next top-level bullet) names every
   question whose `Meaning version:` differs between `git show
-  v0.3.0:CHANGES.md` and the working-tree `CHANGES.md`, each with
+  v0.3.0:CHANGES.md` and `git show v0.4.0:CHANGES.md`, each with
   `meaning version <new number>` with a whole-number match (2 must not
   accept 20 or 21). A question differs when its `## <name>`
   section has a `Meaning version:` number in the new file that is absent from
-  or unequal to the old file's. Today that set is
+  or unequal to the old file's. At that release the set is
   `quality-review-before-merge` (4), `process-model-choice` (2) and
   `process-multi-agent-roles` (2); the test derives it, it does not list it.
   Any count the entry states in words or digits ("two answers", "3
   questions") equals the set size, including later counts after a matching first
   count; numeric prefixes and conflicting later counts fail. Counterexamples:
   the set computed from the
-  working tree alone or hard-coded; `process-model-choice` omitted; the entry
+  working tree (later meaning bumps must not rewrite frozen release notes) or hard-coded; `process-model-choice` omitted; the entry
   saying "two" while three differ; a bump invented for a question whose number
-  did not change. If tag `v0.3.0` does not resolve to a commit, the test
+  did not change. If either tag `v0.3.0` or `v0.4.0` does not resolve to a commit, the test
   fails with a message naming the tag and "fetch tags / fetch-depth: 0", never
   skips or passes: `ci.yml` and `macos.yml` both check out with
   `fetch-depth: 0` (the pinned block of S219), so the tag is present in CI.
@@ -6174,7 +6175,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   removed it exits 2 with the OR8 line; the adopted fixture resolves the
   hook through the symlink with no `adopt.sh` run; the entry's **Reaches
   session** field names `hooks/agent-dispatch`, `*Yes means*` gains one
-  sentence, and its Meaning version is unchanged from `main`
+  sentence, and its Meaning version is 3 after the approved #663 bump
 - Red on `main` b43ee55: no entry, no fixture, no field text
 
 ### S315 — the behavior file parses against the closed schema and the runner's verdict logic is right with a stub model (#499 AC11, AC12)
@@ -6751,6 +6752,9 @@ S119 fail open as before.
   `Reaches session` (closed list; `reaches_session_invalid` passes), and a
   *Yes means* that says the up-to-date check ships through the symlinked hook
   regardless of the answer; no existing entry's meaning version changed
+  except the approved #663 process-multi-agent-roles v2 -> v3 change, whose
+  note names #647 stage-selection and #651 epic stage inheritance, and AC8
+  release-branch-workflow implicit v1 -> v2 with its reason
   (`quality-review-before-merge` unchanged, Human decision 3a assumed); the
   fresh-adoption pending list contains the new ID, and the expected list in
   `r2_pending_after_fresh_adoption.sh` is updated in the same commit, one
@@ -7783,9 +7787,9 @@ A47 supplies protocol provenance, not proof that a future installation activates
 ### S378 — the pipeline-override texts the docs must carry are pinned, each with a mutation arm (#564 AC7, AC9, AC10, doc-text pins; #578 AC9, AC11)
 **Covers:** F38
 - Given: the real tree, and for each pin a fresh sandbox copy with exactly that text removed; an opted-in project (`process-multi-agent-roles` yes) for the session text.
-- When: the pins are read: (a) `abbreviated workflow` (any case) in `policy/WORKFLOW.md` and `skills/role-contracts/SKILL.md`, each on a line holding `skip=Planning` and `skip=Test`; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
-- Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, `skip=Test` dropped, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
-- Falsifiers: a pin that stays green when its text is deleted, a doc that drops the abbreviated workflow, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
+- When: the pins are read: (a) the policy `- **Abbreviated workflow**` bullet names the installed `role-contracts` skill (never a repo-relative path, S534), its `Stage-selection panel` and `pipeline-override.sh`; only the canonical skill carries the full `skip=Planning` and `skip=Test` definition; (b) OR34 in `skills/role-contracts/ORCHESTRATOR.md` names `pipeline-override.sh`; (c) `session-context.sh --slot 1` for the opted-in project names `pipeline-override.sh`; (d) `single quote` in `pipeline-override.sh`, `skills/role-contracts/SKILL.md` and `skills/role-contracts/ORCHESTRATOR.md`; (e) `Closes #` in `skills/role-contracts/SKILL.md` and `pipeline-override.sh`; (f) the OR34 bullet in `skills/role-contracts/ORCHESTRATOR.md` and the `Abbreviated workflow` paragraph of `skills/role-contracts/SKILL.md` point to `pipeline-override.sh --help` for the refusal list.
+- Then: every pin holds on the real tree; each mutation arm first runs its pin on an unmutated copy (it must pass), then on the mutated copy (policy bullet deleted, SKILL.md paragraph deleted, each canonical scope dropped separately, each policy reference target removed separately, OR34 script name removed, `single quote` removed per file, `Closes #` removed per file, the `--help` pointer removed from OR34 or from SKILL.md), and the pin must fail with its own message (the missing text named), so a pin that is red for another reason is detected.
+- Falsifiers: a pin that stays green when its text is deleted, a policy reference that drops the installed skill name or panel entry point, a canonical definition that drops either Abbreviated scope, the single-quote rule or the closing keyword, OR34 or the session text that no longer names the script.
 
 ### S379 — ./check runs ok on a read-only tree without writing bytecode and still reports a syntax error with file and line (#590 AC3; #595 AC1)
 **Covers:** F57
@@ -7922,11 +7926,11 @@ Integration seam: hook stdin JSON, local remote.origin.url and recording fake gh
 
 Integration seams: explicit adoption and read-only status, installed hook stdin JSON, list-only guard execution and baseline documentation. Each numbered scenario has its own runnable case. Live AC2, AC8 and the live portion of AC3 remain a separate TiesL-run observation follow-up; no offline test claims protection or activation.
 
-### S397 — Seven-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
+### S397 — Eight-file bundle installation preserves bytes, modes, manifest and idempotence (#594 AC1)
 **Covers:** F8, F47
 - Given: a fresh project and an isolated Codex home.
 - When: explicit Codex --hooks adoption runs twice.
-- Then: a real .codex/sdg-guard contains exactly the seven accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
+- Then: a real .codex/sdg-guard contains exactly the eight accepted source files and MANIFEST, with identical bytes, modes and sibling layout; the manifest associates each path with its sha256 and mode and the source revision; the merge-only command targets the bundle, contains no source-link path, and the second run changes nothing.
 - Falsifiers: a missing or extra file, clone path, changed bytes or modes, incomplete manifest, source-target command or non-idempotent install.
 
 ### S398 — Default adoption creates no guard bundle (#594 AC5)
@@ -8016,7 +8020,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 
 ### S406 — The hand-kept list alone suffices for source guard parity (#594 AC9)
 **Covers:** F8, F47
-- Given: the seven-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
+- Given: the eight-file hand-kept guard-bundle.list and #593 recording fake-gh fixtures.
 - When: a bundle built from that list only runs from another directory with a minimal tool PATH.
 - Then: plain and same-repository flagged missing-review, CI, ancestry, role-play and eligible verdicts match source stdout, stderr and exit exactly; unrelated commands remain outside merge-only scope.
 - Falsifiers: extra listed files, omitted files, an untested fail-open fixture or any parity difference.
@@ -8026,6 +8030,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: a list-only bundle that first passes the complete parity controls.
 - When: each listed file is removed separately and restored, including the entry point; rules.sh alone is exempt because it is sourced but has no merge-only effect.
 - Then: the role-play fixture loses its exit-2 refusal for each ablation; a missing entry point is exercised through a shell so the test observes its exit rather than a Python exec error.
+- Release-shaped arm (#651, A52): lib/model-record-epic.py is read only for release-shaped heads (the legacy path falls back to plain gh), so its ablation is observed on a release PR whose child lacks a Test record: the complete bundle reports the block, the ablated bundle reports unchecked instead.
 - Falsifiers: a merge-relevant ablation that retains the same refusal or a fixture that never blocked before ablation.
 
 ### S408 — Relative source dependencies must stay inside the declared closure (#594 AC9)
@@ -8046,12 +8051,12 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F51, F57
 - Given: the baseline document before positive live protection evidence.
 - When: its bundle warning, refresh directions and live-result conditions are inspected.
-- Then: it names .codex/sdg-guard and all seven files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
+- Then: it names .codex/sdg-guard and all eight files, retains merge hook optional and off and [A], states refresh outside the sandbox and content-only refresh without re-prompt, names the project policy row, both escape variables and PATH tools, and conditions default/fallback changes on the live result.
 - Falsifiers: a missing bundle dependency or limit, an asserted live guarantee, premature default change or undocumented fallback.
 
 ### S411 — Interrupted bundle refresh preserves policy and permits explicit recovery (#594 AC5, AC6)
 **Covers:** F47, F51
-- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all seven bundle files at a new source revision.
+- Given: an owned installed bundle whose missing-review merge exits 2 with the current-head review refusal, and changed source contents for all eight bundle files at a new source revision.
 - When: in seven isolated trials explicit --hooks refresh is interrupted by an injected partial write and exception at each bundle-file write, then the installed command judges the same merge and a second explicit --hooks refresh runs without injection.
 - Then: each injection is confirmed and refresh reports failure; the installed command retains the exact missing-review exit, stdout and stderr; explicit recovery succeeds without treating interrupted owned data as tampering, returns current structural status and retains the same policy verdict.
 - Native-refusal checks (#621): repeat with ENOSYS and EACCES at exchange; require unchanged old active contents, verified new staging and ready recovery record, read-only stale status, and successful explicit retry; print platform, paths and results (S519).
@@ -8104,7 +8109,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 **Covers:** F40
 - Given: the merge-base emitter and library in a disposable copy when main or origin/main history is available, all five stage-only commands and the kept S206 adopted-project control.
 - When: success, stale --effort and refusal controls run; a scratch mutation requires --role.
-- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The gate and collector code stays unchanged against that baseline; comment-only and blank-line differences are ignored (scratch controls: a changed or inserted code line still fails, a comment or blank-line-only change passes). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
+- Then: success stdout, status and effort warning match the merge base byte for byte; refusal status/stdout match; the old stage-only oracle detects the mutation. The collector code stays unchanged against that baseline, and every merge-base code line of the gate survives (the gate may gain code, as #651 A52 did, but no #599-era code line may be deleted or edited except the closed list of lines the epic path replaced); comment-only and blank-line differences are ignored (scratch controls: a changed or inserted collector line, and a changed or deleted gate line, still fail; an added gate line and a comment or blank-line-only change pass). If history is unavailable, only those historical byte comparisons are explicitly reported as skipped, following S286; the stage-only mutation oracle still runs. S206 separately exercises adoption and kills the same regression.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S416 — Invalid role arguments follow the refusal discipline (#599 AC1, AC4)
@@ -8620,3 +8625,353 @@ and S380's #590 live-evidence boundary.
 - Given: `skills/role-contracts/ORCHESTRATOR.md` OR32 and `test/fixtures/orchestrator-core-pins.tsv`.
 - When: the OR32 item is read.
 - Then: it contains "Resolve absolute path once" and is one physical line. A scratch copy with the phrase deleted fails. Green now (the text is in the tree); the pin hash itself is guarded by S311, S317, S322 and S333, which stay red until the Developer regenerates the OR32 pin.
+
+### S534 — canonical source and managed references (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S534 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires canonical panel subsection, canonical class subsection. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. Policy must name the installed `role-contracts` skill and Stage-selection panel, with no repo-relative `skills/role-contracts/SKILL.md` link; reintroducing that link fails a control. README.md is a repo-root document: its `pipeline-override.sh` row must name Stage-selection panel and point to the canonical source by either the repo-relative path or the installed skill name; removing the pointer fails a control.
+- Mutation controls (#660): N5 (`optionally skim`), N6 (`after using pipeline-override.sh`) and N10 (`except when the panel chooses otherwise`) independently inject permissive sentences at the end of the policy's Abbreviated workflow paragraph, which names the installed role-contracts skill. Locate only that paragraph's structural start, never the consultation clause. The unchanged predicate accepts the actual source and rejects every injected copy. N5/N6 scratch policies are regenerated into WORKFLOW.md, adapters/codex/AGENTS.md and the root AGENTS.md managed block; projection equality must pass and all three changed projections must fail the consultation predicate. Every injection changes bytes; missing or ambiguous structural anchors fail loudly. Unrelated prose, whitespace, tabs, emphasis and case variants remain green in complete S534/S548 fixtures, with every negative control enabled. No replacement locator is needed.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+- Best-effort pins: seven known permissive rewrites survive (listed in TiesL/spec-driven-guardrails#657); the live instruction exercises there are the real check.
+
+### S535 — complete separate panel record (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S535 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires ordinary panel record, stable identity and question, named participants and positions, vote dissent outcome exact stages, human-source link, Discovery eligibility protections evidence. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S536 — separate Discovery before consultation (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S536 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires Discovery separate marker before panel, issue text cannot substitute, consultation is not Planning. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S537 — orchestrator fresh Review and independent scrutiny (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S537 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires orchestrator protected, fresh Review protected, independent scrutiny, Review skip escalates. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The entire protected-work directive is unconditional: prefixes `where practical`, `ordinarily`, `may`, and `unless` are rejected by individual M7 controls.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S538 — AC-dependent Test and executable Implementation (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S538 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires scenario AC requires Test, executable diff requires Implementation, executable tests and scripts included, protections before classification. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S539 — eligible unanimous Abbreviated pair and A49 (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S539 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires unanimous in-class selection, Abbreviated exact pair, A49 valid Test exemption, append-only scenario scope, Abbreviated refuses scenario AC conflict. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S540 — doc-only class cannot bypass protected work (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S540 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires doc-only conditions and permitted scope, configuration outside verified conditions, class cannot override protections. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S541 — test-only class includes executable-test refusal (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S541 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires test-only verified conditions, executable tests still require Implementation. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S542 — split skip escalates while retained work stays (#647; A50/A51)
+**Covers:** F61
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S542 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires 2-1 skip escalates, majority retains and records dissent, missing participants cannot skip. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S543 — unsupported scope and single-session need human authority (#647; A50/A51)
+**Covers:** F61, F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S543 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires outside-class per-item authority, single-session not panel default, panel record alone insufficient, single-session no QA exemption. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S544 — human posting preserves exact words and issue linkage (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S544 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires only orchestrator posts human identity, unchanged single-quoted human reason, unrepresentable words not rewritten, verify returned text, closing issue linkage. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S545 — advance selection ordering survives history changes (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S545 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires both records precede both deadlines, initial base and commit identity, times and identities, tie and unknown not timely, late editing cannot backdate, inherited commits excluded, history rewrite retains deadline. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. A late record remains late, seeks specific human resolution and never claims retroactive compliance; M10 replaces that sentence with panel acceptance and must fail the same oracle.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S546 — merge approval discloses all decisions and risks (#647; A50/A51)
+**Covers:** F63
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S546 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires every decision record and outcome, retained escalated superseded resolutions, risk and limit explicit acceptance, temporary acceptance OR43 and dependency, dependency removal disclosed. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S547 — review depth retained or raised never reduced (#647; A50/A51)
+**Covers:** F63
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S547 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires retain A13 depth or raise force-thorough, never lower depth, stage presence only. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+
+### S548 — unchanged waiver authority and core with authority limits (#647; A50/A51)
+**Covers:** F62
+- Given: the canonical Running section, proposed AC/diff/class evidence and the paired S548 inputs in `test/behavior/stage-selection-scenarios.md`.
+- When: its source-data assertions run on an unmodified sandbox copy and each targeted deletion; the Developer separately runs the instruction exercise with the actual section and captures attempted posting commands.
+- Then: the mechanical subset requires forgeability without authentication, records forgeable, unverifiable evidence blocks posting, panel-name acceptance not permission. Each catalogue row has distinct human-role identity (`maintainer` or the project's human decision-maker), source-link, scope and condition cells; a person name alone cannot fill the role cell. The actual human `decided-by` is supplied at posting time and remains covered by the pipeline-override fixtures. The frozen SHA-256 table keeps its eight non-gate entries; the gate entry is replaced (A52, review finding s548-gate-hash-pin-red) by a structural unchanged-waiver-authority assertion on `skills/pre-merge-review/model-record-gate.sh`: every override read accepts exactly the six scopes (`single-session` and the five `skip=` stages), every read keeps its non-blank `decided-by` and `reason` guards, and no code line recognizes panel, orchestrator or vote authority. Deleting or adding a scope, deleting either guard and adding panel authority each fails its own mutation control. Gate behavior compatibility is S565's job, not S548's. S587 requires the paired exercise document to describe this same structural oracle and eight retained hashes. Deleting any evidence cell or replacing the human role with a person, panel or orchestrator identity fails its own control. Each passing source assertion rejects its own applied deletion with its own diagnostic; missing implementation remains red, with those mutation controls pending. The exercise must produce the permitted posting or the specified escalation/retention, with no posting attempt in prohibited cases. The test-only/doc-only conditions cell limits the standing decision to batches of epic TiesL/spec-driven-guardrails#608 only; outside that scope requires per-item human authority. That cell also retains Implementation for executable tests/scripts and any executable production code. M8 (`mostly documentation or tests`) fails both predicates; independent scope, authority, executable-test and production-code deletions are controls. Abbreviated source evidence requires a per-item human grant in their own words (or a durable link to grant words), never a policy self-link. Any #609 mention in the catalogue must label it an earlier record that predates the executable-test rule, or be absent; a restored eligible-example claim fails a control.
+- Mutation controls (#660): unchanged predicates accept the actual source and reject independent permissive sentence injections N1 (not only batches), N2 (human or unanimous panel authority), N3 (unless unanimous), N4 (panel applies without per-item human grant), N7 (not only #608, also other epics), N8 (except panel agreement), and N9 (panel waives grant). Select the class row and evidence cell by table structure, or the post-table prose by the Standing human class decisions section heading; never locate the normative clause by wording. Every injection changes bytes; missing or ambiguous structural anchors fail loudly. The original post-table required-grant assertion, all deletion, self-link, executable-work, historical-record and frozen-byte controls remain required. No oracle is weakened and no replacement locator is needed. Independent scratch copies cover every legitimate variant named in Reviews 1–3 (including articles, limited/restricted scope, #608 punctuation, durable grant/human-words links, explicit authority, within-epic scope, whitespace/tabs and bold consultation), plus ten further legitimate rewordings using articles, emphasis, case, punctuation and only/limited/restricted synonyms. Each copy must pass complete S534 and S548 fixtures, including N1–N10; unmutated source must pass. The seven panel-5 accepted-limit weakenings remain deferred to #657.
+- Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
+- Best-effort pins: seven known permissive rewrites survive (listed in TiesL/spec-driven-guardrails#657); the live instruction exercises there are the real check.
+
+## Epic child inheritance (#651; A52–A53)
+
+Offline CLI fixtures use the existing sandbox/adoption helpers and real jq at the PATH gh seam.
+The normalized #608 fixture is synthetic, not a claim of live historical evidence.
+
+### S549 — The normalized 19-child #608 fixture
+**Covers:** F64
+- Given: 7 implemented children, 10 Implementation-waived children and dispositions #617/#625, each with all four child skips. The fixture serves the epic timeline, candidate details and child evidence, and rejects `issues?state=all` (and any repository issue list) outright.
+- When: the real gate reads complete child evidence, then #617 loses its evidence.
+- Then: complete coverage passes with the literal one-line stdout `model-record: epic #608 inherited Discovery, Planning, Test and Implementation checked for 19 children` and empty stderr (no `no record found` line, no unattributed or waived-stage line); removing #617 coverage blocks with the single attributed line `role-played: epic #608 child #617 stages missing: Discovery, Planning, Test, Implementation`, every output line attributed to the epic and a child or release PR, and no other child named. The historical shorthand 7+10+1 is superseded by the corrected 7+10+2 count; no child is dropped.
+
+### S550 — All records and verified PR sources
+**Covers:** F64
+- Given: two children with separate stage comments.
+- When: Discovery/Planning/Test/Implementation are supplied by child issue comments or verified closing PR description, comments and reviews.
+- Then: every source combination passes with no role-played or unchecked line. Quoted, fenced or inline-only child Test records block naming that child and Test; inline records retain near-miss context.
+
+### S551 — Every inherited stage waived on every child
+**Covers:** F64
+- Given: closed no-PR children with four live valid child skips.
+- When: the gate evaluates the epic.
+- Then: coverage passes without model-records or fabricated epic evidence.
+
+### S552 — Every child must cover every stage
+**Covers:** F64
+- Given: one fully covered child and one child missing a stage; the release itself has all four records.
+- When: each inherited stage is independently removed from each child.
+- Then: all eight counter-arms block naming the actual child and stage; release records and a quorum cannot hide it.
+
+### S553 — An epic ledger cannot forge evidence
+**Covers:** F64, F65
+- Given: ledger links and recorded claims without ok child records.
+- When: the gate reads the children.
+- Then: it blocks naming both children; ledger prose is never evidence.
+
+### S554 — Review belongs to the release PR
+**Covers:** F64
+- Given: child and epic Review records but no release Review.
+- When: the gate evaluates the release, then receives Review without floor-basis.
+- Then: missing release Review blocks; a release Review without basis retains the missing-floor-basis diagnostic.
+
+### S555 — No-PR dispositions require child skips
+**Covers:** F64
+- Given: a child with a completely read empty closing-PR candidate set.
+- When: four valid skips are replaced by disposition prose or even four records.
+- Then: skips pass; prose or records without the required child skips block naming the child.
+
+### S556 — Membership requires exactly one live Epic field
+**Covers:** F65
+- Given: a listed child with absent, conflicting, repeated, quoted or fenced Epic fields.
+- When: the gate reconciles membership.
+- Then: each malformed membership case blocks naming that child.
+
+### S557 — Work items and field sets must agree
+**Covers:** F65
+- Given: extra list/field members, a field-bearing member found only through an epic timeline cross-reference (unlisted, no closing PR), duplicate or malformed checklist rows, a foreign reference, missing or repeated Work items sections; and timeline noise (a label, a PR source, a foreign-repository source, a candidate with a stale embedded field copy).
+- When: the gate compares complete live sets discovered from the epic timeline, the Work items list and merged release PRs.
+- Then: each defect blocks naming the epic (the timeline-only member also names #611), never a vacuous or guessed pass; mentions and stale embedded copies are not members because the live body decides.
+
+### S558 — Merged release PRs must close only members
+**Covers:** F65
+- Given: a release PR closing an unlisted issue, mixing a child with an unlisted issue, merely mentioning a child or using a foreign closing reference.
+- When: membership is cross-checked.
+- Then: each case blocks naming the offending PR.
+
+### S559 — Closed children and merged release PRs are required
+**Covers:** F65
+- Given: an open child, open/unmerged closing PR or a PR merged to another base.
+- When: the gate evaluates membership.
+- Then: each case blocks naming the child; a merged PR does not infer child closure.
+
+### S560 — All closing PRs must reconcile
+**Covers:** F65
+- Given: two PRs closing the same child.
+- When: both are merged into the release, then the timeline reveals a second PR with another base.
+- Then: the valid pair passes and the wrong-base pair blocks naming child and PR. Foreign timeline sources are ignored without fetching them; a same-repository mere mention is not a closing PR.
+
+### S561 — Late fields count and empty sets block
+**Covers:** F65
+- Given: late updated fields, a member whose field arrives later and is known only through its epic timeline event, CRLF and horizontal whitespace, uppercase X and star bullets, a later level-two section.
+- When: the gate reads current membership and separately an empty set.
+- Then: normalized late members pass; unrelated next-section rows are ignored; empty membership blocks naming the epic.
+
+### S562 — Waivers stay local and structurally valid
+**Covers:** F64, F66
+- Given: blank authority/reason, quoted/fenced/malformed/wrong-stage waivers, prose panel votes and a valid waiver on a different issue; with valid membership, a valid `skip=Test` on the child's own closing PR (description, comment or review) and on another listed child closed by the same PR.
+- When: a child lacks Test and its PR closes another issue with a skip.
+- Then: invalid or other-child evidence never covers Test; an extraneous closing issue is a membership defect; a skip on the child's PR or on a sibling closed by the same PR leaves that child blocked for Test, naming it and not the sibling. Deleting the child-override source filter, or reading overrides from other issues closed by the PR, turns this scenario red (both survived the earlier arms).
+
+### S563 — Standing classes receive ordinary validation
+**Covers:** F64
+- Given: Abbreviated Planning/Test skips and a test-only Implementation skip, with separate records for the other stages.
+- When: the gate reads the child comments.
+- Then: both valid standing-class shapes pass; no new evidence type or panel-authored authority is needed.
+
+### S564 — Single-session and one-text isolation
+**Covers:** F64, F66
+- Given: a child single-session alone, then four records in one body plus four stage skips.
+- When: the gate evaluates the child and then receives child single-session with those records.
+- Then: single-session alone supplies no missing inherited stages; stage skips do not waive one-text findings; single-session with complete records waives that finding only.
+
+### S565 — Ordinary and manual epic paths retain literal legacy bytes
+**Covers:** F66
+- Given: an ordinary PR and a release with a partial manual epic skip.
+- When: the gate runs against the same literal marker fixture.
+- Then: stdout exactly matches the fixed pre-change missing-stage and waiver lines including final LF, stderr is empty, and the manual skip selects the whole legacy path. Near-miss, closing-reference 404 notes (ordinary PR, manual epic override and an eligible release with a release-wide single-session, each closing a nonexistent #9999), each legacy fetch failure, release single-session and 11-second initial-detail outputs are also compared byte for byte to main merge base 626694237d1dc6dfe9b99d8838fba4c7f75f843f.
+
+### S566 — A skip on any closing issue is release-wide
+**Covers:** F66
+- Given: the original #608 waiver fixture and the actual #655 release PR #662 closing #647/#651/#660/#663, each child closed by its own merged release-base PR and referencing both PRs in its timeline.
+- When: the gate evaluates coverage, then one child becomes open.
+- Then: the release-wide skip covers Test for all children; membership still blocks the open child. The actual bundle closes #655 and all four children; exact pass and release-wide Test-skip output is required (S579).
+
+### S567 — Only eligible release PRs inherit
+**Covers:** F65, F66
+- Given: same-repository release/608-inheritance targeting default branch trunk with Closes #608.
+- When: closing keyword case varies; non-release, foreign-head, wrong-target and no-Closes variants run.
+- Then: eligible default-branch and mixed-case forms inherit; other shapes retain legacy missing-stage behavior.
+
+### S568 — Later pages are read at every collection seam
+**Covers:** F66
+- Given: 100 noise objects before real closed PRs, epic and child timeline events, comments or reviews, and an unlisted member that appears only on epic timeline page 2.
+- When: the gate traverses explicit per_page=100 pages through page 2.
+- Then: complete fixtures pass and endpoint logs prove page 2 was read, including release comments/reviews and the epic timeline; the page-2 member blocks; no `--paginate` call is made.
+
+### S569 — Exact collection and response caps are unchecked
+**Covers:** F66
+- Given: 1000 closed PRs, child timeline events, comments or reviews, 1,000 epic timeline events, 200 membership candidates, 100 children, more than 40 REST calls for one child, an 8 MiB response, 1200 aggregate calls or 64 MiB aggregate responses (the issue-object cap is gone: no issue list exists).
+- When: each exact cap is reached independently; 999 epic timeline events, 199 candidates and 5 extra closing PRs for one child are the below-cap controls.
+- Then: role-play-unchecked is emitted at equality, never a checked pass or role-played block; the below-cap controls pass.
+
+### S570 — A delayed REST subprocess is bounded
+**Covers:** F66
+- Given: a timeline REST response delayed eleven seconds and an awk scan delayed 121 seconds after PR detail acquisition; and the scale arm: the normalized 19-child fixture plus 300 unrelated issues, every gh call delayed 0.8 seconds.
+- When: the gate runs with its production ten-second read deadline and one pool of at most eight concurrent reads. An additional hung gh call spawns a child in its own process group (separate from gh and the worker), records both PIDs and PGIDs, and schedules an `orphan-survived` marker after six seconds; a copied gate shortens the watchdog to three seconds with an eight-second worker deadline, forcing supervisor SIGTERM before the collector can expire its own read. A second arm injects the same hung-call machinery at epic detail acquisition after compatibility recognition (the repository read is deliberately outside the deadline), but gh exits successfully immediately after spawning its detached child, which retains both response pipes; an unrelated sentinel and the test supervisor remain outside the recorded groups.
+- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The scale arm finishes checked (the one-line pass) in under 120 seconds, reads no unrelated issue, and the fixture observes more than 1 and at most 8 concurrent gh calls. The external 135-second test watchdog is a failure, never a passing timeout oracle. Both live-parent and early-parent-exit hung-call arms return unchecked; after the marker delay neither recorded PID nor any live process in either recorded PGID survives, and no marker exists. The unrelated sentinel and test supervisor survive each arm. The test cleans up both fixture groups and its sentinel even on failure.
+
+### S571 — Each REST endpoint fails open visibly
+**Covers:** F66
+- Given: injected HTTP 404 and 500 at repository, epic detail/comments/timeline, candidate detail, release PR list, child timeline/detail/comments, closing PR detail/comments/reviews and release detail/comments/reviews; a timeline-only candidate that is gone (404/410 or 500); an eligible release PR closing a nonexistent #9999 (and #9998), with covered and with missing children.
+- When: the real gate traverses each independent fault.
+- Then: every fault returns unchecked without a stale blocking line, including 404 in new traversal; a gone timeline-only candidate is ignored (404/410) but a 500 is unchecked; the eligible release with a nonexistent closing reference ends exactly `role-play-unchecked: closing reference #N on epic release PR #P does not exist (HTTP 404)` (lowest N first, usual stderr warning, no `role-played:` line, not the legacy path).
+
+### S572 — Malformed and mistyped REST data cannot establish coverage
+**Covers:** F66
+- Given: broken JSON at collection/detail endpoints, object instead of array, numeric comment body or string issue number, a missing private helper or an unavailable Python interpreter.
+- When: the gate decodes the transport; S583/S584 also hang the initial fetch independently for each unavailable dependency, including their early-parent-exit PID/PGID/marker and sentinel/supervisor arms.
+- Then: it returns unchecked without a guessed membership or missing-stage block; the hung arms terminate within 12 seconds plus 2 seconds scheduling tolerance and leave no descendant. A child marker scheduled at 12.5 seconds must be absent when observed after its delay; survival within the 12-second bound is unchecked.
+
+### S573 — Details are rechecked before publishing
+**Covers:** F66
+- Given: epic, participating child, closing PR or release detail changes updated_at, body or state at recheck (child list snapshot followed by detail; second detail read for PRs and epic); PR variants also change base, head or merged_at while keeping updated_at unchanged.
+- When: the gate completes traversal and rechecks details. Additional `after: 2` arms change already-discovered excluded candidates: a nonmember gains `**Epic:** #608`, and a mentioned noncloser starts closing child #609 on either a wrong base or the release base. Unchanged copies of each excluded candidate are pass controls.
+- Then: it discards the result and returns unchecked; a checked pass from the old snapshot fails.
+
+### S574 — A late failure discards buffered findings
+**Covers:** F66
+- Given: a child lacks all stages and a later child closing PR reviews request returns 404.
+- When: the traversal reaches the later failure.
+- Then: only unchecked can decide the result; no buffered child or dependent legacy role-played finding escapes.
+
+### S575 — Ledger bookkeeping is documented outside the core
+**Covers:** F65
+- Given: release-branch-workflow skill text.
+- When: content clauses are checked with clause-deletion mutation controls.
+- Then: normalization, late membership, child count, ledger as view, open-child refusal and unchecked cannot justify epic ledger complete: yes are explicit.
+
+### S576 — Gate guarantees and bounded traversal are documented
+**Covers:** F66
+- Given: pre-merge-review skill text.
+- When: content clauses and clause-deletion controls run.
+- Then: forgeable records/overrides, lack of authentication, the 100-child, 200-candidate, 40-calls-per-child, 1,200-call, 8-concurrent, 10-second, 120-second, 64 MiB, 1,000-comment/review and 1,000-timeline-event bounds, cap-to-unchecked behavior, the unchecked closing-reference 404 rule, the timeline-discovery residual gap and the absence of any scan of every repository issue are explicit.
+
+### S577 — Release-wide skips and amendments are explicit
+**Covers:** F65, F66
+- Given: release-branch-workflow skill text and the settled bundle specification.
+- When: content clauses and deletion controls run.
+- Then: any closing-issue skip affects the whole release; A18 and membership amendments require maintainer acceptance; #647 precedes #651. New skill prose uses maintainer rather than a person name.
+
+### S578 — The real gate and merge hook expose actionable epic findings
+**Covers:** F64, F66
+- Given: a complete epic and the same fixture missing child #609 evidence, with kept near-miss diagnostics on child #610 and on the release PR; the merge hook block remedy.
+- When: the gate CLI and the real merge hook run, with the existing v2 review-marker input shape.
+- Then: positive coverage passes; removing child evidence blocks naming epic and child; hook advice names epic, child and pipeline-override. The hook shows every `role-played:` line first and, of the gate's `model-record:` lines, only those naming the release PR or a child named in a `role-played:` line (the #610 line is absent, the release line present); controls reject a leaked unnamed-child line and a dropped release line. Independent output mutations reject unchecked-as-pass, missing diagnostics and leaked stale blocks.
+
+## Release review corrections (#663; A52–A53)
+
+### S579 — Actual release bundle excludes its own child references
+**Covers:** F66
+- Given: the actual #655 bundle with children #647/#651/#660/#663 and release PR #662, each child with its own merged release-base closer and both PRs in its timeline.
+- When: the gate checks complete coverage, then Test records are removed and #647 carries skip=Test.
+- Then: literal pass and release-wide waiver output match, with no self-reference block; existing output mutation controls reject erased blocks or altered pass bytes.
+
+### S580 — Genuinely invalid child closers still block
+**Covers:** F66
+- Given: the same bundle with release self-events removed to isolate the negative oracle.
+- When: an additional child closer is open, wrong-base or merged elsewhere.
+- Then: each arm blocks naming child #647 and closer #9000; this prevents an exclusion fix from ignoring all invalid closers.
+
+### S581 — Release Review and identity checks remain required
+**Covers:** F66
+- Given: the realistic release bundle.
+- When: release Review is removed, then a different invalid PR duplicates the release branch shape.
+- Then: missing Review blocks; the distinct closer #9001 still blocks despite matching release head/base shape.
+
+### S582 — Slow ordinary and manual paths preserve baseline bytes
+**Covers:** F66
+- Given: S565 ordinary and manual epic override fixtures and pre-#651 baseline 626694237d1dc6dfe9b99d8838fba4c7f75f843f.
+- When: each initial PR detail takes 11 seconds.
+- Then: status and both streams match baseline byte for byte, retaining missing-stage blocks and manual waiver semantics.
+
+### S583 — Missing helper bounds a hung initial fetch
+**Covers:** F66
+- Given: an eligible release with its helper unavailable and a hung initial gh that spawns a detached descendant; both a live-parent arm and an early-parent-exit arm retain response pipes; its survival marker is scheduled at 12.5 seconds, strictly beyond the 10-second watchdog plus 2-second grace.
+- When: the real copied gate runs under an independent 14-second test watchdog.
+- Then: unchecked without a leaked block within 10 seconds plus 2-second cleanup grace and 2-second scheduling tolerance; all injected descendants are gone and the marker remains absent when observed after its delay, even after an early gate return. Both arms check recorded PIDs and PGIDs after the marker delay; the unrelated sentinel and test supervisor survive. Within-bound survival is unchecked; RED cleanup kills fixture groups and its sentinel only.
+
+### S584 — Missing Python bounds a hung initial fetch
+**Covers:** F66
+- Given: the S583 fixture with helper present and python3 returning unavailable instead.
+- When: the initial gh hangs using the absolute fixture interpreter.
+- Then: the same bounded unchecked, PID/PGID/marker and unrelated sentinel/supervisor oracle holds for both live-parent and early-parent-exit arms independently of Python availability.
+
+### S585 — Published deadlines match recognition phase boundaries
+**Covers:** F66
+- Given: A52's amended recognition/compatibility contract and the published pre-merge-review skill.
+- When: a content oracle checks the published limits against independent compliant prose, with separate clause-deletion controls and the old unconditional deadline promise as a negative control.
+- Then: healthy compatibility recognition is outside both the ten-second per-read and 120-second evaluation limits; the inheritance budget starts after recognition, so the whole gate has no wall-clock guarantee. Cached recognition inputs count toward byte/object caps, not elapsed time. Missing Python/helper instead bounds the initial fallback read at ten seconds plus two-second cleanup grace. Deleting any boundary or exception fails the oracle.
+
+### S587 — S548 exercise agrees with the mechanical oracle
+**Covers:** F66
+- Given: the S548 exercise document and existing structural waiver-authority/eight-hash oracle.
+- When: document assertions and independent clause deletion plus obsolete-gate-hash controls run; S548 runs unchanged.
+- Then: the exercise requires exactly six scopes, non-blank decided-by/reason guards, no panel authority and eight retained non-gate hashes, without requiring the obsolete gate hash; no live-exercise success is claimed.
+
+### S588 — Approved adoption meanings and stale release answers
+**Covers:** F66
+- Given: the approved process-multi-agent-roles Meaning v3 and release-branch-workflow Meaning v2 snapshot, and fixture projects answered at implicit v1, explicit v1 and current v2.
+- When: the entries and snapshot are checked and pending-changes.sh runs against current CHANGES.md and isolated snapshot variants; controls remove the field, leave version 1, or remove the reason.
+- Then: the release entry's Meaning v2 reason explains late Epic-field children requiring coverage (#651 maintainer decision 2) and epic release stage status derived from children; implicit/explicit v1 answers re-surface as v1 to v2 in the changed-meaning block, never as unanswered; v2 stays quiet. Field/version mutations suppress resurfacing and fail the entry oracle; missing reason fails the entry oracle even though v2 still resurfaces. The process entry retains v3 and its stage-selection/inheritance reason. S90 stays red until Developer updates CHANGES.md to the approved snapshot.

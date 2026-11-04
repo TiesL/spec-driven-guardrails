@@ -1441,9 +1441,10 @@ Posting the override (#564): `pipeline-override.sh` builds and posts the
 record on the work item's issue, so nobody types one. It refuses a value
 the grammar cannot hold instead of altering it, reads the built comment back
 through the gate's own reader before posting, and has a `--dry-run`. The
-named short track, the "abbreviated workflow", is `skip=Planning` plus
-`skip=Test`: Discovery, Implementation and fresh-Reviewer Review still run,
-and only TiesL grants it. The record is seen by the gate only when the PR
+named short track, the "abbreviated workflow", and its human authority,
+scopes and conditions are defined in `skills/role-contracts/SKILL.md`,
+"Running the pipeline"; F61-F63 describe stage selection under that source.
+The record is seen by the gate only when the PR
 title or body names the issue with a closing keyword. The reminder to post it
 before the first commit or PR is text (OR34 in the session context and the
 policy), not a hook or gate. Tests: S376, S377.
@@ -2085,6 +2086,225 @@ Missing or unusable evidence leaves the handoff unresolved. The Reviewer brief
 links the applicable QA artifact and comparison evidence so Review can verify
 scenario provenance as well as test fidelity. `check-scenario-file-sync.sh`
 retains its existing requirements, and QA gains no test-code scope.
+
+### F61 — Select stages without skipping protected work (issue #647)
+
+After Discovery and before the first work-item commit or PR opening,
+Product, Architect and the orchestrator each state which stages the item's
+ACs and proposed diff require. This consultation is not Planning and
+supplies no Planning marker. Only Planning, Test and Implementation are
+selectable, within an applicable standing human class decision (F62).
+A unanimous eligible selection may be applied by the orchestrator. A
+majority to retain work retains it, with dissent recorded. Missing
+participants or evidence leave selection unresolved: continue the full
+required pipeline or resolve the question before skipping work.
+
+The orchestrator on every work item and panel, Review by a fresh Reviewer,
+Discovery with its own separate model-record, every AC-dependent stage,
+and scrutiny by at least one role other than the author can never be
+skipped through this mechanism. Issue text cannot replace Discovery's
+marker. An AC adding a scenario requires Test; a diff touching executable
+code requires Implementation, including executable tests and scripts.
+These protections are checked before class eligibility; a documentation
+or test-only name does not establish permission to skip work.
+
+A 2-1 vote to skip, any recommendation outside a standing class, an
+unverifiable human source or class condition, or any proposal to skip
+Review goes to the maintainer without a panel-derived waiver posting.
+Review remains outside the selectable stages. A request conflicting with
+protected work also escalates; neither a vote nor a class default amends
+these protections. A `single-session` waiver is not a panel class and
+cannot be derived from a vote. Other skips outside an applicable class
+require explicit per-item human authority under OR34.
+
+Acceptance criteria: #647 **AC1** (protected work and eligible stages)
+and **AC3** (escalation).
+
+### F62 — Apply human authority with separate, timely selection records (issue #647)
+
+The single source for stage-selection procedure and standing human class
+rules is "Running the pipeline" in `skills/role-contracts/SKILL.md`,
+including its "Stage-selection panel", "Standing human class decisions"
+and Abbreviated workflow text. Other instructions reference that source
+or reproduce it through managed generation; they do not independently
+redefine class rules. The panel reads that source, the item's ACs,
+Discovery report, proposed file scope and applicable human source.
+The issue and panel record alone are not the procedure.
+
+The two named classes are the Abbreviated workflow and the test-only/doc-only
+`skip=Implementation` class. Each needs the human identity, original
+words or a durable link from which those words can be recovered, permitted
+scopes and exact eligibility conditions. Original human words and class
+eligibility remain unresolved in the accepted offline design; the panel-1
+record and policy paraphrases do not supply that authority. An unresolved
+class cannot authorize a posting: obtain its evidence or an explicit
+per-item human waiver. Do not invent documentation/test exceptions or
+silently remove a scope from the named Abbreviated pair. Class conditions
+never override F61. If the human source conflicts with those protections,
+stop the application and refer the conflict to Product and the maintainer.
+
+The issue gets a separate ordinary comment containing `temporary, panel decision`,
+a stable decision ID, the question, the three named participants' positions,
+the vote including dissent, the outcome with exact selected stages, and a
+link to the standing human words applied. It includes class-eligibility and
+protected-work evidence and links Discovery. An out-of-class recommendation
+states that no standing words apply and links the per-item human decision
+before any waiver posting. If #645 lands, its shared record definition
+replaces this minimal definition through an explicit follow-up preserving
+the required information; #647 does not depend on its availability.
+
+The panel never writes or authorizes an override marker. Only the
+orchestrator posts through `pipeline-override.sh` from the project checkout,
+with the human as `decided-by`, that human's unchanged words as the
+single-quoted `reason`, and exactly the authorized scopes. A panel name is
+not human authority. Script validation or acceptance of a command does not
+authorize the orchestrator to post it. Words the script cannot represent
+require new human words, never rewriting, sanitizing or truncation. The
+orchestrator verifies the returned text and links the waiver comment in the
+panel record or Pipeline log. The PR title or body must link the issue with
+`Closes #<issue>`. A panel record alone never waives missing work.
+A valid `skip=Test` preserves F60/A49's QA-artifact and comparison exemption
+and the Developer's append-only scope for new scenario entries and text;
+`single-session` alone grants no such exemption.
+
+Both the completed panel record and applicable waiver posting must precede
+both the first work-item commit and PR opening. This includes spec-only,
+test-only, empty and later-squashed commits across sessions; inherited base
+or release commits do not start that deadline. The Pipeline log retains the
+initial base SHA, first work-item commit identity (or `none yet`), record
+identities and creation times, and PR identity and creation time when known.
+Unknown ordering or equal times leave timeliness unresolved. A late record
+or later edit cannot establish advance selection; publish a superseding
+record at its actual time and seek a specific human resolution. Rebase,
+squash or deletion does not reset the deadline or erase the original evidence.
+
+Records are forgeable by any session, including human-looking `decided-by`
+values. Links and timestamps provide evidence, not authentication. This
+mechanism relies on posting discipline, human authority and independent
+scrutiny; it adds no panel-identity check or change to the merge gate or
+posting script. Offline text and CLI checks cannot prove human authorship,
+class applicability or live instruction-following; those limits remain
+visible even when such checks pass.
+
+Acceptance criteria: #647 **AC2** (human authority and separate records),
+**AC4** (one source and evidenced class conditions) and **AC5** (advance timing).
+
+### F63 — Disclose every panel decision and preserve review depth (issue #647)
+
+A merge-approval request lists every panel decision relevant to the work,
+linking each record and outcome, including retained-work, escalated and
+superseded decisions and their resolutions. Decisions widening a limit or
+accepting a risk are flagged for explicit maintainer acceptance. This includes
+the temporary spec decisions for #647 and removal of #645 as a dependency.
+Panel agreement and a merge into a release branch do not establish that
+acceptance; OR43 and the release/main merge-approval rules still apply.
+
+Stage selection changes stage presence only. It retains A13's required
+review depth or raises it with `--force-thorough`; neither a waiver nor a
+doc-only label may lower that depth.
+
+Acceptance criteria: #647 **AC6** (complete decision disclosure) and
+**AC7** (review depth retained or raised).
+
+### F64 — An epic release PR uses every child's stage evidence (issue #651)
+
+**Serves:** #651 AC1–AC5, AC12; compatibility exception in AC6/AC13 (F66).
+For an opted-in epic release PR, the role-play gate derives Discovery,
+Planning, Test and Implementation from the children instead of requiring a
+manual override on each epic or a fabricated epic record. For each inherited
+stage, every child must have an ok `model-record` in its own issue comments
+or verified closing PR evidence, or a valid human `pipeline-override
+skip=<Stage>` on that child. There is no quorum: one covered child cannot
+hide an uncovered one, and the release's own stage records cannot cover a
+missing child. Complete coverage produces no `role-played:` line, provided
+the release's other role-play requirements are satisfied. Missing coverage
+blocks with `role-played:` naming the child and missing stage.
+
+A child closed by disposition without a PR needs valid human skips on that
+child for all four inherited stages. A ledger claim, arbitrary prose, a
+panel vote or a quoted waiver does not count. Each child waiver must be a
+live, valid line on the correct child, with nonblank `decided-by` and
+`reason` and the required scope; standing-class waivers receive the same
+validation. Evidence from different children is kept separate. A child
+`single-session` alone does not supply missing inherited stages, and a
+stage skip does not waive the separate multiple-stages-in-one-text finding.
+
+Review stays holistic on the release PR: it requires the release PR's own
+ok Review record, including its model floor basis, rather than children's
+or the epic's Review records, subject to the existing release-wide override
+effects in F66. No new record type or authority to grant waivers is added.
+
+### F65 — Epic membership and its ledger must reconcile before release (issue #651)
+
+**Serves:** #651 AC2, AC3, AC8, AC9, AC14.
+Inheritance applies to a same-repository `release/<epic-number>-<slug>` PR
+that targets the repository's default branch and explicitly names
+`Closes #<epic-number>` in its title or body. Ordinary work-item PRs,
+non-release-branch epics and plain tracking issues do not inherit.
+The single child membership signal is the work-item issue field
+`**Epic:** #N`. The gate cross-checks that complete field-derived set
+against the epic's Work items list and the issues closed by PRs merged into
+the release branch. The child set must be nonempty. Missing, repeated or
+conflicting fields, unequal membership sets, and unlisted issues or PRs
+block and name the relevant child or PR (the epic when no child is known).
+Every child must be closed; its closing PRs must all be merged into that
+release branch, except for the covered no-PR disposition case in F64.
+An open child or an open, unmerged or wrong-base closing PR blocks.
+
+Before opening the release PR, the orchestrator normalizes the Epic fields
+and Work items list, without retroactively editing the closed #608 children.
+An issue gaining the Epic field after branch opening counts as a child and
+must be covered too. The orchestrator maintains a human-readable epic ledger
+of child, stage and record-or-waiver link, refreshes it at each child merge,
+and rechecks it before requesting release approval. The ledger is a view,
+never evidence the gate trusts. The Pipeline log records the child count and
+`epic ledger complete: yes|no`; yes requires complete evidence, closed children
+and merged closing PRs, except covered dispositions. An unchecked gate result
+cannot justify yes. These bookkeeping rules live outside the orchestrator core.
+
+This item belongs to `**Epic:** #655` and merges after #647. Its reserved
+entries are F64–F66, A52–A53 and S549–S578; F61–F63 remain reserved for #647.
+The A18 override amendment and the release-branch membership-freeze amendment
+must be flagged for maintainer acceptance, together with the temporary panel
+decisions; this text does not silently approve them.
+
+### F66 — Inheritance is bounded, visibly unchecked on failure, and compatible (issue #651)
+
+**Serves:** #651 AC6, AC7, AC10–AC13.
+Child, comment, review and PR retrieval handles pagination under documented
+finite caps and timeouts (A52). A cap reached, timeout, API failure, malformed
+or unreadable evidence collection, or inability to establish complete coverage
+returns `role-play-unchecked`, never a checked pass or a guessed role-play
+block. Partial findings are discarded if a later failure invalidates the
+check. This preserves fail-open merge behavior while visibly distinguishing
+an incomplete check from a completed one; truncated collections never pass.
+
+Ordinary PR output remains byte-identical to the existing gate. A valid
+manual override on the epic retains the complete legacy evaluation and output,
+including partial skips; a release-wide `single-session` also retains that
+path. Otherwise, a valid skip already in the release PR's existing evidence
+pool, including a skip on ANY issue named by `Closes` (or another supported
+closing keyword), waives that stage for the whole release PR. For inherited
+stages this removes the per-child missing-stage obligation at that release
+gate; it does not grant a child waiver or change a child's own gate.
+Membership reconciliation still applies, and a skip does not waive the
+multiple-stages-in-one-text finding. Release-wide `skip=Review` or
+`single-session` keeps its legacy effect, although standing panel policy
+cannot authorize skipping Review. Child-local evidence fetched only for
+inheritance does not enter that release-wide override pool.
+
+The bundle release PR names `Closes #655`, `Closes #651` and `Closes #647`.
+The orchestrator checks that exact closing-reference set and records in the
+Pipeline log and approval request which stages any applicable skip waives
+release-wide; it must not claim universal coverage is mechanically required
+for a waived stage. Compatibility checks retain S230–S263 and S377, including
+byte-for-byte output checks for ordinary PRs and manual epic overrides.
+
+The gate validates recorded evidence and consistency. Any session able to
+post records can forge model-records and human override lines: this is not
+authenticated human authority or proof that stages ran. Reconciliation can
+catch removing one membership signal, but cannot prevent a coordinated rewrite
+of all sources; read-only checks do not guarantee an atomic GitHub snapshot.
 
 ## Non-functional characteristics
 

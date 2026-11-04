@@ -4,4 +4,5 @@ hooks/rules.sh
 lib/markdown.sh
 lib/changes.sh
 lib/model-record.sh
+lib/model-record-epic.py
 skills/pre-merge-review/model-record-gate.sh

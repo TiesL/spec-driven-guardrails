@@ -13,6 +13,12 @@ point.
 
 ## Unreleased
 
+- **#660:** harden offline stage-selection pin tests with a structural waiver-authority oracle and retained compatibility hashes; this does not verify live instruction loading or cover every permissive rewrite.
+- **#663:** correct release PR self-reference handling and delayed ordinary/manual-override compatibility; clarify late-added membership and record the approved role-process meaning version 3 and release-workflow meaning version 2.
+
+- **#647:** centralize stage selection and standing human class decisions in the role-contracts skill, with managed policy references.
+- **TiesL/spec-driven-guardrails#651:** derive epic release stage coverage from reconciled child evidence, discovering children from the epic timeline, Work items and merged release PRs (never every repository issue), with bounded concurrent offline-testable traversal, attributed output and visible unchecked failures; document ledger bookkeeping and the A18/membership amendments.
+
 ## v0.5.1 — Many low severity review findings resolved. See CHANGELOG.md for the improvements made (2026-11-03)
 
 - **Fix #615/#628: a bad `COMMIT_CHECK_BUDGET` is refused in `hooks/pre-commit`.** The value is

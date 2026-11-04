@@ -530,9 +530,11 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
 - **Default:** question
 - **Applies if:** always
-- **Meaning version:** 2 — #427 (A31a/A34a) makes the merge guard refuse
-  inline-only records and overrides with `<` or `>` in a value. Projects
-  answered under v1 re-confirm this stricter obligation (#254).
+- **Meaning version:** 3 — #647 stage-selection rules and #651 epic stage inheritance
+  materially change what answering “yes” commits a project to (#663).
+  Projects answered under v2 re-confirm these obligations (#254).
+  The v2 strict whole-line records and override-value requirements from #427
+  (A31a/A34a) remain in force.
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
@@ -550,6 +552,16 @@ the shared parser warns if it has no `Applies if`.
   warning; a closing-reference HTTP 404 is ignored and leaves absent stages
   missing. The hook prints the warning; in the #430 AC3 run it appeared in the
   stream transcript only and did not reach the agent as command output (https://github.com/TiesL/spec-driven-guardrails/issues/430#issuecomment-6132587414).
+  Epic release inheritance (#651, after #647): a same-repository
+  release/<epic>-<slug> PR closing that epic and targeting the default branch
+  derives Discovery, Planning, Test and Implementation from every child;
+  Review stays on the release PR. The Epic fields, Work items list and merged
+  release PRs must reconcile. Closed no-PR dispositions need child skips.
+  Bounded, paginated reads fail open visibly as role-play-unchecked on errors,
+  caps, timeouts or changed details. Manual epic overrides retain legacy
+  output; a skip on any closing issue remains release-wide. Records and
+  overrides are forgeable: this checks structure, not authenticated authority.
+  The A18 and release-membership amendments require maintainer acceptance.
   Role conflicts escalate to the project's human decision-maker instead of
   being settled by whichever role spoke last. Create the five `role:*` labels
   (`role:product`, `role:architect`, `role:qa`, `role:dev`, `role:reviewer`)
@@ -570,7 +582,11 @@ the shared parser warns if it has no `Applies if`.
   fork, `--stage` marker command, model, Reviewer PR, head SHA and
   carry-forward gate), quoting that rule's `ORCHESTRATOR.md` line; it fails
   open.
-- **Reaches session:** session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
+  #647 adds the canonical [Stage-selection panel](skills/role-contracts/SKILL.md#stage-selection-panel)
+  and Standing human class decisions under Running the pipeline. Read them before
+  selecting stages or posting a waiver; policy and README reference that source.
+  Existing opt-in applies; no gate/core change or new adoption question.
+- **Reaches session:** always-loaded: WORKFLOW.md, session-context: skills/role-contracts/ORCHESTRATOR.md, hook: hooks/agent-dispatch, gate: skills/pre-merge-review/model-record-gate.sh
 - **PR:** https://github.com/TiesL/spec-driven-guardrails/pull/385
 
 ## release-branch-workflow
@@ -579,12 +595,21 @@ the shared parser warns if it has no `Applies if`.
   branches and `main` for epics whose work items ship together?
 - **Default:** question
 - **Applies if:** always
+- **Meaning version:** 2 — #651 maintainer decision 2: membership is no longer
+  frozen at release-branch opening; issues that gain the Epic field later count
+  as children and must be covered. The gate now derives epic release stage
+  status from the children (#663). Projects answered under v1 re-confirm
+  these obligations (#254).
 - **Yes means:** an epic that Product+Architect explicitly judge to warrant
   it (recorded on the epic issue, no numeric threshold) gets a
   `release/<epic#>-<slug>` branch forked from `main`. Work-item PRs merge
   into it on CI-green + tests-pass, same low-ceremony path as any other PR.
-  Membership (which issues belong) freezes at branch-creation time. Once
-  every member issue is merged, a fresh, always-thorough QA+Reviewer pass
+  Membership includes issues that gain the Epic field after branch opening.
+  Before release approval, reconcile the fields, Work items list and merged
+  release PRs; record the child count and epic ledger complete: yes|no in the
+  Pipeline log. Yes requires closed children, complete evidence and merged
+  closing PRs, except no-PR dispositions with all required child skips.
+  An unchecked gate cannot justify yes. A fresh, always-thorough QA+Reviewer pass
   reviews the whole branch before the maintainer's explicit confirmation —
   which also decides the SemVer bump — merges it into `main`. The
   `release-branch-workflow` skill symlinks into every adopted project by
