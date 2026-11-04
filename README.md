@@ -216,7 +216,7 @@ user/global hooks and trust/permission/plugin settings. Repeat opt-in updates on
 the exact recorded definition; edits, duplicates, malformed data and symlink paths
 conflict before writes. Default adoption after opt-in retains the hook.
 The installed command uses `.codex/sdg-guard/hooks/git-guardrails --merge-only`;
-other Bash commands pass. The seven-file copy preserves source bytes, modes and
+other Bash commands pass. The eight-file copy preserves source bytes, modes and
 sibling layout, with revision and file digests in `MANIFEST`. Version-4 local
 provenance records ownership, the manifest digest and a strictly validated refresh
 transaction; the bundle is gitignored. Versions 1–3 remain readable and upgrade

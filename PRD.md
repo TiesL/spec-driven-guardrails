@@ -2206,6 +2206,106 @@ doc-only label may lower that depth.
 Acceptance criteria: #647 **AC6** (complete decision disclosure) and
 **AC7** (review depth retained or raised).
 
+### F64 — An epic release PR uses every child's stage evidence (issue #651)
+
+**Serves:** #651 AC1–AC5, AC12; compatibility exception in AC6/AC13 (F66).
+For an opted-in epic release PR, the role-play gate derives Discovery,
+Planning, Test and Implementation from the children instead of requiring a
+manual override on each epic or a fabricated epic record. For each inherited
+stage, every child must have an ok `model-record` in its own issue comments
+or verified closing PR evidence, or a valid human `pipeline-override
+skip=<Stage>` on that child. There is no quorum: one covered child cannot
+hide an uncovered one, and the release's own stage records cannot cover a
+missing child. Complete coverage produces no `role-played:` line, provided
+the release's other role-play requirements are satisfied. Missing coverage
+blocks with `role-played:` naming the child and missing stage.
+
+A child closed by disposition without a PR needs valid human skips on that
+child for all four inherited stages. A ledger claim, arbitrary prose, a
+panel vote or a quoted waiver does not count. Each child waiver must be a
+live, valid line on the correct child, with nonblank `decided-by` and
+`reason` and the required scope; standing-class waivers receive the same
+validation. Evidence from different children is kept separate. A child
+`single-session` alone does not supply missing inherited stages, and a
+stage skip does not waive the separate multiple-stages-in-one-text finding.
+
+Review stays holistic on the release PR: it requires the release PR's own
+ok Review record, including its model floor basis, rather than children's
+or the epic's Review records, subject to the existing release-wide override
+effects in F66. No new record type or authority to grant waivers is added.
+
+### F65 — Epic membership and its ledger must reconcile before release (issue #651)
+
+**Serves:** #651 AC2, AC3, AC8, AC9, AC14.
+Inheritance applies to a same-repository `release/<epic-number>-<slug>` PR
+that targets the repository's default branch and explicitly names
+`Closes #<epic-number>` in its title or body. Ordinary work-item PRs,
+non-release-branch epics and plain tracking issues do not inherit.
+The single child membership signal is the work-item issue field
+`**Epic:** #N`. The gate cross-checks that complete field-derived set
+against the epic's Work items list and the issues closed by PRs merged into
+the release branch. The child set must be nonempty. Missing, repeated or
+conflicting fields, unequal membership sets, and unlisted issues or PRs
+block and name the relevant child or PR (the epic when no child is known).
+Every child must be closed; its closing PRs must all be merged into that
+release branch, except for the covered no-PR disposition case in F64.
+An open child or an open, unmerged or wrong-base closing PR blocks.
+
+Before opening the release PR, the orchestrator normalizes the Epic fields
+and Work items list, without retroactively editing the closed #608 children.
+An issue gaining the Epic field after branch opening counts as a child and
+must be covered too. The orchestrator maintains a human-readable epic ledger
+of child, stage and record-or-waiver link, refreshes it at each child merge,
+and rechecks it before requesting release approval. The ledger is a view,
+never evidence the gate trusts. The Pipeline log records the child count and
+`epic ledger complete: yes|no`; yes requires complete evidence, closed children
+and merged closing PRs, except covered dispositions. An unchecked gate result
+cannot justify yes. These bookkeeping rules live outside the orchestrator core.
+
+This item belongs to `**Epic:** #655` and merges after #647. Its reserved
+entries are F64–F66, A52–A53 and S549–S578; F61–F63 remain reserved for #647.
+The A18 override amendment and the release-branch membership-freeze amendment
+must be flagged for maintainer acceptance, together with the temporary panel
+decisions; this text does not silently approve them.
+
+### F66 — Inheritance is bounded, visibly unchecked on failure, and compatible (issue #651)
+
+**Serves:** #651 AC6, AC7, AC10–AC13.
+Child, comment, review and PR retrieval handles pagination under documented
+finite caps and timeouts (A52). A cap reached, timeout, API failure, malformed
+or unreadable evidence collection, or inability to establish complete coverage
+returns `role-play-unchecked`, never a checked pass or a guessed role-play
+block. Partial findings are discarded if a later failure invalidates the
+check. This preserves fail-open merge behavior while visibly distinguishing
+an incomplete check from a completed one; truncated collections never pass.
+
+Ordinary PR output remains byte-identical to the existing gate. A valid
+manual override on the epic retains the complete legacy evaluation and output,
+including partial skips; a release-wide `single-session` also retains that
+path. Otherwise, a valid skip already in the release PR's existing evidence
+pool, including a skip on ANY issue named by `Closes` (or another supported
+closing keyword), waives that stage for the whole release PR. For inherited
+stages this removes the per-child missing-stage obligation at that release
+gate; it does not grant a child waiver or change a child's own gate.
+Membership reconciliation still applies, and a skip does not waive the
+multiple-stages-in-one-text finding. Release-wide `skip=Review` or
+`single-session` keeps its legacy effect, although standing panel policy
+cannot authorize skipping Review. Child-local evidence fetched only for
+inheritance does not enter that release-wide override pool.
+
+The bundle release PR names `Closes #655`, `Closes #651` and `Closes #647`.
+The orchestrator checks that exact closing-reference set and records in the
+Pipeline log and approval request which stages any applicable skip waives
+release-wide; it must not claim universal coverage is mechanically required
+for a waived stage. Compatibility checks retain S230–S263 and S377, including
+byte-for-byte output checks for ordinary PRs and manual epic overrides.
+
+The gate validates recorded evidence and consistency. Any session able to
+post records can forge model-records and human override lines: this is not
+authenticated human authority or proof that stages ran. Reconciliation can
+catch removing one membership signal, but cannot prevent a coordinated rewrite
+of all sources; read-only checks do not guarantee an atomic GitHub snapshot.
+
 ## Non-functional characteristics
 
 ### Security

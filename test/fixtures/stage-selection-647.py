@@ -112,13 +112,61 @@ RULES = {534: [('canonical panel subsection', '### Stage-selection panel'),
 SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e3837105d5bb9faa64505',
  'lib/model-record.sh': '0348c95cd8f1347cf893b688c65dec9e2ba2d6dbe65826d72e40d7144875e870',
  'pipeline-override.sh': 'a107b7379b33e5f25225a9f8c5bce54fd93727f85f9c496d1e590d7bdb4b4998',
- 'skills/pre-merge-review/model-record-gate.sh': '05fa545d7d44e7e4d23e468a9abbd113dcdfbb5e5493d1b80766267783fd6925',
  'skills/role-contracts/ORCHESTRATOR.md': 'a85d1ca59e0b06e87a1a77b0b640033fbf7c9de5d4d010e84d538645c2cabe88',
  'skills/role-contracts/orchestrator-rules.tsv': 'a41764d85b4392adcf557389d5d69d84fb8445750cff7bcfe8a1ad4771cd3f99',
  'test/behavior/orchestrator-diff.stamp': 'c77f2e8db29dbbfc0081a3c6720f48f8ed5f481abce21316c083db5470dca568',
  'test/behavior/orchestrator-scenarios.md': 'c2eaf345bf0e847e51914145dcce7be37a6eda1a5e14a06bd1a8222a0abfca40',
  'test/fixtures/orchestrator-core-pins.tsv': 'c530682a65901dec340095667a78303308c3e184d24031a343623189b68ac667'}
 errors = []
+
+SIX_SCOPES = ('single-session', 'skip=Discovery', 'skip=Planning', 'skip=Test', 'skip=Implementation', 'skip=Review')
+
+def waiver_authority_problems(text):
+    """Structural waiver authority of the gate: exactly six scopes, non-blank
+    decided-by and reason for every override read, and no panel authority."""
+    problems = []
+    lines = text.splitlines()
+    code = [l for l in lines if not l.lstrip().startswith('#')]
+    for field, token in (('decided-by', '$who'), ('reason', '$reason'), ('scope', '$scope')):
+        reads = [l for l in code if 'rec_field "$line" ' + field in l]
+        if not reads:
+            problems.append('no override read of ' + field)
+    cases = [l.strip() for l in code if re.match(r'\s*case "\$scope" in ', l)]
+    reads = [l for l in code if 'rec_field "$line" scope' in l]
+    if not cases or len(cases) < len(reads):
+        problems.append('a scope read lacks its scope case')
+    for line in cases:
+        alts = re.match(r'case "\$scope" in (.*?)\)', line)
+        found = tuple(sorted(alts[1].split('|'))) if alts else ()
+        if found != tuple(sorted(SIX_SCOPES)):
+            problems.append('scope set is not exactly the six override scopes: ' + repr(found))
+    for field, var in (('decided-by', 'who'), ('reason', 'reason')):
+        reads = [l for l in code if 'rec_field "$line" ' + field in l]
+        guards = [l for l in code if re.search(r'case "\$' + var + r'" in \*\[!\[:space:\]\]\*\)', l)]
+        if len(guards) < len(reads):
+            problems.append('non-blank ' + field + ' guard missing for a read')
+    if any(re.search(r'panel|orchestrator|vote', l, re.I) for l in code):
+        problems.append('code line recognizes panel authority')
+    return problems
+
+def waiver_authority(tmp):
+    gate = ROOT / 'skills/pre-merge-review/model-record-gate.sh'
+    text = gate.read_text()
+    check(not waiver_authority_problems(text), 'S548/unchanged waiver authority: ' + '; '.join(waiver_authority_problems(text)))
+    one = 'skip=Test'
+    mutants = {
+        'scope deleted': lambda t: t.replace('|' + one, '', 1),
+        'scope added': lambda t: t.replace('|' + one, '|' + one + '|skip=Panel', 1),
+        'panel scope added': lambda t: t.replace('single-session|', 'single-session|panel-vote|', 1),
+        'decided-by guard deleted': lambda t: re.sub(r'.*case "\$who" in \*\[!\[:space:\]\]\*\).*\n', '', t, count=1),
+        'reason guard deleted': lambda t: re.sub(r'.*case "\$reason" in \*\[!\[:space:\]\]\*\).*\n', '', t, count=1),
+        'panel authority code': lambda t: t + '\n[ "$who" = panel ] && waive_all=1\n',
+    }
+    for label, mutate in mutants.items():
+        mutated = mutate(text)
+        check(mutated != text, 'S548/waiver control did not change the source: ' + label)
+        check(bool(waiver_authority_problems(mutated)), 'S548/waiver authority mutant survived: ' + label)
+    print('CONTROL: S548 waiver authority structural assertion and six mutants PASS')
 
 def check(ok, label):
     if not ok:
@@ -633,6 +681,7 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
             check(hashlib.sha256(content).hexdigest() == digest, 'S548/unchanged ' + path)
             check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
         print('CONTROL: S548 frozen production hashes and byte mutants PASS')
+        waiver_authority(tmp)
     if ident in (534, 548):
         valid_variant_controls(tmp, ident)
 sys.exit(bool(errors))

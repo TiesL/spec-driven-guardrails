@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S548 — unchanged gate script and core with authority limits (#647; mechanical subset only)
+# S548 — unchanged waiver authority and core with authority limits (#647; mechanical subset only)
 # Covers: F62
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
