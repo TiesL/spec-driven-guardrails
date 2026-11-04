@@ -194,16 +194,22 @@ def respond(data, endpoint, args):
         if mode == 'hung-descendant':
             # Runner starts gh in a separate session/group from the worker.
             # Its child also owns a separate group and must not outlive the gate.
+            early_exit = fault.get('early_exit', False)
             child = subprocess.Popen([sys.executable, '-c',
                 'import pathlib,time; pathlib.Path(' +
                 repr(os.environ['EPIC_LOG'] + '.orphan-ready') +
                 ').write_text(str(time.time())); time.sleep(6); pathlib.Path(' +
                 repr(os.environ['EPIC_LOG'] + '.orphan-survived') +
                 ').touch(); time.sleep(20)'], start_new_session=True, stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                stdout=None if early_exit else subprocess.DEVNULL,
+                stderr=None if early_exit else subprocess.DEVNULL)
             Path(os.environ['EPIC_LOG'] + '.pids').write_text(json.dumps(
                 {'pids': [os.getpid(), child.pid], 'pgid': os.getpgrp(),
                  'child_pgid': os.getpgid(child.pid)}))
+            if early_exit:
+                # Exit successfully while the detached child keeps both response
+                # pipes open; the live-parent cleanup arm cannot catch this case.
+                sys.exit(0)
             time.sleep(30)
         elif mode == 'delay':
             time.sleep(11)
@@ -740,56 +746,73 @@ def scenario(n, t):
         # race with its normal per-call timeout and hide the supervisor defect.
         gate.write_text(source.replace(deadline, 'remaining=$((8 - SECONDS + started))')
                         .replace(watchdog, '( sleep 3 ||'))
-        a = world(); a['_fault'] = {'key': 'issues/609/timeline', 'mode': 'hung-descendant'}
-        receipt = Path(t.env['EPIC_LOG'] + '.pids')
-        orphan = Path(t.env['EPIC_LOG'] + '.orphan-survived')
-        ready = Path(t.env['EPIC_LOG'] + '.orphan-ready')
-        receipt.unlink(missing_ok=True); orphan.unlink(missing_ok=True); ready.unlink(missing_ok=True)
-        groups = []
-        try:
-            t.run(a, 'unchecked', label='hung-call descendant cleanup', gate=gate)
-            if not receipt.exists():
-                t.failures.append('hung-call descendant cleanup: injection not reached')
-            else:
-                record = json.loads(receipt.read_text())
-                groups = [record['pgid'], record['child_pgid']]
-                assert groups == record['pids'] and groups[0] != groups[1]
-                assert os.getpgrp() not in groups, 'fixture must own separate groups'
-                # Wall time crosses process boundaries on older macOS Python too.
-                # Wait past the child's write time, even if the gate returned early.
-                if not ready.exists():
-                    t.failures.append('hung-call descendant cleanup: child did not reach delay')
+        # The early-exit arm faults the first collector REST call so the short
+        # watchdog still reaches the injection under the four-worker test load.
+        for early_exit in (False, True):
+            a = world(); a['_fault'] = {'key': '' if early_exit else 'issues/609/timeline',
+                                      'mode': 'hung-descendant', 'early_exit': early_exit}
+            label = 'early-parent-exit descendant cleanup' if early_exit else 'hung-call descendant cleanup'
+            receipt = Path(t.env['EPIC_LOG'] + '.pids')
+            orphan = Path(t.env['EPIC_LOG'] + '.orphan-survived')
+            ready = Path(t.env['EPIC_LOG'] + '.orphan-ready')
+            receipt.unlink(missing_ok=True); orphan.unlink(missing_ok=True); ready.unlink(missing_ok=True)
+            groups = []
+            supervisor = (os.getpid(), os.getpgrp())
+            sentinel = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],
+                                        start_new_session=True, stdin=subprocess.DEVNULL,
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                t.run(a, 'unchecked', label=label, gate=gate)
+                if not receipt.exists():
+                    t.failures.append(label + ': injection not reached')
                 else:
-                    time.sleep(max(0, float(ready.read_text()) + 6.5 - time.time()))
-                alive = []
-                for pid in record['pids']:
-                    try:
-                        os.kill(pid, 0)
-                        alive.append(pid)
-                    except ProcessLookupError:
-                        pass
-                live_groups = []
+                    record = json.loads(receipt.read_text())
+                    groups = [record['pgid'], record['child_pgid']]
+                    assert groups == record['pids'] and groups[0] != groups[1]
+                    assert os.getpgrp() not in groups, 'fixture must own separate groups'
+                    # Wall time crosses process boundaries on older macOS Python too.
+                    # Wait past the child's write time, even if the gate returned early.
+                    if not ready.exists():
+                        t.failures.append(label + ': child did not reach delay')
+                    else:
+                        time.sleep(max(0, float(ready.read_text()) + 6.5 - time.time()))
+                    alive = []
+                    for pid in record['pids']:
+                        try:
+                            os.kill(pid, 0)
+                            alive.append(pid)
+                        except ProcessLookupError:
+                            pass
+                    live_groups = []
+                    for group in groups:
+                        try:
+                            os.killpg(group, 0)
+                            live_groups.append(group)
+                        except ProcessLookupError:
+                            pass
+                    if alive or live_groups:
+                        t.failures.append(f'{label}: surviving pids {alive}; '
+                                          f'pgids {live_groups}')
+                    if sentinel.poll() is not None:
+                        t.failures.append(label + ': unrelated sentinel was killed')
+                    os.kill(supervisor[0], 0)
+                    if (os.getpid(), os.getpgrp()) != supervisor:
+                        t.failures.append(label + ': test supervisor identity changed')
+                    if orphan.exists():
+                        t.failures.append(label + ': orphan-survived marker written')
+            finally:
+                # A RED regression must not leak its deliberately hung processes.
+                if receipt.exists() and not groups:
+                    record = json.loads(receipt.read_text())
+                    groups = [record['pgid'], record['child_pgid']]
+                if sentinel.poll() is None:
+                    sentinel.kill()
+                sentinel.wait()
                 for group in groups:
                     try:
-                        os.killpg(group, 0)
-                        live_groups.append(group)
+                        os.killpg(group, signal.SIGKILL)
                     except ProcessLookupError:
                         pass
-                if alive or live_groups:
-                    t.failures.append(f'hung-call descendant cleanup: surviving pids {alive}; '
-                                      f'pgids {live_groups}')
-                if orphan.exists():
-                    t.failures.append('hung-call descendant cleanup: orphan-survived marker written')
-        finally:
-            # A RED regression must not leak its deliberately hung processes.
-            if receipt.exists() and not groups:
-                record = json.loads(receipt.read_text())
-                groups = [record['pgid'], record['child_pgid']]
-            for group in groups:
-                try:
-                    os.killpg(group, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
 
         # A shell scan blocks after detail acquisition: the whole-evaluation
         # watchdog must cover this, independently of Python REST timeouts.
