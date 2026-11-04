@@ -13,6 +13,8 @@ point.
 
 ## Unreleased
 
+## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
+
 - **#660:** harden offline stage-selection pin tests with a structural waiver-authority oracle and retained compatibility hashes; this does not verify live instruction loading or cover every permissive rewrite.
 - **#663:** correct release PR self-reference handling and delayed ordinary/manual-override compatibility; clarify late-added membership and record the approved role-process meaning version 3 and release-workflow meaning version 2.
 
