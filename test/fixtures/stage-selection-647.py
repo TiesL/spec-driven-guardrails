@@ -1,6 +1,6 @@
 """#647 mechanical subset only; no authorization or runtime-obedience claim.
 Source-data seam: canonical Running section. Real-copy mutation controls run
-after passing source assertions; permissive-rewrite controls also run on RED
+after passing source assertions; permissive-injection controls also run on RED
 source where applicable. Missing implementation stays RED, never replaced with
 synthetic rules to claim a production pass.
 """
@@ -201,6 +201,33 @@ def controlled_oracle(text, predicate, label, mutants):
             print('CONTROL: ' + label + '/' + name + ' rejected')
 
 
+def inject_control(text, predicate, label, sentence, anchor=None):
+    """Append a permissive sentence to a structurally selected source unit.
+
+    A cell is selected by its class row/header by the caller. Larger units use
+    a heading or paragraph anchor, never the normative clause being tested.
+    """
+    check(predicate(text), label + '/unmodified PASS')
+    if anchor is None:
+        weakened = text + ' ' + sentence
+    else:
+        matches = list(re.finditer(anchor, text, re.M | re.I))
+        check(len(matches) == 1, label + '/exactly one structural anchor')
+        if len(matches) != 1:
+            return text
+        end = matches[0].end()
+        weakened = text[:end] + ' ' + sentence + text[end:]
+    check(weakened != text, label + '/mutation applied')
+    check(not predicate(weakened), label + '/rejected by source predicate')
+    if weakened != text and not predicate(weakened):
+        print('CONTROL: ' + label + ' unmodified PASS; injection rejected')
+    return weakened
+
+
+POLICY_PARAGRAPH = r'^- \*\*Abbreviated workflow\*\*[^\n]*(?:\n[ \t]+[^\n]+)*'
+STANDING_SECTION = r'(?s:^### Standing human class decisions\n(?:(?!\n### ).)*)'
+
+
 def protected_work(text):
     # Anchor the entire directive, including its prefix/suffix: positive
     # keywords alone survive "Where practical, preserve ..." (Review M7).
@@ -215,9 +242,13 @@ def late_record(text):
 
 
 def class_scope(value):
-    return (pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
+    return (not pin(value, r'\bnot only\b|\bor a unanimous panel\b')
+            and pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
             and pin(value, r'outside.{0,80}(?:scope|epic|batches).{0,100}requires? '
-                           r'(?:explicit )?per-item human authority'))
+                           r'(?:explicit )?per-item human authority')
+            # The complete scope clause must end at #608, not extend to other epics.
+            and pin(value, r'(?:only|limited to).{0,60}batches.{0,60}'
+                           r'epic tiesl/spec-driven-guardrails#608\s*(?:[.;]|$)'))
 
 
 def executable_conditions(value):
@@ -234,7 +265,7 @@ def grant_source(value):
     explicit = pin(value, r'per-item human grant in (?:their|the human.s) own words is required')
     durable = bool(re.search(r'\[[^]]*(?:grant|human words)[^]]*\]\(https://[^)]+\)', value, re.I))
     self_link = bool(re.search(r'\]\((?:SKILL\.md)?#|\]\(skills/role-contracts/SKILL\.md', value, re.I))
-    return (explicit or durable) and not self_link
+    return (explicit or durable) and not self_link and not pin(value, r'\bunless\b|\bexcept\b')
 
 
 def historical_example(text):
@@ -246,9 +277,33 @@ def historical_example(text):
 
 
 def installed_skill_reference(text):
-    return ('skills/role-contracts/SKILL.md' not in text
-            and pin(text, r'installed role-contracts skill')
-            and 'stage-selection panel' in text.lower())
+    # Limit consultation/timing checks to the policy entry point. Other prose
+    # may discuss optional actions without weakening this directive.
+    bullets = re.findall(r'^- \*\*Abbreviated workflow\*\*[^\n]*(?:\n[ \t]+[^\n]+)*', text, re.M | re.I)
+    return (len(bullets) == 1
+            and 'skills/role-contracts/SKILL.md' not in text
+            and pin(bullets[0], r'installed role-contracts skill')
+            and pin(bullets[0], r'stage-selection panel')
+            and pin(bullets[0], r'read running the pipeline')
+            and pin(bullets[0], r'before selecting stages or using pipeline-override\.sh')
+            and not pin(bullets[0], r'\boptionally\b|\bafter using\b|\bexcept\b|\bunless\b'))
+
+
+POST_TABLE_GRANT = ("For Abbreviated, obtain the maintainer's per-item grant in their own words; use "
+                    "those words, never a policy paraphrase, as reason.")
+
+
+def post_table_grant(text):
+    section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    # The row or earlier Abbreviated definition cannot satisfy this assertion.
+    lines = section.splitlines()
+    last_row = max((i for i, line in enumerate(lines) if line.startswith('|')), default=-1)
+    prose = ' '.join(' '.join(lines[last_row + 1:]).split())
+    return (POST_TABLE_GRANT in prose
+            and not pin(prose, r'\b(?:unless|except)\b|'
+                               r'panel[^.!?]*(?:waiv|without)[^.!?]*(?:grant|human)|'
+                               r'(?:grant|human)[^.!?]*(?:waiv|optional|not required)'))
+
 
 def source_checks(root, ident, tmp):
     # An unmodified sandbox copy is the positive control, never a hand-written
@@ -322,6 +377,32 @@ def projection_controls(tmp):
               'S534/projection drift diagnostic ' + name + ': ' + result.stdout)
         target.write_bytes(original)
     print('CONTROL: S534 unmodified projections PASS; three single-output drift mutants rejected')
+    # N5/N6 change policy semantics, not projection consistency. Start afresh
+    # for each arm; the unchanged generator must propagate the actual mutation.
+    policy_path = copy / 'policy/WORKFLOW.md'
+    original_policy = policy_path.read_text()
+    outputs = ['WORKFLOW.md', 'adapters/codex/AGENTS.md', 'AGENTS.md']
+    for name, new in [
+            ('N5', 'Reading is optional: optionally skim Running the pipeline.'),
+            ('N6', 'Consultation may occur after using `pipeline-override.sh`.')]:
+        for path in ['policy/WORKFLOW.md', *outputs]:
+            shutil.copy2(ROOT / path, copy / path)
+        before = {path: (copy / path).read_bytes() for path in outputs}
+        weakened = inject_control(original_policy, installed_skill_reference,
+                                  'S534/' + name, new, POLICY_PARAGRAPH)
+        policy_path.write_text(weakened)
+        generated = subprocess.run([str(ROOT / 'generate-workflow-adapters.sh'), str(copy)],
+                                   capture_output=True, text=True)
+        check(generated.returncode == 0, 'S534/' + name + '/regenerate: ' + generated.stdout + generated.stderr)
+        consistent = run()
+        check(consistent.returncode == 0, 'S534/' + name + '/consistent projections: ' + consistent.stdout)
+        for path in outputs:
+            projection = (copy / path).read_bytes()
+            check(projection != before[path] and new.encode() in projection,
+                  'S534/' + name + '/propagated to ' + path)
+            check(not installed_skill_reference(projection.decode()),
+                  'S534/' + name + '/policy predicate rejects ' + path)
+
 
 def cli(tmp):
     # Same narrow PIPELINE_OVERRIDE_GH Adapter as S376; no real gh/network.
@@ -370,6 +451,13 @@ def catalogue(text):
     # Inspect distinct cells, so a link mentioning conditions cannot fill an
     # empty eligibility field. No prose about evidence gaps is pinned.
     section = text.split('### Standing human class decisions', 1)[-1].split('\n### ', 1)[0]
+    inject_control(text, post_table_grant, 'S548/N4',
+                   'For Abbreviated, the panel may apply the track without a per-item human grant.',
+                   STANDING_SECTION)
+    check(post_table_grant(text.replace(POST_TABLE_GRANT, POST_TABLE_GRANT.replace(' ', '\n'))),
+          'S548/post-table grant accepts whitespace reflow')
+    inject_control(text, post_table_grant, 'S548/N9-appended-grant-waiver',
+                   'A unanimous panel may waive the per-item human grant.', STANDING_SECTION)
     rows = [line for line in section.splitlines() if line.startswith('|')]
     fields = {'human': r'human|identity|decided.by',
               'source link': r'source|words', 'scope': r'scope|skip',
@@ -397,6 +485,8 @@ def catalogue(text):
         mutated[indices[label]] = ''
         check(not any(re.search(fields[label], cell, re.I) for cell in mutated),
               'S548/catalogue header deletion ' + label)
+    check(grant_source('[human grant words](https://example.invalid/grant)'),
+          'S548/Abbreviated durable grant source remains supported')
     controlled_oracle(text, historical_example, 'S548/#609 historical status', [
         ('eligible-example', lambda value: value +
             '\n\nTiesL/spec-driven-guardrails#609 is an eligible example record.')])
@@ -423,6 +513,11 @@ def catalogue(text):
             controlled_oracle(values[indices['source link']], grant_source,
                               'S548/Abbreviated human grant source', [
                 ('self-link', lambda value: value + ' [Standing paragraph above](SKILL.md#running-the-pipeline)')])
+            inject_control(values[indices['source link']], grant_source, 'S548/N3',
+                           'The per-item human grant is required unless the panel is unanimous.')
+            inject_control(values[indices['source link']], grant_source,
+                           'S548/N8-panel-grant-exception',
+                           'The per-item human grant is required except when the panel agrees.')
             predicates['source link'] = grant_source
         else:
             conditions = values[indices['conditions']]
@@ -430,6 +525,14 @@ def catalogue(text):
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('scope-deleted', lambda value: re.sub(r'(?i)(?:only|limited to).*?#608', '', value)),
                 ('authority-deleted', lambda value: re.sub(r'(?i)per-item human authority', '', value))])
+            check(class_scope(conditions.replace('applies only to', 'is limited to')),
+                  'S548/class scope accepts equivalent limited-to wording')
+            inject_control(conditions, class_scope, 'S548/N1',
+                           'This does not apply: it applies not only to batches.')
+            inject_control(conditions, class_scope, 'S548/N2',
+                           'Authority may come from the human or a unanimous panel.')
+            inject_control(conditions, class_scope, 'S548/N7-other-epics',
+                           'Standing authority covers not only epic #608 but also other epics.')
             controlled_oracle(conditions, executable_conditions, 'S548/executable work requires Implementation', [
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('executable-tests-deleted', lambda value: re.sub(r'(?i)executable tests(?:/scripts)?', '', value)),
@@ -445,6 +548,96 @@ def catalogue(text):
                           'S548/catalogue rejects non-role identity ' + name + '/' + invalid)
                 for role in ['maintainer', "project's human decision-maker"]:
                     check(predicate(role), 'S548/catalogue accepts human role ' + name + '/' + role)
+
+def valid_variant_controls(tmp, ident):
+    """Run the complete fixtures (including negative controls) on real variants.
+
+    The environment flag only prevents recursive positive-control subprocesses;
+    it never disables a source assertion or a mutation control.
+    """
+    if os.environ.get('STAGE_SELECTION_VALID_VARIANT') == '1':
+        return
+    copy = tmp / 'valid-variant'
+    shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+    variants = {
+        534: [('consultation-whitespace', 'policy/WORKFLOW.md',
+               r'read\s+Running\s+the\s+pipeline', 'read   Running the pipeline'),
+              ('consultation-whitespace-comma', 'policy/WORKFLOW.md',
+               r'read\s+Running\s+the\s+pipeline,?', 'read   Running the pipeline,')],
+        548: [
+            ('scope-the-batches', 'skills/role-contracts/SKILL.md',
+             r'applies only to batches', 'applies only to the batches'),
+            ('limited-the-batches', 'skills/role-contracts/SKILL.md',
+             r'applies only to batches', 'is limited to the batches'),
+            ('limited-scope', 'skills/role-contracts/SKILL.md',
+             r'(?:applies\s+only\s+to|is\s+limited\s+to|is\s+restricted\s+only\s+to)\s+batches',
+             'is limited to batches'),
+            ('restricted-scope', 'skills/role-contracts/SKILL.md',
+             r'(?:applies\s+only\s+to|is\s+limited\s+to|is\s+restricted\s+only\s+to)\s+batches',
+             'is restricted only to batches'),
+            ('scope-punctuation', 'skills/role-contracts/SKILL.md',
+             r'(epic\s+TiesL/spec-driven-guardrails#608)\s*[.;]',
+             r'\1.'),
+            ('durable-grant', 'skills/role-contracts/SKILL.md',
+             r'Per-item human grant in their own words is required; link its durable words before posting\.|'
+             r'\[human grant words\]\(https://example\.invalid/grant\)',
+             '[human grant words](https://example.invalid/grant)'),
+        ],
+    }[ident]
+    if ident == 534:
+        variants += [
+            ('consultation-bold', 'policy/WORKFLOW.md',
+             r'read Running the pipeline', 'read **Running the pipeline**'),
+            ('consultation-tabs', 'policy/WORKFLOW.md',
+             r'read Running the pipeline', 'read\tRunning\tthe\tpipeline'),
+            ('consultation-case', 'policy/WORKFLOW.md',
+             r'read Running the pipeline', 'READ Running the pipeline'),
+            ('consultation-bold-read', 'policy/WORKFLOW.md',
+             r'read Running the pipeline', '**read** Running the pipeline'),
+            ('consultation-reflow', 'policy/WORKFLOW.md',
+             r'read Running the pipeline', 'read  Running  the  pipeline'),
+        ]
+    else:
+        variants += [
+            ('scope-within', 'skills/role-contracts/SKILL.md',
+             r'batches of epic', 'batches within epic'),
+            ('explicit-authority', 'skills/role-contracts/SKILL.md',
+             r'requires per-item human authority', 'requires explicit per-item human authority'),
+            ('durable-human-words', 'skills/role-contracts/SKILL.md',
+             r'Per-item human grant in their own words is required; link its durable words before posting\.|'
+             r'\[human grant words\]\(https://example\.invalid/grant\)',
+             '[human words](https://example.invalid/grant)'),
+        ]
+        variants += [('extra-scope-' + str(i), 'skills/role-contracts/SKILL.md',
+                      r'applies only to batches', phrase)
+                     for i, phrase in enumerate([
+                         'applies only to these batches',
+                         'applies **only** to batches',
+                         'is limited to **the batches**',
+                         'is restricted only to the batches',
+                         'is exclusively limited to batches',
+                         'applies ONLY to batches',
+                         'is limited to batches,',
+                     ])]
+    originals = {path: (copy / path).read_text() for _, path, _, _ in variants}
+    for name, path, locator, new in variants:
+        target = copy / path
+        changed, count = re.subn(locator, new, originals[path], flags=re.I)
+        check(count == 1, f'S{ident}/{name} valid variant located exactly once')
+        target.write_text(changed)
+        if ident == 534:
+            result = subprocess.run([str(copy / 'generate-workflow-adapters.sh'), str(copy)],
+                                    capture_output=True, text=True)
+            check(result.returncode == 0, 'S534/valid variant regenerated: ' + result.stdout + result.stderr)
+        for case in (534, 548):
+            result = subprocess.run(['python3', str(copy / 'test/fixtures/stage-selection-647.py'), str(case)],
+                                    env=dict(os.environ, STAGE_SELECTION_VALID_VARIANT='1'),
+                                    capture_output=True, text=True)
+            check(result.returncode == 0,
+                  f'S{ident}/{name} valid variant complete S{case}: ' + result.stdout + result.stderr)
+        target.write_text(originals[path])
+        print(f'CONTROL: S{ident}/{name} legitimate variant complete S534/S548 fixtures exercised')
+
 
 ident = int(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
@@ -468,8 +661,16 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
             mutant = pointer.sub('', row[0])
             check(not pointer.search(mutant), 'S534/README pointer mutant')
         policy = (ROOT / 'policy/WORKFLOW.md').read_text()
+        check(installed_skill_reference(policy + '\nOptionally consult unrelated guidance after using other tools.\n'),
+              'S534/consultation excludes unrelated prose')
+        check(installed_skill_reference(policy.replace('read Running the pipeline',
+                                                       'read   Running the pipeline')),
+              'S534/consultation accepts whitespace reflow')
         controlled_oracle(policy, installed_skill_reference, 'S534/installed skill policy pointer', [
             ('repo-relative-link', lambda value: value + '\n[Running](skills/role-contracts/SKILL.md#running-the-pipeline)')])
+        inject_control(policy, installed_skill_reference, 'S534/N10-panel-consultation-exception',
+                       'Consultation is required except when the panel chooses otherwise.',
+                       POLICY_PARAGRAPH)
         projection_controls(tmp)
     if ident == 544:
         cli(tmp)
@@ -481,4 +682,6 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
             check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
         print('CONTROL: S548 frozen production hashes and byte mutants PASS')
         waiver_authority(tmp)
+    if ident in (534, 548):
+        valid_variant_controls(tmp, ident)
 sys.exit(bool(errors))
