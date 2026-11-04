@@ -49,6 +49,116 @@ if [ ! -r "$own_dir/../../lib/model-record.sh" ]; then reader_failed; fi
 # shellcheck source=../../lib/model-record.sh
 . "$own_dir/../../lib/model-record.sh"
 
+# Dependency-failure acquisition has its own Bash deadline. Ruby supplies
+# native child enumeration on macOS, where sandboxed ps/pgrep cannot do it;
+# it is used only on this exceptional path, never for healthy recognition.
+fallback_detail() {
+  local buffer="$1" worker watchdog rc
+  command -v ruby >/dev/null 2>&1 || return 1
+  set -m
+  ruby - "$buffer" "repos/{owner}/{repo}/pulls/$pr_number" "$pr_jq$metadata_jq" <<'RUBY' >"$buffer/worker-out" 2>"$buffer/worker-error" &
+require 'fiddle'
+require 'set'
+# Track descendants even when they create a new session. Freeze parents
+# before the final enumeration so termination cannot orphan an unseen child.
+if RUBY_PLATFORM.include?('darwin')
+  lib = Fiddle.dlopen('/usr/lib/libproc.dylib')
+  listing = Fiddle::Function.new(lib['proc_listchildpids'],
+    [Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+  children = lambda do |pid|
+    size = 32
+    loop do
+      bytes = "\0" * (size * 4)
+      count = listing.call(pid, bytes, bytes.bytesize)
+      raise 'child enumeration failed' if count < 0
+      break bytes.unpack('i*').take(count).reject { |id| id == 0 } if count < size
+      size *= 2
+    end
+  end
+else
+  children = lambda do |pid|
+    Dir.glob("/proc/#{pid}/task/*/children").flat_map do |path|
+      begin File.read(path).split.map(&:to_i); rescue Errno::ENOENT; []; end
+    end.uniq
+  end
+end
+buffer, endpoint, query = ARGV
+owned = Set.new
+signal = lambda do |kind, pid|
+  begin Process.kill(kind, pid); rescue Errno::ESRCH; end
+end
+scan = lambda do |freeze|
+  pending = [Process.pid] + owned.to_a
+  seen = Set.new
+  until pending.empty?
+    pid = pending.shift
+    next unless seen.add?(pid)
+    signal.call('STOP', pid) if freeze && pid != Process.pid
+    children.call(pid).each do |child|
+      owned.add(child)
+      pending << child
+    end
+  end
+end
+pipes = []
+status = nil
+begin
+  # Prove native enumeration works before starting any external read.
+  children.call(Process.pid)
+  trap('TERM') { raise 'Bash watchdog expired' }
+  out_r, out_w = IO.pipe; err_r, err_w = IO.pipe
+  pipes = [out_r, out_w, err_r, err_w]
+  pid = Process.spawn('gh', 'api', endpoint, '--jq', query,
+                      :out => out_w, :err => err_w)
+  owned.add(pid)
+  out_w.close; err_w.close
+  streams = {out_r => File.open(buffer + '/out', 'wb'),
+             err_r => File.open(buffer + '/err', 'wb')}
+  counts = Hash.new(0)
+  until streams.empty? && status
+    scan.call(false)
+    ready = streams.empty? ? nil : IO.select(streams.keys, nil, nil, 0.05)
+    (ready ? ready[0] : []).each do |io|
+      data = io.read_nonblock(65536, :exception => false)
+      next if data == :wait_readable
+      if data.nil?
+        streams.delete(io).close; io.close
+      else
+        counts[io] += data.bytesize
+        raise 'response stream exceeded 8 MiB' if counts[io] > 8 * 1024 * 1024
+        streams[io].write(data)
+      end
+    end
+    status ||= Process.waitpid2(pid, Process::WNOHANG)
+    sleep 0.05 if streams.empty? && !status
+  end
+  File.write(buffer + '/status', status[1].exitstatus || 1)
+rescue StandardError => error
+  File.write(buffer + '/failed', error.message)
+ensure
+  trap('TERM', 'IGNORE')
+  scan.call(true)
+  owned.each { |id| signal.call('KILL', id) }
+  pipes.each { |io| io.close unless io.closed? }
+  begin Process.waitall; rescue Errno::ECHILD; end
+end
+RUBY
+  worker=$!
+  ( sleep 10 || { : > "$buffer/failed"; kill -TERM "$worker"; exit 1; }
+    : > "$buffer/timed-out"
+    kill -TERM "$worker"
+    sleep 2
+    kill -KILL -- "-$worker" ) >/dev/null 2>&1 &
+  watchdog=$!
+  wait "$worker" 2>/dev/null
+  rc=$?
+  kill -KILL -- "-$worker" >/dev/null 2>&1
+  kill -TERM -- "-$watchdog" >/dev/null 2>&1
+  wait "$watchdog" 2>/dev/null
+  set +m
+  [ "$rc" -eq 0 ] && [ ! -e "$buffer/timed-out" ] && [ ! -e "$buffer/failed" ] && [ -r "$buffer/status" ]
+}
+
 # Whole evaluation is buffered by the private supervisor, including these
 # shell scans. The watchdog is independent of the per-REST read deadline.
 # The helper returns ordered, attributed rows; the worker only prints them.
@@ -136,15 +246,22 @@ if [ "$pr_number" = --epic-evaluate ]; then
   opted_in=1
 else
   detail_error="$(mktemp)" || { unchecked 'could not capture PR detail'; exit 0; }
-  started=$SECONDS
   helper="$own_dir/../../lib/model-record-epic.py"
-  if [ -r "$helper" ] && command -v python3 >/dev/null 2>&1; then
-    pr="$(python3 -I "$helper" initial gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq "$pr_jq$metadata_jq" 2>"$detail_error")"
-    detail_rc=$?
-  else
-    detail_rc=127
+  helper_available=0
+  if [ -r "$helper" ] && command -v python3 >/dev/null 2>&1 && python3 -I -c 'pass' >/dev/null 2>&1; then
+    helper_available=1
   fi
-  if [ "$detail_rc" -eq 127 ]; then
+  if [ "$helper_available" -eq 0 ]; then
+    detail_buffer="$(mktemp -d)" || { rm -f "$detail_error"; unchecked 'could not buffer PR detail'; exit 0; }
+    if ! fallback_detail "$detail_buffer"; then
+      rm -rf "$detail_buffer"; rm -f "$detail_error"
+      unchecked 'initial PR detail incomplete (dependency unavailable, stream cap or timeout)'; exit 0
+    fi
+    pr="$(cat "$detail_buffer/out")"
+    detail_rc="$(cat "$detail_buffer/status")"
+    cat "$detail_buffer/err" > "$detail_error"
+    rm -rf "$detail_buffer"
+  else
     pr="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq "$pr_jq$metadata_jq" 2>"$detail_error")"
     detail_rc=$?
   fi
@@ -156,17 +273,36 @@ else
   # Old fixtures lack metadata. Only release-shaped heads need the helper.
   if [ "$opted_in" -eq 1 ] && [ "$detail_rc" -eq 0 ] && [[ "$metadata" == '__EPIC_META__["release/'* ]]; then
     helper="$own_dir/../../lib/model-record-epic.py"
-    if [ ! -r "$helper" ] || ! command -v python3 >/dev/null 2>&1; then
+    if [ "$helper_available" -eq 0 ]; then
       rm -f "$detail_error"
       unchecked 'epic inheritance helper or Python unavailable'; exit 0
     fi
     epic_tmp="$(mktemp -d)" || { unchecked 'could not buffer epic evaluation'; exit 0; }
     printf '%s' "${metadata#__EPIC_META__}" > "$epic_tmp/metadata"
     printf '%s' "$pr" > "$epic_tmp/detail"
-    # The worker owns a process group. Its deadline includes these initial
-    # detail seconds and every shell reader; partial output is never published.
+    # Compatibility recognition has no new wall-clock deadline. Only a
+    # recognized epic enters the bounded traversal, with these reads cached.
+    python3 -I "$helper" recognize "$own_dir/model-record-gate.sh" "$pr_number" "$epic_tmp" > "$epic_tmp/recognition-output" 2> "$epic_tmp/error"
+    recognition_rc=$?
+    if [ "$recognition_rc" -ne 2 ]; then
+      first="$(head -n 1 "$epic_tmp/recognition-output")"
+      if [ "$recognition_rc" -ne 0 ]; then
+        unchecked 'epic recognition incomplete'
+      else
+        case "$first" in
+          'fetch-error|'*)
+            suffix="${first#fetch-error|}"; issue="${suffix#*|}"; suffix="${suffix%%|*}"
+            cat "$epic_tmp/fetch-error" >&2
+            if [ "$suffix" = issue ]; then unchecked "couldn't consult closing issue #$issue"
+            else unchecked "couldn't consult PR #$pr_number's $suffix"; fi;;
+          $'unchecked\t'*) unchecked "${first#unchecked$'\t'}";;
+          *) cat "$epic_tmp/recognition-output"; cat "$detail_error" >&2;;
+        esac
+      fi
+      rm -rf "$epic_tmp"; rm -f "$detail_error"; exit 0
+    fi
+    started=$SECONDS
     remaining=$((120 - SECONDS + started))
-    [ "$remaining" -gt 0 ] || { rm -rf "$epic_tmp"; rm -f "$detail_error"; unchecked 'epic inheritance deadline'; exit 0; }
     set -m
     python3 -I "$helper" supervise "$own_dir/model-record-gate.sh" "$pr_number" "$epic_tmp" "$remaining" > "$epic_tmp/output" 2> "$epic_tmp/error" &
     epic_pid=$!
