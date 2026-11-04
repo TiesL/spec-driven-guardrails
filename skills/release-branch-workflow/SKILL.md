@@ -3,7 +3,7 @@ name: release-branch-workflow
 description: >
   When and how to use a release branch between work-item branches and
   `main`: the trigger (a recorded Product+Architect judgment call, no
-  numeric threshold), who may merge what into it, the frozen membership
+  numeric threshold), who may merge what into it, the current membership
   set, the mandatory holistic review before it can go to the project
   maintainer for the final merge decision, and the version-bump proposal
   that merge carries. Use this when an epic is being scoped, or when an
@@ -42,14 +42,14 @@ release branch exists for this epic without reconstructing the decision.
 Branch name: `release/<epic-issue-number>-<kebab-case-slug>`, forked from the
 current tip of `main` — same naming shape as `feature/`/`fix/`, one level up.
 
-**Membership freezes at this point.** The set of issues this release branch
-covers is exactly the epic's work items as they exist the moment the branch is
-opened (or the moment a mid-flight epic is promoted into this tier). An issue
-discovered afterward and given the epic's label does not automatically become
-part of *this* release — it's tracked under the epic for the next one, unless
-Product/Architect explicitly pull it in with the same kind of recorded
-decision that opened the branch in the first place. This keeps "the release is
-done" a real, checkable condition instead of a moving target.
+**Membership amendment — maintainer acceptance required.** The current
+membership includes issues that gain the Epic field after branch opening.
+The sole child signal is a live whole-line `**Epic:** #<epic>` field. Normalize
+these fields and the epic's single `## Work items` checklist before the release
+PR, reconciling both with the PRs merged into the release branch. Late Epic
+fields count; labels alone do not establish membership. This replaces the
+previous membership freeze. Historical closed children are not retroactively
+normalized as part of this change.
 
 **Mid-flight promotion**: if work-item PRs are already open against `main` when
 the epic crosses into needing a release branch, retarget them —
@@ -83,7 +83,7 @@ practical outcome — nothing to configure here — is the same either way.)
 
 ## Completing a release branch
 
-Once every issue in the frozen membership set (above) is merged into the
+Once every issue in the current membership set (above) is merged into the
 release branch:
 
 1. **A full holistic review runs before anything goes to the maintainer.**
@@ -100,6 +100,36 @@ release branch:
    `CHANGELOG.md` entries and propose a SemVer bump type (patch/minor/major)
    under the project's existing versioning rules. This is a proposal, not a
    decision — see below.
+
+## Epic evidence and ledger bookkeeping
+
+The orchestrator keeps a running ledger of child, stage and record-or-waiver
+URL on the epic, refreshing it at each child merge and rechecking it before
+requesting release approval. The ledger is a human view, never gate evidence.
+Discovery, Planning, Test and Implementation must each be covered for every
+child by its issue or verified closing PR evidence, or its own valid human
+skip. A closed no-PR disposition needs all four child-issue skips. Review
+belongs on the release PR itself, including its floor-basis.
+
+In the existing Pipeline log, record the child count and
+`epic ledger complete: yes|no`. An open child requires no; refuse yes for
+unmerged closing PRs or incomplete evidence. Unchecked output cannot justify
+yes or a complete ledger. Closing an issue after its release-branch PR merges
+is still the merger's responsibility, as described below.
+
+Record the release PR's exact closing-reference set and the stages waived by
+it in the Pipeline log and approval request. Any issue named by a closing
+keyword (including Closes) can carry a valid skip that waives that stage for
+the whole release PR; it removes that stage's inherited absence obligation
+but never membership reconciliation or a multi-stage-text finding. Child-only
+skips remain local. A child single-session supplies no missing stage coverage.
+A manual epic override retains the complete legacy path, including partial
+skips; release-wide single-session also retains legacy behavior.
+
+**A18 override amendment — maintainer acceptance required.** The release-wide
+skip effect above preserves existing override semantics. Present this A18
+amendment and the membership amendment alongside the bundle's temporary panel
+decisions for maintainer acceptance; neither grants a new override authority.
 
 ## Merging the release branch into `main`
 

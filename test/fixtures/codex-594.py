@@ -19,7 +19,7 @@ ROOT = Path(sys.argv[1]).resolve()
 SCENARIO = int(sys.argv[2])
 TMP = Path(os.environ['SANDBOX']).resolve()
 FILES = ('hooks/git-guardrails', 'hooks/read-command.py', 'hooks/rules.sh',
-         'lib/markdown.sh', 'lib/changes.sh', 'lib/model-record.sh',
+         'lib/markdown.sh', 'lib/changes.sh', 'lib/model-record.sh', 'lib/model-record-epic.py',
          'skills/pre-merge-review/model-record-gate.sh')
 OLD_REV = '1' * 40
 NEW_REV = '2' * 40
@@ -113,7 +113,7 @@ def list_files():
     require(len(candidates) == 1, 'multiple candidate guard bundle lists')
     path, names = candidates[0]
     require(len(names) == len(set(names)) and set(names) == set(FILES),
-            f'bundle list must contain exactly the seven accepted paths: {names}')
+            f'bundle list must contain exactly the eight accepted paths: {names}')
     return names
 
 
@@ -187,6 +187,36 @@ def guard_fixture():
         require(not Path(env['REPO593_ERRORS']).read_text(), 'unsupported #593 fake-gh request')
         return result.returncode, result.stdout, result.stderr
     return invoke
+
+
+def epic_release_fixture():
+    """Release-shaped PR #648 on #651's offline REST fake, run against a bundled gate copy."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('epic651', ROOT / 'test/fixtures/epic-651.py')
+    epic = importlib.util.module_from_spec(spec); spec.loader.exec_module(epic)
+    bindir = TMP / 'epic-bin'; bindir.mkdir()
+    for name in ('bash', 'sh', 'env', 'git', 'python3', 'dirname', 'mktemp', 'rm', 'cat', 'grep',
+                 'sed', 'awk', 'sort', 'tr', 'head', 'date', 'readlink', 'sleep', 'kill', 'jq'):
+        source = shutil.which(name)
+        if source: (bindir / name).symlink_to(source)
+    fake = bindir / 'gh'
+    fake.write_text('#!/bin/sh\nexec ' + shlex.quote(shutil.which('python3')) + ' ' +
+                    shlex.quote(str(ROOT / 'test/fixtures/epic-651.py')) + ' serve "$@"\n')
+    fake.chmod(0o755)
+    project = TMP / 'epic-project'; project.mkdir(); git_metadata(project)
+    (project / 'WORKFLOW-ADOPTION.md').write_text(
+        '| quality-review-before-merge | yes | date | fixture |\n'
+        '| process-multi-agent-roles | yes | date | fixture |\n')
+    data = epic.world()
+    data['issues/609/comments'] = epic.comments(*(epic.marker(s) for s in epic.STAGES if s != 'Test'))
+    (TMP / 'epic-world.json').write_text(json.dumps(data))
+    env = {k: ENV[k] for k in ('HOME', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_GLOBAL')}
+    env.update(PATH=str(bindir), TMPDIR=str(TMP), PYTHONDONTWRITEBYTECODE='1',
+               EPIC_DATA=str(TMP / 'epic-world.json'), EPIC_LOG=str(TMP / 'epic-calls'))
+    def run_gate(gate):
+        result = run('bash', gate, '648', cwd=project, env=env)
+        return result.stdout + result.stderr
+    return run_gate
 
 
 def parity(target, invoke, installed=False):
@@ -1224,11 +1254,25 @@ elif SCENARIO in (406, 407):
     invoke = guard_fixture()
     parity(built / 'hooks/git-guardrails', invoke)
     if SCENARIO == 407:
+        epic_arm = epic_release_fixture()
+        gate = built / 'skills/pre-merge-review/model-record-gate.sh'
+        # Control: the helper is merge-relevant only for release-shaped heads (A52); the
+        # complete bundle blocks the release PR on the child's missing Test record.
+        full = epic_arm(gate)
+        require('role-played' in full and '#609' in full and 'Test' in full,
+                f'epic release control did not block with the complete bundle: {full!r}')
         for name in names:
             if name == 'hooks/rules.sh': continue  # sourced but unused by merge-only
             target = built / name; saved = target.read_bytes(); mode = target.stat().st_mode
             target.unlink()
             try:
+                if name == 'lib/model-record-epic.py':
+                    # The legacy fixture reads PR detail without the helper (fallback), so only
+                    # a release-shaped head observes its removal: the block must degrade.
+                    actual = epic_arm(gate)
+                    require(actual != full and 'role-played' not in actual,
+                            f'{name}: ablation left epic release block unchanged: {actual!r}')
+                    continue
                 if name == 'hooks/git-guardrails':
                     require(not target.exists(), 'guard ablation did not remove entry point')
                     # Shell reports the missing entry point, rather than Python failing to exec.

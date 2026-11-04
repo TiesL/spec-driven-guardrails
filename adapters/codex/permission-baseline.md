@@ -247,13 +247,16 @@ Source: the accepted Architect recommendation on #594, building on #590.
   The hook matches every Bash call; `--merge-only` is decided inside the program.
   Trust therefore authorizes execution of this code, beyond the merge policy itself.
 - `adopt.sh --runtime codex --hooks` installs a self-contained copy in the real directory
-  `<project>/.codex/sdg-guard/`. Its seven files are `hooks/git-guardrails`,
+  `<project>/.codex/sdg-guard/`. Its eight files are `hooks/git-guardrails`,
   `hooks/read-command.py`, `hooks/rules.sh`, `lib/markdown.sh`, `lib/changes.sh`,
-  `lib/model-record.sh` and `skills/pre-merge-review/model-record-gate.sh`, keeping
+  `lib/model-record.sh`, `lib/model-record-epic.py` and
+  `skills/pre-merge-review/model-record-gate.sh`, keeping
   sibling `hooks/`, `lib/` and `skills/pre-merge-review/` directories. `MANIFEST`
   records source revision, sha256 and mode; installation provenance owns its digest.
   The copy runs independently of `.guardrails/source`. Source edits reach the hook
   only after a reviewed merge and explicit refresh by TiesL outside the sandbox.
+  The bundled gate calls `lib/model-record-epic.py` for epic release PR inheritance;
+  without that helper, the installed guard reports `role-play-unchecked` there.
 - [A] Codex protects `.codex` and its contents inside writable roots. Offline tests
   establish installation and guard parity, never this protection. Adoption refuses
   symlinked `.codex`, `sdg-guard` and any inner symlink before writes. An unrecorded

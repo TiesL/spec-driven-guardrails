@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S397 — Seven-file bundle installation preserves bytes, modes, manifest and idempotence.
+# S397 — Eight-file bundle installation preserves bytes, modes, manifest and idempotence.
 # Covers: F8, F47
 # Issue #594 AC1. Public seams and isolated fixture: test/fixtures/codex-594.py.
 set -uo pipefail

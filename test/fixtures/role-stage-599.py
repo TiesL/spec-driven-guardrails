@@ -997,25 +997,54 @@ def compatibility():
     p.write_text(s.replace(needle,'case " $* " in *" --role "*) : ;; *) echo "MUTANT role required" >&2; exit 2 ;; esac\n'+needle,1))
     r=emit(['--stage','Planning','--model','m'],mutant)
     check(r.returncode==2 and not r.stdout and r.stderr==b'MUTANT role required\n','stage-only oracle must kill role-required mutation')
-    # The gate and collector code remain unchanged against the merge-base; comment-only
-    # and blank-line differences are ignored (panel decision, #622). Reader grammar is
-    # exercised by S204, not duplicated here as an implementation-text oracle.
+    # AC7 (#599): the work changed only the emitter and dispatch hook, so the record
+    # reader/classifier code of the gate and the collector must stay as it was.
+    # compliance-evidence.sh is still pinned byte-for-byte (comment/blank lines ignored).
+    # The gate was changed on purpose later (#651, A52: epic inheritance), so it is pinned
+    # as "every merge-base code line survives" instead of "identical": additions are
+    # allowed, any deletion or edit of a baseline code line fails unless the exact line is
+    # in the closed #651 allowlist below (the legacy fetch/closing-scan lines the epic path
+    # replaced, and three lines that gained a child-context condition).
+    from collections import Counter
+    allow=Counter(l.encode() for l in [
+        'comments="$(gh api "repos/{owner}/{repo}/issues/$pr_number/comments" --paginate --jq "$comments_jq")" || { unchecked "couldn\'t consult PR #$pr_number\'s comments"; exit 0; }',
+        'reviews="$(gh api "repos/{owner}/{repo}/pulls/$pr_number/reviews" --paginate --jq "$reviews_jq")" || { unchecked "couldn\'t consult PR #$pr_number\'s reviews"; exit 0; }',
+        'pr_jq="((.title // \\"\\") | gsub(\\"[\\\\u0000-\\\\u001f]\\"; \\" \\")), ((.created_at // \\"\\") + \\"\\t\\" + $body_filter)"',
+        'pr="$(gh api "repos/{owner}/{repo}/pulls/$pr_number" --jq "$pr_jq")" || { unchecked "couldn\'t consult PR #$pr_number\'s description"; exit 0; }',
+        'issue_numbers="$(LC_ALL=C grep -oiE "$closing_keyword_ere" <<<"$title ${description_body//$\'\\001\'/$\'\\n\'}" | LC_ALL=C grep -oE \'[0-9]+\' | LC_ALL=C sort -un)"',
+        '  if [ "${present[$s]}" -eq 0 ]; then',
+        'if [ "${latest_class[4]}" = ok ]; then',
+        '[ -z "$waived" ] || echo "model-record: a pipeline-override waived stage absence:$waived"',
+    ])
+    def survives(base,cur):
+        return not ((Counter(code_only(base))-Counter(code_only(cur)))-allow)
     for f in ['skills/pre-merge-review/model-record-gate.sh','compliance-evidence.sh']:
-        if baseline is not None:
-            check(code_only((baseline/f).read_bytes())==code_only((ROOT/f).read_bytes()),'AC7 unchanged code '+f)
-        # Mutation controls on a scratch copy (working tree untouched).
+        gate=f.endswith('model-record-gate.sh')
         real=(ROOT/f).read_bytes()
+        pin=(lambda base,cur:survives(base,cur)) if gate else (lambda base,cur:code_only(base)==code_only(cur))
+        if baseline is not None:
+            check(pin((baseline/f).read_bytes(),real),'AC7 '+('baseline code lines survive ' if gate else 'unchanged code ')+f)
+            base=(baseline/f).read_bytes()
+        else:
+            base=real  # controls still run against the working copy
+        # Mutation controls on a scratch copy (working tree untouched).
         lines=real.splitlines(keepends=True)
-        code=[i for i,l in enumerate(lines) if l.strip() and not l.lstrip().startswith(b'#')]
+        basecode=Counter(code_only(base))
+        code=[i for i,l in enumerate(lines) if l.strip() and not l.lstrip().startswith(b'#') and basecode[l.rstrip(b'\r\n')]>0 and l.rstrip(b'\r\n') not in allow]
         i=code[-1]
-        for label,mut in [('inserted code line',lines[:i]+[b'echo MUTANT\n']+lines[i:]),
-                          ('changed code line',lines[:i]+[lines[i].rstrip(b'\n')+b' MUTANT\n']+lines[i+1:]),
-                          ('added trailing comment on code line',lines[:i]+[lines[i].rstrip(b'\n')+b' # x\n']+lines[i+1:])]:
+        muts=[('changed code line',lines[:i]+[lines[i].rstrip(b'\n')+b' MUTANT\n']+lines[i+1:]),
+              ('added trailing comment on code line',lines[:i]+[lines[i].rstrip(b'\n')+b' # x\n']+lines[i+1:])]
+        muts.append(('deleted code line',lines[:i]+lines[i+1:]) if gate else ('inserted code line',lines[:i]+[b'echo MUTANT\n']+lines[i:]))
+        for label,mut in muts:
             m=TMP/('ac7-'+label.replace(' ','-')+'-'+Path(f).name); m.write_bytes(b''.join(mut))
-            check(code_only(m.read_bytes())!=code_only(real),'AC7 control: '+label+' in '+f+' must FAIL the pin')
+            check(not pin(base,m.read_bytes()),'AC7 control: '+label+' in '+f+' must FAIL the pin')
         extra=[lines[0],b'# added comment\n',b'\n',b'   # indented comment\n']+lines[1:]+[b'\n',b'# tail comment\n']
         m=TMP/('ac7-comment-only-'+Path(f).name); m.write_bytes(b''.join(extra))
-        check(code_only(m.read_bytes())==code_only(real),'AC7 control: comment/blank-only change in '+f+' must PASS the pin')
+        check(pin(base,m.read_bytes()),'AC7 control: comment/blank-only change in '+f+' must PASS the pin')
+        if gate:
+            added=lines[:i]+[b'echo ADDED-BY-A-LATER-FEATURE\n']+lines[i:]
+            m=TMP/'ac7-added-gate'; m.write_bytes(b''.join(added))
+            check(pin(base,m.read_bytes()),'AC7 control: an added code line in the gate must PASS (later features may extend it)')
 
 def bad_inputs():
     for value in ['product','Fullstack','Fullstack Developer','Discovery','Planning','Test','Implementation','Review','']:
