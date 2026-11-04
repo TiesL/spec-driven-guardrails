@@ -153,12 +153,15 @@ def controlled_oracle(text, predicate, label, mutants):
             print('CONTROL: ' + label + '/' + name + ' rejected')
 
 
-def rewrite_control(text, predicate, label, old, new):
+def rewrite_control(text, predicate, label, old, new, *, pattern=False):
     """A reviewed rewrite must apply exactly once, independently of other arms."""
     check(predicate(text), label + '/unmodified PASS')
-    count = text.count(old)
+    # Literal clauses tolerate whitespace reflow; callers may supply a pattern
+    # for equivalent wording. A missing/ambiguous witness always fails loudly.
+    locator = old if pattern else r'\s+'.join(map(re.escape, old.split()))
+    count = len(re.findall(locator, text, flags=re.I))
     check(count == 1, label + '/exactly one replacement')
-    weakened = text.replace(old, new, 1)
+    weakened = re.sub(locator, lambda match: new, text, count=1, flags=re.I)
     check(weakened != text, label + '/mutation applied')
     check(not predicate(weakened), label + '/rejected by source predicate')
     if count == 1 and weakened != text and not predicate(weakened):
@@ -183,7 +186,10 @@ def class_scope(value):
     return (not pin(value, r'\bnot only\b|\bor a unanimous panel\b')
             and pin(value, r'(?:only|limited to).{0,60}batches.{0,60}epic tiesl/spec-driven-guardrails#608')
             and pin(value, r'outside.{0,80}(?:scope|epic|batches).{0,100}requires? '
-                           r'(?:explicit )?per-item human authority'))
+                           r'(?:explicit )?per-item human authority')
+            # The complete scope clause must end at #608, not extend to other epics.
+            and pin(value, r'(?:only|limited to).{0,60}batches.{0,60}'
+                           r'epic tiesl/spec-driven-guardrails#608\s*(?:[.;]|$)'))
 
 
 def executable_conditions(value):
@@ -200,7 +206,7 @@ def grant_source(value):
     explicit = pin(value, r'per-item human grant in (?:their|the human.s) own words is required')
     durable = bool(re.search(r'\[[^]]*(?:grant|human words)[^]]*\]\(https://[^)]+\)', value, re.I))
     self_link = bool(re.search(r'\]\((?:SKILL\.md)?#|\]\(skills/role-contracts/SKILL\.md', value, re.I))
-    return (explicit or durable) and not self_link and not pin(value, r'\bunless\b')
+    return (explicit or durable) and not self_link and not pin(value, r'\bunless\b|\bexcept\b')
 
 
 def historical_example(text):
@@ -221,7 +227,7 @@ def installed_skill_reference(text):
             and pin(bullets[0], r'stage-selection panel')
             and pin(bullets[0], r'read running the pipeline')
             and pin(bullets[0], r'before selecting stages or using pipeline-override\.sh')
-            and not pin(bullets[0], r'\boptionally\b|\bafter using\b'))
+            and not pin(bullets[0], r'\boptionally\b|\bafter using\b|\bexcept\b|\bunless\b'))
 
 
 POST_TABLE_GRANT = ("For Abbreviated, obtain the maintainer's per-item grant in their own words; use "
@@ -234,7 +240,10 @@ def post_table_grant(text):
     lines = section.splitlines()
     last_row = max((i for i, line in enumerate(lines) if line.startswith('|')), default=-1)
     prose = ' '.join(' '.join(lines[last_row + 1:]).split())
-    return POST_TABLE_GRANT in prose
+    return (POST_TABLE_GRANT in prose
+            and not pin(prose, r'\b(?:unless|except)\b|'
+                               r'panel[^.!?]*(?:waiv|without)[^.!?]*(?:grant|human)|'
+                               r'(?:grant|human)[^.!?]*(?:waiv|optional|not required)'))
 
 
 def source_checks(root, ident, tmp):
@@ -315,14 +324,14 @@ def projection_controls(tmp):
     original_policy = policy_path.read_text()
     outputs = ['WORKFLOW.md', 'adapters/codex/AGENTS.md', 'AGENTS.md']
     for name, old, new in [
-            ('N5', 'read Running the pipeline', 'optionally skim Running the pipeline'),
-            ('N6', 'before selecting stages or using `pipeline-override.sh`',
+            ('N5', r'read\s+Running\s+the\s+pipeline', 'optionally skim Running the pipeline'),
+            ('N6', r'before\s+selecting\s+stages\s+or\s+using\s+`?pipeline-override\.sh`?',
              'after using `pipeline-override.sh`')]:
         for path in ['policy/WORKFLOW.md', *outputs]:
             shutil.copy2(ROOT / path, copy / path)
         before = {path: (copy / path).read_bytes() for path in outputs}
         weakened = rewrite_control(original_policy, installed_skill_reference,
-                                   'S534/' + name, old, new)
+                                   'S534/' + name, old, new, pattern=True)
         policy_path.write_text(weakened)
         generated = subprocess.run([str(ROOT / 'generate-workflow-adapters.sh'), str(copy)],
                                    capture_output=True, text=True)
@@ -393,6 +402,9 @@ def catalogue(text):
                     'For Abbreviated, the panel may apply the track without a per-item grant')
     check(post_table_grant(text.replace(original_grant, POST_TABLE_GRANT.replace(' ', '\n'))),
           'S548/post-table grant accepts whitespace reflow')
+    rewrite_control(text, post_table_grant, 'S548/N9-appended-grant-waiver',
+                    original_grant, original_grant +
+                    ' A unanimous panel may waive the per-item human grant.')
     rows = [line for line in section.splitlines() if line.startswith('|')]
     fields = {'human': r'human|identity|decided.by',
               'source link': r'source|words', 'scope': r'scope|skip',
@@ -450,6 +462,9 @@ def catalogue(text):
                 ('self-link', lambda value: value + ' [Standing paragraph above](SKILL.md#running-the-pipeline)')])
             rewrite_control(values[indices['source link']], grant_source, 'S548/N3',
                             'is required', 'is required unless the panel is unanimous')
+            rewrite_control(values[indices['source link']], grant_source,
+                            'S548/N8-panel-grant-exception', 'is required',
+                            'is required except when the panel agrees')
             predicates['source link'] = grant_source
         else:
             conditions = values[indices['conditions']]
@@ -460,10 +475,14 @@ def catalogue(text):
             check(class_scope(conditions.replace('applies only to', 'is limited to')),
                   'S548/class scope accepts equivalent limited-to wording')
             rewrite_control(conditions, class_scope, 'S548/N1',
-                            'applies only to batches', 'applies not only to batches')
+                            r'(?:applies\s+only\s+to|is\s+limited\s+to)\s+batches',
+                            'applies not only to batches', pattern=True)
             rewrite_control(conditions, class_scope, 'S548/N2',
-                            'requires per-item human authority',
-                            'requires per-item human authority or a unanimous panel')
+                            r'requires?\s+(?:explicit\s+)?per-item\s+human\s+authority',
+                            'requires per-item human authority or a unanimous panel', pattern=True)
+            rewrite_control(conditions, class_scope, 'S548/N7-other-epics',
+                            'epic TiesL/spec-driven-guardrails#608;',
+                            'epic TiesL/spec-driven-guardrails#608 and other epics;')
             controlled_oracle(conditions, executable_conditions, 'S548/executable work requires Implementation', [
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('executable-tests-deleted', lambda value: re.sub(r'(?i)executable tests(?:/scripts)?', '', value)),
@@ -479,6 +498,41 @@ def catalogue(text):
                           'S548/catalogue rejects non-role identity ' + name + '/' + invalid)
                 for role in ['maintainer', "project's human decision-maker"]:
                     check(predicate(role), 'S548/catalogue accepts human role ' + name + '/' + role)
+
+def valid_variant_controls(tmp, ident):
+    """Run the complete fixtures (including negative controls) on real variants.
+
+    The environment flag only prevents recursive positive-control subprocesses;
+    it never disables a source assertion or a mutation control.
+    """
+    if os.environ.get('STAGE_SELECTION_VALID_VARIANT') == '1':
+        return
+    copy = tmp / 'valid-variant'
+    shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+    path, old, new = {
+        534: ('policy/WORKFLOW.md', 'read Running the pipeline', 'read   Running the pipeline'),
+        548: ('skills/role-contracts/SKILL.md', 'applies only to batches', 'is limited to batches'),
+    }[ident]
+    target = copy / path
+    original = target.read_text()
+    locator = r'\s+'.join(map(re.escape, old.split()))
+    if ident == 548:
+        locator = r'(?:applies\s+only\s+to|is\s+limited\s+to)\s+batches'
+    changed, count = re.subn(locator, lambda match: new, original)
+    check(count == 1, f'S{ident}/valid variant located exactly once')
+    target.write_text(changed)
+    if ident == 534:
+        result = subprocess.run([str(copy / 'generate-workflow-adapters.sh'), str(copy)],
+                                capture_output=True, text=True)
+        check(result.returncode == 0, 'S534/valid variant regenerated: ' + result.stdout + result.stderr)
+    for case in (534, 548):
+        result = subprocess.run(['python3', str(copy / 'test/fixtures/stage-selection-647.py'), str(case)],
+                                env=dict(os.environ, STAGE_SELECTION_VALID_VARIANT='1'),
+                                capture_output=True, text=True)
+        check(result.returncode == 0,
+              f'S{ident}/valid variant complete S{case}: ' + result.stdout + result.stderr)
+    print(f'CONTROL: S{ident} legitimate variant complete S534/S548 fixtures exercised')
+
 
 ident = int(sys.argv[1])
 with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
@@ -509,6 +563,10 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
               'S534/consultation accepts whitespace reflow')
         controlled_oracle(policy, installed_skill_reference, 'S534/installed skill policy pointer', [
             ('repo-relative-link', lambda value: value + '\n[Running](skills/role-contracts/SKILL.md#running-the-pipeline)')])
+        rewrite_control(policy, installed_skill_reference, 'S534/N10-panel-consultation-exception',
+                        'before selecting stages or using `pipeline-override.sh`',
+                        'before selecting stages or using `pipeline-override.sh`, '
+                        'except when the panel chooses otherwise')
         projection_controls(tmp)
     if ident == 544:
         cli(tmp)
@@ -519,4 +577,6 @@ with tempfile.TemporaryDirectory(prefix='stage-selection-647-') as scratch:
             check(hashlib.sha256(content).hexdigest() == digest, 'S548/unchanged ' + path)
             check(hashlib.sha256(content + b'\n').hexdigest() != digest, 'S548/byte mutation ' + path)
         print('CONTROL: S548 frozen production hashes and byte mutants PASS')
+    if ident in (534, 548):
+        valid_variant_controls(tmp, ident)
 sys.exit(bool(errors))
