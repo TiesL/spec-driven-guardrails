@@ -6,6 +6,7 @@ reads, including rechecks, and all context scans share one bounded pool of 8
 concurrent subprocesses and one budget. No production knobs.
 """
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -43,6 +44,68 @@ class FetchError(Incomplete):
         self.status = int(m[1]) if m else None
 
 
+def child_pids(pid):
+    """Enumerate direct children without a ps executable (sandboxed on macOS)."""
+    if sys.platform == 'darwin':
+        lib = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        listing = lib.proc_listchildpids
+        listing.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int]
+        size = 32
+        while True:
+            buffer = (ctypes.c_int * size)()
+            count = listing(pid, buffer, ctypes.sizeof(buffer))
+            if count < 0:
+                raise OSError(ctypes.get_errno(), 'proc_listchildpids')
+            if count < size:
+                return set(buffer[:count]) - {0}
+            size *= 2
+    # Linux lists children per thread, including subprocesses started by pool
+    # threads rather than the main thread. An exited task can disappear here.
+    children = set()
+    for task in Path(f'/proc/{pid}/task').glob('*'):
+        try:
+            children.update(map(int, (task / 'children').read_text().split()))
+        except FileNotFoundError:
+            pass
+    return children
+
+
+def kill_descendants(roots):
+    """Freeze the owned trees before killing them, including new sessions.
+
+    Killing only a worker's group loses gh groups when the worker exits.
+    Stop parents first so they cannot fork or orphan a child during discovery;
+    repeat child discovery until every discovered descendant is stopped.
+    Never signal our own group: the caller and watchdog may share it.
+    """
+    owned = set(roots)
+    stopped = set()
+    try:
+        while owned - stopped:
+            pending = owned - stopped
+            for pid in sorted(pending):
+                try:
+                    if os.getpgid(pid) == pid and pid != os.getpgrp():
+                        os.killpg(pid, signal.SIGSTOP)
+                    else:
+                        os.kill(pid, signal.SIGSTOP)
+                except ProcessLookupError:
+                    pass
+                stopped.add(pid)
+            for pid in pending:
+                owned.update(child_pids(pid))
+    finally:
+        # Individual PIDs also cover descendants sharing the caller's group.
+        for pid in sorted(owned - set(roots), reverse=True) + list(roots):
+            try:
+                if os.getpgid(pid) == pid and pid != os.getpgrp():
+                    os.killpg(pid, signal.SIGKILL)
+                else:
+                    os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
 class Runner:
     """Bounded subprocesses, each in its own process group, tracked under a
     lock so the main thread can kill them all on SIGTERM, deadline or the
@@ -51,7 +114,7 @@ class Runner:
     def __init__(self, gate, remaining):
         self.gate = gate
         self.deadline = time.monotonic() + remaining
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.groups = set()
         self.abort = threading.Event()
         self.calls = 1  # speculative detail acquisition
@@ -71,11 +134,7 @@ class Runner:
         self.abort.set()
         with self.lock:
             groups = list(self.groups)
-        for pid in groups:
-            try:
-                os.killpg(pid, signal.SIGKILL)
-            except (ProcessLookupError, PermissionError):
-                pass
+        kill_descendants(groups)
 
     def all(self, fn, items):
         """Run fn over items in the pool; results in input order, never in
@@ -154,6 +213,8 @@ class Runner:
             except subprocess.TimeoutExpired:
                 raise Incomplete('subprocess timeout')
             finally:
+                if p.poll() is None or p.returncode:
+                    kill_descendants([p.pid])
                 try:
                     os.killpg(p.pid, signal.SIGTERM)
                 except (ProcessLookupError, PermissionError):
@@ -600,9 +661,11 @@ def inherit(r, number, root, repo, head, base, meta, detail, title, stamp, body,
                                    empty, local, child_comments, child_reviews, scopes))
 
     # Recheck participating details and scan every context, in one pool.
-    participating = [f'pulls/{number}', f'issues/{epic}'] + [f'issues/{c}' for c in ordered]
-    participating += [f'pulls/{pn}' for pn in prs if any(pn in closers[c] for c in ordered)]
-    owner = {f'issues/{c}': c for c in ordered}
+    # Classification itself depends on the excluded objects' first reads too.
+    participating = [f'pulls/{number}', f'issues/{epic}'] + [f'issues/{c}' for c in numbers]
+    participating += [f'pulls/{pn}' for pn in prs]
+    participating = list(dict.fromkeys(participating))
+    owner = {f'issues/{c}': c for c in numbers}
     owner.update({f'pulls/{pn}': wanted[pn] for pn in prs})
 
     def recheck(path):
