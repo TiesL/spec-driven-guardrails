@@ -3,6 +3,7 @@
 import fcntl
 import json
 import shutil
+import signal
 import os
 from pathlib import Path
 import re
@@ -190,7 +191,21 @@ def respond(data, endpoint, args):
     active = key == fault.get('key') and page == fault.get('page', 1) and counts[key] >= fault.get('after', 1)
     if active:
         mode = fault.get('mode', 'error')
-        if mode == 'delay':
+        if mode == 'hung-descendant':
+            # Runner starts gh in a separate session/group from the worker.
+            # Its child also owns a separate group and must not outlive the gate.
+            child = subprocess.Popen([sys.executable, '-c',
+                'import pathlib,time; pathlib.Path(' +
+                repr(os.environ['EPIC_LOG'] + '.orphan-ready') +
+                ').write_text(str(time.time())); time.sleep(6); pathlib.Path(' +
+                repr(os.environ['EPIC_LOG'] + '.orphan-survived') +
+                ').touch(); time.sleep(20)'], start_new_session=True, stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            Path(os.environ['EPIC_LOG'] + '.pids').write_text(json.dumps(
+                {'pids': [os.getpid(), child.pid], 'pgid': os.getpgrp(),
+                 'child_pgid': os.getpgid(child.pid)}))
+            time.sleep(30)
+        elif mode == 'delay':
             time.sleep(11)
         elif mode == 'error':
             sys.exit('gh: injected failure (HTTP ' + str(fault.get('status', 500)) + ')')
@@ -210,7 +225,7 @@ def respond(data, endpoint, args):
     if active and fault.get('mode') == 'changed':
         value = json.loads(json.dumps(value))
         change = fault.get('change', 'updated_at')
-        if change == 'body': value['body'] += '\nchanged'
+        if change == 'body': value['body'] = fault.get('body', value['body'] + '\nchanged')
         elif change == 'state': value['state'] = 'open'
         elif change == 'base': value['base']['ref'] = 'different-base'
         elif change == 'head': value['head']['sha'] = 'c' * 40
@@ -710,6 +725,72 @@ def scenario(n, t):
         d['_fault'] = {'key': 'issues/609/timeline', 'mode': 'delay'}
         start = time.monotonic(); t.run(d, 'unchecked', label='10s subprocess timeout')
         if time.monotonic() - start > 14: t.failures.append('10s subprocess was not killed promptly')
+        # Use the existing copied-gate seam (S572) to shorten only the
+        # deadline expression; exercise the unchanged production supervisor.
+        short = t.sandbox / 'short-deadline'
+        (short / 'skills/pre-merge-review').mkdir(parents=True)
+        (short / 'lib').symlink_to(t.root / 'lib', target_is_directory=True)
+        gate = short / 'skills/pre-merge-review/model-record-gate.sh'
+        source = (t.root / 'skills/pre-merge-review/model-record-gate.sh').read_text()
+        deadline = 'remaining=$((120 - SECONDS + started))'
+        assert source.count(deadline) == 1, 'deadline injection seam moved'
+        watchdog = '( sleep "$remaining" ||'
+        assert source.count(watchdog) == 1, 'watchdog injection seam moved'
+        # Fire SIGTERM before the collector's own deadline, so cleanup cannot
+        # race with its normal per-call timeout and hide the supervisor defect.
+        gate.write_text(source.replace(deadline, 'remaining=$((8 - SECONDS + started))')
+                        .replace(watchdog, '( sleep 3 ||'))
+        a = world(); a['_fault'] = {'key': 'issues/609/timeline', 'mode': 'hung-descendant'}
+        receipt = Path(t.env['EPIC_LOG'] + '.pids')
+        orphan = Path(t.env['EPIC_LOG'] + '.orphan-survived')
+        ready = Path(t.env['EPIC_LOG'] + '.orphan-ready')
+        receipt.unlink(missing_ok=True); orphan.unlink(missing_ok=True); ready.unlink(missing_ok=True)
+        groups = []
+        try:
+            t.run(a, 'unchecked', label='hung-call descendant cleanup', gate=gate)
+            if not receipt.exists():
+                t.failures.append('hung-call descendant cleanup: injection not reached')
+            else:
+                record = json.loads(receipt.read_text())
+                groups = [record['pgid'], record['child_pgid']]
+                assert groups == record['pids'] and groups[0] != groups[1]
+                assert os.getpgrp() not in groups, 'fixture must own separate groups'
+                # Wall time crosses process boundaries on older macOS Python too.
+                # Wait past the child's write time, even if the gate returned early.
+                if not ready.exists():
+                    t.failures.append('hung-call descendant cleanup: child did not reach delay')
+                else:
+                    time.sleep(max(0, float(ready.read_text()) + 6.5 - time.time()))
+                alive = []
+                for pid in record['pids']:
+                    try:
+                        os.kill(pid, 0)
+                        alive.append(pid)
+                    except ProcessLookupError:
+                        pass
+                live_groups = []
+                for group in groups:
+                    try:
+                        os.killpg(group, 0)
+                        live_groups.append(group)
+                    except ProcessLookupError:
+                        pass
+                if alive or live_groups:
+                    t.failures.append(f'hung-call descendant cleanup: surviving pids {alive}; '
+                                      f'pgids {live_groups}')
+                if orphan.exists():
+                    t.failures.append('hung-call descendant cleanup: orphan-survived marker written')
+        finally:
+            # A RED regression must not leak its deliberately hung processes.
+            if receipt.exists() and not groups:
+                record = json.loads(receipt.read_text())
+                groups = [record['pgid'], record['child_pgid']]
+            for group in groups:
+                try:
+                    os.killpg(group, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
         # A shell scan blocks after detail acquisition: the whole-evaluation
         # watchdog must cover this, independently of Python REST timeouts.
         slow = t.sandbox / 'slow-scan'; slow.mkdir()
@@ -796,6 +877,24 @@ exec "$EPIC_REAL_AWK" "$@"
                 # publishing, so the changed object must appear from the second read on.
                 a = world(); a['_fault'] = {'key': key, 'after': 2, 'mode': 'changed', 'change': change}
                 t.run(a, 'unchecked', label='snapshot changed ' + key + '/' + change)
+        # Excluded candidates participated in classification too. Their second
+        # read must be checked even though they supplied no inherited evidence.
+        a = world(); mention(a, 4400)
+        t.run(a, label='control: unchanged discovered nonmember passes')
+        a['_fault'] = {'key': 'issues/4400', 'after': 2, 'mode': 'changed',
+                       'change': 'body', 'body': '**Epic:** #608'}
+        t.run(a, 'unchecked', label='excluded nonmember gains Epic field before publication')
+        for base in ('elsewhere', 'release/608-inheritance'):
+            a = world(); p = pr(4500, 999, base)
+            a['pulls/4500'] = p
+            a['issues/4500/comments'] = []; a['pulls/4500/reviews'] = []
+            a['issues/609/timeline'].append({'id': 4500, 'created_at': STAMP,
+                'event': 'cross-referenced', 'source': {'issue': dict(p,
+                    pull_request={'url': f'https://api.github.com/repos/{REPO}/pulls/4500'})}})
+            t.run(a, label='control: unchanged mentioned noncloser passes on ' + base)
+            a['_fault'] = {'key': 'pulls/4500', 'after': 2, 'mode': 'changed',
+                           'change': 'body', 'body': 'Closes #609'}
+            t.run(a, 'unchecked', label='excluded noncloser becomes child closer on ' + base)
         # Control: a change visible from the first read is a genuinely open child, not a
         # snapshot change, so the gate blocks on it (the recheck cannot see a difference).
         a = world(); a['_fault'] = {'key': 'issues/609', 'after': 1, 'mode': 'changed', 'change': 'state'}

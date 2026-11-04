@@ -8861,8 +8861,8 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 ### S570 — A delayed REST subprocess is bounded
 **Covers:** F66
 - Given: a timeline REST response delayed eleven seconds and an awk scan delayed 121 seconds after PR detail acquisition; and the scale arm: the normalized 19-child fixture plus 300 unrelated issues, every gh call delayed 0.8 seconds.
-- When: the gate runs with its production ten-second read deadline and one pool of at most eight concurrent reads.
-- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The scale arm finishes checked (the one-line pass) in under 120 seconds, reads no unrelated issue, and the fixture observes more than 1 and at most 8 concurrent gh calls. The external 135-second test watchdog is a failure, never a passing timeout oracle.
+- When: the gate runs with its production ten-second read deadline and one pool of at most eight concurrent reads. An additional hung gh call spawns a child in its own process group (separate from gh and the worker), records both PIDs and PGIDs, and schedules an `orphan-survived` marker after six seconds; a copied gate shortens the watchdog to three seconds with an eight-second worker deadline, forcing supervisor SIGTERM before the collector can expire its own read.
+- Then: the REST delay returns unchecked within fourteen seconds; the shell delay is bounded by the whole-evaluation 120-second watchdog (130 seconds including cleanup). Both discard role-played lines. The scale arm finishes checked (the one-line pass) in under 120 seconds, reads no unrelated issue, and the fixture observes more than 1 and at most 8 concurrent gh calls. The external 135-second test watchdog is a failure, never a passing timeout oracle. The hung-call arm returns unchecked; after the marker delay neither recorded PID nor any live process in either recorded PGID survives, and no marker exists. The test cleans up both fixture groups even on failure.
 
 ### S571 — Each REST endpoint fails open visibly
 **Covers:** F66
@@ -8879,7 +8879,7 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 ### S573 — Details are rechecked before publishing
 **Covers:** F66
 - Given: epic, participating child, closing PR or release detail changes updated_at, body or state at recheck (child list snapshot followed by detail; second detail read for PRs and epic); PR variants also change base, head or merged_at while keeping updated_at unchanged.
-- When: the gate completes traversal and rechecks details.
+- When: the gate completes traversal and rechecks details. Additional `after: 2` arms change already-discovered excluded candidates: a nonmember gains `**Epic:** #608`, and a mentioned noncloser starts closing child #609 on either a wrong base or the release base. Unchanged copies of each excluded candidate are pass controls.
 - Then: it discards the result and returns unchecked; a checked pass from the old snapshot fails.
 
 ### S574 — A late failure discards buffered findings
