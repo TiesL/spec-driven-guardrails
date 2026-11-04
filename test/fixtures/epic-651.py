@@ -198,7 +198,7 @@ def respond(data, endpoint, args):
             child = subprocess.Popen([sys.executable, '-c',
                 'import pathlib,time; pathlib.Path(' +
                 repr(os.environ['EPIC_LOG'] + '.orphan-ready') +
-                ').write_text(str(time.time())); time.sleep(6); pathlib.Path(' +
+                ').write_text(str(time.time())); time.sleep(' + str(fault.get('marker_after', 6)) + '); pathlib.Path(' +
                 repr(os.environ['EPIC_LOG'] + '.orphan-survived') +
                 ').touch(); time.sleep(20)'], start_new_session=True, stdin=subprocess.DEVNULL,
                 stdout=None if early_exit else subprocess.DEVNULL,
@@ -241,7 +241,7 @@ def respond(data, endpoint, args):
         if q.get('per_page') != ['100']:
             sys.exit('collection must request per_page=100')
         value = value[(page - 1) * 100:page * 100]
-    if key == 'pulls' and q.get('base') != [data['pulls/648']['head']['ref']]:
+    if key == 'pulls' and q.get('base') != [data['pulls/' + str(data.get('_release', 648))]['head']['ref']]:
         sys.exit('release ref missing or incorrectly encoded')
     raw = json.dumps(value)
     expr = None
@@ -313,7 +313,7 @@ class Check:
         Path(self.env['EPIC_DATA']).write_text(json.dumps(d))
         for suffix in ('', '.counts', '.detail', '.slow', '.viol', '.conc', '.counts.lock', '.conc.lock'):
             Path(self.env['EPIC_LOG'] + suffix).unlink(missing_ok=True)
-        cmd = ['bash', str(gate or self.root / 'skills/pre-merge-review/model-record-gate.sh'), '648']
+        cmd = ['bash', str(gate or self.root / 'skills/pre-merge-review/model-record-gate.sh'), str(getattr(self, 'pr_number', 648))]
         try:
             p = subprocess.run(cmd, cwd=self.sandbox / 'project', env=self.env, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=135)
@@ -606,13 +606,14 @@ def scenario(n, t):
         old_gate.write_bytes(subprocess.run(['git', 'show', base + ':skills/pre-merge-review/model-record-gate.sh'],
                                            cwd=t.root, capture_output=True, check=True).stdout)
         for manual in (False, True):
-            for arm in ('clean', 'near-miss', '404', '404-other', '404-single', 'comments-fail', 'reviews-fail', 'detail-fail', 'release-single'):
+            for arm in ('clean', 'near-miss', '404', '404-other', '404-single', 'comments-fail', 'reviews-fail', 'detail-fail', 'release-single', 'slow-detail'):
                 if arm == '404-single' and manual: continue
                 a = world()
                 if arm == '404-single': pass  # eligible release, no epic override
                 elif not manual: a['pulls/648']['head']['ref'] = 'feature/651-work'
                 else: a['issues/608/comments'] = comments(skip('skip=Implementation'))
-                if arm == 'near-miss': a['issues/648/comments'] = comments('inline ' + marker('Test'))
+                if arm == 'slow-detail': a['_fault'] = {'key': 'pulls/648', 'mode': 'delay'}
+                elif arm == 'near-miss': a['issues/648/comments'] = comments('inline ' + marker('Test'))
                 elif arm == '404' and manual: continue  # a 404 on the epic itself is unchecked (S571)
                 elif arm == '404': a['_fault'] = {'key': 'issues/608/comments', 'status': 404}
                 elif arm in ('404-other', '404-single'):
@@ -640,18 +641,7 @@ def scenario(n, t):
         t.run(d, label='any Closes issue skip waives inherited Test release-wide')
         d['issues/609']['state'] = 'open'
         t.run(d, 'block', ('#609',), 'release-wide skip cannot waive membership')
-        a = world()
-        a['issues/655'] = issue(655, a.pop('issues/608')['body'])
-        a['issues/655/comments'] = a.pop('issues/608/comments')
-        a['issues/655/timeline'] = a.pop('issues/608/timeline')
-        a['pulls/648']['body'] = 'Closes #655\nCloses #651\nCloses #647'
-        a['pulls/648']['head']['ref'] = 'release/655-bundle'
-        a['issues/651/comments'] = []; a['issues/647/comments'] = comments(skip('skip=Test'))
-        for c in (609, 610):
-            a[f'issues/{c}']['body'] = '**Epic:** #655'
-            a[f'pulls/{c+1000}']['base']['ref'] = 'release/655-bundle'
-            a[f'issues/{c}/comments'] = comments(*(marker(s) for s in STAGES if s != 'Test'))
-        t.run(a, label='exact bundle Closes #655 #651 #647 and Test waived release-wide')
+        scenario(579, t)  # Actual bundle, including release self references.
 
     elif n == 567:
         for arm in ('default', 'case', 'nonrelease', 'foreign', 'wrong-target', 'no-closes'):
@@ -746,10 +736,11 @@ def scenario(n, t):
         # race with its normal per-call timeout and hide the supervisor defect.
         gate.write_text(source.replace(deadline, 'remaining=$((8 - SECONDS + started))')
                         .replace(watchdog, '( sleep 3 ||'))
-        # The early-exit arm faults the first collector REST call so the short
-        # watchdog still reaches the injection under the four-worker test load.
+        # Repository detail now belongs to unbounded compatibility recognition.
+        # Fault the first bounded epic detail instead, after recognition, so
+        # the unchanged early-parent-exit cleanup oracle exercises inheritance.
         for early_exit in (False, True):
-            a = world(); a['_fault'] = {'key': '' if early_exit else 'issues/609/timeline',
+            a = world(); a['_fault'] = {'key': 'issues/608' if early_exit else 'issues/609/timeline',
                                       'mode': 'hung-descendant', 'early_exit': early_exit}
             label = 'early-parent-exit descendant cleanup' if early_exit else 'hung-call descendant cleanup'
             receipt = Path(t.env['EPIC_LOG'] + '.pids')
@@ -891,6 +882,8 @@ exec "$EPIC_REAL_AWK" "$@"
         saved_path = t.env['PATH']; t.env['PATH'] = str(no_python) + os.pathsep + saved_path
         t.run(world(), 'unchecked', label='Python interpreter unavailable')
         t.env['PATH'] = saved_path
+        scenario(583, t)  # Hung initial fetch with helper unavailable.
+        scenario(584, t)  # Independent interpreter-unavailable arm.
 
     elif n == 573:
         for key in ('issues/608', 'issues/609', 'pulls/1609', 'pulls/648'):
@@ -966,6 +959,12 @@ exec "$EPIC_REAL_AWK" "$@"
                 t.failures.append(f'real hook broken={broken}: exit={h.returncode}, expected {want}: {h.stderr}')
             if broken:
                 hook_filter(t, p.stdout if p else '', h.stderr)
+    elif 579 <= n <= 588:
+        import importlib.util
+        sys.dont_write_bytecode = True
+        spec = importlib.util.spec_from_file_location('release_663', t.root / 'test/fixtures/release-663.py')
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        module.scenario(n, t, sys.modules[__name__])
     else:
         raise AssertionError(n)
 

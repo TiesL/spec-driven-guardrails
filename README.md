@@ -382,7 +382,7 @@ work items, this repo and every adopted project can add an optional middle tier:
 branch** (`release/<epic-number>-<slug>`, forked from `main`). Each work item's branch targets the release branch, and the release branch
 merges into `main` in one step once the whole epic is ready.
 
-The full mechanism — when to open one, who may merge what into it, the frozen membership set,
+The full mechanism — when to open one, who may merge what into it, membership including late-added children,
 the mandatory holistic review before the release branch can go to the maintainer, and the
 version-bump proposal that merge carries — lives in the `release-branch-workflow` skill, not
 repeated here. In short: the two merges are confirmed differently, on purpose. A work item

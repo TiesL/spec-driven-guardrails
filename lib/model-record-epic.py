@@ -2,8 +2,8 @@
 """Private A52 transport and reconciliation. The shell owns record semantics.
 
 The only result is a versioned manifest and private transport files. All gh
-reads, including rechecks, and all context scans share one bounded pool of 8
-concurrent subprocesses and one budget. No production knobs.
+reads and context scans after compatibility recognition share one bounded
+pool of 8 concurrent subprocesses and one budget. No production knobs.
 """
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import ctypes
@@ -524,7 +524,52 @@ def collect(gate, number, root, remaining):
             r.pool.shutdown(wait=False, cancel_futures=True)
 
 
+class Recognition:
+    """Compatibility reads finish before the inheritance budget starts.
+
+    Reuse transport/framing and the shell grammar without constructing a
+    Runner or applying its deadlines. Cache collections for the later worker.
+    """
+    api = Runner.api
+    collection = Runner.collection
+    shell = Runner.shell
+    batch = Runner.batch
+    overrides = Runner.overrides
+    settle = Runner.settle
+
+    def __init__(self, gate):
+        self.gate = gate
+        self.lock = threading.RLock()
+        self.cache = {}
+        self.calls = 1
+        self.total = 0
+
+    def count(self, child):
+        self.calls += 1
+
+    def all(self, fn, items):
+        return [fn(item) for item in items]
+
+    def process(self, args, data=None, limit=None):
+        result = subprocess.run(args, input=None if data is None else data.encode(
+            'utf-8', errors='surrogateescape'), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            start_new_session=True)
+        return result.returncode, result.stdout, result.stderr.decode(
+            'utf-8', errors='surrogateescape')
+
+
 def traverse(r, number, root):
+    cached = json.loads((root / 'recognition.json').read_text())
+    r.cache = cached.pop('cache')
+    r.calls = cached.pop('calls')
+    r.total = cached.pop('total')
+    if r.calls >= CALLS or r.total >= TOTAL_BYTES:
+        raise Incomplete('recognition cap')
+    return inherit(r, number, root, **cached)
+
+
+def recognize(gate, number, root):
+    r = Recognition(gate)
     meta = json.loads((root / 'metadata').read_text())
     if not isinstance(meta, list) or len(meta) != 9 or not all(isinstance(x, str) for x in meta[:4]):
         raise Incomplete('invalid metadata')
@@ -588,8 +633,12 @@ def traverse(r, number, root):
     if notes:
         # An eligible release never falls back to legacy on a 404.
         return {'version': 2, 'unchecked': 'closing reference #%d on epic release PR #%d does not exist (HTTP 404)' % (min(notes), number)}
-    return inherit(r, number, root, repo, head, base, meta, detail, title, stamp, body,
-                   epic, issues, comments, reviews, scopes)
+    cached = dict(repo=repo, head=head, base=base, meta=meta, detail=detail,
+                  title=title, stamp=stamp, body=body, epic=epic, issues=issues,
+                  comments=comments, reviews=reviews, scopes=scopes,
+                  cache=r.cache, calls=r.calls, total=r.total)
+    (root / 'recognition.json').write_text(json.dumps(cached))
+    return None
 
 
 def inherit(r, number, root, repo, head, base, meta, detail, title, stamp, body,
@@ -704,7 +753,7 @@ def inherit(r, number, root, repo, head, base, meta, detail, title, stamp, body,
         for source in events(loaded[(c, 'timeline')]):
             link = source.get('pull_request')
             link = pull_url.fullmatch(link.get('url') or '') if isinstance(link, dict) else None
-            if link:
+            if link and int(link[1]) != number:
                 referenced[c].add(int(link[1]))
     # Candidate PR details, attributed to the first child that names them.
     wanted = {}
@@ -828,18 +877,21 @@ def supervise(gate, number, root, remaining):
 
 def main():
     mode = sys.argv[1]
-    if mode == 'initial':
-        r = Runner('', READ_SECONDS)
-        try:
-            rc, raw, err = r.process(sys.argv[2:])
-        except Incomplete as error:
-            sys.stderr.buffer.write(str(error).encode('utf-8', errors='surrogateescape'))
-            sys.exit(1)
-        if rc:
-            sys.stderr.buffer.write(err.encode('utf-8', errors='surrogateescape'))
-            sys.exit(1)
-        sys.stdout.buffer.write(raw)
-        sys.stderr.buffer.write(err.encode('utf-8', errors='surrogateescape'))
+    if mode == 'recognize':
+        gate, number, root = sys.argv[2:]
+        root = Path(root)
+        value = recognize(gate, int(number), root)
+        if value is None:
+            sys.exit(2)
+        (root / 'manifest.json').write_text(json.dumps(value))
+        # Legacy output has no inheritance attribution or deadline.
+        if value.get('fetch_error'):
+            sys.stdout.write('fetch-error|' + value['fetch_error'] + '|' + str(value.get('issue', '')) + '\n')
+        elif value.get('unchecked'):
+            sys.stdout.write('unchecked\t' + value['unchecked'] + '\n')
+        else:
+            for _, line in value['rows']:
+                print(line)
     elif mode == 'supervise':
         supervise(sys.argv[2], sys.argv[3], Path(sys.argv[4]), float(sys.argv[5]))
     elif mode == 'collect':

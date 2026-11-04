@@ -167,8 +167,13 @@ Traversal uses explicit pages of 100 and finite limits: 100 children;
 1,000 closed PRs; 1,000 timeline events per child or on the epic; 40 REST calls
 attributable to one child; 1,200 total REST calls; 8 MiB per response and
 64 MiB total. Reads and context scans run at most 8 concurrent subprocesses.
-Each subprocess/read has 10 seconds; the whole evaluation, including shell
-scans, has 120 seconds. Equality with a cap, timeout, reader failure,
+Healthy compatibility recognition is outside the 10-second read and
+120-second evaluation limits. The inheritance budget starts after recognition:
+each subprocess/read has 10 seconds and the inheritance evaluation, including
+shell scans, has 120 seconds plus 2-second cleanup grace. The whole gate has no
+wall-clock guarantee. Cached recognition inputs count toward byte/object caps,
+not elapsed time. If Python or the helper is unavailable, the initial fallback
+read has 10 seconds plus 2-second cleanup grace. Equality with a cap, timeout, reader failure,
 retrieval error or changed detail snapshot yields `role-play-unchecked`,
 discarding all partial blocking findings. Collections are complete only after
 a short page; there are no retries. Details are rechecked before publishing,

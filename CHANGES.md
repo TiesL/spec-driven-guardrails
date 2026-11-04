@@ -530,9 +530,11 @@ the shared parser warns if it has no `Applies if`.
 - **Question:** Does this project carry a change through the five separately dispatched roles (Product, Architect, QA, Fullstack Developer, Reviewer) instead of one agent session doing every stage?
 - **Default:** question
 - **Applies if:** always
-- **Meaning version:** 2 — #427 (A31a/A34a) makes the merge guard refuse
-  inline-only records and overrides with `<` or `>` in a value. Projects
-  answered under v1 re-confirm this stricter obligation (#254).
+- **Meaning version:** 3 — #647 stage-selection rules and #651 epic stage inheritance
+  materially change what answering “yes” commits a project to (#663).
+  Projects answered under v2 re-confirm these obligations (#254).
+  The v2 strict whole-line records and override-value requirements from #427
+  (A31a/A34a) remain in force.
 - **Yes means:** each work item's stages are dispatched to the roles in the
   `role-contracts` skill, in its fixed order, each with its own write/action
   scope and input scope, by the orchestrating Claude Code session. At session
@@ -593,6 +595,11 @@ the shared parser warns if it has no `Applies if`.
   branches and `main` for epics whose work items ship together?
 - **Default:** question
 - **Applies if:** always
+- **Meaning version:** 2 — #651 maintainer decision 2: membership is no longer
+  frozen at release-branch opening; issues that gain the Epic field later count
+  as children and must be covered. The gate now derives epic release stage
+  status from the children (#663). Projects answered under v1 re-confirm
+  these obligations (#254).
 - **Yes means:** an epic that Product+Architect explicitly judge to warrant
   it (recorded on the epic issue, no numeric threshold) gets a
   `release/<epic#>-<slug>` branch forked from `main`. Work-item PRs merge

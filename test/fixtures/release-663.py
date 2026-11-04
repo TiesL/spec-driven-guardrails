@@ -1,0 +1,309 @@
+"""#663 offline regressions through the existing gate CLI and fixture Adapter."""
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+
+def bundle(e):
+    # Rename the empty world's epic and release; create actual children anew.
+    raw = json.dumps(e.world(()))
+    raw = raw.replace('608', '655').replace('648', '662').replace('inheritance', 'bundle')
+    d = json.loads(raw); d['_release'] = 662
+    for c in (647, 651, 660, 663):
+        e.add_child(d, c, epic=655, base='release/655-bundle')
+    release = d['pulls/662']
+    release.update(state='open', merged=False, merged_at=None)
+    release['body'] = '\n'.join(f'Closes #{c}' for c in (655, 647, 651, 660, 663))
+    for c in (647, 651, 660, 663):
+        d[f'issues/{c}/timeline'].append({'id': 662, 'created_at': e.STAMP,
+            'event': 'cross-referenced', 'source': {'issue': dict(release,
+                pull_request={'url': f'https://api.github.com/repos/{e.REPO}/pulls/662'})}})
+    return d
+
+
+def exercise_problems(text):
+    section = text.split('### S548 ', 1)[-1].split('\n## ', 1)[0].lower()
+    flat = re.sub(r'\s+', ' ', section)
+    clauses = {
+        'structural waiver authority': r'structural.{0,40}waiver.authority',
+        'eight retained hashes': r'(?:eight|8).{0,35}(?:retained|non.gate).{0,25}hash',
+        'six scopes': r'(?:six|6).{0,25}(?:override )?scopes',
+        'nonblank authority': r'non.blank.{0,50}decided.by.{0,30}reason',
+        'no panel authority': r'no.{0,20}panel.{0,20}authority',
+    }
+    problems = [name for name, pattern in clauses.items() if not re.search(pattern, flat)]
+    if re.search(r'hashes.{0,90}(?:script, gate|gate and)', flat):
+        problems.append('obsolete gate hash')
+    return problems
+
+
+def release_meaning_problems(text):
+    entries = re.findall(r'^## release-branch-workflow\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    if len(entries) != 1:
+        return ['expected exactly one release-branch-workflow entry']
+    fields = re.findall(r'^- \*\*Meaning version:\*\* (.*?)(?=^- \*\*|\Z)', entries[0], re.M | re.S)
+    if len(fields) != 1:
+        return ['expected one explicit Meaning version field']
+    field = re.sub(r'\s+', ' ', fields[0]).strip()
+    clauses = {
+        'Meaning version 2': r'^2 — ',
+        'membership no longer frozen at opening': r'membership.{0,40}no longer.{0,20}frozen.{0,40}opening',
+        'late Epic-field children need coverage': r'issues.{0,30}gain.{0,20}epic field.{0,25}later.{0,25}count.{0,25}children.{0,25}must be covered',
+        '#651 maintainer decision 2': r'#651 maintainer decision 2',
+        'gate derives epic release stages from children': r'gate.{0,20}derives.{0,20}epic release stage status.{0,20}from.{0,20}children',
+    }
+    return [name for name, pattern in clauses.items() if not re.search(pattern, field, re.I)]
+
+
+def release_pending(t, workflow, text, label, expect_notice):
+    (workflow / 'CHANGES.md').write_text(text)
+    project = t.sandbox / 'release-adopter'
+    project.mkdir(exist_ok=True)  # A plain fixture directory: no git writes needed.
+    for version in ('implicit', 'v1', 'v2'):
+        notes = 'original answer' if version == 'implicit' else f're-confirmed (meaning {version})'
+        (project / 'WORKFLOW-ADOPTION.md').write_text(
+            '| Change | Answer | Date | Notes |\n|---|---|---|---|\n'
+            f'| release-branch-workflow | yes | 2026-11-04 | {notes} |\n')
+        result = subprocess.run(['bash', str(workflow / 'pending-changes.sh'), str(project)],
+                                env=t.env, capture_output=True, text=True, timeout=30)
+        t.arms += 1
+        lines = [line for line in result.stdout.splitlines() if line.startswith('  - release-branch-workflow ')]
+        want = expect_notice and version != 'v2'
+        notice = '  - release-branch-workflow — answered under meaning v1, now v2 — '
+        if result.returncode or result.stderr:
+            t.failures.append(f'{label}/{version}: pending command failed: {result.stderr}')
+        if (want and (len(lines) != 1 or not lines[0].startswith(notice)
+                      or 'Answered, but the meaning has changed since' not in result.stdout)
+                or not want and lines):
+            t.failures.append(f'{label}/{version}: expected resurfaced={want}, got {lines!r}')
+
+
+def deadline_problems(text):
+    flat = re.sub(r'\s+', ' ', text.lower())
+    clauses = {
+        'recognition outside both deadlines': r'(?:recognition|compatibility).{0,100}(?:outside|exclud|not subject).{0,80}(?:10|ten).{0,40}(?:120|whole.evaluation)',
+        'inheritance budget starts after recognition': r'(?:120.second|inheritance|evaluation).{0,60}(?:budget|deadline|limit).{0,50}(?:starts?|begins?).{0,30}after.{0,30}recognition',
+        'no whole-gate wall-clock guarantee': r'(?:whole gate|entire gate).{0,50}no.{0,30}wall.clock.{0,30}(?:guarantee|limit|bound)',
+        'cached inputs count toward caps not time': r'cached recognition inputs.{0,40}(?:byte|object).{0,40}caps.{0,30}not.{0,20}(?:elapsed|time)',
+        'missing dependency fallback exception': r'(?:python|helper).{0,40}unavailable.{0,80}(?:initial|fallback).{0,60}(?:10|ten).{0,50}(?:2|two).second.{0,20}(?:grace|cleanup)',
+    }
+    return [name for name, pattern in clauses.items() if not re.search(pattern, flat)]
+
+
+def dependency_hang(t, e, missing, early_exit=False):
+    label = missing + (" early-parent-exit" if early_exit else " live-parent")
+    clone = t.sandbox / ('hung-' + label.replace(' ', '-'))
+    (clone / 'skills/pre-merge-review').mkdir(parents=True)
+    (clone / 'lib').mkdir()
+    for lib in (t.root / 'lib').iterdir():
+        if missing == 'helper' and lib.name == 'model-record-epic.py':
+            continue
+        (clone / 'lib' / lib.name).symlink_to(lib)
+    gate = clone / 'skills/pre-merge-review/model-record-gate.sh'
+    shutil.copyfile(t.root / 'skills/pre-merge-review/model-record-gate.sh', gate)
+    saved = t.env['PATH']
+    if missing == 'python':
+        no_python = t.sandbox / ('hung-no-python-' + str(early_exit)); no_python.mkdir()
+        script = no_python / 'python3'; script.write_text('#!/bin/sh\nexit 127\n'); script.chmod(0o755)
+        t.env['PATH'] = str(no_python) + os.pathsep + saved
+    # The 10s watchdog plus 2s grace may legitimately leave the child alive
+    # within that bound. Schedule its witness strictly after 12s, never at 6s.
+    marker_after = 12.5
+    d = e.world(); d['_fault'] = {'key': 'pulls/648', 'mode': 'hung-descendant',
+                                'marker_after': marker_after, 'early_exit': early_exit}
+    Path(t.env['EPIC_DATA']).write_text(json.dumps(d))
+    receipt = Path(t.env['EPIC_LOG'] + '.pids')
+    survived = Path(t.env['EPIC_LOG'] + '.orphan-survived')
+    ready = Path(t.env['EPIC_LOG'] + '.orphan-ready')
+    for path in (receipt, survived, ready):
+        path.unlink(missing_ok=True)
+    supervisor = (os.getpid(), os.getpgrp())
+    sentinel = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],
+                                start_new_session=True, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    start = time.monotonic()
+    p = subprocess.Popen(['bash', str(gate), '648'], cwd=t.sandbox / 'project', env=t.env,
+                         text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    t.arms += 1
+    try:
+        try:
+            out, err = p.communicate(timeout=14)  # 12s contract + 2s scheduling tolerance
+            elapsed = time.monotonic() - start
+            if p.returncode or not e.accepts(out, err, 'unchecked'):
+                t.failures.append(f'{label} hung initial: expected unchecked without block; {out!r} {err!r}')
+            if elapsed > 14:
+                t.failures.append(f'{label} hung initial exceeded bound: {elapsed:.2f}s')
+        except subprocess.TimeoutExpired:
+            t.failures.append(f'{label} hung initial exceeded 12s + 2s tolerance')
+        if not receipt.exists():
+            t.failures.append(f'{label}: hung initial injection not reached')
+        else:
+            record = json.loads(receipt.read_text())
+            if not ready.exists():
+                t.failures.append(f'{label}: child did not reach marker delay')
+            else:
+                # Observe past the witness even if the gate returned quickly.
+                time.sleep(max(0, float(ready.read_text()) + marker_after + 0.5 - time.time()))
+            for pid in record['pids']:
+                try:
+                    os.kill(pid, 0)
+                    t.failures.append(f'{label}: descendant {pid} survived')
+                except ProcessLookupError:
+                    pass
+            for group in set((record['pgid'], record['child_pgid'])):
+                assert group != supervisor[1], 'fixture must own separate groups'
+                try:
+                    os.killpg(group, 0)
+                    t.failures.append(f'{label}: descendant group {group} survived')
+                except ProcessLookupError:
+                    pass
+            if survived.exists():
+                t.failures.append(f'{label}: orphan survival marker written')
+        if sentinel.poll() is not None:
+            t.failures.append(f'{label}: unrelated sentinel was killed')
+        os.kill(supervisor[0], 0)
+        if (os.getpid(), os.getpgrp()) != supervisor:
+            t.failures.append(f'{label}: test supervisor identity changed')
+    finally:
+        if sentinel.poll() is None:
+            sentinel.kill()
+        sentinel.wait()
+        groups = [p.pid]
+        if receipt.exists():
+            record = json.loads(receipt.read_text()); groups += [record['pgid'], record['child_pgid']]
+        for group in set(groups):
+            assert group != os.getpgrp()
+            try: os.killpg(group, signal.SIGKILL)
+            except ProcessLookupError: pass
+        p.communicate()
+        t.env['PATH'] = saved
+
+
+def scenario(n, t, e):
+    if n in (579, 580, 581):
+        t.pr_number = 662
+        if n == 579:
+            d = bundle(e)
+            final = 'model-record: epic #655 inherited Discovery, Planning, Test and Implementation checked for 4 children\n'
+            control = json.loads(json.dumps(d))
+            for c in (647, 651, 660, 663):
+                control[f'issues/{c}/timeline'] = control[f'issues/{c}/timeline'][:1]
+            t.run(control, label='control: complete bundle without self events', exact=final)
+            assert e.accepts(final, '', 'pass', attributed=True, exact=final)
+            assert not e.accepts(final.replace('4 children', '3 children'), '', 'pass', exact=final)
+            t.run(d, label='actual bundle self references', exact=final)
+            for c in (647, 651, 660, 663):
+                d[f'issues/{c}/comments'] = e.comments(*(e.marker(s) for s in e.STAGES if s != 'Test'))
+            d['issues/647/comments'].append(e.comments(e.skip('skip=Test'))[0])
+            # Pin the complete release-wide skip output, not just absence of blocks.
+            expected = ('model-record: epic #655 release PR #662 a pipeline-override waived inherited stage absence for all children: skip=Test\n' + final)
+            control = json.loads(json.dumps(d))
+            for c in (647, 651, 660, 663):
+                control[f'issues/{c}/timeline'] = control[f'issues/{c}/timeline'][:1]
+            t.run(control, label='control: release-wide skip without self events', exact=expected)
+            assert e.accepts(expected, '', 'pass', attributed=True, exact=expected)
+            assert not e.accepts(final, '', 'pass', exact=expected)
+            t.run(d, label='actual bundle release-wide Test skip', exact=expected)
+        elif n == 580:
+            for kind in ('open', 'wrong-base', 'merged-elsewhere'):
+                d = bundle(e)
+                # Isolate invalid-closer detection from F1: remove only self events.
+                for c in (647, 651, 660, 663):
+                    d[f'issues/{c}/timeline'] = d[f'issues/{c}/timeline'][:1]
+                p = e.pr(9000, 647, 'release/655-bundle')
+                if kind == 'open': p.update(state='open', merged_at=None, merged=False)
+                elif kind == 'wrong-base': p['base']['ref'] = 'trunk'
+                else: p['base']['ref'] = 'release/999-elsewhere'
+                d['pulls/9000'] = p; d['issues/9000/comments'] = []; d['pulls/9000/reviews'] = []
+                d['issues/647/timeline'].append({'id': 9000, 'created_at': e.STAMP,
+                    'event': 'cross-referenced', 'source': {'issue': dict(p,
+                        pull_request={'url': f'https://api.github.com/repos/{e.REPO}/pulls/9000'})}})
+                t.run(d, 'block', ('child #647', 'closing PR #9000'), kind)
+        else:
+            d = bundle(e); d['pulls/662/reviews'] = []
+            t.run(d, 'block', ('release PR #662', 'Review'), 'release Review still required')
+            # A different PR with the release head/base is still a child closer;
+            # exclusion must use identity, not merely branch shape.
+            d = bundle(e)
+            for c in (647, 651, 660, 663):
+                d[f'issues/{c}/timeline'] = d[f'issues/{c}/timeline'][:1]
+            other = e.pr(9001, 647, 'trunk')
+            other.update(state='open', merged=False, merged_at=None)
+            other['head']['ref'] = 'release/655-bundle'
+            d['pulls/9001'] = other
+            d['issues/9001/comments'] = []; d['pulls/9001/reviews'] = []
+            d['issues/647/timeline'].append({'id': 9001, 'created_at': e.STAMP,
+                'event': 'cross-referenced', 'source': {'issue': dict(other,
+                    pull_request={'url': f'https://api.github.com/repos/{e.REPO}/pulls/9001'})}})
+            t.run(d, 'block', ('child #647', 'closing PR #9001'), 'same shape, different PR identity')
+    elif n == 582:
+        e.scenario(565, t)
+    elif n in (583, 584):
+        for early_exit in (False, True):
+            dependency_hang(t, e, 'helper' if n == 583 else 'python', early_exit)
+    elif n == 585:
+        # A52's phase boundaries, independently phrased. Each deletion must
+        # fail the same oracle used on the published skill, even while RED.
+        clauses = (
+            'Healthy compatibility recognition is outside the 10-second read and 120-second evaluation limits.',
+            'The inheritance budget starts after recognition.',
+            'The whole gate has no wall-clock guarantee.',
+            'Cached recognition inputs count toward byte/object caps, not elapsed time.',
+            'If Python or helper is unavailable, the initial fallback has 10 seconds plus 2-second cleanup grace.',
+        )
+        control = ' '.join(clauses)
+        assert not deadline_problems(control), deadline_problems(control)
+        for clause in clauses:
+            assert deadline_problems(control.replace(clause, '')), clause
+        # The old unconditional promise must not satisfy the boundary oracle.
+        assert deadline_problems('Each subprocess/read has 10 seconds; the whole evaluation, including shell scans, has 120 seconds.')
+        t.failures += ['published deadlines: ' + x for x in deadline_problems(
+            (t.root / 'skills/pre-merge-review/SKILL.md').read_text())]
+    elif n == 587:
+        good = ('### S548 — authority\nStructural waiver-authority oracle; eight retained hashes. '
+                'Exactly six override scopes, non-blank decided-by and reason guards, no panel authority.\n')
+        assert not exercise_problems(good)
+        for clause in ('Structural waiver-authority oracle;', 'eight retained hashes.', 'six override scopes,',
+                       'non-blank decided-by and reason guards,', 'no panel authority.'):
+            assert exercise_problems(good.replace(clause, ''))
+        assert exercise_problems(good + ' Retain hashes: core, script, gate and readers.')
+        text = (t.root / 'test/behavior/stage-selection-scenarios.md').read_text()
+        t.failures += ['S548 exercise: ' + x for x in exercise_problems(text)]
+        # Existing S548 executes the structural oracle and all eight hashes/controls.
+        p = subprocess.run(['bash', str(t.root / 'test/cases/s548_stage_selection.sh')], capture_output=True, text=True)
+        if p.returncode: t.failures.append('S548 mechanical oracle failed: ' + p.stdout + p.stderr)
+    elif n == 588:
+        baseline = (t.root / 'test/fixtures/baseline/CHANGES.md.snapshot').read_text()
+        current = (t.root / 'CHANGES.md').read_text()
+        for label, text in (('snapshot', baseline), ('current', current)):
+            section = text.split('## process-multi-agent-roles\n', 1)[1].split('\n## ', 1)[0]
+            assert '**Meaning version:** 3' in section
+            assert 'stage-selection' in section and 'epic stage inheritance' in section
+            t.failures += [f'{label} release entry: ' + x for x in release_meaning_problems(text)]
+        if baseline != current:
+            t.failures.append('CHANGES.md must match approved process v3 / release v2 snapshot')
+        # Only the release entry is varied. The shared parser and real CLI run
+        # unchanged in an isolated workflow, never editing production files.
+        workflow = t.sandbox / 'release-workflow'; workflow.mkdir()
+        shutil.copyfile(t.root / 'pending-changes.sh', workflow / 'pending-changes.sh')
+        (workflow / 'lib').symlink_to(t.root / 'lib', target_is_directory=True)
+        release_pending(t, workflow, baseline, 'approved snapshot control', True)
+        prefix, entry = baseline.split('## release-branch-workflow\n', 1)
+        entry, suffix = entry.split('\n## ', 1)
+        field = re.search(r'^- \*\*Meaning version:\*\* .*?(?=^- \*\*)', entry, re.M | re.S).group()
+        mutants = {
+            'field removed': (entry.replace(field, ''), False),
+            'version left at 1': (entry.replace('**Meaning version:** 2', '**Meaning version:** 1'), False),
+            'reason missing': (entry.replace(field, '- **Meaning version:** 2\n'), True),
+        }
+        for label, (mutant, notice) in mutants.items():
+            text = prefix + '## release-branch-workflow\n' + mutant + '\n## ' + suffix
+            assert release_meaning_problems(text), label + ' escaped entry oracle'
+            release_pending(t, workflow, text, 'mutation: ' + label, notice)
+        release_pending(t, workflow, current, 'current CHANGES.md', True)

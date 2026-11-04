@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S239 — process-model-choice moves to meaning version 2 (effort is no longer recorded), quality-review-before-merge to 4, each exactly once; process-multi-agent-roles is now v2 (#427); this repo's own rows re-confirm; adopters answered under the old version are re-surfaced.
+# S239 — process-model-choice moves to meaning version 2 (effort is no longer recorded), quality-review-before-merge to 4, each exactly once; process-multi-agent-roles is now v3 (#647/#651/#663); this repo's own rows re-confirm; adopters answered under the old version are re-surfaced.
 # Covers: F9, F26, F39
 #
 # Issue #424 (V3; A33a), AC4. The adoption-registry rule (#254) counts a
@@ -7,7 +7,7 @@
 # said every stage records "which model/effort") bumps from the absent
 # version (= 1) to 2, and `quality-review-before-merge` from 3 to 4 (S191
 # pins its text). Both move once, in this slice. `process-multi-agent-roles`
-# now carries v2 with #427, which makes the guard stricter. Each "Yes means" states that the floor is judged
+# retains the v2 #427 guard and carries v3 for stage selection and epic inheritance. Each "Yes means" states that the floor is judged
 # on the model and effort is neither chosen nor checked, with the revisit
 # trigger "when the dispatch tool gains an effort parameter". Seam: CHANGES.md
 # and WORKFLOW-ADOPTION.md as text, and pending-changes.sh run on fixture
@@ -35,7 +35,7 @@ trap sandbox_destroy EXIT
 [ "$(changes_meaning_version process-model-choice "$changes")" = "2" ] \
   || fail "S239/AC4 — process-model-choice must be at Meaning version 2, got '$(changes_meaning_version process-model-choice "$changes")'"
 pmar="$(changes_meaning_version process-multi-agent-roles "$changes")"
-[ "$pmar" = 2 ] || fail "S239 — multi-agent meaning must now be v2 (#427)"
+[ "$pmar" = 3 ] || fail "S239 — multi-agent meaning must now be v3 (#647/#651/#663)"
 
 # ===== the process-model-choice entry =======================================
 entry="$(awk -v id="process-model-choice" '
