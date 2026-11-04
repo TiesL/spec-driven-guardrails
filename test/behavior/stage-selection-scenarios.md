@@ -186,8 +186,10 @@ the person named in `decided-by` is supplied at posting time, as pinned by the
 pipeline-override fixtures; only evidence whose applicability is verified may support
 posting. Remove only the human source, or make conditions unverifiable: obtain
 evidence/per-item authority, no class posting. Do not pin missing-evidence prose
-or use panel records as original human words. Retain the exact production hashes
-in the mechanical fixture: core, script, gate and record/Markdown readers. Links,
+or use panel records as original human words. Apply the structural waiver-authority
+oracle: exactly six override scopes, non-blank decided-by and reason guards,
+and no panel authority. Retain the eight non-gate production hashes in the
+mechanical fixture: core, script and record/Markdown readers. Links,
 timestamps and human-looking decided-by are forgeable, not authentication.
 
 ## Deliberately permissive instruction mutant

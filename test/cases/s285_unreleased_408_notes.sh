@@ -36,8 +36,9 @@ for t in 'fresh Reviewers' 'finding-class loop-back' 'override' 'decision table'
 done
 
 # Meaning versions: the oracle is the set of questions whose "Meaning version:"
-# differs between v0.3.0's CHANGES.md and the working tree (a question absent
-# or unnumbered then counts as changed). Numbers are never hard-coded.
+# differs between v0.3.0's and v0.4.0's CHANGES.md (a question absent
+# or unnumbered then counts as changed). Frozen release notes cannot track later
+# meaning bumps (#663). Numbers and changed questions are never hard-coded.
 meaning_versions() {
   awk '
     /^## / { h = substr($0, 4); next }
@@ -55,7 +56,10 @@ if ! git -C "$r" rev-parse -q --verify 'refs/tags/v0.3.0^{commit}' >/dev/null 2>
   fail "S285 — tag v0.3.0 is not in this clone; the macOS and Linux CI checkouts need fetch-depth: 0 to have it"
 else
   old="$(git -C "$r" show v0.3.0:CHANGES.md | meaning_versions)"
-  new="$(meaning_versions <"$r/CHANGES.md")"
+  if ! git -C "$r" rev-parse -q --verify 'refs/tags/v0.4.0^{commit}' >/dev/null 2>&1; then
+    fail "S285 — tag v0.4.0 is missing; fetch tags / fetch-depth: 0"
+  fi
+  new="$(git -C "$r" show v0.4.0:CHANGES.md | meaning_versions)"
   changed=""
   n_changed=0
   while IFS=' ' read -r q v; do
@@ -67,7 +71,7 @@ else
         || fail "S285 — compatibility entry does not name '$q' (meaning version changed since v0.3.0)"
       ql="$(grep -F -- "$q" <<<"$entry")"
       grep -qE -- "meaning version $v([^[:alnum:]_]|$)" <<<"$ql" \
-        || fail "S285 — compatibility entry has no '$q' line with 'meaning version $v' (read from CHANGES.md)"
+        || fail "S285 — compatibility entry has no '$q' line with 'meaning version $v' (read from v0.4.0:CHANGES.md)"
     fi
   done <<<"$new"
   [ "$n_changed" -gt 0 ] || fail "S285 — oracle found no changed meaning versions since v0.3.0"
