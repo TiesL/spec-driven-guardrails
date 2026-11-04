@@ -2818,39 +2818,37 @@ constant number of shell subprocesses per phase.
   exposing one wrapper per endpoint. Leverage and Locality stay in this Module.
   The real `gh` and the fixture `gh` are the two Adapters at the existing PATH
   Seam. No new configuration port or changes to the shared record reader.
-- **Recognition and compatibility.** Extend the existing PR-detail `--jq`
-  projection with a separately framed metadata row for `.head.ref`,
-  `.head.repo.full_name`, `.base.ref`, `.base.repo.full_name`; retain the old
-  title and time/body rows exactly and strip metadata before record scanning.
-  Acquire this detail first into a private buffer so release-shaped retrievals
-  can take the bounded path before comments/reviews are fetched. Defer its
-  error reporting to the legacy comments/reviews/detail failure precedence
-  on ordinary PRs; neither a speculative read nor metadata appears in output.
-  Use `@json` for metadata, not raw ref text. Missing head metadata in old
-  synthetic fixtures is a non-release shape. Real malformed metadata for a
-  release-shaped head is unchecked. Only an opted-in PR with a same-repository
-  head matching `^release/([1-9][0-9]*)-[A-Za-z0-9][A-Za-z0-9-]*$`, targeting
-  the repository's default branch, and an explicit case-insensitive
-  `Closes #<captured epic>` in title/body enters inheritance. Obtain the
-  default branch from `gh api 'repos/{owner}/{repo}'`; do not hardcode main.
-  The existing closing-reference parser still handles all its current
-  keywords for ordinary evidence/overrides. A non-release work-item PR or a
-  tracking epic never inherits. Before new reads, inspect cached comments of
-  the captured epic: any valid manual override there selects the complete
-  legacy evaluation/output, even a partial skip. A release-wide single-session
-  also selects legacy evaluation. A closing reference that returns HTTP 404
-  never selects the legacy path. Order for a release-shaped PR closing #E:
-  decide eligibility (head, `Closes #E`, base equals the default branch)
-  without regard to 404s; a non-eligible PR keeps legacy output with the
-  existing 404 note. For an eligible PR: a 404 on #E itself is unchecked; then
-  a valid manual epic override or release-wide single-session selects legacy
-  (its 404 notes unchanged); otherwise any other closing-reference 404 is
-  unchecked, exactly `role-play-unchecked: closing reference #N on epic
-  release PR #P does not exist (HTTP 404)` (lowest N first), with the usual
-  stderr warning and no `role-played:` line (AC7, AC11). Rationale: the
-  legacy path blocks with "stages missing" even when every child is covered,
-  which is neither a checked result nor a visible fail-open. No extra inheritance messages in either
-  compatibility path; ordinary PRs retain byte-identical stdout/stderr.
+- **[A] Recognition and compatibility (#663 F2/F3).** The shell first calls
+  `gh api repos/{owner}/{repo}/pulls/P --jq "$pr_jq$metadata_jq"` directly,
+  never the helper `initial` mode; strip metadata, retaining baseline bytes.
+  Use the existing legacy comments,
+  reviews, closing-reference parser and closing-issue comment reads, preserving
+  their failure precedence, framing, ordering, 404 notes and override parser.
+  Before any Runner, select legacy for non-opted-in/ordinary PRs; malformed
+  release metadata is unchecked. A release candidate requires same-repository head
+  `^release/([1-9][0-9]*)-[A-Za-z0-9][A-Za-z0-9-]*$` and case-insensitive
+  explicit `Closes #<captured epic>`; missing synthetic metadata is non-release.
+  Any valid manual override on that epic (including partial skips), or a
+  release-wide single-session, selects complete legacy output immediately.
+  Only remaining candidates read `gh api repos/{owner}/{repo}` to compare the
+  base with its default branch; another base selects legacy evaluation too.
+  Recognition is cheap and bounded in additional probes (one repository read
+  only for remaining candidates), not a new wall-clock limit on legacy reads.
+  An 11-second or slower successful response retains baseline stdout/stderr
+  byte-for-byte, including missing-stage enforcement.
+  Only now enter the epic path: start the 120-second budget and call
+  `python3 -I "$helper" supervise "$gate" P "$epic_tmp" 120`; its worker
+  calls `collect` on cached recognition inputs, never repeats compatibility
+  selection under a deadline. Existing 10-second read/cap limits apply there.
+  Eligible missing closing issues are unchecked, not a legacy fallback:
+  `role-play-unchecked: closing reference #N on epic release PR #P does not exist (HTTP 404)`
+  (lowest N first, usual warning, no partial block); compatibility keeps 404 notes.
+  If Python/helper is unavailable, wrap the initial gh read in an independent
+  Bash process-group watchdog: 10 seconds, TERM, 2-second grace, KILL and reap;
+  Cap each stream at 8 MiB; timeout/overflow/watchdog failure discards bytes, calls unchecked,
+  exit 0 within 12 seconds plus scheduling overhead. No raw unbounded retry on
+  status 127. Fast ordinary responses continue legacy; release candidates are
+  unchecked. This exceptional failure bound excludes healthy compatibility.
 - **REST reads (all read-only).** Beyond the existing PR detail/comments/
   reviews and closing-issue comments, request `gh api` with these endpoints
   (replace R with the verified base repository's owner/name; E, C and P are
@@ -2921,7 +2919,15 @@ constant number of shell subprocesses per phase.
   Timeline references alone are not closing evidence; other-repository
   sources and mere mentions contribute nothing. Union these candidates with
   the release-list matches, so hand-closed release children are discoverable
-  even if no automatic close event exists. A closing PR that is open,
+  even if no automatic close event exists.
+  [A] #663 F1: identify the evaluated release by the CLI PR number P, verified
+  repository R, base/default ref and release head B from its cached detail and
+  snapshot recheck. Exclude exactly that PR from child closer candidates and
+  release-list ownership, including its own child-timeline cross-references,
+  before closer validation/evidence aggregation. Never exempt by branch alone:
+  another number, another base or a closer merged elsewhere remains validated
+  and blocks as below. Inconsistent self identity is unchecked, not exempted.
+  Its Closes still feed legacy overrides; release Review remains. A closing PR that is open,
   unmerged, or merged to another base is a mismatch naming C/P, not a
   disposition. Several closing PRs are permitted only when all are merged
   to B; scan their combined evidence once each. A fully read empty candidate
@@ -2960,7 +2966,7 @@ constant number of shell subprocesses per phase.
   1,200 total REST calls; 8 concurrent subprocesses; 8 MiB per response and
   64 MiB total; 10 seconds per subprocess/read and 120 seconds for the whole
   inheritance evaluation, including parsing/scanning. Call budget for the
-  normalized 19-child #608 shape: about 23 fixed reads (initial detail,
+  normalized 19-child #608 shape: about 23 fixed reads (including cached detail,
   release comments/reviews, three closing issues, repository, release and epic
   detail, one epic timeline page, one merged-PR page, about 10 non-child
   candidates, two rechecks) plus about 10 per child (detail, one timeline
@@ -2978,14 +2984,17 @@ constant number of shell subprocesses per phase.
   (2.1.309 installed [V]); the Codex merge hook showed 600 s [V, adapters/
   codex/permission-baseline.md]; `merge-preflight.sh` has no limit. The hook
   runs its review-marker, CI and stray-closes checks first (a few seconds),
-  then this gate (at most 120 s plus the 2-second kill grace). Keep the
-  deadline at or below a quarter of the hook's runtime limit; a runtime that
+  then this gate. [A] #663 bounds inheritance at 120 s plus 2-second kill grace;
+  legacy-compatible recognition time is additional, so the whole gate has no
+  new wall-clock guarantee. Keep the inheritance deadline below a quarter of
+  the hook's runtime limit; a runtime that
   cancels the hook first would let the merge proceed without the unchecked
   warning, which is a silent fail-open this design avoids by margin, not by
   mechanism. Equality with any cap is unchecked,
   even if the last page could be complete. These limits include release PR
   comments/reviews and closing-issue comments reused in inheritance, not just
-  newly discovered children. Start the traversal budget at detail acquisition.
+  newly discovered children. [A] #663 starts this budget only after recognition;
+  cached recognition inputs count toward byte/object caps, not elapsed time.
   Pages continue until a page with
   fewer than 100 objects; a full final allowed page cannot establish a pass.
   Python uses monotonic deadlines, bounded streamed stdout/stderr and process
@@ -3104,6 +3113,31 @@ constant number of shell subprocesses per phase.
   own deletion or addition mutation control. Gate behavior compatibility is
   S565's job; S548's title and Then clause say "unchanged waiver authority"
   instead of "unchanged gate script".
+- **[A] #663 handoff (F1–F7; AC1–AC7).** No new Module, Interface or Seam:
+  gate/helper retain Depth, Leverage and Locality with real/fixture gh Adapters.
+  Developer moves recognition from Runner to shell, passes cached inputs to
+  supervise/collect, implements identity exclusion/watchdog and regression code.
+  QA allocates only S579–S588: S579 corrects S566 to epic #655 and children
+  #647/#651/#660/#663, each with merged release-base closer, epic timeline
+  membership and child timelines referencing both closer and release PR #662;
+  require exact pass/skip output. S580 independently adds open, wrong-base and
+  merged-elsewhere closers; S581 retains release Review/identity protection.
+  S582 adds S565 slow-ordinary (11 seconds) and slow manual-override arms,
+  comparing both streams byte-for-byte to pre-#651 baseline, retaining blocks.
+  S583/S584 extend S572 separately for missing helper/missing python3 with hung
+  initial gh, asserting unchecked, <=12 seconds plus scheduling tolerance,
+  no leaked block and no surviving descendant; retain fast/malformed arms.
+  S585 asserts CHANGELOG #660/#663; S586 README late membership/discovery residual;
+  S587 exercises S548 document text against structural waiver authority plus
+  all eight retained hashes, dropping only the obsolete gate hash;
+  S588 updates S90 snapshot with CHANGES.md Meaning version 3 and rationale.
+  Developer owns README, CHANGELOG, CHANGES.md and S548 exercise correction;
+  QA owns scenarios, Developer tests. English only; no person names in skills.
+  #660 is test-only pin hardening, not live instruction proof
+  or complete protection against permissive rewrites; seven survivors remain.
+  Meaning v3 reflects stage selection/epic inheritance; release-branch-workflow
+  stays implicit v1 pending maintainer decision.
+  No #663 AC is contradicted/narrowed; no panel-visible contract change.
 - **Ownership and consistency.** Architect: A52–A53 only. Product: PRD F64–F66
   and issue/dependency text (`**Epic:** #655`, #647 before #651). QA:
   TEST-SCENARIOS S549–S578, corresponding test cases/fixtures under panel 2.
@@ -3156,11 +3190,12 @@ waiver effect, although standing panel policy cannot authorize skipping Review.
 Child-local evidence fetched only for inheritance never joins the release-wide
 override pool. A child single-session alone supplies no inherited missing stage.
 
-[V] The bundle record requires `Closes #655`, `Closes #651`, `Closes #647` on
-its release PR. Therefore a skip on #647 or #651 already affects the whole
-release PR; record exactly which stages this waives in the Pipeline log and
-approval request. Test that compatibility explicitly (AC13), rather than claim
-that the release mechanically requires child coverage for a waived stage.
+[V] F66 requires the release Closes set to include epic #655 and its children;
+#663 AC1 extends the concrete set to #647, #651, #660 and #663. [A] Keep
+that set explicit in release body, Pipeline log and approval request, with
+every release-wide skip effect (AC13). Excluding self from child closers changes
+neither overrides nor panel authority; no panel contract change is needed.
+The release-membership meaning-version decision remains with maintainer.
 [A] Maintainer acceptance under OR43 must name the A18 amendment and the
 release-membership amendment, alongside all temporary panel decisions and the
 panel-2 QA scope departure. No new override author, marker or orchestrator-core
