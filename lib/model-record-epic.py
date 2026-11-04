@@ -70,7 +70,75 @@ def child_pids(pid):
     return children
 
 
-def kill_descendants(roots):
+class PipeInfo(ctypes.Structure):
+    # Stable proc_pidfdinfo(PROC_PIDFDPIPEINFO) layout from sys/proc_info.h.
+    _fields_ = [('file', ctypes.c_uint32 * 6), ('stat', ctypes.c_uint64 * 17),
+                ('handle', ctypes.c_uint64), ('peer', ctypes.c_uint64),
+                ('status', ctypes.c_int), ('reserved', ctypes.c_int)]
+
+
+def process_pipes(pid):
+    """Map anonymous pipe FDs to (reader, writer) identities, without ps.
+
+    A retained read endpoint pins its peer's identity even after a writer's
+    original parent exits. Only the matching write endpoint proves ownership.
+    """
+    if sys.platform == 'darwin':
+        lib = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        size = lib.proc_pidinfo(pid, 1, 0, None, 0)  # PROC_PIDLISTFDS, bytes
+        if size <= 0:
+            return {}
+        rows = (ctypes.c_int32 * ((size + 256) // 4))()
+        count = lib.proc_pidinfo(pid, 1, 0, rows, ctypes.sizeof(rows))
+        result = {}
+        for i in range(0, max(0, count) // 4, 2):
+            fd, kind = rows[i:i + 2]
+            if kind != 6:  # PROX_FDTYPE_PIPE
+                continue
+            info = PipeInfo()
+            if lib.proc_pidfdinfo(pid, fd, 6, ctypes.byref(info), ctypes.sizeof(info)) != ctypes.sizeof(info):
+                continue
+            flags = info.file[0]  # FREAD / FWRITE, not O_RDONLY / O_WRONLY
+            result[fd] = (info.peer if flags & 1 else None,
+                          info.handle if flags & 2 else None)
+        return result
+    result = {}
+    for fd in Path(f'/proc/{pid}/fd').glob('*'):
+        try:
+            target = os.readlink(fd)
+            if not target.startswith('pipe:['):
+                continue
+            flags = re.search(r'^flags:\s+([0-7]+)',
+                              (Path(f'/proc/{pid}/fdinfo') / fd.name).read_text(), re.M)
+            access = int(flags[1], 8) & os.O_ACCMODE
+            result[int(fd.name)] = (target if access != os.O_WRONLY else None,
+                                    target if access != os.O_RDONLY else None)
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            pass
+    return result
+
+
+def pipe_writers(readers):
+    """Find escaped holders of private response pipes; never select readers."""
+    if not readers:
+        return set()
+    if sys.platform == 'darwin':
+        lib = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        size = max(32, lib.proc_listallpids(None, 0) + 32)
+        while True:
+            buffer = (ctypes.c_int * size)()
+            count = lib.proc_listallpids(buffer, ctypes.sizeof(buffer))
+            if count < size:
+                pids = buffer[:max(0, count)]
+                break
+            size *= 2
+    else:
+        pids = [int(p.name) for p in Path('/proc').iterdir() if p.name.isdecimal()]
+    return {pid for pid in pids if pid > 0 and pid != os.getpid()
+            and any(writer in readers for _, writer in process_pipes(pid).values())}
+
+
+def kill_descendants(roots, readers=()):
     """Freeze the owned trees before killing them, including new sessions.
 
     Killing only a worker's group loses gh groups when the worker exits.
@@ -78,10 +146,11 @@ def kill_descendants(roots):
     repeat child discovery until every discovered descendant is stopped.
     Never signal our own group: the caller and watchdog may share it.
     """
-    owned = set(roots)
+    owned = set(roots) - {os.getpid()}
+    readers = set(readers) - {None}
     stopped = set()
     try:
-        while owned - stopped:
+        while True:
             pending = owned - stopped
             for pid in sorted(pending):
                 try:
@@ -93,7 +162,15 @@ def kill_descendants(roots):
                     pass
                 stopped.add(pid)
             for pid in pending:
+                readers.update(reader for reader, _ in process_pipes(pid).values() if reader is not None)
                 owned.update(child_pids(pid))
+            if owned - stopped:
+                continue
+            # A parent may already have exited. Its detached pipe holders are
+            # no longer in the tree, but still own our pinned write endpoints.
+            owned.update(pipe_writers(readers))
+            if not owned - stopped:
+                break
     finally:
         # Individual PIDs also cover descendants sharing the caller's group.
         for pid in sorted(owned - set(roots), reverse=True) + list(roots):
@@ -104,6 +181,14 @@ def kill_descendants(roots):
                     os.kill(pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+        # A recorded group can outlive its leader. getpgid(leader) then fails,
+        # so signal the recorded group directly as well as the discovered PIDs.
+        for group in roots:
+            if group != os.getpgrp():
+                try:
+                    os.killpg(group, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    pass
 
 
 class Runner:
@@ -116,6 +201,7 @@ class Runner:
         self.deadline = time.monotonic() + remaining
         self.lock = threading.RLock()
         self.groups = set()
+        self.readers = {}
         self.abort = threading.Event()
         self.calls = 1  # speculative detail acquisition
         self.child_calls = {}
@@ -134,7 +220,10 @@ class Runner:
         self.abort.set()
         with self.lock:
             groups = list(self.groups)
-        kill_descendants(groups)
+            readers = set().union(*self.readers.values()) if self.readers else set()
+            # Keep these read FDs open until discovery finishes: pool threads
+            # remove their registry entries under this same lock before close.
+            kill_descendants(groups, readers)
 
     def all(self, fn, items):
         """Run fn over items in the pool; results in input order, never in
@@ -187,6 +276,9 @@ class Runner:
                 p = subprocess.Popen(args, stdin=incoming, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, start_new_session=True)
                 self.groups.add(p.pid)
+                endpoints = process_pipes(os.getpid())
+                self.readers[p.pid] = {endpoints[stream.fileno()][0]
+                                       for stream in (p.stdout, p.stderr)}
             result = [bytearray(), bytearray()]
             selector = selectors.DefaultSelector()
             for i, stream in enumerate((p.stdout, p.stderr)):
@@ -213,8 +305,8 @@ class Runner:
             except subprocess.TimeoutExpired:
                 raise Incomplete('subprocess timeout')
             finally:
-                if p.poll() is None or p.returncode:
-                    kill_descendants([p.pid])
+                if selector.get_map() or p.poll() is None or p.returncode:
+                    kill_descendants([p.pid], self.readers[p.pid])
                 try:
                     os.killpg(p.pid, signal.SIGTERM)
                 except (ProcessLookupError, PermissionError):
@@ -233,6 +325,7 @@ class Runner:
                 p.wait()
                 with self.lock:
                     self.groups.discard(p.pid)
+                    self.readers.pop(p.pid)
                 selector.close()
                 p.stdout.close()
                 p.stderr.close()
