@@ -50,7 +50,7 @@ if [ ! -r "$own_dir/../../lib/model-record.sh" ]; then reader_failed; fi
 . "$own_dir/../../lib/model-record.sh"
 
 # Dependency-failure acquisition has its own Bash deadline. Ruby supplies
-# native child enumeration on macOS, where sandboxed ps/pgrep cannot do it;
+# native process/pipe inspection on macOS, where sandboxed ps cannot do it;
 # it is used only on this exceptional path, never for healthy recognition.
 fallback_detail() {
   local buffer="$1" worker watchdog rc
@@ -59,12 +59,42 @@ fallback_detail() {
   ruby - "$buffer" "repos/{owner}/{repo}/pulls/$pr_number" "$pr_jq$metadata_jq" <<'RUBY' >"$buffer/worker-out" 2>"$buffer/worker-error" &
 require 'fiddle'
 require 'set'
-# Track descendants even when they create a new session. Freeze parents
-# before the final enumeration so termination cannot orphan an unseen child.
+# Keep a dedicated gh group, plus private pipe identities for children that
+# detach and lose their parent before a descendant scan can observe them.
 if RUBY_PLATFORM.include?('darwin')
   lib = Fiddle.dlopen('/usr/lib/libproc.dylib')
   listing = Fiddle::Function.new(lib['proc_listchildpids'],
     [Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+  info = Fiddle::Function.new(lib['proc_pidinfo'],
+    [Fiddle::TYPE_INT, Fiddle::TYPE_INT, Fiddle::TYPE_LONG_LONG, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+  fdinfo = Fiddle::Function.new(lib['proc_pidfdinfo'],
+    [Fiddle::TYPE_INT, Fiddle::TYPE_INT, Fiddle::TYPE_INT, Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+  all = Fiddle::Function.new(lib['proc_listallpids'],
+    [Fiddle::TYPE_VOIDP, Fiddle::TYPE_INT], Fiddle::TYPE_INT)
+  processes = lambda do
+    size = 1024
+    loop do
+      bytes = "\0" * (size * 4)
+      count = all.call(bytes, bytes.bytesize)
+      raise 'process enumeration failed' if count < 0
+      break bytes.unpack('i*').take(count).reject { |id| id <= 0 } if count < size
+      size *= 2
+    end
+  end
+  process_pipes = lambda do |pid|
+    size = info.call(pid, 1, 0, nil, 0)
+    next [] if size <= 0
+    rows = "\0" * (size + 256)
+    count = info.call(pid, 1, 0, rows, rows.bytesize)
+    rows.byteslice(0, [count, 0].max).unpack('i*').each_slice(2).map do |fd, kind|
+      next unless kind == 6 # PROX_FDTYPE_PIPE
+      pipe = "\0" * 184 # pipe_fdinfo: file(24), stat(136), handles(16), status(8)
+      next unless fdinfo.call(pid, fd, 6, pipe, pipe.bytesize) == pipe.bytesize
+      flags = pipe.unpack('I')[0] # FREAD/FWRITE
+      handle, peer = pipe.byteslice(160, 16).unpack('Q2')
+      [fd, flags & 1 != 0 ? peer : nil, flags & 2 != 0 ? handle : nil]
+    end.compact
+  end
   children = lambda do |pid|
     size = 32
     loop do
@@ -76,6 +106,19 @@ if RUBY_PLATFORM.include?('darwin')
     end
   end
 else
+  processes = lambda { Dir.glob('/proc/[0-9]*').map { |path| File.basename(path).to_i } }
+  process_pipes = lambda do |pid|
+    Dir.glob("/proc/#{pid}/fd/*").map do |path|
+      begin
+        target = File.readlink(path)
+        next unless target.start_with?('pipe:[')
+        flags = File.read("/proc/#{pid}/fdinfo/#{File.basename(path)}")[/^flags:\s+([0-7]+)/, 1].to_i(8) & 3
+        [File.basename(path).to_i, flags != 1 ? target : nil, flags != 0 ? target : nil]
+      rescue Errno::ENOENT, Errno::ESRCH, Errno::EACCES
+        nil
+      end
+    end.compact
+  end
   children = lambda do |pid|
     Dir.glob("/proc/#{pid}/task/*/children").flat_map do |path|
       begin File.read(path).split.map(&:to_i); rescue Errno::ENOENT; []; end
@@ -84,6 +127,8 @@ else
 end
 buffer, endpoint, query = ARGV
 owned = Set.new
+groups = Set.new
+readers = Set.new
 signal = lambda do |kind, pid|
   begin Process.kill(kind, pid); rescue Errno::ESRCH; end
 end
@@ -93,7 +138,14 @@ scan = lambda do |freeze|
   until pending.empty?
     pid = pending.shift
     next unless seen.add?(pid)
-    signal.call('STOP', pid) if freeze && pid != Process.pid
+    if pid != Process.pid
+      begin
+        group = Process.getpgid(pid)
+        groups.add(group) if group == pid && group != Process.getpgrp
+      rescue Errno::ESRCH
+      end
+      signal.call('STOP', pid) if freeze
+    end
     children.call(pid).each do |child|
       owned.add(child)
       pending << child
@@ -108,9 +160,13 @@ begin
   trap('TERM') { raise 'Bash watchdog expired' }
   out_r, out_w = IO.pipe; err_r, err_w = IO.pipe
   pipes = [out_r, out_w, err_r, err_w]
+  process_pipes.call(Process.pid).each do |fd, reader, _|
+    readers.add(reader) if [out_r.fileno, err_r.fileno].include?(fd) && reader
+  end
   pid = Process.spawn('gh', 'api', endpoint, '--jq', query,
-                      :out => out_w, :err => err_w)
+                      :out => out_w, :err => err_w, :pgroup => true)
   owned.add(pid)
+  groups.add(pid)
   out_w.close; err_w.close
   streams = {out_r => File.open(buffer + '/out', 'wb'),
              err_r => File.open(buffer + '/err', 'wb')}
@@ -122,7 +178,8 @@ begin
       data = io.read_nonblock(65536, :exception => false)
       next if data == :wait_readable
       if data.nil?
-        streams.delete(io).close; io.close
+        # Keep the private read endpoint pinned until ownership cleanup.
+        streams.delete(io).close
       else
         counts[io] += data.bytesize
         raise 'response stream exceeded 8 MiB' if counts[io] > 8 * 1024 * 1024
@@ -137,7 +194,14 @@ rescue StandardError => error
   File.write(buffer + '/failed', error.message)
 ensure
   trap('TERM', 'IGNORE')
+  # Pinned read endpoints prove ownership even after a detached writer is
+  # reparented. Never select a process merely for holding a read endpoint.
+  processes.call.each do |id|
+    next if id == Process.pid
+    owned.add(id) if process_pipes.call(id).any? { |_, _, writer| writer && readers.include?(writer) }
+  end
   scan.call(true)
+  groups.each { |id| signal.call('KILL', -id) unless id == Process.getpgrp }
   owned.each { |id| signal.call('KILL', id) }
   pipes.each { |io| io.close unless io.closed? }
   begin Process.waitall; rescue Errno::ECHILD; end
