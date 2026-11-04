@@ -460,11 +460,18 @@ def catalogue(text):
             controlled_oracle(values[indices['source link']], grant_source,
                               'S548/Abbreviated human grant source', [
                 ('self-link', lambda value: value + ' [Standing paragraph above](SKILL.md#running-the-pipeline)')])
+            grant_locator = (r'per-item\s+human\s+grant\s+in\s+(?:their|the\s+human.s)\s+'
+                             r'own\s+words\s+is\s+required|'
+                             r'\[[^]]*(?:grant|human\s+words)[^]]*\]\(https://[^)]+\)')
+            grant_match = re.search(grant_locator, values[indices['source link']], re.I)
+            grant_clause = grant_match[0] if grant_match else ''
             rewrite_control(values[indices['source link']], grant_source, 'S548/N3',
-                            'is required', 'is required unless the panel is unanimous')
+                            grant_locator, grant_clause + ' unless the panel is unanimous',
+                            pattern=True)
             rewrite_control(values[indices['source link']], grant_source,
-                            'S548/N8-panel-grant-exception', 'is required',
-                            'is required except when the panel agrees')
+                            'S548/N8-panel-grant-exception', grant_locator,
+                            grant_clause + ' except when the panel agrees',
+                            pattern=True)
             predicates['source link'] = grant_source
         else:
             conditions = values[indices['conditions']]
@@ -475,14 +482,14 @@ def catalogue(text):
             check(class_scope(conditions.replace('applies only to', 'is limited to')),
                   'S548/class scope accepts equivalent limited-to wording')
             rewrite_control(conditions, class_scope, 'S548/N1',
-                            r'(?:applies\s+only\s+to|is\s+limited\s+to)\s+batches',
+                            r'(?:applies\s+only\s+to|is\s+limited\s+to|is\s+restricted\s+only\s+to)\s+batches',
                             'applies not only to batches', pattern=True)
             rewrite_control(conditions, class_scope, 'S548/N2',
                             r'requires?\s+(?:explicit\s+)?per-item\s+human\s+authority',
                             'requires per-item human authority or a unanimous panel', pattern=True)
             rewrite_control(conditions, class_scope, 'S548/N7-other-epics',
-                            'epic TiesL/spec-driven-guardrails#608;',
-                            'epic TiesL/spec-driven-guardrails#608 and other epics;')
+                            r'epic\s+TiesL/spec-driven-guardrails#608(?=\s*(?:[.;]|$))',
+                            'epic TiesL/spec-driven-guardrails#608 and other epics', pattern=True)
             controlled_oracle(conditions, executable_conditions, 'S548/executable work requires Implementation', [
                 ('M8', lambda value: 'mostly documentation or tests'),
                 ('executable-tests-deleted', lambda value: re.sub(r'(?i)executable tests(?:/scripts)?', '', value)),
@@ -509,29 +516,45 @@ def valid_variant_controls(tmp, ident):
         return
     copy = tmp / 'valid-variant'
     shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns('.git', '__pycache__'))
-    path, old, new = {
-        534: ('policy/WORKFLOW.md', 'read Running the pipeline', 'read   Running the pipeline'),
-        548: ('skills/role-contracts/SKILL.md', 'applies only to batches', 'is limited to batches'),
+    variants = {
+        534: [('consultation-whitespace', 'policy/WORKFLOW.md',
+               r'read\s+Running\s+the\s+pipeline', 'read   Running the pipeline'),
+              ('consultation-whitespace-comma', 'policy/WORKFLOW.md',
+               r'read\s+Running\s+the\s+pipeline,?', 'read   Running the pipeline,')],
+        548: [
+            ('limited-scope', 'skills/role-contracts/SKILL.md',
+             r'(?:applies\s+only\s+to|is\s+limited\s+to|is\s+restricted\s+only\s+to)\s+batches',
+             'is limited to batches'),
+            ('restricted-scope', 'skills/role-contracts/SKILL.md',
+             r'(?:applies\s+only\s+to|is\s+limited\s+to|is\s+restricted\s+only\s+to)\s+batches',
+             'is restricted only to batches'),
+            ('scope-punctuation', 'skills/role-contracts/SKILL.md',
+             r'(epic\s+TiesL/spec-driven-guardrails#608)\s*[.;]',
+             r'\1.'),
+            ('durable-grant', 'skills/role-contracts/SKILL.md',
+             r'Per-item human grant in their own words is required; link its durable words before posting\.|'
+             r'\[human grant words\]\(https://example\.invalid/grant\)',
+             '[human grant words](https://example.invalid/grant)'),
+        ],
     }[ident]
-    target = copy / path
-    original = target.read_text()
-    locator = r'\s+'.join(map(re.escape, old.split()))
-    if ident == 548:
-        locator = r'(?:applies\s+only\s+to|is\s+limited\s+to)\s+batches'
-    changed, count = re.subn(locator, lambda match: new, original)
-    check(count == 1, f'S{ident}/valid variant located exactly once')
-    target.write_text(changed)
-    if ident == 534:
-        result = subprocess.run([str(copy / 'generate-workflow-adapters.sh'), str(copy)],
-                                capture_output=True, text=True)
-        check(result.returncode == 0, 'S534/valid variant regenerated: ' + result.stdout + result.stderr)
-    for case in (534, 548):
-        result = subprocess.run(['python3', str(copy / 'test/fixtures/stage-selection-647.py'), str(case)],
-                                env=dict(os.environ, STAGE_SELECTION_VALID_VARIANT='1'),
-                                capture_output=True, text=True)
-        check(result.returncode == 0,
-              f'S{ident}/valid variant complete S{case}: ' + result.stdout + result.stderr)
-    print(f'CONTROL: S{ident} legitimate variant complete S534/S548 fixtures exercised')
+    originals = {path: (copy / path).read_text() for _, path, _, _ in variants}
+    for name, path, locator, new in variants:
+        target = copy / path
+        changed, count = re.subn(locator, new, originals[path], flags=re.I)
+        check(count == 1, f'S{ident}/{name} valid variant located exactly once')
+        target.write_text(changed)
+        if ident == 534:
+            result = subprocess.run([str(copy / 'generate-workflow-adapters.sh'), str(copy)],
+                                    capture_output=True, text=True)
+            check(result.returncode == 0, 'S534/valid variant regenerated: ' + result.stdout + result.stderr)
+        for case in (534, 548):
+            result = subprocess.run(['python3', str(copy / 'test/fixtures/stage-selection-647.py'), str(case)],
+                                    env=dict(os.environ, STAGE_SELECTION_VALID_VARIANT='1'),
+                                    capture_output=True, text=True)
+            check(result.returncode == 0,
+                  f'S{ident}/{name} valid variant complete S{case}: ' + result.stdout + result.stderr)
+        target.write_text(originals[path])
+        print(f'CONTROL: S{ident}/{name} legitimate variant complete S534/S548 fixtures exercised')
 
 
 ident = int(sys.argv[1])
