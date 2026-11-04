@@ -42,6 +42,47 @@ def exercise_problems(text):
     return problems
 
 
+def release_meaning_problems(text):
+    entries = re.findall(r'^## release-branch-workflow\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    if len(entries) != 1:
+        return ['expected exactly one release-branch-workflow entry']
+    fields = re.findall(r'^- \*\*Meaning version:\*\* (.*?)(?=^- \*\*|\Z)', entries[0], re.M | re.S)
+    if len(fields) != 1:
+        return ['expected one explicit Meaning version field']
+    field = re.sub(r'\s+', ' ', fields[0]).strip()
+    clauses = {
+        'Meaning version 2': r'^2 — ',
+        'membership no longer frozen at opening': r'membership.{0,40}no longer.{0,20}frozen.{0,40}opening',
+        'late Epic-field children need coverage': r'issues.{0,30}gain.{0,20}epic field.{0,25}later.{0,25}count.{0,25}children.{0,25}must be covered',
+        '#651 maintainer decision 2': r'#651 maintainer decision 2',
+        'gate derives epic release stages from children': r'gate.{0,20}derives.{0,20}epic release stage status.{0,20}from.{0,20}children',
+    }
+    return [name for name, pattern in clauses.items() if not re.search(pattern, field, re.I)]
+
+
+def release_pending(t, workflow, text, label, expect_notice):
+    (workflow / 'CHANGES.md').write_text(text)
+    project = t.sandbox / 'release-adopter'
+    project.mkdir(exist_ok=True)  # A plain fixture directory: no git writes needed.
+    for version in ('implicit', 'v1', 'v2'):
+        notes = 'original answer' if version == 'implicit' else f're-confirmed (meaning {version})'
+        (project / 'WORKFLOW-ADOPTION.md').write_text(
+            '| Change | Answer | Date | Notes |\n|---|---|---|---|\n'
+            f'| release-branch-workflow | yes | 2026-11-04 | {notes} |\n')
+        result = subprocess.run(['bash', str(workflow / 'pending-changes.sh'), str(project)],
+                                env=t.env, capture_output=True, text=True, timeout=30)
+        t.arms += 1
+        lines = [line for line in result.stdout.splitlines() if line.startswith('  - release-branch-workflow ')]
+        want = expect_notice and version != 'v2'
+        notice = '  - release-branch-workflow — answered under meaning v1, now v2 — '
+        if result.returncode or result.stderr:
+            t.failures.append(f'{label}/{version}: pending command failed: {result.stderr}')
+        if (want and (len(lines) != 1 or not lines[0].startswith(notice)
+                      or 'Answered, but the meaning has changed since' not in result.stdout)
+                or not want and lines):
+            t.failures.append(f'{label}/{version}: expected resurfaced={want}, got {lines!r}')
+
+
 def dependency_hang(t, e, missing):
     clone = t.sandbox / ('hung-' + missing)
     (clone / 'skills/pre-merge-review').mkdir(parents=True)
@@ -187,9 +228,30 @@ def scenario(n, t, e):
         if p.returncode: t.failures.append('S548 mechanical oracle failed: ' + p.stdout + p.stderr)
     elif n == 588:
         baseline = (t.root / 'test/fixtures/baseline/CHANGES.md.snapshot').read_text()
-        section = baseline.split('## process-multi-agent-roles\n', 1)[1].split('\n## ', 1)[0]
-        assert '**Meaning version:** 3' in section
-        assert 'stage-selection' in section and 'epic stage inheritance' in section
         current = (t.root / 'CHANGES.md').read_text()
-        assert baseline.split('## release-branch-workflow\n')[1] == current.split('## release-branch-workflow\n')[1]
-        if baseline != current: t.failures.append('CHANGES.md must match approved Meaning v3 snapshot')
+        for label, text in (('snapshot', baseline), ('current', current)):
+            section = text.split('## process-multi-agent-roles\n', 1)[1].split('\n## ', 1)[0]
+            assert '**Meaning version:** 3' in section
+            assert 'stage-selection' in section and 'epic stage inheritance' in section
+            t.failures += [f'{label} release entry: ' + x for x in release_meaning_problems(text)]
+        if baseline != current:
+            t.failures.append('CHANGES.md must match approved process v3 / release v2 snapshot')
+        # Only the release entry is varied. The shared parser and real CLI run
+        # unchanged in an isolated workflow, never editing production files.
+        workflow = t.sandbox / 'release-workflow'; workflow.mkdir()
+        shutil.copyfile(t.root / 'pending-changes.sh', workflow / 'pending-changes.sh')
+        (workflow / 'lib').symlink_to(t.root / 'lib', target_is_directory=True)
+        release_pending(t, workflow, baseline, 'approved snapshot control', True)
+        prefix, entry = baseline.split('## release-branch-workflow\n', 1)
+        entry, suffix = entry.split('\n## ', 1)
+        field = re.search(r'^- \*\*Meaning version:\*\* .*?(?=^- \*\*)', entry, re.M | re.S).group()
+        mutants = {
+            'field removed': (entry.replace(field, ''), False),
+            'version left at 1': (entry.replace('**Meaning version:** 2', '**Meaning version:** 1'), False),
+            'reason missing': (entry.replace(field, '- **Meaning version:** 2\n'), True),
+        }
+        for label, (mutant, notice) in mutants.items():
+            text = prefix + '## release-branch-workflow\n' + mutant + '\n## ' + suffix
+            assert release_meaning_problems(text), label + ' escaped entry oracle'
+            release_pending(t, workflow, text, 'mutation: ' + label, notice)
+        release_pending(t, workflow, current, 'current CHANGES.md', True)

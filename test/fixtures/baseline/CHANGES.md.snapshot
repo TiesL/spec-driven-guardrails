@@ -595,6 +595,11 @@ the shared parser warns if it has no `Applies if`.
   branches and `main` for epics whose work items ship together?
 - **Default:** question
 - **Applies if:** always
+- **Meaning version:** 2 — #651 maintainer decision 2: membership is no longer
+  frozen at release-branch opening; issues that gain the Epic field later count
+  as children and must be covered. The gate now derives epic release stage
+  status from the children (#663). Projects answered under v1 re-confirm
+  these obligations (#254).
 - **Yes means:** an epic that Product+Architect explicitly judge to warrant
   it (recorded on the epic issue, no numeric threshold) gets a
   `release/<epic#>-<slug>` branch forked from `main`. Work-item PRs merge

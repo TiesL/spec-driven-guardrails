@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S588 — Approved adoption meaning matches its snapshot; #663, A52–A53.
+# S588 — Approved adoption meanings and stale release answers; #663, A52–A53.
 # Covers: F66
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR

@@ -6753,7 +6753,8 @@ S119 fail open as before.
   *Yes means* that says the up-to-date check ships through the symlinked hook
   regardless of the answer; no existing entry's meaning version changed
   except the approved #663 process-multi-agent-roles v2 -> v3 change, whose
-  note names #647 stage-selection and #651 epic stage inheritance
+  note names #647 stage-selection and #651 epic stage inheritance, and AC8
+  release-branch-workflow implicit v1 -> v2 with its reason
   (`quality-review-before-merge` unchanged, Human decision 3a assumed); the
   fresh-adoption pending list contains the new ID, and the expected list in
   `r2_pending_after_fresh_adoption.sh` is updated in the same commit, one
@@ -8963,8 +8964,8 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 - When: document assertions and independent clause deletion plus obsolete-gate-hash controls run; S548 runs unchanged.
 - Then: the exercise requires exactly six scopes, non-blank decided-by/reason guards, no panel authority and eight retained non-gate hashes, without requiring the obsolete gate hash; no live-exercise success is claimed.
 
-### S588 — Approved adoption meaning matches its snapshot
+### S588 — Approved adoption meanings and stale release answers
 **Covers:** F66
-- Given: the approved process-multi-agent-roles Meaning v3 snapshot.
-- When: the snapshot and current CHANGES.md are compared.
-- Then: v3 explains stage-selection and epic stage inheritance; the complete release-branch-workflow entry remains byte-identical and implicit v1; S90 stays red until Developer updates CHANGES.md.
+- Given: the approved process-multi-agent-roles Meaning v3 and release-branch-workflow Meaning v2 snapshot, and fixture projects answered at implicit v1, explicit v1 and current v2.
+- When: the entries and snapshot are checked and pending-changes.sh runs against current CHANGES.md and isolated snapshot variants; controls remove the field, leave version 1, or remove the reason.
+- Then: the release entry's Meaning v2 reason explains late Epic-field children requiring coverage (#651 maintainer decision 2) and epic release stage status derived from children; implicit/explicit v1 answers re-surface as v1 to v2 in the changed-meaning block, never as unanswered; v2 stays quiet. Field/version mutations suppress resurfacing and fail the entry oracle; missing reason fails the entry oracle even though v2 still resurfaces. The process entry retains v3 and its stage-selection/inheritance reason. S90 stays red until Developer updates CHANGES.md to the approved snapshot.

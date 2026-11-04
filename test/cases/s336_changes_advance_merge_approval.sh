@@ -33,7 +33,7 @@ grep -q '^- \*\*Reaches session:\*\* always-loaded: WORKFLOW.md' <<<"$entry" || 
 grep -q '^- \*\*PR:\*\* https://' <<<"$entry" || fail "S336 — no PR link"
 
 # The advance-approval slice leaves meanings unchanged. The separately approved
-# #663 exception is only process-multi-agent-roles v2 -> v3; retain all other pins.
+# #663 exceptions are process-multi-agent-roles v3 and release-branch-workflow v2; retain all other pins.
 base_ref="$(git -C "$R" merge-base HEAD origin/main 2>/dev/null)"
 if [ -n "$base_ref" ]; then
   python3 - "$R" "$base_ref" <<'PY_CHECK' || fail "S336 — unapproved Meaning version change"
@@ -50,6 +50,11 @@ assert len(current) == 1
 assert re.match(r'- \*\*Meaning version:\*\* 3 — #647 stage-selection rules and #651 epic stage inheritance$', current[0])
 if previous != current:  # Before #663 merges, only its approved v2 -> v3 delta is allowed.
     assert len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* 2(?: |$)', previous[0])
+key = 'release-branch-workflow'
+previous, current = old.pop(key, []), new.pop(key, [])
+assert len(current) == 1 and re.match(r'- \*\*Meaning version:\*\* 2 — .+', current[0])
+# AC8 supersedes the implicit-v1 pin: only this approved extra bump is allowed.
+assert previous == current or not previous or (len(previous) == 1 and re.match(r'- \*\*Meaning version:\*\* 1(?: |$)', previous[0]))
 assert old == new, (old, new)
 PY_CHECK
 fi
