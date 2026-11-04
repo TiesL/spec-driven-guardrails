@@ -8881,7 +8881,7 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 ### S572 — Malformed and mistyped REST data cannot establish coverage
 **Covers:** F66
 - Given: broken JSON at collection/detail endpoints, object instead of array, numeric comment body or string issue number, a missing private helper or an unavailable Python interpreter.
-- When: the gate decodes the transport; S583/S584 also hang the initial fetch independently for each unavailable dependency.
+- When: the gate decodes the transport; S583/S584 also hang the initial fetch independently for each unavailable dependency, including their early-parent-exit PID/PGID/marker and sentinel/supervisor arms.
 - Then: it returns unchecked without a guessed membership or missing-stage block; the hung arms terminate within 12 seconds plus 2 seconds scheduling tolerance and leave no descendant. A child marker scheduled at 12.5 seconds must be absent when observed after its delay; survival within the 12-second bound is unchecked.
 
 ### S573 — Details are rechecked before publishing
@@ -8948,15 +8948,21 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 
 ### S583 — Missing helper bounds a hung initial fetch
 **Covers:** F66
-- Given: an eligible release with its helper unavailable and a hung initial gh that spawns a detached descendant; its survival marker is scheduled at 12.5 seconds, strictly beyond the 10-second watchdog plus 2-second grace.
+- Given: an eligible release with its helper unavailable and a hung initial gh that spawns a detached descendant; both a live-parent arm and an early-parent-exit arm retain response pipes; its survival marker is scheduled at 12.5 seconds, strictly beyond the 10-second watchdog plus 2-second grace.
 - When: the real copied gate runs under an independent 14-second test watchdog.
-- Then: unchecked without a leaked block within 10 seconds plus 2-second cleanup grace and 2-second scheduling tolerance; all injected descendants are gone and the marker remains absent when observed after its delay, even after an early gate return. Within-bound survival is unchecked; RED cleanup kills fixture groups only.
+- Then: unchecked without a leaked block within 10 seconds plus 2-second cleanup grace and 2-second scheduling tolerance; all injected descendants are gone and the marker remains absent when observed after its delay, even after an early gate return. Both arms check recorded PIDs and PGIDs after the marker delay; the unrelated sentinel and test supervisor survive. Within-bound survival is unchecked; RED cleanup kills fixture groups and its sentinel only.
 
 ### S584 — Missing Python bounds a hung initial fetch
 **Covers:** F66
 - Given: the S583 fixture with helper present and python3 returning unavailable instead.
 - When: the initial gh hangs using the absolute fixture interpreter.
-- Then: the same bounded unchecked and descendant-cleanup oracle holds independently of Python availability.
+- Then: the same bounded unchecked, PID/PGID/marker and unrelated sentinel/supervisor oracle holds for both live-parent and early-parent-exit arms independently of Python availability.
+
+### S585 — Published deadlines match recognition phase boundaries
+**Covers:** F66
+- Given: A52's amended recognition/compatibility contract and the published pre-merge-review skill.
+- When: a content oracle checks the published limits against independent compliant prose, with separate clause-deletion controls and the old unconditional deadline promise as a negative control.
+- Then: healthy compatibility recognition is outside both the ten-second per-read and 120-second evaluation limits; the inheritance budget starts after recognition, so the whole gate has no wall-clock guarantee. Cached recognition inputs count toward byte/object caps, not elapsed time. Missing Python/helper instead bounds the initial fallback read at ten seconds plus two-second cleanup grace. Deleting any boundary or exception fails the oracle.
 
 ### S587 — S548 exercise agrees with the mechanical oracle
 **Covers:** F66

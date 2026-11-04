@@ -6,6 +6,7 @@ import re
 import shutil
 import signal
 import subprocess
+import sys
 import time
 
 
@@ -83,8 +84,21 @@ def release_pending(t, workflow, text, label, expect_notice):
             t.failures.append(f'{label}/{version}: expected resurfaced={want}, got {lines!r}')
 
 
-def dependency_hang(t, e, missing):
-    clone = t.sandbox / ('hung-' + missing)
+def deadline_problems(text):
+    flat = re.sub(r'\s+', ' ', text.lower())
+    clauses = {
+        'recognition outside both deadlines': r'(?:recognition|compatibility).{0,100}(?:outside|exclud|not subject).{0,80}(?:10|ten).{0,40}(?:120|whole.evaluation)',
+        'inheritance budget starts after recognition': r'(?:120.second|inheritance|evaluation).{0,60}(?:budget|deadline|limit).{0,50}(?:starts?|begins?).{0,30}after.{0,30}recognition',
+        'no whole-gate wall-clock guarantee': r'(?:whole gate|entire gate).{0,50}no.{0,30}wall.clock.{0,30}(?:guarantee|limit|bound)',
+        'cached inputs count toward caps not time': r'cached recognition inputs.{0,40}(?:byte|object).{0,40}caps.{0,30}not.{0,20}(?:elapsed|time)',
+        'missing dependency fallback exception': r'(?:python|helper).{0,40}unavailable.{0,80}(?:initial|fallback).{0,60}(?:10|ten).{0,50}(?:2|two).second.{0,20}(?:grace|cleanup)',
+    }
+    return [name for name, pattern in clauses.items() if not re.search(pattern, flat)]
+
+
+def dependency_hang(t, e, missing, early_exit=False):
+    label = missing + (" early-parent-exit" if early_exit else " live-parent")
+    clone = t.sandbox / ('hung-' + label.replace(' ', '-'))
     (clone / 'skills/pre-merge-review').mkdir(parents=True)
     (clone / 'lib').mkdir()
     for lib in (t.root / 'lib').iterdir():
@@ -95,20 +109,24 @@ def dependency_hang(t, e, missing):
     shutil.copyfile(t.root / 'skills/pre-merge-review/model-record-gate.sh', gate)
     saved = t.env['PATH']
     if missing == 'python':
-        no_python = t.sandbox / 'hung-no-python'; no_python.mkdir()
+        no_python = t.sandbox / ('hung-no-python-' + str(early_exit)); no_python.mkdir()
         script = no_python / 'python3'; script.write_text('#!/bin/sh\nexit 127\n'); script.chmod(0o755)
         t.env['PATH'] = str(no_python) + os.pathsep + saved
     # The 10s watchdog plus 2s grace may legitimately leave the child alive
     # within that bound. Schedule its witness strictly after 12s, never at 6s.
     marker_after = 12.5
     d = e.world(); d['_fault'] = {'key': 'pulls/648', 'mode': 'hung-descendant',
-                                'marker_after': marker_after}
+                                'marker_after': marker_after, 'early_exit': early_exit}
     Path(t.env['EPIC_DATA']).write_text(json.dumps(d))
     receipt = Path(t.env['EPIC_LOG'] + '.pids')
     survived = Path(t.env['EPIC_LOG'] + '.orphan-survived')
     ready = Path(t.env['EPIC_LOG'] + '.orphan-ready')
     for path in (receipt, survived, ready):
         path.unlink(missing_ok=True)
+    supervisor = (os.getpid(), os.getpgrp())
+    sentinel = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],
+                                start_new_session=True, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     start = time.monotonic()
     p = subprocess.Popen(['bash', str(gate), '648'], cwd=t.sandbox / 'project', env=t.env,
                          text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
@@ -118,29 +136,44 @@ def dependency_hang(t, e, missing):
             out, err = p.communicate(timeout=14)  # 12s contract + 2s scheduling tolerance
             elapsed = time.monotonic() - start
             if p.returncode or not e.accepts(out, err, 'unchecked'):
-                t.failures.append(f'{missing} hung initial: expected unchecked without block; {out!r} {err!r}')
+                t.failures.append(f'{label} hung initial: expected unchecked without block; {out!r} {err!r}')
             if elapsed > 14:
-                t.failures.append(f'{missing} hung initial exceeded bound: {elapsed:.2f}s')
+                t.failures.append(f'{label} hung initial exceeded bound: {elapsed:.2f}s')
         except subprocess.TimeoutExpired:
-            t.failures.append(f'{missing} hung initial exceeded 12s + 2s tolerance')
+            t.failures.append(f'{label} hung initial exceeded 12s + 2s tolerance')
         if not receipt.exists():
-            t.failures.append(f'{missing}: hung initial injection not reached')
+            t.failures.append(f'{label}: hung initial injection not reached')
         else:
             record = json.loads(receipt.read_text())
             if not ready.exists():
-                t.failures.append(f'{missing}: child did not reach marker delay')
+                t.failures.append(f'{label}: child did not reach marker delay')
             else:
                 # Observe past the witness even if the gate returned quickly.
                 time.sleep(max(0, float(ready.read_text()) + marker_after + 0.5 - time.time()))
             for pid in record['pids']:
                 try:
                     os.kill(pid, 0)
-                    t.failures.append(f'{missing}: descendant {pid} survived')
+                    t.failures.append(f'{label}: descendant {pid} survived')
+                except ProcessLookupError:
+                    pass
+            for group in set((record['pgid'], record['child_pgid'])):
+                assert group != supervisor[1], 'fixture must own separate groups'
+                try:
+                    os.killpg(group, 0)
+                    t.failures.append(f'{label}: descendant group {group} survived')
                 except ProcessLookupError:
                     pass
             if survived.exists():
-                t.failures.append(f'{missing}: orphan survival marker written')
+                t.failures.append(f'{label}: orphan survival marker written')
+        if sentinel.poll() is not None:
+            t.failures.append(f'{label}: unrelated sentinel was killed')
+        os.kill(supervisor[0], 0)
+        if (os.getpid(), os.getpgrp()) != supervisor:
+            t.failures.append(f'{label}: test supervisor identity changed')
     finally:
+        if sentinel.poll() is None:
+            sentinel.kill()
+        sentinel.wait()
         groups = [p.pid]
         if receipt.exists():
             record = json.loads(receipt.read_text()); groups += [record['pgid'], record['child_pgid']]
@@ -212,7 +245,26 @@ def scenario(n, t, e):
     elif n == 582:
         e.scenario(565, t)
     elif n in (583, 584):
-        dependency_hang(t, e, 'helper' if n == 583 else 'python')
+        for early_exit in (False, True):
+            dependency_hang(t, e, 'helper' if n == 583 else 'python', early_exit)
+    elif n == 585:
+        # A52's phase boundaries, independently phrased. Each deletion must
+        # fail the same oracle used on the published skill, even while RED.
+        clauses = (
+            'Healthy compatibility recognition is outside the 10-second read and 120-second evaluation limits.',
+            'The inheritance budget starts after recognition.',
+            'The whole gate has no wall-clock guarantee.',
+            'Cached recognition inputs count toward byte/object caps, not elapsed time.',
+            'If Python or helper is unavailable, the initial fallback has 10 seconds plus 2-second cleanup grace.',
+        )
+        control = ' '.join(clauses)
+        assert not deadline_problems(control), deadline_problems(control)
+        for clause in clauses:
+            assert deadline_problems(control.replace(clause, '')), clause
+        # The old unconditional promise must not satisfy the boundary oracle.
+        assert deadline_problems('Each subprocess/read has 10 seconds; the whole evaluation, including shell scans, has 120 seconds.')
+        t.failures += ['published deadlines: ' + x for x in deadline_problems(
+            (t.root / 'skills/pre-merge-review/SKILL.md').read_text())]
     elif n == 587:
         good = ('### S548 — authority\nStructural waiver-authority oracle; eight retained hashes. '
                 'Exactly six override scopes, non-blank decided-by and reason guards, no panel authority.\n')
