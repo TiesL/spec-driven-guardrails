@@ -69,6 +69,121 @@ the `model-choice` skill.
 
 **Abbreviated workflow.** The one named short track: `skip=Planning` and `skip=Test`. Discovery, Implementation and Review still run, and Review is still a fresh Reviewer; under the valid `skip=Test` record, no QA artifact or comparison applies and the Developer adds new scenario entries plus scenario text per the Fullstack Developer scope (A4) in the role contracts. Only the human grants it, in their own words, and those words are the `reason` of the record. The orchestrator posts it before the work item's first commit or PR open (never after the merge guard fires) with `$SPEC_DRIVEN_GUARDRAILS_DIR/pipeline-override.sh <issue> --scope skip=Planning --scope skip=Test --decided-by <human> --reason '<their words>'`, run from the project's checkout, with `--reason` in single quotes. The script posts one record line per scope and refuses a value it cannot record as given (full list: `pipeline-override.sh --help`): the orchestrator then asks the human for other words and never edits theirs. The record is read only if the PR title or body carries the literal `Closes #<issue>`. Any other waiver is not this track and still needs the human's explicit words and its own record (OR34).
 
+### Temporary-decision panel
+
+These TiesL/spec-driven-guardrails#645 recommendations are temporary and maintainer-pending; this section
+cannot accept its own delegation. OR43/OR45 remain the compatibility synopsis;
+only the maintainer can accept these canonical-skill carve-outs. Existing
+release/main merge rules and human overrule handling continue.
+
+**Procedure and shared issue record.**
+
+Only maintainer-approved delegation permits eligible temporary choices under OR43/OR45.
+The members are Product, Architect and the orchestrator.
+Two agreeing positions out of three settle an eligible temporary outcome; retain
+dissent.
+Missing participants or evidence, or three incompatible positions, leave the panel
+unresolved.
+Post one ordinary comment per decision on the work-item issue where it was made, never
+only on a PR.
+The PR description links to that issue comment.
+Unresolved and escalated panels also leave issue records; process decisions belong on
+the issue driving that process.
+Use the literal label temporary, panel decision and a stable decision ID.
+Record question, scope/AC and artifact links, three named positions and their
+evidence/model records, vote including dissent, outcome, rationale,
+reservation/escalation status and a limit/risk flag.
+Use 3-0 or 2-1 only for resolved votes; never invent a vote for an unresolved case.
+Link superseded records and their resolutions rather than erasing them.
+No override marker is part of the shared record format.
+
+**Eligibility and reservations.**
+
+Delegation is an allow-list: every action it does not name stays reserved to the
+maintainer.
+Without evidence of maintainer acceptance of delegation, otherwise eligible proposals
+remain unresolved or referred.
+Eligible: temporary spec-visible choices; policy choices; in-repo README edits through a
+PR; CHANGELOG Unreleased edits through a PR; docs edits through a PR; meaning-version
+bumps; closing issues; comments on this repository's issues and PRs; labels on this
+repository's issues and PRs; deleting merged branches; merging work-item PRs into
+release branches.
+Existing release-branch authority retains its own conditions and is outside this panel's
+grant.
+Eligibility grants no execution outside existing role scopes or permissions.
+Reserved examples: merges into main; version bumps; tags; GitHub releases; publication
+outside this repository; posts on other repositories; repository settings; deleting
+issues; transferring repository ownership or any novel unlisted action.
+Also reserved: pipeline-override markers; disabling guardrails; user config; hook-denied
+operations; sandbox-denied operations.
+A panel cannot overrule a role, waive a contract, retry a denied operation or
+manufacture human approval; use OR45 pushback and human decision where applicable.
+All security trade-offs remain reserved, both 2-1 and 3-0; refer them to the maintainer
+without unauthorized attempts.
+
+**Independent brief and model floor.**
+
+Brief fresh non-inheriting Product and Architect separately with canonical procedure,
+issue/ACs, ground-truth artifact links and exact question/scope.
+Withhold orchestrator reasoning, preferred answer, conversation or pasted issue history,
+and peer positions until independent returns.
+The orchestrator records its own position before reconciling returns.
+Apply the recorded work author's model floor to all three members, including the
+orchestrator.
+Record every exact model and reasoning level, the Artificial Analysis Intelligence Index
+entry, score and date read for the author and each member.
+Each member's index score must be at least the author's; model names alone prove
+nothing.
+Missing author/model records, missing index entries, unknown variants, absent dates or
+weaker scores leave the panel unresolved: obtain evidence or escalate.
+Members may run bounded read-only local experiments within existing permissions; record
+command, inputs, result and limits.
+Refuse writes, network mutations and denied-action retries; the brief grants no new
+permissions.
+
+Index source: https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index.
+Cite the exact entry and date read: this third-party snapshot changes; variants
+such as `gpt-6-1-sol-xhigh` are separate entries. Do not infer scores from names.
+
+**Merge-approval disclosure.**
+
+Build every merge-approval list from work-item issue comments labelled temporary, panel
+decision, never session memory.
+Re-list every decision since the last approval and carry earlier relevant unaccepted
+decisions across approval rounds.
+List ID, issue-record link, vote, dissent, outcome and resolution links, including
+retained-work, superseded, unresolved and escalated decisions.
+Group unanimous agreement (3-0) first, majority agreement (2-1) second; keep
+unresolved/escalated items visible alongside without fabricated votes.
+Unanimous items may be accepted as a group; majority items receive individual scrutiny.
+In both groups flag widening a limit / accepting a risk — explicit acceptance required.
+Silence, temporary disposition, unanimity, release-branch merge and merge permission
+alone do not establish acceptance of flagged choices.
+Apply the same grouping to TiesL/spec-driven-guardrails#646 and TiesL/spec-driven-guardrails#647 records while preserving their additional
+protections.
+
+**Compatibility and evidence limits.**
+
+ORCHESTRATOR.md remains byte-identical as a compatibility synopsis in this work.
+Adopt the shared format for stage selection through explicit follow-up preserving all
+additional fields and protections.
+Generic majority never relaxes unanimous eligible skips, protected work,
+evidence/advance ordering, fresh Review, review depth, valid Test-skip/A49 provenance or
+per-item human authority.
+Only the orchestrator posts an otherwise authorized override naming the human and
+unchanged words; preserve existing validation, round trip and Closes issue-link
+requirements.
+A panel never supplies posting authority; syntactic acceptance of a panel name grants no
+permission.
+Records, links, timestamps and human-looking identities are forgeable evidence, not
+authentication.
+Missing evidence or forged-looking approvals require explicit limitation and referral,
+never an authenticated-human or verified-capability claim.
+There is no new parser, gate, hook, dispatcher or sandbox exception.
+Green structural checks do not prove live obedience, independence or capability, or
+completeness of historical records; reconcile available issue/PR artifacts and report
+missing evidence.
+
 ### Stage-selection panel
 
 The panel brief must ask participants to read this subsection, Standing human class

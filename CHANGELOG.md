@@ -13,6 +13,10 @@ point.
 
 ## Unreleased
 
+- #645: Document the temporary-decision panel proposal, allow-list, independent
+  model-floor evidence, issue-home records and grouped merge-approval disclosure;
+  decisions remain temporary and maintainer-pending.
+
 ## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
 
 - **#660:** harden offline stage-selection pin tests with a structural waiver-authority oracle and retained compatibility hashes; this does not verify live instruction loading or cover every permissive rewrite.
