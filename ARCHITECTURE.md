@@ -3234,7 +3234,7 @@ rule is introduced.
   The issue's proposed new rule next to OR43/OR45 is satisfied conceptually by
   the canonical cross-reference, not by adding a core OR-number. This is an
   explicit AC1 placement difference for Product/maintainer acceptance, not a
-  silent AC amendment. Editing ORCHESTRATOR.md requires a paid behavior run
+  silent AC amendment. Editing ORCHESTRATOR.md requires a behavior run
   (this dispatch's constraint), out of scope here; a literal core-rule change
   requires separately scoped work and that run. Extend the existing reference
   in `policy/WORKFLOW.md` and regenerate managed projections in Implementation;
