@@ -3245,8 +3245,21 @@ rule is introduced.
   bumps, CHANGES.md meaning-version bumps, outward-facing actions (release, tag,
   publication, external message, repository setting), security trade-offs,
   departures from role recommendations and contract waivers. The issue omits
-  version bumps and outward-facing actions. [A] Recommend retaining **all** those
-  additional reservations; the omission is an open maintainer scope decision.
+  version bumps and outward-facing actions. [A] Maintainer direction 2026-11-05
+  (temporary, pending acceptance): the delegation is an **allow-list**; whatever
+  it does not name stays reserved to the maintainer, so a new kind of action
+  defaults to reserved. Eligible for a panel: temporary spec-visible and policy
+  choices recorded as panel decisions; edits to in-repo content through a PR
+  (README, CHANGELOG `Unreleased`, docs); meaning-version bumps (adopters get a
+  readoption question, which is harmless); closing issues; comments and labels on
+  this repository's issues and PRs; deleting merged branches; merging work-item
+  PRs into release branches (existing OR43 authority, unchanged). Reserved by
+  omission, named here only as examples: merges into `main`, version bumps
+  (tags and GitHub releases), publication outside the repository including posts
+  on other repositories, repository settings, deleting issues. Security
+  trade-offs remain reserved as below. The literal OR43 text is unchanged until
+  ORCHESTRATOR.md is edited, so the carve-outs live in the canonical skill
+  section (D1); that difference is for the maintainer to accept.
   Eligible votes concern temporary spec-visible choices and policy questions
   only after the delegation itself is accepted. A vote cannot overrule a role,
   waive a contract, authorize a denied operation or manufacture human approval;
@@ -3267,9 +3280,18 @@ rule is introduced.
   existing permissions, recording command, inputs, result and limits; no network
   mutation or denied-action retry is authorized. Record each named participant's
   model and the work author's recorded model, with capability-floor rationale;
-  apply the author's floor to all three members. Unknown capability or missing
-  author/model evidence leaves the panel unresolved: obtain evidence or escalate,
-  never infer a floor from a model name alone. The orchestrator records its own
+  apply the author's floor to all three members. [A] Maintainer direction
+  2026-11-05 (temporary): capability order across vendors is public, so the
+  floor evidence is the Artificial Analysis Intelligence Index entry for each
+  member's model and reasoning level and for the author's (variants such as
+  `gpt-6-1-sol-xhigh` are separate entries), cited with the date read because
+  the index is a third-party snapshot that changes; a member's score must be at
+  least the author's. The link is
+  https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index
+  (scores to be read at implementation, not verified in this entry). Missing
+  author/model records, or no index entry for a model, leave the panel
+  unresolved: obtain evidence or escalate, never infer a floor from a model name
+  alone. The orchestrator records its own
   position before reconciling returns. Two agreeing positions out of three settle
   an eligible temporary outcome; retain dissent. Missing participants/evidence
   or three incompatible positions means unresolved, not a fabricated 2-1 vote.
@@ -3317,10 +3339,13 @@ rule is introduced.
   S589 (AC1) canonical home, three members, vote and complete shared record;
   mechanically delete each required clause/field independently and introduce a
   conflicting duplicate policy, then exercise missing-record detection.
-  S590 (AC2) exercise every reserved category independently, including version
-  and meaning-version bumps, every named outward action, guard/config/denial,
-  role/contract overrule and both 2-1 and 3-0 security proposals; require referral
-  and no unauthorized action, with eligible non-security positive controls.
+  S590 (AC2) exercise the allow-list of D2: every action it does not name must
+  be referred (version bumps and tags, publication outside the repository,
+  posts on other repositories, repository settings, deleting issues, merges into
+  `main`, a novel unlisted action), plus guard/config/denial, role/contract
+  overrule and both 2-1 and 3-0 security proposals; require referral and no
+  unauthorized action, with positive controls for each eligible action (including
+  meaning-version bumps and closing issues).
   S591 (AC3) inspect actual briefs/returns and read-only experiment attempts;
   mutate in orchestrator reasoning, inherited history, peer anchoring, a weaker
   or unknown model and a write attempt; require refusal/correction or escalation,
@@ -3347,7 +3372,7 @@ rule is introduced.
   controls; publish its normal handoff artifact. Developer owns skill/policy
   implementation, generated projections and test code only after owner handoffs
   and maintainer acceptance of delegation. [A] AC2-AC4 are not contradicted or
-  narrowed; AC1's core placement difference and the additional retained OR43
-  reservations require explicit Product/maintainer resolution. All D1-D7 remain
+  narrowed; AC1's core placement difference and the allow-list narrowing of
+  OR43 (D2) require explicit Product/maintainer resolution. All D1-D7 remain
   temporary recommendations, including record extensions, conservative security
   scope and test allocations. No decision in this design authorizes itself.
