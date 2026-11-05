@@ -3295,8 +3295,12 @@ rule is introduced.
   position before reconciling returns. Two agreeing positions out of three settle
   an eligible temporary outcome; retain dissent. Missing participants/evidence
   or three incompatible positions means unresolved, not a fabricated 2-1 vote.
-- **D4 — Shared record and acceptance (AC1/AC4).** [A] Use one ordinary issue
-  or PR comment per decision with the literal label `temporary, panel decision`,
+- **D4 — Shared record and acceptance (AC1/AC4).** [A] Use one ordinary comment
+  on the work-item issue where the decision was made (maintainer, 2026-11-05: never
+  only on a PR, which can be closed or rebased away; the PR description links to
+  it; an unresolved or escalated panel and decisions about the process itself are
+  recorded there too, and the merge-approval list is built from these comments)
+  per decision with the literal label `temporary, panel decision`,
   stable decision ID, question, scope/AC and artifact links, three named
   positions and their evidence/model records, explicit vote (3-0 or 2-1) including
   dissent, outcome, rationale, reservation/escalation status, and a flag for
