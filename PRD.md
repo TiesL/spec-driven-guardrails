@@ -2152,6 +2152,13 @@ states that no standing words apply and links the per-item human decision
 before any waiver posting. If #645 lands, its shared record definition
 replaces this minimal definition through an explicit follow-up preserving
 the required information; #647 does not depend on its availability.
+[A] F67-F69 provisionally define that shared format and disclosure. Adoption
+requires the explicit follow-up above and preserves every stage-selection
+field, human-authority condition and timing requirement here and in F61.
+The generic 2-of-3 vote in F67 cannot relax the unanimous eligible skip
+requirement: a 2-1 vote to skip still goes to the maintainer without a
+panel-derived waiver posting. This is a temporary recommendation pending
+maintainer acceptance, not an enacted change to stage-selection authority.
 
 The panel never writes or authorizes an override marker. Only the
 orchestrator posts through `pipeline-override.sh` from the project checkout,
@@ -2198,6 +2205,14 @@ accepting a risk are flagged for explicit maintainer acceptance. This includes
 the temporary spec decisions for #647 and removal of #645 as a dependency.
 Panel agreement and a merge into a release branch do not establish that
 acceptance; OR43 and the release/main merge-approval rules still apply.
+
+[A] F69 provisionally supplies the shared issue-record-based disclosure,
+grouped 3-0 first and 2-1 second, for #646 and #647 as well as #645.
+Its adoption preserves this entry's complete relevant-decision list,
+resolution links and explicit acceptance flags; unresolved or escalated
+records remain visible without an invented vote. Neither grouping nor a
+generic majority relaxes F61/F62's stronger stage-selection protections.
+This recommendation remains temporary and pending maintainer acceptance.
 
 Stage selection changes stage presence only. It retains A13's required
 review depth or raises it with `--force-thorough`; neither a waiver nor a
@@ -2305,6 +2320,125 @@ post records can forge model-records and human override lines: this is not
 authenticated human authority or proof that stages ran. Reconciliation can
 catch removing one membership signal, but cannot prevent a coordinated rewrite
 of all sources; read-only checks do not guarantee an atomic GitHub snapshot.
+
+### F67 — Give temporary panels one canonical home and durable issue records (issue #645)
+
+**Serves:** #645 AC1; A54 D1, D3 and D4.
+[A] F67-F69 are provisional, temporary panel/maintainer-pending
+recommendations, not acceptance of delegation or evidence that a panel
+voted. Final F-numbers are confirmed at merge time. [V] A54 records the
+design; `issue-645.md` contains AC1-AC4 and `issue-645-comments.md` contains
+the local maintainer direction dated 2026-11-05. [A] These requirements
+address authority drift, anchoring and forgotten temporary decisions in
+this repository's multi-role workflow through visible, overridable records.
+
+[A] The canonical procedure is a "Temporary-decision panel" section in
+"Running the pipeline" in `skills/role-contracts/SKILL.md`, adjacent to
+"Stage-selection panel". It states the eligibility, reservations, brief,
+vote, shared record and relationship to OR43/OR45; only maintainer-approved
+delegation permits the eligible temporary choices. ORCHESTRATOR.md remains
+byte-identical in this work as a compatibility synopsis. This is an explicit
+placement difference from AC1's proposed rule next to OR43/OR45, pending
+Product/maintainer acceptance, not a silent AC amendment. The existing
+`policy/WORKFLOW.md` reference is extended and managed projections are
+regenerated during Implementation, rather than independently redefining policy.
+
+[A] The three members are Product, Architect and the orchestrator. Two
+agreeing positions out of three settle only an eligible temporary outcome;
+record 3-0 or 2-1 and retain dissent. Missing participants or evidence, or
+three incompatible positions, leave the question unresolved. No vote
+manufactures human approval or overrides F68's reservations or F61/F62's
+unanimous eligible skip requirement.
+
+[A] Each decision has one ordinary comment on the work-item issue where
+it was made, bearing the literal label `temporary, panel decision`; the
+PR description links to that comment. A PR-only or session-only record
+is insufficient. Unresolved and escalated panels also leave a record there.
+Process decisions are recorded on the issue driving that process (#645
+for this mechanism). Each record contains a stable decision ID, question,
+scope/AC and artifact links, three named positions and their evidence/model
+records, explicit vote including dissent (or unresolved status without a
+fabricated vote), outcome, rationale, reservation/escalation status, and a
+flag for widening a limit or accepting a risk. Link superseded records and
+their resolutions rather than erasing them. This format contains no override
+marker. Adopt it for F62 through an explicit follow-up preserving that
+entry's additional evidence, human authority and advance-ordering rules.
+
+### F68 — Bound delegated authority and require independent, evidenced participants (issue #645)
+
+**Serves:** #645 AC2 and AC3; A54 D2 and D3.
+[A] Delegation is an allow-list, effective only after maintainer acceptance;
+every action it does not name remains reserved to the maintainer. Eligible
+scope is temporary spec-visible and policy choices recorded as panel
+decisions; in-repository content edits through a PR (README, CHANGELOG
+`Unreleased`, docs); meaning-version bumps; closing issues; comments and
+labels on this repository's issues and PRs; deleting merged branches; and
+merging work-item PRs into release branches. Existing release-branch merge
+authority remains outside the panel's grant and retains its own conditions.
+Eligibility does not itself authorize execution outside existing role scopes
+or permissions. These are proposed canonical-skill carve-outs from OR43,
+whose literal core text remains unchanged pending separately scoped work.
+
+[A] Reserved examples include merges into `main`, version bumps (tags and
+GitHub releases), publication outside this repository including posts on
+other repositories, repository settings, and deleting issues. Also reserved
+are pipeline-override markers, disabling guardrails, hook/sandbox-denied
+actions and user configuration. A panel cannot overrule a role, waive a
+contract, retry a denied operation or manufacture human approval; applicable
+OR45 pushback and human-decision handling continue. All security trade-offs
+remain reserved, whether 2-1 or 3-0; the 2-1 case always goes to the
+maintainer. This conservative scope exceeds AC2's explicit 2-1 protection
+and remains a temporary recommendation, not accepted broader delegation.
+
+[A] Dispatch fresh Product and Architect participants separately without
+inherited conversation or pasted issue history. Supply the canonical
+procedure, issue/ACs, relevant artifact links and exact question/scope,
+with neither the orchestrator's reasoning or preferred answer nor the other
+participant's position before independent returns. Members read ground
+truth and may run bounded read-only local experiments within existing
+permissions, recording command, inputs, results and limits. This grants no
+network mutation or denied-action retry. The orchestrator records its own
+position before reconciling returns.
+
+[A] Record all three participants' models and the work author's recorded
+model, with capability-floor rationale. Every participant, including the
+orchestrator, must meet the author's floor using the public
+[Artificial Analysis Intelligence Index](https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index):
+cite the entry for each model and reasoning level and the date read, with
+each participant's score at least the author's. Variants are separate
+entries; a model name alone does not establish the floor. Missing author
+or model records, a missing index entry or unverified comparison leave
+the panel unresolved: obtain evidence or escalate. Scores are to be read
+when applying the procedure; none are asserted verified here.
+
+### F69 — Re-list temporary decisions by vote when requesting merge approval (issue #645)
+
+**Serves:** #645 AC4; A54 D4; preserves F63's stage-selection disclosure.
+[A] Build each merge-approval list from the work-item issue comments bearing
+`temporary, panel decision`, never session memory or PR-only records.
+Re-list every temporary decision since the last approval and retain earlier
+relevant unaccepted decisions across rounds. Each item includes its stable
+ID, issue-record link, vote, outcome and resolution links. Include retained-
+work, escalated and superseded decisions and their resolutions as F63
+requires; leave unresolved/escalated items visible alongside the groups
+without inventing a vote.
+
+[A] Group unanimous agreement (3-0) first and majority agreement (2-1)
+second, with each decision's vote and dissent preserved. Unanimous items
+may be accepted as a group; majority items receive individual scrutiny.
+In either category flag every item **widening a limit / accepting a risk —
+explicit acceptance required**. Apply the same grouping to #646 and #647
+records while preserving their additional protections, including F61/F62's
+unanimous eligible skip rule and F63's review-depth requirement.
+
+[A] A temporary outcome, unanimity, silence, a release-branch merge or merge
+permission alone does not establish maintainer acceptance of flagged
+choices. Existing release/main merge rules continue. Records, links,
+timestamps and human-looking identities are forgeable evidence, not
+authentication; this procedure introduces no parser, gate, hook, dispatcher
+or sandbox exception and cannot prove independence, capability or obedience.
+Local structural checks cannot establish that every historical decision was
+recorded; reconcile available issue/PR artifacts and report missing evidence.
 
 ## Non-functional characteristics
 
