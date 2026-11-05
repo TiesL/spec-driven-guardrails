@@ -3200,3 +3200,154 @@ The release-membership meaning-version decision remains with maintainer.
 release-membership amendment, alongside all temporary panel decisions and the
 panel-2 QA scope departure. No new override author, marker or orchestrator-core
 rule is introduced.
+
+### A54 — Temporary-decision panels: canonical procedure and visible acceptance (#645)
+
+- **Threat model and robustness bound first.** [V] The header of
+  `skills/pre-merge-review/model-record-gate.sh` disclaims verification of emitter
+  provenance, model capability/identity, agent identity, basis honesty and override
+  authorship; F62 and A50 likewise treat records, links and timestamps as forgeable
+  evidence, not authentication. [A] This design addresses accidental authority
+  drift, anchoring, omitted dissent and forgotten temporary choices through
+  independent scrutiny and maintainer-visible records. It cannot constrain a
+  malicious session, prove independence or model capability, or turn a vote into
+  authenticated human authority. No new parser, gate, hook, dispatcher or sandbox
+  exception is proposed; green text checks do not prove live obedience.
+- **Status and evidence.** [A] Every recommendation in this entry is a
+  **temporary, panel decision recommendation for maintainer acceptance**, not an
+  enacted OR43 amendment or evidence that a three-member panel actually voted.
+  `[V]` identifies facts verified in the cited local files; `[A]` identifies
+  assumptions and proposed decisions. [V] `issue-645.md`, Context and Not in scope,
+  makes changing OR43 contingent on the maintainer; `issue-645-comments.md`
+  supplies the local Discovery record. Neither supplies acceptance of this design.
+  [A] A54 is the next entry after A53; confirm its final number at merge time.
+- **D1 — Rule home (AC1).** [V] A50/A51 and F62 place canonical panel procedure
+  in `skills/role-contracts/SKILL.md`, Running the pipeline, reached from
+  `WORKFLOW.md`, During the work; OR43 and OR45 currently reserve decisions and
+  govern overruling recommendations (`skills/role-contracts/ORCHESTRATOR.md`).
+  [A] Add `Temporary-decision panel` there, adjacent to Stage-selection panel,
+  containing the eligibility rule, never-delegated list, brief and shared record
+  format. That section states explicitly its relation to OR43/OR45: only
+  maintainer-approved delegation permits eligible temporary spec/policy choices;
+  existing reservations and human overrule handling otherwise continue. Keep
+  ORCHESTRATOR.md **byte-identical** as a compatibility synopsis in this work.
+  The issue's proposed new rule next to OR43/OR45 is satisfied conceptually by
+  the canonical cross-reference, not by adding a core OR-number. This is an
+  explicit AC1 placement difference for Product/maintainer acceptance, not a
+  silent AC amendment. Editing ORCHESTRATOR.md requires a paid behavior run
+  (this dispatch's constraint), out of scope here; a literal core-rule change
+  requires separately scoped work and that run. Extend the existing reference
+  in `policy/WORKFLOW.md` and regenerate managed projections in Implementation;
+  never hand-edit WORKFLOW.md, AGENTS.md or adapter-generated instructions.
+- **D2 — Authority and reserved scope (AC2).** [V] `issue-645.md`, Proposal and
+  AC2, excludes main merges, pipeline-override markers, disabling guardrails,
+  hook/sandbox-denied actions and user config. OR43 additionally reserves version
+  bumps, CHANGES.md meaning-version bumps, outward-facing actions (release, tag,
+  publication, external message, repository setting), security trade-offs,
+  departures from role recommendations and contract waivers. The issue omits
+  version bumps and outward-facing actions. [A] Recommend retaining **all** those
+  additional reservations; the omission is an open maintainer scope decision.
+  Eligible votes concern temporary spec-visible choices and policy questions
+  only after the delegation itself is accepted. A vote cannot overrule a role,
+  waive a contract, authorize a denied operation or manufacture human approval;
+  use OR45's pushback/human-decision route where applicable. Reserve all security
+  trade-offs, including unanimous ones; a 2-1 security vote always goes to the
+  maintainer. This conservative reading exceeds AC2's explicit 2-1 protection;
+  Product must expose any intended broader security delegation as a spec decision.
+  Existing release-branch merge authority remains outside this panel's grant.
+- **D3 — Panel brief and independence (AC1/AC3).** [V] OR47 requires artifact
+  links and stated scope, without conversation history or pasted issue history;
+  OR7 requires fresh non-inheriting dispatch. The issue's Proposal requires a
+  Product member, Architect member and orchestrator, read-only experiments and a
+  floor at least as capable as the author. [A] Brief fresh Product and Architect
+  separately with canonical procedure, issue/ACs, relevant source artifacts and
+  exact question/scope; give neither the orchestrator's reasoning, preferred
+  answer nor the other member's position before their independent returns.
+  Each reads ground truth and may run bounded read-only local experiments within
+  existing permissions, recording command, inputs, result and limits; no network
+  mutation or denied-action retry is authorized. Record each named participant's
+  model and the work author's recorded model, with capability-floor rationale;
+  apply the author's floor to all three members. Unknown capability or missing
+  author/model evidence leaves the panel unresolved: obtain evidence or escalate,
+  never infer a floor from a model name alone. The orchestrator records its own
+  position before reconciling returns. Two agreeing positions out of three settle
+  an eligible temporary outcome; retain dissent. Missing participants/evidence
+  or three incompatible positions means unresolved, not a fabricated 2-1 vote.
+- **D4 — Shared record and acceptance (AC1/AC4).** [A] Use one ordinary issue
+  or PR comment per decision with the literal label `temporary, panel decision`,
+  stable decision ID, question, scope/AC and artifact links, three named
+  positions and their evidence/model records, explicit vote (3-0 or 2-1) including
+  dissent, outcome, rationale, reservation/escalation status, and a flag for
+  widening a limit or accepting a risk. Link superseded records and their
+  resolutions rather than erasing them. No override marker is part of this format.
+  [V] A50/F62 already require stage-selection-specific evidence and ordering;
+  F63 requires disclosure including retained, escalated and superseded choices.
+  [A] Adopt this common format through an explicit follow-up preserving those
+  additional stage-selection fields and protections; do not let a generic 2-1
+  majority relax that mechanism's unanimous skip requirement. Apply grouping
+  equally to #646/#647 records, as `issue-645.md` AC4 requests.
+  At every merge-approval request re-list every temporary decision since the last
+  approval with ID, record link, vote, outcome and resolution: **3-0 first, 2-1
+  second**, per the maintainer's 2026-11-05 instruction preserved in AC4. Preserve
+  unresolved/escalated items visibly alongside those groups without inventing a
+  vote; retain earlier relevant unaccepted decisions across approval rounds.
+  Unanimous items may be accepted as a group; majority items receive individual
+  scrutiny. In either group explicitly flag **widening a limit / accepting a risk
+  — explicit acceptance required**. A vote is temporary disposition, not final
+  maintainer acceptance; merge permission alone must not hide flagged decisions.
+- **D5 — Module and existing Seams.** [A] Keep one policy Module with a small
+  Interface: brief, eligibility, independent positions, record and approval
+  disclosure. Its Depth concentrates authority rules; deleting it would spread
+  complexity across panel consumers, so it provides Leverage and Locality.
+  [V] A51 identifies source-text and instruction-exercise Seams; existing
+  `test/cases/s534_stage_selection.sh`, `s546_stage_selection.sh` and
+  `s548_stage_selection.sh` explicitly label their coverage mechanical-only.
+  [A] Reuse those Seams and the existing test harness; real instruction execution
+  and controlled local fixtures are actual Adapters, so no speculative panel
+  engine or new production Seam is justified. Static pins inspect procedure,
+  record examples and projection equality; exercises observe actual briefs,
+  experiment attempts, positions, escalation and disclosure, not a helper that
+  merely prints the expected answer. Mechanical checks cannot prove that no
+  unrecorded historical decision exists (AC1's falsifier); Reviewer must reconcile
+  available issue/PR decision artifacts and report missing evidence explicitly.
+- **D6 — Five-scenario reservation and mutation controls.** [V] The highest
+  scenario heading in `TEST-SCENARIOS.md` is S588; the highest PRD F-entry is F66.
+  [A] Reserve **S589-S593**, final numbers checked at merge time, with QA-owned
+  text and Developer-owned executable cases using the existing test harness:
+  S589 (AC1) canonical home, three members, vote and complete shared record;
+  mechanically delete each required clause/field independently and introduce a
+  conflicting duplicate policy, then exercise missing-record detection.
+  S590 (AC2) exercise every reserved category independently, including version
+  and meaning-version bumps, every named outward action, guard/config/denial,
+  role/contract overrule and both 2-1 and 3-0 security proposals; require referral
+  and no unauthorized action, with eligible non-security positive controls.
+  S591 (AC3) inspect actual briefs/returns and read-only experiment attempts;
+  mutate in orchestrator reasoning, inherited history, peer anchoring, a weaker
+  or unknown model and a write attempt; require refusal/correction or escalation,
+  with an artifact-only, known-floor, read-only positive control.
+  S592 (AC4) exercise mixed 3-0/2-1 decisions, risk flags in both categories,
+  supersession, unresolved records and multiple approval rounds; independently
+  drop a decision, reverse groups, erase dissent/flags or treat silence as
+  acceptance, and require each corruption to fail the disclosure oracle.
+  S593 (AC1-AC4 robustness) pin unchanged core/gate/posting authority and exercise
+  forged human-looking records, missing evidence and attempts to use generic
+  majority to bypass stage-selection protections; require explicit limitation
+  and referral, not an authentication claim. Include clause-deletion controls
+  and permissive-rewrite negatives, plus unchanged valid-record controls.
+  For every scenario distinguish structural assertions from observed instruction
+  behavior; report unrun behavior exercises as unrun, never as passing. Developer
+  demonstrates RED on each independent mutation and GREEN on valid controls;
+  Reviewer assesses whether the oracle actually detects the intended violation.
+- **D7 — Owner handoff and open acceptance.** [A] Product owns `PRD.md`: add
+  provisional F67 (home/record, AC1), F68 (reserved authority and independent
+  participants/floor, AC2/AC3), F69 (approval disclosure, AC4); reconcile F62/F63
+  through explicit references preserving their stronger stage-selection rules.
+  QA owns `TEST-SCENARIOS.md`: add S589-S593 with Covers links to those owner-
+  approved F-entries and the AC mapping above, plus observable oracles and mutation
+  controls; publish its normal handoff artifact. Developer owns skill/policy
+  implementation, generated projections and test code only after owner handoffs
+  and maintainer acceptance of delegation. [A] AC2-AC4 are not contradicted or
+  narrowed; AC1's core placement difference and the additional retained OR43
+  reservations require explicit Product/maintainer resolution. All D1-D7 remain
+  temporary recommendations, including record extensions, conservative security
+  scope and test allocations. No decision in this design authorizes itself.
