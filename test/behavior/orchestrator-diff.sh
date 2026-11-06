@@ -3,8 +3,8 @@
 #
 # Compares skills/role-contracts/ORCHESTRATOR.md at --base (default origin/main)
 # with the working tree's, scenario by scenario, N runs per arm, through
-# `claude -p` (or the stub named by CLAUDE_BIN). Costs money: the real claude is
-# only started here. Not run by ./check or CI.
+# `claude -p` (or the stub named by CLAUDE_BIN). Uses subscription usage: the real
+# claude is only started here. Not run by ./check or CI.
 #
 # Usage: test/behavior/orchestrator-diff.sh [--base <rev>] [--runs N] [--model M]
 #          [--max-budget-usd X] [--calibrate] [--baseline] [--mutant-rule ORn]
