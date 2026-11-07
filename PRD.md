@@ -2373,7 +2373,8 @@ scope is temporary spec-visible and policy choices recorded as panel
 decisions; in-repository content edits through a PR (README, CHANGELOG
 `Unreleased`, docs); meaning-version bumps; closing issues; comments and
 labels on this repository's issues and PRs; deleting merged branches; and
-merging work-item PRs into release branches. Existing release-branch merge
+merging work-item PRs into release branches. In-repository docs edits and
+policy choices exclude contract text, defined below. Existing release-branch merge
 authority remains outside the panel's grant and retains its own conditions.
 Eligibility does not itself authorize execution outside existing role scopes
 or permissions. These are proposed canonical-skill carve-outs from OR43,
@@ -2383,7 +2384,14 @@ whose literal core text remains unchanged pending separately scoped work.
 GitHub releases), publication outside this repository including posts on
 other repositories, repository settings, and deleting issues. Also reserved
 are pipeline-override markers, disabling guardrails, hook/sandbox-denied
-actions and user configuration. A panel cannot overrule a role, waive a
+actions and user configuration. Editing contract text is reserved to the
+maintainer (action `edit-panel-rules`): anything under `skills/`, `policy/`,
+`hooks/`, `settings/` and `adapters/`, plus the generated `AGENTS.md` and
+`WORKFLOW.md`, `ORCHESTRATOR.md` (including OR47) and A54 D2 itself. This is
+a clear class, not an open list; spec content (PRD, ARCHITECTURE,
+TEST-SCENARIOS) stays eligible as a temporary spec choice. Any proposal whose
+target is contract text is referred to the maintainer, even when it would
+otherwise be an eligible docs edit or policy choice. A panel cannot overrule a role, waive a
 contract, retry a denied operation or manufacture human approval; applicable
 OR45 pushback and human-decision handling continue. All security trade-offs
 remain reserved, whether 2-1 or 3-0; the 2-1 case always goes to the
