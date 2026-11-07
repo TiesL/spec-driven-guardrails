@@ -3257,12 +3257,17 @@ rule is introduced.
   omission, named here only as examples: merges into `main`, version bumps
   (tags and GitHub releases), publication outside the repository including posts
   on other repositories, repository settings, deleting issues. Also reserved
-  (maintainer decision of 2026-11-07, closing a Review round 5 loophole):
-  **editing the panel's own rules**, meaning the Temporary-decision panel section
-  of `skills/role-contracts/SKILL.md`, OR43 and OR45; a panel that could settle
-  an edit to its own allow-list or reservations would widen its own authority,
-  so any proposal whose target is those rules is referred to the maintainer,
-  even when it would otherwise be an eligible docs edit or policy choice.
+  (maintainer decision of 2026-11-07, closing a Review round 5 loophole and
+  widened the same day after Review round 6 finding 2): **editing the panel's own
+  rules**, meaning **contract text**: anything under `skills/`, `policy/`, `hooks/`,
+  `settings/` and `adapters/`, plus the generated `AGENTS.md` and `WORKFLOW.md`,
+  `ORCHESTRATOR.md` (including OR47, OR43 and OR45) and A54 D2 itself. [A] This is
+  a clear class, not an open list. A panel that could settle an edit to the rules
+  its authority depends on would widen its own authority, so any proposal whose
+  target is contract text is referred to the maintainer, even when it would
+  otherwise be an eligible docs edit or policy choice. Spec content (`PRD.md`,
+  the rest of `ARCHITECTURE.md`, `TEST-SCENARIOS.md`) stays eligible as a
+  temporary spec choice. The action token stays `edit-panel-rules`.
   Security trade-offs remain reserved as below. The literal OR43 text is unchanged until
   ORCHESTRATOR.md is edited, so the carve-outs live in the canonical skill
   section (D1); that difference is for the maintainer to accept.
@@ -3382,7 +3387,7 @@ rule is introduced.
   | Scenario | Closed structured fields/domains and required relations |
   | --- | --- |
   | S589 / AC1 | Members exactly `Product`, `Architect`, `orchestrator`; positions `adopt`, `defer`, `reject`; outcome `resolved`, `unresolved`, `escalated`; vote `3-0`, `2-1`, absent. One position/evidence/model row per member; resolved needs three complete members and a tally of at least two, with matching vote and dissent member/position pairs (empty for unanimity); unresolved/escalated has no vote. Label exactly `temporary, panel decision`; home `issue` or `PR`; issue identity, decision ID, record/PR-description links, expected inventory IDs, superseded IDs and resolution links must agree, be unique and preserve predecessors. Risk, limit-widening and accepted are booleans; reservation status `pending`, `referred`, `none`. Required opaque record fields are question, scope/AC, artifacts, evidence source, model/reasoning, rationale and resolution text/link: presence only, plus exact preservation when copied. |
-  | S590 / AC2 | Action tokens are the 13 `ELIGIBLE` and 19 `RESERVED` entries: the 13 and 18 in `test/fixtures/temporary-panel-645.py` at the reviewed head above plus the new RESERVED token `edit-panel-rules` (maintainer decision 2026-11-07, D2; the Developer adds it to the fixture); these are fixed D2 examples, including the one `novel-unlisted-action` representative. Any token outside the fixed allow-list is reserved. A structured field, the proposal target (`panel-rules` or `other`; `panel-rules` means the Temporary-decision panel section of `skills/role-contracts/SKILL.md`, OR43 or OR45), selects the token: an otherwise eligible `docs-pr` or `temporary-spec-choice`/`policy-choice` proposal whose target is `panel-rules` is the RESERVED token `edit-panel-rules`, not the eligible one, so it is referred (route `maintainer`, no panel-derived execution) whatever the delegation, panel state or vote; with target `other` those tokens stay eligible. The target is a supplied fact; the oracle never reads proposal prose to infer it. Delegation state `accepted`, `refused`, `unverified`, `missing`; source identity, delegated scopes, permission scopes, permitted action IDs and actor `orchestrator`, `Product`, `Architect` are supplied facts. Panel state uses S589. Result disposition `temporary`, `referred`, `authorized-existing-route`; route `panel`, `maintainer`, `release-authority`; acceptance `pending`, `accepted`; attempts record action/authority identities; prior denial `denied`, `none`. Only accepted applicable delegation, existing permission and resolved panel support temporary/panel, with acceptance pending and no panel-derived execution. Otherwise require referral/no attempt. Existing release authority is independent: source state as above, action/base identities (`release` versus `main`), CI/tests `passed`, `failed`, `missing`, Review `approved`, `changes-requested`, `missing` and permission must all support that exact release action before its existing route/attempt is allowed. Delegation/release words remain opaque. |
+  | S590 / AC2 | Action tokens are the 13 `ELIGIBLE` and 19 `RESERVED` entries: the 13 and 18 in `test/fixtures/temporary-panel-645.py` at the reviewed head above plus the new RESERVED token `edit-panel-rules` (maintainer decision 2026-11-07, D2; the Developer adds it to the fixture); these are fixed D2 examples, including the one `novel-unlisted-action` representative. Any token outside the fixed allow-list is reserved. A structured field, the proposal target (`panel-rules` or `other`; `panel-rules` means contract text as defined in D2, widened by the maintainer decision of 2026-11-07: anything under `skills/`, `policy/`, `hooks/`, `settings/` and `adapters/`, the generated `AGENTS.md` and `WORKFLOW.md`, `ORCHESTRATOR.md` including OR47, and A54 D2 itself; `other` means everything else, including spec content), selects the token: an otherwise eligible `docs-pr` or `temporary-spec-choice`/`policy-choice` proposal whose target is `panel-rules` is the RESERVED token `edit-panel-rules`, not the eligible one, so it is referred (route `maintainer`, no panel-derived execution) whatever the delegation, panel state or vote; with target `other` those tokens stay eligible. The target is a supplied fact; the oracle never reads proposal prose to infer it. Delegation state `accepted`, `refused`, `unverified`, `missing`; source identity, delegated scopes, permission scopes, permitted action IDs and actor `orchestrator`, `Product`, `Architect` are supplied facts. Panel state uses S589. Result disposition `temporary`, `referred`, `authorized-existing-route`; route `panel`, `maintainer`, `release-authority`; acceptance `pending`, `accepted`; attempts record action/authority identities; prior denial `denied`, `none`. Only accepted applicable delegation, existing permission and resolved panel support temporary/panel, with acceptance pending and no panel-derived execution. Otherwise require referral/no attempt. Existing release authority is independent: source state as above, action/base identities (`release` versus `main`), CI/tests `passed`, `failed`, `missing`, Review `approved`, `changes-requested`, `missing` and permission must all support that exact release action before its existing route/attempt is allowed. Delegation/release words remain opaque. |
   | S591 / AC3 | Author and three member model/variant/entry identities must match the captured synthetic index table; score below/equal/above author; date present-valid, invalid, missing. Brief recipients `Product`, `Architect`, distinct session IDs, inheritance IDs, return member/session IDs, used-session IDs and brief/return/own-position/reconciliation ordering are checked. Payload tags are exactly `procedure`, `issue/ACs`, `artifacts`, `question/scope`, `orchestrator-reasoning`, `preferred-answer`, `conversation-history`, `pasted-issue-history`, `peer-return`; require the first four and exclude the latter five before returns. Tags classify supplied synthetic segments only; arbitrary text inside any tag is not interpreted. Experiment kind `local-read`, `local-write`, `network-mutation`, `denied-retry`; permission `local-read`, `none`; command/input identities, attempts and prior-denial identity must match; disposition `accepted`, `refused`, `incomplete`; reconciliation `settled`, `unresolved`. Only complete permitted local-read may be attempted/accepted; other kinds require refusal/no attempt, incomplete evidence requires unresolved/no attempt. Command, result and limits text have presence/copy checks only; no shell-command or brief-prose semantics are inferred. |
   | S592 / AC4 | Controlled issue inventories for consumers `645`, `646`, `647`, rounds `1`, `2`, record fields from S589, disclosure source `issue-comments`, `session-memory`, row order and decision/supersession/resolution IDs. Exact inventory preservation (including opaque bytes), 3-0 before 2-1, unresolved/escalated visible, and carryforward of unaccepted IDs are required. Acceptance evidence kind `explicit`, `silence`, `merge-permission`, `temporary-disposition`, `unanimity`, `release-merge`, `missing`; source/decision IDs, scrutiny `group`, `individual`, and accepted boolean. Only explicit applicable evidence supports accepted; 2-1 requires individual scrutiny with exactly that ID, 3-0 permits group scrutiny. Risk and limit flags must survive both groups/rounds. Acceptance words are opaque: compare copied bytes, never infer explicit acceptance from grammar or keywords. |
   | S593 / AC1-AC4 | Source state `accepted`, `refused`, `unverified`, `missing`; kind `human`, `panel`, `copied-approval`, `structural-check`; source/item/scope identities; posting actor `orchestrator`, `Product`, `Architect`; validation `0`, `nonzero`, `missing`; round-trip words/scopes equality and Closes issue identity. Result `authorized-route`, `temporary`, `referred`; limitation present/absent; claims `supplied-evidence-only`, `authenticated-human`, `live-obedience`, `verified-capability`; attempts `none`, `post-override`, `bypass`. Accepted applicable supplied human evidence and successful posting relations are necessary for the existing route; panel/copied/check evidence cannot supply it, and the last three claims are always unsupported. Protect the nine named conditions below independently of a `retained` disposition or any supplied `eligible` list. |
@@ -3440,7 +3445,32 @@ rule is introduced.
   Source controls are the finite `CLAUSES`, injection sentences, adjacency and
   policy-reference checks in the reviewed fixture at the head above: each clause
   deletion and each listed exact injection/rewrite, not arbitrary contradictory
-  prose. Preserve existing core/gate/hook byte comparisons and generator checks,
+  prose. [V] Those controls were frozen at `822be6d` (CLAUSES[590] has 9 entries
+  and the derived `590/source/action/<n>` pins number 1-33, counted on the
+  fixture at HEAD `803211b`). [A] They are now extended by exactly one
+  source pin, closing Review round 6 finding 1: CLAUSES[590] gains a 10th and
+  last entry (appended, so existing numbers do not move), the exact reservation
+  sentence in the Temporary-decision panel section of
+  `skills/role-contracts/SKILL.md`: "Editing the panel's own rules is also
+  reserved: any proposal whose target is contract text (anything under skills/,
+  policy/, hooks/, settings/ and adapters/, the generated AGENTS.md and
+  WORKFLOW.md, ORCHESTRATOR.md including OR47, and A54 D2) is referred to the
+  maintainer, even when it would otherwise be an eligible docs edit or policy
+  choice." It has no `; ` so the fixture's action loop derives one more pin.
+  Required diagnostics: `590/source/clause/10/control` (unchanged source passes),
+  `590/source/clause/10` (mutation: delete the sentence from a copy of the panel
+  section; the clause oracle must report `missing clause` and s590 must turn
+  red), and `590/source/action/34` (mutation: rewrite the sentence to
+  "panel may authorize an unlisted action"; the eligibility/reservation oracle
+  must reject it). Counts: CLAUSES[590] 9 to 10; source action pins 33 to 34;
+  action tokens stay 13 eligible and 19 reserved. The Developer adds the sentence
+  to the skill and the clause to the fixture; the
+  skill text must match the quoted sentence byte for byte after `norm`. These
+  pins prove only those exact bytes; semantic adequacy remains Review.
+  Holding pen, unchanged by this widening: H1 (the target is read only for the
+  `docs-pr`, `temporary-spec-choice` and `policy-choice` tokens) and H2 (S593
+  protection rows are not tied to each other) stay low, unfixed and out of scope.
+  Preserve existing core/gate/hook byte comparisons and generator checks,
   with one changed-byte/projection control per protected file and valid baseline.
   These pins prove only those exact bytes/strings; semantic adequacy remains Review.
   Fixtures are complete when every manifest row has its valid/safe control and
