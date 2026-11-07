@@ -262,7 +262,10 @@ def proposal(action, vote):
                 delegation=dict(source='controlled:maintainer-delegation', words='Delegate temporary eligible choices',
                                 scope=list(ELIGIBLE)),
                 permissions=dict(source='controlled:role-and-sandbox-permissions', role='orchestrator', scope=[action], permitted=[action]),
-                release_authority=dict(source='controlled:release-authority', base='release/600-panel',
+                release_authority=dict(source=dict(kind='human-words', human='maintainer',
+                                       action='merge-work-item-to-release', base='release/600-panel',
+                                       words='Authorize work-item merges to release/600-panel under existing conditions.'),
+                                       base='release/600-panel',
                                        ci='passed', tests='passed', review='approved'),
                 result=dict(disposition='temporary', route='panel', acceptance='pending', attempts=[]),
                 prior_denials=[])
@@ -408,23 +411,61 @@ PROTECTIONS = ('unanimous-skip', 'protected-work', 'evidence-before-action', 'ad
                'fresh-review', 'review-depth', 'valid-test-skip', 'A49-provenance', 'per-item-human-authority')
 
 
+def grant_words(scopes):
+    return ('For issue #645, authorize ' + ','.join(scopes)
+            + ' when doc_only=True and executable_diff=False.')
+
+
+def grant_supports(source, issue, scopes, actual):
+    # Interpret a bounded synthetic vocabulary independently of its constructor.
+    # Matching captured words/links does not authenticate a human.
+    if not isinstance(source, dict):
+        return False
+    words = re.fullmatch(r'For issue #(\d+), authorize ([A-Za-z=,]+) when '
+                         r'doc_only=(True|False) and executable_diff=(True|False)\.', source.get('words', ''))
+    return (words is not None and source.get('kind') == 'controlled-human-record'
+            and source.get('human') == 'maintainer' and source.get('issue') == issue == int(words[1]) == 645
+            and source.get('link') == 'issue:645#controlled-human-words'
+            and bool(scopes) and set(scopes) <= {'skip=Planning', 'skip=Test', 'skip=Implementation'}
+            and source.get('scopes') == scopes == words[2].split(',')
+            and source.get('conditions') == dict(doc_only=words[3] == 'True', executable_diff=words[4] == 'True')
+            and actual == source.get('conditions') == dict(doc_only=True, executable_diff=False))
+
+
+def controlled_grant(scope, issue=645):
+    return dict(kind='controlled-human-record', human='maintainer', issue=issue,
+                link='issue:645#controlled-human-words', scopes=[scope] if isinstance(scope, str) else scope,
+                words=grant_words([scope] if isinstance(scope, str) else scope),
+                conditions=dict(doc_only=True, executable_diff=False))
+
+
+QA_CAPTURE = dict(base='fixture:base', head='fixture:head', content='published QA fixture content')
+QA_HASH = hashlib.sha256(QA_CAPTURE['content'].encode()).hexdigest()
 PROTECTED_WORK = {
-    'unanimous-skip': ('skip Planning', {'votes': ['retain', 'skip', 'skip'], 'required_vote': '3-0'}),
-    'protected-work': ('add executable tests and scenario', {'requires': ['Test', 'Implementation']}),
-    'evidence-before-action': ('post override', {'evidence_at': 1, 'action_at': 2}),
-    'advance-ordering': ('first work-item commit and PR', {'decision_at': 1, 'waiver_at': 2, 'commit_at': 3, 'pr_at': 4}),
-    'fresh-review': ('Review round 2', {'reviewer_session': 'fresh:review-2', 'previous_session': 'review-1'}),
-    'review-depth': ('review gate', {'required': 'thorough', 'selected': 'thorough'}),
-    'valid-test-skip': ('skip Test', {'human_source': 'controlled:human-608', 'scope': 'skip=Test'}),
-    'A49-provenance': ('published QA comparison', {'base': 'fixture:base', 'qa': 'fixture:qa', 'comparison': 'match'}),
-    'per-item-human-authority': ('out-of-class waiver', {'source': 'controlled:per-item-645', 'issue': 645})}
+    'unanimous-skip': ('skip Planning', dict(votes=['skip'] * 3, required_vote='3-0', vote='3-0',
+                                          scope='skip=Planning', eligible=['skip=Planning'])),
+    'protected-work': ('add executable tests and scenario', dict(executable_tests=True, adds_scenario=True,
+                      requires=['Test', 'Implementation'], selected=['Test', 'Implementation'])),
+    'evidence-before-action': ('post override', dict(evidence_at=1, action_at=2)),
+    'advance-ordering': ('first work-item commit and PR', dict(decision_at=1, waiver_at=2, commit_at=3, pr_at=4)),
+    'fresh-review': ('Review round 2', dict(reviewer_session='fresh:review-2', previous_session='review-1', inherits=[])),
+    'review-depth': ('review gate', dict(required='thorough', selected='thorough')),
+    'valid-test-skip': ('skip Test', dict(human_source=controlled_grant('skip=Test'), scope='skip=Test',
+                      actual=dict(doc_only=True, executable_diff=False), validation=dict(exit=0, scopes=['skip=Test']))),
+    'A49-provenance': ('published QA comparison', dict(base='fixture:base', head='fixture:head', qa='fixture:qa',
+                      applicable='fixture:qa', artifacts={'fixture:qa': QA_CAPTURE,
+                      'fixture:qa-old': dict(base='fixture:base', head='fixture:head', content='superseded QA')},
+                      hashes=dict(qa=QA_HASH, head=QA_HASH), head_content=QA_CAPTURE['content'],
+                      comparison='match', comparison_at=2, review_at=3)),
+    'per-item-human-authority': ('out-of-class waiver', dict(source=controlled_grant('skip=Planning'),
+                               issue=645, scope='skip=Planning', actual=dict(doc_only=True, executable_diff=False)))}
 
 
 def human_source():
-    return dict(kind='controlled-human-record', id='controlled:human-608', human='maintainer',
-                words='Skip Planning and Test for this item under the named conditions.',
-                scopes=['skip=Planning', 'skip=Test'], conditions=dict(doc_only=True, executable_diff=False),
-                limitation='Supplied synthetic record; human identity is not authenticated.')
+    source = controlled_grant(['skip=Planning', 'skip=Test'])
+    source.update(id='controlled:human-608',
+                  limitation='Supplied synthetic record; human identity is not authenticated.')
+    return source
 
 
 def authority_record(kind='posting'):
@@ -505,6 +546,19 @@ def authority_checks():
                 changed(m, lambda x: x['result']['attempts'].append('bypass:' + protection)),
                 authority_oracle, 'bypass attempt')
 
+
+def supporting_condition_sweep():
+    e = authority_record()
+    mutations = {
+        'unrelated-human-words': lambda m: (m['source'].update(words='Please read this issue.'),
+            m['posting'].update(reason='Please read this issue.'),
+            m['posting']['round_trip'].update(words='Please read this issue.')),
+        'protected-executable-work': lambda m: (m['source']['conditions'].update(executable_diff=True),
+                                               m['conditions'].update(executable_diff=True))}
+    for name, mutate in mutations.items():
+        fixture('593-source-support-negative-' + name, changed(e, mutate), authority_oracle, 'source/referral')
+
+
 def records_oracle(items, expected=None, supersessions=None):
     problems = []
     ids = [r.get('id') for r in items]
@@ -581,7 +635,12 @@ def proposal_oracle(p):
     permitted = (permission.get('source') and permission.get('role') == 'orchestrator' and action in permission.get('scope', [])
                  and action in permission.get('permitted', []))
     release = p.get('release_authority', {})
-    release_ok = (action == 'merge-work-item-to-release' and release.get('source')
+    release_source = release.get('source')
+    release_source = release_source if isinstance(release_source, dict) else {}
+    release_ok = (action == 'merge-work-item-to-release'
+                  and release_source.get('kind') == 'human-words' and release_source.get('human') == 'maintainer'
+                  and release_source.get('action') == action and release_source.get('base') == release.get('base')
+                  and release_source.get('words') == 'Authorize work-item merges to ' + release.get('base', '') + ' under existing conditions.'
                   and release.get('base', '').startswith('release/') and release.get('ci') == 'passed'
                   and release.get('tests') == 'passed' and release.get('review') == 'approved' and permitted)
     result = p['result']
@@ -593,8 +652,13 @@ def proposal_oracle(p):
         if result.get('disposition') != 'authorized-existing-route':
             problems.append(action + '/disposition')
     elif eligible and delegated and permitted:
-        if result.get('disposition') != 'temporary' or route != 'panel':
-            problems.append(action + '/disposition')
+        rows = p.get('panel', [])
+        settled = len(rows) == 1 and rows[0].get('outcome') == 'resolved' and not records_oracle(rows)
+        if settled:
+            if result.get('disposition') != 'temporary' or route != 'panel':
+                problems.append(action + '/disposition')
+        elif result.get('disposition') != 'referred' or route != 'maintainer':
+            problems.append(action + '/unresolved-panel settlement')
     elif result.get('disposition') != 'referred' or route != 'maintainer':
         reason = 'referral' if not eligible else 'delegation' if not delegated else 'permission'
         problems.append(action + '/' + reason)
@@ -700,15 +764,57 @@ def floor_oracle(e):
     return problems
 
 
+def protection_supported(name, c):
+    if name == 'unanimous-skip':
+        return (c.get('votes') == ['skip'] * 3 and c.get('vote') == c.get('required_vote') == '3-0'
+                and c.get('scope') in c.get('eligible', []))
+    if name == 'protected-work':
+        required = set(c.get('requires', []))
+        if c.get('adds_scenario'):
+            required.add('Test')
+        if c.get('executable_tests'):
+            required.add('Implementation')
+        return required <= set(c.get('selected', []))
+    if name == 'evidence-before-action':
+        return c.get('evidence_at', float('inf')) < c.get('action_at', -1)
+    if name == 'advance-ordering':
+        return all(c.get(r + '_at', float('inf')) < c.get(d + '_at', -1)
+                   for r in ('decision', 'waiver') for d in ('commit', 'pr'))
+    if name == 'fresh-review':
+        return (bool(c.get('reviewer_session')) and bool(c.get('previous_session'))
+                and c['reviewer_session'] != c['previous_session'] and c.get('inherits') == [])
+    if name == 'review-depth':
+        ranks = {'quick': 0, 'thorough': 1}
+        return c.get('required') in ranks and ranks.get(c.get('selected'), -1) >= ranks[c['required']]
+    if name == 'valid-test-skip':
+        return (c.get('scope') == 'skip=Test'
+                and grant_supports(c.get('human_source'), 645, ['skip=Test'], c.get('actual'))
+                and c.get('validation', {}).get('exit') == 0
+                and c['validation'].get('scopes') == ['skip=Test'])
+    if name == 'A49-provenance':
+        artifact = c.get('artifacts', {}).get(c.get('qa'), {})
+        hashes = c.get('hashes', {})
+        return (bool(c.get('base')) and bool(c.get('head')) and bool(c.get('qa'))
+                and c['qa'] == c.get('applicable')
+                and artifact.get('base') == c['base'] and artifact.get('head') == c['head']
+                and isinstance(artifact.get('content'), str) and isinstance(c.get('head_content'), str)
+                and hashlib.sha256(artifact['content'].encode()).hexdigest() == hashes.get('qa')
+                and hashlib.sha256(c['head_content'].encode()).hexdigest() == hashes.get('head')
+                and artifact['content'] == c['head_content'] and c.get('comparison') == 'match'
+                and c.get('comparison_at', float('inf')) < c.get('review_at', -1))
+    if name == 'per-item-human-authority':
+        return (c.get('issue') == 645 and c.get('scope') == 'skip=Planning'
+                and grant_supports(c.get('source'), c['issue'], [c['scope']], c.get('actual')))
+    return False
+
+
 def authority_oracle(e):
     problems = records_oracle(e.get('panel', []))
     source = e.get('source') or {}
     posting = e.get('posting', {})
     result = e['result']
-    source_ok = (source.get('kind') == 'controlled-human-record' and source.get('id')
-                 and source.get('human') and source.get('words') and source.get('limitation')
-                 and e.get('applied_scope') == source.get('scopes')
-                 and e.get('conditions') == source.get('conditions'))
+    source_ok = (grant_supports(source, posting.get('issue'), e.get('applied_scope', []), e.get('conditions'))
+                 and source.get('id') and source.get('limitation'))
     defects = []
     if not source_ok:
         defects.append('source/referral')
@@ -728,7 +834,8 @@ def authority_oracle(e):
     for name in PROTECTIONS:
         rows = [p for p in protections if p.get('name') == name]
         if (len(rows) != 1 or not rows[0].get('evidence') or not rows[0].get('work')
-                or not rows[0].get('conditions') or rows[0].get('disposition') != 'retained'):
+                or not protection_supported(name, rows[0].get('conditions', {}))
+                or rows[0].get('disposition') != 'retained'):
             problems.append('protection/' + name)
     if e.get('kind') == 'stage-selection':
         if e.get('selection') != ['Discovery', 'Planning', 'Test', 'Implementation', 'Review']:
@@ -764,6 +871,17 @@ def disclosure_oracle(inventory, request):
     expected = sorted(inventory, key=lambda r: {'3-0': 0, '2-1': 1, None: 2}[r['vote']])
     if request.get('source') != 'issue-comments' or request.get('rows') != expected:
         errors.append('inventory/order/fields')
+    for row in inventory:
+        if row.get('accepted'):
+            evidence = row.get('acceptance_evidence', {})
+            decisions = evidence.get('decisions', [])
+            applicable = row.get('id') in decisions and bool(decisions)
+            words = 'I accept ' + ','.join(decisions) + '.'
+            scrutiny = (evidence.get('scrutiny') == 'individual' and decisions == [row.get('id')]
+                        if row.get('vote') == '2-1' else evidence.get('scrutiny') in ('individual', 'group'))
+            if (evidence.get('kind') != 'human-words' or not evidence.get('source')
+                    or not applicable or evidence.get('words') != words or not scrutiny):
+                errors.append(row.get('id', '?') + '/acceptance-evidence')
     if request.get('accepted_without_explicit_words'):
         errors.append('silence/merge permission is not acceptance')
     return errors
@@ -778,6 +896,7 @@ def disclosure_checks():
             items.append(record('new-round-two', '2-1'))
             # Supplied explicit human acceptance is inventory evidence, not authentication.
             items[0]['accepted'] = True
+            items[0]['acceptance_evidence'] = explicit_acceptance(items[0])
         request = dict(source='issue-comments', rows=sorted(copy.deepcopy(items), key=lambda r: {'3-0': 0, '2-1': 1, None: 2}[r['vote']]))
         oracle = lambda req: disclosure_oracle(items, req)
         check(not oracle(request), 'complete approval round ' + str(round_no))
@@ -795,6 +914,123 @@ def disclosure_checks():
             mutant = copy.deepcopy(request)
             mutate(mutant)
             rejects(oracle, request, mutant, name)
+
+
+PANEL_STATES = ('resolved-3-0', 'resolved-2-1', 'unresolved-incompatible')
+
+
+def panel_state(p, state):
+    r = record('proposal', '2-1' if state == 'resolved-2-1' else '3-0')
+    if state == 'unresolved-incompatible':
+        r.update(outcome='unresolved', vote=None)
+        for row, position in zip(r['positions'], ('adopt', 'defer', 'reject')):
+            row['position'] = position
+    p['panel'] = [r]
+
+
+def outcome_checks():
+    for action in ELIGIBLE:
+        for state in PANEL_STATES:
+            for outcome in ('settlement', 'referral'):
+                p = proposal(action, '3-0')
+                panel_state(p, state)
+                unresolved = state == 'unresolved-incompatible'
+                if outcome == 'referral':
+                    p['result'].update(disposition='referred', route='maintainer',
+                                       reason='panel-unresolved')
+                reason = ('unresolved-panel settlement' if unresolved else 'disposition')
+                valid = (outcome == 'referral') == unresolved
+                fixture('590-panel-' + action + '-' + state + '-' + outcome,
+                        p, proposal_oracle, None if valid else reason)
+    for state in PANEL_STATES:
+        p = proposal('merge-work-item-to-release', '3-0')
+        panel_state(p, state)
+        p['result'].update(disposition='authorized-existing-route', route='release-authority')
+        fixture('590-release-existing-authority-positive-' + state, p, proposal_oracle)
+        mutations = dict(source=lambda m: m['release_authority'].update(source='panel agreement'),
+                         base=lambda m: m['release_authority'].update(base='main'),
+                         ci=lambda m: m['release_authority'].update(ci='failed'),
+                         tests=lambda m: m['release_authority'].update(tests='failed'),
+                         review=lambda m: m['release_authority'].update(review='changes requested'),
+                         permission=lambda m: m['permissions'].update(permitted=[]))
+        for condition, mutate in mutations.items():
+            fixture('590-release-existing-authority-negative-' + state + '-' + condition,
+                    changed(p, mutate), proposal_oracle, 'release authority')
+
+
+def protection_checks():
+    mutations = {
+        'unanimous-skip': [('majority', lambda c: c['votes'].__setitem__(0, 'retain')),
+                           ('vote-mismatch', lambda c: c.update(vote='2-1'))],
+        'protected-work': [('no-test', lambda c: c['selected'].remove('Test')),
+                           ('no-implementation', lambda c: c['selected'].remove('Implementation'))],
+        'evidence-before-action': [('late', lambda c: c.update(evidence_at=3)),
+                                   ('tied', lambda c: c.update(evidence_at=2))],
+        'advance-ordering': [],
+        'fresh-review': [('same-session', lambda c: c.update(reviewer_session=c['previous_session'])),
+                         ('inherited', lambda c: c.update(inherits=['review-1']))],
+        'review-depth': [('quick', lambda c: c.update(selected='quick'))],
+        'valid-test-skip': [('wrong-source', lambda c: c['human_source'].update(kind='panel')),
+                            ('wrong-scope', lambda c: c['human_source'].update(scopes=['skip=Planning'])),
+                            ('unmet-condition', lambda c: c['actual'].update(executable_diff=True)),
+                            ('failed-validation', lambda c: c['validation'].update(exit=1))],
+        'A49-provenance': [('different', lambda c: c.update(comparison='different')),
+                           ('unusable', lambda c: c.update(comparison='unusable')),
+                           ('hash-mismatch', lambda c: c['hashes'].update(qa='wrong')),
+                           ('wrong-artifact', lambda c: c.update(qa='fixture:qa-old')),
+                           ('after-review', lambda c: c.update(comparison_at=5))],
+        'per-item-human-authority': [('other-item', lambda c: c['source'].update(issue=646)),
+                                     ('other-scope', lambda c: c['source'].update(scopes=['skip=Test'])),
+                                     ('panel-source', lambda c: c['source'].update(kind='panel'))]}
+    for record_name in ('decision', 'waiver'):
+        for deadline in ('commit', 'pr'):
+            for relation in ('after', 'tied'):
+                mutations['advance-ordering'].append((record_name + '-' + deadline + '-' + relation,
+                    lambda c, r=record_name, d=deadline, extra=int(relation == 'after'):
+                        c.update({r + '_at': c[d + '_at'] + extra})))
+    for name, changes in mutations.items():
+        e = authority_record()
+        fixture('593-' + name + '-positive', e, authority_oracle)
+        index = PROTECTIONS.index(name)
+        for suffix, mutate in changes:
+            m = copy.deepcopy(e)
+            mutate(m['protections'][index]['conditions'])
+            fixture('593-' + name + '-negative-' + suffix, m, authority_oracle, 'protection/' + name)
+
+
+def explicit_acceptance(row):
+    return dict(kind='human-words', source='issue:645#acceptance',
+                decisions=[row['id']], words='I accept ' + row['id'] + '.',
+                scrutiny='individual' if row['vote'] == '2-1' else 'group')
+
+
+def acceptance_checks():
+    for consumer in (645, 646, 647):
+        for vote in VOTES:
+            for flag in ('limit-widening', 'risk-accepting'):
+                r = record(str(consumer) + '-acceptance-' + vote + '-' + flag, vote, risk=flag == 'risk-accepting')
+                r.update(limit_widening=flag == 'limit-widening', accepted=True, consumer=consumer)
+                r['acceptance_evidence'] = explicit_acceptance(r)
+                suffix = str(consumer) + '-' + vote + '-' + flag
+                def run(name, row, reason=None, drop=False):
+                    request = dict(source='issue-comments', rows=[] if drop else [copy.deepcopy(row)],
+                                   accepted_without_explicit_words=False)
+                    fixture(name, request, lambda req: disclosure_oracle([row], req), reason)
+                run('592-acceptance-positive-' + suffix, r)
+                for source in ('silence', 'merge-permission', 'temporary-disposition', 'unanimity',
+                               'release-merge', 'other-decision'):
+                    m = copy.deepcopy(r)
+                    m['acceptance_evidence'] = (dict(kind='human-words', source='issue:645#other',
+                        decisions=['other'], words='I accept other.', scrutiny='individual')
+                        if source == 'other-decision' else dict(kind=source, source='issue:645#' + source,
+                                                              words='Merge this PR.' if source == 'merge-permission' else ''))
+                    run('592-acceptance-negative-' + suffix + '-' + source, m, 'acceptance-evidence')
+                    m['accepted'] = False
+                    run('592-unaccepted-carryforward-positive-' + suffix + '-' + source, m)
+                    if source == 'silence':
+                        run('592-unaccepted-carryforward-positive-' + suffix, m)
+                    run('592-unaccepted-carryforward-negative-' + suffix + '-' + source,
+                        m, 'inventory', drop=True)
 
 
 def preservation_checks():
@@ -830,12 +1066,16 @@ if IDENT == 589:
     inventory_checks()
 elif IDENT == 590:
     eligibility_checks()
+    outcome_checks()
 elif IDENT == 591:
     floor_checks()
 elif IDENT == 592:
     disclosure_checks()
+    acceptance_checks()
 elif IDENT == 593:
     authority_checks()
+    protection_checks()
+    supporting_condition_sweep()
     preservation_checks()
 print(f'S{IDENT} represented fixtures: {FIXTURE_COUNTS}')
 print(f'S{IDENT}: {COUNTS["positive"]} positive checks, {COUNTS["mutation"]} mutations rejected, {len(ERRORS)} failures; mechanical only; behavior UNRUN')
