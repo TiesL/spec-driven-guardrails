@@ -173,7 +173,11 @@ ELIGIBLE = ('temporary-spec-choice', 'policy-choice', 'readme-pr', 'changelog-un
 RESERVED = ('merge-main', 'version-bump', 'tag', 'github-release', 'publish-outside-repository',
             'post-other-repository', 'repository-settings', 'delete-issue', 'transfer-ownership',
             'novel-unlisted-action', 'pipeline-override', 'disable-guardrail', 'user-config',
-            'hook-denied-operation', 'sandbox-denied-operation', 'overrule-role', 'waive-contract', 'security-tradeoff')
+            'hook-denied-operation', 'sandbox-denied-operation', 'overrule-role', 'waive-contract', 'security-tradeoff',
+            'edit-panel-rules')
+# Structured proposal target: panel-rules makes these eligible tokens the reserved edit-panel-rules token.
+TARGETS = ('panel-rules', 'other')
+TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice')
 VOTES = ('3-0', '2-1')
 SOURCE_STATES = ('accepted', 'refused', 'unverified', 'missing')
 REQUIRED_TAGS = ('procedure', 'issue/ACs', 'artifacts', 'question/scope')
@@ -349,8 +353,8 @@ def inventory_checks():
     negative('589/supersession/erased-predecessor', rows, oracle, [], rows[1:], '/inventory')
 
 
-def proposal(action='docs-pr', vote='3-0'):
-    return dict(action=action, panel=[record('proposal', vote)],
+def proposal(action='docs-pr', vote='3-0', target='other'):
+    return dict(action=action, target=target, panel=[record('proposal', vote)],
                 delegation=dict(state='accepted', source='A', words='opaque A', scope=list(ELIGIBLE)),
                 permissions=dict(source='A', role='orchestrator', scope=[action], permitted=[action]),
                 release_authority=dict(source=dict(state='accepted', id='A', kind='human', human='maintainer',
@@ -366,7 +370,8 @@ def referral(p):
 
 def unsupported_proposal(name, control, path, value, diagnostic, delete=False):
     m = negative(name, control, proposal_oracle, path, value, diagnostic, delete)
-    malformed = (value == 'UNKNOWN' and path[-1] in ('state', 'role', 'ci', 'tests', 'review')) or (path[-1] == 'state' and value == '' and not delete)
+    malformed = ((value == 'UNKNOWN' and path[-1] in ('state', 'role', 'ci', 'tests', 'review'))
+                 or (path[-1] == 'state' and value == '' and not delete) or path == ['target'])
     fixture(name + '/safe-referral', referral(copy.deepcopy(m)), proposal_oracle, diagnostic if malformed else None)
 
 
@@ -435,6 +440,56 @@ def eligibility_checks():
     fixture('590/denial-none', changed(p, lambda m: m['prior_denials'][0].update(result='none')), proposal_oracle)
     negative('590/denial-UNKNOWN', p, proposal_oracle, ['prior_denials', 0, 'result'], 'UNKNOWN', '/denied-retry')
     release_checks()
+    target_checks()
+
+
+def only(oracle, diagnostic):
+    """Exactness wrapper: the oracle must return exactly the one named diagnostic."""
+    return lambda value: [diagnostic] if oracle(value) == [diagnostic] else ['MISMATCH ' + repr(oracle(value))]
+
+
+def target_checks():
+    # T0: inventory of the fixed token set; removing the new token turns the control red.
+    inventory = lambda tokens: [] if ('edit-panel-rules' in tokens and len(tokens) == 19) else ['590/source/action/edit-panel-rules']
+    fixture('590/token/edit-panel-rules/inventory', RESERVED, inventory)
+    fixture('590/token/edit-panel-rules/inventory/removed', tuple(t for t in RESERVED if t != 'edit-panel-rules'),
+            inventory, '590/source/action/edit-panel-rules')
+    fixture('590/token/eligible-count', ELIGIBLE, lambda tokens: [] if len(tokens) == 13 else ['590/source/action/eligible'])
+    for action in TARGETED:
+        for vote in VOTES:
+            base = '590/target-' + '%s/' + action + '/' + vote
+            # T1-T3: target other stays eligible. T4-T6: panel-rules is reserved.
+            fixture(base % 'other', proposal(action, vote, 'other'), proposal_oracle)
+            p = proposal(action, vote, 'panel-rules')
+            fixture(base % 'panel-rules' + '/settlement', p,
+                    only(proposal_oracle, '590/edit-panel-rules/referral'), '590/edit-panel-rules/referral')
+            attempt = referral(copy.deepcopy(p))
+            attempt['result']['attempts'] = [dict(action=action, authority='panel')]
+            fixture(base % 'panel-rules' + '/attempt', attempt,
+                    only(proposal_oracle, '590/edit-panel-rules/attempt'), '590/edit-panel-rules/attempt')
+            fixture(base % 'panel-rules' + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
+    # T7: delegation independence for the reserved token.
+    for state in SOURCE_STATES:
+        p = proposal('docs-pr', '3-0', 'panel-rules')
+        p['delegation']['state'] = state
+        fixture('590/target-panel-rules/delegation/' + state, p,
+                only(proposal_oracle, '590/edit-panel-rules/referral'), '590/edit-panel-rules/referral')
+        fixture('590/target-panel-rules/delegation/' + state + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
+    # T8: target domain; unknown is never read as other.
+    for action in TARGETED:
+        control = proposal(action)
+        for label, value in [('UNKNOWN', 'UNKNOWN'), ('empty', ''), ('missing', None)]:
+            unsupported_proposal('590/target/' + action + '/' + label, control, ['target'], value,
+                                 '590/' + action + '/target', label == 'missing')
+    # T9: the target is a supplied fact; prose is opaque.
+    prose = proposal('docs-pr', '3-0', 'other')
+    prose['delegation']['words'] = prose['panel'][0]['question'] = 'edit the panel rules in OR43 and the Temporary-decision panel'
+    fixture('590/target/prose-ignored/other', prose, proposal_oracle)
+    fixture('590/target/prose-ignored/panel-rules', referral(proposal('docs-pr', '3-0', 'panel-rules')), proposal_oracle)
+    # T10: release authority has no target.
+    release = release_proposal()
+    release['target'] = 'panel-rules'
+    fixture('590/target/release-ignored', release, proposal_oracle)
 
 
 def release_proposal():
@@ -910,6 +965,7 @@ def protection_checks():
                 c.update(scope='skip=' + stage, eligible=values)
                 m['protections'][0]['disposition'] = disposition
                 fixture('593/protected-skip/' + stage + '/' + eligibility + '/' + disposition, m, authority_oracle, '593/protection/unanimous-skip')
+    skip_required_checks(e)
     bad('unanimous-skip', 'UNKNOWN-scope', ['scope'], 'UNKNOWN')
     for i, member in enumerate(MEMBERS):
         for vote in ('retain', 'UNKNOWN'):
@@ -994,6 +1050,67 @@ def protection_checks():
     for field in ('qa', 'head'):
         bad('A49-provenance', 'hash/' + field, ['hashes', field], 'B')
         bad('A49-provenance', 'hash/' + field + '/missing', ['hashes', field], delete=True)
+
+
+def skip_case(e, stage, adds=False, executable=False, requires=None):
+    m = copy.deepcopy(e)
+    c = m['protections'][0]['conditions']
+    grant = controlled_grant('skip=' + stage)
+    grant['conditions'] = dict(doc_only=not executable, executable_diff=executable)
+    c.update(scope='skip=' + stage, eligible=['skip=' + stage], source=grant, actual=dict(grant['conditions']))
+    c['protected'].update(adds_scenario=adds, executable_diff=executable, doc_only=not executable,
+                          requires=requires or ['Discovery', 'Review'])
+    return m
+
+
+def skip_required_checks(e):
+    """S593 finding 1: a unanimous skip may not name a stage the protected-work facts require."""
+    diagnostic = '593/protection/unanimous-skip'
+    cases = [('R1', 'Test', dict(adds=True, requires=['Discovery', 'Test', 'Review'])),
+             ('R2', 'Test', dict(requires=['Discovery', 'Test', 'Review'])),
+             ('R3', 'Test', dict(adds=True)),
+             ('R4', 'Implementation', dict(requires=['Discovery', 'Implementation', 'Review'])),
+             ('R5', 'Implementation', dict(executable=True)),
+             ('R6', 'Planning', dict(requires=['Discovery', 'Planning', 'Review']))]
+    for label, stage, kw in cases:
+        fixture('593/unanimous-skip/required/' + label + '/control', skip_case(e, stage), authority_oracle)
+        for disposition in ('retained', 'bypass-authorized'):
+            m = skip_case(e, stage, **kw)
+            m['protections'][0]['disposition'] = disposition
+            fixture('593/unanimous-skip/required/' + label + '/' + disposition, m, only(authority_oracle, diagnostic), diagnostic)
+    for label, stage, kw in [('C2', 'Test', dict(executable=True)), ('C3', 'Implementation', dict(adds=True)),
+                             ('C4', 'Planning', dict(adds=True, executable=True))]:
+        fixture('593/unanimous-skip/required/' + label, skip_case(e, stage, **kw), authority_oracle)
+
+
+def eligible_panel_checks():
+    """S593 finding 2: outer disposition follows the represented proposal's supported result."""
+    def outer(p, disposition, limitation='supplied evidence only'):
+        m = authority_record('eligible-panel')
+        m.update(source=None, proposal=p)
+        m['result'].update(disposition=disposition)
+        if limitation is None:
+            del m['result']['limitation']
+        else:
+            m['result']['limitation'] = limitation
+        return m
+    refused = proposal('docs-pr')
+    refused['delegation']['state'] = 'refused'
+    unresolved = proposal('docs-pr')
+    panel_state(unresolved, 'incompatible-unresolved')
+    referred = {'reserved': proposal('merge-main'), 'refused': refused, 'unresolved': unresolved}
+    for name, p in referred.items():
+        referral(p)
+        fixture('593/eligible-panel/' + name + '-temporary', outer(p, 'temporary'),
+                only(authority_oracle, '593/eligible-panel-disposition'), '593/eligible-panel-disposition')
+        fixture('593/eligible-panel/' + name + '-referred', outer(p, 'referred'), authority_oracle)
+        for label, limitation in [('empty', ''), ('missing', None)]:
+            fixture('593/eligible-panel/' + name + '-referred/limitation-' + label, outer(p, 'referred', limitation),
+                    only(authority_oracle, '593/evidence-limitation'), '593/evidence-limitation')
+    # Nested oracle still reports an inner contradiction; the outer value cannot hide it.
+    contradiction = proposal('merge-main')
+    fixture('593/eligible-panel/inner-contradiction', outer(contradiction, 'temporary'), authority_oracle, '590/merge-main/referral')
+    fixture('593/eligible-panel/temporary-limitation', outer(proposal(), 'temporary'), authority_oracle)
 
 
 def qa_sweep_checks(ident):
@@ -1371,6 +1488,13 @@ def proposal_oracle(p):
     action = p.get('action', 'UNKNOWN')
     prefix = '590/' + action + '/'
     problems = records_oracle(p.get('panel', []))
+    if action in TARGETED:
+        # The structured target selects the token; proposal prose is never read.
+        if p.get('target') not in TARGETS:
+            problems.append(prefix + 'target')
+        elif p['target'] == 'panel-rules':
+            action = 'edit-panel-rules'
+            prefix = '590/' + action + '/'
     if len(p.get('panel', [])) != 1:
         problems.append(prefix + 'panel-record')
     delegation = p.get('delegation') or {}
@@ -1542,7 +1666,7 @@ def floor_oracle(e):
     return problems
 
 
-def grant_supports(source, issue, scopes, actual):
+def grant_supports(source, issue, scopes, actual, doc_only_grant=True):
     # Supplied state/applicability facts only. No grammar establishes human intent.
     return (isinstance(source, dict) and source.get('state') == 'accepted' and source.get('kind') == 'human'
             and present(source.get('human')) and issue == source.get('issue') == 645
@@ -1550,9 +1674,21 @@ def grant_supports(source, issue, scopes, actual):
             and present(source.get('words')) and unique(scopes) and bool(scopes)
             and set(scopes) <= {'skip=Planning', 'skip=Test', 'skip=Implementation'}
             and source.get('scopes') == scopes
-            and source.get('conditions') == actual == dict(doc_only=True, executable_diff=False)
+            and source.get('conditions') == actual
+            and (actual == dict(doc_only=True, executable_diff=False) if doc_only_grant
+                 else isinstance(actual, dict) and set(actual) == {'doc_only', 'executable_diff'})
             and all(type(v) is bool for v in actual.values())
             and all(type(v) is bool for v in source['conditions'].values()))
+
+
+def required_stages(c):
+    """Stages the represented protected-work facts and the claimed requirement both demand."""
+    required = {'Discovery', 'Review'} | set(c.get('requires') or [])
+    if c.get('adds_scenario') is True:
+        required.add('Test')
+    if c.get('executable_diff') is True:
+        required.add('Implementation')
+    return required
 
 
 def protection_supported(name, c):
@@ -1563,8 +1699,9 @@ def protection_supported(name, c):
         return (scope in ('skip=Planning', 'skip=Test', 'skip=Implementation')
                 and c.get('votes') == ['skip'] * 3 and c.get('vote') == c.get('required_vote') == '3-0'
                 and unique(c.get('eligible')) and scope in c.get('eligible', [])
-                and grant_supports(c.get('source'), 645, [scope], c.get('actual'))
+                and grant_supports(c.get('source'), 645, [scope], c.get('actual'), doc_only_grant=False)
                 and protection_supported('protected-work', c.get('protected'))
+                and scope[len('skip='):] not in required_stages(c.get('protected'))
                 and c.get('protected', {}).get('executable_diff') == c.get('actual', {}).get('executable_diff')
                 and c.get('protected', {}).get('doc_only') == c.get('actual', {}).get('doc_only'))
     if name == 'protected-work':
@@ -1573,12 +1710,7 @@ def protection_supported(name, c):
         required, selected = c.get('requires'), c.get('selected')
         if not unique(required) or not unique(selected) or not set(required) <= set(STAGES) or not set(selected) <= set(STAGES):
             return False
-        actual_required = {'Discovery', 'Review'}
-        if c['adds_scenario']:
-            actual_required.add('Test')
-        if c['executable_diff']:
-            actual_required.add('Implementation')
-        return (set(required) | actual_required) <= set(selected)
+        return required_stages(c) <= set(selected)
     if name == 'evidence-before-action':
         return all(present(c.get(f)) for f in ('evidence', 'action')) and before(c.get('evidence_at'), c.get('action_at'))
     if name == 'advance-ordering':
@@ -1644,8 +1776,11 @@ def authority_oracle(e):
     if e.get('kind') == 'stage-selection' and not exact_members(e.get('selection'), STAGES):
         problems.append('593/stage-selection')
     if e.get('kind') == 'eligible-panel':
-        problems += proposal_oracle(e.get('proposal', {}))
-        if result.get('disposition') != 'temporary':
+        proposal_problems = proposal_oracle(e.get('proposal', {}))
+        problems += proposal_problems
+        # The outer disposition follows the represented proposal's supported result.
+        supported = not proposal_problems and (e.get('proposal') or {}).get('result', {}).get('disposition') == 'temporary'
+        if result.get('disposition') != ('temporary' if supported else 'referred'):
             problems.append('593/eligible-panel-disposition')
         may_post = False
     else:
@@ -1765,6 +1900,7 @@ elif IDENT == 592:
     copied_boolean_checks()
 elif IDENT == 593:
     authority_checks()
+    eligible_panel_checks()
     protection_checks()
     preservation_checks()
 print(f'S{IDENT} represented fixtures: {FIXTURE_COUNTS}')

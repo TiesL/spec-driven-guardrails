@@ -15,7 +15,8 @@ point.
 
 - #645: Document the temporary-decision panel proposal, allow-list, independent
   model-floor evidence, issue-home records and grouped merge-approval disclosure;
-  decisions remain temporary and maintainer-pending.
+  decisions remain temporary and maintainer-pending; editing the panel's own rules is
+  reserved to the maintainer.
 
 ## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
 
