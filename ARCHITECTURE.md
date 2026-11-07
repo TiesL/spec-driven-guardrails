@@ -3511,3 +3511,720 @@ rule is introduced.
   OR43 (D2) require explicit Product/maintainer resolution. All D1-D7 remain
   temporary recommendations, including record extensions, conservative security
   scope and test allocations. No decision in this design authorizes itself.
+
+### A55 — Merge-risk panel: record reuse, bounded authority and measurable coverage (#646)
+
+- **Status and threat model.** [A] Final reconciliation design, Planning pass 4,
+  2026-11-06; `temporary, panel decision`, for maintainer acceptance. A55 follows
+  the merged A54 (#645, temporary-decision panels), whose procedure is in
+  `skills/role-contracts/SKILL.md`. This entry changes no
+  live authority and claims no panel vote. [V] The local issue snapshots establish
+  #646 as the intended main-merge exception and mechanism of former #511, now
+  carried by #607. The existing OR11/OR43 reservation is still loaded policy.
+  [A] `[V]` identifies reproduced measurements or inspected sources; `[A]`
+  identifies temporary policy choices, judgments and estimates, including the
+  implementation details of settled maintainer decisions. Records, SHA pins,
+  links and timestamps provide inspectable evidence, not authentication. As the
+  model-record gate header warns, they cannot prove model/agent identity,
+  capability, honest authorship, independence or obedience. Five forged records
+  remain forgeable. Suspected forgery stops autonomy and refers outside the
+  disputed chain. Neither this panel nor its verifier authorizes a denied action,
+  permission expansion, guard bypass, role overrule or contract waiver.
+
+- **Maintainer decisions, 2026-11-06, D1-D8 (settled direction).** [A]
+  **D1:** amend #646/#607 to allow adoption, projections of allowed generator
+  inputs, and guard implementations of an accepted design with stage-record
+  approval lineage; default caps are **300 added-plus-deleted lines / 8 files**.
+  Release/version paths and `release/*` origin, risk labels, any historical
+  CHANGES_REQUESTED event, and autonomy machinery remain vetoes.
+  **D2:** put paths, caps, hold duration and veto lists in **one configuration
+  file**, with documented defaults; that file is always reserved.
+  **D3:** the maintainer or any panel voter may add `hold` or `risk:high`; either
+  vetoes. The risk-label veto is dormant until such a label appears.
+  **D4:** retain five voters and 5-0, reuse pipeline records, dispatch only for
+  what is new in the final diff: a fresh independent Reviewer and the
+  orchestrator's check. The concrete conditional-vote interpretation below
+  still needs the maintainer's acceptance; D4 is not five fresh examinations.
+  **D5:** go live with the narrow default after the accepted implementation;
+  **no shadow phase, 40-case prerequisite or first-ten maintainer review**.
+  Record every decision with reversal instructions and publish per-class stats.
+  **D6:** default five-minute configurable hold, one autonomous merge at a time,
+  recheck main before the next, issue audit, wake/relay recovery and revocation
+  to the human-confirmation path.
+  **D7:** confirmation has been a **timing hold, not a quality check**; preserve
+  the opportunity to postpone work because of conflicts or upcoming changes.
+  **D8:** token cost is an investment in learning, not an activation gate;
+  design efficiently and make no cash-payback claim.
+  These supersede the two drafts' conflicting rollout, waiting-time and cost
+  recommendations; they are not questions to reopen.
+
+- **Reconciliation choices (one reason per difference).** [A]
+  Pass 3's accepted-design implementation axis replaces passB's artifact-only
+  class, because D1 explicitly admits accepted guard/adoption work.
+  PassB's positive path catalogue and content-condition haircuts refine pass 3's
+  broad screen, because filenames and lineage markers alone do not clear risk.
+  Keep both drafts' exact generated-output provenance checks, because source
+  eligibility and reproducibility must accompany the output exemption.
+  Keep passB's baseline lineage for ordinary corrections and pass 3's explicit
+  accepted-design lineage for guards, because they avoid new hollow approvals.
+  Replace both drafts' fresh-role panels with conditional stage-record reuse,
+  because D4 requires five accountable votes rather than repeated stage work.
+  Restore D1's CHANGELOG/version/release-origin veto over both drafts' relaxed
+  release-name treatment; unrelated `tag`/`version` tokens alone still do not veto.
+  Replace both shadow/first-ten schemes and passB's 24-hour dwell with immediate
+  narrow-class operation and a five-minute hold, as D5/D6 decide.
+  Drop both economic activation tests and proposed numerical definitions of
+  “substantial,” because D8 settles cost and AC5 supplies no numeric target.
+  Retain both drafts' shared-account and final-read race disclosures, because
+  records and a hold window do not create authenticated authority or a lock.
+  Retain #259 as a conditional candidate rather than passB's adoption-assertion
+  haircut: `2bd6f7c` tests already documented behavior, now admitted by D1.
+
+- **One policy Module and one configuration (AC3/AC5; D1/D2).** [A]
+  Canonical procedure lives in `skills/role-contracts/SKILL.md`, Running the
+  pipeline, under `Merge-risk panel`; #645's shared issue-record Interface is
+  extended explicitly. Keep the existing guard/model-record Interfaces intact.
+  A read-only `merge-risk-evidence.sh <pr-number>` with private implementation
+  `lib/merge-risk.py` collects and validates evidence, producing
+  `eligible|held|referred|unresolved` with reasons, never a merge command or vote.
+  Its internal fixture Interface accepts the same collected bundle without
+  network. This single Module concentrates config, identity and record validation:
+  deleting it would redistribute the complexity across callers, so its Depth
+  earns Leverage and Locality. The existing fake-gh and real-gh Adapters and
+  fixture/live instruction exercises provide actual Seams; no speculative
+  dispatcher, independent authority engine or general queue daemon is proposed.
+  The orchestrator retains semantic judgment and execution responsibility.
+
+  `policy/merge-autonomy.json` is the **only runtime configuration**. It contains
+  a schema version, repository/delegation reference, enabled setting, control
+  issue (#607 here), class path groups, generated-output/input map, size/file
+  caps, hold seconds, label/origin/path/content veto lists, and documented defaults
+  in descriptive fields. Skills and generated instructions link to it, never
+  maintain a second list. Load its accepted **main** revision, not a candidate's
+  proposed config; record its SHA-256 and base commit. Missing, malformed,
+  ambiguous or unsupported config means human confirmation. Changed config is
+  a veto even if the candidate deletes its own veto. Changes to this file, its
+  reader or the autonomy procedure itself always require maintainer confirmation.
+  `enabled=true` takes effect with the explicitly accepted implementation;
+  `enabled=false` disables autonomy. No separate shadow/pilot activation gate.
+
+  | Configuration field / default | Checkable meaning |
+  | --- | --- |
+  | `max_lines=300`, `max_files=8` | Inclusive; additions + deletions across the full main-to-head diff; all docs, tests and generated paths count. Both counts must be positive. |
+  | `hold_seconds=300` | Positive integer; earliest execution is announcement creation time plus this duration. Silence is not approval: authority comes from the accepted standing delegation. |
+  | Ordinary paths | README.md, CONTEXT.md, root PRD*.md, ARCHITECTURE.md, TEST-SCENARIOS.md, Markdown under docs/ and wip/, and test/ cases, fixtures and support. |
+  | Adoption paths | adopt.sh, install.sh, pending-changes.sh, CHANGES.md, WORKFLOW-ADOPTION.md, .gitignore; lib/changes.sh, lib/*adopt*, lib/skill-links.sh, lib/managed_blocks.py, lib/workflow-adapters.py; skills/adopt-workflow/* and skills/adoption-registry/*. |
+  | Guard/source paths | hooks/*, .github/*, .codex/*, .agents/*, adapters/*, settings/*, policy/*; AGENTS.md, CLAUDE.md, WORKFLOW.md, USER-CLAUDE.md; check, check-*, session-context.sh, skills/deploy-guards/*, lib/review-rounds*, review-rounds.sh, compliance-evidence.sh, classify-review-depth.sh, role-label-staleness.sh, generate-workflow-adapters.sh, wait-for-ci.sh; templates/check-*, templates/*guard*, templates/ci.yml, templates/wait-for-ci.sh. Reserved paths below override every group. |
+  | Generated outputs | WORKFLOW.md, adapters/codex/AGENTS.md, root AGENTS.md's managed block only; reviewed eligible inputs are policy/WORKFLOW.md and applicable adapters/*/INSTRUCTIONS.md through lib/workflow-adapters.py. INSTRUCTIONS.md and generator code are inputs, never outputs. |
+  | Reserved release paths/origin | CHANGELOG.md (including Unreleased/editorial edits), VERSION, package.json, skills/release-branch-workflow/*; any `release/*` source or release-completion/aggregate origin. Release/version/tag/publication effects anywhere also veto. |
+  | Reserved autonomy paths | merge-preflight.sh, skills/pre-merge-review/*, lib/model-record*, pipeline-override.sh, skills/role-contracts/*, policy/merge-autonomy.json, merge-risk-evidence.sh, lib/merge-risk*. Semantic changes to this autonomy mechanism in any other file also veto. |
+  | Label vetoes | `hold`, `risk:*` (including risk:high), `merge-autonomy:off`; exact pattern matches on the PR or work-item issue. On control issue #607, merge-autonomy:off disables the whole queue. |
+  | Remaining vetoes | CHANGES_REQUESTED count >0 even if later resolved; open medium/high finding; unresolved route; new security/spec/permission/authority choice, weakened accepted protection/oracle, actual version or CHANGES.md meaning-version bump, external action, unlisted/unknown scope, release aggregation. |
+
+  Paths are repository-relative, case-sensitive matches; `*` in these documented
+  patterns includes nested descendants. Read both old and new rename/copy paths;
+  deletion still touches its old path. Reject incomplete, binary/unmeasurable,
+  ambiguous-case or unknown path/count evidence. Match on complete paths, never
+  basename/substrings; a benign near-match must not trigger a different rule.
+  Unioned allowed groups do not cancel vetoes. Unlisted paths refer, rather
+  than becoming eligible because no deny pattern matched.
+  The single-work-item class requires complete base-to-head scope, not only the
+  last commit or child PR. Do not split/retarget work to game the caps.
+
+  Ordinary changes must restore an unchanged accepted main baseline or faithfully
+  realize accepted requirements; tests may strengthen an existing oracle, never
+  silently change it. Adoption is no longer a blanket disqualifier. Guard changes
+  need the accepted design and AC revision, acceptance source, authorized paths/
+  behavior, acceptance time, supersession state and hunk-to-AC/test mapping in
+  the stage records. Acceptance precedes implementation. A new security trade-off
+  or permission expansion remains reserved even if described as a guard fix.
+  Required thorough security review still runs when a trigger fires; accepted
+  guard lineage never shortens Review. The literal #607 security-trigger veto
+  conflicts with admitting such guard work until its amendment expressly makes
+  that limited accepted-design exception, while reserving new security choices.
+  A stage marker or stage-waiver `decided-by` alone is not design acceptance.
+  Product and Reviewer must distinguish executing an accepted decision from
+  making a new one; unknown lineage refers. Reuse naturally occurring acceptance,
+  never solicit an empty approval merely to make the class count larger.
+
+  Projections require byte-exact regeneration at H, successful
+  `check-workflow-adapters.sh`, eligible generator inputs and no root AGENTS.md
+  edits outside the managed block. Changed generator/source is assessed itself;
+  every changed input must be allowed and every semantic veto remains effective.
+  Unchanged inputs repairing stale output can still change loaded policy. Neither
+  the output name nor a green regeneration check attests safety. Historical
+  snapshots lack hunks/regeneration evidence, so projection counts are ceilings.
+
+- **Gate-first collection and voting lifetime (AC1).** [V] `merge-preflight.sh`
+  delegates to `hooks/git-guardrails`; its checks include base freshness, matching
+  Review marker, CI and role-play evidence. Its documented fail-open/escape paths
+  and the model-record gate's incomplete-check warnings can return success
+  without complete verification. [A] Require positive evidence for repository,
+  PR, base main tip B, head H, complete B-to-H diff hash, config digest C, accepted
+  design digest D and AC digest A: unbypassed preflight with no incomplete warning,
+  completed required green CI on H and the existing completion marker pinned to H.
+  Record CI run/check identities, not just a green icon. Absent, skipped required,
+  red, pending, unreadable or unknown evidence means **no vote**, not a negative
+  vote. Existing legitimately non-required skipped checks retain their ordinary
+  semantics; required `check` must actually succeed. Preserve stage routing,
+  findings/dispositions, QA-provenance comparison and required Review depth.
+  The mandatory fresh Review still runs promptly in parallel with CI; it is not
+  delayed waiting for green CI. Only **panel vote activation** waits for all
+  hard gates. Its resulting final-diff Review record can supply that panel slot.
+  Immediately before execution re-read gates, B/H, config, labels and authority.
+  A changed H, even update-branch, invalidates all five activated votes and the
+  announcement; a changed B or D/A/C also expires the decision. Rebind only under
+  the rules below, with a new hold window and final-head Review. Human advance
+  approval's special base-update survival rule is not inherited by panel votes.
+
+- **Five voters from records, not five fresh runs (AC2; D4).** [A]
+  A stage marker supplies provenance/presence, **never an implicit yes**. Extend
+  each relevant role's ordinary issue report with an explicit reusable conditional
+  merge position: record ID, role, source session/model, scope, artifact hashes,
+  applicable accepted-decision links, conditions, `yes-if` or dissent and
+  supersession/revocation links. This is an ordinary record envelope, not a new
+  `model-record` attribute or override marker. Preserve original reports; do not
+  edit them later to pretend the role inspected a future head.
+
+  | Voter | Exactly which record counts and what it warrants |
+  | --- | --- |
+  | Product | Latest applicable, unsuperseded **Discovery** report on the work-item issue with its own emitted marker and explicit conditional yes for accepted AC digest A. It permits only a subsequently accepted Planning design realizing that same A, no new spec choice, and final AC-to-evidence mapping confirmed by fresh Review. It does not claim Product already inspected the eventual diff. |
+  | Architect | Latest applicable **Planning** report with its own marker, accepted design D / AC A and explicit conditional yes within named paths, risks, reversibility limits and accepted implementation scope. An open risk/dissent is not a yes. |
+  | QA | Latest applicable **Test** report/handoff with its own marker, D/A, scenario/oracle and exact QA-artifact hashes, an explicit conditional yes requiring unchanged owner-approved scenarios, credible falsifying evidence and completed passing H-bound CI. A scenario plan alone does not attest tests ran. |
+  | Fresh Reviewer | Latest **Review** report for the final B-to-H diff, with own emitted Review marker/floor-basis, completion marker for H, D/A/C and explicit yes after validating semantic reuse conditions, AC/test/hunk mapping, lineage, current findings and residual risks (conditional on pending hard gates). Cross-link the issue report and PR marker. The ordinary required final Review supplies this vote: no duplicate “panel Review.” |
+  | Orchestrator | A new named, marker-free process check on the work-item issue for H/B/D/A/C: gates, source identities/hashes, pipeline routes, floors, eligibility, timing, ownership, conflicts, labels and revocation. Seal its own position before reading the fresh Review conclusion. It cannot write another role's endorsement. |
+
+  Developer supplies implementation/test evidence and never votes. The reports
+  must come from distinct appropriately dispatched role sessions, with a Reviewer
+  independent of every final-diff author. Normal stages may depend on earlier
+  role artifacts; this is not five blind, statistically independent inspections
+  of the final code. OR47 still applies to every fresh dispatch: links and stated
+  scope, no inherited conversation/pasted history, orchestrator preference or
+  curated peer merge arguments. OR12 still requires a new Reviewer every round.
+  An earlier author cannot become that Reviewer merely by opening another comment.
+
+  **Binding algorithm.** Canonicalize the owner-approved AC/design artifact bodies
+  as exact UTF-8 bytes with recorded extraction limits (no whitespace normalization)
+  and hash them with SHA-256. Pin their source commit/comment IDs, creation/update
+  metadata and exact bytes. D/A exclude the later vote envelope to avoid recursive
+  hashes. At source time Product can know A before D exists: its explicit condition
+  delegates only to the later *accepted Planning digest for A*. This is a
+  conditional template, not a vote on an unseen design. Architect/QA name D/A
+  when available; an unresolved artifact reference is never an activated vote.
+
+  After the final Review and all gates, build one immutable **binding manifest**
+  on the work-item issue with repository/issue/PR, H, B, diff hash, C, D, A,
+  accepted-decision source and five rows. Each row contains the role, source
+  report URL/ID/body SHA-256, explicit position, resolved D/A/H/B/C and condition
+  evidence; Reviewer signs off the semantic resolutions and orchestrator records
+  the binding. Product's design reference resolves through the accepted Planning
+  record, not through an orchestrator-invented Product approval. Thus all five
+  **activated votes** name the same exact head and design/AC digests, while older
+  source reports honestly remain conditional. A unanimous **5-0** alone qualifies.
+  Any dissent including 4-1 refers; missing, stale, ambiguous or abstaining votes
+  leave unresolved. Do not select an older yes over a later dissent/near-miss,
+  replace a voter to erase dissent, or count Developer/gates as extra votes.
+
+  Movement of H invalidates the manifest, not automatically the underlying
+  conditional templates. Reuse them again only if D/A and all declared scope/
+  artifact conditions still hold, with a newly hashed full diff, fresh final-head
+  Reviewer, orchestrator check and new announcement/window. Rechecks of unchanged
+  evidence are local/script work, not fresh stage dispatches. A changed accepted
+  design/AC, scenario artifact, substantive scope or unresolved condition routes
+  to the owning Product/Architect/QA stage under the normal finding route; only
+  affected new work is dispatched, followed by fresh Review. Absent explicit
+  reusable positions in old reports, or a valid stage waiver leaving a voter
+  without evidence, **does not reduce the five**: obtain that role's actual new
+  scoped record or use maintainer confirmation. No historical marker backfill,
+  orchestrator-authored substitute, automatic yes, or mandatory five-run reset.
+
+  **Acceptance point.** This reading of AC2 is a **design choice the maintainer
+  must accept**: five accountable, head-bound positions, three conditionally
+  reused, one fresh final Review and one fresh process check. It differs from
+  five fresh final-diff examinations. Independence of final Review under OR47
+  remains; assurance from three new independent final-diff readers is deliberately
+  absent. The risk is correlated omissions and an over-broad conditional grant;
+  explicit scope, digest expiry and independent final-condition inspection reduce
+  it but cannot remove it. No AC2 vote-count amendment is proposed.
+
+- **What the script can and cannot verify; floors (#645 dependency).** [A]
+  The verifier can check correct existing marker grammar/presence and latest
+  candidate selection using the existing reader, five distinct role slots,
+  explicit positions, report references and body hashes, exact H/B/diff/C/D/A
+  equality, required artifact existence and QA comparison, ancestry/rename/count
+  data, configured veto patterns, condition fields, stage record ordering,
+  supersession, CI run-to-H identities, hold time arithmetic and known completed
+  outcomes. A source/body edit without a new accepted binding invalidates it.
+  It can detect missing evidence; it cannot turn an unresolved condition green.
+  No claim that the current model-record gate already performs these new checks.
+
+  Reuse #645's **dated Artificial Analysis Intelligence Index evidence** for
+  author and all five voters, including the orchestrator: exact model and
+  available reasoning variant, score, source snapshot/link and date read;
+  https://artificialanalysis.ai/evaluations/artificial-analysis-intelligence-index .
+  Every voter must meet the highest evidenced relevant author's score and its
+  qualitative role floor. The script can compare recorded numbers, variants and
+  dates against that pinned index evidence and reject unknown/missing/incomparable
+  entries; it cannot authenticate the index, establish current capability or
+  verify the runtime actually used that model/variant. A stage report whose
+  recorded model fails this later panel floor cannot be reused as a vote.
+  Missing floor evidence refers, not a cheaper-model inference. Keep existing
+  marker grammar/model-only stage semantics; this is an explicit panel-specific
+  supplement, not silent insertion of an effort field. [V] No index snapshot or
+  live score was supplied/read in this offline pass.
+
+  [A] Semantic AC fulfillment, genuine human acceptance, absence of concealed
+  security effects, honest timestamps, actual independent dispatch and successful
+  tests for the right reason still require role judgment and execution evidence.
+  Shared credentials cannot authenticate the maintainer's words. Hash equality
+  proves equal bytes, not their truth. Static fixtures do not establish live
+  obedience, actual human attention or an atomic cross-machine queue.
+
+- **Five-minute hold, one executor, wake/relay and revocation (AC4/AC5; D3/D6/D7).** [A]
+  After eligible 5-0 is recorded, announce on the work-item issue, link from the
+  PR and save server creation time T, H/B/D/A/C, queue position and
+  `earliest_merge=T+hold_seconds`. The maintainer can say **hold** in an attended
+  session/manager relay or add `hold`; any panel voter may add `hold` or
+  `risk:high` on the PR/issue. Relay a spoken hold immediately into the durable
+  decision/label; an observed hold stops execution even before label posting.
+  A human hold is released only by the maintainer explicitly, not by a timer or
+  agent removing the label. Restart a full window after release or reannouncement.
+  Read both issue and PR labels before voting and immediately before merging;
+  inaccessible controls stop execution. [V] The 80 detailed rows contain no
+  risk/hold label: 79 empty label sets, one `role:reviewer`. [A] The risk-label
+  veto is currently **dormant**, not a prerequisite that such labels already
+  exist; maintainers/voters create them when needed. Label absence alone is not
+  evidence of safety and never suppresses a content veto.
+
+  Serialize autonomous merges through **one known execution owner**, including
+  scheduled/wake entry. Its durable queue on control issue #607 references each
+  work-item decision, key `(repository, PR, H, decision-id)`, owner/run identity,
+  state and result. States are pending, held, claimed, executing, merged, referred
+  or failed; no overwrite of history. One pending decision is picked up **once**,
+  duplicate wakes refer to the same key, and a wake scans all nonterminal entries
+  so a pending merge is not dropped. Before changing executing to merged, query
+  the saved PR/repository for actual MERGED state and squash commit. After a crash
+  in executing, reconcile that result first; if outcome or ownership is unknown,
+  stop/referral instead of blindly retrying. Failed/queued-only is never merged.
+  Store the queue index without label-based racing claims: GitHub comments/labels
+  are **not a lock**. A second machine must not execute concurrently; if a single
+  owner cannot be established, pending items fall back to human confirmation.
+
+  Before each next item, re-read main and the entire final evidence set; a previous
+  merge may require base update, fresh CI, delta Review, rebinding and a new hold.
+  Save repository/PR/B/H before branch deletion; the execution command is
+  `gh pr merge <n> --repo <owner/repo> --squash --delete-branch --match-head-commit <H>`,
+  after a successful fresh `merge-preflight.sh <n>` and positive complete gates.
+  No autonomous retry of an approval/sandbox denial. Expected-head matching does
+  not make base/hold reads atomic: a late hold or external merge can race the last
+  check. Disclose this residual risk for explicit maintainer acceptance; detect
+  a raced hold/identity mismatch as an incident, disable autonomy and recover.
+  Zero-race enforcement would need separately designed execution control, not
+  a misleading claim that this issue ledger provides it.
+
+  A label `merge-autonomy:off` on control issue #607 or `enabled=false` in the
+  accepted config revokes the whole delegation immediately on observation; on a
+  PR/issue the label disables that item's autonomy. Maintainer or any voter may
+  add the disabling label; only the maintainer explicitly re-enables it. Pending
+  decisions become referred for maintainer confirmation, not silently deleted or
+  revived when a setting changes. Resume requires new validation/binding/window.
+  Wakes get no authority from a timer, old prompt or manager summary. Relays carry
+  the linked decision ID/scope and verbatim maintainer words; a paraphrase or
+  another PR's approval cannot release a hold or authorize a human-path merge.
+  The #513 manager release's existing rule changes only when this accepted
+  delegation is explicitly available to that run.
+
+- **Issue audit, reversal, live operation and learning (AC4/AC5; D5/D8).** [A]
+  Every decision (eligible, held, vetoed, unresolved, referred, failed or merged)
+  is an ordinary comment on the **work-item issue**, never only a PR. Extend
+  #645's shared format with `temporary, panel decision`, stable decision ID,
+  question, delegation source, class/config revision, H/B/diff/D/A, accepted
+  lineage links, screen/content reasons, five named source positions and hashes,
+  conditions and floor evidence, gate commands/results/run IDs, findings/routes,
+  vote including dissent, risk flags, announcement/deadline, labels/control state,
+  executor/queue key and supersession/resolution links. Append the actual merged
+  H/time/squash commit and saved base, or explicit non-merge outcome. Link it in
+  the PR description, along with `Closes #<work-item>`.
+
+  **Every decision record includes the reversal command**, not only successful
+  merges: before completion, `git revert <squash-commit-from-this-decision-result>`
+  is explicitly pending/unavailable, never an executable guessed SHA. On success
+  append the exact `git revert <recorded-squash-SHA>` command. To reverse, first
+  hold/disable autonomy, create the required revert issue and branch from current
+  main, apply that command, resolve conflicts, test and obtain fresh Review/CI
+  plus maintainer confirmation of the revert PR. No reset/force-push of main,
+  and no autonomous revert authority follows from the original vote. Adoption
+  may already have propagated; a Git revert cannot retract applied copies or
+  external effects. State the corrective/adoption follow-up if needed.
+
+  Go live with the accepted narrow default, **no shadow-mode phase, 40-case sample,
+  first-ten retrospective review or 24-hour/30-day pilot constraints**. The
+  maintainer does not review main PRs; the panel and normal pipeline own quality.
+  Publish per config/class revision: all distinct main candidates, each veto
+  reason (including overlaps), screen/content candidates, fully eligible 5-0,
+  holds, referrals/dissent, merges, failures/reverts/incidents, unavailable evidence,
+  time to merge and actual incremental token/cache metrics. Count one decision
+  key once, retain supersessions, and show merged-only and all-main denominators
+  separately from already-autonomous release merges. Widen only via a reserved
+  config PR with maintainer approval, new coverage/hazard analysis and tests;
+  a successful streak never changes defaults. Nobody reviews an initial batch
+  on the maintainer's behalf as a hidden activation gate. Any incorrect autonomy
+  decision, ignored hold or suspected forgery triggers immediate disabling and
+  owner investigation, with explicit human re-enablement.
+
+  **Token estimate.** The supplied proxy for four extra fresh role runs is
+  180-280k tokens (45-70k each), not a locally verified price/usage measurement.
+  Reusing Product/Architect/QA gives **zero additional runs for those three**.
+  Budget **45-70k plus roughly 2-10k for the orchestrator**, or **47-80k** if a
+  new final-diff Reviewer is needed: about 26-29% of the comparable proxy endpoints.
+  If the ordinary required final Review already covers H, that same record supplies
+  the vote and incremental panel work is roughly **2-10k**, not another Reviewer.
+  These are [A] planning estimates; changed D/A/scope or a missing conditional
+  endorsement can add owning-role work outside that normal case. Stage envelope
+  writing/evidence collection is not free. Record comparable actual usage,
+  including cache metrics separately and `n/a` where unavailable; never estimate
+  reported session size for OR13. Token cost is **not a maintainer gate**, no
+  cash-payback or guaranteed efficiency/safety claim follows. D7 preserves the
+  useful timing intervention; it does not invent a lost human quality check.
+
+- **Coverage, rerun and content-condition haircuts (AC5).** [V]
+  `pr-data-main.json`: 80 distinct main merges, UTC 2026-09-18T23:30:41Z through
+  2026-11-05T14:14:14Z, SHA-256
+  `5059279b3cc08deca92d93308d9d611230dd0f09ac9d15d8c7cc2a84ffe71a8c`.
+  `pr-data-all.json`: 161 merges, 83 main / 78 release, SHA-256
+  `f551e8fed3d235158e29c64d2181bb20c279aa309d00967264d0ec0c80e1d0a3`.
+  Main #246/#247/#675 lack path detail in the 80-row snapshot. All 80 record zero
+  CHANGES_REQUESTED. The issue-number heuristic in hyp646.py is **not** a closing
+  reference or acceptance check: its dropped adoption candidate #555 lacks that
+  title/head hint, though all 83 main records in the all snapshot have `closes`.
+
+  `hyp646.py` depends on an absolute external scratch file. Do not read that file.
+  The reproducible block below supplies the pass-3 embedded classifier
+  predicates to that legacy `open` **in memory**, then executes the unchanged supplied
+  hyp646.py. This limits reads to local snapshots and preserves its input bytes.
+  Run the block as a file with `python3 -I` (a shell file descriptor is sufficient):
+  `python3 -I <(sed -n '/^# BEGIN A55 REPLAY$/,/^# END A55 REPLAY$/p' ARCHITECTURE.md)`.
+  It then applies the actual D1 retained vetoes, positive path catalogue and
+  explicit content haircuts. No network, inferred approval or historical gate
+  replay is performed.
+
+  | Caps (lines/files) | hyp646 dropping guards+adoption | D1 path/metadata ceiling | After content haircuts, still an upper bound | Main-confirmation reduction ceiling / all-merge reduction ceiling |
+  | --- | ---: | ---: | ---: | ---: |
+  | **300 / 8 default** | 30/80 (37.50%) | 24/80 (30.00%) | **22/80 (27.50%)** | 22/83 (26.51%) / 22/161 (13.66%) |
+  | 500 / 12 widened config | 39/80 (48.75%) | 29/80 (36.25%) | **25/80 (31.25%)** | 25/83 (30.12%) / 25/161 (15.53%) |
+  | 1000 / 20 widened config | 48/80 (60.00%) | 35/80 (43.75%) | **28/80 (35.00%)** | 28/83 (33.73%) / 28/161 (17.39%) |
+  | Fully evidenced autonomous admissions, any caps | unknown | unknown | **unknown** | unknown |
+
+  [V] The rerun also reproduces hyp646's C5 12/12/13 and guards-only-drop
+  22/27/32 across those caps. [A] D1 reinstates strict CHANGELOG and autonomy
+  machinery vetoes, retains release/* origin and permits unrelated version/tag
+  name tokens; that is why hyp646's broad sensitivity totals are not D1 coverage.
+  Content haircuts are conservative judgments, not a verified classifier:
+  #255 (`2af7c1c`) introduces CI/adoption policy; #604 (`ccd35d9`) changes relay/
+  runtime policy content beyond a spelling correction. At widened caps also
+  remove #261 (`45c23af`) and #266 (`82517b6`), actual CHANGES.md meaning-version
+  bumps. At 1000/20 also remove #297 (`b6f3558`), new proposed design content,
+  #592 (`86c54f1`), permission/trust-policy choices, and #553 (`d2e6d75`), the
+  hook-trust/security trade-off. #598 (`2f5cfac`) remains conditional: its
+  permission-baseline edit corrects command comments, not permission values.
+  #480 is already excluded by CHANGELOG, not counted as an extra haircut.
+  These judgments remove visible questionable content, **not** establish accepted
+  lineage for retained candidates. The remaining reports/diffs may introduce
+  more disqualifiers, so both pre- and post-haircut figures are upper bounds.
+
+  | Exclusive screen class (guard before adoption before projection before ordinary) | Default: screen / after haircut | 500/12 | 1000/20 |
+  | --- | ---: | ---: | ---: |
+  | Accepted guard/source implementation candidates | 9 / 9 | 12 / 12 | 17 / 15 |
+  | Adoption candidates | 6 / 5 | 8 / 5 | 8 / 5 |
+  | Projection-only candidates | 2 / 2 | 2 / 2 | 2 / 2 |
+  | Ordinary artifact/test candidates | 7 / 6 | 7 / 6 | 8 / 6 |
+  | Total | 24 / 22 | 29 / 25 | 35 / 28 |
+
+  [V] Conditional default IDs: #252, #259, #269, #270, #271, #277, #278, #280,
+  #301, #306, #321, #342, #399, #417, #482, #508, #510, #539, #549, #555,
+  #589, #670. All are represented among the 83 main records. Conditional on
+  every missing requirement, main confirmations would fall from 83/161 (51.55%)
+  to 61/161 (37.89%), 58/161 (36.02%) or 55/161 (34.16%); these are ceilings
+  on reductions, not observed savings. The 78 release merges already require
+  no main confirmation. Missing source acceptance, reusable conditional votes,
+  old rename paths, generator proof, H-bound gates/floors/findings and hold/
+  ownership snapshots keep **full historical eligibility unknown**. Do not call
+  all old PRs ineligible merely because the new envelope did not exist, or claim
+  all passed it. No future coverage guarantee follows; “substantial” remains an
+  AC5 judgment for Product/maintainer informed by live per-class statistics,
+  not a new threshold or a reason to reintroduce shadow mode.
+
+```python
+# BEGIN A55 REPLAY
+import builtins
+import collections
+import fnmatch
+import hashlib
+import io
+import json
+import re
+from pathlib import Path
+
+# Legacy dependency predicates reproduced from pass 3; no external file read.
+LEGACY = r"""
+import collections
+import fnmatch
+import hashlib
+import json
+import re
+from pathlib import Path
+SOURCE = Path('pr-data-main.json')
+data = json.loads(SOURCE.read_text())
+assert len(data) == 80 and len({p['number'] for p in data}) == 80
+groups = {
+ 'guards/hooks/permissions': ['hooks/*', '.github/*', '.codex/*', '.agents/*', 'adapters/*', 'settings/*', 'policy/*', 'AGENTS.md', 'CLAUDE.md', 'WORKFLOW.md', 'USER-CLAUDE.md', 'check', 'check-*', 'merge-preflight.sh', 'pipeline-override.sh', 'session-context.sh', 'skills/pre-merge-review/*', 'skills/role-contracts/*', 'skills/deploy-guards/*', 'lib/model-record*', 'lib/review-rounds*', 'review-rounds.sh', 'compliance-evidence.sh', 'classify-review-depth.sh', 'role-label-staleness.sh', 'generate-workflow-adapters.sh'],
+ 'adoption': ['adopt.sh', 'install.sh', 'pending-changes.sh', 'CHANGES.md', 'WORKFLOW-ADOPTION.md', 'lib/changes.sh', 'lib/*adopt*', 'lib/skill-links.sh', 'lib/managed_blocks.py', 'lib/workflow-adapters.py', 'skills/adopt-workflow/*', 'skills/adoption-registry/*', '.gitignore'],
+ 'release/version': ['CHANGELOG.md', 'VERSION', 'package.json', 'skills/release-branch-workflow/*'],
+ 'spec-content proxy': ['PRD*.md', 'ARCHITECTURE.md', 'TEST-SCENARIOS.md', 'wip/*/PRD*.md', 'wip/*/ARCHITECTURE*.md', 'wip/*/DECISIONS.md', 'wip/*/issues/*'],
+}
+def matches(paths, patterns):
+ return any(fnmatch.fnmatchcase(path, pattern) for path in paths for pattern in patterns)
+def reasons(p, strict_changelog=False, strict_spec=False):
+ labels = {str(x['name'] if isinstance(x, dict) else x).lower() for x in p['labels']}
+ result = []
+ if matches(p['files'], ['templates/check-*', 'templates/*guard*', 'templates/ci.yml']):
+  result.append('guards/hooks/permissions')
+ for name, patterns in groups.items():
+  if name == 'release/version' and not strict_changelog:
+   patterns = [x for x in patterns if x != 'CHANGELOG.md']
+  if name == 'spec-content proxy' and not strict_spec:
+   continue
+  if matches(p['files'], patterns):
+   result.append(name)
+ if (p['head'].startswith('release/')
+     or re.search(r'(^|[/\-])(release[^/\-]*|version[^/\-]*|tags?)([/\-]|$)', p['head'])
+     or any('release' in x for x in labels)):
+  result.append('release origin/label')
+ if any(any(t in x for t in ['security', 'permission', 'hold', 'blocked', 'risk:high', 'risk:medium']) for x in labels):
+  result.append('risk/hold label')
+ return result
+"""
+legacy_path = '/private/tmp/claude-501/-Users-ties-Documents-ClaudeCodeZandbak/0df129c1-ffa3-4fe4-b846-042273bce637/scratchpad/measure646.py'
+def dependency_open(name, *args, **kwargs):
+ if str(name) == legacy_path:
+  return io.StringIO(LEGACY)
+ raise RuntimeError('unexpected legacy open; no external read allowed')
+ns = {'__builtins__': dict(vars(builtins), open=dependency_open)}
+exec(compile(Path('hyp646.py').read_bytes(), 'hyp646.py', 'exec'), ns)
+data, groups, matches = ns['data'], ns['groups'], ns['matches']
+all_prs = json.loads(Path('pr-data-all.json').read_text())
+assert len(all_prs) == len({p['number'] for p in all_prs}) == 161
+print('bases', dict(collections.Counter('main' if p['base'] == 'main' else 'release' for p in all_prs)))
+assert sum(p['base'] == 'main' for p in all_prs) == 83
+print('missing path detail', sorted({p['number'] for p in all_prs if p['base'] == 'main'} - {p['number'] for p in data}))
+projection = {'AGENTS.md', 'WORKFLOW.md', 'adapters/codex/AGENTS.md'}
+extra_guard = ['templates/check-*', 'templates/*guard*', 'templates/ci.yml', 'wait-for-ci.sh', 'templates/wait-for-ci.sh']
+reserved = groups['release/version'] + ['merge-preflight.sh', 'skills/pre-merge-review/*', 'lib/model-record*', 'pipeline-override.sh', 'skills/role-contracts/*', 'policy/merge-autonomy.json', 'merge-risk-evidence.sh', 'lib/merge-risk*']
+allowed = groups['guards/hooks/permissions'] + groups['adoption'] + extra_guard + ['README.md', 'CONTEXT.md', 'PRD*.md', 'ARCHITECTURE.md', 'TEST-SCENARIOS.md', 'docs/*.md', 'wip/*.md', 'test/*']
+haircut = {255: 'new CI/adoption policy', 604: 'relay/runtime policy content', 261: 'meaning-version bump', 266: 'meaning-version bumps', 297: 'new proposed design', 592: 'permission/trust policy', 553: 'hook-trust/security trade-off'}
+def labels(p):
+ return [str(x['name'] if isinstance(x, dict) else x) for x in p['labels']]
+def d1_screen(p, lines, files):
+ return (0 < p['additions'] + p['deletions'] <= lines
+         and 0 < len(p['files']) <= files and p['changes_requested'] == 0
+         and not p['head'].startswith('release/')
+         and not matches(p['files'], reserved)
+         and not matches(labels(p), ['hold', 'risk:*', 'merge-autonomy:off'])
+         and all(matches([f], allowed) for f in p['files']))
+def screen_class(p):
+ nonprojection = [f for f in p['files'] if f not in projection]
+ if matches(nonprojection, groups['guards/hooks/permissions'] + extra_guard):
+  return 'guard'
+ if matches(nonprojection, groups['adoption']):
+  return 'adoption'
+ if projection.intersection(p['files']):
+  return 'projection'
+ return 'ordinary'
+for lines, files, expected in [(300, 8, (24, 22)), (500, 12, (29, 25)), (1000, 20, (35, 28))]:
+ screen = [p for p in data if d1_screen(p, lines, files)]
+ kept = [p for p in screen if p['number'] not in haircut]
+ assert (len(screen), len(kept)) == expected
+ assert all(any(q['number'] == p['number'] and q['base'] == 'main' for q in all_prs) for p in kept)
+ print('D1', lines, files, 'screen', len(screen), 'content upper bound', len(kept), f'{100*len(kept)/80:.2f}%')
+ print('content cuts', sorted(p['number'] for p in screen if p['number'] in haircut))
+ print('conditional ids', sorted(p['number'] for p in kept))
+ print('class screen', dict(collections.Counter(screen_class(p) for p in screen)))
+ print('class after haircut', dict(collections.Counter(screen_class(p) for p in kept)))
+ print('reduction ceilings main/all', f'{100*len(kept)/83:.2f}%', f'{100*len(kept)/161:.2f}%', 'remaining', 83-len(kept))
+for name in ('pr-data-main.json', 'pr-data-all.json', 'hyp646.py'):
+ print('sha256', name, hashlib.sha256(Path(name).read_bytes()).hexdigest())
+print('fully evidenced autonomous coverage: unknown')
+# END A55 REPLAY
+```
+
+- **QA handoff: S594-S598 (AC1-AC5; D1-D6).** [A]
+  Reserve these IDs after #645's S589-S593; confirm numbering on the target line.
+  QA authors TEST-SCENARIOS.md and its normal byte-pinned handoff, Developer
+  implements cases. Do not write scenarios into the owners' files in Planning.
+  Use current test harness/fake-gh, record fixtures and observed instruction
+  exercises. A verdict-printing helper is not an oracle. For every independent
+  mutation first pass the valid fixture, fail for the intended diagnostic (not
+  setup), then pass with mutation removed. Pair each behavioral refusal with an
+  otherwise identical permitted control and a permissive instruction mutant.
+
+  | ID / AC / F-entry | Updated scenarios and falsifying controls |
+  | --- | --- |
+  | S594 / AC1 / F70 | Mutate required CI green to red/pending/unknown/skipped; preflight to bypass/incomplete exit 0; marker to absent/stale; repository/H/B/diff to mismatch; QA comparison/routes to unresolved. Require **no activated votes or merge**, while mandatory fresh Review can run alongside CI. Positive: complete same-H gates permit vote activation, never count as a sixth voter. Test B/H movement before activation and before execution, including update-branch; no survival of stale binding. |
+  | S595 / AC2 / F71 | Positive: exact Product Discovery, Architect Planning, QA Test conditional records, one ordinary fresh final Review and orch check resolve 5-0 to H/D/A; observe **one** new Reviewer, no three needless role reruns. Mutate each source role/ID/hash, explicit yes-if, scope condition, D/A, acceptance source, floor entry/date/variant, Reviewer independence or artifact-only brief; add Developer, 4-1, abstention, missing vote, peer anchoring or forged orchestrator role marker. Each rejects/refers, never invents approval. Old report without an envelope cannot count. Same-model-score equality passes floor; lower score fails; unknown score unresolved. On H move source templates may remain, activated votes expire; on D/A/scenario/scope change route only affected owning work then fresh Review. Missing voter means four not five; all five yes vs one dissent is the vote boundary. |
+  | S596 / AC3/AC5 / F72 | Paired positive controls: accepted adoption work; accepted guard fix with explicit stage lineage; eligible input plus exact generated output; baseline artifact correction; #259-style stronger existing assertion; #598-style comment repair. Mutate each reserved path/action independently, old/new rename side, root managed-block escape, generator/input eligibility, byte mismatch, hidden security/spec/permission choice, weakened test oracle, release/meaning-version effect, release/* origin, config/self-verifier change and unknown path. Reserve CHANGELOG even for prose; ordinary README with only an unrelated tag/version name remains eligible, actual release does not. 0/1 CHANGES_REQUESTED is pass/veto even when the one is resolved. Medium/high open finding veto; low-only still needs normal disposition. No risk labels is a valid dormant-veto control; adding hold or risk:high by each allowed actor vetoes, role:reviewer does not. Missing acceptance or temporary/waiver marker masquerading as lineage refers. Match exact case/nesting/near-name paths. |
+  | S597 / AC4/AC5 / F73 | Positive: complete work-item record/PR link, five bound sources, pending revert command then actual squash SHA, 300-second elapsed window, single owner and exact-H execution, confirmed MERGED result. Drop any field/revert/source/result, use PR-only record, erase dissent, misgroup 4-1, claim queued as merged, or execute twice: fail. At default elapsed **299 seconds waits / 300 permits** with otherwise valid evidence; any hold at/before final check wins even at deadline. Reannouncement or human hold release starts a new full interval. At a test config hold=60 use **59/60**; hold=0 invalid / hold=1 valid, execution before/at its deadline. Test one owner/one active merge vs a second concurrent claimant; after first merge, second must reread main/revalidate, not use stale votes. Simulate crash before attempt and after success-before-recording; wake reconciles saved PR, neither double-attempts nor drops pending work. Unknown executing outcome stops for human recovery. |
+  | S598 / AC5 / F74 | Reproduce exact hyp646 and D1 tables/hashes/IDs plus content haircuts, never label a ceiling as fully eligible or add release savings twice. Synthetic otherwise-valid cases isolate **0/1 lines**, **300/301 lines**, **0/1 files**, **8/9 files**; widened configs isolate **500/501 and 12/13**, **1000/1001 and 20/21**. Config integers 0/1 and unknown/malformed/missing config exercise validity separately. A config change requires human path even if it widens caps to admit itself. Go-live positive requires accepted narrow implementation and ordinary evidence, **no 40-case/shadow or first-ten review demand**. Wake/relay tests cover duplicate delivery, old head/config, manager paraphrase, verbal hold, exact release words, global/item off-label and enabled=false. Revocation sends pending entries to confirmation; later re-enable alone cannot resurrect votes. Stats count distinct decisions/classes, retain held/dissent/failed cases, show token n/a honestly; zero history or high token cost never invents a rollout/cash gate. |
+
+  Structural checks establish record/text/hash behavior; instruction exercises
+  inspect actual briefs, role dispatches, attempted commands and escalation against
+  isolated merge stubs. Live single-owner wake/hold recovery needs observed evidence,
+  not a pretend atomic fake-gh transcript. Report unrun cases as unrun. Required
+  core OR11/OR43 changes need context-budget/inventory/pin checks and the existing
+  OR48-scoped differential behavior run/stamp; a core-only runner does not load
+  this canonical skill, so dedicated exercises must do that too. These are normal
+  pre-release verification, **not a shadow rollout** or maintainer PR-quality duty.
+  No behavior run/live merge is claimed in this Planning dispatch.
+
+- **Product F-entry and implementation handoff.** [A] Product adds provisional
+  **F70**: gate-first activation, exact identities and expiry (AC1 / S594);
+  **F71**: five conditional/reused positions, binding algorithm, independence,
+  index floors and explicit AC2-reading acceptance (AC2 / S595);
+  **F72**: one config, D1 class, accepted lineage/projections and all reservations
+  (AC3/AC5 / S596); **F73**: issue announcement/audit/revert, hold timing, one
+  execution owner, completion and crash recovery (AC4/AC5 / S597);
+  **F74**: live narrow start, measured upper bounds/per-class stats, config-only
+  widening, wake/relay/revocation and efficiency without a cost gate (AC5 / S598).
+  Reconcile F8/F55 and other unconditional main-confirmation statements; preserve
+  F62/F63's stronger stage-selection rules and F64-F66's release behavior.
+  Extend #645's record grouping with a separate **5-0**, then dissent/unresolved
+  merge-risk group, not fabricated 3-0/2-1 votes. Retain ordinary #645's actual
+  3-0 then 2-1 ordering and explicitly flagged risk/widening acceptance. No
+  autonomous merge may approve its own temporary new design or risk decision.
+
+  QA owns TEST-SCENARIOS.md S594-S598, amended affected scenarios and its handoff.
+  Developer owns the canonical skill, minimal explicit OR11/OR43/OR6 main-merge
+  cross-references, policy/WORKFLOW.md, applicable adapter instruction sources,
+  the panel-specific floor reference in model-choice, policy/merge-autonomy.json,
+  merge-risk-evidence.sh and private lib/merge-risk.py; new test/cases/
+  s594_merge_risk.sh through s598_merge_risk.sh, test/fixtures/merge-risk-646.py
+  and test/behavior/merge-risk-scenarios.md. Maintain affected core budget/pins/
+  inventory/behavior cases and generate their stamp through the runner. Regenerate
+  WORKFLOW.md, root AGENTS.md and adapters/codex/AGENTS.md; verify generation.
+  Reconcile permission-baseline statements that currently promise unconditional
+  confirmation without altering sandbox/trust settings. README/CHANGES adoption
+  notice follows owner approval; no CHANGELOG/version edit is needed in this
+  design-only pass. Existing gate, override parser and marker grammar stay intact;
+  the new read-only verifier supplements them, never weakens fail-closed autonomy
+  eligibility because a normal guard fails open. Autonomy implementation/config
+  paths are reserved, so **#646 cannot merge under its own delegation**.
+  Architect effort is this reconciliation plus normal finding response; QA and
+  Developer estimate their own implementation/evidence work. The orchestrator
+  owns this dispatch's commit/push and issue stage record.
+
+- **Exact issue amendments for the orchestrator/Product.** [A]
+  Post the maintainer's dated D1-D8 source with these changes; do not edit the
+  supplied snapshots or imply an Architect has amended a Product-owned issue.
+  In **#646**, replace Proposal's never-delegated bullet and **AC3** with:
+
+  > Maintainer decision 2026-11-06: the accepted #646 delegation is the narrow
+  > exception for autonomous main merges. The low-risk class may include adoption
+  > paths, generated projections whose generator inputs are allowed, and guard
+  > paths implementing an already accepted design, with approval lineage in the
+  > stage records. Default inclusive caps are 300 added-plus-deleted lines and
+  > 8 changed files. These inclusions do not authorize new security trade-offs,
+  > spec-content decisions, permission expansion, weakened accepted protections,
+  > outward-facing actions or role/contract overrides. Release/version changes
+  > remain reserved, including CHANGELOG.md, VERSION, package.json, the release
+  > skill and release/* origin. Risk/hold labels and any CHANGES_REQUESTED event
+  > veto autonomy. The autonomy machinery itself is reserved: merge-preflight.sh,
+  > skills/pre-merge-review/*, lib/model-record*, pipeline-override.sh,
+  > skills/role-contracts/*, the panel/class configuration and its verifier.
+  > Security triggers still require their normal thorough Review; the former
+  > blanket trigger veto has only this accepted-design guard exception.
+  > Any veto, missing evidence or out-of-class work requires maintainer
+  > confirmation regardless of a 5-0 vote; hard gates cannot be bypassed.
+
+  Append to **#646 AC2** (leave the five named voters and 5-0 rule intact):
+
+  > Proposed AC2 implementation, requiring explicit maintainer acceptance:
+  > Product Discovery, Architect Planning and QA Test reports may supply explicit
+  > conditional votes through a final binding manifest on the work-item issue;
+  > an ordinary fresh independent final-diff Review and the orchestrator's new
+  > process check supply the other two. All five activated votes bind the exact
+  > PR head SHA and accepted design/AC digests. A marker alone is not a vote;
+  > changed head invalidates activation, and changed content/conditions routes
+  > to the affected owner. This is five accountable positions, not five fresh
+  > final-diff runs. Missing votes, dissent or unavailable evidence cannot merge.
+
+  Append to **#646 AC4/AC5**:
+
+  > Maintainer decisions 2026-11-06: paths, line/file caps, hold duration and veto
+  > lists have one documented configuration file, itself never autonomous.
+  > Default hold is five minutes after the completed issue announcement; the
+  > maintainer can say hold and the maintainer or any voter may add hold or
+  > risk:high. These labels veto; the risk-label veto is dormant until a label
+  > appears. Confirmation preserves timing/conflict judgment, not a maintainer
+  > quality check. Serialize autonomous merges, recheck main before the next,
+  > record every decision on the work-item issue with reversal instructions
+  > and the exact revert command after completion, and reconcile wake/relay
+  > state so pending work is picked up once, neither twice nor dropped. A label
+  > or setting can revoke autonomy; pending work then needs confirmation.
+  > Go live with the accepted narrow default; no shadow phase, 40-case rollout
+  > or first-ten maintainer review. Publish per-class outcomes/upper-bound
+  > coverage so the maintainer can widen through a reserved config change.
+  > Token cost is an investment in learning, not a gate; design for efficiency
+  > and make no cash-payback claim. AC5's substantial-share requirement remains.
+
+  In **#607**, replace the three “Risk classes”, “What disqualifies” and
+  “Growth over time” bullets under Merge autonomy with:
+
+  > - Risk classes: #646 is the mechanism. Maintainer decision 2026-11-06 permits
+  >   accepted adoption work, projections of allowed inputs and implementations
+  >   of an accepted guard design with stage-record approval lineage. Defaults
+  >   are at most 300 added-plus-deleted lines and 8 changed files, with paths,
+  >   caps, hold duration and veto lists in one reserved configuration file.
+  > - Disqualifiers: release/version (CHANGELOG.md, VERSION, package.json, the
+  >   release skill, release/* origin), risk/hold labels, CHANGES_REQUESTED >0,
+  >   open medium/high findings, new security/spec/permission/authority choices,
+  >   external actions and the autonomy machinery itself: merge-preflight.sh,
+  >   skills/pre-merge-review/*, lib/model-record*, pipeline-override.sh,
+  >   skills/role-contracts/*, the panel/class configuration and its verifier.
+  >   Accepted guard/adoption implementation is no longer a blanket veto.
+  >   A security trigger still requires thorough Review; its blanket veto is
+  >   replaced only for the accepted-design guard exception, not new trade-offs.
+  > - Operation/growth/revocation: live narrow default, no shadow/40-case phase or
+  >   first-ten maintainer review; every work-item decision records its votes,
+  >   head and reversal instructions/revert command. Publish per-class stats;
+  >   widening uses a maintainer-approved config change. Five-minute configurable
+  >   hold preserves timing judgment; maintainer or any voter can add hold or
+  >   risk:high, whose veto is dormant until present. One autonomous merge at a
+  >   time, recheck main, reconcile wake/relay once, and revoke via label/setting
+  >   to return pending items to confirmation. Reused explicit stage positions
+  >   plus fresh final Review and orchestrator check retain 5-0, subject to
+  >   explicit acceptance of #646's AC2 reading. Token cost is learning investment,
+  >   not a gate or cash-payback case.
+
+- **AC consistency, conflicts and open acceptance.** [A] AC1 remains a hard
+  precondition; AC2's membership and 5-0 stay, but the conditional-record reading
+  above needs explicit acceptance. AC3 and #607's current blanket guard/adoption
+  exclusions, including #607's blanket security-trigger wording, **conflict
+  with settled D1 until the exact amendments are posted**; they are not silently
+  reinterpreted and required security review remains. The loaded OR11/OR43/OR6 and unconditional
+  policy/adapter confirmation promises also need their explicit named exception
+  before operation. #645's shared record (A54, merged on main) is a dependency; its
+  three-voter mechanism cannot authorize main merges or self-approve #646.
+  AC4's common record gets the explicit five-voter grouping extension; AC5's
+  measured substantial share remains unproven, not numerically redefined.
+  No settled D1-D8 decision is reopened. Open maintainer acceptance is the
+  concrete AC2 conditional-binding semantics and correlated-omission risk,
+  shared-account lineage limits, residual non-atomic hold/base race under one
+  executor, and this temporary implementation/config/record design. Product
+  owns issue/PRD reconciliation and AC5 judgment. No human override, independent
+  vote, live model-floor verification, behavior exercise or autonomous merge is
+  claimed here. Additional in-clone reads: tracked role-contract/model-choice/
+  codebase-design skills, WORKFLOW-ADOPTION.md, #645's design, gate/preflight
+  headers and selected local historical diffs, to establish contract applicability,
+  provenance limits and content haircuts. The prescribed .guardrails/source and
+  .agents/skills installation paths are absent; report the gap and ordinary
+  `adopt.sh --runtime codex` remedy to the orchestrator, never repair from this
+  dispatch. Only this A55 entry is edited; all earlier architecture bytes remain.
