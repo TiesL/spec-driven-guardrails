@@ -614,6 +614,31 @@ def floor_checks():
         fixture('591/experiment/opaque/' + field, m, floor_oracle)
 
 
+def prior_identity_checks():
+    e = clean_evidence()
+    fixture('591/prior-identity/clean-read', e, floor_oracle)
+    unrelated = changed(e, lambda m: m['experiments'][0].update(prior=[dict(id='B', result='denied')]))
+    fixture('591/prior-identity/unrelated', unrelated, floor_oracle)
+    matching = changed(unrelated, lambda m: m['experiments'][0]['prior'][0].update(id='A'))
+    fixture('591/prior-identity/matching-attempt', matching, floor_oracle, '591/experiment/denied-retry')
+    check('591/reconciliation/unsupported-settlement' in floor_oracle(matching),
+          '591/prior-identity/matching-attempt/settlement', 'mutation')
+    safe = changed(matching, lambda m: m['experiments'][0].update(disposition='refused', attempts=[]))
+    safe['reconciliation']['disposition'] = 'unresolved'
+    fixture('591/prior-identity/matching-refusal', safe, floor_oracle)
+    for label, value in [('missing', None), ('empty', ''), ('null', None)]:
+        for handling, control in [('attempt', matching), ('safe', safe)]:
+            name = '591/prior-identity/' + label + '/' + handling
+            mutant = negative(name, control if handling == 'safe' else unrelated, floor_oracle,
+                              ['experiments', 0, 'prior', 0, 'id'], value,
+                              '591/experiment/denied-retry', delete=label == 'missing')
+            diagnostics = floor_oracle(mutant)
+            check(('591/reconciliation/unsupported-settlement' in diagnostics) == (handling == 'attempt'),
+                  name + '/settlement', 'mutation')
+            if handling == 'safe':
+                check(mutant['experiments'][0]['attempts'] == [], name + '/no-attempt')
+
+
 def explicit_acceptance(row):
     return dict(kind='explicit', source='A', applicable_source='A', decisions=[row['id']],
                 words='opaque A', scrutiny='individual' if row['vote'] == '2-1' else 'group')
@@ -714,6 +739,30 @@ def acceptance_checks():
         row.update(accepted=True, acceptance_evidence=explicit_acceptance(row))
         row['acceptance_evidence']['decisions'] = ['A', 'B']
     fixture('592/unanimous-group', disclosure_request([a, b]), lambda req: disclosure_oracle([a, b], req))
+
+
+def copied_boolean_checks():
+    for field in ('risk', 'limit_widening', 'accepted'):
+        for value in (True, False):
+            row = record('A')
+            row[field] = value
+            if row['accepted']:
+                row['acceptance_evidence'] = explicit_acceptance(row)
+            req = disclosure_request([row])
+            oracle = lambda request: disclosure_oracle([row], request)
+            name = '592/copy-boolean/' + field + '/' + str(value)
+            fixture(name + '/control', req, oracle)
+            negative(name + '/integer', req, oracle, ['rows', 0, field], int(value), '592/A/copy/' + field)
+            negative(name + '/opposite', req, oracle, ['rows', 0, field], not value, '592/A/copy/' + field)
+        row = record('A')
+        req = disclosure_request([row])
+        oracle = lambda request: disclosure_oracle([row], request)
+        for label, value in [('missing', None), ('empty', ''), ('null', None), ('UNKNOWN', 'UNKNOWN')]:
+            mutant = negative('592/copy-boolean/' + field + '/' + label, req, oracle,
+                              ['rows', 0, field], value, '592/A/copy/' + field, delete=label == 'missing')
+            if label == 'missing':
+                fixture('592/copy-boolean/' + field + '/missing/inventory', mutant, oracle,
+                        '592/A/inventory/order/fields')
 
 
 def controlled_grant(scope='skip=Planning', issue=645):
@@ -945,6 +994,168 @@ def protection_checks():
     for field in ('qa', 'head'):
         bad('A49-provenance', 'hash/' + field, ['hashes', field], 'B')
         bad('A49-provenance', 'hash/' + field + '/missing', ['hashes', field], delete=True)
+
+
+def qa_sweep_checks(ident):
+    """QA round-five representatives of existing domains and copy relations."""
+    if ident == 589:
+        rows = record_inventory()
+        expected = [r['id'] for r in rows]
+        oracle = lambda value: records_oracle(value, expected, {'supersession': ['A']})
+        for i, row in enumerate(rows[1:], 1):
+            negative('589/sweep/inventory/' + row['id'] + '/empty', rows, oracle, [i, 'id'], '', '/inventory')
+        fixture('589/sweep/expected-id/control', expected, lambda ids: records_oracle(rows, ids))
+        negative('589/sweep/expected-id/empty', expected, lambda ids: records_oracle(rows, ids), [0], '', '/inventory')
+        negative('589/sweep/supersedes/empty-token', rows, oracle, [5, 'supersedes', 0], '', '/supersession')
+        for i, row in enumerate(rows):
+            for field in ('risk', 'limit_widening', 'accepted'):
+                for label, value in [('empty', ''), ('integer-one', 1), ('integer-zero', 0)]:
+                    negative('589/sweep/boolean/' + row['id'] + '/' + field + '/' + label,
+                             rows, oracle, [i, field], value, '/' + field)
+    elif ident == 590:
+        p = proposal()
+        for action in ELIGIBLE:
+            control = proposal(action)
+            i = control['delegation']['scope'].index(action)
+            unsupported_proposal('590/sweep/delegation/' + action + '/empty-token', control,
+                                 ['delegation', 'scope', i], '', '/delegation')
+        for field in ('scope', 'permitted'):
+            unsupported_proposal('590/sweep/permission/' + field + '/empty-token', p,
+                                 ['permissions', field, 0], '', '/permission')
+        prior = changed(p, lambda m: m.update(prior_denials=[dict(action='docs-pr', result='none')]))
+        missing('590/sweep/denial/action', prior, proposal_oracle, ['prior_denials', 0, 'action'], '/denied-retry')
+        negative('590/sweep/denial/result/missing', prior, proposal_oracle,
+                 ['prior_denials', 0, 'result'], None, '/denied-retry', True)
+        unsupported_proposal('590/sweep/release/source/human/empty', release_proposal(),
+                             ['release_authority', 'source', 'human'], '', '/release-authority')
+    elif ident == 591:
+        e = clean_evidence()
+        for i, recipient in enumerate(('Product', 'Architect')):
+            negative('591/sweep/' + recipient + '/recipient/empty', e, floor_oracle,
+                     ['briefs', i, 'recipient'], '', '/brief')
+            negative('591/sweep/' + recipient + '/inheritance/empty-token', e, floor_oracle,
+                     ['briefs', i, 'inherits'], [''], '/inherited-dispatch')
+        for i, session in enumerate(e['reconciliation']['used_sessions']):
+            negative('591/sweep/used-session/' + session + '/empty', e, floor_oracle,
+                     ['reconciliation', 'used_sessions', i], '', 'separate-sessions/reconciliation')
+        for field in ('command', 'inputs'):
+            negative('591/sweep/experiment/' + field + '/empty-token', e, floor_oracle,
+                     ['experiments', 0, field, 0], '', 'experiment/' + field)
+            aligned = copy.deepcopy(e)
+            aligned['experiments'][0][field][0] = ''
+            aligned['experiments'][0]['attempts'][0][field][0] = ''
+            fixture('591/sweep/experiment/' + field + '/empty-token/aligned', aligned, floor_oracle,
+                    'experiment/' + field)
+            fixture('591/sweep/experiment/' + field + '/aligned/control', e, floor_oracle)
+        for field in ('command', 'inputs'):
+            negative('591/sweep/attempt/' + field + '/empty-token', e, floor_oracle,
+                     ['experiments', 0, 'attempts', 0, field, 0], '', 'experiment/capture')
+    elif ident == 592:
+        rows = record_inventory()
+        req = disclosure_request(rows)
+        oracle = lambda value: disclosure_oracle(rows, value)
+        for i, row in enumerate(req['rows']):
+            for field in ('id', 'issue', 'home', 'link', 'pr_link', 'resolution'):
+                negative('592/sweep/' + row['id'] + '/copy/' + field + '/empty', req, oracle,
+                         ['rows', i, field], '', row['id'] + '/inventory/order/fields' if field == 'id' else row['id'] + '/copy/' + field)
+            for field in ('positions', 'evidence', 'models', 'dissent'):
+                for j, contribution in enumerate(row[field]):
+                    negative('592/sweep/' + row['id'] + '/' + field + '/' + contribution['member'] + '/empty',
+                             req, oracle, ['rows', i, field, j, 'member'], '', row['id'] + '/copy/' + field)
+            for j, prior in enumerate(row['supersedes']):
+                negative('592/sweep/' + row['id'] + '/supersedes/' + prior + '/empty', req, oracle,
+                         ['rows', i, 'supersedes', j], '', row['id'] + '/copy/supersedes')
+        earlier = [r['id'] for r in rows]
+        carried = disclosure_request(rows, round_no=2, earlier=earlier)
+        carry_oracle = lambda value: disclosure_oracle(rows, value, round_no=2, earlier=earlier)
+        negative('592/sweep/earlier-unaccepted/missing', carried, carry_oracle,
+                 ['earlier_unaccepted'], None, '592/inventory/carryforward', True)
+        for i, token in enumerate(earlier):
+            negative('592/sweep/earlier-unaccepted/' + token + '/empty', carried, carry_oracle,
+                     ['earlier_unaccepted', i], '', '592/inventory/carryforward')
+        row = record('A')
+        row.update(accepted=True, acceptance_evidence=explicit_acceptance(row))
+        req = disclosure_request([row])
+        acceptance_oracle = lambda value: disclosure_oracle([row], value)
+        malformed = copy.deepcopy(row)
+        malformed['acceptance_evidence']['decisions'][0] = ''
+        fixture('592/sweep/acceptance/decision-token/empty/control', req, acceptance_oracle)
+        fixture('592/sweep/acceptance/decision-token/empty', disclosure_request([malformed]),
+                lambda value: disclosure_oracle([malformed], value), '592/A/acceptance-evidence/decision')
+        negative('592/sweep/acceptance/words-copy/empty', req, acceptance_oracle,
+                 ['rows', 0, 'acceptance_evidence', 'words'], '', '592/A/copy/acceptance_evidence')
+    elif ident == 593:
+        e = authority_record()
+        authority_negative('593/sweep/source/applicable-source/empty', e,
+                           ['source', 'applicable_source'], '', '593/source/referral')
+        for i, scope in enumerate(e['source']['scopes']):
+            authority_negative('593/sweep/source/scope/' + scope + '/empty', e,
+                               ['source', 'scopes', i], '', '593/source/referral')
+        for owner, path in [('source', ['source', 'conditions']), ('actual', ['conditions'])]:
+            for field in ('doc_only', 'executable_diff'):
+                for label, value in [('missing', None), ('empty', ''), ('null', None), ('one', 1), ('zero', 0), ('UNKNOWN', 'UNKNOWN')]:
+                    authority_negative('593/sweep/' + owner + '/boolean/' + field + '/' + label, e,
+                                       path + [field], value, '593/source/referral', label == 'missing')
+        authority_negative('593/sweep/posting/human/empty', e, ['posting', 'human'], '', '593/human-identity')
+        for path, diagnostic in [(['applied_scope'], '593/source/referral'),
+                                 (['posting', 'validation', 'scopes'], '593/validation'),
+                                 (['posting', 'round_trip', 'scopes'], '593/round-trip')]:
+            for i, scope in enumerate(at(e, path)):
+                authority_negative('593/sweep/scope/' + '/'.join(path) + '/' + scope + '/empty', e,
+                                   path + [i], '', diagnostic)
+        authority_negative('593/sweep/posting/reason/empty', e, ['posting', 'reason'], '', '593/human-words')
+        authority_negative('593/sweep/posting/issue/empty', e, ['posting', 'issue'], '', '593/source/referral')
+        base = ['protections', 0, 'conditions']
+        diagnostic = '593/protection/unanimous-skip'
+        for field in ('id', 'human', 'issue', 'link', 'applicable_source'):
+            missing('593/sweep/unanimous/source/' + field, e, authority_oracle, base + ['source', field], diagnostic)
+        for owner, path, fields in [('source', ['source', 'conditions'], ('doc_only', 'executable_diff')),
+                                    ('actual', ['actual'], ('doc_only', 'executable_diff')),
+                                    ('protected', ['protected'], ('adds_scenario', 'executable_diff', 'doc_only'))]:
+            for field in fields:
+                for label, value in [('missing', None), ('empty', ''), ('null', None), ('one', 1), ('zero', 0), ('UNKNOWN', 'UNKNOWN')]:
+                    negative('593/sweep/unanimous/' + owner + '/' + field + '/' + label, e, authority_oracle,
+                             base + path + [field], value, diagnostic, label == 'missing')
+        negative('593/sweep/unanimous/eligibility/empty-token', e, authority_oracle,
+                 base + ['eligible', 0], '', diagnostic)
+        negative('593/sweep/unanimous/source/scope/empty-token', e, authority_oracle,
+                 base + ['source', 'scopes', 0], '', diagnostic)
+        for field in ('adds_scenario', 'executable_diff', 'doc_only'):
+            for label, value in [('empty', ''), ('null', None), ('one', 1), ('zero', 0)]:
+                negative('593/sweep/protected-work/' + field + '/' + label, e, authority_oracle,
+                         ['protections', 1, 'conditions', field], value, '593/protection/protected-work')
+        negative('593/sweep/fresh-review/inheritance/empty-token', e, authority_oracle,
+                 ['protections', 4, 'conditions', 'inherits'], [''], '593/protection/fresh-review')
+        base = ['protections', 6, 'conditions']
+        diagnostic = '593/protection/valid-test-skip'
+        for field in ('id', 'human', 'issue', 'link', 'applicable_source'):
+            negative('593/sweep/test-skip/source/' + field + '/empty', e, authority_oracle,
+                     base + ['human_source', field], '', diagnostic)
+        for owner, path in [('source', ['human_source', 'conditions']), ('actual', ['actual'])]:
+            for field in ('doc_only', 'executable_diff'):
+                for label, value in [('missing', None), ('empty', ''), ('null', None), ('one', 1), ('zero', 0), ('UNKNOWN', 'UNKNOWN')]:
+                    negative('593/sweep/test-skip/' + owner + '/' + field + '/' + label, e, authority_oracle,
+                             base + path + [field], value, diagnostic, label == 'missing')
+        for path in (['human_source', 'scopes', 0], ['validation', 'scopes', 0]):
+            negative('593/sweep/test-skip/' + '/'.join(map(str, path)) + '/empty', e, authority_oracle,
+                     base + path, '', diagnostic)
+        negative('593/sweep/test-skip/scope/empty', e, authority_oracle, base + ['scope'], '', diagnostic)
+        for field in ('base', 'head'):
+            negative('593/sweep/A49/artifact/' + field + '/empty', e, authority_oracle,
+                     ['protections', 7, 'conditions', 'artifacts', 'A', field], '', '593/protection/A49-provenance')
+        base = ['protections', 8, 'conditions']
+        diagnostic = '593/protection/per-item-human-authority'
+        for field in ('id', 'human', 'issue', 'link', 'applicable_source'):
+            negative('593/sweep/per-item/source/' + field + '/empty', e, authority_oracle,
+                     base + ['source', field], '', diagnostic)
+        for owner, path in [('source', ['source', 'conditions']), ('actual', ['actual'])]:
+            for field in ('doc_only', 'executable_diff'):
+                for label, value in [('missing', None), ('empty', ''), ('null', None), ('one', 1), ('zero', 0), ('UNKNOWN', 'UNKNOWN')]:
+                    negative('593/sweep/per-item/' + owner + '/' + field + '/' + label, e, authority_oracle,
+                             base + path + [field], value, diagnostic, label == 'missing')
+        negative('593/sweep/per-item/source/scope/empty-token', e, authority_oracle,
+                 base + ['source', 'scopes', 0], '', diagnostic)
+        negative('593/sweep/per-item/scope/empty', e, authority_oracle, base + ['scope'], '', diagnostic)
 
 
 def remaining_manifest_checks(ident):
@@ -1292,7 +1503,9 @@ def floor_oracle(e):
     if not experiments:
         problems.append('591/experiment/missing')
     for exp in experiments:
-        missing_fields = [f for f in ('id', 'command', 'inputs', 'result', 'limits') if not present(exp.get(f))]
+        missing_fields = [f for f in ('id', 'command', 'inputs', 'result', 'limits')
+                          if not present(exp.get(f)) or (f in ('command', 'inputs')
+                          and isinstance(exp.get(f), list) and any(not present(token) for token in exp[f]))]
         if missing_fields:
             if exp.get('disposition') != 'incomplete' or exp.get('attempts') != [] or reconcile.get('disposition') != 'unresolved':
                 problems += ['591/experiment/' + f for f in missing_fields]
@@ -1306,7 +1519,11 @@ def floor_oracle(e):
         kind = exp.get('kind')
         if kind not in ('local-read', 'local-write', 'network-mutation', 'denied-retry'):
             problems.append('591/experiment/kind')
-        denied = any(p.get('id') == exp.get('id') and p.get('result') == 'denied' for p in exp.get('prior', []))
+        prior = exp.get('prior', [])
+        malformed_prior = any(not present(p.get('id')) for p in prior)
+        if malformed_prior:
+            problems.append('591/experiment/denied-retry')
+        denied = malformed_prior or any(p.get('id') == exp.get('id') and p.get('result') == 'denied' for p in prior)
         attempts = exp.get('attempts')
         if kind in ('local-write', 'network-mutation', 'denied-retry') or denied:
             if exp.get('disposition') != 'refused' or attempts != []:
@@ -1463,14 +1680,16 @@ def disclosure_oracle(inventory, request, consumer=645, round_no=1, earlier=None
     ids = [r.get('id') for r in rows]
     if rows != expected:
         problems.append('592/inventory/order/fields')
-        for row in expected:
-            copies = [r for r in rows if r.get('id') == row['id']]
-            if len(copies) != 1 or copies[0] != row:
-                problems.append('592/' + row['id'] + '/inventory/order/fields')
-            if len(copies) == 1:
-                for field in row:
-                    if copies[0].get(field) != row[field]:
-                        problems.append('592/' + row['id'] + '/copy/' + field)
+    for row in expected:
+        copies = [r for r in rows if r.get('id') == row['id']]
+        if len(copies) != 1 or copies[0] != row:
+            problems.append('592/' + row['id'] + '/inventory/order/fields')
+        if len(copies) == 1:
+            for field in row:
+                copied = copies[0].get(field)
+                if (copied != row[field]
+                        or (field in ('risk', 'limit_widening', 'accepted') and type(copied) is not bool)):
+                    problems.append('592/' + row['id'] + '/copy/' + field)
     for ident in earlier or []:
         if ids.count(ident) != 1:
             problems.append('592/' + ident + '/carryforward')
@@ -1531,6 +1750,7 @@ def preservation_checks():
 
 source_checks()
 remaining_manifest_checks(IDENT)
+qa_sweep_checks(IDENT)
 if IDENT == 589:
     inventory_checks()
 elif IDENT == 590:
@@ -1538,9 +1758,11 @@ elif IDENT == 590:
     outcome_checks()
 elif IDENT == 591:
     floor_checks()
+    prior_identity_checks()
 elif IDENT == 592:
     disclosure_checks()
     acceptance_checks()
+    copied_boolean_checks()
 elif IDENT == 593:
     authority_checks()
     protection_checks()
