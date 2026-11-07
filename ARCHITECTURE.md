@@ -3330,43 +3330,138 @@ rule is introduced.
   `s548_stage_selection.sh` explicitly label their coverage mechanical-only.
   [A] Reuse those Seams and the existing test harness; real instruction execution
   and controlled local fixtures are actual Adapters, so no speculative panel
-  engine or new production Seam is justified. Static pins inspect procedure,
-  record examples and projection equality; exercises observe actual briefs,
-  experiment attempts, positions, escalation and disclosure, not a helper that
-  merely prints the expected answer. Mechanical checks cannot prove that no
-  unrecorded historical decision exists (AC1's falsifier); Reviewer must reconcile
-  available issue/PR decision artifacts and report missing evidence explicitly.
-- **D6 — Five-scenario reservation and mutation controls.** [V] The highest
-  scenario heading in `TEST-SCENARIOS.md` is S588; the highest PRD F-entry is F66.
-  [A] Reserve **S589-S593**, final numbers checked at merge time, with QA-owned
-  text and Developer-owned executable cases using the existing test harness:
-  S589 (AC1) canonical home, three members, vote and complete shared record;
-  mechanically delete each required clause/field independently and introduce a
-  conflicting duplicate policy, then exercise missing-record detection.
-  S590 (AC2) exercise the allow-list of D2: every action it does not name must
-  be referred (version bumps and tags, publication outside the repository,
-  posts on other repositories, repository settings, deleting issues, merges into
-  `main`, a novel unlisted action), plus guard/config/denial, role/contract
-  overrule and both 2-1 and 3-0 security proposals; require referral and no
-  unauthorized action, with positive controls for each eligible action (including
-  meaning-version bumps and closing issues).
-  S591 (AC3) inspect actual briefs/returns and read-only experiment attempts;
-  mutate in orchestrator reasoning, inherited history, peer anchoring, a weaker
-  or unknown model and a write attempt; require refusal/correction or escalation,
-  with an artifact-only, known-floor, read-only positive control.
-  S592 (AC4) exercise mixed 3-0/2-1 decisions, risk flags in both categories,
-  supersession, unresolved records and multiple approval rounds; independently
-  drop a decision, reverse groups, erase dissent/flags or treat silence as
-  acceptance, and require each corruption to fail the disclosure oracle.
-  S593 (AC1-AC4 robustness) pin unchanged core/gate/posting authority and exercise
-  forged human-looking records, missing evidence and attempts to use generic
-  majority to bypass stage-selection protections; require explicit limitation
-  and referral, not an authentication claim. Include clause-deletion controls
-  and permissive-rewrite negatives, plus unchanged valid-record controls.
-  For every scenario distinguish structural assertions from observed instruction
-  behavior; report unrun behavior exercises as unrun, never as passing. Developer
-  demonstrates RED on each independent mutation and GREEN on valid controls;
-  Reviewer assesses whether the oracle actually detects the intended violation.
+  engine or new production Seam is justified. [V] At reviewed head
+  `822be6d016be444bcc8aae3ed134b9f83926294d`, the Python fixture accepts nonempty
+  delegation words, searches brief text for sentinel prefixes, and accepts a
+  caller-supplied skip-eligibility list (`proposal_oracle`, `floor_oracle`,
+  `protection_supported`). The three supplied Review reports find recurring
+  mismatches between represented evidence and its claimed interpretation.
+  [A] The design defect is an unbounded mechanical oracle: neither a nonempty
+  string nor a blacklist of phrases establishes the meaning of unrestricted
+  delegation, brief or acceptance prose. A formal grammar can validate its own
+  language, but is not an interpreter of ordinary human instructions.
+  Separate the existing Seams explicitly:
+  - **Mechanical Adapter:** source-byte pins, controlled inventories and the
+    closed structured facts/relations in D6. A synthetic source's classified
+    state or payload tag is a supplied test input, not proof that prose supports
+    it. Derive expected results from those inputs and fixed rules, never from
+    result labels (`retained`, `temporary`, `accepted`) or supplied eligibility
+    assertions. A tag/content disagreement is outside this Adapter's oracle.
+  - **Instruction-exercise Adapter:** semantic interpretation of delegation,
+    scope, brief contents, evidence relevance, acceptance and suspicious records;
+    observe actual briefs, returns, attempts, escalation and disclosure using
+    `test/behavior/temporary-panel-scenarios.md`. Do not replace an exercise with
+    a helper printing the expected answer. These exercises use subscription usage
+    and remain **UNRUN** until separately executed and evidenced. Mechanical
+    GREEN never fills this gap, authenticates people/models, proves independence
+    or establishes completeness of historical decisions. Reviewer reconciles
+    available issue/PR artifacts and explicitly names missing evidence.
+- **D6 — Closed mechanical coverage and separate semantic exercises.** [V]
+  `TEST-SCENARIOS.md` now contains S589-S593. [A] Retain those IDs and AC mapping;
+  QA owns their revised wording and Developer owns executable cases. This is a
+  temporary test allocation, not a change to the normative panel requirements.
+  No production schema, parser or permission grant is introduced.
+
+  **Finite input vocabulary.** [A] The following is the complete set of facts
+  whose *values* the represented-fixture oracle interprets. Nested field names
+  may differ in code, but QA must publish a one-to-one coverage manifest mapping
+  them to these rows before Implementation. All booleans have exactly `true` and
+  `false`; all optional sources also have `missing`. Identifiers/links/hashes use
+  two distinct controlled tokens plus missing/empty, testing equality, inequality,
+  membership and uniqueness, not their meaning or authenticity. Times use only
+  before/equal/after; numeric scores use below/equal/above the author. Missing
+  evidence cannot support settlement or posting; a diagnosed unresolved/referral
+  with no prohibited attempt is the safe outcome.
+
+  | Scenario | Closed structured fields/domains and required relations |
+  | --- | --- |
+  | S589 / AC1 | Members exactly `Product`, `Architect`, `orchestrator`; positions `adopt`, `defer`, `reject`; outcome `resolved`, `unresolved`, `escalated`; vote `3-0`, `2-1`, absent. One position/evidence/model row per member; resolved needs three complete members and a tally of at least two, with matching vote and dissent member/position pairs (empty for unanimity); unresolved/escalated has no vote. Label exactly `temporary, panel decision`; home `issue` or `PR`; issue identity, decision ID, record/PR-description links, expected inventory IDs, superseded IDs and resolution links must agree, be unique and preserve predecessors. Risk, limit-widening and accepted are booleans; reservation status `pending`, `referred`, `none`. Required opaque record fields are question, scope/AC, artifacts, evidence source, model/reasoning, rationale and resolution text/link: presence only, plus exact preservation when copied. |
+  | S590 / AC2 | Action tokens are the 13 `ELIGIBLE` and 18 `RESERVED` entries in `test/fixtures/temporary-panel-645.py` at the reviewed head above; these are fixed D2 examples, including the one `novel-unlisted-action` representative. Any token outside the fixed allow-list is reserved. Delegation state `accepted`, `refused`, `unverified`, `missing`; source identity, delegated scopes, permission scopes, permitted action IDs and actor `orchestrator`, `Product`, `Architect` are supplied facts. Panel state uses S589. Result disposition `temporary`, `referred`, `authorized-existing-route`; route `panel`, `maintainer`, `release-authority`; acceptance `pending`, `accepted`; attempts record action/authority identities; prior denial `denied`, `none`. Only accepted applicable delegation, existing permission and resolved panel support temporary/panel, with acceptance pending and no panel-derived execution. Otherwise require referral/no attempt. Existing release authority is independent: source state as above, action/base identities (`release` versus `main`), CI/tests `passed`, `failed`, `missing`, Review `approved`, `changes-requested`, `missing` and permission must all support that exact release action before its existing route/attempt is allowed. Delegation/release words remain opaque. |
+  | S591 / AC3 | Author and three member model/variant/entry identities must match the captured synthetic index table; score below/equal/above author; date present-valid, invalid, missing. Brief recipients `Product`, `Architect`, distinct session IDs, inheritance IDs, return member/session IDs, used-session IDs and brief/return/own-position/reconciliation ordering are checked. Payload tags are exactly `procedure`, `issue/ACs`, `artifacts`, `question/scope`, `orchestrator-reasoning`, `preferred-answer`, `conversation-history`, `pasted-issue-history`, `peer-return`; require the first four and exclude the latter five before returns. Tags classify supplied synthetic segments only; arbitrary text inside any tag is not interpreted. Experiment kind `local-read`, `local-write`, `network-mutation`, `denied-retry`; permission `local-read`, `none`; command/input identities, attempts and prior-denial identity must match; disposition `accepted`, `refused`, `incomplete`; reconciliation `settled`, `unresolved`. Only complete permitted local-read may be attempted/accepted; other kinds require refusal/no attempt, incomplete evidence requires unresolved/no attempt. Command, result and limits text have presence/copy checks only; no shell-command or brief-prose semantics are inferred. |
+  | S592 / AC4 | Controlled issue inventories for consumers `645`, `646`, `647`, rounds `1`, `2`, record fields from S589, disclosure source `issue-comments`, `session-memory`, row order and decision/supersession/resolution IDs. Exact inventory preservation (including opaque bytes), 3-0 before 2-1, unresolved/escalated visible, and carryforward of unaccepted IDs are required. Acceptance evidence kind `explicit`, `silence`, `merge-permission`, `temporary-disposition`, `unanimity`, `release-merge`, `missing`; source/decision IDs, scrutiny `group`, `individual`, and accepted boolean. Only explicit applicable evidence supports accepted; 2-1 requires individual scrutiny with exactly that ID, 3-0 permits group scrutiny. Risk and limit flags must survive both groups/rounds. Acceptance words are opaque: compare copied bytes, never infer explicit acceptance from grammar or keywords. |
+  | S593 / AC1-AC4 | Source state `accepted`, `refused`, `unverified`, `missing`; kind `human`, `panel`, `copied-approval`, `structural-check`; source/item/scope identities; posting actor `orchestrator`, `Product`, `Architect`; validation `0`, `nonzero`, `missing`; round-trip words/scopes equality and Closes issue identity. Result `authorized-route`, `temporary`, `referred`; limitation present/absent; claims `supplied-evidence-only`, `authenticated-human`, `live-obedience`, `verified-capability`; attempts `none`, `post-override`, `bypass`. Accepted applicable supplied human evidence and successful posting relations are necessary for the existing route; panel/copied/check evidence cannot supply it, and the last three claims are always unsupported. Protect the nine named conditions below independently of a `retained` disposition or any supplied `eligible` list. |
+
+  **S593 protection relations.** [A] The complete protection-name enum remains
+  `unanimous-skip`, `protected-work`, `evidence-before-action`, `advance-ordering`,
+  `fresh-review`, `review-depth`, `valid-test-skip`, `A49-provenance`,
+  `per-item-human-authority`. Their finite facts and contradiction pairs are:
+  1. Skip scope `Planning`, `Test`, `Implementation`, `Discovery`, `Review`;
+     votes `skip`/`retain` for each of three members and tally 3-0/2-1. Only the
+     first three scopes can be eligible and all require unanimity plus applicable
+     human conditions and protected-work checks. Test `Discovery` and `Review`
+     with both a correct and a lying supplied eligibility list; both must fail.
+     Never derive eligibility from that list or a retained label.
+  2. Protected-work booleans `adds_scenario`, `executable_diff` (including
+     executable tests), `doc_only`; required/selected stage sets drawn from the
+     five stages. Discovery/Review stay selected; adding a scenario requires Test;
+     executable diff requires Implementation. Removing either required stage
+     fails even if a claimed required-stage set omits it. Source conditions for
+     a skip must equal actual facts; this fixture does not establish that a real
+     change satisfies a standing human class.
+  3. Evidence must precede action; decision and waiver must each precede both
+     first work-item commit and PR. For each comparison test before/equal/after;
+     equal and after fail. Missing identities/times cannot establish ordering.
+  4. Reviewer session differs from previous session, inheritance empty, selected
+     depth `quick`/`thorough` at least required depth `quick`/`thorough`.
+     Same-session, inherited-session and required-thorough/selected-quick fail.
+  5. Valid Test skip requires scope Test, accepted applicable supplied human
+     source/conditions, successful validation and matching scopes; per-item
+     authority requires the same source/item/scope/condition matches. Panel,
+     refused, unverified, wrong-item, wrong-scope and unmet-condition controls fail.
+  6. A49 requires applicable QA artifact, base/head identities and bytes/hash
+     agreement, comparison `match`/`different`/`unusable` and comparison before
+     Review. Wrong artifact/base/head/hash/content, non-match, tied/late comparison
+     fail regardless of a claimed match/retained label. Compute hashes from bytes.
+     Every protection has exactly one row with evidence/work presence and
+     disposition `retained`/`bypass-authorized`; the latter never substitutes for
+     supported conditions. Generic majority cannot bypass any of these nine.
+
+  **Completion/stopping rule.** [A] QA's manifest enumerates, per table row:
+  every field/domain representative, required-field deletion, identity mismatch,
+  duplicate/missing member or record, ordering relation and contradiction above,
+  with a named expected diagnostic and unchanged valid control. For each closed
+  enum test every value and one unknown token; for booleans test both; for
+  identity relations use the two tokens; for timestamps/scores use the three
+  relations. For list relations test intact, one missing, one duplicate and one
+  wrong element, separately for each named member/required tag/stage. This is
+  independent single-field coverage, not an unbounded Cartesian product.
+  The only required cross-products are S590 action x vote (3-0/2-1) for eligible
+  and reserved controls, eligible action x panel state (resolved-3-0,
+  resolved-2-1, incompatible-unresolved) x settlement/referral, and S592 consumer
+  x vote x flag (risk/limit) x acceptance kind. Each supporting-condition failure
+  pairs unsafe settlement/posting with safe unresolved/referral/no attempt;
+  missing mandatory record structure gets its named validation diagnostic.
+  Source controls are the finite `CLAUSES`, injection sentences, adjacency and
+  policy-reference checks in the reviewed fixture at the head above: each clause
+  deletion and each listed exact injection/rewrite, not arbitrary contradictory
+  prose. Preserve existing core/gate/hook byte comparisons and generator checks,
+  with one changed-byte/projection control per protected file and valid baseline.
+  These pins prove only those exact bytes/strings; semantic adequacy remains Review.
+  Fixtures are complete when every manifest row has its valid/safe control and
+  independently rejected contradiction, all pass, and each named instruction
+  exercise has an explicit run status. Unrun semantic exercises do not block
+  *mechanical fixture completeness* and never count as behavioral success.
+  Preserve covered structured counterexamples from earlier rounds; replace
+  prose-interpreting pseudo-oracles with the explicit split. Further structured
+  counterexamples within this matrix remain defects; new prose paraphrases go
+  to exercises. A new interpreted field/rule or cross-product needs an explicit
+  QA/Architect scope decision, not another phrase blacklist or automatic growth.
+
+  **Named instruction exercises.** [A] QA must align S589-S593 and the Developer
+  must extend `test/behavior/temporary-panel-scenarios.md` with these named cases;
+  all remain **UNRUN**, using actual canonical instructions and captured attempts:
+  `S589-record-meaning` (question/scope/evidence/dissent relevance),
+  `S590-delegation-meaning` (applicable approval, explicit refusal and unrelated
+  words, safe referral versus settlement), `S591-brief-meaning` (peer anchoring,
+  orchestrator reasoning/preference/history in arbitrary wording and payload tags,
+  refusal before use), `S592-acceptance-meaning` (explicit/refused/ambiguous or
+  unrelated acceptance with group/individual scope), `S593-authority-meaning`
+  (forged-looking/missing source, protected-skip/override pressure, explicit
+  limitation/referral). Include round-3's exact delegation refusal and both
+  unprefixed contamination sentences in the corresponding named exercises;
+  do not claim a Python fixture judged their meaning. This allocation narrows
+  mechanical claims, not AC1-AC4 behavior. No new AC contradiction or narrowing
+  is proposed; D1/D2's existing open acceptance qualifications still apply.
 - **D7 — Owner handoff and open acceptance.** [A] Product owns `PRD.md`: add
   provisional F67 (home/record, AC1), F68 (reserved authority and independent
   participants/floor, AC2/AC3), F69 (approval disclosure, AC4); reconcile F62/F63
