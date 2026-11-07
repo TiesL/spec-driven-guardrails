@@ -116,9 +116,10 @@ outside this repository; posts on other repositories; repository settings; delet
 issues; transferring repository ownership or any novel unlisted action.
 Also reserved: pipeline-override markers; disabling guardrails; user config; hook-denied
 operations; sandbox-denied operations.
-Editing the panel's own rules (this section, OR43 and OR45) is also reserved: any proposal
-whose target is those rules is referred to the maintainer, even when it would otherwise be
-an eligible docs edit or policy choice.
+Editing the panel's own rules is also reserved: any proposal whose target is contract
+text (anything under skills/, policy/, hooks/, settings/ and adapters/, the generated
+AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, and A54 D2) is referred to
+the maintainer, even when it would otherwise be an eligible docs edit or policy choice.
 A panel cannot overrule a role, waive a contract, retry a denied operation or
 manufacture human approval; use OR45 pushback and human decision where applicable.
 All security trade-offs remain reserved, both 2-1 and 3-0; refer them to the maintainer

@@ -39,6 +39,7 @@ CLAUSES = {
     'Also reserved: pipeline-override markers; disabling guardrails; user config; hook-denied operations; sandbox-denied operations.',
     'A panel cannot overrule a role, waive a contract, retry a denied operation or manufacture human approval; use OR45 pushback and human decision where applicable.',
     'All security trade-offs remain reserved, both 2-1 and 3-0; refer them to the maintainer without unauthorized attempts.',
+    'Editing the panel\'s own rules is also reserved: any proposal whose target is contract text (anything under skills/, policy/, hooks/, settings/ and adapters/, the generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, and A54 D2) is referred to the maintainer, even when it would otherwise be an eligible docs edit or policy choice.',
 ],
 591: [
     'Brief fresh non-inheriting Product and Architect separately with canonical procedure, issue/ACs, ground-truth artifact links and exact question/scope.',
@@ -175,7 +176,9 @@ RESERVED = ('merge-main', 'version-bump', 'tag', 'github-release', 'publish-outs
             'novel-unlisted-action', 'pipeline-override', 'disable-guardrail', 'user-config',
             'hook-denied-operation', 'sandbox-denied-operation', 'overrule-role', 'waive-contract', 'security-tradeoff',
             'edit-panel-rules')
-# Structured proposal target: panel-rules makes these eligible tokens the reserved edit-panel-rules token.
+# Structured proposal target: panel-rules (contract text: skills/, policy/, hooks/, settings/, adapters/, generated AGENTS.md and
+# WORKFLOW.md, ORCHESTRATOR.md including OR47, A54 D2) makes these eligible tokens the reserved edit-panel-rules token;
+# other means everything else, including spec content. The target is a supplied fact; no path or keyword inference.
 TARGETS = ('panel-rules', 'other')
 TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice')
 VOTES = ('3-0', '2-1')
