@@ -9019,3 +9019,77 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 - Then: [A] core ORCHESTRATOR.md and gate/hook authority remain unchanged; the canonical skill contains the proposed carve-outs without a new parser, gate, dispatcher, hook or sandbox exception. Only the orchestrator posts an otherwise authorized pipeline override naming the human and unchanged words, with existing validation, round trip and issue-link requirements intact; a panel never supplies that authorization. Generic majority never relaxes unanimous stage-selection skips, protected work, evidence/ordering, fresh Review, review depth, valid Test-skip/A49 provenance rules or required per-item human authority. Forged-looking records and missing evidence produce an explicit limitation and referral rather than an authenticated-human or verified-capability claim; a syntactically accepted panel name grants no permission.
 - Mutation controls: [A] independently delete each authority/protection/forgeability clause; inject `unanimous records authenticate approval`, `a majority may bypass stage-selection protections`, `the panel may post an override`, or `green structural checks prove live obedience`; alter one protected core/gate/hook byte or hand-edit a generated projection. Each enumerated exact-pin/byte mutation and structured protection contradiction fails its named diagnostic with a valid/safe control; Discovery and Review skips fail with truthful or lying eligibility lists regardless of a retained label. `S593-authority-meaning` judges suspicious-source meaning and authority pressure, identifies the limit, refers the decision and attempts no unauthorized posting/bypass. Positive controls keep original valid records, authorized human-source posting fixtures and existing stronger stage-selection requirements unchanged; genuinely eligible temporary panels still follow the common procedure without weakening those controls.
 - Falsifier: [A] an enumerated exact-pin/byte/structured protection contradiction passes its mechanical diagnostic, including Discovery/Review skips, or `S593-authority-meaning` authorizes a protected skip/override from panel pressure, treats a forged-looking record as authentication or reports structural GREEN as observed obedience. Report mechanical results and instruction-exercise results separately, including unrun exercises and unverifiable evidence; no new enforcement or malicious-session resistance is claimed.
+
+## Release-aware epic auto-close (#683; A55)
+
+Seam for S594-S603: the existing fake `gh` of `test/cases/s102_s106_epic_auto_close.sh` (`fake_gh_bin`), extended with `api` responses served from fixtures, with no network. The fake behaves like the real `gh api` for what the script can observe: it honours the `state` and `base` query parameters of the pulls endpoint and the ref prefix of the matching-refs endpoint as the server does, serves a fixture as several pages when `--paginate` is given, applies a `--jq` expression to each page the way `gh` does, can be switched per query (branches or open PRs) to a failure mode (non-zero exit, no output at all, malformed output, HTTP 403 on stderr), and logs every `api` call. Unlisted calls still exit 1. Unless a scenario sets a response, `api` answers one well-formed empty page. Every scenario below is checked through the exit status, the stderr text, the close log and the `api` call log, never through the script's internals. The exact query form is the Developer's (A55); a case that passes only for one query form is a defect of the case.
+
+### S594 — A remote release branch keeps the epic open and skips the PR query (#683; A55; AC1)
+**Covers:** F20
+- Given: epic 607 is open, every issue naming it as Epic is closed, a remote branch `release/607-panel-mechanisms` exists, and the open-PR query is switched to fail.
+- When: `epic-auto-close.sh` runs for the last closed child.
+- Then: no `gh issue close` is issued, the script exits 0, stderr holds at most one line and that line names epic 607 and the branch, and the `api` log shows no open-PR query. A control with the same branch and a working PR query ends the same way.
+- Falsifier: `gh issue close` is called while the branch exists, the exit status is non-zero because of the PR query, the PR query was issued, or the note is missing or names the wrong epic or branch.
+
+### S595 — An open release PR alone keeps the epic open (#683; A55; AC2)
+**Covers:** F20
+- Given: the state of S594 but the branch query finds no `release/607-*` branch (already deleted), and the open-PR query returns one open same-repository PR with head `release/607-panel-mechanisms` and base `main`.
+- When: the script runs.
+- Then: the epic is not closed and the script exits 0.
+- Falsifier: the epic closes while that PR is open.
+
+### S596 — No branch and no open release PR still closes the epic (#683; A55; AC3)
+**Covers:** F20
+- Given: epic 21 is open, all its children are closed, the branch query returns a well-formed empty list and the PR query returns a well-formed empty list (separately: both return only unrelated branches and PRs such as `feature/1-x`).
+- When: the script runs for the last closed child.
+- Then: the epic closes with the existing comment, unchanged bytes (both children named, as in S102), and the exit status is 0. A well-formed empty list is "none", not a failure.
+- Falsifier: the epic stays open, the comment text changes, or an empty list is reported as a failed query.
+
+### S597 — The epic number matches exactly, in both directions (#683; A55; AC4)
+**Covers:** F20
+- Given: all children closed. Case A: epic 607 and the only branch is `release/6070-other`. Case B: epic 607 and the only open PR has head `release/6070-other`. Case C: epic 60 and the only branch is `release/607-panel-mechanisms`. Case D: epic 60 and the only open PR has head `release/607-panel-mechanisms`. Case E: epic 6070 and the only branch is `release/607-panel-mechanisms`. For each case a variant makes the fake over-broad (it answers with every ref or PR regardless of the requested prefix), so exactness cannot rest on server-side filtering. Control F: epic 607 and branch `release/607-x` still keeps the epic open.
+- When: the script runs for each case.
+- Then: cases A to E close the epic (exit 0, close log names the right epic); control F does not close it.
+- Falsifier: a longer or shorter number blocks, or triggers the close of, another epic; or an over-broad server answer changes any outcome.
+
+### S598 — Other PRs do not count: non-main base, closed or merged, fork (#683; A55; AC5)
+**Covers:** F20
+- Given: epic 607, all children closed, no `release/607-*` branch, and one of these PRs with head `release/607-panel-mechanisms` in the fixture: (a) open with base other than `main`; (b) closed unmerged with base `main`; (c) merged with base `main`; (d) open with base `main` whose head repository is a fork (not the repository itself). Each over-broad variant serves these PRs even when the request filters state or base, so the decision cannot rest on the server filter alone. Control (e): open, base `main`, head repository the same repository.
+- When: the script runs once per case.
+- Then: cases (a) to (d) close the epic as in S596; control (e) keeps it open with exit 0.
+- Falsifier: any of (a) to (d) keeps the epic open, or control (e) lets the epic close.
+
+### S599 — Matches beyond the first page are still found (#683; A55; AC6)
+**Covers:** F20
+- Given: epic 607, all children closed. Case A: the branch fixture spans three pages (more than the 100 per page of the API and more than a default `gh` list limit) with `release/607-panel-mechanisms` only on page 3, and the PR fixture is empty. Case B: no matching branch, and the open-PR fixture spans three pages with the matching same-repository PR only on page 3. Control C: three pages of non-matching entries only.
+- When: the script runs once per case.
+- Then: cases A and B keep the epic open with exit 0; control C closes it.
+- Falsifier: the epic closes because the match was on a later page, or control C stays open.
+
+### S600 — A failed query leaves the epic open, loudly (#683; A55; AC7)
+**Covers:** F20
+- Given: all children closed and no earlier signal that keeps the epic open. The branch query is switched to each failure: (a) non-zero exit, (b) exit 0 with no output at all, (c) malformed output, (d) HTTP 403 on stderr with non-zero exit. Then, with the branch query returning a well-formed empty list, the open-PR query is switched to the same four failures. Control (e): a well-formed empty list from both queries. Control (f): the branch query finds a branch while the PR query would fail (this is S594).
+- When: the script runs for each of the eight failure cases, and for the controls.
+- Then: in all eight, no `gh issue close`, a non-zero exit, and a stderr message naming epic #607 and which query failed (branch or open PR); a 403 is never read as "no release PR". Control (e) closes the epic with exit 0; control (f) exits 0 as in S594.
+- Falsifier: the epic closes, or the exit status is 0, or the message is missing or does not name the epic and the failed query, in any of the eight cases; or (e) is treated as a failure; or (f) exits non-zero.
+
+### S601 — An epic without a release branch behaves as before (#683; A55; AC8)
+**Covers:** F20
+- Given: the existing S102-S107 cases with their fixtures unchanged, and the fake's default `api` response (one well-formed empty page); plus an epic whose children merge straight to `main` (no release branch, no release PR).
+- When: the whole existing S102-S107 case file runs, and the last child of the straight-to-`main` epic closes.
+- Then: every S102-S107 case keeps its body and outcome (S102 closes with the comment naming both issues, S103 to S106 close nothing, S107 still reports the failed close with a non-zero exit); the straight-to-`main` epic auto-closes exactly as today. For epics that do not reach the close (open child, no children, already closed, self-reference, dangling reference) the `api` log is empty: the two release queries are only issued when the epic is about to close (Item 1 placement).
+- Falsifier: any S102-S107 case changes outcome or needs edited fixtures other than the added default `api` response, or a release query is issued for an epic that is not about to close.
+
+### S602 — The new cases stay inside the fake-gh seam (#683; A55; AC9)
+**Covers:** F20
+- Given: `test/cases/s102_s106_epic_auto_close.sh` extended for S594-S601, run with `PATH` holding only the fake `gh`, and a sentinel `gh` later on the path that records any call it receives.
+- When: the suite runs, then again with the production release check deliberately removed (red-before-green control, as in `tdd-seams`).
+- Then: the sentinel is never called, so no case reaches real `gh` or the network; the file header names S594-S603 where they are claimed so `check-scenario-file-sync.sh` is clean; each of S594-S601 has at least one case using the fake, including the failing-query switch, the paginated fixtures and the default `api` response; the suite passes. With the check removed, the cases for S594, S595, S597 (A to E where the epic must stay, i.e. control F), S598 control (e), S599 and S600 fail.
+- Falsifier: a criterion has no case, a case calls real `gh` or the network, or the suite stays green with the release check removed.
+
+### S603 — The workflow token is sufficient for the queries (#683; A55; AC10)
+**Covers:** F20
+- Given: `.github/workflows/epic-auto-close.yml` after the change, and the fake of S600(d).
+- When: the workflow file is read mechanically (permissions block pins) and S600(d) runs.
+- Then: the workflow's `permissions:` grants `contents: read`, `issues: write` and `pull-requests: read`, and nothing more (no other scope, no write beyond `issues`); a permission-denied response is handled as in S600(d).
+- Falsifier: `pull-requests: read` is missing, an extra scope is granted, or a 403 is treated as "no PR". Not testable in this seam: that the live Actions token really needs exactly these scopes (the seam has no real token; the Architect marked this not verified), so the exact-minimum claim rests on the Architect's check and a first live run, not on this scenario.

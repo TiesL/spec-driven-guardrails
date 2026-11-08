@@ -23,10 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     # issues:write to close the epic and post the explaining comment;
     # contents:read is also explicit here since naming one permission
-    # drops the rest to their implicit default.
+    # drops the rest to their implicit default; pull-requests:read for the
+    # open-release-PR query before closing (#683, A55).
     permissions:
       contents: read
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       - env:

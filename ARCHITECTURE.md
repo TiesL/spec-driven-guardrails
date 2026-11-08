@@ -3511,3 +3511,73 @@ rule is introduced.
   OR43 (D2) require explicit Product/maintainer resolution. All D1-D7 remain
   temporary recommendations, including record extensions, conservative security
   scope and test allocations. No decision in this design authorizes itself.
+
+### A55 — The epic auto-close decision asks two release-signal queries, only at the moment it would close (#683; partial of #671)
+
+- **Placement (Locality).** [A] `epic-auto-close.sh` already ends in one decision
+  (`NONE` / `STILL_OPEN` / `CLOSE`). The release-signal check runs only inside the
+  `CLOSE` arm, immediately before `gh issue close`, as a small function in the same
+  script. An epic with open children, no children, or already closed never pays for
+  the two queries (the common case on every issue close). No new module or seam: the
+  existing `gh` call seam, which the fake-`gh` tests already use, is the only seam.
+- **Query form (exactness once, client-side).** [V, run against this repo with
+  `gh` 2.102.0] Branches: `gh api --paginate "repos/{owner}/{repo}/git/matching-refs/heads/release/N-"
+  --jq '"page", (.[].ref)'`; an open-PR list: `gh api --paginate
+  "repos/{owner}/{repo}/pulls?state=open&base=main&per_page=100" --jq '"page", (.[] |
+  [.state, .base.ref, .head.ref, (.head.repo.full_name // ""), (.base.repo.full_name // "")] | @tsv)'`
+  (as shipped in `release_signal`; an `awk` match keeps open, base `main`, head
+  `release/N-*`, head repository equal to base repository).
+  `--paginate` closes AC6 without a magic limit. The `"page"` line the jq emits once
+  per page is the response sentinel: a legitimate empty result is one `page` line
+  (matching-refs answers `[]`), so no output at all means the call failed or was
+  malformed. [A] The script then keeps only lines matching `refs/heads/release/N-`
+  or `release/N-` (N from the already-validated digit string) so exactness does not
+  depend on server prefix semantics, and the fake `gh` can be tested with an
+  over-broad response (AC4). The pulls endpoint has no prefix filter on head (`head=`
+  needs an exact `owner:branch`), hence list-and-filter. A PR from a fork carrying a
+  `release/N-` head name does not count: same-repository heads only, per the [maintainer decision, Pipeline log comment](https://github.com/TiesL/spec-driven-guardrails/issues/683#issuecomment-6725817396)
+  (this replaces the first draft, which kept the epic open for a fork PR).
+  Search (`gh pr list --search`) is rejected: index lag, which the script header
+  already avoids for issues.
+- **Order and short-circuit.** [A] Branch query first; if it finds a match the epic
+  stays open without the PR query (exit 0, one stderr line naming the epic and the
+  branch). A failed branch query exits non-zero at once. This narrows AC7 for the case
+  where the branch is found and the PR query would have failed; resolved, see AC
+  differences.
+- **Token.** [V] `.github/workflows/ci.yml` records repo evidence (#83) that a job
+  with an explicit `permissions:` block lacking `pull-requests: read` failed on a PR
+  endpoint. [A, not fetched this session] GitHub's REST reference lists "Pull
+  requests: read" for list-pull-requests and "Contents: read" for git refs
+  (matching-refs). Decision: add `pull-requests: read` to `epic-auto-close.yml`
+  (permissions then `contents: read`, `issues: write`, `pull-requests: read`). The
+  repo is public, where reads may succeed unauthenticated; that is not relied on.
+  A 403/404 is a failed query (AC7), not "no PR". [V] A nonexistent repo gives
+  `gh api` exit 1 under `--paginate`.
+- **Failure handling.** [A] Each query: non-zero exit, no output, or no `page`
+  sentinel is a failure: stderr `epic-auto-close: epic #N: <branch|open-PR> query
+  failed ...`, exit 1, epic left open. The existing "no fail-open" header rule holds.
+- **Rule (d) (#683 item 4).** [A] Recommend dropping it from this work item. It
+  changes `templates/check-pr-issue-link.sh`, which `adopt.sh` offers to adopters
+  (the issue's own scaffolding out-of-scope line), needs an N-specific closing
+  match the script does not have (today it only asks "references no issue"), and the
+  `edited` trigger reruns the whole `check` job on every PR edit. The harm it
+  prevents is visible and recoverable (an epic stays open until closed by hand); the
+  harm of item 1 is the irreversible-looking premature close. Defer to the rest of
+  #671.
+- **Test-harness consequence.** [V] The existing fake `gh` in
+  `test/cases/s102_s106_epic_auto_close.sh` returns exit 1 for any unlisted call.
+  After this change the existing close cases (S102/AC1, the close-failure case) reach
+  an `api` call and would hit AC7 behaviour. The fake needs a default `api`
+  response (one `page` line = nothing found) so those cases keep their outcome; case
+  bodies stay unchanged.
+- **AC differences (resolved by the maintainer; this entry no longer awaits a
+  decision).** Per the [maintainer decision, Pipeline log comment](https://github.com/TiesL/spec-driven-guardrails/issues/683#issuecomment-6725817396) and the amended #683 body: AC7 is read as "only
+  when no earlier signal already keeps the epic open", so a found branch skips the
+  PR query and exits 0. AC11 and Item 4 are dropped (the Rule (d) bullet above is
+  the reasoning, now historical). AC5 and rule (b) gain the same-repository-head
+  condition (fork PRs do not count). AC7 "empty output": `page` only is a valid
+  "none", no output at all is the failure. AC8/AC9: the fake `gh` carries a default
+  `api` response. AC1-AC4, AC6 and AC10 are met as written.
+- **Effect of this update.** Documentation only, no scenario or code change:
+  S594-S603 and `release_signal` at d89c017 already implement these decisions (S598/d
+  covers the fork case). The Rule (d) bullet was not removed, only superseded.

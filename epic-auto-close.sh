@@ -102,6 +102,54 @@ else:
     print("CLOSE " + nums)
 ' "$epic_number" <<<"$all_issues")"
 
+# Release-signal check (#683, A55). A work item merged into a release branch
+# does not close the epic's work: the epic stays open while a release/<N>-*
+# branch still exists on the remote or a same-repository PR from such a
+# branch into main is open. Called only from the CLOSE arm, so epics that are
+# not about to close never pay for the two queries.
+#
+# Each query is `gh api --paginate` with a jq that prints a "page" line per
+# page, so a legitimate empty answer (one "page" line) is told apart from a
+# failed or malformed one (non-zero exit, no output, no sentinel). Matching is
+# repeated here on the exact "release/<N>-" prefix so correctness does not
+# rest on the server's filtering. <N> is the digit string validated above.
+#
+# Returns 0 = a signal keeps the epic open (note already printed), 1 = none
+# found, 2 = a query failed (message already printed).
+release_signal() {
+  local n="$1" out st hit
+
+  out="$(gh api --paginate "repos/{owner}/{repo}/git/matching-refs/heads/release/${n}-" \
+    --jq '"page", (.[].ref)' 2>/dev/null)"
+  st=$?
+  if [ "$st" -ne 0 ] || [ "$(head -n1 <<<"$out")" != "page" ]; then
+    echo "epic-auto-close: epic #$n: branch query failed — leaving it open, nothing closed." >&2
+    return 2
+  fi
+  hit="$(grep -m1 -E "^(refs/heads/)?release/${n}-" <<<"$out")"
+  if [ -n "$hit" ]; then
+    echo "epic-auto-close: epic #$n stays open: release branch ${hit#refs/heads/} still exists." >&2
+    return 0
+  fi
+
+  out="$(gh api --paginate "repos/{owner}/{repo}/pulls?state=open&base=main&per_page=100" \
+    --jq '"page", (.[] | [.state, .base.ref, .head.ref, (.head.repo.full_name // ""), (.base.repo.full_name // "")] | @tsv)' \
+    2>/dev/null)"
+  st=$?
+  if [ "$st" -ne 0 ] || [ "$(head -n1 <<<"$out")" != "page" ]; then
+    echo "epic-auto-close: epic #$n: open-PR query failed — leaving it open, nothing closed." >&2
+    return 2
+  fi
+  # open, into main, head named release/<N>-*, head repository = this one.
+  hit="$(awk -F'\t' -v pre="release/${n}-" \
+    '$1 == "open" && $2 == "main" && $4 != "" && $4 == $5 && index($3, pre) == 1 { print $3; exit }' <<<"$out")"
+  if [ -n "$hit" ]; then
+    echo "epic-auto-close: epic #$n stays open: open release PR from $hit into main." >&2
+    return 0
+  fi
+  return 1
+}
+
 case "$decision" in
   NONE)
     echo "epic-auto-close: no issue names #$epic_number as its Epic — nothing to check." >&2
@@ -110,6 +158,12 @@ case "$decision" in
     exit 0 ;;
   "CLOSE "*)
     refs="${decision#CLOSE }"
+    release_signal "$epic_number"
+    case $? in
+      0) exit 0 ;;
+      1) ;;
+      *) exit 1 ;;
+    esac
     if ! gh issue close "$epic_number" \
       --comment "Auto-closed: every issue naming this as its Epic is closed ($refs)." \
       >/dev/null 2>&1; then

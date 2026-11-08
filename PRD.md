@@ -775,7 +775,7 @@ that already exist (on another machine, from before this change) are
 never blocked mid-work — the same "when in doubt, allow" ground rule
 `git-guardrails` follows throughout.
 
-### F20 — Epic auto-close (issue #219)
+### F20 — Epic auto-close (issues #219, #683)
 
 An epic (`templates/ISSUE_TEMPLATE/epic.md`) stays open until every work
 item under it is done, then someone has to remember to close it by hand —
@@ -790,7 +790,13 @@ number. That script extracts `**Epic:** #<n>` from the closed issue's body
 item to fill in), and — if the named epic is still open — lists every
 issue in the repo whose body names that same epic (`gh issue list --json
 number,state,body`, filtered locally). If none of them are open anymore,
-the epic closes, with a comment naming which issues were checked.
+the epic closes, with a comment naming which issues were checked. Before
+closing, the script checks whether the epic is managed through a release
+branch: if a remote branch `release/<N>-<slug>` exists, or an open
+same-repository PR with head `release/<N>-<slug>` and base `main` exists
+(exact epic number), the epic stays open, because GitHub closes it natively
+through `Closes #N` in the release PR. If either query fails, the epic stays
+open and the script exits non-zero (#683).
 
 **Deliberately not the epic's own "Work items" checklist.** That section
 is for human readability and can drift — #211's checklist was never filled
