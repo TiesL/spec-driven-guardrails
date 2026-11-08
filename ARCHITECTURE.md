@@ -3581,3 +3581,43 @@ rule is introduced.
 - **Effect of this update.** Documentation only, no scenario or code change:
   S594-S603 and `release_signal` at d89c017 already implement these decisions (S598/d
   covers the fork case). The Rule (d) bullet was not removed, only superseded.
+
+### A54 addendum (2026-11-08) — The reserved contract-text class also covers `CHANGES.md`, `templates/` and `USER-CLAUDE.md` (#681; amends A54 D2, D6 and the S590 matrix row)
+
+Append-only note. The A54 entry above is not edited; where it lists the class, read it
+together with this addendum, which prevails.
+
+- **Decision.** [A] Maintainer decision of 2026-11-08 (recorded on #607; resolves item 7
+  of the holding pen #678): the reserved contract-text class (action
+  `edit-panel-rules`, target `panel-rules`) widens by exactly three entries. It is now
+  `skills/`, `policy/`, `hooks/`, `settings/`, `adapters/` and `templates/` (any depth),
+  plus the generated `AGENTS.md` and `WORKFLOW.md`, `ORCHESTRATOR.md` (including OR47,
+  OR43 and OR45), `CHANGES.md`, `USER-CLAUDE.md` and A54 D2 itself. This is a deliberate
+  change of the closed list set on 2026-11-07, not an omission fix; it stays "a clear
+  class, not an open list".
+- **By repository path.** [A] `templates/PRD.md` is in the class; the root `PRD.md` is
+  not. Spec content (root `PRD.md`, the rest of `ARCHITECTURE.md`, `TEST-SCENARIOS.md`)
+  and README, CHANGELOG and docs stay `other`. #646's narrower guard-path list
+  (A55 on that branch) is a separate merge-risk class and does not constrain this one.
+- **Unchanged.** [A] The action token, the allow-list, reserved examples, vote rules,
+  the "target is a supplied fact" rule and the rationale of D3/D6 are untouched.
+- **Where the class is stated, and how each is amended.** [A] Hand-edited: the
+  `skills/role-contracts/SKILL.md` sentence (canonical), PRD.md F68, the
+  `test/fixtures/temporary-panel-645.py` pin `CLAUSES[590][10]` and the `TARGETS`
+  comment, `test/behavior/temporary-panel-scenarios.md` (line 42 and set one of
+  `S590-target-meaning`), TEST-SCENARIOS.md S590, CHANGELOG.md Unreleased. Not
+  edited, amended by this addendum: A54 D2, the D6 quoted copy of the skill sentence
+  and the S590 matrix row. Nothing is regenerated: the generated `AGENTS.md` and
+  `WORKFLOW.md` carry no copy of the sentence (verified by search).
+- **Effective sentence (the new canonical text and `CLAUSES[590][10]`).** [A] "Editing the panel's own rules is also reserved: any proposal whose target is contract text (by repository path: anything under skills/, policy/, hooks/, settings/, adapters/ and templates/, the generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, CHANGES.md, USER-CLAUDE.md, and A54 D2) is referred to the maintainer, even when it would otherwise be an eligible docs edit or policy choice."
+- **Fixture pins.** [A] The oracle stays target-only (no path inference). One pin
+  sentence is updated in place (the index stays 10, no number moves). Per added entry
+  (`CHANGES.md`, `templates/`, `USER-CLAUDE.md`) the Developer/QA add one source pin
+  that the skill sentence names it, red when the entry is removed, green when
+  restored, plus target controls: an opaque label per entry (`templates/` with
+  `templates/check-traceability.sh` and `templates/PRD.md`) on an otherwise eligible
+  `docs-pr`/`temporary-spec-choice`/`policy-choice` with target `panel-rules`, at 3-0
+  and 2-1, referred; the target-`other` controls keep passing.
+- **Doubt, recorded.** [A] Consequence of the widening: D4-style rule edits to
+  `templates/` scripts, which adopted projects copy, now always need the maintainer
+  even for a typo fix; accepted by the decision.
