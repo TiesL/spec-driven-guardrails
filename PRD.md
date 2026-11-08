@@ -2391,11 +2391,14 @@ GitHub releases), publication outside this repository including posts on
 other repositories, repository settings, and deleting issues. Also reserved
 are pipeline-override markers, disabling guardrails, hook/sandbox-denied
 actions and user configuration. Editing contract text is reserved to the
-maintainer (action `edit-panel-rules`): anything under `skills/`, `policy/`,
-`hooks/`, `settings/` and `adapters/`, plus the generated `AGENTS.md` and
-`WORKFLOW.md`, `ORCHESTRATOR.md` (including OR47) and A54 D2 itself. This is
-a clear class, not an open list; spec content (PRD, ARCHITECTURE,
-TEST-SCENARIOS) stays eligible as a temporary spec choice. Any proposal whose
+maintainer (action `edit-panel-rules`), by repository path: anything under
+`skills/`, `policy/`, `hooks/`, `settings/`, `adapters/` and `templates/` (the
+whole directory, at any depth), plus the generated `AGENTS.md` and
+`WORKFLOW.md`, `ORCHESTRATOR.md` (including OR47), `CHANGES.md`,
+`USER-CLAUDE.md` and A54 D2 itself (widened by the maintainer decision of
+2026-11-08, #681). This is a clear class, not an open list; spec content (the
+root PRD, ARCHITECTURE, TEST-SCENARIOS, which are not `templates/PRD.md` and
+its siblings) stays eligible as a temporary spec choice. Any proposal whose
 target is contract text is referred to the maintainer, even when it would
 otherwise be an eligible docs edit or policy choice. A panel cannot overrule a role, waive a
 contract, retry a denied operation or manufacture human approval; applicable
