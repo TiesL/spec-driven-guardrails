@@ -3523,7 +3523,10 @@ rule is introduced.
 - **Query form (exactness once, client-side).** [V, run against this repo with
   `gh` 2.102.0] Branches: `gh api --paginate "repos/{owner}/{repo}/git/matching-refs/heads/release/N-"
   --jq '"page", (.[].ref)'`; an open-PR list: `gh api --paginate
-  "repos/{owner}/{repo}/pulls?state=open&base=main&per_page=100" --jq '"page", (.[].head.ref)'`.
+  "repos/{owner}/{repo}/pulls?state=open&base=main&per_page=100" --jq '"page", (.[] |
+  [.state, .base.ref, .head.ref, (.head.repo.full_name // ""), (.base.repo.full_name // "")] | @tsv)'`
+  (as shipped in `release_signal`; an `awk` match keeps open, base `main`, head
+  `release/N-*`, head repository equal to base repository).
   `--paginate` closes AC6 without a magic limit. The `"page"` line the jq emits once
   per page is the response sentinel: a legitimate empty result is one `page` line
   (matching-refs answers `[]`), so no output at all means the call failed or was
@@ -3532,14 +3535,15 @@ rule is introduced.
   depend on server prefix semantics, and the fake `gh` can be tested with an
   over-broad response (AC4). The pulls endpoint has no prefix filter on head (`head=`
   needs an exact `owner:branch`), hence list-and-filter. A PR from a fork carrying a
-  `release/N-` head name also counts: conservative, keeps the epic open.
+  `release/N-` head name does not count: same-repository heads only, per the [maintainer decision, Pipeline log comment](https://github.com/TiesL/spec-driven-guardrails/issues/683#issuecomment-6725817396)
+  (this replaces the first draft, which kept the epic open for a fork PR).
   Search (`gh pr list --search`) is rejected: index lag, which the script header
   already avoids for issues.
 - **Order and short-circuit.** [A] Branch query first; if it finds a match the epic
   stays open without the PR query (exit 0, one stderr line naming the epic and the
-  branch). A failed branch query exits non-zero at once. This is a narrowing of AC7
-  for the case where the branch is found and the PR query would have failed: see
-  Recommended AC differences.
+  branch). A failed branch query exits non-zero at once. This narrows AC7 for the case
+  where the branch is found and the PR query would have failed; resolved, see AC
+  differences.
 - **Token.** [V] `.github/workflows/ci.yml` records repo evidence (#83) that a job
   with an explicit `permissions:` block lacking `pull-requests: read` failed on a PR
   endpoint. [A, not fetched this session] GitHub's REST reference lists "Pull
@@ -3566,10 +3570,14 @@ rule is introduced.
   an `api` call and would hit AC7 behaviour. The fake needs a default `api`
   response (one `page` line = nothing found) so those cases keep their outcome; case
   bodies stay unchanged.
-- **Recommended AC differences (awaiting the spec decision, not amendments).**
-  AC7: with a branch match, the PR query is skipped, so a failing PR query yields
-  exit 0, not non-zero; propose reading "either query fails" as "when no earlier
-  signal already keeps the epic open". AC7 "empty output": an empty JSON array
-  (`page` only) is a valid "none", no output at all is the failure. AC8/AC9: the
-  fake is extended with a default `api` response (above). AC11: dropped if the
-  maintainer accepts. AC1-AC6, AC10 are otherwise met as written.
+- **AC differences (resolved by the maintainer; this entry no longer awaits a
+  decision).** Per the [maintainer decision, Pipeline log comment](https://github.com/TiesL/spec-driven-guardrails/issues/683#issuecomment-6725817396) and the amended #683 body: AC7 is read as "only
+  when no earlier signal already keeps the epic open", so a found branch skips the
+  PR query and exits 0. AC11 and Item 4 are dropped (the Rule (d) bullet above is
+  the reasoning, now historical). AC5 and rule (b) gain the same-repository-head
+  condition (fork PRs do not count). AC7 "empty output": `page` only is a valid
+  "none", no output at all is the failure. AC8/AC9: the fake `gh` carries a default
+  `api` response. AC1-AC4, AC6 and AC10 are met as written.
+- **Effect of this update.** Documentation only, no scenario or code change:
+  S594-S603 and `release_signal` at d89c017 already implement these decisions (S598/d
+  covers the fork case). The Rule (d) bullet was not removed, only superseded.
