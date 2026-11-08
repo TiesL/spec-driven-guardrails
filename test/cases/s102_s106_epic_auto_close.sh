@@ -71,7 +71,7 @@ if [ ! -f "$FIX/api/overbroad" ]; then
   fi
 fi
 pages="$(ls "$FIX/api/$kind"/*.json 2>/dev/null)"
-[ -n "$pages" ] || { echo "[]" > "$FIX/api/empty-page.json"; pages="$FIX/api/empty-page.json"; }
+[ -n "$pages" ] || { mkdir -p "$FIX/api"; echo "[]" > "$FIX/api/empty-page.json"; pages="$FIX/api/empty-page.json"; }
 for f in $pages; do
   page="$(jq -c "$filter" "$f")" || exit 1
   if [ -n "$expr" ]; then jq -r "$expr" <<<"$page" || exit 1; else echo "$page"; fi
@@ -360,6 +360,7 @@ expect_close "S600/e control, two well-formed empty lists" 607 9002
 # straight-to-main epic still closes on the default api answer (S102 above
 # already keeps its outcome under that default).
 setup_epic 70 9001 9002; set_issue_list '[{"number":70,"state":"OPEN","body":"epic"},{"number":9001,"state":"CLOSED","body":"**Epic:** #70"},{"number":9002,"state":"OPEN","body":"**Epic:** #70"}]'
+set_body 9001 "**Epic:** #70"
 expect_open "S601/open child" 70 9001
 set_body 9003 "**Epic:** #71"; set_state 71 OPEN; set_issue_list '[{"number":71,"state":"OPEN","body":"epic"}]'
 expect_open "S601/no children" 71 9003
