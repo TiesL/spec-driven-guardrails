@@ -39,7 +39,7 @@ CLAUSES = {
     'Also reserved: pipeline-override markers; disabling guardrails; user config; hook-denied operations; sandbox-denied operations.',
     'A panel cannot overrule a role, waive a contract, retry a denied operation or manufacture human approval; use OR45 pushback and human decision where applicable.',
     'All security trade-offs remain reserved, both 2-1 and 3-0; refer them to the maintainer without unauthorized attempts.',
-    'Editing the panel\'s own rules is also reserved: any proposal whose target is contract text (anything under skills/, policy/, hooks/, settings/ and adapters/, the generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, and A54 D2) is referred to the maintainer, even when it would otherwise be an eligible docs edit or policy choice.',
+    'Editing the panel\'s own rules is also reserved: any proposal whose target is contract text (by repository path: anything under skills/, policy/, hooks/, settings/, adapters/ and templates/, the generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, CHANGES.md, USER-CLAUDE.md, and A54 D2) is referred to the maintainer, even when it would otherwise be an eligible docs edit or policy choice.',
 ],
 591: [
     'Brief fresh non-inheriting Product and Architect separately with canonical procedure, issue/ACs, ground-truth artifact links and exact question/scope.',
@@ -125,6 +125,27 @@ def source_checks():
                     changed_clause = norm(clause).replace(action, 'panel may authorize an unlisted action', 1)
                     rejects(oracle, panel, panel.replace(norm(clause), changed_clause, 1),
                             '590/source/action/' + str(action_number))
+    if IDENT == 590:
+        # #681: each added entry is its own pin inside the reservation sentence (red when removed, green when restored).
+        sentence = re.search(r"Editing the panel's own rules is also reserved:.*?choice\.", panel)
+        sentence = sentence[0] if sentence else ''
+        for entry in WIDENED:
+            oracle = lambda t, e=entry: [] if e in t else ['widened entry']
+            check(entry in sentence, '590/source/widened/' + entry + '/control')
+            if entry in sentence:
+                rejects(oracle, sentence, sentence.replace(entry, '', 1), '590/source/widened/' + entry)
+        # #681: exercise S590-target-meaning names the added entries in set one only.
+        exercise = (ROOT / 'test/behavior/temporary-panel-scenarios.md').read_text()
+        section = re.search(r'^## S590-target-meaning\n(.*?)(?=^## |\Z)', exercise, re.M | re.S)
+        section = norm(section[1]) if section else ''
+        one = re.search(r'Set one:(.*?)Set two:', section)
+        two = re.search(r'Set two:(.*?)Use the actual', section)
+        one, two = (one[1] if one else ''), (two[1] if two else '')
+        for entry in WIDENED:
+            check(entry in one, '590/exercise/set-one/' + entry + '/control')
+            check(entry not in two, '590/exercise/set-two/' + entry + '/absent')
+        check('templates/' in one and 'script' in one and '.md' in one, '590/exercise/set-one/templates-examples')
+        check('UNRUN' in section, '590/exercise/status-unrun')
     # Keep every positive clause while injecting contradictory permission.
     # The same oracle must reject the contradiction, not merely missing text.
     injections = {
@@ -176,11 +197,17 @@ RESERVED = ('merge-main', 'version-bump', 'tag', 'github-release', 'publish-outs
             'novel-unlisted-action', 'pipeline-override', 'disable-guardrail', 'user-config',
             'hook-denied-operation', 'sandbox-denied-operation', 'overrule-role', 'waive-contract', 'security-tradeoff',
             'edit-panel-rules')
-# Structured proposal target: panel-rules (contract text: skills/, policy/, hooks/, settings/, adapters/, generated AGENTS.md and
-# WORKFLOW.md, ORCHESTRATOR.md including OR47, A54 D2) makes these eligible tokens the reserved edit-panel-rules token;
+# Structured proposal target: panel-rules (contract text, by repository path: skills/, policy/, hooks/, settings/, adapters/,
+# templates/ (whole directory), generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, CHANGES.md, USER-CLAUDE.md, A54 D2) makes these eligible tokens the reserved edit-panel-rules token;
 # other means everything else, including spec content. The target is a supplied fact; no path or keyword inference.
 TARGETS = ('panel-rules', 'other')
 TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice')
+# #681 widening (maintainer decision 2026-11-08): entries added to the reserved contract-text class.
+WIDENED = ('CHANGES.md', 'templates/', 'USER-CLAUDE.md')
+# One opaque control label per added entry; templates/ has a script and a .md path. Labels never reach the oracle.
+WIDENED_LABELS = ('CHANGES.md', 'templates/check-traceability.sh', 'templates/PRD.md', 'USER-CLAUDE.md')
+# Unchanged target-other controls: root spec content stays eligible.
+OTHER_LABELS = ('README.md', 'CHANGELOG.md', 'docs/', 'PRD.md', 'ARCHITECTURE.md', 'TEST-SCENARIOS.md')
 VOTES = ('3-0', '2-1')
 SOURCE_STATES = ('accepted', 'refused', 'unverified', 'missing')
 REQUIRED_TAGS = ('procedure', 'issue/ACs', 'artifacts', 'question/scope')
@@ -471,6 +498,24 @@ def target_checks():
             fixture(base % 'panel-rules' + '/attempt', attempt,
                     only(proposal_oracle, '590/edit-panel-rules/attempt'), '590/edit-panel-rules/attempt')
             fixture(base % 'panel-rules' + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
+    # T6b (#681): each added entry, opaque label, otherwise eligible proposal with target panel-rules is referred; target other stays eligible.
+    for label in WIDENED_LABELS:
+        for action in TARGETED:
+            for vote in VOTES:
+                base = '590/target-%s/widened/' + label + '/' + action + '/' + vote
+                p = proposal(action, vote, 'panel-rules')
+                fixture(base % 'panel-rules' + '/settlement', p,
+                        only(proposal_oracle, '590/edit-panel-rules/referral'), '590/edit-panel-rules/referral')
+                attempt = referral(copy.deepcopy(p))
+                attempt['result']['attempts'] = [dict(action=action, authority='panel')]
+                fixture(base % 'panel-rules' + '/attempt', attempt,
+                        only(proposal_oracle, '590/edit-panel-rules/attempt'), '590/edit-panel-rules/attempt')
+                fixture(base % 'panel-rules' + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
+    for label in OTHER_LABELS:
+        for action in TARGETED:
+            for vote in VOTES:
+                fixture('590/target-other/control/' + label + '/' + action + '/' + vote,
+                        proposal(action, vote, 'other'), proposal_oracle)
     # T7: delegation independence for the reserved token.
     for state in SOURCE_STATES:
         p = proposal('docs-pr', '3-0', 'panel-rules')

@@ -17,6 +17,7 @@ point.
   model-floor evidence, issue-home records and grouped merge-approval disclosure;
   decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
   contract text, is reserved to the maintainer.
+- #681: Widen the reserved contract-text class to `templates/`, `CHANGES.md` and `USER-CLAUDE.md`, by repository path (maintainer decision of 2026-11-08; no meaning-version bump).
 
 ## v0.6.0 — Stage-selection panel: choose which pipeline stages an item needs, within your standing waivers; epic release PRs pass the merge gate from their children's records. (2026-11-04)
 
