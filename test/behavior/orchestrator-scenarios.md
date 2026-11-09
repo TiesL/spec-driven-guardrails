@@ -59,7 +59,7 @@ arms.
   `file_issue_now` (its own issue immediately).
 - `model_choice`: compared with the reference model the scenario names:
   `same_or_stronger` or `weaker`.
-- `run_scope`: how much of the checks you run now, for the paid behavior-test
+- `run_scope`: how much of the checks you run now, for the behavior-test
   run or the local checks before a commit:
   `affected` (only the scenarios or checks the change can affect),
   `full` (every scenario or the whole suite),
@@ -382,13 +382,13 @@ When: You choose the model for the rebase dispatch.
 Then: next_action=dispatch; next_role=Fullstack Developer; model_choice=weaker
 
 ### OB60 · OR48
-Given: One sentence of the run rules was reworded on issue 40's work-item branch. Only scenarios OB12 and OB13 concern that sentence. No stamp, gate or other requirement asks for the whole scenario set to be run again. A paid behavior-test run is due.
-When: You start the paid run.
+Given: One sentence of the run rules was reworded on issue 40's work-item branch. Only scenarios OB12 and OB13 concern that sentence. No stamp, gate or other requirement asks for the whole scenario set to be run again. A behavior-test run is due.
+When: You start the behavior-test run.
 Then: next_action=answer_directly; run_scope=affected
 
 ### OB61 · OR48
-Given: One sentence of the run rules was reworded on issue 40's work-item branch. Only scenarios OB12 and OB13 concern that sentence. The committed stamp covers the whole rules file and the whole scenario file, so any edit to either one makes it stale until every scenario has been run again. A paid behavior-test run is due.
-When: You start the paid run.
+Given: One sentence of the run rules was reworded on issue 40's work-item branch. Only scenarios OB12 and OB13 concern that sentence. The committed stamp covers the whole rules file and the whole scenario file, so any edit to either one makes it stale until every scenario has been run again. A behavior-test run is due.
+When: You start the behavior-test run.
 Then: next_action=answer_directly; run_scope=full
 
 ### OB62 · OR48
@@ -543,7 +543,7 @@ item cites its decision as at least one `#<n>`.
   by the maintainer (#532 decisions 1-2).
 - OB59 (OR28, OR39): a mechanical dispatch takes the cheapest available
   model. Decided by the maintainer (#532 decisions 1-2).
-- OB60 (OR48): a paid behavior run after a change covers affected scenarios
+- OB60 (OR48): a behavior-test run after a change covers affected scenarios
   only. Decided by the maintainer (#532 decisions 1-2).
 - OB61 (OR48): a stamp that covers the whole file requires the full run.
   Decided by the maintainer (#532 decisions 1-2).
