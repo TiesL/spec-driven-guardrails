@@ -911,6 +911,18 @@ def _(t):
     expect(t.ev(b), 'unresolved', has=['record-edited'])
 
 
+@row('609', 'reviewer-asserts-disqualifier')
+def _(t):
+    o = edit_manifest(t, lambda m: m['reviewer_assertions'].update(semantic_disqualifiers='new permission in hooks/x'))
+    expect(o, 'referred', has=['assertion'], detail='semantic_disqualifiers')
+
+
+@row('609', 'reviewer-assertion-missing')
+def _(t):
+    expect(edit_manifest(t, lambda m: m['reviewer_assertions'].update(lineage='')), 'unresolved', has=['assertion-missing'], detail='lineage')
+
+
+mutation('609', 'reviewer-assertion', ['reviewer-asserts-disqualifier'], lib=('drop', 'assertion'))
 mutation('609', 'schema-closed', ['e-missing-key', 'e-unknown-key'], lib=('sub', 'manifest-closed', 'manifest_errors(m)', '[]'))
 mutation('609', 'single-record', ['f-two-records'], lib=('drop', 'single-record'))
 mutation('609', 'no-edit', ['g-edited'], lib=('drop', 'no-edit'))
@@ -1377,6 +1389,7 @@ for _p in RESERVED_ROWS:
         return json.dumps(cfg)
     _others = [x for x in RESERVED_ROWS if RESERVED_PATTERN[x] == RESERVED_PATTERN[_p]]
     mutation('613', 'delete reserved entry ' + RESERVED_PATTERN[_p], ['reserved ' + x for x in _others], config=_cfg_drop, exact=True)
+mutation('613', 'reserved-rule', ['reserved ' + x for x in RESERVED_ROWS], lib=('drop', 'reserved'))
 mutation('613', 'delete label hold', ['hold-pr', 'hold-issue'], exact=True,
          config=lambda s: json.dumps(dict(json.loads(s), labels={'hold': ['risk:*'], 'off': 'merge-autonomy:off'})))
 mutation('613', 'delete label risk', ['risk-high-pr'], exact=True,
