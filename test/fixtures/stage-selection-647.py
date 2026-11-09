@@ -114,7 +114,7 @@ SNAPSHOTS = {'lib/markdown.sh': '4fa016febf33b7e972ccc64a154249863424972ff04e383
  'pipeline-override.sh': 'a107b7379b33e5f25225a9f8c5bce54fd93727f85f9c496d1e590d7bdb4b4998',
  'skills/role-contracts/ORCHESTRATOR.md': 'b8cce3bd77fa08becd92192800a84d80c8c5211443db9928fbe6b146b7619136',
  'skills/role-contracts/orchestrator-rules.tsv': 'a41764d85b4392adcf557389d5d69d84fb8445750cff7bcfe8a1ad4771cd3f99',
- 'test/behavior/orchestrator-diff.stamp': 'c77f2e8db29dbbfc0081a3c6720f48f8ed5f481abce21316c083db5470dca568',
+ 'test/behavior/orchestrator-diff.stamp': 'f6bc5a7bfd5605f2339dca20e60996006a5f1e5992069c8247b7495884e696aa',
  'test/behavior/orchestrator-scenarios.md': '9c7fa05d970b69ff7ec24848b9d44fe211447f102ac0f928a5e32bfe198c484c',
  'test/fixtures/orchestrator-core-pins.tsv': '2e1a30b503bd1c294db97e50111fc2759777592b8fffb8597b1cda3a514228d7'}
 errors = []
