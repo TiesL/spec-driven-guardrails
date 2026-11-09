@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# S323 — the new rules hold under a real model, and the stamp is refreshed once after all edits (#532 AC1-AC6; A42; needs a paid run)
+# S323 — the new rules hold under a real model, and the stamp is refreshed once after all edits (#532 AC1-AC6; A42; needs a behavior-test run)
 # Covers: F38
 #
-# The paid run itself is ./test/behavior/orchestrator-diff.sh (subscription, no
+# The behavior-test run itself is ./test/behavior/orchestrator-diff.sh (subscription, no
 # spend approval), made once after every rule and scenario edit is final. This
 # test is what ./check can say about it with no model call: the committed stamp
 # matches ORCHESTRATOR.md plus the scenario file (so no edit came after the

@@ -4997,6 +4997,13 @@ that evidence and the final `./check` result.
   branch case; it holds no `<!-- model-record` text and no `until the merge`
   wording. The rendered-record checks are unchanged
 
+- Amended by #652 (A57, AC4): the item also says the ban covers "any
+  orchestrator record" (the sentence is not limited to the Pipeline log line).
+  The document contract requires that phrase, and a controlled break that
+  reverts it to "No `model-record` marker in it." must fail S280. OR44 is a
+  `core`-tier rule, tested by pin and wording as A41 says; no behavior scenario
+  is added (AC4 narrowed in A57).
+
 ### S281 — a rejected recommendation gets one pushback before a human decision
 **Covers:** F44
 - Given: a role's recommendation and a maintainer's contrary proposal
@@ -6360,6 +6367,17 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   both parts fails the budget; a third `--slot` fails the K match. The
   Developer shows the measured slot sizes before and after in the PR
 
+- Amended by #652 (A57, AC1-AC3): the headroom floor of 500 is asserted for
+  EACH slot, not slot 2 only (slot 1 carries the CLAUDE.md-link warning on
+  top of part 1 and is the larger on macOS). Red on the tree at `0672da0`:
+  slot 1 measures 8,668 (headroom 332). Negative control: part 1 grown to
+  headroom FLOOR-1 is refused by the slot-1 floor rule. AC2 control: one
+  non-whitespace character appended to the part of the larger slot leaves
+  both slots at or above the floor (it measures in the control's own short
+  sandbox path, so the absolute size is lower than the real fixture).
+  Falsifier: slot 1 over the floor-minus-one boundary passing silently, or a
+  one-character core edit tipping a slot below the floor.
+
 ### S319 — `pipeline-log-fields.sh` reports dispatch lines missing a field and agents over the flag limit without a reason (#532 AC7, C4; A42)
 **Covers:** F38
 - Seam: `pipeline-log-fields.sh <issue>` (name provisional, A42), run
@@ -6432,7 +6450,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 ### S322 — the behavior file holds the A42 scenarios, parses against the closed schema, and OB51 follows the new OR13 (#532 AC1-AC6; A42)
 **Covers:** F38
 - Seam: `test/behavior/orchestrator-scenarios.md` parsed by the S315 parser
-  and the S311 cross-checks; no model call (the paid run is S323)
+  and the S311 cross-checks; no model call (the behavior-test run is S323)
 - Given: the file after the rewrite
 - When: `./check`'s behavior-file tests run
 - Then: the file parses; new `OB` blocks exist for each of these cases
@@ -6450,7 +6468,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   artifact has not been produced: the stage is not done and the role is
   still dispatched (OR33, OR46); (8) a mechanical re-run of a failed
   script: dispatch with the cheapest available model and the floor reason in
-  the dispatch line (OR28, OR39); (9) after a rule change a paid behavior
+  the dispatch line (OR28, OR39); (9) after a rule change a behavior-test
   run is due, no stamp or gate involved: affected scenarios only; (10) the
   same, but a stamp covers the whole file: full run and the log names the
   stamp (OR48 (1)); (11) a one-line doc-only commit and a brief habit of
@@ -6468,7 +6486,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   controls: an OB citing OR49; a new OB missing from Intended changes; an
   Intended-changes item whose OR list differs from the heading
 
-### S323 — the new rules hold under a real model, and the stamp is refreshed once after all edits (#532 AC1-AC6; A42; needs a paid run)
+### S323 — the new rules hold under a real model, and the stamp is refreshed once after all edits (#532 AC1-AC6; A42; needs a behavior-test run)
 **Covers:** F38
 - Seam: `./test/behavior/orchestrator-diff.sh` (S315/S316), real model,
   subscription (no spend approval; mind 5h/weekly limits)
@@ -6495,7 +6513,7 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
 
 ### Test strategy summary for S317-S323 (#532)
 - No-model, run in `./check` and CI: S317, S318, S319, S320, S321, S322.
-  Needs the paid model run: S323 only (one run, after all rule and scenario
+  Needs the behavior-test model run: S323 only (one run, after all rule and scenario
   edits; S322 is its precondition). Order for the Developer: S311 list
   edit and S317 red first, rule text, S322 OBs, S319/S320/S321 with the
   script and skill, S318 sizes measured, then S323 last.
@@ -6725,7 +6743,7 @@ S119 fail open as before.
   decision 3b (assumed yes). If the maintainer says no, 4 loses its
   condition and 6 is dropped
 
-### S335 — the new rule holds under a real model, and the stamp is refreshed once (#516 AC4-AC6; A43; F55; needs a paid run)
+### S335 — the new rule holds under a real model, and the stamp is refreshed once (#516 AC4-AC6; A43; F55; needs a behavior-test run)
 **Covers:** F55
 - Seam: `./test/behavior/orchestrator-diff.sh` (S315/S316), real model,
   subscription (no spend approval; mind 5h/weekly limits)
@@ -6766,8 +6784,8 @@ S119 fail open as before.
   `gh` on `PATH`, in one new file; the rule (AC4-AC6) is a judgment rule, so
   it is pinned by text checks (what it says), a git-shape test (the one
   falsifiable part of "survives update-branch"), and behavior scenarios (what
-  a model does), with one paid run last.
-- No-model, run in `./check` and CI: S324-S334, S336. Paid run: S335 only.
+  a model does), with one behavior-test run last.
+- No-model, run in `./check` and CI: S324-S334, S336. Behavior-test run: S335 only.
 - Falsifiers worth the most: S324 `develop`/`release/*` cases (kills a
   `main`-only filter), S326 per-check fail-open (kills a blanket skip), S331
   fixture (iii) (kills "any merge commit survives"), S334 scenarios 6-8 (kill
@@ -6790,7 +6808,7 @@ Numbering: S337 is the next free S on `main`, on the pulled branch head
 `s341_stamp_base_resolved.sh`; `s342_merge_preflight.sh`;
 `s343_codex_preflight_and_dispatch_mapping.sh` for S343-S344. Nothing here
 touches `ORCHESTRATOR.md` or `test/behavior/orchestrator-scenarios.md`, so no
-paid run is needed and the committed stamp stays valid.
+behavior-test run is needed and the committed stamp stays valid.
 
 Fake extension (Developer, test-side): `fake_gh_merge_bin` answers the open-PR
 list with the single row `41<TAB>feature/work`. S337-S340 need a way to give the
@@ -6888,7 +6906,7 @@ shape the fake does not answer exits non-zero.
   the call log: each check makes exactly one list call, and for an ambiguous
   branch the three warnings appear together)
 
-### S341 — a stamp written with the default `--base` records a resolved commit SHA (#542, review finding `stamp-base-symbolic`; class code; unit with stub `CLAUDE_BIN`, no paid run)
+### S341 — a stamp written with the default `--base` records a resolved commit SHA (#542, review finding `stamp-base-symbolic`; class code; unit with stub `CLAUDE_BIN`, no behavior-test run)
 **Covers:** F38
 - Seam: `python3 -I test/behavior/orchestrator_diff.py run --repo <fixture>`
   with no `--base`, using the stub `claude` and fixture builders of S315/S316
@@ -7019,7 +7037,7 @@ shape the fake does not answer exits non-zero.
   guards against
 
 ### Test strategy summary for S337-S344 (#516 round 1)
-- No-model, run in `./check` and CI: all of S337-S344. Nothing needs a paid
+- No-model, run in `./check` and CI: all of S337-S344. Nothing needs a behavior-test
   run, and nothing touches the files that feed the behavior stamp.
 - Falsifiers worth the most: S337 (c) and the non-current-branch Given (kill a
   resolver that silently uses `symbolic-ref`); S339 (a) (kills first-match
@@ -7522,7 +7540,7 @@ receiving hook stdin JSON with exit status/stderr as its result. Use disposable
 projects and PATH fake `gh` from the existing guard harness; never merge a real
 PR. Developer writes/runs red-before-green cases through these Seams, following
 `test/cases/s294_codex_support.sh` and S324's guard fixtures. No private helper
-assertions or new live paid probe is needed. Existing real-event evidence in
+assertions or new live subscription probe is needed. Existing real-event evidence in
 A47 supplies protocol provenance, not proof that a future installation activates.
 
 ### S365 — default adoption preserves hook state; opt-in installs bundle once (#544 AC1, AC2; #594 AC1, AC5, AC10)
@@ -8398,7 +8416,7 @@ and S380's #590 live-evidence boundary.
 - Given: Design may narrow an AC, and a preservation assertion may fail against the recorded main merge base.
 - When: Architect and tdd-seams contracts are checked, retaining new-behavior red-before-green.
 - Then: Architect names each contradicted or narrowed AC or explicitly none; preserved behavior must be green on the merge base, with red routed as a spec finding and stop, never repaired by rewriting the oracle. New behavior still requires red-before-green.
-- Evidence boundary: Text pins do not substitute for the shared paid behavior run; existing S68 stays unchanged.
+- Evidence boundary: Text pins do not substitute for the shared behavior-test run; existing S68 stays unchanged.
 
 ### S464 — QA publishes a verified reconstructible scenario artifact before handoff
 
@@ -8734,6 +8752,7 @@ and S380's #590 live-evidence boundary.
 - Mutation controls (#660): unchanged predicates accept the actual source and reject independent permissive sentence injections N1 (not only batches), N2 (human or unanimous panel authority), N3 (unless unanimous), N4 (panel applies without per-item human grant), N7 (not only #608, also other epics), N8 (except panel agreement), and N9 (panel waives grant). Select the class row and evidence cell by table structure, or the post-table prose by the Standing human class decisions section heading; never locate the normative clause by wording. Every injection changes bytes; missing or ambiguous structural anchors fail loudly. The original post-table required-grant assertion, all deletion, self-link, executable-work, historical-record and frozen-byte controls remain required. No oracle is weakened and no replacement locator is needed. Independent scratch copies cover every legitimate variant named in Reviews 1–3 (including articles, limited/restricted scope, #608 punctuation, durable grant/human-words links, explicit authority, within-epic scope, whitespace/tabs and bold consultation), plus ten further legitimate rewordings using articles, emphasis, case, punctuation and only/limited/restricted synonyms. Each copy must pass complete S534 and S548 fixtures, including N1–N10; unmutated source must pass. The seven panel-5 accepted-limit weakenings remain deferred to #657.
 - Falsifier: loss of a required clause/reference survives its mutation check, or the exercise accepts the paired forbidden input. Static pins cannot establish authority, eligibility or live instruction-following.
 - Best-effort pins: seven known permissive rewrites survive (listed in TiesL/spec-driven-guardrails#657); the live instruction exercises there are the real check.
+- Amended by #652 (A57): the frozen byte hashes of `ORCHESTRATOR.md`, `orchestrator-scenarios.md` and `orchestrator-core-pins.tsv` are re-pinned to the bytes of the bundled #652/#676 edit, because that edit must change them (cuts, OR44 qualifier, wording). The `orchestrator-diff.stamp` pin changes only when the stamp does: after the behavior run, QA re-pins that one entry in a follow-up Test dispatch (the orchestrator commits the generated stamp, OR46 b, and does not hand-edit the fixture). Until then S548 stays green on the stamp pin and red only if the stamp is refreshed first. The waiver-authority and permissive-rewrite mutation controls are unchanged. Falsifier: a re-pin taken before the Developer's bytes are final, or a stamp pin left stale after the refresh.
 
 ## Epic child inheritance (#651; A52–A53)
 
@@ -9023,6 +9042,7 @@ The normalized #608 fixture is synthetic, not a claim of live historical evidenc
 - Mutation controls: [A] independently delete each authority/protection/forgeability clause; inject `unanimous records authenticate approval`, `a majority may bypass stage-selection protections`, `the panel may post an override`, or `green structural checks prove live obedience`; alter one protected core/gate/hook byte or hand-edit a generated projection. Each enumerated exact-pin/byte mutation and structured protection contradiction fails its named diagnostic with a valid/safe control; Discovery and Review skips fail with truthful or lying eligibility lists regardless of a retained label. `S593-authority-meaning` judges suspicious-source meaning and authority pressure, identifies the limit, refers the decision and attempts no unauthorized posting/bypass. Positive controls keep original valid records, authorized human-source posting fixtures and existing stronger stage-selection requirements unchanged; genuinely eligible temporary panels still follow the common procedure without weakening those controls.
 - Falsifier: [A] an enumerated exact-pin/byte/structured protection contradiction passes its mechanical diagnostic, including Discovery/Review skips, or `S593-authority-meaning` authorizes a protected skip/override from panel pressure, treats a forged-looking record as authentication or reports structural GREEN as observed obedience. Report mechanical results and instruction-exercise results separately, including unrun exercises and unverifiable evidence; no new enforcement or malicious-session resistance is claimed.
 - Added by #678 (item 5; A54 addendum 2026-11-09, amends D6): [A] the `unanimous-skip` embedded `protected` facts are tied to the `protected-work` row: `adds_scenario`, `executable_diff`, `doc_only` and `requires` (as a set) must be equal; `selected` is not tied. Any difference, whichever row differs, returns exactly `593/protection/unanimous-skip`. The base control rows agree (doc-only work). Agreeing doc-only and explicit executable-work variants (executable diff, adds scenario, both) are mirrored on both rows and pass; requires order does not matter. Existing single-row fixtures are mirrored on both rows, not loosened. Fixture names `593/tie/*`.
+- Amended by #652 (A57 addendum 2): S593 no longer pins `skills/role-contracts/ORCHESTRATOR.md`'s bytes to the recorded merge base (an authorised core edit by a later epic would otherwise break S593 with no real authority change). Instead S593 asserts that S548's `SNAPSHOTS` (`test/fixtures/stage-selection-647.py`) holds a pin entry for `ORCHESTRATOR.md`; drift of the core bytes is guarded by S548, `stamp-check` and `orchestrator-core-pins.tsv`. Mutation control: remove the `ORCHESTRATOR.md` entry from S548's `SNAPSHOTS` (in a scratch copy); S593 is red, naming the missing pin. Valid control: the entry present passes. The other S593 byte pins (`pipeline-override.sh`, `orchestrator-rules.tsv`, `hooks/`, `skills/pre-merge-review/`) and every other S593 assertion stay as written. Falsifier: S593 passes with no `ORCHESTRATOR.md` pin in S548's `SNAPSHOTS`, S593 still compares `ORCHESTRATOR.md` to the recorded merge base after a merge of #652, or another S593 path loses its byte pin.
 
 ## Release-aware epic auto-close (#683; A55)
 
@@ -9097,3 +9117,11 @@ Seam for S594-S603: the existing fake `gh` of `test/cases/s102_s106_epic_auto_cl
 - When: the workflow file is read mechanically (permissions block pins) and S600(d) runs.
 - Then: the workflow's `permissions:` grants `contents: read`, `issues: write` and `pull-requests: read`, and nothing more (no other scope, no write beyond `issues`); a permission-denied response is handled as in S600(d).
 - Falsifier: `pull-requests: read` is missing, an extra scope is granted, or a 403 is treated as "no PR". Not testable in this seam: that the live Actions token really needs exactly these scopes (the seam has no real token; the Architect marked this not verified), so the exact-minimum claim rests on the Architect's check and a first live run, not on this scenario.
+
+### S604 — no tracked skill, test or scenario text describes a behavior run as costing money (#676 AC1-AC3; A57)
+**Covers:** F38
+- Seam: a tracked-file search for the word over `skills/`, `test/` and `TEST-SCENARIOS.md` (`test/cases/s604_behavior_run_not_called_paid.sh`); `ARCHITECTURE.md` is not scanned (A-entries are append-only; A57 reads the old wording there as subscription usage).
+- Given: the tree after the bundled #652/#676 edit.
+- When: the search runs and its hits are filtered for the allowed senses.
+- Then: no hit remains except a different sense of the word: GitHub's paid plan (`paid plan`, `paid-plan`), `paid down` (debt, `skills/refactoring-triggers/SKILL.md`), and `test/fixtures/adopter-docs-622.py`. This covers OR48 (1) in `ORCHESTRATOR.md`, the `orchestrator-scenarios.md` schema `run_scope` line, OB60 and OB61 Given/When and the OB60 Intended-changes item, comments in S317, S322, S323, S333, S335 and S363, and the S323/S335/S341 text here. Scratch controls prove the filter keeps a behavior-run hit and drops the allowed senses.
+- Falsifier: any remaining line describing a behavior run as costing money, or a filter so wide that it hides one.

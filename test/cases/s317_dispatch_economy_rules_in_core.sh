@@ -76,7 +76,7 @@ cc() {
   has "$line" "scope" || echo "or47-scope: OR47 must say stated scope"
   has "$line" "history" || echo "or47-history: OR47 must forbid conversation or issue history"
   line="$(item OR48 "$o")"
-  has "$line" "affected" || echo "or48-affected: OR48 (1) must scope a paid run to affected scenarios"
+  has "$line" "affected" || echo "or48-affected: OR48 (1) must scope a behavior-test run to affected scenarios"
   has "$line" "stamp" || echo "or48-stamp: OR48 (1) must name the stamp exception"
   has "$line" "gate" || echo "or48-gate: OR48 (1) must name the gate exception"
   has "$line" "pre-commit" || echo "or48-doc-only: OR48 (2) must say a doc-only commit runs the pre-commit hooks only"

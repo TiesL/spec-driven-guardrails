@@ -2101,7 +2101,21 @@ def disclosure_oracle(inventory, request, consumer=645, round_no=1, earlier=None
 def preservation_checks():
     base = 'b22b4760fa3dcfd79a1c2557899bd735c6fafefc'
     check(subprocess.run(['git', 'merge-base', '--is-ancestor', base, 'HEAD'], cwd=ROOT).returncode == 0, 'recorded preservation baseline ancestor')
-    paths = ['skills/role-contracts/ORCHESTRATOR.md', 'pipeline-override.sh', 'skills/role-contracts/orchestrator-rules.tsv']
+    # ORCHESTRATOR.md is no longer byte-pinned here (A57 addendum 2, #652/#676): S548's
+    # SNAPSHOTS owns that pin, so a deliberate ORCHESTRATOR.md edit re-pins one place.
+    import ast
+    stage_src = (ROOT / 'test/fixtures/stage-selection-647.py').read_text()
+    snapshots = None
+    for node in ast.parse(stage_src).body:
+        if isinstance(node, ast.Assign) and any(getattr(t, 'id', '') == 'SNAPSHOTS' for t in node.targets):
+            snapshots = ast.literal_eval(node.value)
+    check(isinstance(snapshots, dict), '593/orchestrator-pin/snapshots-found')
+    pin_oracle = lambda table: [] if isinstance(table, dict) and 'skills/role-contracts/ORCHESTRATOR.md' in table else ['593/orchestrator-pin/missing']
+    check(not pin_oracle(snapshots or {}), '593/orchestrator-pin/held-by-S548')
+    mutated = dict(snapshots or {})
+    mutated.pop('skills/role-contracts/ORCHESTRATOR.md', None)
+    check(pin_oracle(mutated) != [], '593/orchestrator-pin/mutation')
+    paths = ['pipeline-override.sh', 'skills/role-contracts/orchestrator-rules.tsv']
     paths += [p.relative_to(ROOT).as_posix() for directory in ('hooks', 'skills/pre-merge-review')
               for p in (ROOT / directory).rglob('*') if p.is_file()]
     for path in paths:
