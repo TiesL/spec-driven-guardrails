@@ -3717,3 +3717,367 @@ fields) needs no design decision beyond the diagnostics fixed at the end.
   control's meaning of `protected-work` row 1 to doc-only, which weakens the
   executable-work coverage of the loops at ~1031-1056 unless QA keeps explicit
   executable variants (C2-C5 style) mirrored on both rows.
+
+### A58 — Merge-risk panel: own skill, one reserved configuration, a read-only verifier, a timed hold and one executor (#646; F70-F74; ports A55 of `feature/646-merge-risk-panel` 9621de6)
+
+Status: PROPOSAL (Architect, Planning, 2026-11-09, release branch
+`release/607-panel-mechanisms` at 2cfba6a). Nothing here takes effect without the
+maintainer's explicit acceptance of #646's "Maintainer acceptance required" points
+1-5; silence accepts nothing, and delivering this into the release branch or merging
+the release branch accepts nothing (OR43). Until acceptance every merge into `main`
+keeps WORKFLOW.md step 4 / OR11. `[V]` = checked in the cited source; `[A]` = design
+choice or judgment. A55 on the old branch is superseded by this entry and is not
+merged; its D1-D8 (maintainer decisions 2026-11-06) are carried over unchanged and
+not reopened. Records, SHA pins, links and timestamps are inspectable evidence, not
+authentication (A54 threat model): on the shared account every role, the
+orchestrator and the maintainer post as the same login.
+
+- **What carries over from A55 unchanged.** [A] D1-D8; class C5 = D1 at 300 lines /
+  8 files inclusive, both counts positive, over the full `main`-to-H diff, renames
+  count both paths; unlisted paths refer; five voters (Product, Architect, QA, fresh
+  Reviewer, orchestrator), 5-0 only, Developer never votes, gates never vote; the
+  conditional-record reading of AC2 (three reused `yes-if` positions plus the
+  ordinary fresh final-diff Review plus an orchestrator check, bound by one manifest
+  to H, B, diff, config, design and AC digests); #645's Artificial Analysis
+  Intelligence Index floor for every voter against the highest relevant author;
+  vote expiry on any H change including `gh pr update-branch`; five-minute
+  configurable hold; one executor; recheck `main` before the next; issue-side
+  records with the revert command; global and per-item revocation; live narrow
+  start, no shadow phase; config-only widening; token cost is not a gate. The
+  coverage measurement is A55's and is cited, not re-run: [V on 9621de6] 22/80
+  (27.5%) of main merges 2026-09-18 to 2026-11-05 at 300/8 after content haircuts,
+  an upper bound; fully evidenced historical eligibility is unknown. Its replay
+  block needs `pr-data-*.json` and `hyp646.py`, which are not in the repository, so
+  it is not ported.
+- **What changes against A55.** [A] (1) Placement: own skill, not `role-contracts`
+  (AC9). (2) Exact Interfaces below (config schema, verifier modes and exit codes,
+  record and position line formats), where A55 only named them. (3) More reserved
+  paths: `hooks/git-guardrails` (the merge guard that `merge-preflight.sh`
+  delegates to; a change to it can weaken a hard gate, so it is autonomy machinery
+  in substance) and the mechanism's own tests (`test/cases/*merge_risk*`,
+  `test/fixtures/merge-risk*`, `test/behavior/merge-risk*`: weakening the
+  verifier's oracle is a gate change). This narrows C5 below A55's 27.5% ceiling by
+  an unmeasured amount; flagged for acceptance point 4. (4) The single executor is
+  made checkable by a host field. (5) Records are never edited; completion and hold
+  release are new linked comments. (6) The durable queue stays on the control
+  issue, and a closed control issue stops autonomy (answers Q3 without a dated
+  move).
+- **Facts that bound what is mechanical.** [V] `main` protection (GitHub API,
+  2026-11-09): PRs required, required status check `check`, `strict: true` (branch
+  must be up to date), `required_approving_review_count: 0`, admins enforced. So
+  "CI green" and "up to date" are enforced by the server for every merge, human or
+  autonomous; the maintainer's per-PR approval is enforced by nothing mechanical
+  today (procedure only, WORKFLOW.md step 4, OR11). [V] `hooks/git-guardrails`
+  judges a literal Bash `gh pr merge` (marker for H, behind-base, CI, role-play,
+  stray `Closes`), parses `--repo` and `--match-head-commit`, and has an escape
+  hatch (`CLAUDE_WORKFLOW_MERGE_GUARD_OFF`) and fail-open warnings;
+  `merge-preflight.sh <n>` feeds it the same JSON. A `gh pr merge` run inside a
+  script is not seen by the PreToolUse hook. [V] No script or test today measures a
+  SKILL.md against the ~20,000-character post-compaction budget (#530).
+
+- **D1 — Placement (AC9).** [A] New skill `skills/merge-risk-panel/SKILL.md`
+  (frontmatter `name: merge-risk-panel`). The **whole file is at most 16,000
+  characters** (UTF-8 bytes; headroom under the ~20,000-character / 5,000-token
+  compaction prefix of #530), so no part of the procedure can fall outside the
+  surviving prefix; a test enforces the cap. Its description says it applies only
+  in a repository whose accepted `main` holds `policy/merge-autonomy.json` with
+  `"enabled": true`, an `acceptance` link and this repository's name; everywhere
+  else (every adopted project today) it is inert and the normal approval rule
+  holds. `adopt.sh` links every `skills/*` directory, so adopted projects receive
+  the file; it is inert there by that condition, and there is no adoption question
+  in this work item (#679 owns the meaning-version and any offer). **No edit to
+  `skills/role-contracts/SKILL.md`**: its prefix is full, and the existing
+  Temporary-decision panel sentence "Apply the same grouping to #646 ... records"
+  already links the disclosure rule. Roles learn the position-line duty from their
+  dispatch brief, which the skill tells the orchestrator to include for every
+  `main`-bound work item. Skill content, in this order: applicability; hard gates;
+  class and disqualifiers (by reference to the config, no second list); position
+  line; manifest and decision record; hold; executor sequence; revocation and
+  recovery; human-path interaction (AC6); statistics; residual risks. The skill is
+  procedure; the config is data; the verifier is the only reader of both.
+- **D2 — Core pointer (AC9, #652).** [A] Minimal edits in `ORCHESTRATOR.md` part 1
+  (slot 1), all pointers, no procedure:
+  - OR11: `Autonomy without per-PR approval: #511.` becomes
+    ``Autonomy without per-PR approval: #511, only via accepted `merge-risk-panel` delegation.``
+    (+49 characters; keeps the `#511` token pinned by S330/S333).
+  - OR43: ``merges into `main`;`` becomes ``merges into `main` (OR11);`` (+7).
+  - OR6: ``confirmation before merge into `main` `` becomes
+    ``confirmation before merge into `main` (OR11)`` (+7).
+  Total +63 in slot 1. [V on A57's scratch measurement] slot 1 is 8,424 after
+  #692, headroom 576, floor 500: +63 leaves 513. The Developer re-measures with the
+  S318 guard on the final bytes; if under 500, drop the OR6 edit first (OR11 still
+  carries the exception), then stop and route to Architect. "Accepted" makes the
+  sentence true before acceptance (no delegation exists, so no autonomy). Without
+  these edits OR11/OR43 would stay unconditional while autonomy is live, which AC9
+  rules out. One differential run (`test/behavior/orchestrator-diff.sh`, all
+  scenarios, every verdict `same`: with no accepted delegation the behavior is
+  unchanged) covers these bytes together with every other core edit pending on the
+  release branch at that time; the orchestrator generates and commits the stamp
+  (OR46 b). `policy/WORKFLOW.md` step 4: after "Merge autonomy without a per-PR
+  approval is #511, not this rule." add "Only the accepted #646 delegation (the
+  `merge-risk-panel` skill) provides it."; regenerate `WORKFLOW.md`, root
+  `AGENTS.md` and `adapters/codex/AGENTS.md` through
+  `generate-workflow-adapters.sh`, never by hand. The meaning-version bump is #679's.
+
+- **D3 — The one configuration (AC3, D2).** [A] `policy/merge-autonomy.json`, read
+  only from the base commit B (current `main` tip), never from the candidate
+  head; the SHA-256 of its exact bytes is the config digest C. Schema `1`, closed:
+  unknown keys, missing keys, wrong types or a malformed file make every verdict
+  `unresolved`.
+
+  | Key | Type / shipped value | Meaning |
+  | --- | --- | --- |
+  | `schema` | integer `1` | Format version. |
+  | `repository` | `"TiesL/spec-driven-guardrails"` | Must equal the PR's repository. |
+  | `enabled` | boolean, ships `false` | `true` is valid only with `acceptance` set (Q1, AC8). |
+  | `acceptance` | `null` or `https://github.com/<repository>/issues/646#issuecomment-<digits>` | The maintainer's recorded acceptance; the verifier checks shape and that the comment exists, not its meaning or author (shared login). |
+  | `control_issue` | integer, `607` | Global switch and queue home; a closed issue or `merge-autonomy:off` on it stops everything. |
+  | `executor_host` | string, `""` | `hostname -s` of the one machine that may execute; empty means no executor, so nothing executes. Set by the maintainer's config PR. |
+  | `max_lines`, `max_files` | integers `300`, `8` | Inclusive; both counts must be 1..cap. Values below 1 are invalid. |
+  | `hold_seconds` | integer `300` | At least 1; `0` is invalid. |
+  | `groups.ordinary` | path patterns | `README.md`, `CONTEXT.md`, `PRD*.md` (root), `ARCHITECTURE.md`, `TEST-SCENARIOS.md`, `docs/**.md`, `wip/**.md`, `test/**`. |
+  | `groups.adoption` | path patterns | A55's adoption list verbatim. |
+  | `groups.guard` | path patterns | A55's guard/source list verbatim, minus `hooks/git-guardrails` (now reserved). |
+  | `groups.generated` | `{ "outputs": [...], "inputs": [...] }` | Outputs `WORKFLOW.md`, `adapters/codex/AGENTS.md`, root `AGENTS.md` (managed block only); inputs `policy/WORKFLOW.md`, `adapters/*/INSTRUCTIONS.md`. |
+  | `reserved.release` | path patterns | `CHANGELOG.md`, `VERSION`, `package.json`, `skills/release-branch-workflow/**`. |
+  | `reserved.autonomy` | path patterns | `merge-preflight.sh`, `hooks/git-guardrails`, `skills/pre-merge-review/**`, `lib/model-record*`, `pipeline-override.sh`, `skills/role-contracts/**`, `skills/merge-risk-panel/**`, `policy/merge-autonomy.json`, `merge-risk-evidence.sh`, `lib/merge-risk*`, `test/cases/*merge_risk*`, `test/fixtures/merge-risk*`, `test/behavior/merge-risk*`. |
+  | `labels.hold` | `["hold", "risk:*"]` | Present on PR or work-item issue: `held`. |
+  | `labels.off` | `"merge-autonomy:off"` | On the control issue: global stop; on PR or issue: that item is referred. |
+  | `release_heads` | `["release/*"]` | Matching head branch: referred. |
+
+  Pattern grammar (one rule for the verifier): repository-relative, case-sensitive,
+  full-path match; `*` matches within one path segment, `**` matches any depth; no
+  basename or substring match. Reserved beats every group; a path in no group
+  refers. Defaults live only in this file; the skill links it and restates no list.
+
+- **D4 — Verifier `merge-risk-evidence.sh` with private `lib/merge-risk.py` (AC1,
+  AC3, AC5, AC7).** [A] One deep Module: collection of every input through
+  `gh`/`git`, then one pure evaluation function over the collected bundle. Deletion
+  test: without it, config parsing, path matching, digesting and record checks
+  would be redone by each caller and in prose, so it earns its Depth. Two real
+  Adapters, no speculative Seam: the live `gh`/`git` collector, and a JSON bundle
+  for tests (`python3 -I lib/merge-risk.py evaluate --bundle <file>`; the bundle
+  carries `now`). Read-only: it never merges, labels, comments or votes.
+
+  Interface: `merge-risk-evidence.sh [--phase class|final] <pr-number>` (default
+  `final`) and `merge-risk-evidence.sh --queue`. Stdout: first line
+  `merge-risk: <verdict> pr=<n> head=<H> base=<B> diff=<sha256> config=<C>`, then
+  one `reason: <code> <detail>` line per reason, all reasons, stable codes. Exit
+  codes: `0` eligible, `1` held, `3` referred, `4` unresolved, `2` usage. Any other
+  exit, a crash, or missing `gh`/`python3` is read by callers as unresolved.
+  Verdict precedence when several apply: referred, then unresolved, then held (a
+  referral is never downgraded by missing evidence).
+
+  `--phase class` (before the panel is convened; may run while CI is pending, then
+  answers `unresolved` with reason `gates-pending`): config valid, `enabled` with
+  acceptance; repository match; base is `main`; head not in `release_heads`; exactly
+  one closing issue reference (`closingIssuesReferences`); B = current `main` tip
+  and `merge-base(B, H) == B` (else `unresolved behind-base`); file list, rename old
+  paths, additions and deletions from the B...H compare (binary or unmeasurable
+  file: unresolved); caps; group and reserved matching; a `CHANGES.md` hunk that
+  changes a `**Meaning version:**` line: referred; any review ever in state
+  `CHANGES_REQUESTED`: referred; labels on PR, work-item issue and control issue;
+  control issue open; `merge-preflight.sh <n>` run with
+  `CLAUDE_WORKFLOW_MERGE_GUARD_OFF` removed from its environment, exit 0 and no
+  `warning:` line on stderr; required check `check` completed `SUCCESS` on H (run ID
+  recorded); diff digest = SHA-256 of the exact B..H unified diff bytes.
+
+  `--phase final` adds: exactly one decision record (D5) for H on the work-item
+  issue, never edited (`updated_at == created_at`); its H, B, diff and C equal the
+  current values; five rows, roles distinct and complete; each source URL resolves,
+  its body SHA-256 equals the row, it contains exactly one position line whose role
+  matches, and (Product, Architect, QA, Reviewer) its first line is a `model-record`
+  marker whose stage matches the role (existing reader in `lib/model-record.sh`);
+  every row `yes`/`yes-if` with the same A and D digests; floor numbers: each voter
+  score at least the highest author score, every entry with model, variant, score,
+  date; Reviewer assertions present and `none` (D5); `now - T >= hold_seconds`
+  (else `held hold-window`, with the earliest time); no `labels.hold` or
+  `labels.off` label added on PR, issue or control issue at any time after T (from
+  the timeline; else `unresolved void-after-announcement`, needing a new record and
+  a new window); `executor_host` non-empty and equal to `hostname -s`.
+
+  `--queue`: lists every queue entry on the control issue whose latest state is not
+  terminal, for wake recovery (D7).
+
+  What the verifier cannot decide, and so takes only as recorded assertions whose
+  presence it checks: semantic disqualifiers (new security trade-off, spec-content
+  decision, permission expansion, authority choice, weakened protection or oracle,
+  outward-facing action, version or tag effect outside reserved paths, semantic
+  change to the autonomy mechanism outside reserved paths), accepted-design lineage
+  for guard paths and baseline lineage for ordinary paths, open medium/high
+  findings, honest voter independence, and that the acceptance comment is the
+  maintainer's. Byte-exact regeneration of generated outputs is carried by the
+  required `check`, which runs `check-workflow-adapters.sh` [V `check` line 148].
+
+- **D5 — Position line, decision record, manifest (AC2, AC4; reuses A54's shared
+  record).** [A]
+  - Position line, one per report:
+    `merge-risk-position: role=<Product|Architect|QA|Reviewer|orchestrator> position=<yes-if|yes|no|abstain> ac=<sha256> design=<sha256|pending> head=<H|any>`,
+    followed by a `conditions:` paragraph (scope, paths, what would void it).
+    Product writes `design=pending head=any` (its yes-if delegates to the later
+    accepted Planning digest for the same A); Architect and QA write `head=any`;
+    the Reviewer writes `position=yes head=<H>` in its Review report; the
+    orchestrator writes `position=yes head=<H>` in a marker-free issue comment
+    (OR44) after its process check, sealed before it reads the Review conclusion
+    (procedure). A `model-record` marker alone is never a position. A report
+    without a position line cannot be reused and does not reduce the five: the role
+    gets a new scoped record or the maintainer decides.
+  - A and D: SHA-256 of the exact UTF-8 bytes of the accepted AC text (the issue
+    body revision current at the acceptance comment's time) and of the A-entry text
+    in `ARCHITECTURE.md` at a named commit; the manifest records both sources.
+  - Decision record: one ordinary comment on the work-item issue in A54's shared
+    format (literal `temporary, panel decision`, stable ID `MR-<pr>-<short H>-<n>`,
+    question, positions, vote including dissent, outcome, rationale, reservation
+    status, limit/risk flag) plus, in a fenced block opened by
+    `<!-- merge-risk-manifest v1 -->`, one JSON object: `decision_id`,
+    `repository`, `issue`, `pr`, `head`, `base`, `diff_sha256`, `config_sha256`,
+    `config_commit`, `ac {source, sha256}`, `design {source, sha256}`, `class`,
+    `reasons`, `authors [{model, variant, score, entry, date}]`, `rows [{role,
+    source_url, source_sha256, position, model, variant, score, entry, date}]`,
+    `gates {preflight, check_run_id}`, `reviewer_assertions {semantic_disqualifiers,
+    lineage, open_medium_high}`, `hold_release` (null or link plus verbatim
+    words), `outcome`, `earliest_merge`, `labels`, `executor_host`, `queue_key`,
+    `revert: "pending"`. Its server `created_at` is the announcement time T. Every
+    outcome (eligible, held, vetoed, unresolved, referred, failed, merged) gets a
+    record; only `eligible` starts a window. The PR description links the record
+    beside `Closes #<work-item>`.
+  - Completion: a new comment linked to the record (never an edit, so the no-edit
+    check stays valid) with merged H, time, squash SHA and the exact
+    `git revert <squash-SHA>`. Reversal is a normal maintainer-confirmed revert PR.
+  - Disclosure (AC4): merge-risk records are listed in their own 5-0 group,
+    dissent and unresolved visible, no invented 3-0/2-1 (A54's grouping applied).
+
+- **D6 — Hold (AC5; maintainer decisions D3, D6, D7).** [A] T is the decision
+  record's server `created_at`; earliest merge is `T + hold_seconds` (at the default
+  299 s waits, 300 s may proceed). A spoken hold (session or relay) becomes the
+  `hold` label at once; the label is added by the maintainer or a voter (Q2; on the
+  shared login the verifier cannot tell who, so any hold label vetoes). Once a hold
+  or risk label appears after T the record is void (D4 final phase), so release
+  always needs a new record and a full new window. Only the maintainer releases his
+  hold: the new record's `hold_release` quotes his verbatim words for that PR with
+  their link; the verifier checks the field is present, not who wrote it. No risk
+  label existing anywhere is a valid state (dormant veto), never evidence of safety.
+
+- **D7 — Executor, recheck of `main`, recovery, revocation (AC7).** [A] The
+  executor is the orchestrator session on the machine named by `executor_host`, one
+  PR at a time. Sequence per item, each step logged in the Pipeline log:
+  1. `merge-risk-evidence.sh --phase final <n>`: exit 0, else wait (1) or refer.
+  2. Queue comment on the control issue:
+     `merge-risk-queue: id=<decision_id> pr=<n> head=<H> state=executing host=<host>`.
+  3. `merge-preflight.sh <n>` fresh: exit 0 without warnings.
+  4. The literal Bash command
+     `gh pr merge <n> --repo TiesL/spec-driven-guardrails --squash --delete-branch --match-head-commit <H>`,
+     never wrapped in a script, so the PreToolUse merge guard and
+     `stop-after-completion` see it.
+  5. `gh pr view <n> --json state,mergeCommit,headRefOid`: `MERGED` with
+     `headRefOid == H` gives the completion comment and a `state=merged` queue line;
+     anything else gives `state=failed`, a record and a referral.
+  6. Before the next item: `git fetch origin`, then step 1 for it. Its manifest
+     names the old B, so it is `unresolved` until update-branch, CI, a delta Review,
+     a new orchestrator check, a new manifest and a new window.
+  Recovery: a wake or resumed session runs `--queue` first; an `executing` entry is
+  reconciled against the PR's actual state before anything else (merged: record
+  completion; still open: refer, never retry blindly); an unknown outcome stops and
+  refers. Queue lines are append-only, keyed `(repository, pr, H, decision_id)`; a
+  key executes at most once. Comments and labels are not a lock; `executor_host`
+  prevents an accidental second machine, not a deliberate one.
+  Revocation: `merge-autonomy:off` on the control issue, `enabled: false`, a closed
+  control issue or a config digest change turns every pending decision into a
+  maintainer-approval item (old records do not revive: the C check or the void
+  check fails them). The label on one PR or issue refers that item. Only the
+  maintainer re-enables (config PR or label removal, then new records). An
+  incorrect autonomous merge, an ignored hold or suspected forgery: add the global
+  off label, record the incident on the control issue, refer.
+
+- **D8 — Human path, releases, self-application, statistics (AC6, AC8).** [A]
+  Outside C5, any disqualifier, dissent, missing evidence or revoked autonomy:
+  today's rule with all lapse rules of step 4. An explicit maintainer approval of an
+  in-class PR is a human-path merge, recorded as such. Relays and wakes count only
+  his verbatim words about that exact PR and decision. Release-into-`main` and
+  work-item-into-release merges are untouched. #646's own PR touches reserved paths
+  and cannot merge under its delegation. Statistics per config revision (AC8) are a
+  procedure: the orchestrator posts them on the control issue from the decision
+  records (candidates, each reason, 5-0, holds, referrals, dissent, merges,
+  failures, reverts, incidents, time to merge, token usage or `n/a`); no script in
+  this work item. Widening only by a maintainer-approved config PR.
+
+- **Mechanical versus procedure.**
+
+  | Control | Enforced by |
+  | --- | --- |
+  | `check` green, branch up to date | GitHub branch protection, every merge [V] |
+  | Review marker for H, behind-base, CI, role-play, stray Closes | `hooks/git-guardrails` on a literal Bash `gh pr merge` (Claude); `merge-preflight.sh` (Codex, instruction-driven) [V] |
+  | Merge only at H | `--match-head-commit <H>` (server-side) |
+  | Config validity, class, caps, reserved paths, labels, CHANGES_REQUESTED, meaning-version line, B/H/diff/C binding, five rows, hashes, markers, floor numbers, hold arithmetic, void-after-hold, executor host, queue state | The verifier, only when the orchestrator runs it and obeys its exit code |
+  | That the verifier is run, that a spoken hold becomes a label, that briefs ask for position lines, semantic disqualifiers, lineage, findings, independence, who added or removed a label, who wrote the acceptance | Procedure and role judgment; not enforceable on a shared login |
+
+  Nothing new intercepts `gh pr merge` for autonomy: an orchestrator that skips the
+  verifier and merges a C5 PR without approval commits the same violation as
+  today's unapproved merge, caught only by the records. A new hook was rejected: it
+  would have to decide whether a human approval exists, which it cannot read either.
+
+- **Files and ownership.** [A] Product: `PRD.md` F70-F74 after acceptance; issue
+  text. QA (`TEST-SCENARIOS.md` only, IDs from S605 or the first free number at Test
+  time, plus its byte-pinned handoff): scenarios for AC1-AC9 with both sides of every
+  boundary (300/301 lines, 8/9 files, 0 lines/files, 299/300 s, hold 1 valid / 0
+  invalid, 5-0 vs 4-1, missing row), each verdict and exit code, every reserved
+  path alone, config self-widening, void-after-hold, base move, crash in
+  `executing`, the 16,000-character skill cap, the slot-1 floor; "Amended by #646"
+  lines on S330, S333, S278 and any other scenario whose pinned text changes.
+  Developer (all code and test code): new `skills/merge-risk-panel/SKILL.md`,
+  `policy/merge-autonomy.json` (`enabled: false`, `acceptance: null`,
+  `executor_host: ""`), `merge-risk-evidence.sh`, `lib/merge-risk.py`,
+  `test/cases/s<ID>_merge_risk_*.sh` (one per QA scenario),
+  `test/fixtures/merge-risk-646.py` (bundles and mutation helpers),
+  `test/behavior/merge-risk-scenarios.md` (instruction exercises, run by #682);
+  edits to `skills/role-contracts/ORCHESTRATOR.md` (D2 only),
+  `skills/role-contracts/orchestrator-rules.tsv` `covered_by` and
+  `test/fixtures/orchestrator-core-pins.tsv` if a pin changes,
+  `test/fixtures/stage-selection-647.py` `SNAPSHOTS` re-pins (A57 addendum order),
+  `policy/WORKFLOW.md` and the three regenerated projections, the `.gitignore`
+  managed-block entry `/.agents/skills/merge-risk-panel` by re-running the normal
+  installer (not by hand), affected existing tests (S330, S333, S278, S318
+  measurement) and a `CHANGELOG.md` Unreleased line. Orchestrator: differential run
+  and stamp commit. Not in this work item: `CHANGES.md` (#679), live exercises
+  (#682), setting `enabled`, `acceptance` or `executor_host` (a maintainer config PR).
+
+- **AC consistency.** [A] Narrowings, recommended, not amendments: AC4 "the record
+  gains the merged H ..." becomes a linked completion comment (records are never
+  edited); AC3 "an actual version effect" outside reserved paths, like every
+  semantic disqualifier, is Reviewer judgment recorded as an assertion, not a
+  verifier result; AC5/Q2 "who may add hold" cannot be checked, so every hold label
+  vetoes; AC7 "one known executor" adds the `executor_host` field; AC9 adds OR6 to
+  the pointer edits and puts no pointer in `role-contracts/SKILL.md`; C5 (AC3,
+  acceptance point 4) loses `hooks/git-guardrails` and the mechanism's own tests to
+  the reserved list. Q3 is answered by the closed-issue stop rather than a planned
+  move. No other AC is contradicted.
+
+- **Residual risks (for acceptance point 2).** [A] (1) Every record, label and
+  position is forgeable on the shared login; the verifier proves equal bytes, not
+  honest authors. (2) The hold/base read is not atomic: a hold added between the
+  verifier's last read and the merge is missed and is detected afterwards as an
+  incident. (3) Three of five positions are conditional and written before the
+  final diff: correlated omissions are possible; only the fresh Reviewer reads the
+  final diff. (4) The verifier binds only if run: skipping it is not mechanically
+  blocked. (5) Semantic disqualifiers rest on Reviewer judgment; a hidden security
+  effect in an accepted guard path passes if the Reviewer misses it. (6) Slot-1
+  headroom drops to about 513 against the 500 floor: the next slot-1 addition this
+  release has about 13 characters. (7) The new skill lands in adopted projects
+  (inert) before #679 explains it. (8) A merged autonomous change that adopters
+  already pulled is not undone by `git revert`.
+
+- **Violated when:** a verdict is computed from the candidate's config; any
+  reserved path, unlisted path, CHANGES_REQUESTED, hold or off label, or edited
+  record yields `eligible`; a vote survives an H, B or C change; a merge runs before
+  `T + hold_seconds` or other than as the literal `gh pr merge ...
+  --match-head-commit <H>`; the skill file exceeds 16,000 characters; slot-1
+  headroom falls under 500; a second list of paths or caps appears outside the
+  config.
+- **Doubts, recorded (one line each).** [A]
+  - Reserving `hooks/git-guardrails` and the mechanism's tests narrows D1's class; the maintainer may prefer A55's list.
+  - The OR6 pointer may be unnecessary if OR11 is read as defining what confirmation means; kept because it costs 7 characters.
+  - "One differential run" is read as one run for all core edits pending at that time; if a run for #646 alone was meant, only the order changes.
+  - `executor_host` via `hostname -s` is spoofable and breaks if a machine is renamed; the alternative is no executor field at all.
+  - Taking A from the issue body revision at acceptance time relies on GitHub's edit history; if unavailable the Developer stops and routes to Architect.
+  - Roles may omit position lines because the duty sits in the brief, not in `role-contracts`; the effect is a referral, safe but lowering coverage.
+  - A57's addendum gives the SNAPSHOTS re-pin to QA; under the current contract that is test code, so this design gives it to the Developer.
