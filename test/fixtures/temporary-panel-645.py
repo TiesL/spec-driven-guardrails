@@ -126,6 +126,15 @@ def source_checks():
                     rejects(oracle, panel, panel.replace(norm(clause), changed_clause, 1),
                             '590/source/action/' + str(action_number))
     if IDENT == 590:
+        # #678 item 6: PRD F68 names spec content in A54's words, excluding A54 D2 (the rest of ARCHITECTURE).
+        prd = (ROOT / 'PRD.md').read_text()
+        f68 = re.search(r'^### F68 .*?(?=^### |\Z)', prd, re.M | re.S)
+        f68 = norm(f68[0]) if f68 else ''
+        check('the rest of ARCHITECTURE' in f68, '590/source/F68/rest-of-architecture')
+        check('root PRD, ARCHITECTURE, TEST-SCENARIOS' not in f68, '590/source/F68/no-whole-architecture')
+        wording = lambda t: [] if ('the rest of ARCHITECTURE' in t and 'root PRD, ARCHITECTURE, TEST-SCENARIOS' not in t) else ['F68 wording']
+        fixture('590/source/F68/wording/control', 'the root PRD, the rest of ARCHITECTURE, TEST-SCENARIOS', wording)
+        fixture('590/source/F68/wording/whole-architecture', 'the root PRD, ARCHITECTURE, TEST-SCENARIOS', wording, 'F68 wording')
         # #681: each added entry is its own pin inside the reservation sentence (red when removed, green when restored).
         sentence = re.search(r"Editing the panel's own rules is also reserved:.*?choice\.", panel)
         sentence = sentence[0] if sentence else ''
@@ -202,6 +211,12 @@ RESERVED = ('merge-main', 'version-bump', 'tag', 'github-release', 'publish-outs
 # other means everything else, including spec content. The target is a supplied fact; no path or keyword inference.
 TARGETS = ('panel-rules', 'other')
 TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice')
+# #678 item 4 (A54 addendum 2026-11-09): the six tokens whose structured target is read. The tests iterate this
+# constant; the oracle's TARGETED must equal it (inventory control in target_checks).
+EXPECTED_TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice', 'readme-pr', 'changelog-unreleased-pr',
+                     'meaning-version-bump')
+# #678 item 4 (A54 addendum 2026-11-09): eligible tokens that edit no file; the structured target is not read for them.
+UNTARGETED = ('close-issue', 'comment-issue', 'comment-pr', 'label-issue', 'label-pr', 'delete-merged-branch')
 # #681 widening (maintainer decision 2026-11-08): entries added to the reserved contract-text class.
 WIDENED = ('CHANGES.md', 'templates/', 'USER-CLAUDE.md')
 # One opaque control label per added entry; templates/ has a script and a .md path. Labels never reach the oracle.
@@ -323,6 +338,18 @@ def inventory_checks():
         for field in r:
             negative('589/' + r['id'] + '/delete/' + field, rows, oracle, [i, field], None,
                      '/' + field, delete=True)
+    # #678 item 1: null supersedes gives the supersession diagnostic with no exception; a missing key is rejected as a missing field.
+    for i in (0, 5):
+        negative('589/null/' + rows[i]['id'] + '/supersedes', rows, oracle, [i, 'supersedes'], None, '/supersession')
+    # #678 item 3: unresolved and escalated records carry no dissent; anything but [] is rejected, including null.
+    for i in (2, 3):
+        ident = rows[i]['id']
+        for label, value in [('member', [dict(member='orchestrator', position='defer')]), ('empty-member', [dict()]),
+                             ('null', None), ('string', 'defer'), ('zero', 0)]:
+            negative('589/dissent/' + ident + '/' + label, rows, oracle, [i, 'dissent'], value, '589/' + ident + '/dissent')
+        fixture('589/dissent/' + ident + '/empty/control', changed(rows, lambda m: put(m, [i, 'dissent'], [])), oracle)
+    for i in (0, 1, 4, 5):
+        negative('589/dissent/' + rows[i]['id'] + '/resolved-null', rows, oracle, [i, 'dissent'], None, '589/' + rows[i]['id'] + '/dissent')
     for field, label in [('positions', 'position'), ('evidence', 'evidence'), ('models', 'model')]:
         lists('589/contributions/' + field, rows, oracle, [0, field], '/' + label, 'member')
         for i, member in enumerate(MEMBERS):
@@ -423,6 +450,11 @@ def eligibility_checks():
                 negative(name + '/attempt', p, proposal_oracle, ['result', 'attempts'],
                          [dict(action=action, authority='panel')], '/attempt')
     p = proposal()
+    # #678 item 1: an explicit null list field gives its named diagnostic, never an exception; a missing key equals [].
+    fixture('590/null/prior_denials/missing-key', changed(p, lambda m: m.pop('prior_denials')), proposal_oracle)
+    fixture('590/null/attempts/missing-key', changed(p, lambda m: m['result'].pop('attempts')), proposal_oracle)
+    negative('590/null/prior_denials', p, proposal_oracle, ['prior_denials'], None, '590/docs-pr/denied-retry')
+    negative('590/null/result/attempts', p, proposal_oracle, ['result', 'attempts'], None, '590/docs-pr/attempt')
     for field in ('delegation', 'permissions'):
         unsupported_proposal('590/' + field + '/missing', p, [field], None,
                              '/delegation' if field == 'delegation' else '/permission', True)
@@ -485,7 +517,7 @@ def target_checks():
     fixture('590/token/edit-panel-rules/inventory/removed', tuple(t for t in RESERVED if t != 'edit-panel-rules'),
             inventory, '590/source/action/edit-panel-rules')
     fixture('590/token/eligible-count', ELIGIBLE, lambda tokens: [] if len(tokens) == 13 else ['590/source/action/eligible'])
-    for action in TARGETED:
+    for action in EXPECTED_TARGETED:
         for vote in VOTES:
             base = '590/target-' + '%s/' + action + '/' + vote
             # T1-T3: target other stays eligible. T4-T6: panel-rules is reserved.
@@ -500,7 +532,7 @@ def target_checks():
             fixture(base % 'panel-rules' + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
     # T6b (#681): each added entry, opaque label, otherwise eligible proposal with target panel-rules is referred; target other stays eligible.
     for label in WIDENED_LABELS:
-        for action in TARGETED:
+        for action in EXPECTED_TARGETED:
             for vote in VOTES:
                 base = '590/target-%s/widened/' + label + '/' + action + '/' + vote
                 p = proposal(action, vote, 'panel-rules')
@@ -512,10 +544,22 @@ def target_checks():
                         only(proposal_oracle, '590/edit-panel-rules/attempt'), '590/edit-panel-rules/attempt')
                 fixture(base % 'panel-rules' + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
     for label in OTHER_LABELS:
-        for action in TARGETED:
+        for action in EXPECTED_TARGETED:
             for vote in VOTES:
                 fixture('590/target-other/control/' + label + '/' + action + '/' + vote,
                         proposal(action, vote, 'other'), proposal_oracle)
+    # T11 (#678 item 4): the oracle's targeted set is exactly the six tokens; the other eligible file-less tokens ignore the target.
+    fixture('590/target/targeted-set/inventory', TARGETED,
+            lambda tokens: [] if tuple(tokens) == EXPECTED_TARGETED else ['590/source/targeted'])
+    fixture('590/target/targeted-set/untargeted-disjoint', UNTARGETED,
+            lambda tokens: [] if not set(tokens) & set(EXPECTED_TARGETED) and set(tokens) <= set(ELIGIBLE) else ['590/source/untargeted'])
+    for action in UNTARGETED:
+        for vote in VOTES:
+            for label, value in [('panel-rules', 'panel-rules'), ('UNKNOWN', 'UNKNOWN'), ('empty', ''), ('missing', None), ('other', 'other')]:
+                p = proposal(action, vote, value)
+                if label == 'missing':
+                    del p['target']
+                fixture('590/target-ignored/' + action + '/' + vote + '/' + label, p, proposal_oracle)
     # T7: delegation independence for the reserved token.
     for state in SOURCE_STATES:
         p = proposal('docs-pr', '3-0', 'panel-rules')
@@ -524,7 +568,7 @@ def target_checks():
                 only(proposal_oracle, '590/edit-panel-rules/referral'), '590/edit-panel-rules/referral')
         fixture('590/target-panel-rules/delegation/' + state + '/safe-referral', referral(copy.deepcopy(p)), proposal_oracle)
     # T8: target domain; unknown is never read as other.
-    for action in TARGETED:
+    for action in EXPECTED_TARGETED:
         control = proposal(action)
         for label, value in [('UNKNOWN', 'UNKNOWN'), ('empty', ''), ('missing', None)]:
             unsupported_proposal('590/target/' + action + '/' + label, control, ['target'], value,
@@ -706,6 +750,10 @@ def floor_checks():
         negative('591/experiment/disposition/' + value, e, floor_oracle, ['experiments', 0, 'disposition'], value, 'experiment/')
     for field in ('kind', 'permissions', 'attempts', 'disposition'):
         negative('591/experiment/delete/' + field, e, floor_oracle, ['experiments', 0, field], None, 'experiment/', True)
+    # #678 item 1: null payload and null prior give their named diagnostics, never an exception.
+    for i, recipient in enumerate(('Product', 'Architect')):
+        negative('591/null/' + recipient + '/payload', e, floor_oracle, ['briefs', i, 'payload'], None, '591/' + recipient + '/brief')
+    negative('591/null/experiment/prior', e, floor_oracle, ['experiments', 0, 'prior'], None, '591/experiment/denied-retry')
     retry = changed(e, lambda m: m['experiments'][0].update(prior=[dict(id='A', result='denied')]))
     fixture('591/experiment/prior-denial-matching', retry, floor_oracle, 'experiment/denied-retry')
     fixture('591/experiment/prior-denial-other', changed(retry, lambda m: m['experiments'][0]['prior'][0].update(id='B')), floor_oracle)
@@ -740,6 +788,38 @@ def prior_identity_checks():
                   name + '/settlement', 'mutation')
             if handling == 'safe':
                 check(mutant['experiments'][0]['attempts'] == [], name + '/no-attempt')
+
+
+def prior_result_checks():
+    """#678 item 2 (A54 addendum 2026-11-09): prior[].result domain is denied/none; any other value, null, empty or
+    missing on ANY prior row is the denied-retry diagnostic and the experiment is treated as denied (no attempt)."""
+    e = clean_evidence()
+    bad_values = [('UNKNOWN', 'UNKNOWN'), ('empty', ''), ('null', None), ('missing', None), ('other-case', 'Denied'), ('number', 0)]
+    for identity, label in [('A', 'matching'), ('B', 'other')]:
+        control = changed(e, lambda m: m['experiments'][0].update(prior=[dict(id=identity, result='none')]))
+        fixture('591/prior-result/' + label + '/none/control', control, floor_oracle)
+        for name, value in bad_values:
+            mutant = negative('591/prior-result/' + label + '/' + name + '/attempt', control, floor_oracle,
+                              ['experiments', 0, 'prior', 0, 'result'], value, '591/experiment/denied-retry', name == 'missing')
+            check('591/reconciliation/unsupported-settlement' in floor_oracle(mutant),
+                  '591/prior-result/' + label + '/' + name + '/attempt/settlement', 'mutation')
+    # A second, otherwise valid row does not hide a malformed first row, and a malformed second row is found too.
+    for position in (0, 1):
+        rows = [dict(id='B', result='none'), dict(id='C', result='none')]
+        control = changed(e, lambda m: m['experiments'][0].update(prior=rows))
+        fixture('591/prior-result/row-' + str(position) + '/control', control, floor_oracle)
+        negative('591/prior-result/row-' + str(position) + '/bad', control, floor_oracle,
+                 ['experiments', 0, 'prior', position, 'result'], 'UNKNOWN', '591/experiment/denied-retry')
+    # Matching identity with a bad result is treated as denied: refused with no attempt is the safe handling.
+    safe = changed(e, lambda m: m['experiments'][0].update(prior=[dict(id='A', result='denied')], disposition='refused', attempts=[]))
+    safe['reconciliation']['disposition'] = 'unresolved'
+    fixture('591/prior-result/matching/denied/safe-control', safe, floor_oracle)
+    for name, value in bad_values:
+        mutant = negative('591/prior-result/matching/' + name + '/safe', safe, floor_oracle,
+                          ['experiments', 0, 'prior', 0, 'result'], value, '591/experiment/denied-retry', name == 'missing')
+        check('591/reconciliation/unsupported-settlement' not in floor_oracle(mutant),
+              '591/prior-result/matching/' + name + '/safe/no-settlement-claim')
+        check(mutant['experiments'][0]['attempts'] == [], '591/prior-result/matching/' + name + '/safe/no-attempt')
 
 
 def explicit_acceptance(row):
@@ -883,8 +963,9 @@ def protection_conditions():
         'unanimous-skip': dict(votes=['skip'] * 3, required_vote='3-0', vote='3-0', scope='skip=Planning', eligible=['skip=Planning'],
                               source=controlled_grant(), actual=dict(doc_only=True, executable_diff=False),
                               protected=dict(adds_scenario=False, executable_diff=False, doc_only=True, requires=['Discovery', 'Review'], selected=list(STAGES))),
-        'protected-work': dict(adds_scenario=True, executable_diff=True, doc_only=False,
-                               requires=['Discovery', 'Test', 'Implementation', 'Review'], selected=list(STAGES)),
+        # #678 item 5: row 1 carries the same work facts as the unanimous-skip row's embedded copy (doc-only, per the grant's actual).
+        'protected-work': dict(adds_scenario=False, executable_diff=False, doc_only=True,
+                               requires=['Discovery', 'Review'], selected=list(STAGES)),
         'evidence-before-action': dict(evidence='A', action='A', evidence_at=1, action_at=2),
         'advance-ordering': dict(decision='A', waiver='A', commit='A', pr='A', decision_at=1, waiver_at=1, commit_at=2, pr_at=2),
         'fresh-review': dict(reviewer_session='A', previous_session='B', inherits=[]),
@@ -1014,6 +1095,7 @@ def protection_checks():
                 m['protections'][0]['disposition'] = disposition
                 fixture('593/protected-skip/' + stage + '/' + eligibility + '/' + disposition, m, authority_oracle, '593/protection/unanimous-skip')
     skip_required_checks(e)
+    tie_checks(e)
     bad('unanimous-skip', 'UNKNOWN-scope', ['scope'], 'UNKNOWN')
     for i, member in enumerate(MEMBERS):
         for vote in ('retain', 'UNKNOWN'):
@@ -1031,26 +1113,43 @@ def protection_checks():
     for field in ('adds_scenario', 'executable_diff', 'doc_only'):
         bad('protected-work', field + '/UNKNOWN', [field], 'UNKNOWN')
         for value in (True, False):
-            m = copy.deepcopy(e)
-            m['protections'][1]['conditions'][field] = value
+            # Mirrored on both rows (#678 item 5); executable_diff/doc_only variants use the executable-work pair.
+            if field == 'adds_scenario':
+                m = copy.deepcopy(e)
+                m['protections'][0]['conditions']['protected'][field] = value
+                mirror(m)
+            elif (field == 'executable_diff') == value:
+                m = skip_case(e, 'Planning', executable=True)
+            else:
+                m = copy.deepcopy(e)
             fixture('593/protected-work/' + field + '/' + str(value), m, authority_oracle)
     # Each selected stage is independently represented as required in this control.
-    m = copy.deepcopy(e)
-    m['protections'][1]['conditions']['requires'] = list(STAGES)
+    m = full_pair(e)
     for field in ('requires', 'selected'):
         original = at(m, ['protections', 1, 'conditions', field])
         for i, stage in enumerate(original):
             for mode, value in [('missing', original[:i] + original[i + 1:]), ('duplicate', original + [stage]), ('wrong', original[:i] + ['UNKNOWN'] + original[i + 1:])]:
                 if field == 'requires' and mode == 'missing':
-                    fixture('593/stage-lists/requires/' + stage + '/missing-safe',
+                    safe = changed(m, lambda r: put(r, ['protections', 1, 'conditions', field], value))
+                    put(safe, ['protections', 0, 'conditions', 'protected', 'requires'], list(value))
+                    fixture('593/stage-lists/requires/' + stage + '/missing-safe', safe, authority_oracle)
+                elif field == 'selected' and mode == 'missing' and stage == 'Planning':
+                    fixture('593/stage-lists/selected/Planning/missing-safe',
                             changed(m, lambda r: put(r, ['protections', 1, 'conditions', field], value)), authority_oracle)
                 else:
                     negative('593/stage-lists/' + field + '/' + stage + '/' + mode, m, authority_oracle,
                              ['protections', 1, 'conditions', field], value, '593/protection/protected-work')
     for stage in ('Discovery', 'Test', 'Implementation', 'Review'):
-        test = copy.deepcopy(e)
-        c = test['protections'][1]['conditions']
-        c['requires'].remove(stage)
+        # Test and Implementation are still demanded by the (mirrored) work facts; Discovery and Review always are.
+        rest = [s for s in STAGES if s not in ('Planning', stage)]
+        if stage == 'Test':
+            test = skip_case(e, 'Planning', adds=True, requires=rest)
+        elif stage == 'Implementation':
+            test = skip_case(e, 'Planning', executable=True, requires=rest)
+        else:
+            test = full_pair(e)
+            test['protections'][1]['conditions']['requires'].remove(stage)
+            test['protections'][0]['conditions']['protected']['requires'].remove(stage)
         fixture('593/protected-work/claimed-omission/' + stage + '/safe-control', test, authority_oracle)
         negative('593/protected-work/claimed-omission/' + stage, test, authority_oracle,
                  ['protections', 1, 'conditions', 'selected'], [s for s in STAGES if s != stage], '593/protection/protected-work')
@@ -1100,6 +1199,67 @@ def protection_checks():
         bad('A49-provenance', 'hash/' + field + '/missing', ['hashes', field], delete=True)
 
 
+FACTS = ('adds_scenario', 'executable_diff', 'doc_only', 'requires')
+
+
+def mirror(m):
+    """#678 item 5: protected-work row 1 describes the same work as the unanimous-skip embedded copy."""
+    source = m['protections'][0]['conditions']['protected']
+    target = m['protections'][1]['conditions']
+    for field in FACTS:
+        target[field] = copy.deepcopy(source[field])
+    return m
+
+
+def full_pair(e):
+    """Both rows claim all four non-Planning stages as required; the row-0 skip scope stays Planning."""
+    m = copy.deepcopy(e)
+    full = [s for s in STAGES if s != 'Planning']
+    m['protections'][0]['conditions']['protected']['requires'] = list(full)
+    m['protections'][1]['conditions']['requires'] = list(full)
+    return m
+
+
+def tie_checks(e):
+    """#678 item 5 (A54 addendum 2026-11-09, amends D6): the unanimous-skip embedded `protected` copy and the
+    protected-work row describe the same work: adds_scenario, executable_diff, doc_only and requires (as a set).
+    `selected` is not tied. A mismatch is 593/protection/unanimous-skip, whichever row differs."""
+    diagnostic = '593/protection/unanimous-skip'
+    row0 = lambda m: m['protections'][0]['conditions']['protected']
+    row1 = lambda m: m['protections'][1]['conditions']
+    # The base control rows agree on all four facts.
+    check(all(row0(e)[f] == row1(e)[f] for f in FACTS), '593/tie/base-control/rows-agree')
+    # Controls: agreeing rows pass, doc-only and explicit EXECUTABLE-work variants alike; set equality ignores order and selected.
+    fixture('593/tie/control/doc-only', e, authority_oracle)
+    fixture('593/tie/control/adds-scenario', mirror(changed(e, lambda m: row0(m).update(adds_scenario=True))), authority_oracle)
+    fixture('593/tie/control/executable', skip_case(e, 'Planning', executable=True), authority_oracle)
+    fixture('593/tie/control/executable-adds', skip_case(e, 'Planning', adds=True, executable=True), authority_oracle)
+    fixture('593/tie/control/requires-order', changed(e, lambda m: (row0(m).update(requires=['Test', 'Review', 'Discovery']),
+                                                                     row1(m).update(requires=['Review', 'Discovery', 'Test']))), authority_oracle)
+    fixture('593/tie/control/selected-not-tied', changed(e, lambda m: row0(m).update(selected=['Discovery', 'Review'])), authority_oracle)
+    # Mutants: the row-0 copy differs from row 1 (row 1 unchanged and itself valid), then row 1 differs from row 0.
+    executable = skip_case(e, 'Planning', executable=True)
+    mutants = {
+        'adds_scenario/row0': changed(e, lambda m: row0(m).update(adds_scenario=True)),
+        'adds_scenario/row1': changed(e, lambda m: row1(m).update(adds_scenario=True)),
+        'requires/row0-extra': changed(e, lambda m: row0(m).update(requires=['Discovery', 'Review', 'Test'])),
+        'requires/row0-fewer': changed(e, lambda m: row0(m).update(requires=['Discovery'])),
+        'requires/row1-extra': changed(e, lambda m: row1(m).update(requires=['Discovery', 'Review', 'Test'])),
+        'requires/row1-fewer': changed(e, lambda m: row1(m).update(requires=['Discovery'])),
+        'requires/row1-different': changed(e, lambda m: row1(m).update(requires=['Discovery', 'Review', 'Implementation'])),
+        'executable/row0-only': changed(executable, lambda m: row1(m).update(executable_diff=False, doc_only=True)),
+        'executable/row1-only': changed(e, lambda m: row1(m).update(executable_diff=True, doc_only=False)),
+        'doc_only/row0-only': changed(e, lambda m: (row0(m).update(doc_only=False),
+                                                    m['protections'][0]['conditions']['actual'].update(doc_only=False),
+                                                    m['protections'][0]['conditions']['source']['conditions'].update(doc_only=False))),
+        'doc_only/row1-only': changed(e, lambda m: row1(m).update(doc_only=False)),
+        'executable-work/row1-doc-only': changed(executable, lambda m: row1(m).update(adds_scenario=True)),
+    }
+    for name, mutant in mutants.items():
+        check(repr(mutant) != repr(e), '593/tie/' + name + '/changed-bytes')
+        fixture('593/tie/' + name, mutant, only(authority_oracle, diagnostic), diagnostic)
+
+
 def skip_case(e, stage, adds=False, executable=False, requires=None):
     m = copy.deepcopy(e)
     c = m['protections'][0]['conditions']
@@ -1108,7 +1268,7 @@ def skip_case(e, stage, adds=False, executable=False, requires=None):
     c.update(scope='skip=' + stage, eligible=['skip=' + stage], source=grant, actual=dict(grant['conditions']))
     c['protected'].update(adds_scenario=adds, executable_diff=executable, doc_only=not executable,
                           requires=requires or ['Discovery', 'Review'])
-    return m
+    return mirror(m)
 
 
 def skip_required_checks(e):
@@ -1942,6 +2102,7 @@ elif IDENT == 590:
 elif IDENT == 591:
     floor_checks()
     prior_identity_checks()
+    prior_result_checks()
 elif IDENT == 592:
     disclosure_checks()
     acceptance_checks()
