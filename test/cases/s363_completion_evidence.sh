@@ -7,7 +7,7 @@ set -uo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 sandbox_create
 trap sandbox_destroy EXIT
-# This validates recorded evidence, never reruns paid/live sessions in CI.
+# This validates recorded evidence, never reruns subscription/live sessions in CI.
 python3 "$TEST_REPO_ROOT/test/completion-evidence.py" "$TEST_REPO_ROOT" || fail "completion evidence"
 
 # Mutation checks (#561, Architect redesign step): the evidence test must tie each

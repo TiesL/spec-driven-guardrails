@@ -3717,3 +3717,199 @@ fields) needs no design decision beyond the diagnostics fixed at the end.
   control's meaning of `protected-work` row 1 to doc-only, which weakens the
   executable-work coverage of the loops at ~1031-1056 unless QA keeps explicit
   executable variants (C2-C5 style) mirrored on both rows.
+
+### A57 — Core headroom by redundancy cuts, OR44 qualifier restored, "paid" wording retired, one stamp (#652, #676; F38; amends A41 "#620 amendment" Budget note and A42 Budget)
+
+Status: PROPOSAL (Architect, Planning, 2026-11-09). `ORCHESTRATOR.md` is contract
+text (OR43): the maintainer decides. A57 is used because A55 is claimed twice
+(#683 merged; #646 on its branch) and A56 by #680 on its branch.
+
+- **Measured (S318 guard, `session-context.sh --runtime claude --slot n`, worst-case
+  fixture, macOS `mktemp -d`, head 0672da0).** Slot 1 = 8,668 (CLAUDE.md-link warning
+  507 plus part 1 8,161), slot 2 = 8,499 (part 2). The worst case depends on the
+  sandbox path: two paths in the warning, so a Linux `/tmp` sandbox reads about 80
+  less. macOS (local and the CI macOS leg) is the larger and is the one targeted.
+- **Constraint found.** A41 Human decisions 1-2 on #499: every rule stays injected
+  verbatim and no rule moves to a voluntary read. Moving a rule's obligation to the
+  `dispatch-economy` skill or to this file therefore needs that human decision
+  amended; this design does not do it.
+- **Q1 (what leaves core).** No rule and no obligation. Only text that states no
+  obligation, or restates one that another line of the same core already carries,
+  is removed. Nothing lands elsewhere: the removed fragments are either explanation
+  already held by A41/A42/A27/A33 or duplicates inside the core.
+  - Part 1 (-244): OR3 "(its own reduced-role shape)"; OR46 "(SKILL.md
+    command/log)"; OR43 "Existing authority for work-item merges into release
+    branches unchanged." (OR43's list already says "merges into `main`", and OR11
+    states the release-branch step); OR45 "; Architect's risk-note format in
+    `SKILL.md`" (OR21 carries the pointer); OR13 "Log: continued yes/no, rule
+    applied, reported size of agent not continued." (OR22's dispatch-line fields
+    carry the same log obligation, in the same always-injected pair of parts).
+  - Part 2 (-121 cut, +16 net added): OR15 "May link fix commits/Developer
+    comments." (a permission, no obligation); OR23 "Class, severity = judgments;
+    script only checks route left evidence."; OR22 "(A27, A33)" citation. Added:
+    OR44 qualifier (+21) and OR48 (1) "Paid" dropped (-5).
+  - Result, measured on a scratch copy with the real guard: slot 1 = 8,424
+    (headroom 576), slot 2 = 8,394 (headroom 606). The pin-bearing tests on the
+    copy fail only on the OR44 pin (S311, and the S317/S322/S333 harness calls)
+    and the stamp; no phrase pin breaks.
+  - Rejected cuts, pinned: OR11 "#511" (S330, S333), OR34 "`pipeline-override.sh
+    --help`" (S378), OR46 "OR19 and the A49 conflict stop still apply."
+    (skip-test pins). Reserve if the differential run rejects a cut: the header
+    sentence's "cross-part reference by ID only; never renumber." (-48 in each
+    slot; needs the `orchestrator-core.py` SENTENCE pin and A41's quoted header
+    amended).
+- **Q2 (numbers).** Unchanged: budget 9,000, floor 500, fallback trigger 8,500.
+- **Q3 (OR47/OR48).** Stay in part 2; the placement rule stays. Slot 2 at 8,394 is
+  under 8,500, so the fallback condition does not fire (AC3).
+- **Q4 (OR44).** In core. Last sentence "No `model-record` marker in it." becomes
+  "No `model-record` marker in any orchestrator record." (the lost sentence of
+  1aba086^ in core style). OR44 stays tier `core`; its pin row changes. OR22 and
+  OR26 are left as they are (no behavior change).
+- **Q5 (#651 rule).** Outside core, in its skill: it must not spend this headroom.
+- **Q6 (slot-1 floor).** In scope. S318 asserts `CONTEXT_BUDGET_CHARS - s1 >= FLOOR`
+  as it does for slot 2 (red on 8,668), adds a slot-1 floor negative control (part 1
+  grown to headroom FLOOR-1 is refused), and an AC2 control: one non-whitespace
+  character appended to the part of the larger slot still passes.
+- **AC consistency.** AC4's behavioral falsifier (a new OB for a PR comment) is
+  narrowed: OR44 is tier `core`, which A41 tests by pin and wording, not by
+  scenarios, and the runner's closed schema has no field that grades a marker in a
+  drafted comment. The mechanical falsifier (S280 requires "any orchestrator
+  record"; a decision-table-415 mutation that drops it goes red) carries AC4. A new
+  OB would need a new schema field (`orchestrator_diff.py` SCHEMA, the scenario
+  file's schema, S315), which is a runner change. Recommendation awaiting
+  Product/maintainer, not an amendment. Other ACs: none contradicted.
+- **#676 ("paid").** Behavior-run senses are reworded to "behavior-test run" or
+  subscription usage: ORCHESTRATOR.md OR48 (1); `orchestrator-scenarios.md` schema
+  `run_scope` line, OB60 and OB61 Given and When, the OB60 Intended-changes item;
+  comments in s317 (message), s322, s323, s333, s335; s363 "paid/live" to
+  "subscription/live". Left alone: `refactoring-triggers` "paid down",
+  `adopter-docs-622.py` (GitHub paid plan). Historical A-entries keep their word
+  (append-only); read "paid run" in A41, A42 and later entries as subscription
+  usage. TEST-SCENARIOS.md headings and lines for S323, S335, S341 are QA's call.
+- **Stamp.** One differential run (`test/behavior/orchestrator-diff.sh`, default
+  base `origin/main`, whose `ORCHESTRATOR.md` equals the release branch's today),
+  all 83 scenarios (the stamp covers both files, OR48 (1)), after every
+  `ORCHESTRATOR.md` and scenario-file edit is final; every verdict must be `same`
+  (no listed intended change, because AC4 has no OB). The orchestrator commits the
+  generated stamp (OR46 b). If any scenario diverges, restore the cut that scenario
+  depends on and re-measure; do not list it as intended.
+- **Alternatives and their cost.** (B) Move judgment-tier detail to
+  `dispatch-economy` (Product's Q1 rec): frees the most, but amends #499 Human
+  decisions 1-2 (rules become a voluntary read). (C) Shorten the CLAUDE.md-link
+  warning in `session-context.sh`: no stamp effect and no behavior run, about 100 in
+  slot 1 only, but changes a user-visible message in every adopted project and
+  does nothing for slot 2. (D) Raise the budget to 9,500: no text change, but
+  halves the margin under the 10,000-character cap that A41 relies on. (E) A third
+  slot: A41 says K above 2 needs a redesign; it changes adopted hook wiring and a
+  meaning version.
+- **Violated when:** either slot's headroom falls below 500 on the S318 fixture; a
+  removed fragment turns out to be the only carrier of an obligation (the
+  differential run diverges); OR44 loses "any orchestrator record".
+- **Revisit when:** the next core addition needs more than about 75 characters in
+  slot 1 or about 100 in slot 2; then option (B) or the reserve cut is the next
+  step, decided by the maintainer.
+
+#### A57 addendum (Architect, Planning, 2026-11-09): S548 byte pins join the file list
+
+Loop-back from QA (d63eddd, d0a7433) and the Developer. A57's file list missed
+`test/fixtures/stage-selection-647.py`: its `SNAPSHOTS` pin the SHA-256 of
+`ORCHESTRATOR.md`, `orchestrator-scenarios.md`, `orchestrator-core-pins.tsv` and
+`orchestrator-diff.stamp` (S548), and the bundled edit must change the first three.
+
+- **File list.** Add `test/fixtures/stage-selection-647.py` (the `SNAPSHOTS` entries
+  only) to QA's files, with `TEST-SCENARIOS.md` S548 carrying an "Amended by #652"
+  line. The waiver-authority and mutation controls are untouched.
+- **Mechanism, checked.** QA's two-step is right. The stamp hashes only
+  `ORCHESTRATOR.md` and the scenarios (`orchestrator_diff.py` `stamp_hash`), never the
+  fixture, so re-pinning the fixture cannot make the stamp stale: no circularity.
+  Dropping the stamp pin would be simpler but weakens a #647 oracle, which the
+  maintainer decides, not this design; so the pin stays.
+- **Order and owners.**
+  1. Developer finishes the bytes of `ORCHESTRATOR.md`, the scenarios file and the
+     pins file (A57 edits). Any later change to those bytes voids step 2.
+  2. QA (Test) re-pins the three entries from the final bytes. The current pins are
+     provisional, taken from the Developer's patch.
+  3. The orchestrator runs the behavior run and commits the generated stamp (OR46 b);
+     nobody hand-edits it or the fixture.
+  4. QA, in a follow-up Test dispatch, re-pins only the `orchestrator-diff.stamp`
+     entry, runs S548, S323 and S335, and pushes. This changes no stamped byte, so
+     the stamp stays valid. Until step 4, S548 is red on the stamp pin by design.
+  5. Merge only after step 4 is green; the stamp-pin dispatch is part of A57's done.
+- **Violated when** (added to A57): an S548 pin of the three content files differs
+  from the committed bytes at merge; the stamp pin differs from the committed stamp
+  at merge; a pin is taken before the Developer's bytes are final; or the fixture is
+  hand-edited by the orchestrator rather than re-pinned by QA.
+- **Doubt, recorded.** [A] Dropping the stamp pin (stamp-check already covers
+  staleness) would save one dispatch; kept because removing a pin is the
+  maintainer's call.
+
+#### A57 addendum 2 (Architect, Planning, 2026-11-09): S593 no longer byte-freezes `ORCHESTRATOR.md`
+
+Loop-back from Review round 1 on PR #692 (finding `s593-orchestrator-byte-freeze`,
+design/high; finding `or46c-comparison-pointer-cut`, design/low). S593's
+`preservation_checks()` (`test/fixtures/temporary-panel-645.py`) requires
+`skills/role-contracts/ORCHESTRATOR.md` to be byte-identical to `b22b476`. That was a
+#645 scope guard ("remains byte-identical ... in this work"); #645 is merged, and #652
+legitimately changes the file.
+
+- **Decision.** Retire S593's byte pin for `ORCHESTRATOR.md` only, and replace it with a
+  cross-reference check; do not re-point it. Reasons: (1) re-pointing makes a second
+  copy of the pin S548 already holds (`SNAPSHOTS` in `stage-selection-647.py`), so every
+  authorised core edit would need two re-pins and QA's two-step twice, which is the
+  loop-back shape already seen once; (2) the guard's intent (no unreviewed drift of the
+  core) is carried after #645 by S548's byte pin, `stamp-check` (core or scenario bytes
+  change, behavior run required, OR46 b), and `orchestrator-core-pins.tsv` fragment pins;
+  (3) narrowing to "the parts S593 really guards" has no content to narrow to: S593's
+  only core claim was "untouched by #645", which is a statement about a finished diff.
+- **What stays frozen.** The other `paths` in `preservation_checks()`
+  (`pipeline-override.sh`, `orchestrator-rules.tsv`, `hooks/`, `skills/pre-merge-review/`)
+  keep the `b22b476` byte pin, the ancestor check and the protected-byte mutation
+  control; #652 touches none of them (`git diff --stat origin/main` confirms). The
+  generated-projection checks are untouched.
+- **Replacement check.** `preservation_checks()` asserts that `SNAPSHOTS` in
+  `test/fixtures/stage-selection-647.py` has a pin for
+  `skills/role-contracts/ORCHESTRATOR.md` (a text oracle, with a mutation control that
+  rejects the fixture text with that entry removed). So dropping the S593 byte pin cannot
+  silently leave the core unpinned; S548 does the byte comparison.
+- **Other freezers, checked.** Grep of the test tree for `b22b476` finds only this
+  fixture. SHA-256 literals appear in `stage-selection-647.py` (S548, handled by addendum
+  1), `orchestrator-diff.stamp` (stamp), `orchestrator-core-pins.tsv` (fragment pins,
+  re-pinned in A57), and unrelated hashes in `s159`, `s248` (a forbidden-name hash) and
+  `completion-evidence.py` (the original stop-text hash). S316/S323/S335 hash through the
+  stamp. Nothing else freezes `ORCHESTRATOR.md` bytes, so no third oracle loop-back is
+  expected. The 593 clause `'ORCHESTRATOR.md remains byte-identical ... in this work.'`
+  (`CLAUSES[593]`) is a pin of the panel's canonical wording, not a byte comparison, and
+  stays: it is scoped to #645 by its own words. Do not edit it.
+- **No `ORCHESTRATOR.md` byte changes.** Neither this resolution nor the finding 2
+  decision below touches `ORCHESTRATOR.md`, the scenarios file or the pins file, so
+  the stamp (OR46 b) stays valid and no behavior run is repeated. `stamp-check` must
+  still say `stamp matches`.
+- **File list.** QA (scenario text): `TEST-SCENARIOS.md` S593 gains an "Amended by #652
+  (A57 addendum 2)" line: the `ORCHESTRATOR.md` byte snapshot moves to S548, S593 checks
+  that the pin exists, the other snapshots remain; falsifier: the ORCHESTRATOR.md pin
+  absent from `SNAPSHOTS` passes S593. Developer (test code):
+  `test/fixtures/temporary-panel-645.py` `preservation_checks()` only (drop the path from
+  `paths`, add the cross-reference check and its mutation control). Per the current
+  contract QA writes scenarios and the Developer writes test code (open #684 covers the
+  inconsistency in earlier loops). Order: the two edits are independent of the core
+  bytes; run `bash test/cases/s593_temporary_panel.sh`, S548, S323, S335, then `./check`
+  (CI on the head, both legs).
+- **Finding 2 (`or46c-comparison-pointer-cut`): resolved without a byte change.** The
+  pointer "(SKILL.md command/log)" was dropped deliberately. A fresh orchestrator holds the
+  `role-contracts` skill (OR46 already assumes it: OR40 and OR21 point into `SKILL.md`
+  the same way), whose "QA scenario comparison" section defines the command and the exact
+  log line; the core keeps the obligation. Restoring about 25 characters would fit the
+  headroom (576 / 606) but changes core bytes, re-staling the stamp and the behavior run,
+  for a low whose damage is bounded by the Reviewer's own comparison. Deferred per OR40
+  (a design low, not trivial); the A57 Q1 claim "each removed fragment is explanation or
+  a duplicate" is corrected here: this one was a locator.
+- **Violated when** (added to A57): S593 compares `ORCHESTRATOR.md` to `b22b476` bytes
+  after #652 merges; S593 passes with no `SNAPSHOTS` pin for `ORCHESTRATOR.md` in the
+  S548 fixture; any other S593 `paths` entry loses its byte pin; this resolution is
+  carried out by editing `ORCHESTRATOR.md`, the scenarios or the pins file (stamp
+  stale); or a second test pins `ORCHESTRATOR.md` bytes without being listed in an A57
+  addendum.
+- **Doubt, recorded.** [A] Retiring rather than re-pointing the S593 byte pin trades a
+  duplicate oracle for the S548 cross-reference; the maintainer may prefer a
+  re-point (then S548 and S593 re-pin together) and the finding 2 pointer restored.
+

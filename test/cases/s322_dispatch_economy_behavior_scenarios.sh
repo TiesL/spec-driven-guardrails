@@ -4,7 +4,7 @@
 #
 # Seam: test/behavior/orchestrator-scenarios.md parsed by the S315 parser
 # (orchestrator_diff.py check-scenarios) and the S311 harness cross-checks. No
-# model call (the paid run is S323). New scenarios are OB52 onward, in the
+# model call (the behavior-test run is S323). New scenarios are OB52 onward, in the
 # order of the QA list: 52 continue small, 53 fresh at 300k, 54 fresh next
 # work item, 55 no-agent stamp and check, 56 failing command dispatched, 57
 # hand edit dispatched, 58 stage not done, 59 mechanical cheapest model, 60
