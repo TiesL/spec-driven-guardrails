@@ -110,8 +110,12 @@ ps="$(slot_size "$pad" "$proj" 2)"
 [ $((CONTEXT_BUDGET_CHARS - ps)) -lt "$FLOOR" ] || fail "S318/neg-floor — headroom $((CONTEXT_BUDGET_CHARS - ps)) is not below the floor (control broken)"
 
 # Slot-1 floor control (#652): part 1 grown to headroom FLOOR-1 must be refused by the floor rule.
-extra1=$((CONTEXT_BUDGET_CHARS - FLOOR + 1 - s1))
+# Slot 1 carries the CLAUDE.md-link warning, which names the clone path, so the padding is
+# sized from the unpadded copy measured in $pad itself, never from $s1 (the long clone path).
 (cd "$wf" && tar -cf - .) | (rm -rf "$pad" && mkdir -p "$pad" && cd "$pad" && tar -xf -)
+p0="$(slot_size "$pad" "$proj" 1)"
+extra1=$((CONTEXT_BUDGET_CHARS - FLOOR + 1 - p0))
+[ "$extra1" -ge 0 ] || extra1=0
 python3 -I - "$pad/skills/role-contracts/ORCHESTRATOR.md" "$extra1" <<'PY3'
 import sys
 p, n = sys.argv[1], int(sys.argv[2])
