@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "repository": "TiesL/spec-driven-guardrails",
+  "enabled": false,
+  "acceptance": null,
+  "control_issue": 607,
+  "executor_host": "",
+  "max_lines": 300,
+  "max_files": 8,
+  "hold_seconds": 300,
+  "groups": {
+    "ordinary": [
+      "README.md",
+      "CONTEXT.md",
+      "PRD*.md",
+      "ARCHITECTURE.md",
+      "TEST-SCENARIOS.md",
+      "docs/**.md",
+      "wip/**.md",
+      "test/**"
+    ],
+    "adoption": [
+      "adopt.sh",
+      "install.sh",
+      "pending-changes.sh",
+      "CHANGES.md",
+      "WORKFLOW-ADOPTION.md",
+      ".gitignore",
+      "lib/changes.sh",
+      "lib/*adopt*",
+      "lib/skill-links.sh",
+      "lib/managed_blocks.py",
+      "lib/workflow-adapters.py",
+      "skills/adopt-workflow/*",
+      "skills/adoption-registry/*"
+    ],
+    "guard": [
+      "hooks/*",
+      ".github/*",
+      ".codex/*",
+      ".agents/*",
+      "adapters/*",
+      "settings/*",
+      "policy/*",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "WORKFLOW.md",
+      "USER-CLAUDE.md",
+      "check",
+      "check-*",
+      "session-context.sh",
+      "skills/deploy-guards/*",
+      "lib/review-rounds*",
+      "review-rounds.sh",
+      "compliance-evidence.sh",
+      "classify-review-depth.sh",
+      "role-label-staleness.sh",
+      "generate-workflow-adapters.sh",
+      "wait-for-ci.sh",
+      "templates/check-*",
+      "templates/*guard*",
+      "templates/ci.yml",
+      "templates/wait-for-ci.sh"
+    ],
+    "generated": {
+      "outputs": [
+        "WORKFLOW.md",
+        "adapters/codex/AGENTS.md",
+        "AGENTS.md"
+      ],
+      "inputs": [
+        "policy/WORKFLOW.md",
+        "adapters/*/INSTRUCTIONS.md"
+      ]
+    }
+  },
+  "reserved": {
+    "release": [
+      "CHANGELOG.md",
+      "VERSION",
+      "package.json",
+      "skills/release-branch-workflow/**"
+    ],
+    "autonomy": [
+      "merge-preflight.sh",
+      "hooks/git-guardrails",
+      "skills/pre-merge-review/**",
+      "lib/model-record*",
+      "pipeline-override.sh",
+      "skills/role-contracts/**",
+      "skills/merge-risk-panel/**",
+      "policy/merge-autonomy.json",
+      "merge-risk-evidence.sh",
+      "lib/merge-risk*",
+      "test/cases/*merge_risk*",
+      "test/fixtures/merge-risk*",
+      "test/behavior/merge-risk*"
+    ]
+  },
+  "labels": {
+    "hold": [
+      "hold",
+      "risk:*"
+    ],
+    "off": "merge-autonomy:off"
+  },
+  "release_heads": [
+    "release/*"
+  ]
+}
