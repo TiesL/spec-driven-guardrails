@@ -4276,3 +4276,74 @@ orchestrator and the maintainer post as the same login.
   - Taking A from the issue body revision at acceptance time relies on GitHub's edit history; if unavailable the Developer stops and routes to Architect.
   - Roles may omit position lines because the duty sits in the brief, not in `role-contracts`; the effect is a referral, safe but lowering coverage.
   - A57's addendum gives the SNAPSHOTS re-pin to QA; under the current contract that is test code, so this design gives it to the Developer.
+
+#### A58 addendum (Architect, Planning, 2026-11-09): pattern lists, void verdict, second record, `paths:` line
+
+Loop-back from the Developer's part-1 report on #646 (findings 1-4, comment
+6735630464) against S613, S618, S609, S619 and the shipped
+`policy/merge-autonomy.json`. Still PROPOSAL; acceptance points 1-5 unchanged.
+
+- **E1 — S613's look-alike `lib/model-records-note.md` is reserved; D3 is right.**
+  [V] Under D3's grammar `lib/model-record*` matches it (one-segment star over
+  `s-note.md`), and it would refer as unlisted anyway. It is a genuine pattern
+  match, not a basename or substring look-alike, so the safe side and the grammar
+  agree. The scenario changes: the path moves from the controls to the reserved
+  cases (`referred`, reason `reserved`), and the control becomes `test/lib/model-record.sh`
+  (in `test/**`, not matched by any reserved pattern because matching is full-path
+  anchored). No change to D3 for this point.
+- **E2 — Void after T is `unresolved`; D4 is right, S618 changes.** [A] A void
+  record can never proceed by waiting, and `held` (exit 1) tells the executor to
+  wait and retry the same record (D7 step 1). So a stop label added at or after T
+  gives `unresolved void-after-announcement` (exit 4: refer, a new record and a
+  new window are needed), never `held`. Precedence stays referred, then
+  unresolved, then held, and every reason is listed: (a) hold on the PR and (b) a
+  `risk:*` label on the issue answer `unresolved` with `void-after-announcement`,
+  plus `label-hold` while the label is still present; (c) `merge-autonomy:off` on
+  the control issue answers `referred` (`label-off-control`) with
+  `void-after-announcement`; (d), (e) answer `unresolved`
+  `void-after-announcement`. Clarification of D4's wording, matching D3: on the
+  control issue only `labels.off` is a stop; a `hold` or `risk:*` label there is
+  not read (D3 reads hold labels on the PR and work-item issue only).
+- **E3 — One-segment stars in the copied lists were not intended; the lists use
+  `**` for descendants.** [V on 9621de6, A55 path note] A55 states "`*` in these
+  documented patterns includes nested descendants"; the epic #607 lists
+  (`skills/pre-merge-review/*`, `skills/role-contracts/*`) use the same reading,
+  and D3 already converted those two. Copying the other lists verbatim under D3's
+  grammar changed their meaning: [V, `git ls-files`] `adapters/*` and `.github/*`
+  match no tracked file at all (everything is nested), so the narrowing is an
+  accident, not a design. Decision, per pattern:
+  - Directory patterns become `/**` (restoring A55, maintainer D1): `hooks/**`,
+    `.github/**`, `.codex/**`, `.agents/**`, `adapters/**`, `settings/**`,
+    `policy/**` (guard); `skills/adopt-workflow/**`, `skills/adoption-registry/**`
+    (adoption); `skills/deploy-guards/**` (guard). Reserved entries inside them
+    (`hooks/git-guardrails`, `policy/merge-autonomy.json`) still win.
+  - Reserved prefix patterns become `**` (safe side: a nested file under a
+    reserved prefix must not fall into `test/**` and become eligible):
+    `lib/model-record**`, `lib/merge-risk**`, `test/cases/**merge_risk**`,
+    `test/fixtures/merge-risk**`, `test/behavior/merge-risk**`.
+  - Filename wildcards stay one-segment (they name files in a flat directory;
+    staying narrow in an allowed group is safe): `PRD*.md`, `lib/*adopt*`,
+    `lib/review-rounds*`, `check-*`, `templates/check-*`, `templates/*guard*`,
+    `adapters/*/INSTRUCTIONS.md`.
+  The narrowing of acceptance point 4 is again only A58's stated one
+  (`hooks/git-guardrails` and the mechanism's own tests).
+- **E4 — Second record after a hold: the Developer's reading is confirmed, D4
+  amended.** [A] D4's "exactly one decision record for H" reads: exactly one
+  record with `outcome: eligible` for H that is not superseded; an earlier
+  eligible record for H is superseded only when a `labels.hold` or `labels.off`
+  stop event at or after its T and before the newer record's T voided it; any
+  other second eligible record for H is `unresolved record-duplicate`. Records
+  with other outcomes (held, unresolved, referred, ...) do not count toward the
+  one. After any such stop the newer record needs `hold_release` (D6), also when
+  the stop was an off label: re-enabling is the maintainer's act in any case.
+- **E5 — `paths:` line: the Developer's format is confirmed and is D5's.** [A]
+  The `conditions:` paragraph of a `yes-if` position carries one machine-read
+  line `paths: <pattern> [<pattern> ...]` (space-separated, D3 grammar), the
+  first such line after the position line and before any next position line.
+  Every changed path must match one of them, else `unresolved condition-scope`;
+  a `yes-if` without the line is `unresolved condition-missing`. The skill owns
+  the format text; QA and the brief cite it.
+- **Doubts (one line each).** [A]
+  - Restoring `.github/**` puts CI workflow edits in the guard class; a weakened check rests on the Reviewer's semantic assertion and the required `check`, and the maintainer may prefer `.github/ISSUE_TEMPLATE/**` only.
+  - Requiring `hold_release` after an off-label stop costs one extra maintainer quote on re-enable; a separate re-enable field was judged not worth the schema change.
+  - `held` for a still-present hold label without a prior record stays exit 1 (wait); only a void record is forced to `unresolved`.
