@@ -3622,6 +3622,102 @@ together with this addendum, which prevails.
   `templates/` scripts, which adopted projects copy, now always need the maintainer
   even for a typo fix; accepted by the decision.
 
+### A54 addendum (2026-11-09) — Holding-pen decisions for items 2-6 of #678 (amends A54 D6, the S589/S590/S591/S593 matrix rows and the F68 wording; no contract text changes)
+
+Append-only note. The A54 entry and the 2026-11-08 addendum above are not edited; where
+they differ from this note on the points below, this note prevails. Planning for #678
+(release branch `release/607-panel-mechanisms`, tip `0672da0`). Item 1 (null list
+fields) needs no design decision beyond the diagnostics fixed at the end.
+
+- **Item 2: S591 prior-result domain.** [A] `experiments[].prior[].result` takes the
+  domain `denied`, `none` (the S590 `prior_denials` domain). A prior row is malformed
+  when its `id` is not `present` (existing rule) OR its `result` is outside that domain
+  (`UNKNOWN`, empty, null, or key missing). A malformed row on ANY prior row, matching
+  or not, gives `591/experiment/denied-retry` and makes the experiment `denied` (the
+  existing `malformed_prior` path: disposition `refused`, `attempts == []`, otherwise
+  `denied-retry` again), so a matching identity with a bad result is read as denied,
+  never as `none`. Chosen over validating only matching rows because the oracle already
+  fails closed on a malformed `id` in any row; one `malformed_prior` rule, not two.
+  Matrix row S591 gains "prior result `denied`/`none`".
+- **Item 3: dissent on `unresolved`/`escalated`.** [A] Not allowed. The expected
+  `dissent` is the computed minority for a `resolved` 2-1, `[]` otherwise, so any
+  `unresolved` or `escalated` record whose `dissent` is not exactly `[]` (including
+  null) gives `589/<id>/dissent`. The key stays required (present, may be empty), so
+  a missing `dissent` is still `589/<id>/dissent`. Rationale: dissent is a vote artifact
+  and `positions` already records each member's stance; this parallels
+  `/fabricated-vote`. The skill says dissent is "recorded" with a vote; it nowhere
+  allows it without one, so no SKILL.md change. Matrix row S589 gains "unresolved/
+  escalated has no vote and no dissent".
+- **Item 4: tokens that carry a target.** [A] `TARGETED` becomes six tokens: the
+  existing `docs-pr`, `temporary-spec-choice`, `policy-choice` plus `readme-pr`,
+  `changelog-unreleased-pr`, `meaning-version-bump` (each edits a repository file, so
+  a contract-text file can be the target). Excluded, with reason: `close-issue`,
+  `comment-issue`, `comment-pr`, `label-issue`, `label-pr`, `delete-merged-branch`
+  have no file target (a comment is not an edit; rule text proposed in a comment still
+  needs its own file-editing proposal, which is targeted); `merge-work-item-to-release`
+  ignores target by T10. Behaviour for a targeted token is unchanged from the three
+  already covered: target `panel-rules` becomes `edit-panel-rules` and is referred;
+  `UNKNOWN`/empty/missing gives `590/<token>/target`; `other` stays eligible. For the
+  seven untargeted eligible tokens the `target` field is not read (no diagnostic for
+  any value). The reserved-class sentence in the skill is token-agnostic ("any
+  proposal whose target is contract text ... eligible docs edit or policy choice"),
+  so no SKILL.md change is needed; the S590 matrix row's "otherwise eligible
+  `docs-pr` or `temporary-spec-choice`/`policy-choice` proposal" reads as "the six
+  targeted tokens" from here.
+- **Item 5: S593 protection rows tied (explicit amendment of D6).** [A] D6 says to
+  protect the nine conditions "independently of a `retained` disposition or any
+  supplied `eligible` list": independent of those two, never stated as independent of
+  each other. This addendum nonetheless amends D6 explicitly: the four fact fields
+  `adds_scenario`, `executable_diff`, `doc_only`, `requires` (the latter compared as a
+  set; `selected` is a stage choice, not a fact, and is excluded) in the
+  `unanimous-skip` row's embedded `protected` object must equal those of the
+  `protected-work` row's `conditions` in the same record. Violation (including a
+  missing or malformed field on either side, when both rows are present exactly
+  once) gives `593/protection/unanimous-skip` (appended once). The other seven
+  protections stay independent. Chosen over a single source (drop the embedded copy)
+  because that changes the record shape and every `protected` fixture. Direction of the
+  base-control fix: row 1 (`protected-work`) takes row 0's doc-only facts
+  (`adds_scenario=False`, `executable_diff=False`, `doc_only=True`,
+  `requires=['Discovery','Review']`, `selected` all stages), because row 0 is pinned to
+  the grant's `actual` (doc-only) by the existing `executable_diff`/`doc_only` equality
+  and by `grant_supports`; the reverse would make the skip grant lie.
+- **Item 6: F68 wording.** [A] PRD.md F68, "the root PRD, ARCHITECTURE, TEST-SCENARIOS,
+  which are not `templates/PRD.md` and its siblings" becomes "the root PRD, the rest of
+  ARCHITECTURE (every entry except A54 D2), TEST-SCENARIOS, which are not
+  `templates/PRD.md` and its siblings". PRD.md is Product-owned: Product (or the
+  orchestrator) applies this exact wording; the Developer does not. No other text states
+  the list ("root PRD" occurs only in F68).
+- **Fixture plan.** [A] All in `test/fixtures/temporary-panel-645.py`; QA writes
+  cases first, Developer the oracle. Oracle: (2) `malformed_prior` also tests
+  `result not in ('denied','none')`; (3) compute `expected_dissent` outside the
+  `resolved` branch; (4) `TARGETED` to six; (5) tie check after the protections loop in
+  `authority_oracle`; (1) a list-or-malformed helper. Cases: S591 result matrix
+  (4 bad values x matching and non-matching row, plus `none` control); S589 dissent on
+  `unresolved` and `escalated` (non-empty, null, missing; `[]` control); every
+  `TARGETED` loop (T1-T9, T6b widened labels) covers the three new tokens by the
+  constant alone, plus one fixture per untargeted token that target `panel-rules`/
+  `UNKNOWN` is ignored; S593 tie mutants per fact field and `requires` set. Existing
+  fixtures that change a single protection row and are now expected to be red or must
+  be mirrored on both rows: `protection_conditions()` row 1; the protected-work
+  field True/False loop (~1031-1036); the `requires`/`selected` stage-list block
+  (~1037-1056); `skip_case` (mirror its `protected` update onto row 1); the sweep at
+  ~1290. Every control passing at `0672da0` must still pass (AC7); a control whose
+  expectation flips because of the tie is mirrored, not loosened.
+- **Item 1 diagnostics.** [A] `supersedes: None` gives `589/<id>/supersession`;
+  `prior_denials: None` gives `590/<action>/denied-retry`; `result.attempts: None` gives
+  `590/<action>/attempt`; `briefs[].payload: None` gives `591/<recipient>/brief`;
+  `experiments[].prior: None` gives `591/experiment/denied-retry`. A missing key stays
+  equal to an empty list.
+- **Contract text.** [A] None of items 2-6 changes `skills/`, `ORCHESTRATOR.md` or
+  A54 D2; nothing here is a maintainer-reserved edit. The F68 wording (item 6) is
+  Product-owned spec text.
+- **Doubts, recorded.** [A] (a) Item 4 excludes `comment-issue`: a comment can carry
+  rule text, but is not an edit, so the proposal that edits is targeted instead; revisit
+  if a panel ever executes a comment as the rule change. (b) Item 5 changes the base
+  control's meaning of `protected-work` row 1 to doc-only, which weakens the
+  executable-work coverage of the loops at ~1031-1056 unless QA keeps explicit
+  executable variants (C2-C5 style) mirrored on both rows.
+
 ### A57 — Core headroom by redundancy cuts, OR44 qualifier restored, "paid" wording retired, one stamp (#652, #676; F38; amends A41 "#620 amendment" Budget note and A42 Budget)
 
 Status: PROPOSAL (Architect, Planning, 2026-11-09). `ORCHESTRATOR.md` is contract
@@ -3816,3 +3912,4 @@ legitimately changes the file.
 - **Doubt, recorded.** [A] Retiring rather than re-pointing the S593 byte pin trades a
   duplicate oracle for the S548 cross-reference; the maintainer may prefer a
   re-point (then S548 and S593 re-pin together) and the finding 2 pointer restored.
+

@@ -2397,8 +2397,9 @@ whole directory, at any depth), plus the generated `AGENTS.md` and
 `WORKFLOW.md`, `ORCHESTRATOR.md` (including OR47), `CHANGES.md`,
 `USER-CLAUDE.md` and A54 D2 itself (widened by the maintainer decision of
 2026-11-08, #681). This is a clear class, not an open list; spec content (the
-root PRD, ARCHITECTURE, TEST-SCENARIOS, which are not `templates/PRD.md` and
-its siblings) stays eligible as a temporary spec choice. Any proposal whose
+root PRD, the rest of ARCHITECTURE, meaning every entry except A54 D2, and
+TEST-SCENARIOS, none of which are `templates/PRD.md` or its siblings) stays
+eligible as a temporary spec choice. Any proposal whose
 target is contract text is referred to the maintainer, even when it would
 otherwise be an eligible docs edit or policy choice. A panel cannot overrule a role, waive a
 contract, retry a denied operation or manufacture human approval; applicable
