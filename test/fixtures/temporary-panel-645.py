@@ -132,9 +132,13 @@ def source_checks():
         f68 = norm(f68[0]) if f68 else ''
         check('the rest of ARCHITECTURE' in f68, '590/source/F68/rest-of-architecture')
         check('root PRD, ARCHITECTURE, TEST-SCENARIOS' not in f68, '590/source/F68/no-whole-architecture')
+        # The wording oracle runs on the real F68 text and on mutants derived from it, so reverting PRD.md changes outcomes.
         wording = lambda t: [] if ('the rest of ARCHITECTURE' in t and 'root PRD, ARCHITECTURE, TEST-SCENARIOS' not in t) else ['F68 wording']
-        fixture('590/source/F68/wording/control', 'the root PRD, the rest of ARCHITECTURE, TEST-SCENARIOS', wording)
-        fixture('590/source/F68/wording/whole-architecture', 'the root PRD, ARCHITECTURE, TEST-SCENARIOS', wording, 'F68 wording')
+        fixture('590/source/F68/wording/control', f68, wording)
+        whole = re.sub(r'root PRD, the rest of ARCHITECTURE, meaning every entry except A54 D2, and TEST-SCENARIOS',
+                       'root PRD, ARCHITECTURE, TEST-SCENARIOS', f68, count=1)
+        check(whole != f68, '590/source/F68/wording/whole-architecture/changed-bytes')
+        fixture('590/source/F68/wording/whole-architecture', whole, wording, 'F68 wording')
         # #681: each added entry is its own pin inside the reservation sentence (red when removed, green when restored).
         sentence = re.search(r"Editing the panel's own rules is also reserved:.*?choice\.", panel)
         sentence = sentence[0] if sentence else ''
