@@ -2458,6 +2458,133 @@ or sandbox exception and cannot prove independence, capability or obedience.
 Local structural checks cannot establish that every historical decision was
 recorded; reconcile available issue/PR artifacts and report missing evidence.
 
+### F70 — Merge-risk panel: hard gates come first and are never votes (issue #646)
+
+**Status: PROPOSED.** F70-F74 take effect only on the maintainer's explicit
+acceptance recorded on #646 (acceptance points 1-5 in the issue's Discovery
+comment). Until then every merge into `main` keeps the maintainer's explicit
+per-PR approval.
+
+**Serves:** #646 AC1; A58.
+[A] For a PR into `main`, `merge-preflight.sh <n>` must succeed with no bypass
+and no incomplete-check warning, every required CI check must be complete and
+green on head H, and the Review completion marker must be pinned to H, before
+any vote is activated. These hard gates are not votes: the panel is five
+voters, never six or seven. The mandatory fresh Review keeps running in
+parallel with CI.
+
+[A] A change of H, including through `gh pr update-branch`, expires all five
+activated votes and the announcement. The advance-approval survival rule for a
+human approval does not apply to panel votes.
+
+### F71 — Merge-risk panel: five positions, binding manifest and floors (issue #646)
+
+**Status: PROPOSED.** See F70.
+
+**Serves:** #646 AC2; A58.
+[A] The five voters are Product, Architect, QA, a fresh Reviewer and the
+orchestrator; the Developer never votes. A 5-0 yes on the activated votes plus
+class C5 with no disqualifier makes a PR eligible. Any dissent, abstention or
+missing vote refers it to the maintainer.
+
+[A] Under the conditional-record reading, the Product Discovery, Architect
+Planning and QA Test reports each carry an explicit conditional `yes-if`
+position with scope and conditions; the fresh final-diff Review and a new
+orchestrator process check supply the other two. A binding manifest on the
+work-item issue binds all five rows to the same H, base B, diff hash,
+configuration digest and accepted design/AC digests. A `model-record` marker
+alone is never a yes; a report without an explicit position cannot be reused;
+a changed design, AC, scenario artifact or scope routes to the owning role.
+
+[A] A voter whose recorded model fails the panel floor (#645's evidence: score
+at least the highest relevant author's, exact model and variant, date read)
+casts no activated vote.
+
+### F72 — Merge-risk panel: one configuration, class C5 and disqualifiers (issue #646)
+
+**Status: PROPOSED.** See F70.
+
+**Serves:** #646 AC3; A58.
+[A] One configuration file, read from its accepted revision on `main` and never
+from the candidate PR, holds paths, caps, hold duration, veto lists and an
+`enabled` setting. The file is itself a reserved autonomy path.
+
+[A] Class C5 is a PR into `main` (not `release/*`, not a release aggregate)
+with 1-300 added-plus-deleted lines and 1-8 changed files inclusive over the
+full diff, every path in a configured allowed group, and content that restores
+an accepted baseline or implements an accepted requirement or design.
+Disqualifiers refer the PR whatever the vote: reserved release paths or
+effects; reserved autonomy paths or a semantic change to the mechanism; a
+`CHANGES.md` meaning-version bump; any CHANGES_REQUESTED review event; an open
+medium or high finding; a `hold`, `risk:*` or `merge-autonomy:off` label; a new
+security trade-off, spec-content decision, permission expansion or weakened
+protection; outward-facing actions; missing, unreadable or ambiguous evidence.
+
+[A] A read-only evidence check reports exactly one of `eligible`, `held`,
+`referred`, `unresolved` with every reason, and never merges or votes. A
+candidate PR that changes the configuration is referred.
+
+### F73 — Merge-risk panel: record, hold, own approval, single executor (issue #646)
+
+**Status: PROPOSED.** See F70.
+
+**Serves:** #646 AC4, AC5, AC6, AC7; A58.
+[A] Every panel outcome is recorded in one ordinary comment on the work-item
+issue, marked `temporary, panel decision`, with the fields AC4 lists (IDs,
+digests, class and reasons, five named positions, floor evidence, gate results,
+vote including dissent, announcement and earliest merge time, executor, reversal
+instructions); the PR links it. A completed merge adds the merged H, time,
+squash commit and the revert command for that commit; before completion the
+revert is marked pending. Reversal is a maintainer-confirmed revert PR. 5-0
+records form their own group in merge-approval disclosure (F69); dissent stays
+visible.
+
+[A] No merge runs before announcement plus the hold (default 300 seconds).
+The maintainer's spoken `hold`, or a `hold` or `risk:high` label from the
+maintainer or any voter, stops the merge at the next check including the final
+one; only the maintainer releases his hold, and release restarts a full window.
+A missing risk label is a valid dormant state, never evidence of safety.
+
+[A] An explicit maintainer approval of an in-class PR makes it a human-path
+merge, recorded as such. Only his verbatim words about that exact PR count
+through a relay or wake. Out-of-class PRs keep the per-PR approval rule;
+release-into-`main` and work-item-into-release merges are unaffected; #646
+itself cannot merge under its own delegation.
+
+[A] Exactly one known executor merges one PR at a time with `gh pr merge <n>
+--repo <owner/repo> --squash --delete-branch --match-head-commit <H>` after a
+fresh `merge-preflight.sh <n>`, re-reads `main` and the full evidence before
+the next, and treats a moved base as update, CI, delta Review, rebinding and a
+new hold window. After a duplicate wake or crash it reconciles actual PR state
+first; a decision executes at most once; an unknown outcome refers to the
+maintainer. `merge-autonomy:off` on the control issue, or `enabled: false`,
+stops everything and does not revive old votes on re-enabling.
+
+### F74 — Merge-risk panel: live narrow start, statistics, revocation, delivery constraints (issue #646)
+
+**Status: PROPOSED.** See F70.
+
+**Serves:** #646 AC7, AC8, AC9; A58.
+[A] The mechanism starts live at the C5 defaults, with no shadow phase. The
+configuration ships `enabled: false` unless the change links the maintainer's
+recorded acceptance of #646. An incorrect autonomous decision, ignored hold or
+suspected forgery disables autonomy and is recorded as an incident; only the
+maintainer re-enables.
+
+[A] The design reports C5's share of recent merged `main` PRs as an upper bound
+(A55 measured 22 of 80). Live results are published per configuration revision
+and class: candidates, veto reasons, eligible 5-0, holds, referrals, dissent,
+merges, failures, reverts, incidents, time to merge, actual token usage.
+Widening happens only through a reserved, maintainer-approved configuration PR.
+
+[A] The merge-risk procedure lives in its own skill file whose text lies inside
+the first 5,000 tokens (#530), with at most a one-line pointer in
+`skills/role-contracts/SKILL.md`. The ORCHESTRATOR.md core gets only the minimum
+pointer edit that makes OR11/OR43 true (#652 budget), batched with the release's
+other core edits. Loaded policy texts that promise unconditional confirmation
+name the accepted exception by reference; the meaning-version bump belongs to
+#679.
+
 ## Non-functional characteristics
 
 ### Security
