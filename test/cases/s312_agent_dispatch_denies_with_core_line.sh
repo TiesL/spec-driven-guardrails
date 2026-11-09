@@ -48,9 +48,11 @@ deny_with() {
   case "$ad_err" in *'<!-- session-context: slot -->'*) fail "S312/$name — the marker line is in the deny output" ;; esac
 }
 
-good_dev="$(ad_prompt "Fullstack Developer")"
+good_dev="$(ad_prompt Developer)"
 
 # prefix (OR8)
+# #685: the old fifth-role prefix is no longer one of the five roles.
+deny_with prefix-old-fullstack "$(ad_input "$(ad_prompt Developer | sed '1s/.*/ROLE SESSION: Fullstack Developer/')")" OR8
 deny_with prefix-missing "$(ad_input "Please do QA.
 $(printf '%s' "$good_dev" | tail -n +2)")" OR8
 deny_with prefix-lower "$(ad_input "role session: QA
@@ -113,7 +115,7 @@ deny_with three-checks "$(ad_input "Hello
 $(printf '%s' "$good_dev" | tail -n +2)" fork -)" OR8 OR7 OR30
 
 # Compliant dispatch for each role: exit 0, no output at all.
-for role in Product Architect QA "Fullstack Developer" Reviewer; do
+for role in Product Architect QA Developer Reviewer; do
   ad_run_core "$(ad_input "$(ad_prompt "$role")")"
   [ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] \
     || fail "S312/compliant-$role — expected silent exit 0, got $ad_st ($ad_err)"
@@ -159,7 +161,7 @@ grep -q 'EDITED-499' <<<"$ad_err" || fail "S312/edited — deny text is not read
 grep -q 'Start every dispatch prompt' "$AD_CORE" && fail "S312/copy — agent-dispatch.py holds a copy of the OR8 text"
 
 # #599: keep the old stage-only controls; add all five role-only arms.
-for role in Product Architect QA "Fullstack Developer" Reviewer; do
+for role in Product Architect QA Developer Reviewer; do
   ad_run_core "$(ad_input "$(ad_role_prompt "$role")")"
   [ "$ad_st" = 0 ] && [ -z "$ad_out" ] && [ -z "$ad_err" ] || fail "S312/#599/compliant-$role — role-only dispatch must silently pass"
 done

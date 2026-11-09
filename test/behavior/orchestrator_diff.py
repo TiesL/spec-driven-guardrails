@@ -25,7 +25,7 @@ SCEN_REL = "test/behavior/orchestrator-scenarios.md"
 STAMP_REL = "test/behavior/orchestrator-diff.stamp"
 MARKER = "<!-- session-context: slot -->"
 
-ROLES = ["Product", "Architect", "QA", "Fullstack Developer", "Reviewer", "none"]
+ROLES = ["Product", "Architect", "QA", "Developer", "Reviewer", "none"]
 SCHEMA = {
     "next_action": ["dispatch", "continue_agent", "merge", "ask_human", "stop",
                     "answer_directly", "comply_and_record", "self_check",

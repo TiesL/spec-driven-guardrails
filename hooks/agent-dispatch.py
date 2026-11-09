@@ -33,7 +33,7 @@ FIELDS = [F_TOOL, F_AGENT, F_INPUT + "." + F_PROMPT,
 ROLE_STAGES = (("Product", "Product", "Discovery"),
                ("Architect", "Architect", "Planning"),
                ("QA", "QA", "Test"),
-               ("Fullstack Developer", "Developer", "Implementation"),
+               ("Developer", "Developer", "Implementation"),
                ("Reviewer", "Reviewer", "Review"))
 CHECKS = ["prefix", "no-fork", "marker-command", "role-stage", "model",
           "reviewer-pr", "reviewer-sha", "reviewer-gate"]
