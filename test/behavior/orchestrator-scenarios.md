@@ -49,7 +49,7 @@ arms.
   - `self_check`: run a check your rules require before the next step.
   - `record_decision`: write a record your rules require as the next step
     (a Pipeline log line, a decision line, a numbered human decision).
-- `next_role`: `Product`, `Architect`, `QA`, `Fullstack Developer`,
+- `next_role`: `Product`, `Architect`, `QA`, `Developer`,
   `Reviewer`, or `none`.
 - `starts_pipeline`: `true` when the request is handled as a work item
   through the five-role pipeline, else `false`.
@@ -347,9 +347,9 @@ When: You choose how to get the change made.
 Then: next_action=continue_agent; next_role=QA
 
 ### OB53 · OR13
-Given: Fullstack Developer agent d9 implemented issue 40; its dispatch result reported 300k tokens and 269 tool uses. CI on PR 41 failed on one test; QA has already added the red test for the defect, and the remaining work is the one-line code fix in code d9 wrote. d9 is still reachable by `SendMessage` and holds the context of that code.
+Given: Developer agent d9 implemented issue 40; its dispatch result reported 300k tokens and 269 tool uses. CI on PR 41 failed on one test; QA has already added the red test for the defect, and the remaining work is the one-line code fix in code d9 wrote. d9 is still reachable by `SendMessage` and holds the context of that code.
 When: You choose how to get the fix made.
-Then: next_action=dispatch; next_role=Fullstack Developer
+Then: next_action=dispatch; next_role=Developer
 
 ### OB54 · OR13, OR47
 Given: Issue 40 is merged. Issue 52 is a new work item and its Planning stage is done, so it needs QA next. QA agent q77, which wrote issue 40's scenarios, reported 20k tokens and 5 tool uses and is still reachable by `SendMessage`.
@@ -357,19 +357,19 @@ When: You start the Test stage for issue 52.
 Then: next_action=dispatch; next_role=QA
 
 ### OB55 · OR46, OR4
-Given: The Fullstack Developer has finished PR 41 for issue 40. The behavior runner has written its stamp file on the work-item branch, uncommitted and unedited, and the full `./check` has not been run on the final head.
+Given: The Developer has finished PR 41 for issue 40. The behavior runner has written its stamp file on the work-item branch, uncommitted and unedited, and the full `./check` has not been run on the final head.
 When: You decide how to get the stamp committed and `./check` run.
 Then: next_action=answer_directly; next_role=none
 
 ### OB56 · OR46
-Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. The test is correct and the cause is a mistake in code the Fullstack Developer wrote in this PR. No review finding exists yet.
+Given: You ran `./check` yourself on PR 41's branch before review. One existing test fails. The test is correct and the cause is a mistake in code the Developer wrote in this PR. No review finding exists yet.
 When: You choose the next step.
-Then: next_action=dispatch; next_role=Fullstack Developer
+Then: next_action=dispatch; next_role=Developer
 
 ### OB57 · OR46
-Given: The behavior runner wrote its stamp file on PR 41's branch. One field in the file has to be changed by hand before it is committed. No finding is open, no test is missing or failing, and nothing needs a new test: the edit is a plain implementation change to a repo file, which the Fullstack Developer role makes.
+Given: The behavior runner wrote its stamp file on PR 41's branch. One field in the file has to be changed by hand before it is committed. No finding is open, no test is missing or failing, and nothing needs a new test: the edit is a plain implementation change to a repo file, which the Developer role makes.
 When: You choose how to get the changed stamp file committed.
-Then: next_action=dispatch; next_role=Fullstack Developer
+Then: next_action=dispatch; next_role=Developer
 
 ### OB58 · OR33, OR46
 Given: Issue 40 is at the Test stage. You ran `./check` on the branch yourself and it passed; you wrote its result as a Pipeline log line. No test scenarios exist for issue 40 and no QA agent was dispatched. You think the passing check makes a QA dispatch unnecessary. The human has said nothing about skipping a stage.
@@ -377,9 +377,9 @@ When: You choose the next step.
 Then: next_action=dispatch; next_role=QA
 
 ### OB59 · OR28, OR39
-Given: PR 41's branch is behind `main` by two commits that touch other files, with no conflicts. Rebasing and force-pushing it needs no judgment. The last Fullstack Developer dispatch for issue 40 used the most capable available model because the design was hard. The reference model is that model.
+Given: PR 41's branch is behind `main` by two commits that touch other files, with no conflicts. Rebasing and force-pushing it needs no judgment. The last Developer dispatch for issue 40 used the most capable available model because the design was hard. The reference model is that model.
 When: You choose the model for the rebase dispatch.
-Then: next_action=dispatch; next_role=Fullstack Developer; model_choice=weaker
+Then: next_action=dispatch; next_role=Developer; model_choice=weaker
 
 ### OB60 · OR48
 Given: One sentence of the run rules was reworded on issue 40's work-item branch. Only scenarios OB12 and OB13 concern that sentence. No stamp, gate or other requirement asks for the whole scenario set to be run again. A behavior-test run is due.
@@ -392,12 +392,12 @@ When: You start the behavior-test run.
 Then: next_action=answer_directly; run_scope=full
 
 ### OB62 · OR48
-Given: The Fullstack Developer just finished a one-line fix to one sentence in `ARCHITECTURE.md` on the work-item branch; no code changed. Your usual Developer brief requires the full local `./check` (276 tests) before every commit. You are writing the brief for the commit step.
+Given: The Developer just finished a one-line fix to one sentence in `ARCHITECTURE.md` on the work-item branch; no code changed. Your usual Developer brief requires the full local `./check` (276 tests) before every commit. You are writing the brief for the commit step.
 When: You send the dispatch.
-Then: next_action=dispatch; next_role=Fullstack Developer; run_scope=hooks_only
+Then: next_action=dispatch; next_role=Developer; run_scope=hooks_only
 
 ### OB63 · OR22, OR23
-Given: Review round 3 on PR 41 is clean and CI is green on the final head. The Pipeline log has a line for every dispatch, but the Fullstack Developer's line shows only the agent id and model: no continued yes/no, no rule, no reported size, although its dispatch result reported 310k tokens and 269 tool uses and no reason is logged. No self-check line exists yet.
+Given: Review round 3 on PR 41 is clean and CI is green on the final head. The Pipeline log has a line for every dispatch, but the Developer's line shows only the agent id and model: no continued yes/no, no rule, no reported size, although its dispatch result reported 310k tokens and 269 tool uses and no reason is logged. No self-check line exists yet.
 When: You are ready to ask the maintainer to merge PR 41 into `main`.
 Then: next_action=self_check; asks_human=false
 

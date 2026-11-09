@@ -6123,6 +6123,31 @@ acceptance evidence (AC12), traced through the inventory's `covered_by`.
   item `#499`. Red on `6ccad5c`: the issue-and-comment-only brief, the issue
   ref with a real SHA, and the digits-as-SHA brief all exit 0
 - Issue #599 amendment: Retain the five stage-only controls and add all five compliant role-only prompts. Product with --stage Planning (the #595 prompt), Product with --role Architect, and an invalid role fail OR31; deny text remains the core line (#599 AC5/AC8).
+- Amended by #685 (A59, Part A): the fifth role is named `Developer` everywhere
+  the hook, OR5 and OR8 name it. Given: the same fixture, the real
+  `ORCHESTRATOR.md` and inventory. When: a brief opens `ROLE SESSION:
+  Developer` with `model-record-emit.sh --role Developer` and a model; then
+  `ROLE SESSION: Fullstack Developer` with `--role Developer`; then `ROLE
+  SESSION: Developer` with `--role "Fullstack Developer"`. Then: the first
+  allows silently with exit 0, empty stdout and stderr; the second denies with
+  exit 2, empty stdout, OR8's exact core line once plus the avoidance line
+  only (the old prefix is no longer one of the five roles); the third denies
+  with OR31 once plus the avoidance line (the emitter's role check already
+  rejects the old value). OR8's core line names `Product, Architect, QA,
+  Developer, Reviewer`, and OR5's row reads
+  `Implementation/Developer/role:dev/Implementation`; the hook's role table,
+  `role_stage` and OR5 agree on the name (drift check green). Test seam for the
+  Developer: in `role-stage-599.py` the row `Fullstack Developer alias`,
+  currently `allowed(...)`, flips to `denied` with OR8; every other fixture row
+  (the four unchanged roles, the compliant `Developer` row, the bad-input rows)
+  keeps its verdict, and the S312 compliant-dispatch case for the fifth role
+  uses the new prefix. Red first on the current head: the old prefix allows
+  and the new prefix denies with OR8. Falsifiers: a hook that still accepts
+  either spelling of the old prefix; an OR5 or OR8 line still naming the old
+  role while the hook table says `Developer` (or the reverse); the flipped row
+  left `allowed`; a deny text carrying a second hand-written copy of the role
+  list instead of the core line. Part B (the allow-list guard) is not covered
+  here.
 
 ### S505 — Exact role prefixes reject QA-lead (#618 AC1)
 **Covers:** F40
@@ -8169,6 +8194,7 @@ Integration seams: explicit adoption and read-only status, installed hook stdin 
 - Given: the hook --list-roles rows, role_stage for all five roles, and OR5's stage/role/label/marker rows.
 - When: the hook output is parsed by tab and compared with the other public outputs; one stage in each map source and the hook's tab join to a one-space join are independently mutated in scratch copies.
 - Then: every hook output line has exactly three tab-separated fields (prefix name, flag name, stage), preserving the space within Fullstack Developer as part of the first field. All rows agree, including Fullstack Developer to Developer; a conforming tab-separated scratch output passes, and the one-space join fails the field-format pin. Each single-source map mutation fails the oracle independently of the working hook's delimiter. The inventory still equals --list-checks through S311.
+- Amended by #685 (A59, Part A): the fifth role's first field is now the single word `Developer` (no space), still the prefix name; the three-field and agreement checks are unchanged, and a row still spelling `Fullstack Developer` fails the agreement oracle.
 - Falsifiers: a wrong verdict, output, reason, mapping or instruction; a mutation surviving its named oracle; a refusal caused by fixture failure.
 
 ### S419 — Instructing docs pin role commands and retain grammar ownership (#599 AC6, AC7)
