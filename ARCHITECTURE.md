@@ -4447,9 +4447,10 @@ wording, A57 and A59 unchanged.
   approval: none; only accepted, enabled `merge-risk-panel` delegation (#511)
   may add it." 30/30. Given amended (below): base 30/30, head 30/30. OB66 and
   OB69 (same shape, red CI / fix on update): base and head 10/10 each.
-  Majority-of-3 per arm at a 15-25% per-call rate diverges in roughly 1 run in
-  10-25, and in either direction; the two failures and the isolated `same`
-  recheck are that noise.
+  The per-call `self_check` rate swung between batches (base 5/10, 1/10,
+  4/20), so majority-of-3 per arm flips OB65 in either arm in a material share
+  of runs (about 1 in 6-16 at a steady 15-25%, more in a high batch); the two
+  failures and the isolated `same` recheck are that noise, not a core effect.
 - **Decision.** Core unchanged: the OR11 sentence and the OR6/OR43 pointers stay
   (OR11 stays conditional, as Product requires). QA appends one sentence to the
   end of OB65's Given in `test/behavior/orchestrator-scenarios.md`:
