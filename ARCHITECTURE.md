@@ -3712,3 +3712,37 @@ text (OR43): the maintainer decides. A57 is used because A55 is claimed twice
 - **Revisit when:** the next core addition needs more than about 75 characters in
   slot 1 or about 100 in slot 2; then option (B) or the reserve cut is the next
   step, decided by the maintainer.
+
+#### A57 addendum (Architect, Planning, 2026-11-09): S548 byte pins join the file list
+
+Loop-back from QA (d63eddd, d0a7433) and the Developer. A57's file list missed
+`test/fixtures/stage-selection-647.py`: its `SNAPSHOTS` pin the SHA-256 of
+`ORCHESTRATOR.md`, `orchestrator-scenarios.md`, `orchestrator-core-pins.tsv` and
+`orchestrator-diff.stamp` (S548), and the bundled edit must change the first three.
+
+- **File list.** Add `test/fixtures/stage-selection-647.py` (the `SNAPSHOTS` entries
+  only) to QA's files, with `TEST-SCENARIOS.md` S548 carrying an "Amended by #652"
+  line. The waiver-authority and mutation controls are untouched.
+- **Mechanism, checked.** QA's two-step is right. The stamp hashes only
+  `ORCHESTRATOR.md` and the scenarios (`orchestrator_diff.py` `stamp_hash`), never the
+  fixture, so re-pinning the fixture cannot make the stamp stale: no circularity.
+  Dropping the stamp pin would be simpler but weakens a #647 oracle, which the
+  maintainer decides, not this design; so the pin stays.
+- **Order and owners.**
+  1. Developer finishes the bytes of `ORCHESTRATOR.md`, the scenarios file and the
+     pins file (A57 edits). Any later change to those bytes voids step 2.
+  2. QA (Test) re-pins the three entries from the final bytes. The current pins are
+     provisional, taken from the Developer's patch.
+  3. The orchestrator runs the behavior run and commits the generated stamp (OR46 b);
+     nobody hand-edits it or the fixture.
+  4. QA, in a follow-up Test dispatch, re-pins only the `orchestrator-diff.stamp`
+     entry, runs S548, S323 and S335, and pushes. This changes no stamped byte, so
+     the stamp stays valid. Until step 4, S548 is red on the stamp pin by design.
+  5. Merge only after step 4 is green; the stamp-pin dispatch is part of A57's done.
+- **Violated when** (added to A57): an S548 pin of the three content files differs
+  from the committed bytes at merge; the stamp pin differs from the committed stamp
+  at merge; a pin is taken before the Developer's bytes are final; or the fixture is
+  hand-edited by the orchestrator rather than re-pinned by QA.
+- **Doubt, recorded.** [A] Dropping the stamp pin (stamp-check already covers
+  staleness) would save one dispatch; kept because removing a pin is the
+  maintainer's call.
