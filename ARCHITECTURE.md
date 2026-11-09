@@ -4472,3 +4472,182 @@ wording, A57 and A59 unchanged.
   other ask-for-merge scenarios; OB66/OB69 measured 10/10, others not measured.
   [A] Runner noise of this size can flip any near-boundary scenario; a
   `--runs 5` default would cut it but changes cost and is not this item's call.
+
+#### A58 addendum 3 (Architect, Planning, 2026-11-10): reserved closure, verifier pinned to B, hold history, acceptance target, server clock
+
+Loop-back from Review round 1 on PR #696 at cca7dbe (comment 6753769243,
+findings reserved-closure, verifier-not-pinned-to-B, pre-record-hold-release,
+acceptance-any-comment, hold-local-clock, untested-fail-closed-checks,
+traceability-gates). Still PROPOSAL; core bytes (`ORCHESTRATOR.md`) and
+`test/behavior/orchestrator-scenarios.md` do not change, so the stamp stays
+valid. AC5/F73 are not amended: every decision below makes the code meet them.
+
+- **F1 — Reserved set: an explicit complete list, kept complete by a closure
+  test (finding reserved-closure).** [V, read on cca7dbe] The files the gates and
+  the verifier run or source are: `merge-risk-evidence.sh` -> `lib/merge-risk.py`
+  -> `lib/markdown.sh`, `lib/model-record.sh`, `merge-preflight.sh` ->
+  `hooks/git-guardrails` -> `hooks/read-command.py`, `hooks/rules.sh`,
+  `lib/markdown.sh`, `lib/changes.sh`,
+  `skills/pre-merge-review/model-record-gate.sh` -> `lib/changes.sh`,
+  `lib/model-record.sh` -> `lib/markdown.sh`. The reserved test cases source
+  `test/lib.sh`, `test/fixtures/pipeline-371-helpers.sh` and
+  `lib/context-budget.sh`; `test/run.sh` runs them. The wiring that makes the
+  guard and the required check exist is `settings/session-hooks.json`, `check`
+  and `.github/workflows/**`. [A] Decision: the verifier keeps one explicit list
+  (D3: one list, data only; a closure computed at verify time would need a shell
+  and Python reference parser inside the oracle, which is more code to trust).
+  `reserved.autonomy` gains `hooks/read-command.py`, `hooks/rules.sh`,
+  `lib/markdown.sh`, `lib/changes.sh` (removed from `groups.adoption`, so the
+  lists stay disjoint), `lib/context-budget.sh`, `settings/session-hooks.json`,
+  `check`, `.github/workflows/**`, `test/lib.sh`, `test/run.sh`,
+  `test/fixtures/pipeline-371-helpers.sh`. `.github/**` stays in `guard` for the
+  rest (issue templates); reserved wins. How it stays complete: a new test (QA
+  scenario, first free ID, S628 on this head) derives the closure from the entry
+  points `merge-risk-evidence.sh`, `merge-preflight.sh`, `hooks/git-guardrails`,
+  `lib/merge-risk.py` and every file matching `test/cases/**merge_risk**` and
+  `test/fixtures/merge-risk**`, following the reference forms these files use
+  (shell `.`/`source` and executed paths built from `$own_dir`, `$script_dir`,
+  `$(dirname "${BASH_SOURCE[0]}")`, `$TEST_REPO_ROOT`; Python `LIB / '<name>'`,
+  `Path(script_dir) / '<name>'`) to a fixpoint, adds the wiring entries
+  (`settings/session-hooks.json`, `check`, `.github/workflows/ci.yml`) and
+  `test/run.sh`, and asserts that each path, checked alone with `--phase class`
+  against the config at HEAD, answers `referred` with `reserved-path`. A
+  reference to a repository file the resolver cannot resolve fails the test (it
+  names the line), so a new form forces a decision. The closure is inductive:
+  adding an edge needs an edit to a file already in the closure, which is
+  reserved, so the candidate that adds it is referred. The test's entry and
+  wiring names are an oracle, not a second policy list (D3's "Violated when"
+  is about lists the verifier reads).
+- **F2 — The verifier judges only from bytes equal to B (finding
+  verifier-not-pinned-to-B).** [A] Mechanical part: the collector, before any
+  other read, records `verifier: {head, mismatches}` for its own checkout
+  (`script_dir`): `head` = `git -C <script_dir> rev-parse HEAD`; `mismatches` =
+  every path matching `reserved.autonomy` in `git ls-tree -r --name-only B` whose
+  working-file bytes differ from `git cat-file blob B:<path>`, or that is missing
+  (bytes are compared directly, so `assume-unchanged`, `skip-worktree` and index
+  tricks do not hide a change). The evaluation answers `unresolved
+  verifier-not-at-base` when `head != B`, B is not in the local object store, the
+  field is absent, or any mismatch exists (detail: first path). Because F1 makes
+  every gate and verifier file reserved, this compares exactly the bytes that
+  judge. Procedure part (skill, Hard gates and executor sequence): the executor
+  runs from a dedicated detached checkout of B (`git worktree add --detach`,
+  refreshed with `git fetch origin` and `git checkout --detach origin/main`
+  before each item, D7 step 6) and points `SPEC_DRIVEN_GUARDRAILS_DIR` and its
+  session's hooks at it; after a merge B moves, so the next verify refuses until
+  the checkout is refreshed (safe direction). What stays procedure: a verifier
+  that is not B's code can skip its own self-check (the check catches accidental
+  drift such as a candidate branch checked out, not a deliberate substitution),
+  and the guard the PreToolUse hook runs at the literal merge is whatever the
+  session's hook configuration points at. Both go to Residual risks.
+- **F3 — A stop at any time before T needs the maintainer's release (finding
+  pre-record-hold-release).** [A] The safer option is taken; AC5/F73 stay as
+  written. For the newest eligible record (time T), every `labeled` event of a
+  `labels.hold` or `labels.off` label on the PR or the work-item issue at any
+  time before T (no lower bound, no "earlier record" condition) requires
+  `hold_release`; the linked words must be dated after the latest such event
+  (existing `hold-release-stale`, boundary `<=` stays stale). A missing release
+  keeps the existing reason `hold-release-missing` and its verdict. S618 row (g)
+  (hold at T-100, removed at T-50) changes from `eligible` to that verdict and
+  becomes the row that pins this finding. Control issue: its off label has an
+  unbounded history, so this rule does not read it; instead any `labeled` event
+  of `labels.off` on the control issue after the committer date of the last
+  commit at or before B that changed `policy/merge-autonomy.json` answers
+  `referred off-since-config` (date unreadable: `unresolved`). So after a global
+  off only a maintainer-approved config PR re-enables (a reserved path, so a
+  human-path merge; it also changes C, voiding old records). D7's "config PR or
+  label removal" becomes "config PR"; this narrows D7, not an AC.
+- **F4 — The acceptance comment must be on #646 by the repository owner
+  (finding acceptance-any-comment).** [A] The collector stores the comment's
+  `issue_url`, `html_url` and `user.login` (null when unreadable).
+  `acceptance-unverified` unless `issue_url` is
+  `https://api.github.com/repos/<repository>/issues/646` and `user.login` equals
+  the owner part of `repository` (detail: `missing`, `issue` or `author`). On the
+  shared login the author check proves the account, not the person; the body's
+  meaning stays procedure, carried by the config PR that sets `acceptance`, which
+  is reserved and so merges only on the human path.
+- **F5 — `now` is GitHub's clock (finding hold-local-clock).** [A] The collector
+  takes `now` from the `Date` response header of one `gh api --include
+  repos/<repository>/branches/main` request made last, after the timeline reads;
+  absent or unparseable gives `unresolved now-unreadable`. The local clock no
+  longer enters any verdict. Residual: one-second granularity (T is seconds too)
+  and trust in GitHub's own clock, which also sets T.
+- **F6 — Traceability gates (finding traceability-gates): Product.** [A] Product
+  edits issue text only: #646's `**Covers:**` field adds S605-S627 plus QA's new
+  ID(s) once QA has fixed them; #685's AC headings are renamed to the `AC<n>`
+  form the gate reads (content unchanged; the A/B parts stay in the text). The
+  orchestrator reruns `scenario-gate.sh .` and `issue-structure-gate.sh 696`.
+- **F7 — Who re-pins S548 (Reviewer's authorship note).** [A] A4 wins over A59
+  steps (3)/(5) and addendum 2's wording: test code, including `SNAPSHOTS`
+  re-pins, is the Developer's; QA owns `TEST-SCENARIOS.md` and scenario text.
+  Nothing in this addendum needs a re-pin (no stamped byte changes).
+
+- **QA (`TEST-SCENARIOS.md` only).**
+  - New S628 "The reserved set covers everything the gates and the verifier run"
+    (F1): each closure file alone is `referred reserved-path`; an unresolvable
+    reference fails; a planted new sourced file in a copy of the guard fails if
+    unreserved; control: `test/lib/model-record.sh` stays ordinary.
+  - S614 (F2): `verifier-not-at-base` rows for head != B, a reserved file's bytes
+    differ, B absent, field absent; control at B. S614 or S625 (F4): acceptance
+    missing, on another issue, by another login, plus the `acceptance-unverified`
+    row the review found absent.
+  - S618: row (g) flips (F3); new row: a stop event at exactly T voids (`>=`).
+    S619: a hold before any record, released by later words, is eligible; words
+    dated at or before the hold are stale; a control-issue off after the config
+    commit is `referred off-since-config`, one before it is a control.
+  - S617 (F5): `now` missing gives `unresolved now-unreadable`.
+  - Rows for the other untagged checks of finding 4: S615 final `record-label`,
+    `record-id`, `manifest-binding` (repository, issue); S609
+    `identity-config-commit`; S608 `position-mismatch`; S611 `pr-not-open`,
+    closing issues unreadable, `issue-unreadable`, `labels-unreadable`; S605
+    `check` absent from the check runs; S610 two authors with different scores
+    and a voter between them (`floor-below`, kills `min`).
+- **Developer (code, config, tests).** `policy/merge-autonomy.json` (F1 list);
+  `lib/merge-risk.py` (F2 collector and evaluation, F3 rule and
+  `off-since-config` with its commit-date read, F4 fields, F5 `Date` header, the
+  local clock out of every verdict); `skills/merge-risk-panel/SKILL.md` (Hard
+  gates: dedicated checkout at B; revocation: re-enable by config PR only; hold
+  rule wording; the Residual risks below; stays under 16,000 bytes); the S628
+  case and closure resolver; fixture rows for every QA row; a `# rule:` tag and
+  a MUTATIONS entry, each killed, for the 15 checks the review lists
+  (`acceptance-unverified`, final `record-label`, `record-id`,
+  `manifest-binding`, `identity-config-commit`, `position-mismatch`,
+  `pr-not-open`, closing issues unreadable, `check` missing, `issue-unreadable`,
+  `labels-unreadable`, `now-unreadable`, floor `max`, void `>=`, release-stale
+  boundary) and for each new rule (`verifier-not-at-base`, pre-record release,
+  `off-since-config`, acceptance issue, acceptance author, server `now`); the
+  fixture header claim corrected to match. A collector-level test for F2 and F5
+  uses a throwaway local repository and a stubbed `gh`; if not feasible, the
+  report says so and the bundle rows stand.
+- **Orchestrator.** PR #696's acceptance points 2 and 4 list F1's additions and
+  the narrowed class; the stale PR-description sentences (slot-1 size,
+  differential run as "next step") are corrected. No new differential run.
+
+- **Residual risks (replaces A58's list; for acceptance point 2).** [A] (1)
+  Every record, label, position and the acceptance comment is forgeable on the
+  shared login; the verifier proves equal bytes and an account, not honest
+  authors. (2) The hold/base read is not atomic: a hold added between the last
+  read and the merge is detected afterwards as an incident. (3) Three of five
+  positions are conditional and written before the final diff. (4) The verifier
+  binds only if run. (5) Semantic disqualifiers rest on Reviewer judgment. (6)
+  Slot-1 headroom is about 513 over the 500 floor. (7) The skill reaches adopted
+  projects (inert) before #679. (8) A revert does not undo what adopters pulled.
+  (9) The B-pinning self-check runs inside the code it checks: it catches
+  accidental drift, not a deliberately substituted verifier, and the guard the
+  hook runs at the literal merge is not verified. (10) The closure test sees
+  static references in the forms it knows; `gh`, `git`, `python3`, `bash` and
+  GitHub itself are outside it. (11) `now` and T are GitHub's clock at
+  one-second granularity. (12) Any hold ever placed on the PR or work-item issue
+  costs a maintainer quote before autonomy, and a global off costs a config PR.
+- **Violated when** (added): a file in the derived closure is not reserved; a
+  verdict other than `unresolved` (or `referred`) is given when the verifier's
+  checkout is not B or a reserved file differs from B; a PR or issue with any
+  earlier stop event is `eligible` without a later `hold_release`; a
+  control-issue off after the config commit is not `referred`; an acceptance
+  comment on another issue or by another login verifies; the local clock
+  decides the hold.
+- **Doubts (one line each).** [A]
+  - Reserving `check`, `.github/workflows/**`, `lib/changes.sh` and the test harness narrows C5 further by an unmeasured amount; the maintainer may prefer naming some as deliberately eligible (finding 1, option b).
+  - `hold-release-missing` keeps verdict `held` although waiting cannot fix an immutable record; `unresolved` would match E2's logic but changes S619 rows, so it is left to the maintainer.
+  - The control-issue rule makes every off/on toggle cost a config PR; a dated re-enable field in the config was judged not worth the schema change.
+  - The owner-login check on the acceptance is near-zero assurance on a shared login; kept because it is free and stops a wrong-issue paste.
+  - A dedicated executor checkout is one more thing to keep fresh; refusal on drift makes the failure visible, not silent.
