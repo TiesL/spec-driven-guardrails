@@ -13,6 +13,11 @@ point.
 
 ## Unreleased
 
+- #678: Tighten the panel fixture oracle (items 1-6): null list fields give named
+  diagnostics instead of crashing, `prior[].result` is limited to `denied`/`none`,
+  unresolved/escalated records carry no dissent, the structured target is read for
+  six tokens, `unanimous-skip` facts must match the `protected-work` row, and PRD
+  F68 reads "the rest of ARCHITECTURE". Fixture and spec wording only.
 - #645: Document the temporary-decision panel proposal, allow-list, independent
   model-floor evidence, issue-home records and grouped merge-approval disclosure;
   decisions remain temporary and maintainer-pending; editing the panel's own rules, meaning any
