@@ -853,6 +853,13 @@ def _(t):
     expect(o, 'unresolved', has=['condition-scope'], detail='Architect docs/guide.md')
 
 
+@row('609', 'a-paths-line-missing')
+def _(t):
+    body = '\n'.join(x for x in report('Architect').split('\n') if not x.startswith('paths: '))
+    o = with_report(t, 'Architect', body)
+    expect(o, 'unresolved', has=['condition-missing'], lacks=['condition-scope'], detail='Architect')
+
+
 @row('609', 'b-row-head-differs')
 def _(t):
     expect(with_report(t, 'QA', report('QA', head=H2)), 'unresolved', has=['position-head'], detail='QA')
@@ -903,6 +910,17 @@ def _(t):
     expect(t.ev(b), 'unresolved', has=['record-duplicate'])
 
 
+@row('609', 'control-earlier-non-eligible-record')
+def _(t):
+    for outcome in ('held', 'unresolved'):
+        b = base(t)
+        b['issue_comments'] = []
+        add_record(b, manifest(b, n=1, outcome=outcome), created=T0 - timedelta(seconds=60))
+        add_record(b, manifest(b, n=2), created=T0)
+        o = t.ev(b)
+        expect(o, 'eligible', lacks=['record-duplicate'], detail=None)
+
+
 @row('609', 'g-edited')
 def _(t):
     b = base(t)
@@ -928,6 +946,9 @@ mutation('609', 'single-record', ['f-two-records'], lib=('drop', 'single-record'
 mutation('609', 'no-edit', ['g-edited'], lib=('drop', 'no-edit'))
 mutation('609', 'digest-sources', ['c-ac-digest', 'd-design-digest'], lib=('drop', 'ad-source'))
 mutation('609', 'condition-scope', ['a-scope-excludes-path'], lib=('drop', 'condition-scope'))
+mutation('609', 'condition-missing', ['a-paths-line-missing'], lib=('drop', 'condition-missing'))
+mutation('609', 'count-every-outcome', ['control-earlier-non-eligible-record'],
+         lib=('sub', 'eligible-only', "if m['outcome'] == 'eligible'", 'if True'))
 mutation('609', 'row-head', ['b-row-head-differs'], lib=('drop', 'position-head-cond'))
 
 
@@ -1209,17 +1230,21 @@ def one_path(t, path, extra=''):
     return t.ev(b)
 
 
-RESERVED_ROWS = ['CHANGELOG.md', 'VERSION', 'package.json', 'skills/release-branch-workflow/x',
-                 'merge-preflight.sh', 'hooks/git-guardrails', 'skills/pre-merge-review/x', 'lib/model-record.sh',
-                 'pipeline-override.sh', 'skills/role-contracts/x', 'skills/merge-risk-panel/SKILL.md',
-                 'policy/merge-autonomy.json', 'merge-risk-evidence.sh', 'lib/merge-risk.py',
-                 'test/cases/s610_merge_risk_x.sh', 'test/fixtures/merge-risk-646.py', 'test/behavior/merge-risk-scenarios.md']
-RESERVED_PATTERN = dict(zip(RESERVED_ROWS, ['CHANGELOG.md', 'VERSION', 'package.json', 'skills/release-branch-workflow/**',
-                                            'merge-preflight.sh', 'hooks/git-guardrails', 'skills/pre-merge-review/**',
-                                            'lib/model-record*', 'pipeline-override.sh', 'skills/role-contracts/**',
-                                            'skills/merge-risk-panel/**', 'policy/merge-autonomy.json', 'merge-risk-evidence.sh',
-                                            'lib/merge-risk*', 'test/cases/*merge_risk*', 'test/fixtures/merge-risk*',
-                                            'test/behavior/merge-risk*']))
+RESERVED_PAIRS = [
+    ('CHANGELOG.md', 'CHANGELOG.md'), ('VERSION', 'VERSION'), ('package.json', 'package.json'),
+    ('skills/release-branch-workflow/x', 'skills/release-branch-workflow/**'),
+    ('merge-preflight.sh', 'merge-preflight.sh'), ('hooks/git-guardrails', 'hooks/git-guardrails'),
+    ('skills/pre-merge-review/x', 'skills/pre-merge-review/**'), ('lib/model-record.sh', 'lib/model-record**'),
+    ('lib/model-records-note.md', 'lib/model-record**'),
+    ('pipeline-override.sh', 'pipeline-override.sh'), ('skills/role-contracts/x', 'skills/role-contracts/**'),
+    ('skills/merge-risk-panel/SKILL.md', 'skills/merge-risk-panel/**'),
+    ('policy/merge-autonomy.json', 'policy/merge-autonomy.json'), ('merge-risk-evidence.sh', 'merge-risk-evidence.sh'),
+    ('lib/merge-risk.py', 'lib/merge-risk**'), ('test/cases/s610_merge_risk_x.sh', 'test/cases/**merge_risk**'),
+    ('test/fixtures/merge-risk-646.py', 'test/fixtures/merge-risk**'),
+    ('test/fixtures/merge-risk/x.py', 'test/fixtures/merge-risk**'),
+    ('test/behavior/merge-risk-scenarios.md', 'test/behavior/merge-risk**')]
+RESERVED_ROWS = [p for p, _ in RESERVED_PAIRS]
+RESERVED_PATTERN = dict(RESERVED_PAIRS)
 for _p in RESERVED_ROWS:
     def _mk(p=_p):
         def fn(t):
@@ -1246,7 +1271,7 @@ def _(t):
 
 @row('613', 'star-one-segment')
 def _(t):
-    expect(one_path(t, 'skills/adopt-workflow/sub/x.md'), 'referred', has=['unlisted-path'])
+    expect(one_path(t, 'lib/sub/adopt-x.sh'), 'referred', has=['unlisted-path'])
 
 
 @row('613', 'double-star-depth')
@@ -1365,18 +1390,18 @@ def _(t):
     expect(one_path(t, 'test/VERSION'), 'eligible')
 
 
-FINDINGS = {'613': ['FINDING (#646): S613 lists lib/model-records-note.md as a look-alike control that must stay '
-                    'eligible, but A58 D3 reserves lib/model-record* (one-segment star: it matches that path) and no '
-                    'A55 group lists lib/** (so it would be unlisted anyway). Not asserted here; routed to QA and the '
-                    'Architect. Current verdict: %s'],
-            '618': ['FINDING (#646): S618 (a)/(b) expect held or referred for a hold/risk label added after T; A58 D4 '
-                    'makes void-after-announcement unresolved and the precedence referred > unresolved > held, so '
-                    'the verifier answers unresolved. Rows assert the shared part (not eligible, record void).']}
+@row('613', 'control-lookalike-test-lib-model-record')
+def _(t):
+    expect(one_path(t, 'test/lib/model-record.sh'), 'eligible')
 
 
-def _lookalike_note(t):
-    o = one_path(t, 'lib/model-records-note.md')
-    return FINDINGS['613'][0] % o.verdict
+NESTED_GROUP_CONTROLS = ['.github/workflows/ci.yml', 'adapters/codex/INSTRUCTIONS.md', 'skills/adopt-workflow/SKILL.md']
+for _p in NESTED_GROUP_CONTROLS:
+    def _mk(p=_p):
+        def fn(t):
+            expect(one_path(t, p), lacks=['unlisted-path', 'reserved-path'])
+        return fn
+    row('613', 'control-nested ' + _p)(_mk())
 
 
 for _p in RESERVED_ROWS:
@@ -1390,6 +1415,19 @@ for _p in RESERVED_ROWS:
     _others = [x for x in RESERVED_ROWS if RESERVED_PATTERN[x] == RESERVED_PATTERN[_p]]
     mutation('613', 'delete reserved entry ' + RESERVED_PATTERN[_p], ['reserved ' + x for x in _others], config=_cfg_drop, exact=True)
 mutation('613', 'reserved-rule', ['reserved ' + x for x in RESERVED_ROWS], lib=('drop', 'reserved'))
+
+
+def _one_segment(text, group, pat):
+    cfg = json.loads(text)
+    lst = cfg['groups'][group]
+    lst[lst.index(pat + '/**')] = pat + '/*'
+    return json.dumps(cfg)
+
+
+# Only .github/workflows/ci.yml depends on `/**` alone: adapters/codex/INSTRUCTIONS.md is
+# also a generated input, and skills/adopt-workflow/SKILL.md is a direct child.
+mutation('613', 'one-segment star .github', ['control-nested .github/workflows/ci.yml'], exact=True,
+         config=lambda s: _one_segment(s, 'guard', '.github'))
 mutation('613', 'delete label hold', ['hold-pr', 'hold-issue'], exact=True,
          config=lambda s: json.dumps(dict(json.loads(s), labels={'hold': ['risk:*'], 'off': 'merge-autonomy:off'})))
 mutation('613', 'delete label risk', ['risk-high-pr'], exact=True,
@@ -1733,14 +1771,16 @@ def _(t):
 @row('618', 'a-hold-on-pr-after-T')
 def _(t):
     o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=10)))], {'pr': ['hold']})
-    expect(o, among=('held', 'referred', 'unresolved'), has=['void-after-announcement', 'label-hold'])
+    expect(o, 'unresolved', has=['void-after-announcement', 'label-hold'])
+    need(o.rc == 4, 'exit %s, expected 4' % o.rc)
 
 
 @row('618', 'b-risk-on-issue-after-T')
 def _(t):
     for label in ('risk:high', 'risk:low'):
         o = timeline_case(t, [('issue', ev_label('issue', label, T0 + timedelta(seconds=10)))], {'issue': [label]})
-        expect(o, among=('held', 'referred', 'unresolved'), has=['void-after-announcement'])
+        expect(o, 'unresolved', has=['void-after-announcement', 'label-hold'], detail='issue %s' % label)
+        need(o.rc == 4, 'exit %s, expected 4' % o.rc)
 
 
 @row('618', 'c-off-on-control-after-T')
@@ -1748,20 +1788,23 @@ def _(t):
     o = timeline_case(t, [('control', ev_label('control', 'merge-autonomy:off', T0 + timedelta(seconds=10)))],
                       {'control': ['merge-autonomy:off']})
     expect(o, 'referred', has=['void-after-announcement', 'label-off-control'])
+    need(o.rc == 3, 'exit %s, expected 3' % o.rc)
 
 
 @row('618', 'd-added-then-removed')
 def _(t):
     o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=10))),
                           ('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=20), 'unlabeled'))])
-    expect(o, 'unresolved', has=['void-after-announcement'])
+    expect(o, 'unresolved', has=['void-after-announcement'], lacks=['label-hold'])
+    need(o.rc == 4, 'exit %s, expected 4' % o.rc)
 
 
 @row('618', 'e-same-second')
 def _(t):
     o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=10))),
                           ('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=10), 'unlabeled'))])
-    expect(o, 'unresolved', has=['void-after-announcement'])
+    expect(o, 'unresolved', has=['void-after-announcement'], lacks=['label-hold'])
+    need(o.rc == 4, 'exit %s, expected 4' % o.rc)
 
 
 @row('618', 'f-timeline-unreadable')
@@ -1778,16 +1821,13 @@ def _(t):
     expect(o, 'eligible')
 
 
-@row('618', 'finding-verdict-label')
-def _(t):
-    o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 + timedelta(seconds=10)))], {'pr': ['hold']})
-    print(FINDINGS['618'][0] + ' Current verdict: %s' % o.verdict)
-
-
 mutation('618', 'ignore-after-T', ['d-added-then-removed', 'e-same-second'], lib=('drop', 'void'))
 mutation('618', 'honour-removal', ['d-added-then-removed'],
          lib=('sub', 'void', '_hit(ev, where)', "_hit(ev, where) and ev.get('label') in now_labels[where]"))
 mutation('618', 'unreadable-as-empty', ['f-timeline-unreadable'], lib=('drop', 'timeline-readable'))
+mutation('618', 'void-mapped-to-held', ['a-hold-on-pr-after-T', 'b-risk-on-issue-after-T', 'd-added-then-removed',
+                                        'e-same-second'], exact=True,
+         lib=('sub', 'void-verdict', "r.add('unresolved', 'void-after-announcement'", "r.add('held', 'void-after-announcement'"))
 
 
 # =========================================================================
@@ -2269,7 +2309,4 @@ mutation('626', 'heading-moved', ['heading-order'], skill=lambda s: sub_once(s, 
 
 
 if __name__ == '__main__':
-    code = main()
-    if SCN == '613':
-        print(_lookalike_note(Tree()))
-    sys.exit(code)
+    sys.exit(main())

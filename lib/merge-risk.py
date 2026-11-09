@@ -520,7 +520,7 @@ def check_row(b, m, row, H, ctx, r):
             r.add('unresolved', 'marker-present', 'orchestrator comment must be marker-free (OR44)')
     if row['position'] == 'yes-if':
         scope = condition_paths(body)
-        if not scope:
+        if not scope:  # rule:condition-missing
             r.add('unresolved', 'condition-missing', role)
         else:
             for p in ctx.get('paths', []):
@@ -558,7 +558,7 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
             r.add('unresolved', 'manifest-schema', '%s %s' % (c.get('url'), e))
         if not errs:
             valid.append((c, m))
-    eligible = [(c, m) for c, m in valid if m['outcome'] == 'eligible']
+    eligible = [(c, m) for c, m in valid if m['outcome'] == 'eligible']  # rule:eligible-only
     mine = sorted(((c, m) for c, m in eligible if m['head'] == H), key=lambda x: str(x[0].get('created_at')))
     if not mine:  # rule:identity-head
         r.add('unresolved', 'identity-head' if eligible else 'record-missing',
@@ -577,8 +577,9 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
         return stops(where, ev)
     events = [(where, ev) for where in ('pr', 'issue', 'control') for ev in label_events(b, where)]
     stop_times = [ts(ev.get('created_at')) for where, ev in events if _hit(ev, where) and ts(ev.get('created_at'))]
-    # An earlier record for H is superseded only when a hold voided it before the
-    # latest record was posted; any other second record is a duplicate.
+    # A58 addendum E4: exactly one non-superseded eligible record for H. An earlier
+    # one is superseded only when a hold or off stop event at or after its T, and
+    # before the newer record's T, voided it; any other second one is a duplicate.
     latest_t = ts(mine[-1][0].get('created_at'))
     superseded = all(ts(cc.get('created_at')) and latest_t and any(ts(cc.get('created_at')) <= t < latest_t for t in stop_times)
                      for cc, mm in mine[:-1])
@@ -661,7 +662,7 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
         if when is None:
             r.add('unresolved', 'timeline-unreadable', 'event time')
         elif when >= T and _hit(ev, where):  # rule:void
-            r.add('unresolved', 'void-after-announcement', '%s %s at %s' % (where, ev.get('label'), ev.get('created_at')))
+            r.add('unresolved', 'void-after-announcement', '%s %s at %s' % (where, ev.get('label'), ev.get('created_at')))  # rule:void-verdict
     earlier = [ts(cc.get('created_at')) for cc, mm in valid if ts(cc.get('created_at')) and ts(cc.get('created_at')) < T]
     T_first = min(earlier) if earlier else T
     holds = [t for t in stop_times if T_first <= t < T]
