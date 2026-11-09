@@ -3621,3 +3621,94 @@ together with this addendum, which prevails.
 - **Doubt, recorded.** [A] Consequence of the widening: D4-style rule edits to
   `templates/` scripts, which adopted projects copy, now always need the maintainer
   even for a typo fix; accepted by the decision.
+
+### A57 — Core headroom by redundancy cuts, OR44 qualifier restored, "paid" wording retired, one stamp (#652, #676; F38; amends A41 "#620 amendment" Budget note and A42 Budget)
+
+Status: PROPOSAL (Architect, Planning, 2026-11-09). `ORCHESTRATOR.md` is contract
+text (OR43): the maintainer decides. A57 is used because A55 is claimed twice
+(#683 merged; #646 on its branch) and A56 by #680 on its branch.
+
+- **Measured (S318 guard, `session-context.sh --runtime claude --slot n`, worst-case
+  fixture, macOS `mktemp -d`, head 0672da0).** Slot 1 = 8,668 (CLAUDE.md-link warning
+  507 plus part 1 8,161), slot 2 = 8,499 (part 2). The worst case depends on the
+  sandbox path: two paths in the warning, so a Linux `/tmp` sandbox reads about 80
+  less. macOS (local and the CI macOS leg) is the larger and is the one targeted.
+- **Constraint found.** A41 Human decisions 1-2 on #499: every rule stays injected
+  verbatim and no rule moves to a voluntary read. Moving a rule's obligation to the
+  `dispatch-economy` skill or to this file therefore needs that human decision
+  amended; this design does not do it.
+- **Q1 (what leaves core).** No rule and no obligation. Only text that states no
+  obligation, or restates one that another line of the same core already carries,
+  is removed. Nothing lands elsewhere: the removed fragments are either explanation
+  already held by A41/A42/A27/A33 or duplicates inside the core.
+  - Part 1 (-244): OR3 "(its own reduced-role shape)"; OR46 "(SKILL.md
+    command/log)"; OR43 "Existing authority for work-item merges into release
+    branches unchanged." (OR43's list already says "merges into `main`", and OR11
+    states the release-branch step); OR45 "; Architect's risk-note format in
+    `SKILL.md`" (OR21 carries the pointer); OR13 "Log: continued yes/no, rule
+    applied, reported size of agent not continued." (OR22's dispatch-line fields
+    carry the same log obligation, in the same always-injected pair of parts).
+  - Part 2 (-121 cut, +16 net added): OR15 "May link fix commits/Developer
+    comments." (a permission, no obligation); OR23 "Class, severity = judgments;
+    script only checks route left evidence."; OR22 "(A27, A33)" citation. Added:
+    OR44 qualifier (+21) and OR48 (1) "Paid" dropped (-5).
+  - Result, measured on a scratch copy with the real guard: slot 1 = 8,424
+    (headroom 576), slot 2 = 8,394 (headroom 606). The pin-bearing tests on the
+    copy fail only on the OR44 pin (S311, and the S317/S322/S333 harness calls)
+    and the stamp; no phrase pin breaks.
+  - Rejected cuts, pinned: OR11 "#511" (S330, S333), OR34 "`pipeline-override.sh
+    --help`" (S378), OR46 "OR19 and the A49 conflict stop still apply."
+    (skip-test pins). Reserve if the differential run rejects a cut: the header
+    sentence's "cross-part reference by ID only; never renumber." (-48 in each
+    slot; needs the `orchestrator-core.py` SENTENCE pin and A41's quoted header
+    amended).
+- **Q2 (numbers).** Unchanged: budget 9,000, floor 500, fallback trigger 8,500.
+- **Q3 (OR47/OR48).** Stay in part 2; the placement rule stays. Slot 2 at 8,394 is
+  under 8,500, so the fallback condition does not fire (AC3).
+- **Q4 (OR44).** In core. Last sentence "No `model-record` marker in it." becomes
+  "No `model-record` marker in any orchestrator record." (the lost sentence of
+  1aba086^ in core style). OR44 stays tier `core`; its pin row changes. OR22 and
+  OR26 are left as they are (no behavior change).
+- **Q5 (#651 rule).** Outside core, in its skill: it must not spend this headroom.
+- **Q6 (slot-1 floor).** In scope. S318 asserts `CONTEXT_BUDGET_CHARS - s1 >= FLOOR`
+  as it does for slot 2 (red on 8,668), adds a slot-1 floor negative control (part 1
+  grown to headroom FLOOR-1 is refused), and an AC2 control: one non-whitespace
+  character appended to the part of the larger slot still passes.
+- **AC consistency.** AC4's behavioral falsifier (a new OB for a PR comment) is
+  narrowed: OR44 is tier `core`, which A41 tests by pin and wording, not by
+  scenarios, and the runner's closed schema has no field that grades a marker in a
+  drafted comment. The mechanical falsifier (S280 requires "any orchestrator
+  record"; a decision-table-415 mutation that drops it goes red) carries AC4. A new
+  OB would need a new schema field (`orchestrator_diff.py` SCHEMA, the scenario
+  file's schema, S315), which is a runner change. Recommendation awaiting
+  Product/maintainer, not an amendment. Other ACs: none contradicted.
+- **#676 ("paid").** Behavior-run senses are reworded to "behavior-test run" or
+  subscription usage: ORCHESTRATOR.md OR48 (1); `orchestrator-scenarios.md` schema
+  `run_scope` line, OB60 and OB61 Given and When, the OB60 Intended-changes item;
+  comments in s317 (message), s322, s323, s333, s335; s363 "paid/live" to
+  "subscription/live". Left alone: `refactoring-triggers` "paid down",
+  `adopter-docs-622.py` (GitHub paid plan). Historical A-entries keep their word
+  (append-only); read "paid run" in A41, A42 and later entries as subscription
+  usage. TEST-SCENARIOS.md headings and lines for S323, S335, S341 are QA's call.
+- **Stamp.** One differential run (`test/behavior/orchestrator-diff.sh`, default
+  base `origin/main`, whose `ORCHESTRATOR.md` equals the release branch's today),
+  all 83 scenarios (the stamp covers both files, OR48 (1)), after every
+  `ORCHESTRATOR.md` and scenario-file edit is final; every verdict must be `same`
+  (no listed intended change, because AC4 has no OB). The orchestrator commits the
+  generated stamp (OR46 b). If any scenario diverges, restore the cut that scenario
+  depends on and re-measure; do not list it as intended.
+- **Alternatives and their cost.** (B) Move judgment-tier detail to
+  `dispatch-economy` (Product's Q1 rec): frees the most, but amends #499 Human
+  decisions 1-2 (rules become a voluntary read). (C) Shorten the CLAUDE.md-link
+  warning in `session-context.sh`: no stamp effect and no behavior run, about 100 in
+  slot 1 only, but changes a user-visible message in every adopted project and
+  does nothing for slot 2. (D) Raise the budget to 9,500: no text change, but
+  halves the margin under the 10,000-character cap that A41 relies on. (E) A third
+  slot: A41 says K above 2 needs a redesign; it changes adopted hook wiring and a
+  meaning version.
+- **Violated when:** either slot's headroom falls below 500 on the S318 fixture; a
+  removed fragment turns out to be the only carrier of an obligation (the
+  differential run diverges); OR44 loses "any orchestrator record".
+- **Revisit when:** the next core addition needs more than about 75 characters in
+  slot 1 or about 100 in slot 2; then option (B) or the reserve cut is the next
+  step, decided by the maintainer.
