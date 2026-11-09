@@ -210,7 +210,8 @@ RESERVED = ('merge-main', 'version-bump', 'tag', 'github-release', 'publish-outs
 # templates/ (whole directory), generated AGENTS.md and WORKFLOW.md, ORCHESTRATOR.md including OR47, CHANGES.md, USER-CLAUDE.md, A54 D2) makes these eligible tokens the reserved edit-panel-rules token;
 # other means everything else, including spec content. The target is a supplied fact; no path or keyword inference.
 TARGETS = ('panel-rules', 'other')
-TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice')
+TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice', 'readme-pr', 'changelog-unreleased-pr',
+            'meaning-version-bump')
 # #678 item 4 (A54 addendum 2026-11-09): the six tokens whose structured target is read. The tests iterate this
 # constant; the oracle's TARGETED must equal it (inventory control in target_checks).
 EXPECTED_TARGETED = ('docs-pr', 'temporary-spec-choice', 'policy-choice', 'readme-pr', 'changelog-unreleased-pr',
@@ -1663,8 +1664,12 @@ def records_oracle(items, expected=None, supersessions=None):
             dissent = [p for p in r.get('positions', []) if positions.count(p.get('position')) == 1] if tally == 2 else []
             if r.get('dissent') != dissent:
                 problems.append(name + '/dissent')
-        elif vote is not None:
-            problems.append(name + '/fabricated-vote')
+        else:
+            if vote is not None:
+                problems.append(name + '/fabricated-vote')
+            # #678 item 3: unresolved and escalated records carry no dissent.
+            if r.get('dissent', []) != []:
+                problems.append(name + '/dissent')
         for field in ('risk', 'limit_widening', 'accepted'):
             if type(r.get(field)) is not bool:
                 problems.append(name + '/' + field)
@@ -1673,6 +1678,9 @@ def records_oracle(items, expected=None, supersessions=None):
         if not isinstance(r.get('artifacts'), list) or not all(present(a) for a in r.get('artifacts', [])):
             problems.append(name + '/artifacts')
         supersedes = r.get('supersedes', [])
+        if supersedes is None:
+            problems.append(name + '/supersession')
+            supersedes = []
         if not unique(supersedes):
             problems.append(name + '/supersession')
         if supersessions is not None and supersedes != supersessions.get(r.get('id'), []):
@@ -1754,11 +1762,19 @@ def proposal_oracle(p):
         problems.append(prefix + ('referral' if action not in ELIGIBLE else 'delegation' if not delegated else 'permission'))
     if result.get('acceptance') != 'pending':
         problems.append(prefix + 'inferred-acceptance')
-    for denial in p.get('prior_denials', []):
+    prior_denials = p.get('prior_denials', [])
+    if prior_denials is None:
+        problems.append(prefix + 'denied-retry')
+        prior_denials = []
+    for denial in prior_denials:
         if denial.get('result') not in ('denied', 'none') or not present(denial.get('action')):
             problems.append(prefix + 'denied-retry')
-    for attempt in result.get('attempts', []):
-        if any(d.get('result') == 'denied' and d.get('action') == attempt.get('action') for d in p.get('prior_denials', [])):
+    attempts_list = result.get('attempts', [])
+    if attempts_list is None:
+        problems.append(prefix + 'attempt')
+        attempts_list = []
+    for attempt in attempts_list:
+        if any(d.get('result') == 'denied' and d.get('action') == attempt.get('action') for d in prior_denials):
             problems.append(prefix + 'denied-retry')
         if not (release_ok and route == 'release-authority' and attempt.get('authority') == 'release-authority'
                 and attempt.get('action') == action):
@@ -1804,6 +1820,9 @@ def floor_oracle(e):
         if not present(b.get('session')) or b.get('inherits') != []:
             problems.append('591/' + recipient + '/inherited-dispatch')
         payload = b.get('payload', [])
+        if payload is None:
+            problems.append('591/' + recipient + '/brief')
+            payload = []
         for tag in REQUIRED_TAGS:
             parts = [p for p in payload if p.get('kind') == tag]
             if len(parts) != 1 or not present(parts[0].get('text')):
@@ -1852,7 +1871,12 @@ def floor_oracle(e):
         if kind not in ('local-read', 'local-write', 'network-mutation', 'denied-retry'):
             problems.append('591/experiment/kind')
         prior = exp.get('prior', [])
-        malformed_prior = any(not present(p.get('id')) for p in prior)
+        null_prior = prior is None
+        if null_prior:
+            prior = []
+        # #678 item 2: prior[].result domain is denied/none; anything else fails closed as denied.
+        malformed_prior = null_prior or any(not present(p.get('id')) or p.get('result') not in ('denied', 'none')
+                                            for p in prior)
         if malformed_prior:
             problems.append('591/experiment/denied-retry')
         denied = malformed_prior or any(p.get('id') == exp.get('id') and p.get('result') == 'denied' for p in prior)
@@ -1974,6 +1998,19 @@ def authority_oracle(e):
     if not re.search(r'\bCloses #' + str(posting.get('issue', '?')) + r'\b', posting.get('pr_body', '')):
         defects.append('593/Closes-issue-link')
     protections = e.get('protections', [])
+    # #678 item 5 (amends D6): the unanimous-skip embedded `protected` facts equal the protected-work row's.
+    skip_row = [p for p in protections if p.get('name') == 'unanimous-skip']
+    work_row = [p for p in protections if p.get('name') == 'protected-work']
+    if len(skip_row) == 1 and len(work_row) == 1:
+        embedded = (skip_row[0].get('conditions') or {}).get('protected')
+        row_facts = work_row[0].get('conditions')
+        if isinstance(embedded, dict) and isinstance(row_facts, dict):
+            def facts(c):
+                req = c.get('requires')
+                return (c.get('adds_scenario'), c.get('executable_diff'), c.get('doc_only'),
+                        frozenset(req) if isinstance(req, list) and all(isinstance(x, str) for x in req) else repr(req))
+            if facts(embedded) != facts(row_facts):
+                problems.append('593/protection/unanimous-skip')
     for name in PROTECTIONS:
         rows = [p for p in protections if p.get('name') == name]
         if (len(rows) != 1 or not present(rows[0].get('evidence')) or not present(rows[0].get('work'))
