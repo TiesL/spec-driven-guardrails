@@ -4427,3 +4427,47 @@ later PR.
   in its Given, that is a core-wording problem, not a scenario bug. [A] The `max`
   counts in the Part B allow-list are a pin that churns when a negative test is
   reworded; accepted, since the churn is the review point.
+
+#### A58 addendum 2 (Architect, Planning, 2026-11-09): OB65 divergence is the scenario's open self-check, not the core
+
+Both full differential runs on 0254d5c (base origin/main) diverged on OB65 only:
+old majority `ask_human`, new majority `self_check`. Still PROPOSAL; D2's pointer
+wording, A57 and A59 unchanged.
+
+- **Cause [V].** OB65's Given never says the self-check for the new head is done.
+  OR23 ("Before asking for merge: run self-check") then makes `self_check` a
+  correct reading in BOTH arms; the sibling scenarios that test the ask (OB64,
+  OB70-OB72) state "your self-check is in the Pipeline log". The base core shows
+  it too, so neither the #646 pointer nor the #685 rename nor an A57 cut caused it.
+- **Evidence [V]** (OB65 alone, runner's own `run_claude`, build_preamble and
+  arm assembly, `sonnet` -> claude-sonnet-5-5, per-call `next_action`, ask/n):
+  base core 30/40 (10 `self_check`); head core 34/40; head with OR11's old
+  sentence 29/30; head without the OR6/OR43 `(OR11)` pointers 28/30; head with
+  every A57 cut restored 18/20; head with OR11 "Autonomy without per-PR
+  approval: none; only accepted, enabled `merge-risk-panel` delegation (#511)
+  may add it." 30/30. Given amended (below): base 30/30, head 30/30. OB66 and
+  OB69 (same shape, red CI / fix on update): base and head 10/10 each.
+  Majority-of-3 per arm at a 15-25% per-call rate diverges in roughly 1 run in
+  10-25, and in either direction; the two failures and the isolated `same`
+  recheck are that noise.
+- **Decision.** Core unchanged: the OR11 sentence and the OR6/OR43 pointers stay
+  (OR11 stays conditional, as Product requires). QA appends one sentence to the
+  end of OB65's Given in `test/behavior/orchestrator-scenarios.md`:
+  `Your self-check on 9f8e7d6 is in the Pipeline log.` Then unchanged; OB65 is
+  not listed as an intended change (A57). Rejected: rewording OR11 (W variant)
+  costs core bytes and S627/S318 headroom for a difference the base arm shows
+  as well; restoring a cut (A57's rule assumes the cut is the cause; here the
+  base diverges too).
+- **Consequences.** Developer: no file. QA: the OB65 sentence, then re-pin
+  `test/behavior/orchestrator-scenarios.md` in the S548 snapshot
+  (`test/fixtures/stage-selection-647.py`), and after the run the stamp entry,
+  per A57 (5). S627 and S318: core bytes unchanged, no effect. S548: one
+  scenarios-hash re-pin, then the stamp re-pin. S333: OB65's Given still has
+  the Review finding. Orchestrator: one full 83-scenario run on the new head
+  (stamp covers the scenario file, OR48 (1)).
+- **Violated when.** OB65's Given lacks the self-check line at the run; the
+  core's OR11 is reworded for OB65; OB65 is listed as intended.
+- **Doubts (one line each).** [A] The same open-self-check shape may hide in
+  other ask-for-merge scenarios; OB66/OB69 measured 10/10, others not measured.
+  [A] Runner noise of this size can flip any near-boundary scenario; a
+  `--runs 5` default would cut it but changes cost and is not this item's call.
