@@ -4651,3 +4651,91 @@ valid. AC5/F73 are not amended: every decision below makes the code meet them.
   - The control-issue rule makes every off/on toggle cost a config PR; a dated re-enable field in the config was judged not worth the schema change.
   - The owner-login check on the acceptance is near-zero assurance on a shared login; kept because it is free and stops a wrong-issue paste.
   - A dedicated executor checkout is one more thing to keep fresh; refusal on drift makes the failure visible, not silent.
+
+#### A58 addendum 4 (Architect, Planning, 2026-11-10): the S628 closure is over code edges only; named leaf exemptions
+
+Loop-back from the Developer's "Blocked: S628" report (comment 6760165838) on
+PR #696. Still PROPOSAL; no AC, no core byte and no stamp changes. This amends
+addendum 3 F1's resolver description and its file list only.
+
+- **Criterion.** [A] The autonomy mechanism must not be able to merge, without
+  the maintainer, a file that the guard, the preflight, the verifier or a
+  reserved test runs or sources as part of the check it performs. A file that is
+  only read as data, or that a reserved test runs only as the *subject* of its
+  assertion, does not decide whether the gates work. A one-line change to a
+  subject can at worst make a reserved test fail, which blocks the merge through
+  the `check` hard gate; the same change to the harness can make every test pass.
+- **Decision: hybrid, (b) for the edge rules plus a short explicit leaf list
+  instead of (a).** Reserving the full computed closure would drag in
+  `adopt.sh`, `pending-changes.sh`, `lib/nfr.sh`, `lib/claude-status.py` and
+  `lib/codex-adoption.py`, and take the core of the adoption group out of C5
+  for files that no gate executes. Not taken.
+- **Edge rules of the S628 resolver (test-local; nothing the verifier reads).**
+  1. Roots: `merge-risk-evidence.sh`, `merge-preflight.sh`,
+     `hooks/git-guardrails`, `lib/merge-risk.py` and every file matching
+     `test/cases/**merge_risk**` and `test/fixtures/merge-risk**`.
+  2. Followed (code edges): shell `.`/`source` of a repo file; a repo script in
+     command position or the argument of `bash`/`sh`/`python3`/`exec`/
+     `subprocess`; Python `import`/`importlib` of a repo module and
+     `LIB / '<name>'`/`Path(script_dir) / '<name>'` when the name is then run,
+     sourced or imported. Roots: `$own_dir`, `$script_dir`,
+     `$(dirname "${BASH_SOURCE[0]}")`, `$TEST_REPO_ROOT`, `$here`, `LIB`, `ROOT`.
+  3. Not followed (data reads): a path used with `cat`, `grep`, `awk`, `sed`,
+     `diff`, `cmp`, `sha256sum`, `ls-tree`, `open()`, `read_text()`, `read_bytes()`
+     or as a fixture to be copied. So `CHANGES.md`, `.gitignore` and
+     `WORKFLOW-ADOPTION.md` are outside. A `ROOT / '<name>'` is a data read
+     unless rule 2 applies. A reference to a `.sh`/`.py`/executable repo file
+     whose use matches neither rule 2 nor rule 3 is "unclassifiable" and fails the
+     test naming file and line (as an unresolvable reference does).
+  4. Wiring entries (`settings/session-hooks.json`, `check`,
+     `.github/workflows/**`, `test/run.sh`) are listed as members and checked for
+     `reserved-path`, but are **not traversed**: `check` runs the project's
+     checks over `$target` and `check-*.sh`, which are the guard group, not this
+     closure.
+  5. Unresolvable path (a variable outside the root list in rule 2, a computed
+     `$base/$name`, a `$target/...`): the test fails naming file and line, unless
+     the line is covered by an entry of the exemption list below.
+  6. Fixpoint over rule 2 edges; the printed closure lists each file and the
+     edge that reached it.
+- **Exemption list (in the test file; each entry: file, reason; an entry that
+  no longer matches a reference fails as stale, so the list cannot grow
+  silently).**
+  - Leaves, followed by nobody: `adopt.sh`, `pending-changes.sh` (run by
+    `test/lib.sh` helpers and the S626 installer row as the subject of an
+    installation/pending-changes assertion). Not traversed: what they reach
+    (`lib/nfr.sh`, `lib/claude-status.py`, `lib/codex-adoption.py`, ...) is not
+    in the closure.
+  - Scratch-tree references: paths under a directory the test itself creates
+    (`$target`, `$proj`, `$work`, `$TEST_TMP`-style roots) are fixtures, not
+    repository files.
+- **`reserved.autonomy` gains `lib/git-env.sh`** (sourced unconditionally by
+  `test/lib.sh:30`; a plain omission from addendum 3 F1). Nothing else is added
+  by this addendum; if the Developer's resolver finds another file via rules 1-3
+  it is added too, and the finding is reported. [V] `lib/git-env.sh` is in no
+  group today, so reserving it narrows C5 by zero previously eligible
+  adoption-group files; with addendum 3's 11 entries, the adoption group loses
+  only `lib/changes.sh`.
+- **S628 wording QA changes.** Given: replace "follows every `.`/`source` path,
+  every executed script path and every `LIB / ...` reference" by the edge rules
+  1-6 above and the exemption list; entry list gets the wiring entries as
+  members not traversed. Add variants: (e) a data read (`cat CHANGES.md`,
+  `ROOT / '.gitignore'`) added to a scratch copy of a closure file does not enter
+  the closure (control); (f) an exemption entry for a file no reference reaches
+  fails as stale; (g) an `adopt.sh`-like script outside the list, executed by a
+  scratch copy of a closure file, is reachable and not reserved and fails (the
+  leaf list is not a pattern). Mutation line: add "treat data reads as edges
+  ((e) fails)" and "drop the staleness check ((f) fails)". Then (a)-(d) otherwise
+  unchanged. Developer: resolver, exemption list, the one config entry and
+  the case file that claims S628.
+- **For the maintainer's acceptance point 4.** C5 is narrowed by
+  `lib/changes.sh` and the 10 non-adoption entries of addendum 3 plus
+  `lib/git-env.sh`, and not by `adopt.sh`. Accepting this also accepts that
+  `adopt.sh`, `pending-changes.sh` and their libraries stay adoption-group
+  eligible although S626 runs them as subject.
+- **Doubts.** (1) A deliberate `adopt.sh` edit could make S626's installer row
+  pass vacuously; bounded by the row's byte assertions on the installed skill.
+  (2) `check-*.sh` are guard-group, not reserved, though `check` runs them;
+  they stay referred through the guard group. (3) Rule 3's tool list is a
+  heuristic; the "unclassifiable fails" rule backs it. (4) Scratch-root names
+  are a name convention; a repo file named like one would be missed, and the
+  repo has none.
