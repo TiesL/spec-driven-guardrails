@@ -99,6 +99,7 @@
       "lib/markdown.sh",
       "lib/changes.sh",
       "lib/context-budget.sh",
+      "lib/git-env.sh",
       "settings/session-hooks.json",
       "check",
       ".github/workflows/**",
