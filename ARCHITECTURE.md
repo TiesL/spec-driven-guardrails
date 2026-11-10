@@ -4939,3 +4939,361 @@ doubt (2).
   - "No class redesign" rests on these four fail-open edges being all of them; a third counting round with a new category would argue for the docs+tests allow-list after all.
   - Treating `check`'s data reads wholesale as subjects is coarse; existence-guarded checks (residual 13) are the known gap.
   - With `session-context.sh` an exempt subject, a change to it is judged only by the Reviewer and S318/S627's own measurements.
+
+#### A58 addendum 6 (Architect, Planning, 2026-11-10): the class becomes an explicit allow-list of plain Markdown; the executor checkout's runtime is pinned to B
+
+Loop-back for Review round 3 on PR #696 at c20bd7d (comment 6770458888:
+executor-runtime-hooks-eligible [medium design], hold-time-boundaries-untested
+[low test]). This is also the OR20 step, because rounds 2 and 3 both carry an
+open medium. Still PROPOSAL; autonomy ships inert. No core byte and no stamp
+change. Supersedes addendum 5's "allow-list not taken" and its doubt 3, because
+the condition that doubt named has now occurred. Extra reads, declared:
+`test/run.sh`; `lib/merge-risk.py` (hold rules, `verifier_state`,
+`config_errors`); the #646 body (C5, AC3, AC8, acceptance point 4);
+`skills/role-contracts/SKILL.md:27-31`; `skills/pre-merge-review/SKILL.md:58-63`;
+`skills/write-spec/SKILL.md:40`; a grep of every tracked non-test file for
+allowed-path references; this session's environment.
+
+- **OR20 question: the deny-list is unsound in its shape, not at one edge.**
+  [A] Three review rounds found five gaps: the closure of sourced modules,
+  data-read switches, `check`'s own scripts, the working directory, and the
+  executor runtime hooks. They are one fault. Everything in four wide groups is
+  eligible by default, so reservation has to enumerate every *runner* that
+  executes or reads the repository on the merge path. That set is open: the
+  executor is an LLM session that reads repository text as instructions.
+  Looking for a sixth runner found two more, which review did not raise. [V]
+  - (a) Executor instructions are eligible. `WORKFLOW.md` is loaded as
+    `CLAUDE.md`. `AGENTS.md` is in the guard group. `CHANGES.md` is in the
+    adoption group, and `session-context.sh` injects its **Reaches session:**
+    entries into every session.
+  - (b) Authority is eligible. `skills/role-contracts/SKILL.md:30-31` says that
+    in this repo the `wip/multi-agent-development/` sources "win over this
+    file". So an ordinary-group `wip/**.md` change outranks a reserved skill.
+
+  Addendum 5's reasons against the allow-list:
+  - (i) "`check` executes `test/**`". True, and decisive against admitting
+    tests (D1), not against the allow-list.
+  - (ii) The class count. Below.
+  - (iii) It reopens D1. True; this is the maintainer's choice (acceptance
+    point 4 below).
+- **D1 — Decision: an explicit allow-list of plain Markdown; every other path
+  is referred.** [A]
+  - `groups.ordinary` becomes exactly `README.md`, `docs/**.md`, `wip/**.md` and
+    `.github/ISSUE_TEMPLATE/*.md`.
+  - `groups.adoption`, `groups.guard`, `groups.generated.outputs` and
+    `groups.generated.inputs` become `[]`. The schema stays, so AC3's group
+    structure and the verifier code stay; `config_errors` must accept an empty
+    list.
+  - `reserved.autonomy` gains `wip/multi-agent-development/**` (authority,
+    point (b) above).
+  - Every other path keeps today's machinery: `unlisted-path` or
+    `reserved-path`, referred.
+
+  What leaves the class, and why:
+
+  | Paths | Reason |
+  |---|---|
+  | `CONTEXT.md` | `write-spec` and `codebase-design` point roles at it as the glossary: an instruction input. |
+  | `PRD*.md`, `TEST-SCENARIOS.md` | Read as configuration by `check-traceability.sh` and the scenario gates (which IDs and rows must exist). |
+  | `ARCHITECTURE.md` | The same gates read it, and the verifier reads its A-entries. |
+  | `test/**` | Executed by `check`. [V] `test/run.sh:101` exports `results_dir`, so a case can rewrite another case's status file and make later `check` runs green, for every later PR including human-path ones. |
+  | Adoption, guard and generated paths | Code, wiring and instructions. |
+
+  - **Soundness argument.** One small, fixed claim must stay true: an allowed
+    file is plain Markdown. Nothing executes, sources or imports it, reads it as
+    configuration, or names it as authority: no code, and no instruction file
+    that the executor or a voter loads.
+    - Execution is excluded by construction (D2).
+    - "Never read as configuration" is a property of the *rest* of the
+      repository. An autonomous merge cannot change the rest, because none of
+      it is ever allowed. S629 keeps the property true (D3).
+    - S629's domain is the whole repository, not a list of roots. No runner has
+      to be named, so a new kind of runner cannot open a gap. A new reader of an
+      allowed path is a human-path change, and S629 fails it there.
+    - Completeness still rests on a test. But it is a textual
+      over-approximation over four patterns, not an edge parser over an open
+      set of runners.
+  - **[V] Class count.** Same method as addendum 5: the last 80 first-parent
+    `main` commits (2026-09-19 to 2026-11-08), caps 300/8, path-only, no content
+    haircut. The script reproduces addendum 5's 20/80 at 3550236 and 15/80 at
+    80bf234.
+    - **Allow-list: 4/80 (5%).** Admitted:
+      - 8973a29: README wording, 12 lines;
+      - ccd35d9: three `wip/multi-runtime-orchestration` files, 24 lines;
+      - d9eb1bb: a name fix in `wip/claude-code-plugin/PRD.md`, 8 lines;
+      - 0a3a0e4: a `docs/` evidence record, 95 lines.
+    - **Option B, the deny-list repaired: 8/80.** It reserves this round's
+      category and the two found above:
+      - the six hook entry points and what they run: `hooks/**`,
+        `session-context.sh`, `pending-changes.sh`, `lib/codex-adoption.py`,
+        `lib/claude-status.py`, `lib/skill-links.sh`;
+      - instruction files: `WORKFLOW.md`, `CLAUDE.md`, `AGENTS.md`,
+        `USER-CLAUDE.md`, `policy/WORKFLOW.md`, `adapters/**`;
+      - `CHANGES.md`, `CONTEXT.md`, `wip/multi-agent-development/**`.
+
+      Its four extra commits are each eligible only through a subject/input
+      judgment, the kind the last three rounds overturned:
+      - b22b476: a test-runner header;
+      - ddc42da: `adopt.sh` plus a test;
+      - 7b49e0a: `.gitignore`;
+      - a84631d: `compliance-evidence.sh` plus a test.
+    - **Lost against 15/80:** every PR touching tests, adoption files,
+      `WORKFLOW.md`, `AGENTS.md` or `CHANGES.md`.
+- **D2 — Construction rules.** [A]
+  - (a) Verifier class rule `file-mode`. A changed path is
+    `referred file-mode` when its new mode in the B...H diff is not `100644`:
+    a `new file mode` or `new mode` line with `100755` or `120000`. So an
+    allowed path cannot become a script, or a symlink into code.
+  - (b) "Allowed means `.md`" is S629 (a), not a verifier rule. As a verifier
+    rule it would turn widening into a code change, against AC8's
+    configuration-only widening. A widening PR into code instead fails `check`
+    until it also changes S629, and both files are reserved.
+- **D3 — New scenario S629, "Nothing the class allows is a merge-decision
+  input".** QA writes the text. The Developer writes the case,
+  `test/cases/s629_merge_risk_allow_list_inputs.sh`, which the reserved pattern
+  `test/cases/**merge_risk**` covers.
+  - (a) Every allowed pattern in the config at HEAD ends in `.md`, exact names
+    included.
+  - (b) Scan domain:
+    - every tracked file that no allowed pattern matches and that is not under
+      `test/`;
+    - plus the instruction files `WORKFLOW.md`, `CLAUDE.md`, `AGENTS.md`,
+      `USER-CLAUDE.md`, `adapters/**` and `skills/**`.
+
+    What to look for, as text:
+    - a root-level `README.md`;
+    - the prefixes `docs/`, `wip/` and `.github/ISSUE_TEMPLATE`;
+    - a repository-wide enumerator: `git ls-files`, `find .`, or a `*.md` or
+      `**` glob over the root.
+
+    Each occurrence must be either a shell or Python comment line, or a named
+    entry: `path:line-pattern`, a reason, and kind `subject` or `pointer`.
+    Stale entries fail. Once `wip/multi-agent-development/**` is reserved, a
+    pointer into it matches the reserved pattern and needs no entry.
+
+    Expected entries; the Developer verifies and reports them:
+    - `check-no-dutch.sh` (scans all files: subject);
+    - `WORKFLOW.md:5`, `AGENTS.md`, `adapters/codex/AGENTS.md` and
+      `skills/adopt-workflow/SKILL.md:46` (README pointers);
+    - `adapters/codex/permission-baseline.md` (`[V docs/...]` citation tags).
+  - (c) Tests stay outside the scan domain. They are subjects of `check` and are
+    not allowed themselves. A test that reads an allowed file can at worst fail,
+    which blocks, or be existence-guarded (Residual 14).
+  - Variants:
+    - a planted `cat docs/zz.md` in a scratch copy of `hooks/git-guardrails`
+      fails, naming it;
+    - a planted hook command `"$wf/wip/zz.md"` in a scratch copy of
+      `settings/session-hooks.json` fails;
+    - a scratch config that adds `hooks/**` or `test/**` to `groups.ordinary`
+      fails (a);
+    - a planted line "read `docs/zz.md` before merging" in a scratch copy of
+      `skills/merge-risk-panel/SKILL.md` fails;
+    - control: the same reference in a `#` comment of a shell file passes;
+    - a stale entry fails.
+  - Mutation lines, each killed:
+    - "skip JSON files": the planted hook passes;
+    - "skip instruction files": the skill line passes;
+    - "drop (a)": the scratch config passes.
+  - S628 stays unchanged, as defence in depth. The reserved list still drives
+    the `reserved-path` reason. F2 no longer depends on it (D4).
+- **D4 — Finding executor-runtime-hooks-eligible, concretely.** [A]
+  - **The class part is closed by D1.** None of the following is allowed:
+    - the six entry points: `hooks/git-guardrails`, `hooks/agent-dispatch`
+      (which runs `hooks/agent-dispatch.py`), `hooks/push-after-commit`,
+      `hooks/stop-after-completion`, `pending-changes.sh`,
+      `session-context.sh`;
+    - what they source or run: `lib/changes.sh`, `lib/nfr.sh`,
+      `lib/skill-links.sh`, `lib/codex-adoption.py`, `hooks/read-command.py`,
+      `hooks/rules.sh`;
+    - `CHANGES.md`, which `session-context.sh` reads.
+
+    So a one-line PR to any of them answers `referred` (`unlisted-path` or
+    `reserved-path`). That meets the first half of the finding's falsifying
+    check (a). S629 (b)'s planted-hook variant meets the second half, in place
+    of S628. Under D1 a hook script needs no reservation to be referred, so
+    S628's wiring stays untraversed.
+  - **Which bytes the session runs still needs pinning.**
+    - [V] The hooks find their code at
+      `dirname(dirname(readlink "$CLAUDE_PROJECT_DIR/.claude/settings.json"))`
+      (`settings/session-hooks.json`). In the shared checkout, that is whatever
+      branch is checked out there.
+    - [V] `CLAUDE_PROJECT_DIR` is not in the Bash tool's environment (checked
+      in this session). So no code run from a Bash call can prove the session's
+      project directory.
+  - **Mechanical (Developer, `lib/merge-risk.py` `verifier_state`):**
+    - (1) F2 compares **every** path of `git ls-tree -r B` with its working
+      bytes, not only `reserved.autonomy`. That removes the dependence on the
+      list and covers the hooks, `session-context.sh` and `CHANGES.md`.
+    - (2) The collector records
+      `runtime: {settings_link, local_settings, foreign_links}`:
+      - `settings_link` is `os.readlink(<top>/.claude/settings.json)`. It must
+        equal the absolute path `<top>/settings/session-hooks.json`: a relative
+        link breaks the hooks' `dirname dirname`.
+      - `local_settings` records whether `<top>/.claude/settings.local.json`
+        exists. It must be absent, because it can add hooks.
+      - `foreign_links` lists every symlink under `<top>/.claude/` whose
+        resolved target lies outside `<top>`. It must be empty.
+
+      Any failure answers `unresolved verifier-not-at-base` with detail
+      `hooks`.
+  - **Procedure (skill Hard gates; Residual 9).**
+    - Start the executor session with its project directory set to that
+      checkout.
+    - Exclude user-level hooks and plugins: use project-only setting sources
+      where the installed runtime offers them, else a dedicated `HOME`.
+    - Between executor steps 3 and 4, the session then runs only the PostToolUse
+      `push-after-commit` and `stop-after-completion` hooks and the PreToolUse
+      `git-guardrails` hook, all from B. An autonomous merge can no longer
+      change them.
+    - The step order stays as it is: under D1 that window holds only
+      human-merged code.
+- **D5 — Finding hold-time-boundaries-untested.** [A] One open boundary is
+  decided: `off-since-config` becomes `t >= cd`. An off label in the same
+  second as the config commit cannot be ordered against it, so this fails
+  closed, like `hold-release-stale`'s `<=`. `release-any-time` stays unbounded.
+  The rows are listed under QA below.
+
+- **QA (`TEST-SCENARIOS.md` only).**
+  - **S613.**
+    - Flip to `referred unlisted-path`: every class row that expected `eligible`
+      for an adoption, guard, generated, `test/**`, `PRD.md`,
+      `TEST-SCENARIOS.md`, `ARCHITECTURE.md` or `CONTEXT.md` path.
+    - New one-file, one-line rows, each `referred`: `hooks/agent-dispatch.py`,
+      `hooks/push-after-commit`, `hooks/stop-after-completion`,
+      `session-context.sh`, `pending-changes.sh`, `CHANGES.md`, `WORKFLOW.md`,
+      `docs/measure-ci-timing.sh` (not `.md`, under `docs/`), and
+      `wip/multi-agent-development/x.md` (`reserved-path`).
+    - Controls, `eligible`: `README.md`, `docs/x.md`, `wip/a/b.md`,
+      `.github/ISSUE_TEMPLATE/epic.md`.
+    - `docs/x.md` added with mode `100755`, and as a symlink: each
+      `referred file-mode`.
+  - **S614.**
+    - A tracked file outside `reserved.autonomy` (`hooks/push-after-commit`,
+      `CHANGES.md`) whose bytes differ from B gives `verifier-not-at-base`.
+    - Detail `hooks` for each of: `.claude/settings.json` absent, relative, or
+      pointing at another checkout; `.claude/settings.local.json` present; a
+      `.claude/skills/x` link that resolves outside the checkout.
+    - Control: all three correct gives no `hooks` reason.
+  - **S618.**
+    - A hold added at T − 86,401 s and removed at T − 86,000 s, with no release,
+      is `held hold-release-missing`.
+    - The same with the hold at T − 400 days.
+    - A hold at T − 1 s with no release is `held hold-release-missing`.
+    - Control: the 400-day hold with a release dated after it is `eligible`.
+    - Mutation lines, each killed: "1-day lookback on release-any-time",
+      "365-day lookback".
+  - **S619.**
+    - A control-issue off label at the config date + 1 s is
+      `referred off-since-config`.
+    - At exactly the config date: the same.
+    - At + 400 days: the same.
+    - Control: at the config date − 1 s, no `off-since-config`.
+    - Mutation lines, each killed: "1-second grace", "1-hour grace",
+      "`>` for `>=`", "a 30-day window".
+  - **S629**, new (D3). Product adds S629 to #646's `**Covers:**`.
+- **Developer (code, config, tests).**
+  - `policy/merge-autonomy.json`: D1's lists.
+  - `lib/merge-risk.py`:
+    - `config_errors` accepts empty group lists;
+    - D2's `file-mode` rule, read from `diff_text`;
+    - D4's whole-tree F2 and `runtime` record, with detail `hooks`;
+    - D5's `>=`;
+    - a `# rule:` tag for each, included in S605's `every-rule-tag-mutated`.
+  - `test/fixtures/merge-risk-646.py`: rows, and a killed MUTATIONS entry, for
+    every QA row above.
+  - The S629 case and its entry list.
+  - `skills/merge-risk-panel/SKILL.md`, kept under 16,000 bytes:
+    - Hard gates: the checkout's `.claude/` wiring and project-only settings;
+    - Class: the list lives in the config, plain Markdown only;
+    - the Residual risks below.
+  - The report lists the S629 entries found and cites `check` (Linux) green on
+    the pushed head.
+- **Orchestrator and Product.**
+  - Orchestrator: rewrite PR #696's acceptance point 4 around D1 and the 4/80
+    figure. Remove "subjects a reserved test runs ... at worst fail a reserved
+    test" and "deliberately eligible: the hooks other than `git-guardrails`".
+  - Product: draft AC text for the conflicts below, for the maintainer's
+    decision, and not before he decides. The conflicts are C5 condition 3's
+    group contents, AC8's coverage sentence (15/80 becomes 4/80), and the
+    Context line "the class must cover a substantial share".
+- **AC consistency.** [A]
+  - Contradicted (a recommendation awaiting the maintainer):
+    - #646 Definitions, C5 condition 3: the adoption, guard/source and generated
+      groups become empty, and the ordinary group loses `CONTEXT.md`,
+      `PRD*.md`, `ARCHITECTURE.md`, `TEST-SCENARIOS.md` and `test/`;
+    - the Context lines "D1 ... not reopened" and "a substantial share";
+    - AC8's coverage figure.
+  - Narrowed:
+    - AC3: one more reason code, `file-mode`, and one more
+      `verifier-not-at-base` detail, `hooks`;
+    - AC7: the executor's start conditions.
+  - Not touched: AC1, AC2, AC4-AC6, AC9.
+- **For the maintainer's acceptance point 4.** [A] Choose one.
+  - **(A) The allow-list. Recommended.**
+    - Class: 4/80 (5%). It admits only README, docs, wip notes and issue
+      templates.
+    - Soundness: by construction for execution; for configuration reads, kept
+      by a test over the whole repository that does not depend on knowing
+      which runners exist.
+  - **(B) D1's wide class, repaired as a deny-list.**
+    - Class: 8/80 (10%).
+    - Soundness: rests on enumerating every runner and instruction path. Each
+      of the last three review rounds, and this addendum, has shown that
+      enumeration incomplete.
+
+  Neither option meets the original hope of "a substantial share" with about 1%
+  failing. At 4/80 the mechanism's main value is to prove the panel and the
+  executor on harmless PRs before any widening. Widening stays a reserved
+  config PR (AC8).
+- **Safe to ship inert?** [A] Yes. With `enabled: false`, `acceptance: null` and
+  `executor_host: ""`, nothing executes. The only live effects are the
+  session-start pointer and the documentation (Residuals 6 and 7). Before
+  enabling, all of the following must hold:
+  - The maintainer has accepted point 4 (A or B) and points 1-6 on #646.
+  - Review approves this PR with no open medium or high finding, and S613-S619
+    and S629 are green on Linux and macOS.
+  - The executor host has a dedicated detached checkout of `main` with:
+    - the absolute `.claude/settings.json` link;
+    - no local settings;
+    - project-only setting sources;
+    - `SPEC_DRIVEN_GUARDRAILS_DIR` pointed at the checkout.
+  - One dry `--phase class` run on a real docs PR answers `eligible` from that
+    checkout and `verifier-not-at-base` from the shared checkout.
+  - The control issue #607 is open and unlabeled.
+  - The maintainer accepts the residual list below, in particular (1):
+    records are forgeable on a shared login.
+- **Residual risks (replaces addendum 5's list).** [A]
+  - (1)-(8), (11) and (12): as in addendum 3.
+  - (9) The B-pinning self-check runs inside the code it checks. At the literal
+    merge, the session's own project directory and the user-level hooks and
+    plugins are procedure: a Bash call cannot observe them.
+  - (10) S629 is a text search over the whole repository. It misses a reader
+    that builds an allowed path without naming it, from computed strings
+    outside the enumerator forms. S628's static-form limits still apply to the
+    reserved list.
+  - (13) An agent can still read an allowed doc as text. A prompt injection in
+    a `docs/` or `wip/` file rests on the Reviewer's semantic disqualifiers.
+  - (14) Tests read allowed files as subjects. A docs change can switch off an
+    existence- or content-guarded test; the change is visible in the diff and
+    judged by the Reviewer.
+  - (15) `test/run.sh` exports `results_dir`, so any test can forge another
+    test's status. This also affects human-path PRs and lies outside #646: a
+    follow-up issue for the maintainer to decide on.
+  - (16) `CHANGELOG.md` stays release-reserved, so a changelog entry is never
+    in the class.
+- **Violated when** (added):
+  - a path outside the four allowed patterns is `eligible`;
+  - an allowed path whose mode is not `100644` is `eligible`;
+  - a non-comment reference to an allowed path in S629's scan domain has no
+    named entry;
+  - the verifier answers anything other than `unresolved` when a tracked file
+    of B differs in the checkout, or the checkout's `.claude/` wiring fails D4;
+  - an off label in the config commit's own second is not `referred`.
+- **Doubts (one line each).** [A]
+  - 4/80 may be too small for the maintainer's "substantial share"; option B is spelled out, so choosing it costs a config PR, not a redesign.
+  - Excluding `test/**` blocks every test-only fix; Residual 15 is the reason, and fixing it could readmit tests later.
+  - Excluding `CONTEXT.md` rests on two skills pointing roles at it as the glossary; a glossary edit is low-risk in practice.
+  - S629 trusts `#` comment lines; a heredoc line starting with `#` would be missed, and such lines are rare.
+  - Project-only setting sources depend on the runtime's flags; a dedicated `HOME` is the fallback, and the verifier can observe neither.
+  - `wip/multi-agent-development/**` outranks the role contracts only "in the guardrails repo itself"; reserving it is cheap and removes the question.
+  - Whole-tree F2 makes any stray local edit in the executor checkout refuse; that is the safe direction, at the cost of a refresh.
