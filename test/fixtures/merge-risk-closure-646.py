@@ -1,47 +1,67 @@
-"""Oracle for S628 (#646, A58 addendum 3 decision 1, addendum 4): everything
-the reserved merge guard runs is itself reserved.
+"""Oracle for S628 (#646, A58 addendum 3 decision 1, addenda 4 and 5): every
+merge-decision input is itself reserved.
 
 Usage: python3 merge-risk-closure-646.py [628 | report]
 
 A test-local closure resolver over the committed tree (no network, no model).
-It starts from ENTRY, applies the edge rules of A58 addendum 4 until no new
-file appears, and checks the result against policy/merge-autonomy.json
-through the verifier's `--phase class` bundle adapter (one bundle per file),
-reusing the bundle builder of test/fixtures/merge-risk-646.py.
+Phase 1 starts from ENTRY and the reserved cases (the merge-decision roots);
+phase 2 from CHECK_ROOTS and the `run:` steps of CI_FILE, for code edges only
+(A58 addendum 5 rule 4'); `test/run.sh`'s dispatch of the cases is not
+traversed. It applies the edge rules until no new file appears, and checks
+the result against policy/merge-autonomy.json through the verifier's
+`--phase class` bundle adapter (one bundle per file), reusing the bundle
+builder of test/fixtures/merge-risk-646.py.
 
 Edge rules (followed):
 - shell: `.`/`source` of a repo file; a repo file in command position; a repo
   file run through `bash`/`sh`/`python3`/`exec`; a repo script handed as an
   argument to a run script or to inline interpreter code (`python3 -c`,
   `python3 -`, `bash -c`): that code may run it, so it counts as run.
+  `bash -n` only parses: its argument is read, not run.
 - python: a `subprocess` run, `importlib` load or `runpy` of a repo path; an
   import of a module beside the file; repo paths are names built on a base
   (`LIB / ...`, `ROOT / ...`, `Path(script_dir) / ...`) that is derived from
   `__file__` or named by the spec (`script_dir`, the root the collector
   passes).
-Not followed (data): `cat`, `grep`, `awk`, `sed`, `diff`, `cmp`, `head`,
-`tail`, `wc`, `jq`, input redirections, `[`/`[[`/`test` probes, `cp`/`tar`
-copies; python `open`, `read_text`, `read_bytes`, `exists`, `is_file`,
-`shutil.copy*`. A data read never needs to resolve: it is not followed.
+Data reads: `cat`, `grep`, `awk`, `sed`, `diff`, `cmp`, `head`, `tail`, `wc`,
+`jq`, input redirections, `[`/`[[`/`test` probes, `cp`/`tar` copies; python
+`open`, `read_text`, `read_bytes`, `exists`, `is_file`, `shutil.copy*`. A
+data read of a repo file by a merge-decision file is an input (rule 3'): the
+file must be reserved or be a SUBJECT_READS entry (exact path, reason, stale
+check). Data reads by files reached only from the check roots are subject
+reads and are not recorded. A data read whose path does not resolve is not
+followed (a limit: the guard reads WORKFLOW-ADOPTION.md through the hook
+input's cwd, which this resolver cannot see; it is reserved by name).
+Copy roots (rule 5'): a variable that receives a copy of the repository (a
+`tar -c` from the repository root piped into `tar -x` under it, `cp -R`/
+`rsync` of the root, `$(sandbox_copy_repo ...)`) names the repository from
+there on, so a run or read under it resolves to the repository file. Only
+trees a test builds from scratch are SCRATCH_ROOTS.
 A repo script referenced in a file only in some other way (an assignment never
 used, an argument to `echo`, ...) fails as unclassifiable. A run or source
 whose path does not resolve to a repo path (an unbound variable, a positional
 parameter, a computed name) fails with file and line, unless SCRATCH_ROOTS
 lists that file and root expression. Wiring entries are members (each must
-be reserved) and are never traversed. The exempt leaves are members that are
-not asserted reserved and are never traversed.
+be reserved) and are never traversed (ci.yml's `run:` steps are roots). The
+exempt leaves are members that are not asserted reserved and are never
+traversed. PINNED_ENV pins `check`'s target to the checkout (CI runs
+`./check` with no argument); RUNTIME_FILES names a file a CI step downloads
+and then runs.
 
 Outside the closure by definition: `gh`, `git`, `python3`, `bash`, every
-other command found on PATH, and GitHub itself.
+other command found on PATH, GitHub itself and its required-check settings.
 
-Interpretations of addendum 4 made here (the Developer's, stated so a
-reviewer can contest them): a bare variable in command position with no path
-part (`"$callback"`, `"$1"`) is a command name its caller supplies, so a repo
-script handed to it is classified at the call site, where an argument to a
-shell function is unclassifiable; a python path is only a `/` expression on a
-base, so a script path held in a plain variable or attribute (`self.gate`)
-is checked where the caller builds it; a relative command after `cd <dir> &&`
-on the same line runs under <dir>.
+Interpretations made here (the Developer's, stated so a reviewer can contest
+them): a bare variable in command position with no path part (`"$callback"`,
+`"$1"`) is a command name its caller supplies, so a repo script handed to it
+is classified at the call site, where an argument to a shell function is
+unclassifiable; a python path is only a `/` expression on a base, so a script
+path held in a plain variable or attribute (`self.gate`) is checked where the
+caller builds it; a relative command after `cd <dir> &&` on the same line
+runs under <dir>; a positional parameter that receives a repository copy
+(`clone()` in s627) names that copy for the rest of the file, since every
+later function of that file is handed such a copy; a bare top-level file name
+read as data (`grep x CHANGES.md`) is the repository file of that name.
 
 Limits: the resolver reads source text with a small shell lexer and Python's
 ast; it executes nothing, so a path built at run time from data it cannot see
@@ -65,16 +85,34 @@ ROOT = Path(__file__).resolve().parents[2]
 
 ENTRY = ['merge-risk-evidence.sh', 'merge-preflight.sh', 'hooks/git-guardrails', 'lib/merge-risk.py']
 ENTRY_CASES = (605, 627)  # test/cases/s605_* .. s627_*
-WIRING = ['settings/session-hooks.json', 'check', '.github/workflows/**', 'test/run.sh']
+# A58 addendum 5 rule 4': roots traversed for code edges only (hard gate (b)):
+# `check` and the `run:` steps of CI_FILE. Their data reads are subject reads.
+CHECK_ROOTS = ['check']
+CI_FILE = '.github/workflows/ci.yml'
+WIRING = ['settings/session-hooks.json', '.github/workflows/**', 'test/run.sh']
 # Exact repo paths: members, not asserted reserved, never traversed.
-EXEMPT_LEAVES = ['adopt.sh', 'pending-changes.sh']
+EXEMPT_LEAVES = ['adopt.sh', 'pending-changes.sh', 'session-context.sh']
+# A58 addendum 5 rule 3': a data read by a merge-decision file is an input; it
+# must be reserved or named here (exact path -> reason; stale-checked).
+SUBJECT_READS = {
+    'CHANGES.md': 'validated by check; the cases read it to build fixtures (meaning lines, session values)',
+    '.gitignore': "S626 asserts this repository's managed block lists the skill (a subject adopt.sh writes)",
+}
 # Scratch-tree roots: (file, root expression) -> what the root is. A run or
 # source under that root in that file is a throwaway tree the case builds.
+# A copy of the repository is never a scratch root (rule 5'): it resolves to
+# the repository files.
 SCRATCH_ROOTS = {
     ('test/fixtures/merge-risk-646.py', 'self.dir'): 'the Tree scratch repository (mkdtemp)',
-    ('test/cases/s627_merge_risk_core_edit_pointer_headroom.sh', '$1'): 'the clone() copy passed to slot_size/projection_problems',
     ('test/fixtures/pipeline-371-helpers.sh', '$cmd'): "a SessionStart command read from the scratch project's .claude/settings.json",
 }
+# Files a CI `run:` step creates itself and then runs: (file, path) -> reason.
+RUNTIME_FILES = {
+    (CI_FILE, 'gitleaks'): 'downloaded by the same step and checked against a pinned sha256',
+}
+# Variables the resolver cannot derive, pinned to what the root is run with:
+# CI runs `./check` with no argument, so its target is the checkout itself.
+PINNED_ENV = {'check': {'target': '\x00ROOT\x00'}}
 SCRIPT_EXT = ('.sh', '.py', '.bash')
 SH_DATA = {'cat', 'grep', 'awk', 'sed', 'diff', 'cmp', 'head', 'tail', 'wc', 'jq', '[', '[[', 'test', 'cp', 'tar',
            'sort', 'shasum', 'sha256sum', 'readlink', 'ls', 'stat'}
@@ -90,6 +128,8 @@ PY_SEED_BASES = {'lib/merge-risk.py': {'script_dir': ''}}  # merge-risk-evidence
 
 ROOT_MARK = '\x00ROOT\x00'
 UNK = '\x00UNK:'
+COPY = '\x00COPY:'   # COPY + name + '\x00' + rest: a path under a copy of the repository
+SCR = '\x00SCR\x00'  # a path under a scratch tree (only the copy-as-scratch mutant makes these)
 
 
 class Rules:
@@ -98,8 +138,11 @@ class Rules:
         self.python_bases = True       # LIB / ..., ROOT / ..., Path(script_dir) / ...
         self.source_word = True        # `source` as well as `.`
         self.unresolvable_fails = True  # an unresolvable run/source fails
-        self.data_is_edge = False      # data reads are not edges
+        self.data_followed = True      # data reads by merge-decision files are inputs
+        self.check_roots = True        # `check` and the ci.yml run: steps are roots
+        self.copy_roots = True         # a repository copy resolves to repository files
         self.stale_check = True        # every exemption is used and exists
+        self.subject_stale_check = True  # every SUBJECT_READS entry is read and exists
         self.exempt_match = 'exact'    # exact path match for exempt leaves
         self.__dict__.update(kw)
 
@@ -499,11 +542,24 @@ def sh_subst(inner, env, fpath):
             rel = v[len(ROOT_MARK):]
             return ROOT_MARK + (rel.rsplit('/', 1)[0] if '/' in rel else '')
         return UNK + '$(dirname)\x00'
+    if re.match(r'sandbox_copy_repo(\s|$)', s):
+        return COPY + '$(sandbox_copy_repo)\x00'  # rule 5': the sandbox copy of the repository
     return UNK + '$(' + s[:30] + ')\x00'
 
 
+COPY_AS_SCRATCH = [False]  # the copy-as-scratch mutant only
+
+
 def classify_value(v, fdir):
-    """('repo', path) | ('unknown', root) | ('cmd', name) | ('outside', text) | ('empty', '')."""
+    """('repo', path) | ('unknown', root) | ('cmd', name) | ('outside', text) | ('empty', '') | ('scratch', root)."""
+    if v.startswith(COPY):
+        name, _, rest = v[len(COPY):].partition('\x00')
+        if COPY_AS_SCRATCH[0]:
+            return ('scratch', name)
+        if UNK in rest or ROOT_MARK in rest or COPY in rest:
+            return ('unknown', 'computed:' + rest.replace(UNK, '$').replace('\x00', '')[:40])
+        rel = norm(rest)
+        return ('repo', rel) if rel is not None else ('outside', v)
     if v.startswith(ROOT_MARK):
         rel = norm(v[len(ROOT_MARK):])
         return ('repo', rel) if rel is not None else ('outside', v)
@@ -534,8 +590,19 @@ def sh_refs(tree, path, rules, text=None, line0=1, env=None):
     refs = []
     fdir = path.rsplit('/', 1)[0] if '/' in path else ''
     env = dict(env if env is not None else ({'TEST_REPO_ROOT': ROOT_MARK} if path.startswith('test/') else {}))
-    cwd_by_line = {}
+    env.update(PINNED_ENV.get(path, {}))
+    cwd_by_line, cwd_raw_by_line = {}, {}
+    copy_src_left = 0
+
+    def is_root(v):
+        return v is not None and classify_value(v, fdir) == ('repo', '')
+
+    def mark_copy_dest(raw):
+        m = re.fullmatch(r'"?\$\{?([A-Za-z_][A-Za-z0-9_]*|\d)\}?"?', raw or '')
+        if m:  # rule 5': this variable names a copy of the repository from here on
+            env[m.group(1)] = COPY + '$' + m.group(1) + '\x00'
     for cmd in sh_commands(text if text is not None else tree.text(path), line0):
+        copy_src_left = max(0, copy_src_left - 1)
         words = list(cmd.words)
         for op, w in cmd.redirs:
             if op in ('<', '<<<'):
@@ -560,7 +627,24 @@ def sh_refs(tree, path, rules, text=None, line0=1, env=None):
         if head == 'cd':
             cwd = sh_eval(words[1], env, path) if len(words) > 1 else ''
             cwd_by_line[cmd.line] = cwd
+            cwd_raw_by_line[cmd.line] = words[1] if len(words) > 1 else ''
             continue
+        # rule 5': a copy of the repository (tar pipe, cp -R, rsync) makes its
+        # destination variable a copy root
+        if head == 'tar':
+            flags = [w.lstrip('-') for w in words[1:] if w.startswith('-') and not w.startswith('--')]
+            cdir, craw = cwd_by_line.get(cmd.line), cwd_raw_by_line.get(cmd.line)
+            if '-C' in words[1:-1]:
+                craw = words[words.index('-C') + 1]
+                cdir = sh_eval(craw, env, path)
+            if any('c' in f for f in flags) and is_root(cdir):
+                copy_src_left = 4
+            elif any('x' in f for f in flags) and copy_src_left:
+                mark_copy_dest(craw)
+        if head in ('cp', 'rsync') and len(words) > 2:
+            args = [w for w in words[1:] if not w.startswith('-')]
+            if len(args) >= 2 and is_root(sh_eval(args[0], env, path)):
+                mark_copy_dest(args[-1])
         if cmd.line in cwd_by_line and re.match(r'\.\.?/', head):
             # a relative command after `cd <dir> &&` on the same line runs under <dir>
             _ref_word(tree, refs, path, cmd.line, head, env, 'edge', 'command position after cd', rules,
@@ -580,7 +664,7 @@ def sh_refs(tree, path, rules, text=None, line0=1, env=None):
             continue
         if head in SH_DATA:
             for w in words[1:]:
-                _ref_word(tree, refs, path, cmd.line, w, env, 'edge' if rules.data_is_edge else 'data', head, rules)
+                _ref_word(tree, refs, path, cmd.line, w, env, 'data', head, rules)
             continue
         if head in ('echo', 'printf', 'source'):
             for w in words[1:]:
@@ -606,6 +690,8 @@ def _assign(tree, refs, path, line, w, env, rules):
     if not m:
         return
     name, val = m.group(1), m.group(3)
+    if name in PINNED_ENV.get(path, {}):
+        return  # pinned: what the root is run with
     if val.startswith('('):
         inner = val[1:-1] if val.endswith(')') else val[1:]
         sub = sh_commands(inner)
@@ -633,6 +719,11 @@ def _runner(tree, path, cmd, words, env, rules):
             return refs
         return sh_refs_for(tree, path, cmd, rest, env, rules) if rest else refs
     inline = False
+    if runner in ('bash', 'sh') and '-n' in rest[:1]:
+        # `bash -n` parses without executing: its argument is read, not run
+        for w in rest[1:]:
+            _ref_word(tree, refs, path, cmd.line, w, env, 'data', runner + ' -n', rules)
+        return refs
     while rest and rest[0].startswith('-'):
         flag = rest.pop(0)
         if flag == '-':
@@ -673,7 +764,7 @@ def sh_refs_for(tree, path, cmd, words, env, rules):
     if hk[0] == 'cmd':
         if hk[1] in SH_DATA:
             for w in words[1:]:
-                _ref_word(tree, refs, path, cmd.line, w, env, 'edge' if rules.data_is_edge else 'data', hk[1], rules)
+                _ref_word(tree, refs, path, cmd.line, w, env, 'data', hk[1], rules)
         return refs
     _ref_word(tree, refs, path, cmd.line, words[0], env, 'edge', 'command position', rules)
     for w in words[1:]:
@@ -690,6 +781,8 @@ def _ref_word(tree, refs, path, line, w, env, ctx, how, rules, value=None):
     fdir = path.rsplit('/', 1)[0] if '/' in path else ''
     v = value if value is not None else sh_eval(w, env, path)
     k = classify_value(v, fdir)
+    if k[0] == 'cmd' and ctx == 'data' and tree.exists(k[1]):
+        k = ('repo', k[1])  # a bare top-level file name read as data (`grep x CHANGES.md`)
     if k[0] == 'repo':
         p = k[1]
         if p == path:
@@ -755,8 +848,6 @@ def py_refs(tree, path, rules, text=None, line0=1):
         if kind == 'base' and not rules.python_bases:
             continue
         ctx, how = _py_context(node, parents)
-        if rules.data_is_edge and ctx == 'data':
-            ctx = 'edge'
         if kind == 'base':
             rel = norm(rel)
             if rel is None or not tree.exists(rel):
@@ -856,7 +947,43 @@ def _py_context(node, parents):
 
 
 # --- the closure
+def ci_run_steps(text):
+    """(line, shell text) of every `run:` step of a workflow file."""
+    out, lines, i = [], text.split('\n'), 0
+    while i < len(lines):
+        m = re.match(r'^(\s*)(?:-\s+)?run:\s*(.*)$', lines[i])
+        if not m:
+            i += 1
+            continue
+        val = m.group(2).strip()
+        if val in ('|', '|-', '>', '>-'):
+            body, j = [], i + 1
+            ind = None
+            while j < len(lines):
+                ln = lines[j]
+                if ln.strip():
+                    cur = len(ln) - len(ln.lstrip())
+                    if ind is None:
+                        ind = cur
+                    if cur < ind or cur <= len(m.group(1)):
+                        break
+                body.append(ln[ind:] if ind is not None else ln)
+                j += 1
+            out.append((i + 2, '\n'.join(body)))
+            i = j
+        else:
+            out.append((i + 1, val))
+            i += 1
+    return out
+
+
 def file_refs(tree, path, rules):
+    COPY_AS_SCRATCH[0] = not rules.copy_roots
+    if path == CI_FILE:
+        refs = []
+        for line, body in ci_run_steps(tree.text(path)):
+            refs.extend(sh_refs(tree, path, rules, text=body, line0=line))
+        return refs
     if tree.is_python(path):
         return py_refs(tree, path, rules)
     if tree.is_shell(path):
@@ -880,48 +1007,85 @@ def leaf_exempt(path, rules):
     return any(fnmatch(path, os.path.join(os.path.dirname(e), '*' + os.path.splitext(e)[1])) for e in EXEMPT_LEAVES)
 
 
-def resolve(tree, rules=None, exempt_leaves=None, scratch=None):
-    """-> dict(closure, wiring, leaves, scratch_used, problems, edges)."""
+def resolve(tree, rules=None, exempt_leaves=None, scratch=None, subject_reads=None):
+    """-> dict(closure, wiring, leaves, scratch_used, problems, edges, data_reads, ...).
+
+    Phase 1 walks the merge-decision roots (guard, preflight, verifier, the
+    reserved cases): code edges are followed and every data read of a repo
+    file is recorded as an input. Phase 2 walks the `check` and ci.yml roots
+    for code edges only; a file reached only there has its data reads
+    treated as subject reads (not recorded)."""
     global EXEMPT_LEAVES
     rules = rules or Rules()
     saved = EXEMPT_LEAVES
     if exempt_leaves is not None:
         EXEMPT_LEAVES = list(exempt_leaves)
     scratch = dict(SCRATCH_ROOTS if scratch is None else scratch)
+    subject_reads = dict(SUBJECT_READS if subject_reads is None else subject_reads)
     try:
         wiring = sorted({f for w in WIRING for f in tree.glob(w)})
         problems, edges = [], {}
-        leaves_used, scratch_used = {}, {}
-        closure = []
-        todo = list(entries(tree))
-        seen = set(todo)
-        while todo:
-            f = todo.pop(0)
-            closure.append(f)
-            refs = file_refs(tree, f, rules)
-            used = {(r.target, r.kind) for r in refs if r.target}
-            for r in refs:
-                if r.kind == 'unresolvable':
-                    if (f, r.root) in scratch:
-                        scratch_used.setdefault((f, r.root), []).append(r.line)
-                    elif rules.unresolvable_fails:
-                        problems.append('unresolvable %s at %s:%s (%s)' % (r.root, f, r.line, r.how))
-                elif r.kind == 'missing':
-                    problems.append('missing %s run at %s:%s (%s)' % (r.target, f, r.line, r.how))
-                elif r.kind == 'mention':
-                    if tree.is_script(r.target) and (r.target, 'edge') not in used and (r.target, 'data') not in used:
-                        problems.append('unclassifiable reference to %s at %s:%s (%s)' % (r.target, f, r.line, r.how))
-                elif r.kind == 'edge':
-                    edges.setdefault(r.target, []).append('%s:%s (%s)' % (f, r.line, r.how))
-                    if r.target in wiring:
-                        continue
-                    if leaf_exempt(r.target, rules):
-                        leaves_used.setdefault(r.target, []).append('%s:%s' % (f, r.line))
-                        continue
-                    if r.target not in seen:
-                        seen.add(r.target)
-                        todo.append(r.target)
+        leaves_used, scratch_used, runtime_used = {}, {}, {}
+        data_reads, subjects_used = {}, {}
+        closure, md, seen = [], set(), set()
+
+        def walk(start, merge_decision):
+            todo = [f for f in start if f not in seen]
+            seen.update(todo)
+            while todo:
+                f = todo.pop(0)
+                closure.append(f)
+                if merge_decision:
+                    md.add(f)
+                refs = file_refs(tree, f, rules)
+                used = {(r.target, r.kind) for r in refs if r.target}
+                for r in refs:
+                    if r.kind == 'unresolvable':
+                        if (f, r.root) in scratch:
+                            scratch_used.setdefault((f, r.root), []).append(r.line)
+                        elif rules.unresolvable_fails:
+                            problems.append('unresolvable %s at %s:%s (%s)' % (r.root, f, r.line, r.how))
+                    elif r.kind == 'missing':
+                        if (f, r.target) in RUNTIME_FILES:
+                            runtime_used.setdefault((f, r.target), []).append(r.line)
+                        else:
+                            problems.append('missing %s run at %s:%s (%s)' % (r.target, f, r.line, r.how))
+                    elif r.kind == 'mention':
+                        if tree.is_script(r.target) and (r.target, 'edge') not in used and (r.target, 'data') not in used:
+                            problems.append('unclassifiable reference to %s at %s:%s (%s)' % (r.target, f, r.line, r.how))
+                    elif r.kind == 'data':
+                        if merge_decision and rules.data_followed:
+                            where = '%s:%s (%s)' % (f, r.line, r.how)
+                            if r.target in subject_reads:
+                                subjects_used.setdefault(r.target, []).append(where)
+                            else:
+                                data_reads.setdefault(r.target, []).append(where)
+                    elif r.kind == 'edge':
+                        edges.setdefault(r.target, []).append('%s:%s (%s)' % (f, r.line, r.how))
+                        if r.target in wiring:
+                            continue
+                        if leaf_exempt(r.target, rules):
+                            leaves_used.setdefault(r.target, []).append('%s:%s' % (f, r.line))
+                            continue
+                        if r.target not in seen:
+                            seen.add(r.target)
+                            todo.append(r.target)
+
+        walk(list(entries(tree)), True)
+        if rules.check_roots:
+            walk([f for f in CHECK_ROOTS + [CI_FILE] if tree.exists(f)], False)
+        if CI_FILE in closure:
+            closure.remove(CI_FILE)  # a wiring member: only its run: steps were roots
+        if rules.subject_stale_check:
+            for e in subject_reads:
+                if not tree.exists(e):
+                    problems.append('SUBJECT_READS entry %s names a path that does not exist' % e)
+                elif e not in subjects_used:
+                    problems.append('SUBJECT_READS entry %s is stale: no merge-decision file reads it' % e)
         if rules.stale_check:
+            for key in RUNTIME_FILES:
+                if key not in runtime_used:
+                    problems.append('runtime file %s in %s is stale: no run: step runs it' % (key[1], key[0]))
             for e in EXEMPT_LEAVES:
                 if not tree.exists(e):
                     problems.append('exemption %s names a path that does not exist' % e)
@@ -933,17 +1097,28 @@ def resolve(tree, rules=None, exempt_leaves=None, scratch=None):
                 elif key not in scratch_used:
                     problems.append('scratch root %s in %s is stale: unused' % (key[1], key[0]))
         return {'closure': closure, 'wiring': wiring, 'leaves': leaves_used, 'scratch_used': scratch_used,
-                'problems': problems, 'edges': edges, 'scratch': scratch}
+                'problems': problems, 'edges': edges, 'scratch': scratch, 'md': md, 'data_reads': data_reads,
+                'subjects_used': subjects_used, 'subject_reads': subject_reads, 'runtime_used': runtime_used}
     finally:
         EXEMPT_LEAVES = saved
 
 
 def report_text(res):
-    out = ['closure (%d files, each must be reserved):' % len(res['closure'])]
+    out = ['closure (%d files, each must be reserved; * = reached only from the check/ci.yml roots):' % len(res['closure'])]
     for f in res['closure']:
         via = res['edges'].get(f)
-        out.append('  %s%s' % (f, ('  <- ' + via[0]) if via else '  (entry point)'))
-    out.append('wiring members (reserved, not traversed): ' + ', '.join(res['wiring']))
+        out.append('  %s%s%s' % ('' if f in res['md'] else '* ', f, ('  <- ' + via[0]) if via else '  (root)'))
+    out.append('wiring members (reserved, not traversed; ci.yml run: steps are roots): ' + ', '.join(res['wiring']))
+    out.append('data reads by merge-decision files (each must be reserved):')
+    for f in sorted(res['data_reads']):
+        out.append('  %s  read by %s%s' % (f, res['data_reads'][f][0], ' (+%d more)' % (len(res['data_reads'][f]) - 1)
+                                           if len(res['data_reads'][f]) > 1 else ''))
+    out.append('SUBJECT_READS (named subjects, not reserved):')
+    for f, why in sorted(res['subject_reads'].items()):
+        out.append('  %s  read by %s: %s' % (f, ', '.join(res['subjects_used'].get(f, ['NOTHING'])[:3]), why))
+    out.append('runtime files (created and run by the same CI step):')
+    for (f, p), why in sorted(RUNTIME_FILES.items()):
+        out.append('  %s in %s, lines %s: %s' % (p, f, ','.join(map(str, res['runtime_used'].get((f, p), []))) or 'NONE', why))
     out.append('exempt leaves (not reserved by this test, not traversed):')
     for e in EXEMPT_LEAVES:
         out.append('  %s  used by %s' % (e, ', '.join(res['leaves'].get(e, ['NOTHING']))))
@@ -986,25 +1161,32 @@ class Verifier:
 
 
 class Ctx:
-    def __init__(self, rules=None, config=None, leaves=None, scratch=None, verifier=None):
+    def __init__(self, rules=None, config=None, leaves=None, scratch=None, subjects=None, verifier=None):
         self.rules = rules or Rules()
         self.config = config if config is not None else (ROOT / 'policy/merge-autonomy.json').read_text()
         self.leaves = list(EXEMPT_LEAVES if leaves is None else leaves)
         self.scratch = dict(SCRATCH_ROOTS if scratch is None else scratch)
+        self.subjects = dict(SUBJECT_READS if subjects is None else subjects)
         self.verifier = verifier or Verifier(self.config)
         self.report = None
 
     def but(self, **kw):
         """The same context with other exemptions, sharing the verifier."""
         return Ctx(rules=self.rules, config=self.config, leaves=kw.get('leaves', self.leaves),
-                   scratch=kw.get('scratch', self.scratch), verifier=self.verifier)
+                   scratch=kw.get('scratch', self.scratch), subjects=kw.get('subjects', self.subjects),
+                   verifier=self.verifier)
 
 
 def closure_check(tree, ctx):
     """Every problem of the closure: the resolver's, plus each member the
-    verifier does not refer with `reserved-path`."""
-    res = resolve(tree, ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch)
+    verifier does not refer with `reserved-path`, plus each data read by a
+    merge-decision file that is neither reserved nor a named subject."""
+    res = resolve(tree, ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch, subject_reads=ctx.subjects)
     problems = list(res['problems'])
+    for f, where in sorted(res['data_reads'].items()):
+        if not ctx.verifier.reserved(f):
+            problems.append('%s is read as data (via %s) by a merge-decision file and is neither reserved nor a '
+                            'SUBJECT_READS entry: %r' % (f, where[0], ctx.verifier.verdict(f)))
     for f in res['closure']:
         if not ctx.verifier.reserved(f):
             via = res['edges'].get(f, ['entry point'])[0]
@@ -1046,7 +1228,7 @@ def row(name):
 
 @row('a-each-closure-file-reserved')
 def _(ctx):
-    res = resolve(Tree(), ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch)
+    res = resolve(Tree(), ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch, subject_reads=ctx.subjects)
     bad = ['%s: %r' % (f, ctx.verifier.verdict(f)) for f in res['closure'] + res['wiring'] if not ctx.verifier.reserved(f)]
     need(not bad, 'not referred with reserved-path: %s' % '; '.join(bad))
     for leaf in ctx.leaves:
@@ -1102,17 +1284,28 @@ def _(ctx):
         need(res['leaves'].get(leaf), 'exemption %s unused' % leaf)
     for key in ctx.scratch:
         need(res['scratch_used'].get(key), 'scratch root %s unused' % (key,))
+    for e in ctx.subjects:
+        need(res['subjects_used'].get(e), 'SUBJECT_READS entry %s unused' % e)
+    need(all(f in res['closure'] for f in CHECK_ROOTS), 'a check root is missing from the closure')
     ctx.report = report_text(res)
 
 
-@row('e-data-read-not-an-edge')
+@row('e-unnamed-data-read-fails')
 def _(ctx):
-    tree, _ = planted('merge-preflight.sh', ['grep -q x CHANGES.md', 'cat lib/zz-data.txt'],
-                      {'lib/zz-data.txt': ('data\n', False)})
+    tree, first = planted('merge-preflight.sh', ['cat lib/zz-data.txt'], {'lib/zz-data.txt': ('data\n', False)})
+    _, problems = closure_check(tree, ctx)
+    need(any(p.startswith('lib/zz-data.txt is read as data (via merge-preflight.sh:%d ' % first) and 'SUBJECT_READS' in p
+             for p in problems), 'an unreserved, unnamed data read passed: %s' % problems)
+
+
+@row('e-named-subject-read-passes')
+def _(ctx):
+    tree, _ = planted('merge-preflight.sh', ['grep -q x CHANGES.md'])
     res, problems = closure_check(tree, ctx)
-    need(not problems, 'a data read changed the result: %s' % problems)
-    for f in ('CHANGES.md', 'lib/zz-data.txt'):
-        need(f not in res['closure'], '%s entered the closure through a data read' % f)
+    need(not problems, 'a named subject read changed the result: %s' % problems)
+    need('CHANGES.md' not in res['closure'], 'CHANGES.md entered the closure through a data read')
+    need(any(w.startswith('merge-preflight.sh:') for w in res['subjects_used'].get('CHANGES.md', [])),
+         'the planted subject read was not seen')
 
 
 @row('f-stale-exemption')
@@ -1136,6 +1329,40 @@ def _(ctx):
     need(any('scratch root $zz_root in test/lib.sh is stale' in p for p in problems), 'a stale scratch root passed: %s' % problems)
 
 
+@row('h-run-under-a-repository-copy')
+def _(ctx):
+    case = 'test/cases/s605_merge_risk_hard_gates_first.sh'
+    tree, first = planted(case, ['zz_copy="$(mktemp -d)"',
+                                 'tar -C "$TEST_REPO_ROOT" -cf - . | tar -C "$zz_copy" -xf -',
+                                 '(cd "$zz_copy" && ./zz-check.sh)'],
+                          {'zz-check.sh': ('#!/usr/bin/env bash\n# planted by S628\n:\n', True)})
+    _, problems = closure_check(tree, ctx)
+    need(any(p.startswith('zz-check.sh is run (via %s:%d ' % (case, first + 2)) and 'neither reserved nor exempt' in p
+             for p in problems), 'a run under a repository copy was not resolved to the repository file: %s' % problems)
+
+
+@row('i-check-root-code-edge')
+def _(ctx):
+    tree, first = planted('check', ['"$target/zz-lint.sh"'],
+                          {'zz-lint.sh': ('#!/usr/bin/env bash\n# planted by S628\n:\n', True)})
+    _, problems = closure_check(tree, ctx)
+    need(any(p.startswith('zz-lint.sh is run (via check:%d ' % first) and 'neither reserved nor exempt' in p
+             for p in problems), 'a planted run line in check was not followed: %s' % problems)
+
+
+@row('j-stale-subject-read')
+def _(ctx):
+    _, problems = closure_check(Tree(), ctx.but(subjects=dict(ctx.subjects, **{'CONTEXT.md': 'planted by S628'})))
+    need(any('SUBJECT_READS entry CONTEXT.md is stale' in p for p in problems), 'a stale SUBJECT_READS entry passed: %s' % problems)
+
+
+@row('j-nonexistent-subject-read')
+def _(ctx):
+    _, problems = closure_check(Tree(), ctx.but(subjects=dict(ctx.subjects, **{'zz-missing.txt': 'planted by S628'})))
+    need(any('SUBJECT_READS entry zz-missing.txt names a path that does not exist' in p for p in problems),
+         'a nonexistent SUBJECT_READS entry passed: %s' % problems)
+
+
 @row('g-unlisted-installer-like-script')
 def _(ctx):
     tree, first = planted('merge-preflight.sh', ['bash ./zz-install.sh'],
@@ -1150,7 +1377,7 @@ def _(ctx):
     """A guard on the resolver itself: every `.`/`source` line of a shell
     closure file yields an edge or an unresolvable reference on that line."""
     tree = Tree()
-    res = resolve(tree, ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch)
+    res = resolve(tree, ctx.rules, exempt_leaves=ctx.leaves, scratch=ctx.scratch, subject_reads=ctx.subjects)
     rx = re.compile(r'^\s*(?:(?:if|then|do|else)\s+|.*?(?:;|&&|\|\||\(|<)\s*)?(?:\.|source)\s+["$]')
     missed = []
     for f in res['closure']:
@@ -1177,7 +1404,11 @@ MUTATIONS = [
     ('drop the LIB / ... rule', ['b-planted-lib-name'], {'rules': Rules(python_bases=False)}),
     ('read an unresolvable reference as no edge', ['c-unresolvable-fails-with-line'], {'rules': Rules(unresolvable_fails=False)}),
     ('follow only `.`, not `source`', ['b-planted-source'], {'rules': Rules(source_word=False)}),
-    ('treat a data read as an edge', ['e-data-read-not-an-edge'], {'rules': Rules(data_is_edge=True)}),
+    ('treat data reads as not followed', ['e-unnamed-data-read-fails'], {'rules': Rules(data_followed=False)}),
+    ('drop check from the roots', ['i-check-root-code-edge'], {'rules': Rules(check_roots=False)}),
+    ('treat a copy root as a scratch root', ['h-run-under-a-repository-copy'], {'rules': Rules(copy_roots=False)}),
+    ('drop the SUBJECT_READS stale check', ['j-stale-subject-read', 'j-nonexistent-subject-read'],
+     {'rules': Rules(subject_stale_check=False)}),
     ('drop the stale-entry check', ['f-stale-exemption', 'f-nonexistent-exemption', 'f-stale-scratch-root'],
      {'rules': Rules(stale_check=False)}),
     ('match exemptions by glob instead of exact path', ['g-unlisted-installer-like-script'],
