@@ -8,8 +8,10 @@
 # floor, policy/WORKFLOW.md step 4 and its generated projections
 # (check-workflow-adapters.sh). The differential behavior run and its stamp are
 # the orchestrator's (UNRUN here); the SNAPSHOTS re-pin is S548's.
-# Mutation checks: OR11 grown by 100 characters (headroom fails), the `#511`
-# token removed (pointer check fails), a hand-edited projection (generator check fails).
+# Mutation checks: OR11 grown, in a copy, by BUDGET - FLOOR + 1 - (slot 1 of
+# that copy) characters (headroom fails) and by one fewer (control passes), so
+# the verdict does not depend on the sandbox path length; the `#511` token
+# removed (pointer check fails); a hand-edited projection (generator check fails).
 #
 # shellcheck disable=SC2016 # backticks are literal rule text, never expansions
 set -uo pipefail
@@ -102,15 +104,31 @@ grep -qF '#646' "$TEST_REPO_ROOT/CHANGES.md" && fail "S627/meaning — CHANGES.m
 # --- mutation checks ----------------------------------------------------------
 m="$SANDBOX/m-$long"
 clone "$m"
-python3 -I - "$m/skills/role-contracts/ORCHESTRATOR.md" <<'PY'
+# grow_or11 <clone> <k>: k more characters inside OR11's pointer sentence.
+grow_or11() {
+  python3 -I - "$1/skills/role-contracts/ORCHESTRATOR.md" "$2" <<'PY'
 import sys
-p = sys.argv[1]
+p, k = sys.argv[1], int(sys.argv[2])
 t = open(p, encoding="utf-8").read()
-old = "only via accepted `merge-risk-panel` delegation."
+old = "only via accepted `merge-risk-panel` delegation"
 assert t.count(old) == 1
-open(p, "w", encoding="utf-8").write(t.replace(old, old[:-1] + " " + "y" * 99 + "."))
+open(p, "w", encoding="utf-8").write(t.replace(old, old + "y" * k))
 PY
-[ -n "$(headroom_problems "$m")" ] || fail "S627/mutation — OR11 grown by 100 characters kept the headroom: the floor does not bind"
+}
+# Relative, as S318's neg-floor-1 (A58 addendum 5 D4): slot 1 is measured in
+# this same copy, so the sandbox path (named in slot 1) is the same before and
+# after the growth and the verdicts do not depend on its length.
+s1_copy="$(slot_size "$m" 1)"
+grow=$((CONTEXT_BUDGET_CHARS - FLOOR + 1 - s1_copy))
+if [ "$grow" -lt 1 ]; then
+  fail "S627/mutation — slot 1 of the copy ($s1_copy) leaves no headroom above $FLOOR to grow into"
+else
+  grow_or11 "$m" $((grow - 1))
+  out="$(headroom_problems "$m")"
+  [ -z "$out" ] || fail "S627/mutation-control — OR11 grown by $((grow - 1)) characters (headroom exactly $FLOOR) failed: $out"
+  grow_or11 "$m" 1
+  [ -n "$(headroom_problems "$m")" ] || fail "S627/mutation — OR11 grown by $grow characters (headroom $((FLOOR - 1))) kept the headroom: the floor does not bind (slot 1 of the copy was $s1_copy)"
+fi
 
 rm -rf "$m"; clone "$m"
 sed -i.bak 's/approval: #511, only via/approval: only via/' "$m/skills/role-contracts/ORCHESTRATOR.md"
