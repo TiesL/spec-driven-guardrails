@@ -15,9 +15,12 @@ Stdout first line: `merge-risk: <verdict> pr=<n> head=<H> base=<B>
 diff=<sha256> config=<C>`, then one `reason: <code> <detail>` per reason and
 `note:` lines. Exit 0 eligible, 1 held, 3 referred, 4 unresolved, 2 usage.
 Precedence: referred, then unresolved, then held. Every `# rule:` tag below
-names one veto, hold, expiry, void or revocation rule; the mutation suite
-(test/fixtures/merge-risk-646.py) removes each one and shows a case fails.
-The verifier proves equal bytes and recorded fields, never authorship.
+names one veto, hold, expiry, void, revocation or fail-closed check; the
+mutation suite (test/fixtures/merge-risk-646.py) changes each tagged line and
+shows a case fails. Untagged lines (parsers, schema detail, collector plumbing)
+are covered by rows, not by a per-line mutation. The verifier proves equal
+bytes and recorded fields, never authorship. `now` and T are GitHub's clock;
+the local clock decides nothing.
 """
 import hashlib
 import json
@@ -26,6 +29,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from functools import lru_cache
 from pathlib import Path
 
@@ -241,9 +245,23 @@ def load_config(b, r):
         return None
     if not cfg['enabled']:  # rule:disabled
         r.add('referred', 'autonomy-disabled', 'enabled is false at the main tip')
-    elif b.get('acceptance_exists') is not True:
-        r.add('unresolved', 'acceptance-unverified', cfg['acceptance'])
+    else:
+        acceptance_checks(b, cfg, r)
     return cfg
+
+
+def acceptance_checks(b, cfg, r):
+    """A58 addendum 3 F4: the comment exists, is on issue 646 of this
+    repository and was written by the repository owner's login."""
+    acc = b.get('acceptance')
+    repo = cfg['repository']
+    if not isinstance(acc, dict):  # rule:acceptance-exists
+        r.add('unresolved', 'acceptance-unverified', 'missing %s' % cfg['acceptance'])
+        return
+    if acc.get('issue_url') != 'https://api.github.com/repos/%s/issues/646' % repo:  # rule:acceptance-issue
+        r.add('unresolved', 'acceptance-unverified', 'issue %s' % acc.get('issue_url'))
+    if acc.get('login') != repo.split('/', 1)[0]:  # rule:acceptance-author
+        r.add('unresolved', 'acceptance-unverified', 'author %s' % acc.get('login'))
 
 
 def allowed_patterns(cfg):
@@ -275,7 +293,7 @@ def gate_checks(b, r):
         r.add('unresolved', 'gate-check', 'unreadable')
         return
     named = [x for x in runs if isinstance(x, dict) and x.get('name') == 'check']
-    if not named:
+    if not named:  # rule:check-missing
         r.add('unresolved', 'gate-check', 'missing')
         return
     run = max(named, key=lambda x: x.get('id') if is_int(x.get('id')) else -1)
@@ -285,6 +303,24 @@ def gate_checks(b, r):
         r.add('unresolved', 'gate-check', 'skipped')
     elif run.get('conclusion') != 'success':
         r.add('unresolved', 'gate-check', 'conclusion=%s' % run.get('conclusion'))
+
+
+def verifier_checks(b, r):
+    """A58 addendum 3 F2: the code that judges is B's code. The collector
+    records its own checkout's HEAD and every reserved path whose working
+    bytes differ from B; this runs inside the code it checks, so it catches
+    drift (a candidate branch checked out), not a substituted verifier."""
+    v, B = b.get('verifier'), b.get('main_tip')
+    if not isinstance(v, dict) or not isinstance(v.get('mismatches'), list):  # rule:verifier-field
+        r.add('unresolved', 'verifier-not-at-base', 'field missing')
+        return
+    if v.get('base_present') is not True:  # rule:verifier-base-present
+        r.add('unresolved', 'verifier-not-at-base', 'base-absent %s' % B)
+        return
+    if not B or v.get('head') != B:  # rule:verifier-head
+        r.add('unresolved', 'verifier-not-at-base', 'head %s, main tip %s' % (v.get('head'), B))
+    for path in v['mismatches']:  # rule:verifier-bytes
+        r.add('unresolved', 'verifier-not-at-base', 'bytes %s' % path)
 
 
 # --- class and disqualifiers (A58 D3/D4)
@@ -304,14 +340,15 @@ def meaning_version_touched(diff_text):
 def class_checks(b, cfg, r, ctx):
     pr = b.get('pr') if isinstance(b.get('pr'), dict) else {}
     gate_checks(b, r)
-    if pr.get('state') != 'OPEN':
+    verifier_checks(b, r)
+    if pr.get('state') != 'OPEN':  # rule:pr-not-open
         r.add('unresolved', 'pr-not-open', 'state=%s' % pr.get('state'))
     if pr.get('base') != 'main':  # rule:base-main
         r.add('referred', 'base-not-main', 'base=%s' % pr.get('base'))
     if path_match(str(pr.get('head_ref')), cfg['release_heads']):  # rule:release-head
         r.add('referred', 'release-head', 'head branch %s' % pr.get('head_ref'))
     closing = pr.get('closing_issues')
-    if not isinstance(closing, list):
+    if not isinstance(closing, list):  # rule:closing-unreadable
         r.add('unresolved', 'closing-issues', 'unreadable')
     elif len(closing) != 1:  # rule:closing-one
         r.add('referred', 'closing-issues', 'count=%d' % len(closing))
@@ -359,12 +396,12 @@ def class_checks(b, cfg, r, ctx):
     issue = b.get('issue')
     items = [('pr', pr.get('labels'))]
     if isinstance(closing, list) and len(closing) == 1:
-        if not isinstance(issue, dict):
+        if not isinstance(issue, dict):  # rule:issue-unreadable
             r.add('unresolved', 'issue-unreadable', closing[0])
         else:
             items.append(('issue', issue.get('labels')))
     for where, labels in items:
-        if not isinstance(labels, list):
+        if not isinstance(labels, list):  # rule:labels-unreadable
             r.add('unresolved', 'labels-unreadable', where)
             continue
         if off in labels:  # rule:label-off-item
@@ -373,8 +410,10 @@ def class_checks(b, cfg, r, ctx):
             if label_match(name, hold):  # rule:label-hold
                 r.add('held', 'label-hold', '%s %s' % (where, name))
     control = b.get('control')
-    if not isinstance(control, dict) or not isinstance(control.get('labels'), list):
+    if not isinstance(control, dict):
         r.add('unresolved', 'control-unreadable', 'issue #%s' % cfg['control_issue'])
+    elif not isinstance(control.get('labels'), list):  # rule:control-labels-unreadable
+        r.add('unresolved', 'labels-unreadable', 'control issue #%s' % cfg['control_issue'])
     else:
         if control.get('state') != 'OPEN':  # rule:control-closed
             r.add('referred', 'control-closed', 'issue #%s' % cfg['control_issue'])
@@ -498,7 +537,7 @@ def check_row(b, m, row, H, ctx, r):
     p_role, p_pos, p_ac, p_design, p_head = pm.groups()
     if p_role != role:  # rule:position-role
         r.add('unresolved', 'position-role', '%s wrote role=%s' % (role, p_role))
-    if p_pos != row['position']:
+    if p_pos != row['position']:  # rule:position-mismatch
         r.add('unresolved', 'position-mismatch', role)
     if p_ac != m['ac']['sha256']:  # rule:ad-equal
         r.add('unresolved', 'position-digest', '%s ac' % role)
@@ -576,7 +615,8 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
     def _hit(ev, where):
         return stops(where, ev)
     events = [(where, ev) for where in ('pr', 'issue', 'control') for ev in label_events(b, where)]
-    stop_times = [ts(ev.get('created_at')) for where, ev in events if _hit(ev, where) and ts(ev.get('created_at'))]
+    stop_events = [(where, ts(ev.get('created_at'))) for where, ev in events if _hit(ev, where) and ts(ev.get('created_at'))]
+    stop_times = [t for _, t in stop_events]
     # A58 addendum E4: exactly one non-superseded eligible record for H. An earlier
     # one is superseded only when a hold or off stop event at or after its T, and
     # before the newer record's T, voided it; any other second one is a duplicate.
@@ -593,16 +633,16 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
         return
     if c.get('updated_at') != c.get('created_at'):  # rule:no-edit
         r.add('unresolved', 'record-edited', c.get('url'))
-    if RECORD_LABEL not in (live(c['body']) or ''):
+    if RECORD_LABEL not in (live(c['body']) or ''):  # rule:record-label-final
         r.add('unresolved', 'record-label', 'literal "%s" missing' % RECORD_LABEL)
-    if not re.fullmatch(r'MR-%s-%s-[0-9]+' % (n, re.escape(str(H)[:7])), str(m['decision_id'])):
+    if not re.fullmatch(r'MR-%s-%s-[0-9]+' % (n, re.escape(str(H)[:7])), str(m['decision_id'])):  # rule:record-id-final
         r.add('unresolved', 'record-id', str(m['decision_id']))
     for key, want in (('repository', b.get('repository')), ('issue', ctx.get('issue'))):
-        if m[key] != want:
+        if m[key] != want:  # rule:manifest-binding
             r.add('unresolved', 'manifest-binding', key)
     if m['base'] != B:  # rule:identity-base
         r.add('unresolved', 'identity-base', 'record %s, now %s' % (m['base'], B))
-    if m['config_commit'] != B:
+    if m['config_commit'] != B:  # rule:identity-config-commit
         r.add('unresolved', 'identity-config-commit', 'record %s, now %s' % (m['config_commit'], B))
     if m['diff_sha256'] != D:  # rule:identity-diff
         r.add('unresolved', 'identity-diff', 'record %s, now %s' % (m['diff_sha256'], D))
@@ -641,7 +681,7 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
     if not authors or not all(floor_ok(a) for a in authors) or not all(floor_ok(x) for x in rows):  # rule:floor-complete
         r.add('unresolved', 'floor-evidence', 'model, variant, numeric score, entry and date for every author and voter')
     else:
-        top = max(a['score'] for a in authors)
+        top = max(a['score'] for a in authors)  # rule:floor-max
         for row in rows:
             if row['role'] in VOTERS and row['score'] < top:  # rule:floor
                 r.add('referred', 'floor-below', '%s score %s, highest author %s' % (row['role'], row['score'], top))
@@ -663,13 +703,14 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
             r.add('unresolved', 'timeline-unreadable', 'event time')
         elif when >= T and _hit(ev, where):  # rule:void
             r.add('unresolved', 'void-after-announcement', '%s %s at %s' % (where, ev.get('label'), ev.get('created_at')))  # rule:void-verdict
-    earlier = [ts(cc.get('created_at')) for cc, mm in valid if ts(cc.get('created_at')) and ts(cc.get('created_at')) < T]
-    T_first = min(earlier) if earlier else T
-    holds = [t for t in stop_times if T_first <= t < T]
-    if earlier and holds:
+    # A58 addendum 3 F3: any hold or off event on the PR or the work-item issue
+    # before T, however long ago and whoever removed it, needs the maintainer's
+    # release dated after the latest such event.
+    holds = [t for where, t in stop_events if where != 'control' and t < T]  # rule:release-any-time
+    if holds:
         hr = m['hold_release']
         if hr is None:  # rule:release-required
-            r.add('held', 'hold-release-missing', 'a hold followed an earlier record; the maintainer\'s verbatim words are required')
+            r.add('held', 'hold-release-missing', 'a hold or off label was placed before the record; the maintainer\'s verbatim words are required')
         else:
             um = COMMENT_URL.fullmatch(hr['link'])
             if not um or um.group(1) != b.get('repository') or int(um.group(3)) not in (n, ctx.get('issue')):  # rule:release-target
@@ -682,10 +723,19 @@ def final_checks(b, cfg, r, ctx, n, H, B, D, C):
                 elif ts(src.get('created_at')) is None or ts(src.get('created_at')) <= max(holds):  # rule:release-stale
                     r.add('held', 'hold-release-stale', 'the linked words predate the hold')
         r.note('hold-release authorship cannot be verified on a shared login; procedure')
+    # A58 addendum 3 F3: a global off after the last config change refers until
+    # a maintainer config PR re-enables; label removal does not.
+    cd = ts(b.get('config_commit_date'))
+    if cd is None:  # rule:config-date
+        r.add('unresolved', 'config-date-unreadable', 'committer date of the last change to policy/merge-autonomy.json')
+    else:
+        for where, t in stop_events:
+            if where == 'control' and t > cd:  # rule:off-since-config
+                r.add('referred', 'off-since-config', 'control issue off label at %s, config changed %s' % (fmt(t), fmt(cd)))
     earliest = T + timedelta(seconds=cfg['hold_seconds'])
-    now = ts(b.get('now'))
-    if now is None:
-        r.add('unresolved', 'now-unreadable', '')
+    now = ts(b.get('now'))  # GitHub's Date header, never the local clock (F5)
+    if now is None:  # rule:now-unreadable
+        r.add('unresolved', 'now-unreadable', 'no Date header on the final request')
     elif (now - T).total_seconds() < cfg['hold_seconds']:  # rule:hold-window
         r.add('held', 'hold-window', 'earliest=%s' % fmt(earliest))
     r.note('earliest-merge=%s' % fmt(earliest))
@@ -890,7 +940,7 @@ def body_at(repo, number, when):
 
 
 def collect(phase, n, script_dir):
-    b = {'phase': phase, 'pr_number': n, 'now': fmt(datetime.now(timezone.utc))}  # rule:read-only
+    b = {'phase': phase, 'pr_number': n, 'now': None}  # rule:read-only
     repo, _ = gh(['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'])
     repo = (repo or '').strip()
     b['repository'] = repo
@@ -918,6 +968,8 @@ def collect(phase, n, script_dir):
                 cfg = json.loads(b['config_text'])
             except ValueError:
                 pass
+    if isinstance(cfg, dict) and isinstance(cfg.get('reserved'), dict):
+        b['verifier'] = verifier_state(script_dir, B, cfg['reserved'].get('autonomy') or [])
     if B and H:
         cmp_ = gh_json(['api', 'repos/%s/compare/%s...%s' % (repo, B, H)])  # rule:full-range
         if isinstance(cmp_, dict):
@@ -948,7 +1000,10 @@ def collect(phase, n, script_dir):
     if is_int(control_n):
         b['control'] = issue(control_n)
     if isinstance(cfg, dict) and comment_id(cfg.get('acceptance')):
-        b['acceptance_exists'] = gh_json(['api', 'repos/%s/issues/comments/%s' % (repo, comment_id(cfg['acceptance']))]) is not None
+        d = gh_json(['api', 'repos/%s/issues/comments/%s' % (repo, comment_id(cfg['acceptance']))])
+        if isinstance(d, dict):
+            b['acceptance'] = {'issue_url': d.get('issue_url'), 'html_url': d.get('html_url'),
+                               'login': (d.get('user') or {}).get('login')}
     env = {k: v for k, v in os.environ.items() if k not in ESCAPE_HATCHES}  # rule:scrub-escape-hatch
     p = subprocess.run([str(Path(script_dir) / 'merge-preflight.sh'), str(n)], capture_output=True, env=env)
     b['preflight'] = {'exit': p.returncode, 'stderr': p.stderr.decode('utf-8', 'replace'),
@@ -999,7 +1054,63 @@ def collect(phase, n, script_dir):
                 if entry is not None:
                     texts[ds] = entry
         b['sources'], b['texts'] = sources, texts
+        log = gh_json(['api', 'repos/%s/commits?sha=%s&path=policy/merge-autonomy.json&per_page=1' % (repo, B)]) if B else None
+        if isinstance(log, list) and log and isinstance(log[0], dict):
+            b['config_commit_date'] = ((log[0].get('commit') or {}).get('committer') or {}).get('date')
+        head, _ = gh(['api', '--include', 'repos/%s/branches/main' % repo])  # the last request: its Date is now
+        b['now'] = server_now(head)  # rule:server-now
     return b
+
+
+def server_now(response):
+    """`now` from the Date header of `gh api --include` output (F5)."""
+    if not isinstance(response, str):
+        return None
+    for line in response.replace('\r\n', '\n').split('\n'):
+        if not line.strip():
+            break
+        if line.lower().startswith('date:'):
+            try:
+                when = parsedate_to_datetime(line.split(':', 1)[1].strip())
+            except (TypeError, ValueError, IndexError):
+                return None
+            if when is None or when.tzinfo is None:
+                return None
+            return fmt(when.astimezone(timezone.utc))
+    return None
+
+
+def verifier_state(script_dir, B, patterns):
+    """HEAD of the verifier's own checkout and every reserved path of B whose
+    working bytes differ from B's blob (F2). Bytes are read directly, so
+    assume-unchanged, skip-worktree and index tricks hide nothing."""
+    def vcs(*args):
+        return subprocess.run(['git', '-C', str(script_dir)] + list(args), capture_output=True)
+    p = vcs('rev-parse', 'HEAD')
+    out = {'head': p.stdout.decode().strip() if p.returncode == 0 else None, 'base_present': False, 'mismatches': []}
+    if not B or not SHA40.fullmatch(B) or vcs('cat-file', '-e', B + '^{commit}').returncode != 0:
+        return out
+    p = vcs('ls-tree', '-r', '-z', B)
+    if p.returncode != 0:
+        return out
+    out['base_present'] = True
+    for entry in p.stdout.split(b'\0'):
+        if not entry:
+            continue
+        meta, path = entry.split(b'\t', 1)
+        mode, _, obj = meta.split(b' ')
+        name = path.decode('utf-8', 'surrogateescape')
+        if not path_match(name, patterns):
+            continue
+        blob = vcs('cat-file', 'blob', obj.decode()).stdout
+        work = Path(script_dir) / name
+        try:
+            have = os.readlink(work).encode('utf-8', 'surrogateescape') if mode == b'120000' else work.read_bytes()
+        except OSError:
+            have = None
+        if have != blob:
+            out['mismatches'].append(name)
+    return out
 
 
 def collect_queue():

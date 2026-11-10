@@ -26,7 +26,6 @@
       "CHANGES.md",
       "WORKFLOW-ADOPTION.md",
       ".gitignore",
-      "lib/changes.sh",
       "lib/*adopt*",
       "lib/skill-links.sh",
       "lib/managed_blocks.py",
@@ -94,7 +93,18 @@
       "lib/merge-risk**",
       "test/cases/**merge_risk**",
       "test/fixtures/merge-risk**",
-      "test/behavior/merge-risk**"
+      "test/behavior/merge-risk**",
+      "hooks/read-command.py",
+      "hooks/rules.sh",
+      "lib/markdown.sh",
+      "lib/changes.sh",
+      "lib/context-budget.sh",
+      "settings/session-hooks.json",
+      "check",
+      ".github/workflows/**",
+      "test/lib.sh",
+      "test/run.sh",
+      "test/fixtures/pipeline-371-helpers.sh"
     ]
   },
   "labels": {

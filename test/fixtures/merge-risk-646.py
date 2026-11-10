@@ -6,10 +6,19 @@ Every row judges the verifier only through its command-line contract: the
 first stdout line, the `reason:` codes, the exit status, and (collector rows)
 the fake gh call log. Every scenario first runs the unmutated base bundle and
 expects `eligible`, so no row passes on an already broken bundle. Mutation
-checks remove exactly one rule (a `# rule:<name>` line of lib/merge-risk.py, a
+checks change exactly one rule (a `# rule:<name>` line of lib/merge-risk.py, a
 statement of the skill, or a config entry) in a scratch copy and require the
 named rows to fail; a surviving mutation is a defect of the suite. The
 rule-to-row map is the MUTATIONS table at the end of each scenario block.
+Every `# rule:` tag of lib/merge-risk.py has at least one mutation here
+(`untagged_rules()` reports any that has none). Lines without a tag (parsers,
+schema detail, collector plumbing) are exercised by rows but not mutated one
+by one; that is the limit of this suite.
+
+Each scratch tree is a throwaway git repository whose single commit is the
+main tip B the fake gh serves, so the collector's own-checkout check (A58
+addendum 3 F2) runs against real git objects; `now` comes from the fake
+`Date` header of the last request (F5).
 
 Nothing here runs a model: obedience to the skill is S624 (UNRUN, #682).
 Synthetic index scores are controlled evidence, not live index observations.
@@ -26,6 +35,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -45,6 +55,8 @@ VOTERS = ('Product', 'Architect', 'QA', 'Reviewer', 'orchestrator')
 STAGE = {'Product': 'Discovery', 'Architect': 'Planning', 'QA': 'Test', 'Reviewer': 'Review', 'Developer': 'Implementation'}
 FIRST = re.compile(r'merge-risk: (eligible|held|referred|unresolved) pr=(\S+) head=(\S+) base=(\S+) diff=(\S+) config=(\S+)')
 EXIT = {'eligible': 0, 'held': 1, 'referred': 3, 'unresolved': 4}
+SHA40 = re.compile(r'[0-9a-f]{40}')
+OWNER_ISSUE = 'https://api.github.com/repos/%s/issues/646' % REPO
 ERRORS = []
 TMP = []
 atexit.register(lambda: [shutil.rmtree(d, ignore_errors=True) for d in TMP])
@@ -124,11 +136,27 @@ class Tree:
         self.skill = skill if skill is not None else (ROOT / 'skills/merge-risk-panel/SKILL.md').read_text()
         self.config = config if config is not None else (ROOT / 'policy/merge-autonomy.json').read_text()
         self.role_contracts = role_contracts if role_contracts is not None else (ROOT / 'skills/role-contracts/SKILL.md').read_bytes()
+        self.lib_text = (self.dir / 'lib/merge-risk.py').read_text()
+        self.vcs('init', '-q')
+        self.vcs('add', 'lib', 'merge-risk-evidence.sh', 'merge-preflight.sh')
+        self.vcs('commit', '-q', '-m', 'B')
+        self.B = self.vcs('rev-parse', 'HEAD').stdout.decode().strip()
+        need(SHA40.fullmatch(self.B), 'scratch repository has no commit')
         Tree.count += 1
         spec = importlib.util.spec_from_file_location('merge_risk_%d' % Tree.count, self.dir / 'lib/merge-risk.py')
         self.mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.mod)
         self.n = 0
+
+    def vcs(self, *args):
+        env = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+        env.update(GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@example.invalid', GIT_COMMITTER_NAME='t',
+                   GIT_COMMITTER_EMAIL='t@example.invalid', GIT_CONFIG_NOSYSTEM='1', HOME=str(self.dir))
+        return subprocess.run(['git', '-C', str(self.dir)] + list(args), env=env, capture_output=True)
+
+    def clone(self):
+        """A fresh tree with the same (possibly mutated) verifier and texts."""
+        return Tree(lib=self.lib_text, skill=self.skill, config=self.config, role_contracts=self.role_contracts)
 
     def _bundle_file(self, b):
         self.n += 1
@@ -304,7 +332,10 @@ def add_record(b, m=None, created=T0, edited=False, raw_json=None, cid=None):
 def base(t, phase='final', cfg=None, files=None):
     files = files if files is not None else [fl('README.md', 10, 2), fl('docs/guide.md', 20)]
     b = {'phase': phase, 'pr_number': 700, 'repository': REPO, 'now': iso(T0 + timedelta(seconds=400)),
-         'host': 'exec-host', 'config_text': cfg if cfg is not None else config_text(t), 'main_tip': B, 'merge_base': B,
+         'host': 'exec-host', 'config_text': cfg if cfg is not None else config_text(t), 'main_tip': t.B, 'merge_base': t.B,
+         'verifier': {'head': t.B, 'base_present': True, 'mismatches': []},
+         'acceptance': {'issue_url': OWNER_ISSUE, 'html_url': ACC, 'login': REPO.split('/')[0]},
+         'config_commit_date': iso(T0 - timedelta(days=10)),
          'pr': {'state': 'OPEN', 'base': 'main', 'head_ref': 'feature/701-docs', 'head': H, 'closing_issues': [701],
                 'labels': [], 'reviews': [{'state': 'APPROVED'}], 'created_at': iso(T0 - timedelta(seconds=5000)),
                 'comments': ['Review done.\n<!-- pre-merge-review:done sha=%s -->' % H]},
@@ -313,7 +344,7 @@ def base(t, phase='final', cfg=None, files=None):
          'checks': [{'name': 'check', 'status': 'completed', 'conclusion': 'success', 'id': 555}],
          'issue': {'number': 701, 'state': 'OPEN', 'labels': []},
          'control': {'number': 607, 'state': 'OPEN', 'labels': []},
-         'acceptance_exists': True, 'timeline': {'pr': [], 'issue': [], 'control': []},
+         'timeline': {'pr': [], 'issue': [], 'control': []},
          'texts': {AC_SRC: AC_TEXT, DESIGN_SRC: DESIGN_TEXT}, 'sources': {}, 'issue_comments': [], '_roles': {}}
     for role in VOTERS:
         set_report(b, role, report(role))
@@ -334,6 +365,15 @@ def ev_label(where, label, when, event='labeled'):
 
 
 # --- the fake gh world for the live collector, built from a bundle
+def http_head(now):
+    """`gh api --include` output head; the Date header carries the bundle's now."""
+    lines = ['HTTP/2.0 200 OK', 'Content-Type: application/json; charset=utf-8']
+    if now is not None:
+        when = datetime.strptime(now, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+        lines.append('Date: ' + format_datetime(when, usegmt=True))
+    return '\r\n'.join(lines) + '\r\n\r\n'
+
+
 def world(b, cand_config=None, overrides=None):
     R, Hh, Bb = REPO, b['pr']['head'], b['main_tip']
     raw = 'api -H Accept: application/vnd.github.raw repos/%s/contents/' % R
@@ -357,7 +397,13 @@ def world(b, cand_config=None, overrides=None):
         'api repos/%s/commits/%s/check-runs?per_page=100' % (R, Hh): {'out': json.dumps({'check_runs': b['checks']})},
         'api repos/%s/issues/701' % R: {'out': json.dumps({'state': b['issue']['state'].lower(), 'labels': [{'name': x} for x in b['issue']['labels']]})},
         'api repos/%s/issues/607' % R: {'out': json.dumps({'state': b['control']['state'].lower(), 'labels': [{'name': x} for x in b['control']['labels']]})},
-        'api repos/%s/issues/comments/111' % R: {'out': json.dumps({'id': 111, 'created_at': iso(T0 - timedelta(days=30))})},
+        'api repos/%s/issues/comments/111' % R: {'out': json.dumps({
+            'id': 111, 'created_at': iso(T0 - timedelta(days=30)), 'html_url': ACC,
+            'issue_url': (b.get('acceptance') or {}).get('issue_url', OWNER_ISSUE),
+            'user': {'login': (b.get('acceptance') or {}).get('login', REPO.split('/')[0])}})},
+        'api repos/%s/commits?sha=%s&path=policy/merge-autonomy.json&per_page=1' % (R, Bb): {'out': json.dumps(
+            [{'sha': Bb, 'commit': {'committer': {'date': b.get('config_commit_date')}}}])},
+        'api --include repos/%s/branches/main' % R: {'out': http_head(b.get('now')) + json.dumps({'commit': {'sha': Bb}})},
         'api repos/%s/issues/comments/222' % R: {'out': json.dumps({'id': 222, 'created_at': iso(T0 - timedelta(seconds=5000))})},
         'graphql i=701': {'out': json.dumps({'data': {'repository': {'issue': {'body': AC_TEXT, 'userContentEdits': {
             'nodes': [{'editedAt': iso(T0 - timedelta(seconds=9000)), 'diff': AC_TEXT}]}}}}})},
@@ -494,6 +540,18 @@ def main():
     return 1 if ERRORS else 0
 
 
+def untagged_rules():
+    """Rule tags of lib/merge-risk.py that no mutation of any scenario changes."""
+    tags = set(re.findall(r'# rule:([A-Za-z0-9-]+)', real_lib()))
+    used = {spec[2][1] for muts in MUTATIONS.values() for spec in muts if spec[2]}
+    return sorted(tags - used)
+
+
+@row('605', 'every-rule-tag-mutated')
+def _(t):
+    need(not untagged_rules(), 'rule tags without a mutation: %s' % untagged_rules())
+
+
 def real_lib():
     return (ROOT / 'lib/merge-risk.py').read_text()
 
@@ -605,6 +663,13 @@ def _(t):
     expect(t.ev(b), 'unresolved', has=['row-not-voter'])
 
 
+@row('605', 'j-check-missing')
+def _(t):
+    o = gate(t, 'class', lambda b: b.update(checks=[{'name': 'lint', 'status': 'completed', 'conclusion': 'success', 'id': 556}]))
+    expect(o, 'unresolved', has=['gate-check'], detail='missing')
+
+
+mutation('605', 'check-missing', ['j-check-missing'], lib=('drop', 'check-missing'))
 mutation('605', 'warning-line', ['b-warning-line'], lib=('drop', 'warning-line'))
 mutation('605', 'escape-hatch-reason', ['c-escape-hatch'], lib=('drop', 'escape-hatch'))
 mutation('605', 'escape-hatch-scrub', ['c-escape-hatch-collector'],
@@ -827,7 +892,18 @@ def _(t):
     expect(o, 'unresolved', has=['source-hash'], detail='Product')
 
 
-mutation('608', 'position-line', ['a-marker-no-position', 'b-position-twice'], lib=('drop', 'position-line'))
+@row('608', 'i-position-value-differs')
+def _(t):
+    for said, recorded in (('no', 'yes'), ('yes-if', 'yes')):
+        b = base(t)
+        set_report(b, 'QA', report('QA', position=said))
+        b['_roles']['QA']['position'] = recorded
+        refresh(b)
+        expect(t.ev(b), 'unresolved', has=['position-mismatch'], detail='QA')
+
+
+mutation('608', 'position-mismatch', ['i-position-value-differs'], lib=('drop', 'position-mismatch'))
+mutation('608', 'position-line',['a-marker-no-position', 'b-position-twice'], lib=('drop', 'position-line'))
 mutation('608', 'source-hash', ['d-hash-mismatch'], lib=('drop', 'source-hash'))
 mutation('608', 'position-role', ['c-role-mismatch'], lib=('drop', 'position-role'))
 mutation('608', 'marker-stage', ['e-first-line-not-marker', 'e-marker-wrong-stage'], lib=('drop', 'marker-stage'))
@@ -940,7 +1016,14 @@ def _(t):
     expect(edit_manifest(t, lambda m: m['reviewer_assertions'].update(lineage='')), 'unresolved', has=['assertion-missing'], detail='lineage')
 
 
-mutation('609', 'reviewer-assertion', ['reviewer-asserts-disqualifier'], lib=('drop', 'assertion'))
+@row('609', 'h-config-commit-not-B')
+def _(t):
+    o = edit_manifest(t, lambda m: m.update(config_commit=B2))
+    expect(o, 'unresolved', has=['identity-config-commit'], lacks=['identity-base'])
+
+
+mutation('609', 'identity-config-commit', ['h-config-commit-not-B'], lib=('drop', 'identity-config-commit'))
+mutation('609', 'reviewer-assertion',['reviewer-asserts-disqualifier'], lib=('drop', 'assertion'))
 mutation('609', 'schema-closed', ['e-missing-key', 'e-unknown-key'], lib=('sub', 'manifest-closed', 'manifest_errors(m)', '[]'))
 mutation('609', 'single-record', ['f-two-records'], lib=('drop', 'single-record'))
 mutation('609', 'no-edit', ['g-edited'], lib=('drop', 'no-edit'))
@@ -1007,7 +1090,15 @@ def _(t):
     expect(floor_case(t, row_edit=lambda m: m['rows'][2].update(score='65')), 'unresolved', has=['floor-evidence'])
 
 
-mutation('610', 'strictly-greater', ['b-equal'], lib=('sub', 'floor', "row['score'] < top", "row['score'] <= top"))
+@row('610', 'g-voter-between-two-authors')
+def _(t):
+    def two(m):
+        m['authors'] = [dict(m['authors'][0], score=50), dict(m['authors'][0], model='claude-opus-5-5', score=70)]
+    expect(floor_case(t, 65, author_edit=two), 'referred', has=['floor-below'], detail='highest author 70')
+
+
+mutation('610', 'floor-min', ['g-voter-between-two-authors'], lib=('sub', 'floor-max', 'max(', 'min('))
+mutation('610', 'strictly-greater',['b-equal'], lib=('sub', 'floor', "row['score'] < top", "row['score'] <= top"))
 mutation('610', 'lower-passes', ['a-one-below'], lib=('sub', 'floor', "row['score'] < top", "row['score'] > top"))
 mutation('610', 'completeness', ['d-no-variant', 'd-no-date', 'e-no-authors', 'f-non-numeric'], lib=('drop', 'floor-complete'))
 
@@ -1019,7 +1110,7 @@ def _(t):
     o = t.ev(base(t))
     expect(o, 'eligible')
     need(o.rc == 0, 'exit %s' % o.rc)
-    need(o.ident == ('700', H, B, sha(base(t)['diff_text']), sha(base(t)['config_text'])), 'first-line identities differ')
+    need(o.ident == ('700', H, t.B, sha(base(t)['diff_text']), sha(base(t)['config_text'])), 'first-line identities differ')
 
 
 @row('611', 'held')
@@ -1102,13 +1193,47 @@ def _(t):
     need(index == ((repo / '.git/index').read_bytes() if (repo / '.git/index').exists() else b''), 'index changed')
 
 
-mutation('611', 'precedence', ['mixed-precedence-all-reasons'],
+def class_edit(t, fn):
+    b = class_base(t)
+    fn(b)
+    return t.ev(b)
+
+
+@row('611', 'a-pr-not-open')
+def _(t):
+    for state in ('CLOSED', 'MERGED'):
+        expect(class_edit(t, lambda b: b['pr'].update(state=state)), 'unresolved', has=['pr-not-open'], detail=state)
+
+
+@row('611', 'b-closing-unreadable')
+def _(t):
+    expect(class_edit(t, lambda b: b['pr'].update(closing_issues=None)), 'unresolved', has=['closing-issues'], detail='unreadable')
+
+
+@row('611', 'c-issue-unreadable')
+def _(t):
+    expect(class_edit(t, lambda b: b.update(issue=None)), 'unresolved', has=['issue-unreadable'], detail='701')
+
+
+@row('611', 'd-labels-unreadable')
+def _(t):
+    for where, fn in (('pr', lambda b: b['pr'].update(labels=None)), ('issue', lambda b: b['issue'].update(labels=None)),
+                      ('control', lambda b: b['control'].update(labels=None))):
+        expect(class_edit(t, fn), 'unresolved', has=['labels-unreadable'], lacks=['verifier-crash'], detail=where)
+
+
+mutation('611', 'pr-not-open', ['a-pr-not-open'], lib=('drop', 'pr-not-open'))
+mutation('611', 'closing-unreadable', ['b-closing-unreadable'], lib=('drop', 'closing-unreadable'))
+mutation('611', 'issue-unreadable', ['c-issue-unreadable'], lib=('drop', 'issue-unreadable'))
+mutation('611', 'labels-unreadable', ['d-labels-unreadable'], lib=('drop', 'labels-unreadable'))
+mutation('611', 'control-labels-unreadable', ['d-labels-unreadable'], lib=('drop', 'control-labels-unreadable'))
+mutation('611', 'precedence',['mixed-precedence-all-reasons'],
          lib=('sub', 'precedence', "('referred', 'unresolved', 'held')", "('held', 'unresolved', 'referred')"))
 mutation('611', 'first-reason-only', ['mixed-precedence-all-reasons'],
          lib=('sub', 'all-reasons', 'self.reasons.append((kind, code, str(detail)))',
               'self.reasons[:] = self.reasons or [(kind, code, str(detail))]'))
 mutation('611', 'write-call', ['read-only-call-log-and-tree'],
-         lib=('sub', 'read-only', "fmt(datetime.now(timezone.utc))}", "fmt(datetime.now(timezone.utc))}; gh(['issue', 'comment', '701', '--body', 'x'])"))
+         lib=('sub', 'read-only', "'now': None}", "'now': None}; gh(['issue', 'comment', '701', '--body', 'x'])"))
 
 
 # =========================================================================
@@ -1195,7 +1320,7 @@ def _(t):
     b['diff_text'] = make_diff(b['files'])
     o, log = t.collector(world(b), ['--phase', 'class', '700'])
     expect(o, 'referred', has=['cap-lines'], detail='lines=301')
-    need(any(e.get('argv') == ['api', 'repos/%s/compare/%s...%s' % (REPO, B, H)] for e in log), 'the B...H compare was not read')
+    need(any(e.get('argv') == ['api', 'repos/%s/compare/%s...%s' % (REPO, t.B, H)] for e in log), 'the B...H compare was not read')
 
 
 for _key, _val, _ok in (('max_lines', 0, False), ('max_lines', -1, False), ('max_files', 0, False),
@@ -1395,7 +1520,7 @@ def _(t):
     expect(one_path(t, 'test/lib/model-record.sh'), 'eligible')
 
 
-NESTED_GROUP_CONTROLS = ['.github/workflows/ci.yml', 'adapters/codex/INSTRUCTIONS.md', 'skills/adopt-workflow/SKILL.md']
+NESTED_GROUP_CONTROLS = ['.github/ISSUE_TEMPLATE/bug.md', 'adapters/codex/INSTRUCTIONS.md', 'skills/adopt-workflow/SKILL.md']
 for _p in NESTED_GROUP_CONTROLS:
     def _mk(p=_p):
         def fn(t):
@@ -1424,9 +1549,9 @@ def _one_segment(text, group, pat):
     return json.dumps(cfg)
 
 
-# Only .github/workflows/ci.yml depends on `/**` alone: adapters/codex/INSTRUCTIONS.md is
+# Only .github/ISSUE_TEMPLATE/bug.md depends on `/**` alone: adapters/codex/INSTRUCTIONS.md is
 # also a generated input, and skills/adopt-workflow/SKILL.md is a direct child.
-mutation('613', 'one-segment star .github', ['control-nested .github/workflows/ci.yml'], exact=True,
+mutation('613', 'one-segment star .github', ['control-nested .github/ISSUE_TEMPLATE/bug.md'], exact=True,
          config=lambda s: _one_segment(s, 'guard', '.github'))
 mutation('613', 'delete label hold', ['hold-pr', 'hold-issue'], exact=True,
          config=lambda s: json.dumps(dict(json.loads(s), labels={'hold': ['risk:*'], 'off': 'merge-autonomy:off'})))
@@ -1520,7 +1645,91 @@ def _(t):
         need(o.ident[4] == sha(t.config), 'config= is not the digest of the shipped bytes')
 
 
-mutation('614', 'read-config-from-H', ['candidate raise-max-lines'], lib=('sub', 'config-at-B', '% (repo, B)', '% (repo, H)'))
+ACCEPTANCE = {
+    'a-missing': (lambda a: None, 'missing'),
+    'b-other-issue': (lambda a: dict(a, issue_url='https://api.github.com/repos/%s/issues/1' % REPO), 'issue'),
+    'c-other-author': (lambda a: dict(a, login='someone-else'), 'author'),
+}
+for _name, (_edit, _detail) in ACCEPTANCE.items():
+    def _mk(edit=_edit, detail=_detail):
+        def fn(t):
+            b = class_base(t)
+            b['acceptance'] = edit(b['acceptance'])
+            o = t.ev(b)
+            expect(o, 'unresolved', has=['acceptance-unverified'], lacks=['verifier-crash'])
+            need(any(r.startswith('acceptance-unverified ' + detail) for r in o.reasons), 'no acceptance-unverified %s: %r' % (detail, o))
+        return fn
+    row('614', 'acceptance ' + _name)(_mk())
+
+
+@row('614', 'acceptance collector reads issue and login')
+def _(t):
+    b = class_base(t)
+    o, _ = t.collector(world(b), ['--phase', 'class', '700'])
+    expect(o, 'eligible')
+    b['acceptance'] = dict(b['acceptance'], login='someone-else', issue_url='https://api.github.com/repos/%s/issues/1' % REPO)
+    o, _ = t.collector(world(b), ['--phase', 'class', '700'])
+    expect(o, 'unresolved', has=['acceptance-unverified'])
+    need(len([r for r in o.reasons if r.startswith('acceptance-unverified ')]) == 2, 'issue and author not both reported: %r' % o)
+
+
+VERIFIER = {
+    'd-head-not-B': (lambda v: dict(v, head=B2), 'head '),
+    'e-reserved-byte-differs': (lambda v: dict(v, mismatches=['lib/merge-risk.py']), 'bytes lib/merge-risk.py'),
+    'f-B-absent': (lambda v: dict(v, base_present=False), 'base-absent'),
+    'g-field-missing': (lambda v: None, 'field missing'),
+}
+for _name, (_edit, _detail) in VERIFIER.items():
+    def _mk(edit=_edit, detail=_detail):
+        def fn(t):
+            for phase in ('class', 'final'):
+                b = base(t, phase=phase)
+                b['verifier'] = edit(b['verifier'])
+                expect(t.ev(b), 'unresolved', has=['verifier-not-at-base'], lacks=['verifier-crash'], detail=detail)
+        return fn
+    row('614', 'verifier ' + _name)(_mk())
+
+
+@row('614', 'verifier collector control at B')
+def _(t):
+    o, log = t.collector(world(class_base(t)), ['--phase', 'class', '700'])
+    expect(o, 'eligible', lacks=['verifier-not-at-base'])
+    need(not writes(log), 'write calls: %s' % writes(log))
+
+
+@row('614', 'verifier collector head moved')
+def _(t):
+    c = t.clone()
+    c.vcs('commit', '-q', '--allow-empty', '-m', 'candidate')
+    o, _ = c.collector(world(class_base(c)), ['--phase', 'class', '700'])
+    expect(o, 'unresolved', has=['verifier-not-at-base'], detail='head ')
+
+
+@row('614', 'verifier collector one byte differs')
+def _(t):
+    c = t.clone()
+    (c.dir / 'lib/model-record.sh').write_bytes((c.dir / 'lib/model-record.sh').read_bytes() + b'#')
+    c.vcs('update-index', '--assume-unchanged', 'lib/model-record.sh')
+    o, _ = c.collector(world(class_base(c)), ['--phase', 'class', '700'])
+    expect(o, 'unresolved', has=['verifier-not-at-base'], detail='bytes lib/model-record.sh')
+
+
+@row('614', 'verifier collector B absent')
+def _(t):
+    b = class_base(t)
+    b['main_tip'] = b['merge_base'] = 'abcdef12' * 5
+    o, _ = t.collector(world(b), ['--phase', 'class', '700'])
+    expect(o, 'unresolved', has=['verifier-not-at-base'], detail='base-absent')
+
+
+mutation('614', 'acceptance-exists', ['acceptance a-missing'], lib=('drop', 'acceptance-exists'))
+mutation('614', 'acceptance-issue', ['acceptance b-other-issue'], lib=('drop', 'acceptance-issue'))
+mutation('614', 'acceptance-author', ['acceptance c-other-author'], lib=('drop', 'acceptance-author'))
+mutation('614', 'verifier-field', ['verifier g-field-missing'], lib=('drop', 'verifier-field'))
+mutation('614', 'verifier-base-present', ['verifier f-B-absent', 'verifier collector B absent'], lib=('drop', 'verifier-base-present'))
+mutation('614', 'verifier-head', ['verifier d-head-not-B', 'verifier collector head moved'], lib=('drop', 'verifier-head'))
+mutation('614', 'verifier-bytes', ['verifier e-reserved-byte-differs', 'verifier collector one byte differs'], lib=('drop', 'verifier-bytes'))
+mutation('614', 'read-config-from-H',['candidate raise-max-lines'], lib=('sub', 'config-at-B', '% (repo, B)', '% (repo, H)'))
 mutation('614', 'schema-not-closed', ['invalid unknown-key', 'invalid missing-key'], lib=('sub', 'config-closed', 'config_errors(cfg)', '[]'))
 mutation('614', 'enabled-acceptance-pairing', ['invalid enabled-null-acceptance'], lib=('drop', 'enabled-needs-acceptance'))
 
@@ -1621,7 +1830,42 @@ def _(t):
         need(sentence in flat, 'skill lacks %r' % sentence)
 
 
-mutation('615', 'reader-fields', ['missing gates', 'missing revert', 'missing rows'], lib=('sub', 'record-fields', 'manifest_errors(m)', '[]'))
+@row('615', 'final control')
+def _(t):
+    expect(t.ev(base(t)), 'eligible')
+
+
+@row('615', 'final a-label-absent')
+def _(t):
+    b = base(t)
+    b['issue_comments'][0]['body'] = b['issue_comments'][0]['body'].replace('temporary, panel decision', 'panel decision')
+    expect(t.ev(b), 'unresolved', has=['record-label'])
+
+
+@row('615', 'final b-id-wrong')
+def _(t):
+    for ident in ('MR-700-5e6f7a8-1', 'MR-699-1a2b3c4-1', 'decision-1'):
+        expect(edit_manifest(t, lambda m: m.update(decision_id=ident)), 'unresolved', has=['record-id'], detail=ident)
+
+
+@row('615', 'final c-other-repository')
+def _(t):
+    expect(edit_manifest(t, lambda m: m.update(repository='Other/repo')), 'unresolved', has=['manifest-binding'], detail='repository')
+
+
+@row('615', 'final d-other-issue')
+def _(t):
+    expect(edit_manifest(t, lambda m: m.update(issue=702)), 'unresolved', has=['manifest-binding'], detail='issue')
+
+
+mutation('615', 'final-label', ['final a-label-absent'], lib=('drop', 'record-label-final'))
+mutation('615', 'final-id', ['final b-id-wrong'], lib=('drop', 'record-id-final'))
+mutation('615', 'manifest-binding', ['final c-other-repository', 'final d-other-issue'], lib=('drop', 'manifest-binding'))
+mutation('615', 'manifest-binding-repository', ['final c-other-repository'],
+         lib=('sub', 'manifest-binding', 'if m[key] != want:', "if m[key] != want and key != 'repository':"))
+mutation('615', 'manifest-binding-issue', ['final d-other-issue'],
+         lib=('sub', 'manifest-binding', 'if m[key] != want:', "if m[key] != want and key != 'issue':"))
+mutation('615', 'reader-fields',['missing gates', 'missing revert', 'missing rows'], lib=('sub', 'record-fields', 'manifest_errors(m)', '[]'))
 mutation('615', 'reader-label', ['missing literal label'], lib=('drop', 'record-label'))
 mutation('615', 'reader-edit', ['edited record'], lib=('drop', 'record-no-edit'))
 mutation('615', 'reader-revert', ['revert not pending'], lib=('drop', 'revert-pending'))
@@ -1744,7 +1988,40 @@ def _(t):
     expect(t.ev(b), 'unresolved', has=['identity-config'])
 
 
-mutation('617', 'strict-greater', ['t-plus-300'], lib=('sub', 'hold-window', "< cfg['hold_seconds']", "<= cfg['hold_seconds']"))
+@row('617', 'now-missing')
+def _(t):
+    b = base(t)
+    b['now'] = None
+    expect(t.ev(b), 'unresolved', has=['now-unreadable'], lacks=['verifier-crash'])
+
+
+@row('617', 'collector-date-header-missing-or-bad')
+def _(t):
+    b = base(t)
+    key = 'api --include repos/%s/branches/main' % REPO
+    for out in ('HTTP/2.0 200 OK\r\nContent-Type: application/json\r\n\r\n{}', 'HTTP/2.0 200 OK\r\nDate: not a date\r\n\r\n{}'):
+        o, _ = t.collector(world(b, overrides={key: {'out': out}}), ['700'])
+        expect(o, 'unresolved', has=['now-unreadable'], lacks=['verifier-crash'])
+
+
+@row('617', 'collector-date-header-decides')
+def _(t):
+    # the header says T+100; the local clock (any real date after 2026-01-01) would say eligible
+    b = base(t)
+    b['now'] = iso(T0 + timedelta(seconds=100))
+    o, log = t.collector(world(b), ['700'])
+    expect(o, 'held', has=['hold-window'])
+    calls = [e.get('argv') for e in log if e.get('tool') == 'gh']
+    need(calls and calls[-1] == ['api', '--include', 'repos/%s/branches/main' % REPO], 'the Date request is not the last gh call: %s' % calls[-1:])
+    b['now'] = iso(T0 + timedelta(seconds=300))
+    o, _ = t.collector(world(b), ['700'])
+    expect(o, 'eligible')
+
+
+mutation('617', 'now-unreadable', ['now-missing'], lib=('drop', 'now-unreadable'))
+mutation('617', 'local-clock', ['collector-date-header-decides', 'collector-date-header-missing-or-bad'],
+         lib=('sub', 'server-now', 'server_now(head)', 'fmt(datetime.now(timezone.utc))'))
+mutation('617', 'strict-greater',['t-plus-300'], lib=('sub', 'hold-window', "< cfg['hold_seconds']", "<= cfg['hold_seconds']"))
 mutation('617', 'fixed-300', ['hold-1-t1'], lib=('sub', 'hold-window', "< cfg['hold_seconds']", '< 300'))
 mutation('617', 'T-from-PR', ['t-plus-0', 't-plus-299'], lib=('sub', 'record-time', "c.get('created_at')", "pr.get('created_at')"))
 
@@ -1814,11 +2091,39 @@ def _(t):
     expect(t.ev(b), 'unresolved', has=['timeline-unreadable'])
 
 
-@row('618', 'g-before-T')
+PRE_HOLD = [('pr', ev_label('pr', 'hold', T0 - timedelta(seconds=100))),
+            ('pr', ev_label('pr', 'hold', T0 - timedelta(seconds=50), 'unlabeled'))]
+
+
+@row('618', 'g-before-T-needs-release')
 def _(t):
-    o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 - timedelta(seconds=100))),
-                          ('pr', ev_label('pr', 'hold', T0 - timedelta(seconds=50), 'unlabeled'))])
-    expect(o, 'eligible')
+    o = timeline_case(t, PRE_HOLD)
+    expect(o, 'held', has=['hold-release-missing'])
+    need(o.rc == 1, 'exit %s, expected 1' % o.rc)
+
+
+@row('618', 'g-before-T-off-on-issue')
+def _(t):
+    o = timeline_case(t, [('issue', ev_label('issue', 'merge-autonomy:off', T0 - timedelta(seconds=100))),
+                          ('issue', ev_label('issue', 'merge-autonomy:off', T0 - timedelta(seconds=50), 'unlabeled'))])
+    expect(o, 'held', has=['hold-release-missing'])
+
+
+@row('618', 'g2-released-after-the-hold')
+def _(t):
+    b = base(t)
+    b['timeline']['pr'] += [ev for _, ev in PRE_HOLD]
+    b['sources'][MAINT] = {'body': 'TiesL: release the hold on #700, merge it.', 'created_at': iso(T0 - timedelta(seconds=40))}
+    b['issue_comments'] = []
+    add_record(b, manifest(b, hold_release=GOOD))
+    expect(t.ev(b), 'eligible')
+
+
+@row('618', 'i-stop-exactly-at-T')
+def _(t):
+    for where, label in (('pr', 'hold'), ('issue', 'merge-autonomy:off')):
+        o = timeline_case(t, [(where, ev_label(where, label, T0)), (where, ev_label(where, label, T0 + timedelta(seconds=1), 'unlabeled'))])
+        expect(o, 'unresolved', has=['void-after-announcement'], detail='%s %s at %s' % (where, label, iso(T0)))
 
 
 mutation('618', 'ignore-after-T', ['d-added-then-removed', 'e-same-second'], lib=('drop', 'void'))
@@ -1826,9 +2131,11 @@ mutation('618', 'honour-removal', ['d-added-then-removed'],
          lib=('sub', 'void', '_hit(ev, where)', "_hit(ev, where) and ev.get('label') in now_labels[where]"))
 mutation('618', 'unreadable-as-empty', ['f-timeline-unreadable'], lib=('drop', 'timeline-readable'))
 mutation('618', 'void-mapped-to-held', ['a-hold-on-pr-after-T', 'b-risk-on-issue-after-T', 'd-added-then-removed',
-                                        'e-same-second'], exact=True,
+                                        'e-same-second', 'i-stop-exactly-at-T'], exact=True,
          lib=('sub', 'void-verdict', "r.add('unresolved', 'void-after-announcement'", "r.add('held', 'void-after-announcement'"))
-
+mutation('618', 'void-strictly-after-T', ['i-stop-exactly-at-T'], lib=('sub', 'void', 'when >= T', 'when > T'))
+mutation('618', 'release-only-after-earlier-record', ['g-before-T-needs-release', 'g-before-T-off-on-issue'],
+         lib=('sub', 'release-any-time', 't < T]', 't < T and len(valid) > 1]'))
 
 # =========================================================================
 # S619 a new record after a hold needs the maintainer's own words
@@ -1890,8 +2197,63 @@ def _(t):
     expect(released(t, GOOD, src=src), 'held', has=['hold-release-stale'])
 
 
-mutation('619', 'accept-null', ['a-null'], lib=('drop', 'release-required'))
-mutation('619', 'shorten-window', ['b-window-too-short'], lib=('sub', 'hold-window', '(now - T)', '(now - T_first)'))
+def pre_record(t, words_at, now=T0 + timedelta(seconds=400)):
+    """A hold added and removed before the first and only record (no void record)."""
+    b = base(t)
+    b['timeline']['pr'] += [ev_label('pr', 'hold', T0 - timedelta(seconds=100)),
+                            ev_label('pr', 'hold', T0 - timedelta(seconds=50), 'unlabeled')]
+    b['sources'][MAINT] = {'body': 'TiesL: release the hold on #700, merge it.', 'created_at': iso(words_at)}
+    b['issue_comments'] = []
+    add_record(b, manifest(b, hold_release=GOOD))
+    b['now'] = iso(now)
+    return t.ev(b)
+
+
+@row('619', 'f-pre-record-hold-released')
+def _(t):
+    expect(pre_record(t, T0 - timedelta(seconds=40)), 'eligible')
+    expect(pre_record(t, T0 - timedelta(seconds=40), now=T0 + timedelta(seconds=299)), 'held', has=['hold-window'])
+
+
+@row('619', 'g-words-at-the-hold')
+def _(t):
+    expect(pre_record(t, T0 - timedelta(seconds=100)), 'held', has=['hold-release-stale'])
+
+
+@row('619', 'h-words-before-the-hold')
+def _(t):
+    expect(pre_record(t, T0 - timedelta(seconds=200)), 'held', has=['hold-release-stale'])
+
+
+def control_off(t, at, config_at=T0 - timedelta(days=10)):
+    b = base(t)
+    b['timeline']['control'] += [ev_label('control', 'merge-autonomy:off', at),
+                                 ev_label('control', 'merge-autonomy:off', at + timedelta(seconds=30), 'unlabeled')]
+    b['config_commit_date'] = iso(config_at) if config_at else None
+    return t.ev(b)
+
+
+@row('619', 'i-off-after-config-commit')
+def _(t):
+    expect(control_off(t, T0 - timedelta(days=1)), 'referred', has=['off-since-config'])
+
+
+@row('619', 'j-off-before-config-commit')
+def _(t):
+    expect(control_off(t, T0 - timedelta(days=20)), 'eligible', lacks=['off-since-config'])
+
+
+@row('619', 'config-date-unreadable')
+def _(t):
+    expect(control_off(t, T0 - timedelta(days=20), config_at=None), 'unresolved', has=['config-date-unreadable'], lacks=['verifier-crash'])
+
+
+mutation('619', 'stale-boundary', ['g-words-at-the-hold'], lib=('sub', 'release-stale', '<= max(holds)', '< max(holds)'))
+mutation('619', 'off-since-config', ['i-off-after-config-commit'], lib=('drop', 'off-since-config'))
+mutation('619', 'off-before-config', ['j-off-before-config-commit'], lib=('sub', 'off-since-config', 't > cd', 't != cd'))
+mutation('619', 'config-date', ['config-date-unreadable'], lib=('drop', 'config-date'))
+mutation('619', 'accept-null',['a-null'], lib=('drop', 'release-required'))
+mutation('619', 'shorten-window', ['b-window-too-short'], lib=('sub', 'hold-window', '(now - T).total_seconds()', '(now - T).total_seconds() + 100'))
 mutation('619', 'any-target', ['c-other-pr'], lib=('drop', 'release-target'))
 mutation('619', 'stale-words', ['e-predates-hold'], lib=('drop', 'release-stale'))
 
@@ -2158,7 +2520,8 @@ def _(t):
         b['timeline']['control'] += [ev_label('control', 'merge-autonomy:off', T0 + timedelta(seconds=20)),
                                       ev_label('control', 'merge-autonomy:off', T0 + timedelta(seconds=90), 'unlabeled')]
     for o in two_items(t, edit):
-        expect(o, 'unresolved', has=['void-after-announcement'])
+        # label removal does not re-enable (A58 addendum 3 F3): void, and referred off-since-config
+        expect(o, 'referred', has=['void-after-announcement', 'off-since-config'])
 
 
 @row('623', 're-enable-same-bytes-new-tip')
