@@ -30,6 +30,15 @@ fails it. The required check `check` must be completed `SUCCESS` on H; pending
 is `gates-pending`. `--phase final` also needs the Review marker for H. A red,
 pending, skipped or unreadable gate means: convene no panel, merge nothing.
 
+The code that judges must be B's code. The executor runs from a dedicated
+detached checkout of B (`git worktree add --detach`), refreshed with
+`git fetch origin` and `git checkout --detach origin/main` before each item,
+and points `SPEC_DRIVEN_GUARDRAILS_DIR` and its session hooks at it. The
+verifier compares its own checkout with B: `HEAD` not B, B not in the local
+object store, or any reserved file whose working bytes differ from B is
+`verifier-not-at-base` (unresolved). After a merge B moves, so the next item
+waits until the checkout is refreshed.
+
 ## Class and disqualifiers
 
 The class, caps, path groups, reserved paths, labels and release heads are
@@ -52,14 +61,17 @@ Verdicts and exit codes: `eligible` 0, `held` 1, `referred` 3, `unresolved` 4,
 usage 2; any other exit or a crash is unresolved. Precedence: referred, then
 unresolved, then held. Reason codes:
 - gates: `gate-preflight`, `gate-preflight-warning`, `gate-escape-hatch`,
-  `gates-pending`, `gate-check`, `gate-review-marker`;
+  `gates-pending`, `gate-check`, `gate-review-marker`, `verifier-not-at-base`;
 - config: `config-absent`, `config-malformed`, `config-invalid`,
-  `config-repository`, `autonomy-disabled`, `acceptance-unverified`;
+  `config-repository`, `autonomy-disabled`, `acceptance-unverified` (detail
+  `missing`, `issue` or `author`: the comment must be on #646 of this
+  repository, by the repository owner's login);
 - class: `pr-not-open`, `base-not-main`, `release-head`, `closing-issues`,
   `behind-base`, `files-unreadable`, `binary-file`, `reserved-path`,
   `unlisted-path`, `cap-files`, `cap-lines`, `diff-unreadable`,
-  `meaning-version-line`, `changes-requested`, `label-off`, `label-hold`,
-  `label-off-control`, `control-closed`, `control-unreadable`;
+  `meaning-version-line`, `changes-requested`, `issue-unreadable`,
+  `labels-unreadable`, `label-off`, `label-hold`, `label-off-control`,
+  `control-closed`, `control-unreadable`;
 - record: `record-missing`, `record-duplicate`, `record-edited`, `record-label`,
   `record-id`, `manifest-malformed`, `manifest-schema`, `manifest-binding`,
   `identity-head`, `identity-base`, `identity-config-commit`, `identity-diff`,
@@ -70,10 +82,11 @@ unresolved, then held. Reason codes:
   `position-head`, `marker-stage`, `marker-present`, `condition-missing`,
   `condition-scope`, `floor-evidence`, `floor-below`, `assertion`,
   `assertion-missing`;
-- hold and execution: `hold-window`, `void-after-announcement`,
-  `timeline-unreadable`, `hold-release-missing`, `hold-release-target`,
-  `hold-release-words`, `hold-release-stale`, `executor-host-empty`,
-  `executor-host-mismatch`.
+- hold and execution: `hold-window`, `now-unreadable`,
+  `void-after-announcement`, `timeline-unreadable`, `hold-release-missing`,
+  `hold-release-target`, `hold-release-words`, `hold-release-stale`,
+  `off-since-config`, `config-date-unreadable`, `executor-host-empty`,
+  `executor-host-mismatch`; a crash is `verifier-crash`.
 
 ## Position line
 
@@ -139,13 +152,16 @@ unresolved records stay visible; never invent a 3-0 or 2-1 vote.
 ## Hold
 
 T is the record's server `created_at`; the earliest merge is
-T + `hold_seconds`. A spoken hold (session or relay) becomes the `hold` label at
-once, added by the maintainer or a voter; any hold or risk label vetoes. A hold,
-risk or off label added after T voids the record (`void-after-announcement`);
-removal by anyone, or a timer, does not release it. Only the maintainer releases
-his hold: a new record whose `hold_release` quotes his verbatim words about this
-PR with their link, then a full new window. No risk label anywhere is a dormant
-veto, never evidence of safety.
+T + `hold_seconds`, and `now` is the `Date` header of the verifier's last GitHub
+request, never the local clock. A spoken hold (session or relay) becomes the
+`hold` label at once, added by the maintainer or a voter; any hold or risk label
+vetoes. A hold, risk or off label added at or after T voids the record
+(`void-after-announcement`); removal by anyone, or a timer, does not release it.
+Any hold, risk or off label ever added to the PR or the work-item issue before
+T, even one already removed, needs a release too. Only the maintainer releases
+his hold: a record whose `hold_release` quotes his verbatim words about this PR
+with their link, dated after the latest such label, then a full new window. No
+risk label anywhere is a dormant veto, never evidence of safety.
 
 ## Executor sequence
 
@@ -178,8 +194,10 @@ decision_id); a key executes at most once.
 The off label on the control issue, `enabled: false`, a closed control issue or
 a configuration digest change turns every pending decision into a
 maintainer-approval item; old records do not revive. The off label on one PR or
-issue refers that item only. Only the maintainer re-enables: a config PR or
-label removal, then new records. An incident (an incorrect autonomous merge, an
+issue refers that item only. Only the maintainer re-enables, by a config PR
+(reserved, so a human-path merge), then new records: an off label on the control
+issue after the last config change is `off-since-config` (referred) even once
+removed. An incident (an incorrect autonomous merge, an
 ignored hold, suspected forgery) disables autonomy: add the off label to the
 control issue, record the incident there, refer.
 
@@ -211,10 +229,23 @@ streak never changes defaults. Token cost is not a gate; no payback claim.
 
 ## Residual risks
 
-Records, labels and positions are forgeable on the shared login: the verifier
-proves equal bytes, not honest authors. The hold read and the merge are not
-atomic. Three positions are conditional and written before the final diff. The
-verifier binds only if it is run; skipping it is not mechanically blocked.
-Semantic disqualifiers rest on Reviewer judgment. The skill reaches adopted
-projects (inert) before #679 explains it. A revert does not undo what adopters
-already pulled.
+1. Records, labels, positions and the acceptance comment are forgeable on the
+   shared login: the verifier proves equal bytes and an account, not honest
+   authors.
+2. The hold read and the merge are not atomic; a hold added in between is
+   found afterwards, as an incident.
+3. Three positions are conditional and written before the final diff.
+4. The verifier binds only if it is run; skipping it is not mechanically
+   blocked.
+5. Semantic disqualifiers rest on Reviewer judgment.
+6. The session-start slot that points here has little headroom.
+7. The skill reaches adopted projects (inert) before #679 explains it.
+8. A revert does not undo what adopters already pulled.
+9. The check against B runs inside the code it checks: it catches drift, not
+   a deliberately substituted verifier, and the guard the hook runs at the
+   literal merge is not verified.
+10. The reserved list is kept complete by a test of static references in the
+    forms it knows; `gh`, `git`, `python3`, `bash` and GitHub are outside it.
+11. `now` and T are GitHub's clock, to the second.
+12. Any hold ever placed costs a maintainer quote, and a global off costs a
+    config PR.
