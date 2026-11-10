@@ -321,6 +321,13 @@ def verifier_checks(b, r):
         r.add('unresolved', 'verifier-not-at-base', 'head %s, main tip %s' % (v.get('head'), B))
     for path in v['mismatches']:  # rule:verifier-bytes
         r.add('unresolved', 'verifier-not-at-base', 'bytes %s' % path)
+    # A58 addendum 5 D2: the preflight (and so the guard, which reads
+    # WORKFLOW-ADOPTION.md from its working directory) ran in this checkout.
+    cwd, top = b.get('preflight_cwd'), v.get('toplevel')
+    if not isinstance(cwd, str) or not cwd or not isinstance(top, str) or not top:  # rule:verifier-cwd-present
+        r.add('unresolved', 'verifier-not-at-base', 'cwd missing (preflight_cwd=%s, checkout=%s)' % (cwd, top))
+    elif cwd != top:  # rule:verifier-cwd-equal
+        r.add('unresolved', 'verifier-not-at-base', 'cwd %s, checkout %s' % (cwd, top))
 
 
 # --- class and disqualifiers (A58 D3/D4)
@@ -1005,9 +1012,16 @@ def collect(phase, n, script_dir):
             b['acceptance'] = {'issue_url': d.get('issue_url'), 'html_url': d.get('html_url'),
                                'login': (d.get('user') or {}).get('login')}
     env = {k: v for k, v in os.environ.items() if k not in ESCAPE_HATCHES}  # rule:scrub-escape-hatch
-    p = subprocess.run([str(Path(script_dir) / 'merge-preflight.sh'), str(n)], capture_output=True, env=env)
-    b['preflight'] = {'exit': p.returncode, 'stderr': p.stderr.decode('utf-8', 'replace'),
-                      'escape_hatch': any(os.environ.get(k) for k in ESCAPE_HATCHES)}
+    # A58 addendum 5 D2: the guard reads WORKFLOW-ADOPTION.md from its working
+    # directory, so the preflight runs in the verifier checkout's top level,
+    # never in the caller's directory.
+    top = toplevel(script_dir)
+    b['preflight_cwd'] = top
+    if top:
+        p = subprocess.run([str(Path(script_dir) / 'merge-preflight.sh'), str(n)], capture_output=True, env=env,
+                           cwd=top)  # rule:preflight-cwd
+        b['preflight'] = {'exit': p.returncode, 'stderr': p.stderr.decode('utf-8', 'replace'),
+                          'escape_hatch': any(os.environ.get(k) for k in ESCAPE_HATCHES)}
     if phase == 'final':
         host = subprocess.run(['hostname', '-s'], capture_output=True)
         b['host'] = host.stdout.decode().strip() if host.returncode == 0 else None
@@ -1074,10 +1088,19 @@ def server_now(response):
                 when = parsedate_to_datetime(line.split(':', 1)[1].strip())
             except (TypeError, ValueError, IndexError):
                 return None
-            if when is None or when.tzinfo is None:
+            if when is None:
                 return None
+            if when.tzinfo is None:  # rule:date-zone
+                return None  # a naive time is never taken as UTC
             return fmt(when.astimezone(timezone.utc))
     return None
+
+
+def toplevel(script_dir):
+    """The verifier checkout's top level (`git rev-parse --show-toplevel`), or None."""
+    p = subprocess.run(['git', '-C', str(script_dir), 'rev-parse', '--show-toplevel'], capture_output=True)
+    top = p.stdout.decode('utf-8', 'surrogateescape').strip() if p.returncode == 0 else ''
+    return top or None
 
 
 def verifier_state(script_dir, B, patterns):
@@ -1087,7 +1110,8 @@ def verifier_state(script_dir, B, patterns):
     def vcs(*args):
         return subprocess.run(['git', '-C', str(script_dir)] + list(args), capture_output=True)
     p = vcs('rev-parse', 'HEAD')
-    out = {'head': p.stdout.decode().strip() if p.returncode == 0 else None, 'base_present': False, 'mismatches': []}
+    out = {'head': p.stdout.decode().strip() if p.returncode == 0 else None, 'base_present': False, 'mismatches': [],
+           'toplevel': toplevel(script_dir)}
     if not B or not SHA40.fullmatch(B) or vcs('cat-file', '-e', B + '^{commit}').returncode != 0:
         return out
     p = vcs('ls-tree', '-r', '-z', B)

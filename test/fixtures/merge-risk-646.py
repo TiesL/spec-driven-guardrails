@@ -102,7 +102,7 @@ import json, os, sys
 world = json.load(open(os.environ['FAKE_WORLD']))
 with open(os.environ['FAKE_LOG'], 'a') as fh:
     fh.write(json.dumps({'tool': '%s', 'argv': sys.argv[1:], 'env': {k: os.environ.get(k) for k in
-             ('CLAUDE_WORKFLOW_MERGE_GUARD_OFF', 'CLAUDE_WORKFLOW_GUARDRAILS_OFF')}}) + '\n')
+             ('CLAUDE_WORKFLOW_MERGE_GUARD_OFF', 'CLAUDE_WORKFLOW_GUARDRAILS_OFF')}, 'cwd': os.getcwd()}) + '\n')
 %s
 '''
 SENTINEL = '#!/bin/sh\necho SENTINEL >> "$FAKE_LOG"\nexit 1\n'
@@ -137,11 +137,15 @@ class Tree:
         self.config = config if config is not None else (ROOT / 'policy/merge-autonomy.json').read_text()
         self.role_contracts = role_contracts if role_contracts is not None else (ROOT / 'skills/role-contracts/SKILL.md').read_bytes()
         self.lib_text = (self.dir / 'lib/merge-risk.py').read_text()
+        # A58 addendum 5 D1: the guard's answers file is reserved, so B carries it
+        shutil.copy(ROOT / 'WORKFLOW-ADOPTION.md', self.dir / 'WORKFLOW-ADOPTION.md')
         self.vcs('init', '-q')
-        self.vcs('add', 'lib', 'merge-risk-evidence.sh', 'merge-preflight.sh')
+        self.vcs('add', 'lib', 'merge-risk-evidence.sh', 'merge-preflight.sh', 'WORKFLOW-ADOPTION.md')
         self.vcs('commit', '-q', '-m', 'B')
         self.B = self.vcs('rev-parse', 'HEAD').stdout.decode().strip()
         need(SHA40.fullmatch(self.B), 'scratch repository has no commit')
+        self.top = self.vcs('rev-parse', '--show-toplevel').stdout.decode().strip()
+        need(self.top, 'scratch repository has no top level')
         Tree.count += 1
         spec = importlib.util.spec_from_file_location('merge_risk_%d' % Tree.count, self.dir / 'lib/merge-risk.py')
         self.mod = importlib.util.module_from_spec(spec)
@@ -333,7 +337,7 @@ def base(t, phase='final', cfg=None, files=None):
     files = files if files is not None else [fl('README.md', 10, 2), fl('docs/guide.md', 20)]
     b = {'phase': phase, 'pr_number': 700, 'repository': REPO, 'now': iso(T0 + timedelta(seconds=400)),
          'host': 'exec-host', 'config_text': cfg if cfg is not None else config_text(t), 'main_tip': t.B, 'merge_base': t.B,
-         'verifier': {'head': t.B, 'base_present': True, 'mismatches': []},
+         'verifier': {'head': t.B, 'base_present': True, 'mismatches': [], 'toplevel': t.top}, 'preflight_cwd': t.top,
          'acceptance': {'issue_url': OWNER_ISSUE, 'html_url': ACC, 'login': REPO.split('/')[0]},
          'config_commit_date': iso(T0 - timedelta(days=10)),
          'pr': {'state': 'OPEN', 'base': 'main', 'head_ref': 'feature/701-docs', 'head': H, 'closing_issues': [701],
@@ -1368,6 +1372,12 @@ RESERVED_PAIRS = [
     ('test/fixtures/merge-risk-646.py', 'test/fixtures/merge-risk**'),
     ('test/fixtures/merge-risk/x.py', 'test/fixtures/merge-risk**'),
     ('test/behavior/merge-risk-scenarios.md', 'test/behavior/merge-risk**')]
+# A58 addendum 5 D1: merge-decision inputs, each reserved by its exact name
+INPUT_PATHS = ['WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md', 'check-no-dutch.sh', 'check-no-quote-break.sh',
+               'check-no-sigpipe-race.sh', 'check-scenario-file-sync.sh', 'check-traceability.sh',
+               'check-workflow-adapters.sh', 'lib/workflow-adapters.py', 'lib/managed_blocks.py', 'lib/nfr.sh',
+               'lib/one-definition-lint.py', 'templates/check-pr-issue-link.sh', 'templates/check-main-via-pr.sh']
+RESERVED_PAIRS += [(p, p) for p in INPUT_PATHS]
 RESERVED_ROWS = [p for p, _ in RESERVED_PAIRS]
 RESERVED_PATTERN = dict(RESERVED_PAIRS)
 for _p in RESERVED_ROWS:
@@ -1520,6 +1530,33 @@ def _(t):
     expect(one_path(t, 'test/lib/model-record.sh'), 'eligible')
 
 
+def adoption_row_case(t, row_id):
+    """A one-file, one-line PR changing only one answer row of WORKFLOW-ADOPTION.md."""
+    b = class_base(t, files=[fl('WORKFLOW-ADOPTION.md', 1, 1)])
+    b['diff_text'] = ('diff --git a/WORKFLOW-ADOPTION.md b/WORKFLOW-ADOPTION.md\n--- a/WORKFLOW-ADOPTION.md\n'
+                      '+++ b/WORKFLOW-ADOPTION.md\n@@ -1 +1 @@\n-| %s | yes | 2026-09-19 | x |\n'
+                      '+| %s | no | 2026-09-19 | x |\n' % (row_id, row_id))
+    return t.ev(b)
+
+
+for _rid in ('quality-review-before-merge', 'process-multi-agent-roles'):
+    def _mk(rid=_rid):
+        def fn(t):
+            expect(adoption_row_case(t, rid), 'referred', has=['reserved-path'], detail='WORKFLOW-ADOPTION.md')
+        return fn
+    row('613', 'input adoption row ' + _rid)(_mk())
+
+
+INPUT_CONTROLS = ['hooks/pre-commit', 'templates/check-traceability.sh', 'check-commit']
+for _p in INPUT_CONTROLS:
+    def _mk(p=_p):
+        def fn(t):
+            b = class_base(t, files=[fl(p, 1)])
+            expect(t.ev(b), lacks=['reserved-path', 'unlisted-path'])
+        return fn
+    row('613', 'control-input ' + _p)(_mk())
+
+
 NESTED_GROUP_CONTROLS = ['.github/ISSUE_TEMPLATE/bug.md', 'adapters/codex/INSTRUCTIONS.md', 'skills/adopt-workflow/SKILL.md']
 for _p in NESTED_GROUP_CONTROLS:
     def _mk(p=_p):
@@ -1537,8 +1574,10 @@ for _p in RESERVED_ROWS:
             if pat in cfg['reserved'][k]:
                 cfg['reserved'][k].remove(pat)
         return json.dumps(cfg)
-    _others = [x for x in RESERVED_ROWS if RESERVED_PATTERN[x] == RESERVED_PATTERN[_p]]
-    mutation('613', 'delete reserved entry ' + RESERVED_PATTERN[_p], ['reserved ' + x for x in _others], config=_cfg_drop, exact=True)
+    _others = ['reserved ' + x for x in RESERVED_ROWS if RESERVED_PATTERN[x] == RESERVED_PATTERN[_p]]
+    if _p == 'WORKFLOW-ADOPTION.md':
+        _others += ['input adoption row quality-review-before-merge', 'input adoption row process-multi-agent-roles']
+    mutation('613', 'delete reserved entry ' + RESERVED_PATTERN[_p], _others, config=_cfg_drop, exact=True)
 mutation('613', 'reserved-rule', ['reserved ' + x for x in RESERVED_ROWS], lib=('drop', 'reserved'))
 
 
@@ -1722,13 +1761,76 @@ def _(t):
     expect(o, 'unresolved', has=['verifier-not-at-base'], detail='base-absent')
 
 
+def _adoption_no(text, row_id='quality-review-before-merge'):
+    """WORKFLOW-ADOPTION.md with one row's answer turned to `no`."""
+    out, hit = [], False
+    for line in text.split('\n'):
+        cells = line.split('|')
+        if len(cells) > 3 and cells[1].strip() == row_id:
+            cells[2] = ' no '
+            line, hit = '|'.join(cells), True
+        out.append(line)
+    need(hit, 'WORKFLOW-ADOPTION.md has no %s row' % row_id)
+    return '\n'.join(out)
+
+
+@row('614', 'cwd h-caller-directory-changes-nothing')
+def _(t):
+    # A58 addendum 5 D2: started from a caller directory whose answers file
+    # turns the guard off, the preflight still runs in the checkout's top level.
+    caller = Path(tempfile.mkdtemp(prefix='mr646-caller-'))
+    TMP.append(str(caller))
+    (caller / 'WORKFLOW-ADOPTION.md').write_text(_adoption_no((t.dir / 'WORKFLOW-ADOPTION.md').read_text()))
+    b = class_base(t)
+    o, log = t.collector(world(b), ['--phase', 'class', '700'], cwd=str(caller))
+    expect(o, 'eligible', lacks=['verifier-not-at-base'])
+    o2, _ = t.collector(world(b), ['--phase', 'class', '700'])
+    need(o.first == o2.first and o.reasons == o2.reasons, 'the caller directory changed the verdict: %r vs %r' % (o, o2))
+    pf = [e for e in log if e.get('tool') == 'preflight']
+    need(len(pf) == 1, 'the preflight ran %d times' % len(pf))
+    need(pf[0].get('cwd') == t.top, 'the preflight ran in %s, not the checkout %s' % (pf[0].get('cwd'), t.top))
+
+
+@row('614', 'cwd i-preflight-cwd-absent')
+def _(t):
+    for phase in ('class', 'final'):
+        b = base(t, phase=phase)
+        del b['preflight_cwd']
+        expect(t.ev(b), 'unresolved', has=['verifier-not-at-base'], lacks=['verifier-crash'], detail='cwd')
+        b['verifier'].pop('toplevel')  # neither side recorded: absence is not equality
+        expect(t.ev(b), 'unresolved', has=['verifier-not-at-base'], lacks=['verifier-crash'], detail='cwd missing')
+
+
+@row('614', 'cwd j-preflight-cwd-differs')
+def _(t):
+    for phase in ('class', 'final'):
+        b = base(t, phase=phase)
+        b['preflight_cwd'] = str(Path(t.top).parent)
+        expect(t.ev(b), 'unresolved', has=['verifier-not-at-base'], lacks=['verifier-crash'], detail='cwd ')
+
+
+@row('614', 'verifier collector k-adoption-file-differs')
+def _(t):
+    c = t.clone()
+    (c.dir / 'WORKFLOW-ADOPTION.md').write_bytes((c.dir / 'WORKFLOW-ADOPTION.md').read_bytes() + b'#')
+    o, _ = c.collector(world(class_base(c)), ['--phase', 'class', '700'])
+    expect(o, 'unresolved', has=['verifier-not-at-base'], detail='bytes WORKFLOW-ADOPTION.md')
+    first = [r for r in o.reasons if r.startswith('verifier-not-at-base bytes ')]
+    need(first and first[0] == 'verifier-not-at-base bytes WORKFLOW-ADOPTION.md', 'first differing path: %r' % first)
+
+
 mutation('614', 'acceptance-exists', ['acceptance a-missing'], lib=('drop', 'acceptance-exists'))
+mutation('614', 'preflight-in-caller-cwd', ['cwd h-caller-directory-changes-nothing'],
+         lib=('sub', 'preflight-cwd', 'cwd=top)', 'cwd=None)'))
+mutation('614', 'verifier-cwd-present', ['cwd i-preflight-cwd-absent'], lib=('drop', 'verifier-cwd-present'))
+mutation('614', 'verifier-cwd-equal', ['cwd j-preflight-cwd-differs'], lib=('drop', 'verifier-cwd-equal'))
 mutation('614', 'acceptance-issue', ['acceptance b-other-issue'], lib=('drop', 'acceptance-issue'))
 mutation('614', 'acceptance-author', ['acceptance c-other-author'], lib=('drop', 'acceptance-author'))
 mutation('614', 'verifier-field', ['verifier g-field-missing'], lib=('drop', 'verifier-field'))
 mutation('614', 'verifier-base-present', ['verifier f-B-absent', 'verifier collector B absent'], lib=('drop', 'verifier-base-present'))
 mutation('614', 'verifier-head', ['verifier d-head-not-B', 'verifier collector head moved'], lib=('drop', 'verifier-head'))
-mutation('614', 'verifier-bytes', ['verifier e-reserved-byte-differs', 'verifier collector one byte differs'], lib=('drop', 'verifier-bytes'))
+mutation('614', 'verifier-bytes', ['verifier e-reserved-byte-differs', 'verifier collector one byte differs',
+                                   'verifier collector k-adoption-file-differs'], lib=('drop', 'verifier-bytes'))
 mutation('614', 'read-config-from-H',['candidate raise-max-lines'], lib=('sub', 'config-at-B', '% (repo, B)', '% (repo, H)'))
 mutation('614', 'schema-not-closed', ['invalid unknown-key', 'invalid missing-key'], lib=('sub', 'config-closed', 'config_errors(cfg)', '[]'))
 mutation('614', 'enabled-acceptance-pairing', ['invalid enabled-null-acceptance'], lib=('drop', 'enabled-needs-acceptance'))
@@ -2018,7 +2120,30 @@ def _(t):
     expect(o, 'eligible')
 
 
+@row('617', 'collector-final-request-fails')
+def _(t):
+    # the local clock (any real date after 2026-01-01) would pass the window; it must not be read
+    b = base(t)
+    key = 'api --include repos/%s/branches/main' % REPO
+    o, log = t.collector(world(b, overrides={key: {'out': '', 'err': 'gh: HTTP 502\n', 'rc': 1}}), ['700'])
+    expect(o, 'unresolved', has=['now-unreadable'], lacks=['verifier-crash'])
+    calls = [e.get('argv') for e in log if e.get('tool') == 'gh']
+    need(calls and calls[-1] == ['api', '--include', 'repos/%s/branches/main' % REPO], 'the failed request was not the last call')
+
+
+@row('617', 'collector-date-without-zone')
+def _(t):
+    b = base(t)
+    key = 'api --include repos/%s/branches/main' % REPO
+    out = 'HTTP/2.0 200 OK\r\nDate: Tue, 10 Nov 2026 06:35:00\r\n\r\n{}'
+    o, _ = t.collector(world(b, overrides={key: {'out': out}}), ['700'])
+    expect(o, 'unresolved', has=['now-unreadable'], lacks=['verifier-crash'])
+
+
 mutation('617', 'now-unreadable', ['now-missing'], lib=('drop', 'now-unreadable'))
+mutation('617', 'local-clock-fallback', ['collector-final-request-fails'],
+         lib=('sub', 'server-now', 'server_now(head)', '(server_now(head) if head is not None else fmt(datetime.now(timezone.utc)))'))
+mutation('617', 'naive-date-as-utc', ['collector-date-without-zone'], lib=('drop', 'date-zone'))
 mutation('617', 'local-clock', ['collector-date-header-decides', 'collector-date-header-missing-or-bad'],
          lib=('sub', 'server-now', 'server_now(head)', 'fmt(datetime.now(timezone.utc))'))
 mutation('617', 'strict-greater',['t-plus-300'], lib=('sub', 'hold-window', "< cfg['hold_seconds']", "<= cfg['hold_seconds']"))
@@ -2126,7 +2251,38 @@ def _(t):
         expect(o, 'unresolved', has=['void-after-announcement'], detail='%s %s at %s' % (where, label, iso(T0)))
 
 
+@row('618', 'j-hold-2h-before-T-no-release')
+def _(t):
+    o = timeline_case(t, [('pr', ev_label('pr', 'hold', T0 - timedelta(hours=2)))], {'pr': ['hold']})
+    expect(o, 'held', has=['hold-release-missing'])
+    need(o.rc == 1, 'exit %s, expected 1' % o.rc)
+
+
+def two_holds(t, words_at, n=1, created=T0, now=T0 + timedelta(seconds=400)):
+    """Holds at T-7200 and T-100 (each removed), release words dated words_at."""
+    b = base(t)
+    b['timeline']['pr'] += [ev_label('pr', 'hold', T0 - timedelta(seconds=7200)),
+                            ev_label('pr', 'hold', T0 - timedelta(seconds=7100), 'unlabeled'),
+                            ev_label('pr', 'hold', T0 - timedelta(seconds=100)),
+                            ev_label('pr', 'hold', T0 - timedelta(seconds=50), 'unlabeled')]
+    b['sources'][MAINT] = {'body': 'TiesL: release the hold on #700, merge it.', 'created_at': iso(words_at)}
+    b['issue_comments'] = []
+    add_record(b, manifest(b, n=n, hold_release=GOOD), created=created)
+    b['now'] = iso(now)
+    return t.ev(b)
+
+
+@row('618', 'k-words-between-two-holds')
+def _(t):
+    expect(two_holds(t, T0 - timedelta(seconds=3600)), 'held', has=['hold-release-stale'])
+    expect(two_holds(t, T0 - timedelta(seconds=40)), 'eligible')  # control: after the later hold
+
+
 mutation('618', 'ignore-after-T', ['d-added-then-removed', 'e-same-second'], lib=('drop', 'void'))
+mutation('618', 'hold-lookback-1h', ['j-hold-2h-before-T-no-release'],
+         lib=('sub', 'release-any-time', 't < T]', 't < T and t >= T - timedelta(hours=1)]'))
+mutation('618', 'release-against-earliest-hold', ['k-words-between-two-holds'],
+         lib=('sub', 'release-stale', '<= max(holds)', '<= min(holds)'))
 mutation('618', 'honour-removal', ['d-added-then-removed'],
          lib=('sub', 'void', '_hit(ev, where)', "_hit(ev, where) and ev.get('label') in now_labels[where]"))
 mutation('618', 'unreadable-as-empty', ['f-timeline-unreadable'], lib=('drop', 'timeline-readable'))
@@ -2248,7 +2404,24 @@ def _(t):
     expect(control_off(t, T0 - timedelta(days=20), config_at=None), 'unresolved', has=['config-date-unreadable'], lacks=['verifier-crash'])
 
 
+@row('619', 'k-off-2h-after-config-commit')
+def _(t):
+    cd = T0 - timedelta(days=3)
+    expect(control_off(t, cd + timedelta(hours=2), config_at=cd), 'referred', has=['off-since-config'])
+
+
+@row('619', 'l-words-between-two-holds-new-record')
+def _(t):
+    # the new record at T2 has a full window; the words sit between the two holds
+    o = two_holds(t, T0 - timedelta(seconds=3600), n=2, created=T2, now=T2 + timedelta(seconds=400))
+    expect(o, 'held', has=['hold-release-stale'])
+
+
 mutation('619', 'stale-boundary', ['g-words-at-the-hold'], lib=('sub', 'release-stale', '<= max(holds)', '< max(holds)'))
+mutation('619', 'off-since-config-one-day', ['k-off-2h-after-config-commit'],
+         lib=('sub', 'off-since-config', 't > cd', 't > cd + timedelta(days=1)'))
+mutation('619', 'release-against-earliest-hold', ['l-words-between-two-holds-new-record'],
+         lib=('sub', 'release-stale', '<= max(holds)', '<= min(holds)'))
 mutation('619', 'off-since-config', ['i-off-after-config-commit'], lib=('drop', 'off-since-config'))
 mutation('619', 'off-before-config', ['j-off-before-config-commit'], lib=('sub', 'off-since-config', 't > cd', 't != cd'))
 mutation('619', 'config-date', ['config-date-unreadable'], lib=('drop', 'config-date'))

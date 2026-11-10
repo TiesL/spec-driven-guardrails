@@ -34,10 +34,13 @@ The code that judges must be B's code. The executor runs from a dedicated
 detached checkout of B (`git worktree add --detach`), refreshed with
 `git fetch origin` and `git checkout --detach origin/main` before each item,
 and points `SPEC_DRIVEN_GUARDRAILS_DIR` and its session hooks at it. The
-verifier compares its own checkout with B: `HEAD` not B, B not in the local
-object store, or any reserved file whose working bytes differ from B is
-`verifier-not-at-base` (unresolved). After a merge B moves, so the next item
-waits until the checkout is refreshed.
+executor session's working directory is that checkout too, so the guard at the
+literal merge reads B's `WORKFLOW-ADOPTION.md`. The verifier compares its own
+checkout with B: `HEAD` not B, B not in the local object store, any reserved
+file whose working bytes differ from B, or a preflight not run in the
+checkout's top level (`preflight_cwd`) is `verifier-not-at-base`
+(unresolved). After a merge B moves, so the next item waits until the
+checkout is refreshed.
 
 ## Class and disqualifiers
 
@@ -243,9 +246,17 @@ streak never changes defaults. Token cost is not a gate; no payback claim.
 8. A revert does not undo what adopters already pulled.
 9. The check against B runs inside the code it checks: it catches drift, not
    a deliberately substituted verifier, and the guard the hook runs at the
-   literal merge is not verified.
+   literal merge is not verified; the executor session's working directory at
+   the literal merge is procedure.
 10. The reserved list is kept complete by a test of static references in the
-    forms it knows; `gh`, `git`, `python3`, `bash` and GitHub are outside it.
+    forms it knows; `gh`, `git`, `python3`, `bash`, GitHub and its
+    required-check settings are outside it.
 11. `now` and T are GitHub's clock, to the second.
 12. Any hold ever placed costs a maintainer quote, and a global off costs a
     config PR.
+13. `check` skips some checks when their subject is absent: deleting a subject
+    switches its check off; visible in the diff, judged by the Reviewer.
+14. The subject/input split is a named judgment per subject read and exempt
+    leaf; the stale check bounds growth, not correctness.
+15. A test change can weaken an oracle for a non-reserved feature; this rests
+    on the Reviewer's "weakened protection or oracle" disqualifier.

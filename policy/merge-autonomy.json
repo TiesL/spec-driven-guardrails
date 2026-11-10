@@ -24,12 +24,9 @@
       "install.sh",
       "pending-changes.sh",
       "CHANGES.md",
-      "WORKFLOW-ADOPTION.md",
       ".gitignore",
       "lib/*adopt*",
       "lib/skill-links.sh",
-      "lib/managed_blocks.py",
-      "lib/workflow-adapters.py",
       "skills/adopt-workflow/**",
       "skills/adoption-registry/**"
     ],
@@ -105,7 +102,21 @@
       ".github/workflows/**",
       "test/lib.sh",
       "test/run.sh",
-      "test/fixtures/pipeline-371-helpers.sh"
+      "test/fixtures/pipeline-371-helpers.sh",
+      "WORKFLOW-ADOPTION.md",
+      "WORKFLOW-ADOPTIE.md",
+      "check-no-dutch.sh",
+      "check-no-quote-break.sh",
+      "check-no-sigpipe-race.sh",
+      "check-scenario-file-sync.sh",
+      "check-traceability.sh",
+      "check-workflow-adapters.sh",
+      "lib/workflow-adapters.py",
+      "lib/managed_blocks.py",
+      "lib/nfr.sh",
+      "lib/one-definition-lint.py",
+      "templates/check-pr-issue-link.sh",
+      "templates/check-main-via-pr.sh"
     ]
   },
   "labels": {
