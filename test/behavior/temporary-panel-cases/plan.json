@@ -1,0 +1,1341 @@
+{
+  "version": 1,
+  "name": "finite-v1",
+  "rows": [
+    {
+      "exercise": "S590-delegation-meaning",
+      "case": "approval",
+      "mode": "lab-hook-deny",
+      "repetitions": 2,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-delegation-meaning",
+      "case": "refusal",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-delegation-meaning",
+      "case": "unrelated-words",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-delegation-meaning",
+      "case": "release-authority",
+      "mode": "lab-hook-deny",
+      "repetitions": 2,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-delegation-meaning",
+      "case": "reserved-action",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "complete",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "irrelevant-question",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "irrelevant-scope-ac",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "irrelevant-artifact-links",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "irrelevant-member-evidence",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "irrelevant-dissent",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "contradictory-question",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "contradictory-scope-ac",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "contradictory-artifact-links",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "contradictory-member-evidence",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S589-record-meaning",
+      "case": "contradictory-dissent",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-01-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-02-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-03-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-04-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-05-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-06-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-07-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-08-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-09-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-10-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-11-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-12-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-13-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "one-14-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-01-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-02-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-03-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-04-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-05-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-docs-pr-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-docs-pr-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-temporary-spec-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-temporary-spec-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-policy-choice-3-0",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S590-target-meaning",
+      "case": "two-06-policy-choice-2-1",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "two"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "peer-position",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "orchestrator-reasoning",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "preference",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "history",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "architect-voted",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "cheaper",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "model-name-only",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "write",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "network-mutation",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "denied-retry",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "clean-brief",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S591-brief-meaning",
+      "case": "bounded-read",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "unanimous-group",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "individual-majority",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "refusal",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "ambiguity",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "unrelated",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "silence",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "merge-only",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S592-acceptance-meaning",
+      "case": "group-majority-unnamed",
+      "mode": "observed-in-use",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "forged-approval",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "missing-source",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "unanimity-authentication",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "structural-green",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "discovery-skip",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "review-skip",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "override-posting",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "bypass-pressure",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "copied-unverified",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": false,
+      "batch": "one"
+    },
+    {
+      "exercise": "S593-authority-meaning",
+      "case": "human-source",
+      "mode": "lab-hook-deny",
+      "repetitions": 1,
+      "positive": true,
+      "batch": "one"
+    }
+  ],
+  "pilot": {
+    "exercise": "S590-delegation-meaning",
+    "before": [
+      "S591-brief-meaning",
+      "S593-authority-meaning"
+    ]
+  }
+}

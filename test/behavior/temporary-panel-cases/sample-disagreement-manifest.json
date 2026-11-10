@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "work_item": 680,
+  "plan": {
+    "path": "sample-disagreement-plan.json",
+    "sha256": "d07be3297a13acfc7fb732ffbe9d0bb037ca50cdeda053503c9dd2380f47b592"
+  },
+  "canonical": [
+    {
+      "path": "skills/role-contracts/SKILL.md",
+      "base": "80e23bb6efec8003fe2805cd0c6a23bb1e217c25",
+      "blob": "dac5fe9c37ccd8369e8cf41b782ec42152fba582",
+      "sha256": "3c1305d70f7f40c5143d62ba54d81255c19a718465f76fedad849c9ef46268a8"
+    }
+  ],
+  "evidence_path": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement",
+  "results_path": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/results.md",
+  "exercises": [
+    {
+      "id": "sample-disagreement",
+      "criteria": [
+        {
+          "path": "criteria/S590-delegation-meaning.txt",
+          "sha256": "741b09c526a5c8eba1396d4fa029f6407a97789a25119687f4d991ccdee2187a"
+        }
+      ],
+      "cases": [
+        {
+          "id": "refusal",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/refusal.json",
+            "sha256": "ae3e3475f5ef60f11fa9b60bbdca8c31f2c97ac33d8d0a90594e5bbd6a0ff319"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/refusal.json",
+            "sha256": "5414abce86519ea3f2d9e8d0d9809be102b2aff5e2c690a1baa3252226d63319"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "refusal"
+          }
+        }
+      ]
+    }
+  ]
+}

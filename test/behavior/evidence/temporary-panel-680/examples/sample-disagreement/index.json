@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "manifest": "ed458115e528bf1f5201d4a95d3121478c295faff77209c1730555105c117c3d",
+  "plan": {
+    "path": "sample-disagreement-plan.json",
+    "sha256": "d07be3297a13acfc7fb732ffbe9d0bb037ca50cdeda053503c9dd2380f47b592"
+  },
+  "records": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/sample-disagreement/refusal-r1.json",
+      "exercise": "sample-disagreement",
+      "case": "refusal",
+      "repetition": 1
+    }
+  ],
+  "calls": [
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-disagreement"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-disagreement"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-disagreement"
+    }
+  ],
+  "judges": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j1.json",
+      "session": "synthetic-judge-sample-disagreement-one-1",
+      "exercise": "sample-disagreement",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j2.json",
+      "session": "synthetic-judge-sample-disagreement-one-2",
+      "exercise": "sample-disagreement",
+      "batch": "one"
+    }
+  ],
+  "canaries": [],
+  "reports": [
+    {
+      "sha256": "4c234ca601d452ae812f4fe186d0f6151c926dedc2727bcad21b644c0f136a5f",
+      "records": 1,
+      "synthetic": true
+    }
+  ]
+}

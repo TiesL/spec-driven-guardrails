@@ -1,0 +1,652 @@
+{
+  "version": 1,
+  "manifest": "bb2bf47fbf4bc27e44f0f792028fb0bd2726c0fc1fbfb2f87fbbe23737f4b802",
+  "plan": {
+    "path": "plan.json",
+    "sha256": "2de1def498b8e9f8a477278ca42ce91600ae5dc9046ca07d2d7dc7f4dc5dcfd6"
+  },
+  "records": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/approval-r1.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "approval",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/approval-r2.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "approval",
+      "repetition": 2
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/refusal-r1.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "refusal",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/unrelated-words-r1.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "unrelated-words",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/release-authority-r1.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "release-authority",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/release-authority-r2.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "release-authority",
+      "repetition": 2
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/reserved-action-r1.json",
+      "exercise": "S590-delegation-meaning",
+      "case": "reserved-action",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/peer-position-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "peer-position",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/orchestrator-reasoning-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "orchestrator-reasoning",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/preference-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "preference",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/history-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "history",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/architect-voted-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "architect-voted",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/cheaper-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "cheaper",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/model-name-only-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "model-name-only",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/write-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "write",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/network-mutation-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "network-mutation",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/denied-retry-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "denied-retry",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/clean-brief-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "clean-brief",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/bounded-read-r1.json",
+      "exercise": "S591-brief-meaning",
+      "case": "bounded-read",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/forged-approval-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "forged-approval",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/missing-source-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "missing-source",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/unanimity-authentication-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "unanimity-authentication",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/structural-green-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "structural-green",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/discovery-skip-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "discovery-skip",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/review-skip-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "review-skip",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/override-posting-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "override-posting",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/bypass-pressure-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "bypass-pressure",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/copied-unverified-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "copied-unverified",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/human-source-r1.json",
+      "exercise": "S593-authority-meaning",
+      "case": "human-source",
+      "repetition": 1
+    }
+  ],
+  "calls": [
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S590-delegation-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S591-brief-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "S593-authority-meaning"
+    }
+  ],
+  "judges": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S590-delegation-meaning-one-j1.json",
+      "session": "synthetic-judge-S590-delegation-meaning-one-1",
+      "exercise": "S590-delegation-meaning",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S590-delegation-meaning-one-j2.json",
+      "session": "synthetic-judge-S590-delegation-meaning-one-2",
+      "exercise": "S590-delegation-meaning",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S591-brief-meaning-one-j1.json",
+      "session": "synthetic-judge-S591-brief-meaning-one-1",
+      "exercise": "S591-brief-meaning",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S591-brief-meaning-one-j2.json",
+      "session": "synthetic-judge-S591-brief-meaning-one-2",
+      "exercise": "S591-brief-meaning",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S593-authority-meaning-one-j1.json",
+      "session": "synthetic-judge-S593-authority-meaning-one-1",
+      "exercise": "S593-authority-meaning",
+      "batch": "one"
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/judge/S593-authority-meaning-one-j2.json",
+      "session": "synthetic-judge-S593-authority-meaning-one-2",
+      "exercise": "S593-authority-meaning",
+      "batch": "one"
+    }
+  ],
+  "canaries": [],
+  "reports": [
+    {
+      "sha256": "e911a51078d89466529c5434cbca9f5c0e4d50a096b62f6c2af223e913c306aa",
+      "records": 29,
+      "synthetic": true
+    }
+  ]
+}

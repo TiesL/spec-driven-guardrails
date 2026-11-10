@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "manifest": "4a2c5901f5cbfb2a7c416bfc31bd36fec9a52bbea114eb4db71bf0ebbf34c8c5",
+  "plan": {
+    "path": "sample-import-plan.json",
+    "sha256": "1d677470b62d9e0825054457e1bcc4ec3e1d971df766adf872d80c9831ff5a84"
+  },
+  "records": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-import/sample-import/refusal-r1.json",
+      "exercise": "sample-import",
+      "case": "refusal",
+      "repetition": 1
+    }
+  ],
+  "calls": [
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-import"
+    }
+  ],
+  "judges": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-import/judge/sample-import-one-j1.json",
+      "session": "synthetic-judge-sample-import-one-1",
+      "exercise": "sample-import",
+      "batch": "one"
+    }
+  ],
+  "canaries": [],
+  "reports": [
+    {
+      "sha256": "4877601ccd466e8253505abee92b75f08cdcf85a85878c79cc6d512358766196",
+      "records": 1,
+      "synthetic": true
+    }
+  ]
+}

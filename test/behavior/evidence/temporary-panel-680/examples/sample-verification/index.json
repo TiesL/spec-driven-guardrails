@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "manifest": "e05016c8e1f11b07a07f597c690519ebd31f6c9ca379ca48b6473197900e8abc",
+  "plan": {
+    "path": "sample-verification-plan.json",
+    "sha256": "172d798f66e064ead99559f57b0b8acea78d6042ecc2961ebff86a34ee5e787e"
+  },
+  "records": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/sample-verification/invalid-primary-r1.json",
+      "exercise": "sample-verification",
+      "case": "invalid-primary",
+      "repetition": 1
+    },
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/sample-verification/invalid-primary-r1-fallback.json",
+      "exercise": "sample-verification",
+      "case": "invalid-primary",
+      "repetition": 1
+    }
+  ],
+  "calls": [
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-verification"
+    },
+    {
+      "kind": "actor",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-verification"
+    },
+    {
+      "kind": "judge",
+      "usage": {
+        "input": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "output": 0
+      },
+      "completed": true,
+      "synthetic": true,
+      "exercise": "sample-verification"
+    }
+  ],
+  "judges": [
+    {
+      "path": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/judge/sample-verification-one-j1.json",
+      "session": "synthetic-judge-sample-verification-one-1",
+      "exercise": "sample-verification",
+      "batch": "one"
+    }
+  ],
+  "canaries": [],
+  "reports": [
+    {
+      "sha256": "6ac788618cc27f2c312c427c4806f60cf8567c02a621f28e8aa89217e54acdab",
+      "records": 2,
+      "synthetic": true
+    }
+  ]
+}
