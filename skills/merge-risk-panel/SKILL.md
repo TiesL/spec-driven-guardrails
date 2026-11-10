@@ -35,7 +35,7 @@ detached checkout of B (`git worktree add --detach`), refreshed with
 `git fetch origin` and `git checkout --detach origin/main` before each item,
 and points `SPEC_DRIVEN_GUARDRAILS_DIR` and its session hooks at it. The
 executor session's working directory is that checkout too, so the guard at the
-literal merge reads B's `WORKFLOW-ADOPTION.md`. The verifier compares its own
+literal merge reads B's adoption answers. The verifier compares its own
 checkout with B: `HEAD` not B, B not in the local object store, any reserved
 file whose working bytes differ from B, or a preflight not run in the
 checkout's top level (`preflight_cwd`) is `verifier-not-at-base`
