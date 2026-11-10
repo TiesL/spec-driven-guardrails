@@ -4739,3 +4739,203 @@ addendum 3 F1's resolver description and its file list only.
   heuristic; the "unclassifiable fails" rule backs it. (4) Scratch-root names
   are a name convention; a repo file named like one would be missed, and the
   repo has none.
+
+#### A58 addendum 5 (Architect, Planning, 2026-11-10): OR20 step; merge-decision inputs fail closed; S627 relative mutation
+
+OR20 two-round-trigger step and loop-back for Review round 2 on PR #696 at
+786dbbb (comment 6760848116: guard-switch-data-eligible [medium design],
+s627-ci-red [medium test], hold-clock-variants-untested [low test],
+clone-scratch-root [low design]); round 1 (comment 6753769243) also had open
+mediums. Still PROPOSAL; no AC, no core byte, no stamp change. Amends
+addendum 3 F1/F2 and addendum 4's criterion, rules 3-5, exemption list and
+doubt (2).
+
+- **OR20 question: is the model unsound?** [A] Partly: the defect is in the
+  *criterion*, not in the list mechanism. The class is already an allow-list
+  (an unlisted path is `referred unlisted-path`); reserved paths carve the
+  gates out of the allowed groups. Both rounds found the same kind of fault: a
+  fail-open default at one edge of the reservation criterion. Round 1: sourced
+  modules and wiring not followed. Round 2: data reads assumed harmless
+  (addendum 4 rule 3), `check`'s own scripts assumed covered by group
+  membership (rule 4), a repository copy assumed a fixture (exemption list),
+  the guard's working directory assumed equal to the checkout (F2). Decision:
+  keep groups plus reserved list, and make every edge default fail closed
+  (below). An explicit allow-list of docs and tests was compared and **not
+  taken**: (i) it is not sound by construction either, because `check`
+  executes `test/**`, so the reserved harness list and S628 are still needed;
+  (ii) [V] path-level upper bound over the last 80 first-parent `main` commits
+  (2026-09-19 to 2026-11-08, caps 300/8, no content haircut): shipped config
+  20/80, this addendum 15/80, docs+tests allow-list 7/80; (iii) it would drop
+  the adoption, projection and accepted-design guard paths that D1 and
+  acceptance point 4 name, which reopens D1 (the maintainer's decision).
+- **Corrected criterion (replaces addendum 4's; its premise was false).**
+  [A] Addendum 4 said "a file that is only read as data ... does not decide
+  whether the gates work". False: `hooks/git-guardrails:345` returns before
+  every check when `WORKFLOW-ADOPTION.md` answers `quality-review-before-merge`
+  `no`; `:578` and `model-record-gate.sh` skip on `process-multi-agent-roles`;
+  `adoption-postcondition-gate.sh` reads `traceability-link-1` and
+  `ci-gate-on-merge`. Addendum 4 doubt (2) was wrong too: the guard group is
+  eligible, not referred. New criterion: every **merge-decision input** is
+  reserved. Merge-decision inputs are (1) every repo file the guard (through
+  the preflight or the hook), the verifier or a reserved test runs or sources;
+  (2) every repo file those read as configuration, i.e. whose content can
+  select whether or how a check runs; (3) every repo file the hard gate (b)
+  runs as a check: what `check` runs or sources and the `run:` steps of
+  `.github/workflows/ci.yml`; (4) the working directory those run in. A
+  *subject* (a file a check validates, or a script a test runs to assert on
+  its output) is not an input; a change to a subject can at worst fail a
+  check, which blocks. The subject/input split is named per file, never
+  inferred.
+- **D1 — Reserved additions (finding guard-switch-data-eligible).** [A]
+  `reserved.autonomy` gains, as exact names: `WORKFLOW-ADOPTION.md`,
+  `WORKFLOW-ADOPTIE.md` (the guard's legacy name; absent, so no cost),
+  `check-no-dutch.sh`, `check-no-quote-break.sh`, `check-no-sigpipe-race.sh`,
+  `check-scenario-file-sync.sh`, `check-traceability.sh`,
+  `check-workflow-adapters.sh`, `lib/workflow-adapters.py` (exec'd by it),
+  `lib/managed_blocks.py` (imported by that), `lib/nfr.sh` (sourced by
+  `check`), `lib/one-definition-lint.py` (run by `check`),
+  `templates/check-pr-issue-link.sh` and `templates/check-main-via-pr.sh` (CI
+  steps). `groups.adoption` loses `WORKFLOW-ADOPTION.md`,
+  `lib/workflow-adapters.py` and `lib/managed_blocks.py` (lists stay
+  disjoint). Not reserved: `templates/check-traceability.sh` (`check` only
+  diffs it against the reserved root copy: a subject) and `check-commit` (not
+  run by `check` or CI; if the S628 resolver finds otherwise it is added and
+  reported). Whole file, not row level: a row rule would need diff parsing of a
+  table the guard parses tolerantly (`grep -m1 '^| *id *|'`, so a duplicate
+  row placed earlier wins) plus its own completeness test.
+- **D2 — The guard's working directory is the B checkout (finding 1, second
+  path).** [A] The collector runs `merge-preflight.sh` with `cwd` = the
+  verifier checkout's top level (`git -C <script_dir> rev-parse
+  --show-toplevel`), records it as `preflight_cwd`, and the evaluation answers
+  `unresolved verifier-not-at-base` with detail `cwd` when `preflight_cwd` is
+  absent or differs from that top level. With D1 the guard then reads B's
+  `WORKFLOW-ADOPTION.md`, whose bytes F2 already compares. Skill (Hard gates):
+  the executor session's working directory is that checkout too, so the
+  PreToolUse hook at the literal merge reads the same file; that part stays
+  procedure (Residual risk 9).
+- **D3 — S628 resolver: edge defaults fail closed.** [A] Replaces addendum 4
+  rules 3-5 and the scratch-root exemption:
+  - Rule 3': a data read of a repo file by a file reached from the
+    merge-decision roots (guard, preflight, verifier, merge_risk cases) is an
+    input: the file must be reserved or be listed in `SUBJECT_READS` (exact
+    path, reason, stale check as for exemptions). Initial entries: `CHANGES.md`
+    (validated by `check`, read by the cases to build fixtures) and
+    `.gitignore` (reason per reader); the Developer reports every other read
+    found. Data reads by files reached only from `check`/CI roots are subject
+    reads (they are what `check` validates) and are not followed.
+  - Rule 4': `check` and the `run:` steps of `.github/workflows/ci.yml` are
+    roots traversed for code edges (rule 2) only. `test/run.sh`'s dispatch of
+    `test/cases/*` is not traversed (each case is a subject; reserved cases are
+    roots on their own). `settings/session-hooks.json` and the other workflow
+    files stay members, not traversed.
+  - Rule 5': a directory populated by copying the repository (`tar`, `cp -R`,
+    `rsync` of `$TEST_REPO_ROOT`, `sandbox_copy_repo`) is a **copy root**: a
+    reference under it resolves to the repository path. Only directories a
+    test builds from scratch remain scratch roots. The
+    `s627_... '$1'` entry leaves `SCRATCH_ROOTS`.
+  - Exempt leaves gain `session-context.sh` (S627 measures its output: a
+    subject).
+- **D4 — S627's mutation is relative, not +100 (finding s627-ci-red).** [A]
+  The floor is a property of the comparison, so the mutation measures its own
+  copy: grow OR11 in the copy by exactly `CONTEXT_BUDGET_CHARS - FLOOR + 1 -
+  s1_copy` characters, where `s1_copy` is slot 1 measured in that same copy
+  before the growth (S318's `neg-floor-1` pattern), and assert the headroom
+  check fires; control: grow by one character less and assert it does not.
+  Both are independent of the sandbox path, which is the same before and after
+  the growth. The "100 characters" claim is dropped: it held only with
+  macOS's long `$TMPDIR` (Linux headroom 624, macOS 536).
+- **D5 — clone-scratch-root.** [A] Resolved by D1 (`check-workflow-adapters.sh`
+  is reserved because `check` runs it) and by D3 rule 5' (the copy resolves to
+  the repository file, so S628 also reaches it through S627).
+- **D6 — hold-clock-variants-untested.** [A] Nothing to decide; rows and
+  mutations below.
+
+- **QA (`TEST-SCENARIOS.md` only).**
+  - S613: new rows: a one-file, one-line PR changing only the
+    `quality-review-before-merge` row of `WORKFLOW-ADOPTION.md` is `referred`
+    `reserved-path`; the same for `process-multi-agent-roles`; the same for
+    each of `check-no-dutch.sh` and `templates/check-pr-issue-link.sh`;
+    control: a one-line `hooks/pre-commit` change is not `reserved-path`
+    (guard group).
+  - S614: new rows: the collector runs the preflight in the verifier
+    checkout's top level whatever the caller's working directory (a caller
+    directory whose `WORKFLOW-ADOPTION.md` answers `no` changes nothing);
+    `preflight_cwd` absent or different gives `unresolved
+    verifier-not-at-base` detail `cwd`; a `WORKFLOW-ADOPTION.md` whose bytes
+    differ from B gives `verifier-not-at-base` (first-path detail).
+  - S617: rows: the final `gh api --include` request fails (non-zero exit)
+    gives `unresolved now-unreadable` and the local clock is not read; a
+    `Date` value without a zone gives `unresolved now-unreadable`.
+  - S618/S619: rows: a hold 2 h before T with no release is `held
+    hold-release-missing`; two holds with the release words between them is
+    stale against the later hold; a control-issue off 2 h after the config
+    commit is `referred off-since-config`.
+  - S627: the mutation "add 100 characters to OR11" becomes "grow OR11 in a
+    copy by the copy's own slot-1 headroom minus 499 characters (headroom
+    check fails) and by one character less (control passes)"; add "the
+    verdicts do not depend on the sandbox path length".
+  - S628: title "Every merge-decision input is itself reserved". Given: roots
+    add `check` and the `ci.yml` `run:` steps (code edges only); `test/run.sh`
+    case dispatch is not traversed; data reads from merge-decision roots must
+    be reserved or a `SUBJECT_READS` entry; copy roots resolve to repository
+    files; exempt leaves `adopt.sh`, `pending-changes.sh`,
+    `session-context.sh`. Variant (e) flips: a planted `cat lib/zz-data.txt`
+    fails naming it as an unreserved, unnamed data read; a planted `grep -q x
+    CHANGES.md` passes (named subject). New (h): in a tar copy of the
+    repository, a scratch copy of a closure file running `./zz-check.sh`
+    there fails naming `zz-check.sh`; (i): a planted `"$target/zz-lint.sh"`
+    run line in a scratch copy of `check` fails naming it; (j): a stale
+    `SUBJECT_READS` entry fails. Mutation lines: "treat data reads as not
+    followed ((e) fails)", "drop `check` from the roots ((i) fails)", "treat a
+    copy root as a scratch root ((h) fails)", replacing "treat a data read as
+    an edge".
+- **Developer (code, config, tests).** `policy/merge-autonomy.json` (D1);
+  `lib/merge-risk.py` (D2: `cwd=` for the preflight run, `preflight_cwd`,
+  detail `cwd`, `# rule:` tag); `test/fixtures/merge-risk-closure-646.py`
+  (D3); `test/cases/s627_merge_risk_core_edit_pointer_headroom.sh` (D4,
+  verified with a 19-character `mktemp` shim before the push); fixture rows
+  and a killed MUTATIONS entry for each QA row above, including the five
+  round-2 mutants (1 h window, `min(holds)`, failed-request local-clock
+  fallback, naive `Date`, one-day `off-since-config`) and D2's `cwd`;
+  `skills/merge-risk-panel/SKILL.md` (Hard gates: executor working directory;
+  the Residual risks below; stays under 16,000 bytes). The report cites
+  `check` (Linux) green on the pushed head.
+- **Orchestrator / Product.** PR #696 acceptance point 4 lists D1's files and
+  the [V] 20/80 -> 15/80 path-level figure; Product decides whether F72/AC8's
+  quoted 27.5% needs a "path-level, after addendum 5" sentence.
+- **AC consistency.** No AC is contradicted. AC3 condition 3's "exact lists
+  ... in the configuration file" is narrowed in content (D1), and D2 adds a
+  refusal reason; both narrow acceptance point 4, flagged below.
+- **For the maintainer's acceptance point 4 (narrowings).** (1)
+  `WORKFLOW-ADOPTION.md` leaves the class: answer-only PRs (14f062f, a2a65c5)
+  go to the human path. (2) The six `check-*.sh` scripts `check` runs,
+  `templates/check-pr-issue-link.sh` and `templates/check-main-via-pr.sh`
+  leave the guard group (5a15c32, b25bb55, a8bee4b would have been referred).
+  (3) `lib/workflow-adapters.py` and `lib/managed_blocks.py` leave the
+  adoption group. (4) `lib/nfr.sh` and `lib/one-definition-lint.py` were
+  already unlisted; reserving them only fixes their status. Deliberately
+  eligible: `adopt.sh`, `pending-changes.sh`, `session-context.sh`
+  (subjects), `templates/check-traceability.sh`, the hooks other than
+  `git-guardrails`.
+- **Residual risks (replaces addendum 3's list).** [A] (1)-(8), (11) and (12)
+  as in addendum 3. (9) as in addendum 3, plus: the executor session's
+  working directory at the literal merge is procedure. (10) The closure sees
+  static references in the forms it knows; `gh`, `git`, `python3`, `bash`,
+  GitHub and its required-check settings are outside it. (13) `check` skips
+  some checks when their subject is absent (`templates/PRD.md`, `nfr/`,
+  `CHANGES.md`): deleting a subject switches its check off; visible in the
+  diff, judged by the Reviewer. (14) The subject/input split is a named
+  judgment per `SUBJECT_READS` entry and exempt leaf; the stale check bounds
+  growth, not correctness. (15) A test change can weaken an oracle for a
+  non-reserved feature; this rests on the Reviewer's "weakened test oracle"
+  disqualifier.
+- **Violated when** (added): a merge-decision input (criterion (1)-(3)) is
+  neither reserved nor a named subject; the preflight runs in a directory
+  other than the verifier checkout without `verifier-not-at-base`; S627's
+  verdict changes with the sandbox path length.
+- **Doubts (one line each).** [A]
+  - Whole-file reservation of `WORKFLOW-ADOPTION.md` costs answer-only PRs (2/80); a row-level rule keeps them but needs code and its own completeness test.
+  - The 15/80 is path-level without A55's content haircuts, so it is not directly comparable with AC8's 22/80.
+  - "No class redesign" rests on these four fail-open edges being all of them; a third counting round with a new category would argue for the docs+tests allow-list after all.
+  - Treating `check`'s data reads wholesale as subjects is coarse; existence-guarded checks (residual 13) are the known gap.
+  - With `session-context.sh` an exempt subject, a change to it is judged only by the Reviewer and S318/S627's own measurements.
