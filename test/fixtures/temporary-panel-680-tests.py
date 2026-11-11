@@ -14,7 +14,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNNER = ROOT / "test/behavior/temporary-panel-run.sh"
+RUNNER = Path(os.environ.get("PANEL_TEST_RUNNER", ROOT / "test/behavior/temporary-panel-run.sh"))
 RECORDER = ROOT / "test/behavior/temporary-panel-recorder.sh"
 SCENARIO = int(sys.argv[1])
 NA = "not applicable: tools disabled"
@@ -186,7 +186,7 @@ print(json.dumps(result))
             capture_output=True, text=True)
         if ok:
             check(p.returncode == 0, f"{op}: {p.stderr} {p.stdout}")
-        else:
+        elif ok is not None:
             check(p.returncode != 0, f"mutation accepted: {args}: {p.stdout}")
         return p
 
@@ -215,6 +215,97 @@ print(json.dumps(result))
             return c
         self.data["judges"] = [j(1, verdict), j(2, second or verdict)]
         return self.cli("judge", "--offline", "--judge-adapter", str(self.adapter), ok=ok)
+
+    def native(self, op="run", model="claude-sonnet-5-5", postflight=0, attempt=False, ok=True, extra=(), session=None):
+        """Exercise native parsing with a launcher that ONLY prints fixture JSON.
+
+        --live selects the native transport/provenance contract in a disposable
+        output directory. No claude executable, model or tool body is called.
+        """
+        launcher = self.dir / "native-launcher.py"
+        launcher.write_text('''#!/usr/bin/env python3
+import json, pathlib, sys
+here = pathlib.Path(__file__).parent
+data = json.loads((here / "native-data.json").read_text())
+request = sys.stdin.read()
+with (here / "native-calls.jsonl").open("a") as f:
+    f.write(json.dumps({"argv": sys.argv[1:], "stdin": request}) + "\\n")
+# Deliberately never exec argv, evaluate tool inputs, or contact a service.
+print(json.dumps({"type": "system", "subtype": "init", "tools": [], "mcp_servers": []}))
+for block in data["blocks"]:
+    print(json.dumps({"type": "assistant", "message": {"content": [block]}}))
+print(json.dumps({"type": "result", "session_id": data["session"],
+    "structured_output": data["response"], "modelUsage": {data["model"]: {
+        "inputTokens": 13, "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0, "outputTokens": 9}}}))
+''')
+        verifier = self.dir / "native-verifier.py"
+        verifier.write_text('''#!/usr/bin/env python3
+import json, pathlib, sys
+data = json.loads((pathlib.Path(__file__).parent / "native-data.json").read_text())
+if sys.argv[1] == "preflight":
+    print(json.dumps({"all_tools_disabled": True}))
+else:
+    print(json.dumps(data["verification"]))
+    sys.exit(data["postflight"])
+''')
+        launcher.chmod(0o755); verifier.chmod(0o755)
+        c = fallback(session or "native-" + op)
+        blocks = [{"type": "text", "text": e["text"]} for e in c["events"]]
+        if attempt:
+            blocks.append({"type": "tool_use", "name": "Bash", "input": {
+                "command": "/usr/bin/curl https://example.invalid/unauthorized"}})
+        response = c["response"] if op == "run" else {"verdicts": [{
+            "case": "control", "repetition": 1, "criterion": "reason", "verdict": "PASS",
+            "quote": "Refer unsupported authority before use.", "reason": "File supports referral."}]}
+        write(self.dir / "native-data.json", {"model": model, "session": c["session"],
+            "blocks": blocks, "response": response, "verification": c["verification"], "postflight": postflight})
+        return self.cli(op, "--live", "--recorder-mode", "transcript-only",
+            "--containment-launcher", str(launcher), "--containment-verifier", str(verifier), *extra, ok=ok)
+
+
+def model_validator_mutation(scenario):
+    """The named metadata cases must kill a disabled model/tier validator."""
+    if os.environ.get("PANEL_TEST_SKIP_MUTATIONS"):
+        return
+    import shutil
+    with tempfile.TemporaryDirectory(prefix="panel-model-mutant-") as tmp:
+        folder = Path(tmp)
+        shutil.copy2(ROOT / "test/behavior/temporary-panel-run.sh", folder)
+        source = (ROOT / "test/behavior/temporary_panel_run.py").read_text()
+        if scenario == 629:
+            start = source.index("def concrete(model, tier=None):")
+            end = source.index("\n\ndef usage(", start)
+            source = source[:start] + "def concrete(model, tier=None):\n    return True\n" + source[end:]
+        else:
+            old = 'return tier is None or model.startswith("claude-" + tier + "-")'
+            check(old in source, "tier mutation anchor exists")
+            source = source.replace(old, "return True", 1)
+        (folder / "temporary_panel_run.py").write_text(source)
+        env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / "temporary-panel-run.sh"), PANEL_TEST_SKIP_MUTATIONS="1")
+        p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), str(scenario)],
+            capture_output=True, text=True, env=env)
+        check(p.returncode != 0 and "model property accepted:" in p.stderr,
+              "model validator mutant survived or failed for unrelated property: " + p.stdout + p.stderr)
+        print(f"S{scenario}: killed {'concrete-model' if scenario == 629 else 'judge-tier'} validator mutant")
+
+
+def runner_mutation(scenario, name, old, new, diagnostic):
+    if os.environ.get("PANEL_TEST_SKIP_MUTATIONS"):
+        return
+    import shutil
+    with tempfile.TemporaryDirectory(prefix="panel-runner-mutant-") as tmp:
+        folder = Path(tmp)
+        shutil.copy2(ROOT / "test/behavior/temporary-panel-run.sh", folder)
+        source = (ROOT / "test/behavior/temporary_panel_run.py").read_text()
+        check(source.count(old) == 1, name + " mutation anchor unique")
+        (folder / "temporary_panel_run.py").write_text(source.replace(old, new, 1))
+        env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / "temporary-panel-run.sh"), PANEL_TEST_SKIP_MUTATIONS="1")
+        p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), str(scenario)],
+            capture_output=True, text=True, env=env)
+        check(p.returncode != 0 and diagnostic in p.stderr,
+              name + " mutant survived or failed for unrelated property: " + p.stdout + p.stderr)
+        print(f"S{scenario}: killed {name} mutant")
 
 
 def reset_out(f):
@@ -274,9 +365,22 @@ def s629(f):
     check(call["instructions"] == (ROOT / "skills/role-contracts/SKILL.md").read_text(), "whole canonical instruction")
     check("PRIVATE_QA_KEY_680" not in json.dumps(call), "key excluded")
     check(call["test_observations"] == {"cwd_empty": True, "home_empty": True, "inherited_marker": False}, "empty scratch/home and no inherited runtime environment: " + str(call["test_observations"]))
-    for model in ("sonnet", "opus", "unknown", "claude-sonnet-placeholder", "claude-stub-1"):
-        c = capture(); c["model"] = model; c["synthetic"] = False
-        reset_out(f); f.run(c, ok=False)
+    # A hash-valid committed key is still forbidden in the instruction channel.
+    reset_out(f)
+    key_path = "test/behavior/temporary-panel-cases/keys/S590-delegation-meaning/approval.json"
+    base = git("rev-parse", "HEAD")
+    f.manifest["canonical"].append({"path": key_path, "base": base,
+        "blob": git("rev-parse", base + ":" + key_path), "sha256": sha((ROOT / key_path).read_bytes())})
+    f.save()
+    p = f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+    check(p.returncode != 0 and "QA key" in p.stderr and not f.calls(), "canonical key reached actor: " + p.stdout + p.stderr)
+    f.manifest = copy.deepcopy(original); f.save()
+    reset_out(f); f.native()
+    check(f.read()["capture"]["model"] == "claude-sonnet-5-5" and not f.read()["capture"]["synthetic"], "matching native model/provenance control")
+    for model in ("sonnet", "opus", "unknown", "claude-sonnet-placeholder", "claude-sonnet-latest", "claude-stub-1", "claude-opus-5-1", "claude-haiku-4-5"):
+        reset_out(f); p = f.native(model=model, ok=None)
+        check(p.returncode != 0 and "live resolved model metadata invalid" in p.stderr,
+              "model property accepted: actor " + model + ": " + p.stdout + p.stderr)
     for field, bad in (("memory", True), ("fresh", False), ("settings_sources", ["project"]), ("persistence", True)):
         c = capture(); c["invocation"][field] = bad
         reset_out(f); f.run(c, ok=False)
@@ -358,6 +462,47 @@ def s630(f):
 
 
 def s631(f):
+    # Completed native output must survive a failed independent postflight.
+    original_manifest = copy.deepcopy(f.manifest); original_plan = copy.deepcopy(f.plan)
+    later = copy.deepcopy(f.case); later["id"] = "later-control"
+    f.manifest["exercises"][0]["cases"].append(later)
+    row = copy.deepcopy(f.plan["rows"][0]); row["case"] = "later-control"
+    f.plan["rows"].append(row); f.save()
+    f.native(postflight=1, attempt=True, extra=("--cases", "control"), ok=False)
+    check(f.evidence().exists(), "postflight failure discarded completed native capture")
+    record = f.read()
+    check(record["case"] == "control" and record["repetition"] == 1, "invalid observation identity retained")
+    check([e["seq"] for e in record["capture"]["events"]] == [1, 2, 3, 4], "invalid ordered events retained")
+    check(record["capture"]["events"][-1]["input"]["command"] == "/usr/bin/curl https://example.invalid/unauthorized", "unauthorized attempt retained without execution")
+    check("postflight failed" in " ".join(record["verification_errors"]), "independent postflight failure retained")
+    check(record["capture"]["usage"] == {"input": 13, "cache_read": 0, "cache_write": 0, "output": 9}, "actual completed native usage retained")
+    call = json.loads((f.out / "evidence/682/index.json").read_text())["calls"][0]
+    check(call["completed"] and call["usage"] == record["capture"]["usage"], "actual completed call usage retained")
+    check(record["capture"]["verification"] == {} and record["verdict"] != "PASS", "failed postflight supplies no usable containment evidence")
+    check(next(v for v in record["deterministic"] if v["criterion"] == "attempts")["verdict"] == "FAIL", "invalid containment cannot erase observed forbidden attempt")
+    f.cli("report", "--live")
+    report = (f.out / "results-682.md").read_text()
+    check("postflight failed" in report and '"input": 13' in report and "unauthorized first-run attempt" in report, "report exposes failure, usage and first attempt")
+    calls = (f.dir / "native-calls.jsonl").read_text()
+    f.native(extra=("--cases", "control"), ok=False)
+    check((f.dir / "native-calls.jsonl").read_text() == calls, "scheduled guard blocks replacement native observation")
+    f.cli("report", "--live")
+    check("postflight failed" in (f.out / "results-682.md").read_text(), "later invocation cannot hide invalid observation")
+    # An independent clean scheduled observation cannot erase that first FAIL.
+    f.native(extra=("--cases", "later-control"), session="native-later")
+    f.cli("report", "--live")
+    report = (f.out / "results-682.md").read_text()
+    check("LAB: FAIL" in report and "postflight failed" in report and '"input": 26' in report, "clean later observation preserves first failure and total actual usage")
+    f.manifest = original_manifest; f.plan = original_plan; f.save()
+    reset_out(f)
+    f.native(); f.native("judge", model="claude-opus-5-1", postflight=1, ok=False)
+    calls = json.loads((f.out / "evidence/682/index.json").read_text())["calls"]
+    check("error_capture" in calls[-1], "judge postflight discarded completed native capture")
+    error = json.loads((f.out / calls[-1]["error_capture"]).read_text())
+    check(error["capture"]["usage"]["input"] == 13 and error["usable"] is False, "invalid native judge retains actual usage without usable evidence")
+    f.cli("report", "--live")
+    check("postflight failed" in (f.out / "results-682.md").read_text(), "report exposes invalid native judge")
+    reset_out(f)
     f.run(); record = f.read()
     for field in ("packet", "canonical", "capture", "verification_errors", "deterministic", "semantic", "coverage", "sensitivity", "findings"):
         check(field in record, "retains " + field)
@@ -484,6 +629,16 @@ def s633(f):
 
 
 def s634(f):
+    # Matching native provenance reaches concrete-model validation, including
+    # live stubs (which are intentionally allowed only for synthetic captures).
+    f.native(); f.native("judge", model="claude-opus-5-1")
+    check(len(json.loads((f.out / "evidence/682/index.json").read_text())["judges"]) == 1, "matching native Opus judge control")
+    for model in ("claude-sonnet-5-5", "claude-haiku-4-5", "opus", "claude-opus-placeholder", "claude-stub-1"):
+        reset_out(f); f.native()
+        p = f.native("judge", model=model, ok=None)
+        check(p.returncode != 0 and "live resolved model metadata invalid" in p.stderr,
+              "model property accepted: judge " + model + ": " + p.stdout + p.stderr)
+    reset_out(f)
     f.judge(); check(len([c for c in f.calls() if c["kind"] == "judge"]) == 1, "PASS: exactly one judge")
     request = f.calls()[-1]
     body = json.dumps(request)
@@ -501,8 +656,6 @@ def s634(f):
     valid = copy.deepcopy(f.data["judges"][0])
     for name, mutate in (
         ("actor-session", lambda c: c.update(session="actor-1")),
-        ("lower-tier", lambda c: c.update(model="claude-sonnet-5-5", synthetic=False)),
-        ("alias", lambda c: c.update(model="opus", synthetic=False)),
         ("tool-enabled", lambda c: c["verification"]["effective"].update(dispatch_disabled=False)),
         ("invented-quote", lambda c: c["response"]["verdicts"][0].update(quote="never present in evidence")),
         ("outside-case", lambda c: c["response"]["verdicts"][0].update(case="different-case")),
@@ -521,7 +674,47 @@ def s634(f):
     f.cli("report", ok=False)
 
 
+def probe_native_chronology(f):
+    """Expected RED: preserve the unresolved native/oracle design question.
+
+    This opt-in diagnostic is excluded from normal cases until Architect/QA
+    define usable native chronology. It proposes no text-to-phase semantics.
+    """
+    f.native(); f.native("judge", model="claude-opus-5-1")
+    record = f.read()
+    check([e["text"] for e in record["capture"]["events"]] == [
+        "Own position established from artifacts.",
+        "Unsupported input refused before reconciliation.",
+        "Reconcile only the independent supplied evidence."], "native ordered text retained")
+    check(all("phase" not in e for e in record["capture"]["events"]), "native events supply no phase annotations")
+    check(all(v["verdict"] == "PASS" for v in record["semantic"]), "meaning judge accepts the supplied text")
+    chronology = next(v for v in record["deterministic"] if v["criterion"] == "chronology")
+    print("Native chronology diagnostic: " + json.dumps(chronology), flush=True)
+    check(chronology["verdict"] == "PASS", "Architect decision required: native chronology cannot satisfy oracle; no semantics invented")
+
+
 with tempfile.TemporaryDirectory(prefix="panel-680-test-") as tmp:
     fixture = Fixture(Path(tmp))
-    globals()["s" + str(SCENARIO)](fixture)
+    if "--probe-native-chronology" in sys.argv[2:]:
+        probe_native_chronology(fixture)
+    else:
+        globals()["s" + str(SCENARIO)](fixture)
+if SCENARIO in (629, 634):
+    model_validator_mutation(SCENARIO)
+if SCENARIO == 629:
+    runner_mutation(629, "canonical-key-isolation",
+        'for text in self.instructions + [packet for _, _, packet, _ in self.rows]:',
+        'for text in [packet for _, _, packet, _ in self.rows]:', "canonical key reached actor:")
+if SCENARIO == 631:
+    for name, old, new, diagnostic in (
+        ("postflight-discard", 'errors.append("independent containment postflight failed")',
+         'raise Invalid("independent containment postflight failed")', "postflight failure discarded completed native capture"),
+        ("native-usage-loss", '"events": observed, "response": result["structured_output"], "usage": totals,',
+         '"events": observed, "response": result["structured_output"], "usage": dict.fromkeys(USAGE, 0),', "actual completed native usage retained"),
+        ("judge-postflight-discard", 'if verify_result.returncode != 0 and (judge or request.get("canary")):',
+         'if False:', "judge postflight discarded completed native capture"),
+        ("invalid-call-report-omission", 'if "error_capture" not in call:', 'if True:', "report exposes invalid native judge"),
+        ("scheduled-observation-retry", 'require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")',
+         'pass', "scheduled guard blocks replacement native observation")):
+        runner_mutation(631, name, old, new, diagnostic)
 print(f"S{SCENARIO}: PASS ({checks} assertions; synthetic offline evidence only)")

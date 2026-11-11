@@ -137,7 +137,7 @@ def same_attempts(stream, log):
 def verify(capture):
     """Return errors so an invalid primary capture can still be retained."""
     try:
-        require(not capture["errors"], "runtime errors retained; capture not usable")
+        require(not capture["errors"], "runtime errors retained; capture not usable: " + "; ".join(capture["errors"]))
         v = capture["verification"]
         fields(v, ("independent", "effective", "hook_log", "canary", "counts"), label="verification")
         i = v["independent"]
@@ -273,6 +273,15 @@ class Manifest:
             fields(plan["pilot"], ("exercise", "before"), label="pilot barrier")
             require(plan["pilot"]["exercise"] in exercise_ids and set(plan["pilot"]["before"]) <= exercise_ids and plan["pilot"]["exercise"] not in plan["pilot"]["before"], "unsupported pilot barrier")
         self.identity = digest(encoded(d))
+        # Hash fidelity authenticates bytes, not their suitability as actor
+        # instructions. Check every actor channel against every prior key.
+        keys = [key for _, _, _, key in self.rows]
+        key_hashes = {c["key"]["sha256"] for _, c, _, _ in self.rows}
+        for text in self.instructions + [packet for _, _, packet, _ in self.rows]:
+            require(digest(text.encode()) not in key_hashes
+                    and not any(marker in text for key in keys for marker in key["private_markers"])
+                    and not re.search(r'"(?:qa_key|expected_verdict|answer_key|private_markers)"\s*:', text),
+                    "QA key leaked into actor input (instructions or packet)")
         refs = [d["plan"]]
         for ex, c, _, _ in self.rows:
             refs.extend(ex["criteria"] + [c["packet"], c["key"]] + c["ground_truth"])
@@ -519,10 +528,17 @@ def live_call(args, store, request, call, judge):
             retain_runtime_error(store, request, observed, result, "runtime lacks init/result/structured response; usage unknown")
             raise Invalid("runtime incomplete; ordered partial events retained, not runnable")
         verify_result = subprocess.run([args.containment_verifier, "postflight", str(scratch)], capture_output=True, text=True, env=env)
-        require(verify_result.returncode == 0, "independent containment postflight failed")
-        v = json.loads(verify_result.stdout)
+        errors = [] if p.returncode == 0 and not result.get("is_error") else ["runtime error/exit " + str(p.returncode)]
+        if verify_result.returncode != 0:
+            # Preserve the completed observation through the ordinary invalid-
+            # capture path. A failed verifier supplies no containment proof,
+            # but cannot erase ordered attempts, response, identity or usage.
+            errors.append("independent containment postflight failed")
+            v = {}
+        else:
+            v = json.loads(verify_result.stdout)
         # Verifier supplies effective settings/denial feedback, not runtime claims.
-        if mode == "lab-hook-deny":
+        if not errors and mode == "lab-hook-deny":
             v["hook_log"] = [json.loads(s) for s in log.read_text().splitlines()] if log.exists() else []
             v["counts"] = {"stream": len(tool_events(observed)), "hook": len(v["hook_log"])}
             if not request.get("canary"):
@@ -532,7 +548,7 @@ def live_call(args, store, request, call, judge):
                 v["canary"]["hook_log"] = previous["verification"]["hook_log"]
             else:
                 v["canary"] = None
-        else:
+        elif not errors:
             require(init.get("tools") == [] and init.get("mcp_servers", []) == [], "runtime advertises tools in disabled mode")
             for k in ("hook_log", "counts", "canary"):
                 v[k] = NA
@@ -544,15 +560,21 @@ def live_call(args, store, request, call, judge):
                 require(type(u.get(source)) is int, "runtime actual token usage missing")
                 totals[key] += u[source]
         call.update(usage=totals, completed=True); store.save()
-        return {"version": 1, "synthetic": False, "kind": "judge" if judge else "actor",
+        capture = {"version": 1, "synthetic": False, "kind": "judge" if judge else "actor",
                 "session": result["session_id"], "runtime": "claude -p", "model": next(iter(model_usage)),
                 "date": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mode": mode,
                 "events": observed, "response": result["structured_output"], "usage": totals,
-                "errors": [] if p.returncode == 0 and not result.get("is_error") else ["runtime error/exit " + str(p.returncode)], "verification": v,
+                "errors": errors, "verification": v,
                 "invocation": {"fresh": True, "memory": False, "settings_sources": [], "strict_mcp": True, "persistence": False}}
+        # Actors use run's ordinary invalid observation record. Judges and
+        # canaries can fail before obtaining an index entry, so also retain a
+        # call-linked error envelope for report to expose independently.
+        if verify_result.returncode != 0 and (judge or request.get("canary")):
+            retain_runtime_error(store, request, observed, result, "independent containment postflight failed", capture)
+        return capture
 
 
-def retain_runtime_error(store, request, observed, result, reason):
+def retain_runtime_error(store, request, observed, result, reason, capture=None):
     """Safe unusable evidence, never an actor result or manufactured usage."""
     events(observed)
     result = result or {}
@@ -560,12 +582,16 @@ def retain_runtime_error(store, request, observed, result, reason):
     if response is not None:
         fields(response, (), RESPONSE + RESPONSE_EXTRA, "partial response")
     path = store.m.data["evidence_path"] + "/errors/call-" + str(len(store.index["calls"])) + ".json"
-    store.put(path, {"version": 1, "kind": "unusable-runtime-error", "usable": False,
+    error = {"version": 1, "kind": "unusable-runtime-error", "usable": False,
+        "work_item": store.m.data["work_item"], "case": request.get("case"), "repetition": request.get("repetition"),
         "exercise": request.get("exercise", "shared verification"), "packet": request.get("packet"),
         "canonical": store.m.data["canonical"], "events": observed, "response": response,
         "runtime": "claude -p", "session": result.get("session_id", "unknown"),
-        "model": "unknown", "date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "usage": "unknown: incomplete runtime; no estimates substituted", "errors": [reason]})
+        "model": capture["model"] if capture else "unknown", "date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "usage": capture["usage"] if capture else "unknown: incomplete runtime; no estimates substituted", "errors": [reason]}
+    if capture is not None:
+        error["capture"] = capture
+    store.put(path, error)
     store.index["calls"][-1]["error_capture"] = path
     store.save()
 
@@ -876,13 +902,31 @@ def report(m, store, args):
     lines = ["# Temporary-panel results", "", "Mechanical fixtures and behavior observations are reported separately.",
              "Product/Architect returns are supplied captured text, not live independent sessions.",
              "QA owns behavior-file status updates; offline synthetic evidence leaves every exercise UNRUN.", ""]
+    invalid_calls = []
+    for call in store.index["calls"]:
+        if "error_capture" not in call:
+            continue
+        error = load(relative(store.root, call["error_capture"]))
+        fields(error, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "packet", "canonical", "events", "response", "runtime", "session", "model", "date", "usage", "errors"), ("capture",), "runtime error evidence")
+        require(error["version"] == 1 and error["kind"] == "unusable-runtime-error" and error["usable"] is False and error["errors"], "error evidence cannot become usable")
+        require(error["work_item"] == m.data["work_item"] and error["canonical"] == m.data["canonical"], "error evidence identity changed")
+        events(error["events"]); scrub(error)
+        if "capture" in error:
+            c = error["capture"]; validate_capture(c, args.offline, c["kind"])
+            require(verify(c) and all(error[k] == c[k] for k in ("events", "response", "session", "model", "usage")), "lost invalid native capture evidence")
+            require(call["completed"] and call["usage"] == c["usage"], "lost invalid native call usage")
+        invalid_calls.append(error)
+        lines += ["Invalid runtime evidence (not usable containment): " + call["error_capture"],
+                  "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model")}),
+                  "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error["events"]),
+                  "Retained response: " + json.dumps(error["response"]), "Available actual usage: " + json.dumps(error["usage"]), ""]
     for ex in m.data["exercises"]:
         expected = [(ex["id"], c["id"], n) for c in ex["cases"] for n in range(1, c["repetitions"] + 1)]
         found = [retained[k] for k in expected if k in retained]
         synthetic = any(r["capture"]["synthetic"] for _, r in found)
         history = [(i, r) for i, r in all_records if r["exercise"] == ex["id"]]
         failures = [r for _, r in history if any(v["verdict"] == "FAIL" for v in r["deterministic"] + r["semantic"])]
-        complete = len(found) == len(expected) and all(r["verdict"] == "PASS" for _, r in found)
+        complete = len(found) == len(expected) and all(r["verdict"] == "PASS" for _, r in found) and not any(e["exercise"] == ex["id"] for e in invalid_calls)
         result = "not runnable (stub)" if synthetic else ("FAIL" if failures else ("PASS" if complete else "not runnable"))
         observed = all(c["mode"] == "observed-in-use" for c in ex["cases"])
         label = "OBSERVED IN USE: " + result + " (no lab run)" if observed else "LAB: " + result
