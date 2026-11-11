@@ -180,7 +180,16 @@ never scrubbed into changed quotations. The cap counts unique referenced input
 files, retained evidence and the result file; unrelated repository files do not
 consume it. The 3,000,000-byte cap, stop file and
 `--max-sessions` are checked before each runtime session, including canary and
-conditional judges. Call reservations persist even on failure. A `STOP` file in
+conditional judges. Call reservations persist even on failure. Each completed call names its retained
+capture and session; the shared validator reconciles exact call membership, kind,
+exercise and each available usage counter against actors, verification captures,
+first/second judges and error captures. Missing accounting, duplicate or misbound
+calls and inconsistent counters reject report, judge and continuation alike.
+Completed rejected judge output remains an explicitly unusable error capture with
+its original batch/cases/ordinal, events, response, identity, validation error and
+usage. An invalid quote supplies no semantic FAIL. A rejected first or second
+judge cannot be retried or replaced with a clean first judgment; its error remains
+reportable and blocks pilot readiness. A `STOP` file in
 the output root or `--stop-file` prevents further calls; retained evidence can
 still be read and reported. No `--max-budget-usd` is used.
 

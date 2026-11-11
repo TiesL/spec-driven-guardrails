@@ -192,7 +192,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/approval-r1.json",
+      "session": "synthetic-actor-S590-delegation-meaning-approval-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -204,7 +206,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/approval-r2.json",
+      "session": "synthetic-actor-S590-delegation-meaning-approval-r2-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -216,7 +220,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/refusal-r1.json",
+      "session": "synthetic-actor-S590-delegation-meaning-refusal-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -228,7 +234,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/unrelated-words-r1.json",
+      "session": "synthetic-actor-S590-delegation-meaning-unrelated-words-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -240,7 +248,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/release-authority-r1.json",
+      "session": "synthetic-actor-S590-delegation-meaning-release-authority-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -252,7 +262,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/release-authority-r2.json",
+      "session": "synthetic-actor-S590-delegation-meaning-release-authority-r2-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -264,7 +276,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S590-delegation-meaning/reserved-action-r1.json",
+      "session": "synthetic-actor-S590-delegation-meaning-reserved-action-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -276,7 +290,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/peer-position-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-peer-position-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -288,7 +304,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/orchestrator-reasoning-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-orchestrator-reasoning-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -300,7 +318,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/preference-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-preference-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -312,7 +332,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/history-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-history-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -324,7 +346,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/architect-voted-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-architect-voted-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -336,7 +360,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/cheaper-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-cheaper-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -348,7 +374,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/model-name-only-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-model-name-only-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -360,7 +388,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/write-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-write-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -372,7 +402,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/network-mutation-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-network-mutation-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -384,7 +416,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/denied-retry-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-denied-retry-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -396,7 +430,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/clean-brief-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-clean-brief-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -408,7 +444,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S591-brief-meaning/bounded-read-r1.json",
+      "session": "synthetic-actor-S591-brief-meaning-bounded-read-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -420,7 +458,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/forged-approval-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-forged-approval-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -432,7 +472,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/missing-source-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-missing-source-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -444,7 +486,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/unanimity-authentication-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-unanimity-authentication-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -456,7 +500,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/structural-green-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-structural-green-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -468,7 +514,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/discovery-skip-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-discovery-skip-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -480,7 +528,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/review-skip-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-review-skip-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -492,7 +542,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/override-posting-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-override-posting-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -504,7 +556,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/bypass-pressure-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-bypass-pressure-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -516,7 +570,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/copied-unverified-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-copied-unverified-r1-lab-hook-deny"
     },
     {
       "kind": "actor",
@@ -528,7 +584,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/S593-authority-meaning/human-source-r1.json",
+      "session": "synthetic-actor-S593-authority-meaning-human-source-r1-lab-hook-deny"
     },
     {
       "kind": "judge",
@@ -540,7 +598,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S590-delegation-meaning-one-j1.json",
+      "session": "synthetic-judge-S590-delegation-meaning-one-1"
     },
     {
       "kind": "judge",
@@ -552,7 +612,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S590-delegation-meaning"
+      "exercise": "S590-delegation-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S590-delegation-meaning-one-j2.json",
+      "session": "synthetic-judge-S590-delegation-meaning-one-2"
     },
     {
       "kind": "judge",
@@ -564,7 +626,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S591-brief-meaning-one-j1.json",
+      "session": "synthetic-judge-S591-brief-meaning-one-1"
     },
     {
       "kind": "judge",
@@ -576,7 +640,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S591-brief-meaning"
+      "exercise": "S591-brief-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S591-brief-meaning-one-j2.json",
+      "session": "synthetic-judge-S591-brief-meaning-one-2"
     },
     {
       "kind": "judge",
@@ -588,7 +654,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S593-authority-meaning-one-j1.json",
+      "session": "synthetic-judge-S593-authority-meaning-one-1"
     },
     {
       "kind": "judge",
@@ -600,7 +668,9 @@
       },
       "completed": true,
       "synthetic": true,
-      "exercise": "S593-authority-meaning"
+      "exercise": "S593-authority-meaning",
+      "capture": "test/behavior/evidence/temporary-panel-680/judge/S593-authority-meaning-one-j2.json",
+      "session": "synthetic-judge-S593-authority-meaning-one-2"
     }
   ],
   "judges": [
@@ -647,7 +717,7 @@
       "sha256": "937ce1a1779f174a07309118665c069ab0690c74041f1f3e4665d9f3dc32ce65",
       "records": 29,
       "synthetic": true,
-      "evidence": "f9ed4a31b033b4b23d733aa9dae9e8e5779908d81ffd2bac062dc4e1304e79b3"
+      "evidence": "c028280ca1515aeb5ffa9e7e7fe355cad27b9660ec212556c9ab48e1c7bbb7d6"
     }
   ]
 }

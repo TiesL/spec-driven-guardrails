@@ -392,6 +392,9 @@ class Store:
         self.save()
         return self.index["calls"][-1]
 
+    def bind_call(self, path, capture):
+        self.index["calls"][-1].update(capture=path, session=capture["session"])
+
     def sessions(self):
         return validate_retained_state(self.m, self, self.args.offline)["sessions"]
 
@@ -423,14 +426,13 @@ def canary(args, store):
     path = store.m.data["evidence_path"] + "/verification/canary.json"
     store.put(path, {"capture": c, "verification_errors": errors})
     require(not errors, "not runnable: independent canary verification failed; capture retained")
+    store.bind_call(path, c)
     store.index["canaries"].append({"path": path, "session": c["session"]})
     store.save()
 
 
 def adapter(args, store, request, judge=False):
     """Offline Adapter or explicit live Adapter, always guarded per call."""
-    if not judge and request.get("mode") == "lab-hook-deny":
-        canary(args, store)
     call = store.reserve("judge" if judge else "actor")
     call["exercise"] = request.get("exercise", "shared recorder verification")
     exe = args.judge_adapter if judge else args.runtime_adapter
@@ -568,7 +570,7 @@ def live_call(args, store, request, call, judge):
             for k in ("hook_log", "counts", "canary"):
                 v[k] = NA
         model_usage = result.get("modelUsage", {})
-        require(model_usage and all(concrete(m, "opus" if judge else "sonnet") for m in model_usage), "live resolved model metadata invalid")
+        require(model_usage and (judge or all(concrete(m, "sonnet") for m in model_usage)), "live resolved model metadata invalid")
         totals = {k: 0 for k in USAGE}
         for u in model_usage.values():
             for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
@@ -581,6 +583,11 @@ def live_call(args, store, request, call, judge):
                 "events": observed, "response": result["structured_output"], "usage": totals,
                 "errors": errors, "verification": v,
                 "invocation": {"fresh": True, "memory": False, "settings_sources": [], "strict_mcp": True, "persistence": False}}
+        if judge and not all(concrete(m, "opus") for m in model_usage):
+            reason = "live resolved model metadata invalid"
+            capture["errors"].append(reason)
+            retain_runtime_error(store, request, observed, result, reason, capture)
+            raise Invalid(reason)
         # Actors use run's ordinary invalid observation record. Judges and
         # canaries can fail before obtaining an index entry, so also retain a
         # call-linked error envelope for report to expose independently.
@@ -594,20 +601,21 @@ def retain_runtime_error(store, request, observed, result, reason, capture=None)
     events(observed)
     result = result or {}
     response = result.get("structured_output")
-    if response is not None:
-        fields(response, (), RESPONSE + RESPONSE_EXTRA, "partial response")
     path = store.m.data["evidence_path"] + "/errors/call-" + str(len(store.index["calls"])) + ".json"
     error = {"version": 1, "kind": "unusable-runtime-error", "usable": False,
         "work_item": store.m.data["work_item"], "case": request.get("case"), "repetition": request.get("repetition"),
         "exercise": request.get("exercise", "shared verification"), "packet": request.get("packet"),
         "canonical": store.m.data["canonical"], "events": observed, "response": response,
-        "runtime": "claude -p", "session": result.get("session_id", "unknown"),
+        "runtime": capture["runtime"] if capture else "claude -p", "session": result.get("session_id", "unknown"),
         "model": capture["model"] if capture else "unknown", "date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "usage": capture["usage"] if capture else "unknown: incomplete runtime; no estimates substituted", "errors": [reason]}
+    if request.get("kind") == "judge":
+        error.update(batch=request["batch"], ordinal=request["ordinal"],
+                     cases=[{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]])
     if capture is not None:
         error["capture"] = capture
     store.put(path, error)
-    store.index["calls"][-1]["error_capture"] = path
+    store.index["calls"][-1].update(error_capture=path, session=error["session"])
     store.save()
 
 
@@ -764,7 +772,7 @@ def run(m, store, args):
                     require(primary is not None, "fallback primary outside validated index")
                     require(primary["case"] == case["id"] and primary["exercise"] == ex["id"] and primary["repetition"] == repetition and primary["mode"] == "lab-hook-deny" and primary["verification_errors"], "fallback requires retained invalid primary for this observation")
                     name = name.replace(".json", "-fallback.json")
-            require(not any((e["exercise"], e["case"], e["repetition"]) == (ex["id"], case["id"], repetition) for e in state["invalid_calls"]), "first runtime error retained; no retry-to-clean")
+            require(not any((e["exercise"], e["case"], e["repetition"]) == (ex["id"], case["id"], repetition) and not (args.fallback_from and e["errors"] == ["duplicate session identity"]) for e in state["invalid_calls"]), "first runtime error retained; no retry-to-clean")
             require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")
             require(not any(j["exercise"] == ex["id"] and j["batch"] == case["batch"] for j in store.index["judges"]), "batch already judged; no additional observations")
             if case["mode"] == "observed-in-use":
@@ -777,10 +785,17 @@ def run(m, store, args):
                 request = {"kind": "actor", "exercise": ex["id"], "case": case["id"], "repetition": repetition,
                            "instructions": "\n".join(m.instructions), "packet": packet, "model_request": "sonnet",
                            "mode": chosen_mode, "command": command(chosen_mode)}
+                if chosen_mode == "lab-hook-deny":
+                    canary(args, store)
+                prior_sessions = store.sessions()
                 c = adapter(args, store, request)
                 validate_capture(c, args.offline)
             require(c["mode"] == chosen_mode, "capture mode differs from scheduled mode; never relabel primary as fallback")
-            require(c["session"] not in store.sessions(), "duplicate session identity")
+            if c["session"] in (prior_sessions if c["kind"] != "release" else state["sessions"]):
+                if c["kind"] != "release":
+                    retain_runtime_error(store, request, c["events"],
+                        {"session_id": c["session"], "structured_output": c["response"]}, "duplicate session identity", c)
+                raise Invalid("duplicate session identity")
             errors = [] if c["kind"] == "release" else verify(c)
             results, sensitivity = deterministic(c, packet, key, case["permitted_attempts"])
             record = {"version": 1, "work_item": m.data["work_item"], "exercise": ex["id"], "case": case["id"], "repetition": repetition,
@@ -802,6 +817,8 @@ def run(m, store, args):
             if fallback_of:
                 record["fallback_of"] = fallback_of
             store.put(name, record)
+            if c["kind"] != "release":
+                store.bind_call(name, c)
             store.index["records"].append({"path": name, "exercise": ex["id"], "case": case["id"], "repetition": repetition})
             store.save()
             require(not errors, "not runnable: containment verification failed; invalid capture retained: " + "; ".join(errors))
@@ -921,6 +938,10 @@ def validate_retained_state(m, store, offline):
         _, r, row = triple
         if not r["verification_errors"]:
             groups.setdefault((r["exercise"], row[1]["batch"]), []).append(triple)
+    # Capture membership is the source of truth for completed call accounting.
+    expected_calls = {i["path"]: ("actor", r["exercise"], r["capture"]) for i, r, _ in records if r["capture"]["kind"] != "release"}
+    for entry in index["canaries"]:
+        expected_calls[entry["path"]] = ("verification", None, load(relative(store.root, entry["path"]))["capture"])
     judges = {}; batches = {}
     for entry in index["judges"]:
         fields(entry, ("path", "session", "exercise", "batch"), label="judge index entry")
@@ -933,12 +954,14 @@ def validate_retained_state(m, store, offline):
         ordinal = 1 if entry["path"] == base + "-j1.json" else 2
         c = load(relative(store.root, entry["path"]))
         validate_capture(c, offline, "judge")
-        require(c["session"] == entry["session"] and c["session"] not in sessions and c["mode"] == "lab-transcript-only" and not verify(c),
+        require(c["session"] == entry["session"] and c["mode"] == "lab-transcript-only" and not verify(c),
                 "judge provenance/session/containment invalid")
+        require(c["session"] not in sessions, "retained judge cross-session uniqueness invalid")
         sessions.add(c["session"])
         validate_judgments(c, groups[group])
         require(ordinal not in batches.setdefault(group, {}), "duplicate judge ordinal")
         batches[group][ordinal] = (entry["path"], c); judges[entry["path"]] = c
+        expected_calls[entry["path"]] = ("judge", entry["exercise"], c)
     for group, batch in groups.items():
         pair = batches.get(group, {})
         require(2 not in pair or 1 in pair, "second judge missing first judgment")
@@ -967,29 +990,70 @@ def validate_retained_state(m, store, offline):
         require(r["findings"] == expected_findings(item, r, key), "FAIL findings/routes altered")
     invalid_calls = []; errors_by_path = {}
     for call in index["calls"]:
-        fields(call, ("kind", "usage", "completed", "synthetic"), ("exercise", "error_capture"), "call")
+        fields(call, ("kind", "usage", "completed", "synthetic"), ("exercise", "error_capture", "capture", "session"), "call")
         require(call["kind"] in ("actor", "judge", "verification") and type(call["completed"]) is bool and call["synthetic"] is offline, "call provenance/kind invalid")
         usage(call["usage"])
         if "error_capture" not in call:
             continue
         error = load(relative(store.root, call["error_capture"]))
-        fields(error, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "packet", "canonical", "events", "response", "runtime", "session", "model", "date", "usage", "errors"), ("capture",), "runtime error evidence")
+        fields(error, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "packet", "canonical", "events", "response", "runtime", "session", "model", "date", "usage", "errors"), ("capture", "batch", "ordinal", "cases"), "runtime error evidence")
         require(error["version"] == 1 and error["kind"] == "unusable-runtime-error" and error["usable"] is False and error["errors"], "error evidence cannot become usable")
         require(error["work_item"] == m.data["work_item"] and error["canonical"] == m.data["canonical"], "error evidence identity changed")
         if error["case"] is not None:
             row = next((row for row in m.rows if (row[0]["id"], row[1]["id"]) == (error["exercise"], error["case"])), None)
             require(row and type(error["repetition"]) is int and 1 <= error["repetition"] <= row[1]["repetitions"] and error["packet"] == row[2], "runtime error outside finite plan")
+        require(call["kind"] == ("judge" if "batch" in error else "actor" if error["case"] is not None else "verification"), "error call kind binding invalid")
         events(error["events"]); scrub(error)
         if "capture" in error:
-            c = error["capture"]; validate_capture(c, offline, c["kind"])
-            require(verify(c) and all(error[k] == c[k] for k in ("events", "response", "session", "model", "usage")), "lost invalid native capture evidence")
+            c = error["capture"]
+            require(all(error[k] == c[k] for k in ("events", "response", "session", "model", "runtime", "usage")), "lost invalid native capture evidence")
+            if call["kind"] == "judge":
+                group = (error["exercise"], error.get("batch"))
+                require(group in groups and error.get("ordinal") in (1, 2), "invalid judge error batch binding")
+                require(error.get("cases") == [{"case": r["case"], "repetition": r["repetition"]} for _, r, _ in groups[group]], "invalid judge error cases binding")
+                require(error["ordinal"] not in batches.get(group, {}), "unusable judgment replaced by usable judgment")
+                try:
+                    validate_capture(c, offline, "judge")
+                    require(c["mode"] == "lab-transcript-only" and not verify(c), "judge tools-disabled containment not established")
+                    require(c["session"] not in sessions, "actor/judge session reused")
+                    validate_judgments(c, groups[group])
+                except Invalid as exc:
+                    require(error["errors"] == [str(exc)] or (len(error["errors"]) == 1 and error["errors"][0] in c.get("errors", [])), "retained judge validation error changed")
+                else:
+                    raise Invalid("error judgment has no validation failure")
+            else:
+                validate_capture(c, offline, c["kind"])
+                require(verify(c) or c["session"] in sessions, "error capture has no verification/session failure")
+            sessions.add(c["session"])
             require(call["completed"] and call["usage"] == c["usage"], "lost invalid native call usage")
+        require(call["error_capture"] not in errors_by_path, "duplicate error call accounting")
         invalid_calls.append(error); errors_by_path[call["error_capture"]] = error
+        expected_calls[call["error_capture"]] = (call["kind"], None if call["kind"] == "verification" else error["exercise"], error.get("capture"))
+    retained_errors = {str(p.relative_to(store.root)) for p in (store.bundle / "errors").glob("*.json")}
+    require(retained_errors == set(errors_by_path), "retained error missing call accounting")
+    accounted = set()
+    for call in index["calls"]:
+        path = call.get("error_capture", call.get("capture"))
+        require(not ("error_capture" in call and "capture" in call), "ambiguous call capture binding")
+        if path is None:
+            require(not call["completed"], "completed call missing capture binding")
+            continue
+        require(path in expected_calls and path not in accounted, "call capture membership/duplicate invalid")
+        accounted.add(path)
+        kind, exercise, c = expected_calls[path]
+        require(call["kind"] == kind and call.get("exercise") == exercise, "call capture identity binding invalid")
+        if c is not None:
+            require(call.get("session") == c["session"], "call session differs from capture")
+            require(call["completed"] and (path in errors_by_path or call["synthetic"] is c["synthetic"]) and call["usage"] == c["usage"], "call usage differs from capture")
+        else:
+            require(not call["completed"], "incomplete error cannot claim completed usage")
+    require(accounted == set(expected_calls), "retained capture missing call accounting")
     pilot_id = m.plan.get("pilot", {}).get("exercise")
     pilot = [(i, r, row) for i, r, row in records if r["exercise"] == pilot_id]
     pilot_identity = digest(encoded({"manifest": m.identity, "records": [(i, r) for i, r, _ in pilot],
         "judges": {p: c for p, c in judges.items() if any(j["path"] == p and j["exercise"] == pilot_id for j in index["judges"])},
-        "canaries": canaries, "errors": [e for e in invalid_calls if e["exercise"] == pilot_id]}))
+        "canaries": canaries, "errors": [e for e in invalid_calls if e["exercise"] == pilot_id],
+        "calls": index["calls"]}))
     reported = False
     result_path = relative(store.root, m.data["results_path"])
     for entry in index["reports"]:
@@ -1036,10 +1100,10 @@ def anonymized(record):
             "supplied_returns_limit": record["supplied_returns_limit"]}
 
 
-def judge_verdicts(c, batch, store, args):
+def judge_verdicts(c, batch, prior_sessions, args):
     validate_capture(c, args.offline, "judge")
     require(c["mode"] == "lab-transcript-only" and not verify(c), "judge tools-disabled containment not established")
-    require(c["session"] not in store.sessions(), "actor/judge session reused")
+    require(c["session"] not in prior_sessions, "actor/judge session reused")
     validate_judgments(c, batch)
 
 
@@ -1079,6 +1143,20 @@ def quote_present(obj, quote):
     return False
 
 
+def retained_judge_attempt(args, store, request, batch):
+    prior_sessions = store.sessions()
+    c = adapter(args, store, request, True)
+    try:
+        judge_verdicts(c, batch, prior_sessions, args)
+    except Invalid as exc:
+        # Completed invalid output is evidence, never a fresh retry opportunity.
+        if "error_capture" not in store.index["calls"][-1]:
+            retain_runtime_error(store, request, c["events"],
+                {"session_id": c["session"], "structured_output": c["response"]}, str(exc), c)
+        raise
+    return c
+
+
 def judge(m, store, args):
     groups = {}
     selected = {(r[0]["id"], r[1]["batch"]) for r in m.selected(args)}
@@ -1091,24 +1169,25 @@ def judge(m, store, args):
     for (exercise, batch_id), batch in groups.items():
         ex = batch[0][2][0]
         require(not any(j["exercise"] == exercise and j["batch"] == batch_id for j in store.index["judges"]), "batch judgment already retained; no retry-to-clean")
+        require(not any(e["exercise"] == exercise and e.get("batch") == batch_id for e in state["invalid_calls"]), "first judge error retained; no retry-to-clean")
         request = {"kind": "judge", "ordinal": 1, "exercise": exercise, "batch": batch_id,
                    "model_request": "opus", "criteria": [reference(m.root, p).decode() for p in ex["criteria"]],
                    "keys": list({row[1]["id"]: {"case": row[1]["id"], "key": row[3]} for _, _, row in batch}.values()),
                    "evidence": [anonymized(r) for _, r, _ in batch]}
-        first = adapter(args, store, request, True)
-        judge_verdicts(first, batch, store, args)
+        first = retained_judge_attempt(args, store, request, batch)
         path = m.data["evidence_path"] + "/judge/" + exercise + "-" + batch_id + "-j1.json"
         store.put(path, first)
+        store.bind_call(path, first)
         store.index["judges"].append({"path": path, "session": first["session"], "exercise": exercise, "batch": batch_id})
         store.save()
         has_fail = any(v["verdict"] == "FAIL" for v in first["response"]["verdicts"]) or any(v["verdict"] == "FAIL" for _, r, _ in batch for v in r["deterministic"])
         second = None
         if has_fail:
             request["ordinal"] = 2
-            second = adapter(args, store, request, True)
-            judge_verdicts(second, batch, store, args)
+            second = retained_judge_attempt(args, store, request, batch)
             path2 = path.replace("-j1.json", "-j2.json")
             store.put(path2, second)
+            store.bind_call(path2, second)
             store.index["judges"].append({"path": path2, "session": second["session"], "exercise": exercise, "batch": batch_id})
             store.save()
         for item, r, row in batch:
@@ -1134,7 +1213,7 @@ def report(m, store, args):
             continue
         error = state["errors_by_path"][call["error_capture"]]
         lines += ["Invalid runtime evidence (not usable containment): " + call["error_capture"],
-                  "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model")}),
+                  "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model", "batch", "ordinal", "cases") if k in error}),
                   "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error["events"]),
                   "Retained response: " + json.dumps(error["response"]), "Available actual usage: " + json.dumps(error["usage"]), ""]
     for ex in m.data["exercises"]:
