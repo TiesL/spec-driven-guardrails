@@ -541,14 +541,22 @@ def live_call(args, store, request, call, judge):
             raise Invalid("runtime incomplete; ordered partial events retained, not runnable")
         verify_result = subprocess.run([args.containment_verifier, "postflight", str(scratch)], capture_output=True, text=True, env=env)
         errors = [] if p.returncode == 0 and not result.get("is_error") else ["runtime error/exit " + str(p.returncode)]
+        postflight_error = ""
         if verify_result.returncode != 0:
+            postflight_error = "independent containment postflight failed"
+        else:
+            try:
+                v = json.loads(verify_result.stdout)
+                if not isinstance(v, dict):
+                    postflight_error = "independent containment postflight failed: malformed proof (expected object)"
+            except json.JSONDecodeError:
+                postflight_error = "independent containment postflight failed: malformed JSON proof"
+        if postflight_error:
             # Preserve the completed observation through the ordinary invalid-
             # capture path. A failed verifier supplies no containment proof,
             # but cannot erase ordered attempts, response, identity or usage.
-            errors.append("independent containment postflight failed")
+            errors.append(postflight_error)
             v = {}
-        else:
-            v = json.loads(verify_result.stdout)
         # Verifier supplies effective settings/denial feedback, not runtime claims.
         if not errors and mode == "lab-hook-deny":
             v["hook_log"] = [json.loads(s) for s in log.read_text().splitlines()] if log.exists() else []
@@ -581,8 +589,8 @@ def live_call(args, store, request, call, judge):
         # Actors use run's ordinary invalid observation record. Judges and
         # canaries can fail before obtaining an index entry, so also retain a
         # call-linked error envelope for report to expose independently.
-        if verify_result.returncode != 0 and (judge or request.get("canary")):
-            retain_runtime_error(store, request, observed, result, "independent containment postflight failed", capture)
+        if postflight_error and (judge or request.get("canary")):
+            retain_runtime_error(store, request, observed, result, postflight_error, capture)
         return capture
 
 
@@ -646,7 +654,11 @@ def sections(stream):
                         quoted_fence = None
                     quoted_paragraph = False
                 elif quoted_fence is None:
-                    quoted_paragraph = bool(body.strip()) and not PARAGRAPH_BREAK.match(body)
+                    # Indented code cannot open a paragraph and therefore has
+                    # no lazy continuation. Indentation can still continue an
+                    # already open paragraph inside the quote.
+                    quoted_paragraph = (bool(body.strip()) and not PARAGRAPH_BREAK.match(body)
+                                        and (quoted_paragraph or not re.match(r"^(?: {4}|\t)", body)))
                 offset += len(line)
                 continue
             # Only paragraph content may lazily omit '>'. A blank or an
@@ -757,7 +769,7 @@ def run(m, store, args):
     for ex, case, packet, key in m.selected(args):
         if args.live and ex["id"] in m.plan.get("pilot", {}).get("before", []):
             pilot_id = m.plan["pilot"]["exercise"]
-            pilot = [(i, load(relative(store.root, i["path"]))) for i in store.index["records"] if i["exercise"] == pilot_id]
+            pilot = [(i, validate_record(m, store, i, args.offline)[0]) for i in store.index["records"] if i["exercise"] == pilot_id]
             expected = sum(c["repetitions"] for e, c, _, _ in m.rows if e["id"] == pilot_id)
             require(len(pilot) == expected and all(not r["capture"]["synthetic"] and not r["verification_errors"] and r["adjudication"] != "unassessed" for _, r in pilot), "pilot containment/adjudication readiness missing")
             positives = {c["id"] for e, c, _, _ in m.rows if e["id"] == pilot_id and c["positive"]}
