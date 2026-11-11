@@ -112,9 +112,13 @@ def usage(value):
 def events(value):
     require(isinstance(value, list), "ordered events missing")
     for n, e in enumerate(value, 1):
-        fields(e, ("seq", "type"), ("tool", "input", "decision", "feedback", "text", "phase"), "event")
+        fields(e, ("seq", "type"), ("tool", "input", "decision", "feedback", "text", "phase", "role"), "event")
         require(e["seq"] == n, "event order is not contiguous")
         require(e["type"] in ("tool_use", "text", "tool_result", "draft"), "unsupported event type")
+        if "role" in e:
+            require(e["role"] in ("assistant", "user", "system", "tool"), "unsupported message role")
+        if e["type"] in ("text", "draft", "tool_result"):
+            require(isinstance(e.get("text"), str), "event text missing")
         if e["type"] == "tool_use":
             require(all(k in e for k in ("tool", "input", "decision", "feedback")), "tool event fields missing")
             require(isinstance(e["tool"], str) and e["tool"], "tool name missing")
@@ -510,15 +514,18 @@ def live_call(args, store, request, call, judge):
         for row in raw:
             if row.get("type") == "system" and row.get("subtype") == "init":
                 init = row
-            for block in row.get("message", {}).get("content", []):
+            message = row.get("message", {})
+            role = message.get("role", row.get("type"))
+            provenance = {"role": role} if role in ("assistant", "user", "system", "tool") else {}
+            for block in message.get("content", []):
                 if block.get("type") == "tool_use":
-                    observed.append({"seq": len(observed) + 1, "type": "tool_use", "tool": block["name"], "input": block["input"], "decision": "deny", "feedback": "pending independent verification"})
+                    observed.append({"seq": len(observed) + 1, "type": "tool_use", "tool": block["name"], "input": block["input"], "decision": "deny", "feedback": "pending independent verification", **provenance})
                 elif block.get("type") == "text":
-                    observed.append({"seq": len(observed) + 1, "type": "text", "text": block["text"]})
+                    observed.append({"seq": len(observed) + 1, "type": "text", "text": block["text"], **provenance})
                 elif block.get("type") == "tool_result":
                     content = block.get("content", "")
                     text = content if isinstance(content, str) else json.dumps(content)
-                    observed.append({"seq": len(observed) + 1, "type": "tool_result", "text": text, "feedback": text})
+                    observed.append({"seq": len(observed) + 1, "type": "tool_result", "text": text, "feedback": text, **provenance})
             if row.get("type") == "result":
                 result = row
         if malformed:
