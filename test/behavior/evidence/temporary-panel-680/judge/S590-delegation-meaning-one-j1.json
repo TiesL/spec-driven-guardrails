@@ -11,20 +11,20 @@
     {
       "seq": 1,
       "type": "text",
-      "phase": "own-position",
-      "text": "Synthetic prior own-position trace; no actual independent thinking is established."
+      "role": "assistant",
+      "text": "own_position:\nThe supplied inventory is synthetic; retain its scope and refer unsupported authority."
     },
     {
       "seq": 2,
       "type": "text",
-      "phase": "refused",
-      "text": "Unsupported input refused before supplied reconciliation in this fixture."
+      "role": "assistant",
+      "text": "input_defects:\nRefuse unsupported authority: supplied returns and missing history establish no human approval."
     },
     {
       "seq": 3,
       "type": "text",
-      "phase": "reconciled",
-      "text": "Only supplied independent evidence is represented; no live independence claim."
+      "role": "assistant",
+      "text": "reconciliation:\nRetain Product and Architect contributions with their dissent; refer reserved changes and preserve the source limits."
     }
   ],
   "response": {

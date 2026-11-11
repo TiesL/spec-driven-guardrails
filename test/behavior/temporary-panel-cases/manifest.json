@@ -29,11 +29,11 @@
           "id": "approval",
           "packet": {
             "path": "packets/S590-delegation-meaning/approval.json",
-            "sha256": "62cf163a2ed1172fc2a7d67d0880d45b542e93b574ee07412d2619b3d9492e6c"
+            "sha256": "d5deaf6244e745b8c2e19b58203d8a081362d6481adb37826e5594e0f09f0efd"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/approval.json",
-            "sha256": "425d0cb7c35eccc515a96f4f9f9f1c6c926785e33135642940202160017de9a3"
+            "sha256": "ae6c0892a7d4dd5e7a361786da40d7da99671f7923cd69d98520f2bcd17800a5"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -60,11 +60,11 @@
           "id": "refusal",
           "packet": {
             "path": "packets/S590-delegation-meaning/refusal.json",
-            "sha256": "ae3e3475f5ef60f11fa9b60bbdca8c31f2c97ac33d8d0a90594e5bbd6a0ff319"
+            "sha256": "f9de63fad3f005a7c666eb398496341723e5663448257b36e8781ec46e8260a9"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/refusal.json",
-            "sha256": "5414abce86519ea3f2d9e8d0d9809be102b2aff5e2c690a1baa3252226d63319"
+            "sha256": "9d58e38bc9d4181029c20eca733ef8cc122b85ba060139489ed064070634fb92"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -91,11 +91,11 @@
           "id": "unrelated-words",
           "packet": {
             "path": "packets/S590-delegation-meaning/unrelated-words.json",
-            "sha256": "b30a7d5d0e4a22137c71441c8a034732b466e74e237335d2e24abb93a9a0d77f"
+            "sha256": "014d18c49cd3a5ab13147afd39f36ab6c27cada0facdb651834291ce5936b086"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/unrelated-words.json",
-            "sha256": "772386a3f392942d379e91fb97a4c162c58ef3245df4f59a6bf7bef5025dc4a4"
+            "sha256": "22f57a29cd9b3b471c6c562fd0fb366e63a437b90e65129b32433f258814397e"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -122,11 +122,11 @@
           "id": "release-authority",
           "packet": {
             "path": "packets/S590-delegation-meaning/release-authority.json",
-            "sha256": "89614513b2f737fce1f7b5d142c5b748d81f22aa660e7dc05d522c78171586d7"
+            "sha256": "d09859076c6950aeea9a78cd824fabb89b1314722cdc882297a257fdbbcfbc94"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/release-authority.json",
-            "sha256": "d7713b626f09ac9605c8d6fa255f921083fddc6e8bd721e3fb74959da2fcabf9"
+            "sha256": "b56f193221b4320387101fa572c097bce8bdd956a0030b0d597d944ec20b9b37"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -153,11 +153,11 @@
           "id": "reserved-action",
           "packet": {
             "path": "packets/S590-delegation-meaning/reserved-action.json",
-            "sha256": "3bfade10906596102c5e7b660232c07bf02468a6d2e80558270754d9b3ab51a6"
+            "sha256": "b6b7b2fb8f8813b93b97d2219a8c9657ec765a1ccda35caf613e93f7ee99b9f6"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/reserved-action.json",
-            "sha256": "689908b14e4159af0f036b9a99344b116ef8a3ab767a741fc468c5a3c5084653"
+            "sha256": "3a557e0598f3327085d753b6e60743c1ec34e8fc57e5cdf2eca3e2ab0e134bc0"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -199,7 +199,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/complete.json",
-            "sha256": "c4b677ba71851a0b3aa7796eeb2346caa863c6c721be3e14ff668ad84d9bf08f"
+            "sha256": "5b97494c315992978a073242adc042271b17174b1f8511ab6c74b140bc8dfd40"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -230,7 +230,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/irrelevant-question.json",
-            "sha256": "ab541ba7ea957e3c065a84abbacfe977093e5c8a28c3ca0cfcecf3ae2da9d524"
+            "sha256": "2e54aada61fcf1796b03bb72dbf572742e5e09139ccc12c5d6b52d5b66823534"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -262,7 +262,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/irrelevant-scope-ac.json",
-            "sha256": "5cc4b684033b28985f2d9821cc092b0eb52a3a5c7d6353a1b2c1b4e22be3967c"
+            "sha256": "e317c44c21365c032e13a16959ef44dc5bfeeaadc7d0ef92e3d2318889492abd"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -294,7 +294,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/irrelevant-artifact-links.json",
-            "sha256": "1bab9bf7250fdbe5df8fb1c756c9e23b3ee063c05f2455e1fc76b84825bbe15c"
+            "sha256": "f55bbc6165260364e3b820e9eadd6f1e2c2ac9ea77b1f95965e9a0536faafc32"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -326,7 +326,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/irrelevant-member-evidence.json",
-            "sha256": "497c10b0ad39318ea62a4f24a48c19b68ff86d2f40959ea5522db1afc3d1f331"
+            "sha256": "b775b0e8dba1cd17e0b211dbe839c019f34f631ee45d186a39f326200c6cdf1f"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -358,7 +358,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/irrelevant-dissent.json",
-            "sha256": "a7910b8cb98f807d36d775b96bae19e57dd2e7efcc357f8f9f8494968ad86b92"
+            "sha256": "1c7765287487576f29741e9fbccdfebb63a6d5a031136be0780f0f0825ef6b1f"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -390,7 +390,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/contradictory-question.json",
-            "sha256": "300531aec8e3695dec2eb7bc80e2913ff0f94ec2967ac2b31e431efb2bbc9a9c"
+            "sha256": "942564c418533bb7cebfefbbe4fd24eb73fa50486e47220b8c24a3f6a44822a1"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -422,7 +422,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/contradictory-scope-ac.json",
-            "sha256": "2a3e56052252eaa0c0066746b90b97df1d961d895884552b8ee7a06f287306e5"
+            "sha256": "8d1f9752fa48fdd5dd9d44358d15cd724cef876994245a6788d103995575d88c"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -454,7 +454,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/contradictory-artifact-links.json",
-            "sha256": "09b860dd56d2f59e0313acb29204f4f22a3d2ac4bd2d2f0e7c733aec37292d33"
+            "sha256": "c3a64154c718a14739744eafbc57d2018af87dbdf38bc9605517819821b80af3"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -486,7 +486,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/contradictory-member-evidence.json",
-            "sha256": "32d3d2550a700dee0a14139f7a2e40999140b5b572997f04837e73ba3f58886c"
+            "sha256": "09afb1c29bd779e0403e5553cd0b292f808fd76b655e47a8a308df78cd3368d1"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -518,7 +518,7 @@
           },
           "key": {
             "path": "keys/S589-record-meaning/contradictory-dissent.json",
-            "sha256": "e8c2db927948e93016651714b053059d585177b9fdb13c0d6a372770a17eeb3d"
+            "sha256": "079e944720c9b1bbab874a35697f2d8684f03ef85cb3802f6eefe18c47e5602f"
           },
           "source_criteria": [
             "S589-record-meaning/Observable pass criteria",
@@ -561,7 +561,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-docs-pr-3-0.json",
-            "sha256": "0e201d6f5c51b629a3f9c15858e61425574cabe59f1a7ff18106e486dbbb00b0"
+            "sha256": "6754418cbc87129026452b954ab4b0cce00874a1431ef9a992526ce600f4563a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -595,7 +595,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-docs-pr-2-1.json",
-            "sha256": "a8a71970af970d3e5f3074ab67b2ebaf86bee15cafb39c6849e045b4e62850f1"
+            "sha256": "f009bf9fbf36a96a2c10a244133e215dd9b06701707fd4b288d18aa8283c093e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -629,7 +629,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-temporary-spec-choice-3-0.json",
-            "sha256": "1e54317fe20e07877cd9e4599fadf4bdf38f914630593754f0e35407aa385b92"
+            "sha256": "7e0ef53c9ea1e07f847cf9bf385b657e575e11a0b21842b254012303eb6ef9d0"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -663,7 +663,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-temporary-spec-choice-2-1.json",
-            "sha256": "c980247ca2e1b1799cb6a9286299331210c8945340ad18d2e298eb8f307eeaa9"
+            "sha256": "07f43eaeca54f65a69742c5ced45e047b0528942dd4fae46a8da1e2b482e932a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -697,7 +697,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-policy-choice-3-0.json",
-            "sha256": "7faaec2adaea042b823734cf83af904667cb5718004c89b86ed5e69c5486cae9"
+            "sha256": "053309c068ee8400a090a0526752ee48138e7b12264d597f7304c459d50abe6b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -731,7 +731,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-01-policy-choice-2-1.json",
-            "sha256": "2d4351527e8f22c72863200ef536abd8789370278df56d909e34c73a148d03f5"
+            "sha256": "e171708d342b793d4da12591c91116e486418a0ea8e3191bc1629f7f76483030"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -765,7 +765,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-docs-pr-3-0.json",
-            "sha256": "2b8208aa29d3c078412345bfc6a48a10ec1d79b5935f386905cd7d3cbff05d0c"
+            "sha256": "f97469ea374655926b4701e59ee5560701eca77db85457967e45fc93bd253832"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -799,7 +799,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-docs-pr-2-1.json",
-            "sha256": "144c374456cd02ada69aaf72a6ce3df41f3a45d8686ec8f278c85175a813b529"
+            "sha256": "94130fd3968d0d66b7807dff46ac8855b2d0922d00fa15e5fb15f6a75e0fc4a7"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -833,7 +833,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-temporary-spec-choice-3-0.json",
-            "sha256": "b8d2638dd032c78f9c0708fba70d1493e9096b121064313a71d9ebfd2755dc99"
+            "sha256": "61ee20fc62de315be6e26ad6ec6d70d3230e4fbefdd951e4f2c2dfd78a8286b5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -867,7 +867,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-temporary-spec-choice-2-1.json",
-            "sha256": "5ec0770bbbd996463866bf9e3483efe74e162c19eb0a0fe0370aafe32b0609bb"
+            "sha256": "86aa40b74354195bc6751849ac37bc4b95d3fbc37fa471219f23e4447a324db6"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -901,7 +901,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-policy-choice-3-0.json",
-            "sha256": "17d1ab0435edda25378df62ceae4b36e3362f6ebcb24b5259c85e3e01f3332da"
+            "sha256": "eccac7af3489243127c9a78b94e469b2c201e829afe436e2ca40a32a9c9fe423"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -935,7 +935,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-02-policy-choice-2-1.json",
-            "sha256": "8d81e68b6fa7cb160946875385bf6e0dc2635c2ffe615090a9c53d518673217f"
+            "sha256": "5a5f079f0c4703c3156861f0e8f7bad0ff5457215e79b702e3dbbbfd1980f908"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -969,7 +969,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-docs-pr-3-0.json",
-            "sha256": "f6a7725e6d5d2f4e28f115a160bf5917cea5dca6c0bec92cd97fc1d9bbdbdc35"
+            "sha256": "5951ead4ab73ccfa847b87f44fd1450e99013ed5a796d6522c987abc046f5700"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1003,7 +1003,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-docs-pr-2-1.json",
-            "sha256": "189316acde8e500542a53e945b99e2a77d02775737ebb1ee937eeee0984fc925"
+            "sha256": "2323cbbc233fee535e83d7ab93514d0667e8723d63006ec121c7dcbb65536b5a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1037,7 +1037,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-temporary-spec-choice-3-0.json",
-            "sha256": "e37957c43808171620a879f59af194ac873487e2c187700e2b0c77cf569f42eb"
+            "sha256": "17e0eef18c783f331bf9f82120f10a851b3440582fde43e039280d90439c9ce5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1071,7 +1071,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-temporary-spec-choice-2-1.json",
-            "sha256": "5028f72ac316ef1e9ba6b2f73733ffca5d1fc9b39579b85395600940ea1ba3b7"
+            "sha256": "1be295c55f9ba4aaa2bc970dcb60fc91f224fe210206194c9f694879ed2e9f44"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1105,7 +1105,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-policy-choice-3-0.json",
-            "sha256": "bbc1a2c707d6f7243ce7d79961adb3114d79f32877d4afeb9e87c1ced2178b93"
+            "sha256": "6df134b24ef08d6be66a9fe09c1cfc79b987858c7d86e19ddda510488ab97cbb"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1139,7 +1139,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-03-policy-choice-2-1.json",
-            "sha256": "459c2679a666a89c264549481b535778c7d39eb21d506bc03f9eca3a117bd29f"
+            "sha256": "62aac7df281d65dd69e2e86ca02507a1315d155a661ce872fdd0a016df3ce505"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1173,7 +1173,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-docs-pr-3-0.json",
-            "sha256": "003fc352282f5215b4143b2ad9207c4f6a373c3e4c39a2fa426cc1d41efb5a6e"
+            "sha256": "f60ab94d41b53fad174fd25903860fde0edc02213a0b05ef15dcecefa05a615f"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1207,7 +1207,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-docs-pr-2-1.json",
-            "sha256": "59dc021e272ab80631bfd1e50a307f1750b4227615d956e390fbbd1d372e8608"
+            "sha256": "a48c629e5171976cc2e68d37f06c65bab71744030470c847584648875d2c26b3"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1241,7 +1241,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-temporary-spec-choice-3-0.json",
-            "sha256": "1376f97ad8819774d59b67c116758f48bd17cc4ec5960ec60eb9636963a6a34d"
+            "sha256": "3b247028e322e5fc099044f3bd8a1b48e94e4c62916c32cffff5f3560d23926c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1275,7 +1275,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-temporary-spec-choice-2-1.json",
-            "sha256": "9679311b03cb28d1303276d94dbd58d0fafd572cc44349648097d1f836647056"
+            "sha256": "4c58eb9cd096d22a422c99de3d3ce2fce2313554343f0efb3ed9a826936523c5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1309,7 +1309,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-policy-choice-3-0.json",
-            "sha256": "046f39eddaaba129ad8eb3493d9b639fdec353a8c1f848742e08b739859d7b56"
+            "sha256": "f7d66519b00711bc808757dc009374d8a301bf2b67d080b093697e0d867eb2b5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1343,7 +1343,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-04-policy-choice-2-1.json",
-            "sha256": "04968d11d3f8360ee212137dee19e3d1a10c2a74ad8aca0fcedf7b16072717ab"
+            "sha256": "53e6a1967b09218078ee5c72cc89dd1dac1796dc6b1a9c17fbbeb8e40de45d49"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1377,7 +1377,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-docs-pr-3-0.json",
-            "sha256": "ca2be3407372c9f7a7aabd99971c88d513f8c5d745abaaaf9d49a7872c59388c"
+            "sha256": "72317e4d297bd14b5d5af67c3a285ed0873955d897e19e81bff4bd0212b4b478"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1411,7 +1411,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-docs-pr-2-1.json",
-            "sha256": "bc59806d88415d2f55fbec7c14384c57207c2787adbf6a8ff20bd9c7f351032e"
+            "sha256": "ba54e54258c770543f864b4bc77afb877be52fd9518f72208a47f964dd39c0c5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1445,7 +1445,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-temporary-spec-choice-3-0.json",
-            "sha256": "d844ce16b136302b8f56f266689c61975f93039a2c3b5d0fe45767512e779bdf"
+            "sha256": "e99aaa7fb2be1605940e2d94c7e79d3728f830f482b3218d658352dd1507e31c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1479,7 +1479,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-temporary-spec-choice-2-1.json",
-            "sha256": "b1c8738321147aa7d86d81794f5296559c53b40eb110a05b7d55761c5e3259f2"
+            "sha256": "d932765b19142d7833e143561ae0df25c9034696d91c5d07cb0da35bc08541cf"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1513,7 +1513,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-policy-choice-3-0.json",
-            "sha256": "3383af00e4bb57168858015709467bfbbe7e893a6a40babbe1f91f9596514bf6"
+            "sha256": "cade7ae482fff73f16c0c1a870dff5054a993816bd20477381d76a4f6d193b66"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1547,7 +1547,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-05-policy-choice-2-1.json",
-            "sha256": "c5691119194c04ee45a0462e3110247ea877ca96628ffcf0b26f774ce550c855"
+            "sha256": "959bb3a580946841348d67f58d2aa4c7804e0296909d86c110f2f0310a604f7b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1581,7 +1581,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-docs-pr-3-0.json",
-            "sha256": "bc58f60e54f0fc07d7ce04e00fd3b0d57067b549fd3be58e83007ee378b0a404"
+            "sha256": "8c1c8702a985a090048dad752840bfb143e66f4c5025b644f8b694b3c30150ba"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1615,7 +1615,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-docs-pr-2-1.json",
-            "sha256": "16457ab1e30324467bf223b377a4c26c2166cbca2a0a8451481e20b88a4af866"
+            "sha256": "d4f16b073760ba4166b9ba49b447108268911121a187cf675afecdf7fb26e7f2"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1649,7 +1649,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-temporary-spec-choice-3-0.json",
-            "sha256": "c7d9be750386dd5716b85446d14a8caceb990506dfcabd0542ea886bc32e7c41"
+            "sha256": "14e3f1576b88861a6d3ce5284d5ecfb42696d5599909dcf14b2f97d28d48de0f"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1683,7 +1683,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-temporary-spec-choice-2-1.json",
-            "sha256": "9fd22eed115dd66e20220bbb23f73383656a539acf70bf1efb3795a0d3f4e1f5"
+            "sha256": "9271dc614529429abbea8cb978c4cbb30d814cc34b93c1fa8bb5b7c6a9ec215c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1717,7 +1717,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-policy-choice-3-0.json",
-            "sha256": "78dd9f82a8a2d977bc844a26b190dcfc5c02d0cf759399d94d2548ad3c5f2044"
+            "sha256": "60f701374753c36b73da3b394731ef5d077660b6e5edcf92ad687cb489682bac"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1751,7 +1751,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-06-policy-choice-2-1.json",
-            "sha256": "b74cabe80295b918e097fb35d42d80fc72dfc99effa388687ebab77b47d40cde"
+            "sha256": "e9f07c42fd7bf772a0fcc74eaa2e8cdc1d6d783ff1df8ac108276cfdb787b359"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1785,7 +1785,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-docs-pr-3-0.json",
-            "sha256": "0dc82fa7b7ff4eb83f61db0c1dbc40cb88ca73e885e9a0f34564eebe579ae475"
+            "sha256": "07b81705f7cf5fb9336fa31b661d29d828d24fe49345ecfc6d108e944fefa066"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1819,7 +1819,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-docs-pr-2-1.json",
-            "sha256": "b3c93be4a4ca78ff9d2374e8becf53db155ae0c4719ebe180ebcfabece7b3899"
+            "sha256": "125eb65528f06bfade8e83518959ca9fcb899b7c8e42729052c511a4194c1394"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1853,7 +1853,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-temporary-spec-choice-3-0.json",
-            "sha256": "ef2697ddc9c8be7601f338e0e92e1c546ac6b27d1c3bcec5a7bc2122eb7c703a"
+            "sha256": "d67470ce40da00318fd756b37b0d61e83c8be82830606b8d983f949c4f1de629"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1887,7 +1887,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-temporary-spec-choice-2-1.json",
-            "sha256": "475f90f6167cb2fbf21178c5df15ad6e5416733ab816e09652e51d463210a9ea"
+            "sha256": "ec193471270ac2c733b33e664c24b9e29320f63fbb447941bb92a20f38de4432"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1921,7 +1921,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-policy-choice-3-0.json",
-            "sha256": "f2d1d024a0a004232225c8ca31c3ac88161a39d7e389758e7deb7cb513e955eb"
+            "sha256": "4cdc46217eea8a23b75cf24ddfbc8e46897dbbe4fdcb3655fdec277319a897c9"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1955,7 +1955,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-07-policy-choice-2-1.json",
-            "sha256": "66967c100dd3d0e06271dcb36db592f9ec371b0c2d5c35d08f0267cf0285eaa4"
+            "sha256": "7564a9f37c6dae659c668dbfb5cd2c79a75727a7d397c52bed7a497297254454"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -1989,7 +1989,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-docs-pr-3-0.json",
-            "sha256": "7999b3ba063f667b3842c01e2366a71628da8162712e5c5c3f14dbbd35c7aed8"
+            "sha256": "0a27811ac10b21a9ba09784c9303f274032b56e7a2f7995de2bdb0d1145a5585"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2023,7 +2023,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-docs-pr-2-1.json",
-            "sha256": "97852c561f52e81d0a01278da20bfa7758e1cba253c377844736916e3a5e3844"
+            "sha256": "8e7845b0a182500b42b21d9b01046f9fdb95334afb5fa61867d144aa702b44b1"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2057,7 +2057,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-temporary-spec-choice-3-0.json",
-            "sha256": "eb4c86861d3e538b1f052aeecfcb11d64e6e3138552369185d5260de18fdcce4"
+            "sha256": "2cecaea4ce6f9c4ace008eaf5fc91a670218ac54906e9bbe6eab6a341034a37c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2091,7 +2091,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-temporary-spec-choice-2-1.json",
-            "sha256": "47bc545fc4e574d10b7bffe26631a74431c1aaf4bfc935f306539d1705875a13"
+            "sha256": "e23541c61be9b6c5b2ea0975aa22bc47b25e824e8878b11910da9f587bbaaf93"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2125,7 +2125,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-policy-choice-3-0.json",
-            "sha256": "55aad134d5ca398516b7b47a3e4a08e7ad0affe6691630cd7b468969965984cd"
+            "sha256": "2685f2977b1d5c2137bdaf07c58db6238d76ca1a57d3cbc375e7ed961476773e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2159,7 +2159,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-08-policy-choice-2-1.json",
-            "sha256": "a68693cd079ecaf3b342c3b33536405ff199cc70e12d481dc2c2b37a920a0c0f"
+            "sha256": "50a2e1be7e2a3c6d470be207561f7df30af3063d045a3d32c4dbef45b154a43d"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2193,7 +2193,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-docs-pr-3-0.json",
-            "sha256": "bcb83c413f4a2033bd52970cad5a83782431ad5fcd7eb817f1c49a9a63ae35e5"
+            "sha256": "c3cc8cf3bd421bdacf8665d9a45c5cd22d9a9d2a5021c6f554072309e7c40704"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2227,7 +2227,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-docs-pr-2-1.json",
-            "sha256": "6c087b20267845046f1472d1952bb84732d80351571b52cea3e2d98320544cee"
+            "sha256": "06015a4ca9cd03c940b5db7f8988f21b9c26fc8f45d1328106e41173703feeb3"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2261,7 +2261,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-temporary-spec-choice-3-0.json",
-            "sha256": "958b9c71a562eedf6da4c83f85b50cfea979ce3f83fb6adb80e47772ea996ab4"
+            "sha256": "0225578092c0b536f11ed68ce38a28a5c8de65733245b8e70a5a6dd0508d9a8c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2295,7 +2295,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-temporary-spec-choice-2-1.json",
-            "sha256": "53c71b1970c9fd8685cc16776910366bf51bea35a26203c3cfc8d648ba359d5c"
+            "sha256": "bca09db8a7b85b45fdc6c38b303356ced96e9edf2066ea55ed347f3888535e1e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2329,7 +2329,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-policy-choice-3-0.json",
-            "sha256": "9c237a06300f9abc64a4e382a856d52b331d6c470ab2a14175f0a0b68c4afffd"
+            "sha256": "539b069b3884f520bbba3df360a989f568ba057336749b1f7aceeb4f97308383"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2363,7 +2363,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-09-policy-choice-2-1.json",
-            "sha256": "ecd835c88d564de3250b995af889ac637b58efd92c9f21d34ab6928eef36a559"
+            "sha256": "10141e151c3ec030be812d15fb933e7d79a87e1be7239c502b9ce7760b14dd61"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2397,7 +2397,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-docs-pr-3-0.json",
-            "sha256": "c905b78efaf75caf176638c3bf52536e9722403044faababe40eaff3f3009939"
+            "sha256": "6344ae4cd7abd029c904c26f9174ee6342032678c907f6564d3007701a3f1a79"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2431,7 +2431,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-docs-pr-2-1.json",
-            "sha256": "014050282cbf5eef3f9663129f19644d5a6a98ce0f4b9e82e1d63bfdf0ea80ba"
+            "sha256": "1f264608e0812580da6cbedc5bd0d47f9171e8bd72328e4a88979156d6786d1b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2465,7 +2465,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-temporary-spec-choice-3-0.json",
-            "sha256": "13e3c58980069c7f8ff33606d8697e89c1aecafd22c2839e68350ab4d2cbd01c"
+            "sha256": "9a1c72f0fba313b9d63cb81a31bb8c486a03aadbe7e12dd3a295ec42781a0c8a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2499,7 +2499,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-temporary-spec-choice-2-1.json",
-            "sha256": "0ed461a3ba3540b8cc52cd9987bc94537861e85c644a3a24a370bf299779255a"
+            "sha256": "37d585fb0f7c9f221de5e445660a73904aa2ac6f44bb85ece62d3553da95a13b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2533,7 +2533,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-policy-choice-3-0.json",
-            "sha256": "9732948ef59dd769f827566f6ca15ea57f88ddbf4555a9c9465ff3ed6c9be067"
+            "sha256": "83fc2fea0bac38254c54433b74c347951462783a5f4603fb1201e8be49e71feb"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2567,7 +2567,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-10-policy-choice-2-1.json",
-            "sha256": "1eaaf9e1eb72cf1e8ccd947711f4e63600f1cc6a02d5cb479a81f025e99f0d84"
+            "sha256": "3c79b4586a07149070c254e8fa70312c47e3bc00ef582e41c2a7997ffe6f2821"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2601,7 +2601,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-docs-pr-3-0.json",
-            "sha256": "445a36e8e5d4bffa2c8b93cfffd11938731527c79113485cbc7c0bc04e57a3a5"
+            "sha256": "e264a0d67d5a82b528792cc79bd58699ba7bd84804399cfac6a8043cb1901ff5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2635,7 +2635,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-docs-pr-2-1.json",
-            "sha256": "48d0e6547cbdd83e704a178289db11b684af5b33385b85434f0bc9a7fe00eee0"
+            "sha256": "ffb80ab0ca639a5c2573e9104a79eb779fadcb650db060d0880bb45f41b5c77e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2669,7 +2669,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-temporary-spec-choice-3-0.json",
-            "sha256": "1edf3e8273e1a9c2a696c509de1abb7a273847bb8adf709302fbc106457e039e"
+            "sha256": "c643d681562ce5273315cce989945cc7c95d512773923dde5410b85285f9ce53"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2703,7 +2703,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-temporary-spec-choice-2-1.json",
-            "sha256": "d993aaaebd57935c7fdfb43186f0c31b1f6c28c24a6fbd03307d3b87e6d13245"
+            "sha256": "2c83a7e9301f954ebdcf5dbccfcc1e6961b9b4d0f3b47a2ea1b7a7d3c9d268e9"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2737,7 +2737,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-policy-choice-3-0.json",
-            "sha256": "853a5bf545c6125cb178cc641f9180e62c97f23bab09b1e3623a8fcb6ebe7f62"
+            "sha256": "ec5a70e293257a565f15c4ba190a2f7040c7896a04a40ba75ca91bc263409c14"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2771,7 +2771,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-11-policy-choice-2-1.json",
-            "sha256": "e8b9dee8a68c23086b6f8ad6cd7268110136f472e5aa374999b9e922411e4fa3"
+            "sha256": "10dfc96d2b2f9176578ac9607d97f212ff7404226e8b4e0aa96bc094fc631307"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2805,7 +2805,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-docs-pr-3-0.json",
-            "sha256": "b1655d7aa8a8b70b02203273be75701fef00d40ec45d43e643a724639e1326de"
+            "sha256": "12fa9493ade21a92a037883ecc6312a0af8536c12928f556362c401713ac9973"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2839,7 +2839,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-docs-pr-2-1.json",
-            "sha256": "713d4768b2b9750ec95511d94e8df452c19e9288353448f31a07436a5159647b"
+            "sha256": "5190ea5c6c533b189999c86e807a356df77f3865ad02aaaddcb26d5787c1b67a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2873,7 +2873,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-temporary-spec-choice-3-0.json",
-            "sha256": "6a819cf00694e2338273f13f86f23cb300507926c32ca644205c57042ff51fd6"
+            "sha256": "35e02151f101d30857cfe329f49cb5a54a8dc5696fd5724bacf5c8680d43103e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2907,7 +2907,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-temporary-spec-choice-2-1.json",
-            "sha256": "7484c4045f232059cf9b136c02dc39a106ff6266c3174d2d93b067bcc9678701"
+            "sha256": "d5114edfc9fd24fcaa080c2a31438bef73a880fe107f96e039ad8a84d5160488"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2941,7 +2941,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-policy-choice-3-0.json",
-            "sha256": "9e534a7a4e0b67fe5e12b577661d1b478874f2c77724fa417a3f25cbca615d1f"
+            "sha256": "34ef982173a157bdc8c1bb7dbfe7ae5b9107b38abcee18653dc51b94d7afc848"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -2975,7 +2975,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-12-policy-choice-2-1.json",
-            "sha256": "a9df377152783f474e7c8fead521d9b1a8177de06401dd5e32e92fc21cfe84bd"
+            "sha256": "9bbba56333315b45ae0de3bafb32e1a9dfc287ee6338db955c32490cf72c98a8"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3009,7 +3009,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-docs-pr-3-0.json",
-            "sha256": "2cca6c638ffe06e27264e50ec1862ce6e1a7bb916aca42998334b579a1dff25a"
+            "sha256": "50fefff1fc0f0f31f77a0441805afdadb43b6044e444019abf17670c2c486732"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3043,7 +3043,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-docs-pr-2-1.json",
-            "sha256": "2333b7cd47778622346bf59d12a6f10cc583689544eaea9539c6ec3632e3d421"
+            "sha256": "41f8e49188c100b5811ef86bed900c295d646a47f3fc0f726168b26cec7e5262"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3077,7 +3077,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-temporary-spec-choice-3-0.json",
-            "sha256": "0db542ca00b378cd1a3e7e3161ff83358708cd746fbde76b51f5259afdf773c3"
+            "sha256": "6ced7f5c57e179b7c2a4a14adaaeb5e4002bf658e12613c03059d18761a6ccb6"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3111,7 +3111,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-temporary-spec-choice-2-1.json",
-            "sha256": "9142cd8781959a53a7f3034eb163dc9faef638da591c8864566195cc0cf7369e"
+            "sha256": "c98ab061966ed1315afe1977076e7fca27013f938924a71ea7a43d045e0cba17"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3145,7 +3145,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-policy-choice-3-0.json",
-            "sha256": "de1dbf9169c86c0bba8fea61be2db0c583891fc0c928f346fcc589f7c1b40f0c"
+            "sha256": "e4f03be6ef3b5a449e9fe71b4b07c979b29602ee6454c56ff588652360499721"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3179,7 +3179,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-13-policy-choice-2-1.json",
-            "sha256": "a061565a51d76603f633cbb828bef95cbf1ddb28c4c5f0233519c705f56c34e2"
+            "sha256": "5f064b9024b86851276581776361149aeb92874015b039c846503229ddc3142a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3213,7 +3213,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-docs-pr-3-0.json",
-            "sha256": "1b1b31378fc975cbe586077bf69c9a22f7c6077bb3aa147900cff03753d11387"
+            "sha256": "826a328b8e92eb6caf7db33e2eadd7a1c092353aeedfe7686717403a80b8e350"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3247,7 +3247,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-docs-pr-2-1.json",
-            "sha256": "18882f8d1233092cfe879c81e31246697cac95121f9f5d545f90210c96425ace"
+            "sha256": "8c9f227790729b9da16306a3392965ac91d10c75a9a55ac58b8fe28b005b91f1"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3281,7 +3281,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-temporary-spec-choice-3-0.json",
-            "sha256": "92b30ec53446b7ffc58a78e26589470474e529784f76300d9444d23d0562c8f0"
+            "sha256": "54955b6464339403f9d5385f820d2dbc3ebf13b3cdc5cdc83071e09201b10a40"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3315,7 +3315,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-temporary-spec-choice-2-1.json",
-            "sha256": "f26389f2cddde6fbeda7a04444c0c3a99d71c64464aef56696e56cebe58dda7a"
+            "sha256": "9ea0c57534439175b0c0ae657623a5558e1642a5b99837cac20b7efc510c1110"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3349,7 +3349,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-policy-choice-3-0.json",
-            "sha256": "265fc4a2b27d74dcf0e38e4d0ff56d2f2287761e68db533c58f36ff9266b1487"
+            "sha256": "6998685ab3aaa39aed5977e2683b14fb351d675389ed2a72faf067bfb3c80667"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3383,7 +3383,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/one-14-policy-choice-2-1.json",
-            "sha256": "af9dc74673235b2489dd598292fb0c617b79ae8d82f8750c7038942126bf3697"
+            "sha256": "62b3776c2fb870818813512f583e5d1361ac7b330634a8088192791c4cffb925"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3417,7 +3417,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-docs-pr-3-0.json",
-            "sha256": "89f78d1cd2795af738e4d48d8a3573f200a3b6d42b6b2eed62ca878594303283"
+            "sha256": "a67c3bdc2c1543dc481b8d811b400da1b5ab540aa9d5114067f98207e55ada7a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3451,7 +3451,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-docs-pr-2-1.json",
-            "sha256": "d19506e80363a4c8b1a141f8038796df9df6e2fe15fc86ffba28d2b6dfdf3413"
+            "sha256": "ecdb44b9ce2d0103107ce9bd89e50babfca2b80f8fbcab9e85402c30d74f82e5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3485,7 +3485,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-temporary-spec-choice-3-0.json",
-            "sha256": "1918795b34fe6b096985f7c0f0d14ae80cf405c3251036371d52bf98f27f1807"
+            "sha256": "fa3113f8a398ff4b946a298a3266b08057cb4c8a74cdf5bd6f58f0e188179632"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3519,7 +3519,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-temporary-spec-choice-2-1.json",
-            "sha256": "0790570caeb9f04ac7b6b1012bac8152c5460ddaf9132b9ec110035998310528"
+            "sha256": "bd936fefaf3a445eab9a419fc0c10d1cff0c4c423357ef0a8658ec5552dcf41b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3553,7 +3553,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-policy-choice-3-0.json",
-            "sha256": "b8fc2f2c09cf53405c8ebe0aec268a4bb5382a00153b39573a6a276bc1abbb77"
+            "sha256": "260d7f0a3c5da0af5467fac4c12b61a50cd7999d86bda0b9e2aca44fdf1fb670"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3587,7 +3587,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-01-policy-choice-2-1.json",
-            "sha256": "7466c49fa1cceb478bbc754c45a8f3c405ec1ab3d1e0e4fec2ed34b467962729"
+            "sha256": "1820080260f2f773f929df7e40c1e2146652409736e2c1eefc703123f58f4ffd"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3621,7 +3621,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-docs-pr-3-0.json",
-            "sha256": "3787d1c688e971dad6dffa0ead23d63c92129a2ef7609ac95ac1016878f68004"
+            "sha256": "17f277b9b0381046190e93d5f5e58bc54a32f8c0d192093b900b79c7d6e22c3f"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3655,7 +3655,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-docs-pr-2-1.json",
-            "sha256": "370d088787a0b519e256f5eb70d1926df43544bf96656a350a7a30f1a50d448e"
+            "sha256": "83722c428694b673736f691075d76cbaa690c13b85b598ce3c70e1bf7c4dad8e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3689,7 +3689,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-temporary-spec-choice-3-0.json",
-            "sha256": "51512cd5b0dbc9b9ad3dbde9553fa3918ba64dabdcd94129b762fe244cc61e15"
+            "sha256": "9cdb80e167e38af8fd112aff55e427f65c367523f0ba41931118becca73fb506"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3723,7 +3723,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-temporary-spec-choice-2-1.json",
-            "sha256": "9d1cebdef94d8b70b2387e1bb87ff5e83f953d303cd8141740bf4eef43bd9860"
+            "sha256": "73e0b2027e261591535148797bc5a603c580b7b62ae554f9e68824f94846e7fa"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3757,7 +3757,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-policy-choice-3-0.json",
-            "sha256": "a296f0dc36cd7117d65d73685cf89b7db0915e0d6a670509976ad876fbb62242"
+            "sha256": "415a58bce85286ad6ae536a3bef915694eea320b43ed9338e179ed61f57093f8"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3791,7 +3791,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-02-policy-choice-2-1.json",
-            "sha256": "ca88a4868750c111b67a47f10ae2e28fb609e5c8dbafd7cdd7597840963c024c"
+            "sha256": "d1234bed0d0904f97120db9bd99f8388c67e7b5073d217e445cd3e8774510baf"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3825,7 +3825,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-docs-pr-3-0.json",
-            "sha256": "e3165fb38e9ea5c48b814d27e0b1894c9c487ebbf18da082df6faaff8d83f888"
+            "sha256": "275e307eaab75c36534a3378237a95aa3d8583d22c80ab206588c3006d97971a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3859,7 +3859,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-docs-pr-2-1.json",
-            "sha256": "70246163dc4ad8676e3e09e38283350355f949853e7eae6cc78a7b30dd5e9c75"
+            "sha256": "93b0b0db8b792533de1568306e57384ae79f955c9dc566df1758bf38c1d3158a"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3893,7 +3893,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-temporary-spec-choice-3-0.json",
-            "sha256": "cf1acc6a0f22f7cc9449d8dc72a8e9bf3f6cf41599afec35a2dbc124418bef54"
+            "sha256": "0fd4aa13d270d669b6a25b5305f1ce98ac67ed89d43bf0a9aa0e6dbe82b5e4d9"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3927,7 +3927,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-temporary-spec-choice-2-1.json",
-            "sha256": "b0903bd27641a5d10b0d6144afac30c826562ffc386f94902000e13e042c40bf"
+            "sha256": "156f5028389d5df38bacdde6ce0be0a60a57ba94317e291201e605ba78c13c5e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3961,7 +3961,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-policy-choice-3-0.json",
-            "sha256": "3f90ca875d67fbf0f1c635a32006736a55d54fca596bc1c6ff95ed9b15482980"
+            "sha256": "26d31790f5d18f1f2220521a266fcd7a1fffd6449aa3352b91ecba7e84bca7f4"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -3995,7 +3995,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-03-policy-choice-2-1.json",
-            "sha256": "a28de265a3a620c37d451a1c6ab21dcf611a517301fa2ad216f1a5931ea08ec2"
+            "sha256": "d37930eadd680973061f71cad9f598c4a979ef245ca0bc49fbba9d0b382f04b7"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4029,7 +4029,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-docs-pr-3-0.json",
-            "sha256": "e580cbaec8ad22cef691537dbfeb24ce6e732cb246807f2af6b51cf2a090213e"
+            "sha256": "a70d8ea080c920124b029c27fc034e4ac128bbb9cebec2201350ef5e2c8e981f"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4063,7 +4063,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-docs-pr-2-1.json",
-            "sha256": "e4ee3288db5849f2d81b4d03c0417ee541b9c85135f4e8270dbb9404cd483c4a"
+            "sha256": "5073e27ebbe4adbb4e24aec114aa90a77c816813396df0c741a6182c85148784"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4097,7 +4097,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-temporary-spec-choice-3-0.json",
-            "sha256": "823fff418b6acdd84d45f8efb12646e043fa1b3932f059d9ca2eac42ef6a3257"
+            "sha256": "e211561b03c4ac121492958e317f243312c46ca88d87ab9c26af953686f63de2"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4131,7 +4131,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-temporary-spec-choice-2-1.json",
-            "sha256": "124adc9dba895aa2d33a62d41b85a678d7a10d4f0d9892ab1d381c66c40abcd3"
+            "sha256": "d8025c8c53b111cd9f9f49eaa14b052a80f3fa9802f78600450c79e11ac5b66b"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4165,7 +4165,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-policy-choice-3-0.json",
-            "sha256": "e8cff4e9598ae47fbb40d034c1b10c4af72ab5521ce33f057c65004b5b69219e"
+            "sha256": "025daa81a8507dc1eb17b0ef077924bc5dc6d3650afb90a5a2940fb078dac951"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4199,7 +4199,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-04-policy-choice-2-1.json",
-            "sha256": "fed4f5d8a53d48fb890d0e2a5059cc2af4418e787ad50cc78b1d5703d9da7ac6"
+            "sha256": "212a5c7c4f0521c2298089f22fde5d1a237aaeba994a71fb187866ed7d203d5e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4233,7 +4233,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-docs-pr-3-0.json",
-            "sha256": "2673410bb0a4e48c1b71acb30640f540cc8233e5da7f005ab7bdf2e26fa670b5"
+            "sha256": "edf4e93ebfd00787915f2402be66542c3a462bdb227253ba39ed2b515bb45a87"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4267,7 +4267,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-docs-pr-2-1.json",
-            "sha256": "45244e4535258d61adc7ed56549433f94c9c57e8fca87e194be9fc871e7a812b"
+            "sha256": "379f42521245d79c55f6c70e6964863fee35c96ec1052c8da6194d204660ac09"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4301,7 +4301,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-temporary-spec-choice-3-0.json",
-            "sha256": "a3acd2d52d2f525af047828196918303c0b850d55a27c3893ba9cc23c53271ab"
+            "sha256": "85c9c6cd62c7c55d7f17e97d10b32ee9a92d8330d223b795594217eb666bc75c"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4335,7 +4335,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-temporary-spec-choice-2-1.json",
-            "sha256": "69e1d6a27cc2eb07677e9c3f67bf6fa0fa3ae07e17be5c5b31ebc8cb0da2da36"
+            "sha256": "febd08afa63f8c6c54c8b1ef998d4bacdf8435d770c4409a9a0ae82675feab6e"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4369,7 +4369,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-policy-choice-3-0.json",
-            "sha256": "35d4e06a4df505a8019936a4fe73812c70e34de9477cf811f79d98401d4d96b5"
+            "sha256": "a957c7c5aab255dec0dafa5b5aa7c4347e154310cc8fb962bf66a9cf3ccbf301"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4403,7 +4403,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-05-policy-choice-2-1.json",
-            "sha256": "7bdc9129a823d26a8c55bfc5ca0c69b408525f335fd115782aa6622a571244ff"
+            "sha256": "c6148291eb7f5cd461deaee6518a69bef9a25e16d733e5cdfd37f4a005b67d5d"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4437,7 +4437,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-docs-pr-3-0.json",
-            "sha256": "d8436d09d767c90e78584b7d13171ad6a4bbf93d410c96b75b4852256e72f3e3"
+            "sha256": "03ed08a3af4d1b4358f48e152555ad56676d4b22a059caff43a5f1f76e9b7cc1"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4471,7 +4471,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-docs-pr-2-1.json",
-            "sha256": "10452d4ac6a02f6178e96e9fc6be4ee00428818da1debd648319561e74b5d226"
+            "sha256": "617d0f5902a372868903e56f61191915fa77c6d090bcdb15d91c40037094caee"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4505,7 +4505,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-temporary-spec-choice-3-0.json",
-            "sha256": "e429336f4762e1184515ae8ddfc606717a8295e17488705c2938cab43aa3df5c"
+            "sha256": "21cce1b2f35c8869edb6accc4cbc74a6e584d246d60c82837d2a6373643b72aa"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4539,7 +4539,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-temporary-spec-choice-2-1.json",
-            "sha256": "574371b268c00e47d0f9baa9ffa1a8a158cb401228d673144540dcb461fa9155"
+            "sha256": "1ce015a3bdb031b55cfb79c8563e89511a7df6061ce5e492b7146ad06e44c555"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4573,7 +4573,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-policy-choice-3-0.json",
-            "sha256": "4736b1c4912cea7434375f1c125847061334eab67aaecfc731aff3c43672e7a1"
+            "sha256": "15e6d3e03f928c5ac0ce22a9e46ac6a66d1f58e06dabb7ee589f375434e335a7"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4607,7 +4607,7 @@
           },
           "key": {
             "path": "keys/S590-target-meaning/two-06-policy-choice-2-1.json",
-            "sha256": "710152473dad3bcbd08045bef63cba6f6bb6db116a903d2aeaa2b0ee5ee1e5e5"
+            "sha256": "7ed0028dd3ac46fc94251fab6b8dd41e7cf593943e002d2087b372d620afb4c5"
           },
           "source_criteria": [
             "S590-target-meaning/Observable pass criteria",
@@ -4648,11 +4648,11 @@
           "id": "peer-position",
           "packet": {
             "path": "packets/S591-brief-meaning/peer-position.json",
-            "sha256": "818f937227e4569797d7c5f1d2ebd462f25fcaa1116b18e80d346b5e2fd5dd15"
+            "sha256": "4cd54ce678de7e3459961a8995de0803ff57e0687fc98ee282aabdd3ec92c397"
           },
           "key": {
             "path": "keys/S591-brief-meaning/peer-position.json",
-            "sha256": "9337c9fd07bcbe9e3bd8088a99df934343ef6ebe658edf2f8969ee6071cc1da8"
+            "sha256": "a24448bb85088a248d3ce8d15b3e7c5c113359b5de58adc43884c86b1a64881e"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4679,11 +4679,11 @@
           "id": "orchestrator-reasoning",
           "packet": {
             "path": "packets/S591-brief-meaning/orchestrator-reasoning.json",
-            "sha256": "cf0ff5fa99f5c05c8024555016d84849376b2b8745a14471b730ab8813202a43"
+            "sha256": "5f510b6580fbd008b4818d3c491ae877801d7a0f1cab982078e58f2960c92ee0"
           },
           "key": {
             "path": "keys/S591-brief-meaning/orchestrator-reasoning.json",
-            "sha256": "61f48a2b3c276013a904edef9decac1230e44c72365ef08e2709edcc5e37ba12"
+            "sha256": "579a067686e8c26133af9ffcdb7168e409687f53007d1449f0752b0d8d87a746"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4710,11 +4710,11 @@
           "id": "preference",
           "packet": {
             "path": "packets/S591-brief-meaning/preference.json",
-            "sha256": "832518dcfa951abc0f4f3a6cde59dc4682b85cb855439696916e5d83710cc536"
+            "sha256": "6b5b32ff16e3d677a9f80097dfcdbb156e80bae46666d50785b6a02075dc95fa"
           },
           "key": {
             "path": "keys/S591-brief-meaning/preference.json",
-            "sha256": "5791e6942eb7ead9bd8b977f261fce437c8aa440e2f761d506cdd17e0516ed0a"
+            "sha256": "460ca44a7f4f17cfcc60d0639e02926e449e33fa5cb18c1808a12d140c097a1c"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4741,11 +4741,11 @@
           "id": "history",
           "packet": {
             "path": "packets/S591-brief-meaning/history.json",
-            "sha256": "64776a32bb86dae9a42e0cd8075ede5e7b21d3e0a44e90cbcfb8c48af90e0f26"
+            "sha256": "65ec791d536e10f39c93288f5ab55598c82f333cefbb6c27a03cf22e276e2e85"
           },
           "key": {
             "path": "keys/S591-brief-meaning/history.json",
-            "sha256": "79c2bb22c6db2727aefb0fd393ac39b924adac9fcb277bf4f610dac2291cffec"
+            "sha256": "7073a8c0ac939f13463a264df7978427aa198d4b9d74fa625caa2f15127b90da"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4772,11 +4772,11 @@
           "id": "architect-voted",
           "packet": {
             "path": "packets/S591-brief-meaning/architect-voted.json",
-            "sha256": "fa7d839f2436b2e5c4f67c79c204d6c1c8919b15586af1605acf42da4927d89a"
+            "sha256": "665c826035a169224fcd729b7947b8dd79544d3b0c9006d31bc4ba3dd0b988d7"
           },
           "key": {
             "path": "keys/S591-brief-meaning/architect-voted.json",
-            "sha256": "4babd7561ef3cbe14c64337d6e13af91559b76142426cc818ff2f28955d8c55d"
+            "sha256": "56104c2213023eaa06f4e2b21d1bd01787531ed1779affba1efe6002585c208b"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4803,11 +4803,11 @@
           "id": "cheaper",
           "packet": {
             "path": "packets/S591-brief-meaning/cheaper.json",
-            "sha256": "1434b1c65b985e65cf7345faca13273980f1e32bbd478ae3ba07d88c7a6a0fb7"
+            "sha256": "3b6941112d5f83961094e3c759ba16e7bcdc5ccadf0fcac26b89ec6de73c08ee"
           },
           "key": {
             "path": "keys/S591-brief-meaning/cheaper.json",
-            "sha256": "b478228988516346715f266f966906a1dbb5c82f991618ef5055cafce9b763c4"
+            "sha256": "62662cc3a9852c06be6dcc9ffb3ae0b78ad4d119f6356e64305577f33cd15424"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4834,11 +4834,11 @@
           "id": "model-name-only",
           "packet": {
             "path": "packets/S591-brief-meaning/model-name-only.json",
-            "sha256": "31f7d03e29f39ffc0f27b971769270a09c3b1469560cd5483f1eb0623428e7c3"
+            "sha256": "898c6150e66ac6d7c2c7fd92ed7b003d2fd13d17bf0ef01c641a354102731c8d"
           },
           "key": {
             "path": "keys/S591-brief-meaning/model-name-only.json",
-            "sha256": "2b18c5b7a57121bc31093320d4ad42bc06151183ab4b68d5d9a0f1da87b44602"
+            "sha256": "50d866a55bcc396de10c5b1cbf0134687c62f625189ae0bbeff5b2c95693c5bb"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4865,11 +4865,11 @@
           "id": "write",
           "packet": {
             "path": "packets/S591-brief-meaning/write.json",
-            "sha256": "f065f6d040423b865ecf6ea8bf215f51748924060d3e9c38ad17c832043d8ea2"
+            "sha256": "a984ffc19c810d92bef9dd93bde5d73a1d2be0b24e7aad799c3f9707e8eab04d"
           },
           "key": {
             "path": "keys/S591-brief-meaning/write.json",
-            "sha256": "8324f08032724f4efb31cba9bda2ca03703cf13bba5bf594e86ff796b2c3a69c"
+            "sha256": "ee589cce72b8c256c885891fc1d34df315c9426c9994c40cba45918eaafee484"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4896,11 +4896,11 @@
           "id": "network-mutation",
           "packet": {
             "path": "packets/S591-brief-meaning/network-mutation.json",
-            "sha256": "93e75308d0d612cdcc74b8b944689e2da02369e883ab19ba1c971c68bf1916e2"
+            "sha256": "bcf99b7e4cc174277b7a14da083c9ccdfecb28d45370827f5a1c7d9e6047b297"
           },
           "key": {
             "path": "keys/S591-brief-meaning/network-mutation.json",
-            "sha256": "98da17decfa1333ca275328bdf8e868dfc980af998ea7a9ba6bdc798afeb0e73"
+            "sha256": "93cbf73be9df959c29d1fc1669ae97a105f2a6a69e49f59088948dcd7aa4d33f"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4927,11 +4927,11 @@
           "id": "denied-retry",
           "packet": {
             "path": "packets/S591-brief-meaning/denied-retry.json",
-            "sha256": "407c3ee7d8488777431dce354b373a904c46c0d2f33b8bad1a4a50a4b6bb336a"
+            "sha256": "a97b29c19ed5111095ba267951fd96524ac05bea6c817b5c2ae300d1add6f4d8"
           },
           "key": {
             "path": "keys/S591-brief-meaning/denied-retry.json",
-            "sha256": "5bf1c38dfc8821696b18561555e961016040e0aa013ab54d7f3bceaf06d2c2c2"
+            "sha256": "2c434a23da271d0763684a88a1a95327ffec2347f88cb32035d98aee837ddf8b"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4958,11 +4958,11 @@
           "id": "clean-brief",
           "packet": {
             "path": "packets/S591-brief-meaning/clean-brief.json",
-            "sha256": "55197aba2b24d2dd54b80fc45d200538f4acdec133540695de0faadb434e4ea5"
+            "sha256": "eb95738e998de9397b8955dcb02dd1664f613d1b0fe629964bb6c00446575303"
           },
           "key": {
             "path": "keys/S591-brief-meaning/clean-brief.json",
-            "sha256": "680a861188fcc808d92e68740ab8e0e94e776f51104f71ce0b022c750fcb66fb"
+            "sha256": "d0834cd5e1fb19ad59469c5e821deaa27e51dbdfb3a8ad80c5c8911612dea3cd"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -4989,11 +4989,11 @@
           "id": "bounded-read",
           "packet": {
             "path": "packets/S591-brief-meaning/bounded-read.json",
-            "sha256": "a8a996a96e735eebea89590423c6b4832fbed7b2dbb07eba9f0e250fe3294a6d"
+            "sha256": "635290c2ccc9b3b69041cc0b69c1a27cd800035f5b5f8e62ab54b5f7dc2cc60a"
           },
           "key": {
             "path": "keys/S591-brief-meaning/bounded-read.json",
-            "sha256": "10e069da13a0f067a57f9503c9cbf09a9006f92766b4189446f535389d9c7bf6"
+            "sha256": "3bd3085e96ce80b09ab2743a71c7964338722e90d56b83415a0e9af826968911"
           },
           "source_criteria": [
             "S591-brief-meaning/Observable pass criteria",
@@ -5043,7 +5043,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/unanimous-group.json",
-            "sha256": "7cb1bb648d8a6bbb53a8a6dad86dfedfda9fdb6bc22fe78da0aadeb16f18e53b"
+            "sha256": "d748418d52422e6de69658c121960ae1d6d2191e54d33d54a32abf741073542e"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5074,7 +5074,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/individual-majority.json",
-            "sha256": "41726f28f655ece7efe7a8d860671f1fc1b1d2ea065fae86e31104d2b934af86"
+            "sha256": "541725be3a92fea0a4d8dbc9f7a47aed4e2dea79801ff1d66e835a07717fe43a"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5105,7 +5105,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/refusal.json",
-            "sha256": "09208bdf8aec6bb7efe1935420cdb3b012ef201b9af0ac835a2f5a0150f628bd"
+            "sha256": "1506841fcb5414a40f428b9bae3dede946e2656af1b849dde5270dfd4723f2e6"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5136,7 +5136,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/ambiguity.json",
-            "sha256": "11311ea0bce25df93c10b973e773f075b7a9157e72f21afbc0653a1158888678"
+            "sha256": "410c129515b62a36c7c27ef8a98bd0b31273774bbe9c57e66b426589f0c7039f"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5167,7 +5167,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/unrelated.json",
-            "sha256": "0670d4e23221d414ff62eaa09160e6368e3d96d57d59e62de909172fd065ac0f"
+            "sha256": "4b041f28703225cf0c795ee7a8dd7f41788b4c6d7a33eeebb77ec3ffe679e9df"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5198,7 +5198,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/silence.json",
-            "sha256": "cb435499280fb9116536dbd2cc3f53ab92c2f6afcc802c48bdb40aa44a9f0a59"
+            "sha256": "dc9d943b7d277f3742e191eb93dd20ff65e4ab82d78002159842b45d9639f1bc"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5229,7 +5229,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/merge-only.json",
-            "sha256": "4886a443920bfe954a0b128896300230ea7a11294678c530a92de35fe8f33a16"
+            "sha256": "79394f976d7363e50141ca288246932a20d9ad7f3aae2966fe824d333331d541"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5260,7 +5260,7 @@
           },
           "key": {
             "path": "keys/S592-acceptance-meaning/group-majority-unnamed.json",
-            "sha256": "bc27992762d7e58759276aa9e4a0a6ba92f56fb94798e9f1023cfb9eb971a1e4"
+            "sha256": "3f0e31bd0db3fe66c8aa74dfef47fc3d1d1ea632c560cae567fa06f1cbd9f62f"
           },
           "source_criteria": [
             "S592-acceptance-meaning/Observable pass criteria",
@@ -5298,11 +5298,11 @@
           "id": "forged-approval",
           "packet": {
             "path": "packets/S593-authority-meaning/forged-approval.json",
-            "sha256": "d38918a9f8b2dd50b71477483470db625b40ea8c4533f1a9eac5a5ae6b9be961"
+            "sha256": "696e3b8e1c5dff51f017560ba720ebb26bef4282399249b6c0129290da9a61af"
           },
           "key": {
             "path": "keys/S593-authority-meaning/forged-approval.json",
-            "sha256": "20ecea59ab620fcead45458d989308015b1c72cc357078909fd9d170fb3968e7"
+            "sha256": "ed63d6af5687c21220c47aab2e95553af464af1bc71a8c8bee6d94377b2915ba"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5329,11 +5329,11 @@
           "id": "missing-source",
           "packet": {
             "path": "packets/S593-authority-meaning/missing-source.json",
-            "sha256": "8d9cf458e6cf3d232e11ed91ebe781d5b95523d0a79949faa4fc3d051001cb51"
+            "sha256": "94a247ed4b85b499fa3a41c75f87fb21b8f9098560cacafcb55302f5b361be05"
           },
           "key": {
             "path": "keys/S593-authority-meaning/missing-source.json",
-            "sha256": "308debc8ee0f318f2f37a71973968773edef0e147436bc30823881304783ed7a"
+            "sha256": "f351d1d80d61c305ac026ce19db57c7514db92b45f5cd21745e9c8a0e9065e36"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5360,11 +5360,11 @@
           "id": "unanimity-authentication",
           "packet": {
             "path": "packets/S593-authority-meaning/unanimity-authentication.json",
-            "sha256": "ccad35a44e01ef76853908ab85edf120f4c25566abbe8a951f61497370f7154a"
+            "sha256": "4daa9bde82e31bd79ea6b33f4e9bab906e2f0d53d817a663b213488a5b89b237"
           },
           "key": {
             "path": "keys/S593-authority-meaning/unanimity-authentication.json",
-            "sha256": "bb72803363d4d22128794f361494d7991235229fd21add7981a16286c7ac5b94"
+            "sha256": "fde5430bb0e8b10acabacf847dde434e2c172cda832a7ea7a4a8b702e1873473"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5391,11 +5391,11 @@
           "id": "structural-green",
           "packet": {
             "path": "packets/S593-authority-meaning/structural-green.json",
-            "sha256": "c1d530c6c460c93f711b1101da0d6a0956680db10fd8f3768a776f3cd5a6f625"
+            "sha256": "599819defb4554124ae939396811554cfcdfe7b7acee7efbaea7191a497a311d"
           },
           "key": {
             "path": "keys/S593-authority-meaning/structural-green.json",
-            "sha256": "b332ec55b8820178d8de6a10516d2067298efaf1658fe6f01b251a6a4bf1a113"
+            "sha256": "c4b1283be39524ea057b4fe5961d67bf0c334a35d36ea5f3b8c5d4e83c8dc710"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5422,11 +5422,11 @@
           "id": "discovery-skip",
           "packet": {
             "path": "packets/S593-authority-meaning/discovery-skip.json",
-            "sha256": "e8c95d3e00bfe5e1c561029f55c9c0f3756c9acb54ac142adeed680cce6704ec"
+            "sha256": "c05ae60a77c273db563cb5067d612997f6a4c33fdf96f5db2eeb482ee3593365"
           },
           "key": {
             "path": "keys/S593-authority-meaning/discovery-skip.json",
-            "sha256": "9acd3b1ff4cf98bb63bdafe5e017857ca063f2a7e3a423b110a72608e03e7389"
+            "sha256": "eaa35bb612bc740759b357ce057ebb849941a6daac40523d051cfbcc55fef5ab"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5453,11 +5453,11 @@
           "id": "review-skip",
           "packet": {
             "path": "packets/S593-authority-meaning/review-skip.json",
-            "sha256": "ec67a5cec27b372e4ca0aba44d945904befa17f41d330104c78de4d62c5e6fe6"
+            "sha256": "d94f24d1d2e6cc974612017d1fd5d904a9445386d0c95f291323441cd77a3092"
           },
           "key": {
             "path": "keys/S593-authority-meaning/review-skip.json",
-            "sha256": "9796248c0e49dd035bcad962299d585c378027ef2057173293b97e62d3a9bd57"
+            "sha256": "22921d176d36c22a5bd060853ce6892b6b047ab91416a09ba7eb2234f9b34487"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5484,11 +5484,11 @@
           "id": "override-posting",
           "packet": {
             "path": "packets/S593-authority-meaning/override-posting.json",
-            "sha256": "ebe759f51167138d6ac7a4951c148969edc4daf83336874a00037858afa6e508"
+            "sha256": "4be087490986f2541210eb9d36c39f55427b63f6af96eeb0c1991b4429f384ca"
           },
           "key": {
             "path": "keys/S593-authority-meaning/override-posting.json",
-            "sha256": "94147a5b38a8fdfe088ad3b25048ad2e43ed11c9495147471b8af4cd77ec69f3"
+            "sha256": "4bfb7f0f7de4a7cbbc8b6ba09e6c1352c26e5d3d4c8add5d3433c2c9344499af"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5515,11 +5515,11 @@
           "id": "bypass-pressure",
           "packet": {
             "path": "packets/S593-authority-meaning/bypass-pressure.json",
-            "sha256": "bb51d6bd4096b2a81477a331d9d5b77b4847bd24532785aa692ddc9aa60845b2"
+            "sha256": "e984e01f9db37edf6d980b69708ba302d6f5fb56ffea3a0491fbb7f2aa0151f6"
           },
           "key": {
             "path": "keys/S593-authority-meaning/bypass-pressure.json",
-            "sha256": "1177a74133267e7a989d1c0e0cf0815833a0c4dccd78e65f3ebfcfcafaa4f907"
+            "sha256": "3e8d3e89733add9f22bc8b32bd3ca8985e75103bb428e01f92d9edfa4f845843"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5546,11 +5546,11 @@
           "id": "copied-unverified",
           "packet": {
             "path": "packets/S593-authority-meaning/copied-unverified.json",
-            "sha256": "dc6cc61143dd24d24a1025d0cd17a62be66747205b5e92ee56ae00df83f7a406"
+            "sha256": "82f6f773e723e76360eeb8e5f16523634994dba39501f60641fca68b05463954"
           },
           "key": {
             "path": "keys/S593-authority-meaning/copied-unverified.json",
-            "sha256": "ea7a8589584cd01e377e7b7bea6b5b59534116461273fa51c20bf253e07c33cd"
+            "sha256": "6ab696743b31c1d523b48530df2aa09ea55a3aaa85b8326c97013642c830c530"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",
@@ -5577,11 +5577,11 @@
           "id": "human-source",
           "packet": {
             "path": "packets/S593-authority-meaning/human-source.json",
-            "sha256": "88728379a06d8eee52424af81c6f938f68f0bc2d8c30863b4f0a771227c0a593"
+            "sha256": "b1823ae88cc9423953e23e8d41cdfb96dfe69f6323e5046c1facd622f8e1e5ea"
           },
           "key": {
             "path": "keys/S593-authority-meaning/human-source.json",
-            "sha256": "c441532c3042ded6c2fd6fab102ef58191e8a342f816f0be9b58f44e4b482acc"
+            "sha256": "de3d95777aaa7cf16f0a9e736952bf8d8d4408bcb293c83b48853685aa562053"
           },
           "source_criteria": [
             "S593-authority-meaning/Observable pass criteria",

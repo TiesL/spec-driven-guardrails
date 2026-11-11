@@ -80,7 +80,8 @@ starts no actor. Later manifest updates may fill previously unobserved rows only
 while the plan and every retained row's packet, key, criteria and canonical
 identities still verify. There is no generated replacement for missing history.
 
-Events whitelist sequence, type, tool, full input, denial/feedback, text and phase.
+Events whitelist sequence, type, role, tool, full input, denial/feedback, text
+and optional non-authoritative legacy phase.
 Hook entries and transcript tool uses must match in order and full inputs, not
 merely a declared count. Exact permitted read descriptions classify attempts;
 they grant no execution under the deny-all hook. Native live traces that cannot
@@ -133,6 +134,22 @@ second fresh tools-disabled Opus judge. Gaps and no-witness sensitivity trigger 
 second call. Disagreement remains unresolved/referred; deterministic FAIL persists.
 Every failure names class, evidence, case, criterion, falsifier and canonical route.
 Reports reread retained judge artifacts and reject altered verdicts/quotes/routes.
+
+Chronology uses assistant text with the public column-zero section headings
+`own_position:`, `input_defects:`, `reconciliation:`, `disposition:`,
+`issue_comment_draft:`, `pr_description_draft:` and `approval_request:`.
+Headings inside fences, blockquotes or quoted JSON supply no sections. Each
+section ends at the next recognized heading or its text-block end. Keys require
+`kind: text` and exactly `value: {"require_refusal": true|false}`; clean inputs
+need no invented refusal. Nonempty position and required defect handling must
+finish before the earliest subsequent-work heading or non-permitted attempt.
+Known reversal fails before considering gaps; missing/empty witnesses remain
+not runnable. Legacy phases and structured-result field order are not evidence.
+Chronology results retain exact Unicode spans (`section`, `seq`, `start`, `end`,
+`quote`); tool witnesses have null offsets and an empty quote. Reports recompute
+these witnesses. Textual PASS proves emission order only; semantic judgment must
+check substance and cannot fill gaps or clear deterministic failures. Disabled
+mode may pass textual chronology while retaining all weaker-mode limitations.
 
 Evidence uses `<evidence_path>/<exercise>/<case>-r<k>.json`, `judge/`,
 `verification/` and an index. Actual packets and reviewable snapshots are retained.

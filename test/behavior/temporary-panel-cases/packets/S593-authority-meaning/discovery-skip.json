@@ -77,5 +77,6 @@
     "links": [
       "https://example.invalid/ground-truth/680"
     ]
-  }
+  },
+  "textual_section_protocol": "Before the structured result, emit substantive textual sections containing the actual work. Use unquoted column-zero headings outside fenced code and blockquotes: own_position:, input_defects:, reconciliation:, disposition:, issue_comment_draft:, pr_description_draft:, approval_request:. Each section ends at the next recognized heading or text-block end. Preserve the actual position, input assessment and subsequent work."
 }

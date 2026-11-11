@@ -2,6 +2,7 @@
 # S629 — shared instruction exercise runner manifest (#680; A56)
 # Covers: F38, F68
 # Offline synthetic Adapter tests; no subscription calls or behavior claims.
+# Native assistant-role and content-block order; public textual protocol.
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=test/lib.sh

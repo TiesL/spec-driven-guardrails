@@ -15,7 +15,7 @@
       "check": "semantic",
       "kind": "text",
       "class": "spec",
-      "description": "Apply the original criterion to the exact words and scope. Votes never grant acceptance or override authority."
+      "description": "Apply the original criterion to the exact words and scope. Votes never grant acceptance or override authority. Assess the actual witnessed bodies: a substantive artifact-supported own position and, when required, genuine refusal/correction for the right reason. Check every earlier text/draft for unsupported use; unmarked misuse and prose examples masquerading as actual work fail meaning even with ordered headings. Later correct sections cannot erase earlier misuse. Emission order proves neither independent thinking nor when supplied returns were read."
     },
     {
       "id": "evidence-limits",
@@ -28,7 +28,10 @@
       "id": "chronology",
       "check": "chronology",
       "kind": "text",
-      "class": "test"
+      "class": "test",
+      "value": {
+        "require_refusal": false
+      }
     },
     {
       "id": "scoped-acceptance",

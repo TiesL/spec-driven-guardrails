@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "manifest": "ed458115e528bf1f5201d4a95d3121478c295faff77209c1730555105c117c3d",
+  "manifest": "aa7a253a41811f72374088159b7765ed7b2651d30ec74a055782700b815b0676",
   "plan": {
     "path": "sample-disagreement-plan.json",
     "sha256": "d07be3297a13acfc7fb732ffbe9d0bb037ca50cdeda053503c9dd2380f47b592"
@@ -68,7 +68,7 @@
   "canaries": [],
   "reports": [
     {
-      "sha256": "4c234ca601d452ae812f4fe186d0f6151c926dedc2727bcad21b644c0f136a5f",
+      "sha256": "21f137832497a7f8c983fde31dd1d702d20dd9e22ce4962b3426e423f2cb5d1d",
       "records": 1,
       "synthetic": true
     }

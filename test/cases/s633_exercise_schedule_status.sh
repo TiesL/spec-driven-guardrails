@@ -2,6 +2,7 @@
 # S633 — shared instruction exercise schedule status (#680; A56)
 # Covers: F67, F68, F69
 # Offline synthetic Adapter tests; no subscription calls or behavior claims.
+# All refusal allocations and native primary pilot-barrier controls.
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=test/lib.sh

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "manifest": "bb2bf47fbf4bc27e44f0f792028fb0bd2726c0fc1fbfb2f87fbbe23737f4b802",
+  "manifest": "a523785b1399fd8d946f08cfce02a3c3d54b53f613be9a21aa69742f51386fad",
   "plan": {
     "path": "plan.json",
     "sha256": "2de1def498b8e9f8a477278ca42ce91600ae5dc9046ca07d2d7dc7f4dc5dcfd6"
@@ -644,7 +644,7 @@
   "canaries": [],
   "reports": [
     {
-      "sha256": "e911a51078d89466529c5434cbca9f5c0e4d50a096b62f6c2af223e913c306aa",
+      "sha256": "cba0a02e64578d5f5474154190cdcd3d9577ed45556269be7c8b4fe8b87ad71f",
       "records": 29,
       "synthetic": true
     }
