@@ -617,6 +617,8 @@ def verdict(criterion, result, reason, quote=""):
 SECTION_NAMES = RESPONSE[:7]
 WORK_SECTIONS = SECTION_NAMES[2:]
 SECTION_HEADING = re.compile(r"^(" + "|".join(SECTION_NAMES) + r"):[ \t]*(.*)$")
+# These blocks can interrupt a paragraph (and hence a lazy quote continuation).
+PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|(?:[-*_][ \t]*){3,}$|[-+*][ \t]+\S|1[.)][ \t]+\S)")
 
 
 def sections(stream):
@@ -626,8 +628,37 @@ def sections(stream):
             continue
         text = e["text"]
         headings = []; fence = None; offset = 0
+        quoted_paragraph = False; quoted_fence = None
         for line in text.splitlines(keepends=True):
+            content = line.rstrip("\r\n")
+            quoted = re.match(r"^(?: {0,3}>[ \t]?)+", content) if fence is None else None
+            if quoted:
+                body = content[quoted.end():]
+                # A quoted list item can itself open a paragraph with lazy
+                # continuation; its list marker is not a paragraph terminator.
+                body = re.sub(r"^(?: {0,3}(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)+", "", body)
+                marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", body)
+                if marker:
+                    run, tail = marker.groups()
+                    if quoted_fence is None:
+                        quoted_fence = (run[0], len(run))
+                    elif run[0] == quoted_fence[0] and len(run) >= quoted_fence[1] and not tail.strip():
+                        quoted_fence = None
+                    quoted_paragraph = False
+                elif quoted_fence is None:
+                    quoted_paragraph = bool(body.strip()) and not PARAGRAPH_BREAK.match(body)
+                offset += len(line)
+                continue
+            # Only paragraph content may lazily omit '>'. A blank or an
+            # interrupting block ends that context; quoted fences never leak
+            # into the surrounding text's fence state.
+            quoted_fence = None
             fence_line = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line.rstrip("\r\n"))
+            if not content.strip() or fence_line or PARAGRAPH_BREAK.match(content):
+                quoted_paragraph = False
+            if quoted_paragraph:
+                offset += len(line)
+                continue
             if fence_line:
                 marker, tail = fence_line.groups()
                 if fence is None:
@@ -814,7 +845,9 @@ def validate_record(m, store, item, offline):
         require(reference(m.root, g["reference"]).decode() == g["snapshot"], "ground truth snapshot/reference corrupt")
     require(len(r["ground_truth"]) == len(case["ground_truth"]), "lost reviewable source snapshots")
     require(not r["capture"]["synthetic"] or r["verdict"] == "not runnable (stub)", "stub output cannot claim observed PASS")
-    if r["adjudication"] != "unassessed":
+    if r["adjudication"] == "unassessed":
+        require(r["semantic"] == [] and r["verdict"] == ("not runnable (stub)" if r["capture"]["synthetic"] else "not runnable"), "unassessed evidence has semantic judgments or unsupported overall verdict")
+    else:
         semantic_ids = {k["id"] for k in key["criteria"] if k["check"] == "semantic"}
         require(semantic_ids == {v["criterion"] for v in r["semantic"]} and len(semantic_ids) == len(r["semantic"]), "semantic criteria omitted/duplicated")
         for v in r["semantic"]:

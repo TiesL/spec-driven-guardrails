@@ -789,6 +789,40 @@ def chronology_suite(parent, scenario):
         add("clean", lambda c=c: assess("clean", c, "PASS", False))
         c = capture(); c["events"][2]["text"] = "disposition:\nRefer the protected scope to the maintainer."
         add("referral", lambda c=c: assess("referral", c, "PASS"))
+        def lazy_only():
+            c = capture()
+            for e in c["events"]:
+                e["text"] = "> quoted example\n" + e["text"]
+            v = assess("lazy-blockquote-only", c, "not runnable")
+            check(v["witnesses"] == [], "lazy blockquote supplied witnesses")
+        add("lazy-blockquote-only", lazy_only)
+        def lazy_early():
+            control = assess("lazy-control", capture(), "PASS", native=True)
+            prefix = "> This is a quoted example only:\nreconciliation:\nQuoted example work.\n\n"
+            c = capture(); c["events"][0]["text"] = prefix + c["events"][0]["text"]
+            v = assess("lazy-blockquote-early", c, "PASS", native=True)
+            expected = copy.deepcopy(control["witnesses"])
+            expected[0]["start"] += len(prefix); expected[0]["end"] += len(prefix)
+            check(v["witnesses"] == expected, "lazy example changed actual-section witnesses")
+            f.native("judge", model="claude-opus-5-1")
+            check(f.read()["verdict"] == "PASS", "lazy example overrode semantic PASS")
+            f.cli("report", "--live")
+            check("LAB: PASS" in (f.out / "results-682.md").read_text(), "lazy example changed report outcome")
+        add("lazy-blockquote-early", lazy_early)
+        def quote_context():
+            for prefix in ("> > nested example\n", "   > indented quote\n", "> - quoted list paragraph\n", "> 1. quoted list paragraph\n",
+                           "> - - nested list paragraph\n", "> <em>quoted example</em>\n"):
+                c = capture()
+                for e in c["events"]:
+                    e["text"] = prefix + e["text"]
+                v = assess("lazy-context", c, "not runnable")
+                check(v["witnesses"] == [], "lazy quote context supplied witnesses: " + prefix)
+            for prefix in ("> quoted paragraph\n\n", "> quoted paragraph\n>\n", "> # quoted heading\n",
+                           "> ```text\n> quoted code\n> ```\n", "> quoted paragraph\n```text\nreconciliation:\nexample\n```\n"):
+                c = capture(); c["events"][0]["text"] = prefix + c["events"][0]["text"]
+                v = assess("quote-ended", c, "PASS")
+                check(v["witnesses"][0]["start"] == len(prefix) and v["witnesses"][0]["quote"] == capture()["events"][0]["text"], "quote end changed actual witness")
+        add("quote-context", quote_context)
         for index, label in enumerate(("own", "refusal", "work")):
             c = capture(); del c["events"][index]; c["events"] = resequence(c["events"])
             add("missing-" + label, lambda c=c, label=label: assess("missing-" + label, c, "not runnable"))
@@ -927,6 +961,36 @@ def chronology_suite(parent, scenario):
             reset_out(f); f.native(); f.native("judge", model="claude-opus-5-1")
             r = f.read(); check(criterion(r)["verdict"] == "PASS" and r["strength"] == WEAK and r["verdict"] == "not runnable", "fallback chronology/strength")
         add("weaker", weaker)
+    if scenario == 634:
+        for label in ("positive", "gap", "reversed"):
+            def unassessed(label=label):
+                c = capture()
+                expected = "PASS"
+                if label == "gap":
+                    c["events"] = resequence(c["events"][1:]); expected = "not runnable"
+                elif label == "reversed":
+                    c["events"] = resequence([c["events"][2], *c["events"][:2]]); expected = "FAIL"
+                assess("unassessed-" + label, c, expected, native=True)
+                original = f.read()
+                index = json.loads((f.out / "evidence/682/index.json").read_text())
+                check(original["adjudication"] == "unassessed" and original["semantic"] == [] and index["judges"] == [], "unassessed control already judged")
+                f.cli("report", "--live")
+                report_verdict = "FAIL" if label == "reversed" else "not runnable"
+                check("LAB: " + report_verdict in (f.out / "results-682.md").read_text(), "unassessed control reported unsupported outcome")
+                altered = copy.deepcopy(original); altered["verdict"] = "PASS"
+                write(f.evidence(), altered)
+                p = f.cli("report", "--live", ok=None)
+                check(p.returncode != 0 and "unassessed" in p.stderr, "unassessed verdict promotion accepted: " + label + ": " + p.stdout + p.stderr)
+                write(f.evidence(), original)
+                altered = copy.deepcopy(original); altered["semantic"] = [{"criterion": "reason", "verdict": "PASS"}]
+                write(f.evidence(), altered)
+                p = f.cli("report", "--live", ok=None)
+                check(p.returncode != 0 and "unassessed" in p.stderr, "unassessed semantic evidence accepted: " + label)
+                write(f.evidence(), original)
+                f.native("judge", model="claude-opus-5-1")
+                check(f.read()["verdict"] == expected, "unchanged adjudicated control altered: " + label)
+                f.cli("report", "--live")
+            add("unassessed-" + label, unassessed)
     selected = sys.argv[sys.argv.index("--chronology-probe") + 1] if "--chronology-probe" in sys.argv else None
     if "--list-chronology" in sys.argv:
         print("\n".join(probes)); return
@@ -944,7 +1008,12 @@ def chronology_mutations():
     mutations = [
         (632, "chronology-order", 'if first_use and any(w and', 'if False and first_use and any(w and', "early-disposition", "early-disposition chronology"),
         (632, "chronology-phase", 'matched = sections(c["events"])', 'if any(e.get("phase") == "reconciled" for e in c["events"] or []):\n        return dict(verdict(criterion, "PASS", "mutated phase trust"), witnesses=[])\n    matched = sections(c["events"])', "phase-only", "phase-only chronology"),
-        (634, "judge-gap-upgrade", 'all_verdicts = r["deterministic"] + r["semantic"]', 'all_verdicts = [v for v in r["deterministic"] if v["verdict"] != "not runnable"] + r["semantic"]', "native-gap", "judge-upgrade gap")]
+        (634, "judge-gap-upgrade", 'all_verdicts = r["deterministic"] + r["semantic"]', 'all_verdicts = [v for v in r["deterministic"] if v["verdict"] != "not runnable"] + r["semantic"]', "native-gap", "judge-upgrade gap"),
+        (632, "lazy-quote-witness", 'if quoted_paragraph:', 'if False and quoted_paragraph:', "lazy-blockquote-only", "lazy-blockquote-only chronology"),
+        (632, "lazy-quote-early-use", 'if quoted_paragraph:', 'if False and quoted_paragraph:', "lazy-blockquote-early", "lazy-blockquote-early chronology")]
+    unassessed_check = 'require(r["semantic"] == [] and r["verdict"] == ("not runnable (stub)" if r["capture"]["synthetic"] else "not runnable"), "unassessed evidence has semantic judgments or unsupported overall verdict")'
+    for label in ("positive", "gap"):
+        mutations.append((634, "unassessed-" + label + "-promotion", unassessed_check, 'pass', "unassessed-" + label, "unassessed verdict promotion accepted: " + label))
     for scenario, name, old, new, probe, diagnostic in mutations:
         with tempfile.TemporaryDirectory(prefix="panel-chron-mutant-") as tmp:
             folder = Path(tmp)
@@ -955,7 +1024,7 @@ def chronology_mutations():
             env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / "temporary-panel-run.sh"), PANEL_TEST_SKIP_MUTATIONS="1")
             p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), str(scenario), "--chronology-probe", probe], capture_output=True, text=True, env=env)
             check(p.returncode != 0 and diagnostic in p.stderr, name + " survived/unrelated failure: " + p.stdout + p.stderr)
-            print("killed " + name + ": " + p.stderr.splitlines()[-1])
+            print("killed " + name + ": " + next(line for line in p.stderr.splitlines() if line.startswith("AssertionError:")))
 
 
 with tempfile.TemporaryDirectory(prefix="panel-680-test-") as tmp:
