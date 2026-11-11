@@ -4624,3 +4624,68 @@ Doubt: native transport fakes cannot establish installed containment, live model
 
 Doubt: protocol compliance on a real native runtime remains unverified; a format failure stays not runnable and never permits a pilot bypass or retry to erase a non-pass.
 Doubt: events establish observable emission order only; live independence, private thought, supplied-return reading order and authenticated containment remain unproved.
+
+
+### A56 addendum 4 (Architect, Planning, 2026-11-11): retain completed judge output before validation (#680; PR #697)
+
+- **Classification and decision.** Rounds 5/6 expose one under-specified producer
+  obligation. The general retention goal already exists, but addendum 3 specifies
+  pre-rejection preservation explicitly for postflight, not every judge validation
+  path. Handling named failures or catching only `Invalid` leaves the next malformed
+  field able to discard output. Replace that implicit ordering with this invariant;
+  do not extend an exception/failure-kind list. The round-5 accounting and session-test
+  defects are related consistency/test-fidelity defects, not additional parser kinds.
+  Round 6 loses evidence and reportability; its ledger already blocks clean retry.
+  No #680 AC1-AC6 is contradicted or narrowed; prior accepted qualifications remain.
+- **Invariant and owner.** `retained_judge_attempt()` owns the complete lifecycle of
+  every first or conditional second judge attempt, across native/offline Adapters.
+  Every completed call must first have a durable, call-bound, initially unusable
+  capture of its original output and available usage, BEFORE any validation of
+  result content, identity, schema, provenance, containment, criteria or quotes.
+  Validation may qualify that same capture or record why it remains unusable; it
+  cannot delete, replace or detach it. Rejection is reportable, blocks replacement
+  judgment and pilot continuation, and cannot be cleaned by retry. A prescribed
+  second judge adjudicates a usable FAIL; it never replaces an unusable attempt.
+- **Developer change.** Put capture-first ownership around the Adapter completion,
+  not just around `judge_verdicts()`. Native/offline transport must hand off durable
+  original output before parsing/normalization or disposable scratch cleanup can
+  lose it. Bind the envelope with runner-owned call identity, exercise/batch/ordinal
+  and scheduled cases; keep result-supplied identities and fields as opaque data.
+  Retention must not require valid/hashable identities, valid events, an object
+  response or successful `validate_capture()`/`validate_judgments()`. Preserve original
+  bytes and known usage; malformed/missing usage stays explicitly unknown with raw
+  evidence, never fabricated zero. Bind call accounting exactly once to that capture.
+
+  Make result validation total over malformed input: check field types before
+  hashing/indexing, including the reported case/repetition/criterion identities.
+  Unexpected validation exceptions still leave the pre-existing capture unusable.
+  Update `validate_retained_state()` to validate the trusted error envelope/accounting
+  independently of payload validity, so report can expose an invalid payload without
+  repeating its crash. No consumer may promote it to usable evidence. Publication
+  whitelist, scrub, cap and stop rules remain: rejected publication keeps private
+  recovery evidence and stops further calls, never publishes unsafe raw output or
+  rewrites quotes. Storage failure is an explicit stop, never successful retention.
+- **One QA falsifier and stopping rule.** QA adds one generic S631 field-mutation
+  property, exercised through the public judge/report/continuation Interface: from
+  a valid completed judge result, corrupt any one field (missing/wrong-type/container
+  values, including `criterion=[]`, `case={}`, `repetition=[]`) while holding trusted
+  request context fixed. For both judge ordinals require exact original output,
+  available usage and call binding to survive; report exposes the unusable error,
+  retry/continuation launch zero calls, and no PASS replaces it. Malformed usage
+  requires explicit unknown plus preserved raw values. Keep unchanged valid first
+  and conditional-second controls. This is one property across fields, not another
+  normative list of special failures. Developer supplies RED/GREEN and a mutation
+  that moves retention after validation; the property must kill it for evidence loss,
+  not unrelated setup failure. Retain all carried falsifiers. Stop when this property,
+  its valid controls/mutation and fresh Review pass; sample coverage is not a proof
+  over all possible output. A new field variant violates this same invariant.
+- **Scope and route.** QA owns scenario text; Developer owns implementation, executable
+  tests and affected synthetic artifacts; orchestrator owns publication, QA comparison
+  and git/GitHub actions. Architect -> QA -> Developer -> QA comparison -> fresh
+  Reviewer. Keep one deep Module and the existing Interface/Seam: native/offline
+  Adapters are real variations; deleting lifecycle ownership would spread retention
+  across callers. Central ownership supplies Depth, Leverage and Locality. No new
+  Module, dependency, model session or exercise/meaning change. Estimated effort:
+  moderate producer/error-reader change and one parameterized regression property.
+
+Doubt: durable capture establishes recoverability and local consistency, not authenticated runtime identity, installed containment or live exercise success.
