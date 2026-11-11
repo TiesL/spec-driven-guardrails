@@ -185,11 +185,25 @@ capture and session; the shared validator reconciles exact call membership, kind
 exercise and each available usage counter against actors, verification captures,
 first/second judges and error captures. Missing accounting, duplicate or misbound
 calls and inconsistent counters reject report, judge and continuation alike.
-Completed rejected judge output remains an explicitly unusable error capture with
-its original batch/cases/ordinal, events, response, identity, validation error and
-usage. An invalid quote supplies no semantic FAIL. A rejected first or second
-judge cannot be retried or replaced with a clean first judgment; its error remains
-reportable and blocks pilot readiness. A `STOP` file in
+Every completed judge call first retains its exact stdout/stderr in a durable,
+initially unusable `attempts/call-<n>.json` envelope, before either Adapter parses
+or validates output. Runner-owned call/exercise/batch/ordinal/case identities bind
+that envelope and available usage exactly once. Emitted fields remain opaque,
+including malformed identities/events/response. Qualification updates the same
+attempt and links its normalized judge capture; it preserves original bytes.
+Rejected output stays reportable without revalidating its payload, blocks retry
+and pilot continuation, and cannot supply semantic PASS or FAIL. A second judge
+adjudicates a usable first FAIL and cannot replace an unusable attempt.
+
+Known counters stay exact. Missing/malformed counters are null (unknown), with
+original usage retained; totals with unknown calls explicitly separate the known
+subtotal and unknown-call count. They never substitute zero. Publication failure
+(scrub, cap or storage) retains private recovery bytes and trusted request context
+under `.private-recovery/`, sets STOP and blocks publication/calls until recovery.
+Private recovery is not part of the publishable bundle; do not publish that tree.
+Successful safe retention removes the redundant private handoff. Storage failure
+is an explicit stop and never a claim that retention succeeded.
+A `STOP` file in
 the output root or `--stop-file` prevents further calls; retained evidence can
 still be read and reported. No `--max-budget-usd` is used.
 

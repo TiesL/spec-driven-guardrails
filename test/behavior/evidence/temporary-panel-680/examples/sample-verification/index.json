@@ -59,8 +59,9 @@
       "completed": true,
       "synthetic": true,
       "exercise": "sample-verification",
-      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/judge/sample-verification-one-j1.json",
-      "session": "synthetic-judge-sample-verification-one-1"
+      "attempt_capture": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/attempts/call-3.json",
+      "session": "synthetic-judge-sample-verification-one-1",
+      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-verification/judge/sample-verification-one-j1.json"
     }
   ],
   "judges": [
@@ -77,7 +78,7 @@
       "sha256": "159502b3cc619bd4405aaaa2bbf4d24ea46ea6c96b0c29365179538b77c7337e",
       "records": 2,
       "synthetic": true,
-      "evidence": "24c929e144b5a3dab1721c0a94e3c9c04d1d010ad0b8df2dd68f389bdc845acd"
+      "evidence": "cf4a6fedc01b934d8153b035a47427488d66a886f9eea0ca2f9b48b0f982bf1a"
     }
   ]
 }

@@ -177,7 +177,7 @@ def validate_capture(c, offline, kind="actor"):
     fields(c, ("version", "synthetic", "kind", "session", "runtime", "model", "date", "mode", "events", "response", "usage", "errors", "verification", "invocation"), ("source",), "capture")
     require(type(c["version"]) is int and c["version"] == 1 and type(c["synthetic"]) is bool, "capture version/provenance")
     require(c["kind"] == kind, "capture kind mismatch")
-    require(c["session"] and c["runtime"] and c["date"], "missing capture identity")
+    require(all(isinstance(c[k], str) and c[k] for k in ("session", "runtime", "date")), "missing capture identity")
     require(c["synthetic"] if offline else not c["synthetic"], "offline fixtures cannot be labelled live")
     require(c["mode"] in MODES, "unknown recorder mode")
     usage(c["usage"])
@@ -191,7 +191,7 @@ def validate_capture(c, offline, kind="actor"):
         if c["events"] is not None:
             events(c["events"])
     else:
-        require((c["synthetic"] and c["model"] == "claude-stub-1") or concrete(c["model"], "opus" if kind == "judge" else "sonnet"), "resolved concrete model/tier required")
+        require((c["synthetic"] and c["model"] == "claude-stub-1") or concrete(c["model"], "opus" if kind == "judge" else "sonnet"), "live resolved model metadata invalid" if kind == "judge" and not offline else "resolved concrete model/tier required")
         fields(c["invocation"], ("fresh", "memory", "settings_sources", "strict_mcp", "persistence"), label="invocation")
         require(c["invocation"] == {"fresh": True, "memory": False, "settings_sources": [], "strict_mcp": True, "persistence": False}, "inherited memory/settings or nonfresh session")
         events(c["events"])
@@ -342,6 +342,7 @@ class Store:
         self.args, self.m = args, manifest
         self.root = Path(args.output_dir).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
+        require(not any(relative(self.root, ".private-recovery").glob("call-*")), "private recovery pending; publication and calls stopped")
         self.bundle = relative(self.root, manifest.data["evidence_path"])
         self.index_name = manifest.data["evidence_path"] + "/index.json"
         self.index_path = self.root / self.index_name
@@ -372,16 +373,21 @@ class Store:
         require(not (self.root / "STOP").exists() and not (self.args.stop_file and Path(self.args.stop_file).exists()), "stop file: no further calls")
 
     def put(self, name, obj):
-        scrub(obj)
         raw = encoded(obj)
         path = relative(self.root, name)
         old = path.stat().st_size if path.exists() else 0
         self.guard(max(0, len(raw) - old))
+        scrub(obj)
         path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as f:
-            f.write(raw); temporary = Path(f.name)
+            f.write(raw); f.flush(); os.fsync(f.fileno()); temporary = Path(f.name)
         os.chmod(temporary, 0o600)
         temporary.replace(path)
+        fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
     def save(self):
         self.put(self.index_name, self.index)
@@ -431,7 +437,7 @@ def canary(args, store):
     store.save()
 
 
-def adapter(args, store, request, judge=False):
+def adapter(args, store, request, judge=False, completed=None):
     """Offline Adapter or explicit live Adapter, always guarded per call."""
     call = store.reserve("judge" if judge else "actor")
     call["exercise"] = request.get("exercise", "shared recorder verification")
@@ -442,21 +448,24 @@ def adapter(args, store, request, judge=False):
     else:
         require(args.live, "runtime requires --offline or explicit --live")
         require(not exe, "arbitrary Adapters are offline only")
-        return live_call(args, store, request, call, judge)
+        return live_call(args, store, request, call, judge, completed)
     with tempfile.TemporaryDirectory(prefix="panel-runtime-") as tmp:
         scratch = Path(tmp)
         env = {"PATH": os.defpath + ":/usr/local/bin:/opt/homebrew/bin", "HOME": str(scratch / "home"), "CLAUDE_CONFIG_DIR": str(scratch / "config"), "LANG": "en_US.UTF-8"}
         Path(env["HOME"]).mkdir(); Path(env["CLAUDE_CONFIG_DIR"]).mkdir()
         cwd = scratch / "empty"; cwd.mkdir()
-        p = subprocess.run(cmd, input=json.dumps(request), text=True, capture_output=True, cwd=cwd, env=env, timeout=args.timeout)
+        p = subprocess.run(cmd, input=json.dumps(request).encode(), capture_output=True, cwd=cwd, env=env, timeout=args.timeout)
+        if completed:
+            completed(p.stdout, p.stderr, "offline")
     require(p.returncode == 0, "offline Adapter error")
-    c = json.loads(p.stdout)
-    call.update(usage=c.get("usage", {}), completed=True)
-    store.save()
+    c = strict_json(p.stdout.decode("utf-8")) if judge else json.loads(p.stdout)
+    if not judge:
+        call.update(usage=c.get("usage", {}), completed=True)
+        store.save()
     return c
 
 
-def live_call(args, store, request, call, judge):
+def live_call(args, store, request, call, judge, completed=None):
     """Fail closed without an external containment launcher + verifier.
 
     The verifier is installation-specific and independent of the hook. It must
@@ -499,6 +508,8 @@ def live_call(args, store, request, call, judge):
         prompt = json.dumps(request) if judge else request["packet"]
         p = subprocess.run(([args.containment_launcher] if args.containment_launcher else []) + cmd, cwd=cwd, env=env, input=prompt.encode(),
                            capture_output=True, timeout=args.timeout)
+        if completed:
+            completed(p.stdout, p.stderr, "native")
         p.stdout = p.stdout.decode("utf-8"); p.stderr = p.stderr.decode("utf-8")
         (scratch / "stream.jsonl").write_text(p.stdout)
         (scratch / "stderr.txt").write_text(p.stderr)
@@ -576,7 +587,8 @@ def live_call(args, store, request, call, judge):
             for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
                 require(type(u.get(source)) is int, "runtime actual token usage missing")
                 totals[key] += u[source]
-        call.update(usage=totals, completed=True); store.save()
+        if not judge:
+            call.update(usage=totals, completed=True); store.save()
         capture = {"version": 1, "synthetic": False, "kind": "judge" if judge else "actor",
                 "session": result["session_id"], "runtime": "claude -p", "model": next(iter(model_usage)),
                 "date": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mode": mode,
@@ -586,18 +598,21 @@ def live_call(args, store, request, call, judge):
         if judge and not all(concrete(m, "opus") for m in model_usage):
             reason = "live resolved model metadata invalid"
             capture["errors"].append(reason)
-            retain_runtime_error(store, request, observed, result, reason, capture)
-            raise Invalid(reason)
-        # Actors use run's ordinary invalid observation record. Judges and
-        # canaries can fail before obtaining an index entry, so also retain a
-        # call-linked error envelope for report to expose independently.
-        if postflight_error and (judge or request.get("canary")):
+            # Return opaque normalized evidence to the lifecycle owner.
+            # Only that owner qualifies or rejects the completed judge.
+            return capture
+        # Actors use run's invalid observation record; judges use their
+        # capture-first lifecycle. Canaries need their own error envelope.
+        if postflight_error and request.get("canary"):
             retain_runtime_error(store, request, observed, result, postflight_error, capture)
         return capture
 
 
 def retain_runtime_error(store, request, observed, result, reason, capture=None):
     """Safe unusable evidence, never an actor result or manufactured usage."""
+    if request.get("kind") == "judge":
+        # The lifecycle owner already retained the completed transport output.
+        return
     events(observed)
     result = result or {}
     response = result.get("structured_output")
@@ -609,9 +624,6 @@ def retain_runtime_error(store, request, observed, result, reason, capture=None)
         "runtime": capture["runtime"] if capture else "claude -p", "session": result.get("session_id", "unknown"),
         "model": capture["model"] if capture else "unknown", "date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "usage": capture["usage"] if capture else "unknown: incomplete runtime; no estimates substituted", "errors": [reason]}
-    if request.get("kind") == "judge":
-        error.update(batch=request["batch"], ordinal=request["ordinal"],
-                     cases=[{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]])
     if capture is not None:
         error["capture"] = capture
     store.put(path, error)
@@ -886,6 +898,35 @@ def expected_findings(item, r, key):
             for k in key["criteria"] if k["id"] in failed]
 
 
+def validate_judge_attempt(m, store, call, number, groups, batches, judges):
+    path = call["attempt_capture"]
+    require(path == m.data["evidence_path"] + "/attempts/call-" + str(number) + ".json", "judge attempt call identity invalid")
+    a = load(relative(store.root, path))
+    fields(a, ("version", "kind", "usable", "work_item", "exercise", "batch", "ordinal", "cases", "call_id", "transport", "original_output", "original_sha256", "stderr", "usage", "raw_usage", "events", "response", "session", "runtime", "model", "errors"), ("capture",), "judge attempt")
+    require(type(a["version"]) is int and a["version"] == 1 and a["kind"] == "completed-judge-attempt" and type(a["usable"]) is bool, "judge attempt kind invalid")
+    require(isinstance(a["exercise"], str) and isinstance(a["batch"], str) and type(a["ordinal"]) is int and a["ordinal"] in (1, 2), "judge attempt identity invalid")
+    group = (a["exercise"], a["batch"])
+    require(type(a["work_item"]) is int and a["work_item"] == m.data["work_item"] and type(a["call_id"]) is int and a["call_id"] == number and group in groups, "judge attempt request binding invalid")
+    require(a["cases"] == [{"case": r["case"], "repetition": r["repetition"]} for _, r, _ in groups[group]], "judge attempt cases changed")
+    require(a["transport"] == ("offline" if call["synthetic"] else "native") and isinstance(a["original_output"], str) and isinstance(a["stderr"], str), "judge attempt transport invalid")
+    require(digest(a["original_output"].encode()) == a["original_sha256"], "original judge output changed")
+    require((a["usage"], a["raw_usage"]) == completed_usage(a["original_output"], a["transport"]), "original judge usage changed")
+    require(all(isinstance(a[k], str) and a[k] for k in ("session", "runtime", "model")), "trusted judge envelope identity invalid")
+    require(call["kind"] == "judge" and call["completed"] and call.get("exercise") == a["exercise"] and call.get("session") == a["session"] and call["usage"] == a["usage"], "judge attempt call/usage binding invalid")
+    require(isinstance(a["errors"], list) and all(isinstance(e, str) and e for e in a["errors"]), "judge attempt errors invalid")
+    pair = batches.get(group, {})
+    if a["ordinal"] == 2:
+        require(1 in pair and (any(v["verdict"] == "FAIL" for v in pair[1][1]["response"]["verdicts"]) or any(v["verdict"] == "FAIL" for _, r, _ in groups[group] for v in r["deterministic"])), "second attempt requires usable first FAIL")
+    if a["usable"]:
+        require(not a["errors"] and "error_capture" not in call and call.get("capture") in judges, "usable judge attempt binding invalid")
+        require(pair.get(a["ordinal"], (None,))[0] == call["capture"] and a.get("capture") == judges[call["capture"]], "qualified judge attempt changed")
+        require(all(a[k] == a["capture"][k] for k in ("session", "model", "runtime", "usage", "events", "response")), "qualified judge envelope changed")
+    else:
+        require(a["errors"] and call.get("error_capture") == path and "capture" not in call and a["ordinal"] not in pair, "unusable judgment replaced by usable judgment")
+    scrub(a)
+    return a
+
+
 def validate_retained_state(m, store, offline):
     """The only qualification view for every retained-evidence consumer.
 
@@ -988,10 +1029,21 @@ def validate_retained_state(m, store, offline):
             require(r["adjudication"] == ("unresolved" if any(v["disagreement"] for v in expected) else "complete"), "adjudication disagreement lost")
         require(r["verdict"] == supported_verdict(r), "unassessed or deterministic first-run FAIL overwritten; unsupported overall verdict")
         require(r["findings"] == expected_findings(item, r, key), "FAIL findings/routes altered")
-    invalid_calls = []; errors_by_path = {}
-    for call in index["calls"]:
-        fields(call, ("kind", "usage", "completed", "synthetic"), ("exercise", "error_capture", "capture", "session"), "call")
+    invalid_calls = []; errors_by_path = {}; attempts = set()
+    for number, call in enumerate(index["calls"], 1):
+        fields(call, ("kind", "usage", "completed", "synthetic"), ("exercise", "error_capture", "capture", "session", "attempt_capture"), "call")
         require(call["kind"] in ("actor", "judge", "verification") and type(call["completed"]) is bool and call["synthetic"] is offline, "call provenance/kind invalid")
+        if "attempt_capture" in call:
+            a = validate_judge_attempt(m, store, call, number, groups, batches, judges)
+            require(call["attempt_capture"] not in attempts, "duplicate judge attempt")
+            attempts.add(call["attempt_capture"])
+            if not a["usable"]:
+                require(call["error_capture"] not in errors_by_path, "duplicate error call accounting")
+                invalid_calls.append(a); errors_by_path[call["error_capture"]] = a
+                expected_calls[call["error_capture"]] = ("judge", a["exercise"], a)
+                if a["session"] != "unknown":
+                    sessions.add(a["session"])
+            continue
         usage(call["usage"])
         if "error_capture" not in call:
             continue
@@ -1003,7 +1055,9 @@ def validate_retained_state(m, store, offline):
             row = next((row for row in m.rows if (row[0]["id"], row[1]["id"]) == (error["exercise"], error["case"])), None)
             require(row and type(error["repetition"]) is int and 1 <= error["repetition"] <= row[1]["repetitions"] and error["packet"] == row[2], "runtime error outside finite plan")
         require(call["kind"] == ("judge" if "batch" in error else "actor" if error["case"] is not None else "verification"), "error call kind binding invalid")
-        events(error["events"]); scrub(error)
+        if call["kind"] != "judge":
+            events(error["events"])
+        scrub(error)
         if "capture" in error:
             c = error["capture"]
             require(all(error[k] == c[k] for k in ("events", "response", "session", "model", "runtime", "usage")), "lost invalid native capture evidence")
@@ -1012,15 +1066,9 @@ def validate_retained_state(m, store, offline):
                 require(group in groups and error.get("ordinal") in (1, 2), "invalid judge error batch binding")
                 require(error.get("cases") == [{"case": r["case"], "repetition": r["repetition"]} for _, r, _ in groups[group]], "invalid judge error cases binding")
                 require(error["ordinal"] not in batches.get(group, {}), "unusable judgment replaced by usable judgment")
-                try:
-                    validate_capture(c, offline, "judge")
-                    require(c["mode"] == "lab-transcript-only" and not verify(c), "judge tools-disabled containment not established")
-                    require(c["session"] not in sessions, "actor/judge session reused")
-                    validate_judgments(c, groups[group])
-                except Invalid as exc:
-                    require(error["errors"] == [str(exc)] or (len(error["errors"]) == 1 and error["errors"][0] in c.get("errors", [])), "retained judge validation error changed")
-                else:
-                    raise Invalid("error judgment has no validation failure")
+                # Legacy error envelopes also remain opaque; error reading
+                # must never repeat the validation crash of a completed payload.
+                require(isinstance(error["errors"], list) and all(isinstance(e, str) and e for e in error["errors"]), "retained judge errors invalid")
             else:
                 validate_capture(c, offline, c["kind"])
                 require(verify(c) or c["session"] in sessions, "error capture has no verification/session failure")
@@ -1030,7 +1078,8 @@ def validate_retained_state(m, store, offline):
         invalid_calls.append(error); errors_by_path[call["error_capture"]] = error
         expected_calls[call["error_capture"]] = (call["kind"], None if call["kind"] == "verification" else error["exercise"], error.get("capture"))
     retained_errors = {str(p.relative_to(store.root)) for p in (store.bundle / "errors").glob("*.json")}
-    require(retained_errors == set(errors_by_path), "retained error missing call accounting")
+    require(retained_errors == {p for p in errors_by_path if p.startswith(m.data["evidence_path"] + "/errors/")}, "retained error missing call accounting")
+    require(attempts == {str(p.relative_to(store.root)) for p in (store.bundle / "attempts").glob("*.json")}, "retained attempt missing call accounting")
     accounted = set()
     for call in index["calls"]:
         path = call.get("error_capture", call.get("capture"))
@@ -1102,7 +1151,8 @@ def anonymized(record):
 
 def judge_verdicts(c, batch, prior_sessions, args):
     validate_capture(c, args.offline, "judge")
-    require(c["mode"] == "lab-transcript-only" and not verify(c), "judge tools-disabled containment not established")
+    errors = verify(c)
+    require(c["mode"] == "lab-transcript-only" and not errors, "judge tools-disabled containment not established: " + "; ".join(errors))
     require(c["session"] not in prior_sessions, "actor/judge session reused")
     validate_judgments(c, batch)
 
@@ -1114,6 +1164,7 @@ def validate_judgments(c, batch):
     got = set()
     for v in c["response"].get("verdicts", []):
         fields(v, ("case", "repetition", "criterion", "verdict", "quote", "reason"), label="judge verdict")
+        require(isinstance(v["case"], str) and type(v["repetition"]) is int and isinstance(v["criterion"], str), "invalid semantic identity types")
         identity = (v["case"], v["repetition"], v["criterion"])
         require(identity in expected and identity not in got, "judge references outside batch/duplicate criterion")
         got.add(identity)
@@ -1143,17 +1194,146 @@ def quote_present(obj, quote):
     return False
 
 
-def retained_judge_attempt(args, store, request, batch):
-    prior_sessions = store.sessions()
-    c = adapter(args, store, request, True)
+def completed_usage(original, transport):
+    """Read available counters without requiring any other payload to be valid."""
+    raw = None
     try:
+        if transport == "offline":
+            obj = strict_json(original)
+            raw = obj.get("usage") if isinstance(obj, dict) else None
+        else:
+            for line in original.split("\n"):
+                try:
+                    row = strict_json(line)
+                except (Invalid, ValueError):
+                    continue
+                if isinstance(row, dict) and "modelUsage" in row:
+                    raw = row["modelUsage"]
+        if transport == "offline":
+            counts = {k: raw.get(k) if isinstance(raw, dict) else None for k in USAGE}
+            return {k: v if type(v) is int and v >= 0 else None for k, v in counts.items()}, raw
+        counts = {}
+        for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
+            values = [v.get(source) if isinstance(v, dict) else None for v in raw.values()] if isinstance(raw, dict) else []
+            counts[key] = sum(values) if values and all(type(v) is int and v >= 0 for v in values) else None
+        return counts, raw
+    except (Invalid, ValueError):
+        return dict.fromkeys(USAGE), raw
+
+
+def retained_judge_attempt(args, store, request, batch):
+    """Own completion -> durable unusable capture -> qualification for both Adapters.
+
+    The transport hands off bytes before parsing or scratch cleanup. Only trusted
+    request fields identify the attempt; emitted payload never identifies storage.
+    """
+    prior_sessions = store.sessions()
+    path = store.m.data["evidence_path"] + "/attempts/call-" + str(len(store.index["calls"]) + 1) + ".json"
+    attempt = None
+    recovery = None
+
+    def completed(stdout, stderr, transport):
+        nonlocal attempt, recovery
+        number = len(store.index["calls"])
+        # Private handoff survives all publication/decoding/storage failures.
+        try:
+            recovery = relative(store.root, ".private-recovery/call-" + str(number))
+            recovery.mkdir(parents=True, mode=0o700)
+            os.chmod(recovery.parent, 0o700)
+            receipt = {"version": 1, "kind": "completed-judge-handoff", "usable": False,
+                "call_id": number, "work_item": store.m.data["work_item"],
+                "exercise": request["exercise"], "batch": request["batch"], "ordinal": request["ordinal"],
+                "cases": [{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]],
+                "transport": transport, "usage": dict.fromkeys(USAGE),
+                "usage_source": "stdout; not parsed yet", "stdout_sha256": digest(stdout), "stderr_sha256": digest(stderr)}
+            for name, raw in (("stdout", stdout), ("stderr", stderr), ("request.json", encoded(request)), ("receipt.json", encoded(receipt))):
+                with (recovery / name).open("xb") as f:
+                    os.chmod(f.name, 0o600); f.write(raw); f.flush(); os.fsync(f.fileno())
+            for directory in (recovery, recovery.parent, store.root):
+                fd = os.open(directory, os.O_RDONLY)
+                try:
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+            attempt = {"version": 1, "kind": "completed-judge-attempt", "usable": False,
+                "work_item": store.m.data["work_item"], "exercise": request["exercise"],
+                "batch": request["batch"], "ordinal": request["ordinal"],
+                "cases": [{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]],
+                "call_id": number, "transport": transport, "original_output": stdout.decode("utf-8"),
+                "original_sha256": digest(stdout), "stderr": stderr.decode("utf-8"),
+                "usage": dict.fromkeys(USAGE), "raw_usage": None,
+                "events": [], "response": None, "session": "unknown", "runtime": transport,
+                "model": "unknown", "errors": ["completed judge output awaiting qualification"]}
+            store.put(path, attempt)
+            call = store.index["calls"][-1]
+            call.update(completed=True, usage=attempt["usage"], error_capture=path, attempt_capture=path, session=attempt["session"])
+            store.save()
+            # The initial envelope and ledger exist BEFORE parsing any content.
+            attempt["usage"], attempt["raw_usage"] = completed_usage(attempt["original_output"], transport)
+            call["usage"] = attempt["usage"]
+            store.put(path, attempt); store.save()
+        except Exception:
+            (store.root / "STOP").touch(mode=0o600)
+            raise
+
+    def cleanup():
+        if recovery is not None:
+            for item in recovery.iterdir():
+                item.unlink()
+            recovery.rmdir()
+
+    def publish():
+        try:
+            store.put(path, attempt); store.save()
+        except Exception:
+            (store.root / "STOP").touch(mode=0o600)
+            raise
+
+    try:
+        c = adapter(args, store, request, True, completed)
+        require(attempt is not None, "completed judge handoff missing")
+        # Opaque capture is evidence even when its fields are absent or containers.
+        with (recovery / "normalized.json").open("xb") as f:
+            os.chmod(f.name, 0o600); f.write(encoded(c)); f.flush(); os.fsync(f.fileno())
+        attempt["capture"] = c
+        if isinstance(c, dict):
+            for key in ("events", "response"):
+                attempt[key] = c.get(key)
+            for key in ("session", "model", "runtime"):
+                value = c.get(key)
+                if isinstance(value, str) and value:
+                    attempt[key] = value
+        store.index["calls"][-1]["session"] = attempt["session"]
+        publish()
         judge_verdicts(c, batch, prior_sessions, args)
-    except Invalid as exc:
-        # Completed invalid output is evidence, never a fresh retry opportunity.
-        if "error_capture" not in store.index["calls"][-1]:
-            retain_runtime_error(store, request, c["events"],
-                {"session_id": c["session"], "structured_output": c["response"]}, str(exc), c)
+    except Exception as exc:
+        if isinstance(exc, OSError):
+            (store.root / "STOP").touch(mode=0o600)
+            raise Invalid("storage failure; retention not established; publication and calls stopped") from exc
+        if (store.root / "STOP").exists():
+            raise Invalid("completed judge retention stopped; inspect private recovery; publication and calls stopped") from exc
+        if attempt is not None:
+            attempt["errors"] = [str(exc) or type(exc).__name__]
+            publish()
+            cleanup()
+        else:
+            raise Invalid("judge incomplete; no completed output captured: " + (str(exc) or type(exc).__name__)) from exc
+        raise Invalid("judge unusable; completed output retained: " + (str(exc) or type(exc).__name__)) from exc
+    # Qualification changes this same attempt; it never replaces the raw capture.
+    qualified = store.m.data["evidence_path"] + "/judge/" + request["exercise"] + "-" + request["batch"] + "-j" + str(request["ordinal"]) + ".json"
+    try:
+        store.put(qualified, c)
+        attempt.update(usable=True, errors=[])
+        store.put(path, attempt)
+        call = store.index["calls"][-1]
+        del call["error_capture"]
+        store.bind_call(qualified, c)
+        store.index["judges"].append({"path": qualified, "session": c["session"], "exercise": request["exercise"], "batch": request["batch"]})
+        store.save()
+    except Exception:
+        (store.root / "STOP").touch(mode=0o600)
         raise
+    cleanup()
     return c
 
 
@@ -1176,20 +1356,11 @@ def judge(m, store, args):
                    "evidence": [anonymized(r) for _, r, _ in batch]}
         first = retained_judge_attempt(args, store, request, batch)
         path = m.data["evidence_path"] + "/judge/" + exercise + "-" + batch_id + "-j1.json"
-        store.put(path, first)
-        store.bind_call(path, first)
-        store.index["judges"].append({"path": path, "session": first["session"], "exercise": exercise, "batch": batch_id})
-        store.save()
         has_fail = any(v["verdict"] == "FAIL" for v in first["response"]["verdicts"]) or any(v["verdict"] == "FAIL" for _, r, _ in batch for v in r["deterministic"])
         second = None
         if has_fail:
             request["ordinal"] = 2
             second = retained_judge_attempt(args, store, request, batch)
-            path2 = path.replace("-j1.json", "-j2.json")
-            store.put(path2, second)
-            store.bind_call(path2, second)
-            store.index["judges"].append({"path": path2, "session": second["session"], "exercise": exercise, "batch": batch_id})
-            store.save()
         for item, r, row in batch:
             r["semantic"] = semantic_results(r, row[3], path, first, second)
             r["adjudication"] = "unresolved" if any(v["disagreement"] for v in r["semantic"]) else "complete"
@@ -1198,6 +1369,16 @@ def judge(m, store, args):
             store.put(item["path"], r)
         store.save()
     print("judgment retained; disagreement referred; deterministic failures preserved")
+
+
+def usage_totals(calls):
+    result = {}
+    for key in USAGE:
+        values = [c["usage"].get(key) for c in calls if c["completed"]]
+        known = sum(v for v in values if type(v) is int)
+        unknown = sum(v is None for v in values)
+        result[key] = {"known": known, "unknown_calls": unknown} if unknown else known
+    return result
 
 
 def report(m, store, args):
@@ -1216,6 +1397,11 @@ def report(m, store, args):
                   "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model", "batch", "ordinal", "cases") if k in error}),
                   "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error["events"]),
                   "Retained response: " + json.dumps(error["response"]), "Available actual usage: " + json.dumps(error["usage"]), ""]
+        if "original_output" in error:
+            lines += ["Original completed output: " + json.dumps(error["original_output"]),
+                      "Original completed stderr: " + json.dumps(error["stderr"]),
+                      "Call binding: " + json.dumps({k: call[k] for k in ("attempt_capture", "session", "usage")}),
+                      "Raw usage evidence: " + json.dumps(error["raw_usage"]), ""]
     for ex in m.data["exercises"]:
         expected = [(ex["id"], c["id"], n) for c in ex["cases"] for n in range(1, c["repetitions"] + 1)]
         found = [retained[k] for k in expected if k in retained]
@@ -1240,8 +1426,8 @@ def report(m, store, args):
                       "  Sensitivity: " + r["sensitivity"] + "; adjudication: " + r["adjudication"],
                       "  Findings: " + json.dumps(r["findings"], ensure_ascii=False)]
         exercise_calls = [c for c in store.index["calls"] if c.get("exercise") == ex["id"]]
-        lines += ["Exercise call usage (including its judges): " + json.dumps({k: sum(c["usage"].get(k, 0) for c in exercise_calls if c["completed"]) for k in USAGE}), ""]
-    totals = {k: sum(c["usage"].get(k, 0) for c in store.index["calls"] if c["completed"]) for k in USAGE}
+        lines += ["Exercise call usage (including its judges): " + json.dumps(usage_totals(exercise_calls)), ""]
+    totals = usage_totals(store.index["calls"])
     lines += ["Actual subscription calls: " + str(sum(not c["synthetic"] and c["completed"] for c in store.index["calls"])),
               "Adapter calls (including judges/verification): " + str(len(store.index["calls"])),
               "Actual recorded token usage (input/cache-read/cache-write/output): " + json.dumps(totals), ""]

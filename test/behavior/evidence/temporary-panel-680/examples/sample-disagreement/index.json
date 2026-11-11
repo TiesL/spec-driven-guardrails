@@ -39,8 +39,9 @@
       "completed": true,
       "synthetic": true,
       "exercise": "sample-disagreement",
-      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j1.json",
-      "session": "synthetic-judge-sample-disagreement-one-1"
+      "attempt_capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/attempts/call-2.json",
+      "session": "synthetic-judge-sample-disagreement-one-1",
+      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j1.json"
     },
     {
       "kind": "judge",
@@ -53,8 +54,9 @@
       "completed": true,
       "synthetic": true,
       "exercise": "sample-disagreement",
-      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j2.json",
-      "session": "synthetic-judge-sample-disagreement-one-2"
+      "attempt_capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/attempts/call-3.json",
+      "session": "synthetic-judge-sample-disagreement-one-2",
+      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-disagreement/judge/sample-disagreement-one-j2.json"
     }
   ],
   "judges": [
@@ -77,7 +79,7 @@
       "sha256": "99c2b7adcb7f5ea0d7c231f821e210e69e02239d5c69388d73912c56c004c6f0",
       "records": 1,
       "synthetic": true,
-      "evidence": "98799821f50c0492a31fc5d22fa65cfe0c12aec1d2d4b5871389c45ff5a65047"
+      "evidence": "b241e214961dbb7c7aaca968d043a34f952f82d6b28f798540b1459850c7e41c"
     }
   ]
 }

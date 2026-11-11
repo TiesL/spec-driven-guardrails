@@ -170,7 +170,9 @@ data=json.loads((here/"adapter-data.json").read_text())
 if request["kind"]=="judge":
     result=data["judges"][request["ordinal"]-1]
 else: result=data["actor"]
-print(json.dumps(result))
+output=json.dumps(result)+"\\n"
+(here/("completed-judge-"+str(request.get("ordinal",0))+".txt")).write_text(output)
+print(output,end="")
 ''')
         self.adapter.chmod(0o755)
         self.data = {"actor": capture(), "judges": []}
@@ -227,7 +229,7 @@ print(json.dumps(result))
         self.data["judges"] = [j(1, verdict), j(2, second or verdict)]
         return self.cli("judge", "--offline", "--judge-adapter", str(self.adapter), ok=ok)
 
-    def native(self, op="run", model="claude-sonnet-5-5", postflight=0, attempt=False, ok=True, extra=(), session=None, cap=None, messages=None, primary=False, judgment="PASS", framing="\n", stream_ascii=False, judge_fault=None):
+    def native(self, op="run", model="claude-sonnet-5-5", postflight=0, attempt=False, ok=True, extra=(), session=None, cap=None, messages=None, primary=False, judgment="PASS", framing="\n", stream_ascii=False, judge_fault=None, judge_mutation=None, block_capture=False):
         """Exercise native parsing with a launcher that ONLY prints fixture JSON.
 
         --live selects the native transport/provenance contract in a disposable
@@ -274,10 +276,26 @@ if data.get("judge_fault") and "--model" in sys.argv and sys.argv[sys.argv.index
     if data["judge_fault"] == "quote": response["verdicts"][0].update(verdict="FAIL", quote="Invented source quote.")
     if data["judge_fault"] == "criterion": response["verdicts"][0]["criterion"] = "invented"
     if data["judge_fault"] == "response": response = []
-print(json.dumps({"type": "result", "session_id": data["session"] + "-" + str(ordinal),
+result = {"type": "result", "session_id": data["session"] + "-" + str(ordinal),
     "structured_output": response, "modelUsage": {data["model"]: {
         "inputTokens": 13, "cacheReadInputTokens": 0,
-        "cacheCreationInputTokens": 0, "outputTokens": 9}}}))
+        "cacheCreationInputTokens": 0, "outputTokens": 9}}}
+mutation=data.get("judge_mutation")
+is_judge="--model" in sys.argv and sys.argv[sys.argv.index("--model")+1]=="opus"
+if is_judge and mutation and req["ordinal"]==mutation["ordinal"]:
+    obj=result
+    for key in mutation["path"][:-1]: obj=obj[key]
+    if mutation.get("missing"): del obj[mutation["path"][-1]]
+    else: obj[mutation["path"][-1]]=mutation["value"]
+output=json.dumps(result)+"\\n"
+if is_judge:
+    # Save the exact completed stream independently of runner scratch.
+    init={"type":"system","subtype":"init","tools":[],"mcp_servers":[]}
+    rows=[init]+[{"type":m.get("role","unknown"),"message":m} for m in messages]
+    (here/("completed-judge-"+str(req["ordinal"])+".txt")).write_text("".join(json.dumps(r,ensure_ascii=data["stream_ascii"])+"\\n" for r in rows)+output)
+if is_judge and data["block_capture"]:
+    (here/"out/evidence/682/attempts/call-3.json").mkdir(parents=True)
+print(output,end="")
 ''')
         verifier = self.dir / "native-verifier.py"
         verifier.write_text('''#!/usr/bin/env python3
@@ -299,7 +317,7 @@ else:
             "case": "control", "repetition": 1, "criterion": "reason", "verdict": "PASS",
             "quote": "CHANGES.md contains reserved contract text", "reason": "File supports referral."}]}
         write(self.dir / "native-data.json", {"model": model, "session": c["session"],
-            "messages": messages if messages is not None else [{"role": "assistant", "content": blocks}], "response": response, "verification": c["verification"], "judge_fault": judge_fault, "postflight": postflight, "primary": primary, "judgment": judgment, "framing": framing, "stream_ascii": stream_ascii})
+            "messages": messages if messages is not None else [{"role": "assistant", "content": blocks}], "response": response, "verification": c["verification"], "judge_fault": judge_fault, "judge_mutation": judge_mutation, "block_capture": block_capture, "postflight": postflight, "primary": primary, "judgment": judgment, "framing": framing, "stream_ascii": stream_ascii})
         mode_args = () if primary and op == "run" else ("--recorder-mode", "transcript-only")
         return self.cli(op, "--live", *mode_args,
             "--containment-launcher", str(launcher), "--containment-verifier", str(verifier), *extra, ok=ok)
@@ -986,7 +1004,123 @@ def chronology_suite(parent, scenario):
                 f.native(primary=True,ok=False,extra=("--exercise","following"))
                 check((f.dir/"native-calls.jsonl").read_text()==before,"r5 "+fault+" invalid pilot continued")
             add("r5-invalid-"+fault,rejected)
+    if scenario == 631:
+        # One field-mutation property; paths/values instantiate the same law.
+        # Request identity is never mutated. Both transport Adapters and ordinals
+        # cross the public judge/report/continuation Interfaces.
+        for transport in ("native", "offline"):
+            variants=[]
+            prefix=["structured_output"] if transport=="native" else ["response"]
+            for field,value in (("criterion",[]),("case",{}),("repetition",[]),
+                                ("quote",[]),("reason",{}),("verdict",[])):
+                variants.append((field,prefix+["verdicts",0,field],value,False))
+                variants.append((field+"-missing",prefix+["verdicts",0,field],None,True))
+            fields=("session_id","modelUsage","structured_output","type") if transport=="native" else tuple(capture())
+            for field in fields:
+                variants.append((field,[field],{} if field in ("errors", "events") else [],False))
+                variants.append((field+"-missing",[field],None,True))
+            usage_path=["modelUsage","claude-opus-5-1","inputTokens"] if transport=="native" else ["usage","input"]
+            variants.append(("usage-counter",usage_path,[],False))
+            for ordinal in (1,2):
+                for field,path,value,missing in variants:
+                    name="r6-property-"+transport+"-j"+str(ordinal)+"-"+field
+                    def completed(transport=transport,ordinal=ordinal,path=path,value=value,missing=missing,name=name):
+                        f=fixture(name)
+                        following=copy.deepcopy(f.manifest["exercises"][0]); following["id"]="following"
+                        f.manifest["exercises"].append(following); f.plan["rows"].append(dict(f.plan["rows"][0],exercise="following"))
+                        f.plan["pilot"]={"exercise":"generic-exercise","before":["following"]}; f.save()
+                        extra=("--exercise","generic-exercise")
+                        if transport=="native":
+                            f.native(primary=True,extra=extra)
+                            p=f.native("judge",model="claude-opus-5-1",judgment="FAIL" if ordinal==2 else "PASS",
+                                judge_mutation=dict(path=path,value=value,missing=missing,ordinal=ordinal),extra=extra,ok=None)
+                            counter=f.dir/"native-calls.jsonl"
+                        else:
+                            f.cli("run","--offline","--runtime-adapter",str(f.adapter),*extra)
+                            # Build unchanged valid judges without launching them.
+                            def j(n):
+                                c=fallback("judge-"+str(n)); c.update(kind="judge",usage=dict(input=13,cache_read=0,cache_write=0,output=9),response={"verdicts":[dict(case="control",repetition=1,criterion="reason",verdict="FAIL" if ordinal==2 else "PASS",quote=json.loads(c["events"][0]["text"])["body"],reason="File supports referral.")]}); return c
+                            f.data["judges"]=[j(1),j(2)]; obj=f.data["judges"][ordinal-1]
+                            for key in path[:-1]: obj=obj[key]
+                            if missing: del obj[path[-1]]
+                            else: obj[path[-1]]=value
+                            p=f.cli("judge","--offline","--judge-adapter",str(f.adapter),*extra,ok=None)
+                            counter=f.dir/"calls.jsonl"
+                        index=json.loads((f.out/"evidence/682/index.json").read_text()); call=index["calls"][-1]
+                        check("error_capture" in call,name+" original-output/evidence-loss: completed output discarded")
+                        error=json.loads((f.out/call["error_capture"]).read_text())
+                        original=(f.dir/("completed-judge-"+str(ordinal)+".txt")).read_text()
+                        check(error.get("original_output")==original,name+" original-output/evidence-loss: bytes changed or absent")
+                        check(p.returncode!=0 and error["usable"] is False and error["errors"],name+" corrupt output qualified")
+                        check(error["exercise"]=="generic-exercise" and error["batch"]=="one" and error["ordinal"]==ordinal and error["cases"]==[dict(case="control",repetition=1)],name+" trusted request binding lost")
+                        check(call["completed"] and call.get("attempt_capture")==call["error_capture"] and call["usage"]==error["usage"],name+" call/usage binding lost")
+                        # Bad usage retains raw values and unknown counters, never zero.
+                        malformed_usage=path[0] in ("modelUsage","usage")
+                        if malformed_usage:
+                            check(any(v is None for v in error["usage"].values()) and "raw_usage" in error,name+" malformed usage fabricated zero")
+                        else:
+                            check(error["usage"]==dict(input=13,cache_read=0,cache_write=0,output=9),name+" known usage lost")
+                        mode="--live" if transport=="native" else "--offline"
+                        f.cli("report",mode); text=(f.out/"results-682.md").read_text()
+                        check("Original completed output:" in text and error["errors"][0] in text and "LAB: PASS" not in text,name+" report lost unusable output")
+                        before=counter.read_bytes()
+                        if transport=="native":
+                            f.native("judge",model="claude-opus-5-1",extra=extra,ok=False)
+                            f.native(primary=True,extra=("--exercise","following"),ok=False)
+                        else:
+                            f.cli("judge",mode,"--judge-adapter",str(f.adapter),*extra,ok=False)
+                            f.cli("run",mode,"--runtime-adapter",str(f.adapter),"--exercise","following",ok=False)
+                        check(counter.read_bytes()==before,name+" retry/continuation launched")
+                    add(name,completed)
+    if scenario == 631:
+        for transport in ("native", "offline"):
+            for second in (False, True):
+                name="r6-control-"+transport+"-"+str(1+second)
+                def valid(transport=transport,second=second,name=name):
+                    f=fixture(name)
+                    if transport=="native":
+                        f.native(primary=True); f.native("judge",model="claude-opus-5-1",judgment="FAIL" if second else "PASS")
+                    else:
+                        f.judge("FAIL" if second else "PASS")
+                    mode="--live" if transport=="native" else "--offline"
+                    f.cli("report",mode)
+                    i=json.loads((f.out/"evidence/682/index.json").read_text())
+                    calls=[c for c in i["calls"] if c["kind"]=="judge"]
+                    check(len(calls)==1+second,name+" valid scheduling changed")
+                    for n,call in enumerate(calls,1):
+                        a=json.loads((f.out/call["attempt_capture"]).read_text())
+                        check(a["usable"] and not a["errors"] and "error_capture" not in call,name+" valid capture not qualified")
+                        check(a["original_output"]==(f.dir/("completed-judge-"+str(n)+".txt")).read_text(),name+" valid original output lost")
+                        check(a["capture"]==json.loads((f.out/call["capture"]).read_text()) and a["usage"]==call["usage"],name+" qualified different capture")
+                    check(f.read()["verdict"]==("not runnable (stub)" if transport=="offline" else "FAIL" if second else "PASS"),name+" valid verdict changed")
+                    check(f.read()["semantic"][0]["verdict"]==("FAIL" if second else "PASS"),name+" supported semantic outcome changed")
+                add(name,valid)
+        for field,value in (("scrub","person@example.invalid"),("cap","x"*3000001),("storage",None)):
+            def private(field=field,value=value):
+                f=fixture("r6-private-"+field); f.native(primary=True)
+                p=f.native("judge",model="claude-opus-5-1",judge_mutation=None if field=="storage" else dict(path=["structured_output","verdicts",0,"quote"],value=value,ordinal=1),block_capture=field=="storage",ok=False)
+                recovery=f.out/".private-recovery/call-3"
+                original=(f.dir/"completed-judge-1.txt").read_bytes()
+                check((recovery/"stdout").read_bytes()==original,"r6 "+field+" private original-output/evidence-loss")
+                check((recovery/"request.json").is_file() and (f.out/"STOP").exists(),"r6 "+field+" lacks stop/recovery binding")
+                receipt=json.loads((recovery/"receipt.json").read_text())
+                check(receipt["usable"] is False and receipt["call_id"]==3 and receipt["exercise"]=="generic-exercise" and receipt["batch"]=="one" and receipt["ordinal"]==1 and receipt["stdout_sha256"]==sha(original) and all(v is None for v in receipt["usage"].values()),"r6 "+field+" private handoff not initially unusable/call-bound")
+                check((recovery/"stdout").stat().st_mode&0o777==0o600 and recovery.parent.stat().st_mode&0o777==0o700,"r6 "+field+" recovery permissions")
+                check(not (f.out/"evidence/682/attempts/call-3.json").is_file(),"r6 "+field+" unsafe publication")
+                before=(f.dir/"native-calls.jsonl").read_bytes()
+                f.cli("report","--live",ok=False); f.native("judge",model="claude-opus-5-1",ok=False); f.native(primary=True,ok=False)
+                check((f.dir/"native-calls.jsonl").read_bytes()==before and not (f.out/"results-682.md").exists(),"r6 "+field+" continued/published")
+            add("r6-private-"+field,private)
     if scenario == 633:
+        def membership_property():
+            # No judge yet: there is no additional attempt-membership check to
+            # mask the ordinary capture-membership rule under its sole mutant.
+            f=pilot("r5-usage-membership-property")
+            f.cli("report","--live")
+            path=f.out/"evidence/682/index.json"; i=json.loads(path.read_text())
+            i["calls"]=[]; write(path,i)
+            block_consumers(f,"r5-usage-membership-property")
+        add("r5-usage-membership-property",membership_property)
         for family in ("primary", "second", "error"):
             variants=["missing-list","omit","duplicate","misbind"]
             variants += [str(n)+"-"+field for n in range(4 if family=="second" else 3) for field in TOKEN_FIELDS]
@@ -1074,11 +1208,34 @@ def chronology_suite(parent, scenario):
                 i=json.loads((f.out/"evidence/682/index.json").read_text()); check(len(i["judges"])==(2 if kind=="reversed" else 1),"second judge scheduling "+kind)
             add("native-"+kind,judged)
     if scenario == 634:
+        def rebind_attempt(f, index, c, ordinal):
+            # Property-only tampering updates every copy/binding so the intended
+            # quote/session validator is the sole remaining rejection.
+            for call in index["calls"]:
+                if call.get("capture") != index["judges"][ordinal-1]["path"]:
+                    continue
+                call["session"]=c["session"]
+                if "attempt_capture" not in call:
+                    continue
+                path=f.out/call["attempt_capture"]; a=json.loads(path.read_text())
+                a["capture"]=c
+                for key in ("session","model","runtime","usage","events","response"):
+                    a[key]=copy.deepcopy(c[key])
+                if a["transport"]=="offline":
+                    a["original_output"]=json.dumps(c)+"\n"
+                else:
+                    rows=[json.loads(line) for line in a["original_output"].splitlines()]
+                    for row in rows:
+                        if row.get("type")=="result":
+                            row.update(session_id=c["session"],structured_output=c["response"])
+                    a["original_output"]="".join(json.dumps(row)+"\n" for row in rows)
+                a["original_sha256"]=sha(a["original_output"].encode()); write(path,a)
         def body_quote():
             f=pilot("body-quote"); f.native("judge",model="claude-opus-5-1",extra=("--exercise","generic-exercise")); f.cli("report","--live")
             i=json.loads((f.out/"evidence/682/index.json").read_text()); path=f.out/i["judges"][0]["path"]; c=json.loads(path.read_text())
             c["response"]["verdicts"][0]["quote"]="a56-chronology-v1"; write(path,c)
             r=f.read(); r["semantic"][0]["first"]["quote"]="a56-chronology-v1"; write(f.evidence(),r)
+            rebind_attempt(f,i,c,1); write(f.out/"evidence/682/index.json",i)
             block_consumers(f,"protocol syntax is not a body quote")
         add("body-quote",body_quote)
         alterations=[("index-mismatch",lambda c,r,i:c.update(session=r["capture"]["session"])),
@@ -1100,8 +1257,7 @@ def chronology_suite(parent, scenario):
                     alter(c,f.read(),i); write(path,c)
                     if "session-" in name:
                         i["judges"][ordinal-1]["session"]=c["session"]
-                        for call in i["calls"]:
-                            if call.get("capture")==i["judges"][ordinal-1]["path"]: call["session"]=c["session"]
+                        rebind_attempt(f,i,c,ordinal)
                         write(f.out/"evidence/682/index.json",i)
                     if "session-" in name:
                         p=f.cli("report","--live",ok=False)
@@ -1192,12 +1348,16 @@ def round5_mutations(scenario):
     import shutil
     mutations=[]
     if scenario==631:
-        mutations.append(("judge-output-discard", '        if "error_capture" not in store.index["calls"][-1]:', '        if False:', "r5-invalid-quote", "discarded rejected judgment"))
+        for transport,ordinal in (("native",1),("offline",2)):
+            mutations.append(("retention-after-validation-"+transport+"-j"+str(ordinal),
+                '        c = adapter(args, store, request, True, completed)',
+                '        pending = []\n        c = adapter(args, store, request, True, lambda *raw: pending.append(raw))\n        judge_verdicts(c, batch, prior_sessions, args)\n        completed(*pending[0])',
+                "r6-property-"+transport+"-j"+str(ordinal)+"-criterion", "original-output/evidence-loss"))
         mutations.append(("judge-error-retry", '        require(not any(e["exercise"] == exercise and e.get("batch") == batch_id for e in state["invalid_calls"]), "first judge error retained; no retry-to-clean")', '        pass', "r5-invalid-quote", "mutation accepted:"))
     if scenario==633:
         mutations.append(("call-usage-unbound", 'call["usage"] == c["usage"], "call usage differs from capture"', 'True, "call usage differs from capture"', "r5-usage-primary-1-input", "report accepted invalid retained state"))
-        mutations.append(("call-membership-unbound", '    require(accounted == set(expected_calls), "retained capture missing call accounting")', '    pass', "r5-usage-primary-missing-list", "report accepted invalid retained state"))
-        mutations.append(("error-call-membership-unbound", '    require(retained_errors == set(errors_by_path), "retained error missing call accounting")', '    pass', "r5-usage-error-omit-call-2", "report accepted invalid retained state"))
+        mutations.append(("call-membership-unbound", '    require(accounted == set(expected_calls), "retained capture missing call accounting")', '    pass', "r5-usage-membership-property", "report accepted invalid retained state"))
+        mutations.append(("error-call-membership-unbound", '    require(attempts == {str(p.relative_to(store.root)) for p in (store.bundle / "attempts").glob("*.json")}, "retained attempt missing call accounting")', '    pass', "r5-usage-error-omit-call-2", "report accepted invalid retained state"))
     if scenario==634:
         for probe in ("retained-j1-session-actor", "retained-j2-session-actor", "retained-j2-session-first", "retained-j2-session-canary"):
             mutations.append(("session-property-"+probe, '        require(c["session"] not in sessions, "retained judge cross-session uniqueness invalid")', '        pass', probe, "mutation accepted:"))
@@ -1241,8 +1401,8 @@ if SCENARIO == 631 and len(sys.argv) == 2:
          'raise Invalid("independent containment postflight failed")', "postflight failure discarded completed native capture"),
         ("native-usage-loss", '"events": observed, "response": result["structured_output"], "usage": totals,',
          '"events": observed, "response": result["structured_output"], "usage": dict.fromkeys(USAGE, 0),', "actual completed native usage retained"),
-        ("judge-postflight-discard", 'if postflight_error and (judge or request.get("canary")):',
-         'if False:', "report exposes invalid native judge"),
+        ("judge-postflight-discard", '            attempt["errors"] = [str(exc) or type(exc).__name__]',
+         '            pass', "report exposes invalid native judge"),
         ("invalid-call-report-omission", 'for call in store.index["calls"]:\n        if "error_capture" not in call:', 'for call in store.index["calls"]:\n        if True:',  "report exposes invalid native judge"),
         ("scheduled-observation-retry", 'require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")',
          'pass', "scheduled guard blocks replacement native observation")):

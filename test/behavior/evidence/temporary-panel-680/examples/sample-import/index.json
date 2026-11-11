@@ -25,8 +25,9 @@
       "completed": true,
       "synthetic": true,
       "exercise": "sample-import",
-      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-import/judge/sample-import-one-j1.json",
-      "session": "synthetic-judge-sample-import-one-1"
+      "attempt_capture": "test/behavior/evidence/temporary-panel-680/examples/sample-import/attempts/call-1.json",
+      "session": "synthetic-judge-sample-import-one-1",
+      "capture": "test/behavior/evidence/temporary-panel-680/examples/sample-import/judge/sample-import-one-j1.json"
     }
   ],
   "judges": [
@@ -43,7 +44,7 @@
       "sha256": "f7f5ff076b1f723ebd3bf2753b7cfd98586c26f8f1f53461fb96bcb0deff763d",
       "records": 1,
       "synthetic": true,
-      "evidence": "ce8c963abdae59a34e1633ef7b1ae7247163b9420e04867362876dd4a349e242"
+      "evidence": "66b78902076f7f5afe98c9662ad5dda2e720cc4e1f15a4172af6befddc93f44e"
     }
   ]
 }
