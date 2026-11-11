@@ -2,7 +2,7 @@
 # S634 — shared instruction exercise judge routing (#680; A56)
 # Covers: F38, F67, F68, F69
 # Offline synthetic Adapter tests; no subscription calls or behavior claims.
-# Semantic judgment cannot upgrade textual chronology gaps or reversals.
+# Both retained judges and all consumers share the complete validation contract.
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=test/lib.sh

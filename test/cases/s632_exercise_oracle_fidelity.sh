@@ -2,7 +2,7 @@
 # S632 — shared instruction exercise oracle fidelity (#680; A56)
 # Covers: F67, F68, F69
 # Offline synthetic Adapter tests; no subscription calls or behavior claims.
-# Textual chronology spans, prior key shapes, early-use and oracle mutations.
+# Strict whole-block JSONL admission, raw spans and earliest-use mutations.
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=test/lib.sh

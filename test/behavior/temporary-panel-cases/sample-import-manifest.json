@@ -29,11 +29,11 @@
           "id": "refusal",
           "packet": {
             "path": "packets/S590-delegation-meaning/refusal.json",
-            "sha256": "f9de63fad3f005a7c666eb398496341723e5663448257b36e8781ec46e8260a9"
+            "sha256": "a8ee9c3156c1addbfe37fc3b541dbc60a01ba62f204300c077606ec33cb9e80c"
           },
           "key": {
             "path": "keys/S590-delegation-meaning/refusal.json",
-            "sha256": "9d58e38bc9d4181029c20eca733ef8cc122b85ba060139489ed064070634fb92"
+            "sha256": "2cf44d2054a0e89c5bf26d5c58074239ac45a933a1fd42a700aabefbb8d8dd3d"
           },
           "source_criteria": [
             "S590-delegation-meaning/Observable pass criteria",
@@ -53,7 +53,7 @@
           "batch": "one",
           "release": {
             "path": "sample-import-capture.json",
-            "sha256": "85f0dcbdf49258dee9feb07d14d1363f11ac9873e1f5a6aa3dbd57a5175d44ca"
+            "sha256": "fc394f2acb3e856421b0dcacf60d635b64f802c644044a27b942722b06c513dd"
           },
           "coverage": {
             "variation": "refusal"

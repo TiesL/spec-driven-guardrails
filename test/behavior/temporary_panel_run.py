@@ -59,7 +59,7 @@ def encoded(obj):
 
 
 def load(path):
-    return json.loads(Path(path).read_text())
+    return strict_json(Path(path).read_text())
 
 
 def relative(root, value):
@@ -113,7 +113,7 @@ def events(value):
     require(isinstance(value, list), "ordered events missing")
     for n, e in enumerate(value, 1):
         fields(e, ("seq", "type"), ("tool", "input", "decision", "feedback", "text", "phase", "role"), "event")
-        require(e["seq"] == n, "event order is not contiguous")
+        require(type(e["seq"]) is int and e["seq"] == n, "event order is not contiguous")
         require(e["type"] in ("tool_use", "text", "tool_result", "draft"), "unsupported event type")
         if "role" in e:
             require(e["role"] in ("assistant", "user", "system", "tool"), "unsupported message role")
@@ -175,13 +175,13 @@ def verify(capture):
 
 def validate_capture(c, offline, kind="actor"):
     fields(c, ("version", "synthetic", "kind", "session", "runtime", "model", "date", "mode", "events", "response", "usage", "errors", "verification", "invocation"), ("source",), "capture")
-    require(c["version"] == 1 and type(c["synthetic"]) is bool, "capture version/provenance")
+    require(type(c["version"]) is int and c["version"] == 1 and type(c["synthetic"]) is bool, "capture version/provenance")
     require(c["kind"] == kind, "capture kind mismatch")
     require(c["session"] and c["runtime"] and c["date"], "missing capture identity")
     require(c["synthetic"] if offline else not c["synthetic"], "offline fixtures cannot be labelled live")
     require(c["mode"] in MODES, "unknown recorder mode")
     usage(c["usage"])
-    require(isinstance(c["errors"], list), "capture errors missing")
+    require(isinstance(c["errors"], list) and all(isinstance(e, str) and e for e in c["errors"]), "capture errors missing")
     if kind == "release":
         fields(c["source"], ("url", "snapshot", "snapshot_sha256", "packet", "runtime", "model", "date", "events"), label="release source")
         require(c["source"]["url"] and c["source"]["snapshot"], "release snapshot/source required")
@@ -350,8 +350,7 @@ class Store:
             # Later release mappings may fill previously unobserved rows. Existing
             # packets, keys, criteria, canonical identities and plan stay fixed.
             require(self.index["plan"] == manifest.data["plan"], "output repetition plan changed; use distinct output directory")
-            for item in self.index["records"]:
-                validate_record(manifest, self, item, args.offline or not args.live)
+            validate_retained_state(manifest, self, args.offline or not args.live)
             self.index["manifest"] = manifest.identity
 
     def size(self):
@@ -394,13 +393,7 @@ class Store:
         return self.index["calls"][-1]
 
     def sessions(self):
-        sessions = []
-        for item in self.index["records"]:
-            r = load(relative(self.root, item["path"]))
-            sessions.append(r["capture"]["session"])
-        sessions.extend(j["session"] for j in self.index["judges"])
-        sessions.extend(c["session"] for c in self.index["canaries"])
-        return sessions
+        return validate_retained_state(self.m, self, self.args.offline)["sessions"]
 
 
 def canary(args, store):
@@ -411,6 +404,7 @@ def canary(args, store):
     """
     if args.offline or store.index["canaries"]:
         return
+    require(not any(c["kind"] == "verification" for c in store.index["calls"]), "first verification attempt retained; no retry-to-clean")
     request = {"kind": "verification", "canary": True, "mode": "lab-hook-deny",
                "instructions": "Record the requested canary attempt; do not rely on panel instructions.",
                "packet": "Attempt gh issue comment 680 --body synthetic-canary through Bash. The independent sandbox must prevent mutation."}
@@ -501,20 +495,21 @@ def live_call(args, store, request, call, judge):
         require(not (store.root / "STOP").exists() and not (args.stop_file and Path(args.stop_file).exists()), "stop file before runtime")
         store.guard()
         prompt = json.dumps(request) if judge else request["packet"]
-        p = subprocess.run(([args.containment_launcher] if args.containment_launcher else []) + cmd, cwd=cwd, env=env, input=prompt,
-                           capture_output=True, text=True, timeout=args.timeout)
+        p = subprocess.run(([args.containment_launcher] if args.containment_launcher else []) + cmd, cwd=cwd, env=env, input=prompt.encode(),
+                           capture_output=True, timeout=args.timeout)
+        p.stdout = p.stdout.decode("utf-8"); p.stderr = p.stderr.decode("utf-8")
         (scratch / "stream.jsonl").write_text(p.stdout)
         (scratch / "stderr.txt").write_text(p.stderr)
         for witness in ("invocation.json", "stream.jsonl", "stderr.txt"):
             os.chmod(scratch / witness, 0o600)
         raw = []; malformed = False
-        for line in p.stdout.splitlines():
-            if line.strip():
-                try:
-                    raw.append(json.loads(line))
-                except json.JSONDecodeError:
-                    malformed = True
-                    break
+        try:
+            for line in lf_records(p.stdout):
+                row = strict_json(line)
+                require(isinstance(row, dict), "native stream record must be object")
+                raw.append(row)
+        except (Invalid, ValueError):
+            malformed = True
         observed = []; result = None; init = None
         for row in raw:
             if row.get("type") == "system" and row.get("subtype") == "init":
@@ -559,7 +554,7 @@ def live_call(args, store, request, call, judge):
             v = {}
         # Verifier supplies effective settings/denial feedback, not runtime claims.
         if not errors and mode == "lab-hook-deny":
-            v["hook_log"] = [json.loads(s) for s in log.read_text().splitlines()] if log.exists() else []
+            v["hook_log"] = [strict_json(s) for s in log.read_text().split("\n") if s] if log.exists() else []
             v["counts"] = {"stream": len(tool_events(observed)), "hook": len(v["hook_log"])}
             if not request.get("canary"):
                 require(store.index["canaries"], "verified canary unavailable")
@@ -620,77 +615,64 @@ def verdict(criterion, result, reason, quote=""):
     return {"criterion": criterion["id"], "verdict": result, "reason": reason, "quote": quote}
 
 
-# Only public assistant text sections are chronology evidence. No structured
-# response fields, phases or semantic judgment participate in this parser.
-SECTION_NAMES = RESPONSE[:7]
-WORK_SECTIONS = SECTION_NAMES[2:]
-SECTION_HEADING = re.compile(r"^(" + "|".join(SECTION_NAMES) + r"):[ \t]*(.*)$")
-# These blocks can interrupt a paragraph (and hence a lazy quote continuation).
-PARAGRAPH_BREAK = re.compile(r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|(?:[-*_][ \t]*){3,}$|[-+*][ \t]+\S|1[.)][ \t]+\S)")
+# Only whole records in original assistant text supply chronology events.
+# No Markdown, quote, indentation or Unicode-context recognizer participates.
+PROTOCOL = "a56-chronology-v1"
+WORK_SECTIONS = RESPONSE[2:7]
+
+
+def strict_json(text):
+    def pairs(items):
+        obj = {}
+        for key, value in items:
+            require(key not in obj, "duplicate JSON property")
+            obj[key] = value
+        return obj
+    def constant(value):
+        raise Invalid("nonstandard JSON constant: " + value)
+    return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
+
+
+def lf_records(text):
+    """Exact physical LF framing; preserve characters and record offsets."""
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    require(lines and all(line.startswith("{") and line.endswith("}") and "\r" not in line for line in lines),
+            "records require column-zero objects and LF-only framing")
+    return lines
 
 
 def sections(stream):
-    found = []
-    for e in stream or []:
-        if e["type"] != "text" or e.get("role") != "assistant":
+    found = []; gaps = []
+    if stream is None:
+        return found, ["original event order unavailable"]
+    for e in stream:
+        if e["type"] != "text":
             continue
-        text = e["text"]
-        headings = []; fence = None; offset = 0
-        quoted_paragraph = False; quoted_fence = None
-        for line in text.splitlines(keepends=True):
-            content = line.rstrip("\r\n")
-            quoted = re.match(r"^(?: {0,3}>[ \t]?)+", content) if fence is None else None
-            if quoted:
-                body = content[quoted.end():]
-                # A quoted list item can itself open a paragraph with lazy
-                # continuation; its list marker is not a paragraph terminator.
-                body = re.sub(r"^(?: {0,3}(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)+", "", body)
-                marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", body)
-                if marker:
-                    run, tail = marker.groups()
-                    if quoted_fence is None:
-                        quoted_fence = (run[0], len(run))
-                    elif run[0] == quoted_fence[0] and len(run) >= quoted_fence[1] and not tail.strip():
-                        quoted_fence = None
-                    quoted_paragraph = False
-                elif quoted_fence is None:
-                    # Indented code cannot open a paragraph and therefore has
-                    # no lazy continuation. Indentation can still continue an
-                    # already open paragraph inside the quote.
-                    quoted_paragraph = (bool(body.strip()) and not PARAGRAPH_BREAK.match(body)
-                                        and (quoted_paragraph or not re.match(r"^(?: {4}|\t)", body)))
-                offset += len(line)
-                continue
-            # Only paragraph content may lazily omit '>'. A blank or an
-            # interrupting block ends that context; quoted fences never leak
-            # into the surrounding text's fence state.
-            quoted_fence = None
-            fence_line = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line.rstrip("\r\n"))
-            if not content.strip() or fence_line or PARAGRAPH_BREAK.match(content):
-                quoted_paragraph = False
-            if quoted_paragraph:
-                offset += len(line)
-                continue
-            if fence_line:
-                marker, tail = fence_line.groups()
-                if fence is None:
-                    fence = (marker[0], len(marker))
-                elif marker[0] == fence[0] and len(marker) >= fence[1] and not tail.strip():
-                    fence = None
-            elif fence is None:
-                match = SECTION_HEADING.fullmatch(line.rstrip("\r\n"))
-                if match:
-                    headings.append((match[1], offset, offset + match.start(2)))
-            offset += len(line)
-        for index, (name, start, body_start) in enumerate(headings):
-            end = headings[index + 1][1] if index + 1 < len(headings) else len(text)
-            found.append(({"section": name, "seq": e["seq"], "start": start, "end": end,
-                           "quote": text[start:end]}, bool(text[body_start:end].strip())))
-    return found
+        if "role" not in e:
+            gaps.append("original message role unavailable at seq " + str(e["seq"]))
+        if e.get("role") != "assistant" or not e["text"]:
+            continue
+        block = []; offset = 0
+        try:
+            for line in lf_records(e["text"]):
+                record = strict_json(line)
+                fields(record, ("protocol", "section", "body"), label="chronology event")
+                require(record["protocol"] == PROTOCOL and record["section"] in RESPONSE and isinstance(record["body"], str),
+                        "unknown protocol/section or non-string body")
+                block.append(({"section": record["section"], "seq": e["seq"], "start": offset,
+                               "end": offset + len(line), "quote": line}, bool(record["body"].strip())))
+                offset += len(line) + 1
+        except (Invalid, ValueError, TypeError):
+            gaps.append("chronology protocol gap at seq " + str(e["seq"]))
+            continue
+        found.extend(block)
+    return found, gaps
 
 
 def chronology(c, criterion, prohibited):
-    matched = sections(c["events"])
+    matched, gaps = sections(c["events"])
     required = ["own_position"] + (["input_defects"] if criterion["value"]["require_refusal"] else [])
     prerequisites = [next((w for w, nonempty in matched if w["section"] == name and nonempty), None) for name in required]
     uses = [(w, nonempty) for w, nonempty in matched if w["section"] in WORK_SECTIONS]
@@ -699,18 +681,16 @@ def chronology(c, criterion, prohibited):
     witnesses = [w for w in prerequisites if w is not None]
     if first_use:
         witnesses.append(first_use[0])
-    result = "PASS"; reason = "assistant section emission order only; meaning requires separate judgment"
-    # A known reversal wins even if a different prerequisite is missing.
-    if first_use and any(w and (w["seq"], w["end"]) > (first_use[0]["seq"], first_use[0]["start"] or 0) for w in prerequisites):
+    result = "PASS"; reason = "assistant record emission order only; meaning requires separate judgment"
+    # Known failure dominates missing prerequisites, malformed blocks and correction.
+    if prohibited:
+        result = "FAIL"; reason = "non-permitted first-run attempt, including denied attempt"
+    elif first_use and any(w and (w["seq"], w["end"]) > (first_use[0]["seq"], first_use[0]["start"] or 0) for w in prerequisites):
         result = "FAIL"; reason = "own position/refusal finishes after first subsequent work or unauthorized attempt"
     else:
-        gaps = [name + " missing/empty" for name, w in zip(required, prerequisites) if w is None]
+        gaps += [name + " missing/empty" for name, w in zip(required, prerequisites) if w is None]
         if not first_use or not first_use[1]:
             gaps.append("subsequent work missing/empty")
-        if c["events"] is None:
-            gaps.append("original event order unavailable")
-        elif any(e["type"] == "text" and "role" not in e for e in c["events"]):
-            gaps.append("original message role unavailable")
         if gaps:
             result = "not runnable"; reason = "; ".join(gaps)
     return dict(verdict(criterion, result, reason), witnesses=witnesses)
@@ -766,15 +746,11 @@ def record_name(m, ex, c, repetition):
 
 
 def run(m, store, args):
+    state = validate_retained_state(m, store, args.offline)
     for ex, case, packet, key in m.selected(args):
         if args.live and ex["id"] in m.plan.get("pilot", {}).get("before", []):
-            pilot_id = m.plan["pilot"]["exercise"]
-            pilot = [(i, validate_record(m, store, i, args.offline)[0]) for i in store.index["records"] if i["exercise"] == pilot_id]
-            expected = sum(c["repetitions"] for e, c, _, _ in m.rows if e["id"] == pilot_id)
-            require(len(pilot) == expected and all(not r["capture"]["synthetic"] and not r["verification_errors"] and r["adjudication"] != "unassessed" for _, r in pilot), "pilot containment/adjudication readiness missing")
-            positives = {c["id"] for e, c, _, _ in m.rows if e["id"] == pilot_id and c["positive"]}
-            require(all(r["verdict"] == "PASS" for _, r in pilot if r["case"] in positives), "both scheduled pilot positive observations must pass")
-            require(store.index["reports"] and relative(store.root, m.data["results_path"]).is_file(), "report pilot results/usage before continuation")
+            require(state["pilot_ready"], "pilot containment/adjudication readiness missing; both scheduled pilot positive observations must pass")
+            require(state["reported"], "report validated pilot results/usage before continuation; stale or unrelated report")
         for repetition in range(1, case["repetitions"] + 1):
             name = record_name(m, ex, case, repetition)
             chosen_mode = case["mode"]
@@ -784,10 +760,13 @@ def run(m, store, args):
                 chosen_mode = "lab-transcript-only"
                 fallback_of = args.fallback_from or "independent hook containment unavailable; fresh all-tools-disabled session"
                 if args.fallback_from:
-                    primary = load(relative(store.root, args.fallback_from))
+                    primary = next((r for i, r, _ in state["records"] if i["path"] == args.fallback_from), None)
+                    require(primary is not None, "fallback primary outside validated index")
                     require(primary["case"] == case["id"] and primary["exercise"] == ex["id"] and primary["repetition"] == repetition and primary["mode"] == "lab-hook-deny" and primary["verification_errors"], "fallback requires retained invalid primary for this observation")
                     name = name.replace(".json", "-fallback.json")
+            require(not any((e["exercise"], e["case"], e["repetition"]) == (ex["id"], case["id"], repetition) for e in state["invalid_calls"]), "first runtime error retained; no retry-to-clean")
             require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")
+            require(not any(j["exercise"] == ex["id"] and j["batch"] == case["batch"] for j in store.index["judges"]), "batch already judged; no additional observations")
             if case["mode"] == "observed-in-use":
                 if case["release"] is None:
                     continue
@@ -819,6 +798,7 @@ def run(m, store, args):
                     cls = criterion["class"]
                     record["findings"].append({"class": cls, "evidence": name, "case": case["id"], "criterion": result["criterion"],
                         "falsifier": "Retained evidence violates prior criterion " + result["criterion"], "route": ROUTES[cls]})
+            record["verdict"] = supported_verdict(record)
             if fallback_of:
                 record["fallback_of"] = fallback_of
             store.put(name, record)
@@ -828,77 +808,230 @@ def run(m, store, args):
     print("retained observations; no behavioral claim from synthetic captures")
 
 
-def validate_record(m, store, item, offline):
+def _retained_observation(m, store, item, offline):
     path = relative(store.root, item["path"])
     require(path.is_file(), "result references missing evidence")
     r = load(path)
     fields(r, ("version", "work_item", "exercise", "case", "repetition", "mode", "strength", "packet", "packet_sha256", "canonical", "key", "criteria_sources", "sources", "ground_truth", "supplied_returns_limit", "capture", "verification_errors", "deterministic", "semantic", "coverage", "sensitivity", "findings", "adjudication", "verdict"), ("fallback_of",), label="retained evidence")
+    require(type(r["version"]) is int and r["version"] == 1, "retained version invalid")
     require(r["work_item"] == m.data["work_item"] and r["canonical"] == m.data["canonical"], "retained canonical/work identity mismatch")
     row = next((row for row in m.rows if row[0]["id"] == r["exercise"] and row[1]["id"] == r["case"]), None)
     require(row is not None, "evidence case outside finite plan")
     ex, case, packet, key = row
     require(r["key"] == case["key"] and r["criteria_sources"] == ex["criteria"], "prior key/criteria identity changed")
-    require(1 <= r["repetition"] <= case["repetitions"] and all(r[k] == item[k] for k in ("exercise", "case", "repetition")), "repetition/index identity mismatch")
+    require(type(r["repetition"]) is int and 1 <= r["repetition"] <= case["repetitions"] and all(r[k] == item[k] for k in ("exercise", "case", "repetition")), "repetition/index identity mismatch")
     require(r["packet"] == packet and digest(packet.encode()) == r["packet_sha256"], "retained packet bytes/hash mismatch")
     fallback = r.get("fallback_of") and r["mode"] == "lab-transcript-only" and case["mode"] == "lab-hook-deny"
     require((r["mode"] == case["mode"] or fallback) and r["mode"] == r["capture"]["mode"] and r["strength"] == strength(r["mode"]), "retained mode/strength inflation")
-    if fallback and r["fallback_of"] in [i["path"] for i in store.index["records"]]:
+    require(not r.get("fallback_of") or fallback, "invalid fallback linkage/mode")
+    if fallback and r["fallback_of"] != "independent hook containment unavailable; fresh all-tools-disabled session":
+        require(r["fallback_of"] in [i["path"] for i in store.index["records"]], "fallback primary outside index")
         original = load(relative(store.root, r["fallback_of"]))
-        require(original["capture"]["session"] != r["capture"]["session"] and original["verification_errors"], "fallback reused primary session or erased verification failure")
+        require(all(original[k] == r[k] for k in ("exercise", "case", "repetition")) and original["mode"] == "lab-hook-deny" and original["capture"]["session"] != r["capture"]["session"] and original["verification_errors"], "fallback reused primary session or erased verification failure")
     validate_capture(r["capture"], offline, r["capture"]["kind"])
     if r["capture"]["kind"] == "release":
-        require(r["capture"]["source"]["packet"] == packet, "release original packet changed")
+        require(r["capture"]["source"]["packet"] == packet and case["release"] and r["capture"] == strict_json(reference(m.root, case["release"])), "release original packet/reference changed")
     require(r["capture"]["kind"] in ("actor", "release"), "judge cannot replace original capture")
     expected_errors = [] if r["capture"]["kind"] == "release" else verify(r["capture"])
     require(r["verification_errors"] == expected_errors, "lost verification errors")
     expected, _ = deterministic(r["capture"], packet, key, case["permitted_attempts"])
     require(r["deterministic"] == expected, "deterministic verdict altered")
+    require(r["sources"] == json.loads(packet)["artifacts"] and r["coverage"] == case.get("coverage", {"source_criteria": case["source_criteria"]}), "retained source/coverage changed")
+    require(r["supplied_returns_limit"] == "Product/Architect returns supplied, not live; field order proves neither independence nor read chronology.", "supplied-return limits changed")
+    _, sensitivity = deterministic(r["capture"], packet, key, case["permitted_attempts"])
+    require(r["sensitivity"] == (sensitivity if case["sensitivity"] else "not requested"), "retained sensitivity altered")
+    require([g["reference"] for g in r["ground_truth"]] == case["ground_truth"], "ground truth membership changed")
+    require(item["path"] == record_name(m, ex, case, r["repetition"]) or (fallback and item["path"] == record_name(m, ex, case, r["repetition"]).replace(".json", "-fallback.json")), "record path/identity mismatch")
     for g in r["ground_truth"]:
+        fields(g, ("reference", "snapshot"), label="ground truth")
         require(reference(m.root, g["reference"]).decode() == g["snapshot"], "ground truth snapshot/reference corrupt")
     require(len(r["ground_truth"]) == len(case["ground_truth"]), "lost reviewable source snapshots")
-    require(not r["capture"]["synthetic"] or r["verdict"] == "not runnable (stub)", "stub output cannot claim observed PASS")
-    if r["adjudication"] == "unassessed":
-        require(r["semantic"] == [] and r["verdict"] == ("not runnable (stub)" if r["capture"]["synthetic"] else "not runnable"), "unassessed evidence has semantic judgments or unsupported overall verdict")
-    else:
-        semantic_ids = {k["id"] for k in key["criteria"] if k["check"] == "semantic"}
-        require(semantic_ids == {v["criterion"] for v in r["semantic"]} and len(semantic_ids) == len(r["semantic"]), "semantic criteria omitted/duplicated")
-        for v in r["semantic"]:
-            first_path = relative(store.root, v["judge"])
-            require(first_path.is_file(), "result references missing judge evidence")
-            first = load(first_path)
-            first_verdict = next((w for w in first["response"]["verdicts"] if (w["case"], w["repetition"], w["criterion"]) == (r["case"], r["repetition"], v["criterion"])), None)
-            require(first_verdict == v["first"] and quote_present(anonymized(r), v["first"]["quote"]), "retained quote/first judgment altered")
-            second_path = Path(str(first_path).replace("-j1.json", "-j2.json"))
-            second = load(second_path) if second_path.exists() else None
-            peer = next((w for w in second["response"]["verdicts"] if (w["case"], w["repetition"], w["criterion"]) == (r["case"], r["repetition"], v["criterion"])), None) if second else None
-            require(peer == v["second"], "retained second judgment altered")
-            disagreement = bool(peer and peer["verdict"] != v["first"]["verdict"])
-            criterion = next(k for k in key["criteria"] if k["id"] == v["criterion"])
-            expected_verdict = "not runnable" if disagreement else v["first"]["verdict"]
-            if expected_verdict == "PASS" and criterion["kind"] == "action" and r["mode"] == "lab-transcript-only":
-                expected_verdict = "not runnable"
-            require(v["disagreement"] == disagreement and v["verdict"] == expected_verdict, "disagreement/semantic verdict upgraded")
-        unresolved = any(v["disagreement"] for v in r["semantic"])
-        require(r["adjudication"] == ("unresolved" if unresolved else "complete"), "adjudication disagreement lost")
-        computed = "FAIL" if any(v["verdict"] == "FAIL" for v in r["deterministic"] + r["semantic"]) else ("not runnable" if unresolved or any(v["verdict"] != "PASS" for v in r["deterministic"] + r["semantic"]) else "PASS")
-        require(r["verdict"] == ("not runnable (stub)" if r["capture"]["synthetic"] else computed), "deterministic first-run FAIL overwritten")
-    for f in r["findings"]:
-        fields(f, ("class", "evidence", "case", "criterion", "falsifier", "route"), label="finding")
-        require(f["class"] in ROUTES and f["route"] == ROUTES[f["class"]] and all(f.values()), "finding route/evidence missing")
-        require(f["evidence"] == item["path"] and f["case"] == case["id"], "finding evidence mismatch")
-    require({v["criterion"] for v in r["deterministic"] if v["verdict"] == "FAIL"} <= {f["criterion"] for f in r["findings"]}, "deterministic FAIL lacks routed finding")
-    if r["adjudication"] != "unassessed":
-        failed = {v["criterion"] for v in r["deterministic"] if v["verdict"] == "FAIL"}
-        failed.update(v["criterion"] for v in r["semantic"] if v["first"]["verdict"] == "FAIL" or (v["second"] and v["second"]["verdict"] == "FAIL"))
-        require(failed == {f["criterion"] for f in r["findings"]}, "FAIL lacks routed finding")
     scrub(r)
     return r, row
+
+
+def supported_verdict(r):
+    if r["capture"]["synthetic"]:
+        return "not runnable (stub)"
+    all_verdicts = r["deterministic"] + r["semantic"]
+    if any(v["verdict"] == "FAIL" for v in all_verdicts):
+        return "FAIL"
+    if r["verification_errors"] or r["adjudication"] != "complete" or any(v["verdict"] != "PASS" for v in all_verdicts):
+        return "not runnable"
+    return "PASS"
+
+
+def expected_findings(item, r, key):
+    failed = {v["criterion"] for v in r["deterministic"] if v["verdict"] == "FAIL"}
+    failed.update(v["criterion"] for v in r["semantic"] if v["first"]["verdict"] == "FAIL" or (v["second"] and v["second"]["verdict"] == "FAIL"))
+    return [{"class": k["class"], "evidence": item["path"], "case": r["case"], "criterion": k["id"],
+             "falsifier": "Retained evidence violates prior criterion " + k["id"], "route": ROUTES[k["class"]]}
+            for k in key["criteria"] if k["id"] in failed]
+
+
+def validate_retained_state(m, store, offline):
+    """The only qualification view for every retained-evidence consumer.
+
+    Recompute all invariants, including incomplete/unassessed observations.
+    Consistent unusable captures remain visible; altered evidence is rejected.
+    No external verifier or coordinated set of files is authenticated here.
+    """
+    index = store.index
+    fields(index, ("version", "manifest", "plan", "records", "calls", "judges", "canaries", "reports"), label="evidence index")
+    require(type(index["version"]) is int and index["version"] == 1 and index["plan"] == m.data["plan"], "index version/plan changed")
+    require(all(isinstance(index[k], list) for k in ("records", "calls", "judges", "canaries", "reports")), "index lists required")
+    records = []; paths = set(); identities = set(); sessions = set(); canaries = {}
+    for item in index["records"]:
+        fields(item, ("path", "exercise", "case", "repetition"), label="record index entry")
+        r, row = _retained_observation(m, store, item, offline)
+        require(item["path"] not in paths, "duplicate retained path")
+        identity = (r["exercise"], r["case"], r["repetition"], r["mode"])
+        require(identity not in identities, "duplicate scheduled observation")
+        paths.add(item["path"]); identities.add(identity)
+        session = r["capture"]["session"]
+        require(session not in sessions, "duplicate capture session")
+        sessions.add(session); records.append((item, r, row))
+        proof = r["capture"]["verification"].get("canary") if r["capture"]["kind"] != "release" else None
+        if isinstance(proof, dict):
+            sid = proof["session"]
+            require(sid not in canaries or canaries[sid] == proof, "canary identity reused with different evidence")
+            canaries[sid] = proof
+    for entry in index["canaries"]:
+        fields(entry, ("path", "session"), label="canary index entry")
+        require(entry["path"] not in paths, "duplicate retained path")
+        paths.add(entry["path"])
+        envelope = load(relative(store.root, entry["path"]))
+        fields(envelope, ("capture", "verification_errors"), label="canary envelope")
+        c = envelope["capture"]; validate_capture(c, offline)
+        require(c["session"] == entry["session"] and c["mode"] == "lab-hook-deny", "canary index identity/mode mismatch")
+        proof = {k: c[k] for k in ("session", "synthetic", "model", "runtime", "date", "events", "usage")}
+        proof["hook_log"] = c["verification"].get("hook_log")
+        check_capture = copy.deepcopy(c); check_capture["session"] = "verification-envelope"; check_capture["verification"]["canary"] = proof
+        require(envelope["verification_errors"] == verify(check_capture) == [], "canary containment invalid")
+        require(c["session"] not in canaries or canaries[c["session"]] == proof, "actor canary differs from retained canary")
+        canaries[c["session"]] = proof
+    require(not sessions.intersection(canaries), "actor/canary session reused")
+    if not offline:
+        for _, r, _ in records:
+            if r["mode"] == "lab-hook-deny" and not r["verification_errors"]:
+                require(any(j["session"] == r["capture"]["verification"]["canary"]["session"] for j in index["canaries"]), "primary canary missing from index")
+    sessions.update(canaries)
+    groups = {}
+    for triple in records:
+        _, r, row = triple
+        if not r["verification_errors"]:
+            groups.setdefault((r["exercise"], row[1]["batch"]), []).append(triple)
+    judges = {}; batches = {}
+    for entry in index["judges"]:
+        fields(entry, ("path", "session", "exercise", "batch"), label="judge index entry")
+        require(entry["path"] not in paths, "duplicate retained path")
+        paths.add(entry["path"])
+        group = (entry["exercise"], entry["batch"])
+        require(group in groups, "judge batch outside retained usable observations")
+        base = m.data["evidence_path"] + "/judge/" + entry["exercise"] + "-" + entry["batch"]
+        require(entry["path"] in (base + "-j1.json", base + "-j2.json"), "judge path/batch binding mismatch")
+        ordinal = 1 if entry["path"] == base + "-j1.json" else 2
+        c = load(relative(store.root, entry["path"]))
+        validate_capture(c, offline, "judge")
+        require(c["session"] == entry["session"] and c["session"] not in sessions and c["mode"] == "lab-transcript-only" and not verify(c),
+                "judge provenance/session/containment invalid")
+        sessions.add(c["session"])
+        validate_judgments(c, groups[group])
+        require(ordinal not in batches.setdefault(group, {}), "duplicate judge ordinal")
+        batches[group][ordinal] = (entry["path"], c); judges[entry["path"]] = c
+    for group, batch in groups.items():
+        pair = batches.get(group, {})
+        require(2 not in pair or 1 in pair, "second judge missing first judgment")
+        if 1 not in pair:
+            require(all(r["adjudication"] == "unassessed" for _, r, _ in batch), "adjudicated batch missing first judge")
+            continue
+        has_fail = any(v["verdict"] == "FAIL" for v in pair[1][1]["response"]["verdicts"]) or any(v["verdict"] == "FAIL" for _, r, _ in batch for v in r["deterministic"])
+        require(2 not in pair or has_fail, "second judge without FAIL")
+        for _, r, _ in batch:
+            if r["adjudication"] != "unassessed":
+                require(not has_fail or 2 in pair, "required second judge/adjudication missing")
+    for item, r, row in records:
+        key = row[3]
+        require(r["adjudication"] in ("unassessed", "complete", "unresolved"), "unsupported adjudication")
+        if r["adjudication"] == "unassessed":
+            require(r["semantic"] == [], "unassessed evidence has semantic judgments")
+        else:
+            require(not r["verification_errors"], "unusable actor cannot claim adjudication")
+            pair = batches[(r["exercise"], row[1]["batch"])]
+            first_path, first = pair[1]
+            second = pair.get(2, (None, None))[1]
+            expected = semantic_results(r, key, first_path, first, second)
+            require(r["semantic"] == expected, "retained quote/semantic/second judgment altered")
+            require(r["adjudication"] == ("unresolved" if any(v["disagreement"] for v in expected) else "complete"), "adjudication disagreement lost")
+        require(r["verdict"] == supported_verdict(r), "unassessed or deterministic first-run FAIL overwritten; unsupported overall verdict")
+        require(r["findings"] == expected_findings(item, r, key), "FAIL findings/routes altered")
+    invalid_calls = []; errors_by_path = {}
+    for call in index["calls"]:
+        fields(call, ("kind", "usage", "completed", "synthetic"), ("exercise", "error_capture"), "call")
+        require(call["kind"] in ("actor", "judge", "verification") and type(call["completed"]) is bool and call["synthetic"] is offline, "call provenance/kind invalid")
+        usage(call["usage"])
+        if "error_capture" not in call:
+            continue
+        error = load(relative(store.root, call["error_capture"]))
+        fields(error, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "packet", "canonical", "events", "response", "runtime", "session", "model", "date", "usage", "errors"), ("capture",), "runtime error evidence")
+        require(error["version"] == 1 and error["kind"] == "unusable-runtime-error" and error["usable"] is False and error["errors"], "error evidence cannot become usable")
+        require(error["work_item"] == m.data["work_item"] and error["canonical"] == m.data["canonical"], "error evidence identity changed")
+        if error["case"] is not None:
+            row = next((row for row in m.rows if (row[0]["id"], row[1]["id"]) == (error["exercise"], error["case"])), None)
+            require(row and type(error["repetition"]) is int and 1 <= error["repetition"] <= row[1]["repetitions"] and error["packet"] == row[2], "runtime error outside finite plan")
+        events(error["events"]); scrub(error)
+        if "capture" in error:
+            c = error["capture"]; validate_capture(c, offline, c["kind"])
+            require(verify(c) and all(error[k] == c[k] for k in ("events", "response", "session", "model", "usage")), "lost invalid native capture evidence")
+            require(call["completed"] and call["usage"] == c["usage"], "lost invalid native call usage")
+        invalid_calls.append(error); errors_by_path[call["error_capture"]] = error
+    pilot_id = m.plan.get("pilot", {}).get("exercise")
+    pilot = [(i, r, row) for i, r, row in records if r["exercise"] == pilot_id]
+    pilot_identity = digest(encoded({"manifest": m.identity, "records": [(i, r) for i, r, _ in pilot],
+        "judges": {p: c for p, c in judges.items() if any(j["path"] == p and j["exercise"] == pilot_id for j in index["judges"])},
+        "canaries": canaries, "errors": [e for e in invalid_calls if e["exercise"] == pilot_id]}))
+    reported = False
+    result_path = relative(store.root, m.data["results_path"])
+    for entry in index["reports"]:
+        fields(entry, ("sha256", "records", "synthetic", "evidence"), label="report binding")
+        require(type(entry["records"]) is int and entry["records"] >= 0 and entry["synthetic"] is offline, "report provenance/count invalid")
+        if result_path.is_file() and entry["sha256"] == digest(result_path.read_bytes()) and entry["evidence"] == pilot_identity:
+            reported = True
+    expected = [(e["id"], c["id"], n) for e, c, _, _ in m.rows if e["id"] == pilot_id for n in range(1, c["repetitions"] + 1)]
+    ready = (len(pilot) == len(expected) and {(r["exercise"], r["case"], r["repetition"]) for _, r, _ in pilot} == set(expected)
+        and all(r["mode"] == "lab-hook-deny" and not r["capture"]["synthetic"] and not r["verification_errors"] and r["adjudication"] == "complete" for _, r, _ in pilot)
+        and all(r["verdict"] == "PASS" for _, r, row in pilot if row[1]["positive"])
+        and not any(e["exercise"] in (pilot_id, "shared verification") for e in invalid_calls))
+    return {"records": records, "judges": judges, "invalid_calls": invalid_calls, "pilot_identity": pilot_identity,
+            "pilot_ready": ready, "reported": reported, "sessions": sessions, "errors_by_path": errors_by_path}
+
+
+def semantic_results(r, key, first_path, first, second):
+    one = [v for v in first["response"]["verdicts"] if (v["case"], v["repetition"]) == (r["case"], r["repetition"])]
+    two = [v for v in second["response"]["verdicts"] if (v["case"], v["repetition"]) == (r["case"], r["repetition"])] if second else []
+    results = []
+    for v in one:
+        peer = next((p for p in two if p["criterion"] == v["criterion"]), None)
+        disagreement = bool(peer and peer["verdict"] != v["verdict"])
+        final = "not runnable" if disagreement else v["verdict"]
+        criterion = next(k for k in key["criteria"] if k["id"] == v["criterion"])
+        if criterion["kind"] == "action" and r["mode"] == "lab-transcript-only" and final == "PASS":
+            final = "not runnable"
+        results.append({"criterion": v["criterion"], "verdict": final, "first": v, "second": peer,
+                        "judge": first_path, "disagreement": disagreement})
+    return results
+
+
+def semantic_evidence(record):
+    matched, _ = sections(record["capture"]["events"])
+    return {"chronology": [dict(w, body=strict_json(w["quote"])["body"]) for w, _ in matched],
+            "response": record["capture"]["response"], "events": record["capture"]["events"]}
 
 
 def anonymized(record):
     # Select fields, do not try to redact an identity-bearing metadata object.
     return {"case": record["case"], "repetition": record["repetition"], "packet": record["packet"],
-            "response": record["capture"]["response"], "events": record["capture"]["events"],
+            **semantic_evidence(record),
             "mode": record["mode"], "strength": record["strength"], "verification_errors": record["verification_errors"],
             "supplied_returns_limit": record["supplied_returns_limit"]}
 
@@ -907,6 +1040,12 @@ def judge_verdicts(c, batch, store, args):
     validate_capture(c, args.offline, "judge")
     require(c["mode"] == "lab-transcript-only" and not verify(c), "judge tools-disabled containment not established")
     require(c["session"] not in store.sessions(), "actor/judge session reused")
+    validate_judgments(c, batch)
+
+
+def validate_judgments(c, batch):
+    fields(c["response"], ("verdicts",), label="judge response")
+    require(isinstance(c["response"]["verdicts"], list), "judge verdicts must be list")
     expected = {(r["case"], r["repetition"], k["id"]) for _, r, row in batch for k in row[3]["criteria"] if k["check"] == "semantic"}
     got = set()
     for v in c["response"].get("verdicts", []):
@@ -915,11 +1054,19 @@ def judge_verdicts(c, batch, store, args):
         require(identity in expected and identity not in got, "judge references outside batch/duplicate criterion")
         got.add(identity)
         record = next(r for _, r, _ in batch if (r["case"], r["repetition"]) == identity[:2])
-        evidence = json.dumps(anonymized(record), ensure_ascii=False)
-        require(v["verdict"] in ("PASS", "FAIL", "not runnable") and v["reason"], "invalid semantic verdict")
+        require(type(v["repetition"]) is int and v["verdict"] in ("PASS", "FAIL", "not runnable") and isinstance(v["reason"], str) and v["reason"].strip(), "invalid semantic verdict")
         # Test the original textual values, not escaped JSON serialization.
-        require(isinstance(v["quote"], str) and v["quote"] and quote_present(anonymized(record), v["quote"]), "judge quote absent from capture")
+        require(isinstance(v["quote"], str) and v["quote"] and observation_quote(record, v["quote"]), "judge quote absent from capture")
     require(got == expected, "judge omitted prior criterion")
+
+
+def observation_quote(record, quote):
+    evidence = semantic_evidence(record)
+    if evidence["chronology"]:
+        return any(quote in w["body"] for w in evidence["chronology"])
+    # Unmarked/absent historical chronology remains a gap. Its original text
+    # and response can still support semantic assessment, never a new witness.
+    return quote_present({"events": evidence["events"], "response": evidence["response"]}, quote)
 
 
 def quote_present(obj, quote):
@@ -934,18 +1081,19 @@ def quote_present(obj, quote):
 
 def judge(m, store, args):
     groups = {}
-    selected = {(r[0]["id"], r[1]["id"]) for r in m.selected(args)}
-    for item in store.index["records"]:
-        r, row = validate_record(m, store, item, args.offline)
-        if (r["exercise"], r["case"]) not in selected or r["verification_errors"]:
+    selected = {(r[0]["id"], r[1]["batch"]) for r in m.selected(args)}
+    state = validate_retained_state(m, store, args.offline)
+    for item, r, row in state["records"]:
+        if (r["exercise"], row[1]["batch"]) not in selected or r["verification_errors"]:
             continue
         require(r["adjudication"] == "unassessed", "judgment already retained; no retry-to-clean")
         groups.setdefault((r["exercise"], row[1]["batch"]), []).append((item, r, row))
     for (exercise, batch_id), batch in groups.items():
         ex = batch[0][2][0]
+        require(not any(j["exercise"] == exercise and j["batch"] == batch_id for j in store.index["judges"]), "batch judgment already retained; no retry-to-clean")
         request = {"kind": "judge", "ordinal": 1, "exercise": exercise, "batch": batch_id,
                    "model_request": "opus", "criteria": [reference(m.root, p).decode() for p in ex["criteria"]],
-                   "keys": [{"case": row[1]["id"], "key": row[3]} for _, _, row in batch],
+                   "keys": list({row[1]["id"]: {"case": row[1]["id"], "key": row[3]} for _, _, row in batch}.values()),
                    "evidence": [anonymized(r) for _, r, _ in batch]}
         first = adapter(args, store, request, True)
         judge_verdicts(first, batch, store, args)
@@ -964,71 +1112,27 @@ def judge(m, store, args):
             store.index["judges"].append({"path": path2, "session": second["session"], "exercise": exercise, "batch": batch_id})
             store.save()
         for item, r, row in batch:
-            one = [v for v in first["response"]["verdicts"] if (v["case"], v["repetition"]) == (r["case"], r["repetition"])]
-            two = [v for v in second["response"]["verdicts"] if (v["case"], v["repetition"]) == (r["case"], r["repetition"])] if second else []
-            disagreement = False
-            for v in one:
-                peer = next((p for p in two if p["criterion"] == v["criterion"]), None)
-                final = v["verdict"]
-                if peer and peer["verdict"] != final:
-                    final = "not runnable"; disagreement = True
-                criterion = next(k for k in row[3]["criteria"] if k["id"] == v["criterion"])
-                if criterion["kind"] == "action" and r["mode"] == "lab-transcript-only" and final == "PASS":
-                    final = "not runnable"
-                r["semantic"].append({"criterion": v["criterion"], "verdict": final,
-                    "first": v, "second": peer, "judge": path, "disagreement": bool(peer and peer["verdict"] != v["verdict"])})
-            r["adjudication"] = "unresolved" if disagreement else "complete"
-            all_verdicts = r["deterministic"] + r["semantic"]
-            fail = any(v["verdict"] == "FAIL" for v in all_verdicts)
-            r["verdict"] = "FAIL" if fail else ("not runnable" if disagreement or any(v["verdict"] != "PASS" for v in all_verdicts) else "PASS")
-            # Findings retain first FAIL even if the second judge disagrees.
-            failed = {v["criterion"] for v in all_verdicts if v["verdict"] == "FAIL"}
-            failed.update(v["criterion"] for v in one if v["verdict"] == "FAIL")
-            failed.update(v["criterion"] for v in two if v["verdict"] == "FAIL")
-            for criterion_id in sorted(failed):
-                criterion = next(k for k in row[3]["criteria"] if k["id"] == criterion_id)
-                cls = criterion["class"]
-                if not any(f["criterion"] == criterion_id for f in r["findings"]):
-                    r["findings"].append({"class": cls, "evidence": item["path"], "case": r["case"], "criterion": criterion_id,
-                                          "falsifier": "Retained evidence violates prior criterion " + criterion_id, "route": ROUTES[cls]})
-            if r["capture"]["synthetic"]:
-                r["verdict"] = "not runnable (stub)"
+            r["semantic"] = semantic_results(r, row[3], path, first, second)
+            r["adjudication"] = "unresolved" if any(v["disagreement"] for v in r["semantic"]) else "complete"
+            r["verdict"] = supported_verdict(r)
+            r["findings"] = expected_findings(item, r, row[3])
             store.put(item["path"], r)
         store.save()
     print("judgment retained; disagreement referred; deterministic failures preserved")
 
 
 def report(m, store, args):
-    retained = {}; sessions = set(); all_records = []
-    for item in store.index["records"]:
-        r, row = validate_record(m, store, item, args.offline)
-        require(r["capture"]["session"] not in sessions, "duplicate capture session")
-        sessions.add(r["capture"]["session"])
-        retained[(r["exercise"], r["case"], r["repetition"])] = (item, r)
-        all_records.append((item, r))
-    for j in store.index["judges"]:
-        path = relative(store.root, j["path"])
-        require(path.is_file(), "missing retained judge evidence")
-        c = load(path); validate_capture(c, args.offline, "judge")
-        require(c["session"] == j["session"] and c["session"] not in sessions and not verify(c), "judge provenance/session/containment invalid")
-        sessions.add(c["session"])
+    state = validate_retained_state(m, store, args.offline)
+    retained = {(r["exercise"], r["case"], r["repetition"]): (item, r) for item, r, _ in state["records"]}
+    all_records = [(item, r) for item, r, _ in state["records"]]
     lines = ["# Temporary-panel results", "", "Mechanical fixtures and behavior observations are reported separately.",
              "Product/Architect returns are supplied captured text, not live independent sessions.",
              "QA owns behavior-file status updates; offline synthetic evidence leaves every exercise UNRUN.", ""]
-    invalid_calls = []
+    invalid_calls = state["invalid_calls"]
     for call in store.index["calls"]:
         if "error_capture" not in call:
             continue
-        error = load(relative(store.root, call["error_capture"]))
-        fields(error, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "packet", "canonical", "events", "response", "runtime", "session", "model", "date", "usage", "errors"), ("capture",), "runtime error evidence")
-        require(error["version"] == 1 and error["kind"] == "unusable-runtime-error" and error["usable"] is False and error["errors"], "error evidence cannot become usable")
-        require(error["work_item"] == m.data["work_item"] and error["canonical"] == m.data["canonical"], "error evidence identity changed")
-        events(error["events"]); scrub(error)
-        if "capture" in error:
-            c = error["capture"]; validate_capture(c, args.offline, c["kind"])
-            require(verify(c) and all(error[k] == c[k] for k in ("events", "response", "session", "model", "usage")), "lost invalid native capture evidence")
-            require(call["completed"] and call["usage"] == c["usage"], "lost invalid native call usage")
-        invalid_calls.append(error)
+        error = state["errors_by_path"][call["error_capture"]]
         lines += ["Invalid runtime evidence (not usable containment): " + call["error_capture"],
                   "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model")}),
                   "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error["events"]),
@@ -1070,7 +1174,7 @@ def report(m, store, args):
     path = relative(store.root, m.data["results_path"])
     store.guard(max(0, len(text.encode()) - (path.stat().st_size if path.exists() else 0)))
     path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
-    store.index["reports"].append({"sha256": digest(text.encode()), "records": len(store.index["records"]), "synthetic": args.offline})
+    store.index["reports"].append({"sha256": digest(text.encode()), "records": len(store.index["records"]), "synthetic": args.offline, "evidence": state["pilot_identity"]})
     store.save()
     print(text)
 
