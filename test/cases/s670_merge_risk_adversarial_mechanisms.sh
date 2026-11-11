@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# S670 — Qualification plants substantive harms outside mechanical stops (#646; A60 + addendum 1)
+# Covers: F71, F72, F74
+# Public evaluator/collector/export/reader or structural seams only. Row and
+# single-rule mutation map: test/fixtures/merge-risk-646.py, S670 entries.
+# Actual model/executor/runtime qualification stays UNRUN (#680/#682).
+set -uo pipefail
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
+sandbox_create
+trap sandbox_destroy EXIT
+TMPDIR="$SANDBOX" python3 -I "$TEST_REPO_ROOT/test/fixtures/merge-risk-646.py" 670 \
+  || fail "S670 - mechanical or structural assertion failed"
+test_done

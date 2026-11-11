@@ -1,0 +1,2 @@
+def export(config, secret, capture):
+    if config["export_enabled"]: capture.append(secret)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S627 — The core edit is a pointer, inside the slot headroom (#646)
+# S627 — Branch snapshot, pointers, portable budget and projections (#646)
 # Covers: F74
 #
 # Seam: the bytes of skills/role-contracts/ORCHESTRATOR.md (OR11, OR43, OR6 as in
@@ -21,13 +21,14 @@ set -uo pipefail
 # shellcheck source=../fixtures/pipeline-371-helpers.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/../fixtures/pipeline-371-helpers.sh"
 sandbox_create
-trap sandbox_destroy EXIT
+short_copy=''
+trap '[ -z "$short_copy" ] || rm -rf "$short_copy"; sandbox_destroy' EXIT
 
 MARKER='<!-- session-context: slot -->'
 FLOOR=500
 OR11_TAIL='Autonomy without per-PR approval: #511, only via accepted `merge-risk-panel` delegation.'
 WF_SENTENCE='Merge autonomy without a per-PR approval is #511, not this rule. Only the accepted #646 delegation (the `merge-risk-panel` skill) provides it.'
-# shellcheck source=../../lib/context-budget.sh
+# shellcheck source=lib/context-budget.sh
 . "$TEST_REPO_ROOT/lib/context-budget.sh"
 case "${CONTEXT_BUDGET_CHARS:-}" in
   ''|*[!0-9]*) fail "S627 — CONTEXT_BUDGET_CHARS is not a number"; test_done ;;
@@ -36,7 +37,7 @@ esac
 clone() { # dest
   mkdir -p "$1"
   (cd "$TEST_REPO_ROOT" && tar --exclude='./.git' --exclude='./wip' --exclude='./CLAUDE.md' \
-    --exclude='./.claude/settings.json' --exclude='./.claude/skills' -cf - .) | (cd "$1" && tar -xf -)
+    --exclude='./.claude/settings.json' --exclude='./.claude/skills' --exclude='./.handoff' --exclude='./REPORT.md' -cf - .) | (cd "$1" && tar -xf -)
 }
 
 # S318's worst case: long clone and project paths (slot 1 names the clone path).
@@ -140,4 +141,29 @@ printf '\nhand edit\n' >>"$m/WORKFLOW.md"
 out="$(projection_problems "$m")"
 grep -qF 'not clean' <<<"$out" || fail "S627/mutation — a hand-edited projection passed the generator check"
 
+# A60's branch-state constraint is against A, not main/release preservation.
+for pinned in skills/role-contracts/ORCHESTRATOR.md test/behavior/orchestrator-scenarios.md test/fixtures/orchestrator-core-pins.tsv test/behavior/orchestrator-diff.stamp; do
+  git -C "$TEST_REPO_ROOT" show "51178851a1f6fba76e87d046788339c02f874f03:$pinned" >"$SANDBOX/pinned"
+  cmp -s "$SANDBOX/pinned" "$TEST_REPO_ROOT/$pinned" || fail "S627 — protected A bytes drifted: $pinned"
+done
+
+# A physical 19-character clone path, independent of macOS's long TMPDIR.
+short_base="$(cd /tmp && pwd -P)"
+short_suffix="$(printf '%*s' "$((17 - ${#short_base}))" '' | tr ' ' X)"
+short_copy="$(mktemp -d "$short_base/m$short_suffix")"
+[ "${#short_copy}" -eq 19 ] || fail "S627 — short physical path is not 19 characters"
+clone "$short_copy"
+short_s1="$(slot_size "$short_copy" 1)"
+short_s2="$(slot_size "$short_copy" 2)"
+short_grow=$((CONTEXT_BUDGET_CHARS - FLOOR + 1 - short_s1))
+if [ "$short_grow" -lt 1 ]; then
+  fail "S627 — short copy has no headroom to mutate"
+else
+  grow_or11 "$short_copy" $((short_grow - 1))
+  [ -z "$(headroom_problems "$short_copy")" ] || fail "S627 — short boundary control failed"
+  grow_or11 "$short_copy" 1
+  [ -n "$(headroom_problems "$short_copy")" ] || fail "S627 — short relative mutant survived"
+  [ "$(slot_size "$short_copy" 2)" = "$short_s2" ] || fail "S627 — slot 2 changed after OR11 growth"
+fi
+printf 'S627 short sizes: slot1=%s slot2=%s budget=%s\n' "$short_s1" "$short_s2" "$CONTEXT_BUDGET_CHARS" >&2
 test_done

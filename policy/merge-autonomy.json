@@ -1,6 +1,7 @@
 {
-  "schema": 1,
+  "schema": 2,
   "repository": "TiesL/spec-driven-guardrails",
+  "policy_path": "policy/merge-autonomy.json",
   "enabled": false,
   "acceptance": null,
   "control_issue": 607,
@@ -8,115 +9,65 @@
   "max_lines": 300,
   "max_files": 8,
   "hold_seconds": 300,
-  "groups": {
-    "ordinary": [
-      "README.md",
-      "CONTEXT.md",
-      "PRD*.md",
-      "ARCHITECTURE.md",
-      "TEST-SCENARIOS.md",
-      "docs/**.md",
-      "wip/**.md",
-      "test/**"
-    ],
-    "adoption": [
-      "adopt.sh",
-      "install.sh",
-      "pending-changes.sh",
-      "CHANGES.md",
-      ".gitignore",
-      "lib/*adopt*",
-      "lib/skill-links.sh",
-      "skills/adopt-workflow/**",
-      "skills/adoption-registry/**"
-    ],
-    "guard": [
-      "hooks/**",
-      ".github/**",
-      ".codex/**",
-      ".agents/**",
-      "adapters/**",
-      "settings/**",
-      "policy/**",
-      "AGENTS.md",
-      "CLAUDE.md",
-      "WORKFLOW.md",
-      "USER-CLAUDE.md",
-      "check",
-      "check-*",
-      "session-context.sh",
-      "skills/deploy-guards/**",
-      "lib/review-rounds*",
-      "review-rounds.sh",
-      "compliance-evidence.sh",
-      "classify-review-depth.sh",
-      "role-label-staleness.sh",
-      "generate-workflow-adapters.sh",
-      "wait-for-ci.sh",
-      "templates/check-*",
-      "templates/*guard*",
-      "templates/ci.yml",
-      "templates/wait-for-ci.sh"
-    ],
-    "generated": {
-      "outputs": [
-        "WORKFLOW.md",
-        "adapters/codex/AGENTS.md",
-        "AGENTS.md"
-      ],
-      "inputs": [
-        "policy/WORKFLOW.md",
-        "adapters/*/INSTRUCTIONS.md"
-      ]
-    }
-  },
-  "reserved": {
-    "release": [
-      "CHANGELOG.md",
-      "VERSION",
-      "package.json",
-      "skills/release-branch-workflow/**"
-    ],
+  "hard_stops": {
     "autonomy": [
-      "merge-preflight.sh",
-      "hooks/git-guardrails",
-      "skills/pre-merge-review/**",
-      "lib/model-record**",
-      "pipeline-override.sh",
-      "skills/role-contracts/**",
-      "skills/merge-risk-panel/**",
       "policy/merge-autonomy.json",
+      "skills/merge-risk-panel/**",
       "merge-risk-evidence.sh",
       "lib/merge-risk**",
       "test/cases/**merge_risk**",
       "test/fixtures/merge-risk**",
-      "test/behavior/merge-risk**",
-      "hooks/read-command.py",
-      "hooks/rules.sh",
+      "test/behavior/merge-risk**"
+    ],
+    "merge-enforcement": [
+      "merge-preflight.sh",
+      "pipeline-override.sh",
+      "skills/pre-merge-review/**",
+      "lib/model-record**",
+      "check",
+      "check-commit",
+      "check-*.sh",
+      "templates/check-*",
       "lib/markdown.sh",
       "lib/changes.sh",
-      "lib/context-budget.sh",
-      "lib/git-env.sh",
-      "settings/session-hooks.json",
-      "check",
+      "test/run.sh"
+    ],
+    "execution": [
+      "hooks/**",
+      "settings/**",
+      ".claude/**",
+      ".codex/**",
+      ".agents/**",
+      "session-context.sh",
+      "pending-changes.sh",
+      ".gitattributes",
+      ".gitmodules"
+    ],
+    "ci": [
       ".github/workflows/**",
-      "test/lib.sh",
-      "test/run.sh",
-      "test/fixtures/pipeline-371-helpers.sh",
+      ".github/actions/**",
+      "templates/ci.yml",
+      "epic-auto-close.sh"
+    ],
+    "contracts": [
+      "skills/role-contracts/**",
+      "wip/multi-agent-development/**",
+      "policy/WORKFLOW.md",
+      "adapters/**",
+      "generate-workflow-adapters.sh",
+      "AGENTS.md",
+      "AGENTS.override.md",
+      "CLAUDE.md",
+      "ORCHESTRATOR.md",
+      "WORKFLOW.md",
+      "USER-CLAUDE.md",
+      "CHANGES.md",
       "WORKFLOW-ADOPTION.md",
       "WORKFLOW-ADOPTIE.md",
-      "check-no-dutch.sh",
-      "check-no-quote-break.sh",
-      "check-no-sigpipe-race.sh",
-      "check-scenario-file-sync.sh",
-      "check-traceability.sh",
-      "check-workflow-adapters.sh",
-      "lib/workflow-adapters.py",
-      "lib/managed_blocks.py",
-      "lib/nfr.sh",
-      "lib/one-definition-lint.py",
-      "templates/check-pr-issue-link.sh",
-      "templates/check-main-via-pr.sh"
+      "**/AGENTS.md",
+      "**/AGENTS.override.md",
+      "**/CLAUDE.md",
+      "**/ORCHESTRATOR.md"
     ]
   },
   "labels": {
@@ -128,5 +79,25 @@
   },
   "release_heads": [
     "release/*"
-  ]
+  ],
+  "reviewer_profiles": [],
+  "deadline_seconds": 1800,
+  "max_age_seconds": 86400,
+  "max_attempts": 2,
+  "unicode_version": "13.0.0",
+  "project": null,
+  "requirements": null,
+  "design": null,
+  "floor": null,
+  "runtime_profile": null,
+  "qualification": null,
+  "guard": null,
+  "expected_checks": [
+    "check",
+    "security"
+  ],
+  "required_contexts": [
+    "build"
+  ],
+  "acceptance_issue": 646
 }

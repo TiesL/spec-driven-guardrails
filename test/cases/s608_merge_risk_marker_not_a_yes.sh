@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
-# S608 — A report's marker alone is never a yes; the position line is binding (#646)
-# Covers: F71
-#
-# Mechanical subset only, judged through the verifier's command-line contract
-# (first stdout line, reason codes, exit status, fake gh call log). The rows,
-# the rule-to-row mutation map and every mutation check live in the S608 block
-# of test/fixtures/merge-risk-646.py; model obedience is S624 (UNRUN, #682).
+# S608 — Historical A58 oracle retired by A60 (#646)
+# Covers: F71, F72
+# Retirement only; no five-vote/class/closure safety or authority claim.
 set -uo pipefail
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-sandbox_create
-trap sandbox_destroy EXIT
-TMPDIR="$SANDBOX" python3 "$TEST_REPO_ROOT/test/fixtures/merge-risk-646.py" 608 \
-  || fail "S608 - mechanical rows or mutation checks failed (FAIL lines above)"
+section="$(awk '/^### S608 /{on=1; next} on && /^### /{exit} on{print}' "$TEST_REPO_ROOT/TEST-SCENARIOS.md")"
+# Read exactly the scenario through the next heading, without modifying it.
+grep -qF 'Amended by A60: historical/superseded' <<<"$section" \
+  || fail "S608 - retirement note absent"
 test_done

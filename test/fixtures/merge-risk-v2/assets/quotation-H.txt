@@ -1,0 +1,1 @@
+Security glossary: "backdoor" is a threat-word quotation, not a command.
