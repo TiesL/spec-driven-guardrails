@@ -16,7 +16,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER = Path(os.environ.get("PANEL_TEST_RUNNER", ROOT / "test/behavior/temporary-panel-run.sh"))
 RECORDER = ROOT / "test/behavior/temporary-panel-recorder.sh"
-SCENARIO = int(sys.argv[1])
+SCENARIO = int(sys.argv[1]) if __name__ == "__main__" else 631
 NA = "not applicable: tools disabled"
 WEAK = "weaker: transcript-only, all tools disabled"
 TOKEN_FIELDS = ("input", "cache_read", "cache_write", "output")
@@ -1098,7 +1098,8 @@ def chronology_suite(parent, scenario):
         for field,value in (("scrub","person@example.invalid"),("cap","x"*3000001),("storage",None)):
             def private(field=field,value=value):
                 f=fixture("r6-private-"+field); f.native(primary=True)
-                p=f.native("judge",model="claude-opus-5-1",judge_mutation=None if field=="storage" else dict(path=["structured_output","verdicts",0,"quote"],value=value,ordinal=1),block_capture=field=="storage",ok=False)
+                p=f.native("judge",model="claude-opus-5-1",judge_mutation=None if field=="storage" else dict(path=["structured_output","verdicts",0,"quote"],value=value,ordinal=1),block_capture=field=="storage",ok=None)
+                check(p.returncode != 0 and (f.out/"STOP").exists(),"r6 "+field+" storage/publication failure claimed successful retention")
                 recovery=f.out/".private-recovery/call-3"
                 original=(f.dir/"completed-judge-1.txt").read_bytes()
                 check((recovery/"stdout").read_bytes()==original,"r6 "+field+" private original-output/evidence-loss")
@@ -1374,41 +1375,42 @@ def round5_mutations(scenario):
             print("killed "+name+": "+next((line for line in p.stderr.splitlines() if line.startswith("AssertionError:")), p.stderr.strip().splitlines()[-1]))
 
 
-if "--r5-mutations-only" in sys.argv:
-    round5_mutations(SCENARIO)
-    sys.exit(0)
+if __name__ == "__main__":
+    if "--r5-mutations-only" in sys.argv:
+        round5_mutations(SCENARIO)
+        sys.exit(0)
 
-if "--mutations-only" in sys.argv:
-    chronology_mutations()
-    sys.exit(0)
+    if "--mutations-only" in sys.argv:
+        chronology_mutations()
+        sys.exit(0)
 
-with tempfile.TemporaryDirectory(prefix="panel-680-test-") as tmp:
-    fixture = Fixture(Path(tmp))
-    if any(flag in sys.argv for flag in ("--chronology-only", "--chronology-probe", "--list-chronology")):
-        chronology_suite(fixture, SCENARIO)
-    else:
-        globals()["s" + str(SCENARIO)](fixture)
-        chronology_suite(fixture, SCENARIO)
-if SCENARIO in (629, 634) and not any(a.startswith("--chronology") or a == "--list-chronology" for a in sys.argv):
-    model_validator_mutation(SCENARIO)
-if SCENARIO == 629 and not any(a.startswith("--chronology") or a == "--list-chronology" for a in sys.argv):
-    runner_mutation(629, "canonical-key-isolation",
-        'for text in self.instructions + [packet for _, _, packet, _ in self.rows]:',
-        'for text in [packet for _, _, packet, _ in self.rows]:', "canonical key reached actor:")
-if SCENARIO == 631 and len(sys.argv) == 2:
-    for name, old, new, diagnostic in (
-        ("postflight-discard", 'errors.append(postflight_error)',
-         'raise Invalid("independent containment postflight failed")', "postflight failure discarded completed native capture"),
-        ("native-usage-loss", '"events": observed, "response": result["structured_output"], "usage": totals,',
-         '"events": observed, "response": result["structured_output"], "usage": dict.fromkeys(USAGE, 0),', "actual completed native usage retained"),
-        ("judge-postflight-discard", '            attempt["errors"] = [str(exc) or type(exc).__name__]',
-         '            pass', "report exposes invalid native judge"),
-        ("invalid-call-report-omission", 'for call in store.index["calls"]:\n        if "error_capture" not in call:', 'for call in store.index["calls"]:\n        if True:',  "report exposes invalid native judge"),
-        ("scheduled-observation-retry", 'require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")',
-         'pass', "scheduled guard blocks replacement native observation")):
-        runner_mutation(631, name, old, new, diagnostic)
-if SCENARIO == 632 and len(sys.argv) == 2:
-    chronology_mutations()
-if len(sys.argv)==2:
-    round5_mutations(SCENARIO)
-print(f"S{SCENARIO}: PASS ({checks} assertions; synthetic offline evidence only)")
+    with tempfile.TemporaryDirectory(prefix="panel-680-test-") as tmp:
+        fixture = Fixture(Path(tmp))
+        if any(flag in sys.argv for flag in ("--chronology-only", "--chronology-probe", "--list-chronology")):
+            chronology_suite(fixture, SCENARIO)
+        else:
+            globals()["s" + str(SCENARIO)](fixture)
+            chronology_suite(fixture, SCENARIO)
+    if SCENARIO in (629, 634) and not any(a.startswith("--chronology") or a == "--list-chronology" for a in sys.argv):
+        model_validator_mutation(SCENARIO)
+    if SCENARIO == 629 and not any(a.startswith("--chronology") or a == "--list-chronology" for a in sys.argv):
+        runner_mutation(629, "canonical-key-isolation",
+            'for text in self.instructions + [packet for _, _, packet, _ in self.rows]:',
+            'for text in [packet for _, _, packet, _ in self.rows]:', "canonical key reached actor:")
+    if SCENARIO == 631 and len(sys.argv) == 2:
+        for name, old, new, diagnostic in (
+            ("postflight-discard", 'errors.append(postflight_error)',
+             'raise Invalid("independent containment postflight failed")', "postflight failure discarded completed native capture"),
+            ("native-usage-loss", '"events": observed, "response": result["structured_output"], "usage": totals,',
+             '"events": observed, "response": result["structured_output"], "usage": dict.fromkeys(USAGE, 0),', "actual completed native usage retained"),
+            ("judge-postflight-discard", '            attempt["errors"] = [str(exc) or type(exc).__name__]',
+             '            pass', "report exposes invalid native judge"),
+            ("invalid-call-report-omission", 'for call in store.index["calls"]:\n        if "error_capture" not in call:', 'for call in store.index["calls"]:\n        if True:',  "report exposes invalid native judge"),
+            ("scheduled-observation-retry", 'require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")',
+             'pass', "scheduled guard blocks replacement native observation")):
+            runner_mutation(631, name, old, new, diagnostic)
+    if SCENARIO == 632 and len(sys.argv) == 2:
+        chronology_mutations()
+    if len(sys.argv)==2:
+        round5_mutations(SCENARIO)
+    print(f"S{SCENARIO}: PASS ({checks} assertions; synthetic offline evidence only)")

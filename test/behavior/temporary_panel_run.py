@@ -8,6 +8,7 @@ See temporary-panel-cases/README.md for the record/Adapter contracts.
 """
 import argparse
 import copy
+from contextlib import contextmanager
 import datetime
 import fcntl
 import hashlib
@@ -37,6 +38,17 @@ ROUTES = {"design": ["Architect", "QA", "Developer", "fresh Reviewer"],
 
 class Invalid(ValueError):
     pass
+
+
+@contextmanager
+def judge_content(enabled=True):
+    """Contain only content work; disk/publication operations stay outside."""
+    try:
+        yield
+    except Exception as exc:
+        if not enabled or isinstance(exc, Invalid):
+            raise
+        raise Invalid("judge content failure (" + type(exc).__name__ + "): " + str(exc)) from exc
 
 
 def require(condition, message):
@@ -460,7 +472,8 @@ def adapter(args, store, request, judge=False, completed=None):
         if completed:
             completed(p.stdout, p.stderr, "offline")
     require(p.returncode == 0, "offline Adapter error")
-    c = strict_json(p.stdout.decode("utf-8")) if judge else json.loads(p.stdout)
+    with judge_content(judge):
+        c = strict_json(p.stdout.decode("utf-8")) if judge else json.loads(p.stdout)
     if not judge:
         call.update(usage=c.get("usage", {}), completed=True)
         store.save()
@@ -512,37 +525,14 @@ def live_call(args, store, request, call, judge, completed=None):
                            capture_output=True, timeout=args.timeout)
         if completed:
             completed(p.stdout, p.stderr, "native")
-        p.stdout = p.stdout.decode("utf-8"); p.stderr = p.stderr.decode("utf-8")
+        with judge_content(judge):
+            p.stdout = p.stdout.decode("utf-8"); p.stderr = p.stderr.decode("utf-8")
         (scratch / "stream.jsonl").write_text(p.stdout)
         (scratch / "stderr.txt").write_text(p.stderr)
         for witness in ("invocation.json", "stream.jsonl", "stderr.txt"):
             os.chmod(scratch / witness, 0o600)
-        raw = []; malformed = False
-        try:
-            for line in lf_records(p.stdout):
-                row = strict_json(line)
-                require(isinstance(row, dict), "native stream record must be object")
-                raw.append(row)
-        except (Invalid, ValueError):
-            malformed = True
-        observed = []; result = None; init = None
-        for row in raw:
-            if row.get("type") == "system" and row.get("subtype") == "init":
-                init = row
-            message = row.get("message", {})
-            role = message.get("role", row.get("type"))
-            provenance = {"role": role} if role in ("assistant", "user", "system", "tool") else {}
-            for block in message.get("content", []):
-                if block.get("type") == "tool_use":
-                    observed.append({"seq": len(observed) + 1, "type": "tool_use", "tool": block["name"], "input": block["input"], "decision": "deny", "feedback": "pending independent verification", **provenance})
-                elif block.get("type") == "text":
-                    observed.append({"seq": len(observed) + 1, "type": "text", "text": block["text"], **provenance})
-                elif block.get("type") == "tool_result":
-                    content = block.get("content", "")
-                    text = content if isinstance(content, str) else json.dumps(content)
-                    observed.append({"seq": len(observed) + 1, "type": "tool_result", "text": text, "feedback": text, **provenance})
-            if row.get("type") == "result":
-                result = row
+        with judge_content(judge):
+            observed, result, init, malformed = native_output(p.stdout)
         if malformed:
             retain_runtime_error(store, request, observed, result, "native stream contains invalid JSON; partial ordered events retained; usage unknown")
             raise Invalid("native stream invalid; unusable error evidence retained")
@@ -582,32 +572,63 @@ def live_call(args, store, request, call, judge, completed=None):
             require(init.get("tools") == [] and init.get("mcp_servers", []) == [], "runtime advertises tools in disabled mode")
             for k in ("hook_log", "counts", "canary"):
                 v[k] = NA
-        model_usage = result.get("modelUsage", {})
-        require(model_usage and (judge or all(concrete(m, "sonnet") for m in model_usage)), "live resolved model metadata invalid")
-        totals = {k: 0 for k in USAGE}
-        for u in model_usage.values():
-            for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
-                require(type(u.get(source)) is int, "runtime actual token usage missing")
-                totals[key] += u[source]
+        with judge_content(judge):
+            model_usage = result.get("modelUsage", {})
+            require(model_usage and (judge or all(concrete(m, "sonnet") for m in model_usage)), "live resolved model metadata invalid")
+            totals = {k: 0 for k in USAGE}
+            for u in model_usage.values():
+                for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
+                    require(type(u.get(source)) is int, "runtime actual token usage missing")
+                    totals[key] += u[source]
+            capture = {"version": 1, "synthetic": False, "kind": "judge" if judge else "actor",
+                    "session": result["session_id"], "runtime": "claude -p", "model": next(iter(model_usage)),
+                    "date": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mode": mode,
+                    "events": observed, "response": result["structured_output"], "usage": totals,
+                    "errors": errors, "verification": v,
+                    "invocation": {"fresh": True, "memory": False, "settings_sources": [], "strict_mcp": True, "persistence": False}}
+            if judge and not all(concrete(m, "opus") for m in model_usage):
+                reason = "live resolved model metadata invalid"
+                capture["errors"].append(reason)
+                # Return opaque normalized evidence to the lifecycle owner.
+                # Only that owner qualifies or rejects the completed judge.
+                return capture
         if not judge:
             call.update(usage=totals, completed=True); store.save()
-        capture = {"version": 1, "synthetic": False, "kind": "judge" if judge else "actor",
-                "session": result["session_id"], "runtime": "claude -p", "model": next(iter(model_usage)),
-                "date": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mode": mode,
-                "events": observed, "response": result["structured_output"], "usage": totals,
-                "errors": errors, "verification": v,
-                "invocation": {"fresh": True, "memory": False, "settings_sources": [], "strict_mcp": True, "persistence": False}}
-        if judge and not all(concrete(m, "opus") for m in model_usage):
-            reason = "live resolved model metadata invalid"
-            capture["errors"].append(reason)
-            # Return opaque normalized evidence to the lifecycle owner.
-            # Only that owner qualifies or rejects the completed judge.
-            return capture
         # Actors use run's invalid observation record; judges use their
         # capture-first lifecycle. Canaries need their own error envelope.
         if postflight_error and request.get("canary"):
             retain_runtime_error(store, request, observed, result, postflight_error, capture)
         return capture
+
+
+def native_output(text):
+    raw = []; malformed = False
+    try:
+        for line in lf_records(text):
+            row = strict_json(line)
+            require(isinstance(row, dict), "native stream record must be object")
+            raw.append(row)
+    except (Invalid, ValueError):
+        malformed = True
+    observed = []; result = None; init = None
+    for row in raw:
+        if row.get("type") == "system" and row.get("subtype") == "init":
+            init = row
+        message = row.get("message", {})
+        role = message.get("role", row.get("type"))
+        provenance = {"role": role} if role in ("assistant", "user", "system", "tool") else {}
+        for block in message.get("content", []):
+            if block.get("type") == "tool_use":
+                observed.append({"seq": len(observed) + 1, "type": "tool_use", "tool": block["name"], "input": block["input"], "decision": "deny", "feedback": "pending independent verification", **provenance})
+            elif block.get("type") == "text":
+                observed.append({"seq": len(observed) + 1, "type": "text", "text": block["text"], **provenance})
+            elif block.get("type") == "tool_result":
+                content = block.get("content", "")
+                text = content if isinstance(content, str) else json.dumps(content)
+                observed.append({"seq": len(observed) + 1, "type": "tool_result", "text": text, "feedback": text, **provenance})
+        if row.get("type") == "result":
+            result = row
+    return observed, result, init, malformed
 
 
 def retain_runtime_error(store, request, observed, result, reason, capture=None):
@@ -904,14 +925,15 @@ def validate_judge_attempt(m, store, call, number, groups, batches, judges):
     path = call["attempt_capture"]
     require(path == m.data["evidence_path"] + "/attempts/call-" + str(number) + ".json", "judge attempt call identity invalid")
     a = load(relative(store.root, path))
-    fields(a, ("version", "kind", "usable", "work_item", "exercise", "batch", "ordinal", "cases", "call_id", "transport", "original_output", "original_sha256", "stderr", "usage", "raw_usage", "events", "response", "session", "runtime", "model", "errors"), ("capture",), "judge attempt")
+    fields(a, ("version", "kind", "usable", "work_item", "exercise", "batch", "ordinal", "cases", "call_id", "transport", "original_output", "original_sha256", "stderr", "usage", "raw_usage", "events", "response", "session", "runtime", "model", "errors"), ("capture", "original_output_encoding", "stderr_encoding"), "judge attempt")
     require(type(a["version"]) is int and a["version"] == 1 and a["kind"] == "completed-judge-attempt" and type(a["usable"]) is bool, "judge attempt kind invalid")
     require(isinstance(a["exercise"], str) and isinstance(a["batch"], str) and type(a["ordinal"]) is int and a["ordinal"] in (1, 2), "judge attempt identity invalid")
     group = (a["exercise"], a["batch"])
     require(type(a["work_item"]) is int and a["work_item"] == m.data["work_item"] and type(a["call_id"]) is int and a["call_id"] == number and group in groups, "judge attempt request binding invalid")
     require(a["cases"] == [{"case": r["case"], "repetition": r["repetition"]} for _, r, _ in groups[group]], "judge attempt cases changed")
     require(a["transport"] == ("offline" if call["synthetic"] else "native") and isinstance(a["original_output"], str) and isinstance(a["stderr"], str), "judge attempt transport invalid")
-    require(digest(a["original_output"].encode()) == a["original_sha256"], "original judge output changed")
+    require(all(a.get(k, "utf-8") in ("utf-8", "latin-1") for k in ("original_output_encoding", "stderr_encoding")), "judge output encoding invalid")
+    require(digest(a["original_output"].encode(a.get("original_output_encoding", "utf-8"))) == a["original_sha256"], "original judge output changed")
     require((a["usage"], a["raw_usage"]) == completed_usage(a["original_output"], a["transport"]), "original judge usage changed")
     require(all(isinstance(a[k], str) and a[k] for k in ("session", "runtime", "model")), "trusted judge envelope identity invalid")
     require(call["kind"] == "judge" and call["completed"] and call.get("exercise") == a["exercise"] and call.get("session") == a["session"] and call["usage"] == a["usage"], "judge attempt call/usage binding invalid")
@@ -1196,30 +1218,92 @@ def quote_present(obj, quote):
     return False
 
 
+def object_fields(text):
+    """Project top-level value spans without recursively decoding other fields.
+
+    Strings and matched containers are opaque. This recovers independent usage
+    even when another value cannot be decoded; no search through nested fields
+    or guessed regex counter is allowed. Duplicate/ambiguous roots reject.
+    """
+    text = text.strip()
+    require(text.startswith("{") and text.endswith("}"), "usage source is not an object")
+    spans = {}; i = 1
+    while i < len(text) - 1:
+        while text[i].isspace():
+            i += 1
+        require(text[i] == '"', "usage source key invalid")
+        key, length = json.JSONDecoder().raw_decode(text[i:])
+        require(key not in spans, "duplicate usage source property")
+        i += length
+        while text[i].isspace():
+            i += 1
+        require(text[i] == ":", "usage source separator invalid"); i += 1
+        start = i; stack = []; quoted = escaped = False
+        while i < len(text):
+            c = text[i]
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif c == "\\":
+                    escaped = True
+                elif c == '"':
+                    quoted = False
+            elif c == '"':
+                quoted = True
+            elif c in "[{":
+                stack.append(c)
+            elif c in "]}":
+                if not stack:
+                    break
+                require(stack.pop() == ("[" if c == "]" else "{"), "usage source container invalid")
+            elif c == "," and not stack:
+                break
+            i += 1
+        require(not quoted and not stack and i < len(text), "usage source truncated")
+        spans[key] = text[start:i].strip()
+        require(spans[key], "usage source value missing")
+        if text[i] == "}":
+            require(i == len(text) - 1, "usage source trailing data")
+            return spans
+        require(text[i] == ",", "usage source delimiter invalid"); i += 1
+        require(text[i:].strip() != "}", "usage source trailing comma")
+    return spans
+
+
 def completed_usage(original, transport):
-    """Read available counters without requiring any other payload to be valid."""
+    """Total content-only projection; unknown counters always retain raw output.
+
+    Never decode unrelated payload. A decoder/extractor exception here cannot
+    become a storage failure, in the completion callback or a fresh report.
+    """
     raw = None
     try:
         if transport == "offline":
-            obj = strict_json(original)
-            raw = obj.get("usage") if isinstance(obj, dict) else None
+            span = object_fields(original).get("usage")
         else:
+            span = None
             for line in original.split("\n"):
                 try:
-                    row = strict_json(line)
-                except (Invalid, ValueError):
+                    candidate = object_fields(line).get("modelUsage")
+                except Exception:
                     continue
-                if isinstance(row, dict) and "modelUsage" in row:
-                    raw = row["modelUsage"]
+                if candidate is not None:
+                    span = candidate
+        # Retain opaque source if this field itself cannot be decoded.
+        raw = span
+        decoded = strict_json(span) if span is not None else None
+        # Prove the optional decoded evidence is serializable at envelope depth.
+        # On any content failure, keep its opaque source span instead.
+        encoded({"raw_usage": decoded})
         if transport == "offline":
-            counts = {k: raw.get(k) if isinstance(raw, dict) else None for k in USAGE}
-            return {k: v if type(v) is int and v >= 0 else None for k, v in counts.items()}, raw
+            counts = {k: decoded.get(k) if isinstance(decoded, dict) else None for k in USAGE}
+            return {k: v if type(v) is int and v >= 0 else None for k, v in counts.items()}, decoded
         counts = {}
         for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
-            values = [v.get(source) if isinstance(v, dict) else None for v in raw.values()] if isinstance(raw, dict) else []
+            values = [v.get(source) if isinstance(v, dict) else None for v in decoded.values()] if isinstance(decoded, dict) else []
             counts[key] = sum(values) if values and all(type(v) is int and v >= 0 for v in values) else None
-        return counts, raw
-    except (Invalid, ValueError):
+        return counts, decoded
+    except Exception:
         return dict.fromkeys(USAGE), raw
 
 
@@ -1261,11 +1345,20 @@ def retained_judge_attempt(args, store, request, batch):
                 "work_item": store.m.data["work_item"], "exercise": request["exercise"],
                 "batch": request["batch"], "ordinal": request["ordinal"],
                 "cases": [{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]],
-                "call_id": number, "transport": transport, "original_output": stdout.decode("utf-8"),
-                "original_sha256": digest(stdout), "stderr": stderr.decode("utf-8"),
+                "call_id": number, "transport": transport, "original_output": "",
+                "original_sha256": digest(stdout), "stderr": "",
                 "usage": dict.fromkeys(USAGE), "raw_usage": None,
                 "events": [], "response": None, "session": "unknown", "runtime": transport,
                 "model": "unknown", "errors": ["completed judge output awaiting qualification"]}
+            # Opaque bytes must survive even a text-codec rejection. Latin-1
+            # is a reversible byte mapping, explicitly labelled, never a repair
+            # or a replacement of the invalid output by successful content.
+            for field, raw in (("original_output", stdout), ("stderr", stderr)):
+                try:
+                    attempt[field] = raw.decode("utf-8")
+                except UnicodeError:
+                    attempt[field] = raw.decode("latin-1")
+                    attempt[field + "_encoding"] = "latin-1"
             store.put(path, attempt)
             call = store.index["calls"][-1]
             call.update(completed=True, usage=attempt["usage"], error_capture=path, attempt_capture=path, session=attempt["session"])
@@ -1295,19 +1388,26 @@ def retained_judge_attempt(args, store, request, batch):
         c = adapter(args, store, request, True, completed)
         require(attempt is not None, "completed judge handoff missing")
         # Opaque capture is evidence even when its fields are absent or containers.
+        with judge_content():
+            normalized = encoded(c)
         with (recovery / "normalized.json").open("xb") as f:
-            os.chmod(f.name, 0o600); f.write(encoded(c)); f.flush(); os.fsync(f.fileno())
-        attempt["capture"] = c
-        if isinstance(c, dict):
-            for key in ("events", "response"):
-                attempt[key] = c.get(key)
-            for key in ("session", "model", "runtime"):
-                value = c.get(key)
-                if isinstance(value, str) and value:
-                    attempt[key] = value
+            os.chmod(f.name, 0o600); f.write(normalized); f.flush(); os.fsync(f.fileno())
+        with judge_content():
+            candidate = dict(attempt)
+            candidate["capture"] = c
+            if isinstance(c, dict):
+                for key in ("events", "response"):
+                    candidate[key] = c.get(key)
+                for key in ("session", "model", "runtime"):
+                    value = c.get(key)
+                    if isinstance(value, str) and value:
+                        candidate[key] = value
+            encoded(candidate)
+        attempt = candidate
         store.index["calls"][-1]["session"] = attempt["session"]
         publish()
-        judge_verdicts(c, batch, prior_sessions, args)
+        with judge_content():
+            judge_verdicts(c, batch, prior_sessions, args)
     except Exception as exc:
         if isinstance(exc, OSError):
             (store.root / "STOP").touch(mode=0o600)
@@ -1404,6 +1504,8 @@ def report(m, store, args):
                       "Original completed stderr: " + json.dumps(error["stderr"]),
                       "Call binding: " + json.dumps({k: call[k] for k in ("attempt_capture", "session", "usage")}),
                       "Raw usage evidence: " + json.dumps(error["raw_usage"]), ""]
+        if "original_output_encoding" in error or "stderr_encoding" in error:
+            lines += ["Original byte encoding: " + json.dumps({k: error.get(k, "utf-8") for k in ("original_output_encoding", "stderr_encoding")}), ""]
     for ex in m.data["exercises"]:
         expected = [(ex["id"], c["id"], n) for c in ex["cases"] for n in range(1, c["repetitions"] + 1)]
         found = [retained[k] for k in expected if k in retained]
