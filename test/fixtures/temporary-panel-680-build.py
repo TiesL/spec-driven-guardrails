@@ -5,13 +5,22 @@ Developer-owned test data. Never starts a model. Release rows are unobserved
 coverage obligations, not invented historical proposals. QA must compare these
 packets/keys to S629-S634 before any live use. No generated behavior status edits.
 """
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 DEST = ROOT / 'test/behavior/temporary-panel-cases'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output-dir', type=Path, help='Generate all synthetic evidence into a fresh directory too.')
+args = parser.parse_args()
+if args.output_dir is not None:
+    args.output_dir = args.output_dir.resolve()
+    if args.output_dir.exists() and any(args.output_dir.iterdir()):
+        parser.error('--output-dir must be empty or absent; existing evidence is never replaced')
 
 
 def write(name, data):
@@ -226,3 +235,18 @@ manifest = dict(version=1, work_item=680, plan=write('plan.json', dict(version=1
     evidence_path='test/behavior/evidence/temporary-panel-680', results_path='test/behavior/temporary-panel-results.md', exercises=exercises)
 write('manifest.json', manifest)
 print('Built', len(plan), 'finite rows; no observation or model call.')
+
+if args.output_dir is not None:
+    runner = ROOT / 'test/behavior/temporary-panel-run.sh'
+    adapter = Path(__file__).with_name('temporary-panel-680') / 'adapter.py'
+    for operation in ('run', 'judge', 'report'):
+        command = [str(runner), operation, '--offline', '--exercise-file', str(DEST / 'manifest.json'),
+                   '--output-dir', str(args.output_dir), '--max-sessions', '40']
+        if operation in ('run', 'judge'):
+            command += ['--runtime-adapter' if operation == 'run' else '--judge-adapter', str(adapter)]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode:
+            raise SystemExit(result.stderr)
+        print('Generated main', operation)
+    subprocess.run([sys.executable, '-I', str(adapter.with_name('examples.py')),
+                    '--output-dir', str(args.output_dir)], check=True)

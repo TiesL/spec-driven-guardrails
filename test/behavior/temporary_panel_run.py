@@ -373,7 +373,9 @@ class Store:
         require(not (self.root / "STOP").exists() and not (self.args.stop_file and Path(self.args.stop_file).exists()), "stop file: no further calls")
 
     def put(self, name, obj):
-        raw = encoded(obj)
+        # Compact only the storage envelope. Strings (including original judge
+        # stdout/stderr) stay byte-exact; identity encoding remains unchanged.
+        raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
         path = relative(self.root, name)
         old = path.stat().st_size if path.exists() else 0
         self.guard(max(0, len(raw) - old))
