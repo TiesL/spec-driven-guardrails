@@ -4689,3 +4689,89 @@ Doubt: events establish observable emission order only; live independence, priva
   moderate producer/error-reader change and one parameterized regression property.
 
 Doubt: durable capture establishes recoverability and local consistency, not authenticated runtime identity, installed containment or live exercise success.
+
+
+### A56 addendum 5 (Architect, Planning, 2026-11-12): opaque unusable-attempt envelopes (#680; PR #697)
+
+- **Classification and decision.** R8 lens 1 and R9 carry the same code/medium
+  finding, `nested-judge-content-prevents-error-reporting`. The contract states a
+  general goal, but implementation still admits content by successful decoding or
+  serialization at the producer's current call depth. R8's 1,100-object rejection
+  passes; R9's offline 983/984-object variants reach the envelope and crash its
+  reader. This is an open-ended family of content shapes, not a special depth or
+  another exception to catch. Specify the missing structural invariant below.
+  This refines addendum 4's trusted-error-reader obligation and supersedes any
+  retention of decoded, unqualified payload inside an unusable attempt. Capture
+  ordering, exact evidence, accounting and qualification obligations remain.
+  No #680 AC1-AC6 is contradicted or further narrowed; addendum 1's accepted
+  qualifications remain. Original output still contains every emitted field.
+- **One invariant and owner.** An unusable completed judge attempt is always a
+  fixed-schema envelope of runner-owned metadata and independently checked scalar
+  projections, plus exact original stdout/stderr as opaque strings with explicit
+  reversible byte encoding, byte lengths and hashes. Its structural nesting never
+  depends on output content. It contains no decoded or normalized payload, including
+  `capture`, `response`, `events` or decoded `raw_usage`, and no payload-derived
+  exception message. A content-originated failure is a flat runner-owned reason
+  code, with a safe generic fallback for any contained content exception.
+  `retained_judge_attempt()` owns this invariant from completion through rejection
+  or qualification, for both ordinals and native/offline Adapters. Validation may
+  qualify that same permanent attempt only after all required checks succeed.
+- **Developer change.** Keep the safe durable initial envelope throughout content
+  work. Do not publish or attach the normalized candidate before qualification;
+  on rejection record only a stable reason code such as `CONTENT_INVALID`.
+  Never persist `str(exc)` or unqualified result identities as trusted diagnostics.
+  Original output remains the evidence for invalid quotes, identities and other
+  fields; reporting needs no second decoded copy of them. Preserve independent
+  known usage exactly and bind it once to the same call; otherwise use explicit
+  unknown counters, never zero, with raw evidence as opaque text. `completed_usage()`
+  must not return arbitrary decoded usage objects for embedding in either the
+  envelope or ledger. Use a bounded nonrecursive projection of permitted counters,
+  retaining source spans as strings where needed.
+
+  Keep every depth-sensitive decode/normalization of original output inside one
+  bounded, contained qualification step: enforce byte and structural/work limits
+  before recursive decoding, contain content failures through validation, and
+  return checked data or a flat reason code. Successful serialization is not a
+  depth limit. Keep filesystem/publication operations outside content exception
+  scopes. `validate_judge_attempt()` via `validate_retained_state()` validates the
+  shallow envelope, byte/hash identity, request/call/ordinal and usage consistency
+  without recursively decoding its original output. Remove its recursive raw-usage
+  path too; safe counter recomputation must obey the same bounded projection.
+  `load()`/`strict_json()` may parse the fixed envelope, never its opaque strings;
+  reject malformed/deep envelope structure in a controlled way before recursive
+  loading. Report renders opaque evidence and the code without content re-decoding.
+  Update dependent schema/readers and affected generated synthetic artifacts;
+  never rewrite real observations or relax qualified-judge validation.
+- **One generic QA falsifier.** Extend the existing S631 content-failure property,
+  through public judge/report/retry/continuation, with a generated family of bounded,
+  scrub-safe malformed outputs and fixed trusted request context. Sweep contiguous
+  depths below, at and above the runtime's producer decode transition (or explicit
+  structural limit); determine that transition in the local synthetic harness,
+  never privilege an interpreter-specific depth. Include the recorded 983/984 and
+  1,100 examples where within the byte budget, nested objects, arrays/mixed shapes,
+  wide objects/long keys and nested usage as instances of this same property.
+  Emit raw text iteratively so the fixture's decoder does not hide runner failures.
+  Across both Adapters and both ordinals require a content-independent envelope
+  shape, exact original bytes/hash/length/binding, known-or-explicitly-unknown usage,
+  successful unusable-attempt reporting with a flat code, no unrelated STOP, zero
+  retry/continuation calls or observations, and no replacement PASS. Keep valid
+  first/conditional-second controls and genuine scrub/cap/storage-stop controls.
+  Demonstrate RED on the supplied head and GREEN after the fix; reinsert decoded
+  rejected content in a scratch mutant and kill it at the envelope/reportability
+  assertion, not setup. Retain carried falsifiers and their intended mutation kills.
+- **Stopping rule, scope and route.** Stop after the single property, transition
+  sweep, controls, carried falsifiers, intended mutation kill, matching QA artifact
+  comparison and fresh Review pass on the resulting head. Further depth/field
+  instances violate this invariant; they do not justify a new exception list or
+  scenario ID. An escaping content failure means the invariant is not implemented,
+  not permission for another depth patch. Keep recursion limits and the unchanged
+  3,000,000-byte publication cap. Safe capture failure still stops calls/publication
+  with private recovery where storage permits; storage failure is never retention.
+  QA owns scenario text; Developer owns code, executable tests and regeneration;
+  orchestrator owns publication, comparison and git/GitHub actions. Route Architect
+  -> QA -> Developer -> QA comparison -> fresh Reviewer. Keep the existing deep
+  Module and Interface/Seam: the two real Adapters share one lifecycle owner.
+  Deleting it would spread content safety across callers; central ownership gives
+  Depth, Leverage and Locality without a new Module, dependency or model session.
+
+Doubt: structural separation removes payload nesting from error-envelope loading; finite probes do not prove all resource failures, runtime authenticity or live exercise success. No finding is closed by this addendum.
