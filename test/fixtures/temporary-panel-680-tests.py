@@ -569,9 +569,9 @@ def s631(f):
     calls = json.loads((f.out / "evidence/682/index.json").read_text())["calls"]
     check("error_capture" in calls[-1], "judge postflight discarded completed native capture")
     error = json.loads((f.out / calls[-1]["error_capture"]).read_text())
-    check(error["capture"]["usage"]["input"] == 13 and error["usable"] is False, "invalid native judge retains actual usage without usable evidence")
-    f.cli("report", "--live")
-    check("postflight failed" in (f.out / "results-682.md").read_text(), "report exposes invalid native judge")
+    check(error["usage"]["input"] == 13 and error["usable"] is False, "invalid native judge retains actual usage without usable evidence")
+    reported = f.cli("report", "--live", ok=None)
+    check(reported.returncode == 0 and "CONTENT_INVALID" in (f.out / "results-682.md").read_text(), "report exposes invalid native judge")
     reset_out(f)
     f.run(); record = f.read()
     for field in ("packet", "canonical", "capture", "verification_errors", "deterministic", "semantic", "coverage", "sensitivity", "findings"):
@@ -705,8 +705,11 @@ def s634(f):
     for model in ("claude-sonnet-5-5", "claude-haiku-4-5", "opus", "claude-opus-placeholder", "claude-stub-1"):
         reset_out(f); f.native()
         p = f.native("judge", model=model, ok=None)
-        check(p.returncode != 0 and "live resolved model metadata invalid" in p.stderr,
+        check(p.returncode != 0 and "CONTENT_INVALID" in p.stderr,
               "model property accepted: judge " + model + ": " + p.stdout + p.stderr)
+        index = json.loads((f.out / "evidence/682/index.json").read_text())
+        attempt = json.loads((f.out / index["calls"][-1]["error_capture"]).read_text())
+        check(model in attempt["original_output"] and attempt["errors"] == ["CONTENT_INVALID"] and not index["judges"], "rejected model evidence retained")
     reset_out(f)
     f.judge(); check(len([c for c in f.calls() if c["kind"] == "judge"]) == 1, "PASS: exactly one judge")
     request = f.calls()[-1]
@@ -992,9 +995,9 @@ def chronology_suite(parent, scenario):
                 i=json.loads((f.out/"evidence/682/index.json").read_text()); call=i["calls"][-1]
                 check("error_capture" in call,"r5 "+fault+" discarded rejected judgment")
                 error=json.loads((f.out/call["error_capture"]).read_text())
-                check(error["usable"] is False and error["capture"]["kind"]=="judge" and error["errors"],"r5 "+fault+" unusable judge identity")
+                check(error["usable"] is False and error["kind"]=="completed-judge-attempt" and "capture" not in error and error["errors"],"r5 "+fault+" unusable judge identity")
                 check(error["usage"]==dict(input=13,cache_read=0,cache_write=0,output=9) and call["usage"]==error["usage"],"r5 "+fault+" lost rejected usage")
-                if fault=="quote": check(error["response"]["verdicts"][0]["quote"]=="Invented source quote.","r5 emitted quote lost")
+                if fault=="quote": check("Invented source quote." in error["original_output"],"r5 emitted quote lost")
                 f.cli("report","--live"); text=(f.out/"results-682.md").read_text()
                 check("LAB: PASS" not in text and error["errors"][0] in text and '"input": 39' in text,"r5 "+fault+" report hid invalid attempt")
                 before=(f.dir/"native-calls.jsonl").read_text()
@@ -1091,7 +1094,7 @@ def chronology_suite(parent, scenario):
                         a=json.loads((f.out/call["attempt_capture"]).read_text())
                         check(a["usable"] and not a["errors"] and "error_capture" not in call,name+" valid capture not qualified")
                         check(a["original_output"]==(f.dir/("completed-judge-"+str(n)+".txt")).read_text(),name+" valid original output lost")
-                        check(a["capture"]==json.loads((f.out/call["capture"]).read_text()) and a["usage"]==call["usage"],name+" qualified different capture")
+                        check(a["qualified_capture"]==call["capture"] and a["qualified_sha256"]==sha((f.out/call["capture"]).read_bytes()) and a["usage"]==call["usage"],name+" qualified different capture")
                     check(f.read()["verdict"]==("not runnable (stub)" if transport=="offline" else "FAIL" if second else "PASS"),name+" valid verdict changed")
                     check(f.read()["semantic"][0]["verdict"]==("FAIL" if second else "PASS"),name+" supported semantic outcome changed")
                 add(name,valid)
@@ -1219,8 +1222,8 @@ def chronology_suite(parent, scenario):
                 if "attempt_capture" not in call:
                     continue
                 path=f.out/call["attempt_capture"]; a=json.loads(path.read_text())
-                a["capture"]=c
-                for key in ("session","model","runtime","usage","events","response"):
+                a["qualified_sha256"]=sha((f.out/a["qualified_capture"]).read_bytes())
+                for key in ("session","model","runtime","usage"):
                     a[key]=copy.deepcopy(c[key])
                 if a["transport"]=="offline":
                     a["original_output"]=json.dumps(c)+"\n"
@@ -1230,6 +1233,7 @@ def chronology_suite(parent, scenario):
                         if row.get("type")=="result":
                             row.update(session_id=c["session"],structured_output=c["response"])
                     a["original_output"]="".join(json.dumps(row)+"\n" for row in rows)
+                a["original_bytes"]=len(a["original_output"].encode(a["original_output_encoding"]))
                 a["original_sha256"]=sha(a["original_output"].encode()); write(path,a)
         def body_quote():
             f=pilot("body-quote"); f.native("judge",model="claude-opus-5-1",extra=("--exercise","generic-exercise")); f.cli("report","--live")
@@ -1403,7 +1407,7 @@ if __name__ == "__main__":
              'raise Invalid("independent containment postflight failed")', "postflight failure discarded completed native capture"),
             ("native-usage-loss", '"events": observed, "response": result["structured_output"], "usage": totals,',
              '"events": observed, "response": result["structured_output"], "usage": dict.fromkeys(USAGE, 0),', "actual completed native usage retained"),
-            ("judge-postflight-discard", '            attempt["errors"] = [str(exc) or type(exc).__name__]',
+            ("judge-postflight-discard", '            attempt["errors"] = ["CONTENT_INVALID"]',
              '            pass', "report exposes invalid native judge"),
             ("invalid-call-report-omission", 'for call in store.index["calls"]:\n        if "error_capture" not in call:', 'for call in store.index["calls"]:\n        if True:',  "report exposes invalid native judge"),
             ("scheduled-observation-retry", 'require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")',

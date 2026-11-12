@@ -21,6 +21,7 @@ import sys
 import tempfile
 
 CAP = 3_000_000
+JSON_DEPTH_LIMIT = 64  # Bound recursive qualification and trusted envelope readers.
 NA = "not applicable: tools disabled"
 WEAK = "weaker: transcript-only, all tools disabled"
 TOOLS = ["Bash", "Write", "Edit", "Agent"]
@@ -48,7 +49,7 @@ def judge_content(enabled=True):
     except Exception as exc:
         if not enabled or isinstance(exc, Invalid):
             raise
-        raise Invalid("judge content failure (" + type(exc).__name__ + "): " + str(exc)) from exc
+        raise Invalid("judge content invalid") from exc
 
 
 def require(condition, message):
@@ -664,7 +665,37 @@ PROTOCOL = "a56-chronology-v1"
 WORK_SECTIONS = RESPONSE[2:7]
 
 
+def json_bounds(text):
+    """Linear work, opaque strings, before any recursive JSON decoder.
+
+    A publication-sized source may still be too deep to qualify. Neither the
+    interpreter's recursion threshold nor successful serialization is a bound.
+    """
+    require(len(text) <= CAP and len(text.encode("utf-8")) <= CAP, "JSON byte limit exceeded")
+    depth = 0; quoted = escaped = False
+    for char in text:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+        elif char in "[{":
+            depth += 1
+            require(depth <= JSON_DEPTH_LIMIT, "JSON structural limit exceeded")
+        elif char in "]}":
+            depth -= 1
+    # Syntax and balanced delimiters are still the strict decoder's job.
+
+
 def strict_json(text):
+    if isinstance(text, bytes):
+        require(len(text) <= CAP, "JSON byte limit exceeded")
+        text = text.decode("utf-8")
+    json_bounds(text)
     def pairs(items):
         obj = {}
         for key, value in items:
@@ -925,7 +956,7 @@ def validate_judge_attempt(m, store, call, number, groups, batches, judges):
     path = call["attempt_capture"]
     require(path == m.data["evidence_path"] + "/attempts/call-" + str(number) + ".json", "judge attempt call identity invalid")
     a = load(relative(store.root, path))
-    fields(a, ("version", "kind", "usable", "work_item", "exercise", "batch", "ordinal", "cases", "call_id", "transport", "original_output", "original_sha256", "stderr", "usage", "raw_usage", "events", "response", "session", "runtime", "model", "errors"), ("capture", "original_output_encoding", "stderr_encoding"), "judge attempt")
+    fields(a, ("version", "kind", "usable", "work_item", "exercise", "batch", "ordinal", "cases", "call_id", "transport", "original_output", "original_sha256", "original_bytes", "original_output_encoding", "stderr", "stderr_bytes", "stderr_sha256", "stderr_encoding", "usage", "raw_usage", "session", "runtime", "model", "errors"), ("qualified_capture", "qualified_sha256"), "judge attempt")
     require(type(a["version"]) is int and a["version"] == 1 and a["kind"] == "completed-judge-attempt" and type(a["usable"]) is bool, "judge attempt kind invalid")
     require(isinstance(a["exercise"], str) and isinstance(a["batch"], str) and type(a["ordinal"]) is int and a["ordinal"] in (1, 2), "judge attempt identity invalid")
     group = (a["exercise"], a["batch"])
@@ -933,7 +964,12 @@ def validate_judge_attempt(m, store, call, number, groups, batches, judges):
     require(a["cases"] == [{"case": r["case"], "repetition": r["repetition"]} for _, r, _ in groups[group]], "judge attempt cases changed")
     require(a["transport"] == ("offline" if call["synthetic"] else "native") and isinstance(a["original_output"], str) and isinstance(a["stderr"], str), "judge attempt transport invalid")
     require(all(a.get(k, "utf-8") in ("utf-8", "latin-1") for k in ("original_output_encoding", "stderr_encoding")), "judge output encoding invalid")
-    require(digest(a["original_output"].encode(a.get("original_output_encoding", "utf-8"))) == a["original_sha256"], "original judge output changed")
+    for field, length, sha in (("original_output", "original_bytes", "original_sha256"), ("stderr", "stderr_bytes", "stderr_sha256")):
+        raw = a[field].encode(a[field + "_encoding"])
+        require(type(a[length]) is int and a[length] == len(raw) and digest(raw) == a[sha], "original judge output changed")
+    fields(a["usage"], USAGE, label="judge usage")
+    require(all(v is None or (type(v) is int and v >= 0) for v in a["usage"].values()), "judge usage must be checked counts or unknown")
+    require(a["raw_usage"] is None or isinstance(a["raw_usage"], str), "judge raw usage must be opaque")
     require((a["usage"], a["raw_usage"]) == completed_usage(a["original_output"], a["transport"]), "original judge usage changed")
     require(all(isinstance(a[k], str) and a[k] for k in ("session", "runtime", "model")), "trusted judge envelope identity invalid")
     require(call["kind"] == "judge" and call["completed"] and call.get("exercise") == a["exercise"] and call.get("session") == a["session"] and call["usage"] == a["usage"], "judge attempt call/usage binding invalid")
@@ -943,10 +979,11 @@ def validate_judge_attempt(m, store, call, number, groups, batches, judges):
         require(1 in pair and (any(v["verdict"] == "FAIL" for v in pair[1][1]["response"]["verdicts"]) or any(v["verdict"] == "FAIL" for _, r, _ in groups[group] for v in r["deterministic"])), "second attempt requires usable first FAIL")
     if a["usable"]:
         require(not a["errors"] and "error_capture" not in call and call.get("capture") in judges, "usable judge attempt binding invalid")
-        require(pair.get(a["ordinal"], (None,))[0] == call["capture"] and a.get("capture") == judges[call["capture"]], "qualified judge attempt changed")
-        require(all(a[k] == a["capture"][k] for k in ("session", "model", "runtime", "usage", "events", "response")), "qualified judge envelope changed")
+        require(pair.get(a["ordinal"], (None,))[0] == call["capture"] and a.get("qualified_capture") == call["capture"], "qualified judge attempt changed")
+        require(a.get("qualified_sha256") == digest(relative(store.root, call["capture"]).read_bytes()), "qualified judge bytes changed")
+        require(all(a[k] == judges[call["capture"]][k] for k in ("session", "model", "runtime", "usage")), "qualified judge envelope changed")
     else:
-        require(a["errors"] and call.get("error_capture") == path and "capture" not in call and a["ordinal"] not in pair, "unusable judgment replaced by usable judgment")
+        require(a["errors"] == ["CONTENT_INVALID"] and a["session"] == a["model"] == "unknown" and a["runtime"] == a["transport"] and "qualified_capture" not in a and "qualified_sha256" not in a and call.get("error_capture") == path and "capture" not in call and a["ordinal"] not in pair, "unusable judgment replaced by usable judgment")
     scrub(a)
     return a
 
@@ -1227,14 +1264,13 @@ def object_fields(text):
     """
     text = text.strip()
     require(text.startswith("{") and text.endswith("}"), "usage source is not an object")
-    spans = {}; i = 1
+    spans = {}; i = 1; decoder = json.JSONDecoder()
     while i < len(text) - 1:
         while text[i].isspace():
             i += 1
         require(text[i] == '"', "usage source key invalid")
-        key, length = json.JSONDecoder().raw_decode(text[i:])
+        key, i = decoder.raw_decode(text, i)
         require(key not in spans, "duplicate usage source property")
-        i += length
         while text[i].isspace():
             i += 1
         require(text[i] == ":", "usage source separator invalid"); i += 1
@@ -1266,43 +1302,48 @@ def object_fields(text):
             require(i == len(text) - 1, "usage source trailing data")
             return spans
         require(text[i] == ",", "usage source delimiter invalid"); i += 1
-        require(text[i:].strip() != "}", "usage source trailing comma")
+        lookahead = i
+        while lookahead < len(text) and text[lookahead].isspace():
+            lookahead += 1
+        require(lookahead < len(text) and text[lookahead] != "}", "usage source trailing comma")
     return spans
 
 
 def completed_usage(original, transport):
-    """Total content-only projection; unknown counters always retain raw output.
+    """Bounded nonrecursive counter projection, with opaque source evidence.
 
-    Never decode unrelated payload. A decoder/extractor exception here cannot
-    become a storage failure, in the completion callback or a fresh report.
+    Containers are scanned iteratively; only permitted scalar counters decode.
+    Unknown or excessive scalar values never manufacture zero. No caller ever
+    receives a decoded usage tree, including the trusted error reader.
     """
     raw = None
     try:
+        require(len(original) <= CAP, "usage source limit exceeded")
         if transport == "offline":
-            span = object_fields(original).get("usage")
+            raw = object_fields(original).get("usage")
+            rows = [object_fields(raw)] if raw is not None else []
+            names = USAGE
         else:
-            span = None
             for line in original.split("\n"):
                 try:
                     candidate = object_fields(line).get("modelUsage")
-                except Exception:
+                except Invalid:
                     continue
                 if candidate is not None:
-                    span = candidate
-        # Retain opaque source if this field itself cannot be decoded.
-        raw = span
-        decoded = strict_json(span) if span is not None else None
-        # Prove the optional decoded evidence is serializable at envelope depth.
-        # On any content failure, keep its opaque source span instead.
-        encoded({"raw_usage": decoded})
-        if transport == "offline":
-            counts = {k: decoded.get(k) if isinstance(decoded, dict) else None for k in USAGE}
-            return {k: v if type(v) is int and v >= 0 else None for k, v in counts.items()}, decoded
+                    raw = candidate
+            models = object_fields(raw) if raw is not None else {}
+            rows = [object_fields(span) for span in models.values()]
+            names = ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")
         counts = {}
-        for key, source in zip(USAGE, ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens", "outputTokens")):
-            values = [v.get(source) if isinstance(v, dict) else None for v in decoded.values()] if isinstance(decoded, dict) else []
-            counts[key] = sum(values) if values and all(type(v) is int and v >= 0 for v in values) else None
-        return counts, decoded
+        for key, source in zip(USAGE, names):
+            values = []
+            for row in rows:
+                span = row.get(source, "")
+                # Bounded scalar decoding, never an arbitrary container/string.
+                value = strict_json(span) if re.fullmatch(r"(?:0|[1-9][0-9]{0,63})", span) else None
+                values.append(value if type(value) is int and value >= 0 else None)
+            counts[key] = sum(values) if values and all(v is not None for v in values) else None
+        return counts, raw
     except Exception:
         return dict.fromkeys(USAGE), raw
 
@@ -1346,14 +1387,16 @@ def retained_judge_attempt(args, store, request, batch):
                 "batch": request["batch"], "ordinal": request["ordinal"],
                 "cases": [{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]],
                 "call_id": number, "transport": transport, "original_output": "",
-                "original_sha256": digest(stdout), "stderr": "",
+                "original_sha256": digest(stdout), "original_bytes": len(stdout), "stderr": "",
+                "stderr_sha256": digest(stderr), "stderr_bytes": len(stderr),
                 "usage": dict.fromkeys(USAGE), "raw_usage": None,
-                "events": [], "response": None, "session": "unknown", "runtime": transport,
-                "model": "unknown", "errors": ["completed judge output awaiting qualification"]}
+                "session": "unknown", "runtime": transport,
+                "model": "unknown", "errors": ["CONTENT_PENDING"]}
             # Opaque bytes must survive even a text-codec rejection. Latin-1
             # is a reversible byte mapping, explicitly labelled, never a repair
             # or a replacement of the invalid output by successful content.
             for field, raw in (("original_output", stdout), ("stderr", stderr)):
+                attempt[field + "_encoding"] = "utf-8"
                 try:
                     attempt[field] = raw.decode("utf-8")
                 except UnicodeError:
@@ -1393,21 +1436,8 @@ def retained_judge_attempt(args, store, request, batch):
         with (recovery / "normalized.json").open("xb") as f:
             os.chmod(f.name, 0o600); f.write(normalized); f.flush(); os.fsync(f.fileno())
         with judge_content():
-            candidate = dict(attempt)
-            candidate["capture"] = c
-            if isinstance(c, dict):
-                for key in ("events", "response"):
-                    candidate[key] = c.get(key)
-                for key in ("session", "model", "runtime"):
-                    value = c.get(key)
-                    if isinstance(value, str) and value:
-                        candidate[key] = value
-            encoded(candidate)
-        attempt = candidate
-        store.index["calls"][-1]["session"] = attempt["session"]
-        publish()
-        with judge_content():
             judge_verdicts(c, batch, prior_sessions, args)
+            require(c["usage"] == attempt["usage"], "completed judge usage projection differs")
     except Exception as exc:
         if isinstance(exc, OSError):
             (store.root / "STOP").touch(mode=0o600)
@@ -1415,17 +1445,19 @@ def retained_judge_attempt(args, store, request, batch):
         if (store.root / "STOP").exists():
             raise Invalid("completed judge retention stopped; inspect private recovery; publication and calls stopped") from exc
         if attempt is not None:
-            attempt["errors"] = [str(exc) or type(exc).__name__]
+            attempt["errors"] = ["CONTENT_INVALID"]
             publish()
             cleanup()
         else:
             raise Invalid("judge incomplete; no completed output captured: " + (str(exc) or type(exc).__name__)) from exc
-        raise Invalid("judge unusable; completed output retained: " + (str(exc) or type(exc).__name__)) from exc
+        raise Invalid("judge unusable; completed output retained: CONTENT_INVALID") from exc
     # Qualification changes this same attempt; it never replaces the raw capture.
     qualified = store.m.data["evidence_path"] + "/judge/" + request["exercise"] + "-" + request["batch"] + "-j" + str(request["ordinal"]) + ".json"
     try:
         store.put(qualified, c)
-        attempt.update(usable=True, errors=[])
+        attempt.update(usable=True, errors=[], qualified_capture=qualified,
+                       qualified_sha256=digest(relative(store.root, qualified).read_bytes()),
+                       **{k: c[k] for k in ("session", "runtime", "model")})
         store.put(path, attempt)
         call = store.index["calls"][-1]
         del call["error_capture"]
@@ -1497,8 +1529,8 @@ def report(m, store, args):
         error = state["errors_by_path"][call["error_capture"]]
         lines += ["Invalid runtime evidence (not usable containment): " + call["error_capture"],
                   "Identity: " + json.dumps({k: error[k] for k in ("exercise", "case", "repetition", "session", "model", "batch", "ordinal", "cases") if k in error}),
-                  "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error["events"]),
-                  "Retained response: " + json.dumps(error["response"]), "Available actual usage: " + json.dumps(error["usage"]), ""]
+                  "Failure: " + "; ".join(error["errors"]), "Ordered events: " + json.dumps(error.get("events", [])),
+                  "Retained response: " + json.dumps(error.get("response")), "Available actual usage: " + json.dumps(error["usage"]), ""]
         if "original_output" in error:
             lines += ["Original completed output: " + json.dumps(error["original_output"]),
                       "Original completed stderr: " + json.dumps(error["stderr"]),
