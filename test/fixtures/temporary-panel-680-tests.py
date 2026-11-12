@@ -530,6 +530,221 @@ def s630(f):
     check(WEAK in (f.out / "results-682.md").read_text(), "fallback result explicitly weaker")
 
 
+def structural_depth(raw):
+    # Independent lexical measurement; quoted source is deliberately opaque.
+    level = maximum = 0; quoted = escaped = False
+    for ch in raw.decode():
+        if quoted:
+            if escaped: escaped = False
+            elif ch == "\\": escaped = True
+            elif ch == '"': quoted = False
+        elif ch == '"': quoted = True
+        elif ch in "[{": level += 1; maximum = max(maximum, level)
+        elif ch in "]}": level -= 1
+    return maximum
+
+
+def nested_wire(shape, depth):
+    opens = []; closes = []
+    for n in range(depth):
+        array = shape == "arrays" or (shape == "mixed" and n % 2)
+        opens.append("[" if array else '{"x":')
+        closes.append("]" if array else "}")
+    return "".join(opens) + '"synthetic"' + "".join(reversed(closes))
+
+
+def publication_property(folder, route, shape, depth):
+    """One public producer/reader property, including future supported uses."""
+    f = Fixture(folder)
+    name = f"{route}-{shape}-{depth}"
+    ordinal = 2 if route.endswith("-j2") else 1
+    wire = nested_wire(shape, depth)
+    marker = "R10_DEPTH_PLACEHOLDER"
+    native = route.startswith("native")
+    mode = "--live" if native else "--offline"
+    extra = ("--exercise", "generic-exercise")
+    following = copy.deepcopy(f.manifest["exercises"][0]); following["id"] = "following"
+    f.manifest["exercises"].append(following)
+    f.plan["rows"].append(dict(f.plan["rows"][0], exercise="following"))
+    f.plan["pilot"] = dict(exercise="generic-exercise", before=["following"]); f.save()
+    original_path = folder / "completed-property.stdout"
+    stderr_path = folder / "completed-property.stderr"
+    original_cli = f.cli
+
+    def emit(op, *args, **kw):
+        if native:
+            launcher = folder / "native-launcher.py"
+            source = launcher.read_text()
+            if route == "native-canary-input":
+                source = source.replace('if primary:\n', 'if canary:\n    messages[0]["content"][0]["input"]["extra"]="' + marker + '"\nif primary:\n', 1)
+                # The log and stream must contain exactly the same actual input.
+                source = source.replace(' + "\\n"\n        for n, b', '.replace(json.dumps("' + marker + '"), ' + repr(wire) + ') + "\\n"\n        for n, b')
+                source = source.replace('print(json.dumps({"type": message.get("role", "unknown"), "message": message}, ensure_ascii=data["stream_ascii"]))', 'print(json.dumps({"type": message.get("role", "unknown"), "message": message}, ensure_ascii=data["stream_ascii"]).replace(json.dumps("' + marker + '"), ' + repr(wire) + '))')
+            condition = 'canary' if "canary" in route else 'not canary and not is_judge'
+            if route.startswith("native-judge"):
+                condition = 'is_judge and req["ordinal"]==' + str(ordinal)
+                insertion = 'if ' + condition + ': result["modelUsage"][data["model"]]["extra"]="' + marker + '"\n'
+            else:
+                insertion = '' if route == "native-canary-input" else 'if ' + condition + ': result["structured_output"]["records"]="' + marker + '"\n'
+            source = source.replace('output=json.dumps(result)+"\\n"\n', insertion + 'output=(json.dumps(result)+"\\n").replace(json.dumps("' + marker + '"), ' + repr(wire) + ')\n')
+            # Independently capture bytes at the transport, including startup stderr.
+            wrapper = folder / "property-launcher.sh"
+            wrapper.write_text('#!/bin/sh\n' + __import__('shlex').quote(str(launcher)) + ' "$@" >' + __import__('shlex').quote(str(original_path)) + ' 2>' + __import__('shlex').quote(str(stderr_path)) + '\nstatus=$?\ncat ' + __import__('shlex').quote(str(original_path)) + '\ncat ' + __import__('shlex').quote(str(stderr_path)) + ' >&2\nexit "$status"\n')
+            wrapper.chmod(0o755); launcher.write_text(source)
+            args = tuple(str(wrapper) if a == str(launcher) else a for a in args)
+        return original_cli(op, *args, **kw)
+
+    if native:
+        f.cli = emit
+    elif route != "import":
+        source = (folder / "adapter_impl.py").read_text()
+        if route.startswith("offline-judge"):
+            source = source.replace('output=json.dumps(result)+"\\n"', 'if request["kind"]=="judge" and request["ordinal"]==' + str(ordinal) + ': result["events"][0]["input"]="' + marker + '"\noutput=json.dumps(result)+"\\n"')
+        source = source.replace('print(output,end="")', 'output=output.replace(json.dumps("' + marker + '"), ' + repr(wire) + ')\n(here/"completed-property.stdout").write_text(output)\nprint(output,end="")')
+        (folder / "adapter_impl.py").write_text(source)
+        # Capture process stderr independently, rather than assuming empty bytes.
+        import shlex
+        f.adapter.write_text('#!/bin/sh\nexport PANEL_TEST_CWD_EMPTY=yes PANEL_TEST_HOME_EMPTY=yes\npython3 -I ' + shlex.quote(str(folder / "adapter_impl.py")) + ' 2>' + shlex.quote(str(stderr_path)) + '\nstatus=$?\ncat ' + shlex.quote(str(stderr_path)) + ' >&2\nexit "$status"\n')
+
+    if "judge" in route:
+        # Valid setup is completed before depth is introduced into the judge.
+        if native: f.native(primary=True, extra=extra)
+        else: f.run(None, True, *extra)
+        check(f.cli("report", mode).returncode == 0, name + " valid setup")
+        if native:
+            p = f.native("judge", model="claude-opus-5-1", judgment="FAIL" if route.endswith("-j2") else "PASS", extra=extra, ok=None)
+        else:
+            for judge_number in (1, 2):
+                c = fallback("judge-" + str(judge_number))
+                c.update(kind="judge", usage=dict(input=13, cache_read=0, cache_write=0, output=9),
+                    response=dict(verdicts=[dict(case="control", repetition=1, criterion="reason",
+                        verdict="FAIL" if route.endswith("-j2") else "PASS", quote=json.loads(c["events"][0]["text"])["body"], reason="Valid supported reason.")]))
+                f.data["judges"].append(c)
+            p = f.cli("judge", mode, "--judge-adapter", str(f.adapter), *extra, ok=None)
+    elif route == "import":
+        c = capture("original-release", "observed-in-use")
+        c.update(kind="release", model="unknown", date="unknown", events=None,
+            source=dict(url="https://example.invalid/history", snapshot="Original history.",
+                snapshot_sha256=sha(b"Original history."), packet=f.packet.read_text(),
+                runtime=c["runtime"], model="unknown", date="unknown", events=None))
+        c["response"]["records"] = marker
+        raw = (json.dumps(c) + "\n").replace(json.dumps(marker), wire).encode()
+        original_path.write_bytes(raw); stderr_path.write_bytes(b"")
+        release = folder / "release.json"; release.write_bytes(raw)
+        f.case.update(mode="observed-in-use", release=ref(release))
+        f.plan["rows"][0]["mode"] = "observed-in-use"; f.save()
+        p = f.cli("run", mode, *extra, ok=None)
+    elif native:
+        p = f.native(primary=True, extra=extra, ok=None)
+    else:
+        c = capture(); c["usage"] = dict(input=13, cache_read=0, cache_write=0, output=9)
+        c["response"]["records"] = marker
+        p = f.run(c, None, *extra)
+
+    index = json.loads((f.out / "evidence/682/index.json").read_text())
+    report = f.cli("report", mode, ok=None)
+    check(report.returncode == 0, name + " publication/readability: report rejected retained output: " + report.stderr)
+    for path in (f.out / "evidence").rglob("*.json"):
+        check(structural_depth(path.read_bytes()) <= 64, name + " publication/readability: complete envelope exceeds 64")
+    errors = [json.loads(path.read_text()) for path in (f.out / "evidence/682").rglob("*.json")
+              if '"original_output"' in path.read_text() and json.loads(path.read_text()).get("usable") is False]
+    if errors:
+        a = errors[-1]
+        check(a["errors"] == ["CONTENT_INVALID"] and structural_depth(json.dumps(a).encode()) <= 4, name + " opaque unusable output")
+        for field, source, size, hashed in (("original_output", original_path, "original_bytes", "original_sha256"), ("stderr", stderr_path, "stderr_bytes", "stderr_sha256")):
+            raw = source.read_bytes()
+            check(a[field].encode(a[field + "_encoding"]) == raw and a[size] == len(raw) and a[hashed] == sha(raw), name + " original-output/evidence-loss")
+        check(a["work_item"] == 682 and a["usable"] is False and a["transport"] == ("import" if route == "import" else "native" if native else "offline"), name + " trusted binding")
+        if route == "import":
+            check(not index["calls"] and len(index["imports"]) == 1 and a["call_id"] is None, name + " import manufactured a call")
+        else:
+            call = index["calls"][-1]
+            check(type(a["call_id"]) is int and a["call_id"] == len(index["calls"]) and call["completed"] and call["session"] == a["session"] and call["usage"] == a["usage"], name + " exact once-only call accounting")
+            check(sum(c.get("error_capture") == call["error_capture"] for c in index["calls"]) == 1, name + " duplicate call accounting")
+        check(a["usage"] == dict(input=13, cache_read=0, cache_write=0, output=9) if route != "import" else a["usage"] == dict.fromkeys(TOKEN_FIELDS, 0), name + " available usage")
+        if "judge" in route:
+            check(a["ordinal"] == ordinal and a["batch"] == "one" and a["cases"] == [dict(case="control", repetition=1)], name + " judge binding")
+        elif "canary" not in route:
+            check((a["exercise"], a["case"], a["repetition"]) == ("generic-exercise", "control", 1), name + " observation binding")
+        check(not (f.out / "STOP").exists() and not list((f.out / ".private-recovery").glob("call-*")), name + " unrelated publication STOP")
+        before = copy.deepcopy(index); original = json.dumps(a, sort_keys=True)
+        counters = {path: path.read_bytes() for path in folder.glob("*calls.jsonl")}
+        for op in ("judge", "run"):
+            if native: f.native(op, model="claude-opus-5-1" if op == "judge" else "claude-sonnet-5-5", primary=op == "run", extra=extra, ok=None)
+            else: f.cli(op, mode, "--judge-adapter" if op == "judge" else "--runtime-adapter", str(f.adapter), *extra, ok=None)
+        if native: f.native(primary=True, extra=("--exercise", "following"), ok=None)
+        else: f.cli("run", mode, "--runtime-adapter", str(f.adapter), "--exercise", "following", ok=None)
+        check({path: path.read_bytes() for path in folder.glob("*calls.jsonl")} == counters and json.loads((f.out / "evidence/682/index.json").read_text())["records"] == before["records"], name + " retry/continuation started calls or observations")
+        check(any(json.dumps(json.loads(path.read_text()), sort_keys=True) == original for path in (f.out / "evidence/682").rglob("*.json")), name + " unusable output replaced")
+        outcome = "unusable"
+    else:
+        check(p.returncode == 0, name + " discarded completed output: " + p.stderr)
+        if not "judge" in route:
+            if native: f.native("judge", model="claude-opus-5-1", extra=extra)
+            else: f.judge()
+        f.cli("report", mode)
+        # Later adjudication must preserve the original records, not drop/rewrite it.
+        if route in ("offline-actor", "native-actor", "import"):
+            check(json.dumps(f.read()["capture"]["response"]["records"], separators=(",", ":")) == wire, name + " records silently rewritten")
+        if native:
+            counter = (folder / "native-calls.jsonl").read_bytes()
+            expected_ready = not route.endswith("-j2")
+            f.native(primary=True, extra=("--exercise", "following"), session="next-observation", ok=expected_ready)
+            if not expected_ready:
+                check((folder / "native-calls.jsonl").read_bytes() == counter, name + " valid FAIL permitted continuation")
+        else:
+            f.data["actor"] = capture("next-observation")
+            f.cli("run", mode, "--runtime-adapter", str(f.adapter), "--exercise", "following")
+        f.cli("report", mode)
+        if (route, shape, depth) == ("native-actor", "objects", 61):
+            # Independent retained-envelope tampering must fail before any call.
+            path = f.evidence(); before = path.read_bytes()
+            path.write_bytes(before.rstrip()[:-1] + b',"tampered":' + nested_wire("objects", 65).encode() + b'}')
+            counter = (folder / "native-calls.jsonl").read_bytes()
+            for op in ("report", "judge", "run"):
+                bad = f.cli(op, mode, ok=None)
+                check(bad.returncode == 2 and "JSON structural limit exceeded" in bad.stderr and "RecursionError" not in bad.stderr, "deep retained envelope tamper accepted")
+            check((folder / "native-calls.jsonl").read_bytes() == counter, "deep retained tamper started call")
+            path.write_bytes(before)
+        outcome = "usable"
+    print("S631 publication/readability " + name + ": " + outcome, flush=True)
+    return route, shape, depth, outcome
+
+
+def publication_suite():
+    import multiprocessing
+    import shutil
+    routes = ("offline-actor", "native-actor", "native-canary", "native-canary-input", "import", "offline-judge-j1", "offline-judge-j2", "native-judge-j1", "native-judge-j2")
+    tasks = [(route, shape, depth) for route in routes for shape in ("objects", "arrays", "mixed") for depth in range(55, 67)]
+    probe = os.environ.get("PANEL_TEST_PUBLICATION_PROBE")
+    if probe: tasks = [task for task in tasks if "-".join(map(str, task)) == probe]
+    check(bool(tasks), "unknown publication probe: " + str(probe))
+    with tempfile.TemporaryDirectory(prefix="panel-publication-") as tmp:
+        jobs = [(Path(tmp) / "-".join(map(str, task)), *task) for task in tasks]
+        if len(jobs) == 1: results = [publication_property(*jobs[0])]
+        else:
+            with multiprocessing.get_context("fork").Pool(4) as pool:
+                results = pool.starmap(publication_property, jobs)
+        if not probe:
+            for route in routes:
+                for shape in ("objects", "arrays", "mixed"):
+                    rows = [(d, o) for r, s, d, o in results if (r, s) == (route, shape)]
+                    transition = next((d for d, o in rows if o == "unusable"), None)
+                    check(transition is not None and any(d == transition - 1 and o == "usable" for d, o in rows), route + " missing contiguous complete-envelope transition")
+                    print(f"S631 {route}/{shape} complete-envelope transition {transition}; sweep 55-66", flush=True)
+        if not probe and not os.environ.get("PANEL_TEST_SKIP_MUTATIONS"):
+            folder = Path(tmp) / "mutant"; folder.mkdir()
+            shutil.copy2(RUNNER, folder / RUNNER.name)
+            source = RUNNER.with_name("temporary_panel_run.py").read_text()
+            old = '    json_bounds(raw)  # Producer and reader share the complete serialized envelope bound.'
+            check(source.count(old) == 1, "producer-bound mutation anchor")
+            (folder / "temporary_panel_run.py").write_text(source.replace(old, '    pass  # scratch producer-enforcement bypass', 1))
+            env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_TEST_PUBLICATION_PROBE="native-actor-objects-62", PANEL_TEST_SKIP_MUTATIONS="1")
+            p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--publication-only"], capture_output=True, text=True, env=env)
+            check(p.returncode != 0 and "publication/readability: report rejected retained output" in p.stderr, "producer bypass survived or died at setup: " + p.stdout + p.stderr)
+            print("S631 killed producer-enforcement-bypass at publication/readability after valid transport setup", flush=True)
+
+
 def s631(f):
     # Completed native output must survive a failed independent postflight.
     original_manifest = copy.deepcopy(f.manifest); original_plan = copy.deepcopy(f.plan)
@@ -1380,6 +1595,10 @@ def round5_mutations(scenario):
 
 
 if __name__ == "__main__":
+    if "--publication-only" in sys.argv:
+        publication_suite()
+        sys.exit(0)
+
     if "--r5-mutations-only" in sys.argv:
         round5_mutations(SCENARIO)
         sys.exit(0)

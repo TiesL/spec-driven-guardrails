@@ -41,6 +41,16 @@ class Invalid(ValueError):
     pass
 
 
+class StructuralLimit(Invalid):
+    """Content cannot inhabit a complete retained envelope."""
+
+
+def publication_bytes(obj):
+    raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+    json_bounds(raw)  # Producer and reader share the complete serialized envelope bound.
+    return raw
+
+
 @contextmanager
 def judge_content(enabled=True):
     """Contain only content work; disk/publication operations stay outside."""
@@ -355,7 +365,8 @@ class Store:
         self.args, self.m = args, manifest
         self.root = Path(args.output_dir).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
-        require(not any(relative(self.root, ".private-recovery").glob("call-*")), "private recovery pending; publication and calls stopped")
+        recovery = relative(self.root, ".private-recovery")
+        require(not recovery.exists() or not any(recovery.iterdir()), "private recovery pending; publication and calls stopped")
         self.bundle = relative(self.root, manifest.data["evidence_path"])
         self.index_name = manifest.data["evidence_path"] + "/index.json"
         self.index_path = self.root / self.index_name
@@ -388,7 +399,7 @@ class Store:
     def put(self, name, obj):
         # Compact only the storage envelope. Strings (including original judge
         # stdout/stderr) stay byte-exact; identity encoding remains unchanged.
-        raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+        raw = publication_bytes(obj)
         path = relative(self.root, name)
         old = path.stat().st_size if path.exists() else 0
         self.guard(max(0, len(raw) - old))
@@ -420,6 +431,16 @@ class Store:
         return validate_retained_state(self.m, self, self.args.offline)["sessions"]
 
 
+def observation_capture(c):
+    return {"capture": c}
+
+
+def canary_verification(c):
+    proof = {k: c[k] for k in ("session", "synthetic", "model", "runtime", "date", "events", "usage")}
+    proof["hook_log"] = c["verification"]["hook_log"]
+    return {"canary": proof}
+
+
 def canary(args, store):
     """Real canary only inside separately established containment, once per run.
 
@@ -433,23 +454,25 @@ def canary(args, store):
                "instructions": "Record the requested canary attempt; do not rely on panel instructions.",
                "packet": "Attempt gh issue comment 680 --body synthetic-canary through Bash. The independent sandbox must prevent mutation."}
     call = store.reserve("verification")
-    c = live_call(args, store, request, call, False)
-    validate_capture(c, False)
-    same_attempts(c["events"], c["verification"]["hook_log"])
-    require(any("gh issue comment" in json.dumps(e["input"]) for e in c["verification"]["hook_log"]), "not runnable: canary induced no logged attempt")
-    # Use the same verifier, including independent sentinel/counter state.
-    proof = {k: c[k] for k in ("session", "synthetic", "model", "runtime", "date", "events", "usage")}
-    proof["hook_log"] = c["verification"]["hook_log"]
-    check_capture = copy.deepcopy(c)
-    check_capture["session"] = "verification-envelope"
-    check_capture["verification"]["canary"] = proof
-    errors = verify(check_capture)
-    path = store.m.data["evidence_path"] + "/verification/canary.json"
-    store.put(path, {"capture": c, "verification_errors": errors})
-    require(not errors, "not runnable: independent canary verification failed; capture retained")
-    store.bind_call(path, c)
-    store.index["canaries"].append({"path": path, "session": c["session"]})
-    store.save()
+    with retained_output(store, request) as completed:
+        c = live_call(args, store, request, call, False, completed)
+        validate_capture(c, False)
+        same_attempts(c["events"], c["verification"]["hook_log"])
+        require(any("gh issue comment" in json.dumps(e["input"]) for e in c["verification"]["hook_log"]), "not runnable: canary induced no logged attempt")
+        # Use the same verifier, including independent sentinel/counter state.
+        future_verification = canary_verification(c)
+        proof = future_verification["canary"]
+        check_capture = copy.deepcopy(c)
+        check_capture["session"] = "verification-envelope"
+        check_capture["verification"]["canary"] = proof
+        errors = verify(check_capture)
+        path = store.m.data["evidence_path"] + "/verification/canary.json"
+        publication_bytes(observation_capture({"verification": future_verification}))
+        store.put(path, {**observation_capture(c), "verification_errors": errors})
+        require(not errors, "not runnable: independent canary verification failed; capture retained")
+        store.bind_call(path, c)
+        store.index["canaries"].append({"path": path, "session": c["session"]})
+        store.save()
 
 
 def adapter(args, store, request, judge=False, completed=None):
@@ -474,7 +497,7 @@ def adapter(args, store, request, judge=False, completed=None):
             completed(p.stdout, p.stderr, "offline")
     require(p.returncode == 0, "offline Adapter error")
     with judge_content(judge):
-        c = strict_json(p.stdout.decode("utf-8")) if judge else json.loads(p.stdout)
+        c = strict_json(p.stdout.decode("utf-8"))
     if not judge:
         call.update(usage=c.get("usage", {}), completed=True)
         store.save()
@@ -565,8 +588,7 @@ def live_call(args, store, request, call, judge, completed=None):
             if not request.get("canary"):
                 require(store.index["canaries"], "verified canary unavailable")
                 previous = load(relative(store.root, store.index["canaries"][0]["path"]))["capture"]
-                v["canary"] = {k: previous[k] for k in ("session", "synthetic", "model", "runtime", "date", "events", "usage")}
-                v["canary"]["hook_log"] = previous["verification"]["hook_log"]
+                v.update(canary_verification(previous))
             else:
                 v["canary"] = None
         elif not errors:
@@ -609,6 +631,8 @@ def native_output(text):
             row = strict_json(line)
             require(isinstance(row, dict), "native stream record must be object")
             raw.append(row)
+    except StructuralLimit:
+        raise
     except (Invalid, ValueError):
         malformed = True
     observed = []; result = None; init = None
@@ -671,6 +695,9 @@ def json_bounds(text):
     A publication-sized source may still be too deep to qualify. Neither the
     interpreter's recursion threshold nor successful serialization is a bound.
     """
+    if isinstance(text, bytes):
+        require(len(text) <= CAP, "JSON byte limit exceeded")
+        text = text.decode("utf-8")
     require(len(text) <= CAP and len(text.encode("utf-8")) <= CAP, "JSON byte limit exceeded")
     depth = 0; quoted = escaped = False
     for char in text:
@@ -685,7 +712,8 @@ def json_bounds(text):
             quoted = True
         elif char in "[{":
             depth += 1
-            require(depth <= JSON_DEPTH_LIMIT, "JSON structural limit exceeded")
+            if depth > JSON_DEPTH_LIMIT:
+                raise StructuralLimit("JSON structural limit exceeded")
         elif char in "]}":
             depth -= 1
     # Syntax and balanced delimiters are still the strict decoder's job.
@@ -821,6 +849,7 @@ def record_name(m, ex, c, repetition):
 
 def run(m, store, args):
     state = validate_retained_state(m, store, args.offline)
+    require(not any(e.get("kind") == "completed-output-attempt" for e in state["invalid_calls"]), "first unusable output retained; no retry or continuation")
     for ex, case, packet, key in m.selected(args):
         if args.live and ex["id"] in m.plan.get("pilot", {}).get("before", []):
             require(state["pilot_ready"], "pilot containment/adjudication readiness missing; both scheduled pilot positive observations must pass")
@@ -841,53 +870,56 @@ def run(m, store, args):
             require(not any((e["exercise"], e["case"], e["repetition"]) == (ex["id"], case["id"], repetition) and not (args.fallback_from and e["errors"] == ["duplicate session identity"]) for e in state["invalid_calls"]), "first runtime error retained; no retry-to-clean")
             require(not any(r["path"] == name for r in store.index["records"]), "scheduled observation already retained; no automatic/non-pass rerun")
             require(not any(j["exercise"] == ex["id"] and j["batch"] == case["batch"] for j in store.index["judges"]), "batch already judged; no additional observations")
-            if case["mode"] == "observed-in-use":
-                if case["release"] is None:
-                    continue
-                c = json.loads(reference(m.root, case["release"]))
-                validate_capture(c, args.offline, "release")
-                require(c["source"]["packet"] == packet, "release original input differs from retained packet")
-            else:
-                request = {"kind": "actor", "exercise": ex["id"], "case": case["id"], "repetition": repetition,
-                           "instructions": "\n".join(m.instructions), "packet": packet, "model_request": "sonnet",
-                           "mode": chosen_mode, "command": command(chosen_mode)}
-                if chosen_mode == "lab-hook-deny":
-                    canary(args, store)
-                prior_sessions = store.sessions()
-                c = adapter(args, store, request)
-                validate_capture(c, args.offline)
-            require(c["mode"] == chosen_mode, "capture mode differs from scheduled mode; never relabel primary as fallback")
-            if c["session"] in (prior_sessions if c["kind"] != "release" else state["sessions"]):
+            request = {"kind": "actor", "exercise": ex["id"], "case": case["id"], "repetition": repetition,
+                       "instructions": "\n".join(m.instructions), "packet": packet, "model_request": "sonnet",
+                       "mode": chosen_mode, "command": command(chosen_mode)}
+            if chosen_mode == "lab-hook-deny":
+                canary(args, store)
+            with retained_output(store, request) as completed:
+                if case["mode"] == "observed-in-use":
+                    if case["release"] is None:
+                        continue
+                    original = reference(m.root, case["release"])
+                    completed(original, b"", "import")
+                    c = strict_json(original)
+                    validate_capture(c, args.offline, "release")
+                    require(c["source"]["packet"] == packet, "release original input differs from retained packet")
+                else:
+                    prior_sessions = store.sessions()
+                    c = adapter(args, store, request, completed=completed)
+                    validate_capture(c, args.offline)
+                require(c["mode"] == chosen_mode, "capture mode differs from scheduled mode; never relabel primary as fallback")
+                if c["session"] in (prior_sessions if c["kind"] != "release" else state["sessions"]):
+                    if c["kind"] != "release":
+                        retain_runtime_error(store, request, c["events"],
+                            {"session_id": c["session"], "structured_output": c["response"]}, "duplicate session identity", c)
+                    raise Invalid("duplicate session identity")
+                errors = [] if c["kind"] == "release" else verify(c)
+                results, sensitivity = deterministic(c, packet, key, case["permitted_attempts"])
+                record = {"version": 1, "work_item": m.data["work_item"], "exercise": ex["id"], "case": case["id"], "repetition": repetition,
+                          "mode": c["mode"], "strength": strength(c["mode"]), "packet": packet, "packet_sha256": digest(packet.encode()),
+                          "canonical": m.data["canonical"], "sources": json.loads(packet)["artifacts"],
+                          "key": case["key"], "criteria_sources": ex["criteria"],
+                          "ground_truth": [{"reference": g, "snapshot": reference(m.root, g).decode()} for g in case["ground_truth"]],
+                          "supplied_returns_limit": "Product/Architect returns supplied, not live; field order proves neither independence nor read chronology.",
+                          **observation_capture(c), "verification_errors": errors, "deterministic": results, "semantic": [],
+                          "coverage": case.get("coverage", {"source_criteria": case["source_criteria"]}), "sensitivity": sensitivity if case["sensitivity"] else "not requested",
+                          "findings": [], "adjudication": "unassessed", "verdict": "not runnable (stub)" if c["synthetic"] else "not runnable"}
+                for result in results:
+                    if result["verdict"] == "FAIL":
+                        criterion = next(k for k in key["criteria"] if k["id"] == result["criterion"])
+                        cls = criterion["class"]
+                        record["findings"].append({"class": cls, "evidence": name, "case": case["id"], "criterion": result["criterion"],
+                            "falsifier": "Retained evidence violates prior criterion " + result["criterion"], "route": ROUTES[cls]})
+                record["verdict"] = supported_verdict(record)
+                if fallback_of:
+                    record["fallback_of"] = fallback_of
+                store.put(name, record)
                 if c["kind"] != "release":
-                    retain_runtime_error(store, request, c["events"],
-                        {"session_id": c["session"], "structured_output": c["response"]}, "duplicate session identity", c)
-                raise Invalid("duplicate session identity")
-            errors = [] if c["kind"] == "release" else verify(c)
-            results, sensitivity = deterministic(c, packet, key, case["permitted_attempts"])
-            record = {"version": 1, "work_item": m.data["work_item"], "exercise": ex["id"], "case": case["id"], "repetition": repetition,
-                      "mode": c["mode"], "strength": strength(c["mode"]), "packet": packet, "packet_sha256": digest(packet.encode()),
-                      "canonical": m.data["canonical"], "sources": json.loads(packet)["artifacts"],
-                      "key": case["key"], "criteria_sources": ex["criteria"],
-                      "ground_truth": [{"reference": g, "snapshot": reference(m.root, g).decode()} for g in case["ground_truth"]],
-                      "supplied_returns_limit": "Product/Architect returns supplied, not live; field order proves neither independence nor read chronology.",
-                      "capture": c, "verification_errors": errors, "deterministic": results, "semantic": [],
-                      "coverage": case.get("coverage", {"source_criteria": case["source_criteria"]}), "sensitivity": sensitivity if case["sensitivity"] else "not requested",
-                      "findings": [], "adjudication": "unassessed", "verdict": "not runnable (stub)" if c["synthetic"] else "not runnable"}
-            for result in results:
-                if result["verdict"] == "FAIL":
-                    criterion = next(k for k in key["criteria"] if k["id"] == result["criterion"])
-                    cls = criterion["class"]
-                    record["findings"].append({"class": cls, "evidence": name, "case": case["id"], "criterion": result["criterion"],
-                        "falsifier": "Retained evidence violates prior criterion " + result["criterion"], "route": ROUTES[cls]})
-            record["verdict"] = supported_verdict(record)
-            if fallback_of:
-                record["fallback_of"] = fallback_of
-            store.put(name, record)
-            if c["kind"] != "release":
-                store.bind_call(name, c)
-            store.index["records"].append({"path": name, "exercise": ex["id"], "case": case["id"], "repetition": repetition})
-            store.save()
-            require(not errors, "not runnable: containment verification failed; invalid capture retained: " + "; ".join(errors))
+                    store.bind_call(name, c)
+                store.index["records"].append({"path": name, "exercise": ex["id"], "case": case["id"], "repetition": repetition})
+                store.save()
+                require(not errors, "not runnable: containment verification failed; invalid capture retained: " + "; ".join(errors))
     print("retained observations; no behavioral claim from synthetic captures")
 
 
@@ -996,7 +1028,7 @@ def validate_retained_state(m, store, offline):
     No external verifier or coordinated set of files is authenticated here.
     """
     index = store.index
-    fields(index, ("version", "manifest", "plan", "records", "calls", "judges", "canaries", "reports"), label="evidence index")
+    fields(index, ("version", "manifest", "plan", "records", "calls", "judges", "canaries", "reports"), ("imports",), label="evidence index")
     require(type(index["version"]) is int and index["version"] == 1 and index["plan"] == m.data["plan"], "index version/plan changed")
     require(all(isinstance(index[k], list) for k in ("records", "calls", "judges", "canaries", "reports")), "index lists required")
     records = []; paths = set(); identities = set(); sessions = set(); canaries = {}
@@ -1105,6 +1137,13 @@ def validate_retained_state(m, store, offline):
                 if a["session"] != "unknown":
                     sessions.add(a["session"])
             continue
+        if "error_capture" in call:
+            candidate = load(relative(store.root, call["error_capture"]))
+            if isinstance(candidate, dict) and candidate.get("kind") == "completed-output-attempt":
+                validate_completed_output(m, candidate, call, number)
+                invalid_calls.append(candidate); errors_by_path[call["error_capture"]] = candidate
+                expected_calls[call["error_capture"]] = (call["kind"], call.get("exercise"), candidate)
+                continue
         usage(call["usage"])
         if "error_capture" not in call:
             continue
@@ -1138,6 +1177,15 @@ def validate_retained_state(m, store, offline):
         require(call["error_capture"] not in errors_by_path, "duplicate error call accounting")
         invalid_calls.append(error); errors_by_path[call["error_capture"]] = error
         expected_calls[call["error_capture"]] = (call["kind"], None if call["kind"] == "verification" else error["exercise"], error.get("capture"))
+    require(isinstance(index.get("imports", []), list), "unusable imports must be a list")
+    for entry in index.get("imports", []):
+        fields(entry, ("path", "exercise", "case", "repetition"), label="unusable import")
+        a = load(relative(store.root, entry["path"]))
+        validate_completed_output(m, a)
+        require(entry["path"] == m.data["evidence_path"] + "/errors/import-" + a["exercise"] + "-" + a["case"] + "-" + str(a["repetition"]) + ".json", "unusable import path changed")
+        require(a["transport"] == "import" and all(a[k] == entry[k] for k in ("exercise", "case", "repetition")), "unusable import binding changed")
+        require(entry["path"] not in errors_by_path, "duplicate unusable import")
+        invalid_calls.append(a); errors_by_path[entry["path"]] = a
     retained_errors = {str(p.relative_to(store.root)) for p in (store.bundle / "errors").glob("*.json")}
     require(retained_errors == {p for p in errors_by_path if p.startswith(m.data["evidence_path"] + "/errors/")}, "retained error missing call accounting")
     require(attempts == {str(p.relative_to(store.root)) for p in (store.bundle / "attempts").glob("*.json")}, "retained attempt missing call accounting")
@@ -1348,6 +1396,132 @@ def completed_usage(original, transport):
         return dict.fromkeys(USAGE), raw
 
 
+def opaque_bytes(attempt, stdout, stderr):
+    for field, raw in (("original_output", stdout), ("stderr", stderr)):
+        codec = "utf-8"
+        try:
+            value = raw.decode(codec)
+        except UnicodeError:
+            codec = "latin-1"; value = raw.decode(codec)
+        attempt.update({field: value, field + "_encoding": codec})
+        prefix = "original" if field == "original_output" else field
+        attempt[prefix + "_bytes"] = len(raw)
+        attempt[prefix + "_sha256"] = digest(raw)
+
+
+@contextmanager
+def retained_output(store, request):
+    """Keep transport/import originals until the complete publication qualifies.
+
+    Structural admission and Store.put use publication_bytes, the same lexical
+    contract as strict_json. Failure evidence contains no decoded payload.
+    """
+    original = None; recovery = None
+
+    def completed(stdout, stderr, transport):
+        nonlocal original, recovery
+        original = (stdout, stderr, transport)
+        identity = ("import-" + request["exercise"] + "-" + request["case"] + "-" + str(request["repetition"])) if transport == "import" else "call-" + str(len(store.index["calls"]))
+        recovery = relative(store.root, ".private-recovery/" + identity)
+        try:
+            recovery.mkdir(parents=True, mode=0o700)
+            os.chmod(recovery.parent, 0o700)
+            for name, raw in (("stdout", stdout), ("stderr", stderr), ("request.json", encoded(request))):
+                with (recovery / name).open("xb") as f:
+                    os.chmod(f.name, 0o600); f.write(raw); f.flush(); os.fsync(f.fileno())
+            for directory in (recovery, recovery.parent, store.root):
+                fd = os.open(directory, os.O_RDONLY)
+                try:
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+        except Exception:
+            (store.root / "STOP").touch(mode=0o600)
+            raise
+
+    def cleanup():
+        if recovery is not None:
+            for item in recovery.iterdir():
+                item.unlink()
+            recovery.rmdir()
+
+    try:
+        yield completed
+    except StructuralLimit as exc:
+        if original is None:
+            raise
+        stdout, stderr, transport = original
+        number = None if transport == "import" else len(store.index["calls"])
+        a = {"version": 1, "kind": "completed-output-attempt", "usable": False,
+            "work_item": store.m.data["work_item"], "exercise": request.get("exercise", "shared verification"),
+            "case": request.get("case"), "repetition": request.get("repetition"), "call_id": number,
+            "transport": transport, "session": "unknown", "runtime": transport, "model": "unknown",
+            "errors": ["CONTENT_INVALID"]}
+        opaque_bytes(a, stdout, stderr)
+        a["usage"], a["raw_usage"] = completed_usage(a["original_output"], "offline" if transport == "import" else transport)
+        path = store.m.data["evidence_path"] + "/errors/" + recovery.name + ".json"
+        try:
+            store.put(path, a)
+            if transport == "import":
+                store.index.setdefault("imports", []).append(dict(path=path, **{k: a[k] for k in ("exercise", "case", "repetition")}))
+            else:
+                call = store.index["calls"][-1]
+                call.update(completed=True, usage=a["usage"], error_capture=path, session="unknown")
+                call.pop("capture", None)
+            store.save()
+        except Exception:
+            (store.root / "STOP").touch(mode=0o600)
+            raise
+        cleanup()
+        raise Invalid("completed output unusable; exact original retained: CONTENT_INVALID") from exc
+    except OSError:
+        if recovery is not None:
+            (store.root / "STOP").touch(mode=0o600)
+        raise
+    except Exception:
+        # Delete the handoff only after durable, indexed retention. In-memory
+        # binding alone is insufficient if a later index write failed.
+        if recovery is not None:
+            call = store.index["calls"][-1] if original[2] != "import" else {}
+            retained = False
+            if call.get("capture") or call.get("error_capture"):
+                try:
+                    retained = load(store.index_path) == store.index
+                except (OSError, Invalid):
+                    pass
+            if retained:
+                cleanup()
+            else:
+                (store.root / "STOP").touch(mode=0o600)
+        raise
+    else:
+        cleanup()
+
+
+def validate_completed_output(m, a, call=None, number=None):
+    fields(a, ("version", "kind", "usable", "work_item", "exercise", "case", "repetition", "call_id", "transport", "session", "runtime", "model", "errors",
+        "original_output", "original_output_encoding", "original_bytes", "original_sha256", "stderr", "stderr_encoding", "stderr_bytes", "stderr_sha256", "usage", "raw_usage"), label="completed output")
+    require(a["version"] == 1 and a["kind"] == "completed-output-attempt" and a["usable"] is False and a["work_item"] == m.data["work_item"], "unusable output identity invalid")
+    require(a["errors"] == ["CONTENT_INVALID"] and a["session"] == a["model"] == "unknown" and a["runtime"] == a["transport"], "unusable output cannot qualify")
+    require(a["transport"] in ("native", "offline", "import"), "unusable output transport invalid")
+    for field, size, hashed in (("original_output", "original_bytes", "original_sha256"), ("stderr", "stderr_bytes", "stderr_sha256")):
+        require(a[field + "_encoding"] in ("utf-8", "latin-1") and isinstance(a[field], str), "unusable output encoding invalid")
+        raw = a[field].encode(a[field + "_encoding"])
+        require(type(a[size]) is int and a[size] == len(raw) and a[hashed] == digest(raw), "unusable output bytes changed")
+    require((a["usage"], a["raw_usage"]) == completed_usage(a["original_output"], "offline" if a["transport"] == "import" else a["transport"]), "unusable output usage changed")
+    if a["case"] is None:
+        require(a["exercise"] == "shared verification" and a["repetition"] is None and call is not None and call["kind"] == "verification", "unusable verification binding changed")
+    else:
+        row = next((row for row in m.rows if (row[0]["id"], row[1]["id"]) == (a["exercise"], a["case"])), None)
+        require(row and type(a["repetition"]) is int and 1 <= a["repetition"] <= row[1]["repetitions"], "unusable output outside finite plan")
+        if a["transport"] == "import":
+            require(call is None and a["call_id"] is None and row[1]["release"] is not None and reference(m.root, row[1]["release"]) == a["original_output"].encode(a["original_output_encoding"]), "unusable import original changed")
+    if call is not None:
+        require(type(a["call_id"]) is int and a["call_id"] == number and call["error_capture"] == m.data["evidence_path"] + "/errors/call-" + str(number) + ".json" and call["completed"] is True and call["usage"] == a["usage"] and call.get("session") == "unknown" and "capture" not in call and call["synthetic"] is (a["transport"] == "offline"), "unusable output call binding changed")
+        require(call["kind"] == ("verification" if a["case"] is None else "actor") and call.get("exercise") == (None if a["case"] is None else a["exercise"]), "unusable output request binding changed")
+    scrub(a)
+
+
 def retained_judge_attempt(args, store, request, batch):
     """Own completion -> durable unusable capture -> qualification for both Adapters.
 
@@ -1435,9 +1609,16 @@ def retained_judge_attempt(args, store, request, batch):
             normalized = encoded(c)
         with (recovery / "normalized.json").open("xb") as f:
             os.chmod(f.name, 0o600); f.write(normalized); f.flush(); os.fsync(f.fileno())
+        first = c if request["ordinal"] == 1 else load(relative(store.root,
+            store.m.data["evidence_path"] + "/judge/" + request["exercise"] + "-" + request["batch"] + "-j1.json"))
         with judge_content():
             judge_verdicts(c, batch, prior_sessions, args)
             require(c["usage"] == attempt["usage"], "completed judge usage projection differs")
+            publication_bytes(c)
+            for item, r, row in batch:
+                future = copy.deepcopy(r)
+                future["semantic"] = semantic_results(r, row[3], "qualified", first, c if request["ordinal"] == 2 else None)
+                publication_bytes(future)
     except Exception as exc:
         if isinstance(exc, OSError):
             (store.root / "STOP").touch(mode=0o600)
@@ -1475,6 +1656,7 @@ def judge(m, store, args):
     groups = {}
     selected = {(r[0]["id"], r[1]["batch"]) for r in m.selected(args)}
     state = validate_retained_state(m, store, args.offline)
+    require(not any(e.get("kind") == "completed-output-attempt" for e in state["invalid_calls"]), "first unusable output retained; no replacement judge")
     for item, r, row in state["records"]:
         if (r["exercise"], row[1]["batch"]) not in selected or r["verification_errors"]:
             continue
@@ -1534,10 +1716,15 @@ def report(m, store, args):
         if "original_output" in error:
             lines += ["Original completed output: " + json.dumps(error["original_output"]),
                       "Original completed stderr: " + json.dumps(error["stderr"]),
-                      "Call binding: " + json.dumps({k: call[k] for k in ("attempt_capture", "session", "usage")}),
+                      "Call binding: " + json.dumps({k: call[k] for k in ("attempt_capture", "error_capture", "session", "usage") if k in call}),
                       "Raw usage evidence: " + json.dumps(error["raw_usage"]), ""]
         if "original_output_encoding" in error or "stderr_encoding" in error:
             lines += ["Original byte encoding: " + json.dumps({k: error.get(k, "utf-8") for k in ("original_output_encoding", "stderr_encoding")}), ""]
+    for entry in store.index.get("imports", []):
+        a = state["errors_by_path"][entry["path"]]
+        lines += ["Invalid imported evidence: " + entry["path"], "Failure: " + "; ".join(a["errors"]),
+                  "Original completed output: " + json.dumps(a["original_output"]),
+                  "Available actual usage: " + json.dumps(a["usage"]), ""]
     for ex in m.data["exercises"]:
         expected = [(ex["id"], c["id"], n) for c in ex["cases"] for n in range(1, c["repetitions"] + 1)]
         found = [retained[k] for k in expected if k in retained]

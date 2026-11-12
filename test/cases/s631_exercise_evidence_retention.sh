@@ -8,6 +8,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/../lib.sh"
 sandbox_create
 trap sandbox_destroy EXIT
+if [ "${PANEL_TEST_CONTENT_ONLY:-0}" != 1 ]; then
+  python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --publication-only || fail "S631 complete-envelope publication/readability"
+fi
 # R7: validate the delivered tree after all examples exist, not the smaller
 # intermediate main bundle that existed when its report was first generated.
 if [ "${PANEL_TEST_CONTENT_ONLY:-0}" != 1 ]; then
