@@ -1,0 +1,66 @@
+{
+  "question": "Classify this actual supplied proposal using its exact file evidence, give the file-supported reason and disposition. Missing historical proposal remains unobserved.",
+  "scope": "Synthetic #680 bounded exercise; decisions remain temporary and maintainer-pending. Never post, write, retry or dispatch real actions.",
+  "words": "Accepted delegation for this eligible temporary proposal; preserve reserved contract-text scope.",
+  "artifacts": [
+    "https://example.invalid/680/S590-target-meaning/two-01-temporary-spec-choice-3-0"
+  ],
+  "ground_truth": {
+    "label": "synthetic ground truth; not release history",
+    "source_limits": "All member returns are supplied, not independent live sessions. No actual release observation supplied.",
+    "file_requirement": {
+      "file": "README.md",
+      "set": "two",
+      "action": "temporary-spec-choice",
+      "vote": "3-0"
+    },
+    "source_snapshot": "No historical file snapshot supplied; retain as missing coverage, not synthetic observed evidence."
+  },
+  "proposal": {
+    "file": "README.md",
+    "set": "two",
+    "action": "temporary-spec-choice",
+    "vote": "3-0"
+  },
+  "supplied_returns": {
+    "label": "supplied captured returns; not live Product/Architect sessions",
+    "Product": {
+      "brief": "Use only exact question, scope and linked artifacts; provide independent relevance and scope analysis.",
+      "return": "Preserve all three contributions, dissent, scope and evidence limits. Prior source evidence is supplied.",
+      "evidence": {
+        "model": "claude-sonnet-5-5",
+        "reasoning": "high",
+        "entry": "synthetic-product",
+        "score": 50
+      }
+    },
+    "Architect": {
+      "brief": "Use the linked ground truth. Preserve all protected work and existing authority.",
+      "return": "Refer unsupported authority and retain risk flags, unresolved records and predecessor/resolution links.",
+      "evidence": {
+        "model": "claude-opus-5-1",
+        "reasoning": "high",
+        "entry": "synthetic-architect",
+        "score": 60
+      }
+    }
+  },
+  "requested_output": [
+    "own_position",
+    "input_defects",
+    "reconciliation",
+    "disposition",
+    "issue_comment_draft",
+    "pr_description_draft",
+    "approval_request",
+    "stated_reasons"
+  ],
+  "history_limit": "Missing real observation; this packet is a coverage requirement, never a historical substitute.",
+  "evidence_tags": {
+    "kind": "artifact-evidence",
+    "links": [
+      "https://example.invalid/ground-truth/680"
+    ]
+  },
+  "proposal_text": "Required release mapping: temporary-spec-choice for README.md at 3-0; actual historical text unavailable."
+}

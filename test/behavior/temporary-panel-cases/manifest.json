@@ -1,0 +1,5610 @@
+{
+  "version": 1,
+  "work_item": 680,
+  "plan": {
+    "path": "plan.json",
+    "sha256": "2de1def498b8e9f8a477278ca42ce91600ae5dc9046ca07d2d7dc7f4dc5dcfd6"
+  },
+  "canonical": [
+    {
+      "path": "skills/role-contracts/SKILL.md",
+      "base": "80e23bb6efec8003fe2805cd0c6a23bb1e217c25",
+      "blob": "dac5fe9c37ccd8369e8cf41b782ec42152fba582",
+      "sha256": "3c1305d70f7f40c5143d62ba54d81255c19a718465f76fedad849c9ef46268a8"
+    }
+  ],
+  "evidence_path": "test/behavior/evidence/temporary-panel-680",
+  "results_path": "test/behavior/temporary-panel-results.md",
+  "exercises": [
+    {
+      "id": "S590-delegation-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S590-delegation-meaning.txt",
+          "sha256": "741b09c526a5c8eba1396d4fa029f6407a97789a25119687f4d991ccdee2187a"
+        }
+      ],
+      "cases": [
+        {
+          "id": "approval",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/approval.json",
+            "sha256": "dd091cf98c59f7eaae2ba99304df4e92e4a302a967dad99ab6867590ec943ca6"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/approval.json",
+            "sha256": "af7ebdf66345b5f7aa39c8dc29dd51b9bc0bca19ce4bf884bba24af19e382845"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 2,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "approval"
+          }
+        },
+        {
+          "id": "refusal",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/refusal.json",
+            "sha256": "a8ee9c3156c1addbfe37fc3b541dbc60a01ba62f204300c077606ec33cb9e80c"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/refusal.json",
+            "sha256": "2cf44d2054a0e89c5bf26d5c58074239ac45a933a1fd42a700aabefbb8d8dd3d"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "refusal"
+          }
+        },
+        {
+          "id": "unrelated-words",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/unrelated-words.json",
+            "sha256": "400464e284e9e178cfb20ab4a71800efce713f55a87f0b469f31a5bd82d4f0fc"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/unrelated-words.json",
+            "sha256": "4067befa9e472d0738e88ca56d7d064d439430caf0cc9ae0a450b42f076c81a8"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "unrelated-words"
+          }
+        },
+        {
+          "id": "release-authority",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/release-authority.json",
+            "sha256": "8e2ff220ba78d341b2c58540f65b42eee26e2a5126fada73fd8ffc29c5580047"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/release-authority.json",
+            "sha256": "3acd10f25f494b7208e4c9035654a7e402c9552f5458a8247c5c244ea996d1e4"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 2,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "release-authority"
+          }
+        },
+        {
+          "id": "reserved-action",
+          "packet": {
+            "path": "packets/S590-delegation-meaning/reserved-action.json",
+            "sha256": "e247b30e71c7facdc6b2070bd60b3d4e6caf4ded56a87ca74ecdb00345498e98"
+          },
+          "key": {
+            "path": "keys/S590-delegation-meaning/reserved-action.json",
+            "sha256": "efb8de670b5c8e4d17eb262aeaf2128278c87a492c518dd960ed0cfab178c488"
+          },
+          "source_criteria": [
+            "S590-delegation-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "reserved-action"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S589-record-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S589-record-meaning.txt",
+          "sha256": "d5cc9dcde150da669e3d951cfef340214afe556f26ae7460de3d33f73afcdb77"
+        }
+      ],
+      "cases": [
+        {
+          "id": "complete",
+          "packet": {
+            "path": "packets/S589-record-meaning/complete.json",
+            "sha256": "21a5e2c8445c7a2f315e3aa601eee4ceb1d8157cd316930542f6a333dc146324"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/complete.json",
+            "sha256": "74027190437d155ca6cc499b20d6fe0964759b2a4d5d9ab530f7155552b7bb70"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "complete"
+          }
+        },
+        {
+          "id": "irrelevant-question",
+          "packet": {
+            "path": "packets/S589-record-meaning/irrelevant-question.json",
+            "sha256": "15f6543041606fc2822f731c9546392d06e5d25141e7c833593699ada22ef70f"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/irrelevant-question.json",
+            "sha256": "11d44676cf865ec02c36238b62c13a4ca07f983d2d2586a0615d9e9a65b4b663"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "irrelevant",
+            "field": "question"
+          }
+        },
+        {
+          "id": "irrelevant-scope-ac",
+          "packet": {
+            "path": "packets/S589-record-meaning/irrelevant-scope-ac.json",
+            "sha256": "eb3c4161e1c77d923123f2b1c1a613602e6fc70f3c8406d6e87c8e21a326082f"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/irrelevant-scope-ac.json",
+            "sha256": "6b9b56cb5948fc585b54db2bb3825bbff6e507e192e9bb712e2f1d688eecdcad"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "irrelevant",
+            "field": "scope-ac"
+          }
+        },
+        {
+          "id": "irrelevant-artifact-links",
+          "packet": {
+            "path": "packets/S589-record-meaning/irrelevant-artifact-links.json",
+            "sha256": "40ca04634c13926d7740ce3b374232f55b73ff52649df724d554e51527e0e473"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/irrelevant-artifact-links.json",
+            "sha256": "adbe426faa2647648530bc627a37c517d4d1b7f84f609b3012fc0bb871eecab5"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "irrelevant",
+            "field": "artifact-links"
+          }
+        },
+        {
+          "id": "irrelevant-member-evidence",
+          "packet": {
+            "path": "packets/S589-record-meaning/irrelevant-member-evidence.json",
+            "sha256": "e2f3677782dc372246e88706509fdbb6db37612ff97d9676467d28a423bc05f2"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/irrelevant-member-evidence.json",
+            "sha256": "e984a24b18a194a9538708234d046285867020ccac255133a12f4217c8857529"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "irrelevant",
+            "field": "member-evidence"
+          }
+        },
+        {
+          "id": "irrelevant-dissent",
+          "packet": {
+            "path": "packets/S589-record-meaning/irrelevant-dissent.json",
+            "sha256": "912f649ef129c109e36d37820cb80445cbd2beb13220045b3208fc1058f8776e"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/irrelevant-dissent.json",
+            "sha256": "760059d46f74ff5d753f18013710e749a3764931a9020081d62f2af676b9e57e"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "irrelevant",
+            "field": "dissent"
+          }
+        },
+        {
+          "id": "contradictory-question",
+          "packet": {
+            "path": "packets/S589-record-meaning/contradictory-question.json",
+            "sha256": "7c012e9ba1cbe0d181dbfff3f57a67de85131010c610b097664cfb0405cb40ca"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/contradictory-question.json",
+            "sha256": "2eae3f2608f393b2356298acab5b042d15c5c9166e854ba9bd0ceee31aa4239c"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "contradictory",
+            "field": "question"
+          }
+        },
+        {
+          "id": "contradictory-scope-ac",
+          "packet": {
+            "path": "packets/S589-record-meaning/contradictory-scope-ac.json",
+            "sha256": "41433432ee9961c168893ecbc5af3adc8bdbb6277f49ce45f3256c34a955091e"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/contradictory-scope-ac.json",
+            "sha256": "4b1387398b793f6c002a4f8bf2d2e6f0c705fcab8890856d0589180dff35de91"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "contradictory",
+            "field": "scope-ac"
+          }
+        },
+        {
+          "id": "contradictory-artifact-links",
+          "packet": {
+            "path": "packets/S589-record-meaning/contradictory-artifact-links.json",
+            "sha256": "0871833288e17e8d692b3daf933654166d3cd4d21be079b790f557ef57adf1b9"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/contradictory-artifact-links.json",
+            "sha256": "9d8b1da49f132d9d3f21e295ec57a7af86ee00ea870de4fd9fe1f841c6b0093b"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "contradictory",
+            "field": "artifact-links"
+          }
+        },
+        {
+          "id": "contradictory-member-evidence",
+          "packet": {
+            "path": "packets/S589-record-meaning/contradictory-member-evidence.json",
+            "sha256": "d37173062afcae9087244c38b82411e7d59f7c6906c4e5cf9ee12287ea77e7c5"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/contradictory-member-evidence.json",
+            "sha256": "a4c83f156c78322c2d7156f259cf622568c404ae64c5692992a489def289d66e"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "contradictory",
+            "field": "member-evidence"
+          }
+        },
+        {
+          "id": "contradictory-dissent",
+          "packet": {
+            "path": "packets/S589-record-meaning/contradictory-dissent.json",
+            "sha256": "fa4c4b13069bbfc13ac9099319eeea9d0891c6aff8e936f8f22f97cad48000b4"
+          },
+          "key": {
+            "path": "keys/S589-record-meaning/contradictory-dissent.json",
+            "sha256": "48763941c51c397d11da0c74d8307a383026fffbe06ad59b30bfcab3e84322c8"
+          },
+          "source_criteria": [
+            "S589-record-meaning/Observable pass criteria",
+            "S589"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "contradictory",
+            "field": "dissent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S590-target-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S590-target-meaning.txt",
+          "sha256": "8c830353be43136b20abfe459656535e6d0631735223a93a07b8bd01fa106707"
+        }
+      ],
+      "cases": [
+        {
+          "id": "one-01-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-docs-pr-3-0.json",
+            "sha256": "0073307cc0a9896e6550f3216ca98307fe8bd2d8e8209539ff242de01075ca49"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-docs-pr-3-0.json",
+            "sha256": "fb5d184bf7deee5798ba7895835b510943659b2047ec91192be5d00ad51c9a2c"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-01-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-docs-pr-2-1.json",
+            "sha256": "3bdf4a12d4d476c788afc809585be314c13f0c3fb415eefc487945d11e2894ee"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-docs-pr-2-1.json",
+            "sha256": "3cecfe37f5f0e516ba64bd868887bbb0d408993b63cdc90d0c0ba2c0ecaeefb5"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-01-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-temporary-spec-choice-3-0.json",
+            "sha256": "04249c374a800dacd37728044269ef67fb524f573759f9a7163852999352b876"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-temporary-spec-choice-3-0.json",
+            "sha256": "0d75e4980355648f1bd7c1a2a0127f219428892ed4c06086d0fe4e8e94f85613"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-01-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-temporary-spec-choice-2-1.json",
+            "sha256": "1cf486a07fd27243fa46905590c2e5688d42fc9ba839508640023eb7083311df"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-temporary-spec-choice-2-1.json",
+            "sha256": "9012ff795dd967d3a011b521ec5c470979b29e77e5262f6cf30b58427fea8014"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-01-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-policy-choice-3-0.json",
+            "sha256": "64d809109ccbe39f95359da073c83384523c62748a98309868e5eadfb9ade973"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-policy-choice-3-0.json",
+            "sha256": "5bd9a8af3030306aa46821f6b98b47bea14b0a948f6d99b36f436f1c832c5caa"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-01-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-01-policy-choice-2-1.json",
+            "sha256": "4935fb7a0e66e66abd029e8a1d0189a1160b0342b4b8a1749e299627b01a2830"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-01-policy-choice-2-1.json",
+            "sha256": "9dd855fb90460ec8dd9dbc03b350f2b20257694068a316a7f7c9967aa1d1d9f0"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "skills/role-contracts/SKILL.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-02-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-docs-pr-3-0.json",
+            "sha256": "6e977c924e8c7a95a61d49afc666f99541094a5fb07ed8a8abd27f6341c6f77e"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-docs-pr-3-0.json",
+            "sha256": "ff0145835289775eaecf18d80a0e1d348e7be183c63fabf99538325d86ca16a1"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-02-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-docs-pr-2-1.json",
+            "sha256": "398b4df5de65bfc90d4f7572c9a19c3c950191ff70070cf8c391a5df53583b9a"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-docs-pr-2-1.json",
+            "sha256": "c6c240ac9068c4ed490f97f81b5a4a6e1051a03a93df2ef89c6c71409d8fb2bc"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-02-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-temporary-spec-choice-3-0.json",
+            "sha256": "ff0fc7a5da478b03c0d9de06e5bb8f20cd1b00861accff3385f86302f0433116"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-temporary-spec-choice-3-0.json",
+            "sha256": "f34655dc4b091c3c07d70673909aca40650a4f77f7388b2c2f4634d7780db415"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-02-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-temporary-spec-choice-2-1.json",
+            "sha256": "f9cb89b76861a926bf657412dc06eaa8da0aa9e58043be5e8f98b36cbff2332d"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-temporary-spec-choice-2-1.json",
+            "sha256": "8a5b4641378f249251cbd5d1176d5e0002e4e4bbea7a550198a47cbb5441f1b2"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-02-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-policy-choice-3-0.json",
+            "sha256": "88ad9a5d10e919456e6528c9cb7debd0a56ff6b08841a33b7277901399679465"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-policy-choice-3-0.json",
+            "sha256": "411414d3ae03580d4f4c7e90f180f27db0b20218ba994a10ae64c20427079a27"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-02-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-02-policy-choice-2-1.json",
+            "sha256": "9666c5edce67b97d27656e06d3820b95b1aef8c6cae62adcf219fcd2c32c0838"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-02-policy-choice-2-1.json",
+            "sha256": "e2427957d49c2a3847ce06036db9cd149a51f8bf6310215c58d99d9414009d08"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "policy/WORKFLOW.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-03-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-docs-pr-3-0.json",
+            "sha256": "6452b3f00776ed3375a3c203db6116ebbbd443a8b6b18e5860484faceadf8ffa"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-docs-pr-3-0.json",
+            "sha256": "8648bccddc008deb2d5088a089aa0b8cc700725a2e81aedee60a14491c416f41"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-03-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-docs-pr-2-1.json",
+            "sha256": "1b3c2346d260488f8115ac19f09969839f6450d79bfaa8e01e8555efaa7343dc"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-docs-pr-2-1.json",
+            "sha256": "585f1a037bc915d62a842a99e9304dd6acaa381ae3534ea073b6ca82353da619"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-03-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-temporary-spec-choice-3-0.json",
+            "sha256": "cfc6cf6fe874b9a296ef3b7f0279130429d52641c4ffbcbd65b248264a7ce558"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-temporary-spec-choice-3-0.json",
+            "sha256": "94513cf4160222b344cbbb2bbe4146df98a92ef203e4ca8783c451d4925f4a7c"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-03-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-temporary-spec-choice-2-1.json",
+            "sha256": "743ca40e4601c2f4343e61cf42b465f6ae0d91194bece60b1abc2eff62ebf91f"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-temporary-spec-choice-2-1.json",
+            "sha256": "440931bd8456f2eb6bad8f4e5c75d4dfddae2dcdef4da322cb8f07879fa3ad42"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-03-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-policy-choice-3-0.json",
+            "sha256": "2a10b40e38f8f053ea82f483657609c67f8685981ed668d1c7936326de088c56"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-policy-choice-3-0.json",
+            "sha256": "5cd7d705d222e9f7a73b441a263dddc7d6372aad537d31bf8b7c8f22dd4e6fc6"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-03-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-03-policy-choice-2-1.json",
+            "sha256": "580e850fc8be454b4a26362f3e632e4575fab5234a5baff360e4a88a93590a5e"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-03-policy-choice-2-1.json",
+            "sha256": "b1f70d3144307d129e34bfff498235327c1c41b210108749c6ed98c8acdc2751"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "hooks/git-guardrails",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-04-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-docs-pr-3-0.json",
+            "sha256": "bec78171601eea3c671a06db9741f4546e3cbc21da507b28d49e8f98a38b5b0c"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-docs-pr-3-0.json",
+            "sha256": "4a7a7455d4604cc374f4c14e640b39d362417d542b43a2e085af67a352c087f5"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-04-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-docs-pr-2-1.json",
+            "sha256": "9134219e9110c7d7f67e73d6bc1c116fac2d064fcb561bdcbaa867ac516d2569"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-docs-pr-2-1.json",
+            "sha256": "230b3ee8dcc81055bdc64a95a5582217685d61d72315de568942b62ebfc6c641"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-04-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-temporary-spec-choice-3-0.json",
+            "sha256": "f48f8759afcd090f9fc0cfc2b551b3ad9047f61414c4d4a68b28c167ca170b86"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-temporary-spec-choice-3-0.json",
+            "sha256": "33d61b92a15e2a763d7ee3895df853bb74be6f9b44555484f4833517e674acfd"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-04-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-temporary-spec-choice-2-1.json",
+            "sha256": "231135305ef22085986a00e97b514d805f7dd2ea8d8cdb7c6846f96a06b9ddc2"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-temporary-spec-choice-2-1.json",
+            "sha256": "474858c52950848d36a694efbdc993b550f0eb407c014d3d1f3f228193e026d3"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-04-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-policy-choice-3-0.json",
+            "sha256": "295b00194bf4956a469fe403e138459c191a214088218789b777a5081609a4be"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-policy-choice-3-0.json",
+            "sha256": "6ad8652febf8fdbbc66e5843d0b67175d842b9dd3eac2163fdab9b1b19b8fcf4"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-04-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-04-policy-choice-2-1.json",
+            "sha256": "10c63851fac890e1f0e4b4124988615fcde4a4a93fdde32339bb02868befd44c"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-04-policy-choice-2-1.json",
+            "sha256": "3baabb1ebba3b2d37098bc4cc23389ebc6c4e5401160bdedd8b8568447193e17"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "settings/session-hooks.json",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-05-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-docs-pr-3-0.json",
+            "sha256": "dfd2d3b1144d1d967c22340e39b042c807ab61bd3be691675c5b8db24f4a97ad"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-docs-pr-3-0.json",
+            "sha256": "37508c829dd1511064f95551c9bbaba40fcade7a8a3fe9992c065e350ca10568"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-05-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-docs-pr-2-1.json",
+            "sha256": "ebe3d6df8ae049345083fef4111f8a31e6ba1150d8fc96a80ff676c1f1104aef"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-docs-pr-2-1.json",
+            "sha256": "c12383824f8196240ad86f04ffdc2456314f2e4ae4a521acce760df6e189247f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-05-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-temporary-spec-choice-3-0.json",
+            "sha256": "f112ffe839f14cfa9b2e2f8e6447de1099f14d340ed3313234da1ca6bb89eebc"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-temporary-spec-choice-3-0.json",
+            "sha256": "04ec7a4b979014a375f751a4d72fce1d17240c00fdecc1e9126ffb5acecae68e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-05-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-temporary-spec-choice-2-1.json",
+            "sha256": "517f22909f3a21cb74e94f9a667be6a0cf88fb9e0f1f209d166ae332d05b81b6"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-temporary-spec-choice-2-1.json",
+            "sha256": "4d04582277b608626e13226f5901fff08fd64b0a19fa1d813d2b8201f05c41f4"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-05-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-policy-choice-3-0.json",
+            "sha256": "1db91131b9dfb6417ffca07ab9f37e1de2ca08b9f563b037e576418c3d8ca20c"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-policy-choice-3-0.json",
+            "sha256": "f95d5488e0af9941c746109117ff73fd9488a49175edca666f30d2d6c8583473"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-05-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-05-policy-choice-2-1.json",
+            "sha256": "a0da7b7b1714fc5442cc4c6371183393817dd01350f6d20fc77a55828aa95516"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-05-policy-choice-2-1.json",
+            "sha256": "18916a0ce0d045a0dcba5b42bf65854c9e9b7057e2f4557dbc80e01759a212b8"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "adapters/codex/INSTRUCTIONS.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-06-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-docs-pr-3-0.json",
+            "sha256": "b60c7f168d66f84420227fbf597c1fcbf4f9513fb8a8c239e054507741c59524"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-docs-pr-3-0.json",
+            "sha256": "0e5025070e9dabbe57a65da365e94a24b76315834f9ae22b391bca50401172a1"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-06-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-docs-pr-2-1.json",
+            "sha256": "85592b7627965d1e3fb9bede245c20c5b1af3a96eb6e86af15e34261725b85a6"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-docs-pr-2-1.json",
+            "sha256": "77581fe279791492e15277806b83b09e6dc5c1145688c5d679905262b9670e98"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-06-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-temporary-spec-choice-3-0.json",
+            "sha256": "6876edc639e8541d76fe76282a9963a938f13d7c0cc4e4b16ae9298acaf1ff39"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-temporary-spec-choice-3-0.json",
+            "sha256": "87a6233e4c124effdb862af3420fd8a5423877d99a93c47a3d274d9db797f03e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-06-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-temporary-spec-choice-2-1.json",
+            "sha256": "1af76648f6e787ee94241d8d83b8632b536b9604ed224b90fd740bcd2b51fcf6"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-temporary-spec-choice-2-1.json",
+            "sha256": "712f45982a4f2501c9edef975d1775983e0d132a74eca21f40675f7183e62e97"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-06-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-policy-choice-3-0.json",
+            "sha256": "96ad5ffe451a4e2b4fbeba9a788c7b937e0935fe7f42ff4a7bbf1faa2968444f"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-policy-choice-3-0.json",
+            "sha256": "43bf4ef9922c47e8cd941378892058b6ed09095c5a28d54992e1c08a69759db9"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-06-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-06-policy-choice-2-1.json",
+            "sha256": "cf6710e58382ee94ed9efea71f8ee9546c4fae0d4cc8a21c30f893b4cba9bba7"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-06-policy-choice-2-1.json",
+            "sha256": "756e7e4397b5a0ce025140815856e2d2483bed9b3d70074562b8c09babe86b9f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "AGENTS.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-07-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-docs-pr-3-0.json",
+            "sha256": "71c9d7fe1a1cde0035d5b649b5f7a63a54aea2f003e7279cec10b8fd175e9406"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-docs-pr-3-0.json",
+            "sha256": "b2e23e05a27ae45dcb396260450c89ebad7c13a418d8858df716f0e0efa4791f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-07-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-docs-pr-2-1.json",
+            "sha256": "bcf6f8e330f1d27922bd548b1437d53ad87a157a149ced27218bb95bf14551ee"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-docs-pr-2-1.json",
+            "sha256": "43fb50c1924292c55ff5f1813b1dca0af62edd114d3fafb4b7316d83a659c9ea"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-07-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-temporary-spec-choice-3-0.json",
+            "sha256": "d980faa3ff5f35a34215ffc8252d7f92ccdce06d980ba688b73c9afc8e9e9b68"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-temporary-spec-choice-3-0.json",
+            "sha256": "74cc33d40c4ec012d4182097b49af2cfcc74d2ac204c3c6be5e303f9fdcffc5f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-07-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-temporary-spec-choice-2-1.json",
+            "sha256": "0f35dc3903ba40a629af3525bf6c18bc24b9a618ddb4278982db4a09fe823d20"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-temporary-spec-choice-2-1.json",
+            "sha256": "d47dad8ef174b55bd743c4ccfd5f6ee47e82bf0c6d5dfb31e5ec663e297c7b1d"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-07-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-policy-choice-3-0.json",
+            "sha256": "e645a8bb87ae88e9b45eef22a7e7007662bede0c1b5089b8ef581807177d31d2"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-policy-choice-3-0.json",
+            "sha256": "78d14a8f4386fea6f4fdc8366f4dab422d5e634743de248c8a0f823fbaeed7f9"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-07-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-07-policy-choice-2-1.json",
+            "sha256": "c1387c395e2ab1564d3e9ba2415a004e74a8878b44cd956423515841b81ec08a"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-07-policy-choice-2-1.json",
+            "sha256": "e37dbe8b368ebea0036c5388378f90c316b7d31e94c12331b028e7fb2b170fce"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "WORKFLOW.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-08-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-docs-pr-3-0.json",
+            "sha256": "83e722f7699ef8d67c349a1230417ef8780395c75ed3a892ea2d2c7cf2c9e83b"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-docs-pr-3-0.json",
+            "sha256": "cd8708a07ac8c19eefbb569ad5529a4c5e227300e256aa8f70327b2b6e22f8ba"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-08-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-docs-pr-2-1.json",
+            "sha256": "84890c8fcd6d3c1ef4fafd7fcd59a10a3456314c42f2ef3383de08de93c448e0"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-docs-pr-2-1.json",
+            "sha256": "7356712245b0f0ee304295a840c0cd31ecdbe054cf45cbb1733b51eef60c47c2"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-08-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-temporary-spec-choice-3-0.json",
+            "sha256": "7c635f3b8c85a5776b26f967b37b0a0111fe5305ee0a2adc9eebf864dcad1600"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-temporary-spec-choice-3-0.json",
+            "sha256": "b426779a4dbe53a395b0031430b368629c4d5ab8247648f538d9e3917521c03e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-08-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-temporary-spec-choice-2-1.json",
+            "sha256": "cef5c36ad91c17b9218e1716ed46dddface2f29eb3a064a718b7bd070d950900"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-temporary-spec-choice-2-1.json",
+            "sha256": "adbfeb20ffb8a2375903e74c17ae613dc25430b7f43e09f7ddf4bd8f2260e19b"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-08-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-policy-choice-3-0.json",
+            "sha256": "21a29b02fada5ba486a20a08808b653dd2088bb4c4481bc28fa50b0194cfe06a"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-policy-choice-3-0.json",
+            "sha256": "db2a04374114c777ef0d9bb0c988d9cb7bd17276bd13cbad7c43261202299c8a"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-08-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-08-policy-choice-2-1.json",
+            "sha256": "a2911821aa543d3a1227cce506b32ae42549aeded5fececc039b60efb354fd61"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-08-policy-choice-2-1.json",
+            "sha256": "25bcb77741276b2b56fd9a35e2788bc712045c1abd530111e2b5d0d7f87a0039"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-09-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-docs-pr-3-0.json",
+            "sha256": "61a3b0da6163bf6c702cf047b79e7efe573cfac640c6b1b7bebf89e84e7b54c3"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-docs-pr-3-0.json",
+            "sha256": "865a2c5530d50f63706037858ccf2d325f771ee1f214ade718aaed5f69262199"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-09-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-docs-pr-2-1.json",
+            "sha256": "320b08bbd69d17a9a0fa6e0cc1d4f3362fa5e59bf3202f2723aa80a72c7cd1d5"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-docs-pr-2-1.json",
+            "sha256": "820d851b8d76447ad32498952aebc848b9119fc1d62e5b231003a505ad8d75c8"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-09-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-temporary-spec-choice-3-0.json",
+            "sha256": "0fb67331d1f7630deb72c705783800f84fc0d24c4987b74f7298d22f52a60130"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-temporary-spec-choice-3-0.json",
+            "sha256": "f047101650bbe66e8e977f0ea1390020e24aa9ffd51ffeff1ee4bf8065db2bfa"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-09-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-temporary-spec-choice-2-1.json",
+            "sha256": "219a5a5fe201adc7898f18a6eb4bfafdeafe4a1429ce2e64a0a0e93bfe9b7fb4"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-temporary-spec-choice-2-1.json",
+            "sha256": "3da2b1098dabd8cdb25514ce71bee4e05b08a5d70f0b4e675dafce0eb3087d64"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-09-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-policy-choice-3-0.json",
+            "sha256": "47823d1995cca4b2d8c5c2075f64ebcf9c5a4c7cc764d7300261a99ae69c14c6"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-policy-choice-3-0.json",
+            "sha256": "1b56182d0da1890a519d0e0280b05bc39658cbfc94ccebf79c20931a3fee17ce"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-09-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-09-policy-choice-2-1.json",
+            "sha256": "bb8b4d13d226fee528b073cfa49c7ba072fad9f81b10f08ffff24984c9bf3fef"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-09-policy-choice-2-1.json",
+            "sha256": "05bf5168c6506166b2272e7e37faaab4f9a507ea77ec200e661b71e62939c536"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ORCHESTRATOR.md#OR47",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-10-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-docs-pr-3-0.json",
+            "sha256": "541b8cebdea5e13f2728e8b9e0d74ae68f3de95e8e3f580e1c95dfa5df682e76"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-docs-pr-3-0.json",
+            "sha256": "00d6895e34a7e85e62de26c913bcaeaf748be88d57598a7dd956dc3c84ea6309"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-10-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-docs-pr-2-1.json",
+            "sha256": "4e9283b149cd0bb6db63b6fe6bf51fb934f6e777c5361c1fc81961f4f59d02de"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-docs-pr-2-1.json",
+            "sha256": "cbe4cbfe9c63b94585a0e4f56aab57d4db71c58005517fccddf1ad2f910e3302"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-10-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-temporary-spec-choice-3-0.json",
+            "sha256": "4f76cbc794e858297b961fd8f06449f438ed854582eb8085a4ea0235a38d542b"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-temporary-spec-choice-3-0.json",
+            "sha256": "4e9cb69ca075945aae1278af214e1bf88b5baa0c48f48c6069a946ef87f95c28"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-10-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-temporary-spec-choice-2-1.json",
+            "sha256": "47103da0c42f8e6f7aa79bb7d56805f789ba38e3d56994c2acfe46b3c93f59c3"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-temporary-spec-choice-2-1.json",
+            "sha256": "36db68231966ed2af479f61ab62a2fb0ba103e310a78438d927ff5634599832e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-10-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-policy-choice-3-0.json",
+            "sha256": "52a65bd508474d90ff63034e9278d4bb1d0f8c2e466229fd58587ba7af1af433"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-policy-choice-3-0.json",
+            "sha256": "1666412bb429a5116fa0429256939a3501f355d3c9cdfece9733f5e68527148c"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-10-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-10-policy-choice-2-1.json",
+            "sha256": "6a8b67113674870feecd227045d865d785ee01e9ec42856494c51f7b6179dec5"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-10-policy-choice-2-1.json",
+            "sha256": "02ad8cbe8705b757189fb7f38c084a54ef5edc28463502c7670773258f04aac5"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "CHANGES.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-11-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-docs-pr-3-0.json",
+            "sha256": "7e01aa9ac216206d85080d98b85d296f104804f92c5457f8f2c3c8436d6a7052"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-docs-pr-3-0.json",
+            "sha256": "d86245ed2caf497aa71fbb116826ad5017183731892491087c25dfedd782e9ee"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-11-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-docs-pr-2-1.json",
+            "sha256": "9d5a8a2307574b9e3af1766d3af21de07a5c52dce6d75c38b7cd4fc6a8001b53"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-docs-pr-2-1.json",
+            "sha256": "227e0e63a6b9370859b09aee7a044f35af5c9715f3c5aa532223635738b13853"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-11-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-temporary-spec-choice-3-0.json",
+            "sha256": "f90ded2c4771b9bbbcadfb2b68b6f57e6e19c50aea35cc0f240def1f5335f48b"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-temporary-spec-choice-3-0.json",
+            "sha256": "5195a652932303dc28ccdf02188a8750e41db95e691ba8ba05bda7eb78490a1d"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-11-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-temporary-spec-choice-2-1.json",
+            "sha256": "0c27d4a947c30474b4586466d14cc3ef0bd97814e1b642f8cfde28c419842eb4"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-temporary-spec-choice-2-1.json",
+            "sha256": "a785f2c1642505a0aa0f686f73e641655bb7fab8a3caaa78475cb79aab07fa52"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-11-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-policy-choice-3-0.json",
+            "sha256": "a7b63b6485be89ad8857e4879b87004a199ee435d7d3c223f4deaf103a027cc3"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-policy-choice-3-0.json",
+            "sha256": "aecbd1198fddf5820631b42f1cd9468c763e109cc623ee338215649c6c9b7a31"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-11-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-11-policy-choice-2-1.json",
+            "sha256": "ea97786c86ea7fa618427f0772b3d6bcf08230fd288f98ecd4cf04d78a101a97"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-11-policy-choice-2-1.json",
+            "sha256": "db097da3c62692f6471f443f145f0ca7c69a6ee64989e21b8dfd9cf784f2c7e3"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "USER-CLAUDE.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-12-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-docs-pr-3-0.json",
+            "sha256": "6cb141c5d0a1af3978f5762e958f1bbf937aaabac0e5a7bb1315029c62185ca4"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-docs-pr-3-0.json",
+            "sha256": "61c2da2f1a754ad0c2696563c7948c0f626ad2e011b4417a0e6990801944f2af"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-12-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-docs-pr-2-1.json",
+            "sha256": "65417b002ddd64daec2cd8b224ab3cc934a2dda90d8669c9b3e1c866dad8da3d"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-docs-pr-2-1.json",
+            "sha256": "2ed8c7406a4fbaa863598be995f2fc903a8c3518f313407ff7ffff2fb55fed7a"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-12-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-temporary-spec-choice-3-0.json",
+            "sha256": "8d5e3a05cd10fd70f1eef7c37f0751003ff9efd82419bd1d7a0045d527469217"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-temporary-spec-choice-3-0.json",
+            "sha256": "8b41614f2513337ea86b1b0ddfdc5ba5a1c6bb1fb80127a870ba7bfdb67d94fd"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-12-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-temporary-spec-choice-2-1.json",
+            "sha256": "90f43ccf54c895da0a05ee0f2359ed3683557c8ed70a1530f488ef41af2719c3"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-temporary-spec-choice-2-1.json",
+            "sha256": "e6c74484f97fc68ead3bdbdceedc65e12d98001e082485ee80f0f9c35053e265"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-12-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-policy-choice-3-0.json",
+            "sha256": "0cd9e198103240b811f086bef15d0564ba709b48594a1231c7ed993c103ca3b0"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-policy-choice-3-0.json",
+            "sha256": "8c56557b4624cb62ea3c7bdab99a10a906d35c21ff5a5d07ef3e169416bfbce6"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-12-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-12-policy-choice-2-1.json",
+            "sha256": "b543f8b6d21c32f168c8f4e01c124d4feae9f8f13e5b274347ae9c1230deeefa"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-12-policy-choice-2-1.json",
+            "sha256": "d9a05d22568b354608472205d413ce85a46bc71ee94a6178d22a7afdc3e9293f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/check-traceability.sh",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-13-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-docs-pr-3-0.json",
+            "sha256": "92d93a6325530fdb75f73bbe09c9a9403036e22aacbf39378b617fba3d20a2f1"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-docs-pr-3-0.json",
+            "sha256": "116319873fd8dc9bc40090601e444c44a80031920e264435cd9817bf65e53d9c"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-13-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-docs-pr-2-1.json",
+            "sha256": "189ff037b13da55377d3908e41bbba42ed846539e276a82bda9c554f839193c2"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-docs-pr-2-1.json",
+            "sha256": "794733fe615943a077a693a65d2b183ca555c7f11e5d1744e0b3abd3d33fe92e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-13-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-temporary-spec-choice-3-0.json",
+            "sha256": "e3be5abe3f7f248df018a3948db5c4f1bbb275daf54f3c638b3a2f10f4fac2f8"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-temporary-spec-choice-3-0.json",
+            "sha256": "494bfd03f5279089437dde8d77021b6842acacc52aa59273ef0b5b0802dac886"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-13-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-temporary-spec-choice-2-1.json",
+            "sha256": "ecb78ff85c901185e50d93360791e7f48caa4374e13ab12e84e659ecf5ccd096"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-temporary-spec-choice-2-1.json",
+            "sha256": "ba7541dbb5ff977d4dd6a4b854ecae1aa6a7d44c32c85445066a46dfc1b267d0"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-13-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-policy-choice-3-0.json",
+            "sha256": "4cb1a30e5566090360cad58c2aab08f60e510ec1fefdfde8cdeda39e71a4dc81"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-policy-choice-3-0.json",
+            "sha256": "ea4fc55c4bf41526f62351dfd07e6b1d304005809804b21e0542c7bdd1d9b720"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-13-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-13-policy-choice-2-1.json",
+            "sha256": "7e38966528fe5afb9b1064432dffd36230640918e633608a0336ef5f3864e7b8"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-13-policy-choice-2-1.json",
+            "sha256": "816b8798dd3a029812d979f26c1f6e260ccd3bc9b7fb921d387ee3123a823921"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "templates/PRD.md",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-14-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-docs-pr-3-0.json",
+            "sha256": "a31bd9dd2a8074706ece9d74f6fd14fc52aec561d67901e2061e338620712e82"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-docs-pr-3-0.json",
+            "sha256": "9c3b6e06c047a7739b5096162c195a6d905475d429e9a7e5f208ddb0177593ac"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-14-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-docs-pr-2-1.json",
+            "sha256": "6bf1660b4292c7540ec8fb9e1b9b149c7972d2ff44257a6d1cc939928a26ae94"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-docs-pr-2-1.json",
+            "sha256": "2717193066668646c6f2456c44cb6e85810e45fae8f102fbfd982301b3b55370"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-14-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-temporary-spec-choice-3-0.json",
+            "sha256": "3b276e0b22a3a9fd5556bc6713fd4a4115be92bdbd7f35c270d16106bd654659"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-temporary-spec-choice-3-0.json",
+            "sha256": "d7fb611e6833d4a818e96fca77551f720a0d02592cac27e3921e31680f8f7fbf"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-14-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-temporary-spec-choice-2-1.json",
+            "sha256": "84138578711720326cb1d3c4e76c0ff36d35df5d38a4a0fcd3160173c1524ade"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-temporary-spec-choice-2-1.json",
+            "sha256": "e48190331b3eae1564b38bb6e624c787f1df9ba0b8c31947a973ab46d16721f4"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "one-14-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-policy-choice-3-0.json",
+            "sha256": "a47faeaf8b317fd17d9e477c957d5efed2c8a1a39ecd74860d7beb059d5fd99d"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-policy-choice-3-0.json",
+            "sha256": "a712bf2e07f8900ddeb570412c3753fc12538276fdd461120e67acd04e06e9ce"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "one-14-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/one-14-policy-choice-2-1.json",
+            "sha256": "ad196d60ae6d94edbdbf4e9a6c26f343b3b98ed00bb7fa4e78f5d79fac94cd89"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/one-14-policy-choice-2-1.json",
+            "sha256": "b6a1cff98b392c44e40aa09ab68cd4a47d6784ca0ba50553cf386261201721ea"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md#A54-D2",
+            "set": "one",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-01-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-docs-pr-3-0.json",
+            "sha256": "5ee773353a6f3b17e5dd52cb7acc622dc23f4fdd7aaf83c3b69e810d45171e4f"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-docs-pr-3-0.json",
+            "sha256": "ea752bcdee1c2d3171bad3ac9820fa7cf4c113780e9f78aebc78db5421976509"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-01-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-docs-pr-2-1.json",
+            "sha256": "3bec9ac01282b059fc5f56393fb8d81d91a76cde42decd738a156c9ec18725cd"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-docs-pr-2-1.json",
+            "sha256": "72d1d51c6c582f1b85a008f82aa9536b1b3ae55a010b9a68e98b7fce3da0ecfd"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-01-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-temporary-spec-choice-3-0.json",
+            "sha256": "d58c7638c98144c444e10d29f7245aefddea0eb95d5d6d02a914307bbe570ae7"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-temporary-spec-choice-3-0.json",
+            "sha256": "568bc7f34687381600bdf1a011bfad2d9f2abdee0db08ab0e42f238330353a95"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-01-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-temporary-spec-choice-2-1.json",
+            "sha256": "90f07a8c7c416d4a0c036d21c001e8673cef3107fa93bcbf7a8bd30fd597fb99"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-temporary-spec-choice-2-1.json",
+            "sha256": "25c213a15950bb8ea3ba0c040712675a803acf0abf162824ece79122a46d3a12"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-01-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-policy-choice-3-0.json",
+            "sha256": "ced4879c17c7bd8d9e29322c15348c838c0b3d9ed720cfaab3334cb81c314b54"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-policy-choice-3-0.json",
+            "sha256": "7197061727254295ff33c3abed8c1644693ec58dcecd3580aa22a0c4dc68e138"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-01-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-01-policy-choice-2-1.json",
+            "sha256": "2c76c2455676acfc27aa0e2e22b0c8863719f01d977e0a09da0e52b4cdf21390"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-01-policy-choice-2-1.json",
+            "sha256": "f1179e75b4fd6ee767f20bc74e8109e1b01879042c3d14149e832514ff9a6a5f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "README.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-02-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-docs-pr-3-0.json",
+            "sha256": "9639ddd6e996e0841d7073d9834fc391f41ac818fde9fbb50e8cdeb27aeae027"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-docs-pr-3-0.json",
+            "sha256": "c08ab85f9657936c0184e8287e9ca4b48be68e946d729502bd7f78670c6cf718"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-02-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-docs-pr-2-1.json",
+            "sha256": "095de28a951ef09ee290f2e118f5481c6fcd1809d5a98d76ac41af0ce2ddfc87"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-docs-pr-2-1.json",
+            "sha256": "5aee1dc041e43494f388a0d166e32e9ac3b2aa86fac9ea78f4820016f3f536af"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-02-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-temporary-spec-choice-3-0.json",
+            "sha256": "07b802118fca5bdef82ea0d6789d8c2384cceb4c1d4561ebee03db8ea99e2dc3"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-temporary-spec-choice-3-0.json",
+            "sha256": "3b88beffa31952ab355a8cc8c951e0db3a2d89f9db0262e60ad193f275000e63"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-02-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-temporary-spec-choice-2-1.json",
+            "sha256": "110789416e50d7036621dafdab46903de6b48d1bd70b71419d18301c7a68f1ac"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-temporary-spec-choice-2-1.json",
+            "sha256": "b202920be807f7779dc70499895f2beb6c9fc758a1701579bbb431da58bbe158"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-02-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-policy-choice-3-0.json",
+            "sha256": "acd4e4b1cd5178694378fcf611cd4e1e6b7c218592977ddfda4ea78ef06ea04f"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-policy-choice-3-0.json",
+            "sha256": "7a83231172e9ff7ba2f435521e1c735bc1814ca2816f018ab10943ea348a330f"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-02-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-02-policy-choice-2-1.json",
+            "sha256": "5bd853614ddcf7fe11df3347a8c7c78f63668238ff83b4287a5937f65d773c72"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-02-policy-choice-2-1.json",
+            "sha256": "d89b52ad5887a5bf534f26eeff137894acad02f904f194247ded248faecb68e7"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "CHANGELOG.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-03-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-docs-pr-3-0.json",
+            "sha256": "8549898c0517dbf7c224aa9eafce697b07496125c01ee1d98c97b3a94f742812"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-docs-pr-3-0.json",
+            "sha256": "168a6cb17775f87897ab09e08329efcce742097447ccecc3d864727d0fd62a29"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-03-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-docs-pr-2-1.json",
+            "sha256": "001955e138f94859c637b983aec4669088f98890bead34efb78ab08d8158945c"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-docs-pr-2-1.json",
+            "sha256": "c8ed7a127746a02533a76e2ff07e13109751f53f1dfcb394017fce0b5e272856"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-03-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-temporary-spec-choice-3-0.json",
+            "sha256": "a8fcf087201ea6f7d2d0fbbade7c630258c7b988a7169f51333ff4b86e1d3e58"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-temporary-spec-choice-3-0.json",
+            "sha256": "b3edbe0a46409ab7297679202f1a5125fdd727dafd847b91a24242afd6b687ab"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-03-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-temporary-spec-choice-2-1.json",
+            "sha256": "904de6294c437231a30f00af45c25445633f5fd8cc0fd4785e7fcb6f943703c6"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-temporary-spec-choice-2-1.json",
+            "sha256": "dea81ca2a97a42eaf9a470e02911f4f28e0eb762f6dce6a9ea58c626fe5bdbe8"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-03-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-policy-choice-3-0.json",
+            "sha256": "ed9933d8987e3c8b3384024cd9449f6e22c0887ce1590e75883d58a48ca60550"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-policy-choice-3-0.json",
+            "sha256": "8e5c135781739137ad0c380faed8929a795041830c65fb9aeba1ccc2b0ede613"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-03-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-03-policy-choice-2-1.json",
+            "sha256": "b58a37b412398d20e80abbdcb0e93efb53c1773e525a456ac7349ffb9fdc1519"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-03-policy-choice-2-1.json",
+            "sha256": "87882380a6e8689ca49d0fde72dd049e0b9085146d1aa3f83d060c669c050259"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "docs/example.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-04-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-docs-pr-3-0.json",
+            "sha256": "291888032c084d090e62e5801e0d2846b9ba44b2173667bf8522ad38e32f0887"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-docs-pr-3-0.json",
+            "sha256": "8eab6767ba63142acfb8e663198cb9c3c9cbd7bd65145d38b67dbe3f75206c47"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-04-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-docs-pr-2-1.json",
+            "sha256": "faadf2f3ca27dc738eef254ca65946fc06f7853955a6071ac797e3f1c2a7c054"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-docs-pr-2-1.json",
+            "sha256": "173359401644c2ce1dca02d94cd640b8e7634b12b5805fb26c26fa89669a0e7b"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-04-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-temporary-spec-choice-3-0.json",
+            "sha256": "979827248863beb35080e61e4a3d0ff2e3861103002940a7f963fdcec009fe97"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-temporary-spec-choice-3-0.json",
+            "sha256": "580d30b202ac2d10dcf48aa8d62ddba48a8d5a8a88a92ca5dd139be34fc31a38"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-04-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-temporary-spec-choice-2-1.json",
+            "sha256": "be5ac96238f5caadf5f6910251948f027879313e42e367722d56239ede9b56b0"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-temporary-spec-choice-2-1.json",
+            "sha256": "b6c333443ea20e23067fb81e3da68454f2f573df6bd4cfaf45360788f910e275"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-04-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-policy-choice-3-0.json",
+            "sha256": "b7c1b9f8ad6f41a16a65d77429535ae0b103b59bc6a4c3f9703a2f6addffb05b"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-policy-choice-3-0.json",
+            "sha256": "8434135f6d5dbaf414c4cac09a76446a36f8913b93e16e77727948aaa6d578d2"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-04-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-04-policy-choice-2-1.json",
+            "sha256": "74506786b88918d2f97c3eb8120632c7729ebff6cbb7ef4f3cf357c98ec75273"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-04-policy-choice-2-1.json",
+            "sha256": "0c6a9364e3247a6858b1f4255169be712da478de29d7e8d217724d0d269e40e2"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "PRD.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-05-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-docs-pr-3-0.json",
+            "sha256": "2d4fcacf59d186fa4abc356e08145315752a5bf76a994585f0887d11cc6f841f"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-docs-pr-3-0.json",
+            "sha256": "1f53a9372351b4d0fe6fa4df10713e514e67f4f7f36a5766890fb3e24b0b4504"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-05-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-docs-pr-2-1.json",
+            "sha256": "42fcaae63c935ee9b8dca7d309c1cf0a3a11a009e32431289f5187a1cd9ecc35"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-docs-pr-2-1.json",
+            "sha256": "8396b23380d93d7a80a3ddcb8734bddfd6349eddd4f025b8e1ae58ff15a47485"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-05-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-temporary-spec-choice-3-0.json",
+            "sha256": "2a05ae34a1b7634b9b4c7ba3e4800386d6254c0b798ac390f462eb4814055dd1"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-temporary-spec-choice-3-0.json",
+            "sha256": "3ea73dc5d18b3939d7cdfb3a794e495fee099176ffee8890b04685376d2ddcad"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-05-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-temporary-spec-choice-2-1.json",
+            "sha256": "3e6f2fa2ab66391719ab65b4d5d54124edff7ca8bd5b93e5d050d7b784308ecd"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-temporary-spec-choice-2-1.json",
+            "sha256": "2893b928a8cdee993347a1ce0a22430a88f1e38bb72d7d10a2e16bdc973dc7e5"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-05-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-policy-choice-3-0.json",
+            "sha256": "4eb315b38a62c5a4c1a00e14e38d9c0c5c6f18b2ae2d6ec1600e059f3691d064"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-policy-choice-3-0.json",
+            "sha256": "153d32b7a4e09b19544ec21b706ee29b71584d4a114010225eae15e792a05aea"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-05-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-05-policy-choice-2-1.json",
+            "sha256": "2f2799f8a2c6193eddb2dc3a62eb6dffa6b1767c17c65d898f8f569ac8d3ae0a"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-05-policy-choice-2-1.json",
+            "sha256": "277e5d7bacdf7a590095b88c1c9a076f5fbf7dcdb2676d8b7ff7e47391cb2740"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "ARCHITECTURE.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-06-docs-pr-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-docs-pr-3-0.json",
+            "sha256": "8807f2fe196211883f49d380bd511f26044245e0ef4993620ed286f8ca78aa8e"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-docs-pr-3-0.json",
+            "sha256": "c819e04b00b9e551458f9a9eb01b5e29b8945ed90b6961cb01b17a8bea444b53"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-06-docs-pr-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-docs-pr-2-1.json",
+            "sha256": "5dd9a741d6552e6fb2c2511b630b9b4c2f4e0d2aafdbbb830512c96b4e38fce4"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-docs-pr-2-1.json",
+            "sha256": "ccfb653ea1f0f3218004fd8e3a0eadce155511961e2671f0d6c74fdbac6f3580"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "docs-pr",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-06-temporary-spec-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-temporary-spec-choice-3-0.json",
+            "sha256": "492d5882f6a482934e0544949a46d4a65d1fac485179354011af6dd15a1dfe8d"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-temporary-spec-choice-3-0.json",
+            "sha256": "c5d93a796c64d48246a8755e8b7111c435db6a99022cdd2076004333645a37db"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-06-temporary-spec-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-temporary-spec-choice-2-1.json",
+            "sha256": "dcbe8b257af987e1096b6d27815274d6badbad84fde44097947f84ab7668323b"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-temporary-spec-choice-2-1.json",
+            "sha256": "21ebbbb28c7e979e0f7ee977d5aa7b8b48874faca19dbb615e766288c77a954e"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "temporary-spec-choice",
+            "vote": "2-1"
+          }
+        },
+        {
+          "id": "two-06-policy-choice-3-0",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-policy-choice-3-0.json",
+            "sha256": "bb138edab523854987c8131468e53b40400c15e9e93dcffc63665b96a3353f8d"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-policy-choice-3-0.json",
+            "sha256": "34974bdd75a24a6969f1609b7b08ad7ab7b244acf026551f60d3f716756694cd"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "3-0"
+          }
+        },
+        {
+          "id": "two-06-policy-choice-2-1",
+          "packet": {
+            "path": "packets/S590-target-meaning/two-06-policy-choice-2-1.json",
+            "sha256": "f9d141da3b15c9f64c876ee6022a351dd45703ae52dc0502624af5925d02388e"
+          },
+          "key": {
+            "path": "keys/S590-target-meaning/two-06-policy-choice-2-1.json",
+            "sha256": "e04317b8b3132f2b6b6cf89ab76989729d55646e8033a5938098e25970763c33"
+          },
+          "source_criteria": [
+            "S590-target-meaning/Observable pass criteria",
+            "S590"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "two",
+          "release": null,
+          "coverage": {
+            "file": "TEST-SCENARIOS.md",
+            "set": "two",
+            "action": "policy-choice",
+            "vote": "2-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S591-brief-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S591-brief-meaning.txt",
+          "sha256": "710735cd15f1dd61f2b3ebfd1135077553b0c2a4f77ca646102809aee738fe9f"
+        }
+      ],
+      "cases": [
+        {
+          "id": "peer-position",
+          "packet": {
+            "path": "packets/S591-brief-meaning/peer-position.json",
+            "sha256": "fb9daff80646dc29fe0b01800c74cf64f889ffb8501d415326b673b40fc43a9f"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/peer-position.json",
+            "sha256": "4738a77f85079fbda774e82e531f6c004307afcef0c24bf2806482c2444b9896"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "peer-position"
+          }
+        },
+        {
+          "id": "orchestrator-reasoning",
+          "packet": {
+            "path": "packets/S591-brief-meaning/orchestrator-reasoning.json",
+            "sha256": "248adfb1fdaaee6dd22a6df52c59bfa7ffd85dcf7e7d1d88ed5a9cf682e6a8f9"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/orchestrator-reasoning.json",
+            "sha256": "3ff76e7f6d9b16d57d7cccfad8c999d2bb82c73d33048af0194c82c67a27af1f"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "orchestrator-reasoning"
+          }
+        },
+        {
+          "id": "preference",
+          "packet": {
+            "path": "packets/S591-brief-meaning/preference.json",
+            "sha256": "a0963a756a9489f327b3004231b580b2acf4a164bed1856d9b5f613649a3e24a"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/preference.json",
+            "sha256": "15558ceb8c90d8677242e51a5880afbcda2935d687b6dd2c0b3c17609d7b4d4d"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "preference"
+          }
+        },
+        {
+          "id": "history",
+          "packet": {
+            "path": "packets/S591-brief-meaning/history.json",
+            "sha256": "9cdbdfa4d13b44a162eb87c1bb122b1426b900c2e15ebfa310d7cb98b0e6ab2e"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/history.json",
+            "sha256": "5030a4b6513e71711ce4cd1c2bd607a2a79752a8c3c04d901dffbb6ce57998c4"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "history"
+          }
+        },
+        {
+          "id": "architect-voted",
+          "packet": {
+            "path": "packets/S591-brief-meaning/architect-voted.json",
+            "sha256": "0ca753e66efb0eabc36cef2daff93e5a630c09dc541c9e810786163b6733cf3f"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/architect-voted.json",
+            "sha256": "c7b5b917936139cf6d4109e718af2e73037e33ecee825dd02d720d3322d96bcd"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "architect-voted"
+          }
+        },
+        {
+          "id": "cheaper",
+          "packet": {
+            "path": "packets/S591-brief-meaning/cheaper.json",
+            "sha256": "756999ec0757512c75c0c22a6ef5e4312f88e5ba134ccfb7c2f2e36a7aba8530"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/cheaper.json",
+            "sha256": "971118c08e9c309165784490519374f5ce78754fed37765128b60c02ba40dda9"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "cheaper"
+          }
+        },
+        {
+          "id": "model-name-only",
+          "packet": {
+            "path": "packets/S591-brief-meaning/model-name-only.json",
+            "sha256": "5a5b01f27a574c694c8f0ba4f3b976b761ce834157513b8882b6e905925a21bc"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/model-name-only.json",
+            "sha256": "a0247ec0532cae81e33aec072f5b686a17da94da6e2b642820f6ccd8f1a1687f"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "model-name-only"
+          }
+        },
+        {
+          "id": "write",
+          "packet": {
+            "path": "packets/S591-brief-meaning/write.json",
+            "sha256": "7317464a32a396beec2e7f72e86d0e15027261591c48372dbdc8bcbfca8fa2a1"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/write.json",
+            "sha256": "16c40ea34f13fcc97271f01acb1dcec8d32d85b058bcb660f71bdadced47a634"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": true,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "write"
+          }
+        },
+        {
+          "id": "network-mutation",
+          "packet": {
+            "path": "packets/S591-brief-meaning/network-mutation.json",
+            "sha256": "b0f1aa5759c1178654b032a969819ca8126e38bc3f474a0cb73b68150cc81ca8"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/network-mutation.json",
+            "sha256": "5881eedfa6f257f4516d75f659e57e44861fd9cc1a52174aeb5a804f7ab2c1e1"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": true,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "network-mutation"
+          }
+        },
+        {
+          "id": "denied-retry",
+          "packet": {
+            "path": "packets/S591-brief-meaning/denied-retry.json",
+            "sha256": "67894fa8a052ac54d6dfd6ef137e498d32ba82649cd7315fb53523a5316471c4"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/denied-retry.json",
+            "sha256": "bdaf0f2934f7d25283563af2c855df109c6d9b3c7abe485c59fa4c6d40d3a8b7"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": true,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "denied-retry"
+          }
+        },
+        {
+          "id": "clean-brief",
+          "packet": {
+            "path": "packets/S591-brief-meaning/clean-brief.json",
+            "sha256": "102dd45f24959283a0d3f12d82bd8fdd954507ba6e447b1947e110a0469595c8"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/clean-brief.json",
+            "sha256": "07a41dd4d365504170561e3bf1ccfcc7a0923bcd2d0cdd8ed52fc1737cf2ee86"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "clean-brief"
+          }
+        },
+        {
+          "id": "bounded-read",
+          "packet": {
+            "path": "packets/S591-brief-meaning/bounded-read.json",
+            "sha256": "15e34d2138637afa0a325ffdbe7292869f1ee42ffc20fc73293ff0b62a58e400"
+          },
+          "key": {
+            "path": "keys/S591-brief-meaning/bounded-read.json",
+            "sha256": "78cb049a9dc7f1ef51e35a5c46faec1c3d0981b0002b4b0ddfee91deb1764d2e"
+          },
+          "source_criteria": [
+            "S591-brief-meaning/Observable pass criteria",
+            "S591"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [
+            {
+              "tool": "Bash",
+              "input": {
+                "command": "cat README.md"
+              },
+              "description": "Exact bounded local read only; hook denies it too."
+            }
+          ],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "bounded-read"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S592-acceptance-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S592-acceptance-meaning.txt",
+          "sha256": "33a39c7cc74c014b6878d3ddd71c2ba844874fa64f7f38a02f7f86e093888dfe"
+        }
+      ],
+      "cases": [
+        {
+          "id": "unanimous-group",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/unanimous-group.json",
+            "sha256": "315ce0712ea3974c0c4559b825716d38dcd045c7719c18d84f525354d4b90029"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/unanimous-group.json",
+            "sha256": "b2c142dbdf5e23f0fd4f6c089eb42b46eb2c8a864fee9adc8c1b17a63c8f6b9a"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "unanimous-group"
+          }
+        },
+        {
+          "id": "individual-majority",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/individual-majority.json",
+            "sha256": "ca06f0508b099793d2cd186bb31030e8772e46afc69ec61c4b7a674244133656"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/individual-majority.json",
+            "sha256": "0ad549a74b0147800b68b8fcded96a118e6728b0a9446de0373ba602680a57e3"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "individual-majority"
+          }
+        },
+        {
+          "id": "refusal",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/refusal.json",
+            "sha256": "a2570ef49e7ab4a35b420d8738f1baf903bef35eb05b1e778cb8564921725029"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/refusal.json",
+            "sha256": "2c82605f581883eb9c4e1bd3931cf07437b474a223de427119b83ef0331e3ddb"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "refusal"
+          }
+        },
+        {
+          "id": "ambiguity",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/ambiguity.json",
+            "sha256": "b319443d735ca40fa4e37b0fc298902fa140b8d3f071148f8c53894615665cbe"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/ambiguity.json",
+            "sha256": "12cf8d5d64bee2d23880d49db185e7fab67b1ddb545ad6ef6fa04e38855abad4"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "ambiguity"
+          }
+        },
+        {
+          "id": "unrelated",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/unrelated.json",
+            "sha256": "8d20b1e29152517919b68db4a9c85ff5446c5a2bed8ce2f3f9a769c124df4bf8"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/unrelated.json",
+            "sha256": "02454dcffbac297109ef16927dea72be2d02487172ad6c7fa3bafcdb7c5026ee"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "unrelated"
+          }
+        },
+        {
+          "id": "silence",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/silence.json",
+            "sha256": "cf0e16f88aded259b45b51775d97fe648af8b77c346943d0475e4e2692a65827"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/silence.json",
+            "sha256": "4ee3f15a915abf64e8e32d222e3d704c8a5b52f93ae3611d7cc861c4a7ef585a"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "silence"
+          }
+        },
+        {
+          "id": "merge-only",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/merge-only.json",
+            "sha256": "c2399e97f915413fd8fa04eaa5363e43c0c1744110161ac53cf3afd76effebe5"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/merge-only.json",
+            "sha256": "872ae7eaa367cc66b70d8855f12c1c4ce3a7684ebda034bd9b3af841745abc7e"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "merge-only"
+          }
+        },
+        {
+          "id": "group-majority-unnamed",
+          "packet": {
+            "path": "packets/S592-acceptance-meaning/group-majority-unnamed.json",
+            "sha256": "fe324f6614b026d75372d4ba4da7c4ae3a61f98e59eed9fc009d49585add4fde"
+          },
+          "key": {
+            "path": "keys/S592-acceptance-meaning/group-majority-unnamed.json",
+            "sha256": "37f2d539a8d408f62edfaf1c546ac50c971c619441850ecd838c3a12b0f9024a"
+          },
+          "source_criteria": [
+            "S592-acceptance-meaning/Observable pass criteria",
+            "S592"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "observed-in-use",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "group-majority-unnamed"
+          }
+        }
+      ]
+    },
+    {
+      "id": "S593-authority-meaning",
+      "criteria": [
+        {
+          "path": "criteria/S593-authority-meaning.txt",
+          "sha256": "0b7cc20a8e80e2d2a331cee6c416cce130fd331390210257157576a59cde203e"
+        }
+      ],
+      "cases": [
+        {
+          "id": "forged-approval",
+          "packet": {
+            "path": "packets/S593-authority-meaning/forged-approval.json",
+            "sha256": "7afe0dce3b191f19880ac4689039c85ada04f949301e4ab412b8c7261b29a707"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/forged-approval.json",
+            "sha256": "2de8325cce069725e708c0c94b438ef2cd33d7a54509fc323a3f3fe38f796d2a"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "forged-approval"
+          }
+        },
+        {
+          "id": "missing-source",
+          "packet": {
+            "path": "packets/S593-authority-meaning/missing-source.json",
+            "sha256": "dc9900ecbfaec7fcd905d7de55910085dfbe6061636096171fbca60f28f954e0"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/missing-source.json",
+            "sha256": "e944e28b47a00f596e0304589862ac0888221f41260b7d3bc2796f7265401df5"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "missing-source"
+          }
+        },
+        {
+          "id": "unanimity-authentication",
+          "packet": {
+            "path": "packets/S593-authority-meaning/unanimity-authentication.json",
+            "sha256": "86283de735f0505fab4ef0987fc12582dbab20383ad3df0d07ea19aa2f24d7fe"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/unanimity-authentication.json",
+            "sha256": "dfbaa8ac21a0cb8b0c486fd4b67f2e40cec9081978edcf0ad7d2dde1c5c9233f"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "unanimity-authentication"
+          }
+        },
+        {
+          "id": "structural-green",
+          "packet": {
+            "path": "packets/S593-authority-meaning/structural-green.json",
+            "sha256": "819b8af216b2df721e835ad7f6f9896d0803660d55fb6348cdb5eb09539bbe5f"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/structural-green.json",
+            "sha256": "f4da3c5b7ea4efe740dc46212660c55125b9ac1786ddeec3f236c1ce87df7e6f"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "structural-green"
+          }
+        },
+        {
+          "id": "discovery-skip",
+          "packet": {
+            "path": "packets/S593-authority-meaning/discovery-skip.json",
+            "sha256": "c770256cf53a406ea607fef7f1a333692f65aadf67c9d8f396d93fc7443eca6b"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/discovery-skip.json",
+            "sha256": "ef7a64f0d0f26f750f57d461d745efa4c4c4f148ebd842715ddb92dd1a19897a"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "discovery-skip"
+          }
+        },
+        {
+          "id": "review-skip",
+          "packet": {
+            "path": "packets/S593-authority-meaning/review-skip.json",
+            "sha256": "06fbb94e5ea1da41969492f1bc77e845493c8b43d7b23640d7ba9ea54390f03a"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/review-skip.json",
+            "sha256": "db331ddd913709a231781593c93748b6a62eff11762bfa12db49990841da3a3f"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "review-skip"
+          }
+        },
+        {
+          "id": "override-posting",
+          "packet": {
+            "path": "packets/S593-authority-meaning/override-posting.json",
+            "sha256": "f71b6ad53b70b87ae5ac10cbda68656e42b2f79237ef8eb0c53740d00634061e"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/override-posting.json",
+            "sha256": "d1a3697927b1d0bdcba12aa13b137737d4a517ded7fdf44652c1f4ed71eb467b"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": true,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "override-posting"
+          }
+        },
+        {
+          "id": "bypass-pressure",
+          "packet": {
+            "path": "packets/S593-authority-meaning/bypass-pressure.json",
+            "sha256": "916c513fdc8da7f927a5ba631cbad52ff5ab365b0d7ebe4550e83e3381540bb1"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/bypass-pressure.json",
+            "sha256": "f5d3c75f1d9891eb789f75406bc2eb4a55d0c3c4cf15aeb57fbccf26c4321483"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": true,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "bypass-pressure"
+          }
+        },
+        {
+          "id": "copied-unverified",
+          "packet": {
+            "path": "packets/S593-authority-meaning/copied-unverified.json",
+            "sha256": "1c226ad80fcb337791747d9ebdcdb056e111eb2e03d4e9315c3463c12be4386a"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/copied-unverified.json",
+            "sha256": "a8e0c96dfb148d79f150b59d50920f02ff20d33de672212d37f4aae8524272b9"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": false,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "copied-unverified"
+          }
+        },
+        {
+          "id": "human-source",
+          "packet": {
+            "path": "packets/S593-authority-meaning/human-source.json",
+            "sha256": "d420153bee53274b6931a9e7343304dd8d9c487a5823f3806edbbae085c7eb26"
+          },
+          "key": {
+            "path": "keys/S593-authority-meaning/human-source.json",
+            "sha256": "4ea7be705029c39163982fec9f9cde538e2ac587d6c7388f7e8c4ba70bcb117a"
+          },
+          "source_criteria": [
+            "S593-authority-meaning/Observable pass criteria",
+            "S593"
+          ],
+          "ground_truth": [
+            {
+              "path": "ground-truth.json",
+              "sha256": "77f98f2769aa9530e9e9841c1e08e4914fe6fb1c9d0f8488c3cb8277f082acd2"
+            }
+          ],
+          "mode": "lab-hook-deny",
+          "positive": true,
+          "sensitivity": false,
+          "permitted_attempts": [],
+          "repetitions": 1,
+          "batch": "one",
+          "release": null,
+          "coverage": {
+            "variation": "human-source"
+          }
+        }
+      ]
+    }
+  ]
+}

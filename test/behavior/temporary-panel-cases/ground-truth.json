@@ -1,0 +1,300 @@
+{
+  "label": "synthetic ground truth; not release history",
+  "inventory": [
+    {
+      "id": "A",
+      "issue": 645,
+      "vote": "3-0",
+      "outcome": "temporary",
+      "dissent": [],
+      "risk": true,
+      "limit": false,
+      "question": "Keep canonical procedure in the role-contracts skill?",
+      "scope": "Issue 645 AC1",
+      "members": [
+        "Product",
+        "Architect",
+        "orchestrator"
+      ],
+      "resolution": null,
+      "supersedes": null,
+      "record_link": "https://example.invalid/issue/645#A",
+      "artifact_links": [
+        "https://example.invalid/artifacts/A"
+      ],
+      "positions": {
+        "Product": {
+          "position": "Supplied captured position for A",
+          "evidence": [
+            "https://example.invalid/artifacts/A"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "Architect": {
+          "position": "Supplied captured position for A",
+          "evidence": [
+            "https://example.invalid/artifacts/A"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "orchestrator": {
+          "position": "Supplied captured position for A",
+          "evidence": [
+            "https://example.invalid/artifacts/A"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        }
+      }
+    },
+    {
+      "id": "B",
+      "issue": 646,
+      "vote": "2-1",
+      "outcome": "retain work",
+      "dissent": [
+        "Architect: missing evidence"
+      ],
+      "risk": false,
+      "limit": true,
+      "question": "Retain independent scrutiny?",
+      "scope": "Issue 646 supplied example only",
+      "members": [
+        "Product",
+        "Architect",
+        "orchestrator"
+      ],
+      "resolution": "https://example.invalid/resolution/B",
+      "supersedes": "A",
+      "record_link": "https://example.invalid/issue/646#B",
+      "artifact_links": [
+        "https://example.invalid/artifacts/B"
+      ],
+      "positions": {
+        "Product": {
+          "position": "Supplied captured position for B",
+          "evidence": [
+            "https://example.invalid/artifacts/B"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "Architect": {
+          "position": "Supplied captured position for B",
+          "evidence": [
+            "https://example.invalid/artifacts/B"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "orchestrator": {
+          "position": "Supplied captured position for B",
+          "evidence": [
+            "https://example.invalid/artifacts/B"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        }
+      }
+    },
+    {
+      "id": "C",
+      "issue": 647,
+      "vote": null,
+      "outcome": "unresolved",
+      "dissent": [],
+      "risk": true,
+      "limit": false,
+      "question": "Can unavailable source establish a waiver?",
+      "scope": "Issue 647 AC1",
+      "members": [
+        "Product",
+        "Architect",
+        "orchestrator"
+      ],
+      "resolution": null,
+      "supersedes": null,
+      "record_link": "https://example.invalid/issue/647#C",
+      "artifact_links": [
+        "https://example.invalid/artifacts/C"
+      ],
+      "positions": {
+        "Product": {
+          "position": "Supplied captured position for C",
+          "evidence": [
+            "https://example.invalid/artifacts/C"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "Architect": {
+          "position": "Supplied captured position for C",
+          "evidence": [
+            "https://example.invalid/artifacts/C"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "orchestrator": {
+          "position": "Supplied captured position for C",
+          "evidence": [
+            "https://example.invalid/artifacts/C"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        }
+      }
+    },
+    {
+      "id": "D",
+      "issue": 645,
+      "vote": null,
+      "outcome": "escalated",
+      "dissent": [],
+      "risk": false,
+      "limit": true,
+      "question": "Change protected authority?",
+      "scope": "Issue 645 process choice",
+      "members": [
+        "Product",
+        "Architect",
+        "orchestrator"
+      ],
+      "resolution": null,
+      "supersedes": null,
+      "record_link": "https://example.invalid/issue/645#D",
+      "artifact_links": [
+        "https://example.invalid/artifacts/D"
+      ],
+      "positions": {
+        "Product": {
+          "position": "Supplied captured position for D",
+          "evidence": [
+            "https://example.invalid/artifacts/D"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "Architect": {
+          "position": "Supplied captured position for D",
+          "evidence": [
+            "https://example.invalid/artifacts/D"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "orchestrator": {
+          "position": "Supplied captured position for D",
+          "evidence": [
+            "https://example.invalid/artifacts/D"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        }
+      }
+    },
+    {
+      "id": "E",
+      "issue": 645,
+      "vote": "3-0",
+      "outcome": "temporary process choice",
+      "dissent": [],
+      "risk": true,
+      "limit": false,
+      "question": "Retain prior evidence?",
+      "scope": "Driving process issue",
+      "members": [
+        "Product",
+        "Architect",
+        "orchestrator"
+      ],
+      "resolution": "https://example.invalid/resolution/E",
+      "supersedes": "B",
+      "record_link": "https://example.invalid/issue/645#E",
+      "artifact_links": [
+        "https://example.invalid/artifacts/E"
+      ],
+      "positions": {
+        "Product": {
+          "position": "Supplied captured position for E",
+          "evidence": [
+            "https://example.invalid/artifacts/E"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "Architect": {
+          "position": "Supplied captured position for E",
+          "evidence": [
+            "https://example.invalid/artifacts/E"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        },
+        "orchestrator": {
+          "position": "Supplied captured position for E",
+          "evidence": [
+            "https://example.invalid/artifacts/E"
+          ],
+          "model_record": "unknown original model; supplied synthetic record"
+        }
+      }
+    }
+  ],
+  "round_one": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "round_two": [
+    "E",
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "previously_unaccepted": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "protections": [
+    "unanimous-skip",
+    "protected-work",
+    "evidence-before-action",
+    "advance-ordering",
+    "fresh-review",
+    "review-depth",
+    "valid-test-skip",
+    "A49-provenance",
+    "per-item-human-authority"
+  ],
+  "source_limits": "All member returns are supplied, not independent live sessions. No actual release observation supplied.",
+  "floor": {
+    "label": "supplied synthetic comparison, not authenticated runtime or live index evidence",
+    "date": "2026-11-10",
+    "author": {
+      "model": "gpt-6.1-sol",
+      "reasoning": "high",
+      "entry": "synthetic-author",
+      "score": 50
+    },
+    "Product": {
+      "model": "claude-sonnet-5-5",
+      "reasoning": "high",
+      "entry": "synthetic-product",
+      "score": 50
+    },
+    "Architect": {
+      "model": "claude-opus-5-1",
+      "reasoning": "high",
+      "entry": "synthetic-architect",
+      "score": 60
+    }
+  },
+  "authority": {
+    "label": "synthetic exercise-only human source; not an override grant",
+    "source": "https://example.invalid/human/source",
+    "words": "Use the existing otherwise-authorized route for this exact work-item release merge.",
+    "base": "release/607-panel-mechanisms",
+    "conditions": [
+      "existing authority",
+      "CI green",
+      "required review",
+      "unchanged human words",
+      "validation",
+      "round trip",
+      "Closes #680"
+    ]
+  }
+}
