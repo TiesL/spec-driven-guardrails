@@ -6335,3 +6335,251 @@ is its evidence, not an observation made in this offline session.
 - All-checks success, strict protection and repeated B/G rebinding may make useful autonomy unavailable in some adopted projects.
 - Project-specific paths and qualification can omit product harms; SDG's instance cannot establish an adopter's safety.
 - The task-specific floor and reviewer count need explicit owner/maintainer decisions; no live scores or usefulness rates were verified.
+
+### A60 addendum 2 — maintainer-decided score lookup and reviewer availability, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-12; ships inert.** This
+append-only correction follows Product at `b727b52`, PRD F71 and the current
+issue AC2/M2 in `.handoff/issue-646-body-3.md`. The capability/count/availability
+rule below transcribes maintainer decisions (ledger 65/66/95); it does not accept
+the final delegation or enable it. `[A]` denotes the proposed implementation of
+that rule; no live scores, effort attestation, isolation or qualification were
+independently verified. No AC is contradicted or narrowed by this addendum.
+
+**P1 — Replacement map and rule.** The following earlier recommendations are
+superseded for the two merge-risk reviewers only; earlier bytes remain history.
+
+| Earlier A60 text | Replacement |
+| --- | --- |
+| D2 capability paragraph; addendum 1 F8/R8 disposition and E6 floor paragraphs | P2's dated maintainer-table comparison replaces task-specific floor selection, external-index evidence and qualification-as-floor. Author identity is an eligibility input again. There is no unresolved choice between floor methods. |
+| Addendum 1 E7's disputed-floor/cut-list reference, E9's task-floor and count/floor owner references, keep/cut paragraph and final floor/count doubt | Keep the other cuts; do not cut the author comparator. Use P2-P4, with qualification remaining a separate prerequisite. |
+| D2 mandatory Claude+Codex/default-unavailability/same-vendor-exception clauses; D10 M2; addendum 1 E9 M2 and A26 diversity references | P4's two independent reviewers, preferred/optional Codex and permitted availability choices replace mandatory cross-vendor composition and the one-versus-two question. |
+
+Each of the two risk reviewers must score at least as high as the author's model
+on the dated maintainer table, keyed by model + effort. Model identity comes from
+the model-record line. Missing author/reviewer identity, effort or table entry
+means refer, fail closed. Prefer a more capable model and different vendors,
+including diversity from the author when possible. The same model at higher
+effort counts only when the table scores it higher. These preferences do not
+establish scores from names, vendors or effort-label order. A numbered maintainer
+exception may accept equal/lower scores (ledger 95); it is never self-granted.
+The rule is not a hard constraint on ongoing ordinary work. It is a predicate
+for this proposed autonomous-risk clearance, with the protected human exception
+path below; it adds no global stage gate or change to ordinary model selection.
+
+**P2 — Exact evaluator Interface.** [A] Keep the existing decision Module and
+collection/consumer/launcher Seams. The capability check consumes retained,
+identified evidence and returns `pass` or `refer` plus closed reason codes; it
+does no external-index lookup, dispatch, posting or repair. Its inputs are:
+
+- The authoritative author model-record source and exact bytes/hash, tied to
+  the candidate's existing author provenance, plus the P3 effort evidence.
+  Preserve the existing relevant-author inventory: if it names multiple authors,
+  perform the same comparison for every one (equivalently the highest looked-up
+  score). Do not omit an unknown author or select the weakest author. This
+  preserves attribution scope, not a new rule for identifying authors.
+- Each of the two reviewer slots' model-record source/bytes/hash and effort
+  evidence, linked to that slot's distinct session/dispatch, resolved model,
+  variant, settings and launcher receipt. A requested model alone is insufficient.
+- The pinned maintainer table's immutable source revision, byte digest and date,
+  plus the explicit mapping from exact runtime model IDs to table row names.
+  For this revision the source is `.handoff/MODEL-SCORES-2026-11-11.md`, dated
+  `2026-11-11`. The handoff path locates supplied data; production must retain
+  its exact accepted bytes in protected project configuration/evidence rather
+  than depend on a mutable handoff directory. No repository name or local
+  absolute path is part of the generic Interface.
+- The accepted fixed reviewer profiles/qualification identities and, if used,
+  the protected numbered maintainer exception and its evidence under P4.
+
+Perform these steps before clearance and again against the final bound evidence:
+
+1. Verify the pinned source/date/digest and the protected decision selecting it.
+   Read only its table rows as score data. Require one unambiguous finite numeric
+   score for each exact `(model, effort)` key used. Missing, duplicate,
+   conflicting, malformed or changed data refers. Do not interpolate efforts,
+   assume monotonicity, follow a URL, choose the latest table or fetch an index.
+   A date alone does not pin bytes. Table updates, including model-name mappings
+   or corrections, are protected maintainer decisions; they expire affected
+   bound evidence and qualification under the existing identity rules.
+2. Parse the retained model-record lines with the existing marker semantics;
+   use their exact model identities, not a report heading or supplied score.
+   Validate source/binding and P3 effort evidence. Map a runtime ID to a table
+   display name only through the pinned explicit mapping, with resolved variant
+   consistency. No fuzzy name/alias matching or effort inferred from `variant`.
+   Unknown/ambiguous identity or mapping refers.
+3. Look up author and reviewer rows. Compute each reviewer comparison against
+   every relevant author. Ordinarily each reviewer score must be `>=` each
+   author score; equality satisfies the baseline. For the same-model/higher-effort
+   route, the table must show a strict score increase: an effort label alone,
+   an equal score or a lower score does not qualify through that route. P4 can
+   record a maintainer's explicit equal/lower choice; preference for a stronger
+   model is not a second hidden numeric threshold.
+4. Check both slots independently. If a comparison fails, only the matching,
+   applicable P4 exception can supply the recorded disposition. A valid exception
+   never fills an unknown identity, effort or absent score. Match the selected
+   profiles, resolved settings and qualification separately; a good lookup
+   cannot stand in for observed adversarial qualification or session independence.
+5. Return the comparison evidence (source hashes, exact row keys, looked-up
+   scores, slot outcomes and exception identity where used) to the durable
+   record, using safe display. Expose only validated numbers/digests and fixed
+   codes to the executor. Any failed mandatory check returns `refer`; retain
+   every applicable reason, never average the two reviewers or choose a favorable
+   author/row. `pass` here clears capability only, never authorizes a merge.
+
+Closed proposed reason codes for this Interface:
+
+| Result/code | Meaning |
+| --- | --- |
+| `pass / capability-score-pass` | Both slots meet the table comparisons with complete bound evidence. |
+| `pass / capability-maintainer-exception` | Complete evidence and a valid numbered exception cover the specified comparison; retain ordinary comparisons for every other slot/author. |
+| `refer / capability-table-invalid` | Pin/date/bytes/acceptance or table row integrity missing, inconsistent or changed. |
+| `refer / capability-identity-missing` | Author/reviewer marker, authoritative source, resolved identity or explicit name mapping missing/ambiguous/conflicting. |
+| `refer / capability-effort-unavailable` | Effort absent, default-only, unobservable, conflicting or not bound to the recorded session/model. |
+| `refer / capability-entry-missing` | No exact model + effort row, including an unsupported effort. |
+| `refer / capability-below-author` | A reviewer scores below an author without a valid applicable exception. |
+| `refer / capability-effort-no-gain` | Claimed same-model/higher-effort qualification lacks a table score increase and an applicable exception. |
+| `refer / capability-exception-invalid` | Exception provenance, scope, protected authority or binding fails. |
+| `refer / capability-profile-mismatch` | Selected/resolved profile, settings or qualification binding does not match. |
+
+These are proposed consumer codes, not a claim that the partial implementation
+already emits them. Preserve the outer evaluator's existing public result/exit
+contract: this `refer` cannot produce eligible/merge; unknown or crashed consumers
+still stop fail closed. Pair absence/unavailability and qualification failures
+retain their separate existing checks and reasons.
+
+The supplied table's older prose requiring a DIFFERENT model and forbidding all
+same-model/higher-effort choices is superseded here by the maintainer's current
+rule; its protected bytes are not edited. Its OpenAI transcription and Claude
+block are marked TO BE VERIFIED. Lookup establishes consistency with those
+supplied numbers, not their truth or live capability. Retain that limitation in
+the acceptance record. Resolving transcription uncertainty or accepting its
+residual is a **maintainer security trade-off**, never evaluator discretion or
+an invitation to replace rows from an external index.
+
+**P3 — Effort evidence without changing model-record.** [A] The current emitter
+omits effort; its compatibility `--effort` flag is ignored. Do not pass that flag
+as evidence, modify old markers, infer an effort from model name/score, or use a
+harness's unknown default. The existing marker remains the model-identity source.
+Author evidence must retain the actual launch setting and its source; reviewer
+evidence must additionally match the observed resolved runtime/settings receipt.
+A launcher with no effort argument may qualify only if an explicit fixed setting
+and evidence of that setting's application are available. Otherwise refer,
+including for a Claude subagent whose harness effort cannot be established.
+A dispatch prompt stating an effort is requested-setting evidence, not proof
+that the runtime applied it; contradictory or absent application evidence refers.
+
+**PROPOSAL for the maintainer, contract-text impact:** the smallest additive
+carrier is a risk-only `model_efforts` adjunct inside the existing retained
+capability/launcher evidence, not a new attribute in the ordinary model-record
+marker. Each entry contains marker source/hash, session/dispatch identity,
+explicit effort, launch-evidence source/hash and applied settings/receipt hash.
+Require a unique consistent entry per referenced marker/session; bind these bytes
+into the existing floor-evidence digest and reviewer envelope. Read model identity
+from the referenced marker rather than creating another identity authority.
+This needs protected approval for its schema/procedure and any skills/contract
+wording; it is not installed by this addendum. A general effort-bearing marker
+format or change to OR29/model-choice would be a separate maintainer proposal.
+Until an accepted carrier supplies the evidence, missing effort refers; no
+temporary inference or retrospective guessed effort can clear capability.
+Launch records on a shared host remain forgeable evidence, not attestation of
+human authorship, actual compute or provider internals; the existing M8 residual
+and observed-runtime prerequisites remain.
+
+**P4 — Pair availability and numbered exception.** Two fresh independent risk
+reviewers remain mandatory, separate from author, executor, quality reviewer and
+each other. Preserve the same complete corpus, no inheritance/peer exposure,
+sealed raw results and two unconditional approvals. Codex is preferred but
+optional. If a vendor is unavailable, the second reviewer may be the other vendor
+or an equally scoring model, provided each selected reviewer satisfies P2/P3
+and its accepted qualified profile. Different vendors remain preferred, including
+diversity from the author where possible; same vendor is not itself a refusal
+or a separate numeric exception requirement under the decided availability rule.
+Never count one review twice, reuse a session or degrade to a single review.
+If no permitted qualified pair is available, refer. Log availability, choices
+and correlation disclosure; no silent profile/model substitution or reuse of
+qualification from a different resolved profile. A changed profile follows the
+existing protected update/renewed qualification route, not retry-to-clear.
+
+A numbered **maintainer** decision may explicitly accept an equal/lower-scoring
+reviewer, including where no stronger choice is available. Equality already
+satisfies ordinary `>=`; such a record can document the choice against the
+stronger-model preference, and is not required for every ordinary equality.
+For a real exception, retain: stable numbered decision and immutable source/hash;
+maintainer's verbatim words and provenance; repository/work item/PR and evidence
+identity; exact author and affected reviewer marker/effort sources; table
+identity/date/digest, row keys and both scores; affected slots/profiles and
+specific departure accepted; availability/reason and correlated-risk disclosure;
+qualification identity; scope, validity limits and supersession/revocation links.
+Bind these to collection and final recheck. An absent/ambiguous scope or changed
+binding refers rather than broadens the exception. Record acceptance before use;
+ledger 95 permits the route, not a standing waiver for every lower score.
+
+The exception is protected, never granted by a panel, author, reviewer or
+executor and never inferred from silence, a model's recommendation, a shared
+login or general merge permission. It accepts the named capability trade-off
+only: it cannot waive missing identity/effort/rows, two-review independence,
+qualification, other gates or final delegation acceptance. Lower-score acceptance,
+trust in effort evidence and table maintenance are **maintainer security
+trade-offs**. This design specifies evidence checking, not proof that human-looking
+records are authentic. Ordinary work can continue through its existing human
+approval route when autonomous capability refers.
+
+**P5 — QA and Developer handoff.** [A] Existing scenario text describes the old
+proposal; the named owner edits below must precede dependent implementation.
+This intentional narrow loop-back supersedes those old oracles rather than
+silently treating them as current conformance evidence. Allocate no new IDs here.
+
+| QA-owned scenario / artifact | Required amendment and public test Seam |
+| --- | --- |
+| S650-S678 proposal preamble, assertion ledger and S659 heading/Given/Then/falsifier | Replace unresolved floor alternatives/external-index/mandatory-cross-vendor claims with this decided rule; retain PROPOSAL, inert and UNRUN distinctions. Keep S659's ordinary A54/quality-floor continuity assertion. |
+| S659 capability/availability matrix | Exercise the public policy/envelope evaluator and object-backed collection using independently specified pinned rows, marker/effort evidence and numbered decisions. Cover each P2 refer code; missing author/reviewer marker, effort and row; wrong pin/date/digest/mapping; duplicate/conflicting rows; both slots; scores below/equal/above; multiple relevant authors without omission; same-model higher effort with actual score gain and without it; nonmonotonic table scores; no external-index access. Kill `>=` to `>`/`<=`, skipped author/slot, guessed effort, trusted supplied score and missing-pin mutants separately. |
+| S659 exception and availability matrix | Equal different-model pair succeeds without a needless exception; allowed unavailable-vendor replacement and qualified same-vendor pair succeed with two fresh slots. Missing/unbound/self-granted/revoked or wrong-score exception refers; a bound numbered lower-score exception clears only its comparison. Missing data still refers with an exception. Single review, duplicated answer, unqualified replacement and candidate table update never clear. Diversity preference alone is not a veto. |
+| S658 independence | Update cross-vendor heading/control while retaining all session/nonce/dispatch/sealing/role separation falsifiers. Capability is separately checked even with independent sessions; same-vendor slots need independent identities and retry histories. |
+| S654, S655, S656 and S606/S615/S618 | Amend repeated binding/age/retry/record/final-recheck fields for table/effort/exception identities and vendor-independent slots. Preserve all timing, retained-attempt and human-disposition assertions; test table/evidence/exception drift after collection. |
+| S666 / S675 | Bind exact effort/table/mapping/exception provenance with profile/runtime and qualification identity; unsupported effort capture, drift, expired evidence or borrowed qualification cannot clear. Table/profile updates do not transfer old qualification. Static evidence does not turn actual runtime exercises into observed passes. |
+| S676 (and S677 where external G supplies it) | An adopter supplies its own protected table pin/mapping/effort/exception evidence through the same Interface; no hard-coded repository, maintainer login, handoff path or inherited acceptance. Missing configuration remains inactive/refers. |
+
+Developer owns code/config/fixtures/tests after QA's amendment, including the
+existing S659 case and `test/fixtures/merge-risk-646.py`; QA owns scenario text,
+assertion ledger, artifact and report, not test code under today's contract.
+The targeted implementation work is:
+
+- In `lib/merge-risk.py`, replace `FLOOR`/`activation_checks`' external-index
+  URL and accepted/adequate-presence shortcut with P2's actual table lookup,
+  marker/effort/exception validation and closed outputs. Extend collection and
+  retained sources in `merge-risk-evidence.sh`/`collect` and the existing record,
+  binding and qualification identities; never invent absent launch evidence.
+- Select profiles by stable reviewer slot plus resolved identity, not vendor
+  alone. Remove `independence_checks`' required Claude/Codex multiset. Change
+  vendor-keyed `ATTEMPT`/launch matching/retry counters to two stable slot IDs;
+  same-vendor sessions must not share/reset retry allowance or deadlines. Preserve
+  every unrelated E6 retry rule and the sealed peer on zero-byte redispatch.
+- Propose protected schema/policy and dedicated
+  `skills/merge-risk-panel/{SKILL.md,RISK-REVIEW.md}` procedure changes for
+  maintainer acceptance; remove only stale floor/count/availability statements.
+  Protect table bytes, mappings and exception evidence as autonomy inputs.
+  Use project-neutral configuration; keep shipped `enabled:false`, empty active
+  profiles and null acceptance/qualification. The effort adjunct remains a
+  PROPOSAL until accepted; do not change the ordinary emitter/marker/core.
+- Replace synthetic arbitrary reviewer scores with pinned independent table
+  fixtures and marker/effort sources, plus explicit lab-only exception records.
+  Implement the QA matrices through public live/replay/launcher Seams and record
+  meaningful red-before-green/mutant evidence. No new classifier, external-index
+  Adapter or general model-ranking framework is needed: the existing Module's
+  Depth keeps lookup/expiry complexity local instead of spreading it to callers.
+  Live and replay are the two existing Adapters, not hypothetical new Seams.
+
+**P6 — Preserved protections and decision limits.** E6's unrelated retry text
+remains intact: two counted paired attempts, any output bytes counted, one logged
+launcher-attested zero-byte transport redispatch per slot/evidence identity
+across both attempts, sealed peer retained, unchanged 1,800-second deadlines and
+86,400-second pair age, required prior maintainer disposition for a second
+counted pair and terminal further failure. No favorable resampling or provider
+retry concealment. A54, ordinary quality Review/model-choice floors and their
+effort-free markers are unchanged. Keep E7's small schema/parser cuts and bounds,
+independent quality approval, checks/CI/preflight, hard stops, corpus/isolation,
+B/H/G binding, hold/stop/revocation/revert, complete qualification and M7/M8
+disclosures. No pinned core, code, test, scenario or contract is edited here.
+M2's count/floor/availability choice is settled by the supplied maintainer
+direction; final delegation/residual acceptance, observed evidence and separate
+protected enablement remain outstanding. Default is inert and fail closed.
