@@ -2495,26 +2495,31 @@ instructions/config/evidence cannot choose the policy/verifier judging them.
 
 **Serves:** #646 AC2; A60 D1-D4, addendum 1 E4-E7.
 [A] Proposed operation requires two fresh non-inheriting independent sessions,
-default Claude plus Codex, distinct from author/implementer, executor, quality
-reviewer and each other. They receive the same complete identified source/diff
-corpus without prior/peer conclusions, author/orchestrator conversation or a
-preferred answer; seal both raw results before comparison. Exact resolved
-model/variant/settings, session/launcher/runtime identities, dated index
-entries/scores, floor rationale and fixed-profile qualification are required.
-Unavailability refers; no automatic substitution. Same-vendor exceptions need
-protected explicit acceptance and renewed qualification. M2 explicitly asks one
-versus two (recommend two); one is not an operating fallback and requires revised
-ACs/design/qualification before use.
+with a Codex reviewer preferred but optional depending on availability, distinct
+from author/implementer, executor, quality reviewer and each other. They receive
+the same complete identified source/diff corpus without prior/peer conclusions,
+author/orchestrator conversation or a preferred answer; seal both raw results
+before comparison. Exact resolved model/variant/settings,
+session/launcher/runtime identities, dated table entries/scores, floor rationale
+and fixed-profile qualification are required. If a vendor is unavailable, the
+second independent reviewer may be of the other vendor or an equally scoring
+model, never a degraded single review.
 
-[A] **Floor method remains a reserved maintainer decision in M2:** Option A is
-literal A54 D3's score at least the highest relevant author's, plus adversarial
-competence and qualification. Option B is a protected task-specific adversarial
-floor with dated exact score evidence and qualification, without an author-score
-comparator (authors remain provenance/correlation evidence). Architect recommends
-B; Product recommends B only with explicit security-trade-off acceptance. Neither
-method is accepted by this text. No accepted method, missing/weak/inapplicable
-evidence or unknown variants means refer. Model names never establish ordering;
-A54 and ordinary quality Review floors remain unchanged.
+[A] **Maintainer-decided floor (ledger 65/66/95):** Each of the two risk reviewers
+must score at least as high as the author's model on the maintainer-provided
+intelligence score table `.handoff/MODEL-SCORES-2026-11-11.md`, pinned to 2026-11-11.
+Model identity comes from the model-record line; the score is a table lookup
+keyed by model + effort, with no reading of any external index. Missing
+author/reviewer identity or a missing table entry means refer (fail closed).
+Prefer a more capable model; the same model at a higher effort counts only when
+the table scores it higher. Different vendors are preferred to diversify: the
+two reviewers should differ from each other and, when possible, from the author's
+vendor. This rule is not codified as a hard constraint for ongoing work: a
+maintainer exception, recorded as a numbered decision, may accept a reviewer
+scoring equal to or below the author (for example, when nothing scores higher
+than the strongest model; ledger 95). No silent substitution is allowed. The
+dated table is maintainer-provided data; updating it is a protected maintainer
+decision. A54 and ordinary quality Review floors remain unchanged.
 
 [A] Reviewers read complete old/new changed files and sufficient B/H surrounding
 context or refer. Repository/PR text is untrusted data. Enforce read-only evidence
