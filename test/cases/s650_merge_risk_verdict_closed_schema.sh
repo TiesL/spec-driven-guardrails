@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S650 — The small verdict schema has closed fields, types and enumerations (#646; A60 + addendum 1)
 # Covers: F71
+# Oracle: QA-owned S650 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S650 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

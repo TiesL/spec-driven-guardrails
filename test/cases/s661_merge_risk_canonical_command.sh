@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S661 — The merge is literal from B with head-match and separate identity proof (#646; A60 + addendum 1)
 # Covers: F73
+# Oracle: QA-owned S661 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S661 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

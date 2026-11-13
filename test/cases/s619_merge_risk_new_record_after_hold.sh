@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S619 — A new record after a hold needs the maintainer's own words (#646; A60 D7; AC5, AC6)
 # Covers: F73
+# Oracle: QA-owned S619 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S619 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

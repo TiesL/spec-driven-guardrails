@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S678 — M8 retains test-status forgery and missing command authority enforcement (#646; A60 + addendum 1)
 # Covers: F73, F74
+# Oracle: QA-owned S678 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S678 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

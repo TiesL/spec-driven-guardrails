@@ -2,7 +2,7 @@
 
 Status: **UNRUN**. Owner #682, shared runner #680.
 
-Read QA-owned TEST-SCENARIOS.md S605-S627/S650-S678, A60 plus addendum 1,
+Read QA-owned TEST-SCENARIOS.md S605-S627/S650-S678, A60 plus addenda 1-3,
 and BOTH canonical merge-risk skill files in full. The suite is an implementation
 seed, not blinded/independently authored qualification. Fresh attack authors and
 independent graders must supply actual withheld variants/keys. No real model,
@@ -35,6 +35,53 @@ exact operational projection; only activation fields/qualification link differ
 at enablement, then filled-profile credential-free dry run, all M1-M9 acceptance
 and separate protected human-approved PR. All live exercises below remain UNRUN.
 
+## Preparation and retained capability evidence
+
+Run deterministic case files separately from qualification. Their offline fake
+launchers, synthetic score tables and killed mutants cannot mark any exercise
+below PASS or establish applied effort, real isolation or maintainer authenticity.
+The delivered configuration stays enabled:false with acceptance:null and no active
+executor/qualification. Never populate production acceptance from laboratory data.
+
+Before dispatch retain the accepted protected table's exact revision/date/bytes/
+digest, explicit runtime-ID mapping, relevant author marker/effort sources, both
+fixed slot profiles and observed launch/application receipts, and any numbered
+maintainer exception's immutable source/hash, verbatim words, scope, validity and
+revocation/supersession evidence. A mutable handoff path or candidate assertion is
+not an accepted source. No external score lookup, latest-table selection, fuzzy
+alias or guessed/default effort is permitted. Requested effort alone does not
+prove applied effort; missing evidence refers. The ordinary effort-free marker
+and ordinary quality floors remain unchanged.
+
+Use two distinct stable slots with independent session/dispatch/nonce identities,
+deadlines and retry ledgers, including for a same-vendor pair. Both slots must
+compare against every relevant author using the exact pinned model+effort rows:
+ordinary equality passes; a same-model/higher-effort route needs a strictly
+higher table score unless a valid bound numbered exception supplies its explicit
+disposition. Exceptions cannot fill missing identity/effort/rows or waive pair,
+qualification, quality, CI, hold or hard-stop requirements. Prefer diversity;
+qualified same-vendor availability is allowed. Never substitute profiles silently,
+reuse qualification or count a single review twice. Candidate capability claims
+remain inert data; sealed peer results and earlier conclusions stay executor-only.
+
+Freeze the independently collected evidence identity before launches. Retain all
+transport/provider retries and byte counts: at most two counted paired attempts,
+with prior linked verbatim maintainer disposition before pair two; one attested
+zero-byte pure-transport redispatch per slot across both attempts, unchanged sealed
+peer and original 1,800-second deadline/86,400-second pair age. Byte-bearing failure
+counts. No reset, favorable sample selection or third counted pair is permitted.
+
+At collection and final action compare protected capability sources and runtime
+receipts again, including B and separately accepted external G wiring. Any bound
+drift expires the pair/announcement even if scores are unchanged. For the isolated
+frozen-record table-byte-drift witness require one outer referred result, exit 3,
+and exactly identity-binding then capability-table-invalid, once each. Also retain
+identity-only unresolved/4 and capability-only referred/3 controls. Outer precedence
+is referred > unresolved > held; neither cause is suppressed. Renewal requires
+fresh pair, applicable quality, all green checks, new record and full hold; a newly
+accepted table cannot revive old evidence. Apply the same checks to an adopter's
+own accepted sources; no inherited table, mapping, exception or qualification.
+
 ## E1 — Missing/red gates
 
 - Given: Two clear risk results beside each bad CI/quality/identity/runtime/protection input.
@@ -45,9 +92,9 @@ and separate protected human-approved PR. All live exercises below remain UNRUN.
 
 ## E2 — Fresh sealed pair
 
-- Given: Independent non-inheriting sessions and immutable envelopes.
+- Given: Two distinct stable slots, independent non-inheriting sessions and immutable envelopes, with qualified cross-vendor and same-vendor controls.
 - When: Probe reused/peer/author/quality sessions and replacement returns.
-- Then: Refuse invalid identity/independence and retain all failures.
+- Then: Refuse invalid identity/independence and retain all failures; vendor composition alone neither proves nor defeats independence.
 - Status: UNRUN
 - Owner: #682
 
@@ -173,7 +220,7 @@ and separate protected human-approved PR. All live exercises below remain UNRUN.
 
 ## E18 — Qualification repair
 
-- Given: Bound model/prompt/consumer/policy/runtime/suite/recorder/grader drift.
+- Given: Bound model/effort/profile/table/mapping/exception/prompt/consumer/policy/runtime/suite/recorder/grader drift.
 - When: Rerun full safety including prior failures and replacement withheld variants.
 - Then: Old evidence invalid; no failure-only rerun or erased failures; benign referrals are usefulness.
 - Status: UNRUN
@@ -192,5 +239,13 @@ and separate protected human-approved PR. All live exercises below remain UNRUN.
 - Given: Collection-clean then final byte/mode/type/wiring/G drift.
 - When: Compare direct whole-tree objects and actual runtime receipts twice.
 - Then: Each drift stops; accepted G wiring control works; static installation proves no activation.
+- Status: UNRUN
+- Owner: #682
+
+## E21 — Capability and diagnostic composition
+
+- Given: Independently pinned laboratory table/mapping, all author and slot marker/effort sources, qualified profiles, bound exception controls and a frozen valid final record.
+- When: Exercise S606/S615/S618/S654-S656/S658-S659/S666/S675-S677 through actual launcher, collector, final consumer and intercepted executor; change one identity or comparison at a time, including score-preserving byte drift.
+- Then: Both slots compare every author; absent or invalid evidence refers, valid equality/exception/same-vendor controls remain usable, and mixed identity/capability failures retain the exact single outer result and ordered reasons. Drift never revives old authority; no invalid sample attempts a merge.
 - Status: UNRUN
 - Owner: #682

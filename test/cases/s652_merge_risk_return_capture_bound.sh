@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S652 — Capture bounds apply before parsing and never accept a prefix (#646; A60 + addendum 1)
 # Covers: F71
+# Oracle: QA-owned S652 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S652 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

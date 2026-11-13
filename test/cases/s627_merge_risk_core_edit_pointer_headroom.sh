@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# S627 — Branch snapshot, pointers, portable budget and projections (#646)
+# S627 — Branch core snapshot, pointers, budget and projection evidence (#646; A60 + addendum 1)
 # Covers: F74
+# Oracle: QA-owned S627 including A60 addenda 1-3 where applicable.
 #
 # Seam: the bytes of skills/role-contracts/ORCHESTRATOR.md (OR11, OR43, OR6 as in
 # A58 D2), the slot sizes from `session-context.sh --runtime claude --slot n`

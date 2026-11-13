@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S613 — Finite hard stops and procedural vetoes replace the old class (#646; A60 + addendum 1)
 # Covers: F72
+# Oracle: QA-owned S613 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S613 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

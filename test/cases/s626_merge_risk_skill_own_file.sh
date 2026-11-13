@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S626 — Two dedicated skill files fit and are explicitly loaded (#646; A60 + addendum 1)
 # Covers: F74
+# Oracle: QA-owned S626 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S626 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S654 — Envelope identities and trusted deadlines cannot be self-attested (#646; A60 + addendum 1)
 # Covers: F70, F71, F73
+# Oracle: QA-owned S654 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S654 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

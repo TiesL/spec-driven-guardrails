@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S671 — A tiny activating PR is judged with dormant behavior already in B (#646; A60 + addendum 1)
 # Covers: F71, F72, F74
+# Oracle: QA-owned S671 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S671 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

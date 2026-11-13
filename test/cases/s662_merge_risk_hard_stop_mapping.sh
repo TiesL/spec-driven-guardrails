@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S662 — Every finite hard-stop pattern vetoes old and new paths (#646; A60 + addendum 1)
 # Covers: F72
+# Oracle: QA-owned S662 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S662 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

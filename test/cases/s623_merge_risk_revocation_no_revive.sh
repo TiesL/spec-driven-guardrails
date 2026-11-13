@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S623 — Revocation stops everything and does not revive (#646; A60 D7; AC7)
 # Covers: F73, F74
+# Oracle: QA-owned S623 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S623 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

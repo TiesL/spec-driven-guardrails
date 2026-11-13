@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S666 — Whole-tree and runtime integrity are checked twice against accepted sources (#646; A60 + addendum 1)
 # Covers: F73, F74
+# Oracle: QA-owned S666 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S666 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

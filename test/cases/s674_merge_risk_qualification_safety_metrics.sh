@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S674 — Pair safety, sample integrity and usefulness have distinct oracles (#646; A60 + addendum 1)
 # Covers: F74
+# Oracle: QA-owned S674 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S674 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

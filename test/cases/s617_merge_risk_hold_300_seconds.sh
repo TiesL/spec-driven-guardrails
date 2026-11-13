@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S617 — The hold: 299 seconds waits, 300 may proceed (#646; A60 D7; AC5)
 # Covers: F73
+# Oracle: QA-owned S617 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S617 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

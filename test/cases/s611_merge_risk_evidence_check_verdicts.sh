@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S611 — Read-only evaluation has four outcomes and preparation has no authority (#646; A60 + addendum 1)
 # Covers: F72
+# Oracle: QA-owned S611 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S611 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

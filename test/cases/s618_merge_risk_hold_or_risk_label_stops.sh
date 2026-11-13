@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S618 — A hold or risk label stops every merge and voids the record (#646; A60 D7; AC5)
 # Covers: F73
+# Oracle: QA-owned S618 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S618 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).

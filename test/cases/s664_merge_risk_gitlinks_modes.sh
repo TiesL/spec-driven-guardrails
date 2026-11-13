@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # S664 — Gitlinks refer in either snapshot while ordinary modes remain reviewable (#646; A60 + addendum 1)
 # Covers: F72
+# Oracle: QA-owned S664 including A60 addenda 1-3 where applicable.
 # Public evaluator/collector/export/reader or structural seams only. Row and
 # single-rule mutation map: test/fixtures/merge-risk-646.py, S664 entries.
 # Actual model/executor/runtime qualification stays UNRUN (#680/#682).
