@@ -6583,3 +6583,93 @@ disclosures. No pinned core, code, test, scenario or contract is edited here.
 M2's count/floor/availability choice is settled by the supplied maintainer
 direction; final delegation/residual acceptance, observed evidence and separate
 protected enablement remain outstanding. Default is inert and fail closed.
+
+### A60 addendum 3 — final identity expiry and capability-referral precedence, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-13; ships inert.** This narrow
+design ruling resolves DEV646-02 in `.handoff/dev-report-646-2.md` against
+`38c24db`, with QA text from `bd229a7`. Earlier A-text remains history. It
+clarifies the outer Interface; no AC is contradicted or narrowed, no capability
+requirement is waived, and no delegation, residual or enabling decision is
+accepted here. The affected implementation remains stopped until QA reconciles
+its oracles through the existing owner route.
+
+**R1 — One outer result, both failures retained.** [A] For the SAME final
+evidence, a frozen valid pair/record followed by capability-table byte drift,
+the outer result is **`referred`, exit 3**. For the isolated DEV646-02 witness
+(all other gates valid), emit exactly these reason lines, once each and in this
+order, after the single ordinary `merge-risk: referred ...` first line:
+
+```text
+reason: identity-binding
+reason: capability-table-invalid
+```
+
+`identity-binding` records the expired pair/announcement; it is an unresolved
+cause. `capability-table-invalid` records P2's failed capability check; it is a
+referral cause. Preserve the inherited outer precedence **referred, then
+unresolved, then held** (A58 D4, preserved by A60 D0/D1 and addendum 2 P2).
+Precedence selects the single outer result/exit, not which reasons survive or
+their display order. Identity diagnostics precede capability diagnostics for
+this overlap; never short-circuit capability checking because identity failed,
+discard the identity cause because referral won, or emit a second outer result.
+Other independently applicable failures retain their existing closed reasons;
+the two-line list above is exact for the isolated witness, not permission to
+hide additional faults or invent derivative missing-data failures.
+
+An identity-binding failure without any referral cause remains `unresolved`,
+exit 4. A capability failure without a stale bound pair/record is `referred`,
+exit 3, with its applicable P2 code(s); do not fabricate `identity-binding`.
+The capability Interface still returns `refer`; its result is not a competing
+outer exit, nor may it be reinterpreted as pass when identity has failed.
+
+**R2 — Expiry and recovery are unchanged.** [A] Both outer outcomes prohibit
+an eligible announcement and merge. Table-byte drift expires the old pair and
+announcement even when date, row keys or numeric comparisons remain unchanged.
+Referral cannot turn the expired record into a reusable record, a hold-only
+wait, or permission to redispatch automatically. Both fresh reviews, applicable
+quality renewal including H marker, complete green checks, a new record and
+full hold remain required. A newly accepted table does not revive the old pair;
+protected table/mapping updates also expire affected qualification. Preserve
+the existing attempt/disposition, exception, qualification and acceptance rules.
+
+This is a diagnostic-composition ruling within an already fail-closed Interface,
+not a maintainer security trade-off: it preserves both prohibitions and recovery
+obligations and follows existing precedence. Accepting changed/unverified table
+data, relaxing binding, or granting any capability exception remains reserved
+to the maintainer and is neither needed nor decided here.
+
+**R3 — Exact QA-owned amendments before Developer resumes.** [A] QA must amend
+both S606 and S659; Architect changes neither scenario file nor fixture here.
+
+| Scenario text to amend (verbatim sentence) | Required replacement / clarification |
+| --- | --- |
+| S606 Then: "each change invalidates the pair and announcement, exit 4 with a closed identity reason; no update-branch exception." | Every change still invalidates the pair/announcement with `identity-binding`. Outer `unresolved`/4 applies when no referral cause also applies; otherwise use the preserved referred-before-unresolved-before-held precedence. Explicitly require the R1 table-drift witness to return outer `referred`/3 and the two ordered reasons. Preserve the remaining renewal sentences and unchanged eligible control. |
+| S606 addendum-2 bullet: "Each invalidates the pair and announcement exactly as in the Then above; a newly accepted table never revalidates an old pair." | Retain unconditional expiry/non-revival, but refer to the clarified Then's composed result/exit rule rather than unconditional exit 4. Apply it to every listed drift; do not assume every identity change has a capability failure. |
+| S659 Then (l): "(l) refers with `capability-table-invalid`; a date alone never pins bytes; the candidate's or the newer table is never used." | Retain the capability referral and all pin/source protections. State explicitly that the frozen-valid-record/changed-table-bytes final variant returns outer `referred`/3 with exactly `identity-binding`, then `capability-table-invalid`. Distinguish a capability-invalid input without stale bound evidence, which requires its applicable capability code(s) without an invented identity failure. |
+| S659 Test seam: "public policy/envelope evaluator and object-backed collection, with table L, mapping, marker/effort sources and laboratory-only numbered decisions specified independently of the implementation; observe result, closed codes, recorded comparison evidence and call/action logs." | Require the same frozen final evidence through the public outer evaluator for S606 and S659 (l), asserting one outer first line, exit 3 and the exact ordered two-code list. Keep a separate capability-level `refer` assertion and an identity-only unresolved/4 control; never repair the conflict by switching only one oracle to a private/per-row exit. |
+
+QA retains S659's all-applicable-reasons/no-merge clause and its existing pin
+mutants; add falsifiers for identity overriding referral, either reason omitted
+or reordered, and two outer results. Preserve S606's stale-identity and renewal
+falsifiers. S654-S656 need no amendment for DEV646-02: their envelope, retained
+source and partition protections remain intact; this ruling does not replace
+those checks. QA publishes a superseding scenario artifact before the dependent
+Developer work under OR19/OR17.
+
+**R4 — Developer consequence and evidence limits.** [A/V] At `38c24db`,
+`Result.verdict()` already gives referral precedence; `evaluate()` runs
+`record_checks()` before adding `capability_reasons()`. The retained diagnostic
+log `.handoff/dev646c/seg2/dev646-02.log` reports the R1 output and an unchanged
+eligible/0 control. This is inspected historical evidence, not a new test run.
+Do not reverse precedence or suppress either cause to satisfy the old S606
+oracle; no evaluator change is required for this exact witness. After QA's
+amendment, Developer owns the S606/Segment 2 regression and the S659 Segment 1
+oracle in `test/fixtures/merge-risk-646.py`: assert the same outer result, exit
+and ordered reason list on identical frozen evidence, retaining the eligible/0
+and identity-only unresolved/4 controls and meaningful single-rule mutants.
+Ensure byte binding detects drift independently of changes to looked-up scores;
+the score-changing witness alone cannot establish that coverage. Any necessary
+implementation fix stays inside the existing decision Module and public Seam;
+no new Module, Adapter, wrapper or result/exit domain is introduced. Live
+capability, qualification and enforcement remain UNRUN.
