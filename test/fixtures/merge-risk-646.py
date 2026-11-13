@@ -310,7 +310,7 @@ def sync(b):
         if 'edit' in spec: spec['edit'](e,comment)
         if comment['body'] is None: comment['body']=exception_body(e)
         ev['exceptions'].append(number)
-        if not spec.get('silent'): ev['ledger'].append(comment); hashes.setdefault(number,[]).append(sha(comment['body']))
+        if not spec.get('silent'): ev['ledger'].append(comment); hashes.setdefault(number,[]).append({'source':comment['url'],'sha256':sha(comment['body'])})
         if spec.get('valid',True): used[(spec['slot'],spec['author'])]=number
         if 'after' in spec: spec['after'](ev)
     for i,p in enumerate(b['risk_pair']):
@@ -456,14 +456,14 @@ def mutate(s, tag, name, replacement=None, control=0):
 
 
 def cap_row(s, name, edit=None, verdict='eligible', codes=('capability-score-pass',), cmp=None, notes=(), atleast=False, pre=None,
-            reader=None, final=(), absent=()):
+            reader=None, final=(), absent=(), exact=None):
     """Capability row: the comparison reader, optionally the prepare phase, and the final evaluation.
     reader: the reader's own pass/refer when it differs from the final verdict (capability
     clears, another gate refers); final: reasons the final evaluation must then carry;
     absent: reason prefixes the final evaluation must not carry."""
     ROWS.setdefault(str(s), []).append((name, edit, verdict, None, 'capability',
                                         {'codes':set(codes), 'cmp':cmp or {}, 'notes':notes, 'atleast':atleast, 'pre':pre,
-                                         'reader':verdict=='eligible' if reader is None else reader, 'final':final, 'absent':absent}))
+                                         'reader':verdict=='eligible' if reader is None else reader, 'final':final, 'absent':absent, 'exact':exact}))
 
 
 def change(path, value):
@@ -1915,6 +1915,242 @@ for tag,name,replacement in [
     mutate(656,tag,name,replacement)
 
 
+# Segment 2: A60 addendum-2 owner bullets; addendum 3 composes mixed causes.
+# Frozen edits deliberately bypass fixture renewal: the public final evaluator
+# receives the same old pair and announcement and independently changed evidence.
+def table_byte_only(b):
+    pin=json.loads(b['config_text'])['capability']['table']
+    b['sources'][pin['source']]['body'] += ' '
+
+
+def move_marker(kind,i):
+    def edit(b):
+        obj,key=holder(b,kind,i); old=copy.deepcopy(obj[key])
+        obj[key]['source']=old['source']+'-moved'
+        b['sources'][obj[key]['source']]=copy.deepcopy(b['sources'][old['source']])
+        for e in b['capability']['efforts']:
+            if e['marker']==old: e['marker']=copy.deepcopy(obj[key])
+    return edit
+
+
+def move_launch(kind,i):
+    def edit(b,efforts,e):
+        old=e['launch']['source']; e['launch']['source']=old+'-moved'
+        b['sources'][e['launch']['source']]=copy.deepcopy(b['sources'][old])
+    return effort_edit(kind,i,edit)
+
+
+def exception_drift(kind):
+    def edit(b):
+        ev=b['capability']
+        if kind=='bytes': ev['ledger'][0]['body']+=' '
+        elif kind=='revoked': ev['ledger'].append(ledger_comment(revocation(7),when=10))
+        else:
+            body=ev['ledger'][0]['body']; e=json.loads(body.split('```json\n')[1].split('\n```')[0])
+            e.update(number=8,supersedes=7)
+            ev['ledger'].append(ledger_comment(exception_body(e),when=10))
+    return edit
+
+
+def exception_control(b): lab(slots=C_PAIR)(b); exc()(b)
+
+
+MIXED=('identity-binding','capability-table-invalid')
+for scenario in (606,659):
+    cap_row(scenario,'add2-frozen-table-score-drift',freeze_edit(stale_bytes),'referred',('capability-table-invalid',),exact=MIXED)
+    cap_row(scenario,'add2-frozen-table-byte-only',freeze_edit(table_byte_only),'referred',('capability-table-invalid',),exact=MIXED)
+    cap_row(scenario,'add2-identity-only',freeze_edit(change(['current','narrative_sha256'],sha('changed'))),
+            'unresolved',reader=True,exact=('identity-binding',))
+# No frozen record exists here: do not fabricate identity-binding for capability failure.
+cap_row(659,'add2-capability-only',both(change(['phase'],'prepare'),after(table_byte_only)),'referred',('capability-table-invalid',),absent=('identity-binding',))
+
+for name,edit in [
+    ('date-only',repin(date='2026-01-02')),
+    ('protected-table-update',repin(text=table_text(extra=['new protected prose']))),
+    ('protected-mapping-update',repin(mapping=mapping_text(list(ROWNAME.items())+[('lab-extra','Q')]))),
+    ('mapping-byte-only',stale_mapping),
+    *[(kind+'-'+str(i)+'-marker-source',move_marker(kind,i)) for kind,count in [('author',1),('slot',2)] for i in range(count)],
+    *[(kind+'-'+str(i)+'-effort-source',move_launch(kind,i)) for kind,count in [('author',1),('slot',2)] for i in range(count)]]:
+    row(606,'add2-'+name,freeze_edit(edit),'referred' if name=='mapping-byte-only' else 'unresolved','identity-binding')
+for kind in ('bytes','revoked','superseded'):
+    row(606,'add2-exception-'+kind,both(exception_control,freeze_edit(exception_drift(kind))),
+        'unresolved' if kind=='bytes' else 'referred','identity-binding')
+row(606,'add2-exception-source',both(exception_control,freeze_edit(
+    lambda b:b['capability']['ledger'][0].update(url=b['capability']['ledger'][0]['url']+'1'))),
+    'unresolved','identity-binding')
+row(606,'add2-new-table-does-not-revive',freeze_edit(both(table_byte_only,repin(text=table_text(extra=['accepted replacement'])))),
+    'unresolved','identity-binding')
+
+mutate(606,'record-floor','add2-exception-source')
+mutate(606,'record-table-bytes','add2-frozen-table-byte-only')
+mutate(606,'record-mapping-bytes','add2-mapping-byte-only')
+for scenario in (606,659):
+    mutate(scenario,'precedence','add2-frozen-table-score-drift',
+           ("('referred','unresolved','held')","('unresolved','referred','held')"))
+
+# Every added disclosure field is independently omitted and changed. These
+# oracles specify the record's public JSON, never import evaluator constants.
+COMPARISON_FIELDS=('slot marker_sha256 effort_sha256 row score author_marker_sha256 author_effort_sha256 author_row author_score outcome exception').split()
+def record_change(path,value=None,remove=False):
+    def edit(m):
+        obj=m
+        for k in path[:-1]: obj=obj[k]
+        if remove: obj.pop(path[-1])
+        else: obj[path[-1]]=copy.deepcopy(value)
+    return edit_record(edit)
+
+for field in COMPARISON_FIELDS:
+    path=['capability','comparisons',0,field]
+    row(615,'add2-remove-'+field,record_change(path,remove=True),'unresolved','manifest-schema')
+    value=0 if field=='score' else 49 if field=='author_score' else 99 if field=='exception' else \
+          {'model':'Q','effort':'high'} if field in ('row','author_row') else \
+          'capability-maintainer-exception' if field=='outcome' else 'slot-other' if field=='slot' else sha('wrong')
+    row(615,'add2-change-'+field,record_change(path,value),'unresolved','identity-binding')
+for group,fields in [('table',('source','date','sha256')),('mapping',('source','sha256'))]:
+    for field in fields:
+        path=['capability',group,field]
+        row(615,'add2-remove-'+group+'-'+field,record_change(path,remove=True),'unresolved','manifest-schema')
+        value=blob('accepted/wrong') if field=='source' else '2025-12-31' if field=='date' else sha('wrong')
+        row(615,'add2-change-'+group+'-'+field,record_change(path,value),'unresolved','identity-binding')
+row(615,'add2-multiple-authors-control',lab(authors=(('X','high'),('Z','medium'))))
+row(615,'add2-omit-author',both(lab(authors=(('X','high'),('Z','medium'))),
+    edit_record(lambda m:m['capability'].update(comparisons=[r for r in m['capability']['comparisons'] if r['author_score']==50]))),
+    'unresolved','identity-binding')
+row(615,'add2-omit-slot',edit_record(lambda m:m['capability']['comparisons'].pop()),'unresolved','identity-binding')
+row(615,'add2-same-vendor-control',lab(slots=CLAUDE_PAIR))
+row(615,'add2-vendor-key-collision',both(lab(slots=CLAUDE_PAIR),edit_record(lambda m:[r.update(slot='Claude') for r in m['capability']['comparisons']])),
+    'unresolved','identity-binding')
+row(615,'add2-exception-control',exception_control)
+row(615,'add2-exception-identity-absent',both(exception_control,record_change(['capability','comparisons',0,'exception'],None)),
+    'unresolved','identity-binding')
+row(615,'add2-exception-source-hash',both(exception_control,record_change(['authority','floor_sha256'],sha('wrong-source'))),
+    'unresolved','identity-binding')
+for tag,name in [('record-capability-pin','add2-change-table-date'),('record-capability-slots','add2-change-slot'),
+                 ('record-capability-authors','add2-change-author_marker_sha256'),('record-capability-values','add2-change-score'),
+                 ('record-capability-exception','add2-exception-identity-absent')]:
+    mutate(615,tag,name)
+
+# A removed old hold with its valid release must never renew changed capability.
+for release in (False,True):
+    prefix=stops('pr',-10,removed=True,release=-9) if release else None
+    for name,edit in [('m-revoked',exception_drift('revoked')),('m-superseded',exception_drift('superseded')),
+                      ('n-table',table_byte_only),('n-mapping',stale_mapping),
+                      ('o-effort-receipt',effort_edit('slot',0,lambda b,es,e:e.update(receipt_sha256=sha('other'))))]:
+        setup=exception_control if name.startswith('m-') else None
+        row(618,'add2-'+name+('-released' if release else ''),both(*[x for x in (prefix,setup,freeze_edit(edit)) if x]),
+            'referred','capability-exception-invalid' if name.startswith('m-') else 'capability-table-invalid' if name.startswith('n-') else 'capability-effort-unavailable')
+for name,edit in [('pin',repin(text=table_text(extra=['new accepted pin']))),
+                  ('mapping',repin(mapping=mapping_text(list(ROWNAME.items())+[('lab-extra','Q')])) )]:
+    for released in (False,True):
+        setup=stops('pr',-10,removed=True,release=-9) if released else lambda b:None
+        row(618,'add2-accepted-'+name+('-released' if released else ''),both(setup,freeze_edit(edit)),
+            'unresolved','identity-binding')
+mutate(618,'final-capability','add2-n-table',('capability_reasons(cap,r)','None'))
+
+# Accepted effort needs both a launch source and a receipt, at collection and final.
+for name,edit,code in [
+    ('no-launch',after(effort_edit('slot',0,lambda b,es,e:b['sources'].pop(e['launch']['source']))),'capability-effort-unavailable'),
+    ('requested-only',effort_edit('slot',0,lambda b,es,e:e.update(basis='requested')),'capability-effort-unavailable'),
+    ('unsupported-effort',effort_edit('slot',0,lambda b,es,e:e.update(effort='high')),'capability-profile-mismatch'),
+    ('final-effort-bytes',freeze_edit(effort_edit('slot',0,lambda b,es,e:b['sources'][e['launch']['source']].update(body='different applied setting'))),'capability-effort-unavailable'),
+    ('final-table',freeze_edit(table_byte_only),'capability-table-invalid'),
+    ('final-mapping',freeze_edit(stale_mapping),'capability-table-invalid'),
+    ('final-exception',both(exception_control,freeze_edit(exception_drift('revoked'))),'capability-exception-invalid')]:
+    cap_row(666,'add2-'+name,edit,'referred',(code,),atleast=True)
+cap_row(666,'add2-final-exception-bytes',both(exception_control,freeze_edit(exception_drift('bytes'))),
+        'unresolved',codes=('capability-maintainer-exception',),reader=True,final=('identity-binding',))
+cap_row(666,'add2-applied-control',None)
+mutate(666,'capability-effort-applied','add2-requested-only',("entry['basis']=='applied'",'True'))
+mutate(666,'capability-supported-effort','add2-unsupported-effort',("entry['effort']==profile['effort']",'True'))
+mutate(666,'capability-effort-launch','add2-final-effort-bytes',("retained_body(b,entry['launch'],repo) is not None",'True'))
+mutate(666,'final-capability','add2-final-table',('capability_reasons(cap,r)','None'))
+
+# Preserve the old qualification while selecting new operational inputs.
+def keep_qualification(edit):
+    def apply(b):
+        q=copy.deepcopy(b['accepted']['qualification']); edit(b)
+        b['accepted']['qualification']=q
+        c=json.loads(b['config_text']); c['qualification']=copy.deepcopy(q['source']); b['config_text']=raw(c).decode()
+        b['current']['policy_sha256']=sha(b['config_text']); b['current']['qualification_sha256']=q['source']['sha256']
+        for p in b['risk_pair']:
+            d=json.loads(base64.b64decode(p['raw_b64']))
+            for k in ('policy_sha256','qualification_sha256'):
+                p['envelope']['binding'][k]=b['current'][k]; d['binding'][k]=b['current'][k]
+            seal(p,d)
+    return apply
+
+for name,edit in [
+    ('effort-only',lab(slots=(('Y','medium'),('Z','high')))),
+    ('table-only',repin(text=table_text(extra=['protected update']))),
+    ('mapping-only',repin(mapping=mapping_text(list(ROWNAME.items())+[('lab-extra','Q')]))),
+    ('replacement-profile',lab(slots=CLAUDE_PAIR))]:
+    cap_row(675,'add2-old-qualification-'+name,keep_qualification(edit),'referred',
+            codes=('capability-score-pass',) if name in ('table-only','mapping-only') else ('capability-profile-mismatch',),
+            reader=name in ('table-only','mapping-only'),atleast=True,
+            final=('qualification-unavailable',) if name in ('table-only','mapping-only') else ('capability-profile-mismatch',))
+row(675,'add2-borrowed-effort-qualification',qualification_edit(lambda q:q['inputs'].update(models=sha('same model different effort'))),
+    'referred','qualification-unavailable')
+row(675,'add2-expired-qualification',qualification_edit(lambda q:q.update(status='UNRUN')),'referred','qualification-unavailable')
+cap_row(675,'add2-exception-other-qualification',both(lab(slots=C_PAIR),exc(valid=False,edit=lambda e,c:e.update(qualification_sha256=sha('borrowed')))),
+        'referred',('capability-exception-invalid',BELOW))
+cap_row(675,'add2-lookup-does-not-qualify',qualification_edit(lambda q:q.update(status='UNRUN')),'referred',reader=True,final=('qualification-unavailable',))
+cap_row(675,'add2-qualification-does-not-replace-lookup',lab(slots=C_PAIR),'referred',(BELOW,))
+
+# An accepted external G is wiring only; all capability sources remain the
+# product's own protected pins. Laboratory/product is already a non-SDG adopter.
+def external_guard(b):
+    c=json.loads(b['config_text']); c['guard']['repository']='laboratory/guard'; c['guard']['revision']='7'*40
+    c['guard']['source']['source']='https://github.com/laboratory/guard/blob/'+('7'*40)+'/accepted/guard'
+    config_edit(lambda cfg:cfg.update(guard=c['guard']))(b)
+    b['guard_state']['head']='7'*40
+    for item in b['instruction_files']:
+        old=item['source']['source']
+        item['source']['source']='https://github.com/laboratory/guard/blob/'+('7'*40)+'/skills/merge-risk-panel/'+item['name']
+        b['sources'][item['source']['source']]=copy.deepcopy(b['sources'][old])
+
+
+def unaccepted_pin(which,origin):
+    source={'guard':'https://github.com/laboratory/guard/blob/'+('7'*40)+'/bundled/',
+            'unrelated':'https://github.com/foreign/other/blob/'+B+'/accepted/',
+            'handoff':'.handoff/', 'candidate':'https://github.com/'+REPO+'/blob/'+H+'/accepted/'}[origin]+which
+    return repin(source={which:source})
+
+for scenario in (676,677):
+    cap_row(scenario,'add2-own-evidence-control',None)
+    cap_row(scenario,'add2-own-lower-table',both(lab(slots=C_PAIR),repin()),'referred',(BELOW,))
+    for which in ('table','mapping','decision'):
+        cap_row(scenario,'add2-missing-'+which,after(lambda b,k=which:b['sources'].pop(json.loads(b['config_text'])['capability'][k]['source'])),
+                'referred',('capability-table-invalid',),atleast=True)
+        for origin in ('guard','unrelated','handoff','candidate'):
+            cap_row(scenario,'add2-'+which+'-from-'+origin,unaccepted_pin(which,origin),'referred',('capability-table-invalid',))
+    for kind,i in [('author',0),('slot',0),('slot',1)]:
+        cap_row(scenario,'add2-missing-effort-'+kind+str(i),effort_edit(kind,i,lambda b,es,e:es.remove(e)),
+                'referred',('capability-effort-unavailable',),atleast=True)
+    cap_row(scenario,'add2-unaccepted-exception',both(lab(slots=C_PAIR),exc(valid=False,edit=lambda e,c:c.update(login='TiesL'))),
+            'referred',('capability-exception-invalid',BELOW))
+    for which,edit in [('table',table_byte_only),('mapping',stale_mapping),
+                       ('effort',effort_edit('slot',0,lambda b,es,e:e.update(basis='requested')))]:
+        cap_row(scenario,'add2-final-'+which,freeze_edit(edit),'referred',
+                ('capability-effort-unavailable',) if which=='effort' else ('capability-table-invalid',),atleast=True)
+    cap_row(scenario,'add2-final-exception',both(exception_control,freeze_edit(exception_drift('revoked'))),
+            'referred',('capability-exception-invalid',BELOW),atleast=True)
+    mutate(scenario,'capability-table-source','add2-table-from-guard',('accepted_ref(table_ref,repo) and accepted_ref(pin[\'decision\'],repo)','True'))
+    mutate(scenario,'capability-mapping-source','add2-mapping-from-guard',("accepted_ref(pin['mapping'],repo)",'True'))
+    mutate(scenario,'final-capability','add2-final-table',('capability_reasons(cap,r)','None'))
+for scenario in (676,677):
+    for origin in ('https://github.com/laboratory/guard/blob/'+('7'*40)+'/bundled/effort',
+                   'https://github.com/foreign/other/blob/'+B+'/accepted/effort', '.handoff/effort'):
+        def foreign_effort(b,es,e,url=origin):
+            old=e['launch']['source']; e['launch']['source']=url
+            b['sources'][url]=copy.deepcopy(b['sources'][old])
+        cap_row(scenario,'add2-unaccepted-effort-'+origin.split('/')[3] if origin.startswith('https:') else 'add2-handoff-effort',
+                effort_edit('slot',0,foreign_effort),'referred',('capability-effort-unavailable',))
+    cap_row(scenario,'add2-G-exception-source',both(lab(slots=C_PAIR),exc(valid=False,
+        edit=lambda e,c:c.update(url=c['url'].replace('laboratory/product','laboratory/guard')))),
+        'referred',('capability-exception-invalid',BELOW))
+cap_row(677,'add2-accepted-external-G',external_guard)
+
+
 class Failure(Exception): pass
 
 
@@ -1961,6 +2197,10 @@ def capability_assert(target,b,want,expect):
         f=invoke(target,b,'evaluate',env)
         expected={'eligible':0,'held':1,'referred':3,'unresolved':4}[want]
         check(f.returncode==expected and f.stdout.startswith('merge-risk: '+want+' '),f'{name}: final want {want}; actual exit={f.returncode} {f.stdout[-700:]!r}')
+        if expect.get('exact') is not None:
+            check([l[8:] for l in f.stdout.splitlines() if l.startswith('reason: ')]==list(expect['exact']),
+                  name+': ordered final reasons '+f.stdout[-900:])
+            check(sum(l.startswith('merge-risk: ') for l in f.stdout.splitlines())==1,name+': multiple outer results')
         if not passed:
             for code in expect['codes']: check('reason: '+code in f.stdout,name+': final missing '+code+' '+f.stdout[-600:])
         for code in expect['final']: check('reason: '+code in f.stdout,name+': final missing '+code+' '+f.stdout[-600:])

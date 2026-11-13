@@ -540,7 +540,16 @@ def record_checks(b,cfg,r,cap):
     excepted=all((x['outcome']=='capability-maintainer-exception')==(x['exception'] is not None)
                  and x['exception']==expected[k]['exception'] for k,x in zip(keys,rows) if k in expected)
     r.need(excepted, 'identity-binding')  # rule:record-capability-exception
-    if not (bound and floor_bound and pinned and per_slot and per_author and values and excepted): return None
+    # The final record binds bytes even when a changed table/mapping yields
+    # exactly the same row keys and scores. Keep the identity cause as well as
+    # capability referral; an already-reported identity cause need not repeat.
+    table_ref={k:v for k,v in disclosed['table'].items() if k!='date'} if disclosed else None
+    table_bytes=retained_body(b,table_ref,cfg['repository']) is not None
+    mapping_bytes=retained_body(b,disclosed['mapping'],cfg['repository']) is not None if disclosed else False
+    expired=lambda:any(code=='identity-binding' for _,code,_ in r.reasons)
+    r.need(table_bytes or expired(), 'identity-binding')  # rule:record-table-bytes
+    r.need(mapping_bytes or expired(), 'identity-binding')  # rule:record-mapping-bytes
+    if not (bound and floor_bound and pinned and per_slot and per_author and values and excepted and table_bytes and mapping_bytes): return None
     return c,m
 
 
@@ -893,7 +902,7 @@ def capability_evaluate(b,cfg,final=True):
     if len(set(claimed))!=len(claimed): add('capability-exception-invalid')
     for number in sorted(set(claimed)):
         candidates=exceptions.get(number,[]); used=False
-        states.append([number,[sha(c['body']) for c,_,_ in candidates],'ended' if number in ended else 'active'])
+        states.append([number,[{'source':c['url'],'sha256':sha(c['body'])} for c,_,_ in candidates],'ended' if number in ended else 'active'])
         if ledger_ok and len(candidates)==1:
             comment,e,count=candidates[0]; url=COMMENT_URL.fullmatch(comment['url'])
             provenance=(count==1 and comment['login']==owner and comment['updated_at']==comment['created_at'] and bool(url)
@@ -939,7 +948,7 @@ def capability_evaluate(b,cfg,final=True):
              'outcome':'capability-maintainer-exception' if c['exception'] is not None else c['code'] or 'capability-score-pass',
              'exception':c['exception']} for c in comparisons]}
     # Floor-evidence digest of an announcement: the predispatch digest and the
-    # bytes of every numbered exception claimed. Comparisons are disclosed and
+    # source identity and bytes of every numbered exception claimed. Comparisons are disclosed and
     # compared field by field in the record itself.
     out['floor']=sha(canonical({'e0':out['e0'],'exceptions':[[n,hashes] for n,hashes,_ in states]}))
     if not out['codes']:
