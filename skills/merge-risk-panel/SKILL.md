@@ -1,31 +1,32 @@
 ---
 name: merge-risk-panel
-description: PROPOSAL, inert by default. Consider an autonomous main-bound work-item merge only under this project's explicitly accepted, enabled, qualified configuration. Otherwise retain ordinary human approval. Require two independent risk approvals, separate quality review, complete checks, persistent stops, a full hold and a fresh final recheck.
+description: Inert PROPOSAL for autonomous main merges under accepted, enabled and qualified delegation. Requires independent risk pair, separate quality, all gates, full hold and final recheck; otherwise human approval.
 ---
 
 # Merge-risk panel
 
-PROPOSAL. Delivery, installation, a release-branch merge, silence and successful
-tests accept nothing. The shipped configuration is disabled, acceptance is null,
+PROPOSAL. Delivery/installation/release-branch merge/silence/passing tests accept
+nothing. The shipped configuration is disabled, acceptance is null,
 there is no executor or qualification. A separate protected human-approved
 configuration change is required to enable the delegation after all evidence
 and M1-M9 decisions. It cannot approve itself.
 
 **Mandatory loading:** the launcher must explicitly load this ENTIRE file AND
 the entire sibling [RISK-REVIEW.md](RISK-REVIEW.md) from the accepted guard source
-as trusted instructions. Measure and retain their original UTF-8 byte lengths
+as trusted instructions. Retain original UTF-8 lengths
 and SHA-256 hashes in the launch capture; each file must be at most 16,000 bytes.
 A Markdown link is not an import. Missing, truncated or unsupported loading stops
-qualification and refers. No operative instruction belongs outside these files.
+qualification and refers. Keep operative instructions in these files.
 
 ## Applicability and accepted sources
 
 Resolve the accepted project configuration at current main B. Its repository,
 policy location, concrete mapping, trusted context brief, control issue,
 executor/profile, guard source G, protection/check wiring, exact reviewer
-profiles/floor and project-specific qualification must be present and accepted.
-Missing or unaccepted data refers. A candidate README, candidate config or
-acceptance/qualification from another product supplies none of them. Ordinary
+profiles, protected score table/mapping/effort/exception sources and qualification must
+be present and accepted.
+Missing/unaccepted data refers. Candidate text or another product's
+acceptance/qualification supplies none. Ordinary
 adoption stays disabled and unconfigured; unset mapping is never empty-as-safe
 and no paths from the guard's own product are implicitly active in an adopter.
 Meaning-version/readoption stays with its existing owner.
@@ -33,23 +34,23 @@ Meaning-version/readoption stays with its existing owner.
 The finite hard-stop categories are autonomy machinery; merge/verification
 enforcement; execution, credentials and deployment; CI/supply chain; governing
 contracts and project controls. Concrete paths and bounds live ONLY in the
-accepted configuration, not in this procedure. They are secondary defenses,
-not an exhaustive dependency closure, a class or an assurance that other paths
-are safe. Ordinary source, tests, changelog, package and generated changes may
+accepted configuration, not here; secondary defenses never establish dependency closure
+or safety. Ordinary source, tests, changelog, package and generated changes may
 reach substantive review. Modes and symlink text are data; any gitlink in either
 snapshot or a configured hard-stop match refers before dispatch. Never fetch or
 follow a submodule or symlink. Preserve original paths, normalize paths AND
 patterns with NFC(casefold(NFC(value))) using the qualified Unicode version,
 match both rename sides and check complete B/H file/directory-prefix inventories
-for collisions before checkout. Unsafe/non-UTF-8 identities refer.
+for collisions before checkout. Match whole paths: * excludes /, ** includes /;
+other characters literal. Unsafe/non-UTF-8 identities refer.
 
-B pins product policy, brief and controls. Separately pin the accepted installed
-guard source G, physical paths, complete tree bytes/types/modes, bundle source
-and content, runtime settings/skill wiring. G may equal B. Never compare an
+B pins policy/brief/controls. Separately pin accepted guard G, physical paths,
+complete tree bytes/types/modes, bundle source/content and runtime/skill wiring. G may
+equal B. Never compare an
 external guard to unrelated product B; explicitly accepted G links can be valid.
 Static status, installation, refresh or links establish neither trust nor live
-activation. No automatic repair is authorized. G/runtime change expires pending
-authority and needs its protected update and renewed qualification.
+activation. No automatic repair. G/runtime drift expires authority and requires protected
+update/renewed qualification.
 
 ## Independent gates and evidence
 
@@ -90,15 +91,16 @@ newly stale H only while that protection remains enforced. Head-match protects H
 neither makes the hold read atomic or protection immutable.
 
 An absolute trusted preflight must exit zero, with no warnings, bypass or
-unparseable stream. Remove both workflow escape hatches from its environment;
+unparseable stream. Remove CLAUDE_WORKFLOW_MERGE_GUARD_OFF and CLAUDE_WORKFLOW_GUARDRAILS_OFF
+from its environment;
 a hatch set in the calling environment is itself a failure. Explicitly require
 active B-equal quality/pipeline adoption answers. Its subprocess cwd is physical
 product B, regardless of caller cwd. Directly compare ALL tracked B and G bytes,
 kinds, executable modes and symlink text against objects at collection AND final
 recheck; index clean/assume-unchanged/skip-worktree proves nothing. Reject drift,
 missing objects, untracked executable/config/instruction files and unaccepted
-wiring. Another runtime needs its own accepted exercised profile. Record exact
-tool versions/paths, hook/plugin/settings inventories and isolated task config.
+wiring. Other runtimes need accepted exercised profiles. Record tool versions/paths,
+hook/plugin/settings inventories and isolated task config.
 Never repurpose the user's HOME or execute candidate code/tests/install steps
 with credentials. Unsupported mandatory observations remain UNRUN/referral.
 
@@ -112,7 +114,7 @@ bytes to opaque artifacts, validate them and render human records. Only closed
 outcome/reason enums, validated numbers/digests/identities and accepted fixed-origin
 references enter executor context. Suppress streams on failures too. No executor
 semantic-reading exception or optimistic prose may resolve unknown evidence.
-The parser cannot establish semantic honesty; that residual is M7.
+The parser cannot prove semantic honesty (M7).
 
 ## Records, binding and full hold
 
@@ -123,34 +125,37 @@ readable history, never authority. The closed manifest retains repository,
 issue/PR/H/B/diff/config commit and digest, accepted requirements/design/authors,
 authority and acceptance, attempt ledger/dispositions, corpus/narrative/snapshot
 identities and diagnostic logs, BOTH sealed raw results/receipts, independent
-quality, counts/stops/every check ID/findings, execution/runtime/preflight/cwd,
+quality, per-slot/per-author score comparisons and table/mapping pins, marker/effort
+hashes and used exception identities, counts/stops/every check ID/findings,
+execution/runtime/preflight/cwd,
 control/stop history/server times, host/queue key, explicit supersession links,
 pending revert and earliest merge. Nested arbitrary objects or prose success
-flags cannot replace evidence. Incomplete attempts are unresolved and retain
-failed bytes. One explicitly selected active eligible record; no latest-comment
-selection or silent replacement. Link/terminally disposition every prior attempt;
+flags cannot replace evidence. Incomplete attempts retain failed bytes and are
+unresolved. Select one active eligible record explicitly; never latest-comment or silent
+replacement. Link/terminally disposition every prior attempt;
 malformed history stays visible without poisoning a later valid disposition.
 
-The PR links the decision beside Closes #<work-item>. Exactly one validated line
+PR links decision beside Closes #<work-item>. Exactly one validated line
 `Merge-risk decision: <same-repository work-item comment URL>` alone is outside
 the narrative hash; retain its original bytes. Duplicate/malformed trailers refer.
-All other narrative bytes remain evidence. No arbitrary candidate exclusion.
+Other narrative bytes remain evidence. No arbitrary exclusion.
 Non-model rendering escapes Markdown/HTML and displays model text literally;
 original-byte hashes never bind sanitized display instead.
 
 Any H/B/diff, narrative/corpus, accepted requirement/design, policy, instructions,
-model/resolved variant/settings/profile/runtime, floor or qualification change
+model/resolved variant/effort/settings/profile/runtime, table bytes/pin/mapping,
+marker/effort evidence, exception identity/validity or qualification change
 expires the pair AND announcement. An update-branch merge gets no exception.
 Reassemble, obtain BOTH fresh risk reviews, renew quality as applicable with H
 marker/checks always required, announce a new record and restart the full hold.
 Hold-only supersession may reuse an unchanged still-valid pair, never a new sample.
-Substantive referral/reject follows the reconsideration route in RISK-REVIEW.md.
+Substantive referral/reject follows the bounded reconsideration route.
 
 Only a COMPLETE eligible announcement's server created_at starts T. Wait the
 full configured positive hold: default 299 seconds waits, 300 only permits final
 recheck. Use a successful final GitHub request's zone-qualified Date, never a
-local/reviewer clock or failed-request fallback. Print the computed earliest
-merge time. The pair must remain valid through that hold.
+local/reviewer clock or failed-request fallback. Print earliest merge time; pair
+validity must cover the hold.
 
 Any actor's hold/risk/off stop on PR/work item persists, however old or removed.
 A spoken hold becomes a label immediately. Stop at/after T voids the record;
@@ -168,8 +173,8 @@ renewed evidence/new records re-enables; no revival or success-streak widening.
 
 ## One executor and literal action
 
-One accepted host/run, serialized local queue/lock; this is not a distributed or
-shared-account authentication proof. On wake run `merge-risk-evidence.sh --queue`
+One accepted host/run, serialized local queue/lock; no distributed/authentication proof.
+On wake run `merge-risk-evidence.sh --queue`
 and reconcile executing entries BEFORE claiming the lock. Already MERGED at
 saved identity means completion only, never a second merge; open/unknown execution
 refers, never blindly retries. A terminal key cannot execute again.
@@ -213,11 +218,11 @@ retrieve leaked secrets or undo adopters' actions.
 Report per policy/model revision: candidates, both risk outcomes and individual
 misses/referrals, disagreements/uncertainties, pair safety, benign false referrals,
 quality/gate failures, stops/caps/holds, merges/failures/reverts/incidents, elapsed
-time and actual tokens or n/a. Historical class percentages establish no current
-usefulness. No quota, automatic widening, shadow rollout or first-ten condition.
+time and actual tokens or n/a. Historical class rates prove no usefulness. No quota,
+widening, shadow rollout or first-ten condition.
 
 M1-M9 require explicit final acceptance of exact revisions and observed evidence:
-delegation; count/vendor/floor; mapping/caps; history/reserved authority; timing/
+delegation; two-slot capability/availability; mapping/caps; history/reserved authority; timing/
 records/retries/recovery; qualification/enablement; model residuals; operational
 residuals; usefulness/cost. No recommendation or exercise accepts them.
 
@@ -235,11 +240,14 @@ proves general safety.
 
 ## Closed result protocol
 
-Exits: eligible 0, held 1, referred 3, unresolved 4, usage 2. Unknown/crash/output
-is unresolved to every consumer. Referral outranks unresolved, which outranks
+Exits: eligible 0, held 1, referred 3, unresolved 4, usage 2. Unknown/crash/output is
+unresolved. Referral outranks unresolved, which outranks
 held; retain ALL causes. Preparation is never eligible. Diagnostics contain no
-candidate text. Reasons describe configuration/acceptance, gates/protection,
-source/corpus/path/stop/cap/integrity, record/identity, pair/binding/freshness/
-time/floor/attempt/qualification, hold/history/control and executor/queue failures.
-The evaluator's closed schemas and fixed reason strings are the mechanical
-contract; neither a code spelling nor a model explanation grants authority.
+candidate text. At final recheck re-evaluate BOTH slots' capability evidence.
+Table-byte drift with a frozen valid record yields referred/3, exactly
+identity-binding then capability-table-invalid for that isolated overlap. Keep
+both causes; identity-only expiry is unresolved/4 and capability-only failure
+refers without invented identity failure. Never short-circuit capability after
+identity expiry, reorder these overlap reasons or emit two outer results. A new
+accepted table cannot revive the old pair. Closed schemas/codes are the mechanical
+contract; model prose or a capability pass grants no authority.
