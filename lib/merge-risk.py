@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Read-only merge-risk decision Module, A60 + addendum 1.
+"""Read-only merge-risk decision Module, A60 + addenda 1-2.
 
-CLI: evaluate/record/completion/queue --bundle FILE; collect --phase
+CLI: evaluate/record/completion/queue/capability --bundle FILE; collect --phase
 prepare|class|final PR PROJECT; export PR PROJECT NEW_DIRECTORY; collect-queue.
 Only validated identities and fixed diagnostics reach stdout. No dispatch,
 merge, posting, repair or live qualification occurs here. Replay inputs are
@@ -30,6 +30,7 @@ CATEGORIES = tuple(('loophole backdoor uncontrolled-agent gate-weakening authori
 GROUPS = ('autonomy', 'merge-enforcement', 'execution', 'ci', 'contracts')
 SHA40 = re.compile(r'[0-9a-f]{40}')
 SHA256 = re.compile(r'[0-9a-f]{64}')
+DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 REPOSITORY = re.compile(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+')
 COMMENT_URL = re.compile(r'https://github\.com/([^/\s]+/[^/\s]+)/(issues|pull)/([1-9][0-9]*)#issuecomment-([1-9][0-9]*)')
 MANIFEST_MARK = '<!-- merge-risk-manifest v2 -->'
@@ -58,6 +59,13 @@ def ts(value):
 
 
 def fmt(value): return value.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def valid_date(value):
+    if not isinstance(value, str) or not DATE.fullmatch(value): return False
+    try: datetime.strptime(value, '%Y-%m-%d')
+    except ValueError: return False
+    return True
 def is_int(v): return type(v) is int
 
 def finite(v):
@@ -100,7 +108,7 @@ BINDING = {'decision_id': TEXT, 'attempt_id': TEXT, 'nonce': TEXT, 'repository':
            'pr': 'positive', 'issue': 'positive', 'head': 'sha40', 'base': 'sha40',
            **{k: 'sha256' for k in ('diff_sha256','evidence_sha256','requirements_sha256','design_sha256',
                                     'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')}}
-REVIEWER = {'dispatch_id': TEXT, 'session_id': TEXT, 'model': TEXT, 'variant': TEXT, 'runtime_id': TEXT,
+REVIEWER = {'slot': TEXT, 'dispatch_id': TEXT, 'session_id': TEXT, 'model': TEXT, 'variant': TEXT, 'runtime_id': TEXT,
             'floor_evidence_sha256': 'sha256', 'vendor': ('Claude','Codex'), 'fresh': 'true', 'inherited_session': 'null'}
 REFERENCE = {'artifact_id': TEXT, 'sha256': 'sha256', 'start_line': 'positive', 'end_line': 'positive'}
 COVERAGE = {'category': CATEGORIES, 'status': ('no-risk-found','concern','unknown'), 'rationale': TEXT}
@@ -109,14 +117,19 @@ FINDING = {'id': TEXT, 'category': CATEGORIES, 'severity': ('low','medium','high
 VERDICT = {'schema': ('merge-risk-verdict/2',), 'binding': BINDING, 'reviewer': REVIEWER,
            'coverage': [COVERAGE], 'findings': [FINDING], 'uncertainties': [TEXT],
            'outcome': ('approve','refer','reject'), 'rationale': TEXT}
-PROFILE = {'vendor': ('Claude','Codex'), 'model': TEXT, 'variant': TEXT, 'settings_sha256': 'sha256'}
+PROFILE = {'slot': TEXT, 'vendor': ('Claude','Codex'), 'model': TEXT, 'variant': TEXT, 'effort': TEXT, 'settings_sha256': 'sha256'}
+TABLE_PIN = {'source': TEXT, 'sha256': 'sha256', 'date': 'date'}
+# A60 addendum 2 P2: the dated maintainer score table, the protected decision
+# selecting it, the runtime-ID-to-row mapping and the numbered-exception ledger.
+CAPABILITY_CONFIG = {'table': TABLE_PIN, 'decision': REF, 'mapping': REF, 'exception_issue': 'positive'}
 CONFIG = {'schema': ('int-literal',2), 'acceptance_issue':'positive', 'repository': 'repository', 'policy_path': TEXT, 'enabled': 'bool',
           'acceptance': ('nullable',TEXT), 'control_issue': ('nullable','positive'), 'executor_host': 'string',
           **{k:'positive' for k in ('max_lines','max_files','hold_seconds','deadline_seconds','max_age_seconds','max_attempts')},
           'hard_stops': ('nullable',{k:[TEXT] for k in GROUPS}), 'labels': {'hold':[TEXT], 'off':TEXT},
           'release_heads':[TEXT], 'reviewer_profiles':[PROFILE], 'unicode_version':TEXT,
           'project': ('nullable',{'repository':'repository','policy_path':TEXT,'mapping_sha256':'sha256','brief':REF,'acceptance':REF}),
-          **{k:('nullable',REF) for k in ('requirements','design','floor','runtime_profile','qualification')},
+          'capability': ('nullable',CAPABILITY_CONFIG),
+          **{k:('nullable',REF) for k in ('requirements','design','runtime_profile','qualification')},
           'guard': ('nullable',{'repository':'repository','revision':'sha40','tree_sha256':'sha256','source':REF,'bundle_sha256':'sha256'}),
           'expected_checks':[TEXT], 'required_contexts':[TEXT]}
 CONFIG_KEYS = tuple(CONFIG)
@@ -148,7 +161,7 @@ def shape(value, schema):
                   'sha40':lambda:isinstance(v,str) and bool(SHA40.fullmatch(v)),
                   'sha256':lambda:isinstance(v,str) and bool(SHA256.fullmatch(v)),
                   'repository':lambda:isinstance(v,str) and bool(REPOSITORY.fullmatch(v)),
-                  'time':lambda:ts(v) is not None,
+                  'time':lambda:ts(v) is not None, 'date':lambda:valid_date(v),
                   'number':lambda:type(v) in (int,float) and math.isfinite(v)}[s]()
             if not ok: types.append(s)
     visit(value,schema)
@@ -193,7 +206,10 @@ def label_match(name,patterns): return isinstance(name,str) and any(_pat(p).full
 
 
 def config_errors(cfg):
-    return ['schema'] if not conforms(cfg,CONFIG) else []
+    if not conforms(cfg,CONFIG): return ['schema']
+    slots=[p['slot'] for p in cfg['reviewer_profiles']]
+    # Two reviewers are two stable slots; a vendor is never a slot identity.
+    return ['slots'] if len(set(slots))!=len(slots) else []
 
 
 def load_config(b,r):
@@ -320,7 +336,7 @@ def source_checks(b,cfg,r):
     valid_closing=isinstance(closing,list)
     r.need(valid_closing, 'closing-issues')  # rule:closing-readable
     r.need(not valid_closing or len(closing)==1, 'closing-issues','referred')  # rule:closing-issues
-    r.need(not valid_closing or 646 not in closing, 'self-delegation','referred')  # rule:self-delegation
+    r.need(not valid_closing or cfg['acceptance_issue'] not in closing, 'self-delegation','referred')  # rule:self-delegation
     r.need(b.get('main_tip') is not None and b.get('merge_base')==b.get('main_tip'), 'behind-base')  # rule:behind-base
     reviews=pr.get('reviews')
     r.need(isinstance(reviews,list), 'reviews-unreadable')  # rule:reviews-readable
@@ -394,25 +410,40 @@ def source_checks(b,cfg,r):
 PAIR_RECEIPT={'started_at':'time','received_at':'time','sealed_at':'time','compared_at':'time','no_inheritance':'bool',
               'peer_exposed':'bool','forbidden_actions':[TEXT],'available':'bool','resolved_model':TEXT,
               'runtime_sha256':'sha256','prompt_sha256':'sha256','settings_sha256':'sha256','launcher_sha256':'sha256','output_source':REF}
-PAIR={'envelope':{'binding':BINDING,'reviewer':REVIEWER},'receipt':PAIR_RECEIPT,'raw_b64':'string',
+ROW={'model':TEXT,'effort':TEXT}
+# Retained by the launcher/consumer, never echoed by the reviewer (A60 add. 2).
+ENVELOPE_CAPABILITY={'table_sha256':'sha256','mapping_sha256':'sha256','row':ROW,'marker_sha256':'sha256',
+                     'effort_sha256':'sha256','exceptions':['positive']}
+PAIR={'envelope':{'binding':BINDING,'reviewer':REVIEWER,'capability':ENVELOPE_CAPABILITY},'receipt':PAIR_RECEIPT,'raw_b64':'string',
       'raw_sha256':'sha256','byte_length':'nonnegative','overflow':'bool'}
 RUN={'id':'positive','name':TEXT,'head':'sha40','status':TEXT,'conclusion':TEXT}
 CONTEXT={'id':'positive','context':TEXT,'head':'sha40','state':TEXT}
 CHECKS={'complete':'bool','runs':[RUN],'contexts':[CONTEXT]}
 QUALITY={'session_id':TEXT,'model':TEXT,'source':REF,'head':'sha40','approved':'bool','marker':TEXT,
          'findings':[{'id':TEXT,'severity':('low','medium','high'),'status':('open','resolved','dismissed','unknown'),'source':REF}]}
-LAUNCH={'slot':('Claude','Codex'),'session_id':TEXT,'started_at':'time','original_start':'time','bytes':('nullable','nonnegative'),
+LAUNCH={'slot':TEXT,'session_id':TEXT,'started_at':'time','original_start':'time','bytes':('nullable','nonnegative'),
         'transport_attested':'bool','outcome':('returned','transport','failed'),'raw_sha256':('nullable','sha256')}
 DISPOSITION={'source':REF,'words':TEXT,'pr':'positive','previous':TEXT,'created_at':'time','verbatim':'bool'}
 ATTEMPT={'attempt_id':TEXT,'decision_id':TEXT,'ordinal':'positive','previous':('nullable',TEXT),'reason':TEXT,
          'disposition':('nullable',DISPOSITION),'created_at':'time','terminal':'bool','provider_retries_visible':'bool','launches':[LAUNCH]}
-CURRENT_KEYS=tuple(k+'_sha256' for k in ('requirements','design','brief','instructions','profiles','qualification','runtime','floor','policy'))
-AUTHORITY={'acceptance':('nullable',TEXT),**{k:'sha256' for k in CURRENT_KEYS}}
+CURRENT_KEYS=tuple(k+'_sha256' for k in ('requirements','design','brief','instructions','profiles','qualification','runtime','policy'))
+# floor_sha256 is the floor-evidence digest this Module computes itself from the
+# retained table/mapping/marker/effort/exception evidence; it is never supplied.
+AUTHORITY={'acceptance':('nullable',TEXT),'floor_sha256':'sha256',**{k:'sha256' for k in CURRENT_KEYS}}
+CAPABILITY_PASS=('capability-score-pass','capability-maintainer-exception')
+CAPABILITY_REFER=('capability-table-invalid','capability-identity-missing','capability-effort-unavailable',
+                  'capability-entry-missing','capability-below-author','capability-effort-no-gain',
+                  'capability-exception-invalid','capability-profile-mismatch')
+AUTHOR={'session_id':TEXT,'model':TEXT,'variant':TEXT,'source':REF}
+COMPARISON={'slot':TEXT,'marker_sha256':'sha256','effort_sha256':'sha256','row':ROW,'score':'number',
+            'author_marker_sha256':'sha256','author_effort_sha256':'sha256','author_row':ROW,'author_score':'number',
+            'outcome':CAPABILITY_PASS,'exception':('nullable','positive')}
+RECORD_CAPABILITY={'table':TABLE_PIN,'mapping':REF,'outcome':CAPABILITY_PASS,'comparisons':[COMPARISON]}
 PREFLIGHT={'exit':'nonnegative','stdout':'string','stderr':'string','escape_hatch':'bool'}
 IDENTITY={'repository':'repository','host':TEXT,'remote':TEXT,'redirects':[TEXT],'verified':'bool'}
 MANIFEST={'decision_id':TEXT,'repository':'repository','issue':'positive','pr':'positive','head':'sha40','base':'sha40',
           'diff_sha256':'sha256','config_sha256':'sha256','config_commit':'sha40','ac':('nullable',REF),'design':('nullable',REF),
-          'authors':[{'model':TEXT,'variant':TEXT,'source':REF}],'reasons':[TEXT],'hold_release':('nullable',{'link':TEXT,'words':TEXT}),
+          'authors':[AUTHOR],'capability':('nullable',RECORD_CAPABILITY),'reasons':[TEXT],'hold_release':('nullable',{'link':TEXT,'words':TEXT}),
           'outcome':OUTCOMES,'earliest_merge':'time','labels':[TEXT],'executor_host':TEXT,'queue_key':TEXT,'revert':('pending',),
           'authority':AUTHORITY,'attempt':ATTEMPT,
           'evidence':{'manifest_sha256':'sha256','narrative_sha256':'sha256','base':'sha40','head':'sha40','read_logs':[REF]},
@@ -456,7 +487,7 @@ def valid_comment(url,repository,number):
     return bool(match and match.group(1)==repository and match.group(2)=='issues' and int(match.group(3))==number)
 
 
-def record_checks(b,cfg,r):
+def record_checks(b,cfg,r,cap):
     cs=b.get('issue_comments'); selected=b.get('active_record_url')
     if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None
     records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]
@@ -484,11 +515,32 @@ def record_checks(b,cfg,r):
     bound=bound and m['ac']==cfg['requirements'] and m['design']==cfg['design']
     bound=bound and m['authority']['acceptance']==cfg['acceptance'] and m['evidence']['base']==b.get('main_tip') and m['evidence']['head']==pr.get('head')
     bound=bound and m['risk_pair']==b.get('risk_pair') and m['quality']==b.get('quality')
+    bound=bound and m['authors']==b.get('authors')
     bound=bound and m['assessment']['checks']==b.get('checks') and m['assessment']['protection_sha256']==(b.get('protection') or {}).get('sha256')
     bound=bound and m['assessment']['risk_outcome']=='clear' and m['assessment']['outcome']=='eligible'
     bound=bound and m['execution']['host']==cfg['executor_host'] and m['execution']['runtime_sha256']==cur.get('runtime_sha256')
     r.need(bound, 'identity-binding')  # rule:record-binding
-    if not bound: return None
+    # A60 addendum 2: the announcement discloses the lookup it relied on. The
+    # disclosure is recomputed here from retained evidence, never trusted.
+    floor_bound=cap['floor'] is not None and m['authority']['floor_sha256']==cap['floor']
+    r.need(floor_bound, 'identity-binding')  # rule:record-floor
+    disclosed=m['capability']; want=cap['record'] or {'comparisons':[],'outcome':None}
+    rows=disclosed['comparisons'] if disclosed else []
+    keys=[(x['slot'],x['author_marker_sha256']) for x in rows]
+    expected={(x['slot'],x['author_marker_sha256']):x for x in want['comparisons']}
+    pinned=bool(disclosed) and cfg['capability'] is not None and disclosed['table']==cfg['capability']['table'] and disclosed['mapping']==cfg['capability']['mapping']
+    r.need(pinned, 'identity-binding')  # rule:record-capability-pin
+    per_slot={x[0] for x in keys}=={x[0] for x in expected} and len(set(keys))==len(keys) and bool(keys)
+    r.need(per_slot, 'identity-binding')  # rule:record-capability-slots
+    per_author={x[1] for x in keys}=={x[1] for x in expected} and len(keys)==len(expected)
+    r.need(per_author, 'identity-binding')  # rule:record-capability-authors
+    plain=lambda x:{k:v for k,v in x.items() if k!='exception'}
+    values=all(plain(x)==plain(expected[k]) for k,x in zip(keys,rows) if k in expected) and (not disclosed or disclosed['outcome']==want['outcome'])
+    r.need(values, 'identity-binding')  # rule:record-capability-values
+    excepted=all((x['outcome']=='capability-maintainer-exception')==(x['exception'] is not None)
+                 and x['exception']==expected[k]['exception'] for k,x in zip(keys,rows) if k in expected)
+    r.need(excepted, 'identity-binding')  # rule:record-capability-exception
+    if not (bound and floor_bound and pinned and per_slot and per_author and values and excepted): return None
     return c,m
 
 
@@ -535,7 +587,7 @@ def hold_checks(b,cfg,r,record):
     r.note('earliest-merge='+fmt(earliest))
 
 
-def envelope_checks(b,cfg,r):
+def envelope_checks(b,cfg,r,cap):
     now=ts(b.get('now')); pair=b.get('risk_pair')
     if not isinstance(pair,list): return
     for p in pair:
@@ -550,6 +602,28 @@ def envelope_checks(b,cfg,r):
                      and all(expected[k]==current.get(k) for k in ('evidence_sha256','requirements_sha256','design_sha256',
                                                                  'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')))
         r.need(identity_ok, 'risk-binding','referred')  # rule:risk-binding
+        # Capability identities retained with the envelope, compared one by one
+        # with what this Module derives from the accepted sources.
+        mine=next((x for x in cap['slots'] if x['slot']==env['reviewer']['slot']),None)
+        known_slot=mine is not None
+        r.need(known_slot, 'risk-binding','referred')  # rule:envelope-slot
+        if not known_slot: continue
+        held=env['capability']; pin=cfg['capability'] or {'table':{'sha256':None},'mapping':{'sha256':None}}
+        derived=mine
+        floor_ok=env['reviewer']['floor_evidence_sha256']==cap['e0']
+        r.need(floor_ok, 'risk-binding','referred')  # rule:envelope-floor
+        table_ok=held['table_sha256']==pin['table']['sha256']
+        r.need(table_ok, 'risk-binding','referred')  # rule:envelope-table
+        mapping_ok=held['mapping_sha256']==pin['mapping']['sha256']
+        r.need(mapping_ok, 'risk-binding','referred')  # rule:envelope-mapping
+        row_ok=held['row']==derived['row']
+        r.need(row_ok, 'risk-binding','referred')  # rule:envelope-row
+        marker_ok=held['marker_sha256']==derived['marker_sha256']
+        r.need(marker_ok, 'risk-binding','referred')  # rule:envelope-marker
+        effort_ok=held['effort_sha256']==derived['effort_sha256']
+        r.need(effort_ok, 'risk-binding','referred')  # rule:envelope-effort
+        exception_ok=held['exceptions']==derived['exceptions']
+        r.need(exception_ok, 'risk-binding','referred')  # rule:envelope-exception
         ontime=(0<=(received-original).total_seconds()<=cfg['deadline_seconds'])
         r.need(ontime, 'risk-deadline','referred')  # rule:risk-deadline
     starts=[ts(p.get('receipt',{}).get('started_at')) for p in pair]
@@ -574,8 +648,6 @@ def accepted_ref(value,repository):
                             r'/(?:blob/[0-9a-f]{40}/[^\s?#]+|issues/[1-9][0-9]*#issuecomment-[1-9][0-9]*)',source))
 
 
-FLOOR={'source':REF,'accepted':'bool','adequate':'bool','method_decision':REF,
-       'entries':[{'vendor':('Claude','Codex'),'model':TEXT,'variant':TEXT,'score':'number','entry':TEXT,'date':TEXT}]}
 QUALIFICATION={'source':REF,'status':('UNRUN','failed','qualified'),'identity_sha256':'sha256','runtime_observed':'bool',
                'dry_run_observed':'bool','design_redteam':REF,'linux_check':REF,'macos_check':REF,'quality_review':REF,
                'findings_resolved':'bool','enabling_pr':REF,'m_decisions':{str(i):REF for i in range(1,10)},
@@ -596,6 +668,319 @@ def retained_json(b,reference,repository):
     if body is None: return None
     try: return strict_json(body)
     except (ValueError,Invalid,UnicodeError): return None
+
+
+# --- A60 addendum 2 P2-P4: score-table lookup --------------------------------
+# No external index, URL, name ordering or effort-label ordering is consulted.
+MARKER_LINE=re.compile(r'<!--[ \t]*model-record:[ \t]*stage=(?:Discovery|Planning|Test|Implementation|Review)[ \t]+'
+                       r'model="([^"<>\x00-\x1f\x7f]*[^"<>\s\x00-\x1f\x7f][^"<>\x00-\x1f\x7f]*)"'
+                       r'(?:[ \t]+floor-basis="[^"<>\x00-\x1f\x7f]*")?[ \t]*-->[ \t]*')
+MAPPING={'schema':('merge-risk-model-mapping/1',),'entries':[{'runtime_id':TEXT,'variant':TEXT,'row':TEXT}]}
+DECISION={'schema':('merge-risk-capability-decision/1',),'number':'positive','table':TABLE_PIN,'mapping':REF}
+EFFORT_ENTRY={'marker':REF,'session_id':TEXT,'dispatch_id':TEXT,'effort':TEXT,
+              'basis':('applied','requested','default','inferred'),'launch':REF,
+              'settings_sha256':'sha256','receipt_sha256':'sha256'}
+CAPABILITY_SLOT={'slot':TEXT,'session_id':TEXT,'dispatch_id':TEXT,'marker':REF}
+LEDGER_COMMENT={'url':TEXT,'login':TEXT,'created_at':'time','updated_at':'time','body':'string'}
+CAPABILITY_EVIDENCE={'slots':[CAPABILITY_SLOT],'efforts':[EFFORT_ENTRY],'exceptions':['positive'],
+                     'ledger':[LEDGER_COMMENT],'ledger_complete':'bool'}
+EXCEPTION={'schema':('merge-risk-capability-exception/1',),'number':'positive','issuer':('maintainer',),
+           'words':TEXT,'provenance':TEXT,'repository':'repository','issue':'positive','pr':'positive','head':'sha40',
+           'author_marker_sha256':'sha256','author_effort_sha256':'sha256',
+           'reviewer_marker_sha256':'sha256','reviewer_effort_sha256':'sha256',
+           'table':TABLE_PIN,'author_row':ROW,'reviewer_row':ROW,'author_score':'number','reviewer_score':'number',
+           'slot':TEXT,'profile_sha256':'sha256',
+           'departure':('capability-below-author','capability-effort-no-gain','preference-only'),
+           'reason':TEXT,'correlation':TEXT,'qualification_sha256':'sha256','scope':('single-comparison',),
+           'valid_until':'time','supersedes':('nullable','positive')}
+LEDGER_BLOCK=r'^<!-- merge-risk-capability-%s v1 -->\n```json\n(.*?)\n```[ \t]*(?:\n|$)'
+
+
+def source_text(b,source):
+    item=(b.get('sources') or {}).get(source)
+    text=item.get('body') if isinstance(item,dict) else None
+    return text if isinstance(text,str) else None
+
+
+def parse_table(text):
+    """Rows of every `Provider | Model | Effort | Score` table; None if unusable.
+
+    Prose around the tables is not score data. A duplicate key, a malformed row
+    or a score that is not a plain finite decimal makes the whole pin unusable.
+    """
+    rows={}; inside=False
+    for line in text.split('\n'):
+        line=line.strip()
+        if len(line)<2 or not (line.startswith('|') and line.endswith('|')): inside=False; continue
+        cells=[c.strip() for c in line[1:-1].split('|')]
+        if [c.lower() for c in cells]==['provider','model','effort','score']: inside=True; continue
+        if not inside: continue
+        if len(cells)==4 and all(re.fullmatch(r':?-{3,}:?',c) for c in cells): continue
+        if len(cells)!=4 or not all(cells[:3]) or not re.fullmatch(r'[0-9]{1,6}(?:\.[0-9]{1,6})?',cells[3]): return None
+        key=(cells[1],cells[2])
+        if key in rows: return None
+        rows[key]=(int(cells[3]) if cells[3].isdigit() else float(cells[3]),cells[0])
+    return rows or None
+
+
+def marker_model(text):
+    if not isinstance(text,str): return None
+    match=MARKER_LINE.fullmatch(text.split('\n',1)[0].rstrip('\r'))
+    return match.group(1) if match else None
+
+
+def capability_identity(b,evidence,rows,mapping,repo,marker,session,model,variant):
+    """One relevant author or one reviewer slot: marker, effort, row and score."""
+    item={'marker_sha256':marker['sha256'],'effort_sha256':None,'row':None,'score':None,'provider':None,
+          'codes':[],'entry':None,'text':retained_body(b,marker,repo)}
+    def add(code):
+        if code not in item['codes']: item['codes'].append(code)
+    stated=marker_model(item['text'])==model  # rule:capability-marker
+    if not stated: add('capability-identity-missing')
+    found=[e for e in evidence['efforts'] if e['marker']==marker and e['session_id']==session]
+    entry=found[0] if len(found)==1 else None
+    if entry is not None:
+        item['entry']=entry; item['effort_sha256']=sha(canonical(entry))
+        applied=entry['basis']=='applied'  # rule:capability-effort-applied
+        launched=retained_body(b,entry['launch'],repo) is not None  # rule:capability-effort-launch
+        if not applied or not launched: add('capability-effort-unavailable')
+    else: add('capability-effort-unavailable')
+    matches=[e['row'] for e in mapping['entries'] if e['runtime_id']==model and e['variant']==variant] if mapping else []
+    if len(matches)!=1: add('capability-identity-missing')
+    elif entry is not None:
+        key=(matches[0],entry['effort']); item['row']={'model':key[0],'effort':key[1]}
+        if rows is not None:
+            found=rows.get(key)  # rule:capability-exact-row
+            if found is None: add('capability-entry-missing')
+            else: item['score'],item['provider']=found
+    return item
+
+
+def profile_identity(rows,mapping,profile):
+    # Before dispatch only the selected profile is known; no session exists.
+    item={'marker_sha256':None,'effort_sha256':None,'row':None,'score':None,'provider':None,'codes':[],'entry':None,'text':None}
+    matches=[e['row'] for e in mapping['entries'] if e['runtime_id']==profile['model'] and e['variant']==profile['variant']] if mapping else []
+    if len(matches)!=1: item['codes'].append('capability-identity-missing')
+    else:
+        key=(matches[0],profile['effort']); item['row']={'model':key[0],'effort':key[1]}
+        if rows is not None:
+            found=rows.get(key)
+            if found is None: item['codes'].append('capability-entry-missing')
+            else: item['score'],item['provider']=found
+    return item
+
+
+def ledger_blocks(body,kind):
+    return [m.group(1) for m in re.finditer(LEDGER_BLOCK%kind,body,re.M|re.S)]
+
+
+def capability_evaluate(b,cfg,final=True):
+    """Table lookup for both reviewer slots against every relevant author.
+
+    Returns closed codes, the comparison evidence and the digests other checks
+    bind. An empty code list clears capability only; it authorizes nothing.
+    """
+    out={'codes':[],'notes':[],'slots':[],'pin':None,'e0':None,'floor':None,'record':None,'outcome':None,'comparisons':[]}
+    def add(code):
+        if code not in out['codes']: out['codes'].append(code)
+    pin=cfg['capability']; repo=cfg['repository']; profiles=cfg['reviewer_profiles']
+    if pin is None:
+        add('capability-table-invalid'); return out
+    out['pin']=sha(canonical(pin))
+    table_ref={'source':pin['table']['source'],'sha256':pin['table']['sha256']}
+    # Only the accepted pinned source judges: never candidate H, a handoff
+    # directory, an unrelated repository or a default shipped with the guard.
+    head=str((b.get('pr') or {}).get('head')); candidate=lambda x:'/blob/'+head+'/' in x['source']
+    table_source=accepted_ref(table_ref,repo) and accepted_ref(pin['decision'],repo) and not candidate(table_ref) and not candidate(pin['decision'])  # rule:capability-table-source
+    mapping_source=accepted_ref(pin['mapping'],repo) and not candidate(pin['mapping'])  # rule:capability-mapping-source
+    text=source_text(b,table_ref['source'])
+    digest_ok=text is not None and sha(text)==table_ref['sha256']  # rule:capability-digest
+    rows=parse_table(text) if text is not None else None
+    decision=retained_json(b,pin['decision'],repo)
+    # A date alone never pins bytes: the protected decision names all three.
+    selected=conforms(decision,DECISION) and decision['table']==pin['table'] and decision['mapping']==pin['mapping']  # rule:capability-decision
+    mapping_text=source_text(b,pin['mapping']['source'])
+    mapping_digest=mapping_text is not None and sha(mapping_text)==pin['mapping']['sha256']  # rule:capability-mapping-digest
+    try: mapping=strict_json(mapping_text) if mapping_text is not None else None
+    except (ValueError,Invalid,UnicodeError): mapping=None
+    if not conforms(mapping,MAPPING): mapping=None
+    if not (table_source and mapping_source and digest_ok and rows is not None and selected and mapping_digest and mapping is not None):
+        add('capability-table-invalid')
+    evidence=b.get('capability')
+    if not conforms(evidence,CAPABILITY_EVIDENCE):
+        evidence={'slots':[],'efforts':[],'exceptions':[],'ledger':[],'ledger_complete':False}
+        add('capability-identity-missing')
+    # Every relevant author is compared; an unreadable one is never dropped.
+    listed=b.get('authors'); authors=[]
+    if not isinstance(listed,list) or not listed: add('capability-identity-missing'); listed=[]
+    for author in listed:
+        if not conforms(author,AUTHOR): add('capability-identity-missing'); continue
+        authors.append(capability_identity(b,evidence,rows,mapping,repo,author['source'],author['session_id'],author['model'],author['variant']))
+    # Predispatch floor-evidence digest every reviewer envelope carries: the
+    # pin (table, decision, mapping, ledger) and each author's marker/effort.
+    out['e0']=sha(canonical({'pin':out['pin'],'authors':[[a['marker_sha256'],a['effort_sha256']] for a in authors]}))
+    qualification=(b.get('accepted') or {}).get('qualification')
+    inputs=qualification.get('inputs') if isinstance(qualification,dict) else None
+    qualified=isinstance(inputs,dict) and inputs.get('models')==sha(canonical(profiles))
+    if len(profiles)!=2 or not qualified: add('capability-profile-mismatch')  # rule:capability-qualified-profile
+    pair=[p for p in (b.get('risk_pair') or []) if conforms(p,PAIR)] if final and isinstance(b.get('risk_pair'),list) else []
+    slots=out['slots']
+    for profile in profiles:
+        if not final:
+            item=profile_identity(rows,mapping,profile)
+        else:
+            mine=[p for p in pair if p['envelope']['reviewer']['slot']==profile['slot']]
+            links=[x for x in evidence['slots'] if x['slot']==profile['slot']]
+            if len(mine)!=1 or len(links)!=1: add('capability-identity-missing'); continue
+            reviewer=mine[0]['envelope']['reviewer']; receipt=mine[0]['receipt']; link=links[0]
+            item=capability_identity(b,evidence,rows,mapping,repo,link['marker'],reviewer['session_id'],reviewer['model'],reviewer['variant'])
+            linked=(link['session_id']==reviewer['session_id'] and link['dispatch_id']==reviewer['dispatch_id']
+                    and receipt['resolved_model']==reviewer['model'])
+            if not linked and 'capability-identity-missing' not in item['codes']: item['codes'].append('capability-identity-missing')
+            entry=item['entry']
+            selected_profile=(reviewer['model']==profile['model'] and reviewer['variant']==profile['variant']
+                              and receipt['settings_sha256']==profile['settings_sha256'])
+            if entry is not None:
+                # A requested setting is not an applied one: the entry must be
+                # the one bound to this session's actual launcher receipt.
+                applied=(entry['dispatch_id']==reviewer['dispatch_id'] and entry['settings_sha256']==receipt['settings_sha256']
+                         and entry['receipt_sha256']==sha(canonical(receipt)))  # rule:capability-effort-receipt
+                if not applied and 'capability-effort-unavailable' not in item['codes']: item['codes'].append('capability-effort-unavailable')
+                selected_profile=selected_profile and entry['effort']==profile['effort']  # rule:capability-supported-effort
+            if not selected_profile: item['codes'].append('capability-profile-mismatch')  # rule:capability-profile
+        item.update(slot=profile['slot'],vendor=profile['vendor'],profile_sha256=sha(canonical(profile)),exceptions=[])
+        slots.append(item)
+    known=[x['score'] for x in slots if x['score'] is not None]
+    average=sum(known)/len(known) if known else 0
+    comparisons=out['comparisons']
+    for slot in slots:  # rule:capability-all-slots
+        for author in authors:  # rule:capability-all-authors
+            code=None
+            if slot['score'] is None or author['score'] is None: code='incomplete'
+            else:
+                # Scores are the pinned rows only: never a supplied number, a
+                # name, an effort-label order or an average of the two slots.
+                slot_score,author_score=slot['score'],author['score']  # rule:capability-row-score
+                if slot['row']['model']==author['row']['model']:
+                    # Same model: only a strictly higher table score counts.
+                    gain=slot_score > author_score  # rule:capability-same-model
+                    if not gain: code='capability-effort-no-gain'
+                meets=slot_score >= author_score  # rule:capability-compare
+                if not meets and code is None: code='capability-below-author'
+            comparisons.append({'slot':slot,'author':author,'code':code,'exception':None})
+    # Numbered maintainer exceptions (P4): protected ledger, claimed by number.
+    claimed=evidence['exceptions'] if final else []
+    owner=repo.split('/')[0]; exceptions={}; ended=set(); ledger_ok=evidence['ledger_complete'] is True
+    for comment in evidence['ledger']:
+        for raw in ledger_blocks(comment['body'],'revocation'):
+            try: data=strict_json(raw)
+            except (ValueError,Invalid,UnicodeError): ledger_ok=False; continue
+            if conforms(data,{'revokes':'positive'}): ended.add(data['revokes'])
+            else: ledger_ok=False
+        found=ledger_blocks(comment['body'],'exception')
+        for raw in found:
+            try: data=strict_json(raw)
+            except (ValueError,Invalid,UnicodeError): continue
+            if not conforms(data,EXCEPTION): continue
+            exceptions.setdefault(data['number'],[]).append((comment,data,len(found)))
+            if data['supersedes'] is not None: ended.add(data['supersedes'])
+    times=[ts(p['receipt']['compared_at']) for p in pair]
+    use=min(times) if len(times)==2 else None; now=ts(b.get('now'))
+    pr=b.get('pr') or {}; closing=pr.get('closing_issues')
+    issue=closing[0] if isinstance(closing,list) and len(closing)==1 else None
+    identity=qualification.get('identity_sha256') if isinstance(qualification,dict) else None
+    states=[]
+    if len(set(claimed))!=len(claimed): add('capability-exception-invalid')
+    for number in sorted(set(claimed)):
+        candidates=exceptions.get(number,[]); used=False
+        states.append([number,[sha(c['body']) for c,_,_ in candidates],'ended' if number in ended else 'active'])
+        if ledger_ok and len(candidates)==1:
+            comment,e,count=candidates[0]; url=COMMENT_URL.fullmatch(comment['url'])
+            provenance=(count==1 and comment['login']==owner and comment['updated_at']==comment['created_at'] and bool(url)
+                        and url.group(1)==repo and url.group(2)=='issues' and int(url.group(3))==pin['exception_issue'])
+            protected=provenance  # rule:exception-provenance
+            current=(use is not None and ts(comment['created_at'])<use and now is not None and now<=ts(e['valid_until'])
+                     and number not in ended)
+            valid=current  # rule:exception-validity
+            if protected and valid:
+                for comparison in comparisons:
+                    slot=comparison['slot']; author=comparison['author']
+                    scope=(e['repository']==b.get('repository') and e['pr']==b.get('pr_number') and e['issue']==issue
+                           and e['head']==pr.get('head') and e['slot']==slot['slot']
+                           and e['reviewer_marker_sha256']==slot['marker_sha256'] and e['reviewer_effort_sha256']==slot['effort_sha256']
+                           and e['author_marker_sha256']==author['marker_sha256'] and e['author_effort_sha256']==author['effort_sha256']
+                           and e['table']==pin['table'] and e['reviewer_row']==slot['row'] and e['author_row']==author['row']
+                           and e['reviewer_score']==slot['score'] and e['author_score']==author['score']
+                           and e['profile_sha256']==slot['profile_sha256'] and e['qualification_sha256']==identity
+                           and e['departure']==(comparison['code'] or 'preference-only'))
+                    covers=scope  # rule:exception-scope
+                    # An exception accepts a named trade-off; it never fills a
+                    # missing identity, effort or row.
+                    complete=not slot['codes'] and not author['codes']  # rule:exception-missing-data
+                    if covers and complete:
+                        comparison['exception']=number; used=True
+                        if number not in slot['exceptions']: slot['exceptions'].append(number)
+        if not used: add('capability-exception-invalid')
+    for comparison in comparisons:
+        if comparison['exception'] is not None: continue
+        if comparison['code'] not in (None,'incomplete'): add(comparison['code'])
+        for code in comparison['slot']['codes']+comparison['author']['codes']: add(code)
+    if not comparisons:
+        for item in slots+authors:
+            for code in item['codes']: add(code)
+    if not slots or not authors: add('capability-identity-missing')
+    excepted=any(c['exception'] is not None for c in comparisons)
+    out['outcome']='capability-maintainer-exception' if excepted else 'capability-score-pass'
+    if comparisons and all(c['code']!='incomplete' for c in comparisons):
+        out['record']={'table':pin['table'],'mapping':pin['mapping'],'outcome':out['outcome'],'comparisons':[
+            {'slot':c['slot']['slot'],'marker_sha256':c['slot']['marker_sha256'],'effort_sha256':c['slot']['effort_sha256'],
+             'row':c['slot']['row'],'score':c['slot']['score'],'author_marker_sha256':c['author']['marker_sha256'],
+             'author_effort_sha256':c['author']['effort_sha256'],'author_row':c['author']['row'],'author_score':c['author']['score'],
+             'outcome':'capability-maintainer-exception' if c['exception'] is not None else c['code'] or 'capability-score-pass',
+             'exception':c['exception']} for c in comparisons]}
+    # Floor-evidence digest of an announcement: the predispatch digest and the
+    # bytes of every numbered exception claimed. Comparisons are disclosed and
+    # compared field by field in the record itself.
+    out['floor']=sha(canonical({'e0':out['e0'],'exceptions':[[n,hashes] for n,hashes,_ in states]}))
+    if not out['codes']:
+        out['notes'].append(out['outcome'])
+        # Disclosed correlation; a preference, never a veto (P4).
+        vendors=[x['vendor'] for x in slots]
+        if len(set(vendors))==1: out['notes'].append('capability-correlation same-vendor')
+        if 'Codex' not in vendors: out['notes'].append('capability-correlation no-codex')
+        if {x['provider'] for x in slots}&{a['provider'] for a in authors}: out['notes'].append('capability-correlation author-vendor')
+        if {x['row']['model'] for x in slots}&{a['row']['model'] for a in authors}: out['notes'].append('capability-correlation author-model')
+    return out
+
+
+def capability_reasons(cap,r):
+    for code in cap['codes']: r.add('referred',code)
+    for text in cap['notes']: r.note(text)
+
+
+def number_text(value): return str(value) if is_int(value) else repr(float(value))
+
+
+def read_capability(b):
+    """Reader for the comparison evidence: validated numbers, digests and codes only."""
+    r=Result(); cfg=load_config(b,r)
+    if cfg is None: return 'merge-risk-capability: refer\ncode: capability-table-invalid\n',3
+    cap=capability_evaluate(b,cfg,b.get('phase','final')=='final')
+    lines=['merge-risk-capability: '+('refer' if cap['codes'] else 'pass')]
+    lines+=['code: '+c for c in (cap['codes'] or [cap['outcome']])]
+    if cfg['capability'] is not None:
+        lines.append('table: sha256=%s date=%s mapping=%s'%(cfg['capability']['table']['sha256'],cfg['capability']['table']['date'],cfg['capability']['mapping']['sha256']))
+    order={id(x):n for n,x in enumerate(cap['slots'],1)}; authors=[]
+    for c in cap['comparisons']:
+        if not any(c['author'] is a for a in authors): authors.append(c['author'])
+        index=next(n for n,a in enumerate(authors,1) if a is c['author'])
+        row=lambda item:sha(canonical(item['row'])) if item['row'] else '-'
+        score=lambda item:number_text(item['score']) if item['score'] is not None else '-'
+        outcome=('capability-maintainer-exception' if c['exception'] is not None else c['code'] or 'capability-score-pass')
+        lines.append('comparison: slot=%d author=%d row=%s score=%s author_row=%s author_score=%s outcome=%s exception=%s'%(
+            order[id(c['slot'])],index,row(c['slot']),score(c['slot']),row(c['author']),score(c['author']),outcome,
+            c['exception'] if c['exception'] is not None else '-'))
+    return '\n'.join(lines)+'\n',3 if cap['codes'] else 0
 
 
 RUNTIME_PROFILE={'project_dir':TEXT,'checker':TEXT,'preflight':TEXT,'isolated_config':'bool',
@@ -633,16 +1018,16 @@ QUAL_CASE={'id':TEXT,'kind':('harm','benign','gate','positive'),'variants':[TEXT
 QUAL_RUN={'case_id':TEXT,'variant':TEXT,'repetition':'positive','sessions':[TEXT],
           'outcomes':[('approve','refer','reject')],'valid_outputs':'bool','forbidden_attempts':'nonnegative',
           'unauthorized_attempts':'nonnegative','merge_count':'nonnegative','full_hold':'bool','head_match':'bool',
-          'detections':[{'reviewer':('Claude','Codex'),'mechanism':TEXT,'location':TEXT,'consequence':TEXT,'grade':REF}],
+          'detections':[{'reviewer':TEXT,'mechanism':TEXT,'location':TEXT,'consequence':TEXT,'grade':REF}],
           'transcripts':[REF],'raw_results':[REF],'actions':REF,'grader':REF,'sealed_at':'time','graded_at':'time'}
 QUALIFICATION.update(suite=[QUAL_CASE],runs=[QUAL_RUN],inputs=QUAL_INPUTS)
 
 
-def qualification_samples(b,cfg,r,q,expired=False):
+def qualification_samples(b,cfg,r,q,pin,expired=False):
     if not conforms(q,QUALIFICATION): return
     cur=b.get('current') or {}
     expected={'models':sha(canonical(cfg['reviewer_profiles'])),'instructions':cur.get('instructions_sha256'),
-              'runtime':cur.get('runtime_sha256'),'floor':cur.get('floor_sha256'),
+              'runtime':cur.get('runtime_sha256'),'floor':pin,
               'policy':sha(canonical(operational_projection(cfg))),'assembler':cur.get('assembler_sha256'),
               'consumer':cur.get('consumer_sha256'),'suite':sha(canonical(q['suite'])),
               'recorder':cur.get('recorder_sha256'),'grader':cur.get('grader_sha256')}
@@ -677,10 +1062,10 @@ def qualification_samples(b,cfg,r,q,expired=False):
 
 
 
-def activation_checks(b,cfg,r,expired=False):
+def activation_checks(b,cfg,r,cap,expired=False):
     project=cfg['project']; mapping=cfg['hard_stops']; repo=cfg['repository']; cur=b.get('current') or {}
     configured=(project is not None and mapping is not None and all(mapping[k] for k in GROUPS)
-                and all(cfg[k] is not None for k in ('requirements','design','floor','runtime_profile','qualification','guard'))
+                and all(cfg[k] is not None for k in ('requirements','design','capability','runtime_profile','qualification','guard'))
                 and project['repository']==repo and project['policy_path']==cfg['policy_path']
                 and project['mapping_sha256']==sha(json.dumps(mapping,separators=(',',':')).encode())
                 and project['brief']['sha256']==cur.get('brief_sha256')
@@ -688,18 +1073,7 @@ def activation_checks(b,cfg,r,expired=False):
     brief=retained_json(b,project['brief'],repo) if project else None
     configured=configured and conforms(brief,BRIEF)
     r.need(configured, 'project-unconfigured','referred')  # rule:project-configured
-    accepted=b.get('accepted') or {}; floor=accepted.get('floor')
-    floor_ok=(conforms(floor,FLOOR) and floor['source']==cfg['floor'] and floor['accepted'] is True and floor['adequate'] is True
-              and accepted_ref(floor['method_decision'],repo) and len(floor['entries'])==2
-              and all(any(e['vendor']==p['vendor'] and e['model']==p['model'] and e['variant']==p['variant']
-                          and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}',e['date']))
-                          and e['entry'].startswith('https://artificialanalysis.ai/') for e in floor['entries'])
-                      for p in cfg['reviewer_profiles']) and len(cfg['reviewer_profiles'])==2)
-    # Accepted capability adequacy/method is a recorded protected human decision;
-    # this reader selects neither disputed method and never infers model ordering.
-    floor_body=retained_json(b,cfg['floor'],repo)
-    floor_ok=floor_ok and floor_body=={k:v for k,v in (floor or {}).items() if k!='source'}
-    r.need(floor_ok, 'floor-unavailable','referred')  # rule:floor
+    accepted=b.get('accepted') or {}
     q=accepted.get('qualification')
     q_ok=(conforms(q,QUALIFICATION) and q['source']==cfg['qualification'] and q['status']=='qualified'
           and all(q[k] is True for k in ('runtime_observed','dry_run_observed','findings_resolved','full_safety_rerun'))
@@ -709,7 +1083,7 @@ def activation_checks(b,cfg,r,expired=False):
     q_body=retained_json(b,cfg['qualification'],repo)
     q_ok=q_ok and q_body=={k:v for k,v in (q or {}).items() if k!='source'}
     r.need(q_ok, 'qualification-unavailable','referred')  # rule:qualification
-    qualification_samples(b,cfg,r,q,expired)
+    qualification_samples(b,cfg,r,q,cap['pin'],expired)
 
 
 def instruction_checks(b,cfg,r):
@@ -790,64 +1164,87 @@ def check_runs(b,cfg,r):
     r.need(good, 'gate-check')  # rule:all-checks
 
 
-def independence_checks(b,cfg,r):
+def independence_checks(b,cfg,r,cap):
     pair=b.get('risk_pair')
     if not isinstance(pair,list) or len(pair)!=2: return
-    receipts=[]; sessions=[]; dispatches=[]; nonces=[]; vendors=[]
+    receipts=[]; sessions=[]; dispatches=[]; nonces=[]; slots=[]; vendors=[]; raws=[]; outputs=[]
+    profiles={x['slot']:x for x in cfg['reviewer_profiles']}
     for p in pair:
         if not conforms(p,PAIR): continue
         env=p['envelope']; rc=p['receipt']; reviewer=env['reviewer']; binding=env['binding']
-        r.need(rc['available'] is True, 'risk-unavailable','referred')  # rule:vendor-availability
+        r.need(rc['available'] is True, 'risk-unavailable','referred')  # rule:slot-availability
         started=ts(rc['started_at']); received=ts(rc['received_at']); sealed=ts(rc['sealed_at']); compared=ts(rc['compared_at'])
-        prof=next((x for x in cfg['reviewer_profiles'] if x['vendor']==reviewer['vendor']),{})
-        separated=(reviewer['session_id'] not in b.get('author_sessions',[]) + b.get('quality_sessions',[])
-                   and reviewer['session_id']!=b.get('executor_session') and rc['no_inheritance'] is True
-                   and rc['peer_exposed'] is False and rc['forbidden_actions']==[] and reviewer['fresh'] is True
-                   and reviewer['inherited_session'] is None and reviewer['model']==rc['resolved_model']==prof.get('model')
+        # The profile is selected by stable slot plus resolved identity.
+        prof=profiles.get(reviewer['slot'],{})
+        fresh=(rc['no_inheritance'] is True and reviewer['fresh'] is True and reviewer['inherited_session'] is None)
+        r.need(fresh, 'risk-independence','referred')  # rule:no-inheritance
+        roles=(reviewer['session_id'] not in b.get('author_sessions',[]) + b.get('quality_sessions',[])
+               and reviewer['session_id']!=b.get('executor_session'))
+        r.need(roles, 'risk-independence','referred')  # rule:role-separation
+        sealing=started<=received<=sealed<=compared
+        r.need(sealing, 'risk-independence','referred')  # rule:seal-before-compare
+        separated=(rc['peer_exposed'] is False and rc['forbidden_actions']==[]
+                   and reviewer['model']==rc['resolved_model']==prof.get('model') and reviewer['vendor']==prof.get('vendor')
                    and reviewer['variant']==prof.get('variant') and rc['settings_sha256']==prof.get('settings_sha256')
-                   and rc['prompt_sha256']==binding['instructions_sha256'] and rc['runtime_sha256']==b['current'].get('runtime_sha256')
-                   and reviewer['floor_evidence_sha256']==b['current'].get('floor_sha256')
-                   and started<=received<=sealed<=compared)
+                   and rc['prompt_sha256']==binding['instructions_sha256'] and rc['runtime_sha256']==b['current'].get('runtime_sha256'))
         r.need(separated, 'risk-independence','referred')  # rule:risk-independence
         receipts.append(rc); sessions.append(reviewer['session_id']); dispatches.append(reviewer['dispatch_id'])
         nonces.append(binding['nonce']); vendors.append(reviewer['vendor'])
-    unique=(len(sessions)==2 and len(set(sessions))==2 and len(set(dispatches))==2 and len(set(nonces))==2
-            and sorted(vendors)==['Claude','Codex'] and all(ts(x['sealed_at'])<=ts(y['compared_at']) for x in receipts for y in receipts))
+        slots.append(reviewer['slot'])  # rule:slot-identity
+        raws.append(p['raw_sha256']); outputs.append(rc['output_source'])
+    identities=len(sessions)==2 and len(set(sessions))==2 and len(set(dispatches))==2 and len(set(nonces))==2
+    r.need(identities, 'risk-independence','referred')  # rule:unique-ids
+    results=len(raws)==2 and len(set(raws))==2 and outputs[0]!=outputs[1]
+    r.need(results, 'risk-independence','referred')  # rule:unique-results
+    # Vendor composition is no independence criterion; two stable slots are.
+    unique=len(slots)==2 and len(set(slots))==2 and set(slots)==set(profiles)
     r.need(unique, 'risk-independence','referred')  # rule:pair-unique
+    sealed=all(ts(x['sealed_at'])<=ts(y['compared_at']) for x in receipts for y in receipts)
+    r.need(sealed, 'risk-independence','referred')  # rule:peer-sealed
 
 
 def attempt_checks(b,cfg,r):
     attempts=b.get('attempts'); pair=b.get('risk_pair') or []; valid=isinstance(attempts,list) and bool(attempts)
     valid=valid and all(conforms(x,ATTEMPT) for x in attempts)
+    slot_ids=[x['slot'] for x in cfg['reviewer_profiles']]; vendor_of={x['slot']:x['vendor'] for x in cfg['reviewer_profiles']}
     if valid:
         valid=(len(attempts)<=cfg['max_attempts'] and [a['ordinal'] for a in attempts]==list(range(1,len(attempts)+1))
                and len({a['attempt_id'] for a in attempts})==len(attempts)
-               and all(a['provider_retries_visible'] is True for a in attempts))
-        prior_sessions=set(); zero_retries={v:0 for v in ('Claude','Codex')}
+               and all(x['slot'] in vendor_of for a in attempts for x in a['launches']))
+        visible=all(a['provider_retries_visible'] is True for a in attempts)  # rule:provider-retries
+        valid=valid and visible
+        prior_sessions=set(); zero_retries={slot:0 for slot in slot_ids}
         for i,a in enumerate(attempts):
             if i:
                 prev=attempts[i-1]; disp=a['disposition']
-                valid=valid and (prev['terminal'] is True and a['previous']==prev['decision_id'] and disp is not None
-                                  and disp['verbatim'] is True and disp['pr']==b.get('pr_number')
-                                  and disp['previous']==prev['decision_id'] and ts(disp['created_at'])<ts(a['created_at']))
+                disposed=(prev['terminal'] is True and a['previous']==prev['decision_id'] and disp is not None
+                          and disp['verbatim'] is True and disp['pr']==b.get('pr_number')
+                          and disp['previous']==prev['decision_id'] and ts(disp['created_at'])<ts(a['created_at']))  # rule:prior-disposition
+                valid=valid and disposed
             else: valid=valid and a['previous'] is None
-            for slot in ('Claude','Codex'):
-                launches=[x for x in a['launches'] if x['slot']==slot]
+            for slot in slot_ids:
+                # Each stable slot keeps its own launches, deadline and the one
+                # zero-byte transport redispatch; a vendor never keys them.
+                launches=[x for x in a['launches'] if x['slot']==slot]  # rule:slot-keyed
                 valid=valid and bool(launches)
                 if not launches: continue
                 start=ts(launches[0]['original_start'])
                 for n,launch in enumerate(launches):
-                    valid=valid and launch['session_id'] not in prior_sessions and ts(launch['original_start'])==start
+                    fresh=launch['session_id'] not in prior_sessions  # rule:launch-fresh
+                    valid=valid and fresh and ts(launch['original_start'])==start
                     prior_sessions.add(launch['session_id'])
                     if n:
                         prev=launches[n-1]; zero_retries[slot]+=1
-                        valid=valid and prev['bytes']==0 and prev['transport_attested'] is True and prev['outcome']=='transport'
-                        valid=valid and zero_retries[slot]<=1
-                    valid=valid and launch['bytes'] is not None and 0<=(ts(launch['started_at'])-start).total_seconds()<=cfg['deadline_seconds']
+                        zero=prev['bytes']==0 and prev['transport_attested'] is True and prev['outcome']=='transport'  # rule:zero-byte-only
+                        valid=valid and zero
+                        once=zero_retries[slot]<=1  # rule:once-per-slot
+                        valid=valid and once
+                    timely=0<=(ts(launch['started_at'])-start).total_seconds()<=cfg['deadline_seconds']  # rule:original-deadline
+                    valid=valid and launch['bytes'] is not None and timely
             if i==len(attempts)-1:
                 for p in pair:
                     env=p.get('envelope',{}); reviewer=env.get('reviewer',{}); binding=env.get('binding',{})
-                    launches=[x for x in a['launches'] if x['slot']==reviewer.get('vendor')]
+                    launches=[x for x in a['launches'] if x['slot']==reviewer.get('slot')]
                     valid=valid and bool(launches) and binding.get('attempt_id')==a['attempt_id']
                     if launches:
                         last=launches[-1]
@@ -942,24 +1339,30 @@ def evaluate(b):
     r.need(b.get('schema')=='merge-risk-evidence/2','evidence-schema')
     r.need(b.get('phase','final') in ('prepare','class','final'),'phase-invalid')
     if cfg is not None:
+        final=b.get('phase','final')=='final'
+        # Capability is consumed before dispatch (prepare) and again here against
+        # the final bound evidence; a pass clears capability only.
+        cap=capability_evaluate(b,cfg,final)
         gate_checks(b,cfg,r)
         source_checks(b,cfg,r)
         runtime_checks(b,cfg,r)
         instruction_checks(b,cfg,r)
         check_runs(b,cfg,r)
         if b.get('phase','final') in ('prepare','class'):
-            activation_checks(b,cfg,r)
+            activation_checks(b,cfg,r,cap)
+            capability_reasons(cap,r)
             r.add('unresolved','risk-pair-required'); r.note('preparation only; no merge authority')
         else:
-            record=record_checks(b,cfg,r)
+            record=record_checks(b,cfg,r,cap)
             expired=any(code=='identity-binding' for _,code,_ in r.reasons)
-            activation_checks(b,cfg,r,expired)
+            activation_checks(b,cfg,r,cap,expired)
+            capability_reasons(cap,r)  # rule:final-capability
             hold_checks(b,cfg,r,record)
             if not any(c=='identity-binding' for _,c,_ in r.reasons):
                 corpus_checks(b,r)
                 pair_checks(b,cfg,r)
-                envelope_checks(b,cfg,r)
-                independence_checks(b,cfg,r)
+                envelope_checks(b,cfg,r,cap)
+                independence_checks(b,cfg,r,cap)
                 attempt_checks(b,cfg,r)
     pr=b.get('pr') or {}; n=b.get('pr_number'); H=identity(pr.get('head'),SHA40); B=identity(b.get('main_tip'),SHA40)
     D=sha(b['diff_text']) if isinstance(b.get('diff_text'),str) else '-'
@@ -1241,11 +1644,25 @@ def collect(phase,n,script_dir):
     # Only the exact bookkeeping trailer can select an active record.
     body=b['pr'].get('body') or ''; urls=re.findall(r'^Merge-risk decision: (\S+)$',body,re.M)
     if len(urls)==1 and valid_comment(urls[0],repo,item): b['active_record_url']=urls[0]
-    for key in ('requirements','design','floor','runtime_profile','qualification'):
-        reference=cfg[key]
+    references=[cfg[key] for key in ('requirements','design','runtime_profile','qualification')]
+    pin=cfg['capability']
+    if pin is not None:
+        # Capability inputs come from their accepted pinned source only: never
+        # from candidate H, a mutable handoff directory, a URL in candidate
+        # text or an external index. A hash mismatch retains nothing.
+        references+=[{'source':pin['table']['source'],'sha256':pin['table']['sha256']},pin['decision'],pin['mapping']]
+    for reference in references:
         if reference:
-            text=source_body(reference,repo)
+            text=source_body(reference,repo)  # rule:collect-accepted-source
             if text is not None: b['sources'][reference['source']]={'body':text}
+    ledger=pages('repos/'+repo+'/issues/'+str(pin['exception_issue'])+'/comments?per_page=100') if pin is not None else None
+    # Author/slot markers, applied-effort evidence and claimed exception
+    # numbers are launch evidence. The collector NEVER invents them: until the
+    # negotiated launcher Adapter supplies them, capability refers.
+    b['authors']=[]
+    b['capability']={'slots':[],'efforts':[],'exceptions':[],'ledger_complete':ledger is not None,
+                     'ledger':[{'url':c.get('html_url'),'login':(c.get('user') or {}).get('login'),'created_at':c.get('created_at'),
+                                'updated_at':c.get('updated_at'),'body':c.get('body')} for c in ledger or []]}
     if cfg['acceptance']:
         match=COMMENT_URL.fullmatch(cfg['acceptance'])
         acc=gh(['api','repos/'+repo+'/issues/comments/'+match.group(4)]) if match else None
@@ -1287,9 +1704,10 @@ def collect_queue():
 
 
 def main(argv):
-    if len(argv)==3 and argv[0] in ('evaluate','record','completion','queue') and argv[1]=='--bundle':
+    if len(argv)==3 and argv[0] in ('evaluate','record','completion','queue','capability') and argv[1]=='--bundle':
         b=strict_json(Path(argv[2]).read_bytes())
         if argv[0]=='evaluate': return render(*evaluate(b))
+        if argv[0]=='capability': return read_capability(b)
         if argv[0]=='queue': return evaluate_queue(b)
         if argv[0]=='record' and 'manifest' in b: return render_record_job(b)
         return render_reader(argv[0],read_record(b) if argv[0]=='record' else read_completion(b))

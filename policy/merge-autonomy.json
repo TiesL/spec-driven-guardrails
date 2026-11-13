@@ -88,7 +88,7 @@
   "project": null,
   "requirements": null,
   "design": null,
-  "floor": null,
+  "capability": null,
   "runtime_profile": null,
   "qualification": null,
   "guard": null,
