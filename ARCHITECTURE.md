@@ -6673,3 +6673,335 @@ the score-changing witness alone cannot establish that coverage. Any necessary
 implementation fix stays inside the existing decision Module and public Seam;
 no new Module, Adapter, wrapper or result/exit domain is introduced. Live
 capability, qualification and enforcement remain UNRUN.
+
+### A60 addendum 4 — one cross-field consistency invariant, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
+OR20 return after `.handoff/review-report-646-r1.md` and
+`.handoff/review-report-646-r2.md`, inspected against `0cc0725`. This append-only
+ruling replaces the practice of adding one comparison per reported witness.
+Earlier A-text remains history; A60 D0-D7, addenda 1-2 and **addendum 3's result
+composition take precedence** where applicable. No F70-F73 AC is contradicted or
+narrowed. This is a design handoff, not closure of findings, implementation proof,
+qualification, acceptance of M1-M9, or authority to enable/merge.
+
+**C1 — Invariant and authority.** [A] The final bundle describes ONE product,
+PR, work item, captured evidence identity, selected eligible announcement and
+current attempt, with TWO independent risk slots and separate quality approval.
+Every identity occurrence must resolve to its authoritative source, every copy
+must agree, every required separation must hold, and the chronology must permit
+a full hold. A well-typed field, two agreeing copies, a nested `eligible`, or an
+unchanged retained digest is insufficient. Eligibility is the conjunction of all
+these rules AND the surviving substantive/gate requirements.
+
+Keep one deep decision Module and its public `evaluate --bundle` Interface.
+Prefer one private table-driven consistency check with explicit source selectors,
+copy selectors, comparison/cardinality/ordering predicates and fixed refusal
+codes. Schema checks precede access to typed values. The table below is its
+specification, not another public schema or a generic validation framework.
+The two real Adapters remain live object/API collection and retained JSON replay.
+Depth and Leverage come from checking the same invariant for both; Locality is
+lost if each consumer owns a different partial list. Deletion test: removing
+this check must make these obligations reappear across the existing consumers,
+not remove them. No new Adapter or speculative Seam is warranted.
+
+Authority is field-specific, in this order of derivation:
+
+1. Accepted protected product configuration at B selects sources and profiles;
+   its acceptance does not authenticate the person who supplied it. G selects
+   guard code/wiring only, never the product's acceptance, table or brief.
+2. Object reads, complete remote/API observations and separately retained
+   launcher/consumer evidence supply actual bytes, identities and server times.
+   Hash those bytes and compute derived identities/outcomes again. Use neither
+   candidate claims nor a reviewer echo to fill an absent observation.
+3. Predispatch envelopes, ledgers and immutable announcements must match those
+   sources. Raw verdict binding/reviewer fields must match the envelope AND the
+   launch evidence. An announcement is a disclosure to validate, not a source
+   allowed to override its evidence. Raw semantic outcomes remain evidence to
+   validate; an announcement's `clear` cannot override `refer`/`reject`.
+4. `current.*`, summary arrays, rendered prose, cached outcomes and embedded
+   copies confer no authority. Incomplete `author_sessions`/`quality_sessions`
+   remain permitted (S658); union their exclusion claims with authoritative
+   participants, never subtract authoritative identities because a summary omits
+   them. An extra summary exclusion can prevent reuse; it cannot create approval.
+
+Distinguish **capture** from **final** without a new caller-controlled switch.
+Capture identities are the independently retained object/launch/source evidence
+for which the pair was obtained. Final identities are freshly observed current
+sources. Internally contradictory capture evidence gets its owning refusal below.
+A consistent captured pair/announcement whose authority changed gets
+`identity-binding` and expires. Compare copies to the captured referent even
+when final sources changed; do not label a consistent old envelope malformed
+merely because it is old. Run final capability, integrity and other applicable
+checks too. Neither a manifest nor a boolean claiming earlier validation proves
+that capture evidence was valid. Missing capture evidence is unavailable evidence,
+not permission to reconstruct it from the agreeing copies. This distinction
+preserves addendum 3 without disabling checks on expired evidence (C4).
+
+**C2 — Exhaustive inventory for the evidence/2 evaluator.** [A] Notation:
+`b` is the retained bundle, `cfg` its accepted B configuration, `m` the uniquely
+selected schema-valid manifest, `env`, `raw`, `rc` a slot's envelope, decoded
+verdict and consumer receipt. `F` means the independently recomputed/observed
+final value; `C` its retained capture referent. Expand EACH named field and EACH
+listed destination separately, including every array element, author, slot and
+prior attempt. A whole-object equality includes every leaf, cardinality and
+unique key; it is never satisfied by a matching subset or first match.
+`U` = unresolved/4, `R` = referred/3, `H` = held/1 when isolated. Reasons compose
+under C4. A changed captured announcement also emits U/`identity-binding`;
+that expiry is distinct from the row's independently established defect.
+
+| Row / identity-bearing field | Authoritative source | Every place that must agree, or required relation | Refusal code |
+| --- | --- | --- | --- |
+| I01 Product `repository`; API/remote host, remote URL and redirects | Accepted `cfg.repository` and independently resolved product identity | `b.repository`, `cfg.project.repository`, `b.identity.repository`, `m.repository`, every `env.binding.repository`/`raw.binding.repository`, scoped exception repository, product source/comment URLs; `m.execution.identity` equals captured `b.identity`. Host is github.com, origin denotes that repository, redirects empty; external G uses I28, never this equality. | U/`repository-identity`; envelope/raw disagreement R/`risk-binding`; stale record U/`identity-binding` |
+| I02 PR, issue and control numbers; acceptance/exception issue numbers | Actual requested PR plus complete closingIssuesReferences, independently fetched issue/control; B config selects control/acceptance/exception issue | `b.pr_number`, `m.pr`, bindings' `pr`, dispositions/exception PR; sole closing issue equals `b.issue.number`, `m.issue`, bindings' `issue`, scoped exception issue and selected comment's work-item URL. `b.control.number`/`m.execution.control.number` equal `cfg.control_issue`; acceptance and exception URLs resolve to their configured issues, never an arbitrary comment. | U/`record-selection` for wrong selected target; R/`risk-binding` for bindings; U/`identity-binding` for manifest copies; U/`acceptance-unverified` or R/`capability-exception-invalid` for those sources |
+| I03 H, including head-bound markers | Object-backed captured H and independent current remote PR head F | `b.pr.head`, `b.remote.head`, head tree/artifact revisions, `m.head`, `m.evidence.head`, bindings' `head`, `quality.head`/completion marker, every run/context head, exception head, queue identity. Each capture copy matches C; C must still equal F. | U/`identity-binding` for expiry; R/`risk-binding`, U/`gate-quality`, U/`gate-review-marker`, U/`gate-check` for independent copy faults |
+| I04 B/config commit/base ref/merge base | Current main tip and independently read Git objects | `b.main_tip`, `remote.base`, `merge_base`, verifier head, base inventory/artifact revisions, `m.base`, `m.config_commit`, `m.evidence.base`, bindings' `base`; PR base ref is main and B is ancestor of H. Never substitute G revision for B. | U/`identity-binding` for expiry/copies; U/`behind-base`, U/`verifier-not-at-base`, R/`base-not-main`, R/`risk-binding` as applicable |
+| I05 Snapshot path, previous path, mode, OID, revision, link/content identity | Complete B/H Git object inventories and object diff | Every `trees.base/head` entry and `files` old/new path/mode/OID corresponds to its snapshot (absence for additions/deletions); both rename sides retained. Artifact `source`, decoded `path_b64`, bytes/hash/length/line map identify that revision/OID/path, including unchanged context and symlink text. No candidate checkout or link following supplies bytes. | R/`evidence-incomplete`, R/`corpus-invalid`; unsafe/colliding/gitlink identities retain `path-unsafe`/`tree-collision`/`gitlink` |
+| I06 Diff digest, line/path counts | Exact object-derived B..H diff bytes and full old/new file set, independently compared with remote | `sha(diff_text)`, `remote.diff_sha256`, `m.diff_sha256`, bindings' `diff_sha256`; remote counts, `m.assessment.lines/paths` and cap inputs equal recomputed counts, including both rename paths. | R/`remote-identity` for remote contradiction; R/`risk-binding` for envelope/raw; U/`identity-binding` for record/expiry; existing `cap-lines`/`cap-files` still apply |
+| I07 Configuration schema/path/bytes/hash/commit and operational projection | Accepted policy bytes at B and its object-backed last-change time | `cfg.policy_path`/`cfg.project.policy_path`, `config_text`, `current.policy_sha256`, `m.config_sha256`, `m.config_commit`, `m.authority.policy_sha256`, binding policy hash and qualification operational hash/projection. Recompute each digest in its specified byte/canonical domain, never hash a sanitized rendering. | U/`config-invalid`, U/`identity-binding`; R/`project-unconfigured` or R/`qualification-unavailable` for missing accepted configuration/qualification |
+| I08 Requirements, design and project brief source identities | Protected accepted `cfg.requirements`, `cfg.design`, `cfg.project.brief` with retained original bytes | `m.ac`, `m.design`; computed `current.requirements_sha256`, `design_sha256`, `brief_sha256`; `m.authority` copies; binding requirements/design hashes; acceptance requirement/design hashes; reviewed/exported brief and accepted project reference. Sources and hashes both agree, not hash alone. `m.authority.acceptance` equals the configured autonomy acceptance URL and retained acceptance evidence; project acceptance remains its separately identified protected source, never an implied grant from G. | U/`identity-binding`; U/`acceptance-unverified`; R/`project-unconfigured` when accepted project evidence absent |
+| I09 EVERY `{source, sha256}` reference, including nested ones | Exact allowed immutable source/object or immutable comment selected by the owning row | Resolve each `REF` in config/project/guard, authors, quality/findings, capability decision/mapping/markers/launches, receipt output, manifest ac/design/read_logs/disposition/supersedes/prior_attempts, hold release and qualification evidence to retained original bytes; digest and source target/provenance must agree. Reject ambiguous/duplicate source identities. An API key with invented matching hash is no substitute for its retained bytes. Each owning row defines allowed origin and meaning; references are never followed as candidate instructions. | Owning row's code: e.g. R/`risk-result-invalid` for output bytes, U/`finding-provenance`, R/`risk-attempt-invalid` for history, R/`qualification-unavailable`, R/`capability-identity-missing` or `capability-effort-unavailable`; manifest mismatch U/`identity-binding` |
+| I10 Narrative digest and bookkeeping trailer/selection URL | Actual retained PR title/body, parsed by `narrative()` against product repository and sole work item | Recompute hash of title + newline + body with ONLY the single validated trailer line excluded; equal `current.narrative_sha256` and `m.evidence.narrative_sha256`. If trailer exists its URL equals `active_record_url` and the selected comment URL. Duplicate/malformed trailers cannot select or escape hashing. Mere matching cached digests proves nothing. | R/`narrative-invalid` for malformed/duplicate trailer; U/`record-selection` for wrong selection; U/`identity-binding` for actual narrative drift/cached-hash mismatch |
+| I11 Selected record URL, schema, label, outcome, immutability and supersession | Explicit validated trailer selection plus complete work-item issue comments | Exactly one selected comment at that repository/work item; v2 closed schema, literal label, `updated_at == created_at`, own `m.outcome == eligible`, selected record not superseded by another valid linked record and no second active eligible record. An outgoing `m.supersedes` may identify the prior record it replaces; it is not itself proof that the selected record was superseded. A held/vetoed/unresolved/referred/failed/merged record never authorizes even if its nested assessment says eligible. Linked history remains visible and dispositioned; do not silently pick latest. | U/`record-selection` for selected noneligible/superseded/wrong target; `record-duplicate`, `manifest-schema`, `record-label`, `record-edited` retain U |
+| I12 Decision ID and ordinal | Retained predispatch decision/attempt ledger for this PR/H | `MR-<pr>-<short H>-<ordinal>` names the actual ledger ordinal; `m.decision_id`, current `attempt.decision_id`, each current binding `decision_id`, queue key decision and linked history/dispositions agree with that decision. Prior attempts keep their OWN IDs/ordinals, not the final ID. Correct spelling/prefix alone is insufficient. | U/`record-id` for malformed ID; R/`risk-attempt-invalid` for ledger/decision relation; R/`risk-binding` for envelope/raw; U/`identity-binding` for manifest disagreement |
+| I13 Attempt ID, ordinal, previous decision and disposition identity | Complete immutable predispatch `b.attempts` ledger, not its announcement copy | `m.attempt` equals the actual selected last attempt in full; bindings' `attempt_id` equal its ID. Ordinals contiguous/unique/max two; previous links equal actual preceding decision, prior attempt references resolve to those records; terminal/disposition requirements preserved. Disposition source/words/PR/previous/time match retained human-source evidence, not just `verbatim:true`. | R/`risk-attempt-invalid`; manifest copy disagreement U/`identity-binding` |
+| I14 Per-launch slot/session/dispatch/nonce/run/runtime identity; raw hash/byte count | Retained launcher record and consumer receipt for EACH actual launch, including retries | Envelope reviewer session/dispatch/runtime and binding nonce/attempt map to that launch; final launch for each slot maps to its returned pair element, `raw_sha256`, byte length/output source and original start. No extra unaccounted launch or output; every transport exemption has its own zero-byte attestation. Shared attempt ID across its two slots is REQUIRED, while session/dispatch/nonce are distinct. A transport redispatch changes session, never slot/original clock or retained peer. | R/`risk-attempt-invalid` for ledger/launch mismatch; R/`risk-binding` for echo mismatch; R/`risk-independence` for reuse |
+| I15 Relevant author session/model/variant/marker source | Existing relevant-author provenance inventory and retained model-record/launch evidence | ALL `b.authors` entries and every `m.authors` leaf agree with that inventory; marker bytes name the model and source/session/variant/effort provenance matches I22. No omitted unknown author, weakest-author selection or summary-created replacement. Multiple contributions by one author do not require artificial distinct sessions. | R/`capability-identity-missing` for missing/conflicting author identity; U/`identity-binding` for manifest copy |
+| I16 Quality session/model/source/H/marker/approval; finding IDs/status/source | Retained separate quality-review artifact and its participant provenance, with every lens participant retained for exclusions | `b.quality` and `m.quality` equal that artifact's structured evidence; its model matches its marker source, H/marker name actual H, approval/findings reflect that source. Each finding ID has its own status/severity/disposition provenance; a summary approval cannot replace an open finding. Retain quality participants omitted from `quality_sessions`; absence of required participant evidence is not independence proof. | U/`gate-quality`, U/`gate-review-marker`, U/`finding-provenance`, U/`open-findings`; copy drift U/`identity-binding`; role reuse I17 |
+| I17 Session independence and exclusion summaries | Union of authoritative author/implementer, quality/lens and executor identities plus conservative summary exclusions | Every quality participant must be separate from every author/implementer; both risk sessions distinct from those sets, executor and one another. Check quality-versus-author even with both summary arrays empty. `author_sessions` and `quality_sessions` need not be complete/equal to inventories; neither can excuse a known equality. Risk session/dispatch/nonce identities unique, no inherited session, fresh/no-inheritance true, peer_exposed false and forbidden_actions empty. No vendor/model inequality is imposed. | R/`risk-independence` for detectable reuse/freshness/separation failure; unavailable participant provenance retains its owning identity/quality refusal |
+| I18 Stable reviewer slot/model/variant/vendor/runtime and settings | Accepted two distinct slot profiles plus actual resolved launcher identity | Profile slot set equals exactly the two envelope/raw reviewer slots and capability slot links; each reviewer model/variant/vendor/runtime agrees with the actual resolved receipt/launcher and its accepted profile; receipt settings equals applied profile settings. Recompute the full profile-list digest for `current.profiles_sha256`, authority/binding copies, each per-profile digest and qualification models input in their respective specified serialization domains. Vendor is never a slot or retry key; model identity is not inferred from an alias. | R/`risk-binding` for identity copies, R/`risk-independence` for slot cardinality/resolved-receipt contradictions; R/`capability-profile-mismatch` for profile selection |
+| I19 Table pin/date/selecting decision and runtime-to-row mapping | Protected project-accepted table bytes and selecting decision, pinned explicit mapping | Config, retained decision, envelope capability table/mapping hashes, recorded capability table/mapping, derived pin and qualification floor input all use the SAME accepted source/date/digest/mapping. Verify bytes again at final; an external G default, mutable handoff or H table is never authoritative. | R/`capability-table-invalid`; stale pair/announcement U/`identity-binding`; independent envelope copy fault R/`risk-binding` |
+| I20 Per-slot/per-author row key, score and comparison outcome | Exact retained marker/effort mapping and finite pinned table lookup, computed for every slot x author | Envelope `capability.row`; complete `m.capability.comparisons` keyed by (slot, author marker), including both marker/effort hashes, author/reviewer rows/scores, outcome and exception; overall capability outcome and disclosed comparison set equal recomputation. No omitted/duplicated author/slot or average; same-model gain/ordinary equality follow addendum 2. | R/`capability-entry-missing`, `capability-below-author`, `capability-effort-no-gain` as applicable; U/`identity-binding` for false disclosure; R/`risk-binding` for independent envelope copies |
+| I21 Predispatch floor and final floor evidence digests | Recomputed addendum-2 e0 (pin plus every author marker/effort) and final floor (e0 plus retained claimed exception identities) | `env.reviewer.floor_evidence_sha256`/raw reviewer floor equals capture e0; `m.authority.floor_sha256` equals capture final floor. Each must still bind current accepted evidence at final. A score-preserving byte change expires identically to a score-changing one. | R/`risk-binding` for capture echo contradiction; U/`identity-binding` for record mismatch/expiry; applicable capability reasons survive |
+| I22 Marker/effort/launch source, session, dispatch, settings and receipt hash | Retained authoritative model-record bytes and explicit evidence of APPLIED effort | Each `capability.slots` slot/session/dispatch/marker matches its actual reviewer; each `capability.efforts` marker/session/dispatch/launch matches its author/reviewer provenance, model/variant, applied effort/settings and actual receipt hash. Compute effort hash, compare envelope marker/effort hashes, disclosed rows and qualification profile effort. A requested/default/inferred effort or peer receipt cannot supply missing application evidence. | R/`capability-identity-missing`, R/`capability-effort-unavailable`, R/`capability-profile-mismatch`; independent echo fault R/`risk-binding`; announcement drift U/`identity-binding` |
+| I23 Numbered exception identity, scope and lifecycle | Complete protected project exception ledger and exact retained numbered decision bytes | Claimed exception numbers unique; envelope exception list, per-comparison exception/outcome and final floor refer to those SAME decisions. Match repository/issue/PR/H, slot/profile/qualification, both marker/effort hashes/rows/scores, table pin, departure, validity, source/issuer/provenance; unique record, unchanged timestamps, supersedes/revokes and actual linked words all checked. Not a missing-data waiver. | R/`capability-exception-invalid`; U/`identity-binding` for expiry; no evaluator-granted security exception |
+| I24 Raw verdict/binding/reviewer, output sink, schema and finding-reference identities | Original write-once consumer-captured bytes, slot launch envelope and corpus manifest | Decode full bounded raw bytes; hash/length equals pair fields, actual output-source bytes/reference and ledger return. EVERY BINDING and REVIEWER field equals its envelope and the I01-I23 referent, not merely the peer. Both outputs/sinks distinct. Schema version closed; finding IDs unique, artifact IDs/digests/line bounds point to actual corpus; coverage/outcome/findings/uncertainties consistent. `m.risk_pair` equals both complete retained pairs. | R/`risk-result-invalid`, R/`risk-binding`, R/`risk-independence`, R/`risk-referral`; false manifest copy U/`identity-binding` |
+| I25 Corpus/evidence manifest digest, artifact IDs, bytes, lengths, partition and read-log references | Complete retained inert B/H export with original bytes and fixed partition | Recompute artifact manifest digest, compare `current.evidence_sha256`, `m.evidence.manifest_sha256`, binding evidence hash. Every artifact ID unique, content/hash/length/line map/source correct (I05/I09); same complete manifest for both slots; read logs refer to actual slot/corpus. Partition/exclusions follow accepted instructions and verified generated-record identities, never a candidate claim. Logs do not prove attention. | R/`corpus-invalid`, R/`evidence-incomplete`; copy fault R/`risk-binding` or U/`identity-binding` |
+| I26 Trusted instruction name/source/raw/loaded bytes and prompt/launcher hashes | Entire accepted G skill files and actual launch loading/args | Exactly SKILL.md and RISK-REVIEW.md from pinned G; raw bytes equal retained source and fully loaded bytes, each <=16,000 UTF-8 bytes. Combined digest equals `current.instructions_sha256`, authority/binding copies and receipt prompt hash; actual launcher hash matches accepted tool identity and retained launch evidence. Candidate instructions cannot supply these hashes. | U/`instruction-load-invalid`; R/`risk-independence` or `risk-binding` for independent launch/echo faults; U/`identity-binding` for drift |
+| I27 Product cwd and absolute checker/preflight/profile/tool/hooks/settings/wiring identities | Physical B top level; accepted runtime profile bytes; resolved actual tools rooted in accepted G (C5) | `verifier.toplevel`, `preflight_cwd`, runtime `project_dir`, manifest execution cwd agree on B; checker/preflight paths resolve to their accepted G objects. Runtime profile hash equals its retained source, `current.runtime_sha256`, authority/execution/receipt copies and qualification runtime input. All profile leaves and tools/hooks/settings/wiring digests match actual observations, isolated/fresh/unexposed conditions preserved. | U/`runtime-invalid`, U/`verifier-not-at-base`; U/`identity-binding` for captured drift; guard faults I28 |
+| I28 Guard repository/revision/tree/source/bundle/resolved root and wiring | Separate accepted `cfg.guard` G source and directly compared physical installed G tree/bundle | `guard_state` head/tree/bundle/base presence/bytes/types/modes/link text and resolved root match G source/revision/content; instruction/tool paths belong to recorded G objects, `guard_state.wiring_sha256` equals runtime wiring. Check at collection AND final. G=B is valid; external G need not be under B and its repository need not equal product repository. | U/`guard-invalid` or U/`runtime-invalid`; U/`identity-binding` for pending authority expiry; missing accepted project G also R/`project-unconfigured` |
+| I29 Host/executor session/run/queue key and repository identity | Accepted host plus actual fresh executor/serialized lock/run observations | `b.host`, `cfg.executor_host`, `m.executor_host`, `m.execution.host` agree; actual run ID equals `m.execution.run_id`; lock owner equals `executor_session`. Manifest top/execution queue keys denote the SAME repository/PR/H/decision as actual queue entry, with no terminal/repeated execution. `m.execution.identity` equals I01 capture identity; preflight object equals actual captured result. | U/`executor-invalid`, U/`identity-binding`; repeated execution retains R/`queue-key-repeated` in its queue consumer |
+| I30 Check-run/context IDs, names, heads and protection identity | Complete independently fetched checks on H and effective protection | `b.checks`/`m.assessment.checks` equal every actual run/context (IDs unique; expected names/required contexts complete), each at H and successful. Protection digest recomputed from actual retained protection and equals assessment copy; required contexts and strict/admin/credential/no-bypass properties match accepted config. | U/`gate-check`, R/`protection-invalid`; false record disclosure U/`identity-binding` |
+| I31 Assessment's hard stops/counts/findings/risk outcome/reasons/uncertainties/overall outcome | Recomputed checks and decoded valid raw outcomes, BEFORE adding hold-only waiting | `m.assessment` discloses actual capture gates/counts/hard stops/open finding IDs/risk reasons/uncertainties/outcomes; own `m.outcome` must independently be eligible (I11). No summary `clear` defeats a raw refer/reject or failed gate. Final findings/reasons compose under C4 rather than rewriting the immutable capture assessment. | U/`identity-binding` for inconsistent disclosure; all actual gate/risk refusal codes also survive |
+| I32 Labels, control state, timeline digest and hold-release source/words | Complete PR/work-item/control label/timeline observations and actual linked release comment | Manifest labels/control/timeline_sha256 equal their capture observations; final labels/state/history rechecked even if capture differs. Release link targets this PR/work item, recorded words equal the retained applicable verbatim words, source time strictly later than latest stop and before new announcement. Removed/ancient stops remain; off policy time and stop-at-T rules apply. | U/`identity-binding` for false capture copy; U/`timeline-unreadable`, U/`void-after-announcement`; H/`hold-release-missing`, `hold-release-target`, `hold-release-words`, `hold-release-stale`; applicable label/off/control referral codes survive |
+| I33 All event/time identities: attempt/disposition, launch/original start, receipt/seal/compare, record creation/update, earliest merge, execution last_check, config date, release/stop and final now | Retained successful trusted server observations and immutable event sources, never reviewer/local clock | Copies denote their actual events; C3 gives exact relations. `m.earliest_merge` equals T + configured hold; `m.execution.last_check` denotes the actual captured gate check, not a fabricated final now. Time advancing alone is not identity drift. Exception/qualification evidence uses its own actual creation/seal/grade/expiry times, never pair clock resets. | R/`risk-independence` for impossible pair/announcement/future chronology; R/`risk-attempt-invalid` for ledger chronology; U/`identity-binding` for copied time/earliest mismatch; U/`record-time`/`now-unreadable`, R/`risk-deadline`/`risk-expired`, H/`hold-window` as C3 |
+| I34 Qualification source/identity/inputs/sample identities and evidence references | Protected accepted project qualification, actual retained suite/runs/recorder/grader evidence | Source/body equals `cfg.qualification` and accepted qualification object; its digest equals `current.qualification_sha256`, manifest authority and binding qualification copies; hash(inputs) equals identity; models/profiles, instructions/runtime/floor/policy/assembler/consumer/suite/recorder/grader inputs equal accepted observed bytes. Suite IDs/variants and run case/variant/repetition identities complete/unique, sessions distinct, outcomes/detections/reviewer identities/grade/raw/transcript/action references bind actual slots and samples; sealed <= graded <= observed now. Enabling/red-team/check/quality/M1-M9/M8/failed-disposition references resolve to their accepted exact evidence, never G defaults or a different product. | R/`qualification-unavailable`; U/`identity-binding` for expired captured qualification; applicable capability/profile reasons retained |
+
+This inventories the identity-bearing leaves of `merge-risk-evidence/2`, its
+configuration, referenced evidence, raw result and manifest. Nonidentity prose
+(rationales, mechanisms, reasons, disposition words) still has original-byte
+integrity and the existing semantic/type rules; it is never an equality oracle
+for authority. Standalone queue/completion readers retain their own Interfaces;
+I29's key and I01-I04 identity must carry through them, without treating a
+completion or terminal outcome as an eligible announcement. No new completion
+feature is requested here.
+
+**C3 — Temporal invariant, not a timestamp-presence test.** [A] For each slot,
+let S be its original trusted start, L the actual retained returning launch,
+R its receipt, Z its seal, and P its comparison. Require
+`attempt.created_at < each launch.started_at` for every retained attempt,
+`S == first launch.started_at`, and `S <= L.started_at <= R <= Z <= P`;
+every retry preserves S, every disposition predates the next attempt, and both
+seals precede/equal EITHER comparison. Define `pair_complete = max(P1, P2)`.
+Require **`pair_complete < T <= now`**, where T is ONLY the selected complete
+eligible comment's server `created_at`. A tie cannot prove that comparison
+preceded announcement at the available timestamp precision; obtain a new
+announcement after completion. The announcement also follows the actual quality
+approval, complete green gates and any applicable release/disposition; retain
+those observations, not self-supplied prose times. All prerequisite event times,
+including both launch/receipt/seal/compare chains and recorded last_check, must
+be <= trusted final now. Comparisons after now or announcement before either
+result completes are **R/`risk-independence`**, not merely H/`hold-window`.
+This fixes the round-2 T+100/T+170 witness and the future-receipt sibling.
+
+There is no independent writable hold-start time: `hold_start = T` by derivation,
+AFTER pair completion and complete announcement. `earliest_merge = T + hold_seconds`
+must equal the manifest's value; disagreement is U/`identity-binding`.
+`now - T < hold_seconds` alone is H/`hold-window`; equality permits only final
+recheck. Do not use max(T, pair_complete), subtract elapsed pre-pair time, or
+repair/backdate T in place. Invalid chronology needs a new complete announcement
+and full window (and fresh pair if expired/otherwise invalid), never a shortened
+remainder. Missing record time gives U/`record-time`; missing/untrusted final time
+U/`now-unreadable`, with no derivative ordering failures from an absent clock.
+Keep inclusive receipt deadline `R - S <= 1800` (configured value) and exclusive
+pair age `now - min(S1,S2) < 86400`; negative elapsed times refuse. Deadline and
+age remain R/`risk-deadline` and R/`risk-expired`, separately from hold length.
+Also require `max(now, earliest_merge) < min(S1,S2) + max_age_seconds`: a pair
+that cannot remain valid through the full hold is R/`risk-expired`, even while
+waiting. No clock reset by redispatch, comparison, reannouncement or same-vendor slot.
+
+**C4 — Composition and expiry.** [A] A58 D4's order is the OUTER precedence
+**referred > unresolved > held**, not a license to stop at the first reason or
+sort diagnostic lines by severity. Preserve addendum 3 R1's stronger display
+rule: identity diagnostics precede capability diagnostics; its isolated frozen
+valid pair/changed-table-bytes case returns ONE outer referred/3 and exactly,
+once each, `identity-binding`, then `capability-table-invalid`. Identity-only
+expiry remains unresolved/4; capability-only referral does not invent expiry.
+
+Run every independently evaluable rule even after record expiry or another
+failure. In particular identity expiry must not suppress a valid raw `refer`
+(`risk-referral`), actual session reuse (`risk-independence`) or a complete
+contradictory ledger (`risk-attempt-invalid`). The combined case returns one
+referred/3, retaining identity and ALL established referral causes. Keep stable
+check/row order within the existing deterministic reason rendering, with the
+addendum-3 identity-before-capability exception; repeated instances of the same
+closed code need only one display line. Detailed field/slot diagnostics remain
+retained data, not candidate prose sent to the executor.
+
+Availability is tracked PER dependency: a malformed raw object cannot support
+its semantic outcome check, but does not hide the other slot, typed envelope,
+quality, source, ledger or hold defect. A missing selected record cannot support
+record-to-copy comparisons, but is not a reason to skip independent pair checks.
+Do not manufacture missing-row/score/echo failures from an already-invalid
+final table when the complete capture evidence still establishes those fields.
+C1's capture/final distinction, rather than an `if identity-binding: skip`
+switch or a blanket suppression list, preserves both all-causes reporting and
+the exact addendum-3 oracle. A genuine absent/invalid source retains its owning
+refusal; dependency unavailability is never a pass. No failure or new acceptance
+revives an expired pair/announcement; existing renewal/disposition rules stand.
+
+**C5 — External guard paths.** [A] Product cwd stays physical B. Resolve the
+actually invoked checker and preflight to their accepted **G** physical root
+and exact object-relative paths (`lib/merge-risk.py`, `merge-preflight.sh`),
+then check source repository/revision, full bytes/types/modes/link text, installed
+bundle source/content and observed wiring against G at collection AND final.
+Validate the accepted G source/path/content before invoking its preflight,
+not merely after executing an unchecked external path.
+Paths in the protected runtime profile must equal those actual resolved paths;
+an accepted recorded link into G is allowed, an arbitrary foreign link/tree or
+an unaccepted redirect is not. Check B independently for policy/brief/adoption
+answers and product cleanliness. Never construct executable expectations as
+`Path(product_top) / guard_path` unless G actually equals B. Never accept an
+external path merely because it exists or a profile repeats it. Missing G
+observations fail with `guard-invalid`/`runtime-invalid`; changed captured
+G/runtime also expires authority with `identity-binding`. This retains current
+U refusals; it does not relax any independent R source/activation refusal.
+Valid external-G and G=B controls must both pass the same invariant.
+
+**C6 — QA matrix, then Developer.** [A] QA first publishes scenario amendments
+through the existing owner route; Architect edits no scenarios or test code.
+Derive a matrix mechanically from I01-I34: ONE separately identifiable row per
+(field, destination/relation) pair, expanding every grouped field and both slots,
+every author and prior-attempt position. Record inventory ID, exact field/place,
+source, scenario, control, contradiction/drift edit, expected code/result/order,
+public Seam and owning mutant. Add omission/type/duplicate/cardinality rows,
+all forbidden outcome values, all required separation pairs (including quality
+versus author), every temporal inequality at equality and either side, and each
+source-resolution/root rule. An unrelated existing refusal does not prove a row.
+
+For each equality, test (a) the destination alone wrong and (b) ALL lower-authority
+copies changed together while the authoritative source stays fixed; recompute
+only legitimate raw hashes/transport wrappers. Independently test actual source
+byte drift AFTER freezing the valid announcement, keeping the recorded copies
+fixed, including title/body, score-preserving table bytes, G paths and applied
+receipt identities. Do not let `prepared()` or announcement helpers repair the
+contradiction. Add source-change-and-copy-update controls only when the required
+new acceptance/reviews/record/hold have genuinely been supplied in the lab.
+Incomplete/empty-summary distinct-session controls stay eligible; same-vendor
+slots remain distinct. Cross every independent referral family with identity
+expiry, plus the exact addendum-3 isolated overlap and identity-only/capability-only
+controls. Assert one outer result, exact exit and applicable ordered codes.
+
+Require ONE behavioral single-rule mutant per rule/relation, with its owning
+matrix row failing and its eligible control passing; expansion of a table rule
+must exercise each field-place selector, so a missing selector cannot hide behind
+a broad loop mutant. Include wrong-authority, first-only, vendor-keyed, last-entry,
+short-circuit-on-expiry, forged-earliest and product-root-for-G mutants. Presence,
+anchor counts, shared implementation-generated expectations and sibling status
+files earn no coverage credit. Record red at `0cc0725` where applicable, green
+on the implementation, and actual killed-mutant evidence. Existing P/B/N baseline
+and ownership rules still apply; do not assert every historical row is newly red.
+
+Map the matrix into existing S606/S615/S617/S618/S619/S650/S651/S654-S656/S658/S659/
+S666/S668/S669/S675-S677 by behavior, preserving S662's independently enumerated
+finite mapping and all seven E1 controls. S662 is already fixed at this head;
+this invariant neither reopens recursive closure nor replaces that independent
+list with production policy. A pass total is not proof that this matrix is full.
+QA must reconcile all expanded selectors to rows and explain any unavailable
+carrier before Developer resumes the affected rule.
+
+Developer consequence in **`lib/merge-risk.py`**, after that QA artifact:
+
+- Centralize the C2 relations in one private table-driven check, called from
+  `evaluate()`. Keep typed parsed evidence separate from eligibility status;
+  `record_checks()` must expose the uniquely selected parsed manifest/comment
+  for diagnostics even when it cannot authorize. Do not use `record is None`
+  or an `identity-binding` reason as a blanket check gate.
+- `record_checks()`/`narrative()` enforce actual title/body hashing, validated
+  selection/trailer, own selected outcome, complete disclosure and manifest-to-
+  ledger equality. `envelope_checks()`/`valid_verdict()` bind EVERY envelope/raw
+  field to I01-I24 referents, including issue/decision/attempt; neither peer
+  equality nor an eligible manifest is a prerequisite for independent checks.
+- `independence_checks()` (with authoritative quality evidence from
+  `gate_checks()`) checks the full separation relation, particularly quality
+  versus authors, and pair chronology. `attempt_checks()` validates ledger
+  decision/ordinal/previous relations as well as IDs, exact launch/output links
+  and retained retry history. `hold_checks()` checks completion-before-T and
+  derived earliest time, retaining stop/release/off semantics without repair.
+- `source_checks()` supplies object/current referents and narrative source;
+  `corpus_checks()`, `capability_evaluate()`/`capability_identity()`,
+  `instruction_checks()`, `activation_checks()`/`qualification_samples()` and
+  `check_runs()` supply their existing authoritative derivations, not parallel
+  trusting copies. `runtime_checks()`/`collect()`/`verifier_state()` distinguish
+  resolved physical B and G roots and actual invoked paths as in C5.
+- `evaluate()` removes the current identity-expiry skip of corpus/pair/envelope/
+  independence/attempt checks. `Result.verdict()` retains A58 precedence;
+  `Result`/`render()` preserve C4's stable all-applicable diagnostics and
+  addendum-3 overlap without duplicate outer results or derivative failures.
+- In **`test/fixtures/merge-risk-646.py`**, implement QA's independently specified
+  matrix through the public CLI; keep freeze helpers from rebinding the attacked
+  source, adjust deadline controls so completion PRECEDES T, and add real external
+  checker/preflight paths with renewed laboratory profile/qualification bindings.
+  Retain eligible, bounded redispatch, dispositioned second-pair, same-vendor and
+  G=B controls. No model/network/live merge/qualification is implied by fixtures.
+
+**C7 — Disposition of the seven requested open slugs.** [A]
+
+| Slug | Inventory/rule covering the exact witnesses and siblings |
+| --- | --- |
+| `risk-quality-author-session-reuse` | I15-I17: quality versus EVERY authoritative author/implementer, independent of either summary, plus lens/risk/executor exclusions where required. |
+| `risk-envelope-record-binding-incomplete` | I02-I04/I10/I12-I14/I24: original issue/decision/embedded-attempt witnesses, actual ledger decision/ordinal against selected decision, actual title/body/trailer against frozen narrative. |
+| `risk-selected-record-outcome-unchecked` | I11/I31: own selected outcome and active status checked independently of nested assessment; each of all six noneligible outcomes refuses selection. |
+| `risk-announcement-before-sealed-pair` | I14/I33 + C3: both complete seal/compare chains before T, none after final now; derived full hold/earliest time. |
+| `risk-identity-expiry-hides-referrals` | I17/I24/I31 + C1/C4: identity expiry composes with raw referral, independence and ledger causes; addendum 3 remains exact for its isolated witness. |
+| `risk-external-guard-paths-forced-under-product` | I01/I04/I26-I28 + C5: physical product cwd B; actual executable/skill/wiring identities at accepted G, with G=B and external controls. |
+| `untested-fail-closed-checks` | ALL I01-I34 + C6: expanded per-field/per-place controls, contradictions, drift and rule mutants; retain independent S662 mapping coverage, not schema-presence evidence. |
+
+New sibling obligations exposed by the inventory, beyond those witnesses, include
+PR/issue/control/URL target cross-links (I01-I02); object mode/OID/path/content,
+count and manifest identities (I05-I09/I25); nonlatest/superseded record selection
+(I11); ledger ordinal and launch dispatch/nonce/runtime/output-source bindings
+(I12-I14/I24); all quality/lens provenance and exclusions (I15-I18); applied
+settings/receipt/marker/exception and full comparison coverage (I19-I23); complete
+loaded-instruction/launcher/G wiring links (I26-I28); host/run/lock/queue/preflight
+copies (I29); actual protection/check IDs and assessment disclosures (I30-I31);
+release/control/timeline/earliest-time copies (I32-I33); qualification sample/
+detection/grade/input bindings (I34). These are matrix obligations, not claims
+that each is currently an independently reproduced code defect.
+
+**C8 — Owner limits and doubts.** [A] The required retained observations are
+already required by A60 D2/D7 and F70-F73; this does not authorize inventing missing
+launch, quality/lens, manifest, runtime-root or qualification evidence. Some
+current carriers (for example LAUNCH lacks dispatch/nonce/runtime fields and
+QUALITY lacks a lens-participant inventory) cannot alone prove all relations.
+Use existing identified retained source artifacts where they actually provide
+them; otherwise fail with the owning unavailable-evidence code and return the
+minimal carrier proposal through Architect/QA and the applicable protected
+owner. Do not silently extend closed schemas, ordinary markers or pinned core.
+
+Any wording/schema/carrier change in `skills/merge-risk-panel/*.md` or other
+contract paths is a **contract-text change, reserved for maintainer decision**,
+not authorized by this design handoff. No need to edit ORCHESTRATOR.md or pinned
+core is established. Accepting forgeable evidence, unobserved effort/isolation,
+unverified table transcription, external-G substitution risk, missing command
+approval enforcement, or any relaxation to these checks is a **maintainer
+security trade-off**, still reserved under M7/M8/addendum 2; this run decides none.
+No new global separation rule between executor and quality, or between authors,
+is inferred beyond the existing contracts. No AC difference is proposed.
+
+Doubts (one line each):
+- Retained launch and quality/lens sources may lack the required observations; fail closed and route the carrier decision rather than filling fields by inference.
+- Capture/final dependency handling needs explicit tests so expiry neither invents derivative causes nor suppresses genuine referrals.
+- Server timestamps have finite precision; a tied completion/announcement needs a later announcement, not an assumed event order.
+- Hashes, paths and matching session IDs establish detectable consistency only; shared-host forgery and substituted-checker risk remain M8.
+- Static matrix completeness and synthetic green results establish neither live independence nor qualification or permission to enable.
