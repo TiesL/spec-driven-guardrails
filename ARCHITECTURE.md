@@ -7005,3 +7005,61 @@ Doubts (one line each):
 - Server timestamps have finite precision; a tied completion/announcement needs a later announcement, not an assumed event order.
 - Hashes, paths and matching session IDs establish detectable consistency only; shared-host forgery and substituted-checker risk remain M8.
 - Static matrix completeness and synthetic green results establish neither live independence nor qualification or permission to enable.
+
+
+### A60 addendum 5 — implied rules and behavioral mutation credit, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-14; ships inert.** [A]
+OR19 clarification of `.handoff/qa-report-646-8-stop.md` at `15d1890`.
+This refines only addendum 4 C6's universal single-rule mutant obligation;
+earlier text remains history. No F70-F73 AC is contradicted or narrowed, and
+no eligibility condition, refusal, reason code, ordering or C4 dependency rule
+is weakened. The temporal counterexample is confirmed: deleting only a
+comparison-to-now bound leaves an equivalent mutant.
+
+For C6 mutation credit, a rule R logically implied by retained rule(s) R' needs
+no separate mutant. QA must put one line **`R implied by R'`** in the owning
+scenario, using exact expanded selectors/relations and naming every premise
+when R' is a conjunction; the mutant(s) for R' must actually kill, with the
+eligible control passing. Keep the matrix row and its boundary/source cases.
+Otherwise ONE behavioral single-rule mutant per rule/relation still applies,
+including each expanded field-place selector. Choose an acyclic implication
+basis: neither reciprocal equality claims nor duplicate wording may exempt
+all checks. A rule with no observable behavior and no implying rule is a
+**design defect to report through Architect**, not a row to silently skip.
+An implication proves only its stated domain: missing/untrusted/ill-typed
+sources and independently evaluable failures still require their C4 refusals.
+An eligible-input implication alone cannot excuse a mutation that changes an
+applicable reason code, its order or another public result on invalid input.
+This is a coverage ruling, not permission to remove validation or diagnostics.
+
+The complete known implication list for I01-I34 and C1-C6 is below, expressed
+as families to cover EVERY named field, destination, slot, author and attempt
+without inventing new rule IDs. Expand these families in QA's matrix; no whole
+inventory row is exempt. Here A = min(S1,S2), E = earliest_merge, h = configured
+positive hold, M = max_age_seconds. All arithmetic uses valid trusted times.
+
+| Implied rule R | Retained implying rule(s) R' |
+| --- | --- |
+| I33/C3 separate `P_i <= now`, `pair_complete <= now`, and `P_i < T` (both slots) | `P_i <= max(P1,P2) = pair_complete < T <= now`; the max relation is a definition, not an extra observation. |
+| I33/C3 separate `S_i`, returning `L_i.started_at`, `R_i`, `Z_i` before/equal now or before T; other prerequisite event-to-now bounds already ordered before T | `S_i <= L_i.started_at <= R_i <= Z_i <= P_i <= pair_complete < T <= now`; for quality approval, complete green gates/last_check and applicable release/disposition, their own required event-before-T relation plus `T <= now`. This includes an earlier attempt/disposition/launch only where its retained ordering chain reaches those events; unordered launches still need their independent bound. |
+| I33/C3 same-slot part of "both seals precede/equal EITHER comparison", and any nonadjacent same-chain ordering restated separately | `Z_i <= P_i` in the slot chain; transitivity of the retained adjacent relations. The CROSS-slot `Z_i <= P_j` for i != j remains independent. |
+| I32/I33/C3 separate latest-stop-before-T/now and release-before-now bounds when an applicable release exists | `latest_stop < release_time < T <= now`. Stop identity/history, actual release source/words/target and stop-at-T/off handling are independent. |
+| I33/C3 negative-elapsed prohibitions for `R_i-S_i`, `now-A` and `now-T` | `R_i >= S_i` from the slot chain; `A <= pair_complete < T <= now`; and `T <= now`, respectively. Missing clocks, copied event identity, inclusive receipt deadline and clock-reset rules are NOT implied. |
+| I33/C3 standalone pair-age bound `now-A < M`, and standalone `E < A+M` if separately restated | `max(now,E) < A+M`. Keep that stronger full-hold survival rule; do not mutually exempt it and its weaker consequences. |
+| I33/C3 separately restated `hold_start == T`, derived `E == T+h`, `E > T`, or hold-ready `now >= E` versus `now-T >= h` | The definitions `hold_start := T`, `E := T+h`, `h > 0`; the two readiness inequalities are algebraically equivalent under those definitions. The manifest-copy equality `m.earliest_merge == T+h` is an independent check and MUST retain its mutant. |
+| I34 separately restated qualification `sealed <= observed_now` | `sealed <= graded <= observed_now`. Each adjacent inequality, actual event/source binding, expiry and sample identity remains independent. |
+| I01-I34/C1 copy-to-copy equalities, or I24's direct raw-to-referent equality, where the SAME referent is already reached | `copy_a == authoritative_capture` AND `copy_b == authoritative_capture`; for raw specifically retain `raw.field == env.field` AND `env.field == authoritative_capture`. Apply to every BINDING/REVIEWER leaf and other explicitly shared copies. Do not exempt those basis equalities; capture-to-final freshness, distinct references, source-byte recomputation and missing evidence are NOT consequences of agreeing copies. |
+| C2 whole-object equality summaries, subset/first-match equality and explicit no-omission/no-duplicate consequences | Complete expanded per-leaf equality to the same authoritative object PLUS exact cardinality and unique-key/set checks imply the whole-object summary and its weaker subset consequences. Retain a mutant for EACH leaf selector and each independent cardinality/key check; a broad object mutant cannot replace them. I18's exact slot set equals the accepted TWO distinct profiles implies two distinct slot keys, not distinct sessions/dispatches/nonces or proven applied settings. |
+| Repeated statements of the IDENTICAL expanded obligation across inventory rows/C-rules | The retained owning rule for that same selector, referent, dependency domain and diagnostic: I09 reference resolution recurs in I05/I08/I13/I15-I16/I22-I25/I32/I34; I24 binding/reviewer leaves recur in I01-I04/I06-I08/I12-I14/I18-I23/I25-I26/I34; I01-I04 exception target leaves recur in I23; I03 run/context-head checks recur in I30; I04 `m.config_commit` recurs in I07; I06 assessment counts recur in I31; I01 `m.execution.identity` recurs in I29; I11 own `m.outcome == eligible` recurs in I31; I12 decision leaves recur in I13's complete `m.attempt` equality; I16 assessment finding leaves recur in I31; I14/I17/I18 repeat slot/session/dispatch/nonce separation where the actual participants coincide; I25 artifact bytes/hash/length/source checks repeat I05/I09; I26-I28/C5 repeat the SAME accepted G path/object/wiring relations; I18-I19/I21/I26-I27 qualification input/copy equalities recur in I34; I32-I33/C3 repeat release/time/earliest relations. These are shared rules, not exemptions for additional leaves, distinct domains or additional owning refusals. |
+
+No further implication is established here: source authenticity/provenance,
+all-copies-wrong attacks, raw semantics, complete participant exclusions,
+exception lifecycle, final expiry and C4 all-causes composition retain their
+independent obligations. QA can resume the matrix using this list; additional
+proved implications must be named with their retained premises, and a newly
+unobservable rule without such proof returns as a design defect. This resolves
+the reported C6 contradiction only, not the seven open review slugs or missing
+carriers. Any protected contract-text/schema/carrier change remains a
+**maintainer decision**; accepting weaker evidence or refusals remains a
+**maintainer security trade-off**. Neither is decided by this addendum.
