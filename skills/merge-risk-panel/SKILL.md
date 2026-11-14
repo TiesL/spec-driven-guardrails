@@ -5,18 +5,18 @@ description: Inert PROPOSAL for autonomous main merges under accepted, enabled a
 
 # Merge-risk panel
 
-PROPOSAL. Delivery/installation/release-branch merge/silence/passing tests accept
-nothing. The shipped configuration is disabled, acceptance is null,
-there is no executor or qualification. A separate protected human-approved
-configuration change is required to enable the delegation after all evidence
-and M1-M9 decisions. It cannot approve itself.
+PROPOSAL. Delivery/install/release-branch merge/silence/green tests accept nothing.
+Shipped configuration is disabled, acceptance is null,
+no executor or qualification exists. Enabling requires a separate protected
+human-approved configuration change after all evidence and M1-M9 decisions.
+It cannot approve itself.
 
 **Mandatory loading:** the launcher must explicitly load this ENTIRE file AND
 the entire sibling [RISK-REVIEW.md](RISK-REVIEW.md) from the accepted guard source
-as trusted instructions. Retain original UTF-8 lengths
-and SHA-256 hashes in the launch capture; each file must be at most 16,000 bytes.
+as trusted instructions. Capture original UTF-8 lengths
+and SHA-256 hashes at launch; each file must be at most 16,000 bytes.
 A Markdown link is not an import. Missing, truncated or unsupported loading stops
-qualification and refers. Keep operative instructions in these files.
+qualification and refers. Keep operative instructions here.
 
 ## Applicability and accepted sources
 
@@ -48,19 +48,19 @@ B pins policy/brief/controls. Separately pin accepted guard G, physical paths,
 complete tree bytes/types/modes, bundle source/content and runtime/skill wiring. G may
 equal B. Never compare an
 external guard to unrelated product B; explicitly accepted G links can be valid.
-Static status, installation, refresh or links establish neither trust nor live
-activation. No automatic repair. G/runtime drift expires authority and requires protected
+Static status/installation/refresh/links prove neither trust nor live activation. No automatic repair. G/runtime drift expires authority and requires protected
 update/renewed qualification.
 
 ## Independent gates and evidence
 
-Use the one read-only decision Module, merge-risk-evidence.sh with
-lib/merge-risk.py. It never merges, posts, labels, dispatches or repairs.
+Use the one read-only decision Module,
+`"$SPEC_DRIVEN_GUARDRAILS_DIR/merge-risk-evidence.sh"`, with lib/merge-risk.py.
+It never merges, posts, labels, dispatches or repairs.
 `--phase prepare` assembles/assesses evidence; deprecated `--phase class` is
 preparation only. Neither emits eligible. A ready preparation is unresolved
 risk-pair-required. `--prepare <n> --out <new-dir>` exports a new identified inert
 corpus, refuses overwrite and confers no authority. Pure replay is
-`python3 -I lib/merge-risk.py evaluate --bundle <file>`.
+`python3 -I "$SPEC_DRIVEN_GUARDRAILS_DIR/lib/merge-risk.py" evaluate --bundle <file>`.
 
 Require the actual complete remote H/current B, B ancestor of H, complete full
 B..H diff/counts, both rename paths and full old/new snapshots/context. All
@@ -90,7 +90,7 @@ including where the hosting plan cannot provide it. Server strictness rejects a
 newly stale H only while that protection remains enforced. Head-match protects H;
 neither makes the hold read atomic or protection immutable.
 
-An absolute trusted preflight must exit zero, with no warnings, bypass or
+Absolute trusted preflight must exit zero: no warnings, bypass or
 unparseable stream. Remove CLAUDE_WORKFLOW_MERGE_GUARD_OFF and CLAUDE_WORKFLOW_GUARDRAILS_OFF
 from its environment;
 a hatch set in the calling environment is itself a failure. Explicitly require
@@ -114,7 +114,7 @@ bytes to opaque artifacts, validate them and render human records. Only closed
 outcome/reason enums, validated numbers/digests/identities and accepted fixed-origin
 references enter executor context. Suppress streams on failures too. No executor
 semantic-reading exception or optimistic prose may resolve unknown evidence.
-The parser cannot prove semantic honesty (M7).
+Parsing cannot prove semantic honesty (M7).
 
 ## Records, binding and full hold
 
@@ -173,11 +173,11 @@ renewed evidence/new records re-enables; no revival or success-streak widening.
 
 ## One executor and literal action
 
-One accepted host/run, serialized local queue/lock; no distributed/authentication proof.
-On wake run `merge-risk-evidence.sh --queue`
+One accepted host/run, serialized local queue/lock; no distributed/auth proof.
+On wake run `"$SPEC_DRIVEN_GUARDRAILS_DIR/merge-risk-evidence.sh" --queue`
 and reconcile executing entries BEFORE claiming the lock. Already MERGED at
 saved identity means completion only, never a second merge; open/unknown execution
-refers, never blindly retries. A terminal key cannot execute again.
+refers, never blindly retries. Terminal keys cannot execute again.
 
 For each item, log this order:
 1. Final evaluator succeeds for the current complete identity.
