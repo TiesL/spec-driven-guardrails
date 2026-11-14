@@ -2308,6 +2308,66 @@ def run_row(root,entry):
     return p
 
 
+# A60 addendum 4: small Segment-1 witnesses, specified independently of lib.
+# The full C6 field/place matrix is a separate implementation segment.
+def actual_external_guard(b):
+    external_guard(b)
+    c=json.loads(b['config_text'])
+    b['guard_state']['toplevel']='/lab/G'
+    b['runtime'].update(checker='/lab/G/lib/merge-risk.py',preflight='/lab/G/merge-preflight.sh')
+    profile={k:v for k,v in b['runtime'].items() if k not in
+             ('profile_sha256','fresh_executor','candidate_exposed','observed')}
+    retain_ref(b,c['runtime_profile'],canonical_fixture(profile))
+    digest=c['runtime_profile']['sha256']
+    b['runtime']['profile_sha256']=b['current']['runtime_sha256']=digest
+    for p in b['risk_pair']: p['receipt']['runtime_sha256']=digest
+    b['accepted']['qualification']['inputs']['runtime']=digest
+    requalify_lab(b,c)
+
+
+def pair_after_announcement(b):
+    for i,p in enumerate(b['risk_pair']):
+        p['receipt'].update(started_at=stamp(100),received_at=stamp(150),
+                            sealed_at=stamp(160),compared_at=stamp(170))
+        b['attempts'][0]['launches'][i].update(started_at=stamp(100),original_start=stamp(100))
+    b['attempts'][0]['created_at']=stamp(99)
+
+
+# Each row uses the public evaluate --bundle seam. Frozen attacks run AFTER
+# preparation so cached digests/announcement cannot repair the changed source.
+SEGMENT1_WITNESSES = {
+    'quality-author': (658, both(change(['author_sessions'],[]),change(['quality_sessions'],[]),
+                         lambda b:b['quality'].update(session_id=b['authors'][0]['session_id'])),
+                       'referred','risk-independence'),
+    'ledger-decision': (669, change(['attempts',0,'decision_id'],'MR-999-deadbee-99'),
+                        'referred','risk-attempt-invalid'),
+    'actual-title': (606, freeze_edit(change(['pr','title'],'Changed substantive task')),
+                     'unresolved','identity-binding'),
+    'malformed-trailer': (606, freeze_edit(change(['pr','body'],
+                          'Closes #701\nMerge-risk decision: not-a-comment\n')),
+                          'referred','narrative-invalid'),
+    'duplicate-trailer': (606, freeze_edit(lambda b:b['pr'].update(body=b['pr']['body']+
+                          ('Merge-risk decision: '+b['active_record_url']+'\n')*2)),
+                          'referred','narrative-invalid'),
+    'late-pair': (654,pair_after_announcement,'referred','risk-independence'),
+    'expiry-reuse': (606, both(reidentify(1,session='session-slot-1'),freeze_edit(
+                          change(['current','narrative_sha256'],sha('changed')))),
+                          'referred','risk-independence'),
+    'expiry-referral': (606, both(verdict_edit(valid_refer),freeze_edit(
+                          change(['current','narrative_sha256'],sha('changed')))),
+                          'referred','risk-referral'),
+    'actual-external-paths': (677,actual_external_guard,'eligible',None),
+}
+for outcome in ('held','vetoed','unresolved','referred','failed','merged'):
+    SEGMENT1_WITNESSES['selected-'+outcome]=(615,edit_record(lambda m,o=outcome:m.update(outcome=o)),
+                                               'unresolved','record-selection')
+for slot in range(2):
+    SEGMENT1_WITNESSES['announcement-tie-'+str(slot)]=(654,receipt_edit(slot,compared_at=stamp()),
+                                                        'referred','risk-independence')
+for name,(scenario,edit,want,code) in SEGMENT1_WITNESSES.items():
+    row(scenario,'add4-'+name,edit,want,code)
+
+
 def main():
     s=sys.argv[1].lstrip('S'); baseline='--baseline' in sys.argv
     entries=ROWS.get(s,[])
