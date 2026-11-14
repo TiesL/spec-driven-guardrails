@@ -115,18 +115,18 @@ unexplained effects/security trade-offs block. Style is quality.
 
 One UTF-8 JSON object; no optional/default/duplicate/unknown/missing keys.
 TEXT=nonempty string; HEX40/64=lowercase hex length; INT=positive integer, not
-boolean. Exact fields/types at EVERY depth:
+boolean. Exact fields/types at ALL depths:
 
 | Object | Fields |
 | --- | --- |
 | Top | schema:literal merge-risk-verdict/2; binding:Object; reviewer:Object; coverage:Array; findings:Array; uncertainties:TEXT[]; outcome:approve/refer/reject; rationale:TEXT |
 | Binding | decision_id,attempt_id,nonce,repository:TEXT; pr,issue:INT; head,base:HEX40; diff_sha256,evidence_sha256,requirements_sha256,design_sha256,policy_sha256,instructions_sha256,profiles_sha256,qualification_sha256:HEX64 |
-| Reviewer | dispatch_id,session_id,model,variant,runtime_id:TEXT; floor_evidence_sha256:HEX64; vendor:Claude/Codex; fresh:true; inherited_session:null |
+| Reviewer | slot,dispatch_id,session_id,model,variant,runtime_id:TEXT; floor_evidence_sha256:HEX64; vendor:Claude/Codex; fresh:true; inherited_session:null |
 | Coverage | category:coverage ID; status:no-risk-found/concern/unknown; rationale:one-line TEXT |
 | Finding | id:unique TEXT; category:coverage ID; severity:low/medium/high; certainty:possible/confirmed; evidence:nonempty Reference[]; mechanism,consequence:TEXT |
 | Reference | artifact_id:manifest member; sha256:matching HEX64; start_line,end_line:INT in range, start<=end |
 
-Exactly one coverage row/ID including other. Concern iff finding; unknown requires
+One coverage row/ID including other. Concern iff finding; unknown requires
 uncertainty. Approve: all no-risk-found, findings/uncertainties empty. Refer needs
 concern/uncertainty; reject needs confirmed finding. Even low blocks. Binary/deleted/
 empty references use inventory lines. Match EVERY binding/reviewer field to current

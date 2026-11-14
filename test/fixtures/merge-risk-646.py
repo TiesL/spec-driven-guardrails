@@ -38,7 +38,7 @@ STOP_PATTERNS = {
  'ci': ['.github/workflows/**', '.github/actions/**', 'templates/ci.yml', 'epic-auto-close.sh'],
  'contracts': ['skills/role-contracts/**', 'wip/multi-agent-development/**', 'policy/WORKFLOW.md', 'adapters/**',
                'generate-workflow-adapters.sh', 'AGENTS.md', 'AGENTS.override.md', 'CLAUDE.md', 'ORCHESTRATOR.md',
-               'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
+               'WORKFLOW.md', 'USER-CLAUDE.md', 'CHANGES.md', 'adopt.sh', 'WORKFLOW-ADOPTION.md', 'WORKFLOW-ADOPTIE.md',
                '**/AGENTS.md', '**/AGENTS.override.md', '**/CLAUDE.md', '**/ORCHESTRATOR.md']}
 
 
@@ -2213,6 +2213,74 @@ def capability_assert(target,b,want,expect):
 
 
 
+# Review round 1: QA-owned contradictory-evidence witnesses (S615/650/654/658/662).
+def authoritative_quality_reuse(empty=False, reuse=True):
+    def edit(b):
+        if empty:
+            b['author_sessions']=[]; b['quality_sessions']=[]
+        if reuse: b['quality']['session_id']=b['risk_pair'][0]['envelope']['reviewer']['session_id']
+    return edit
+
+
+for empty in (False,True):
+    name='empty' if empty else 'omitted'
+    row(658,'distinct-quality-'+name,authoritative_quality_reuse(empty,reuse=False))
+    row(658,'authoritative-quality-reuse-'+name,authoritative_quality_reuse(empty),'referred','risk-independence')
+    mutate(658,'authoritative-quality-separation','authoritative-quality-reuse-'+name,
+           control='distinct-quality-'+name)
+row(658,'authoritative-author-reuse',both(change(['author_sessions'],[]),reidentify(0,session='author-1')),
+    'referred','risk-independence')
+mutate(658,'authoritative-author-separation','authoritative-author-reuse')
+
+row(615,'manifest-attempt-disagrees',edit_record(lambda m:m['attempt'].update(attempt_id='unrelated',ordinal=99)),
+    'unresolved','identity-binding')
+mutate(615,'record-attempt','manifest-attempt-disagrees')
+
+
+def matching_wrong_binding(key,value):
+    def edit(b):
+        for pair in b['risk_pair']:
+            d=json.loads(base64.b64decode(pair['raw_b64']))
+            pair['envelope']['binding'][key]=value; d['binding'][key]=value; seal(pair,d)
+    return edit
+
+
+for key,value in [('issue',999),('decision_id','MR-999-deadbee-99')]:
+    row(654,'matching-wrong-'+key,matching_wrong_binding(key,value),'referred','risk-binding')
+    mutate(654,'envelope-'+key,'matching-wrong-'+key)
+
+
+def documented_reviewer_fields(root):
+    text=(root/'skills/merge-risk-panel/RISK-REVIEW.md').read_text()
+    cells=re.findall(r'^\| Reviewer \| (.*?) \|$',text,re.M)
+    check(len(cells)==1,'exactly one published Reviewer field list')
+    return [field.strip() for group in cells[0].split(';') for field in group.split(':',1)[0].split(',')]
+
+
+def documented_verdict(b,omit=None,root=ROOT):
+    fields=documented_reviewer_fields(root)
+    for i,pair in enumerate(b['risk_pair']):
+        d=json.loads(base64.b64decode(pair['raw_b64']))
+        d['reviewer']={key:d['reviewer'][key] for key in fields if key!=omit or i!=0}
+        seal(pair,d)
+
+
+row(650,'published-reviewer-fields',command='documented-verdict')
+for field in documented_reviewer_fields(ROOT):
+    row(650,'published-missing-'+field,lambda b,k=field:b.update(_omit_reviewer=k),
+        'referred','risk-result-invalid','documented-verdict')
+# slot must also have a negative oracle while its published positive is still red.
+if 'slot' not in documented_reviewer_fields(ROOT):
+    row(650,'published-missing-slot',lambda b:b.update(_omit_reviewer='slot'),
+        'referred','risk-result-invalid','documented-verdict')
+
+
+# Independently delete each documented requirement, with a valid control.
+for field in dict.fromkeys(documented_reviewer_fields(ROOT)+['slot']):
+    mutate(650,'documented-field','published-reviewer-fields',field)
+    mutate(650,'consumer-field','published-missing-'+field,field)
+
+
 def run_row(root,entry):
     name,edit,want,code,command=entry[:5]
     if command=='structure': return structure_assert(root,sys.argv[1].lstrip('S'))
@@ -2220,6 +2288,9 @@ def run_row(root,entry):
     if command=='render-probe': return render_assert(root)
     b=control(root)
     if edit: edit(b)
+    if command=='documented-verdict':
+        documented_verdict(b,b.pop('_omit_reviewer',None),root if (root/'skills').exists() else ROOT)
+        command='evaluate'
     if command=='export-probe': return export_probe(root,b.pop('_export_defect',None),b.pop('_capability_defect',None))
     if command=='wrapper-probe': return wrapper_probe(b.pop('_wrapper_phase','final'))
     b=prepared(b)
@@ -2267,6 +2338,36 @@ def main():
                 try: run_row(root,target)
                 except Failure: print('KILLED S'+s+'/policy '+pattern+' -> '+name)
                 else: raise Failure('SURVIVED S'+s+'/policy '+pattern)
+                continue
+            if tag in ('documented-field','consumer-field'):
+                source=(ROOT/'lib/merge-risk.py').read_text()
+                field=replacement
+                if tag=='documented-field':
+                    path=root/'skills/merge-risk-panel/RISK-REVIEW.md'; path.parent.mkdir(parents=True)
+                    text=(ROOT/'skills/merge-risk-panel/RISK-REVIEW.md').read_text()
+                    def remove_field(match):
+                        groups=[]
+                        for group in match.group(1).split(';'):
+                            keys,kind=group.strip().split(':',1)
+                            keys=[k.strip() for k in keys.split(',') if k.strip()!=field]
+                            if keys: groups.append(','.join(keys)+':'+kind)
+                        return '| Reviewer | '+'; '.join(groups)+' |'
+                    changed=re.sub(r'^\| Reviewer \| (.*?) \|$',remove_field,text,flags=re.M)
+                    check(changed!=text,'documentation deletion did not change '+field)
+                    path.write_text(changed)
+                else:
+                    # Delete only this missing-key rejection, preserving types,
+                    # unknown-field closure and every other required field.
+                    before="if set(v) != set(s): closure.append('keys')"
+                    after_="if set(v) != set(s) and not (s is REVIEWER and set(v)==set(s)-{"+repr(field)+"}): closure.append('keys')"
+                    check(before in source,'consumer presence mutation anchor')
+                    source=source.replace(before,after_)
+                (root/'lib/merge-risk.py').write_text(source)
+                run_row(root,entries[0])
+                target=next(e for e in entries if e[0]==name)
+                try: run_row(root,target)
+                except Failure: print('KILLED S'+s+'/'+tag+' '+field+' -> '+name)
+                else: raise Failure('SURVIVED S'+s+'/'+tag+' '+field)
                 continue
             source=(ROOT/'lib/merge-risk.py').read_text()
             lines=source.splitlines(keepends=True)

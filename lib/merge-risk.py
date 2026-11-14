@@ -520,6 +520,9 @@ def record_checks(b,cfg,r,cap):
     bound=bound and m['assessment']['risk_outcome']=='clear' and m['assessment']['outcome']=='eligible'
     bound=bound and m['execution']['host']==cfg['executor_host'] and m['execution']['runtime_sha256']==cur.get('runtime_sha256')
     r.need(bound, 'identity-binding')  # rule:record-binding
+    attempts=b.get('attempts')
+    attempt_bound=isinstance(attempts,list) and bool(attempts) and m['attempt']==attempts[-1]
+    r.need(attempt_bound, 'identity-binding')  # rule:record-attempt
     # A60 addendum 2: the announcement discloses the lookup it relied on. The
     # disclosure is recomputed here from retained evidence, never trusted.
     floor_bound=cap['floor'] is not None and m['authority']['floor_sha256']==cap['floor']
@@ -549,7 +552,7 @@ def record_checks(b,cfg,r,cap):
     expired=lambda:any(code=='identity-binding' for _,code,_ in r.reasons)
     r.need(table_bytes or expired(), 'identity-binding')  # rule:record-table-bytes
     r.need(mapping_bytes or expired(), 'identity-binding')  # rule:record-mapping-bytes
-    if not (bound and floor_bound and pinned and per_slot and per_author and values and excepted and table_bytes and mapping_bytes): return None
+    if not (correct_id and bound and floor_bound and pinned and per_slot and per_author and values and excepted and table_bytes and mapping_bytes): return None
     return c,m
 
 
@@ -596,7 +599,7 @@ def hold_checks(b,cfg,r,record):
     r.note('earliest-merge='+fmt(earliest))
 
 
-def envelope_checks(b,cfg,r,cap):
+def envelope_checks(b,cfg,r,cap,record):
     now=ts(b.get('now')); pair=b.get('risk_pair')
     if not isinstance(pair,list): return
     for p in pair:
@@ -611,6 +614,15 @@ def envelope_checks(b,cfg,r,cap):
                      and all(expected[k]==current.get(k) for k in ('evidence_sha256','requirements_sha256','design_sha256',
                                                                  'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')))
         r.need(identity_ok, 'risk-binding','referred')  # rule:risk-binding
+        # Invalid/unselected records already fail closed in record_checks.
+        if record is not None:
+            manifest=record[1]
+            issue_ok=(expected['issue']==manifest['issue']
+                      and pr.get('closing_issues')==[expected['issue']]
+                      and (not isinstance(b.get('issue'),dict) or expected['issue']==b['issue'].get('number')))
+            r.need(issue_ok, 'risk-binding','referred')  # rule:envelope-issue
+            decision_ok=expected['decision_id']==manifest['decision_id']
+            r.need(decision_ok, 'risk-binding','referred')  # rule:envelope-decision_id
         # Capability identities retained with the envelope, compared one by one
         # with what this Module derives from the accepted sources.
         mine=next((x for x in cap['slots'] if x['slot']==env['reviewer']['slot']),None)
@@ -1190,6 +1202,12 @@ def independence_checks(b,cfg,r,cap):
         roles=(reviewer['session_id'] not in b.get('author_sessions',[]) + b.get('quality_sessions',[])
                and reviewer['session_id']!=b.get('executor_session'))
         r.need(roles, 'risk-independence','referred')  # rule:role-separation
+        # Summaries may be incomplete; authoritative participants still exclude reuse.
+        quality_session=(b.get('quality') or {}).get('session_id')
+        quality_separate=reviewer['session_id']!=quality_session
+        r.need(quality_separate, 'risk-independence','referred')  # rule:authoritative-quality-separation
+        author_separate=all(reviewer['session_id']!=a.get('session_id') for a in b.get('authors',[]) if isinstance(a,dict))
+        r.need(author_separate, 'risk-independence','referred')  # rule:authoritative-author-separation
         sealing=started<=received<=sealed<=compared
         r.need(sealing, 'risk-independence','referred')  # rule:seal-before-compare
         separated=(rc['peer_exposed'] is False and rc['forbidden_actions']==[]
@@ -1370,7 +1388,7 @@ def evaluate(b):
             if not any(c=='identity-binding' for _,c,_ in r.reasons):
                 corpus_checks(b,r)
                 pair_checks(b,cfg,r)
-                envelope_checks(b,cfg,r,cap)
+                envelope_checks(b,cfg,r,cap,record)
                 independence_checks(b,cfg,r,cap)
                 attempt_checks(b,cfg,r)
     pr=b.get('pr') or {}; n=b.get('pr_number'); H=identity(pr.get('head'),SHA40); B=identity(b.get('main_tip'),SHA40)

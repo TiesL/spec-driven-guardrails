@@ -62,6 +62,7 @@
       "WORKFLOW.md",
       "USER-CLAUDE.md",
       "CHANGES.md",
+      "adopt.sh",
       "WORKFLOW-ADOPTION.md",
       "WORKFLOW-ADOPTIE.md",
       "**/AGENTS.md",
