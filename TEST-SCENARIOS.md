@@ -9275,6 +9275,72 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s606_merge_risk_votes_expire_on_head_change.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I03.1|a>b.pr.head|a|
+|I03.2|a>b.remote.head|a|
+|I03.3|a>head.tree.revision|a|
+|I03.4|a>head.artifact.revision|a|
+|I03.5|a>m.head|a|
+|I03.6|a>m.evidence.head|a|
+|I03.7|a>@bn:head|a|
+|I03.8|a>@bn:marker|a|
+|I03.9|a>queue.head|a|
+|I04.1|b>b.main_tip|a|
+|I04.3|b>b.merge_base|a|
+|I04.2|b>b.remote.base|a|
+|I04.4|b>verifier.head|W|
+|I04.5|b>base.tree.revision|a|
+|I04.6|b>base.artifact.revision|a|
+|I04.7|b>m.base|a|
+|I04.8|b>m.config_commit|a|
+|I04.9|b>m.evidence.base|a|
+|I04.15|c>B|b|
+|I04.16|c>ancestor|b|
+|I04.17|c>H|b|
+|I07.5|d>current.policy_sha256|a|
+|I07.6|d>m.config_sha256|a|
+|I07.7|d>@br:policy_sha256|a|
+|I07.8|e>m.config_commit|a|
+|I07.9|e>policy.last_change|a|
+|I08.3|f>current.requirements_sha256|a|
+|I08.4|f>@br:requirements_sha256|a|
+|I08.14|g>current.design_sha256|a|
+|I08.15|g>@br:design_sha256|a|
+|I08.25|h>current.brief_sha256|a|
+|I08.26|h>@br:brief_sha256|a|
+|I10.1|i>pr.title|a|
+|I10.2|i>pr.body|a|
+|I10.3|i>current.narrative_sha256|a|
+|I10.4|i>m.evidence.narrative_sha256|a|
+|I18.44|j>current.profiles_sha256|a|
+|I18.45|j>@br:profiles_sha256|a|
+|I21.5|k>@br:floor_sha256|a|
+|I21.6|k>current.floor-vs-capture|a|
+|I21.7|k>score-preserving.byte-change|a|
+|I21.8|k>score-changing.byte-change|a|
+|I26.13|l>current.instructions_sha256|a|
+|I26.14|l>@br:instructions_sha256|a|
+|I34.8|m>current.qualification_sha256|a|
+|I34.9|m>@br:qualification_sha256|a|
+
+- A60 addenda 4/5 C1/C4 composition matrix: expand EACH independently evaluable R-code row in I01-I34 (including S662's independently specified hard stops) x each applicable consistent final identity-expiry source (H,B,policy,requirements,design,brief,narrative,profiles,floor,markers/effort,exception,instructions,runtime,G,corpus,qualification). Freeze valid capture, then cause ONLY final expiry and that referral; do not rebind copies. One outer referred/3; closed code set is exactly {identity-binding} union the separately established referral code(s), once each. Identity precedes capability codes; otherwise preserve stable inventory/check order. For each fixed combination name the exact ordered code list from the literal result dictionary before running it. Delete short-circuit-on-expiry for each dependency/slot/attempt selector; the combined assertion must kill its mutant while eligible control passes. Compound capture disclosure lies additionally retain their own identity-binding cause. Identity-only is unresolved/4, capability-only referred/3 without invented expiry; identity plus hold-only is unresolved/4 with hold-window retained. Exact addendum-3 frozen table-byte drift remains ONE referred/3 with exactly identity-binding then capability-table-invalid, no invented row/score/echo failures.
+
+| Named composition stem | Synthetic laboratory witness | Exact independent oracle |
+|---|---|---|
+|C4.raw[s]|valid raw refer and reject separately + frozen actual title/body drift; other slot valid|referred/3; identity-binding and risk-referral once each|
+|C4.reuse[pair]|EACH required session-pair equality + actual title/body drift, summaries empty/incomplete|referred/3; identity-binding and risk-independence once each|
+|C4.ledger[t]|wrong actual decision MR-999-deadbee-99 OR same-PR wrong ordinal MR-700-1a2b3c4-99; matching manifest attempt copied without repairing decision relation; plus expiry|referred/3; identity-binding and risk-attempt-invalid once each|
+|C4.all|typed raw referral + known session reuse + contradictory complete ledger + expiry|referred/3; identity-binding plus risk-referral/risk-independence/risk-attempt-invalid in stable inventory/check order, no omitted cause|
+|C4.raw-unavailable[s]|malformed raw s, other raw valid refer, actual quality reuse, complete bad ledger + expiry|referred/3; identity-binding, risk-result-invalid and every independently established referral; no semantic outcome inferred from malformed raw|
+|C4.record-unavailable|no selected record + independently valid refer/reuse/bad ledger|referred/3; record-selection plus applicable independent referrals; no fabricated record-copy code|
+|C4.table-unavailable|capture complete/valid; final table bytes changed, score-preserving and changing separately|exactly identity-binding then capability-table-invalid; no dependency-generated entry/effort/binding code|
+|C4.clock-unavailable|missing/failed/zone-less final now + independent valid referral|referred/3; now-unreadable and independent referral; no clock-derived deadline/age/ordering code|
+
+- Diagnostic mutants: remove EACH applicable code, duplicate it, reorder identity/capability, choose U over R or H over U, render two outer results, suppress other-slot/source/quality/ledger checks because one dependency is unavailable, or manufacture derivative missing-score/echo/time causes. Each has a named exact-code/order assertion and unchanged eligible companion; FIRST-only/short-circuit mutants exercise every slot/author/attempt source separately. New accepted sources with copies updated require fresh qualified reviews/new immutable record/full hold; no source change or failed check resurrects old authority.
+
 ### S607 — Unanimity: 5-0 only, any dissent, abstention or missing vote refers (#646; A58 D5; AC2)
 **Covers:** F71
 - Amended by A60: historical/superseded. The following A58 oracle is retained as history and supplies no current merge authority. Do not execute its obsolete five-vote/closure assertion as a live safety requirement. Replacement coverage: S650-S659, S615.
@@ -9372,6 +9438,783 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s615_merge_risk_records_complete_immutable.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
 
+- Amended by A60 addendum 4 — systematic matrix protocol (applies to every I-row below). Public Seam E is `python3 -I lib/merge-risk.py evaluate --bundle <synthetic-laboratory-bundle>`; Seam C is its collector with fake Git/API/launcher/consumer observations, no network or effects. Every table row uses E, and source/root rows also C. `b`/`cfg`/`m` mean bundle/accepted B config/selected manifest; p0/p1 are retained pair elements, e0/e1 their envelopes, r0/r1 their decoded ORIGINAL raw verdicts. An indexed comparison [slot,author] denotes that unique key, never an implementation array offset. Authority aliases: B = accepted product object/source; G = separately accepted guard object/source; C = independently retained capture; API/Git/launch/consumer/server/quality/authors/finding/queue/suite/run/REF/applied = original independently retained observations named by I01-I34, never cached copies. A source column selects the exact leaf named by the destination; hashes use the specified original-byte/canonical domain. Each row ID is a named single-oracle assertion, owned by its containing S-number.
+- Matrix controls/edits/mutants: each row has its OWN independently built eligible/0 control K(row), complete pair before T and full hold, with distinct slots, two authors, actual quality/lens/implementer provenance and, for history rows, a valid dispositioned second attempt. Arrays additionally exercise first, middle and last elements and every actual member; [0]/[1] rows distinguish both slots/authors/attempts, not representative sampling. Never invent an absent member to make an assertion pass. For each equality row run D (destination alone wrong), A (all its lower-authority copies agree on the same wrong value, fixed source) and F (actual source drifts AFTER valid announcement freeze, copies fixed); hashes/length wrappers may be recomputed but `prepared()`/record helpers cannot repair attacked identities. Wrong-source/URL/object tests substitute an otherwise valid different source, not a malformed placeholder. Copy-update control K-new requires genuinely new accepted source, qualification/reviews, record and full hold. No cached digest is the source oracle.
+- Result notation is exact isolated owning code and outer result: U=unresolved/4, R=referred/3, H=held/1; eligible controls have no refusal. For a compound capture fault retain the table's owning code plus independently established codes, once each: false manifest disclosure adds `identity-binding`; final consistent-source drift alone is U:`identity-binding`; final source-invalidity adds its owning referral. One outer result only, R > U > H; display identity before capability, otherwise stable inventory/check order. Do not credit an unrelated schema/hold failure as the owning assertion. D/A controls disclose the attacked capture without repairing it; record-copy attacks deliberately retain the original valid capture. The composition table in S606 fixes the combined-code oracles.
+- Every NON-IMPLIED expanded rule owns mutant DEL(row): delete ONLY its field/place comparison (for A, source comparison; for F, final source recheck); its named assertion must fail while K(row) still passes. Repeated or transitive relations use the explicit addendum-5 implication expansion below, never an equivalent-deletion claim. Exercise every selector even if implemented by one table loop. Additional mutants FIRST/LAST (skip other members), WRONG-AUTHORITY (trust copies), VENDOR (key by vendor), EXPIRE-SKIP, FORGED-EARLIEST and B-FOR-G are owned by the corresponding rows below. Each relation row deletes only that relation; each source rule swaps only that authority. Record actual red at `0cc0725` where applicable, green at implementation head and killed-mutant result separately. Existing P/B/N baseline obligations stand; no new QA behavior-pass or live independence/qualification claim. S662 and all seven independent E1 rows remain byte-identical.
+
+
+- Matrix dictionaries: tokens are literal specification abbreviations, never values imported from implementation. In a place `@token:suffix`, replace the prefix token then append the literal suffix. Row Ixx.n is inventory Ixx comparison n; supplemental stems below expand to additional separately named rows. These dictionaries are literal QA declarations, not imported production constants.
+
+| Source token | Independent authority |
+|---|---|
+|a|C.H|
+|b|C.B|
+|c|Git.ancestry|
+|d|B.policy.hash|
+|e|B.policy.commit|
+|f|C.requirements.hash|
+|g|C.design.hash|
+|h|C.brief.hash|
+|i|API.title+LF+body|
+|j|B.profiles.hash|
+|k|capture.finalFloor|
+|l|G.instructions.hash|
+|m|qualification.hash|
+|n|C.identity|
+|o|API.PR|
+|p|API.closingIssue|
+|q|Git.diff.hash|
+|r|Git.count.lines|
+|s|Git.count.paths|
+|t|B.requirements|
+|u|B.design|
+|v|REF.original|
+|w|REF.unique|
+|x|API.validTrailer|
+|y|API.trailer.syntax|
+|z|API.comments|
+|A|selected.own.outcome|
+|B|API.history|
+|C|ledger.currentDecision|
+|D|MR.PR/H/ordinal|
+|E|ledger.last|
+|F|authors.actual|
+|G|quality.actual|
+|H|finding.actual|
+|I|lookup.slot0xauthor0|
+|J|lookup.slot0xauthor1|
+|K|lookup.slot1xauthor0|
+|L|lookup.slot1xauthor1|
+|M|lookup.aggregate|
+|N|C.pair0|
+|O|C.pair1|
+|P|accepted.host|
+|Q|executor.actual|
+|R|queue.actual|
+|S|API.checks|
+|T|API.protection.hash|
+|U|capture.recomputed|
+|V|raw.outcome|
+|W|capture.gateTime|
+|X|server.record|
+|Y|T+cfg.hold|
+|Z|capture.labels|
+|0|API.finalHistory|
+|1|release.actual|
+|2|server.event|
+|3|consumer.bytes|
+|4|corpus.actual|
+|5|raw.semantic|
+|6|B.repo|
+|7|ledger.last.attempt_id|
+|8|launch.actual|
+|9|profile.actual|
+|ba|applied.profile|
+|bb|B.table/mapping|
+|bc|table.lookup|
+|bd|capture.e0|
+|be|applied.slot0|
+|bf|applied.slot1|
+|bg|B.exceptionLedger|
+|bh|envelope+I01-I23|
+|bi|launch+I14-I22|
+|bj|corpus.hash|
+|bk|G.launcher|
+|bl|server.finalDate|
+|bm|Git.base|
+|bn|Git.head|
+|bo|Git.diff|
+|bp|Git.blob|
+|bq|Git.absence|
+|br|Git.paths|
+|bs|Git.diff.bytes|
+|bt|Git.inertExport|
+|bu|B.partition|
+|bv|G.object|
+|bw|ledger.currentAttempt|
+|bx|sessions.actual|
+|by|fresh.launch|
+|bz|sessions.union|
+|bA|two.slots|
+|bB|B.exceptionIssue|
+|bC|authors.all|
+|bD|B.profile+launch|
+|bE|B.profile|
+|bF|B.table|
+|bG|B.selectingDecision|
+|bH|B.mapping|
+|bI|lookup.allPairs|
+|bJ|lookup.exactRow|
+|bK|lookup.sameModelGain|
+|bL|launch.marker|
+|bM|applied.author0|
+|bN|applied.author1|
+|bO|applied.observation|
+|bP|Git.B|
+|bQ|physical.B|
+|bR|B.runtime.hash|
+|bS|runtime.actual|
+|bT|runtime.observed|
+|bU|API.allPages|
+|bV|API.protection|
+|bW|ledger.decision|
+|bX|ledger.ownDecision|
+|bY|ledger.actual|
+|bZ|human.disposition|
+|b0|ledger.sequence|
+|b1|consumer.return|
+|b2|ledger.allLaunches|
+|b3|B.operational|
+|b4|B.profiles|
+|b5|B.floor|
+|b6|B.qualification|
+|b7|accepted.observation|
+|b8|suite.actual|
+|b9|run.actual|
+|ca|suite.complete|
+|cb|API.product|
+|cc|B.control|
+|cd|B.acceptanceIssue|
+|ce|API.baseRef=main|
+|cf|B.policy|
+|cg|B.requirements.hash|
+|ch|B.design.hash|
+|ci|B.brief|
+|cj|B.acceptance|
+|ck|physical.G|
+|cl|accepted.G|
+|cm|G.objects|
+|cn|G.beforeInvoke|
+
+| Prefix token | Literal prefix |
+|---|---|
+|a|qualification.|
+|b|m.risk_pair[0].envelope.|
+|c|m.risk_pair[1].envelope.|
+|d|m.risk_pair[0].|
+|e|m.risk_pair[1].|
+|f|qualification.runs[0].|
+|g|qualification.runs[1].|
+|h|m.capability.|
+|i|m.risk_pair[0].envelope.binding.|
+|j|m.risk_pair[1].envelope.binding.|
+|k|attempts[1].|
+|l|attempts[0].|
+|m|m.capability.comparisons[0,0].|
+|n|m.capability.comparisons[0,1].|
+|o|m.capability.comparisons[1,0].|
+|p|m.capability.comparisons[1,1].|
+|q|m.risk_pair[0].envelope.reviewer.|
+|r|m.risk_pair[1].envelope.reviewer.|
+|s|m.assessment.checks.|
+|t|m.risk_pair[0].receipt.|
+|u|m.risk_pair[1].receipt.|
+|v|attempts[0].launches[0].|
+|w|attempts[1].launches[0].|
+|x|attempts[0].launches[1].|
+|y|attempts[1].launches[1].|
+|z|m.assessment.|
+|A|exception.|
+|B|qualification.inputs.|
+|C|collection.guard_state.|
+|D|capability.|
+|E|m.risk_pair[0].envelope.capability.|
+|F|m.risk_pair[1].envelope.capability.|
+|G|r0.binding.|
+|H|r1.binding.|
+|I|attempts[1].disposition.|
+|J|final.guard_state.|
+|K|attempts[0].disposition.|
+|L|m.execution.|
+|M|instructions[RISK-REVIEW.md].|
+|N|efforts[author0].|
+|O|efforts[author1].|
+|P|capability.slots[0].|
+|Q|capability.slots[1].|
+|R|r0.reviewer.|
+|S|r1.reviewer.|
+|T|p0.receipt.|
+|U|p1.receipt.|
+|V|instructions[RISK-REVIEW.|
+|W|cfg.reviewer_profiles[0].|
+|X|cfg.reviewer_profiles[1].|
+|Y|efforts[slot0].|
+|Z|efforts[slot1].|
+|0|m.assessment.checks.runs[0].|
+|1|m.assessment.checks.runs[1].|
+|2|e0.binding.|
+|3|instructions[SKILL.md].|
+|4|quality.findings[0].|
+|5|quality.findings[1].|
+|6|m.assessment.checks.contexts[0].|
+|7|m.assessment.checks.contexts[1].|
+|8|e1.binding.|
+|9|attempts[0].disposition.source.|
+|ba|attempts[1].disposition.source.|
+|bb|cfg.capability.|
+|bc|capability.slots[0].marker.|
+|bd|capability.slots[1].marker.|
+|be|quality.findings[0].source.|
+|bf|quality.findings[1].source.|
+|bg|r0.findings[0].evidence[0].|
+|bh|r0.findings[1].evidence[0].|
+|bi|r1.findings[0].evidence[0].|
+|bj|r1.findings[1].evidence[0].|
+|bk|collection.|
+|bl|instructions[SKILL.|
+|bm|b.checks.|
+|bn|quality.|
+|bo|e0.reviewer.|
+|bp|e1.reviewer.|
+|bq|m.execution.identity.|
+|br|m.authority.|
+|bs|cfg.capability.mapping.|
+|bt|capability.efforts[0].|
+|bu|capability.efforts[1].|
+|bv|m.execution.preflight.|
+|bw|m.execution.queue_key.|
+|bx|artifacts[0].|
+|by|artifacts[1].|
+|bz|e0.capability.|
+|bA|e1.capability.|
+|bB|b.checks.contexts[0].|
+|bC|b.checks.contexts[1].|
+|bD|b.checks.runs[0].|
+|bE|b.checks.runs[1].|
+|bF|cfg.project.|
+|bG|b.authors[0].source.|
+|bH|m.authors[0].source.|
+|bI|b.authors[1].source.|
+|bJ|m.authors[1].source.|
+|bK|capability.decision.|
+|bL|b.authors[0].|
+
+| Result token | Owning result:code |
+|---|---|
+|a|U:identity-binding|
+|b|U:behind-base|
+|c|U:record-selection|
+|d|R:capability-identity-missing|
+|e|R:capability-effort-unavailable|
+|f|R:risk-result-invalid|
+|g|R:risk-attempt-invalid|
+|h|U:finding-provenance|
+|i|R:qualification-unavailable|
+|j|R:narrative-invalid|
+|k|U:manifest-schema|
+|l|U:record-label|
+|m|U:record-edited|
+|n|U:record-duplicate|
+|o|U:record-id|
+|p|U:open-findings|
+|q|U:executor-invalid|
+|r|R:queue-key-repeated|
+|s|R:risk-referral|
+|t|U:record-time|
+|u|U:timeline-unreadable|
+|v|U:void-after-announcement|
+|w|R:label-off|
+|x|R:label-off-control|
+|y|R:control-closed|
+|z|R:off-since-config|
+|A|H:hold-release-missing|
+|B|H:hold-release-target|
+|C|H:hold-release-words|
+|D|H:hold-release-stale|
+|E|R:risk-binding|
+|F|R:risk-independence|
+|G|U:now-unreadable|
+|H|R:evidence-incomplete|
+|I|R:corpus-invalid|
+|J|R:path-unsafe/tree-collision/gitlink|
+|K|R:remote-identity|
+|L|R:cap-lines|
+|M|R:cap-files|
+|N|U:instruction-load-invalid|
+|O|U:gate-quality|
+|P|U:gate-review-marker|
+|Q|R:capability-exception-invalid|
+|R|R:capability-profile-mismatch|
+|S|R:capability-table-invalid|
+|T|R:capability-below-author|
+|U|R:capability-entry-missing|
+|V|R:capability-effort-no-gain|
+|W|U:verifier-not-at-base|
+|X|U:runtime-invalid|
+|Y|U:gate-check|
+|Z|R:protection-invalid|
+|0|U:repository-identity|
+|1|U:acceptance-unverified|
+|2|R:base-not-main|
+|3|U:config-invalid|
+|4|R:project-unconfigured|
+|5|U:guard-invalid|
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I01.14|n>@bq:repository|a|
+|I01.15|n>@bq:host|a|
+|I01.16|n>@bq:remote|a|
+|I01.17|n>@bq:redirects|a|
+|I01.18|n>@bq:verified|a|
+|I02.1|o>b.pr_number|a|
+|I02.2|o>m.pr|a|
+|I02.7|p>b.issue.number|c|
+|I02.8|p>m.issue|a|
+|I02.9|p>selected.comment.work-item.URL|c|
+|I06.3|q>m.diff_sha256|a|
+|I06.9|r>@z:lines|a|
+|I06.12|s>@z:paths|a|
+|I08.9|t>m.ac.source|a|
+|I08.10|t>m.ac.sha256|a|
+|I08.20|u>m.design.source|a|
+|I08.21|u>m.design.sha256|a|
+|I09.1|v>cfg.requirements.source|a|
+|I09.2|v>cfg.requirements.sha256|a|
+|I09.3|v>cfg.design.source|a|
+|I09.4|v>cfg.design.sha256|a|
+|I09.5|v>@bF:brief.source|a|
+|I09.6|v>@bF:brief.sha256|a|
+|I09.7|v>@bF:acceptance.source|a|
+|I09.8|v>@bF:acceptance.sha256|a|
+|I09.9|v>cfg.runtime_profile.source|a|
+|I09.10|v>cfg.runtime_profile.sha256|a|
+|I09.11|v>cfg.qualification.source|a|
+|I09.12|v>cfg.qualification.sha256|a|
+|I09.13|v>cfg.guard.source.source|a|
+|I09.14|v>cfg.guard.source.sha256|a|
+|I09.15|v>@bb:decision.source|a|
+|I09.16|v>@bb:decision.sha256|a|
+|I09.17|v>@bs:source|a|
+|I09.18|v>@bs:sha256|a|
+|I09.19|v>m.ac.source|a|
+|I09.20|v>m.ac.sha256|a|
+|I09.21|v>m.design.source|a|
+|I09.22|v>m.design.sha256|a|
+|I09.23|v>m.supersedes.source|a|
+|I09.24|v>m.supersedes.sha256|a|
+|I09.25|v>release.original.source|a|
+|I09.26|v>release.original.sha256|a|
+|I09.27|v>@bG:source|a|
+|I09.28|v>@bG:sha256|a|
+|I09.29|v>@bH:source|a|
+|I09.30|v>@bH:sha256|a|
+|I09.31|v>@bc:source|d|
+|I09.32|v>@bc:sha256|d|
+|I09.33|v>@bt:marker.source|d|
+|I09.34|v>@bt:marker.sha256|d|
+|I09.35|v>@bt:launch.source|e|
+|I09.36|v>@bt:launch.sha256|e|
+|I09.37|v>@T:output_source.source|f|
+|I09.38|v>@T:output_source.sha256|f|
+|I09.39|v>m.evidence.read_logs[0].source|a|
+|I09.40|v>m.evidence.read_logs[0].sha256|a|
+|I09.41|v>m.prior_attempts[0].source|g|
+|I09.42|v>m.prior_attempts[0].sha256|g|
+|I09.43|v>@9:source|g|
+|I09.44|v>@9:sha256|g|
+|I09.45|v>@bI:source|a|
+|I09.46|v>@bI:sha256|a|
+|I09.47|v>@bJ:source|a|
+|I09.48|v>@bJ:sha256|a|
+|I09.49|v>@bd:source|d|
+|I09.50|v>@bd:sha256|d|
+|I09.51|v>@bu:marker.source|d|
+|I09.52|v>@bu:marker.sha256|d|
+|I09.53|v>@bu:launch.source|e|
+|I09.54|v>@bu:launch.sha256|e|
+|I09.55|v>@U:output_source.source|f|
+|I09.56|v>@U:output_source.sha256|f|
+|I09.57|v>m.evidence.read_logs[1].source|a|
+|I09.58|v>m.evidence.read_logs[1].sha256|a|
+|I09.59|v>history.attempt[1].record.source|g|
+|I09.60|v>history.attempt[1].record.sha256|g|
+|I09.61|v>@ba:source|g|
+|I09.62|v>@ba:sha256|g|
+|I09.63|v>@bn:source.source|a|
+|I09.64|v>@bn:source.sha256|a|
+|I09.65|v>@be:source|h|
+|I09.66|v>@be:sha256|h|
+|I09.67|v>@bf:source|h|
+|I09.68|v>@bf:sha256|h|
+|I09.69|v>@A:source.source|a|
+|I09.70|v>@A:source.sha256|a|
+|I09.71|v>@a:enabling.source|i|
+|I09.72|v>@a:enabling.sha256|i|
+|I09.73|v>@a:red_team.source|i|
+|I09.74|v>@a:red_team.sha256|i|
+|I09.75|v>@a:check.source|i|
+|I09.76|v>@a:check.sha256|i|
+|I09.77|v>@a:quality.source|i|
+|I09.78|v>@a:quality.sha256|i|
+|I09.79|v>@a:M1_M9.source|i|
+|I09.80|v>@a:M1_M9.sha256|i|
+|I09.81|v>@a:M8.source|i|
+|I09.82|v>@a:M8.sha256|i|
+|I09.83|v>@a:failed_disposition.source|g|
+|I09.84|v>@a:failed_disposition.sha256|g|
+|I09.85|w>retained.source.duplicate|a|
+|I09.86|w>retained.source.ambiguous|a|
+|I09.87|w>retained.bytes.absent|a|
+|I09.88|w>invented.API.hash|a|
+|I10.5|x>trailer.URL=active_record_url|c|
+|I10.6|x>trailer.URL=selected.comment.URL|c|
+|I10.7|y>trailer.duplicate|j|
+|I10.8|y>trailer.malformed|j|
+|I11.1|z>selected.URL|c|
+|I11.7|z>selected.work-item|c|
+|I11.2|z>selected.schema|k|
+|I11.3|z>selected.label|l|
+|I11.4|z>selected.updated_at=created_at|m|
+|I11.5|z>selected.active.count|n|
+|I11.6|z>selected.not.superseded|c|
+|I11.8|A>m.outcome=held;nested=eligible|c|
+|I11.9|A>m.outcome=vetoed;nested=eligible|c|
+|I11.10|A>m.outcome=unresolved;nested=eligible|c|
+|I11.11|A>m.outcome=referred;nested=eligible|c|
+|I11.12|A>m.outcome=failed;nested=eligible|c|
+|I11.13|A>m.outcome=merged;nested=eligible|c|
+|I11.14|B>outgoing.supersedes-is-not-incoming|c|
+|I11.15|B>latest-comment-is-not-selection|c|
+|I12.4|C>m.decision_id|a|
+|I12.5|D>m.decision_id.syntax|o|
+|I13.17|E>m.attempt.attempt_id|a|
+|I13.18|E>m.attempt.decision_id|a|
+|I13.19|E>m.attempt.ordinal|a|
+|I13.20|E>m.attempt.previous|a|
+|I13.21|E>m.attempt.reason|a|
+|I13.22|E>m.attempt.created_at|a|
+|I13.23|E>m.attempt.terminal|a|
+|I13.24|E>m.attempt.provider_retries_visible|a|
+|I15.6|F>m.authors[0].session_id|a|
+|I15.7|F>m.authors[0].model|a|
+|I15.8|F>m.authors[0].variant|a|
+|I15.9|F>@bH:source|a|
+|I15.10|F>@bH:sha256|a|
+|I15.16|F>m.authors[1].session_id|a|
+|I15.17|F>m.authors[1].model|a|
+|I15.18|F>m.authors[1].variant|a|
+|I15.19|F>@bJ:source|a|
+|I15.20|F>@bJ:sha256|a|
+|I16.8|G>m.quality.session_id|a|
+|I16.9|G>m.quality.model|a|
+|I16.12|G>m.quality.head|a|
+|I16.13|G>m.quality.approved|a|
+|I16.14|G>m.quality.marker|a|
+|I16.10|G>m.quality.source.source|a|
+|I16.11|G>m.quality.source.sha256|a|
+|I16.15|H>@4:id|h|
+|I16.16|H>@4:severity|h|
+|I16.17|H>@4:status|h|
+|I16.18|H>@be:source|h|
+|I16.19|H>@be:sha256|h|
+|I16.20|H>@5:id|h|
+|I16.21|H>@5:severity|h|
+|I16.22|H>@5:status|h|
+|I16.23|H>@bf:source|h|
+|I16.24|H>@bf:sha256|h|
+|I16.29|H>open.finding.hidden-by-approval|p|
+|I20.3|I>@m:slot|a|
+|I20.4|I>@m:marker_sha256|a|
+|I20.5|I>@m:effort_sha256|a|
+|I20.8|I>@m:score|a|
+|I20.9|I>@m:author_marker_sha256|a|
+|I20.10|I>@m:author_effort_sha256|a|
+|I20.13|I>@m:author_score|a|
+|I20.14|I>@m:outcome|a|
+|I20.15|I>@m:exception|a|
+|I20.6|I>@m:row.model|a|
+|I20.7|I>@m:row.effort|a|
+|I20.11|I>@m:author_row.model|a|
+|I20.12|I>@m:author_row.effort|a|
+|I20.16|J>@n:slot|a|
+|I20.17|J>@n:marker_sha256|a|
+|I20.18|J>@n:effort_sha256|a|
+|I20.21|J>@n:score|a|
+|I20.22|J>@n:author_marker_sha256|a|
+|I20.23|J>@n:author_effort_sha256|a|
+|I20.26|J>@n:author_score|a|
+|I20.27|J>@n:outcome|a|
+|I20.28|J>@n:exception|a|
+|I20.19|J>@n:row.model|a|
+|I20.20|J>@n:row.effort|a|
+|I20.24|J>@n:author_row.model|a|
+|I20.25|J>@n:author_row.effort|a|
+|I20.31|K>@o:slot|a|
+|I20.32|K>@o:marker_sha256|a|
+|I20.33|K>@o:effort_sha256|a|
+|I20.36|K>@o:score|a|
+|I20.37|K>@o:author_marker_sha256|a|
+|I20.38|K>@o:author_effort_sha256|a|
+|I20.41|K>@o:author_score|a|
+|I20.42|K>@o:outcome|a|
+|I20.43|K>@o:exception|a|
+|I20.34|K>@o:row.model|a|
+|I20.35|K>@o:row.effort|a|
+|I20.39|K>@o:author_row.model|a|
+|I20.40|K>@o:author_row.effort|a|
+|I20.44|L>@p:slot|a|
+|I20.45|L>@p:marker_sha256|a|
+|I20.46|L>@p:effort_sha256|a|
+|I20.49|L>@p:score|a|
+|I20.50|L>@p:author_marker_sha256|a|
+|I20.51|L>@p:author_effort_sha256|a|
+|I20.54|L>@p:author_score|a|
+|I20.55|L>@p:outcome|a|
+|I20.56|L>@p:exception|a|
+|I20.47|L>@p:row.model|a|
+|I20.48|L>@p:row.effort|a|
+|I20.52|L>@p:author_row.model|a|
+|I20.53|L>@p:author_row.effort|a|
+|I20.63|M>@h:outcome|a|
+|I24.32|N>@d:raw_b64|a|
+|I24.33|N>@d:raw_sha256|a|
+|I24.34|N>@d:byte_length|a|
+|I24.35|N>@d:overflow|a|
+|I24.36|N>@i:decision_id|a|
+|I24.37|N>@i:attempt_id|a|
+|I24.38|N>@i:nonce|a|
+|I24.39|N>@i:repository|a|
+|I24.40|N>@i:pr|a|
+|I24.41|N>@i:issue|a|
+|I24.42|N>@i:head|a|
+|I24.43|N>@i:base|a|
+|I24.44|N>@i:diff_sha256|a|
+|I24.45|N>@i:evidence_sha256|a|
+|I24.46|N>@i:requirements_sha256|a|
+|I24.47|N>@i:design_sha256|a|
+|I24.48|N>@i:policy_sha256|a|
+|I24.49|N>@i:instructions_sha256|a|
+|I24.50|N>@i:profiles_sha256|a|
+|I24.51|N>@i:qualification_sha256|a|
+|I24.52|N>@q:slot|a|
+|I24.53|N>@q:dispatch_id|a|
+|I24.54|N>@q:session_id|a|
+|I24.55|N>@q:model|a|
+|I24.56|N>@q:variant|a|
+|I24.57|N>@q:runtime_id|a|
+|I24.58|N>@q:floor_evidence_sha256|a|
+|I24.59|N>@q:vendor|a|
+|I24.60|N>@q:fresh|a|
+|I24.61|N>@q:inherited_session|a|
+|I24.62|N>@E:table_sha256|a|
+|I24.63|N>@E:mapping_sha256|a|
+|I24.66|N>@E:marker_sha256|a|
+|I24.67|N>@E:effort_sha256|a|
+|I24.68|N>@E:exceptions|a|
+|I24.64|N>@E:row.model|a|
+|I24.65|N>@E:row.effort|a|
+|I24.69|N>@t:started_at|a|
+|I24.70|N>@t:received_at|a|
+|I24.71|N>@t:sealed_at|a|
+|I24.72|N>@t:compared_at|a|
+|I24.73|N>@t:no_inheritance|a|
+|I24.74|N>@t:peer_exposed|a|
+|I24.75|N>@t:forbidden_actions|a|
+|I24.76|N>@t:available|a|
+|I24.77|N>@t:resolved_model|a|
+|I24.78|N>@t:runtime_sha256|a|
+|I24.79|N>@t:prompt_sha256|a|
+|I24.80|N>@t:settings_sha256|a|
+|I24.81|N>@t:launcher_sha256|a|
+|I24.82|N>@t:output_source.source|a|
+|I24.83|N>@t:output_source.sha256|a|
+|I24.127|O>@e:raw_b64|a|
+|I24.128|O>@e:raw_sha256|a|
+|I24.129|O>@e:byte_length|a|
+|I24.130|O>@e:overflow|a|
+|I24.131|O>@j:decision_id|a|
+|I24.132|O>@j:attempt_id|a|
+|I24.133|O>@j:nonce|a|
+|I24.134|O>@j:repository|a|
+|I24.135|O>@j:pr|a|
+|I24.136|O>@j:issue|a|
+|I24.137|O>@j:head|a|
+|I24.138|O>@j:base|a|
+|I24.139|O>@j:diff_sha256|a|
+|I24.140|O>@j:evidence_sha256|a|
+|I24.141|O>@j:requirements_sha256|a|
+|I24.142|O>@j:design_sha256|a|
+|I24.143|O>@j:policy_sha256|a|
+|I24.144|O>@j:instructions_sha256|a|
+|I24.145|O>@j:profiles_sha256|a|
+|I24.146|O>@j:qualification_sha256|a|
+|I24.147|O>@r:slot|a|
+|I24.148|O>@r:dispatch_id|a|
+|I24.149|O>@r:session_id|a|
+|I24.150|O>@r:model|a|
+|I24.151|O>@r:variant|a|
+|I24.152|O>@r:runtime_id|a|
+|I24.153|O>@r:floor_evidence_sha256|a|
+|I24.154|O>@r:vendor|a|
+|I24.155|O>@r:fresh|a|
+|I24.156|O>@r:inherited_session|a|
+|I24.157|O>@F:table_sha256|a|
+|I24.158|O>@F:mapping_sha256|a|
+|I24.161|O>@F:marker_sha256|a|
+|I24.162|O>@F:effort_sha256|a|
+|I24.163|O>@F:exceptions|a|
+|I24.159|O>@F:row.model|a|
+|I24.160|O>@F:row.effort|a|
+|I24.164|O>@u:started_at|a|
+|I24.165|O>@u:received_at|a|
+|I24.166|O>@u:sealed_at|a|
+|I24.167|O>@u:compared_at|a|
+|I24.168|O>@u:no_inheritance|a|
+|I24.169|O>@u:peer_exposed|a|
+|I24.170|O>@u:forbidden_actions|a|
+|I24.171|O>@u:available|a|
+|I24.172|O>@u:resolved_model|a|
+|I24.173|O>@u:runtime_sha256|a|
+|I24.174|O>@u:prompt_sha256|a|
+|I24.175|O>@u:settings_sha256|a|
+|I24.176|O>@u:launcher_sha256|a|
+|I24.177|O>@u:output_source.source|a|
+|I24.178|O>@u:output_source.sha256|a|
+|I29.1|P>b.host|q|
+|I29.2|P>cfg.executor_host|q|
+|I29.3|P>m.executor_host|q|
+|I29.4|P>@L:host|q|
+|I29.5|Q>@L:run_id|q|
+|I29.6|Q>lock.owner=executor_session|q|
+|I29.7|Q>@bv:exit|q|
+|I29.8|Q>@bv:stdout|q|
+|I29.9|Q>@bv:stderr|q|
+|I29.10|Q>@bv:escape_hatch|q|
+|I29.11|R>m.queue_key.repository|a|
+|I29.12|R>m.queue_key.pr|a|
+|I29.13|R>m.queue_key.head|a|
+|I29.14|R>m.queue_key.decision|a|
+|I29.15|R>@bw:repository|a|
+|I29.16|R>@bw:pr|a|
+|I29.17|R>@bw:head|a|
+|I29.18|R>@bw:decision|a|
+|I29.19|R>queue.terminal|r|
+|I29.20|R>queue.repeated|r|
+|I30.10|S>@0:id|a|
+|I30.11|S>@0:name|a|
+|I30.12|S>@0:head|a|
+|I30.13|S>@0:status|a|
+|I30.14|S>@0:conclusion|a|
+|I30.15|S>@6:id|a|
+|I30.16|S>@6:context|a|
+|I30.17|S>@6:head|a|
+|I30.18|S>@6:state|a|
+|I30.28|S>@1:id|a|
+|I30.29|S>@1:name|a|
+|I30.30|S>@1:head|a|
+|I30.31|S>@1:status|a|
+|I30.32|S>@1:conclusion|a|
+|I30.33|S>@7:id|a|
+|I30.34|S>@7:context|a|
+|I30.35|S>@7:head|a|
+|I30.36|S>@7:state|a|
+|I30.48|T>@z:protection_sha256|a|
+|I31.1|U>@z:hard_stops|a|
+|I31.2|U>@z:lines|a|
+|I31.3|U>@z:paths|a|
+|I31.4|U>@z:open_findings|a|
+|I31.5|U>@z:risk_outcome|a|
+|I31.6|U>@z:reasons|a|
+|I31.7|U>@z:uncertainties|a|
+|I31.8|U>@z:outcome|a|
+|I31.9|U>m.reasons|a|
+|I31.10|V>assessment.clear-vs-refer|s|
+|I31.11|V>assessment.clear-vs-reject|s|
+|I31.12|V>assessment.clear-vs-gate|s|
+|I33.23|W>@L:last_check|a|
+
+- A60 addenda 4/5 — expansion contract for ALL matrix tables. A selector is a path in retained evidence OR a named observation/relation, not permission to add a JSON member. `content/bytes` means original decoded `content_b64`, `length` means `byte_length`, `line_map` includes `lines` and inventory-line addressing, `corpus` means the complete `artifacts` manifest, `runtime.profile/tools/hooks/settings/wiring` means every accepted RUNTIME_PROFILE leaf/direct observed object. A bare source token denotes its corresponding leaf, not equality between an object and a scalar. `selected.*` denotes the selected original comment; `m` is its decoded manifest. Receipt/launch observations absent from a closed carrier must come from an independently identified existing retained source; otherwise the owning unavailable-evidence oracle applies. No new schema or inferred observation is authorized.
+- Literal domains: s={0,1} stable slots; a={0,1} distinct relevant author contributions; t={0,1} first and second counted attempt; j=EVERY retained launch of t, including both slots and allowed redispatches; k=EVERY actual member of the addressed array. Controls include three-member arrays where allowed, with a defect separately first/middle/last; the two-slot/two-attempt limits are never enlarged. A second-attempt control retains a failed/dispositioned first attempt; a current first-attempt control has no invented predecessor. For conditional sources use a separate applicable control (release, exception, prior attempt, finding), not an absent optional value attacked as if present. Valid negative raw refer/reject examples use an eligible/0 approval companion control, not a claimed eligible refer control.
+- Expansion: each `{x,y}` or named field set in a place expands to ONE row per literal member; Cartesian products expand all selectors, never a whole-object assertion. Name each assertion `S<owner>/I<inventory>.<stem>[indices].<leaf>/<edit>`; retain base Ixx.n names. A relation place produces one row per indexed relation; MISSING/TYPE/KEY/COUNT are separate rule rows, not field-equality credit. Prefix `mirror(p)` is the exact same suffix under `m.attempt` for the selected attempt, `m.risk_pair[s]`, `m.quality`, `m.authors[a]`, `m.assessment.checks`, `m.evidence.read_logs` or `m.capability`, as explicitly declared below. Recurse through every actual leaf, including nullable objects in an applicable control and nested arrays. Decode manifest raw_b64 independently too; it must retain exactly the original pair bytes. No implementation schema/table/helper supplies the expected selectors or values.
+- Independent K(row) is eligible/0 with no refusals. E and C, D/A/F and DEL(row) from the protocol apply to supplemental equality rows too; each field/place has its own control/edit/oracle/mutant. D changes one destination; A changes all copies with the original capture fixed; F changes the real final source after freeze. For source/path resolution use a well-formed alternate allowed-looking object/URL in D/A, not merely a wrong type. D/A must reach the named semantic code after legitimate byte-wrapper updates. Record-copy faults return U:identity-binding, raw/envelope echo faults R:risk-binding, and actual-source faults use their owning code. F consistent-source identity drift is U:identity-binding; independently invalid final sources retain their owning codes as well. Exact isolated result means that code alone unless the declared edit independently establishes another cause. No schema refusal may substitute for a typed equality oracle.
+- Addendum-5 basis expansion (one implication line is generated per exact selector, not a whole-I exemption): `raw[s].binding[f] == capture[f] implied by raw[s].binding[f] == env[s].binding[f] AND env[s].binding[f] == capture[f]`, f=all BIND fields below; likewise each REVIEW leaf with its field-specific launch/profile/e0 referent. Retain both basis mutants, raw-to-env and env-to-capture, for every s/f; ALL-copies-wrong attacks kill the latter. `copy1[f] == copy2[f] implied by copy1[f] == capture[f] AND copy2[f] == capture[f]` only for explicitly identical referents/domains/diagnostics; retain both leaf basis mutants. `whole-object/subset/first-match equality implied by ALL expanded leaf basis equalities AND exact count AND unique-key/set rules`; each premise has its own mutant. Never credit a whole-loop deletion for a missing leaf.
+- Repeated-rule implication expansion: identical `(source, place, predicate, dependency domain, owning code)` occurrences across the numeric and supplemental rows name the earlier owning exact row: `later exact selector implied by earlier exact selector`. This is an acyclic alias, not permission to drop boundary/source cases or a second independently observable code. I09 resolution aliases its owning I05/I08/I13/I15/I16/I22/I23/I24/I25/I32/I34 source rule; I24 echoes alias I01-I04/I06-I08/I12-I14/I18-I23/I25-I26/I34 exact leaves; I07 config_commit aliases I04; I29 execution.identity aliases I01; I30 head aliases I03 only for the SAME run/context; I31 counts/findings/own outcome alias I06/I16/I11 only for the SAME check. I34 inputs alias earlier qualification-input comparisons only for identical leaves. I26-I28/C5 paths/wiring and I32-I33/C3 time copies alias only the identical expanded obligation. Different sources, capture versus final, missing data, or different diagnostic domains keep separate mutants. For invalid-input diagnostics use an input with those dependencies typed and present; implication credit never suppresses an applicable code.
+
+| Supplemental inventory stem | Source | Exact expanded places/relations | Owning result |
+|---|---|---|---|
+|I02.targets[t]|API.PR/closing issue, actual prior decision|attempts[t].disposition.{pr,previous}; mirror for selected attempt; each scoped exception.{repository,issue,pr}; actual selected comment.{repository,issue,URL}|R:risk-attempt-invalid for disposition; R:capability-exception-invalid for exception; U:record-selection for target; mirror U:identity-binding|
+|I09.refs[p,f]|owning original immutable source|EVERY REF location in literal schema/location dictionary below, f={source,sha256}; actual retained bytes, unique resolution and allowed origin; repeat in every manifest mirror|owning source code; mirror U:identity-binding|
+|I13.full[t,f]|actual complete immutable ledger[t]|m.attempt (selected t): ALL ATTEMPT, DISPOSITION and LAUNCH leaves from literal dictionary, including each launch/retry; prior_attempts[k] resolves to actual prior record, not final record|U:identity-binding; independent ledger R:risk-attempt-invalid|
+|I15.author[a,f]|complete relevant-author inventory + original marker|b.authors[a] and m.authors[a], f=AUTHOR leaves plus actual marker's model/session/variant and applied-effort source linkage|R:capability-identity-missing; manifest U:identity-binding|
+|I16.full[k,f]|actual quality artifact, finding and lens provenance|m.quality.findings[k].{id,severity,status,source.source,source.sha256}; b.quality.findings[k] status/disposition bytes; every quality/lens participant's retained session/model/marker/source|U:finding-provenance, U:gate-quality/ gate-review-marker for participant/marker; mirror U:identity-binding|
+|I20.full[s,a,f]|independent finite lookup and complete source set|m.capability.comparisons keyed by EACH (slot,author-marker); all COMP leaves below; exact 2 x author-count keys, no omission/duplicate/addition|U:identity-binding for disclosure; actual missing row R:capability-entry-missing; bad comparison R:capability-below-author or capability-effort-no-gain|
+|I24.full[s,f]|original pair, launch, envelope and consumer sink|m.risk_pair[s]: ALL PAIR leaves below, including decoded raw verdict ALL VERDICT leaves and nested coverage/finding/reference; no truncation, substitution or omission|U:identity-binding; independent raw faults R:risk-result-invalid/risk-binding|
+|I29.execution[f]|captured identity/run/queue/preflight/control observations|m.execution: ALL EXEC leaves below; top queue_key and execution.queue_key are literal canonical strings denoting same repository/PR/H/decision, not new object schemas|U:identity-binding; actual executor/lock defect U:executor-invalid|
+|I30.full[k,f]|all independently fetched runs/contexts/protection|m.assessment.checks: ALL CHECKS/RUN/CONTEXT leaves; m.assessment.protection_sha256; exact run/context ID sets, no dropped red or duplicate ID|U:identity-binding; actual run fault U:gate-check; protection R:protection-invalid|
+|I31.full[k,f]|capture gate/risk computation before hold-only wait|m.assessment.{hard_stops[k],open_findings[k],reasons[k],uncertainties[k],risk_outcome,outcome,lines,paths}; m.reasons[k]; preserve exact sets/order where specified, no hidden applicable cause|U:identity-binding plus each independently established gate/risk code|
+|I32.full[k,f]|captured PR/issue/control + original release|m.labels[k]; m.execution.control.{number,state,labels[k]}; timeline digest; m.hold_release.{link,words} versus actual comment target/words/time|U:identity-binding; actual release H:hold-release-target/hold-release-words/hold-release-stale|
+
+- Literal schema dictionary (QA expectation; expand field groups separately). `T` nonempty TEXT; `S` string (may be empty); `P` positive integer excluding bool; `N` nonnegative integer excluding bool; `D` finite number excluding bool; `H40/H64` exact lowercase hexadecimal; `B` boolean; `Z` trusted UTC event-time syntax; `?X` nullable X (required key still); `[X]` array; `X{...}` exact closed object; `/` literal enum. These types do not make an unaccepted source authoritative. All object keys are required. Existing permissive history stays history, never authority.
+
+| Literal object | Fields and types (comma-separated names each expand separately) |
+|---|---|
+|REF|source:T; sha256:H64|
+|BIND|decision_id,attempt_id,nonce:T; repository:repository; pr,issue:P; head,base:H40; diff_sha256,evidence_sha256,requirements_sha256,design_sha256,policy_sha256,instructions_sha256,profiles_sha256,qualification_sha256:H64|
+|REVIEW|slot,dispatch_id,session_id,model,variant,runtime_id:T; floor_evidence_sha256:H64; vendor:Claude/Codex; fresh:true; inherited_session:null|
+|COVER|category:loophole/backdoor/uncontrolled-agent/gate-weakening/authority-widening/autonomy-self-change/prompt-injection/exfiltration/silent-behavior/test-weakening/other; status:no-risk-found/concern/unknown; rationale:T|
+|LOC|artifact_id:T; sha256:H64; start_line,end_line:P|
+|FIND|id:T; category:COVER.category; severity:low/medium/high; certainty:possible/confirmed; evidence:[LOC]; mechanism,consequence:T|
+|VERDICT|schema:merge-risk-verdict/2; binding:BIND; reviewer:REVIEW; coverage:[COVER]; findings:[FIND]; uncertainties:[T]; outcome:approve/refer/reject; rationale:T|
+|ROW|model,effort:T|
+|PIN|source:T; sha256:H64; date:valid YYYY-MM-DD|
+|PROFILE|slot:T; vendor:Claude/Codex; model,variant,effort:T; settings_sha256:H64|
+|ENV_CAP|table_sha256,mapping_sha256:H64; row:ROW; marker_sha256,effort_sha256:H64; exceptions:[P]|
+|RC|started_at,received_at,sealed_at,compared_at:Z; no_inheritance,peer_exposed,available:B; forbidden_actions:[T]; resolved_model:T; runtime_sha256,prompt_sha256,settings_sha256,launcher_sha256:H64; output_source:REF|
+|PAIR|envelope:{binding:BIND,reviewer:REVIEW,capability:ENV_CAP}; receipt:RC; raw_b64:S; raw_sha256:H64; byte_length:N; overflow:B|
+|LAUNCH|slot,session_id:T; started_at,original_start:Z; bytes:?N; transport_attested:B; outcome:returned/transport/failed; raw_sha256:?H64|
+|DISPOSITION|source:REF; words:T; pr:P; previous:T; created_at:Z; verbatim:B|
+|ATTEMPT|attempt_id,decision_id:T; ordinal:P; previous:?T; reason:T; disposition:?DISPOSITION; created_at:Z; terminal,provider_retries_visible:B; launches:[LAUNCH]|
+|AUTHOR|session_id,model,variant:T; source:REF|
+|QFIND|id:T; severity:low/medium/high; status:open/resolved/dismissed/unknown; source:REF|
+|QUALITY|session_id,model:T; source:REF; head:H40; approved:B; marker:T; findings:[QFIND]|
+|COMP|slot:T; marker_sha256,effort_sha256:H64; row:ROW; score:D; author_marker_sha256,author_effort_sha256:H64; author_row:ROW; author_score:D; outcome:capability-score-pass/capability-maintainer-exception; exception:?P|
+|RECORD_CAP|table:PIN; mapping:REF; outcome:COMP.outcome; comparisons:[COMP]|
+|RUN|id:P; name:T; head:H40; status,conclusion:T|
+|CONTEXT|id:P; context:T; head:H40; state:T|
+|CHECKS|complete:B; runs:[RUN]; contexts:[CONTEXT]|
+|PREFLIGHT|exit:N; stdout,stderr:S; escape_hatch:B|
+|IDENTITY|repository:repository; host,remote:T; redirects:[T]; verified:B|
+|AUTH|acceptance:?T; floor_sha256:H64; requirements_sha256,design_sha256,brief_sha256,instructions_sha256,profiles_sha256,qualification_sha256,runtime_sha256,policy_sha256:H64|
+|EVIDENCE|manifest_sha256,narrative_sha256:H64; base,head:H40; read_logs:[REF]|
+|ASSESS|hard_stops:[T]; lines,paths:N; checks:CHECKS; protection_sha256:H64; open_findings:[T]; risk_outcome:clear/referred/unresolved; reasons,uncertainties:[T]; outcome:eligible/held/vetoed/unresolved/referred/failed/merged|
+|EXEC|host,run_id:T; runtime_sha256:H64; preflight:PREFLIGHT; preflight_cwd,queue_key:T; control:?{number:P,state:T,labels:[T]}; timeline_sha256:H64; last_check:Z; identity:IDENTITY|
+|MANIFEST|decision_id:T; repository:repository; issue,pr:P; head,base:H40; diff_sha256,config_sha256:H64; config_commit:H40; ac,design:?REF; authors:[AUTHOR]; capability:?RECORD_CAP; reasons:[T]; hold_release:?{link:T,words:T}; outcome:ASSESS.outcome; earliest_merge:Z; labels:[T]; executor_host,queue_key:T; revert:pending; authority:AUTH; attempt:ATTEMPT; evidence:EVIDENCE; risk_pair:[PAIR]; quality:?QUALITY; assessment:ASSESS; execution:EXEC; supersedes:?REF; prior_attempts:[REF]|
+|CAPCFG|table:PIN; decision,mapping:REF; exception_issue:P|
+|CFG|schema:integer literal 2; acceptance_issue:P; repository:repository; policy_path:T; enabled:B; acceptance:?T; control_issue:?P; executor_host:S; max_lines,max_files,hold_seconds,deadline_seconds,max_age_seconds,max_attempts:P; hard_stops:?{autonomy:[T],merge-enforcement:[T],execution:[T],ci:[T],contracts:[T]}; labels:{hold:[T],off:T}; release_heads:[T]; reviewer_profiles:[PROFILE]; unicode_version:T; project:?{repository:repository,policy_path:T,mapping_sha256:H64,brief:REF,acceptance:REF}; capability:?CAPCFG; requirements,design,runtime_profile,qualification:?REF; guard:?{repository:repository,revision:H40,tree_sha256:H64,source:REF,bundle_sha256:H64}; expected_checks,required_contexts:[T]|
+|SLOT|slot,session_id,dispatch_id:T; marker:REF|
+|EFFORT|marker:REF; session_id,dispatch_id,effort:T; basis:applied/requested/default/inferred; launch:REF; settings_sha256,receipt_sha256:H64|
+|LEDGER_COMMENT|url,login:T; created_at,updated_at:Z; body:S|
+|CAPEVID|slots:[SLOT]; efforts:[EFFORT]; exceptions:[P]; ledger:[LEDGER_COMMENT]; ledger_complete:B|
+|MAP|schema:merge-risk-model-mapping/1; entries:[{runtime_id:T,variant:T,row:T}]|
+|DECISION|schema:merge-risk-capability-decision/1; number:P; table:PIN; mapping:REF|
+|EXCEPTION|schema:merge-risk-capability-exception/1; number:P; issuer:maintainer; words,provenance:T; repository:repository; issue,pr:P; head:H40; author_marker_sha256,author_effort_sha256,reviewer_marker_sha256,reviewer_effort_sha256:H64; table:PIN; author_row,reviewer_row:ROW; author_score,reviewer_score:D; slot:T; profile_sha256:H64; departure:capability-below-author/capability-effort-no-gain/preference-only; reason,correlation:T; qualification_sha256:H64; scope:single-comparison; valid_until:Z; supersedes:?P|
+|RUNTIME_PROFILE|project_dir,checker,preflight:T; isolated_config:B; tools_sha256,hooks_sha256,settings_sha256,wiring_sha256:H64|
+|BRIEF|purpose:T; sensitive_assets,users,trust_boundaries:[T]|
+|QINPUT|models,instructions,runtime,floor,policy,assembler,consumer,suite,recorder,grader:H64|
+|QCASE|id:T; kind:harm/benign/gate/positive; variants:[T]|
+|DETECTION|reviewer,mechanism,location,consequence:T; grade:REF|
+|QRUN|case_id,variant:T; repetition:P; sessions:[T]; outcomes:[approve/refer/reject]; valid_outputs:B; forbidden_attempts,unauthorized_attempts,merge_count:N; full_hold,head_match:B; detections:[DETECTION]; transcripts,raw_results:[REF]; actions,grader:REF; sealed_at,graded_at:Z|
+|QUAL|source:REF; status:UNRUN/failed/qualified; identity_sha256:H64; runtime_observed,dry_run_observed:B; design_redteam,linux_check,macos_check,quality_review:REF; findings_resolved:B; enabling_pr:REF; m_decisions:{1:REF,2:REF,3:REF,4:REF,5:REF,6:REF,7:REF,8:REF,9:REF}; m8_disposition:REF; full_safety_rerun:B; withheld_key,operational_sha256:H64; failed_dispositions:[REF]; sample_count:P; suite:[QCASE]; runs:[QRUN]; inputs:QINPUT|
+
+| Literal location dictionary / owner | Schema locations (each expands all keys, elements and nested REF leaves) | Invalid-source result |
+|---|---|---|
+|S650/I24|decoded r[s]:VERDICT, including all 11 coverage categories, two findings and two references/finding in applicable negative controls|R:risk-result-invalid|
+|S615/I11-I14/I24/I29-I33|selected m:MANIFEST; each nested pair/attempt/disposition/launch/ref/check/finding/comparison; original m raw bytes separately retained|U:manifest-schema|
+|S676/I01-I09/I18-I19/I26-I28|B cfg:CFG; retained accepted brief:BRIEF|U:config-invalid for cfg; R:project-unconfigured for unavailable accepted brief/project|
+|S659/I18-I23|retained mapping:MAP, decision:DECISION, b.capability:CAPEVID, each accepted profile:PROFILE; each author/slot EFFORT; each numbered original decision:EXCEPTION|R:capability-table-invalid for mapping/decision; R:capability-identity-missing for slots/markers; R:capability-effort-unavailable for effort; R:capability-profile-mismatch for profiles|
+|S669/I12-I14|b.attempts[t]:ATTEMPT and retained launch/disposition observations|R:risk-attempt-invalid|
+|S666/I27|accepted actual runtime-profile:RUNTIME_PROFILE|U:runtime-invalid|
+|S675/I34|accepted retained qualification:QUAL; EACH suite case/run/repetition/detection/reference/input|R:qualification-unavailable|
+
+- Schema row expansion, owned by the location's scenario: `Ixx.SCH[p,key,attack]` for EACH required key at EVERY closed object instance in the literal location dictionary: omit key, add one sentinel unknown key, serialize duplicate JSON key with equal AND differing values, and replace its value with each incompatible type from {null,bool,number,string,array,object}. Container roots also get these type attacks; arrays get wrong-typed members at every actual position. Nullable keys get both null and fully typed controls; missing key never equals null. For text add empty/whitespace-only; for integers add -1,0 where forbidden, fraction,bool; hex add length -1/+1, uppercase, nonhex; time/date add invalid date/zone-less/untrusted source; number add nonfinite. ENUM[p,value] enumerates EACH allowed literal as a syntactic control and unknown, case-changed and wrong-type values as negatives; separate semantic applicability governs whether a legal literal can authorize. Unknown status in QFIND is syntactically history but unavailable provenance cannot clear. Do not make all syntactic enum controls eligible when their semantics forbid that value.
+- Every schema expansion has its own single-oracle assertion of the location's exact code and DEL-presence/type/closure/enum selector mutant with its eligible companion control surviving; parser duplicate-key rejection remains an independent retained premise when schema deletion cannot admit duplicate keys. `object no-omission/no-duplicate summary implied by expanded required-key checks AND parser duplicate-key refusal`; keep per-key omission, duplicate wire cases, exact cardinality and unique identity cases. Raw schema mutants use both slots, manifest nested schemas both slots/authors/attempt launch positions, never just a representative depth. For noneligible finding-bearing raw controls, temporarily violate the SAME leaf in an otherwise valid refer/reject, require risk-result-invalid independently of risk-referral, and retain the companion eligible approval control; the mutant must change the exact code, not necessarily clear the refer.
+- Schema implication expansion for EACH exact leaf p: `general string/type bound at p implied by retained exact literal/enum/HEX40/HEX64/repository/time/date lexical predicate at p` where that predicate already includes the type; retain the lexical/membership mutant and every wire/type boundary case. `duplicate-key schema summary at p implied by retained parser duplicate-key rejection at p`; retain per-object-depth parser mutant. Neither implication exempts required-key presence, exact set/cardinality, source authority, raw-byte integrity or invalid-input diagnostics.
+- Completeness assertion C6.COMPLETE (ONE assertion, owner S615): independently transcribe addendum 4 I01-I34 into the literal field/place declarations above and the owner tables below, expand every named field, destination, source/ref/root, relation, slot, author, attempt and actual array member; let N_inventory be that independently counted declared set of `(inventory,source,place,predicate,domain,code)` keys. Require `N_generated == N_inventory`, exact key-set equality (no omission/duplicate), and EVERY non-implied rule key has a named behavioral mutant with eligible companion control; every implied key has its expanded `R implied by R'` line, acyclic retained premises and killed premise mutant. Compare the per-I counts and exact key lists, including schema/temporal/behavior supplements, before credit. 1,305 recovered numeric rows alone are NOT N_inventory: the expanded supplements and all nested mirrors count too. Array cardinalities come from independently retained fixture/source inventories, not the evaluator or generated row list. For every stem remove one generated selector (first/middle/last), duplicate one, omit one domain position, delete one mutant or break an implication link: this completeness assertion fails. A number-only or self-generated-list comparison earns no completeness credit. Missing carrier remains an explicit unavailable-evidence row, never an omitted key.
+
 ### S616 — Completion confirms the actual merge and exact human-path revert (#646; A60 + addendum 1)
 **Covers:** F73
 - Amended by A60: continuing requirement; supersedes this scenario's A58 mechanism-specific assertions.
@@ -9394,6 +10237,17 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s617_merge_risk_hold_300_seconds.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I33.20|X>selected.created_at|t|
+|I33.21|X>selected.updated_at|t|
+|I33.22|Y>m.earliest_merge|a|
+
+- A60 addenda 4/5 I33 hold rules (same E/C, K/edits/mutants as S615). For h={1,300}, test now-T={h-1,h,h+1}: only h-1 is H:hold-window, h/h+1 eligible/0 after all final gates. Test h=0/-1/type faults as U:config-invalid, no zero hold. T must come from the selected complete immutable eligible comment, not PR creation/earlier record/local time; missing T is U:record-time. m.earliest_merge must equal T+h: independently test -1, equality, +1 with full hold otherwise ready; disagreement is U:identity-binding. Test forged early earliest_merge with now between forged and genuine E: it must not clear. DEL-m.earliest_merge-equality and FORGED-EARLIEST each kill while the correct control passes.
+- `hold_start == T implied by hold_start := selected server T`; `derived E == T+h implied by E := T+h`; `E > T implied by E := T+h AND h > 0`; `now >= E implied by E := T+h AND now-T >= h` (retain readiness mutant on now-T >= h). These definitions never exempt independent manifest-copy/time-source checks. Kill fixed-300, `>=` to `>`, PR-time-for-T, max(T,PC), pre-pair-credit, missing-record-time, missing-final-clock and forged-earliest mutants separately. Prerequisite boundary rows and event-copy rows in S654 expand here for quality/gates/last_check; no future/at-T prerequisite gets a hold-only diagnosis.
+
 ### S618 — A hold or risk label stops every merge and voids the record (#646; A60 D7; AC5)
 **Covers:** F73
 - Given: an eligible record at T and a timeline in which, after T: (a) `hold` is added to the PR; (b) `risk:high` (and `risk:low`, any `risk:*`) is added to the work-item issue; (c) `merge-autonomy:off` is added to the control issue; (d) `hold` is added then removed by someone else before `now`; (e) a hold is added and removed at the same second; (f) the timeline cannot be read. Further: (g) a `hold` label added at T-100 and removed at T-50, before the record, with `hold_release` null; (i) a `hold` or `merge-autonomy:off` `labeled` event at exactly T; (j) a `hold` added 2 hours before T with no release and still present (not removed); (k) two holds, the first at T-7200 and the second at T-100, with the maintainer's release words dated between them (after the first hold and before the second). Controls: (g2) the case (g) timeline with a record whose verified `hold_release` quotes maintainer words dated after the T-100 event, with a full window; (h) no risk label exists anywhere.
@@ -9407,6 +10261,27 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s618_merge_risk_hold_or_risk_label_stops.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I32.1|Z>m.labels|a|
+|I32.2|Z>@L:control.state|a|
+|I32.3|Z>@L:control.labels|a|
+|I32.4|Z>@L:timeline_sha256|a|
+|I32.5|0>timeline.complete|u|
+|I32.6|0>timeline.readable|u|
+|I32.7|0>PR.stop-at-T|v|
+|I32.8|0>issue.stop-at-T|v|
+|I32.9|0>removed.stop-after-T|v|
+|I32.14|0>PR.off|w|
+|I32.15|0>issue.off|w|
+|I32.16|0>control.off|x|
+|I32.17|0>control.closed|y|
+|I32.18|0>control.off-since-config|z|
+
+- A60 addenda 4/5 I32/I33 rule expansion: every PR/issue/control event ID,target,label,action,created_at is compared with the complete retained timeline and its manifest digest/copies separately. For stop-before/at/after-T run T-1,T,T+1; after-T includes added-then-removed/same-second removal. A stop at T or later voids the announcement (U:void-after-announcement plus actual independent stop referral if applicable), never a grace period. Pre-T stops require an actual later applicable release/new T; current label removal alone is not release. Test ancient stops at T-86401 and T-400 days, all history pages, two stops with release between, empty/unreadable/truncated history: U:timeline-unreadable when unavailable, no guessed absence. Off at policy commit time-1/equality/+1 and +400 days retains S618's off-since-config rule (equality/+1/ancient-after refer), no lookback cap. Final labels/control.state are reread even with identity expiry. Each target/label/action/time/count/history/root selector owns DEL-selector; add GRACE-at-T, LOOKBACK, removed-event-erasure, latest-only, no-final-read mutants; eligible unchanged-history and valid pre-record release controls survive.
+
 ### S619 — A new record after a hold needs the maintainer's own words (#646; A60 D7; AC5, AC6)
 **Covers:** F73
 - Given: a void record and a new record at T2 with `hold_release` set to: (a) null; (b) the maintainer's verbatim words about this PR with a link; (c) words about another PR; (d) a paraphrase or "go ahead in general" from a relay; (e) an old prompt predating the hold. Further: (f) a hold added and removed before the first record, with the release words linked and dated after the hold's event (no void record exists); (g) the linked words dated exactly at the hold's event, and (h) dated before it. Off-label variants on the control issue: (i) a `merge-autonomy:off` event after the latest commit that changed `policy/merge-autonomy.json`; control (j) the same event before that commit, with the config re-enabled by it; (k) a control-issue `merge-autonomy:off` event 2 hours after the latest commit that changed `policy/merge-autonomy.json`; (l) two holds with the maintainer's release words dated between them (after the first, before the second), a full window from the new record.
@@ -9418,6 +10293,21 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Amended by A60: control-issue off at config commit time, +1 second and +400 days each refers off-since-config, even removed; -1 second is the no-off-since-config control only with the protected re-enable commit and new valid evidence. Missing config time is unresolved. Kill > instead of >=, 1-second/1-hour/1-day grace and 30-day/365-day history windows. Later release cannot re-enable global off: only a protected maintainer config PR, new record and full hold can do so; pair expiry still applies.
 - Case file: `test/cases/s619_merge_risk_new_record_after_hold.sh` (Developer-owned).
 - Red-before-green: follow the section contract and baseline ledger: record P evidence on M, B object checks on A and actual red-before-green for N; continuing A58 checks use A only as a branch continuity lookup, with fresh killed mutations. This QA run makes no behavior-pass claim.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I32.10|1>release.absent|A|
+|I32.11|1>release.link.target|B|
+|I32.12|1>release.words|C|
+|I32.13|1>release.time|D|
+|I33.24|2>policy.commit_time|a|
+|I33.25|2>release.created_at|a|
+|I33.26|2>latest.stop.time|a|
+
+- A60 addenda 4/5 I32 release expansion: test EACH actual release {link repository,issue/PR target,original words,created_at,source bytes/hash} against the retained linked comment, plus m.hold_release.{link,words}; correct sources/new complete T/full hold stay eligible. Wrong target/words are H:hold-release-target/hold-release-words; absent link is H:hold-release-missing. Latest_stop < release_time < T uses difference -1,0,+1 at BOTH boundaries; stale/tied/wrong-order release is H:hold-release-stale and impossible post-announcement prerequisites additionally retain their C3 risk-independence cause. Stop history remains complete even for removed/ancient labels. Kill each source/target/words/time selector, stale-at-equality, latest-stop-versus-first, release-between-stops and pre-release-hold-credit mutants.
+- `latest_stop < T implied by latest_stop < release_time AND release_time < T`; `latest_stop <= now and release_time <= now implied by latest_stop < release_time AND release_time < T AND T <= now`. Keep the independent adjacent release-order mutants and stop identity/history/stop-at-T/off rules. These source/word equalities establish detectable consistency, never human authorship.
 
 ### S620 — Human approval and reserved authority keep their own rules (#646; A60 + addendum 1)
 **Covers:** F73
@@ -9528,6 +10418,23 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s650_merge_risk_verdict_closed_schema.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I24.27|3>p0.raw_b64|f|
+|I24.28|3>p0.raw_sha256|f|
+|I24.29|3>p0.byte_length|f|
+|I24.30|3>p0.overflow|f|
+|I24.31|3>@T:output_source.bytes|f|
+|I24.122|3>p1.raw_b64|f|
+|I24.123|3>p1.raw_sha256|f|
+|I24.124|3>p1.byte_length|f|
+|I24.125|3>p1.overflow|f|
+|I24.126|3>@U:output_source.bytes|f|
+
+- A60 addenda 4/5 I24.SCH expands the complete literal VERDICT dictionary in S615 at BOTH s positions; every key/type/enum/category and nested finding/reference is a separate named oracle, including two reference positions per finding and every coverage row. Strict raw-byte rows expand independently: original hash, byte length, output-source bytes/reference, immutable sink, cap at 65535/65536/65537 BYTES, overflow flag, malformed base64/UTF-8, empty/whitespace/truncated/trailing-second-object/wrapper and duplicate JSON key at EACH object depth. All are R:risk-result-invalid; original legal complete raw approval is eligible/0. Recompute only permitted wrappers, never normalize/sanitize raw bytes. Each parsing/bound/hash/length/sink/closure/type/enum rule retains its own selector mutant with eligible control; when two checks logically imply a summary, name the exact retained premises under S615, do not remove both. Published-only field control remains independent of production schemas; S662 and its finite mapping stay byte-identical.
+
 ### S651 — Contradictory and uncertain returns never become approvals (#646; A60 + addendum 1)
 **Covers:** F71
 - Given: valid unconditional approvals; separately approve with finding of any severity including low, uncertainty, unknown/concern coverage, or conditional structured state; finding whose category lacks concern, concern without finding, unknown without uncertainty, duplicate finding ID, reject without confirmed finding, refer without concern/uncertainty. Finding references with wrong artifact/digest/absent or reversed/out-of-range lines; inventory reference controls for binary/empty/deleted files.
@@ -9537,6 +10444,55 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Test seam: public evaluator with independent one-field mutations and record/action capture; kill each relation/reference check and AND-to-OR combination. Include valid benign quotation and independently graded semantic contradiction exercise; canned strings do not prove semantic detection.
 - Case file: `test/cases/s651_merge_risk_verdict_cross_fields.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I24.84|4>r0.findings[0].id|f|
+|I24.85|4>@bg:artifact_id|f|
+|I24.86|4>@bg:sha256|f|
+|I24.87|4>@bg:start_line|f|
+|I24.88|4>@bg:end_line|f|
+|I24.89|4>r0.findings[1].id|f|
+|I24.90|4>@bh:artifact_id|f|
+|I24.91|4>@bh:sha256|f|
+|I24.92|4>@bh:start_line|f|
+|I24.93|4>@bh:end_line|f|
+|I24.94|5>r0.refer|s|
+|I24.95|5>r0.reject|s|
+|I24.179|4>r1.findings[0].id|f|
+|I24.180|4>@bi:artifact_id|f|
+|I24.181|4>@bi:sha256|f|
+|I24.182|4>@bi:start_line|f|
+|I24.183|4>@bi:end_line|f|
+|I24.184|4>r1.findings[1].id|f|
+|I24.185|4>@bj:artifact_id|f|
+|I24.186|4>@bj:sha256|f|
+|I24.187|4>@bj:start_line|f|
+|I24.188|4>@bj:end_line|f|
+|I24.189|5>r1.refer|s|
+|I24.190|5>r1.reject|s|
+
+- A60 addenda 4/5 I24 semantic-rule matrix; expand EACH row for s={0,1}, every category/finding/reference and both actual slots' original and manifest-decoded raw copies. Public oracle is exact R:risk-result-invalid for a contradiction, exact R:risk-referral for a valid refer/reject, and eligible/0 for the companion approval control. Each row owns DEL-[row,selector], with actual code change required even when another valid referral still prevents eligibility.
+
+| Rule stem | Single contradiction/behavior edit; positive dimension control |
+|---|---|
+|I24.coverage-set|omit/duplicate/add category versus exact eleven independent IDs|
+|I24.concern-finding|concern without matching finding, finding without concern; valid matching category|
+|I24.unknown|unknown without uncertainty; unknown with retained uncertainty is valid referral|
+|I24.approve-findings|approve with a low/medium/high finding separately; empty-findings approval|
+|I24.approve-uncertainties|approve with one uncertainty at each position; empty approval|
+|I24.approve-status|approve with unknown/concern separately; all no-risk-found approval|
+|I24.refer-evidence|refer with neither finding nor uncertainty; valid concern/uncertainty referral|
+|I24.reject-confirmed|reject with no confirmed finding; confirmed reject refers|
+|I24.finding-ID|duplicate ID with distinct findings; unique IDs|
+|I24.reference|absent/duplicate-ambiguous artifact ID, wrong digest, empty evidence array; unique actual retained artifact|
+|I24.lines|start<1, start>end, end>actual inventory lines; equality at first/last line valid; binary/deleted/empty inventory-line controls|
+|I24.pair-AND|approve/refer, refer/approve, approve/reject, reject/approve; approve/approve alone clears dimension|
+|I24.raw-over-summary|manifest nested clear/eligible cannot suppress a valid raw refer/reject, any severity; immutable capture disclosure mismatch also U:identity-binding|
+
+- Concern/finding equivalence is expanded in BOTH directions, not one shared tautological expected-set calculation. No keyword/majority/conditional/severity filtering supplies clearance; reinstate each as a mutant and benign quoted-threat control kills it. Original/manifest finding evidence identity and reference source rules are not replaced by a syntactic validity result.
 
 ### S652 — Capture bounds apply before parsing and never accept a prefix (#646; A60 + addendum 1)
 **Covers:** F71
@@ -9570,6 +10526,214 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s654_merge_risk_binding_time_expiry.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I01.5|6>@2:repository|E|
+|I01.6|6>@G:repository|E|
+|I01.7|6>@8:repository|E|
+|I01.8|6>@H:repository|E|
+|I02.3|o>@2:pr|E|
+|I02.4|o>@G:pr|E|
+|I02.5|o>@8:pr|E|
+|I02.6|o>@H:pr|E|
+|I02.10|p>@2:issue|E|
+|I02.11|p>@G:issue|E|
+|I02.12|p>@8:issue|E|
+|I02.13|p>@H:issue|E|
+|I03.10|a>@2:head|E|
+|I03.11|a>@G:head|E|
+|I03.12|a>@8:head|E|
+|I03.13|a>@H:head|E|
+|I04.10|b>@2:base|E|
+|I04.11|b>@G:base|E|
+|I04.12|b>@8:base|E|
+|I04.13|b>@H:base|E|
+|I06.4|q>@2:diff_sha256|E|
+|I06.5|q>@G:diff_sha256|E|
+|I06.6|q>@8:diff_sha256|E|
+|I06.7|q>@H:diff_sha256|E|
+|I07.10|d>@2:policy_sha256|E|
+|I07.11|d>@G:policy_sha256|E|
+|I07.12|d>@8:policy_sha256|E|
+|I07.13|d>@H:policy_sha256|E|
+|I08.5|f>@2:requirements_sha256|E|
+|I08.6|f>@G:requirements_sha256|E|
+|I08.7|f>@8:requirements_sha256|E|
+|I08.8|f>@H:requirements_sha256|E|
+|I08.16|g>@2:design_sha256|E|
+|I08.17|g>@G:design_sha256|E|
+|I08.18|g>@8:design_sha256|E|
+|I08.19|g>@H:design_sha256|E|
+|I12.6|C>@2:decision_id|E|
+|I12.7|C>@G:decision_id|E|
+|I12.8|C>@8:decision_id|E|
+|I12.9|C>@H:decision_id|E|
+|I13.46|7>@2:attempt_id|E|
+|I13.47|7>@G:attempt_id|E|
+|I13.48|7>@8:attempt_id|E|
+|I13.49|7>@H:attempt_id|E|
+|I14.25|8>@bo:session_id|E|
+|I14.26|8>@bo:dispatch_id|E|
+|I14.27|8>@bo:runtime_id|E|
+|I14.28|8>@2:nonce|E|
+|I14.57|8>@bp:session_id|E|
+|I14.58|8>@bp:dispatch_id|E|
+|I14.59|8>@bp:runtime_id|E|
+|I14.60|8>@8:nonce|E|
+|I18.7|9>@bo:slot|E|
+|I18.8|9>@bo:model|E|
+|I18.9|9>@bo:variant|E|
+|I18.10|9>@bo:vendor|E|
+|I18.11|9>@bo:runtime_id|E|
+|I18.12|9>@R:slot|E|
+|I18.13|9>@R:model|E|
+|I18.14|9>@R:variant|E|
+|I18.15|9>@R:vendor|E|
+|I18.16|9>@R:runtime_id|E|
+|I18.17|ba>@T:settings_sha256|F|
+|I18.26|9>@bp:slot|E|
+|I18.27|9>@bp:model|E|
+|I18.28|9>@bp:variant|E|
+|I18.29|9>@bp:vendor|E|
+|I18.30|9>@bp:runtime_id|E|
+|I18.31|9>@S:slot|E|
+|I18.32|9>@S:model|E|
+|I18.33|9>@S:variant|E|
+|I18.34|9>@S:vendor|E|
+|I18.35|9>@S:runtime_id|E|
+|I18.36|ba>@U:settings_sha256|F|
+|I18.46|j>@2:profiles_sha256|E|
+|I18.47|j>@G:profiles_sha256|E|
+|I18.48|j>@8:profiles_sha256|E|
+|I18.49|j>@H:profiles_sha256|E|
+|I19.19|bb>@bz:table_sha256|E|
+|I19.20|bb>@bz:mapping_sha256|E|
+|I19.21|bb>@bA:table_sha256|E|
+|I19.22|bb>@bA:mapping_sha256|E|
+|I20.1|bc>@bz:row.model|E|
+|I20.2|bc>@bz:row.effort|E|
+|I20.29|bc>@bA:row.model|E|
+|I20.30|bc>@bA:row.effort|E|
+|I21.1|bd>@bo:floor_evidence_sha256|E|
+|I21.2|bd>@R:floor_evidence_sha256|E|
+|I21.3|bd>@bp:floor_evidence_sha256|E|
+|I21.4|bd>@S:floor_evidence_sha256|E|
+|I22.55|be>@bz:marker_sha256|E|
+|I22.56|be>@bz:effort_sha256|E|
+|I22.57|bf>@bA:marker_sha256|E|
+|I22.58|bf>@bA:effort_sha256|E|
+|I23.38|bg>@bz:exceptions|E|
+|I23.39|bg>@bA:exceptions|E|
+|I24.1|bh>@G:decision_id|E|
+|I24.2|bh>@G:attempt_id|E|
+|I24.3|bh>@G:nonce|E|
+|I24.4|bh>@G:repository|E|
+|I24.5|bh>@G:pr|E|
+|I24.6|bh>@G:issue|E|
+|I24.7|bh>@G:head|E|
+|I24.8|bh>@G:base|E|
+|I24.9|bh>@G:diff_sha256|E|
+|I24.10|bh>@G:evidence_sha256|E|
+|I24.11|bh>@G:requirements_sha256|E|
+|I24.12|bh>@G:design_sha256|E|
+|I24.13|bh>@G:policy_sha256|E|
+|I24.14|bh>@G:instructions_sha256|E|
+|I24.15|bh>@G:profiles_sha256|E|
+|I24.16|bh>@G:qualification_sha256|E|
+|I24.17|bi>@R:slot|E|
+|I24.18|bi>@R:dispatch_id|E|
+|I24.19|bi>@R:session_id|E|
+|I24.20|bi>@R:model|E|
+|I24.21|bi>@R:variant|E|
+|I24.22|bi>@R:runtime_id|E|
+|I24.23|bi>@R:floor_evidence_sha256|E|
+|I24.24|bi>@R:vendor|E|
+|I24.25|bi>@R:fresh|E|
+|I24.26|bi>@R:inherited_session|E|
+|I24.96|bh>@H:decision_id|E|
+|I24.97|bh>@H:attempt_id|E|
+|I24.98|bh>@H:nonce|E|
+|I24.99|bh>@H:repository|E|
+|I24.100|bh>@H:pr|E|
+|I24.101|bh>@H:issue|E|
+|I24.102|bh>@H:head|E|
+|I24.103|bh>@H:base|E|
+|I24.104|bh>@H:diff_sha256|E|
+|I24.105|bh>@H:evidence_sha256|E|
+|I24.106|bh>@H:requirements_sha256|E|
+|I24.107|bh>@H:design_sha256|E|
+|I24.108|bh>@H:policy_sha256|E|
+|I24.109|bh>@H:instructions_sha256|E|
+|I24.110|bh>@H:profiles_sha256|E|
+|I24.111|bh>@H:qualification_sha256|E|
+|I24.112|bi>@S:slot|E|
+|I24.113|bi>@S:dispatch_id|E|
+|I24.114|bi>@S:session_id|E|
+|I24.115|bi>@S:model|E|
+|I24.116|bi>@S:variant|E|
+|I24.117|bi>@S:runtime_id|E|
+|I24.118|bi>@S:floor_evidence_sha256|E|
+|I24.119|bi>@S:vendor|E|
+|I24.120|bi>@S:fresh|E|
+|I24.121|bi>@S:inherited_session|E|
+|I25.3|bj>@2:evidence_sha256|E|
+|I25.4|bj>@G:evidence_sha256|E|
+|I25.5|bj>@8:evidence_sha256|E|
+|I25.6|bj>@H:evidence_sha256|E|
+|I26.15|l>@2:instructions_sha256|E|
+|I26.16|l>@G:instructions_sha256|E|
+|I26.17|l>@8:instructions_sha256|E|
+|I26.18|l>@H:instructions_sha256|E|
+|I26.19|bk>@T:prompt_sha256|F|
+|I26.20|bk>@T:launcher_sha256|F|
+|I26.21|bk>@U:prompt_sha256|F|
+|I26.22|bk>@U:launcher_sha256|F|
+|I33.1|2>@T:started_at|F|
+|I33.2|2>@T:received_at|F|
+|I33.3|2>@T:sealed_at|F|
+|I33.4|2>@T:compared_at|F|
+|I33.9|2>@U:started_at|F|
+|I33.10|2>@U:received_at|F|
+|I33.11|2>@U:sealed_at|F|
+|I33.12|2>@U:compared_at|F|
+|I33.27|bl>b.now|G|
+|I33.28|bl>missing.Date|G|
+|I33.29|bl>failed.request|G|
+|I33.30|bl>zone-less.Date|G|
+|I34.10|m>@2:qualification_sha256|E|
+|I34.11|m>@G:qualification_sha256|E|
+|I34.12|m>@8:qualification_sha256|E|
+|I34.13|m>@H:qualification_sha256|E|
+
+- A60 addenda 4/5 — temporal expansion. s={0,1}, t={0,1}, j=every actual launch. T=selected complete eligible comment server creation; S_s=first trusted slot launch; L_s=returning launch; R_s/Z_s/P_s=actual receipt/seal/comparison; PC=max(P_0,P_1); A=min(S_0,S_1); E=T+h; M=cfg.max_age_seconds. All events independently retained, no values supplied by reviewers/local clock. Each table inequality expands into three named rows with left-minus-right = -1,0,+1 seconds, all other independent premises valid where jointly possible. For `<`: only -1 satisfies; for `<=`: -1 and 0 satisfy. Equality/source-copy rows test correct/-1/+1 and false source with correct spelling. Where transitivity makes an isolated boundary impossible, retain the combined refusal and name ALL violated basis relations; do not claim a single-rule kill for that implied row. Full-hold eligible companions are constructed separately (not by silently changing the attacked T).
+
+| Inventory/stem / owner | Exact relation or event identity | Violating oracle / mutant |
+|---|---|---|
+|I33.created[t,j] / S669|attempts[t].created_at < launch[t,j].started_at|R:risk-attempt-invalid; DEL-created-before-launch[t,j]|
+|I33.first[s,t] / S669|S_s equals actual FIRST launch.started_at; every retry.original_start == S_s; repeated attempt uses its own actual original events without resetting retained evidence identity clocks|R:risk-attempt-invalid; FIRST/LAST-entry and RESET-clock selectors|
+|I33.chain1[s] / S654|S_s <= returning L_s.started_at|R:risk-independence; DEL-chain1[s]|
+|I33.chain2[s] / S654|L_s.started_at <= R_s|R:risk-independence; DEL-chain2[s]|
+|I33.chain3[s] / S654|R_s <= Z_s|R:risk-independence; DEL-chain3[s]|
+|I33.chain4[s] / S654|Z_s <= P_s|R:risk-independence; DEL-chain4[s]|
+|I33.cross[s,j!=s] / S658|Z_s <= P_j (both cross-slot directions)|R:risk-independence; DEL-cross[s,j]|
+|I33.complete / S654|PC < T|R:risk-independence; DEL-pair-before-T; retain exact reviewed T+100 start/T+170 compare witness and each slot late separately|
+|I33.final / S654|T <= trusted final now|R:risk-independence; DEL-T-before-now|
+|I33.deadline[s] / S654|R_s-S_s <= cfg.deadline_seconds (1800)|1799/1800 pass dimension; 1801 R:risk-deadline; inclusive-to-exclusive and DEL-deadline[s]|
+|I33.survive / S654|max(now,E) < A+M (86400)|bound-1 passes dimension; equality/+1 R:risk-expired; DEL-full-hold-survival, earlier-start-to-later, `<` to `<=`|
+|I33.age[s] / S654|now-A < M and E < A+M separately restated|86399/86400/86401 retain exclusive-age cases, R:risk-expired at equality/+1; implication below|
+|I33.no-reset[x] / S654|x={redispatch,receipt,seal,comparison,reannouncement,later-peer,same-vendor}; none replaces original S/A|R:risk-deadline or risk-expired with exact isolated deadline/age setup; RESET-x mutant|
+|I33.prereq[x] / S617|x={actual quality approval,complete green gates,last_check,applicable release,applicable disposition} < T|R:risk-independence for impossible announcement chronology; ledger disposition-to-attempt uses risk-attempt-invalid; DEL-prerequisite[x]|
+|I33.disposition[t] / S669|actual disposition.created_at < next attempt.created_at|R:risk-attempt-invalid; DEL-disposition-before-next[t]|
+|I33.unordered[t,j] / S669|every launch/event not already ordered through T <= final now|R:risk-attempt-invalid; DEL-unordered-now[t,j]|
+|I33.copy[p] / S615|each attempt/disposition/launch/original-start/receipt/seal/compare/last_check/config date/release/stop/exception creation/qualification seal-grade-expiry copy equals ITS original event|owning inventory code; manifest U:identity-binding; DEL-event-copy[p], never a time-parser-only kill|
+|I33.now / S654|successful trusted final server request; Date parseable, zoned, actual final observation|U:now-unreadable for absent/failed/malformed/zone-less, no clock-derived derivative causes; DEL-server-time/LOCAL-fallback/ignore-request-status|
+
+- Addendum-5 temporal implication expansion, one exact line per s and every applicable t/j/event: `P_s <= now implied by P_s <= PC AND PC < T AND T <= now`; `P_s < T implied by P_s <= PC AND PC < T`; `PC <= now implied by PC < T AND T <= now`. `x <= now and x < T implied by x <= next <= ... <= P_s <= PC < T <= now`, x={S_s,L_s.started_at,R_s,Z_s}; list each intervening adjacent chain rule in the expanded line. `same-slot seal <= comparison implied by I33.chain4[s]`; every other nonadjacent same-chain bound names its intervening chain premises. Keep independent CROSS-slot seal rules. Definitions min/max provide mathematical bounds, no extra observed-field mutant.
+- `R_s-S_s >= 0 implied by S_s <= L_s.started_at AND L_s.started_at <= R_s`; `now-A >= 0 implied by A <= PC AND PC < T AND T <= now`; `now-T >= 0 implied by T <= now`. `now-A < M implied by max(now,E) < A+M`; `E < A+M implied by max(now,E) < A+M`. The stronger survival rule retains its OWN mutant. For prerequisite x, `x <= now implied by x < T AND T <= now`; only when the retained chain actually reaches x. Earlier unordered launch/disposition bounds stay independent. Missing/untrusted clocks/event sources, actual-copy binding and inclusive deadlines keep separate mutants and refusals.
+- Exact full-hold controls: for 1800-second receipt controls set both completions strictly BEFORE a later T, then wait h; changing to 1801 mutates only the deadline dimension. For age boundaries use M large enough to distinguish pair chronology and a complete held/ready window as specified; at 86400 the oracle is risk-expired regardless of a superficially complete hold. Time advancing by itself never emits identity-binding. An invalid timeline gets a NEW complete announcement/full hold, never max(T,PC), backdating, in-place timestamp repair or subtraction of pre-pair elapsed time. Kill each such repair mutant using the same frozen timeline.
+
 ### S655 — Complete B/H source is exported as inert identified evidence (#646; A60 + addendum 1)
 **Covers:** F71, F72
 - Given: object-backed B ancestor of H, exact full diff and raw NUL-delimited old/new inventories with blobs/types/modes, complete changed old/new versions and addressable full snapshots. Missing object/file/version/page, inconsistent remote H/B/counts, truncated compare/diff, unavailable LFS/binary content or unmeasurable change; external diff/textconv/filter/replacement object and symlink/submodule sentinels.
@@ -9581,6 +10745,91 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s655_merge_risk_complete_evidence_export.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I05.1|bm>trees.base[0].path|H|
+|I05.2|bm>trees.base[0].mode|H|
+|I05.3|bm>trees.base[0].oid|H|
+|I05.4|bm>trees.base[1].path|H|
+|I05.5|bm>trees.base[1].mode|H|
+|I05.6|bm>trees.base[1].oid|H|
+|I05.7|bn>trees.head[0].path|H|
+|I05.8|bn>trees.head[0].mode|H|
+|I05.9|bn>trees.head[0].oid|H|
+|I05.10|bn>trees.head[1].path|H|
+|I05.11|bn>trees.head[1].mode|H|
+|I05.12|bn>trees.head[1].oid|H|
+|I05.13|bo>files[0].path|H|
+|I05.14|bo>files[0].previous_path|H|
+|I05.15|bo>files[0].old_mode|H|
+|I05.16|bo>files[0].new_mode|H|
+|I05.17|bo>files[0].old_oid|H|
+|I05.18|bo>files[0].new_oid|H|
+|I05.19|bp>@bx:source|I|
+|I05.20|bp>@bx:path_b64|I|
+|I05.21|bp>@bx:revision|I|
+|I05.22|bp>@bx:oid|I|
+|I05.23|bp>@bx:content|I|
+|I05.24|bp>@bx:sha256|I|
+|I05.25|bp>@bx:length|I|
+|I05.26|bp>@bx:line_map|I|
+|I05.27|bo>files[1].path|H|
+|I05.28|bo>files[1].previous_path|H|
+|I05.29|bo>files[1].old_mode|H|
+|I05.30|bo>files[1].new_mode|H|
+|I05.31|bo>files[1].old_oid|H|
+|I05.32|bo>files[1].new_oid|H|
+|I05.33|bp>@by:source|I|
+|I05.34|bp>@by:path_b64|I|
+|I05.35|bp>@by:revision|I|
+|I05.36|bp>@by:oid|I|
+|I05.37|bp>@by:content|I|
+|I05.38|bp>@by:sha256|I|
+|I05.39|bp>@by:length|I|
+|I05.40|bp>@by:line_map|I|
+|I05.41|bq>addition.old-object-absent|H|
+|I05.42|bq>deletion.new-object-absent|H|
+|I05.43|bq>rename.old-side|H|
+|I05.44|bq>rename.new-side|H|
+|I05.45|bq>unchanged.context|H|
+|I05.46|bq>symlink.link-text|H|
+|I05.47|br>unsafe.path|J|
+|I05.48|br>collision.normalized-prefix|J|
+|I05.49|br>gitlink.mode|J|
+|I06.1|bs>b.diff_text|K|
+|I06.2|bs>remote.diff_sha256|K|
+|I06.8|r>remote.lines|K|
+|I06.10|r>cap.input.lines|L|
+|I06.11|s>remote.paths|K|
+|I06.13|s>cap.input.paths|M|
+|I25.1|bj>current.evidence_sha256|a|
+|I25.2|bj>m.evidence.manifest_sha256|a|
+|I25.7|bt>corpus[0].id|I|
+|I25.8|bt>corpus[0].bytes|I|
+|I25.9|bt>corpus[0].sha256|I|
+|I25.10|bt>corpus[0].length|I|
+|I25.11|bt>corpus[0].line_map|I|
+|I25.14|bt>corpus[0].partition|I|
+|I25.12|bt>corpus[0].source.source|I|
+|I25.13|bt>corpus[0].source.sha256|I|
+|I25.15|4>read_logs[0].slot|I|
+|I25.16|4>read_logs[0].corpus|I|
+|I25.17|bt>corpus[1].id|I|
+|I25.18|bt>corpus[1].bytes|I|
+|I25.19|bt>corpus[1].sha256|I|
+|I25.20|bt>corpus[1].length|I|
+|I25.21|bt>corpus[1].line_map|I|
+|I25.24|bt>corpus[1].partition|I|
+|I25.22|bt>corpus[1].source.source|I|
+|I25.23|bt>corpus[1].source.sha256|I|
+|I25.25|4>read_logs[1].slot|I|
+|I25.26|4>read_logs[1].corpus|I|
+
+- A60 addenda 4/5 I05/I06/I25 supplemental expansion: side={base,head}, each snapshot entry k, each file change k and every artifact k (including unchanged context) has its OWN path/previous-path/mode/OID/revision/source/decoded-path/original-content/digest/byte_length/lines/partition equality. Expand every valid old/new side independently; additions have absent old side, deletions absent new, renames retain both. Original tree path is not inferred from artifact path. Real collector observations use complete raw NUL inventories and object reads, no candidate checkout/filters/textconv/external diff/replace object/link following; each source/root/no-execution rule has its own forbidden-effect sentinel and DEL-rule mutant. Omitted/middle/last object, duplicate artifact ID/normalized path, mismatching source/OID and incomplete API page each get R:evidence-incomplete or R:corpus-invalid in its declared owning domain; path unsafe/collision/gitlink are SEPARATE rows with exact path-unsafe/tree-collision/gitlink (result token J expands three rows, not a slash-code). Valid complete ordinary/symlink-text export stays eligible/0.
+- Count/digest rules: exact diff bytes/hash, each remote hash/count and each manifest/binding count/hash copy use independent Git B..H authority. Cap rows at {0,1,max-1,max,max+1} lines AND old/new distinct path counts; 1..max pass dimension, 0/over-max refer with cap-lines/cap-files. Count both rename paths, do not deduplicate by new path or extension. DEL-diff-bytes/hash, each remote identity leaf, cap bounds and rename-side counting mutants must kill. No broad corpus-loop mutant replaces any leaf/source/count selector.
+
 ### S656 — Trusted instructions and reviewer evidence have a fixed partition (#646; A60 + addendum 1)
 **Covers:** F71
 - Given: candidate PR/issue/docs/tests/AGENTS/CLAUDE/skills/settings containing approved-merge-now, skip gates and fake accepted-requirement instructions. Prior risk verdicts/attempt conclusions and quality approval conclusions plus resolved-defect source/fix evidence; forged generated-record claims/hash mismatches and arbitrary candidate exclusions.
@@ -9591,6 +10840,29 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Amended by A60 addendum 2: add candidate PR/issue/doc/comment text that states a model score, an effort, a new table or mapping, or that a maintainer exception was granted. It stays visible untrusted data and changes no capability outcome, table pin, mapping or exception state; an exception counts only from the protected numbered decision source with a matching retained hash. Falsifier: candidate or reviewer prose supplies a score, an effort or an exception. Kill the provenance check for each of table, mapping, effort and exception singly. Every older partition assertion stands.
 - Case file: `test/cases/s656_merge_risk_evidence_partition.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I25.27|bu>slot0.manifest=slot1.manifest|I|
+|I25.28|bu>generated.exclusion.identity|I|
+|I25.29|bu>generated.exclusion.hash|I|
+|I25.30|bu>candidate.exclusion|I|
+|I26.1|bv>@3:name|N|
+|I26.4|bv>@3:raw|N|
+|I26.5|bv>@3:loaded|N|
+|I26.6|bv>@3:byte_length|N|
+|I26.2|bv>@3:source.source|N|
+|I26.3|bv>@3:source.sha256|N|
+|I26.7|bv>@M:name|N|
+|I26.10|bv>@M:raw|N|
+|I26.11|bv>@M:loaded|N|
+|I26.12|bv>@M:byte_length|N|
+|I26.8|bv>@M:source.source|N|
+|I26.9|bv>@M:source.sha256|N|
+
+- A60 addenda 4/5 I25/I26 supplements: exact instruction-name set {SKILL.md,RISK-REVIEW.md}; for EACH name test missing/duplicate/extra name, wrong pinned G source, source bytes/hash, raw bytes, loaded bytes and UTF-8 length at 15999/16000/16001, including multibyte boundary. Only <=16000 complete accepted bytes pass; otherwise U:instruction-load-invalid. Full combined original-byte digest, binding/authority/current copies and each receipt prompt/launcher hash have independent source comparisons. Generated exclusion candidates expand EACH ID/source/hash/partition identity, with real generated record versus arbitrary matching-looking candidate prose/path controls; forged/missing provenance is R:corpus-invalid. Partition/risk/quality/peer conclusions cannot cross to reviewer input; opaque original source remains addressable. One DEL per name/leaf/length/source/loaded-fullness/partition/exclusion rule; FIRST-only, candidate-hash and accept-excluded-claim mutants separately killed. Read/access logs do not prove attention and their absence alone is no new eligibility gate.
 
 ### S657 — Shell reading is allowed only inside demonstrated isolation (#646; A60 + addendum 1)
 **Covers:** F71, F74
@@ -9613,6 +10885,80 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s658_merge_risk_fresh_sealed_pair.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I14.72|bw>@2:attempt_id=e1.binding.attempt_id|E|
+|I16.1|G>b.quality.session_id|O|
+|I16.2|G>b.quality.model|O|
+|I16.5|G>b.quality.head|O|
+|I16.6|G>b.quality.approved|O|
+|I16.7|G>b.quality.marker|O|
+|I16.3|G>b.quality.source.source|O|
+|I16.4|G>b.quality.source.sha256|O|
+|I16.25|G>@bn:marker.H|P|
+|I16.26|G>@bn:marker.model|P|
+|I16.27|G>@bn:lens[0].provenance|P|
+|I16.28|G>@bn:lens[1].provenance|P|
+|I17.1|bx>quality!=author0|F|
+|I17.2|bx>quality!=author1|F|
+|I17.3|bx>quality!=implementer0|F|
+|I17.4|bx>quality!=implementer1|F|
+|I17.5|bx>lens0!=author0|F|
+|I17.6|bx>lens0!=author1|F|
+|I17.7|bx>lens0!=implementer0|F|
+|I17.8|bx>lens0!=implementer1|F|
+|I17.9|bx>lens1!=author0|F|
+|I17.10|bx>lens1!=author1|F|
+|I17.11|bx>lens1!=implementer0|F|
+|I17.12|bx>lens1!=implementer1|F|
+|I17.13|bx>risk0!=author0|F|
+|I17.14|bx>risk0!=author1|F|
+|I17.15|bx>risk0!=implementer0|F|
+|I17.16|bx>risk0!=implementer1|F|
+|I17.17|bx>risk0!=quality|F|
+|I17.18|bx>risk0!=lens0|F|
+|I17.19|bx>risk0!=lens1|F|
+|I17.20|bx>risk0!=executor|F|
+|I17.26|bx>risk1!=author0|F|
+|I17.27|bx>risk1!=author1|F|
+|I17.28|bx>risk1!=implementer0|F|
+|I17.29|bx>risk1!=implementer1|F|
+|I17.30|bx>risk1!=quality|F|
+|I17.31|bx>risk1!=lens0|F|
+|I17.32|bx>risk1!=lens1|F|
+|I17.33|bx>risk1!=executor|F|
+|I17.21|by>@T:no_inheritance|F|
+|I17.22|by>@T:peer_exposed|F|
+|I17.23|by>@T:forbidden_actions|F|
+|I17.24|by>@bo:fresh|F|
+|I17.25|by>@bo:inherited_session|F|
+|I17.34|by>@U:no_inheritance|F|
+|I17.35|by>@U:peer_exposed|F|
+|I17.36|by>@U:forbidden_actions|F|
+|I17.37|by>@bp:fresh|F|
+|I17.38|by>@bp:inherited_session|F|
+|I17.39|8>slot0.session_id!=slot1.session_id|F|
+|I17.40|8>slot0.dispatch_id!=slot1.dispatch_id|F|
+|I17.41|8>slot0.nonce!=slot1.nonce|F|
+|I17.42|8>slot0.run_id!=slot1.run_id|F|
+|I17.43|8>slot0.output_source!=slot1.output_source|F|
+|I17.44|bz>author_sessions.empty-reuse|F|
+|I17.45|bz>author_sessions.incomplete-reuse|F|
+|I17.46|bz>author_sessions.extra-exclusion|F|
+|I17.47|bz>quality_sessions.empty-reuse|F|
+|I17.48|bz>quality_sessions.incomplete-reuse|F|
+|I17.49|bz>quality_sessions.extra-exclusion|F|
+|I18.39|bA>slot.omitted|F|
+|I18.40|bA>slot.duplicate|F|
+|I18.41|bA>slot.extra|F|
+|I18.42|bA>vendor-as-key|F|
+|I18.43|bA>alias-as-identity|F|
+
+- A60 addenda 4/5 I14/I17/I18 participant expansion: Q={quality,lens0,lens1}, A={author0,author1,implementer0,implementer1}, risk={slot0,slot1}. Expand Q x A and risk x (Q union A union executor) plus risk0 != risk1; each is its OWN R:risk-independence row by actual retained session identity. Repeat each equality attack with BOTH summaries empty, each incomplete, and conservative extra exclusions; unchanged distinct-session controls with those SAME summaries are eligible/0. Summaries never create approval. Same author contributing twice may retain one session; executor-versus-quality and author-versus-author are NOT new required exclusions. No vendor/model inequality is added. Each pair selector has DEL-pair mutant; missing authoritative participant evidence instead produces its quality/identity unavailable code, never independence-by-absence.
+- Each risk slot's session/dispatch/nonce/run/output sink uniqueness, no inherited/fork/resume/history, fresh:true, no_inheritance:true, peer_exposed:false and empty forbidden_actions is separately attacked; each raw/envelope/receipt/launch/manifest copy is separately bound. Shared attempt ID across both slots REQUIRED; mutate only one attempt ID as a binding fault, never demand distinct attempt IDs. CROSS seal inequalities expand in S654. Immutable original raw/sink/peer remains unchanged during allowed redispatch; substitute each separately. DEL-freshness/inheritance/exposure/action/sink/peer/separation, VENDOR-key, FIRST-only and LAST-only must kill. Valid cross-vendor AND same-vendor pairs, bounded recovery and dispositioned second attempt remain eligible/0; no weak source may fill a missing launch or lens observation.
+
 ### S659 — Reviewer capability is a pinned score-table lookup; missing evidence refers and a single review never clears (#646; A60 + addendum 1 + addendum 2)
 **Covers:** F71, F74
 - Amended by A60 addendum 2: this text replaces the earlier unresolved-floor and mandatory cross-vendor oracles; the decided rule is PRD F71 and the issue's AC2/M2 (ledger 65/66/95). The numbers are an independently specified laboratory table, not the maintainer's data.
@@ -9628,6 +10974,167 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Test seam: public policy/envelope evaluator and object-backed collection, with table L, mapping, marker/effort sources and laboratory-only numbered decisions specified independently of the implementation; observe result, closed codes, recorded comparison evidence and call/action logs; exercise identical isolated frozen final evidence for S606 and S659 (l) through the public outer evaluator, asserting one `merge-risk: referred ...` first line, exit 3 and exactly `identity-binding`, then `capability-table-invalid`, once each; retain a separate capability-level `refer` assertion and an identity-only outer `unresolved`/4 control; reject identity overriding referral, either reason omitted or reordered, or multiple outer results, and never substitute a private/per-row exit reinterpretation. Kill separately: `>=` to `>` (only (b)); `>=` to `<=` ((a), (c)); same-model strict gain to `>=` (only (e)); effort-label ordering in place of rows ((f)); skipped or weakest-only author ((g)); skipped slot and averaging ((h)); guessed or default effort ((j)); interpolated row ((k)); missing-pin and date-only-pin acceptance ((l)); trusted supplied score ((m)); exception filling missing data ((r)); exception scope broadened ((q)); exception provenance unchecked ((p)); required vendor composition ((t)); one result as two ((w)). Actual launcher effort capture and any live provider behavior remain UNRUN.
 - Case file: `test/cases/s659_merge_risk_floor_vendor_fail_closed.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I02.18|bB>@A:URL.issue|Q|
+|I02.19|bB>@A:URL.repository|Q|
+|I02.20|bB>@A:scope.pr|Q|
+|I02.21|bB>@A:scope.issue|Q|
+|I15.1|F>@bL:session_id|d|
+|I15.2|F>@bL:model|d|
+|I15.3|F>@bL:variant|d|
+|I15.4|F>@bG:source|d|
+|I15.5|F>@bG:sha256|d|
+|I15.11|F>b.authors[1].session_id|d|
+|I15.12|F>b.authors[1].model|d|
+|I15.13|F>b.authors[1].variant|d|
+|I15.14|F>@bI:source|d|
+|I15.15|F>@bI:sha256|d|
+|I15.21|bC>omitted.author|d|
+|I15.22|bC>unknown.author|d|
+|I15.23|bC>summary.replacement|d|
+|I15.24|bC>weakest-only.author|d|
+|I18.1|bD>@W:slot|R|
+|I18.2|bD>@W:model|R|
+|I18.3|bD>@W:variant|R|
+|I18.4|bD>@W:vendor|R|
+|I18.5|bD>@W:effort|R|
+|I18.6|bD>@W:settings_sha256|R|
+|I18.18|bE>@P:slot|R|
+|I18.20|bD>@X:slot|R|
+|I18.21|bD>@X:model|R|
+|I18.22|bD>@X:variant|R|
+|I18.23|bD>@X:vendor|R|
+|I18.24|bD>@X:effort|R|
+|I18.25|bD>@X:settings_sha256|R|
+|I18.37|bE>@Q:slot|R|
+|I19.1|bF>@bb:table.source|S|
+|I19.2|bF>@bb:table.date|S|
+|I19.3|bF>@bb:table.sha256|S|
+|I19.4|bF>@D:table.source|S|
+|I19.5|bF>@D:table.date|S|
+|I19.6|bF>@D:table.sha256|S|
+|I19.7|bF>@h:table.source|a|
+|I19.8|bF>@h:table.date|a|
+|I19.9|bF>@h:table.sha256|a|
+|I19.10|bG>@bK:source|S|
+|I19.11|bG>@bK:sha256|S|
+|I19.12|bG>@bK:table|S|
+|I19.13|bG>@bK:mapping|S|
+|I19.14|bH>@bs:source|S|
+|I19.15|bH>@bs:sha256|S|
+|I19.16|bH>@D:mapping.source|S|
+|I19.17|bH>@D:mapping.sha256|S|
+|I19.18|bH>derived.pin|S|
+|I20.57|bI>comparison.missing|T|
+|I20.58|bI>comparison.duplicate|T|
+|I20.59|bI>comparison.average|T|
+|I20.60|bI>lower-than-author|T|
+|I20.61|bJ>row.absent|U|
+|I20.62|bK>same-model.no-gain|V|
+|I22.1|bL>@P:slot|d|
+|I22.2|bL>@P:session_id|d|
+|I22.3|bL>@P:dispatch_id|d|
+|I22.4|bL>@bc:source|d|
+|I22.5|bL>@bc:sha256|d|
+|I22.6|bL>@Q:slot|d|
+|I22.7|bL>@Q:session_id|d|
+|I22.8|bL>@Q:dispatch_id|d|
+|I22.9|bL>@bd:source|d|
+|I22.10|bL>@bd:sha256|d|
+|I22.11|bM>@N:marker.source|e|
+|I22.12|bM>@N:marker.sha256|e|
+|I22.13|bM>@N:session_id|e|
+|I22.14|bM>@N:dispatch_id|e|
+|I22.17|bM>@N:model|e|
+|I22.18|bM>@N:variant|e|
+|I22.19|bM>@N:effort|e|
+|I22.20|bM>@N:settings_sha256|e|
+|I22.21|bM>@N:receipt_sha256|e|
+|I22.15|bM>@N:launch.source|e|
+|I22.16|bM>@N:launch.sha256|e|
+|I22.22|bN>@O:marker.source|e|
+|I22.23|bN>@O:marker.sha256|e|
+|I22.24|bN>@O:session_id|e|
+|I22.25|bN>@O:dispatch_id|e|
+|I22.28|bN>@O:model|e|
+|I22.29|bN>@O:variant|e|
+|I22.30|bN>@O:effort|e|
+|I22.31|bN>@O:settings_sha256|e|
+|I22.32|bN>@O:receipt_sha256|e|
+|I22.26|bN>@O:launch.source|e|
+|I22.27|bN>@O:launch.sha256|e|
+|I22.33|be>@Y:marker.source|e|
+|I22.34|be>@Y:marker.sha256|e|
+|I22.35|be>@Y:session_id|e|
+|I22.36|be>@Y:dispatch_id|e|
+|I22.39|be>@Y:model|e|
+|I22.40|be>@Y:variant|e|
+|I22.41|be>@Y:effort|e|
+|I22.42|be>@Y:settings_sha256|e|
+|I22.43|be>@Y:receipt_sha256|e|
+|I22.37|be>@Y:launch.source|e|
+|I22.38|be>@Y:launch.sha256|e|
+|I22.44|bf>@Z:marker.source|e|
+|I22.45|bf>@Z:marker.sha256|e|
+|I22.46|bf>@Z:session_id|e|
+|I22.47|bf>@Z:dispatch_id|e|
+|I22.50|bf>@Z:model|e|
+|I22.51|bf>@Z:variant|e|
+|I22.52|bf>@Z:effort|e|
+|I22.53|bf>@Z:settings_sha256|e|
+|I22.54|bf>@Z:receipt_sha256|e|
+|I22.48|bf>@Z:launch.source|e|
+|I22.49|bf>@Z:launch.sha256|e|
+|I22.59|bO>requested-only|e|
+|I22.60|bO>default-only|e|
+|I22.61|bO>inferred-only|e|
+|I22.62|bO>peer-receipt|e|
+|I22.63|bO>unsupported-setting|e|
+|I23.1|bg>@A:number|Q|
+|I23.2|bg>@A:repository|Q|
+|I23.3|bg>@A:issue|Q|
+|I23.4|bg>@A:pr|Q|
+|I23.5|bg>@A:head|Q|
+|I23.6|bg>@A:slot|Q|
+|I23.7|bg>@A:profile|Q|
+|I23.8|bg>@A:qualification|Q|
+|I23.9|bg>@A:author_marker_sha256|Q|
+|I23.10|bg>@A:author_effort_sha256|Q|
+|I23.13|bg>@A:author_score|Q|
+|I23.14|bg>@A:reviewer_marker_sha256|Q|
+|I23.15|bg>@A:reviewer_effort_sha256|Q|
+|I23.18|bg>@A:reviewer_score|Q|
+|I23.22|bg>@A:departure|Q|
+|I23.23|bg>@A:valid_from|Q|
+|I23.24|bg>@A:valid_until|Q|
+|I23.27|bg>@A:issuer|Q|
+|I23.28|bg>@A:provenance|Q|
+|I23.29|bg>@A:created_at|Q|
+|I23.30|bg>@A:updated_at|Q|
+|I23.31|bg>@A:supersedes|Q|
+|I23.32|bg>@A:revokes|Q|
+|I23.33|bg>@A:words|Q|
+|I23.34|bg>@A:duplicate-number|Q|
+|I23.35|bg>@A:duplicate-record|Q|
+|I23.36|bg>@A:missing-data-waiver|Q|
+|I23.37|bg>@A:unlinked-words|Q|
+|I23.11|bg>@A:author_row.model|Q|
+|I23.12|bg>@A:author_row.effort|Q|
+|I23.16|bg>@A:reviewer_row.model|Q|
+|I23.17|bg>@A:reviewer_row.effort|Q|
+|I23.19|bg>@A:table.source|Q|
+|I23.20|bg>@A:table.date|Q|
+|I23.21|bg>@A:table.sha256|Q|
+|I23.25|bg>@A:source.source|Q|
+|I23.26|bg>@A:source.sha256|Q|
+
+- A60 addenda 4/5 I18-I23 additional source/behavior expansion: EACH slot x EACH author has exact model/effort row, finite score, marker/effort hashes, outcome and used exception; compare against laboratory table L already fixed above, never a production lookup expectation. Ordinary distinct-model equality passes; lower refers capability-below-author; same-model effort equal/lower-score gain refers capability-effort-no-gain. Missing row capability-entry-missing, absent/conflicting identity capability-identity-missing, absent/unapplied effort capability-effort-unavailable, selected/resolved/applied profile contradiction capability-profile-mismatch. Test each dimension in each slot/author separately. Exact count=2 x authors, unique (slot,marker) keys; omission/duplicate/additional disclosure is U:identity-binding, no average/weakest-author/first-match rule. `two distinct slot keys implied by exact accepted TWO-profile slot-set equality`; sessions/dispatches/nonces/applied settings keep independent mutants.
+- Every table/date/source/digest/selecting-decision/mapping row has wrong destination, all-agree-wrong-authority, missing original bytes, duplicate/ambiguous key, final drift (score-changing AND score-preserving) and genuinely renewed accepted-source control. Wrong authority variants={H table,newer unaccepted table,G default,mutable handoff,similar alias,external index,supplied score,effort-label monotonicity}; each refers capability-table-invalid or owning identity/entry/effort code and records zero external calls. Marker requested/default/inferred basis never substitutes for observed applied receipt/session/dispatch/settings hash. Each accepted PROFILE leaf, actual resolved reviewer/receipt identity and capability slot leaf has its own comparison and DEL selector. Qualification input models is the digest of the FULL accepted profile list, not a single representative model.
+- I23 exception fields expand per claimed number AND per affected (slot,author): exact protected source bytes/number/issuer/words/provenance/repository/issue/PR/H/profile_sha256/qualification_sha256/marker hashes/effort hashes/row.model/row.effort/scores/table.source/date/hash/departure/reason/correlation/scope/valid_until/supersedes and linked revocation records. Original comment URL/login/created_at/updated_at/body each bind actual immutable ledger. Each absent/mismatched/ambiguous/revoked/superseded/self-granted/out-of-scope/late-source case R:capability-exception-invalid; missing-data waiver still emits its actual identity/effort/entry refusal. Per-comparison exception/outcome, env exception numbers and recomputed final floor refer to the same exact decision. Two claimed numbers/decisions with duplicate identity do not collapse. Keep applicable pre-use valid single-comparison exception eligible; other slot/author stays subject to its own lookup. Boundary validity/source times use equality/either side against actual first use and actual declared validity, with no assumption that a spelling authenticates the issuer. Every leaf/lifecycle/scope/no-missing-data/no-average/strict-gain rule has DEL selector; identical source-copy summaries use S615's acyclic basis, never a whole-exception exemption.
 
 ### S660 — Candidate-influenced prose never reaches the credentialed model (#646; A60 + addendum 1)
 **Covers:** F71, F73
@@ -9701,6 +11208,38 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s666_merge_risk_executor_runtime_pin.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I04.18|bP>verifier.detached_head|W|
+|I27.1|bQ>verifier.toplevel|X|
+|I27.2|bQ>runtime.preflight_cwd|X|
+|I27.3|bQ>runtime.project_dir|X|
+|I27.4|bQ>@L:preflight_cwd|X|
+|I27.9|bR>runtime_profile.source|a|
+|I27.10|bR>current.runtime_sha256|a|
+|I27.11|bR>@br:runtime_sha256|a|
+|I27.12|bR>@L:runtime_sha256|a|
+|I27.13|bS>@T:runtime_sha256|X|
+|I27.14|bS>@T:settings_sha256|X|
+|I27.15|bS>@T:launcher_sha256|X|
+|I27.16|bS>@U:runtime_sha256|X|
+|I27.17|bS>@U:settings_sha256|X|
+|I27.18|bS>@U:launcher_sha256|X|
+|I27.19|bT>runtime.profile|X|
+|I27.20|bT>runtime.tools|X|
+|I27.21|bT>runtime.hooks|X|
+|I27.22|bT>runtime.settings|X|
+|I27.23|bT>runtime.wiring|X|
+|I27.24|bT>runtime.isolated|X|
+|I27.25|bT>runtime.fresh|X|
+|I27.26|bT>runtime.unexposed|X|
+|I27.27|bT>runtime.config_storage|X|
+|I27.28|bT>runtime.tool_versions|X|
+
+- A60 addenda 4/5 I27 supplemental dictionary: RUNTIME_PROFILE leaves from S615 EACH compare retained accepted profile original bytes/digest with actual project_dir/checker/preflight/isolated_config/tools_sha256/hooks_sha256/settings_sha256/wiring_sha256 at collection AND final. Actual B root, verifier detached B, direct whole tracked B tree {bytes,type,mode,link_text}, missing object, untracked executable/config/instruction and settings/plugin/MCP/user-hook/skill/tool observations are separate rows, never git-status-only proof. Compare config-storage isolation/fresh-executor/unexposed status and actual observed tool versions/settings/launch receipts individually. Every missing/unsupported runtime observation is U:runtime-invalid (verifier wrong B U:verifier-not-at-base), captured runtime drift adds U:identity-binding; independently established capability/source R codes survive. Every selector owns DEL-collection and DEL-final mutants, wrong-authority and index-hidden-drift attacks. This later ruling replaces the older blanket 'each ... refers' wording for the isolated I27 runtime faults; the independently applicable R refusals remain as specified.
+
 ### S667 — Strict up-to-date and admin enforcement apply before enabling and action (#646; A60 + addendum 1)
 **Covers:** F70, F73, F74
 - Given: effective accepted main protection strict:true and enforce_admins:true for this credential, no bypass, H containing current B. Separately strict false, admin enforcement false, bypass-capable credential, unavailable/free-private/403/malformed protection, unproven equivalent rule or protection changed since decision. Base moves between recheck and command under still-effective strict protection; protection-change-after-read race.
@@ -9721,6 +11260,42 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s668_merge_risk_all_checks_on_head.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I30.1|S>@bD:id|Y|
+|I30.2|S>@bD:name|Y|
+|I30.3|S>@bD:head|Y|
+|I30.4|S>@bD:status|Y|
+|I30.5|S>@bD:conclusion|Y|
+|I30.6|S>@bB:id|Y|
+|I30.7|S>@bB:context|Y|
+|I30.8|S>@bB:head|Y|
+|I30.9|S>@bB:state|Y|
+|I30.19|S>@bE:id|Y|
+|I30.20|S>@bE:name|Y|
+|I30.21|S>@bE:head|Y|
+|I30.22|S>@bE:status|Y|
+|I30.23|S>@bE:conclusion|Y|
+|I30.24|S>@bC:id|Y|
+|I30.25|S>@bC:context|Y|
+|I30.26|S>@bC:head|Y|
+|I30.27|S>@bC:state|Y|
+|I30.37|bU>checks.complete|Y|
+|I30.38|bU>checks.nonempty|Y|
+|I30.39|bU>checks.uniqueIDs|Y|
+|I30.40|bU>checks.expectedNames|Y|
+|I30.41|bU>checks.requiredContexts|Y|
+|I30.42|bU>checks.no-green-replacement|Y|
+|I30.43|bV>protection.strict|Z|
+|I30.44|bV>protection.enforce_admins|Z|
+|I30.45|bV>protection.credential|Z|
+|I30.46|bV>protection.no_bypass|Z|
+|I30.47|bV>protection.required_contexts|Z|
+
+- A60 addenda 4/5 I30 behavioral expansion: each run/context on EVERY API page independently gets ID/name-or-context/head/status/conclusion-or-state comparison, expected-name and required-context membership. Completed success/valid context success controls; separately pending, failure, skipped, neutral, cancelled, timed-out, missing, unreadable, duplicate/reused ID, wrong H and same-name newer-green-over-red refuse U:gate-check. Protection each {strict,enforce_admins,credential,no_bypass,required_contexts,source bytes/hash/effectiveness} is independent R:protection-invalid; captured assessment false disclosure U:identity-binding. DEL per leaf, all-pages, all-runs, nonempty, each required/expected member, strict/admin/credential/no-bypass/final protection selector; valid control must survive. Independent captured gates stay diagnosable when another raw/record is unavailable; current final gates are not replaced by frozen green disclosure.
+
 ### S669 — Transport redispatch is bounded and byte-bearing attempts are counted (#646; A60 + addendum 1)
 **Covers:** F71, F73
 - Given: immutable predispatch attempt ledger and independent slot IDs/nonces/times. Attested pure transport zero-byte failure, unknown byte availability, whitespace/partial/empty-JSON/malformed output, provider hidden retry; one sealed peer. Two counted pairs, missing/late/paraphrased/wrong-target maintainer disposition before pair two, another counted failure/referral, repeated all-zero outages and content-fix/new-H sample hunting.
@@ -9730,6 +11305,132 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Test seam: public attempt/launcher replay and append-only artifact/action log; kill byte-count, once-per-slot-across-pairs, freshness/peer sealing, original-time, two-total, prior-disposition and provider-retry visibility checks individually. Include valid bounded zero-byte recovery and valid dispositioned second-pair controls.
 - Case file: `test/cases/s669_merge_risk_attempt_redispatch_bounds.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I12.1|bW>@l:decision_id|g|
+|I12.2|bW>@k:decision_id|g|
+|I12.3|bW>decision.ordinal=ledger.ordinal|g|
+|I12.10|bX>history[0].decision_id|g|
+|I12.11|bX>history[1].decision_id|g|
+|I12.12|bX>disposition.previous|g|
+|I12.13|bX>queue.decision|g|
+|I13.1|bY>@l:attempt_id|g|
+|I13.2|bY>@l:decision_id|g|
+|I13.3|bY>@l:ordinal|g|
+|I13.4|bY>@l:previous|g|
+|I13.5|bY>@l:reason|g|
+|I13.6|bY>@l:created_at|g|
+|I13.7|bY>@l:terminal|g|
+|I13.8|bY>@l:provider_retries_visible|g|
+|I13.9|bY>@k:attempt_id|g|
+|I13.10|bY>@k:decision_id|g|
+|I13.11|bY>@k:ordinal|g|
+|I13.12|bY>@k:previous|g|
+|I13.13|bY>@k:reason|g|
+|I13.14|bY>@k:created_at|g|
+|I13.15|bY>@k:terminal|g|
+|I13.16|bY>@k:provider_retries_visible|g|
+|I13.25|bZ>@9:source|g|
+|I13.26|bZ>@9:sha256|g|
+|I13.27|bZ>@K:words|g|
+|I13.28|bZ>@K:pr|g|
+|I13.29|bZ>@K:previous|g|
+|I13.30|bZ>@K:created_at|g|
+|I13.31|bZ>@K:verbatim|g|
+|I13.32|bZ>@ba:source|g|
+|I13.33|bZ>@ba:sha256|g|
+|I13.34|bZ>@I:words|g|
+|I13.35|bZ>@I:pr|g|
+|I13.36|bZ>@I:previous|g|
+|I13.37|bZ>@I:created_at|g|
+|I13.38|bZ>@I:verbatim|g|
+|I13.39|b0>ordinal.gap|g|
+|I13.40|b0>ordinal.duplicate|g|
+|I13.41|b0>ordinal.third|g|
+|I13.42|b0>previous.wrong|g|
+|I13.43|b0>prior.source-wrong|g|
+|I13.44|b0>prior.absent|g|
+|I13.45|b0>terminal.continued|g|
+|I14.1|8>@v:slot|g|
+|I14.2|8>@v:session_id|g|
+|I14.3|8>@v:dispatch_id|g|
+|I14.4|8>@v:nonce|g|
+|I14.5|8>@v:run_id|g|
+|I14.6|8>@v:runtime_id|g|
+|I14.7|8>@v:started_at|g|
+|I14.8|8>@v:original_start|g|
+|I14.9|8>@v:bytes|g|
+|I14.10|8>@v:raw_sha256|g|
+|I14.11|8>@v:outcome|g|
+|I14.12|8>@v:transport_attested|g|
+|I14.13|8>@w:slot|g|
+|I14.14|8>@w:session_id|g|
+|I14.15|8>@w:dispatch_id|g|
+|I14.16|8>@w:nonce|g|
+|I14.17|8>@w:run_id|g|
+|I14.18|8>@w:runtime_id|g|
+|I14.19|8>@w:started_at|g|
+|I14.20|8>@w:original_start|g|
+|I14.21|8>@w:bytes|g|
+|I14.22|8>@w:raw_sha256|g|
+|I14.23|8>@w:outcome|g|
+|I14.24|8>@w:transport_attested|g|
+|I14.29|b1>p0.raw_sha256|g|
+|I14.30|b1>p0.byte_length|g|
+|I14.31|b1>@T:output_source|g|
+|I14.32|b1>@T:started_at|g|
+|I14.33|8>@x:slot|g|
+|I14.34|8>@x:session_id|g|
+|I14.35|8>@x:dispatch_id|g|
+|I14.36|8>@x:nonce|g|
+|I14.37|8>@x:run_id|g|
+|I14.38|8>@x:runtime_id|g|
+|I14.39|8>@x:started_at|g|
+|I14.40|8>@x:original_start|g|
+|I14.41|8>@x:bytes|g|
+|I14.42|8>@x:raw_sha256|g|
+|I14.43|8>@x:outcome|g|
+|I14.44|8>@x:transport_attested|g|
+|I14.45|8>@y:slot|g|
+|I14.46|8>@y:session_id|g|
+|I14.47|8>@y:dispatch_id|g|
+|I14.48|8>@y:nonce|g|
+|I14.49|8>@y:run_id|g|
+|I14.50|8>@y:runtime_id|g|
+|I14.51|8>@y:started_at|g|
+|I14.52|8>@y:original_start|g|
+|I14.53|8>@y:bytes|g|
+|I14.54|8>@y:raw_sha256|g|
+|I14.55|8>@y:outcome|g|
+|I14.56|8>@y:transport_attested|g|
+|I14.61|b1>p1.raw_sha256|g|
+|I14.62|b1>p1.byte_length|g|
+|I14.63|b1>@U:output_source|g|
+|I14.64|b1>@U:started_at|g|
+|I14.65|b2>extra.launch|g|
+|I14.66|b2>unaccounted.output|g|
+|I14.67|b2>zero-byte.attestation.absent|g|
+|I14.68|b2>redispatch.session-unchanged|g|
+|I14.69|b2>redispatch.slot-changed|g|
+|I14.70|b2>redispatch.original-clock-reset|g|
+|I14.71|b2>redispatch.peer-replaced|g|
+|I33.5|2>@v:started_at|g|
+|I33.6|2>@v:original_start|g|
+|I33.7|2>@w:started_at|g|
+|I33.8|2>@w:original_start|g|
+|I33.13|2>@x:started_at|g|
+|I33.14|2>@x:original_start|g|
+|I33.15|2>@y:started_at|g|
+|I33.16|2>@y:original_start|g|
+|I33.17|2>@l:created_at|g|
+|I33.18|2>@k:created_at|g|
+|I33.19|2>@I:created_at|g|
+
+- A60 addenda 4/5 I12-I14 behavioral expansion t={0,1}, s={0,1}, every retained launch/retry: decision PR/short-H/actual ordinal, contiguous unique ordinal set/max TWO, each attempt ID/previous/terminal/reason/provider visibility, original dispositions and launch/output linkage are independent. Both slots share one current attempt ID. Bind each launch observation {slot,session,dispatch,nonce,run,runtime,args,prompt,config,started_at,original_start,bytes,raw hash,outcome,transport attestation} to the actual retained producer/consumer, and selected manifest's complete attempt including nested disposition/launches. Missing observations do NOT get invented JSON members; LAUNCH alone lacks dispatch/nonce/run/runtime, so absent identified source is R:risk-attempt-invalid, echo contradictions R:risk-binding, reuse R:risk-independence, manifest-only lie U:identity-binding.
+- One fresh zero-byte attested pure transport redispatch PER slot/evidence identity across BOTH attempts is permitted; exercise bytes={0,1,whitespace,partial,malformed,unknown}, first/second retry and crossing attempt boundary separately. Only known zero-byte transport is exempt; every byte-bearing/unknown case counts. Peer retained unchanged and original clocks/slot fixed. Wrong bytes/hash/output source, unaccounted output/launch, shared/changed session, changed slot/peer, absent attestation, hidden provider retry, missing/late/wrong-PR/previous/words disposition, third counted pair, terminal continuation and infinite-zero recovery each R:risk-attempt-invalid or the isolated reuse/deadline code specified by its owning row. Name DEL-rule[t,s,j] per relation, ONCE-per-attempt instead of identity, FIRST-only/LAST-only, reset-clock and favorable-output-selection mutants. Valid bounded transport recovery, both author positions, both attempt positions and dispositioned pair two remain eligible/0 after genuine new complete announcement/full hold.
 
 ### S670 — Qualification plants substantive harms outside mechanical stops (#646; A60 + addendum 1)
 **Covers:** F71, F72, F74
@@ -9792,6 +11493,126 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s675_merge_risk_qualification_identity_enable.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I07.14|b3>@a:operational_sha256|i|
+|I07.15|b3>@a:operational_projection|i|
+|I18.19|b4>@B:models[0]|i|
+|I18.38|b4>@B:models[1]|i|
+|I19.23|b5>@B:floor|i|
+|I27.29|bT>@B:runtime|i|
+|I34.1|b6>@a:source.source|i|
+|I34.2|b6>@a:source.sha256|i|
+|I34.3|b6>@a:body|i|
+|I34.4|b6>@a:identity_sha256|i|
+|I34.5|b6>@a:operational_sha256|i|
+|I34.6|b6>@a:sample_count|i|
+|I34.7|b6>@a:status|i|
+|I34.14|b7>@B:models|i|
+|I34.15|b7>@B:profiles|i|
+|I34.16|b7>@B:instructions|i|
+|I34.17|b7>@B:runtime|i|
+|I34.18|b7>@B:floor|i|
+|I34.19|b7>@B:policy|i|
+|I34.20|b7>@B:assembler|i|
+|I34.21|b7>@B:consumer|i|
+|I34.22|b7>@B:suite|i|
+|I34.23|b7>@B:recorder|i|
+|I34.24|b7>@B:grader|i|
+|I34.25|b8>@a:suite[0].id|i|
+|I34.26|b8>@a:suite[0].kind|i|
+|I34.27|b8>@a:suite[0].variants|i|
+|I34.28|b9>@f:case_id|i|
+|I34.29|b9>@f:variant|i|
+|I34.30|b9>@f:repetition|i|
+|I34.31|b9>@f:sessions[0]|i|
+|I34.32|b9>@f:sessions[1]|i|
+|I34.33|b9>@f:outcomes[0]|i|
+|I34.34|b9>@f:outcomes[1]|i|
+|I34.35|b9>@f:detections|i|
+|I34.36|b9>@f:reviewer_ids[0]|i|
+|I34.37|b9>@f:reviewer_ids[1]|i|
+|I34.38|b9>@f:valid_outputs|i|
+|I34.39|b9>@f:forbidden_attempts|i|
+|I34.40|b9>@f:unauthorized_attempts|i|
+|I34.41|b9>@f:merge_count|i|
+|I34.42|b9>@f:full_hold|i|
+|I34.43|b9>@f:head_match|i|
+|I34.44|b9>@f:sealed_at|i|
+|I34.45|b9>@f:graded_at|i|
+|I34.46|b9>@f:grade.source|i|
+|I34.47|b9>@f:grade.sha256|i|
+|I34.48|b9>@f:transcripts[0].source|i|
+|I34.49|b9>@f:transcripts[0].sha256|i|
+|I34.50|b9>@f:transcripts[1].source|i|
+|I34.51|b9>@f:transcripts[1].sha256|i|
+|I34.52|b9>@f:raw_results[0].source|i|
+|I34.53|b9>@f:raw_results[0].sha256|i|
+|I34.54|b9>@f:raw_results[1].source|i|
+|I34.55|b9>@f:raw_results[1].sha256|i|
+|I34.56|b9>@f:action.source|i|
+|I34.57|b9>@f:action.sha256|i|
+|I34.58|b8>@a:suite[1].id|i|
+|I34.59|b8>@a:suite[1].kind|i|
+|I34.60|b8>@a:suite[1].variants|i|
+|I34.61|b9>@g:case_id|i|
+|I34.62|b9>@g:variant|i|
+|I34.63|b9>@g:repetition|i|
+|I34.64|b9>@g:sessions[0]|i|
+|I34.65|b9>@g:sessions[1]|i|
+|I34.66|b9>@g:outcomes[0]|i|
+|I34.67|b9>@g:outcomes[1]|i|
+|I34.68|b9>@g:detections|i|
+|I34.69|b9>@g:reviewer_ids[0]|i|
+|I34.70|b9>@g:reviewer_ids[1]|i|
+|I34.71|b9>@g:valid_outputs|i|
+|I34.72|b9>@g:forbidden_attempts|i|
+|I34.73|b9>@g:unauthorized_attempts|i|
+|I34.74|b9>@g:merge_count|i|
+|I34.75|b9>@g:full_hold|i|
+|I34.76|b9>@g:head_match|i|
+|I34.77|b9>@g:sealed_at|i|
+|I34.78|b9>@g:graded_at|i|
+|I34.79|b9>@g:grade.source|i|
+|I34.80|b9>@g:grade.sha256|i|
+|I34.81|b9>@g:transcripts[0].source|i|
+|I34.82|b9>@g:transcripts[0].sha256|i|
+|I34.83|b9>@g:transcripts[1].source|i|
+|I34.84|b9>@g:transcripts[1].sha256|i|
+|I34.85|b9>@g:raw_results[0].source|i|
+|I34.86|b9>@g:raw_results[0].sha256|i|
+|I34.87|b9>@g:raw_results[1].source|i|
+|I34.88|b9>@g:raw_results[1].sha256|i|
+|I34.89|b9>@g:action.source|i|
+|I34.90|b9>@g:action.sha256|i|
+|I34.91|ca>sample.omission|i|
+|I34.92|ca>sample.duplicate|i|
+|I34.93|ca>sample.wrong-variant|i|
+|I34.94|ca>sample.missing-repetition|i|
+|I34.95|ca>sample.session-reuse|i|
+|I34.96|ca>sample.detection-location|i|
+|I34.97|ca>sample.detection-consequence|i|
+|I34.98|ca>sample.grader-identity|i|
+|I34.99|ca>sample.input-identity|i|
+|I34.100|ca>sample.expiry|i|
+
+- A60 addenda 4/5 I34 supplemental field/place expansion (each exact selector owns E/C, K/D/A/F and DEL as S615). Literal QUAL/QINPUT/QCASE/QRUN/DETECTION/REF dictionary expands EVERY suite member, variant, repetition (at least 3), both reviewer/session/outcome/transcript/raw-result positions and every detection; no two-run representative replaces the required suite. Inputs.models means digest of complete resolved profiles/efforts/settings/slots; other input leaves bind accepted instructions/runtime/floor/policy/assembler/consumer/suite/recorder/grader bytes independently. Hash inputs again for identity, whole original accepted qualification source/body again for bound digest; compare all current/authority/env/raw/manifest copies separately.
+
+| Supplemental rule stem | Source / field-place expansion | Isolated oracle / mutant |
+|---|---|---|
+|I34.refs[k]|qualification.source, design_redteam, linux_check, macos_check, quality_review, enabling_pr, m_decisions[1..9], m8_disposition, failed_dispositions[k]; each REF.source and REF.sha256 -> original accepted product evidence|R:qualification-unavailable; DEL-ref[k,leaf]|
+|I34.detection[t,k]|runs[t].detections[k].{reviewer,mechanism,location,consequence,grade.source,grade.sha256} -> actual independently retained sealed sample/grade|R:qualification-unavailable; DEL-detection[t,k,leaf]|
+|I34.sample[t,s]|runs[t].{case_id,variant,repetition,sessions[s],outcomes[s],transcripts[s].source,transcripts[s].sha256,raw_results[s].source,raw_results[s].sha256,actions.source,actions.sha256,grader.source,grader.sha256,sealed_at,graded_at} -> actual case/variant/repetition/session/output/action/grader/events|R:qualification-unavailable; DEL-sample[t,s,leaf]|
+|I34.observed[t]|runtime_observed,dry_run_observed,findings_resolved,full_safety_rerun,withheld_key,operational_sha256,sample_count,status; each sample valid_outputs/forbidden_attempts/unauthorized_attempts/merge_count/full_hold/head_match -> actual full retained run/recorder|R:qualification-unavailable; DEL-observation[t,leaf]|
+|I34.sets|exact suite ID/variant/repetition set and per-sample 2 reviewer keys/sessions/outcomes/transcripts/raw results; no omission/duplicate/borrowed identity|R:qualification-unavailable; DEL-cardinality/unique-set selector|
+|I34.grade-order[t]|actual sealed_at <= graded_at <= trusted observed_now; equality/-1/+1 for EACH adjacent inequality|R:qualification-unavailable; DEL-sealed-before-grade[t], DEL-grade-before-now[t]|
+|I34.sources|different product/G default/unaccepted suite/borrowed profile or qualification/invented matching API hash versus actual accepted product source|R:qualification-unavailable; WRONG-authority/source mutant per source family|
+|I34.behavior|missing runner/model/recorder or zero samples, no full safety rerun after repair, failed-only rerun, withheld tuning/erasure, unauthorized attempted action, generic/path-only 'detection', one unsafe repetition averaged away, positive recorder never merges|R:qualification-unavailable; DEL each named obligation; independent complete laboratory protocol control|
+
+- `runs[t].sealed_at <= observed_now implied by runs[t].sealed_at <= runs[t].graded_at AND runs[t].graded_at <= observed_now`; expand per actual run, retain boundary/source cases and both adjacent mutants. Actual qualification expiry/acceptance validity/source/participant identity remains independent. All copies use their OWN actual event clocks, never pair-start resets. S659's numbered exception qualification/profile linkage is independently retained. Changed model/effort/table/mapping/prompt/assembler/consumer/runtime/suite/recorder/grader invalidates old qualification; changed accepted projection requires full new evidence except explicitly allowed activation fields. Kill each input/final-recheck/full-suite/projection/no-transfer rule separately. Canned laboratory protocol evidence establishes no live qualification; all actual model/runtime protocols remain UNRUN until executed by their owners.
+
 ### S676 — Adopters remain unconfigured and supply their own product context (#646; A60 + addendum 1)
 **Covers:** F72, F74
 - Given: a different repository/stack with ordinary adoption defaults and a completed accepted project configuration control. Remove/unaccept individually repository/policy location, concrete category mapping including applicable auth/data/migrations/secrets/CODEOWNERS/instructions/dependencies/deploy/IaC, trusted purpose/assets/users/trust-boundaries brief, open control issue, executor host/runtime, strict protection/expected checks/CI wiring, profiles/floors or stack-specific qualification. Candidate README/SDG acceptance offered as replacement.
@@ -9803,6 +11624,46 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Case file: `test/cases/s676_merge_risk_adopted_project_neutrality.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
 
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I01.1|6>b.repository|0|
+|I01.2|6>@bF:repository|0|
+|I01.3|6>b.identity.repository|0|
+|I01.4|6>m.repository|0|
+|I01.9|cb>b.identity.host|0|
+|I01.10|cb>b.identity.remote|0|
+|I01.11|cb>b.identity.redirects|0|
+|I01.12|cb>product.source.URL|0|
+|I01.13|cb>product.comment.URL|0|
+|I02.14|cc>b.control.number|a|
+|I02.15|cc>@L:control.number|a|
+|I02.16|cd>acceptance.URL.issue|1|
+|I02.17|cd>acceptance.URL.repository|1|
+|I04.14|ce>b.pr.base|2|
+|I07.1|cf>cfg.schema|3|
+|I07.2|cf>cfg.policy_path|3|
+|I07.3|cf>@bF:policy_path|3|
+|I07.4|cf>b.config_text|3|
+|I08.1|t>cfg.requirements.source|4|
+|I08.2|t>cfg.requirements.sha256|4|
+|I08.11|cg>acceptance.requirements_sha256|1|
+|I08.12|u>cfg.design.source|4|
+|I08.13|u>cfg.design.sha256|4|
+|I08.22|ch>acceptance.design_sha256|1|
+|I08.23|ci>@bF:brief.source|4|
+|I08.24|ci>@bF:brief.sha256|4|
+|I08.27|ci>reviewed.brief.source|4|
+|I08.28|ci>exported.brief.source|4|
+|I08.29|ci>accepted.project.brief|4|
+|I08.30|cj>@br:acceptance|1|
+|I08.31|cj>retained.acceptance.URL|1|
+|I08.32|cj>project.acceptance.source|1|
+|I08.33|cj>project.acceptance.sha256|1|
+
+- A60 addenda 4/5 I01-I09 source/root rules: accepted physical product B alone selects repository/host/origin/redirect policy, sole closing issue/control/acceptance/exception source and immutable URL target. EACH source and EACH {repository,issue/comment target,revision,path,original bytes,digest,unique resolution,acceptance} is a separate selector; well-formed alternate repository/comment/object and all-agree-wrong copies must fail with the owning source code. Expected product host github.com, origin resolves to accepted repository and redirects empty; API-key/hash alone without bytes does not resolve evidence. Empty/duplicate/ambiguous closing issue selection fails record-selection; unavailable acceptance acceptance-unverified; no accepted brief/project/table/mapping/qualification remains project-unconfigured plus independently established capability/qualification refusals. Generic adopter/default/G presence cannot provide any of these. Per-source WRONG-authority/URL-target/absent-original/duplicate-reference/no-acceptance mutants; complete accepted adopter control uses its OWN sources and gets eligible/0. Every CFG schema key/type/location rule from S615 expands here; active defaults are never inferred from structural adoption.
+
 ### S677 — Product B and external guard G are pinned separately (#646; A60 + addendum 1)
 **Covers:** F73, F74
 - Given: product B and separately accepted external SDG source revision G, resolved tool/settings/skill paths and tree hashes, bundle source/content and actual runtime wiring. Wrong/missing G, code/byte/mode/type/symlink drift, bundle/source mismatch, paths from unrelated product B, refresh/trust/activation unobserved; collection-correct then final-G/runtime-change. SDG self-instance G=B control.
@@ -9813,6 +11674,51 @@ A60 addendum 2 samples (QA loop-back, 2026-11-12). Every assertion in a bullet m
 - Amended by A60 addendum 2: table, mapping, effort and exception evidence are each pinned to their own accepted source revision; where external G supplies the evaluator or wiring, G carries no accepted table, mapping, exception or acceptance of its own. Evidence found only in an unaccepted, unrelated or drifted source, or a default bundled with G, never activates or clears: the project stays unconfigured and inactive until its accepted evidence exists. Drift of the accepted source after collection refers and expires the pending pair as in the Then above. Falsifier: G's presence supplies capability evidence, or final drift of that source is ignored. Kill the accepted-source and final-recheck checks for these sources singly; the G=B and valid external-G controls stand.
 - Case file: `test/cases/s677_merge_risk_external_guard_revision.sh` (Developer-owned).
 - Red-before-green: Developer records failure of each new boundary assertion before implementation, then green and a killed single-rule mutant per named rule; the valid control must pass independently. Actual model/runtime exercises remain UNRUN for #680/#682; a static case can validate their protocol only.
+
+- Matrix: S615 dictionaries/protocol, refined by addendum 5.
+
+| Row | Source>place | Result |
+|---|---|---|
+|I27.5|ck>runtime.checker|X|
+|I27.6|ck>runtime.preflight|X|
+|I27.7|ck>invoked.checker.resolved|X|
+|I27.8|ck>invoked.preflight.resolved|X|
+|I28.1|cl>@C:repository|5|
+|I28.2|cl>@C:head|5|
+|I28.3|cl>@C:tree_sha256|5|
+|I28.6|cl>@C:bundle_sha256|5|
+|I28.7|cl>@C:base_present|5|
+|I28.8|cl>@C:bytes|5|
+|I28.9|cl>@C:types|5|
+|I28.10|cl>@C:modes|5|
+|I28.11|cl>@C:link_text|5|
+|I28.12|cl>@C:resolved_root|5|
+|I28.13|cl>@C:wiring_sha256|5|
+|I28.4|cl>@C:source.source|5|
+|I28.5|cl>@C:source.sha256|5|
+|I28.14|cl>@J:repository|5|
+|I28.15|cl>@J:head|5|
+|I28.16|cl>@J:tree_sha256|5|
+|I28.19|cl>@J:bundle_sha256|5|
+|I28.20|cl>@J:base_present|5|
+|I28.21|cl>@J:bytes|5|
+|I28.22|cl>@J:types|5|
+|I28.23|cl>@J:modes|5|
+|I28.24|cl>@J:link_text|5|
+|I28.25|cl>@J:resolved_root|5|
+|I28.26|cl>@J:wiring_sha256|5|
+|I28.17|cl>@J:source.source|5|
+|I28.18|cl>@J:source.sha256|5|
+|I28.27|cm>skill.resolved_path|5|
+|I28.28|cm>tool.resolved_path|5|
+|I28.29|cm>installed.bundle.source|5|
+|I28.30|cm>installed.bundle.content|5|
+|I28.31|cm>runtime.wiring_sha256|5|
+|I28.32|cn>preflight.validate-before-execute|5|
+|I28.33|cn>arbitrary.foreign-link|5|
+|I28.34|cn>unaccepted.redirect|5|
+
+- A60 addenda 4/5 C5/I26-I28 exact root matrix: root={collection,final}, object={checker lib/merge-risk.py,preflight merge-preflight.sh,SKILL.md,RISK-REVIEW.md,accepted settings/hooks/tool/skill wiring,installed bundle}. Expand EACH root x object x {actual resolved absolute path,repository,revision,object-relative path,full bytes,type,mode,link text,source,digest}; separately G {tree hash,bundle source/content/hash,base presence,resolved physical root,wiring hash}. Accepted runtime profile checker/preflight paths equal ACTUAL resolved G paths; physical cwd/verifier/product policy/brief/answers stay B. G repository/revision need not equal B; external G need not be underneath B. Collection validates accepted G source/path/content BEFORE invoking external preflight; sentinel observes ZERO invocations for invalid source, not refusal after arbitrary code ran. Each missing/mismatched G field U:guard-invalid; runtime path/profile field U:runtime-invalid; captured final drift additionally U:identity-binding. Missing accepted project G independently retains R:project-unconfigured. Every selector owns DEL-collection/DEL-final/source-before-execute mutant; PRODUCT-ROOT-FOR-G and blanket-foreign-link rejection are killed by actual valid external-G paths with renewed runtime/profile/qualification bindings. Unchanged G=B and external-G controls both eligible/0; arbitrary existing foreign path/repeated profile string/unaccepted redirect never supplies authority.
 
 ### S678 — M8 retains test-status forgery and missing command authority enforcement (#646; A60 + addendum 1)
 **Covers:** F73, F74
