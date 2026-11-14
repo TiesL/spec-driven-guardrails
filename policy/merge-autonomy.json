@@ -1,0 +1,104 @@
+{
+  "schema": 2,
+  "repository": "TiesL/spec-driven-guardrails",
+  "policy_path": "policy/merge-autonomy.json",
+  "enabled": false,
+  "acceptance": null,
+  "control_issue": 607,
+  "executor_host": "",
+  "max_lines": 300,
+  "max_files": 8,
+  "hold_seconds": 300,
+  "hard_stops": {
+    "autonomy": [
+      "policy/merge-autonomy.json",
+      "skills/merge-risk-panel/**",
+      "merge-risk-evidence.sh",
+      "lib/merge-risk**",
+      "test/cases/**merge_risk**",
+      "test/fixtures/merge-risk**",
+      "test/behavior/merge-risk**"
+    ],
+    "merge-enforcement": [
+      "merge-preflight.sh",
+      "pipeline-override.sh",
+      "skills/pre-merge-review/**",
+      "lib/model-record**",
+      "check",
+      "check-commit",
+      "check-*.sh",
+      "templates/check-*",
+      "lib/markdown.sh",
+      "lib/changes.sh",
+      "test/run.sh"
+    ],
+    "execution": [
+      "hooks/**",
+      "settings/**",
+      ".claude/**",
+      ".codex/**",
+      ".agents/**",
+      "session-context.sh",
+      "pending-changes.sh",
+      ".gitattributes",
+      ".gitmodules"
+    ],
+    "ci": [
+      ".github/workflows/**",
+      ".github/actions/**",
+      "templates/ci.yml",
+      "epic-auto-close.sh"
+    ],
+    "contracts": [
+      "skills/role-contracts/**",
+      "wip/multi-agent-development/**",
+      "policy/WORKFLOW.md",
+      "adapters/**",
+      "generate-workflow-adapters.sh",
+      "AGENTS.md",
+      "AGENTS.override.md",
+      "CLAUDE.md",
+      "ORCHESTRATOR.md",
+      "WORKFLOW.md",
+      "USER-CLAUDE.md",
+      "CHANGES.md",
+      "adopt.sh",
+      "WORKFLOW-ADOPTION.md",
+      "WORKFLOW-ADOPTIE.md",
+      "**/AGENTS.md",
+      "**/AGENTS.override.md",
+      "**/CLAUDE.md",
+      "**/ORCHESTRATOR.md"
+    ]
+  },
+  "labels": {
+    "hold": [
+      "hold",
+      "risk:*"
+    ],
+    "off": "merge-autonomy:off"
+  },
+  "release_heads": [
+    "release/*"
+  ],
+  "reviewer_profiles": [],
+  "deadline_seconds": 1800,
+  "max_age_seconds": 86400,
+  "max_attempts": 2,
+  "unicode_version": "13.0.0",
+  "project": null,
+  "requirements": null,
+  "design": null,
+  "capability": null,
+  "runtime_profile": null,
+  "qualification": null,
+  "guard": null,
+  "expected_checks": [
+    "check",
+    "security"
+  ],
+  "required_contexts": [
+    "build"
+  ],
+  "acceptance_issue": 646
+}

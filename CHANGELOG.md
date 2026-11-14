@@ -13,6 +13,7 @@ point.
 
 ## Unreleased
 
+- #646: Merge-risk panel (proposal, pending maintainer acceptance; ships `enabled:false`, inert by default): `merge-risk-panel` skill, `policy/merge-autonomy.json` and read-only `merge-risk-evidence.sh` verifier for autonomous merges into `main`; OR11/OR43/OR6 and WORKFLOW.md step 4 point to the accepted delegation.
 - #678: Tighten the panel fixture oracle (items 1-6): null list fields give named
   diagnostics instead of crashing, `prior[].result` is limited to `denied`/`none`,
   unresolved/escalated records carry no dissent, the structured target is read for

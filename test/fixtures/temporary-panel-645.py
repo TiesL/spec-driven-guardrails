@@ -2120,6 +2120,11 @@ def preservation_checks():
               for p in (ROOT / directory).rglob('*') if p.is_file()]
     for path in paths:
         baseline = subprocess.check_output(['git', 'show', base + ':' + path], cwd=ROOT)
+        if path == 'hooks/agent-dispatch.py':
+            # #685 Part A (A59): the one sanctioned token change, role name Developer.
+            old_row = b'("Fullstack Developer", "Developer", "Implementation")'
+            check(baseline.count(old_row) == 1, '593/role-rename/baseline-row')
+            baseline = baseline.replace(old_row, b'("Developer", "Developer", "Implementation")')
         actual = (ROOT / path).read_bytes()
         digest = hashlib.sha256(baseline).digest()
         oracle = lambda data: [] if hashlib.sha256(data).digest() == digest else ['593/protected-byte/' + path]
