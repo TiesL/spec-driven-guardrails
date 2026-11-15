@@ -13,6 +13,7 @@ if [ "${PANEL_TEST_CONTENT_ONLY:-0}" != 1 ]; then
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-witnesses-only || fail "S631 publication scrub witnesses"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-family-only || fail "S631 publication scrub family foundations"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-hex-only || fail "S631 finite independent hex layouts"
+  python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-prefix-only >/dev/null || fail "S631 independent prefix alternative matrix"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-bytes-only || fail "S631 recovered byte matrix"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-native-bytes-only || fail "S631 native recovered byte matrix"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-unicode-only || fail "S631 Unicode case language matrix"
@@ -23,6 +24,7 @@ if [ "${PANEL_TEST_CONTENT_ONLY:-0}" != 1 ]; then
   if [ "${PANEL_TEST_SKIP_MUTATIONS:-0}" != 1 ]; then
     python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-integrity-only || fail "S631 independent matrix completeness"
     python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-hex-integrity-only || fail "S631 independent finite hex completeness"
+    python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-prefix-integrity-only || fail "S631 independent prefix alternative completeness"
     python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-mutations-only || fail "S631 publication inspection mutations"
   fi
 fi

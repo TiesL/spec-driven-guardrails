@@ -850,8 +850,12 @@ def scrub_family_matrix():
 
 
 def _scrub_family_job(job):
+    # G/O: every generated family/hex row runs on the strong harness (fresh
+    # bundle, independently known 13/9 usage, receipt/binding, whole public
+    # tree, safe prior work, no later call). The six named W witnesses keep
+    # the historical R11 constructor in scrub_witnesses().
     key, name, specimen = job
-    scrub_witnesses({name: specimen})
+    _scrub_scalar_job((key[0], name, SCRUB_FAMILY_WIRES[name], specimen[2], None, name))
     return key
 
 
@@ -1396,6 +1400,125 @@ def scrub_integrity_mutations():
 # against both uniform bases. Never form a Cartesian product across units in
 # the default policy. The argument keeps the expansion policy reviewable and
 # replaceable by QA; the scanner's own tables/decoder are never consulted.
+# F independent prefix alternatives and minima (S631 F table and P4.catalogue).
+# Written from the scenario text: each U is one prefix alternative at its exact
+# minimum, each C its declared near-match. Never read from the runner's tables.
+def scrub_prefix_sources():
+    sources = {}
+    for label, prefix in (("tmp", "/tmp/"), ("private-tmp", "/private/tmp/"),
+                          ("var-folders", "/var/folders/"), ("private-var-folders", "/private/var/folders/")):
+        sources["temporary-" + label + "-U"] = (prefix + "example/note", "U")
+        sources["temporary-" + label + "-C"] = (prefix[:-1] + "-example/note", "Cq")
+    for family, prefixes in (("short-token", ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")),
+                             ("cloud-key", ("AKIA", "ASIA")),
+                             ("slack", ("xoxb-", "xoxa-", "xoxp-", "xoxr-", "xoxs-"))):
+        for prefix in prefixes:
+            sources[family + "-" + prefix + "-U"] = (prefix + "A" * 16, "U")
+            sources[family + "-" + prefix + "-C"] = (prefix + "A" * 15, "Cq")
+    for label, algorithm in (("plain", ""), ("rsa", "RSA "), ("ec", "EC "), ("openssh", "OPENSSH ")):
+        header = "-----BEGIN " + algorithm + "PRIVATE KEY-----"
+        sources["private-key-" + label + "-U"] = (header, "U")
+        sources["private-key-" + label + "-C"] = (header[:-1], "Cq")
+    sources["google-minimum-U"] = ("AIza" + "A" * 30, "U")
+    sources["google-minimum-C"] = ("AIza" + "A" * 29, "Cq")
+    sources["jwt-minimum-U"] = ("eyJ" + "A" * 10 + "." + "B" * 10 + "." + "C" * 10, "U")
+    for segment, counts in enumerate(((9, 10, 10), (10, 9, 10), (10, 10, 9)), 1):
+        sources["jwt-segment-" + str(segment) + "-C"] = (
+            "eyJ" + "A" * counts[0] + "." + "B" * counts[1] + "." + "C" * counts[2], "Cq")
+    sources["email-minimum-U"] = ("q@x.aa", "U")
+    sources["email-minimum-C"] = ("q@x.a", "Cq")
+    return sources
+
+
+def scrub_prefix_rows():
+    # The obligation list is spelled out a second time, independently of the
+    # constructor above: a deleted alternative cannot shrink both sides.
+    required = set("""
+        temporary-tmp-U temporary-tmp-C temporary-private-tmp-U temporary-private-tmp-C
+        temporary-var-folders-U temporary-var-folders-C
+        temporary-private-var-folders-U temporary-private-var-folders-C
+        short-token-sk--U short-token-sk--C short-token-ghp_-U short-token-ghp_-C
+        short-token-gho_-U short-token-gho_-C short-token-ghu_-U short-token-ghu_-C
+        short-token-ghs_-U short-token-ghs_-C short-token-ghr_-U short-token-ghr_-C
+        short-token-github_pat_-U short-token-github_pat_-C
+        cloud-key-AKIA-U cloud-key-AKIA-C cloud-key-ASIA-U cloud-key-ASIA-C
+        slack-xoxb--U slack-xoxb--C slack-xoxa--U slack-xoxa--C slack-xoxp--U slack-xoxp--C
+        slack-xoxr--U slack-xoxr--C slack-xoxs--U slack-xoxs--C
+        private-key-plain-U private-key-plain-C private-key-rsa-U private-key-rsa-C
+        private-key-ec-U private-key-ec-C private-key-openssh-U private-key-openssh-C
+        google-minimum-U google-minimum-C jwt-minimum-U jwt-segment-1-C jwt-segment-2-C
+        jwt-segment-3-C email-minimum-U email-minimum-C
+    """.split())
+    pairs = {
+        ("L2", "response.reason", "offline-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-second-judge", "CONTENT_PENDING", "file"),
+        ("L3", "response.reason", "native-canary", "canary-initial", "file"),
+        ("L2", "response.reason", "native-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "native-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "native-second-judge", "CONTENT_PENDING", "file"),
+    }
+    sources = scrub_prefix_sources()
+    check(len(required) == 52 and set(sources) == required, "S631 prefix required source declaration")
+    check(SCRUB_SCALAR_PAIRS | SCRUB_NATIVE_SCALAR_PAIRS == pairs, "S631 prefix required pair declaration")
+    check(all(name[-1] == outcome[0] for name, (_, outcome) in sources.items()),
+          "S631 prefix declared result class")
+    expected = {(pair, name) for pair in pairs for name in required}
+    rows = [(pair, name, json.dumps(text), outcome) for name, (text, outcome) in sources.items()
+            for pair in sorted(SCRUB_SCALAR_PAIRS | SCRUB_NATIVE_SCALAR_PAIRS)]
+    keys = [(pair, name) for pair, name, _, _ in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 prefix exact row-key equality/no duplicates")
+    check({key[0] for key in keys} == pairs, "S631 prefix exact pair-key equality")
+    return rows
+
+
+def scrub_prefix_matrix():
+    import multiprocessing
+    rows = scrub_prefix_rows()
+    probe = os.environ.get("PANEL_SCRUB_PREFIX_PROBE")
+    if probe:
+        rows = [row for row in rows if row[1] + "/" + row[0][2] == probe]
+        check(len(rows) == 1, "unknown prefix probe")
+    with multiprocessing.get_context("fork").Pool(min(8, os.cpu_count() or 1)) as pool:
+        completed = pool.map(_scrub_scalar_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {(p, s) for p, s, _, _ in rows},
+          "S631 prefix no skipped executions")
+    print("S631 prefix alternative matrix:", len(rows), "rows; 7 owners", flush=True)
+
+
+def scrub_prefix_integrity_mutations():
+    # Verification mutants only: a broken declaration or generator must fail
+    # before any behavioral execution could look green.
+    source = Path(__file__).read_text()
+    mutations = (
+        ("prefix-drop-alternative", '("short-token", ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")),\n',
+         '("short-token", ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "github_pat_")),\n',
+         "S631 prefix required source declaration"),
+        ("prefix-drop-clean-twin", '        sources["temporary-" + label + "-C"] = (prefix[:-1] + "-example/note", "Cq")\n',
+         '', "S631 prefix required source declaration"),
+        ("prefix-mislabel-result", '    sources["google-minimum-C"] = ("AIza" + "A" * 29, "Cq")\n',
+         '    sources["google-minimum-C"] = ("AIza" + "A" * 29, "U")\n', "S631 prefix declared result class"),
+        ("prefix-reduced-route", '            for pair in sorted(SCRUB_SCALAR_PAIRS | SCRUB_NATIVE_SCALAR_PAIRS)]\n    keys = [(pair, name)',
+         '            for pair in sorted(SCRUB_SCALAR_PAIRS)]\n    keys = [(pair, name)',
+         "S631 prefix exact row-key equality/no duplicates"),
+        ("prefix-duplicate-replaces-row", '    keys = [(pair, name) for pair, name, _, _ in rows]\n',
+         '    rows[-1] = rows[0]\n    keys = [(pair, name) for pair, name, _, _ in rows]\n',
+         "S631 prefix exact row-key equality/no duplicates"),
+    )
+    with tempfile.TemporaryDirectory(prefix="panel-prefix-integrity-") as tmp:
+        fixture = Path(tmp) / Path(__file__).name
+        clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-prefix-declarations-only"], capture_output=True, text=True)
+        check(clean.returncode == 0, "S631 prefix valid declaration control: " + clean.stderr)
+        for name, old, new, diagnostic in mutations:
+            check(source.count(old) == 1, name + " mutation anchor unique")
+            fixture.write_text(source.replace(old, new, 1))
+            p = subprocess.run([sys.executable, "-I", str(fixture), "631", "--scrub-prefix-declarations-only"], capture_output=True, text=True)
+            check(p.returncode != 0 and diagnostic in p.stderr,
+                  name + " survived or unrelated failure: " + p.stdout + p.stderr)
+            print("S631 killed matrix-" + name + " at " + diagnostic, flush=True)
+
+
 SCRUB_HEX_POLICY = "single-unit-both-bases"
 
 
@@ -1556,8 +1679,9 @@ def scrub_hex_integrity_mutations():
 
 def _scrub_scalar_job(row):
     pair, scalar, wire, outcome = row[:4]
-    byte_source = row[4] if len(row) == 5 else None
-    name = scalar + "/" + pair[2]
+    byte_source = row[4] if len(row) >= 5 else None
+    named = len(row) == 6
+    name = row[5] if named else scalar + "/" + pair[2]
     native = pair[2].startswith("native-")
     mode = "--live" if native else "--offline"
     with tempfile.TemporaryDirectory(prefix="panel-scalar-") as tmp:
@@ -1581,6 +1705,12 @@ def _scrub_scalar_job(row):
         else:
             f.data["actor"] = capture()
             f.data["actor"]["response"]["excluded" if pair[1] == "response.excluded" else "reason"] = marker
+            if pair[3] == "unusable-initial":
+                # R11 actor lifecycle: allowed response.records, 63 nested
+                # objects, so the clean twin is a structural Cd, never Cq.
+                nested = "synthetic"
+                for _ in range(63): nested = {"x": nested}
+                f.data["actor"]["response"]["records"] = nested
         for cap in [f.data["actor"], *f.data["judges"]]:
             cap["usage"] = dict(input=13, cache_read=0, cache_write=0, output=9)
         source = (f.dir / "adapter_impl.py").read_text()
@@ -1606,6 +1736,14 @@ def _scrub_scalar_job(row):
                     'if ' + selected + ':\n    raw=' + repr(raw_bytes) +
                     '\n    (here/("completed-judge-"+str(request.get("ordinal",0))+".txt")).write_bytes(raw)\n    sys.stdout.buffer.write(raw)\nelse: print(output,end="")')
         (f.dir / "adapter_impl.py").write_text(source)
+        watched = {}
+        if named:
+            # No public temporary/create may precede refusal in either
+            # rejected-attempt directory (P1.context delayed inspection).
+            for location in ("attempts", "errors"):
+                folder = f.out / "evidence/682" / location
+                folder.mkdir(parents=True, exist_ok=True)
+                watched[folder] = (folder.stat().st_mtime_ns, folder.stat().st_ctime_ns)
         prior = {p.relative_to(f.out): p.read_bytes() for p in f.out.rglob("*") if p.is_file()}
         if native:
             original_cli = f.cli
@@ -1693,6 +1831,10 @@ def _scrub_scalar_job(row):
             if pair[0] == "L2": rejected_paths.append(f.evidence())
             if pair[0] == "L3": rejected_paths.append(f.out / "evidence/682/verification/canary.json")
             check(not any(path.exists() for path in rejected_paths), name + " no public rejected attempt")
+            for folder, stamp in watched.items():
+                check((folder.stat().st_mtime_ns, folder.stat().st_ctime_ns) == stamp,
+                      name + " no public temporary/copy before refusal")
+            check(raw not in p.stdout.encode() + p.stderr.encode(), name + " no console original")
             for path in f.out.rglob("*"):
                 if not path.is_file() or ".private-recovery" in path.parts:
                     continue
@@ -1945,7 +2087,76 @@ def scrub_mutations():
             '        if not (' + condition + '):\n            _scrub_sources(sources())',
             "--scrub-native-scalars-only", {"PANEL_SCRUB_NATIVE_SCALAR_PROBE": probe},
             probe + " publication refusal/STOP"),)
+    # P4.catalogue[f]: one mutant per family and per independent prefix
+    # alternative, each killed at its own literal U row; minimum changes are
+    # killed at the declared C near-match. Longer /private/ markers are
+    # substring-implied by their short marker and get no mutant or credit.
+    first = "/offline-first-judge"
+    def family(name): return ("--scrub-family-only", "PANEL_SCRUB_FAMILY_PROBE", "family-" + name + "-U-literal-offline-first-judge")
+    def prefix(name): return ("--scrub-prefix-only", "PANEL_SCRUB_PREFIX_PROBE", name + first)
+    paths = '("/users/", "/home/", "/tmp/", "/private/tmp/", "/var/folders/", "/private/var/folders/")'
+    short = '(?:sk-|gh[pousr]_|github_pat_)'
+    header = '(?:RSA |EC |OPENSSH )?'
+    catalogue = [
+        ("users", paths, paths.replace('"/users/", ', ""), family("users")),
+        ("linux", paths, paths.replace('"/home/", ', ""), family("linux")),
+        ("tmp", paths, paths.replace('"/tmp/", ', ""), prefix("temporary-tmp-U")),
+        ("var-folders", paths, paths.replace('"/var/folders/", ', ""), prefix("temporary-var-folders-U")),
+        ("sk", short, short.replace("sk-|", ""), prefix("short-token-sk--U")),
+        ("github-pat", short, short.replace("|github_pat_", ""), prefix("short-token-github_pat_-U")),
+        ("AKIA", '(?:AKIA|ASIA)', '(?:ASIA)', prefix("cloud-key-AKIA-U")),
+        ("ASIA", '(?:AKIA|ASIA)', '(?:AKIA)', prefix("cloud-key-ASIA-U")),
+        ("key-plain", header, header[:-1], prefix("private-key-plain-U")),
+        ("key-rsa", header, header.replace("RSA |", ""), prefix("private-key-rsa-U")),
+        ("key-ec", header, header.replace("EC |", ""), prefix("private-key-ec-U")),
+        ("key-openssh", header, header.replace("|OPENSSH ", ""), prefix("private-key-openssh-U")),
+        ("google", '(r"AIza", ', '(r"AIzb", ', family("google")),
+        ("jwt", 'if (start >= 0 and a.end() - start >= 13', 'if (False and a.end() - start >= 13', family("jwt")),
+        ("email", 'if char != "@" or at == 0 or text[at - 1] not in local:', 'if True:', family("email")),
+        ("min-cloud", '"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 16, 0)', '"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 15, 0)', prefix("cloud-key-AKIA-C")),
+        ("min-slack", '0123456789-", 16, 0)', '0123456789-", 15, 0)', prefix("slack-xoxb--C")),
+        ("min-google", '0123456789_-", 30, 0)', '0123456789_-", 29, 0)', prefix("google-minimum-C")),
+        ("min-jwt-1", 'a.end() - start >= 13', 'a.end() - start >= 12', prefix("jwt-segment-1-C")),
+        ("min-jwt-2", 'b.end() - b.start() >= 10', 'b.end() - b.start() >= 9', prefix("jwt-segment-2-C")),
+        ("min-jwt-3", 'c.end() - c.start() >= 10', 'c.end() - c.start() >= 9', prefix("jwt-segment-3-C")),
+    ]
+    catalogue += [("gh" + letter, short, short.replace("[pousr]", "[" + "pousr".replace(letter, "") + "]"), prefix("short-token-gh" + letter + "_-U"))
+                  for letter in "pousr"]
+    catalogue += [("xox" + letter, 'xox[baprs]-', 'xox[baprs]-'.replace(letter, "", 1), prefix("slack-xox" + letter + "--U"))
+                  for letter in "baprs"]
+    for label, old, new, (flag, variable, specimen) in catalogue:
+        check(old != new, label + " catalogue mutation changes source")
+        mutations += (("P4-catalogue-" + label, old, new, flag, {variable: specimen},
+                       specimen + (" publication refusal/STOP" if "-U" in specimen else " clean no scrub STOP")),)
+    # P1.routes[actor unusable-initial] and P7.refusal[early private delete],
+    # observed on the strong G/O harness at both R11 lifecycle routes.
+    actor_row, judge_row = ("hex/users/U/identity/lower/offline-" + owner for owner in ("actor", "first-judge"))
+    mutations += (
+        ("P1-initial-actor", '        _scrub_sources(sources())',
+         '        if not (store is not None and isinstance(payload, dict) and payload.get("kind") == "completed-output-attempt"):\n            _scrub_sources(sources())',
+         "--scrub-hex-only", {"PANEL_SCRUB_HEX_PROBE": actor_row}, actor_row + " no public temporary/copy before refusal"),
+        ("P7-actor-private-early-delete",
+         '            (store.root / "STOP").touch(mode=0o600)\n            raise\n        cleanup()\n        # Keep the existing runner-owned',
+         '            (store.root / "STOP").touch(mode=0o600)\n            cleanup()\n            raise\n        cleanup()\n        # Keep the existing runner-owned',
+         "--scrub-hex-only", {"PANEL_SCRUB_HEX_PROBE": actor_row}, actor_row + " private exact original"),
+        ("P7-judge-private-early-delete",
+         '            raise Invalid("completed judge retention stopped; inspect private recovery; publication and calls stopped") from exc',
+         '            cleanup()\n            raise Invalid("completed judge retention stopped; inspect private recovery; publication and calls stopped") from exc',
+         "--scrub-hex-only", {"PANEL_SCRUB_HEX_PROBE": judge_row}, judge_row + " private exact original"),
+    )
     required = {
+        "P4-catalogue-users", "P4-catalogue-linux", "P4-catalogue-tmp", "P4-catalogue-var-folders",
+        "P4-catalogue-sk", "P4-catalogue-ghp", "P4-catalogue-gho", "P4-catalogue-ghu", "P4-catalogue-ghs",
+        "P4-catalogue-ghr", "P4-catalogue-github-pat", "P4-catalogue-AKIA", "P4-catalogue-ASIA",
+        "P4-catalogue-xoxb", "P4-catalogue-xoxa", "P4-catalogue-xoxp", "P4-catalogue-xoxr", "P4-catalogue-xoxs",
+        "P4-catalogue-key-plain",
+        "P4-catalogue-key-rsa",
+        "P4-catalogue-key-ec",
+        "P4-catalogue-key-openssh",
+        "P4-catalogue-google", "P4-catalogue-jwt", "P4-catalogue-email",
+        "P4-catalogue-min-cloud", "P4-catalogue-min-slack", "P4-catalogue-min-google",
+        "P4-catalogue-min-jwt-1", "P4-catalogue-min-jwt-2", "P4-catalogue-min-jwt-3",
+        "P1-initial-actor", "P7-actor-private-early-delete", "P7-judge-private-early-delete",
         "P1-pre-store-exception", "P6-excluded-content-retention", "P3-recovered-latin1", "P2-slash", "P2-backslash",
         "P6-native-byte-reportability", "P6-native-malformed-original", "P3-recovered-utf8", "P3-invalid-ignore",
         "P4-identity", "P4-short-ascii-only", "P4-short-prefix-only",
@@ -1983,6 +2194,17 @@ def scrub_mutations():
                 clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag],
                                        capture_output=True, text=True, env=clean_env)
                 check(clean.returncode == 0, name + " clean hex route control failed: " + clean.stdout + clean.stderr)
+            if flag == "--scrub-prefix-only":
+                # The opposite-class twin of the same alternative must still
+                # reach its declared outcome on the mutated runner.
+                specimen = extra["PANEL_SCRUB_PREFIX_PROBE"]
+                twin = specimen.replace("-U/", "-C/") if "-U/" in specimen else {
+                    "jwt-segment-1-C": "jwt-minimum-U", "jwt-segment-2-C": "jwt-minimum-U",
+                    "jwt-segment-3-C": "jwt-minimum-U"}.get(specimen.split("/")[0], specimen.split("/")[0][:-1] + "U") + "/" + specimen.split("/")[1]
+                clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_PREFIX_PROBE=twin)
+                clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag],
+                                       capture_output=True, text=True, env=clean_env)
+                check(clean.returncode == 0, name + " prefix twin control failed: " + clean.stdout + clean.stderr)
             if flag in ("--scrub-native-scalars-only", "--scrub-native-bytes-only"):
                 owner = next(iter(extra.values())).split("/")[1]
                 for specimen in ("astral-literal", "high-safe"):
@@ -2855,6 +3077,15 @@ if __name__ == "__main__":
         sys.exit(0)
     if "--scrub-hex-only" in sys.argv:
         scrub_hex_matrix()
+        sys.exit(0)
+    if "--scrub-prefix-declarations-only" in sys.argv:
+        print(str(len(scrub_prefix_rows())) + " declared prefix alternative rows")
+        sys.exit(0)
+    if "--scrub-prefix-only" in sys.argv:
+        scrub_prefix_matrix()
+        sys.exit(0)
+    if "--scrub-prefix-integrity-only" in sys.argv:
+        scrub_prefix_integrity_mutations()
         sys.exit(0)
     if "--scrub-hex-integrity-only" in sys.argv:
         scrub_hex_integrity_mutations()
