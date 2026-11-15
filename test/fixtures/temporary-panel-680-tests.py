@@ -782,13 +782,22 @@ SCRUB_FAMILY_PAIRS = {
 }
 
 
-def scrub_family_matrix():
-    import multiprocessing
+def scrub_family_rows():
     # Declaration and actual expansion are separate constructions. Every full
     # row key includes its pair, family, source/result and representation ID.
+    required_families = {"users", "linux", "temporary", "short-token", "cloud", "slack", "google", "jwt", "email", "key"}
+    required_representations = {"literal", "unicode-lower", "unicode-upper", "mixed", "slash", "nested-string", "member-name", "fullwidth", "broken-container"}
+    required_pairs = {
+        ("L2", "response.reason", "offline-actor", "unusable-initial", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+    }
+    check(set(SCRUB_FAMILIES) == required_families, "S631 family required source declaration")
+    check(set(SCRUB_REPRESENTATIONS) == required_representations and len(SCRUB_REPRESENTATIONS) == len(required_representations),
+          "S631 family required representation declaration")
+    check(SCRUB_FAMILY_PAIRS == required_pairs, "S631 family required pair declaration")
     expected = {(pair, family, outcome, representation)
-                for pair in SCRUB_FAMILY_PAIRS for family in SCRUB_FAMILIES
-                for outcome in ("U", "C") for representation in SCRUB_REPRESENTATIONS}
+                for pair in required_pairs for family in required_families
+                for outcome in ("U", "C") for representation in required_representations}
     rows = []
     for family, sources in SCRUB_FAMILIES.items():
         for number, source in enumerate(sources):
@@ -817,7 +826,13 @@ def scrub_family_matrix():
     actual = [key for key, _, _ in rows]
     check(len(actual) == len(set(actual)) == len(expected) and set(actual) == expected,
           "S631 family exact row-key equality/no duplicates")
-    check({key[0] for key in actual} == SCRUB_FAMILY_PAIRS, "S631 family exact pair-key equality")
+    check({key[0] for key in actual} == required_pairs, "S631 family exact pair-key equality")
+    return rows
+
+
+def scrub_family_matrix():
+    import multiprocessing
+    rows = scrub_family_rows()
     print("S631 family foundation matrix:", len(rows), "rows;", len(SCRUB_FAMILY_PAIRS), "declared pairs", flush=True)
     def jobs():
         for key, name, specimen in rows:
@@ -934,6 +949,17 @@ for _scalar_id, _gap in {
         _parts = (_gap, "/Users/Example/note") if _position == "before" else ("/Users/Example/note", _gap)
         SCRUB_SCALARS[_scalar_id + "-unsafe-" + _position] = ('"' + "".join(_parts) + '"', "U")
 
+# Two lexical layers: the JSON value contains literal Unicode escape runs.
+# Neither the transport wire nor a once-decoded string has a literal token.
+for _key, _count, _outcome in (("nested-unicode-token", 16, "U"), ("nested-unicode-short", 15, "Cq")):
+    _text = "sk-" + "A" * _count
+    SCRUB_SCALARS[_key] = (json.dumps("".join("\\u" + format(ord(c), "04x") for c in _text)), _outcome)
+
+# Container depth and string-decoding layers are independent axes. These
+# exact deep scalar sources reach the opaque fallback before qualification.
+SCRUB_SCALARS["deep-safe"] = ("[" * 64 + '"harmless"' + "]" * 64, "Cd")
+SCRUB_SCALARS["deep-unsafe"] = ("[" * 64 + '"/Users/Example/note"' + "]" * 64, "U")
+
 SCRUB_SCALAR_PAIRS = {
     ("L2", "response.reason", "offline-actor", "qualification", "file"),
     ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
@@ -948,7 +974,7 @@ def scrub_scalar_rows():
     required_sources = {
         "astral-literal", "astral-paired", "bold-token-literal", "bold-token-paired", "bold-short-paired",
         "canonical-email-nfc", "canonical-email-nfd", "canonical-email-short",
-        "path-case", "path-accent", "path-cyrillic", "identity-only-token",
+        "path-case", "path-accent", "path-cyrillic", "identity-only-token", "deep-safe", "deep-unsafe", "nested-unicode-token", "nested-unicode-short",
     } | {gap + suffix for gap in ("high", "low", "reversed", "nonadjacent", "truncated", "malformed")
          for suffix in ("-safe", "-split", "-unsafe-before", "-unsafe-after")}
     required_pairs = {
@@ -980,6 +1006,51 @@ def scrub_scalar_matrix():
     check(len(completed) == len(rows) and set(completed) == {(p, s) for p, s, _, _ in rows},
           "S631 scalar no skipped executions")
     print("S631 scalar matrix:", len(rows), "rows;", len(SCRUB_SCALAR_PAIRS), "pairs", flush=True)
+
+
+# Native transport is a distinct producer, including its separate canary.
+# These declarations deliberately do not borrow a production route table or
+# relabel offline executions as native evidence.
+SCRUB_NATIVE_SCALAR_PAIRS = {
+    ("L3", "response.reason", "native-canary", "canary-initial", "file"),
+    ("L2", "response.reason", "native-actor", "qualification", "file"),
+    ("L4", "response.verdicts[0].reason", "native-first-judge", "CONTENT_PENDING", "file"),
+    ("L4", "response.verdicts[0].reason", "native-second-judge", "CONTENT_PENDING", "file"),
+}
+
+
+def scrub_native_scalar_rows():
+    scrub_scalar_rows()  # also verifies the independent source list
+    required_pairs = {
+        ("L3", "response.reason", "native-canary", "canary-initial", "file"),
+        ("L2", "response.reason", "native-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "native-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "native-second-judge", "CONTENT_PENDING", "file"),
+    }
+    check(SCRUB_NATIVE_SCALAR_PAIRS == required_pairs, "S631 native scalar required pair declaration")
+    expected = {(pair, scalar) for pair in required_pairs for scalar in SCRUB_SCALARS}
+    # Expand from the independently verified source dictionary, once per source.
+    rows = [(pair, scalar, wire, outcome) for scalar, (wire, outcome) in SCRUB_SCALARS.items()
+            for pair in sorted(SCRUB_NATIVE_SCALAR_PAIRS)]
+    keys = [(pair, scalar) for pair, scalar, _, _ in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 native scalar exact row-key equality/no duplicates")
+    check({key[0] for key in keys} == required_pairs, "S631 native scalar exact pair-key equality")
+    return rows
+
+
+def scrub_native_scalar_matrix():
+    import multiprocessing
+    rows = scrub_native_scalar_rows()
+    probe = os.environ.get("PANEL_SCRUB_NATIVE_SCALAR_PROBE")
+    if probe:
+        rows = [row for row in rows if row[1] + "/" + row[0][2] == probe]
+        check(len(rows) == 1, "unknown native scalar probe")
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        completed = pool.map(_scrub_scalar_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {(p, s) for p, s, _, _ in rows},
+          "S631 native scalar no skipped executions")
+    print("S631 native scalar matrix:", len(rows), "rows;", len(SCRUB_NATIVE_SCALAR_PAIRS), "pairs", flush=True)
 
 
 # A56 addendum 7: independently declared Unicode ignore-case language.  These
@@ -1146,11 +1217,137 @@ def scrub_byte_matrix():
     print("S631 byte matrix:", len(rows), "rows; fullwidth/latin-1 reversal impossible", flush=True)
 
 
+# Native stdout/stderr specimens are emitted by the launcher, then independently
+# captured at transport. Only the selected owner receives the specimen; sibling
+# calls remain valid controls and never substitute for the selected bytes.
+def scrub_native_byte_rows():
+    offline = scrub_byte_rows()  # verifies the independent mandatory B sources
+    scrub_native_scalar_rows()  # verifies the native pair declaration
+    required_sources = {key[1] for key, row in offline}
+    required_pairs = {
+        ("L3", "response.reason", "native-canary", "canary-initial", "file"),
+        ("L2", "response.reason", "native-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "native-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "native-second-judge", "CONTENT_PENDING", "file"),
+    }
+    expected = {(pair, source, stream) for pair in required_pairs for source in required_sources
+                for stream in ("stdout", "stderr")}
+    rows = []
+    for source, (raw, outcome) in scrub_byte_sources().items():
+        for stream in ("stdout", "stderr"):
+            payload = b'{broken:"' + raw + b'"' if stream == "stdout" else raw
+            for base in sorted(SCRUB_NATIVE_SCALAR_PAIRS):
+                slot = "original_output" if stream == "stdout" else "stderr"
+                pair = (base[0], slot, *base[2:])
+                name = "native-byte-" + "-".join(source) + "-" + stream
+                # A native actor cannot qualify after a non-UTF8 stderr decode;
+                # the exact clean bytes still require shallow reportability.
+                invalid_utf8 = False
+                try: payload.decode("utf-8")
+                except UnicodeError: invalid_utf8 = True
+                result = "Cd" if outcome != "U" and (stream == "stdout" or invalid_utf8) else outcome
+                rows.append(((base, source, stream), (pair, name, '"Harmless note."', result, (stream, payload))))
+    keys = [key for key, row in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 native byte exact row-key equality/no duplicates")
+    check({key[0] for key in keys} == required_pairs, "S631 native byte exact pair-key equality")
+    return rows
+
+
+def scrub_native_byte_matrix():
+    import multiprocessing
+    rows = scrub_native_byte_rows()
+    probe = os.environ.get("PANEL_SCRUB_NATIVE_BYTE_PROBE")
+    if probe:
+        rows = [job for job in rows if job[1][1] + "/" + job[1][0][2] == probe]
+        check(len(rows) == 1, "unknown native byte probe")
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        completed = pool.map(_scrub_unicode_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {key for key, row in rows},
+          "S631 native byte no skipped executions")
+    print("S631 native byte matrix:", len(rows), "rows; stdout/stderr x", len(SCRUB_NATIVE_SCALAR_PAIRS), "native owners", flush=True)
+
+
+SCRUB_EXCLUDED_SOURCES = {
+    "excluded-safe": ("Harmless excluded value.", "Cd"),
+    "excluded-unsafe": ("/Users/Example/note", "U"),
+}
+SCRUB_EXCLUDED_PAIRS = {
+    ("L2", "response.excluded", "offline-actor", "qualification", "file"),
+    ("L4", "response.excluded", "offline-first-judge", "CONTENT_PENDING", "file"),
+    ("L4", "response.excluded", "offline-second-judge", "CONTENT_PENDING", "file"),
+    ("L3", "response.excluded", "native-canary", "canary-initial", "file"),
+    ("L2", "response.excluded", "native-actor", "qualification", "file"),
+    ("L4", "response.excluded", "native-first-judge", "CONTENT_PENDING", "file"),
+    ("L4", "response.excluded", "native-second-judge", "CONTENT_PENDING", "file"),
+}
+
+
+def scrub_excluded_rows():
+    # X explicitly excludes this field from qualification, never from inspecting
+    # its completed original. Trusted request, identity, proof and quote stay valid.
+    required_pairs = {
+        (location, "response.excluded", owner, lifecycle, "file")
+        for location, owner, lifecycle in (
+            ("L2", "offline-actor", "qualification"), ("L2", "native-actor", "qualification"),
+            ("L3", "native-canary", "canary-initial"),
+            ("L4", "offline-first-judge", "CONTENT_PENDING"), ("L4", "offline-second-judge", "CONTENT_PENDING"),
+            ("L4", "native-first-judge", "CONTENT_PENDING"), ("L4", "native-second-judge", "CONTENT_PENDING"))}
+    check(set(SCRUB_EXCLUDED_SOURCES) == {"excluded-safe", "excluded-unsafe"}, "S631 excluded required source declaration")
+    check(SCRUB_EXCLUDED_PAIRS == required_pairs, "S631 excluded required pair declaration")
+    expected = {(pair, source) for pair in required_pairs for source in ("excluded-safe", "excluded-unsafe")}
+    rows = [(pair, source, json.dumps(text), outcome) for source, (text, outcome) in SCRUB_EXCLUDED_SOURCES.items()
+            for pair in sorted(SCRUB_EXCLUDED_PAIRS)]
+    keys = [(pair, source) for pair, source, _, _ in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 excluded exact row-key equality/no duplicates")
+    return rows
+
+
+def scrub_excluded_matrix():
+    import multiprocessing
+    rows = scrub_excluded_rows()
+    probe = os.environ.get("PANEL_SCRUB_EXCLUDED_PROBE")
+    if probe:
+        rows = [row for row in rows if row[1] + "/" + row[0][2] == probe]
+        check(len(rows) == 1, "unknown excluded slot probe")
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        completed = pool.map(_scrub_scalar_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {(p, s) for p, s, _, _ in rows},
+          "S631 excluded no skipped executions")
+    print("S631 excluded slot matrix:", len(rows), "rows; 7 owners", flush=True)
+
+
 def scrub_integrity_mutations():
     source = Path(__file__).read_text()
     split = source.index("def scrub_integrity_mutations():")
     declaration, harness = source[:split], source[split:]
     mutants = (
+        ("family-required-source", 'def scrub_family_rows():',
+         'del SCRUB_FAMILIES["users"]\n\ndef scrub_family_rows():', "S631 family required source declaration"),
+        ("family-required-pair", 'def scrub_family_rows():',
+         'SCRUB_FAMILY_PAIRS.pop()\n\ndef scrub_family_rows():', "S631 family required pair declaration"),
+        ("family-required-representation", 'def scrub_family_rows():',
+         'SCRUB_REPRESENTATIONS = SCRUB_REPRESENTATIONS[:-1]\n\ndef scrub_family_rows():', "S631 family required representation declaration"),
+        ("family-reduced-generator", '                for pair in sorted(SCRUB_FAMILY_PAIRS):',
+         '                for pair in sorted(SCRUB_FAMILY_PAIRS)[:1]:', "S631 family exact row-key equality/no duplicates"),
+        ("family-duplicate-replacing-row", '    actual = [key for key, _, _ in rows]',
+         '    rows[-1] = rows[0]\n    actual = [key for key, _, _ in rows]', "S631 family exact row-key equality/no duplicates"),
+        ("excluded-required-pair", 'def scrub_excluded_rows():',
+         'SCRUB_EXCLUDED_PAIRS.pop()\n\ndef scrub_excluded_rows():',
+         "S631 excluded required pair declaration"),
+        ("excluded-required-source", 'def scrub_excluded_rows():',
+         'del SCRUB_EXCLUDED_SOURCES["excluded-safe"]\n\ndef scrub_excluded_rows():',
+         "S631 excluded required source declaration"),
+        ("native-required-route", 'def scrub_native_scalar_rows():',
+         'SCRUB_NATIVE_SCALAR_PAIRS.pop()\n\ndef scrub_native_scalar_rows():',
+         "S631 native scalar required pair declaration"),
+        ("native-reduced-generator", 'for pair in sorted(SCRUB_NATIVE_SCALAR_PAIRS)]',
+         'for pair in sorted(SCRUB_NATIVE_SCALAR_PAIRS)[:1]]',
+         "S631 native scalar exact row-key equality/no duplicates"),
+        ("native-duplicate-replacing-row", 'for pair in sorted(SCRUB_NATIVE_SCALAR_PAIRS)]\n    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
+         'for pair in sorted(SCRUB_NATIVE_SCALAR_PAIRS)]\n    rows[-1] = rows[0]\n    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
+         "S631 native scalar exact row-key equality/no duplicates"),
         ("unicode-required-source", '    return sources\n\n\ndef scrub_unicode_rows():',
          '    sources.popitem()\n    return sources\n\n\ndef scrub_unicode_rows():',
          "S631 Unicode required source declaration"),
@@ -1161,8 +1358,10 @@ def scrub_integrity_mutations():
          '    representations = ("literal",)', "S631 Unicode exact row-key equality/no duplicates"),
         ("byte-required-source", '    sources = scrub_byte_sources()',
          '    sources = scrub_byte_sources()\n    sources.popitem()', "S631 byte required source declaration"),
-        ("byte-required-stderr", '        for stream in ("stdout", "stderr"):',
-         '        for stream in ("stdout",):', "S631 byte exact row-key equality/no duplicates"),
+        ("byte-required-stderr", '    for source, (raw, outcome) in sources.items():\n        for stream in ("stdout", "stderr"):',
+         '    for source, (raw, outcome) in sources.items():\n        for stream in ("stdout",):', "S631 byte exact row-key equality/no duplicates"),
+        ("native-byte-required-stderr", '    for source, (raw, outcome) in scrub_byte_sources().items():\n        for stream in ("stdout", "stderr"):',
+         '    for source, (raw, outcome) in scrub_byte_sources().items():\n        for stream in ("stdout",):', "S631 native byte exact row-key equality/no duplicates"),
         ("required-source", 'def scrub_scalar_rows():',
          'del SCRUB_SCALARS["astral-literal"]\n\ndef scrub_scalar_rows():',
          "S631 scalar required source declaration"),
@@ -1171,8 +1370,8 @@ def scrub_integrity_mutations():
          "S631 scalar required pair declaration"),
         ("reduced-generator", 'for pair in sorted(SCRUB_SCALAR_PAIRS)]',
          'for pair in sorted(SCRUB_SCALAR_PAIRS)[:1]]', "S631 scalar exact row-key equality/no duplicates"),
-        ("duplicate-replacing-row", '    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
-         '    rows[-1] = rows[0]\n    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
+        ("duplicate-replacing-row", 'for pair in sorted(SCRUB_SCALAR_PAIRS)]\n    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
+         'for pair in sorted(SCRUB_SCALAR_PAIRS)]\n    rows[-1] = rows[0]\n    keys = [(pair, scalar) for pair, scalar, _, _ in rows]',
          "S631 scalar exact row-key equality/no duplicates"),
     )
     with tempfile.TemporaryDirectory(prefix="panel-matrix-integrity-") as tmp:
@@ -1180,7 +1379,7 @@ def scrub_integrity_mutations():
         command = [sys.executable, "-I", str(copy_path), "631", "--scrub-declarations-only"]
         copy_path.write_text(source)
         clean = subprocess.run(command, capture_output=True, text=True)
-        check(clean.returncode == 0 and "108 declared scalar rows" in clean.stdout,
+        check(clean.returncode == 0 and "120 declared scalar rows" in clean.stdout,
               "S631 integrity valid declaration control: " + clean.stdout + clean.stderr)
         for name, old, new, diagnostic in mutants:
             check(declaration.count(old) == 1, name + " integrity anchor unique")
@@ -1195,23 +1394,29 @@ def _scrub_scalar_job(row):
     pair, scalar, wire, outcome = row[:4]
     byte_source = row[4] if len(row) == 5 else None
     name = scalar + "/" + pair[2]
+    native = pair[2].startswith("native-")
+    mode = "--live" if native else "--offline"
     with tempfile.TemporaryDirectory(prefix="panel-scalar-") as tmp:
         f = Fixture(Path(tmp))
         marker = "S631_SCALAR_MARKER"
-        ordinal = 2 if pair[2] == "offline-second-judge" else 1
+        ordinal = 2 if pair[2].endswith("second-judge") else 1
         if pair[0] == "L4":
-            f.run()
-            f.cli("report", "--offline")
+            if native: f.native(primary=True)
+            else: f.run()
+            f.cli("report", mode)
             for number in (1, 2):
                 cap = fallback("judge-" + str(number))
                 cap.update(kind="judge", response={"verdicts": [dict(case="control", repetition=1,
                     criterion="reason", verdict="FAIL" if ordinal == 2 else "PASS",
                     quote=json.loads(cap["events"][0]["text"])["body"], reason="Valid supported reason.")]})
                 f.data["judges"].append(cap)
-            f.data["judges"][ordinal - 1]["response"]["verdicts"][0]["reason"] = marker
+            if pair[1] == "response.excluded":
+                f.data["judges"][ordinal - 1]["response"]["excluded"] = marker
+            else:
+                f.data["judges"][ordinal - 1]["response"]["verdicts"][0]["reason"] = marker
         else:
             f.data["actor"] = capture()
-            f.data["actor"]["response"]["reason"] = marker
+            f.data["actor"]["response"]["excluded" if pair[1] == "response.excluded" else "reason"] = marker
         for cap in [f.data["actor"], *f.data["judges"]]:
             cap["usage"] = dict(input=13, cache_read=0, cache_write=0, output=9)
         source = (f.dir / "adapter_impl.py").read_text()
@@ -1238,56 +1443,152 @@ def _scrub_scalar_job(row):
                     '\n    (here/("completed-judge-"+str(request.get("ordinal",0))+".txt")).write_bytes(raw)\n    sys.stdout.buffer.write(raw)\nelse: print(output,end="")')
         (f.dir / "adapter_impl.py").write_text(source)
         prior = {p.relative_to(f.out): p.read_bytes() for p in f.out.rglob("*") if p.is_file()}
-        if pair[0] == "L4":
-            p = f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+        if native:
+            original_cli = f.cli
+            stdout_path = f.dir / "native-scalar.stdout"
+            stderr_path = f.dir / "native-scalar.stderr"
+            def emit(op, *args, **kwargs):
+                import shlex
+                launcher = f.dir / "native-launcher.py"
+                source = launcher.read_text()
+                anchor = 'output=json.dumps(result)+"\\n"\n'
+                # judge runs both prescribed ordinals in one operation. A
+                # valid semantic FAIL from ordinal one schedules ordinal two;
+                # only the selected ordinal receives the specimen.
+                first = ('if is_judge and req["ordinal"]==1: result["structured_output"]["verdicts"][0]["verdict"]="FAIL"\n'
+                         if pair[0] == "L4" and ordinal == 2 else '')
+                gate = ('canary' if pair[0] == "L3" else 'not canary') if pair[0] != "L4" else 'is_judge and req["ordinal"]==' + str(ordinal)
+                excluded = pair[1] == "response.excluded"
+                extra = ('if ' + gate + ': result["structured_output"]["excluded"]=' + repr(marker) + '\n'
+                         if excluded and pair[0] == "L4" else
+                         'if canary: result["structured_output"].pop("excluded",None)\n' if excluded and pair[0] == "L2" else '')
+                target_marker = marker if pair[0] != "L4" or excluded else "Synthetic semantic judgment only."
+                replacement = first + extra + anchor + 'if ' + gate + ': output=output.replace(json.dumps(' + repr(target_marker) + '), ' + repr(wire) + ')\n'
+                if byte_source is not None:
+                    stream, raw_bytes = byte_source
+                    if stream == "stdout":
+                        replacement += ('if ' + gate + ':\n    sys.stdout.flush()\n    sys.stdout.buffer.write(' + repr(raw_bytes) + ')\n    sys.exit(0)\n')
+                    else:
+                        replacement += 'if ' + gate + ': sys.stderr.buffer.write(' + repr(raw_bytes) + ')\n'
+                check(source.count(anchor) == 1, name + " native wire-injection setup")
+                launcher.write_text(source.replace(anchor, replacement, 1))
+                wrapper = f.dir / "native-scalar-launcher.sh"
+                wrapper.write_text('#!/bin/sh\n' + shlex.quote(str(launcher)) + ' "$@" >' + shlex.quote(str(stdout_path)) + ' 2>' + shlex.quote(str(stderr_path)) +
+                    '\nstatus=$?\ncat ' + shlex.quote(str(stdout_path)) + '\ncat ' + shlex.quote(str(stderr_path)) + ' >&2\nexit "$status"\n')
+                wrapper.chmod(0o755)
+                args = list(args)
+                args[args.index("--containment-launcher") + 1] = str(wrapper)
+                return original_cli(op, *args, **kwargs)
+            f.cli = emit
+            if pair[0] == "L4":
+                p = f.native("judge", model="claude-opus-5-1", ok=None)
+            else:
+                p = f.native(primary=True, cap=f.data["actor"], ok=None)
+            f.cli = original_cli
+            raw = stdout_path.read_bytes()
         else:
-            p = f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
-        raw = (f.dir / ("completed-judge-" + str(ordinal if pair[0] == "L4" else 0) + ".txt")).read_bytes()
+            if pair[0] == "L4":
+                p = f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+            else:
+                p = f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+            raw = (f.dir / ("completed-judge-" + str(ordinal if pair[0] == "L4" else 0) + ".txt")).read_bytes()
+        def call_count():
+            path = f.dir / "native-calls.jsonl"
+            return len(path.read_text().splitlines()) if native else len(f.calls())
+        def binding(value):
+            if (value.get("work_item"), value.get("call_id"), value.get("transport")) != (682, call_count(), "native" if native else "offline"):
+                return False
+            if pair[0] == "L4":
+                return (value.get("exercise"), value.get("batch"), value.get("ordinal"), value.get("cases")) == (
+                    "generic-exercise", "one", ordinal, [dict(case="control", repetition=1)])
+            return (value.get("exercise"), value.get("case"), value.get("repetition")) == (
+                ("shared verification", None, None) if pair[0] == "L3" else ("generic-exercise", "control", 1))
         if outcome == "U":
             check(p.returncode == 2 and (f.out / "STOP").exists(), name + " publication refusal/STOP")
             originals = list((f.out / ".private-recovery").glob("*/stdout"))
             check(any(path.read_bytes() == raw for path in originals), name + " private exact original")
             recovery = next(path.parent for path in originals if path.read_bytes() == raw)
+            if native:
+                check((recovery / "stderr").read_bytes() == stderr_path.read_bytes(), name + " native private exact stderr")
             if byte_source is not None and byte_source[0] == "stderr":
-                check((recovery / "stderr").read_bytes() == stderr_source.read_bytes()
-                      and stderr_source.read_bytes().endswith(byte_source[1]), name + " private exact stderr")
+                captured_stderr = stderr_path if native else stderr_source
+                check((recovery / "stderr").read_bytes() == captured_stderr.read_bytes()
+                      and captured_stderr.read_bytes().endswith(byte_source[1]), name + " private exact stderr")
             receipt_path = recovery / "receipt.json"
             check(receipt_path.is_file(), name + " completed private receipt")
             receipt = json.loads(receipt_path.read_text())
+            check(binding(receipt), name + " private exact owner/request binding")
             check(receipt.get("completed") is True and receipt["stdout_sha256"] == sha(raw)
-                  and receipt["call_id"] == len(f.calls()) and receipt["work_item"] == 682,
+                  and receipt["call_id"] == call_count() and receipt["work_item"] == 682,
                   name + " private once-only completed binding")
             check(receipt["usage"] == dict.fromkeys(TOKEN_FIELDS)
                   or receipt["usage"] == dict(input=13, cache_read=0, cache_write=0, output=9),
                   name + " private checked-or-unknown usage")
-            forbidden = (f.evidence() if pair[0] == "L2" else
-                         f.out / ("evidence/682/attempts/call-" + str(len(f.calls())) + ".json"))
-            check(not forbidden.exists(), name + " no public rejected attempt")
+            rejected_paths = [f.out / ("evidence/682/" + location + "/call-" + str(call_count()) + ".json")
+                              for location in ("attempts", "errors")]
+            if pair[0] == "L2": rejected_paths.append(f.evidence())
+            if pair[0] == "L3": rejected_paths.append(f.out / "evidence/682/verification/canary.json")
+            check(not any(path.exists() for path in rejected_paths), name + " no public rejected attempt")
             for path in f.out.rglob("*"):
                 if not path.is_file() or ".private-recovery" in path.parts:
                     continue
                 check(raw not in path.read_bytes(), name + " no public encoded original")
+                if path.suffix == ".json":
+                    # The original is itself JSON/JSONL, so its escaped envelope
+                    # need not contain the wire bytes as a contiguous substring.
+                    # Inspect public string values, without parsing originals.
+                    pending = [json.loads(path.read_bytes())]
+                    while pending:
+                        value = pending.pop()
+                        if isinstance(value, dict): pending.extend(value.values())
+                        elif isinstance(value, list): pending.extend(value)
+                        elif isinstance(value, str):
+                            for codec in ("utf-8", "latin-1"):
+                                try: candidate = value.encode(codec)
+                                except UnicodeError: continue
+                                check(candidate != raw, name + " no public string-encoded original")
             for path, data in prior.items():
                 if path.name != "index.json":
                     check((f.out / path).read_bytes() == data, name + " unrelated safe prior work preserved")
-            count = len(f.calls())
-            check(f.cli("report", "--offline", ok=None).returncode == 2, name + " report refused")
-            f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
-            f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
-            check(len(f.calls()) == count, name + " no later call")
+            count = call_count()
+            check(f.cli("report", mode, ok=None).returncode == 2, name + " report refused")
+            if native:
+                f.native("judge", model="claude-opus-5-1", ok=None)
+                f.native(primary=True, ok=None)
+            else:
+                f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+                f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+            check(call_count() == count, name + " no later call")
         else:
             check(not (f.out / "STOP").exists(), name + " clean no scrub STOP")
             check(p.returncode == (0 if outcome == "Cq" else 2), name + " clean outcome")
-            check(f.cli("report", "--offline", ok=None).returncode == 0, name + " clean reportability")
+            check(f.cli("report", mode, ok=None).returncode == 0, name + " clean reportability")
+            if pair[0] == "L3" and outcome == "Cq":
+                canary = json.loads((f.out / "evidence/682/verification/canary.json").read_bytes())
+                check(canary["capture"]["response"]["reason"] == json.loads(wire), name + " clean canary slot reached")
+                check(call_count() == 2, name + " clean canary then actor calls")
             if outcome == "Cd":
                 envelopes = [json.loads(path.read_text()) for path in (f.out / "evidence").rglob("*.json")]
                 matches = [a for a in envelopes if a.get("usable") is False and a.get("original_output", "").encode(a.get("original_output_encoding", "utf-8")) == raw]
                 check(len(matches) == 1, name + " exact unusable original")
                 a = matches[0]
+                check(binding(a), name + " public exact owner/request binding")
                 check(structural_depth(json.dumps(a).encode()) <= 4 and a["errors"] == ["CONTENT_INVALID"], name + " shallow unusable envelope")
                 check(a["original_bytes"] == len(raw) and a["original_sha256"] == sha(raw), name + " original binding")
+                if native:
+                    stderr = stderr_path.read_bytes()
+                    check(a["stderr"].encode(a["stderr_encoding"]) == stderr and a["stderr_bytes"] == len(stderr)
+                          and a["stderr_sha256"] == sha(stderr), name + " exact public stderr binding")
                 expected_usage = dict.fromkeys(TOKEN_FIELDS) if byte_source is not None and byte_source[0] == "stdout" else dict(input=13, cache_read=0, cache_write=0, output=9)
                 check(a["usage"] == expected_usage, name + " checked-or-unknown usage")
+                count = call_count()
+                if native:
+                    f.native("judge", model="claude-opus-5-1", ok=None)
+                    f.native(primary=True, ok=None)
+                else:
+                    f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+                    f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+                check(call_count() == count, name + " clean unusable no retry/continuation")
         print("S631 scalar", name, outcome, "PASS", flush=True)
     return pair, scalar
 
@@ -1300,6 +1601,17 @@ def scrub_cli_diagnostics():
         p = subprocess.run([str(RUNNER), "invalid-" + text], capture_output=True, text=True)
         check(p.returncode == 2 and p.stdout == "" and p.stderr == "temporary-panel: invalid arguments\n",
               "early CLI no unsafe diagnostic copy")
+    with tempfile.TemporaryDirectory(prefix="panel-prestore-fault-") as tmp:
+        f = Fixture(Path(tmp))
+        check(f.cli("dry-run", "--offline").returncode == 0 and not f.calls(), "pre-Store valid input setup")
+        for fault, raw in (("utf8", b"\xff"), ("json", b"{invalid}")):
+            f.packet.write_bytes(raw); f.case["packet"] = ref(f.packet); f.save()
+            p = f.cli("dry-run", "--offline", ok=None)
+            check(p.returncode == 2 and not p.stdout and p.stderr.startswith("temporary-panel:")
+                  and "Traceback" not in p.stderr and str(ROOT) not in p.stderr,
+                  "pre-Store input fault safe diagnostics: " + fault)
+            check(f.packet.read_bytes() == raw and not f.calls() and not f.out.exists(),
+                  "pre-Store fault private original/no publication/no call: " + fault)
     print("S631 pre-Store CLI diagnostics PASS", flush=True)
 
 
@@ -1351,6 +1663,30 @@ def scrub_mutations():
     import shutil
     source = RUNNER.with_name("temporary_panel_run.py").read_text()
     mutations = (
+        ("P1-pre-store-exception", 'except Exception as error:',
+         'except (Invalid, OSError, KeyError, TypeError, json.JSONDecodeError, subprocess.TimeoutExpired) as error:',
+         "--scrub-cli-only", {}, "pre-Store input fault safe diagnostics: utf8"),
+        ("P6-excluded-content-retention", '        # Qualification can fail before there is an indexed observation. Retain',
+         '        if not isinstance(exc, StructuralLimit):\n            (store.root / "STOP").touch(mode=0o600)\n            raise\n        # Qualification can fail before there is an indexed observation. Retain',
+         "--scrub-excluded-slots-only", {"PANEL_SCRUB_EXCLUDED_PROBE": "excluded-safe/offline-actor"},
+         "excluded-safe/offline-actor clean no scrub STOP"),
+        ("P3-recovered-latin1", 'inspect(raw.decode("latin-1"), len(raw))', 'pass',
+         "--scrub-unicode-only", {"PANEL_SCRUB_UNICODE_PROBE": "unicode-sk--cyrillic-15-1109-literal/offline-first-judge"},
+         "unicode-sk--cyrillic-15-1109-literal/offline-first-judge publication refusal/STOP"),
+        ("P2-slash", "'/': '/', ", "",
+         "--scrub-family-only", {"PANEL_SCRUB_FAMILY_PROBE": "family-users-U-slash-offline-first-judge"},
+         "family-users-U-slash-offline-first-judge publication refusal/STOP"),
+        ("P2-backslash", "'\\\\': '\\\\', ", "",
+         "--scrub-scalars-only", {"PANEL_SCRUB_SCALAR_PROBE": "nested-unicode-token/offline-first-judge"},
+         "nested-unicode-token/offline-first-judge publication refusal/STOP"),
+        ("P6-native-byte-reportability", '        yield completed\n    except Exception as exc:',
+         '        yield completed\n    except (Invalid, json.JSONDecodeError, RecursionError) as exc:',
+         "--scrub-native-bytes-only", {"PANEL_SCRUB_NATIVE_BYTE_PROBE": "native-byte-accent-safe-latin-1-plain-stderr/native-actor"},
+         "native-byte-accent-safe-latin-1-plain-stderr/native-actor clean reportability"),
+        ("P6-native-malformed-original", 'raise NativeStreamInvalid("native stream invalid") from exc',
+         'pass',
+         "--scrub-native-scalars-only", {"PANEL_SCRUB_NATIVE_SCALAR_PROBE": "truncated-safe/native-actor"},
+         "truncated-safe/native-actor exact unusable original"),
         ("P3-recovered-utf8", 'inspect(raw.decode("utf-8", "surrogateescape"), len(raw))', 'pass',
          "--scrub-bytes-only", {"PANEL_SCRUB_BYTE_PROBE": "byte-mojibake-0-latin-1-before-stdout/offline-first-judge"},
          "byte-mojibake-0-latin-1-before-stdout/offline-first-judge publication refusal/STOP"),
@@ -1397,10 +1733,10 @@ def scrub_mutations():
          'raise Invalid("JSON scalar cannot inhabit retained envelope")',
          "--scrub-scalars-only", {"PANEL_SCRUB_SCALAR_PROBE": "high-safe/offline-actor"},
          "high-safe/offline-actor clean no scrub STOP"),
-        ("P6-malformed-reportability", 'except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:',
-         'except (UnicodeError, RecursionError) as exc:',
+        ("P6-malformed-reportability", '        yield completed\n    except Exception as exc:',
+         '        yield completed\n    except (Invalid, UnicodeError, RecursionError) as exc:',
          "--scrub-scalars-only", {"PANEL_SCRUB_SCALAR_PROBE": "malformed-safe/offline-actor"},
-         "malformed-safe/offline-actor clean no scrub STOP"),
+         "malformed-safe/offline-actor clean reportability"),
         ("P7-private-completion", '"kind": "completed-output-handoff", "completed": True',
          '"kind": "completed-output-handoff", "completed": False',
          "--scrub-scalars-only", {"PANEL_SCRUB_SCALAR_PROBE": "path-case/offline-actor"},
@@ -1418,6 +1754,38 @@ def scrub_mutations():
         ("P5-layers", 'require(layer < SCRUB_LAYER_LIMIT, "publication inspection incomplete")', 'pass',
          "--scrub-budgets-only", {}, "SCRUB_LAYER_LIMIT budget did not stop incomplete inspection"),
     )
+    # Native producer routes are independently observable at publication. The
+    # mutation changes only the shared publication guard for the selected role;
+    # trusted transport, content validators and all other writers stay intact.
+    for owner, ordinal, specimen in (("canary", -1, "deep-unsafe"), ("actor", 0, "deep-unsafe"),
+                                     ("first-judge", 1, "path-case"),
+                                     ("second-judge", 2, "path-case")):
+        condition = ('store is not None and store.args.live and store.index["calls"] and '
+                     'store.index["calls"][-1]["kind"]==' + repr("verification" if ordinal == -1 else "actor" if ordinal == 0 else "judge"))
+        if ordinal > 0:
+            condition += ' and sum(c["kind"]=="judge" for c in store.index["calls"])==' + str(ordinal)
+        probe = specimen + "/native-" + owner
+        mutations += (("P1-native-" + owner, '        _scrub_sources(sources())',
+            '        if not (' + condition + '):\n            _scrub_sources(sources())',
+            "--scrub-native-scalars-only", {"PANEL_SCRUB_NATIVE_SCALAR_PROBE": probe},
+            probe + " publication refusal/STOP"),)
+    required = {
+        "P1-pre-store-exception", "P6-excluded-content-retention", "P3-recovered-latin1", "P2-slash", "P2-backslash",
+        "P6-native-byte-reportability", "P6-native-malformed-original", "P3-recovered-utf8", "P3-invalid-ignore",
+        "P4-identity", "P4-short-ascii-only", "P4-short-prefix-only",
+        "P1-pre-store-stderr", "P2-nested-string-revisit", "P4-NFKC", "P1-initial-judge",
+        "P2-surrogate-pair", "P2-lone-surrogate-gap", "P4-NFD", "P4-path-case",
+        "P6-scalar-reportability", "P6-malformed-reportability",
+        "P7-private-completion", "P7-private-unknown", "P5-work", "P5-live", "P5-source", "P5-layers",
+        "P1-native-canary", "P1-native-actor", "P1-native-first-judge", "P1-native-second-judge",
+    }
+    check(len(mutations) == len(required) and {row[0] for row in mutations} == required,
+          "S631 mutation required property declaration")
+    probe = os.environ.get("PANEL_SCRUB_MUTATION")
+    if probe:
+        mutations = tuple(row for row in mutations if row[0] == probe)
+        check(len(mutations) == 1, "unknown publication mutation probe")
+    executed = []
     # Recorded implications retain assertions, without inventing independent
     # branches: literal/escaped equality <- P2+P4; initial/failed-qualification
     # protection <- P1+P7; report codec fidelity <- P1+P3; no retry <- P7.
@@ -1431,10 +1799,21 @@ def scrub_mutations():
                 clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_WITNESS=control)
                 clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-witnesses-only"], capture_output=True, text=True, env=clean_env)
                 check(clean.returncode == 0, name + " clean route control failed: " + clean.stdout + clean.stderr)
+            if flag in ("--scrub-native-scalars-only", "--scrub-native-bytes-only"):
+                owner = next(iter(extra.values())).split("/")[1]
+                for specimen in ("astral-literal", "high-safe"):
+                    clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name),
+                                     PANEL_SCRUB_NATIVE_SCALAR_PROBE=specimen + "/" + owner)
+                    clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-native-scalars-only"],
+                                           capture_output=True, text=True, env=clean_env)
+                    check(clean.returncode == 0, name + " native clean route control failed: " + clean.stdout + clean.stderr)
             env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), **extra)
             p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag], capture_output=True, text=True, env=env)
             check(p.returncode != 0 and diagnostic in p.stderr, name + " survived or unrelated failure: " + p.stdout + p.stderr)
             print("S631 killed " + name + " at " + diagnostic, flush=True)
+            executed.append((name, diagnostic))
+    check(len(executed) == len(mutations) and {name for name, _ in executed} == ({probe} if probe else required),
+          "S631 mutation exact intended-assertion result ledger")
 
 
 def s631(f):
@@ -2287,6 +2666,15 @@ def round5_mutations(scenario):
 
 
 if __name__ == "__main__":
+    if "--scrub-excluded-slots-only" in sys.argv:
+        scrub_excluded_matrix()
+        sys.exit(0)
+    if "--scrub-native-bytes-only" in sys.argv:
+        scrub_native_byte_matrix()
+        sys.exit(0)
+    if "--scrub-native-scalars-only" in sys.argv:
+        scrub_native_scalar_matrix()
+        sys.exit(0)
     if "--scrub-bytes-only" in sys.argv:
         scrub_byte_matrix()
         sys.exit(0)
@@ -2294,9 +2682,13 @@ if __name__ == "__main__":
         scrub_unicode_matrix()
         sys.exit(0)
     if "--scrub-declarations-only" in sys.argv:
+        print(str(len(scrub_family_rows())) + " declared family rows")
         print(str(len(scrub_scalar_rows())) + " declared scalar rows")
+        print(str(len(scrub_native_scalar_rows())) + " declared native scalar rows")
         print(str(len(scrub_unicode_rows())) + " declared Unicode rows")
         print(str(len(scrub_byte_rows())) + " declared byte rows")
+        print(str(len(scrub_native_byte_rows())) + " declared native byte rows")
+        print(str(len(scrub_excluded_rows())) + " declared excluded slot rows")
         sys.exit(0)
     if "--scrub-integrity-only" in sys.argv:
         scrub_integrity_mutations()

@@ -46,6 +46,10 @@ class StructuralLimit(Invalid):
     """Content cannot inhabit a complete retained envelope."""
 
 
+class NativeStreamInvalid(StructuralLimit):
+    """Malformed completed native framing or JSON requires opaque retention."""
+
+
 def publication_bytes(obj):
     try:
         raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
@@ -714,10 +718,7 @@ def adapter(args, store, request, judge=False, completed=None):
             completed(p.stdout, p.stderr, "offline")
     require(p.returncode == 0, "offline Adapter error")
     with judge_content(judge):
-        try:
-            c = strict_json(p.stdout.decode("utf-8"))
-        except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
-            raise StructuralLimit("completed output content invalid") from exc
+        c = strict_json(p.stdout.decode("utf-8"))
     if not judge:
         call.update(usage=c.get("usage", {}), completed=True)
         store.save()
@@ -776,10 +777,7 @@ def live_call(args, store, request, call, judge, completed=None):
         for witness in ("invocation.json", "stream.jsonl", "stderr.txt"):
             os.chmod(scratch / witness, 0o600)
         with judge_content(judge):
-            observed, result, init, malformed = native_output(p.stdout)
-        if malformed:
-            retain_runtime_error(store, request, observed, result, "native stream contains invalid JSON; partial ordered events retained; usage unknown")
-            raise Invalid("native stream invalid; unusable error evidence retained")
+            observed, result, init = native_output(p.stdout)
         if not (init and result and result.get("structured_output") is not None):
             retain_runtime_error(store, request, observed, result, "runtime lacks init/result/structured response; usage unknown")
             raise Invalid("runtime incomplete; ordered partial events retained, not runnable")
@@ -845,7 +843,7 @@ def live_call(args, store, request, call, judge, completed=None):
 
 
 def native_output(text):
-    raw = []; malformed = False
+    raw = []
     try:
         for line in lf_records(text):
             row = strict_json(line)
@@ -853,8 +851,11 @@ def native_output(text):
             raw.append(row)
     except StructuralLimit:
         raise
-    except (Invalid, ValueError):
-        malformed = True
+    except (Invalid, ValueError) as exc:
+        # Neither malformed framing nor a parsed prefix represents the exact
+        # completed stream. Keep all bytes in the same shallow opaque lifecycle;
+        # trusted readers never reparse it or promote partial chronology.
+        raise NativeStreamInvalid("native stream invalid") from exc
     observed = []; result = None; init = None
     for row in raw:
         if row.get("type") == "system" and row.get("subtype") == "init":
@@ -873,7 +874,7 @@ def native_output(text):
                 observed.append({"seq": len(observed) + 1, "type": "tool_result", "text": text, "feedback": text, **provenance})
         if row.get("type") == "result":
             result = row
-    return observed, result, init, malformed
+    return observed, result, init
 
 
 def retain_runtime_error(store, request, observed, result, reason, capture=None):
@@ -1674,9 +1675,29 @@ def retained_output(store, request):
 
     try:
         yield completed
-    except StructuralLimit as exc:
+    except Exception as exc:
         if original is None:
             raise
+        if isinstance(exc, OSError) or (store.root / "STOP").exists():
+            # A real storage/publication failure is permanent; never retry it as
+            # a content error or claim successful retention.
+            (store.root / "STOP").touch(mode=0o600)
+            raise
+        call = store.index["calls"][-1] if original[2] != "import" else {}
+        retained = False
+        if call.get("capture") or call.get("error_capture"):
+            try:
+                retained = load(store.index_path) == store.index
+            except (OSError, Invalid):
+                pass
+        if retained:
+            # Preserve a durably indexed invalid observation (e.g. postflight),
+            # including its ordered events and known usage, instead of replacing it.
+            cleanup()
+            raise
+        # Qualification can fail before there is an indexed observation. Retain
+        # its exact source in the same shallow envelope; publish still performs
+        # the complete inspection and can refuse unsafe or incomplete sources.
         stdout, stderr, transport = original
         number = None if transport == "import" else len(store.index["calls"])
         a = {"version": 1, "kind": "completed-output-attempt", "usable": False,
@@ -1700,27 +1721,12 @@ def retained_output(store, request):
             (store.root / "STOP").touch(mode=0o600)
             raise
         cleanup()
-        raise Invalid("completed output unusable; exact original retained: CONTENT_INVALID") from exc
-    except OSError:
-        if recovery is not None:
-            (store.root / "STOP").touch(mode=0o600)
-        raise
-    except Exception:
-        # Delete the handoff only after durable, indexed retention. In-memory
-        # binding alone is insufficient if a later index write failed.
-        if recovery is not None:
-            call = store.index["calls"][-1] if original[2] != "import" else {}
-            retained = False
-            if call.get("capture") or call.get("error_capture"):
-                try:
-                    retained = load(store.index_path) == store.index
-                except (OSError, Invalid):
-                    pass
-            if retained and not (store.root / "STOP").exists():
-                cleanup()
-            else:
-                (store.root / "STOP").touch(mode=0o600)
-        raise
+        # Keep the existing runner-owned native syntax diagnostic, without
+        # exposing a decoder exception or any payload-derived message.
+        # Closed, runner-owned diagnostic codes only; never render str(exc).
+        prefix = "native stream invalid; " if isinstance(exc, NativeStreamInvalid) else (
+            "live resolved model metadata invalid; " if isinstance(exc, Invalid) and exc.args == ("live resolved model metadata invalid",) else "")
+        raise Invalid(prefix + "completed output unusable; exact original retained: CONTENT_INVALID") from exc
     else:
         cleanup()
 
@@ -2057,7 +2063,7 @@ def main(argv=None):
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (Invalid, OSError, KeyError, TypeError, json.JSONDecodeError, subprocess.TimeoutExpired) as error:
+    except Exception as error:
         try:
             publish("stderr", "temporary-panel: " + str(error))
         except Invalid:
