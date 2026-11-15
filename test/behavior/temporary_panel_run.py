@@ -47,7 +47,12 @@ class StructuralLimit(Invalid):
 
 
 def publication_bytes(obj):
-    raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+    try:
+        raw = (json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+    except UnicodeError as exc:
+        # A lone decoded surrogate cannot inhabit a UTF-8 public envelope. Its
+        # exact wire bytes can still inhabit the shallow opaque error envelope.
+        raise StructuralLimit("JSON scalar cannot inhabit retained envelope") from exc
     json_bounds(raw)  # Producer and reader share the complete serialized envelope bound.
     return raw
 
@@ -709,7 +714,10 @@ def adapter(args, store, request, judge=False, completed=None):
             completed(p.stdout, p.stderr, "offline")
     require(p.returncode == 0, "offline Adapter error")
     with judge_content(judge):
-        c = strict_json(p.stdout.decode("utf-8"))
+        try:
+            c = strict_json(p.stdout.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+            raise StructuralLimit("completed output content invalid") from exc
     if not judge:
         call.update(usage=c.get("usage", {}), completed=True)
         store.save()
@@ -1638,7 +1646,14 @@ def retained_output(store, request):
         try:
             recovery.mkdir(parents=True, mode=0o700)
             os.chmod(recovery.parent, 0o700)
-            for name, raw in (("stdout", stdout), ("stderr", stderr), ("request.json", encoded(request))):
+            receipt = {"version": 1, "kind": "completed-output-handoff", "completed": True,
+                "call_id": None if transport == "import" else len(store.index["calls"]),
+                "work_item": store.m.data["work_item"], "exercise": request.get("exercise", "shared verification"),
+                "case": request.get("case"), "repetition": request.get("repetition"), "transport": transport,
+                "usage": dict.fromkeys(USAGE), "usage_source": "stdout; not parsed yet",
+                "stdout_sha256": digest(stdout), "stderr_sha256": digest(stderr)}
+            for name, raw in (("stdout", stdout), ("stderr", stderr), ("request.json", encoded(request)),
+                              ("receipt.json", encoded(receipt))):
                 with (recovery / name).open("xb") as f:
                     os.chmod(f.name, 0o600); f.write(raw); f.flush(); os.fsync(f.fileno())
             for directory in (recovery, recovery.parent, store.root):
@@ -1753,7 +1768,7 @@ def retained_judge_attempt(args, store, request, batch):
             recovery = relative(store.root, ".private-recovery/call-" + str(number))
             recovery.mkdir(parents=True, mode=0o700)
             os.chmod(recovery.parent, 0o700)
-            receipt = {"version": 1, "kind": "completed-judge-handoff", "usable": False,
+            receipt = {"version": 1, "kind": "completed-judge-handoff", "usable": False, "completed": True,
                 "call_id": number, "work_item": store.m.data["work_item"],
                 "exercise": request["exercise"], "batch": request["batch"], "ordinal": request["ordinal"],
                 "cases": [{"case": e["case"], "repetition": e["repetition"]} for e in request["evidence"]],

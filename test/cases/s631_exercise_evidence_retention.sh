@@ -12,6 +12,7 @@ if [ "${PANEL_TEST_CONTENT_ONLY:-0}" != 1 ]; then
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-cli-only || fail "S631 scrub early diagnostics"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-witnesses-only || fail "S631 publication scrub witnesses"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-family-only || fail "S631 publication scrub family foundations"
+  python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-scalars-only || fail "S631 JSON scalar fidelity matrix"
   python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-budgets-only || fail "S631 publication inspection budgets"
   if [ "${PANEL_TEST_SKIP_MUTATIONS:-0}" != 1 ]; then
     python3 -I "$TEST_REPO_ROOT/test/fixtures/temporary-panel-680-tests.py" 631 --scrub-mutations-only || fail "S631 publication inspection mutations"
