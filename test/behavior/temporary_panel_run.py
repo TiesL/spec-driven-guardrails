@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 CAP = 3_000_000
 JSON_DEPTH_LIMIT = 64  # Bound recursive qualification and trusted envelope readers.
@@ -102,15 +103,241 @@ def reference(root, obj):
     return raw
 
 
+# Inspection limits are internal test seams, never CLI/caller scrub options.
+SCRUB_SOURCE_LIMIT = CAP
+SCRUB_WORK_LIMIT = 256 * CAP
+SCRUB_LIVE_LIMIT = 8 * CAP
+SCRUB_LAYER_LIMIT = 64
+
+
+def _forbidden(text):
+    """Fixed P4 language, linear scans with bounded token lookahead."""
+    if any(p in text.casefold() for p in ("/users/", "/home/", "/tmp/", "/private/tmp/", "/var/folders/", "/private/var/folders/")):
+        return True
+    for prefix, alphabet, count, flags in (
+        (r"(?:sk-|gh[pousr]_|github_pat_)", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", 16, re.I),
+        (r"(?:AKIA|ASIA)", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 16, 0),
+        (r"xox[baprs]-", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-", 16, 0),
+        (r"AIza", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", 30, 0)):
+        for match in re.finditer(prefix, text, flags):
+            tail = text[match.end():match.end() + count]
+            if len(tail) == count and (re.fullmatch(r"[A-Za-z0-9_-]{16}", tail, re.I) is not None if flags else all(c in alphabet for c in tail)):
+                return True
+    if re.search(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----", text):
+        return True
+    # Maximal alphabet runs avoid quadratic failed greedy-regex searches.
+    runs = re.finditer(r"[A-Za-z0-9_-]+", text)
+    previous = []
+    for match in runs:
+        previous.append(match)
+        previous = previous[-3:]
+        if len(previous) == 3:
+            a, b, c = previous
+            start = text.find("eyJ", a.start(), a.end())
+            if (start >= 0 and a.end() - start >= 13 and b.end() - b.start() >= 10 and
+                    c.end() - c.start() >= 10 and text[a.end():b.start()] == "." and text[b.end():c.start()] == "."):
+                return True
+    local = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._%+-")
+    domain = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-")
+    letters = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+    for at, char in enumerate(text):
+        if char != "@" or at == 0 or text[at - 1] not in local:
+            continue
+        end = at + 1
+        while end < len(text) and text[end] in domain:
+            end += 1
+        # Any two ASCII suffix letters after a dot with a nonempty domain.
+        for pos in range(at + 2, end - 2):
+            if text[pos] == "." and text[pos + 1] in letters and text[pos + 2] in letters:
+                return True
+    return False
+
+
+def _unescape_view(text):
+    """One lexical string-content layer, independent of document/container validity.
+
+    Quotes and invalid spans stay separators. No container is loaded, and no
+    invalid unit is deleted or replaced. JSON escape runs are consumed in order.
+    """
+    result = []
+    i = 0
+    standard = {'"': '"', '/': '/', '\\': '\\', 'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r', 't': '\t'}
+    hexdigits = frozenset("0123456789abcdefABCDEF")
+    while i < len(text):
+        if text[i] == "\\" and i + 1 < len(text):
+            code = text[i + 1]
+            if code in standard:
+                result.append(standard[code]); i += 2; continue
+            if code == "u" and i + 6 <= len(text) and all(c in hexdigits for c in text[i + 2:i + 6]):
+                value = int(text[i + 2:i + 6], 16)
+                if 0xD800 <= value <= 0xDBFF and text[i + 6:i + 8] == "\\u" and i + 12 <= len(text) and all(c in hexdigits for c in text[i + 8:i + 12]):
+                    low = int(text[i + 8:i + 12], 16)
+                    if 0xDC00 <= low <= 0xDFFF:
+                        result.append(chr(0x10000 + ((value - 0xD800) << 10) + low - 0xDC00)); i += 12; continue
+                if not 0xD800 <= value <= 0xDFFF:
+                    result.append(chr(value)); i += 6; continue
+                # Preserve lone/reversed surrogates as opaque separating units.
+                result.append(text[i:i + 6]); i += 6; continue
+        result.append(text[i]); i += 1
+    return "".join(result)
+
+
 def scrub(obj):
-    """Reject before publication; never redact or alter evidence/quotes."""
-    text = json.dumps(obj, ensure_ascii=False)
-    patterns = (r"/Users/", r"/home/", r"/(?:private/)?(?:tmp|var/folders)/", r"(?i)(?:sk-|gh[pousr]_|github_pat_)[A-Za-z0-9_-]{16,}",
-                r"(?:AKIA|ASIA)[A-Z0-9]{16}", r"xox[baprs]-[A-Za-z0-9-]{16,}", r"AIza[A-Za-z0-9_-]{30,}",
-                r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
-                r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
-                r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
-    require(not any(re.search(p, text) for p in patterns), "publication scrub rejected path/secret/email")
+    """Content-validation entry; publication always uses the complete source set."""
+    _scrub_sources((obj,))
+
+
+def _scrub_sources(sources):
+    """One bounded, transient R/J/B/N inspection; never rewrite evidence."""
+    work = 0
+    seen = set()
+
+    def charge(amount):
+        nonlocal work
+        work += amount
+        require(work <= SCRUB_WORK_LIMIT, "publication inspection incomplete")
+
+    def inspect(source, source_bytes=None):
+        size = len(source.encode("utf-8", "surrogatepass")) if source_bytes is None else source_bytes
+        require(size <= SCRUB_SOURCE_LIMIT, "publication inspection incomplete")
+        layer = 0
+        while True:
+            charge(len(source))
+            require(3 * len(source) <= SCRUB_LIVE_LIMIT, "publication inspection incomplete")
+            key = digest(source.encode("utf-8", "surrogatepass"))
+            if key in seen:
+                return
+            seen.add(key)
+            for form in (None, "NFC", "NFD", "NFKC"):
+                charge(12 * len(source))  # normalization, case/path and fixed language scans
+                view = source if form is None else unicodedata.normalize(form, source)
+                charge(12 * len(view))
+                require(len(source) + 2 * len(view) <= SCRUB_LIVE_LIMIT, "publication inspection incomplete")
+                require(not _forbidden(view), "publication scrub rejected path/secret/email")
+            charge(2 * len(source))
+            decoded = _unescape_view(source)
+            if decoded == source:
+                return
+            require(layer < SCRUB_LAYER_LIMIT, "publication inspection incomplete")
+            source = decoded; layer += 1
+
+    try:
+        for obj in sources:
+            text = obj if isinstance(obj, str) else json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n"
+            inspect(text)
+            # Derive opaque sources only from the fixed envelope schema, including
+            # envelopes nested in reports. Walk iteratively, without decoding trees.
+            pending = [obj]
+            while pending:
+                value = pending.pop()
+                if isinstance(value, dict):
+                    charge(len(value))
+                    for field in ("original_output", "stderr"):
+                        if field + "_encoding" not in value:
+                            continue
+                        codec = value[field + "_encoding"]
+                        require(codec in ("utf-8", "latin-1") and isinstance(value.get(field), str), "publication inspection incomplete")
+                        raw = value[field].encode(codec)
+                        prefix = "original" if field == "original_output" else field
+                        require(len(raw) == value.get(prefix + "_bytes") and digest(raw) == value.get(prefix + "_sha256"), "publication inspection incomplete")
+                        charge(3 * len(raw))
+                        require(len(raw) <= SCRUB_SOURCE_LIMIT, "publication inspection incomplete")
+                        inspect(raw.decode("latin-1"), len(raw))
+                        # surrogateescape preserves invalid bytes as separating units.
+                        inspect(raw.decode("utf-8", "surrogateescape"), len(raw))
+                    pending.extend(value.values())
+                elif isinstance(value, list):
+                    charge(len(value)); pending.extend(value)
+    except Invalid:
+        raise
+    except Exception as exc:
+        raise Invalid("publication inspection incomplete") from exc
+
+
+def publish(destination, payload):
+    """Single public writer, with schema/lifecycle context owned by Store.
+
+    A Store destination is (store, relative name); console destinations are the
+    fixed stdout/stderr channels. Reports derive context from retained envelopes,
+    rather than trusting Markdown to carry source codec labels.
+    """
+    store = destination[0] if isinstance(destination, tuple) else None
+    def sources():
+        channel = destination[1] if store is not None else destination
+        # Console serialization includes the newline print emits.
+        yield payload + "\n" if channel in ("stdout", "stderr") and isinstance(payload, str) else payload
+        if store is None:
+            return
+        yield destination[1]
+        # Source inventory is schema/lifecycle-owned, not a caller allow-list.
+        recovery = store.root / ".private-recovery"
+        if recovery.exists():
+            for folder in recovery.iterdir():
+                for field in ("stdout", "stderr"):
+                    path = folder / field
+                    if path.is_file():
+                        require(path.stat().st_size <= SCRUB_SOURCE_LIMIT, "publication inspection incomplete")
+                        raw = path.read_bytes()
+                        source = {}; opaque_bytes(source, raw, b"")
+                        yield source
+        if isinstance(payload, str):
+            for path in store.bundle.rglob("*.json"):
+                yield load(path)
+
+    try:
+        _scrub_sources(sources())
+        console = destination[1] if store is not None else destination
+        if store is not None and console not in ("stdout", "stderr"):
+            _, name = destination
+            raw = payload.encode() if isinstance(payload, str) else publication_bytes(payload)
+            path = relative(store.root, name)
+            old = path.stat().st_size if path.exists() else 0
+            store.guard(max(0, len(raw) - old))
+            # Keep an attempt's prior public state until its private handoff is
+            # removed. A later failed update quarantines only this transaction.
+            recovery = store.root / ".private-recovery"
+            active = tuple(sorted(p.name for p in recovery.iterdir())) if recovery.exists() else ()
+            if active:
+                history = store._publication_history.setdefault(active, {})
+                if name not in history:
+                    history[name] = path.read_bytes() if path.exists() else None
+            else:
+                store._publication_history.clear()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as f:
+                f.write(raw); f.flush(); os.fsync(f.fileno()); temporary = Path(f.name)
+            os.chmod(temporary, 0o600)
+            temporary.replace(path)
+            fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        else:
+            require(console in ("stdout", "stderr"), "publication destination invalid")
+            print(payload, file=sys.stdout if console == "stdout" else sys.stderr)
+    except StructuralLimit:
+        # Complete-envelope admission is a content transition: the lifecycle
+        # retains a shallow scrub-safe error envelope, without a scrub STOP.
+        raise
+    except Exception as exc:
+        if store is not None:
+            (store.root / "STOP").touch(mode=0o600)
+            recovery = store.root / ".private-recovery"
+            active = tuple(sorted(p.name for p in recovery.iterdir())) if recovery.exists() else ()
+            history = store._publication_history.get(active, {})
+            # These are previously admitted bytes, restored without rendering or
+            # decoding. Unrelated prior observations/reports remain unchanged.
+            for name, previous in history.items():
+                path = relative(store.root, name)
+                if previous is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    with path.open("wb") as f:
+                        f.write(previous); f.flush(); os.fsync(f.fileno())
+        if isinstance(exc, (Invalid, OSError)):
+            raise
+        raise Invalid("publication inspection incomplete") from exc
 
 
 def git(repo, *args):
@@ -363,6 +590,7 @@ def schedule(m, args):
 class Store:
     def __init__(self, args, manifest):
         self.args, self.m = args, manifest
+        self._publication_history = {}
         self.root = Path(args.output_dir).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         recovery = relative(self.root, ".private-recovery")
@@ -397,23 +625,7 @@ class Store:
         require(not (self.root / "STOP").exists() and not (self.args.stop_file and Path(self.args.stop_file).exists()), "stop file: no further calls")
 
     def put(self, name, obj):
-        # Compact only the storage envelope. Strings (including original judge
-        # stdout/stderr) stay byte-exact; identity encoding remains unchanged.
-        raw = publication_bytes(obj)
-        path = relative(self.root, name)
-        old = path.stat().st_size if path.exists() else 0
-        self.guard(max(0, len(raw) - old))
-        scrub(obj)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as f:
-            f.write(raw); f.flush(); os.fsync(f.fileno()); temporary = Path(f.name)
-        os.chmod(temporary, 0o600)
-        temporary.replace(path)
-        fd = os.open(path.parent, os.O_RDONLY)
-        try:
-            os.fsync(fd)
-        finally:
-            os.close(fd)
+        publish((self, name), obj)
 
     def save(self):
         self.put(self.index_name, self.index)
@@ -920,7 +1132,7 @@ def run(m, store, args):
                 store.index["records"].append({"path": name, "exercise": ex["id"], "case": case["id"], "repetition": repetition})
                 store.save()
                 require(not errors, "not runnable: containment verification failed; invalid capture retained: " + "; ".join(errors))
-    print("retained observations; no behavioral claim from synthetic captures")
+    publish("stdout", "retained observations; no behavioral claim from synthetic captures")
 
 
 def _retained_observation(m, store, item, offline):
@@ -1489,7 +1701,7 @@ def retained_output(store, request):
                     retained = load(store.index_path) == store.index
                 except (OSError, Invalid):
                     pass
-            if retained:
+            if retained and not (store.root / "STOP").exists():
                 cleanup()
             else:
                 (store.root / "STOP").touch(mode=0o600)
@@ -1684,7 +1896,7 @@ def judge(m, store, args):
             r["findings"] = expected_findings(item, r, row[3])
             store.put(item["path"], r)
         store.save()
-    print("judgment retained; disagreement referred; deterministic failures preserved")
+    publish("stdout", "judgment retained; disagreement referred; deterministic failures preserved")
 
 
 def usage_totals(calls):
@@ -1758,13 +1970,12 @@ def report(m, store, args):
         if not call["completed"]:
             lines.append("Incomplete call reservation; usage unknown, not estimated: " + json.dumps(call))
     text = "\n".join(lines)
-    scrub(text)
     path = relative(store.root, m.data["results_path"])
     store.guard(max(0, len(text.encode()) - (path.stat().st_size if path.exists() else 0)))
-    path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
+    publish((store, m.data["results_path"]), text)
     store.index["reports"].append({"sha256": digest(text.encode()), "records": len(store.index["records"]), "synthetic": args.offline, "evidence": state["pilot_identity"]})
     store.save()
-    print(text)
+    publish((store, "stdout"), text)
 
 
 def recorder(argv):
@@ -1788,11 +1999,20 @@ def recorder(argv):
     return 0
 
 
+class PublicParser(argparse.ArgumentParser):
+    def error(self, message):
+        try:
+            publish("stderr", "temporary-panel: " + message)
+        except Invalid:
+            publish("stderr", "temporary-panel: invalid arguments")
+        raise SystemExit(2)
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "recorder":
         return recorder(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = PublicParser(description=__doc__)
     parser.add_argument("operation", nargs="?", default="dry-run", choices=("dry-run", "run", "judge", "report"))
     parser.add_argument("--repo", default=str(Path(__file__).resolve().parents[2]))
     parser.add_argument("--exercise-file", default=str(Path(__file__).with_name("temporary-panel-cases") / "manifest.json"))
@@ -1809,7 +2029,7 @@ def main(argv=None):
     require(args.max_sessions >= 0 and args.timeout > 0, "invalid session/timeout limits")
     m = Manifest(args)
     if args.operation == "dry-run":
-        print(json.dumps(schedule(m, args), ensure_ascii=False, indent=2))
+        publish("stdout", json.dumps(schedule(m, args), ensure_ascii=False, indent=2))
     else:
         # Reading an existing synthetic bundle is offline unless --live was explicit.
         if args.operation == "report" and not args.live:
@@ -1823,5 +2043,8 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except (Invalid, OSError, KeyError, TypeError, json.JSONDecodeError, subprocess.TimeoutExpired) as error:
-        print("temporary-panel: " + str(error), file=sys.stderr)
+        try:
+            publish("stderr", "temporary-panel: " + str(error))
+        except Invalid:
+            publish("stderr", "temporary-panel: publication refused")
         sys.exit(2)

@@ -745,6 +745,267 @@ def publication_suite():
             print("S631 killed producer-enforcement-bypass at publication/readability after valid transport setup", flush=True)
 
 
+# Independent S631 W dictionary: literal/escaped twins and clean depth control.
+# These are reconstructed fixtures, not claims to reproduce R11's old hashes.
+SCRUB_WITNESSES = {
+    "R11-actor-literal": ("actor", "literal", "U"),
+    "R11-actor-escaped": ("actor", "escaped", "U"),
+    "R11-first-judge-literal": ("first-judge", "literal", "U"),
+    "R11-first-judge-escaped": ("first-judge", "escaped", "U"),
+    "actor-depth-clean": ("actor", "clean", "Cd"),
+    "first-judge-clean": ("first-judge", "clean", "Cq"),
+}
+
+
+# F/N/V foundations, independent of the production pattern/view tables.
+# This covers the named family literals at the two R11 lifecycle routes. The
+# full L1-L9 producer/slot cross product remains a separate unfinished ledger.
+SCRUB_FAMILIES = {
+    "users": ("/Users/Example/private-note", "/User/Example/private-note"),
+    "linux": ("/home/example/private-note", "/homes/example/private-note"),
+    "temporary": ("/private/var/folders/example/note", "/private/var/folder/example/note"),
+    "short-token": ("sk-" + "A" * 16, "sk-" + "A" * 15),
+    "cloud": ("AKIA" + "A" * 16, "akia" + "A" * 16),
+    "slack": ("xoxb-" + "A" * 16, "XOXB-" + "A" * 16),
+    "google": ("AIza" + "A" * 30, "AIzA" + "A" * 30),
+    "jwt": ("eyJ" + "A" * 10 + "." + "B" * 10 + "." + "C" * 10,
+            "EyJ" + "A" * 10 + "." + "B" * 10 + "." + "C" * 10),
+    "email": ("qa@example.invalid", "qa.example.invalid"),
+    "key": ("-----BEGIN RSA PRIVATE KEY-----", "-----BEGIN RSA PRIVATE KEY----"),
+}
+SCRUB_FAMILY_WIRES = {}
+SCRUB_REPRESENTATIONS = ("literal", "unicode-lower", "unicode-upper", "mixed", "slash",
+                         "nested-string", "member-name", "fullwidth", "broken-container")
+SCRUB_FAMILY_PAIRS = {
+    ("L2", "response.reason", "offline-actor", "unusable-initial", "file"),
+    ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+}
+
+
+def scrub_family_matrix():
+    import multiprocessing
+    # Declaration and actual expansion are separate constructions. Every full
+    # row key includes its pair, family, source/result and representation ID.
+    expected = {(pair, family, outcome, representation)
+                for pair in SCRUB_FAMILY_PAIRS for family in SCRUB_FAMILIES
+                for outcome in ("U", "C") for representation in SCRUB_REPRESENTATIONS}
+    rows = []
+    for family, sources in SCRUB_FAMILIES.items():
+        for number, source in enumerate(sources):
+            outcome = "U" if number == 0 else "C"
+            for representation in SCRUB_REPRESENTATIONS:
+                text = source
+                if representation == "fullwidth":
+                    text = "".join(chr(ord(c) + 0xFEE0) if 0x21 <= ord(c) <= 0x7E else c for c in text)
+                wire = json.dumps(text)
+                if representation.startswith("unicode-") or representation == "mixed":
+                    upper = representation == "unicode-upper"
+                    wire = '"' + "".join(("\\u" + format(ord(c), "04X" if upper else "04x"))
+                        if representation != "mixed" or i % 2 else c for i, c in enumerate(text)) + '"'
+                elif representation == "slash": wire = wire.replace("/", "\\/")
+                elif representation == "nested-string": wire = json.dumps(wire)
+                elif representation == "member-name": wire = "{" + wire + ':"harmless"}'
+                elif representation == "broken-container": wire = json.dumps('{broken:' + wire)
+                for pair in sorted(SCRUB_FAMILY_PAIRS):
+                    key = (pair, family, outcome, representation)
+                    name = "family-" + family + "-" + outcome + "-" + representation + "-" + pair[2]
+                    SCRUB_FAMILY_WIRES[name] = wire
+                    # Non-string reason controls are explicitly clean unusable.
+                    result = "U" if outcome == "U" else ("Cd" if pair[0] == "L2" or representation == "member-name" else "Cq")
+                    owner = "actor" if pair[0] == "L2" else "first-judge"
+                    rows.append((key, name, (owner, name, result)))
+    actual = [key for key, _, _ in rows]
+    check(len(actual) == len(set(actual)) == len(expected) and set(actual) == expected,
+          "S631 family exact row-key equality/no duplicates")
+    check({key[0] for key in actual} == SCRUB_FAMILY_PAIRS, "S631 family exact pair-key equality")
+    print("S631 family foundation matrix:", len(rows), "rows;", len(SCRUB_FAMILY_PAIRS), "declared pairs", flush=True)
+    def jobs():
+        for key, name, specimen in rows:
+            yield (key, name, specimen)
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        selected = list(jobs())
+        probe = os.environ.get("PANEL_SCRUB_FAMILY_PROBE")
+        if probe:
+            selected = [job for job in selected if job[1] == probe]
+            check(len(selected) == 1, "unknown family probe")
+        completed = pool.map(_scrub_family_job, selected)
+    executed = {job[0] for job in selected}
+    check(len(completed) == len(executed) and set(completed) == executed, "S631 family no skipped executions")
+
+
+def _scrub_family_job(job):
+    key, name, specimen = job
+    scrub_witnesses({name: specimen})
+    return key
+
+
+def scrub_witnesses(rows=None):
+    declared = {(owner, spelling, result) for owner in ("actor", "first-judge")
+                for spelling, result in (("literal", "U"), ("escaped", "U"),
+                                         ("clean", "Cd" if owner == "actor" else "Cq"))}
+    if rows is not None:
+        declared = set(rows.values())
+    specimens = SCRUB_WITNESSES if rows is None else rows
+    generated = list(specimens.values())
+    check(len(generated) == len(set(generated)) and set(generated) == declared,
+          "S631 W exact row/pair completeness")
+    results = set()
+    with tempfile.TemporaryDirectory(prefix="panel-scrub-w-") as tmp:
+        for name, (owner, spelling, result) in specimens.items():
+            if os.environ.get("PANEL_SCRUB_WITNESS") and name != os.environ["PANEL_SCRUB_WITNESS"]: continue
+            f = Fixture(Path(tmp) / name)
+            marker = "S631_WIRE_MARKER"
+            wire = ('"\\u002fUsers\\u002fExample/private-note"' if spelling == "escaped" else
+                    json.dumps("/Users/Example/private-note" if spelling == "literal" else "Harmless note."))
+            if spelling in SCRUB_FAMILY_WIRES:
+                wire = SCRUB_FAMILY_WIRES[spelling]
+            source = (f.dir / "adapter_impl.py").read_text()
+            source = source.replace('output=json.dumps(result)+"\\n"',
+                'output=(json.dumps(result)+"\\n").replace(json.dumps(' + repr(marker) + '), ' + repr(wire) + ')')
+            (f.dir / "adapter_impl.py").write_text(source)
+            if owner == "actor":
+                c = capture(); nested = "synthetic"
+                for _ in range(63): nested = {"x": nested}
+                c["response"].update(records=nested, reason=marker)
+                watch = f.out / "evidence/682/errors"; watch.mkdir(parents=True, exist_ok=True)
+                before_directory = (watch.stat().st_mtime_ns, watch.stat().st_ctime_ns)
+                p = f.run(c, None)
+                original = f.dir / "completed-judge-0.txt"
+                public = f.out / "evidence/682/errors/call-1.json"
+                recovery = f.out / ".private-recovery/call-1/stdout"
+            else:
+                f.run()
+                check(f.cli("report", "--offline").returncode == 0, name + " valid setup")
+                c = fallback("judge-1")
+                c.update(kind="judge", response={"verdicts": [{"case": "control", "repetition": 1,
+                    "criterion": "reason", "verdict": "PASS", "quote": json.loads(c["events"][0]["text"])["body"], "reason": marker}]})
+                f.data["judges"] = [c]
+                watch = f.out / "evidence/682/attempts"; watch.mkdir(parents=True, exist_ok=True)
+                before_directory = (watch.stat().st_mtime_ns, watch.stat().st_ctime_ns)
+                p = f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+                original = f.dir / "completed-judge-1.txt"
+                public = f.out / "evidence/682/attempts/call-2.json"
+                recovery = f.out / ".private-recovery/call-2/stdout"
+            raw = original.read_bytes()
+            print(name, "bytes=" + str(len(raw)), "sha256=" + sha(raw), flush=True)
+            if result == "U":
+                check(p.returncode == 2 and (f.out / "STOP").exists(), name + " publication refusal/STOP")
+                check(recovery.read_bytes() == raw, name + " private exact original")
+                check(not public.exists(), name + " no public original")
+                check((watch.stat().st_mtime_ns, watch.stat().st_ctime_ns) == before_directory,
+                      name + " no public temporary/copy before refusal")
+                count = len(f.calls())
+                report = f.cli("report", "--offline", ok=None)
+                check(report.returncode == 2, name + " report refused")
+                f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+                check(len(f.calls()) == count, name + " no later call")
+                check(raw not in p.stdout.encode() + p.stderr.encode(), name + " no console original")
+            else:
+                check(p.returncode == (2 if result == "Cd" else 0), name + " clean outcome")
+                check(not (f.out / "STOP").exists(), name + " clean no scrub STOP")
+                check(f.cli("report", "--offline").returncode == 0, name + " clean reportability")
+            results.add((owner, spelling, result))
+    check(results == ({SCRUB_WITNESSES[os.environ["PANEL_SCRUB_WITNESS"]]} if os.environ.get("PANEL_SCRUB_WITNESS") else declared), "S631 W execution completeness")
+
+
+def scrub_cli_diagnostics():
+    safe = subprocess.run([str(RUNNER), "invalid-operation"], capture_output=True, text=True)
+    check(safe.returncode == 2 and "invalid-operation" in safe.stderr, "early CLI clean control")
+    for text in ("/Users/Example/private-note", "\\u002fUsers\\u002fExample/private-note",
+                 "/uSeRs/Example/note", "／Ｕｓｅｒｓ／Ｅｘａｍｐｌｅ／ｎｏｔｅ"):
+        p = subprocess.run([str(RUNNER), "invalid-" + text], capture_output=True, text=True)
+        check(p.returncode == 2 and p.stdout == "" and p.stderr == "temporary-panel: invalid arguments\n",
+              "early CLI no unsafe diagnostic copy")
+    print("S631 pre-Store CLI diagnostics PASS", flush=True)
+
+
+def scrub_budget_suite():
+    # P5 explicitly authorizes configurable budgets at the internal inspection
+    # Seam. Other publication tests continue to use only the public CLI.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("budget_runner", RUNNER.with_name("temporary_panel_run.py"))
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    names = ("SCRUB_SOURCE_LIMIT", "SCRUB_WORK_LIMIT", "SCRUB_LIVE_LIMIT", "SCRUB_LAYER_LIMIT")
+    original = {name: getattr(module, name) for name in names}
+    def probe(name, source, limit, refused, diagnostic="publication inspection incomplete"):
+        for field, value in original.items(): setattr(module, field, value)
+        setattr(module, name, limit)
+        try:
+            module._scrub_sources((source,))
+        except module.Invalid as exc:
+            check(refused and diagnostic in str(exc), name + " incorrect refusal: " + str(exc))
+        else:
+            check(not refused, name + " budget did not stop incomplete inspection")
+    for size in (3, 4, 5):
+        probe("SCRUB_SOURCE_LIMIT", "x" * size, 4, size > 4)
+        probe("SCRUB_LIVE_LIMIT", "x" * size, 12, size > 4)
+    probe("SCRUB_LIVE_LIMIT", "\ufdfa", 36, True)  # NFKC expands to 18 code units.
+    # The work budget is metered; find its actual transition, then require the
+    # two neighbouring limits to preserve the same acceptance/refusal boundary.
+    low, high = 0, 4096
+    while low + 1 < high:
+        mid = (low + high) // 2
+        module.SCRUB_WORK_LIMIT = mid
+        try: module._scrub_sources(("safe",))
+        except module.Invalid: low = mid
+        else: high = mid
+    check(high > 1 and high < 4096, "work metering transition missing")
+    for limit in (high - 1, high, high + 1):
+        probe("SCRUB_WORK_LIMIT", "safe", limit, limit < high)
+    def layers(n, tail="u0073afe"):
+        return "\\" + "u005c" * (n - 1) + tail
+    for depth in (3, 4, 5):
+        probe("SCRUB_LAYER_LIMIT", layers(depth), 4, depth > 4)
+    probe("SCRUB_LAYER_LIMIT", layers(4, "u002fUsers/Example/note"), 4, True,
+          "publication scrub rejected")
+    probe("SCRUB_LAYER_LIMIT", layers(5, "u002fUsers/Example/note"), 4, True)
+    for field, value in original.items(): setattr(module, field, value)
+    print("S631 budget below/at/above controls PASS; measured ASCII work transition", high, flush=True)
+
+
+def scrub_mutations():
+    import shutil
+    source = RUNNER.with_name("temporary_panel_run.py").read_text()
+    mutations = (
+        ("P1-pre-store-stderr", '        _scrub_sources(sources())',
+         '        if destination != "stderr":\n            _scrub_sources(sources())',
+         "--scrub-cli-only", {}, "early CLI no unsafe diagnostic copy"),
+        ("P2-nested-string-revisit", 'decoded = _unescape_view(source)', 'decoded = source',
+         "--scrub-witnesses-only", {"PANEL_SCRUB_WITNESS": "R11-actor-escaped"}, "R11-actor-escaped publication refusal/STOP"),
+        ("P4-NFKC", 'view = source if form is None else unicodedata.normalize(form, source)',
+         'view = source if form in (None, "NFKC") else unicodedata.normalize(form, source)',
+         "--scrub-family-only", {"PANEL_SCRUB_FAMILY_PROBE": "family-users-U-fullwidth-offline-actor"}, "family-users-U-fullwidth-offline-actor publication refusal/STOP"),
+        ("P1-initial-judge", '        _scrub_sources(sources())',
+         '        if not (store is not None and isinstance(payload, dict) and payload.get("kind") == "completed-judge-attempt"):\n            _scrub_sources(sources())',
+         "--scrub-witnesses-only", {"PANEL_SCRUB_WITNESS": "R11-first-judge-escaped"}, "R11-first-judge-escaped no public temporary/copy before refusal"),
+        ("P5-work", 'require(work <= SCRUB_WORK_LIMIT, "publication inspection incomplete")', 'pass',
+         "--scrub-budgets-only", {}, "work metering transition missing"),
+        ("P5-live", 'require(len(source) + 2 * len(view) <= SCRUB_LIVE_LIMIT, "publication inspection incomplete")', 'pass',
+         "--scrub-budgets-only", {}, "SCRUB_LIVE_LIMIT budget did not stop incomplete inspection"),
+        ("P5-source", 'require(size <= SCRUB_SOURCE_LIMIT, "publication inspection incomplete")', 'pass',
+         "--scrub-budgets-only", {}, "SCRUB_SOURCE_LIMIT budget did not stop incomplete inspection"),
+        ("P5-layers", 'require(layer < SCRUB_LAYER_LIMIT, "publication inspection incomplete")', 'pass',
+         "--scrub-budgets-only", {}, "SCRUB_LAYER_LIMIT budget did not stop incomplete inspection"),
+    )
+    # Recorded implications retain assertions, without inventing independent
+    # branches: literal/escaped equality <- P2+P4; initial/failed-qualification
+    # protection <- P1+P7; report codec fidelity <- P1+P3; no retry <- P7.
+    with tempfile.TemporaryDirectory(prefix="panel-scrub-mutants-") as tmp:
+        for name, old, new, flag, extra, diagnostic in mutations:
+            folder = Path(tmp) / name; folder.mkdir()
+            check(source.count(old) == 1, name + " mutation anchor unique")
+            shutil.copy2(RUNNER, folder / RUNNER.name)
+            (folder / "temporary_panel_run.py").write_text(source.replace(old, new, 1))
+            for control in ("actor-depth-clean", "first-judge-clean"):
+                clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_WITNESS=control)
+                clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-witnesses-only"], capture_output=True, text=True, env=clean_env)
+                check(clean.returncode == 0, name + " clean route control failed: " + clean.stdout + clean.stderr)
+            env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), **extra)
+            p = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag], capture_output=True, text=True, env=env)
+            check(p.returncode != 0 and diagnostic in p.stderr, name + " survived or unrelated failure: " + p.stdout + p.stderr)
+            print("S631 killed " + name + " at " + diagnostic, flush=True)
+
+
 def s631(f):
     # Completed native output must survive a failed independent postflight.
     original_manifest = copy.deepcopy(f.manifest); original_plan = copy.deepcopy(f.plan)
@@ -1595,6 +1856,26 @@ def round5_mutations(scenario):
 
 
 if __name__ == "__main__":
+    if "--scrub-cli-only" in sys.argv:
+        scrub_cli_diagnostics()
+        sys.exit(0)
+
+    if "--scrub-budgets-only" in sys.argv:
+        scrub_budget_suite()
+        sys.exit(0)
+
+    if "--scrub-mutations-only" in sys.argv:
+        scrub_mutations()
+        sys.exit(0)
+
+    if "--scrub-family-only" in sys.argv:
+        scrub_family_matrix()
+        sys.exit(0)
+
+    if "--scrub-witnesses-only" in sys.argv:
+        scrub_witnesses()
+        sys.exit(0)
+
     if "--publication-only" in sys.argv:
         publication_suite()
         sys.exit(0)
