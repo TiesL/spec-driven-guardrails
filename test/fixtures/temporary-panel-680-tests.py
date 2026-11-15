@@ -919,6 +919,7 @@ SCRUB_SCALARS = {
     "canonical-email-nfc": (json.dumps("q@x.a\u00e1"), "U"),
     "canonical-email-nfd": (json.dumps("q@x.aa\u0301"), "U"),
     "canonical-email-short": (json.dumps("q@x.\u00e1"), "Cq"),
+    "identity-only-token": (json.dumps("sk-" + "A" * 7 + "\u0130" + "A" * 8 + "\u0301", ensure_ascii=False), "U"),
     "path-case": (json.dumps("/uSeRs/Example/note"), "U"),
     "path-accent": (json.dumps("/Us\u00e9rs/Example/note"), "Cq"),
     "path-cyrillic": (json.dumps("/User\u0455/Example/note"), "Cq"),
@@ -947,7 +948,7 @@ def scrub_scalar_rows():
     required_sources = {
         "astral-literal", "astral-paired", "bold-token-literal", "bold-token-paired", "bold-short-paired",
         "canonical-email-nfc", "canonical-email-nfd", "canonical-email-short",
-        "path-case", "path-accent", "path-cyrillic",
+        "path-case", "path-accent", "path-cyrillic", "identity-only-token",
     } | {gap + suffix for gap in ("high", "low", "reversed", "nonadjacent", "truncated", "malformed")
          for suffix in ("-safe", "-split", "-unsafe-before", "-unsafe-after")}
     required_pairs = {
@@ -981,11 +982,187 @@ def scrub_scalar_matrix():
     print("S631 scalar matrix:", len(rows), "rows;", len(SCRUB_SCALAR_PAIRS), "pairs", flush=True)
 
 
+# A56 addendum 7: independently declared Unicode ignore-case language.  These
+# source/result labels come from S631, never from the production matcher.
+def scrub_unicode_sources():
+    sources = {}
+    prefixes = ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")
+    for prefix in prefixes:
+        for position in range(16):
+            for codepoint in (0x130, 0x131, 0x17F, 0x212A):
+                key = (prefix, "payload", position, codepoint)
+                sources[key] = (prefix + "A" * position + chr(codepoint) + "A" * (15-position), "U")
+        for position, char in enumerate(prefix):
+            for codepoint in {"i": (0x130, 0x131), "k": (0x212A,), "s": (0x17F,)}.get(char, ()):
+                sources[(prefix, "prefix", position, codepoint)] = (prefix[:position] + chr(codepoint) + prefix[position+1:] + "A" * 16, "U")
+        sources[(prefix, "cyrillic", 15, 0x455)] = (prefix + "A" * 15 + "\u0455", "Cq")
+    return sources
+
+
+def scrub_unicode_rows():
+    # Keep a separate mandatory obligation construction: losing a prefix,
+    # position, character, representation or pair cannot shrink the oracle.
+    required_sources = {(prefix, "payload", position, codepoint)
+        for prefix in ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")
+        for position in range(16) for codepoint in (304, 305, 383, 8490)}
+    required_sources |= {(prefix, "prefix", position, codepoint)
+        for prefix, position, values in (("sk-", 0, (383,)), ("sk-", 1, (8490,)),
+            ("ghs_", 2, (383,)), ("github_pat_", 1, (304, 305)))
+        for codepoint in values}
+    # github_pat_'s i is at index 1; the independent list above is deliberate.
+    required_sources |= {(prefix, "cyrillic", 15, 1109)
+        for prefix in ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")}
+    pairs = {
+        ("L2", "response.reason", "offline-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-second-judge", "CONTENT_PENDING", "file"),
+    }
+    required_pairs = {
+        ("L2", "response.reason", "offline-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-second-judge", "CONTENT_PENDING", "file"),
+    }
+    check(pairs == required_pairs, "S631 Unicode required pair declaration")
+    sources = scrub_unicode_sources()
+    check(set(sources) == required_sources, "S631 Unicode required source declaration")
+    representations = ("literal", "escaped")
+    expected = {(pair, source, spelling) for pair in pairs
+                for source in required_sources for spelling in ("literal", "escaped")}
+    rows = []
+    for source, (text, outcome) in sources.items():
+        for spelling in representations:
+            wire = json.dumps(text, ensure_ascii=spelling != "literal")
+            for pair in sorted(pairs):
+                key = (pair, source, spelling)
+                name = "unicode-" + "-".join(map(str, source)) + "-" + spelling
+                # S631's Cyrillic C is conditional on EVERY byte view being
+                # clean. Literal UTF-8 D1 95 recovered as Latin-1 is Ñ + U+0095;
+                # NFD yields N + tilde, completing prefix+15A+N. Escaped ASCII
+                # wire has no such byte sequence and is the clean twin.
+                result = "U" if source[1] == "cyrillic" and spelling == "literal" else outcome
+                rows.append((key, (pair, name, wire, result)))
+    keys = [key for key, row in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 Unicode exact row-key equality/no duplicates")
+    check({key[0] for key in keys} == pairs, "S631 Unicode exact pair-key equality")
+    return rows
+
+
+def _scrub_unicode_job(job):
+    key, row = job
+    _scrub_scalar_job(row)
+    return key
+
+
+def scrub_unicode_matrix():
+    import multiprocessing
+    import unicodedata
+    rows = scrub_unicode_rows()
+    probe = os.environ.get("PANEL_SCRUB_UNICODE_PROBE")
+    if probe:
+        rows = [job for job in rows if job[1][1] + "/" + job[1][0][2] == probe]
+        check(len(rows) == 1, "unknown Unicode probe")
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        completed = pool.map(_scrub_unicode_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {key for key, row in rows},
+          "S631 Unicode no skipped executions")
+    print("S631 Unicode matrix:", len(rows), "rows; Unicode", unicodedata.unidata_version, flush=True)
+
+
+# B: independent byte sources.  Invalid units are separators; they are never
+# removed to create a match, and complete forbidden spans on either side survive.
+def scrub_byte_sources():
+    sources = {}
+    unsafe = "/Users/Example/note"
+    fullwidth = "／Ｕｓｅｒｓ／Ｅｘａｍｐｌｅ／ｎｏｔｅ"
+    for name, text, outcome in (("path", unsafe, "U"),
+                               ("safe", "/User/Example/note", "Cq"),
+                               ("fullwidth", fullwidth, "U"),
+                               ("accent-unsafe", "q@x.a\u00e1", "U"),
+                               ("accent-safe", "q@x.\u00e1", "Cq")):
+        for codec in ("utf-8", "latin-1"):
+            try: raw = text.encode(codec)
+            except UnicodeEncodeError:
+                # B-latin1 explicitly excludes this impossible reversal.
+                continue
+            sources[(name, codec, "plain")] = (raw, outcome)
+    for number, gap in enumerate((b"\xff", b"\x80", b"\xc3(", b"\xe2\x82", b"\xed\xa0\x80")):
+        for position in ("before", "after", "split"):
+            raw = (gap + unsafe.encode() if position == "before" else
+                   unsafe.encode() + gap if position == "after" else b"sk-" + b"A" * 8 + gap + b"A" * 8)
+            sources[("invalid-" + str(number), "latin-1", position)] = (raw, "Cq" if position == "split" else "U")
+        sources[("mojibake-" + str(number), "latin-1", "before")] = (gap + fullwidth.encode(), "U")
+        escaped = b'"\\u002fUsers\\u002fExample/note"'
+        sources[("escaped-" + str(number), "latin-1", "after")] = (escaped + gap, "U")
+    return sources
+
+
+def scrub_byte_rows():
+    required = {(name, codec, "plain") for name in
+        ("path", "safe", "fullwidth", "accent-unsafe", "accent-safe")
+        for codec in ("utf-8", "latin-1") if (name, codec) != ("fullwidth", "latin-1")}
+    required |= {("invalid-" + str(n), "latin-1", position) for n in range(5)
+                 for position in ("before", "after", "split")}
+    required |= {(family + str(n), "latin-1", position) for n in range(5)
+                 for family, position in (("mojibake-", "before"), ("escaped-", "after"))}
+    pairs = set(SCRUB_SCALAR_PAIRS)
+    check(pairs == {
+        ("L2", "response.reason", "offline-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-second-judge", "CONTENT_PENDING", "file")},
+        "S631 byte required pair declaration")
+    sources = scrub_byte_sources()
+    check(set(sources) == required, "S631 byte required source declaration")
+    expected = {(pair, source, stream) for pair in pairs for source in required
+                for stream in ("stdout", "stderr")}
+    rows = []
+    for source, (raw, outcome) in sources.items():
+        for stream in ("stdout", "stderr"):
+            payload = b'{broken:"' + raw + b'"' if stream == "stdout" else raw
+            for base in sorted(pairs):
+                pair = ("L5", "original_output" if stream == "stdout" else "stderr", *base[2:])
+                name = "byte-" + "-".join(source) + "-" + stream
+                result = "Cd" if outcome != "U" and stream == "stdout" else outcome
+                # L5 uses the original owner for setup; no new source identity.
+                job_pair = (base[0], pair[1], *base[2:])
+                rows.append(((base, source, stream), (job_pair, name, '"Harmless note."', result, (stream, payload))))
+    keys = [key for key, row in rows]
+    check(len(keys) == len(set(keys)) == len(expected) and set(keys) == expected,
+          "S631 byte exact row-key equality/no duplicates")
+    return rows
+
+
+def scrub_byte_matrix():
+    import multiprocessing
+    rows = scrub_byte_rows()
+    probe = os.environ.get("PANEL_SCRUB_BYTE_PROBE")
+    if probe:
+        rows = [job for job in rows if job[1][1] + "/" + job[1][0][2] == probe]
+        check(len(rows) == 1, "unknown byte probe")
+    with multiprocessing.get_context("fork").Pool(4) as pool:
+        completed = pool.map(_scrub_unicode_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {key for key, row in rows},
+          "S631 byte no skipped executions")
+    print("S631 byte matrix:", len(rows), "rows; fullwidth/latin-1 reversal impossible", flush=True)
+
+
 def scrub_integrity_mutations():
     source = Path(__file__).read_text()
     split = source.index("def scrub_integrity_mutations():")
     declaration, harness = source[:split], source[split:]
     mutants = (
+        ("unicode-required-source", '    return sources\n\n\ndef scrub_unicode_rows():',
+         '    sources.popitem()\n    return sources\n\n\ndef scrub_unicode_rows():',
+         "S631 Unicode required source declaration"),
+        ("unicode-required-pair", '    check(pairs == required_pairs, "S631 Unicode required pair declaration")',
+         '    pairs.pop()\n    check(pairs == required_pairs, "S631 Unicode required pair declaration")',
+         "S631 Unicode required pair declaration"),
+        ("unicode-required-spelling", '    representations = ("literal", "escaped")',
+         '    representations = ("literal",)', "S631 Unicode exact row-key equality/no duplicates"),
+        ("byte-required-source", '    sources = scrub_byte_sources()',
+         '    sources = scrub_byte_sources()\n    sources.popitem()', "S631 byte required source declaration"),
+        ("byte-required-stderr", '        for stream in ("stdout", "stderr"):',
+         '        for stream in ("stdout",):', "S631 byte exact row-key equality/no duplicates"),
         ("required-source", 'def scrub_scalar_rows():',
          'del SCRUB_SCALARS["astral-literal"]\n\ndef scrub_scalar_rows():',
          "S631 scalar required source declaration"),
@@ -1003,7 +1180,7 @@ def scrub_integrity_mutations():
         command = [sys.executable, "-I", str(copy_path), "631", "--scrub-declarations-only"]
         copy_path.write_text(source)
         clean = subprocess.run(command, capture_output=True, text=True)
-        check(clean.returncode == 0 and "105 declared scalar rows" in clean.stdout,
+        check(clean.returncode == 0 and "108 declared scalar rows" in clean.stdout,
               "S631 integrity valid declaration control: " + clean.stdout + clean.stderr)
         for name, old, new, diagnostic in mutants:
             check(declaration.count(old) == 1, name + " integrity anchor unique")
@@ -1015,7 +1192,8 @@ def scrub_integrity_mutations():
 
 
 def _scrub_scalar_job(row):
-    pair, scalar, wire, outcome = row
+    pair, scalar, wire, outcome = row[:4]
+    byte_source = row[4] if len(row) == 5 else None
     name = scalar + "/" + pair[2]
     with tempfile.TemporaryDirectory(prefix="panel-scalar-") as tmp:
         f = Fixture(Path(tmp))
@@ -1039,6 +1217,25 @@ def _scrub_scalar_job(row):
         source = (f.dir / "adapter_impl.py").read_text()
         source = source.replace('output=json.dumps(result)+"\\n"',
             'output=(json.dumps(result)+"\\n").replace(json.dumps(' + repr(marker) + '), ' + repr(wire) + ')')
+        if byte_source is not None:
+            stream, raw_bytes = byte_source
+            # Capture process stderr, including interpreter startup diagnostics,
+            # independently of the runner's completed-output callback.
+            import shlex
+            stderr_source = f.dir / "completed-byte.stderr"
+            script = f.adapter.read_text().replace(
+                'exec python3 -I "$(dirname "$0")/adapter_impl.py"',
+                'python3 -I "$(dirname "$0")/adapter_impl.py" 2>' + shlex.quote(str(stderr_source)) +
+                '\nstatus=$?\ncat ' + shlex.quote(str(stderr_source)) + ' >&2\nexit "$status"')
+            f.adapter.write_text(script)
+            selected = repr(marker) + ' in json.dumps(result)'
+            if stream == "stderr":
+                source = source.replace('print(output,end="")',
+                    'if ' + selected + ': sys.stderr.buffer.write(' + repr(raw_bytes) + ')\nprint(output,end="")')
+            else:
+                source = source.replace('print(output,end="")',
+                    'if ' + selected + ':\n    raw=' + repr(raw_bytes) +
+                    '\n    (here/("completed-judge-"+str(request.get("ordinal",0))+".txt")).write_bytes(raw)\n    sys.stdout.buffer.write(raw)\nelse: print(output,end="")')
         (f.dir / "adapter_impl.py").write_text(source)
         prior = {p.relative_to(f.out): p.read_bytes() for p in f.out.rglob("*") if p.is_file()}
         if pair[0] == "L4":
@@ -1051,6 +1248,9 @@ def _scrub_scalar_job(row):
             originals = list((f.out / ".private-recovery").glob("*/stdout"))
             check(any(path.read_bytes() == raw for path in originals), name + " private exact original")
             recovery = next(path.parent for path in originals if path.read_bytes() == raw)
+            if byte_source is not None and byte_source[0] == "stderr":
+                check((recovery / "stderr").read_bytes() == stderr_source.read_bytes()
+                      and stderr_source.read_bytes().endswith(byte_source[1]), name + " private exact stderr")
             receipt_path = recovery / "receipt.json"
             check(receipt_path.is_file(), name + " completed private receipt")
             receipt = json.loads(receipt_path.read_text())
@@ -1086,7 +1286,8 @@ def _scrub_scalar_job(row):
                 a = matches[0]
                 check(structural_depth(json.dumps(a).encode()) <= 4 and a["errors"] == ["CONTENT_INVALID"], name + " shallow unusable envelope")
                 check(a["original_bytes"] == len(raw) and a["original_sha256"] == sha(raw), name + " original binding")
-                check(a["usage"] == dict(input=13, cache_read=0, cache_write=0, output=9), name + " checked usage")
+                expected_usage = dict.fromkeys(TOKEN_FIELDS) if byte_source is not None and byte_source[0] == "stdout" else dict(input=13, cache_read=0, cache_write=0, output=9)
+                check(a["usage"] == expected_usage, name + " checked-or-unknown usage")
         print("S631 scalar", name, outcome, "PASS", flush=True)
     return pair, scalar
 
@@ -1150,6 +1351,24 @@ def scrub_mutations():
     import shutil
     source = RUNNER.with_name("temporary_panel_run.py").read_text()
     mutations = (
+        ("P3-recovered-utf8", 'inspect(raw.decode("utf-8", "surrogateescape"), len(raw))', 'pass',
+         "--scrub-bytes-only", {"PANEL_SCRUB_BYTE_PROBE": "byte-mojibake-0-latin-1-before-stdout/offline-first-judge"},
+         "byte-mojibake-0-latin-1-before-stdout/offline-first-judge publication refusal/STOP"),
+        ("P3-invalid-ignore", 'raw.decode("utf-8", "surrogateescape")', 'raw.decode("utf-8", "ignore")',
+         "--scrub-bytes-only", {"PANEL_SCRUB_BYTE_PROBE": "byte-invalid-0-latin-1-split-stdout/offline-first-judge"},
+         "byte-invalid-0-latin-1-split-stdout/offline-first-judge clean no scrub STOP"),
+        ("P4-identity", 'for form in (None, "NFC", "NFD", "NFKC"):',
+         'for form in ("NFC", "NFD", "NFKC"):',
+         "--scrub-scalars-only", {"PANEL_SCRUB_SCALAR_PROBE": "identity-only-token/offline-first-judge"},
+         "identity-only-token/offline-first-judge publication refusal/STOP"),
+        ("P4-short-ascii-only", 're.fullmatch(r"[A-Za-z0-9_-]{16}", tail, re.I)',
+         're.fullmatch(r"[A-Za-z0-9_-]{16}", tail, re.I | re.ASCII)',
+         "--scrub-unicode-only", {"PANEL_SCRUB_UNICODE_PROBE": "unicode-sk--payload-15-305-escaped/offline-first-judge"},
+         "unicode-sk--payload-15-305-escaped/offline-first-judge publication refusal/STOP"),
+        ("P4-short-prefix-only", 're.fullmatch(r"[A-Za-z0-9_-]{16}", tail, re.I)',
+         're.fullmatch(r"[A-Za-z0-9_-]{16}", tail)',
+         "--scrub-unicode-only", {"PANEL_SCRUB_UNICODE_PROBE": "unicode-sk--payload-15-305-escaped/offline-first-judge"},
+         "unicode-sk--payload-15-305-escaped/offline-first-judge publication refusal/STOP"),
         ("P1-pre-store-stderr", '        _scrub_sources(sources())',
          '        if destination != "stderr":\n            _scrub_sources(sources())',
          "--scrub-cli-only", {}, "early CLI no unsafe diagnostic copy"),
@@ -2068,8 +2287,16 @@ def round5_mutations(scenario):
 
 
 if __name__ == "__main__":
+    if "--scrub-bytes-only" in sys.argv:
+        scrub_byte_matrix()
+        sys.exit(0)
+    if "--scrub-unicode-only" in sys.argv:
+        scrub_unicode_matrix()
+        sys.exit(0)
     if "--scrub-declarations-only" in sys.argv:
         print(str(len(scrub_scalar_rows())) + " declared scalar rows")
+        print(str(len(scrub_unicode_rows())) + " declared Unicode rows")
+        print(str(len(scrub_byte_rows())) + " declared byte rows")
         sys.exit(0)
     if "--scrub-integrity-only" in sys.argv:
         scrub_integrity_mutations()
