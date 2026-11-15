@@ -4775,3 +4775,257 @@ Doubt: durable capture establishes recoverability and local consistency, not aut
   Depth, Leverage and Locality without a new Module, dependency or model session.
 
 Doubt: structural separation removes payload nesting from error-envelope loading; finite probes do not prove all resource failures, runtime authenticity or live exercise success. No finding is closed by this addendum.
+
+
+### A56 addendum 6 (Architect, Planning, 2026-11-15): one publication-scrub invariant (#680; PR #697)
+
+- **Ruling and authority.** R11's
+  `json-escaped-original-output-bypasses-publication-scrub` remains open,
+  code/medium: serialized spelling is insufficient to enforce the existing S631
+  prohibition. Specify the whole representation/location/route family once below;
+  no sample-specific escape patch. The supplied panel-680-d4 decision
+  ([issue record](https://github.com/TiesL/spec-driven-guardrails/issues/680#issuecomment-6886405486),
+  3-0) permits one bounded cycle, subject to the Architect position's conditions
+  1-7. This is its OR20 Planning step, not a new panel vote or finding closure.
+  No #680 AC1-AC6 is contradicted or further narrowed; addendum 1's accepted
+  qualifications remain. Addenda 4-5's retention, qualification and structural
+  contracts stay in force.
+
+- **P1 — One owner and publication Interface.** Inside the existing runner Module,
+  one `publish(destination, payload)` Interface owns every public file replacement
+  and console emission. Its single internal `scrub()` scan constructs all views
+  below; callers supply neither a scrub strength nor a list of views to omit.
+  `Store.put()`/`save()` delegate, as do report file output and console output.
+  Publication context comes from the owning Store/lifecycle: exact candidate bytes,
+  destination/reference text, and every retained source/encoding that contributes
+  to that candidate. Report context includes its source envelopes, so rendering
+  cannot discard the encoding information needed for inspection. The Interface
+  derives sources from the fixed envelope schema and lifecycle, never a
+  caller-selected allow-list. Inspect before creating a public temporary file,
+  replacing a file, printing text, or deleting private recovery. Apply this before
+  the first CONTENT_PENDING judge envelope and again on each update/export;
+  qualification failure cannot turn a publication refusal into CONTENT_INVALID
+  and republish it. Content-validation scrubs may reject earlier, but are not the
+  publication authority. Private handoff writes are not public publication.
+
+- **Inventory of producers and required views.** R, J, B and N refer to P2-P4;
+  N applies to every R/J/B text view. A source has B whenever it contains retained
+  bytes or an encoding-labelled opaque field. All strings, including object
+  member names, take J, even in otherwise whitelisted metadata. The inventory is
+  of writers/data origins, not permission to retain excluded fields.
+
+  | Location | Current producers and text covered | Mandatory inspection |
+  | --- | --- | --- |
+  | L1 inputs and imports | `Manifest`, `reference()`, `run()`: published packet/input copies, source/ground-truth snapshots, canonical/key/criteria/reference identities and imported release snapshots; imported errors as well as qualified observations | R/J/N; B/J/N for snapshot/import bytes; existing prompt/environment exclusions remain |
+  | L2 actors | `adapter()`/`live_call()`, `run()`, `observation_capture()`: native and offline qualified captures, response/events/drafts/tool input/tool result, proofs, invocation whitelist, verification errors and deterministic/semantic findings/quotes | R/J/N throughout; B/J/N for retained original stdout AND stderr, including structural-rejection envelopes from `retained_output()` |
+  | L3 verification/canary | `canary()`, `canary_verification()`, `live_call()`: separate native canary record and future embedded canary proof/hook-log input; offline synthetic canary/proof fields through their actor capture | R/J/N for record and later wrapper; B/J/N for any retained canary stdout/stderr and unusable output |
+  | L4 judges | `retained_judge_attempt()`, `judge()`: native/offline FIRST and prescribed conditional SECOND, initial unusable envelope before usage extraction, usage update, rejection, qualified capture, permanent attempt and later semantic record update | R/J/N at every write; B/J/N for exact original stdout/stderr; opaque `raw_usage` strings and nested strings/member names take J independently of qualification |
+  | L5 every failure path | `retain_runtime_error()`, `retained_output()`, `retained_judge_attempt()`: partial/malformed native stream, invalid UTF-8, postflight/proof, schema/identity/model/quote/content/usage failures, unexpected content exceptions; scrub/cap/storage/timeout/serialization/inspection errors | Same views as the corresponding successful writer; no exception-message or unqualified-identity shortcut; public diagnostics also L8 |
+  | L6 retained bookkeeping | `Store.reserve()`/`bind_call()`/`save()`/`put()`: index, call ledger, imports/canaries/judges/reports lists, paths, binding, usage, result references and every nested field/name | R/J/N, plus B/J/N for any opaque byte source; hashes/lengths are not a substitute for inspecting retained text |
+  | L7 reports/exports | `report()`: Markdown file AND printed report, unusable actor/import/judge originals and stderr, raw usage, reasons, quotes, findings, identities, counters and report-hash registration | R/J/N on final rendered bytes AND source views; B/J/N from source encoding metadata, not guesses based on Markdown labels |
+  | L8 other public output | `main()`/`schedule()`, run progress and CLI error/diagnostic stdout/stderr, including failure before Store construction | R/J/N; B/J/N if any retained bytes are emitted; use fixed runner-owned diagnostics when unsafe input cannot be emitted |
+  | L9 private transport/recovery | `live_call()` scratch instruction/invocation/stream/stderr, verifier I/O, `recorder()` hook log and deny response, `retained_output()` handoff, judge request/receipt/normalized scratch | Remain private, byte-exact, with existing containment/permissions. Recorder denial is a fixed transport response, not an evidence export. Any promotion/copy into L1-L8 must cross P1 with its applicable R/J/B/N views; private placement never supplies a public-scrub exemption |
+
+- **P2 — R and J views, independent of document validity.** R is the exact text
+  serialized for the destination, plus each contributing retained text source and
+  destination/reference name. J includes actual JSON string values AND member
+  names, at every container depth, and successive nested retained string layers.
+  Scan lexically/iteratively, without loading a payload tree: recognize string
+  tokens and standard JSON string-content escapes even in fragments, malformed
+  documents and JSONL. Include `\"`, `\/`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`,
+  and `\uXXXX`, every upper/lower hex spelling and mixed literal/escaped spelling.
+  Revisit decoded string content for further such layers, including escape runs
+  without a complete enclosing JSON document. Join adjacent valid high/low
+  surrogate escape pairs into their Unicode scalar; literal scalar and paired
+  escape spellings have the same decision. Lone/reversed surrogates and malformed
+  or truncated escapes remain opaque units/literal spans: never drop, replace,
+  join across them or manufacture a scalar. Scan valid surrounding spans too;
+  those controls alone do not make a scrub-safe unusable original unreportable.
+  Never concatenate distinct members, string tokens or separated invalid spans
+  to invent a forbidden value. A broken quote/container must not hide later
+  inspectable strings. Inspection is not acceptance of malformed JSON as content.
+
+- **P3 — B views from supported byte encodings.** Recover each opaque source's
+  exact bytes using its stored/declared codec, currently `utf-8` or reversible
+  `latin-1`, and check its existing length/hash binding. Inspect both supported
+  text interpretations of those same bytes, followed by J: Latin-1 is always
+  reversible; UTF-8 decodes valid sequences and leaves undecodable bytes as opaque
+  separating units for scan purposes. Thus invalid UTF-8 does not hide adjacent
+  valid UTF-8 or ASCII escape runs, and does not by itself prevent scrub-safe
+  opaque retention. Never use replacement/ignore decoding or join across invalid
+  bytes. A codec label cannot select a weaker scan. Missing/unknown codec where
+  required, impossible reversal or inconsistent hash/length is inspection failure,
+  not a clean result. Do not guess base64, URL encodings, arbitrary codecs or
+  visual confusables. These rules also cover stderr and opaque usage source spans;
+  no decoded usage container is needed.
+
+- **P4 — N views and one fixed forbidden-pattern catalogue.** For every R/J/B
+  text, compare identity, NFC, NFD and NFKC views, using the standard-library
+  Unicode tables (record the runtime Unicode version in verification evidence).
+  These are transient comparison views, never new evidence. Retain every literal
+  check in the current `scrub()` catalogue: `/Users/`, `/home/`, temporary-folder
+  paths (`/tmp/`, `/private/tmp/`, `/var/folders/`, `/private/var/folders/`),
+  sk-/GitHub token forms, AKIA/ASIA, Slack xox forms, Google AIza, JWT-shaped
+  forms, email and private-key headers, with their existing alphabets/minimum
+  lengths/flags. On each normalization view also casefold the path-marker view
+  and its markers; `/uSeRs/` is forbidden. Keep existing token/key case rules:
+  sk-/GitHub prefixes are case-insensitive; AKIA/ASIA, xox, AIza, eyJ and key
+  headers keep their current case-sensitive spellings. Email keeps the existing
+  ASCII character classes, including both letter cases. No blanket casefolding,
+  accent stripping, confusable substitution, separator deletion or whitespace
+  removal. Apply N after byte/string decoding; matching never rewrites a quote.
+  QA must pair compatibility/case equivalents with genuine safe near-matches,
+  including case-sensitive token-prefix controls. No family may disappear while
+  fixing the path example.
+
+  The fixed catalogue is the following regex language (search, not whole-value
+  matching); only the marked case-insensitive form changes regex case rules.
+  P4's additional casefolded path comparison applies to the first three patterns.
+
+  ```text
+  /Users/
+  /home/
+  /(?:private/)?(?:tmp|var/folders)/
+  (?i)(?:sk-|gh[pousr]_|github_pat_)[A-Za-z0-9_-]{16,}
+  (?:AKIA|ASIA)[A-Z0-9]{16}
+  xox[baprs]-[A-Za-z0-9-]{16,}
+  AIza[A-Za-z0-9_-]{30,}
+  eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}
+  [A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}
+  -----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----
+  ```
+
+- **P5 — Finite inspection, fail closed.** Each distinct original/candidate source
+  is at most CAP = 3,000,000 bytes; this is not a new delivered-bundle allowance.
+  Permit at most 64 successive JSON-string unescape layers per source lineage,
+  counting the publication wrapper too. Container depth is not a string layer:
+  deep scrub-safe raw objects/arrays remain inspectable with an iterative walk.
+  Bound aggregate work per publication to 256 * CAP inspected/emitted byte or
+  code-unit visits across decoding, lexical traversal, normalization and matching;
+  bound live transient views to 8 * CAP code units. Use bounded linear scans,
+  including the fixed pattern matching, without unmetered regex backtracking.
+  Deduplicate identical views, process incrementally and release them; no
+  recursive payload parsing. A nonterminal view at the layer limit, work/memory
+  exhaustion, inability to serialize/recover a required view, scan exception or
+  incomplete inspection has P7's outcome. Neither truncating the source nor
+  silently dropping a view certifies cleanliness. QA exercises below/at/above
+  each limit with small configurable test budgets at the same internal Seam;
+  production callers cannot lower budgets or disable views. If required clean
+  reportability cannot coexist with these limits, stop for scope resolution,
+  never silently raise a reader/recursion/publication limit or narrow retention.
+
+- **P6 — Inspection is transient; structural retention stays separate.** Persist
+  exact original bytes with their reversible encoding, lengths and hashes.
+  Never normalize/redact/repair retained text, change quotes or insert any J/B/N
+  decoded tree into an unusable envelope. `load()`/`strict_json()` and trusted
+  error readers retain addenda 4-5: bounded fixed envelope, opaque originals,
+  scalar checked-or-unknown usage, flat runner-owned reason code. Publication's
+  lexical views do not qualify a capture or restore recursive original-output
+  parsing. Preserve complete-envelope reader depth 64, interpreter recursion
+  limit, trusted call/exercise/batch/ordinal/case/repetition binding, exact lengths
+  and hashes, once-only accounting, independently known usage and explicit
+  unknown usage with opaque source evidence. Ordinary clean depth-rejected
+  originals must still report successfully, block replacement/continuation and
+  stay shallow; the existing 3,000,000-byte unique-path bundle cap is unchanged.
+
+- **P7 — Refusal and recovery.** A forbidden match in ANY required view, or P5
+  inspection failure, exits 2, sets STOP and launches no later actor, canary or
+  judge call, including on retry/continuation. Preserve exact originals, trusted
+  receipt/binding and available accounting privately where storage permits;
+  the completed call keeps its once-only receipt/ledger identity and checked
+  counters or explicit unknown, never a rolled-back reservation or fabricated
+  zero. This applies even when the first unusable-envelope write is refused.
+  Keep recovery until the whole attempt's public retention is durably safe and
+  indexed. Preflight sources before initial publication; if a later attempt
+  update fails, quarantine any public copies of that attempt in private recovery.
+  Leave no public original, qualified/invalid evidence or report copy for the
+  rejected attempt, including console export; retain unrelated safe prior work.
+  A report refused before emission cannot register a successful report hash.
+  Stop diagnostics contain only a fixed safe code, never the offending view,
+  payload-derived exception, private filename or credential. Private storage or
+  STOP-write failure remains a failed stop/retention operation: exit 2, no later
+  call, no successful-retention claim and no fallback public copy. Empty STOP
+  metadata and the fixed safe terminal diagnostic carry no rejected content.
+
+- **P8 — QA matrix and mutations.** QA amends ONE generated S631 falsifier
+  matrix, not one new scenario per escape/location. Cross representations
+  (R/J/B/N and mixed/nested forms) x L1-L8 locations x applicable public routes
+  (run/import, canary, native/offline, both judge ordinals, initial/update/error
+  writes, report file/console, retry/continuation and early CLI failures).
+  Enumerate applicable cells and justify impossible cells; never substitute
+  independent axis samples for cross-combinations. Keep trusted identity/proof,
+  quote setup, source references and known-or-unknown usage valid and constant.
+  Include R11's exact actor and first-judge escaped/literal pairs, other forbidden
+  families, stdout/stderr, usage spans, nested values/member names, both codecs,
+  valid surrogate pairs versus lone/reversed/malformed controls, normalization
+  and case variants, clean near-matches, and all limit transitions. The oracle
+  is P7 for unsafe/incomplete cases; clean qualified and clean structural-failure
+  controls must preserve their distinct supported behavior under P6. Compare
+  byte originals/hashes/lengths and call counters, not just an exit/message.
+
+  | Rule | Required property-specific scratch mutation, after valid setup |
+  | --- | --- |
+  | P1 | Bypass each distinct publication route in turn, including initial judge publication and report file/console; the intended publication assertion must fail |
+  | P2 | Omit decoded values, member names, nested layers or a standard escape/surrogate rule in turn; unsafe-equivalent and safe-neighbour assertions distinguish the lost rule |
+  | P3 | Skip a supported recovered-byte view, trust only the codec label, or drop invalid byte separators; kill at encoded-publication/binding or safe-control fidelity |
+  | P4 | Omit each normalization/path-case rule or forbidden-pattern family; also overfold a case-sensitive family; kill at the corresponding rejection or safe-neighbour assertion |
+  | P5 | Treat each limit/inspection exception as clean or truncate; separately impose the reader's container-depth bound on lexical inspection; kill at no-publication or clean-depth reportability |
+  | P6 | Rewrite an original, reinsert decoded rejected content, disturb hash/length/binding/usage/accounting, or raise a preserved limit; retain the carried property-only kills |
+  | P7 | Swallow publication refusal into content rejection, delete private recovery, leak a failing diagnostic/report, leave an attempt copy, or permit a following call; kill at STOP/private-exactness/no-copy/no-call |
+  | P8 | Covered by execution evidence, not a production-code branch; validate matrix enumeration and mutation-to-assertion results independently |
+
+  A mutant is required per independently falsifiable rule/subrule and distinct
+  publication route, not merely per example. Name logically implied obligations
+  and the implying rule instead of claiming an independent mutant: literal versus
+  escaped equality follows P2+P4; initial/failed-qualification protection follows
+  P1+P7; report codec fidelity follows P1+P3; no retry-to-clean after scrub STOP
+  follows P7. Keep their behavioral assertions even when no separate implementation
+  branch exists. P8 is a verification obligation, not a reason to fabricate a
+  vacuous mutation. Record killed/survived/implied, mutant, implying rule where
+  applicable, public cell and intended assertion; setup/provenance crashes are
+  not kills. Developer supplies RED on `50bbe08` and GREEN after implementation,
+  carries all 17 resolved R11 slugs, both actor-wrapper aliases, all 38 carried
+  mutation kills and exact evidence, and regenerates affected synthetic artifacts
+  through their builder. QA compares its artifact against the resulting head.
+
+- **Developer consequence and size.** In
+  `test/behavior/temporary_panel_run.py`, deepen `scrub()` behind the one
+  `publish()` Interface; route `Store.put()`/`save()` and `report()`'s direct write
+  and print through it. Wire mandatory source context from `opaque_bytes()`,
+  `retained_output()` and `retained_judge_attempt()` (including its first
+  `completed()` write), and the qualified/error updates from `run()`, `canary()`,
+  `retain_runtime_error()` and `judge()`. Audit `adapter()`/`live_call()` scratch
+  and `recorder()` log promotion; route `main()`/`schedule()` diagnostics and
+  stdout through the same public owner. Update validation calls in
+  `validate_capture()`, `_retained_observation()`, `validate_completed_output()`,
+  `validate_judge_attempt()` and `validate_retained_state()` consistently;
+  `completed_usage()`/`object_fields()` remain bounded opaque-span/scalar
+  projectors. `publication_bytes()`/`json_bounds()` still own complete-envelope
+  structural admission; `load()`/`strict_json()` do not decode original payloads.
+  No new dependency, Module, Adapter, panel engine or project-specific rule.
+  Native/offline and import variations already exist at the Seam. Deleting this
+  shared owner would spread encoding/escape logic across writers: its Depth
+  supplies Leverage to all manifests and Locality to future repairs. Architect
+  share: moderate-to-large inventory/compatibility audit; Developer owns its
+  implementation estimate, QA owns scenario text, orchestrator owns publication
+  and git/GitHub actions. No code or scenario is changed by this entry.
+
+- **Bounded route, reservations and stopping rule.** Architect family audit -> QA
+  -> Developer -> matching QA artifact comparison -> fresh R12 Reviewer -> both
+  lens reviews -> final fresh Claude review, on the resulting head. End this
+  single authorization only when matrix, controls, carried falsifiers/mutations,
+  comparison and every scheduled review pass. Any new OR surviving medium/high
+  finding in R12, either lens or final review ends the cycle and returns for a new
+  recorded decision; never start another sibling patch automatically. Failure
+  to preserve exact retention, reportability and existing limits returns to
+  Product/maintainer scope resolution. Retain panel-680-d3's historical stop and
+  explicit d4 supersession; this addendum does not erase it. Deferral, hashes-only
+  retention, reduced inspection/coverage, guessed encodings, accepted leakage or
+  changed limits are security/scope trade-offs reserved to the maintainer, not
+  decisions made here. Any contract-text edit under the reserved path class also
+  requires the maintainer; none is proposed or authorized. No live exercise,
+  finding closure, merge, contract waiver or new scope is granted.
+
+Doubt: finite supported views and mutations establish bounded evidence, not arbitrary-encoding/confusable detection, runtime authentication or live exercise success.
+Doubt: normalization and inspection budgets can cause conservative stops; failure of required clean reportability is a scope referral, never an implicit evidence waiver.
+Doubt: the supplied panel outcome is dispatch authority; remote eligibility, model-index records, supersession and current CI were not independently verified offline.
