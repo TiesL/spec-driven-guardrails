@@ -830,6 +830,7 @@ def scrub_family_rows():
     return rows
 
 
+
 def scrub_family_matrix():
     import multiprocessing
     rows = scrub_family_rows()
@@ -1390,6 +1391,169 @@ def scrub_integrity_mutations():
             print("S631 killed matrix-" + name + " at " + diagnostic, flush=True)
 
 
+# S631 J-unicode finite interpretation, orchestrator decision/ledger 136.
+# Vary all hex-letter assignments WITHIN one affected UTF-16 unit at a time,
+# against both uniform bases. Never form a Cartesian product across units in
+# the default policy. The argument keeps the expansion policy reviewable and
+# replaceable by QA; the scanner's own tables/decoder are never consulted.
+SCRUB_HEX_POLICY = "single-unit-both-bases"
+
+
+def scrub_hex_layouts(text, max_changed_units=1):
+    from itertools import combinations, product
+    check(type(max_changed_units) is int and max_changed_units >= 0,
+          "S631 invalid changed-unit bound")
+    raw = text.encode("utf-16-be", "surrogatepass")
+    units = [format(int.from_bytes(raw[i:i + 2], "big"), "04x")
+             for i in range(0, len(raw), 2)]
+    layouts = {"lower": units, "upper": [u.upper() for u in units],
+               "alternating": ["".join(c.upper() if (i * 4 + j) % 2 else c
+                                      for j, c in enumerate(u))
+                               for i, u in enumerate(units)]}
+    for base in ("lower", "upper"):
+        uniform = units if base == "lower" else [u.upper() for u in units]
+        for width in range(1, min(max_changed_units, len(units)) + 1):
+            for positions in combinations(range(len(units)), width):
+                choices = []
+                for position in positions:
+                    unit = units[position]
+                    letters = [i for i, c in enumerate(unit) if c in "abcdef"]
+                    alternatives = []
+                    for assignment in product((0, 1), repeat=len(letters)):
+                        if all(bit == (base == "upper") for bit in assignment):
+                            continue
+                        changed = list(unit)
+                        for offset, bit in zip(letters, assignment):
+                            changed[offset] = changed[offset].upper() if bit else changed[offset]
+                        alternatives.append(("".join(changed), "".join(map(str, assignment))))
+                    choices.append(alternatives)
+                for selected in product(*choices):
+                    variant = list(uniform)
+                    for position, (changed, _) in zip(positions, selected):
+                        variant[position] = changed
+                    name = (base + "/unit=" + ",".join(map(str, positions)) +
+                            "/mask=" + ",".join(mask for _, mask in selected))
+                    layouts[name] = variant
+    return {key: '"' + "".join("\\u" + unit for unit in layout) + '"'
+            for key, layout in layouts.items()}
+
+
+def scrub_hex_expected(text):
+    # Independent declaration: numeric UTF-16 words and arithmetic bit masks,
+    # rather than the generator's itertools/string-letter choice iteration.
+    encoded = text.encode("utf-16-be", "surrogatepass")
+    words = [encoded[i] * 256 + encoded[i + 1] for i in range(0, len(encoded), 2)]
+    expected = {"lower", "upper", "alternating"}
+    for n, word in enumerate(words):
+        count = sum(((word >> shift) & 15) >= 10 for shift in (12, 8, 4, 0))
+        for mask in range(1 << count):
+            bits = format(mask, "0" + str(count) + "b") if count else ""
+            if mask != 0:
+                expected.add("lower/unit=" + str(n) + "/mask=" + bits)
+            if mask != (1 << count) - 1:
+                expected.add("upper/unit=" + str(n) + "/mask=" + bits)
+    return expected
+
+
+def scrub_hex_rows():
+    # This explicit population expands the existing F foundation at both R11
+    # publication routes. It is not the unfinished full L1-L9 cross product.
+    mandatory = {"users", "linux", "temporary", "short-token", "cloud",
+                 "slack", "google", "jwt", "email", "key"}
+    pairs = {
+        ("L2", "response.reason", "offline-actor", "unusable-initial", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+    }
+    check(set(SCRUB_FAMILIES) == mandatory, "S631 hex required source declaration")
+    check(SCRUB_FAMILY_PAIRS == pairs, "S631 hex required pair declaration")
+    check(all(len(SCRUB_FAMILIES[family]) == 2 for family in mandatory),
+          "S631 hex required U/C source cardinality")
+    expected, rows = set(), []
+    for family in sorted(mandatory):
+        for number, source in enumerate(SCRUB_FAMILIES[family]):
+            outcome = "U" if number == 0 else "C"
+            for form in ("identity", "fullwidth"):
+                text = source if form == "identity" else "".join(
+                    chr(ord(c) + 0xFEE0) if 0x21 <= ord(c) <= 0x7E else c for c in source)
+                layouts = scrub_hex_layouts(text)
+                required = scrub_hex_expected(text)
+                check(set(layouts) == required and len(layouts) == len(required),
+                      "S631 hex exact layout-key equality")
+                for pair in pairs:
+                    expected.update((pair, family, outcome, form, layout) for layout in required)
+                for layout, wire in layouts.items():
+                    # A separate standard-library JSON reader checks that every
+                    # generated spelling preserves the scalar, not just the ID.
+                    check(json.loads(wire) == text, "S631 hex exact decoded scalar")
+                    for pair in sorted(SCRUB_FAMILY_PAIRS):
+                        key = (pair, family, outcome, form, layout)
+                        name = "hex/" + family + "/" + outcome + "/" + form + "/" + layout + "/" + pair[2]
+                        SCRUB_FAMILY_WIRES[name] = wire
+                        result = "U" if outcome == "U" else "Cd" if pair[0] == "L2" else "Cq"
+                        owner = "actor" if pair[0] == "L2" else "first-judge"
+                        rows.append((key, name, (owner, name, result)))
+    keys = [key for key, _, _ in rows]
+    check(set(keys) == expected and len(keys) == len(expected),
+          "S631 hex exact row-key equality/no duplicates")
+    check({key[0] for key in keys} == pairs, "S631 hex exact pair-key equality")
+    return rows
+
+
+def scrub_hex_matrix():
+    import multiprocessing
+    rows = scrub_hex_rows()
+    print("S631 finite hex matrix:", len(rows), "rows; policy", SCRUB_HEX_POLICY, flush=True)
+    probe = os.environ.get("PANEL_SCRUB_HEX_PROBE")
+    selected = [row for row in rows if row[1] == probe] if probe else rows
+    check(bool(selected) and (not probe or len(selected) == 1), "S631 unknown hex probe")
+    with multiprocessing.get_context("fork").Pool(min(8, os.cpu_count() or 1)) as pool:
+        completed = pool.map(_scrub_family_job, selected)
+    expected = {row[0] for row in selected}
+    check(set(completed) == expected and len(completed) == len(expected),
+          "S631 hex no skipped executions")
+    print("S631 finite hex executed:", len(completed), "PASS", flush=True)
+
+
+def scrub_hex_integrity_mutations():
+    check(len(scrub_hex_layouts("\uffff\uffff")) == 63 and
+          len(scrub_hex_layouts("\uffff\uffff", max_changed_units=2)) == 513,
+          "S631 hex changed-unit parameter control")
+    # Broken declarations/generation fail before behavioral execution. These
+    # are verification mutants, never counted as production-property kills.
+    import shutil
+    source = Path(__file__).read_text()
+    mutations = (
+        ("hex-drop-clean-source", '    check(SCRUB_FAMILY_PAIRS == pairs, "S631 hex required pair declaration")\n',
+         '    SCRUB_FAMILIES["users"] = SCRUB_FAMILIES["users"][:1]\n    check(SCRUB_FAMILY_PAIRS == pairs, "S631 hex required pair declaration")\n',
+         "S631 hex required U/C source cardinality"),
+        ("hex-drop-mixed-unit", '    for base in ("lower", "upper"):\n',
+         '    for base in ("lower",):\n', "S631 hex exact layout-key equality"),
+        ("hex-drop-alternating", '    return {key: \'"\' + "".join("\\\\u" + unit for unit in layout) + \'"\'\n',
+         '    layouts.pop("alternating")\n    return {key: \'"\' + "".join("\\\\u" + unit for unit in layout) + \'"\'\n',
+         "S631 hex exact layout-key equality"),
+        ("hex-duplicate-replaces-row", '    keys = [key for key, _, _ in rows]\n',
+         '    rows[-1] = rows[0]\n    keys = [key for key, _, _ in rows]\n',
+         "S631 hex exact row-key equality/no duplicates"),
+        ("hex-reduced-route", '                    for pair in sorted(SCRUB_FAMILY_PAIRS):\n                        key = (pair, family, outcome, form, layout)',
+         '                    for pair in sorted(SCRUB_FAMILY_PAIRS)[:1]:\n                        key = (pair, family, outcome, form, layout)',
+         "S631 hex exact row-key equality/no duplicates"),
+        ("hex-spelling-corruption", '                layouts = scrub_hex_layouts(text)\n',
+         '                layouts = scrub_hex_layouts(text)\n                layouts["lower"] = json.dumps("harmless")\n',
+         "S631 hex exact decoded scalar"),
+    )
+    with tempfile.TemporaryDirectory(prefix="panel-hex-integrity-") as tmp:
+        fixture = Path(tmp) / Path(__file__).name
+        clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-hex-declarations-only"], capture_output=True, text=True)
+        check(clean.returncode == 0, "S631 hex valid declaration control: " + clean.stderr)
+        for name, old, new, diagnostic in mutations:
+            check(source.count(old) == 1, name + " mutation anchor unique")
+            fixture.write_text(source.replace(old, new, 1))
+            p = subprocess.run([sys.executable, "-I", str(fixture), "631", "--scrub-hex-declarations-only"], capture_output=True, text=True)
+            check(p.returncode != 0 and diagnostic in p.stderr,
+                  name + " survived or unrelated failure: " + p.stdout + p.stderr)
+            print("S631 killed matrix-" + name + " at " + diagnostic, flush=True)
+
+
 def _scrub_scalar_job(row):
     pair, scalar, wire, outcome = row[:4]
     byte_source = row[4] if len(row) == 5 else None
@@ -1754,6 +1918,18 @@ def scrub_mutations():
         ("P5-layers", 'require(layer < SCRUB_LAYER_LIMIT, "publication inspection incomplete")', 'pass',
          "--scrub-budgets-only", {}, "SCRUB_LAYER_LIMIT budget did not stop incomplete inspection"),
     )
+    unicode_guard = 'if code == "u" and i + 6 <= len(text) and all(c in hexdigits for c in text[i + 2:i + 6]):'
+    for spelling, condition, specimen in (
+        ("lower", ' and text[i + 2:i + 6] != text[i + 2:i + 6].lower()',
+         "hex/users/U/identity/lower/offline-actor"),
+        ("upper", ' and text[i + 2:i + 6] != text[i + 2:i + 6].upper()',
+         "hex/users/U/identity/upper/offline-actor"),
+        ("mixed", ' and (text[i + 2:i + 6] == text[i + 2:i + 6].lower() or text[i + 2:i + 6] == text[i + 2:i + 6].upper())',
+         "hex/users/U/fullwidth/lower/unit=0/mask=101/offline-actor"),
+    ):
+        mutations += (("P2-hex-" + spelling, unicode_guard,
+            unicode_guard[:-1] + condition + ':', "--scrub-hex-only",
+            {"PANEL_SCRUB_HEX_PROBE": specimen}, specimen + " publication refusal/STOP"),)
     # Native producer routes are independently observable at publication. The
     # mutation changes only the shared publication guard for the selected role;
     # trusted transport, content validators and all other writers stay intact.
@@ -1778,6 +1954,7 @@ def scrub_mutations():
         "P6-scalar-reportability", "P6-malformed-reportability",
         "P7-private-completion", "P7-private-unknown", "P5-work", "P5-live", "P5-source", "P5-layers",
         "P1-native-canary", "P1-native-actor", "P1-native-first-judge", "P1-native-second-judge",
+        "P2-hex-lower", "P2-hex-upper", "P2-hex-mixed",
     }
     check(len(mutations) == len(required) and {row[0] for row in mutations} == required,
           "S631 mutation required property declaration")
@@ -1799,6 +1976,13 @@ def scrub_mutations():
                 clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_WITNESS=control)
                 clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-witnesses-only"], capture_output=True, text=True, env=clean_env)
                 check(clean.returncode == 0, name + " clean route control failed: " + clean.stdout + clean.stderr)
+            if flag == "--scrub-hex-only":
+                control = extra["PANEL_SCRUB_HEX_PROBE"].replace("/U/", "/C/")
+                clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name),
+                                 PANEL_SCRUB_HEX_PROBE=control)
+                clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag],
+                                       capture_output=True, text=True, env=clean_env)
+                check(clean.returncode == 0, name + " clean hex route control failed: " + clean.stdout + clean.stderr)
             if flag in ("--scrub-native-scalars-only", "--scrub-native-bytes-only"):
                 owner = next(iter(extra.values())).split("/")[1]
                 for specimen in ("astral-literal", "high-safe"):
@@ -2666,6 +2850,15 @@ def round5_mutations(scenario):
 
 
 if __name__ == "__main__":
+    if "--scrub-hex-declarations-only" in sys.argv:
+        print(str(len(scrub_hex_rows())) + " declared finite hex rows")
+        sys.exit(0)
+    if "--scrub-hex-only" in sys.argv:
+        scrub_hex_matrix()
+        sys.exit(0)
+    if "--scrub-hex-integrity-only" in sys.argv:
+        scrub_hex_integrity_mutations()
+        sys.exit(0)
     if "--scrub-excluded-slots-only" in sys.argv:
         scrub_excluded_matrix()
         sys.exit(0)
