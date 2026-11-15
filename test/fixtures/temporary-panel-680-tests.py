@@ -1873,7 +1873,7 @@ def _scrub_scalar_job(row):
                 canary = json.loads((f.out / "evidence/682/verification/canary.json").read_bytes())
                 check(canary["capture"]["response"]["reason"] == json.loads(wire), name + " clean canary slot reached")
                 check(call_count() == 2, name + " clean canary then actor calls")
-            if outcome == "Cd":
+            if outcome in ("Cd", "Cu"):
                 envelopes = [json.loads(path.read_text()) for path in (f.out / "evidence").rglob("*.json")]
                 matches = [a for a in envelopes if a.get("usable") is False and a.get("original_output", "").encode(a.get("original_output_encoding", "utf-8")) == raw]
                 check(len(matches) == 1, name + " exact unusable original")
@@ -1885,7 +1885,7 @@ def _scrub_scalar_job(row):
                     stderr = stderr_path.read_bytes()
                     check(a["stderr"].encode(a["stderr_encoding"]) == stderr and a["stderr_bytes"] == len(stderr)
                           and a["stderr_sha256"] == sha(stderr), name + " exact public stderr binding")
-                expected_usage = dict.fromkeys(TOKEN_FIELDS) if byte_source is not None and byte_source[0] == "stdout" else dict(input=13, cache_read=0, cache_write=0, output=9)
+                expected_usage = dict.fromkeys(TOKEN_FIELDS) if outcome == "Cu" or byte_source is not None and byte_source[0] == "stdout" else dict(input=13, cache_read=0, cache_write=0, output=9)
                 check(a["usage"] == expected_usage, name + " checked-or-unknown usage")
                 count = call_count()
                 if native:
@@ -1897,6 +1897,705 @@ def _scrub_scalar_job(row):
                 check(call_count() == count, name + " clean unusable no retry/continuation")
         print("S631 scalar", name, outcome, "PASS", flush=True)
     return pair, scalar
+
+
+# S631 K/L/D/X slot and route matrix. Every table below is written from the
+# scenario text (L1-L9, D, X, O); none is read from the runner. A slot is one
+# concrete text-bearing field, member-name position, byte stream, reference
+# or diagnostic input. Each declared pair runs every source family, result
+# class and representation class; the F/N/V source axes run in full on the
+# R11 routes in the family/hex/prefix/Unicode/scalar/byte stages above.
+SLOT_SOURCES = {
+    "users": {"U": "/Users/Example/private-note", "C": "/UsersExample/private-note"},
+    "short-token": {"U": "sk-" + "A" * 16, "C": "sk-" + "A" * 15},
+}
+SLOT_REPRESENTATIONS = ("R", "J-unicode", "J-layer2", "N-fullwidth")
+SLOT_FIXED_DIAGNOSTICS = {
+    "temporary-panel: publication scrub rejected path/secret/email\n",
+    "temporary-panel: completed judge retention stopped; inspect private recovery; publication and calls stopped\n",
+    "temporary-panel: invalid arguments\n",
+}
+
+
+def slot_value(family, result, representation):
+    """Surrounded specimen `note:` + V(s) + `:end`; bytes fixed by this dictionary."""
+    source = SLOT_SOURCES[family][result]
+    if representation == "J-unicode":
+        source = "".join("\\u%04x" % ord(c) for c in source)
+    elif representation == "J-layer2":
+        # Two Q layers over the first character and every slash: short enough
+        # for one path component, and the literal source never appears raw.
+        source = "".join("\\u005cu%04x" % ord(c) if c == "/" or n == 0 else c for n, c in enumerate(source))
+    elif representation == "N-fullwidth":
+        source = "".join(chr(ord(c) + 0xFEE0) if 0x21 <= ord(c) <= 0x7E else c for c in source)
+    else:
+        check(representation == "R", "unknown slot representation")
+    return "note:" + source + ":end"
+
+
+def _slot_packet(f, value):
+    data = json.loads(f.packet.read_text()); data["question"] = "Does this apply? " + value
+    write(f.packet, data); f.case["packet"] = ref(f.packet); f.save()
+
+
+def _slot_key(f, value):
+    data = json.loads(f.key.read_text()); data["criteria"][-1]["description"] = value
+    write(f.key, data); f.case["key"] = ref(f.key); f.save()
+
+
+def _slot_ground(f, value):
+    ground = write(f.dir / "ground.json", {"file": "CHANGES.md", "scope": value})
+    f.case["ground_truth"] = [ref(ground)]; f.save()
+
+
+def _slot_reference_name(f, value):
+    name = "refs/" + value + ".json"
+    ground = write(f.dir / name, {"file": "CHANGES.md", "scope": "Reserved contract text"})
+    f.case["ground_truth"] = [{"path": name, "sha256": sha(ground.read_bytes())}]; f.save()
+
+
+def _slot_criteria(f, value):
+    f.criteria.write_text("Original observable criteria, verbatim: " + value + "\n")
+    f.manifest["exercises"][0]["criteria"] = [ref(f.criteria)]; f.save()
+
+
+def _slot_evidence_path(f, value):
+    f.manifest["evidence_path"] = "evidence/682/" + value; f.save()
+
+
+def _slot_stream(stream, malformed=False):
+    def mutate(f, value):
+        raw = (b"{not json " if malformed else b"") + value.encode()
+        out, err = (b"", raw) if stream == "stderr" else (raw, b"")
+        source = (f.dir / "adapter_impl.py").read_text()
+        anchor = 'print(output,end="")'
+        check(source.count(anchor) == 1, "slot stream injection setup")
+        (f.dir / "adapter_impl.py").write_text(source.replace(anchor,
+            '(here/"completed-judge-0.txt").write_bytes(' + repr(out) + ')\nsys.stdout.buffer.write(' + repr(out) +
+            ')\nsys.stderr.buffer.write(' + repr(err) + ')\nsys.exit(' + ("0" if malformed else "1") + ')'))
+        return {"stderr": err}
+    mutate.stream = stream
+    return mutate
+
+
+def _slot_canary_input(c, value):
+    for name in ("events", "hook_log"):
+        c["verification"]["canary"][name][0]["input"]["note"] = value
+
+
+# (location, fixed-schema slot path, owner, lifecycle, channel, promotion):
+# (harness kind, clean result class, injection). The injection never touches a
+# trusted identity, proof, quote or binding other than the named slot.
+SLOT_TABLE = {
+    ("L1", "packet.question", "pre-Store", "input-initial-copy", "stderr", "none"): ("input", "Cq", _slot_packet),
+    ("L1", "key.criteria[].description", "pre-Store", "input-initial-copy", "stderr", "none"): ("input", "Cq", _slot_key),
+    ("L1", "ground_truth[].snapshot", "offline-actor", "qualified-capture", "file", "none"): ("input-call", "Cq", _slot_ground),
+    ("L1", "ground_truth[].reference.path", "offline-actor", "qualified-capture", "file", "none"): ("input-call", "Cq", _slot_reference_name),
+    ("L2", "response.own_position", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c["response"].update(own_position=v)),
+    ("L2", "response.file_evidence[]", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c["response"].update(file_evidence=["CHANGES.md", v])),
+    ("L2", "events[].text.body", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c["events"][0].update(text=protocol("own_position", "CHANGES.md contains reserved contract text; " + v))),
+    ("L2", "verification.independent.mechanism", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c["verification"]["independent"].update(mechanism=v)),
+    ("L2", "runtime", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c.update(runtime=v)),
+    ("L2", "invocation.settings_sources[]", "offline-actor", "unusable-capture", "file", "none"): ("actor", "Cd", lambda c, v: c["invocation"].update(settings_sources=[v])),
+    ("L2", "response.<member-name>", "offline-actor", "unusable-capture", "file", "none"): ("actor", "Cd", lambda c, v: c["response"].update({v: "x"})),
+    ("L2", "model", "offline-actor", "unusable-capture", "file", "none"): ("actor", "Cd", lambda c, v: c.update(model="claude-stub-1" + v)),
+    ("L2", "errors[]", "offline-actor", "verification-error-capture", "file", "none"): ("actor", "Cr", lambda c, v: c.update(errors=[v])),
+    ("L3", "verification.canary.events[].input", "offline-embedded-canary", "qualified-capture", "file", "none"): ("actor", "Cq", _slot_canary_input),
+    ("L5", "stderr", "offline-actor", "runtime-error-initial", "file", "none"): ("stream", "Cd", _slot_stream("stderr")),
+    ("L5", "stdout", "offline-actor", "runtime-error-initial", "file", "none"): ("stream", "Cd", _slot_stream("stdout")),
+    ("L5", "stdout-malformed", "offline-actor", "runtime-error-initial", "file", "none"): ("stream", "Cd", _slot_stream("stdout", True)),
+    ("L6", "calls[].session", "offline-actor", "bind-completed-call", "file", "none"): ("actor", "Cq", lambda c, v: c.update(session="s-" + v)),
+    ("L6", "destination.evidence_path", "pre-call", "reserve-initial-save", "file", "none"): ("destination", "Cq", _slot_evidence_path),
+    ("L8", "argv.operation", "pre-Store", "early-failure", "stderr", "none"): ("cli", "Ce", lambda v: ("invalid-" + v,)),
+    ("L8", "argv.unknown-option", "pre-Store", "early-failure", "stderr", "none"): ("cli", "Ce", lambda v: ("--" + v,)),
+    ("L8", "schedule.jobs[].stdin", "pre-Store", "schedule-initial-progress", "stdout", "none"): ("schedule", "Cq", _slot_packet),
+}
+for _ordinal, _owner in ((1, "offline-first-judge"), (2, "offline-second-judge")):
+    SLOT_TABLE.update({
+        ("L4", "response.verdicts[].quote", _owner, "CONTENT_PENDING", "file", "none"): ("judge", "Cd", lambda c, v: c["response"]["verdicts"][0].update(quote=v)),
+        ("L4", "response.verdicts[].verdict", _owner, "CONTENT_PENDING", "file", "none"): ("judge", "Cd", lambda c, v: c["response"]["verdicts"][0].update(verdict=v)),
+        ("L4", "response.verdicts[].<member-name>", _owner, "CONTENT_PENDING", "file", "none"): ("judge", "Cd", lambda c, v: c["response"]["verdicts"][0].update({v: 1})),
+        ("L4", "usage.<opaque>", _owner, "CONTENT_PENDING", "file", "none"): ("judge", "Cd", lambda c, v: c.update(usage={"input": v})),
+        ("L4", "verification.independent.mechanism", _owner, "qualified-capture", "file", "none"): ("judge", "Cq", lambda c, v: c["verification"]["independent"].update(mechanism=v)),
+        ("L6", "judges[].session", _owner, "bind-completed-call", "file", "none"): ("judge", "Cq", lambda c, v: c.update(session="j-" + v)),
+    })
+# Closed X records, each with its concrete schema/route reason and a
+# demonstration row: the unsafe input is held constant and no public copy,
+# STOP or payload-derived diagnostic may appear.
+SLOT_EXCLUSIONS = {
+    ("X", "criteria[].bytes", "offline-actor", "not-copied", "none", "none"):
+        ("criteria bytes are referenced by path and hash only; no writer copies them", "run", _slot_criteria),
+    ("X", "argv.--stop-file", "offline-actor", "not-published", "none", "none"):
+        ("the stop-file path is read for existence only and is never written or printed", "run", lambda f, v: ("--stop-file", v)),
+    ("X", "argv.--exercise", "pre-call", "fixed-diagnostic", "stderr", "none"):
+        ("an unknown exercise selects no rows; the diagnostic is a fixed code", "run", lambda f, v: ("--exercise", v)),
+    ("X", "argv.--cases", "pre-call", "fixed-diagnostic", "stderr", "none"):
+        ("an unknown case identity is refused with a fixed code", "run", lambda f, v: ("--cases", v)),
+    ("X", "argv.--fallback-from", "pre-call", "fixed-diagnostic", "stderr", "none"):
+        ("a fallback reference outside the validated index is refused with a fixed code", "run",
+         lambda f, v: ("--recorder-mode", "transcript-only", "--fallback-from", v)),
+}
+
+
+def scrub_slot_rows():
+    # DeclaredPairs, spelled out a second time independently of SLOT_TABLE: a
+    # deleted or mislabeled slot cannot shrink both sides.
+    declared = set()
+    for line in """
+        L1|packet.question|pre-Store|input-initial-copy|stderr|none|Cq
+        L1|key.criteria[].description|pre-Store|input-initial-copy|stderr|none|Cq
+        L1|ground_truth[].snapshot|offline-actor|qualified-capture|file|none|Cq
+        L1|ground_truth[].reference.path|offline-actor|qualified-capture|file|none|Cq
+        L2|response.own_position|offline-actor|qualified-capture|file|none|Cq
+        L2|response.file_evidence[]|offline-actor|qualified-capture|file|none|Cq
+        L2|events[].text.body|offline-actor|qualified-capture|file|none|Cq
+        L2|verification.independent.mechanism|offline-actor|qualified-capture|file|none|Cq
+        L2|runtime|offline-actor|qualified-capture|file|none|Cq
+        L2|invocation.settings_sources[]|offline-actor|unusable-capture|file|none|Cd
+        L2|response.<member-name>|offline-actor|unusable-capture|file|none|Cd
+        L2|model|offline-actor|unusable-capture|file|none|Cd
+        L2|errors[]|offline-actor|verification-error-capture|file|none|Cr
+        L3|verification.canary.events[].input|offline-embedded-canary|qualified-capture|file|none|Cq
+        L4|response.verdicts[].quote|offline-first-judge|CONTENT_PENDING|file|none|Cd
+        L4|response.verdicts[].verdict|offline-first-judge|CONTENT_PENDING|file|none|Cd
+        L4|response.verdicts[].<member-name>|offline-first-judge|CONTENT_PENDING|file|none|Cd
+        L4|usage.<opaque>|offline-first-judge|CONTENT_PENDING|file|none|Cd
+        L4|verification.independent.mechanism|offline-first-judge|qualified-capture|file|none|Cq
+        L4|response.verdicts[].quote|offline-second-judge|CONTENT_PENDING|file|none|Cd
+        L4|response.verdicts[].verdict|offline-second-judge|CONTENT_PENDING|file|none|Cd
+        L4|response.verdicts[].<member-name>|offline-second-judge|CONTENT_PENDING|file|none|Cd
+        L4|usage.<opaque>|offline-second-judge|CONTENT_PENDING|file|none|Cd
+        L4|verification.independent.mechanism|offline-second-judge|qualified-capture|file|none|Cq
+        L5|stderr|offline-actor|runtime-error-initial|file|none|Cd
+        L5|stdout|offline-actor|runtime-error-initial|file|none|Cd
+        L5|stdout-malformed|offline-actor|runtime-error-initial|file|none|Cd
+        L6|calls[].session|offline-actor|bind-completed-call|file|none|Cq
+        L6|judges[].session|offline-first-judge|bind-completed-call|file|none|Cq
+        L6|judges[].session|offline-second-judge|bind-completed-call|file|none|Cq
+        L6|destination.evidence_path|pre-call|reserve-initial-save|file|none|Cq
+        L8|argv.operation|pre-Store|early-failure|stderr|none|Ce
+        L8|argv.unknown-option|pre-Store|early-failure|stderr|none|Ce
+        L8|schedule.jobs[].stdin|pre-Store|schedule-initial-progress|stdout|none|Cq
+        X|criteria[].bytes|offline-actor|not-copied|none|none|X
+        X|argv.--stop-file|offline-actor|not-published|none|none|X
+        X|argv.--exercise|pre-call|fixed-diagnostic|stderr|none|X
+        X|argv.--cases|pre-call|fixed-diagnostic|stderr|none|X
+        X|argv.--fallback-from|pre-call|fixed-diagnostic|stderr|none|X
+    """.split():
+        parts = line.split("|")
+        declared.add((tuple(parts[:6]), parts[6]))
+    families, results, representations = ("users", "short-token"), ("U", "C"), ("R", "J-unicode", "J-layer2", "N-fullwidth")
+    check(len(declared) == 39 and len({pair for pair, _ in declared}) == 39, "S631 slot declared pair inventory")
+    actual = {(pair, entry[1]) for pair, entry in SLOT_TABLE.items()} | {(pair, "X") for pair in SLOT_EXCLUSIONS}
+    check(actual == declared, "S631 slot exact pair-key and clean-class equality")
+    check(all(reason and len(reason) > 20 for reason, _, _ in SLOT_EXCLUSIONS.values()), "S631 slot X records carry reasons")
+    check(all(SLOT_TABLE[pair][2].stream == pair[1].split("-")[0] for pair in SLOT_TABLE if pair[0] == "L5"),
+          "S631 slot stream label matches injected stream")
+    check(tuple(SLOT_SOURCES) == families and SLOT_REPRESENTATIONS == representations
+          and all(tuple(SLOT_SOURCES[name]) == results for name in families), "S631 slot source/representation axes")
+    expected = {(pair, family, result, representation) for pair, _ in declared for family in families
+                for result in results for representation in representations}
+    rows = []
+    for pair in sorted(list(SLOT_TABLE) + list(SLOT_EXCLUSIONS)):
+        clean = SLOT_TABLE[pair][1] if pair in SLOT_TABLE else "X"
+        for family in SLOT_SOURCES:
+            for result in SLOT_SOURCES[family]:
+                for representation in SLOT_REPRESENTATIONS:
+                    outcome = "X" if clean == "X" else "U" if result == "U" else clean
+                    rows.append((pair, family, result, representation, outcome))
+    keys = [row[:4] for row in rows]
+    check(len(keys) == len(set(keys)) == len(expected) == 39 * 2 * 2 * 4 and set(keys) == expected,
+          "S631 slot exact row-key equality/no duplicates")
+    check(all((result == "U") == (outcome == "U") or outcome == "X" for _, _, result, _, outcome in rows),
+          "S631 slot declared result class")
+    # Independent decoded-source fidelity: each representation spells its
+    # source through this dictionary only.
+    for family in families:
+        for result in results:
+            source = SLOT_SOURCES[family][result]
+            check(slot_value(family, result, "R") == "note:" + source + ":end"
+                  and json.loads('"' + slot_value(family, result, "J-unicode") + '"') == "note:" + source + ":end"
+                  and json.loads('"' + json.loads('"' + slot_value(family, result, "J-layer2") + '"') + '"') == "note:" + source + ":end"
+                  and source not in slot_value(family, result, "J-unicode") + slot_value(family, result, "J-layer2") + slot_value(family, result, "N-fullwidth"),
+                  "S631 slot representation spelling fidelity")
+    return rows
+
+
+# Actual writer inventory of the runner, audited against L1-L9 before
+# execution. Keys are (enclosing function, call); values are the location
+# keys the site serves. A writer added to or removed from the runner fails the
+# exact equality until this declaration maps it.
+SLOT_WRITER_SITES = {
+    ("<module>", "publish"): (2, "L8 main stderr diagnostic and fixed fallback"),
+    ("PublicParser.error", "publish"): (2, "L8 pre-Store stderr diagnostic and fixed fallback"),
+    ("main", "publish"): (1, "L8 schedule stdout"),
+    ("run", "publish"): (1, "L8 main stdout progress"),
+    ("judge", "publish"): (1, "L8 main stdout progress"),
+    ("report", "publish"): (2, "L7 report-file and report-console"),
+    ("retained_judge_attempt", "publish"): (1, "L4 initial completed judge write (nested publisher definition)"),
+    ("Store.put", "publish"): (1, "every Store destination"),
+    ("Store.save", "self.put"): (1, "L6 index save"),
+    ("Store.reserve", "self.save"): (1, "L6 reserve initial save"),
+    ("adapter", "store.save"): (1, "L6 completed-call save"),
+    ("live_call", "store.save"): (1, "L6 completed-call usage save"),
+    ("canary", "store.put"): (1, "L3 canary initial record"),
+    ("canary", "store.save"): (1, "L3/L6 canary index save"),
+    ("run", "store.put"): (1, "L1/L2 qualified observation"),
+    ("run", "store.save"): (1, "L6 record index save"),
+    ("judge", "store.put"): (1, "L2 semantic-result update"),
+    ("judge", "store.save"): (1, "L6 judge index save"),
+    ("report", "store.save"): (1, "L6/L7 report-hash registration"),
+    ("retain_runtime_error", "store.put"): (1, "L5 runtime-error initial write"),
+    ("retain_runtime_error", "store.save"): (1, "L5/L6 error index save"),
+    ("retained_output", "store.put"): (1, "L2/L3/L5 unusable capture"),
+    ("retained_output", "store.save"): (1, "L6 unusable-capture index save"),
+    ("retained_judge_attempt", "store.put"): (2, "L4 qualified capture and permanent attempt"),
+    ("retained_judge_attempt", "store.save"): (1, "L6 judge attempt index save"),
+    ("retained_judge_attempt.completed", "store.put"): (2, "L4 CONTENT_PENDING and completed usage update"),
+    ("retained_judge_attempt.completed", "store.save"): (2, "L6 CONTENT_PENDING and usage saves"),
+    ("retained_judge_attempt.publish", "store.put"): (1, "L4 rejection update"),
+    ("retained_judge_attempt.publish", "store.save"): (1, "L6 rejection index save"),
+    ("publish", "print"): (1, "the single console writer inside the shared owner"),
+    ("publish", "f.write"): (2, "the single file writer and prior-bytes restore inside the shared owner"),
+    ("publish", "tempfile.NamedTemporaryFile"): (1, "the single public temporary inside the shared owner"),
+    ("recorder", "print"): (2, "L9 fixed private recorder transport response"),
+    ("recorder", "f.write"): (1, "L9 private hook log"),
+    ("live_call", "instruction.write_text"): (1, "L9 private scratch instruction"),
+    ("live_call", "scratch / 'invocation.json'.write_text"): (1, "L9 private scratch invocation"),
+    ("live_call", "scratch / 'stream.jsonl'.write_text"): (1, "L9 private scratch stream"),
+    ("live_call", "scratch / 'stderr.txt'.write_text"): (1, "L9 private scratch stderr"),
+    ("retained_output.completed", "f.write"): (1, "L9 private recovery original"),
+    ("retained_judge_attempt.completed", "f.write"): (1, "L9 private recovery original"),
+    ("retained_judge_attempt", "f.write"): (1, "L9 private normalized scratch"),
+}
+
+
+def scrub_slot_writer_audit():
+    import ast
+    tree = ast.parse(RUNNER.with_name("temporary_panel_run.py").read_text())
+    kinds = {"publish", "put", "save", "print", "write", "write_text", "write_bytes", "writelines",
+             "NamedTemporaryFile", "copy", "copy2", "copyfile", "copytree", "move", "rename", "symlink", "link"}
+    actual = {}
+    def walk(node, scope):
+        for child in ast.iter_child_nodes(node):
+            inner = scope + [child.name] if isinstance(child, (ast.FunctionDef, ast.ClassDef)) else scope
+            if isinstance(child, ast.Call):
+                target = child.func
+                name = target.id if isinstance(target, ast.Name) else target.attr if isinstance(target, ast.Attribute) else None
+                if name in kinds:
+                    receiver = ast.unparse(target.value) + "." if isinstance(target, ast.Attribute) else ""
+                    key = (".".join(scope) or "<module>", receiver + name)
+                    actual[key] = actual.get(key, 0) + 1
+            walk(child, inner)
+    walk(tree, [])
+    declared = {key: count for key, (count, _) in SLOT_WRITER_SITES.items()}
+    check(actual == declared, "S631 slot writer inventory exact key-set equality: " +
+          repr(sorted(set(actual.items()) ^ set(declared.items()))))
+    check(all(text.split()[0].rstrip(":").split("/")[0] in ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "every", "the")
+              for _, text in SLOT_WRITER_SITES.values()), "S631 slot writer sites map to location keys")
+    return len(actual)
+
+
+def _scrub_slot_job(row):
+    pair, family, result, representation, outcome = row
+    value = slot_value(family, result, representation)
+    name = "slot/" + "/".join(pair[:4]) + "/" + family + "/" + result + "/" + representation
+    kind, _, inject = SLOT_TABLE[pair] if pair in SLOT_TABLE else ("exclusion",) + SLOT_EXCLUSIONS[pair][1:]
+    forms = {value.encode(), json.dumps(value)[1:-1].encode(), json.dumps(value, ensure_ascii=False)[1:-1].encode(),
+             SLOT_SOURCES[family][result].encode()} if result == "U" else set()
+    with tempfile.TemporaryDirectory(prefix="panel-slot-") as tmp:
+        f = Fixture(Path(tmp))
+        ordinal = 2 if pair[2].endswith("second-judge") else 1 if pair[2].endswith("first-judge") else 0
+        extra, expected_stderr = (), None
+        f.data["actor"] = capture()
+        f.data["actor"]["usage"] = dict(input=13, cache_read=0, cache_write=0, output=9)
+        if kind == "judge":
+            f.run(f.data["actor"]); f.cli("report", "--offline")
+            for number in (1, 2):
+                cap = fallback("judge-" + str(number))
+                cap.update(kind="judge", usage=dict(input=13, cache_read=0, cache_write=0, output=9), response={"verdicts": [dict(
+                    case="control", repetition=1, criterion="reason", verdict="FAIL" if ordinal == 2 else "PASS",
+                    quote=json.loads(cap["events"][0]["text"])["body"], reason="Valid supported reason.")]})
+                f.data["judges"].append(cap)
+            inject(f.data["judges"][ordinal - 1], value)
+        elif kind == "actor":
+            inject(f.data["actor"], value)
+        elif kind == "stream":
+            expected_stderr = inject(f, value)["stderr"]
+        elif kind == "cli":
+            extra = inject(value)
+        elif kind in ("input", "input-call", "schedule", "destination", "exclusion"):
+            extra = inject(f, value) or ()
+        prior = {p.relative_to(f.out): p.read_bytes() for p in f.out.rglob("*") if p.is_file()} if f.out.exists() else {}
+        if kind == "cli":
+            p = subprocess.run([str(RUNNER), *extra], capture_output=True, text=True)
+        elif kind == "schedule":
+            p = f.cli("dry-run", "--offline", ok=None)
+        elif kind == "judge":
+            p = f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+        else:
+            p = f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), *extra, ok=None)
+        calls = len(f.calls())
+        def public_files():
+            return [path for path in f.out.rglob("*") if path.is_file() and ".private-recovery" not in path.parts] if f.out.exists() else []
+        def no_copy(label):
+            console = p.stdout.encode() + p.stderr.encode()
+            check(not any(form in console for form in forms), name + " no console copy" + label)
+            for path in public_files():
+                data = path.read_bytes()
+                check(not any(form in data for form in forms), name + " no public copy" + label)
+        def later_calls():
+            f.cli("report", "--offline", ok=None)
+            f.cli("judge", "--offline", "--judge-adapter", str(f.adapter), ok=None)
+            f.cli("run", "--offline", "--runtime-adapter", str(f.adapter), ok=None)
+            return len(f.calls())
+        raw_path = f.dir / ("completed-judge-" + str(ordinal) + ".txt")
+        if outcome == "X":
+            # Payload-independent: the same exit and diagnostic for U and C,
+            # no STOP, no copy of either value anywhere public.
+            forms = {value.encode(), json.dumps(value)[1:-1].encode(), json.dumps(value, ensure_ascii=False)[1:-1].encode()}
+            fixed = {"none": (0, "retained observations; no behavioral claim from synthetic captures\n", ""),
+                     "argv.--exercise": (2, "", "temporary-panel: no selected rows\n"),
+                     "argv.--cases": (2, "", "temporary-panel: unknown selected case\n"),
+                     "argv.--fallback-from": (2, "", "temporary-panel: fallback primary outside validated index\n")}
+            check((p.returncode, p.stdout, p.stderr) == fixed.get(pair[1], fixed["none"]), name + " excluded slot fixed outcome")
+            check(not (f.out / "STOP").exists() and calls == (1 if p.returncode == 0 else 0), name + " excluded slot no STOP/expected calls")
+            no_copy(" of excluded slot")
+        elif outcome == "U" and kind in ("input", "cli", "schedule"):
+            check(p.returncode == 2 and p.stdout == "" and p.stderr in SLOT_FIXED_DIAGNOSTICS, name + " pre-Store refusal with fixed code")
+            check(calls == 0 and not public_files() and not (f.out / ".private-recovery").exists(), name + " pre-Store no call/no public file")
+            no_copy("")
+        elif outcome == "U" and kind == "destination":
+            check(p.returncode == 2 and (f.out / "STOP").exists() and p.stdout == "" and p.stderr in SLOT_FIXED_DIAGNOSTICS,
+                  name + " publication refusal/STOP")
+            check(calls == 0, name + " zero calls before refusal")
+            check([path.relative_to(f.out).as_posix() for path in public_files()] == ["STOP"], name + " no public file under forbidden destination")
+            no_copy("")
+            check(later_calls() == 0, name + " no later call")
+        elif outcome == "U":
+            check(p.returncode == 2 and (f.out / "STOP").exists(), name + " publication refusal/STOP")
+            check(p.stdout == "" and p.stderr in SLOT_FIXED_DIAGNOSTICS, name + " fixed safe diagnostic")
+            raw = raw_path.read_bytes()
+            originals = [path for path in (f.out / ".private-recovery").glob("*/stdout") if path.read_bytes() == raw]
+            check(len(originals) == 1, name + " private exact original")
+            recovery = originals[0].parent
+            if expected_stderr is not None:
+                check((recovery / "stderr").read_bytes() == expected_stderr, name + " private exact stderr")
+            receipt = json.loads((recovery / "receipt.json").read_text())
+            check(receipt.get("completed") is True and receipt["stdout_sha256"] == sha(raw) and receipt["call_id"] == calls
+                  and receipt["work_item"] == 682 and receipt.get("transport") == "offline", name + " private once-only completed binding")
+            check((receipt.get("exercise"), receipt.get("batch"), receipt.get("ordinal"), receipt.get("cases")) ==
+                  ("generic-exercise", "one", ordinal, [dict(case="control", repetition=1)]) if ordinal else
+                  (receipt.get("exercise"), receipt.get("case"), receipt.get("repetition")) == ("generic-exercise", "control", 1),
+                  name + " private exact owner/request binding")
+            check(receipt["usage"] in (dict.fromkeys(TOKEN_FIELDS), dict(input=13, cache_read=0, cache_write=0, output=9)),
+                  name + " private checked-or-unknown usage")
+            rejected = [f.out / ("evidence/682/" + location + "/call-" + str(calls) + ".json") for location in ("attempts", "errors")]
+            if not ordinal: rejected.append(f.evidence())
+            check(not any(path.exists() for path in rejected), name + " no public rejected attempt")
+            no_copy("")
+            for path in public_files():
+                check(raw not in path.read_bytes() or not raw, name + " no public encoded original")
+            for path, data in prior.items():
+                if path.name != "index.json":
+                    check((f.out / path).read_bytes() == data, name + " unrelated safe prior work preserved")
+            check(f.cli("report", "--offline", ok=None).returncode == 2, name + " report refused")
+            check(later_calls() == calls, name + " no later call")
+        else:
+            check(not (f.out / "STOP").exists(), name + " clean no scrub STOP")
+            if outcome == "Ce":
+                check(p.returncode == 2 and p.stdout == "" and p.stderr.startswith("temporary-panel: ")
+                      and p.stderr not in SLOT_FIXED_DIAGNOSTICS and not f.out.exists(), name + " clean early diagnostic route reached")
+            elif kind == "schedule":
+                check(p.returncode == 0 and value in json.loads(p.stdout)["jobs"][0]["stdin"] or
+                      json.dumps(value)[1:-1] in json.loads(p.stdout)["jobs"][0]["stdin"], name + " clean schedule slot reached")
+            else:
+                check(p.returncode == (0 if outcome == "Cq" else 2), name + " clean outcome")
+                check(f.cli("report", "--offline", ok=None).returncode == 0, name + " clean reportability")
+            if outcome in ("Cq", "Cr") and kind != "schedule":
+                def strings(obj):
+                    pending = [obj]
+                    while pending:
+                        item = pending.pop()
+                        if isinstance(item, dict): pending.extend(item.values()); pending.extend(item.keys())
+                        elif isinstance(item, list): pending.extend(item)
+                        elif isinstance(item, str): yield item
+                reached = any(value in text or json.dumps(value)[1:-1] in text
+                              for path in public_files() if path.suffix == ".json" for text in strings(json.loads(path.read_bytes())))
+                # Inputs that are hashed, not copied, stay unpublished even when clean.
+                check(reached or pair[1] == "key.criteria[].description", name + " clean slot reached public evidence")
+            if outcome == "Cd":
+                raw = raw_path.read_bytes()
+                envelopes = [json.loads(path.read_text()) for path in (f.out / "evidence").rglob("*.json")]
+                matches = [a for a in envelopes if a.get("usable") is False
+                           and a.get("original_output", "").encode(a.get("original_output_encoding", "utf-8")) == raw
+                           and "original_bytes" in a]
+                check(len(matches) == 1, name + " exact unusable original")
+                a = matches[0]
+                check(structural_depth(json.dumps(a).encode()) <= 4 and a["errors"] == ["CONTENT_INVALID"], name + " shallow unusable envelope")
+                check(a["original_bytes"] == len(raw) and a["original_sha256"] == sha(raw), name + " original binding")
+                if expected_stderr is not None:
+                    check(a["stderr"].encode(a["stderr_encoding"]) == expected_stderr and a["stderr_bytes"] == len(expected_stderr)
+                          and a["stderr_sha256"] == sha(expected_stderr), name + " exact public stderr binding")
+                check(later_calls() == calls, name + " clean unusable no retry/continuation")
+        print("S631", name, outcome, "PASS", flush=True)
+    return row[:4]
+
+
+def scrub_slot_matrix():
+    import multiprocessing
+    sites = scrub_slot_writer_audit()
+    rows = scrub_slot_rows()
+    counts = {}
+    for pair, family, result, representation, outcome in rows:
+        for axis in ("location " + pair[0], "owner " + pair[2], "family " + family, "representation " + representation, "result " + outcome):
+            counts[axis] = counts.get(axis, 0) + 1
+    print("S631 slot expansion sizes before execution:", len(rows), "rows; 39 pairs;", sites, "audited writer sites;",
+          json.dumps(counts, sort_keys=True), flush=True)
+    probe = os.environ.get("PANEL_SCRUB_SLOT_PROBE")
+    if probe:
+        rows = [row for row in rows if "/".join(row[0][:4]) + "/" + "/".join(row[1:4]) == probe]
+        check(len(rows) == 1, "unknown slot probe")
+    with multiprocessing.get_context("fork").Pool(min(8, os.cpu_count() or 1)) as pool:
+        completed = pool.map(_scrub_slot_job, rows)
+    check(len(completed) == len(rows) and set(completed) == {row[:4] for row in rows}, "S631 slot no skipped executions")
+    print("S631 slot/route matrix executed:", len(rows), "PASS", flush=True)
+
+
+def scrub_slot_integrity_mutations():
+    # Verification mutants only (P8): a reduced, mislabeled or duplicated
+    # declaration, or an unmapped writer, must fail before any execution.
+    source = Path(__file__).read_text()
+    mutations = (
+        ("slot-drop-pair", '    ("L2", "runtime", "offline-actor", "qualified-capture", "file", "none"): ("actor", "Cq", lambda c, v: c.update(runtime=v)),\n',
+         '', "S631 slot exact pair-key and clean-class equality"),
+        ("slot-mislabel-clean-class", '("actor", "Cd", lambda c, v: c.update(model="claude-stub-1" + v)),\n',
+         '("actor", "Cq", lambda c, v: c.update(model="claude-stub-1" + v)),\n', "S631 slot exact pair-key and clean-class equality"),
+        ("slot-drop-exclusion-record", '    ("X", "argv.--cases", "pre-call", "fixed-diagnostic", "stderr", "none"):\n        ("an unknown case identity is refused with a fixed code", "run", lambda f, v: ("--cases", v)),\n',
+         '', "S631 slot exact pair-key and clean-class equality"),
+        ("slot-drop-representation", 'SLOT_REPRESENTATIONS = ("R", "J-unicode", "J-layer2", "N-fullwidth")\n',
+         'SLOT_REPRESENTATIONS = ("R", "J-unicode", "N-fullwidth")\n', "S631 slot source/representation axes"),
+        ("slot-substitute-stdout-for-stderr", '("stream", "Cd", _slot_stream("stderr")),\n', '("stream", "Cd", _slot_stream("stdout")),\n',
+         "S631 slot stream label matches injected stream"),
+        ("slot-duplicate-replaces-row", '    keys = [row[:4] for row in rows]\n    check(len(keys) == len(set(keys)) == len(expected) == 39',
+         '    rows[-1] = rows[0]\n    keys = [row[:4] for row in rows]\n    check(len(keys) == len(set(keys)) == len(expected) == 39',
+         "S631 slot exact row-key equality/no duplicates"),
+        ("slot-mislabel-result", '                    outcome = "X" if clean == "X" else "U" if result == "U" else clean\n',
+         '                    outcome = "X" if clean == "X" else clean\n', "S631 slot declared result class"),
+        ("slot-unmapped-writer", '    ("run", "store.put"): (1, "L1/L2 qualified observation"),\n', '',
+         "S631 slot writer inventory exact key-set equality"),
+    )
+    with tempfile.TemporaryDirectory(prefix="panel-slot-integrity-") as tmp:
+        fixture = Path(tmp) / Path(__file__).name
+        clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-slots-declarations-only"], capture_output=True, text=True)
+        check(clean.returncode == 0, "S631 slot valid declaration control: " + clean.stderr)
+        for name, old, new, diagnostic in mutations:
+            check(source.count(old) == 1, name + " mutation anchor unique")
+            fixture.write_text(source.replace(old, new, 1))
+            p = subprocess.run([sys.executable, "-I", str(fixture), "631", "--scrub-slots-declarations-only"], capture_output=True, text=True,
+                               env=dict(os.environ, PANEL_TEST_RUNNER=str(RUNNER)))
+            check(p.returncode != 0 and diagnostic in p.stderr, name + " survived or unrelated failure: " + p.stdout + p.stderr)
+            print("S631 killed matrix-" + name + " at " + diagnostic, flush=True)
+
+
+# S631 F alphabet edges and V J-standard / J-fragment / J-separated /
+# J-surrogate source axes, on both R11 publication routes. Written from the
+# scenario dictionaries; the expected class of every specimen is fixed by its
+# construction here, never by calling the runner's scrub or decoder.
+AXIS_FAMILIES = {
+    "users": ("/Users/Example/private-note", "/UsersExample/private-note"),
+    "linux": ("/home/example/private-note", "/homes/example/private-note"),
+    "temporary": ("/tmp/example/note", "/tmp-example/note"),
+    "short-token": ("sk-" + "A" * 16, "sk-" + "A" * 15),
+    "cloud-key": ("AKIA" + "A" * 16, "AKIA" + "A" * 15),
+    "slack": ("xoxb-" + "A" * 16, "xoxb-" + "A" * 15),
+    "google": ("AIza" + "A" * 30, "AIza" + "A" * 29),
+    "jwt": ("eyJ" + "A" * 10 + "." + "B" * 10 + "." + "C" * 10, "eyJ" + "A" * 9 + "." + "B" * 10 + "." + "C" * 10),
+    "email": ("q@x.aa", "q@x.a"),
+    "private-key": ("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY----"),
+}
+AXIS_EDGE_CLASSES = {
+    "short-token": ("sk-", 16, "AZaz09_-"), "cloud-key": ("AKIA", 16, "AZ09"),
+    "slack": ("xoxb-", 16, "AZaz09-"), "google": ("AIza", 30, "AZaz09_-"),
+}
+AXIS_ESCAPES = {"quote": '\\"', "slash": "\\/", "backslash": "\\\\", "b": "\\b", "f": "\\f", "n": "\\n",
+                "r": "\\r", "t": "\\t", "unicode": "\\u0041"}
+AXIS_GAPS = {"lone-high": "\\uD83D", "lone-low": "\\uDE42", "reversed": "\\uDE42\\uD83D", "truncated": "\\u12 "}
+AXIS_PAIRS = (
+    ("L2", "response.reason", "offline-actor", "qualification", "file"),
+    ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+)
+
+
+def scrub_axis_sources():
+    sources = {}
+    def add(name, wire, outcome, actor=None):
+        # `actor` is the offline-actor class where it differs: response.reason
+        # admits any JSON value there, while a judge reason must be a string.
+        check(name not in sources, "duplicate axis source " + name)
+        sources[name] = (wire, outcome, actor or outcome)
+    def token(text): return '"' + text + '"'
+    # F alphabet edges: each payload position, first/last character of each
+    # allowed class (U), and `!` for the broken minimum-length control (Cq).
+    for family, (prefix, count, allowed) in AXIS_EDGE_CLASSES.items():
+        for position in range(count):
+            for char in allowed + "!":
+                add("edge/%s/%d/%04x" % (family, position, ord(char)),
+                    token(prefix + "A" * position + char + "A" * (count - position - 1)), "Cq" if char == "!" else "U")
+    for segment in range(3):
+        for position in range(10):
+            for char in "AZaz09_-!":
+                parts = ["A" * 10, "B" * 10, "C" * 10]
+                parts[segment] = parts[segment][:position] + char + parts[segment][position + 1:]
+                add("edge/jwt/%d.%d/%04x" % (segment, position, ord(char)), token("eyJ" + ".".join(parts)), "Cq" if char == "!" else "U")
+    for family, (unsafe, clean) in AXIS_FAMILIES.items():
+        for result, text in (("U", unsafe), ("C", clean)):
+            base = "Cq" if result == "C" else "U"
+            malformed = "Cd" if result == "C" else "U"
+            # A wire that breaks the enclosing document leaves no checked
+            # usage: the clean twin is Cd with explicit-unknown accounting.
+            broken = "Cu" if result == "C" else "U"
+            # J-standard: surrounding escapes cannot hide a complete U and do
+            # not complete a C. Adjacent slash/letter escapes would extend a
+            # near-match, so they stay space-separated for C.
+            for label, escape in AXIS_ESCAPES.items():
+                add("standard/%s/%s/prefix/%s" % (family, result, label), token(escape + " " + text), base)
+                add("standard/%s/%s/suffix/%s" % (family, result, label), token(text + " " + escape), base)
+                if result == "U" or label not in ("slash", "unicode"):
+                    add("standard/%s/%s/before/%s" % (family, result, label), token(escape + text), base)
+                    add("standard/%s/%s/after/%s" % (family, result, label), token(text + escape), base)
+            for run in (1, 2, 3, 4):
+                add("standard/%s/%s/backslash-run/%d" % (family, result, run), token("x" + "\\\\" * run + " " + text), base)
+            if family in ("users", "short-token"):
+                for first, a in AXIS_ESCAPES.items():
+                    for second, b in AXIS_ESCAPES.items():
+                        add("standard/%s/%s/pair/%s+%s" % (family, result, first, second), token(a + b + " " + text + " " + b + a), base)
+            if family in ("users", "linux", "temporary"):
+                # literal backslash + slash run: two lexical layers to the slash
+                add("standard/%s/%s/literal-backslash-slash" % (family, result), token(text.replace("/", "\\\\/")), base)
+            # J-fragment: ell 0..3 nested Q layers and malformed surroundings.
+            escaped = "".join("\\u%04x" % ord(c) for c in text)
+            layer = '{"r": "' + escaped + '"}'
+            add("fragment/%s/%s/complete-token" % (family, result), token(text), base)
+            for ell in (1, 2, 3):
+                layer = json.dumps(layer)
+                add("fragment/%s/%s/layer-%d" % (family, result, ell), layer, base)
+            add("fragment/%s/%s/string-content" % (family, result), text, malformed)
+            add("fragment/%s/%s/truncated-container" % (family, result), '{"a": ["' + text, broken)
+            add("fragment/%s/%s/jsonl-earlier-malformed" % (family, result), '{"broken": \n{"reason": "' + text + '"}', broken)
+            add("fragment/%s/%s/broken-quote" % (family, result), '"unterminated \n "' + text + '"', broken)
+            add("fragment/%s/%s/nested-value" % (family, result), '{"a": {"b": {"c": "' + text + '"}}}', malformed, "Cq" if result == "C" else "U")
+            add("fragment/%s/%s/nested-name" % (family, result), '{"a": {"' + text + '": 1}}', malformed, "Cq" if result == "C" else "U")
+            add("fragment/%s/%s/nested-array" % (family, result), '[[["' + text + '"]]]', malformed, "Cq" if result == "C" else "U")
+            # J-surrogate: valid pairs keep the class; lone/reversed/malformed
+            # units stay opaque and leave the surrounding span inspectable.
+            add("surrogate/%s/%s/literal" % (family, result), token("\U0001F642" + text + "\U0001F642"), base)
+            add("surrogate/%s/%s/paired-upper" % (family, result), token("\\uD83D\\uDE42" + text + "\\uD83D\\uDE42"), base)
+            add("surrogate/%s/%s/paired-lower" % (family, result), token("\\ud83d\\ude42" + text + "\\ud83d\\ude42"), base)
+            add("surrogate/%s/%s/paired-mixed" % (family, result), token("\\uD83d\\uDe42" + text + "\\ud83D\\udE42"), base)
+            for label, gap in (("lone-high", "\\uD83D"), ("lone-low", "\\uDE42"), ("reversed", "\\uDE42\\uD83D"),
+                               ("truncated", "\\uD83 "), ("malformed", "\\uZZZZ ")):
+                add("surrogate/%s/%s/%s" % (family, result, label), token(gap + " " + text + " " + gap), malformed)
+            add("surrogate/%s/%s/high-text-low" % (family, result), token("\\uD83D " + text + " \\uDE42"), malformed)
+            add("surrogate/%s/%s/trailing-backslash" % (family, result), '"' + text + ' \\"', broken)
+        # Control/quote escape inside the minimum span splits it (Cq).
+        for label in ("quote", "b", "f", "n", "r", "t"):
+            add("standard/%s/C/inside/%s" % (family, label), token(unsafe[:2] + AXIS_ESCAPES[label] + unsafe[2:]), "Cq")
+        if family == "email":
+            # The raw view of an escape spelling ends in an ASCII letter or
+            # digit directly before `@`; separated email rows are excluded
+            # (the split halves alone are covered by `q@x.a`).
+            continue
+        # J-separated: every nonempty interior split; tokens and invalid spans
+        # are never joined. A path half that still holds its complete marker
+        # stays U by construction.
+        marker = {"users": "/Users/", "linux": "/home/", "temporary": "/tmp/"}.get(family)
+        for position in range(1, len(unsafe)):
+            left, right = unsafe[:position], unsafe[position:]
+            outcome = "U" if marker and marker in left else "Cd"
+            add("separated/%s/%d/members" % (family, position), '{"a": "' + left + '", "b": "' + right + '"}', outcome,
+                "Cq" if outcome == "Cd" else None)
+            add("separated/%s/%d/tokens" % (family, position), '"' + left + '" "' + right + '"', outcome)
+            for label, gap in AXIS_GAPS.items():
+                add("separated/%s/%d/%s" % (family, position, label), token(left + gap + right), outcome)
+        for label, gap in dict(AXIS_GAPS, members='", "b": "', tokens='" "').items():
+            add("separated/%s/adjacent-before/%s" % (family, label), token(unsafe + gap + "x"), "U")
+            add("separated/%s/adjacent-after/%s" % (family, label), token("x" + gap + unsafe), "U")
+    return sources
+
+
+def scrub_axis_rows():
+    # Independent arithmetic over the scenario dictionaries: axis sizes are
+    # spelled as literals, so a reduced generator cannot shrink both sides.
+    sources = scrub_axis_sources()
+    counts = {}
+    for name in sources:
+        counts[name.split("/")[0]] = counts.get(name.split("/")[0], 0) + 1
+    edges = 16 * 9 + 16 * 5 + 16 * 8 + 30 * 9 + 3 * 10 * 9
+    standard = 10 * (9 * 2 * 2 + 9 * 2 + 7 * 2 + 4 * 2 + 6) + 2 * 2 * 81 + 3 * 2
+    lengths = {"users": 27, "linux": 26, "temporary": 17, "short-token": 19, "cloud-key": 20, "slack": 21,
+               "google": 34, "jwt": 35, "private-key": 27}
+    separated = sum(length - 1 for length in lengths.values()) * 6 + 9 * 6 * 2
+    check(all(len(AXIS_FAMILIES[name][0]) == length for name, length in lengths.items()) and len(AXIS_FAMILIES) == 10,
+          "S631 axis family source lengths")
+    check(counts == {"edge": edges, "standard": standard, "fragment": 10 * 2 * 11, "surrogate": 10 * 2 * 11, "separated": separated}
+          and (edges, standard, separated) == (892, 1150, 1410), "S631 axis required source cardinality: " + repr(counts))
+    check(all(outcome in ("U", "Cq", "Cd", "Cu") and (outcome == "U") == (actor == "U") for _, outcome, actor in sources.values())
+          and all((outcome == "U") == ("/U/" in name) for name, (_, outcome, _) in sources.items() if name.split("/")[0] in ("standard", "fragment", "surrogate")),
+          "S631 axis declared result class")
+    required_pairs = {
+        ("L2", "response.reason", "offline-actor", "qualification", "file"),
+        ("L4", "response.verdicts[0].reason", "offline-first-judge", "CONTENT_PENDING", "file"),
+    }
+    check(set(AXIS_PAIRS) == required_pairs and len(AXIS_PAIRS) == 2, "S631 axis required pair declaration")
+    rows = [(pair, name, wire, actor if pair[2] == "offline-actor" else outcome, None, "axis/" + name + "/" + pair[2])
+            for name, (wire, outcome, actor) in sources.items() for pair in AXIS_PAIRS]
+    keys = [(pair, name) for pair, name, _, _, _, _ in rows]
+    expected = {(pair, name) for pair in required_pairs for name in sources}
+    check(len(keys) == len(set(keys)) == len(expected) == 2 * (892 + 1150 + 220 + 220 + 1410) and set(keys) == expected,
+          "S631 axis exact row-key equality/no duplicates")
+    return rows
+
+
+def scrub_axis_matrix():
+    import multiprocessing
+    rows = scrub_axis_rows()
+    print("S631 axis expansion sizes before execution:", len(rows), "rows; 2 pairs; edge 892, standard 1150, fragment 220, surrogate 220, separated 1410 sources", flush=True)
+    probe = os.environ.get("PANEL_SCRUB_AXIS_PROBE")
+    if probe:
+        rows = [row for row in rows if row[1] + "/" + row[0][2] == probe]
+        check(len(rows) == 1, "unknown axis probe")
+    with multiprocessing.get_context("fork").Pool(min(8, os.cpu_count() or 1)) as pool:
+        completed = pool.map(_scrub_scalar_job, rows, chunksize=8)
+    check(len(completed) == len(rows) and set(completed) == {(row[0], row[1]) for row in rows}, "S631 axis no skipped executions")
+    print("S631 source axis matrix executed:", len(rows), "PASS", flush=True)
+
+
+def scrub_axis_integrity_mutations():
+    source = Path(__file__).read_text()
+    mutations = (
+        ("axis-drop-edge-class", '    "slack": ("xoxb-", 16, "AZaz09-"), "google": ("AIza", 30, "AZaz09_-"),\n',
+         '    "slack": ("xoxb-", 16, "AZaz09"), "google": ("AIza", 30, "AZaz09_-"),\n', "S631 axis required source cardinality"),
+        ("axis-drop-escape", '"r": "\\\\r", "t": "\\\\t", "unicode": "\\\\u0041"}\n', '"r": "\\\\r", "t": "\\\\t"}\n',
+         "S631 axis required source cardinality"),
+        ("axis-drop-split-positions", '        for position in range(1, len(unsafe)):\n', '        for position in range(1, len(unsafe) - 1):\n',
+         "S631 axis required source cardinality"),
+        ("axis-mislabel-result", '            base = "Cq" if result == "C" else "U"\n', '            base = "Cq"\n', "S631 axis declared result class"),
+        ("axis-reduced-route", '            for name, (wire, outcome, actor) in sources.items() for pair in AXIS_PAIRS]\n',
+         '            for name, (wire, outcome, actor) in sources.items() for pair in AXIS_PAIRS[:1]]\n', "S631 axis exact row-key equality/no duplicates"),
+        ("axis-duplicate-replaces-row", '    keys = [(pair, name) for pair, name, _, _, _, _ in rows]\n',
+         '    rows[-1] = rows[0]\n    keys = [(pair, name) for pair, name, _, _, _, _ in rows]\n', "S631 axis exact row-key equality/no duplicates"),
+    )
+    with tempfile.TemporaryDirectory(prefix="panel-axis-integrity-") as tmp:
+        fixture = Path(tmp) / Path(__file__).name
+        clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-axes-declarations-only"], capture_output=True, text=True)
+        check(clean.returncode == 0, "S631 axis valid declaration control: " + clean.stderr)
+        for name, old, new, diagnostic in mutations:
+            check(source.count(old) == 1, name + " mutation anchor unique")
+            fixture.write_text(source.replace(old, new, 1))
+            p = subprocess.run([sys.executable, "-I", str(fixture), "631", "--scrub-axes-declarations-only"], capture_output=True, text=True)
+            check(p.returncode != 0 and diagnostic in p.stderr, name + " survived or unrelated failure: " + p.stdout + p.stderr)
+            print("S631 killed matrix-" + name + " at " + diagnostic, flush=True)
 
 
 def scrub_cli_diagnostics():
@@ -2144,7 +2843,28 @@ def scrub_mutations():
          '            cleanup()\n            raise Invalid("completed judge retention stopped; inspect private recovery; publication and calls stopped") from exc',
          "--scrub-hex-only", {"PANEL_SCRUB_HEX_PROBE": judge_row}, judge_row + " private exact original"),
     )
+    # Segment 2: P1.context and the short-token minimum, observed on the
+    # declared slot/route matrix. A tuple anchor is one rule changed at each of
+    # its sites (the short-token minimum is spelled twice in the runner).
+    def slot(key): return "--scrub-slots-only", {"PANEL_SCRUB_SLOT_PROBE": key}, "slot/" + key
+    destination = slot("L6/destination.evidence_path/pre-call/reserve-initial-save/users/U/R")
+    packet = slot("L1/packet.question/pre-Store/input-initial-copy/users/U/J-unicode")
+    key_input = slot("L1/key.criteria[].description/pre-Store/input-initial-copy/users/U/J-unicode")
+    short_c = "short-token-sk--C" + first
+    mutations += (
+        ("P1-context-destination", '        yield destination[1]\n', '', destination[0], destination[1],
+         destination[2] + " zero calls before refusal"),
+        ("P1-context-initial-preflight-packet", 'scrub(p); scrub(key)', 'scrub(key)', packet[0], packet[1],
+         packet[2] + " pre-Store no call/no public file"),
+        ("P1-context-initial-preflight-key", 'scrub(p); scrub(key)', 'scrub(p)', key_input[0], key_input[1],
+         key_input[2] + " pre-Store refusal with fixed code"),
+        ("P4-catalogue-min-short", ('0123456789_-", 16, re.I)', 're.fullmatch(r"[A-Za-z0-9_-]{16}", tail, re.I)'),
+         ('0123456789_-", 15, re.I)', 're.fullmatch(r"[A-Za-z0-9_-]{15}", tail, re.I)'),
+         "--scrub-prefix-only", {"PANEL_SCRUB_PREFIX_PROBE": short_c}, short_c + " clean no scrub STOP"),
+    )
     required = {
+        "P1-context-destination", "P1-context-initial-preflight-packet", "P1-context-initial-preflight-key",
+        "P4-catalogue-min-short",
         "P4-catalogue-users", "P4-catalogue-linux", "P4-catalogue-tmp", "P4-catalogue-var-folders",
         "P4-catalogue-sk", "P4-catalogue-ghp", "P4-catalogue-gho", "P4-catalogue-ghu", "P4-catalogue-ghs",
         "P4-catalogue-ghr", "P4-catalogue-github-pat", "P4-catalogue-AKIA", "P4-catalogue-ASIA",
@@ -2180,9 +2900,12 @@ def scrub_mutations():
     with tempfile.TemporaryDirectory(prefix="panel-scrub-mutants-") as tmp:
         for name, old, new, flag, extra, diagnostic in mutations:
             folder = Path(tmp) / name; folder.mkdir()
-            check(source.count(old) == 1, name + " mutation anchor unique")
+            mutated = source
+            for before, after in zip(*((old, new) if isinstance(old, tuple) else ((old,), (new,)))):
+                check(source.count(before) == 1 and before != after, name + " mutation anchor unique")
+                mutated = mutated.replace(before, after, 1)
             shutil.copy2(RUNNER, folder / RUNNER.name)
-            (folder / "temporary_panel_run.py").write_text(source.replace(old, new, 1))
+            (folder / "temporary_panel_run.py").write_text(mutated)
             for control in ("actor-depth-clean", "first-judge-clean"):
                 clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_WITNESS=control)
                 clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", "--scrub-witnesses-only"], capture_output=True, text=True, env=clean_env)
@@ -2194,6 +2917,14 @@ def scrub_mutations():
                 clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag],
                                        capture_output=True, text=True, env=clean_env)
                 check(clean.returncode == 0, name + " clean hex route control failed: " + clean.stdout + clean.stderr)
+            if flag == "--scrub-slots-only":
+                # The clean twin of the same slot/representation must still
+                # reach its declared outcome on the mutated runner.
+                control = extra["PANEL_SCRUB_SLOT_PROBE"].replace("/U/", "/C/")
+                clean_env = dict(os.environ, PANEL_TEST_RUNNER=str(folder / RUNNER.name), PANEL_SCRUB_SLOT_PROBE=control)
+                clean = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "631", flag],
+                                       capture_output=True, text=True, env=clean_env)
+                check(clean.returncode == 0, name + " clean slot route control failed: " + clean.stdout + clean.stderr)
             if flag == "--scrub-prefix-only":
                 # The opposite-class twin of the same alternative must still
                 # reach its declared outcome on the mutated runner.
@@ -3077,6 +3808,24 @@ if __name__ == "__main__":
         sys.exit(0)
     if "--scrub-hex-only" in sys.argv:
         scrub_hex_matrix()
+        sys.exit(0)
+    if "--scrub-axes-declarations-only" in sys.argv:
+        print(str(len(scrub_axis_rows())) + " declared source axis rows")
+        sys.exit(0)
+    if "--scrub-axes-only" in sys.argv:
+        scrub_axis_matrix()
+        sys.exit(0)
+    if "--scrub-axes-integrity-only" in sys.argv:
+        scrub_axis_integrity_mutations()
+        sys.exit(0)
+    if "--scrub-slots-declarations-only" in sys.argv:
+        print(str(len(scrub_slot_rows())) + " declared slot/route rows; " + str(scrub_slot_writer_audit()) + " audited writer sites")
+        sys.exit(0)
+    if "--scrub-slots-only" in sys.argv:
+        scrub_slot_matrix()
+        sys.exit(0)
+    if "--scrub-slots-integrity-only" in sys.argv:
+        scrub_slot_integrity_mutations()
         sys.exit(0)
     if "--scrub-prefix-declarations-only" in sys.argv:
         print(str(len(scrub_prefix_rows())) + " declared prefix alternative rows")
