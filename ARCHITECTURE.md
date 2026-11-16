@@ -7476,3 +7476,149 @@ Doubts (one line each):
 - Real-evidence non-eligibility rests on collector behavior plus inert policy; the S625 witness is the tripwire, not a proof against forged bundles (M8).
 - Segment 5 is the risky step; any unexplained outcome change must stop the segment rather than be absorbed into expectations.
 - Synthetic green results establish no live independence, provenance, qualification or permission to enable.
+
+
+### A60 addendum 7 — narrative implication basis and overlapping-rule kill targets, #646
+
+**Status: PROPOSAL, Architect / Planning, 2026-11-16; ships inert.** [A] OR19
+clarification of `.handoff/dev-report-646-a6-seg2-stop.md` at `57b4ab0`. Earlier
+A-text remains history; addenda 3-6 stand except the addendum-6 sentences N4 names.
+No eligibility condition, refusal, reason code, exit, ordering or C4 dependency rule
+is weakened, and every rule addendum 6 adds stays in the code. This is a
+mutation-credit and kill-target ruling only.
+
+**N1 — The narrative triangle.** [A] Let M = selected `m.evidence.narrative_sha256`,
+C = `current.narrative_sha256`, N = `narrative(pr; product repository, sole closing
+issue)`. Three equalities emit the identical reason `('unresolved','identity-binding','')`:
+E1 `M == C` (the narrative leaf of the existing `rule:record-binding` in
+`record_checks()`), E2 `C == N` (`rule:narrative-current`), E3 `M == N`
+(`rule:narrative-record`). Any two imply the third, so wherever all three apply no
+single deletion is observable. Their domains differ: E1 applies whenever
+`record_checks()` reaches its binding line (a schema-valid selection); E2 applies
+whenever N is available, with or without a selection; E3 needs both. Only E3 has no
+exclusive domain: the Developer's finding is confirmed, DEL-`narrative-record` is an
+equivalent mutant on every input.
+
+Ruling: basis {E1, E2}; E3 is implied (option 1). The basis is acyclic: neither E1
+nor E2 may be claimed implied, and addendum 5's copy-to-copy row does NOT apply to
+the I10 copies (no line `M == C implied by ...`). It is sound because E1's exclusive
+domain (selection, N unavailable) and E2's (N available, no schema-valid selection)
+are real and killable, and E3's domain is their intersection. Moving or removing E1
+is rejected: it changes `bound` (hold/envelope gating before Segment 5) and leaves
+the N-unavailable domain without any narrative check, which weakens a refusal.
+
+Conditions on Segment 2; a violation reopens E3 as a design defect:
+
+1. E3 stays: `r.need(<pred>, 'identity-binding')  # rule:narrative-record` on the
+   line directly after `rule:narrative-current`, with no rule between them. Both use
+   the same S4 N-availability guard; E3 also requires a schema-valid selection; E2
+   is NOT conditioned on a selection. Neither skips on a missing or ill-typed C (a
+   missing C is a mismatch, as today).
+2. Every `record_checks()` path that returns a selection has executed
+   `rule:record-binding` with the narrative leaf; a new early exit before that line
+   returns `None`.
+3. Append the mutation anchor `  # rule:record-binding-narrative` to the existing
+   `families['narrative']=...` line. Predicate unchanged; not a new rule; the leaf
+   still feeds the one `rule:record-binding` need line. Mutant replacement:
+   `("families['narrative']=", "families['narrative']=True or ")`.
+4. Premise kill rows (QA adds them and names the exact ordered codes):
+   - `record-binding-narrative`: selected schema-valid record, only M changed, PR
+     body with a duplicate trailer (N unavailable); referred/3 carrying
+     `narrative-invalid` and `identity-binding`.
+   - `narrative-current`: the selected manifest parses but fails the closed schema
+     (U/`manifest-schema`, no selection), only C changed; the result carries
+     `identity-binding`.
+   Neither row relies on `bound` gating, so both still kill after Segment 5.
+   `add4-actual-title` and "M alone wrong" remain rows; neither kills E1, E2 or E3
+   singly.
+5. `rule:narrative-record` gets no mutant; it is neither run nor credited.
+
+**N2 — Implication sentence QA adds (S606 I10 rows, or S615's implication block).**
+[A] QA owns the wording; the content is exactly:
+`m.evidence.narrative_sha256 == narrative(pr.title, pr.body; product repository,
+sole closing issue) [I10.4, rule:narrative-record] implied by
+m.evidence.narrative_sha256 == current.narrative_sha256
+[rule:record-binding-narrative] AND current.narrative_sha256 == narrative(pr.title,
+pr.body; product repository, sole closing issue) [I10.3, rule:narrative-current];
+domain: a schema-valid selected record exists AND narrative() returns a digest.`
+Both premises are `now` (S2 I10 is NOW, satisfying S3.5); each kills on its N1.4 row
+with the eligible control passing. QA also writes the N3 A2 line.
+
+**N3 — Inventory scan of Segments 2-5.** [A] Every new tag was compared with retained
+and new rules emitting the same (kind, code, detail).
+
+A. Same shape (no exclusive domain; addendum-5 line, no mutant):
+- A1 `rule:narrative-record` (N1).
+- A2 I10.6 against I10.5: `trailer.URL == selected.comment.URL implied by
+  trailer.URL == active_record_url [rule:trailer-selection] AND
+  selected.comment.URL == active_record_url` (the selection definition in
+  `record_checks()`, not an observation). Implement ONE line, `rule:trailer-selection`.
+No other tag has this shape.
+
+B. Overlap with an exclusive domain: own mutant, but the natural D/F row kills
+neither rule; the listed row is the kill target.
+- B1 Segment 2 `record-decision-ledger` vs `record-queue-key`: "m.decision_id alone
+  wrong" fires both. Kill `record-decision-ledger` with `m.decision_id`,
+  `m.queue_key` and `m.execution.queue_key` moved together to one well-formed ID of
+  this PR and head with another ordinal; kill `record-queue-key` with `m.queue_key`
+  alone wrong.
+- B2 Segment 2 `selected-url-target` vs `trailer-selection` and `narrative-valid`: a
+  valid trailer naming the old selection fires both U rules. Kill
+  `selected-url-target` with the selected comment URL, `active_record_url` and the
+  single trailer all naming a comment on another issue of the product repository
+  (R/`narrative-invalid` plus U/`record-selection`). Domain clarification, not a new
+  skip: `trailer-selection` compares only a trailer `narrative()` accepted; without
+  one, `narrative-invalid` owns the input. Zero-trailer behavior stays as specified.
+- B3 Segment 2 `ledger-decision-id` vs the existing attempt-chain validity
+  (`rule:prior-disposition`): "a prior attempt carrying the final decision ID" breaks
+  the previous link and can fire both. Kill target: the last attempt's decision ID
+  from another PR or another capture head.
+- B4 Segment 2 `envelope-issue`, `envelope-decision_id` and Segment 5
+  `envelope-<family>` vs `rule:risk-binding`: an envelope leaf alone wrong fires both
+  R/`risk-binding`. Kill each envelope tag with raw and envelope changed together
+  (record copy and final unchanged), the S3.2 A edit where it is `now`;
+  `rule:risk-binding` keeps its raw-alone rows.
+- B5 Segment 3 `full-hold-age` vs existing `rule:risk-expired`: with a readable T,
+  every `now - A >= M` input fires both, so S654 `age-86400` and
+  `same-vendor-age-from-earlier-slot-86400` stop killing `rule:risk-expired`. QA's
+  existing line `now-A < M implied by max(now,E) < A+M` covers the T domain.
+  Retarget both `rule:risk-expired` mutants to its exclusive domain: a stale pair
+  (`now - A == M`) with a selected manifest that fails the closed schema; and, for
+  the `0 <=` conjunct, now one second before `min(started_at)` with `T + h - A < M`.
+  Kill `full-hold-age` with `now - A < M <= T + h - A`. The old rows stay unchanged.
+- B6 Segment 5 `capture-head-final` / `capture-base-final` vs the head/base leaves of
+  `rule:record-binding`: the F row (final moves, capture and record copy stay) fires
+  both. Kill with record copies at final while the changed/context artifact revision
+  and envelope `binding.head`/`binding.base` name another revision.
+The remaining Segment 2-4 tags already have an exclusive row in their red lists.
+
+**N4 — Addendum-6 text changes.** [A]
+- S5 common rules, "add one mutant per new tag": except a tag QA declares implied
+  under addendum 5 (today only `rule:narrative-record`); a mutant kills on the row
+  N1/N3 names, when one is named.
+- S5 common rules, "never delete a mutant without a replacement that kills the same
+  row": when a later rule doubly covers that row (B5), the mutant keeps its tag and
+  moves to a row of its exclusive domain; the old row stays; REPORT lists old and
+  new targets.
+- Segment 2 Boundary: add the N1.3 anchor and the N1.1-N1.2 placement and guards;
+  `rule:trailer-selection` reads only an accepted trailer (B2); one line for
+  I10.5/I10.6 (A2).
+- Segment 2 Red tests: add the two N1.4 rows and the B1, B2, B3 and B4 kill rows.
+- Segment 2 Done (new): the ten witnesses and QA's Segment-2 rows green; every new
+  Segment-2 tag and `rule:record-binding-narrative` KILLED on its named row, except
+  `rule:narrative-record`, covered by the N2 line; every other row as Segment 1;
+  compile, `git diff --check` and stamp checks as S5. Any other surviving mutant is
+  a STOP to Architect, never a test edit.
+- Segments 3 and 5 Red tests: add the B5 and B4/B6 rows respectively.
+- S6: S606 (or S615) gains the N2 and A2 lines; S615 Segment-2 rows gain the N1.4,
+  B1, B2, B3 and B4 rows; S654 gains the B5 rows.
+
+**N5 — Maintainer marks.** None. No protected contract text, closed schema, carrier,
+skill or reason code changes, and no security trade-off is taken; addendum 6 S7
+stands unchanged.
+
+Doubts (one line each):
+- Dropping the E3 line would be equally sound and smaller; it stays because addendum 6 and QA's oracle name it.
+- B2's kill row assumes QA's oracle gives no `record-selection` from `trailer-selection` on a rejected trailer; otherwise B2 needs another row.
+- B3 rests on reading `rule:prior-disposition`, not on an executed row.
+- No row or mutant was run; every kill claim here is algebraic until the Developer shows red, green and KILLED output.
