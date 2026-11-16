@@ -7795,3 +7795,63 @@ new unexplained survivor still follows OR19, never an oracle relaxation.
 Doubts: Later-segment kill constructions are algebraic and must be demonstrated after their implementation; no behavior or mutation suite ran in this Architect session.
 Doubts: The lower implication is domain-limited; it never authorizes removing returning-launch or suppressing diagnostics while a ledger consumer is unavailable/skipped.
 Doubts: Missing adoption/session-context paths prevent installation/live-loading verification; ordinary Codex adoption is the orchestrator's remedy, not a repair authorized here.
+
+### A60 addendum 10 — expiry refusal composition and preserved-row audit, #646
+
+**Ruling (Architect / Planning, 2026-11-16, OR19, `c768216`).** [A] Keep
+addendum 6 S4's independent issue referent: S611 `a6s2-closing-final`
+changes its oracle from U/4 [identity-binding, record-selection] to R/3
+[identity-binding, record-selection, risk-binding]. Its only frozen edit changes
+the readable sole closing issue from 701 to 702; binding.issue stays 701. This is
+a mismatch, not an unavailable source, and this family has no record-copy
+fallback. The added code is an additional refusal, both previous U reasons stay,
+and R > U > H remains unchanged. Skipping this readable comparison would hide an
+independent referral after expiry, contrary to S4/C4. Isolated unreadable closing
+and issue sources still keep only their owning U refusals. No new skip is allowed.
+
+**Exhaustive observed-delta ruling.** [A] The read-only public CLI audit compared
+identical materialized inputs against `074a59a` and the current library:
+1,377 paired bundle rows, 100 verdict/ordered-code changes, nine on preserved rows;
+the other 1,277 were identical. REPORT.md lists EVERY changed row with complete
+old/new output and its ruling, plus coverage of every Segment-5/6 target family.
+Besides S611, preserved S606 `add4-expiry-reuse`/`add4-expiry-referral` gain their
+already-required referral causes; S654 `capability-envelope-slot-named-by-vendor`
+and S658 `same-vendor-one-slot-twice` retain identity-binding and
+capability-identity-missing and add risk-independence and risk-attempt-invalid;
+S659 `n-resolved-model-differs`, `n-variant-differs` and
+`v-resolved-model-silently-differs` retain every old code and add
+risk-independence; S669 `a6s2-ledger-final` retains identity-binding and
+risk-attempt-invalid and adds risk-binding. Accept these additive causes, never
+remove an old applicable refusal. Only the two NEW capture/no-selection rows
+change R to U: S4/addendum-9 B6 already replace comparisons against the wrong final
+revision with valid independent capture referents, retain manifest-schema and
+add identity-binding. No applicable capture/pair fault is excused. Source-audited
+git-writing probes, unimplemented Segment-6 inventory/collector work and actual
+mutation-credit limits are explicit in REPORT.md; this is no completion claim.
+
+**Exact QA handoff.** [A] QA amends S611's addendum-6 Then for the readable-closing
+row above, S669's addendum-6 scope for the exact three-code ledger-final oracle,
+S654's scope and S658's preservation clause for the slot attacks, and S659's
+declaration to distinguish unchanged reader/addendum-3 controls from the three
+final additive-refusal rows. S606's no-derivative F sentence applies to Rule G
+record-copy classification; readable independent referents still compare after
+expiry. S615's blanket preservation sentence cites precisely these nine observed
+exceptions and keeps all eligible controls/addendum-8 input corrections; its
+per-conjunct mutant sentence and S658 must prescribe OTHER closed-domain vendor
+(Claude/Codex), never unresolved-vendor, for `a6s5-reviewer-vendor-0/1`, and align
+receipt.resolved_model to the attacked reviewer model for
+`a6s5-reviewer-model-0/1`. Keep separate receipt-resolved-model attacks. Temporary
+field-specific deletion probes demonstrate loss of ONLY risk-independence for
+all seven corrected conjunct inputs in both slots, with independent eligible
+controls. REPORT.md gives exact codes, sentences and input changes. S617/S618/S619/
+S677 need no amendment. QA publishes its artifact before Developer applies these
+specific oracle/input corrections; every other retained expectation stands.
+
+**Limits.** [A] No Product AC (including AC5/AC6), F70-F74, Module, Interface or
+CLI/collector Seam changes; no schema/reason/precedence/contract change or new
+security trade-off is decided. Addendum 6 S7's MAINTAINER SECURITY TRADE-OFF and
+CONTRACT-TEXT CHANGE reservations remain unaccepted here. Segment-6 coverage,
+carrier-absence witness and selector kills remain required, not inferred from
+this audit. A genuinely new unexplained failure/survivor still follows OR19.
+Doubts: Eighteen git-writing installer/export probes have source evidence only; synthetic replays establish no live qualification or authority.
+Doubts: Missing adoption/session-context paths and .agents links remain an orchestrator setup remedy, not a repair in this scope.
