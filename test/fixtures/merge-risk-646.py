@@ -2590,7 +2590,11 @@ for i in range(2):
         seg3(669,'outcome-'+str(i),change(['attempts',0,'launches',i,'outcome'],outcome),'referred','risk-attempt-invalid')
 mutate(669,'launch-after-attempt','a6s3-created-0--100')
 mutate(669,'first-launch-start','a6s3-first-0--99')
-mutate(669,'returning-launch',['a6s3-return-0--49','a6s3-return-1--101','a6s3-outcome-0'])
+# Addendum 9: S<=L is implied by original-deadline and the retained
+# original-start equalities when the schema-valid ledger consumer runs.
+# Keep both lower-bound behavior rows; upper/outcome kills cover BOTH slots.
+mutate(669,'returning-launch',['a6s3-return-0--49','a6s3-return-1--49',
+                              'a6s3-outcome-0','a6s3-outcome-1'])
 
 for i in range(2):
     for d in (-1,0,1):
