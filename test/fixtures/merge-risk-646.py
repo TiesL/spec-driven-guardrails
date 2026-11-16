@@ -964,7 +964,7 @@ mutate(661,'repository-identity','redirect')
 
 # This Adapter uses real local Git objects and an exhaustive fake gh. It never
 # delegates an unmatched call to a real executable or a network transport.
-def export_probe(implementation, defect=None, capability=None, guard=None):
+def export_probe(implementation, defect=None, capability=None, guard=None, inert=False):
     with tempfile.TemporaryDirectory(prefix='mr646-object-') as tmp:
         home=Path(tmp); repo=home/'product'; repo.mkdir(); binpath=home/'bin'; binpath.mkdir()
         env={k:v for k,v in os.environ.items() if not k.startswith('GIT_')}
@@ -980,6 +980,7 @@ def export_probe(implementation, defect=None, capability=None, guard=None):
         (repo/'merge-preflight.sh').write_text('#!/bin/sh\nexit 0\n');(repo/'merge-preflight.sh').chmod(0o755)
         (repo/'WORKFLOW-ADOPTION.md').write_text('| quality-review-before-merge | yes |\n| process-multi-agent-roles | yes |\n')
         cfg=configuration();cfg.update(enabled=False,acceptance=None,executor_host='',guard=None)
+        if inert: cfg['enabled']=True  # laboratory only, committed in B below
         guard_dir=None
         if guard:
             # Independent G objects and a preflight sentinel; no code runs from B.
@@ -1042,8 +1043,35 @@ def export_probe(implementation, defect=None, capability=None, guard=None):
         (home/'world.json').write_text(json.dumps(routes))
         (binpath/'gh').write_text('#!'+sys.executable+'\nimport json,os,sys\na=sys.argv[1:]\nopen(os.environ["MR_LOG"],"a").write(json.dumps(a)+"\\n")\nr=json.load(open(os.environ["MR_WORLD"])).get(" ".join(a))\nif r is None: sys.exit(99)\nsys.stdout.write(r)\n')
         (binpath/'gh').chmod(0o755);env['PATH']=str(binpath)+':'+env['PATH']
-        if guard: g('checkout','--detach',base)  # physical product verifier is clean B
+        if guard or inert: g('checkout','--detach',base)  # physical product verifier is clean B
         before=g('status','--porcelain'); index=sha((repo/'.git/index').read_bytes())
+        if inert:
+            for tool in ('curl','wget','ssh','nc'):
+                (binpath/tool).write_text('#!/bin/sh\necho '+tool+' >> "$MR_LOG.network"\nexit 97\n')
+                (binpath/tool).chmod(0o755)
+            # Observe the real collector, not a synthetic eligible bundle. The
+            # executable probe lives outside B; all remote reads use fake gh.
+            probe=home/'observe.py'
+            probe.write_text("import json,runpy,sys\n"
+                             "m=runpy.run_path(sys.argv[1])\n"
+                             "b=m['collect']('final',700,sys.argv[2])\n"
+                             "print(json.dumps(b))\n")
+            p=subprocess.run([sys.executable,'-I',str(probe),str(repo/'lib/merge-risk.py'),str(repo)],
+                             cwd=repo,env=env,capture_output=True,text=True)
+            check(p.returncode==0,'real collect observation: '+p.stdout+p.stderr)
+            bundle=json.loads(p.stdout)
+            check(json.loads(bundle['config_text'])['enabled'] is True,'collector did not read enabled lab policy at B')
+            check(not (home/'calls.log.network').exists(),'inert collector network lookup')
+            result=invoke(implementation,bundle)
+            collector_inert_assert(bundle,result)
+            print('S625 real-collector referred/3 '+repr([line[8:] for line in result.stdout.splitlines() if line.startswith('reason: ')]))
+            collector_inert_falsifiers(bundle,result)
+            check(g('status','--porcelain')==before and sha((repo/'.git/index').read_bytes())==index,
+                  'inert witness wrote product repository/index')
+            calls=[json.loads(l) for l in (home/'calls.log').read_text().splitlines()]
+            check(not any(a[:2] in (['pr','merge'],['issue','comment'],['issue','edit']) for a in calls),
+                  'inert witness remote mutation')
+            return result
         if guard:
             p=subprocess.run([sys.executable,'-I',str(repo/'lib/merge-risk.py'),
                               'export','700',str(guard_dir),str(home/'guard-evidence')],
@@ -2354,6 +2382,8 @@ for field in dict.fromkeys(documented_reviewer_fields(ROOT)+['slot']):
 def run_row(root,entry):
     name,edit,want,code,command=entry[:5]
     if command=='structure': return structure_assert(root,sys.argv[1].lstrip('S'))
+    if command=='collector-inert': return export_probe(root,inert=True)
+    if command=='shipped-inert': return shipped_inert_probe(root)
     if command=='installer': return installer_assert()
     if command=='render-probe': return render_assert(root)
     b=control(root)
@@ -2906,6 +2936,166 @@ for section,key,expression in (
     mutate(658,'risk-independence',tuple('a6s5-'+section+'-'+key+'-'+str(i) for i in range(2)),
            {'before':before,'after':after_})
 
+
+# Independently eligible retained inventories for the forthcoming C6
+# expansion. Keep these separate from the one-author regression control.
+C6_TWO_AUTHORS=(('X','medium'),('Y','medium'))
+C6_THREE_AUTHORS=C6_TWO_AUTHORS+(('P','high'),)
+C6_SLOTS=(('Q','high'),('Z','max'))
+for name,edit in (
+    ('two-authors',lab(authors=C6_TWO_AUTHORS,slots=C6_SLOTS)),
+    ('three-authors',lab(authors=C6_THREE_AUTHORS,slots=C6_SLOTS)),
+    ('two-attempts',both(lab(authors=C6_TWO_AUTHORS,slots=C6_SLOTS),second_attempt)),
+    ('three-launches',both(lab(authors=C6_TWO_AUTHORS,slots=C6_SLOTS),transport_retry(0,started=-80)))):
+    row(615,'a6s6-inventory-control-'+name,edit)
+
+
+# Raw equality basis: literal BIND/REVIEW leaves from QA, independently of
+# production schemas. Literal true/null reviewer leaves have schema premises;
+# the remaining leaves each own a field-specific equality mutant.
+RAW_BIND_LEAVES=('decision_id','attempt_id','nonce','repository','pr','issue','head','base',
+                 'diff_sha256','evidence_sha256','requirements_sha256','design_sha256',
+                 'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')
+RAW_REVIEW_EDITS={'slot':'unrelated-slot','dispatch_id':'unrelated-dispatch',
+                  'session_id':'unrelated-session','model':'unrelated-model','variant':'unrelated-variant',
+                  'runtime_id':'unrelated-runtime','floor_evidence_sha256':sha('unrelated-floor'),
+                  'vendor':None}
+for slot in range(2):
+    seg5(654,'raw-nonce-'+str(slot),destination(slot,'binding','nonce','unrelated-nonce',True),
+         'referred',('identity-binding','risk-binding'))
+    for key,value in RAW_REVIEW_EDITS.items():
+        def raw_reviewer(b,slot=slot,key=key,value=value):
+            if key=='vendor':
+                value='Codex' if b['risk_pair'][slot]['envelope']['reviewer']['vendor']=='Claude' else 'Claude'
+            destination(slot,'reviewer',key,value,True)(b)
+        seg5(654,'raw-reviewer-'+key+'-'+str(slot),raw_reviewer,
+             'referred',('identity-binding','risk-binding'))
+raw_equality="raw_equal=d['binding']==expected and d['reviewer']==env['reviewer']"
+for key in RAW_BIND_LEAVES:
+    names=tuple('a6s5-raw-nonce-'+str(i) if key=='nonce' else 'a6s5-'+key+'-'+str(i)+'-raw' for i in range(2))
+    weakened="raw_equal=all(d['binding'][k]==expected[k] for k in expected if k!="+repr(key)+") and d['reviewer']==env['reviewer']"
+    mutate(654,'risk-binding',names,{'before':raw_equality,'after':weakened})
+for key in RAW_REVIEW_EDITS:
+    weakened="raw_equal=d['binding']==expected and all(d['reviewer'][k]==env['reviewer'][k] for k in env['reviewer'] if k!="+repr(key)+")"
+    mutate(654,'risk-binding',tuple('a6s5-raw-reviewer-'+key+'-'+str(i) for i in range(2)),
+           {'before':raw_equality,'after':weakened})
+
+
+# Segment 6 selector/authority mutants exercise both stable slots. Each
+# paired destination leaves final/source/record fixed, so these are basis
+# witnesses, never the deferred Rule-G all-copies attack.
+for key in BINDING_EDITS:
+    family={'decision_id':'decision_id','attempt_id':'attempt_id'}.get(key,key.removesuffix('_sha256'))
+    tag='envelope-'+family
+    predicate={'decision_id':'decision_ok','attempt_id':'attempt_ok'}.get(key,family+'_ok')
+    for mode,index,bad in (('FIRST',0,1),('LAST',-1,0)):
+        mutate(654,tag,'a6s5-'+key+'-'+str(bad)+'-paired',
+               (predicate,predicate+' or p is not pair['+str(index)+']'))
+    mutate(654,tag,tuple('a6s5-'+key+'-'+str(i)+'-paired' for i in range(2)),
+           (predicate,"expected['"+key+"']==d['binding']['"+key+"']"))
+for tag,predicate,key in (
+    ('table','table_ok','table_sha256'),('mapping','mapping_ok','mapping_sha256'),
+    ('row','row_ok','row'),('marker','marker_ok','marker_sha256'),
+    ('effort','effort_ok','effort_sha256'),('exception','exception_ok','exceptions')):
+    for mode,index,bad in (('FIRST',0,1),('LAST',-1,0)):
+        mutate(654,'envelope-'+tag,'a6s5-cap-'+key+'-'+str(bad),
+               (predicate,predicate+' or p is not pair['+str(index)+']'))
+for mode,index,bad in (('FIRST',0,1),('LAST',-1,0)):
+    mutate(654,'envelope-floor','a6s5-floor-'+str(bad)+'-paired',
+           ('floor_ok','floor_ok or p is not pair['+str(index)+']'))
+
+
+# S625 independent carrier inventory. Empty/None placeholders are absence;
+# no launch, review, author or accepted source may be inferred from them.
+INERT_CODES=('risk-pair-required','risk-attempt-invalid','gate-quality',
+             'instruction-load-invalid','runtime-invalid','executor-invalid',
+             'qualification-unavailable','guard-invalid')
+INERT_CARRIERS={
+    'launch': ('attempts','launches'),
+    'pair': ('risk_pair',),
+    'ledger': ('attempts',),
+    'quality': ('quality',),
+    'author': ('authors',),
+    'capability-slot': ('capability','slots'),
+    'runtime': ('runtime',),
+    'queue': ('queue',),
+    'host': ('host',),
+    'instruction': ('instruction_files',),
+    'current': ('current',),
+    'accepted': ('accepted',),
+    'guard-bundle': ('guard_state','bundle_sha256'),
+}
+
+
+def carrier_absent(bundle,name):
+    path=INERT_CARRIERS[name]
+    if name=='launch':
+        absent=not any(a.get('launches') for a in bundle.get('attempts',[]) or [])
+    else:
+        value=bundle
+        for key in path:
+            value=value.get(key) if isinstance(value,dict) else None
+        absent=not value
+    check(absent,'invented carrier: '+name)
+
+
+def collector_inert_assert(bundle,result):
+    check(result.returncode==3 and result.stdout.startswith('merge-risk: referred '),
+          'real collector must refer/3: '+result.stdout+result.stderr)
+    codes={line[8:] for line in result.stdout.splitlines() if line.startswith('reason: ')}
+    check('autonomy-disabled' not in codes,'disabled policy masked missing evidence')
+    for code in INERT_CODES: check(code in codes,'missing unavailable code: '+code)
+    check(any(code.startswith('capability-') for code in codes),'missing capability referral')
+    for name in INERT_CARRIERS: carrier_absent(bundle,name)
+
+
+def collector_inert_falsifiers(bundle,result):
+    for name,path in INERT_CARRIERS.items():
+        attacked=copy.deepcopy(bundle)
+        if name=='launch': attacked['attempts']=[{'launches':[{'partial':True}]}]
+        elif len(path)==1: attacked[path[0]]={'partial':True}
+        else: attacked[path[0]]={path[1]:{'partial':True}}
+        # The exact owning absence must fail, independent of every other
+        # still-missing carrier and its unchanged unavailable diagnostic.
+        try: carrier_absent(attacked,name)
+        except Failure as error:
+            check(str(error)=='invented carrier: '+name,'wrong carrier falsifier: '+str(error))
+            print('KILLED S625/missing-carrier-'+name)
+        else: raise Failure('SURVIVED S625/missing-carrier-'+name)
+    for code in INERT_CODES+('capability-*',):
+        attacked=copy.copy(result)
+        attacked.stdout='\n'.join(line for line in result.stdout.splitlines()
+                                  if line!='reason: '+code and not
+                                  (code=='capability-*' and line.startswith('reason: capability-')))+'\n'
+        try: collector_inert_assert(bundle,attacked)
+        except Failure as error:
+            expected='missing capability referral' if code=='capability-*' else 'missing unavailable code: '+code
+            check(str(error)==expected,'wrong unavailable-code falsifier: '+str(error))
+            print('KILLED S625/missing-code-'+code)
+        else: raise Failure('SURVIVED S625/missing-code-'+code)
+
+
+def shipped_inert_assert(cfg):
+    for key,value in (('enabled',False),('acceptance',None),('executor_host',''),('qualification',None)):
+        correct=key in cfg and type(cfg[key]) is type(value) and cfg[key]==value
+        check(correct,'shipped inert default: '+key)
+
+
+def shipped_inert_probe(root):
+    cfg=json.loads((root/'policy/merge-autonomy.json').read_bytes())
+    shipped_inert_assert(cfg)
+    for key,value in (('enabled',True),('acceptance','https://github.com/example/project/issues/1#issuecomment-1'),
+                      ('executor_host','lab-host'),('qualification',{'partial':True})):
+        attacked=copy.deepcopy(cfg); attacked[key]=value
+        try: shipped_inert_assert(attacked)
+        except Failure as error:
+            check(str(error)=='shipped inert default: '+key,'wrong inert-default falsifier')
+            print('KILLED S625/shipped-'+key)
+        else: raise Failure('SURVIVED S625/shipped-'+key)
+
+
+row(625,'a6s6-real-collector',command='collector-inert')
+row(625,'a6s6-shipped-inert',command='shipped-inert')
 
 def main():
     s=sys.argv[1].lstrip('S'); baseline='--baseline' in sys.argv
