@@ -3382,7 +3382,8 @@ C6_RESULT_DECLARATIONS = {'a': 'U:identity-binding',
  'G': 'U:now-unreadable',
  'H': 'R:evidence-incomplete',
  'I': 'R:corpus-invalid',
- 'J': 'R:path-unsafe/tree-collision/gitlink',
+ 'J': 'expand separately by typed inventory: unsafe.path -> R:path-unsafe; normalized-prefix collision -> '
+      'R:tree-collision; gitlink mode -> R:gitlink; never one serialized reason',
  'K': 'R:remote-identity',
  'L': 'R:cap-lines',
  'M': 'R:cap-files',
@@ -3407,17 +3408,17 @@ C6_RESULT_DECLARATIONS = {'a': 'U:identity-binding',
  '5': 'U:guard-invalid'}
 
 C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.head', 'result_token': 'a'},
- 'I03.2': {'owner': 'S606', 'declaration': 'a>b.remote.head', 'result_token': 'a'},
+ 'I03.2': {'owner': 'S606', 'declaration': 'a>b.remote.head', 'result_token': 'K; complete typed source inventories, current H/diff/counts versus remote'},
  'I03.3': {'owner': 'S606', 'declaration': 'a>head.tree.revision', 'result_token': 'a'},
  'I03.4': {'owner': 'S606', 'declaration': 'a>head.artifact.revision', 'result_token': 'a'},
  'I03.5': {'owner': 'S606', 'declaration': 'a>m.head', 'result_token': 'a'},
  'I03.6': {'owner': 'S606', 'declaration': 'a>m.evidence.head', 'result_token': 'a'},
- 'I03.7': {'owner': 'S606', 'declaration': 'a>@bn:head', 'result_token': 'a'},
- 'I03.8': {'owner': 'S606', 'declaration': 'a>@bn:marker', 'result_token': 'a'},
+ 'I03.7': {'owner': 'S606', 'declaration': 'a>@bn:head', 'result_token': 'O; actual approved quality.head == final H'},
+ 'I03.8': {'owner': 'S606', 'declaration': 'a>@bn:marker', 'result_token': 'P; actual expected quality marker for final H'},
  'I03.9': {'owner': 'S606', 'declaration': 'a>queue.head', 'result_token': 'a'},
  'I04.1': {'owner': 'S606', 'declaration': 'b>b.main_tip', 'result_token': 'a'},
- 'I04.3': {'owner': 'S606', 'declaration': 'b>b.merge_base', 'result_token': 'a'},
- 'I04.2': {'owner': 'S606', 'declaration': 'b>b.remote.base', 'result_token': 'a'},
+ 'I04.3': {'owner': 'S606', 'declaration': 'b>b.merge_base', 'result_token': 'b; main_tip == b.merge_base in source domain'},
+ 'I04.2': {'owner': 'S606', 'declaration': 'b>b.remote.base', 'result_token': 'K; complete typed source inventories, current main_tip/diff/counts versus remote'},
  'I04.4': {'owner': 'S606', 'declaration': 'b>verifier.head', 'result_token': 'W'},
  'I04.5': {'owner': 'S606', 'declaration': 'b>base.tree.revision', 'result_token': 'a'},
  'I04.6': {'owner': 'S606', 'declaration': 'b>base.artifact.revision', 'result_token': 'a'},
@@ -3473,20 +3474,20 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I09.2': {'owner': 'S615', 'declaration': 'v>cfg.requirements.sha256', 'result_token': 'a'},
  'I09.3': {'owner': 'S615', 'declaration': 'v>cfg.design.source', 'result_token': 'a'},
  'I09.4': {'owner': 'S615', 'declaration': 'v>cfg.design.sha256', 'result_token': 'a'},
- 'I09.5': {'owner': 'S615', 'declaration': 'v>@bF:brief.source', 'result_token': 'a'},
- 'I09.6': {'owner': 'S615', 'declaration': 'v>@bF:brief.sha256', 'result_token': 'a'},
+ 'I09.5': {'owner': 'S615', 'declaration': 'v>@bF:brief.source', 'result_token': 'R:project-unconfigured; I08 retained_json/body brief consumer'},
+ 'I09.6': {'owner': 'S615', 'declaration': 'v>@bF:brief.sha256', 'result_token': 'R:project-unconfigured; I08 retained_json/body brief consumer'},
  'I09.7': {'owner': 'S615', 'declaration': 'v>@bF:acceptance.source', 'result_token': 'a'},
  'I09.8': {'owner': 'S615', 'declaration': 'v>@bF:acceptance.sha256', 'result_token': 'a'},
- 'I09.9': {'owner': 'S615', 'declaration': 'v>cfg.runtime_profile.source', 'result_token': 'a'},
- 'I09.10': {'owner': 'S615', 'declaration': 'v>cfg.runtime_profile.sha256', 'result_token': 'a'},
- 'I09.11': {'owner': 'S615', 'declaration': 'v>cfg.qualification.source', 'result_token': 'a'},
- 'I09.12': {'owner': 'S615', 'declaration': 'v>cfg.qualification.sha256', 'result_token': 'a'},
+ 'I09.9': {'owner': 'S615', 'declaration': 'v>cfg.runtime_profile.source', 'result_token': 'X; I27 retained_json runtime consumer'},
+ 'I09.10': {'owner': 'S615', 'declaration': 'v>cfg.runtime_profile.sha256', 'result_token': 'X; I27 retained_json runtime consumer'},
+ 'I09.11': {'owner': 'S615', 'declaration': 'v>cfg.qualification.source', 'result_token': 'i; I34 retained_json qualification consumer'},
+ 'I09.12': {'owner': 'S615', 'declaration': 'v>cfg.qualification.sha256', 'result_token': 'i; I34 retained_json qualification consumer'},
  'I09.13': {'owner': 'S615', 'declaration': 'v>cfg.guard.source.source', 'result_token': 'a'},
  'I09.14': {'owner': 'S615', 'declaration': 'v>cfg.guard.source.sha256', 'result_token': 'a'},
- 'I09.15': {'owner': 'S615', 'declaration': 'v>@bb:decision.source', 'result_token': 'a'},
- 'I09.16': {'owner': 'S615', 'declaration': 'v>@bb:decision.sha256', 'result_token': 'a'},
- 'I09.17': {'owner': 'S615', 'declaration': 'v>@bs:source', 'result_token': 'a'},
- 'I09.18': {'owner': 'S615', 'declaration': 'v>@bs:sha256', 'result_token': 'a'},
+ 'I09.15': {'owner': 'S615', 'declaration': 'v>@bb:decision.source', 'result_token': 'S; I19 retained_json decision/map consumer'},
+ 'I09.16': {'owner': 'S615', 'declaration': 'v>@bb:decision.sha256', 'result_token': 'S; I19 retained_json decision/map consumer'},
+ 'I09.17': {'owner': 'S615', 'declaration': 'v>@bs:source', 'result_token': 'S; I19 retained_json decision/map consumer'},
+ 'I09.18': {'owner': 'S615', 'declaration': 'v>@bs:sha256', 'result_token': 'S; I19 retained_json decision/map consumer'},
  'I09.19': {'owner': 'S615', 'declaration': 'v>m.ac.source', 'result_token': 'a'},
  'I09.20': {'owner': 'S615', 'declaration': 'v>m.ac.sha256', 'result_token': 'a'},
  'I09.21': {'owner': 'S615', 'declaration': 'v>m.design.source', 'result_token': 'a'},
@@ -3495,48 +3496,64 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I09.24': {'owner': 'S615', 'declaration': 'v>m.supersedes.sha256', 'result_token': 'a'},
  'I09.25': {'owner': 'S615', 'declaration': 'v>release.original.source', 'result_token': 'a'},
  'I09.26': {'owner': 'S615', 'declaration': 'v>release.original.sha256', 'result_token': 'a'},
- 'I09.27': {'owner': 'S615', 'declaration': 'v>@bG:source', 'result_token': 'a'},
- 'I09.28': {'owner': 'S615', 'declaration': 'v>@bG:sha256', 'result_token': 'a'},
+ 'I09.27': {'owner': 'S615', 'declaration': 'v>@bG:source', 'result_token': 'd; I15 actual author-marker body consumer'},
+ 'I09.28': {'owner': 'S615', 'declaration': 'v>@bG:sha256', 'result_token': 'd; I15 actual author-marker body consumer'},
  'I09.29': {'owner': 'S615', 'declaration': 'v>@bH:source', 'result_token': 'a'},
  'I09.30': {'owner': 'S615', 'declaration': 'v>@bH:sha256', 'result_token': 'a'},
  'I09.31': {'owner': 'S615', 'declaration': 'v>@bc:source', 'result_token': 'd'},
  'I09.32': {'owner': 'S615', 'declaration': 'v>@bc:sha256', 'result_token': 'd'},
- 'I09.33': {'owner': 'S615', 'declaration': 'v>@bt:marker.source', 'result_token': 'd'},
- 'I09.34': {'owner': 'S615', 'declaration': 'v>@bt:marker.sha256', 'result_token': 'd'},
+ 'I09.33': {'owner': 'S615', 'declaration': 'v>@bt:marker.source', 'result_token': 'e; I22 one matching applied effort.marker entry for actual participant marker in typed '
+                            'CAPEVID; marker-source validity is distinct d'},
+ 'I09.34': {'owner': 'S615', 'declaration': 'v>@bt:marker.sha256', 'result_token': 'e; I22 one matching applied effort.marker entry for actual participant marker in typed '
+                            'CAPEVID; marker-source validity is distinct d'},
  'I09.35': {'owner': 'S615', 'declaration': 'v>@bt:launch.source', 'result_token': 'e'},
  'I09.36': {'owner': 'S615', 'declaration': 'v>@bt:launch.sha256', 'result_token': 'e'},
- 'I09.37': {'owner': 'S615', 'declaration': 'v>@T:output_source.source', 'result_token': 'f'},
- 'I09.38': {'owner': 'S615', 'declaration': 'v>@T:output_source.sha256', 'result_token': 'f'},
+ 'I09.37': {'owner': 'S615', 'declaration': 'v>@T:output_source.source', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not '
+                            'raw integrity'},
+ 'I09.38': {'owner': 'S615', 'declaration': 'v>@T:output_source.sha256', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not '
+                            'raw integrity'},
  'I09.39': {'owner': 'S615', 'declaration': 'v>m.evidence.read_logs[0].source', 'result_token': 'a'},
  'I09.40': {'owner': 'S615', 'declaration': 'v>m.evidence.read_logs[0].sha256', 'result_token': 'a'},
- 'I09.41': {'owner': 'S615', 'declaration': 'v>m.prior_attempts[0].source', 'result_token': 'g'},
- 'I09.42': {'owner': 'S615', 'declaration': 'v>m.prior_attempts[0].sha256', 'result_token': 'g'},
- 'I09.43': {'owner': 'S615', 'declaration': 'v>@9:source', 'result_token': 'g'},
- 'I09.44': {'owner': 'S615', 'declaration': 'v>@9:sha256', 'result_token': 'g'},
- 'I09.45': {'owner': 'S615', 'declaration': 'v>@bI:source', 'result_token': 'a'},
- 'I09.46': {'owner': 'S615', 'declaration': 'v>@bI:sha256', 'result_token': 'a'},
+ 'I09.41': {'owner': 'S615', 'declaration': 'v>m.prior_attempts[0].source', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.42': {'owner': 'S615', 'declaration': 'v>m.prior_attempts[0].sha256', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.43': {'owner': 'S615', 'declaration': 'v>@9:source', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.44': {'owner': 'S615', 'declaration': 'v>@9:sha256', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.45': {'owner': 'S615', 'declaration': 'v>@bI:source', 'result_token': 'd; I15 actual author-marker body consumer'},
+ 'I09.46': {'owner': 'S615', 'declaration': 'v>@bI:sha256', 'result_token': 'd; I15 actual author-marker body consumer'},
  'I09.47': {'owner': 'S615', 'declaration': 'v>@bJ:source', 'result_token': 'a'},
  'I09.48': {'owner': 'S615', 'declaration': 'v>@bJ:sha256', 'result_token': 'a'},
  'I09.49': {'owner': 'S615', 'declaration': 'v>@bd:source', 'result_token': 'd'},
  'I09.50': {'owner': 'S615', 'declaration': 'v>@bd:sha256', 'result_token': 'd'},
- 'I09.51': {'owner': 'S615', 'declaration': 'v>@bu:marker.source', 'result_token': 'd'},
- 'I09.52': {'owner': 'S615', 'declaration': 'v>@bu:marker.sha256', 'result_token': 'd'},
+ 'I09.51': {'owner': 'S615', 'declaration': 'v>@bu:marker.source', 'result_token': 'e; I22 one matching applied effort.marker entry for actual participant marker in typed '
+                            'CAPEVID; marker-source validity is distinct d'},
+ 'I09.52': {'owner': 'S615', 'declaration': 'v>@bu:marker.sha256', 'result_token': 'e; I22 one matching applied effort.marker entry for actual participant marker in typed '
+                            'CAPEVID; marker-source validity is distinct d'},
  'I09.53': {'owner': 'S615', 'declaration': 'v>@bu:launch.source', 'result_token': 'e'},
  'I09.54': {'owner': 'S615', 'declaration': 'v>@bu:launch.sha256', 'result_token': 'e'},
- 'I09.55': {'owner': 'S615', 'declaration': 'v>@U:output_source.source', 'result_token': 'f'},
- 'I09.56': {'owner': 'S615', 'declaration': 'v>@U:output_source.sha256', 'result_token': 'f'},
+ 'I09.55': {'owner': 'S615', 'declaration': 'v>@U:output_source.source', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not '
+                            'raw integrity'},
+ 'I09.56': {'owner': 'S615', 'declaration': 'v>@U:output_source.sha256', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source resolution, not '
+                            'raw integrity'},
  'I09.57': {'owner': 'S615', 'declaration': 'v>m.evidence.read_logs[1].source', 'result_token': 'a'},
  'I09.58': {'owner': 'S615', 'declaration': 'v>m.evidence.read_logs[1].sha256', 'result_token': 'a'},
- 'I09.59': {'owner': 'S615', 'declaration': 'v>history.attempt[1].record.source', 'result_token': 'g'},
- 'I09.60': {'owner': 'S615', 'declaration': 'v>history.attempt[1].record.sha256', 'result_token': 'g'},
- 'I09.61': {'owner': 'S615', 'declaration': 'v>@ba:source', 'result_token': 'g'},
- 'I09.62': {'owner': 'S615', 'declaration': 'v>@ba:sha256', 'result_token': 'g'},
- 'I09.63': {'owner': 'S615', 'declaration': 'v>@bn:source.source', 'result_token': 'a'},
- 'I09.64': {'owner': 'S615', 'declaration': 'v>@bn:source.sha256', 'result_token': 'a'},
- 'I09.65': {'owner': 'S615', 'declaration': 'v>@be:source', 'result_token': 'h'},
- 'I09.66': {'owner': 'S615', 'declaration': 'v>@be:sha256', 'result_token': 'h'},
- 'I09.67': {'owner': 'S615', 'declaration': 'v>@bf:source', 'result_token': 'h'},
- 'I09.68': {'owner': 'S615', 'declaration': 'v>@bf:sha256', 'result_token': 'h'},
+ 'I09.59': {'owner': 'S615', 'declaration': 'v>history.attempt[1].record.source', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.60': {'owner': 'S615', 'declaration': 'v>history.attempt[1].record.sha256', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.61': {'owner': 'S615', 'declaration': 'v>@ba:source', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.62': {'owner': 'S615', 'declaration': 'v>@ba:sha256', 'result_token': 'deferred-701:—; planned R:risk-attempt-invalid, original prior/disposition source '
+                            'resolution'},
+ 'I09.63': {'owner': 'S615', 'declaration': 'v>@bn:source.source', 'result_token': '{original quality source:deferred-701:C-Q, planned O; manifest mirror:a}'},
+ 'I09.64': {'owner': 'S615', 'declaration': 'v>@bn:source.sha256', 'result_token': '{original quality source:deferred-701:C-Q, planned O; manifest mirror:a}'},
+ 'I09.65': {'owner': 'S615', 'declaration': 'v>@be:source', 'result_token': '{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}'},
+ 'I09.66': {'owner': 'S615', 'declaration': 'v>@be:sha256', 'result_token': '{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}'},
+ 'I09.67': {'owner': 'S615', 'declaration': 'v>@bf:source', 'result_token': '{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}'},
+ 'I09.68': {'owner': 'S615', 'declaration': 'v>@bf:sha256', 'result_token': '{original finding source:deferred-701:C-Q, planned h; manifest mirror:a}'},
  'I09.69': {'owner': 'S615', 'declaration': 'v>@A:source.source', 'result_token': 'a'},
  'I09.70': {'owner': 'S615', 'declaration': 'v>@A:source.sha256', 'result_token': 'a'},
  'I09.71': {'owner': 'S615', 'declaration': 'v>@a:enabling.source', 'result_token': 'i'},
@@ -3551,8 +3568,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I09.80': {'owner': 'S615', 'declaration': 'v>@a:M1_M9.sha256', 'result_token': 'i'},
  'I09.81': {'owner': 'S615', 'declaration': 'v>@a:M8.source', 'result_token': 'i'},
  'I09.82': {'owner': 'S615', 'declaration': 'v>@a:M8.sha256', 'result_token': 'i'},
- 'I09.83': {'owner': 'S615', 'declaration': 'v>@a:failed_disposition.source', 'result_token': 'g'},
- 'I09.84': {'owner': 'S615', 'declaration': 'v>@a:failed_disposition.sha256', 'result_token': 'g'},
+ 'I09.83': {'owner': 'S615', 'declaration': 'v>@a:failed_disposition.source', 'result_token': 'deferred-701:—; planned R:qualification-unavailable, I34 failed-disposition source '
+                            'resolution'},
+ 'I09.84': {'owner': 'S615', 'declaration': 'v>@a:failed_disposition.sha256', 'result_token': 'deferred-701:—; planned R:qualification-unavailable, I34 failed-disposition source '
+                            'resolution'},
  'I09.85': {'owner': 'S615', 'declaration': 'w>retained.source.duplicate', 'result_token': 'a'},
  'I09.86': {'owner': 'S615', 'declaration': 'w>retained.source.ambiguous', 'result_token': 'a'},
  'I09.87': {'owner': 'S615', 'declaration': 'w>retained.bytes.absent', 'result_token': 'a'},
@@ -3563,7 +3582,9 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I10.8': {'owner': 'S615', 'declaration': 'y>trailer.malformed', 'result_token': 'j'},
  'I11.1': {'owner': 'S615', 'declaration': 'z>selected.URL', 'result_token': 'c'},
  'I11.7': {'owner': 'S615', 'declaration': 'z>selected.work-item', 'result_token': 'c'},
- 'I11.2': {'owner': 'S615', 'declaration': 'z>selected.schema', 'result_token': 'k'},
+ 'I11.2': {'owner': 'S615', 'declaration': 'z>selected.schema', 'result_token': 'k for parsed selected MANIFEST shape; c for original selected body embedded-wire '
+                           'duplicate/nonfinite/malformed parse/selection; record-reader manifest-malformed is a '
+                           'separate Interface'},
  'I11.3': {'owner': 'S615', 'declaration': 'z>selected.label', 'result_token': 'l'},
  'I11.4': {'owner': 'S615', 'declaration': 'z>selected.updated_at=created_at', 'result_token': 'm'},
  'I11.5': {'owner': 'S615', 'declaration': 'z>selected.active.count', 'result_token': 'n'},
@@ -3603,16 +3624,16 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I16.14': {'owner': 'S615', 'declaration': 'G>m.quality.marker', 'result_token': 'a'},
  'I16.10': {'owner': 'S615', 'declaration': 'G>m.quality.source.source', 'result_token': 'a'},
  'I16.11': {'owner': 'S615', 'declaration': 'G>m.quality.source.sha256', 'result_token': 'a'},
- 'I16.15': {'owner': 'S615', 'declaration': 'H>@4:id', 'result_token': 'h'},
- 'I16.16': {'owner': 'S615', 'declaration': 'H>@4:severity', 'result_token': 'h'},
- 'I16.17': {'owner': 'S615', 'declaration': 'H>@4:status', 'result_token': 'h'},
- 'I16.18': {'owner': 'S615', 'declaration': 'H>@be:source', 'result_token': 'h'},
- 'I16.19': {'owner': 'S615', 'declaration': 'H>@be:sha256', 'result_token': 'h'},
- 'I16.20': {'owner': 'S615', 'declaration': 'H>@5:id', 'result_token': 'h'},
- 'I16.21': {'owner': 'S615', 'declaration': 'H>@5:severity', 'result_token': 'h'},
- 'I16.22': {'owner': 'S615', 'declaration': 'H>@5:status', 'result_token': 'h'},
- 'I16.23': {'owner': 'S615', 'declaration': 'H>@bf:source', 'result_token': 'h'},
- 'I16.24': {'owner': 'S615', 'declaration': 'H>@bf:sha256', 'result_token': 'h'},
+ 'I16.15': {'owner': 'S615', 'declaration': 'H>@4:id', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.16': {'owner': 'S615', 'declaration': 'H>@4:severity', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.17': {'owner': 'S615', 'declaration': 'H>@4:status', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.18': {'owner': 'S615', 'declaration': 'H>@be:source', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.19': {'owner': 'S615', 'declaration': 'H>@be:sha256', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.20': {'owner': 'S615', 'declaration': 'H>@5:id', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.21': {'owner': 'S615', 'declaration': 'H>@5:severity', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.22': {'owner': 'S615', 'declaration': 'H>@5:status', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.23': {'owner': 'S615', 'declaration': 'H>@bf:source', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
+ 'I16.24': {'owner': 'S615', 'declaration': 'H>@bf:sha256', 'result_token': '{closed status/source shape:h; original finding-leaf truth:deferred-701:C-Q, planned h}'},
  'I16.29': {'owner': 'S615', 'declaration': 'H>open.finding.hidden-by-approval', 'result_token': 'p'},
  'I20.3': {'owner': 'S615', 'declaration': 'I>@m:slot', 'result_token': 'a'},
  'I20.4': {'owner': 'S615', 'declaration': 'I>@m:marker_sha256', 'result_token': 'a'},
@@ -3773,14 +3794,20 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I24.178': {'owner': 'S615', 'declaration': 'O>@u:output_source.sha256', 'result_token': 'a'},
  'I29.1': {'owner': 'S615', 'declaration': 'P>b.host', 'result_token': 'q'},
  'I29.2': {'owner': 'S615', 'declaration': 'P>cfg.executor_host', 'result_token': 'q'},
- 'I29.3': {'owner': 'S615', 'declaration': 'P>m.executor_host', 'result_token': 'q'},
- 'I29.4': {'owner': 'S615', 'declaration': 'P>@L:host', 'result_token': 'q'},
- 'I29.5': {'owner': 'S615', 'declaration': 'Q>@L:run_id', 'result_token': 'q'},
+ 'I29.3': {'owner': 'S615', 'declaration': 'P>m.executor_host', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                           'actual host/lock/reconciled predicate q remains separate'},
+ 'I29.4': {'owner': 'S615', 'declaration': 'P>@L:host', 'result_token': 'a; cfg.executor_host == m.execution.host in selected typed manifest'},
+ 'I29.5': {'owner': 'S615', 'declaration': 'Q>@L:run_id', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                           'actual host/lock/reconciled predicate q remains separate'},
  'I29.6': {'owner': 'S615', 'declaration': 'Q>lock.owner=executor_session', 'result_token': 'q'},
- 'I29.7': {'owner': 'S615', 'declaration': 'Q>@bv:exit', 'result_token': 'q'},
- 'I29.8': {'owner': 'S615', 'declaration': 'Q>@bv:stdout', 'result_token': 'q'},
- 'I29.9': {'owner': 'S615', 'declaration': 'Q>@bv:stderr', 'result_token': 'q'},
- 'I29.10': {'owner': 'S615', 'declaration': 'Q>@bv:escape_hatch', 'result_token': 'q'},
+ 'I29.7': {'owner': 'S615', 'declaration': 'Q>@bv:exit', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                           'actual host/lock/reconciled predicate q remains separate'},
+ 'I29.8': {'owner': 'S615', 'declaration': 'Q>@bv:stdout', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                           'actual host/lock/reconciled predicate q remains separate'},
+ 'I29.9': {'owner': 'S615', 'declaration': 'Q>@bv:stderr', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                           'actual host/lock/reconciled predicate q remains separate'},
+ 'I29.10': {'owner': 'S615', 'declaration': 'Q>@bv:escape_hatch', 'result_token': 'deferred-701:—; planned U:executor-invalid, original executor/run/preflight copy sweep; '
+                            'actual host/lock/reconciled predicate q remains separate'},
  'I29.11': {'owner': 'S615', 'declaration': 'R>m.queue_key.repository', 'result_token': 'a'},
  'I29.12': {'owner': 'S615', 'declaration': 'R>m.queue_key.pr', 'result_token': 'a'},
  'I29.13': {'owner': 'S615', 'declaration': 'R>m.queue_key.head', 'result_token': 'a'},
@@ -3821,10 +3848,14 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I31.9': {'owner': 'S615', 'declaration': 'U>m.reasons', 'result_token': 'a'},
  'I31.10': {'owner': 'S615', 'declaration': 'V>assessment.clear-vs-refer', 'result_token': 's'},
  'I31.11': {'owner': 'S615', 'declaration': 'V>assessment.clear-vs-reject', 'result_token': 's'},
- 'I31.12': {'owner': 'S615', 'declaration': 'V>assessment.clear-vs-gate', 'result_token': 's'},
- 'I33.23': {'owner': 'S615', 'declaration': 'W>@L:last_check', 'result_token': 'a'},
+ 'I31.12': {'owner': 'S615', 'declaration': 'V>assessment.clear-vs-gate', 'result_token': 'actual failed gates U:gate-quality/U:gate-check and each own gate code, not s; selected '
+                            'assessment risk_outcome/outcome a; full counts/reasons/uncertainties/disclosure '
+                            'deferred-701:—'},
+ 'I33.23': {'owner': 'S615', 'declaration': 'W>@L:last_check', 'result_token': '{last_check<T:a; original last-check event equality:deferred-701:—, planned a}; '
+                            'Compare=T-29/last_check=T-2 cannot prove absent source equality'},
  'I33.20': {'owner': 'S617', 'declaration': 'X>selected.created_at', 'result_token': 't'},
- 'I33.21': {'owner': 'S617', 'declaration': 'X>selected.updated_at', 'result_token': 't'},
+ 'I33.21': {'owner': 'S617', 'declaration': 'X>selected.updated_at', 'result_token': 'm; canonical I11 typed selected.updated_at == created_at; invalid created_at separately '
+                            't'},
  'I33.22': {'owner': 'S617', 'declaration': 'Y>m.earliest_merge', 'result_token': 'a'},
  'I32.1': {'owner': 'S618', 'declaration': 'Z>m.labels', 'result_token': 'a'},
  'I32.2': {'owner': 'S618', 'declaration': 'Z>@L:control.state', 'result_token': 'a'},
@@ -3844,19 +3875,24 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I32.11': {'owner': 'S619', 'declaration': '1>release.link.target', 'result_token': 'B'},
  'I32.12': {'owner': 'S619', 'declaration': '1>release.words', 'result_token': 'C'},
  'I32.13': {'owner': 'S619', 'declaration': '1>release.time', 'result_token': 'D'},
- 'I33.24': {'owner': 'S619', 'declaration': '2>policy.commit_time', 'result_token': 'a'},
- 'I33.25': {'owner': 'S619', 'declaration': '2>release.created_at', 'result_token': 'a'},
- 'I33.26': {'owner': 'S619', 'declaration': '2>latest.stop.time', 'result_token': 'a'},
+ 'I33.24': {'owner': 'S619', 'declaration': '2>policy.commit_time', 'result_token': '{config date availability:U:config-date-unreadable; off-since-config:z; original '
+                            'policy-event equality:deferred-701:—, planned a}; advancing time is not a'},
+ 'I33.25': {'owner': 'S619', 'declaration': '2>release.created_at', 'result_token': '{actual release freshness:D; original release-event equality:deferred-701:—, planned a}; '
+                            'advancing time is not a'},
+ 'I33.26': {'owner': 'S619', 'declaration': '2>latest.stop.time', 'result_token': '{actual stop-at-T:v; original stop-event equality:deferred-701:—, planned a}; advancing '
+                            'time is not a'},
  'I24.27': {'owner': 'S650', 'declaration': '3>p0.raw_b64', 'result_token': 'f'},
  'I24.28': {'owner': 'S650', 'declaration': '3>p0.raw_sha256', 'result_token': 'f'},
  'I24.29': {'owner': 'S650', 'declaration': '3>p0.byte_length', 'result_token': 'f'},
  'I24.30': {'owner': 'S650', 'declaration': '3>p0.overflow', 'result_token': 'f'},
- 'I24.31': {'owner': 'S650', 'declaration': '3>@T:output_source.bytes', 'result_token': 'f'},
+ 'I24.31': {'owner': 'S650', 'declaration': '3>@T:output_source.bytes', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source bytes/REF; '
+                            'current raw byte/hash/length integrity is distinct f'},
  'I24.122': {'owner': 'S650', 'declaration': '3>p1.raw_b64', 'result_token': 'f'},
  'I24.123': {'owner': 'S650', 'declaration': '3>p1.raw_sha256', 'result_token': 'f'},
  'I24.124': {'owner': 'S650', 'declaration': '3>p1.byte_length', 'result_token': 'f'},
  'I24.125': {'owner': 'S650', 'declaration': '3>p1.overflow', 'result_token': 'f'},
- 'I24.126': {'owner': 'S650', 'declaration': '3>@U:output_source.bytes', 'result_token': 'f'},
+ 'I24.126': {'owner': 'S650', 'declaration': '3>@U:output_source.bytes', 'result_token': 'deferred-701:C-L; planned R:risk-result-invalid, original output-source bytes/REF; '
+                             'current raw byte/hash/length integrity is distinct f'},
  'I24.84': {'owner': 'S651', 'declaration': '4>r0.findings[0].id', 'result_token': 'f'},
  'I24.85': {'owner': 'S651', 'declaration': '4>@bg:artifact_id', 'result_token': 'f'},
  'I24.86': {'owner': 'S651', 'declaration': '4>@bg:sha256', 'result_token': 'f'},
@@ -3925,35 +3961,55 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I13.47': {'owner': 'S654', 'declaration': '7>@G:attempt_id', 'result_token': 'E'},
  'I13.48': {'owner': 'S654', 'declaration': '7>@8:attempt_id', 'result_token': 'E'},
  'I13.49': {'owner': 'S654', 'declaration': '7>@H:attempt_id', 'result_token': 'E'},
- 'I14.25': {'owner': 'S654', 'declaration': '8>@bo:session_id', 'result_token': 'E'},
- 'I14.26': {'owner': 'S654', 'declaration': '8>@bo:dispatch_id', 'result_token': 'E'},
- 'I14.27': {'owner': 'S654', 'declaration': '8>@bo:runtime_id', 'result_token': 'E'},
- 'I14.28': {'owner': 'S654', 'declaration': '8>@2:nonce', 'result_token': 'E'},
- 'I14.57': {'owner': 'S654', 'declaration': '8>@bp:session_id', 'result_token': 'E'},
- 'I14.58': {'owner': 'S654', 'declaration': '8>@bp:dispatch_id', 'result_token': 'E'},
- 'I14.59': {'owner': 'S654', 'declaration': '8>@bp:runtime_id', 'result_token': 'E'},
- 'I14.60': {'owner': 'S654', 'declaration': '8>@8:nonce', 'result_token': 'E'},
+ 'I14.25': {'owner': 'S654', 'declaration': '8>@bo:session_id', 'result_token': 'g; last selected slot launch.session_id == reviewer.session_id in typed attempt '
+                            'ledger/current pair; raw/env equality separately E; original launch provenance '
+                            'deferred-701:C-L'},
+ 'I14.26': {'owner': 'S654', 'declaration': '8>@bo:dispatch_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
+ 'I14.27': {'owner': 'S654', 'declaration': '8>@bo:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
+ 'I14.28': {'owner': 'S654', 'declaration': '8>@2:nonce', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
+ 'I14.57': {'owner': 'S654', 'declaration': '8>@bp:session_id', 'result_token': 'g; last selected slot launch.session_id == reviewer.session_id in typed attempt '
+                            'ledger/current pair; raw/env equality separately E; original launch provenance '
+                            'deferred-701:C-L'},
+ 'I14.58': {'owner': 'S654', 'declaration': '8>@bp:dispatch_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
+ 'I14.59': {'owner': 'S654', 'declaration': '8>@bp:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
+ 'I14.60': {'owner': 'S654', 'declaration': '8>@8:nonce', 'result_token': 'deferred-701:C-L; planned R:risk-binding, actual launch source lacks these closed-LAUNCH '
+                            'members; raw/env I24 E, capability dispatch d and I17 uniqueness F are distinct'},
  'I18.7': {'owner': 'S654', 'declaration': '9>@bo:slot', 'result_token': 'E'},
- 'I18.8': {'owner': 'S654', 'declaration': '9>@bo:model', 'result_token': 'E'},
- 'I18.9': {'owner': 'S654', 'declaration': '9>@bo:variant', 'result_token': 'E'},
- 'I18.10': {'owner': 'S654', 'declaration': '9>@bo:vendor', 'result_token': 'E'},
- 'I18.11': {'owner': 'S654', 'declaration': '9>@bo:runtime_id', 'result_token': 'E'},
+ 'I18.8': {'owner': 'S654', 'declaration': '9>@bo:model', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                           'profiles drift; independent capability model/variant causes retained'},
+ 'I18.9': {'owner': 'S654', 'declaration': '9>@bo:variant', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                           'profiles drift; independent capability model/variant causes retained'},
+ 'I18.10': {'owner': 'S654', 'declaration': '9>@bo:vendor', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                            'profiles drift; independent capability model/variant causes retained'},
+ 'I18.11': {'owner': 'S654', 'declaration': '9>@bo:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from '
+                            'LAUNCH; raw/env I24 equality remains E'},
  'I18.12': {'owner': 'S654', 'declaration': '9>@R:slot', 'result_token': 'E'},
  'I18.13': {'owner': 'S654', 'declaration': '9>@R:model', 'result_token': 'E'},
  'I18.14': {'owner': 'S654', 'declaration': '9>@R:variant', 'result_token': 'E'},
  'I18.15': {'owner': 'S654', 'declaration': '9>@R:vendor', 'result_token': 'E'},
- 'I18.16': {'owner': 'S654', 'declaration': '9>@R:runtime_id', 'result_token': 'E'},
+ 'I18.16': {'owner': 'S654', 'declaration': '9>@R:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from '
+                            'LAUNCH; raw/env I24 equality remains E'},
  'I18.17': {'owner': 'S654', 'declaration': 'ba>@T:settings_sha256', 'result_token': 'F'},
  'I18.26': {'owner': 'S654', 'declaration': '9>@bp:slot', 'result_token': 'E'},
- 'I18.27': {'owner': 'S654', 'declaration': '9>@bp:model', 'result_token': 'E'},
- 'I18.28': {'owner': 'S654', 'declaration': '9>@bp:variant', 'result_token': 'E'},
- 'I18.29': {'owner': 'S654', 'declaration': '9>@bp:vendor', 'result_token': 'E'},
- 'I18.30': {'owner': 'S654', 'declaration': '9>@bp:runtime_id', 'result_token': 'E'},
+ 'I18.27': {'owner': 'S654', 'declaration': '9>@bp:model', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                            'profiles drift; independent capability model/variant causes retained'},
+ 'I18.28': {'owner': 'S654', 'declaration': '9>@bp:variant', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                            'profiles drift; independent capability model/variant causes retained'},
+ 'I18.29': {'owner': 'S654', 'declaration': '9>@bp:vendor', 'result_token': 'F; configured stable-slot profile leaf == envelope reviewer leaf, conforming pair and no '
+                            'profiles drift; independent capability model/variant causes retained'},
+ 'I18.30': {'owner': 'S654', 'declaration': '9>@bp:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from '
+                            'LAUNCH; raw/env I24 equality remains E'},
  'I18.31': {'owner': 'S654', 'declaration': '9>@S:slot', 'result_token': 'E'},
  'I18.32': {'owner': 'S654', 'declaration': '9>@S:model', 'result_token': 'E'},
  'I18.33': {'owner': 'S654', 'declaration': '9>@S:variant', 'result_token': 'E'},
  'I18.34': {'owner': 'S654', 'declaration': '9>@S:vendor', 'result_token': 'E'},
- 'I18.35': {'owner': 'S654', 'declaration': '9>@S:runtime_id', 'result_token': 'E'},
+ 'I18.35': {'owner': 'S654', 'declaration': '9>@S:runtime_id', 'result_token': 'deferred-701:C-L; planned R:risk-binding, original runtime-ID observation absent from '
+                            'LAUNCH; raw/env I24 equality remains E'},
  'I18.36': {'owner': 'S654', 'declaration': 'ba>@U:settings_sha256', 'result_token': 'F'},
  'I18.46': {'owner': 'S654', 'declaration': 'j>@2:profiles_sha256', 'result_token': 'E'},
  'I18.47': {'owner': 'S654', 'declaration': 'j>@G:profiles_sha256', 'result_token': 'E'},
@@ -4038,21 +4094,35 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I26.17': {'owner': 'S654', 'declaration': 'l>@8:instructions_sha256', 'result_token': 'E'},
  'I26.18': {'owner': 'S654', 'declaration': 'l>@H:instructions_sha256', 'result_token': 'E'},
  'I26.19': {'owner': 'S654', 'declaration': 'bk>@T:prompt_sha256', 'result_token': 'F'},
- 'I26.20': {'owner': 'S654', 'declaration': 'bk>@T:launcher_sha256', 'result_token': 'F'},
+ 'I26.20': {'owner': 'S654', 'declaration': 'bk>@T:launcher_sha256', 'result_token': 'deferred-701:C-L; planned R:risk-independence, accepted-launcher source equality; '
+                            'receipt.prompt/binding.instructions F is distinct'},
  'I26.21': {'owner': 'S654', 'declaration': 'bk>@U:prompt_sha256', 'result_token': 'F'},
- 'I26.22': {'owner': 'S654', 'declaration': 'bk>@U:launcher_sha256', 'result_token': 'F'},
- 'I33.1': {'owner': 'S654', 'declaration': '2>@T:started_at', 'result_token': 'F'},
- 'I33.2': {'owner': 'S654', 'declaration': '2>@T:received_at', 'result_token': 'F'},
- 'I33.3': {'owner': 'S654', 'declaration': '2>@T:sealed_at', 'result_token': 'F'},
- 'I33.4': {'owner': 'S654', 'declaration': '2>@T:compared_at', 'result_token': 'F'},
- 'I33.9': {'owner': 'S654', 'declaration': '2>@U:started_at', 'result_token': 'F'},
- 'I33.10': {'owner': 'S654', 'declaration': '2>@U:received_at', 'result_token': 'F'},
- 'I33.11': {'owner': 'S654', 'declaration': '2>@U:sealed_at', 'result_token': 'F'},
- 'I33.12': {'owner': 'S654', 'declaration': '2>@U:compared_at', 'result_token': 'F'},
- 'I33.27': {'owner': 'S654', 'declaration': 'bl>b.now', 'result_token': 'G'},
- 'I33.28': {'owner': 'S654', 'declaration': 'bl>missing.Date', 'result_token': 'G'},
- 'I33.29': {'owner': 'S654', 'declaration': 'bl>failed.request', 'result_token': 'G'},
- 'I33.30': {'owner': 'S654', 'declaration': 'bl>zone-less.Date', 'result_token': 'G'},
+ 'I26.22': {'owner': 'S654', 'declaration': 'bk>@U:launcher_sha256', 'result_token': 'deferred-701:C-L; planned R:risk-independence, accepted-launcher source equality; '
+                            'receipt.prompt/binding.instructions F is distinct'},
+ 'I33.1': {'owner': 'S654', 'declaration': '2>@T:started_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event '
+                           'equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.2': {'owner': 'S654', 'declaration': '2>@T:received_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event '
+                           'equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.3': {'owner': 'S654', 'declaration': '2>@T:sealed_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event '
+                           'equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.4': {'owner': 'S654', 'declaration': '2>@T:compared_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event '
+                           'equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.9': {'owner': 'S654', 'declaration': '2>@U:started_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt event '
+                           'equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.10': {'owner': 'S654', 'declaration': '2>@U:received_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt '
+                            'event equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.11': {'owner': 'S654', 'declaration': '2>@U:sealed_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt '
+                            'event equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.12': {'owner': 'S654', 'declaration': '2>@U:compared_at', 'result_token': '{retained receipt chronology:F; selected m.risk_pair copy:a; original launch/receipt '
+                            'event equality:deferred-701:C-L, planned F}; distinct exact keys'},
+ 'I33.27': {'owner': 'S654', 'declaration': 'bl>b.now', 'result_token': 'G; evaluator ts(b.now) availability, selected-record final domain; collector '
+                            'response/Date validation distinct'},
+ 'I33.28': {'owner': 'S654', 'declaration': 'bl>missing.Date', 'result_token': 'collector successful-response/Date failure -> None; selected-record final evaluator G, no '
+                            'invented request-status/equality field'},
+ 'I33.29': {'owner': 'S654', 'declaration': 'bl>failed.request', 'result_token': 'collector successful-response/Date failure -> None; selected-record final evaluator G, no '
+                            'invented request-status/equality field'},
+ 'I33.30': {'owner': 'S654', 'declaration': 'bl>zone-less.Date', 'result_token': 'collector successful-response/Date failure -> None; selected-record final evaluator G, no '
+                            'invented request-status/equality field'},
  'I34.10': {'owner': 'S654', 'declaration': 'm>@2:qualification_sha256', 'result_token': 'E'},
  'I34.11': {'owner': 'S654', 'declaration': 'm>@G:qualification_sha256', 'result_token': 'E'},
  'I34.12': {'owner': 'S654', 'declaration': 'm>@8:qualification_sha256', 'result_token': 'E'},
@@ -4103,9 +4173,9 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I05.44': {'owner': 'S655', 'declaration': 'bq>rename.new-side', 'result_token': 'H'},
  'I05.45': {'owner': 'S655', 'declaration': 'bq>unchanged.context', 'result_token': 'H'},
  'I05.46': {'owner': 'S655', 'declaration': 'bq>symlink.link-text', 'result_token': 'H'},
- 'I05.47': {'owner': 'S655', 'declaration': 'br>unsafe.path', 'result_token': 'J'},
- 'I05.48': {'owner': 'S655', 'declaration': 'br>collision.normalized-prefix', 'result_token': 'J'},
- 'I05.49': {'owner': 'S655', 'declaration': 'br>gitlink.mode', 'result_token': 'J'},
+ 'I05.47': {'owner': 'S655', 'declaration': 'br>unsafe.path', 'result_token': 'R:path-unsafe; actual typed inventory and predicate, not combined J reason'},
+ 'I05.48': {'owner': 'S655', 'declaration': 'br>collision.normalized-prefix', 'result_token': 'R:tree-collision; actual typed inventory and predicate, not combined J reason'},
+ 'I05.49': {'owner': 'S655', 'declaration': 'br>gitlink.mode', 'result_token': 'R:gitlink; actual typed inventory and predicate, not combined J reason'},
  'I06.1': {'owner': 'S655', 'declaration': 'bs>b.diff_text', 'result_token': 'K'},
  'I06.2': {'owner': 'S655', 'declaration': 'bs>remote.diff_sha256', 'result_token': 'K'},
  'I06.8': {'owner': 'S655', 'declaration': 'r>remote.lines', 'result_token': 'K'},
@@ -4151,13 +4221,17 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I26.8': {'owner': 'S656', 'declaration': 'bv>@M:source.source', 'result_token': 'N'},
  'I26.9': {'owner': 'S656', 'declaration': 'bv>@M:source.sha256', 'result_token': 'N'},
  'I14.72': {'owner': 'S658', 'declaration': 'bw>@2:attempt_id=e1.binding.attempt_id', 'result_token': 'E'},
- 'I16.1': {'owner': 'S658', 'declaration': 'G>b.quality.session_id', 'result_token': 'O'},
- 'I16.2': {'owner': 'S658', 'declaration': 'G>b.quality.model', 'result_token': 'O'},
+ 'I16.1': {'owner': 'S658', 'declaration': 'G>b.quality.session_id', 'result_token': 'deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source '
+                           'equality; actual session exclusion I17 F is distinct'},
+ 'I16.2': {'owner': 'S658', 'declaration': 'G>b.quality.model', 'result_token': 'deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source '
+                           'equality; actual session exclusion I17 F is distinct'},
  'I16.5': {'owner': 'S658', 'declaration': 'G>b.quality.head', 'result_token': 'O'},
  'I16.6': {'owner': 'S658', 'declaration': 'G>b.quality.approved', 'result_token': 'O'},
- 'I16.7': {'owner': 'S658', 'declaration': 'G>b.quality.marker', 'result_token': 'O'},
- 'I16.3': {'owner': 'S658', 'declaration': 'G>b.quality.source.source', 'result_token': 'O'},
- 'I16.4': {'owner': 'S658', 'declaration': 'G>b.quality.source.sha256', 'result_token': 'O'},
+ 'I16.7': {'owner': 'S658', 'declaration': 'G>b.quality.marker', 'result_token': 'P; actual expected quality marker for final H'},
+ 'I16.3': {'owner': 'S658', 'declaration': 'G>b.quality.source.source', 'result_token': 'deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source '
+                           'equality; actual session exclusion I17 F is distinct'},
+ 'I16.4': {'owner': 'S658', 'declaration': 'G>b.quality.source.sha256', 'result_token': 'deferred-701:C-Q; planned U:gate-quality, arbitrary typed quality participant/source '
+                           'equality; actual session exclusion I17 F is distinct'},
  'I16.25': {'owner': 'S658', 'declaration': 'G>@bn:marker.H', 'result_token': 'P'},
  'I16.26': {'owner': 'S658', 'declaration': 'G>@bn:marker.model', 'result_token': 'P'},
  'I16.27': {'owner': 'S658', 'declaration': 'G>@bn:lens[0].provenance', 'result_token': 'P'},
@@ -4193,17 +4267,26 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I17.21': {'owner': 'S658', 'declaration': 'by>@T:no_inheritance', 'result_token': 'F'},
  'I17.22': {'owner': 'S658', 'declaration': 'by>@T:peer_exposed', 'result_token': 'F'},
  'I17.23': {'owner': 'S658', 'declaration': 'by>@T:forbidden_actions', 'result_token': 'F'},
- 'I17.24': {'owner': 'S658', 'declaration': 'by>@bo:fresh', 'result_token': 'F'},
- 'I17.25': {'owner': 'S658', 'declaration': 'by>@bo:inherited_session', 'result_token': 'F'},
+ 'I17.24': {'owner': 'S658', 'declaration': 'by>@bo:fresh', 'result_token': 'schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw '
+                            'nonliteral R:risk-result-invalid; pair shape retains independently applicable '
+                            'availability/independence causes'},
+ 'I17.25': {'owner': 'S658', 'declaration': 'by>@bo:inherited_session', 'result_token': 'schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw '
+                            'nonliteral R:risk-result-invalid; pair shape retains independently applicable '
+                            'availability/independence causes'},
  'I17.34': {'owner': 'S658', 'declaration': 'by>@U:no_inheritance', 'result_token': 'F'},
  'I17.35': {'owner': 'S658', 'declaration': 'by>@U:peer_exposed', 'result_token': 'F'},
  'I17.36': {'owner': 'S658', 'declaration': 'by>@U:forbidden_actions', 'result_token': 'F'},
- 'I17.37': {'owner': 'S658', 'declaration': 'by>@bp:fresh', 'result_token': 'F'},
- 'I17.38': {'owner': 'S658', 'declaration': 'by>@bp:inherited_session', 'result_token': 'F'},
+ 'I17.37': {'owner': 'S658', 'declaration': 'by>@bp:fresh', 'result_token': 'schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw '
+                            'nonliteral R:risk-result-invalid; pair shape retains independently applicable '
+                            'availability/independence causes'},
+ 'I17.38': {'owner': 'S658', 'declaration': 'by>@bp:inherited_session', 'result_token': 'schema-implied within conforming pair: REVIEW.fresh=true, inherited_session=null; raw '
+                            'nonliteral R:risk-result-invalid; pair shape retains independently applicable '
+                            'availability/independence causes'},
  'I17.39': {'owner': 'S658', 'declaration': '8>slot0.session_id!=slot1.session_id', 'result_token': 'F'},
  'I17.40': {'owner': 'S658', 'declaration': '8>slot0.dispatch_id!=slot1.dispatch_id', 'result_token': 'F'},
  'I17.41': {'owner': 'S658', 'declaration': '8>slot0.nonce!=slot1.nonce', 'result_token': 'F'},
- 'I17.42': {'owner': 'S658', 'declaration': '8>slot0.run_id!=slot1.run_id', 'result_token': 'F'},
+ 'I17.42': {'owner': 'S658', 'declaration': '8>slot0.run_id!=slot1.run_id', 'result_token': 'deferred-701:C-L; planned R:risk-independence, original launch run observation, no LAUNCH '
+                            'run_id member'},
  'I17.43': {'owner': 'S658', 'declaration': '8>slot0.output_source!=slot1.output_source', 'result_token': 'F'},
  'I17.44': {'owner': 'S658', 'declaration': 'bz>author_sessions.empty-reuse', 'result_token': 'F'},
  'I17.45': {'owner': 'S658', 'declaration': 'bz>author_sessions.incomplete-reuse', 'result_token': 'F'},
@@ -4211,10 +4294,13 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I17.47': {'owner': 'S658', 'declaration': 'bz>quality_sessions.empty-reuse', 'result_token': 'F'},
  'I17.48': {'owner': 'S658', 'declaration': 'bz>quality_sessions.incomplete-reuse', 'result_token': 'F'},
  'I17.49': {'owner': 'S658', 'declaration': 'bz>quality_sessions.extra-exclusion', 'result_token': 'F'},
- 'I18.39': {'owner': 'S658', 'declaration': 'bA>slot.omitted', 'result_token': 'F'},
- 'I18.40': {'owner': 'S658', 'declaration': 'bA>slot.duplicate', 'result_token': 'F'},
- 'I18.41': {'owner': 'S658', 'declaration': 'bA>slot.extra', 'result_token': 'F'},
- 'I18.42': {'owner': 'S658', 'declaration': 'bA>vendor-as-key', 'result_token': 'F'},
+ 'I18.39': {'owner': 'S658', 'declaration': 'bA>slot.omitted', 'result_token': 'R:risk-pair-required for array len != 2; two-entry configured slot-set F; required slot '
+                            'member omission uses location schema/f'},
+ 'I18.40': {'owner': 'S658', 'declaration': 'bA>slot.duplicate', 'result_token': 'F for duplicate slot in two-entry conforming pair; retain independent capability/ledger '
+                            'causes'},
+ 'I18.41': {'owner': 'S658', 'declaration': 'bA>slot.extra', 'result_token': 'R:risk-pair-required for third pair; independence_checks does not emit F outside len == '
+                            '2'},
+ 'I18.42': {'owner': 'S658', 'declaration': 'bA>vendor-as-key', 'result_token': 'eligible/0 same-vendor control kills VENDOR-key selector; no vendor inequality/refusal'},
  'I18.43': {'owner': 'S658', 'declaration': 'bA>alias-as-identity', 'result_token': 'F'},
  'I02.18': {'owner': 'S659', 'declaration': 'bB>@A:URL.issue', 'result_token': 'Q'},
  'I02.19': {'owner': 'S659', 'declaration': 'bB>@A:URL.repository', 'result_token': 'Q'},
@@ -4234,20 +4320,58 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I15.22': {'owner': 'S659', 'declaration': 'bC>unknown.author', 'result_token': 'd'},
  'I15.23': {'owner': 'S659', 'declaration': 'bC>summary.replacement', 'result_token': 'd'},
  'I15.24': {'owner': 'S659', 'declaration': 'bC>weakest-only.author', 'result_token': 'd'},
- 'I18.1': {'owner': 'S659', 'declaration': 'bD>@W:slot', 'result_token': 'R'},
- 'I18.2': {'owner': 'S659', 'declaration': 'bD>@W:model', 'result_token': 'R'},
- 'I18.3': {'owner': 'S659', 'declaration': 'bD>@W:variant', 'result_token': 'R'},
- 'I18.4': {'owner': 'S659', 'declaration': 'bD>@W:vendor', 'result_token': 'R'},
- 'I18.5': {'owner': 'S659', 'declaration': 'bD>@W:effort', 'result_token': 'R'},
- 'I18.6': {'owner': 'S659', 'declaration': 'bD>@W:settings_sha256', 'result_token': 'R'},
- 'I18.18': {'owner': 'S659', 'declaration': 'bE>@P:slot', 'result_token': 'R'},
- 'I18.20': {'owner': 'S659', 'declaration': 'bD>@X:slot', 'result_token': 'R'},
- 'I18.21': {'owner': 'S659', 'declaration': 'bD>@X:model', 'result_token': 'R'},
- 'I18.22': {'owner': 'S659', 'declaration': 'bD>@X:variant', 'result_token': 'R'},
- 'I18.23': {'owner': 'S659', 'declaration': 'bD>@X:vendor', 'result_token': 'R'},
- 'I18.24': {'owner': 'S659', 'declaration': 'bD>@X:effort', 'result_token': 'R'},
- 'I18.25': {'owner': 'S659', 'declaration': 'bD>@X:settings_sha256', 'result_token': 'R'},
- 'I18.37': {'owner': 'S659', 'declaration': 'bE>@Q:slot', 'result_token': 'R'},
+ 'I18.1': {'owner': 'S659', 'declaration': 'bD>@W:slot', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.2': {'owner': 'S659', 'declaration': 'bD>@W:model', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.3': {'owner': 'S659', 'declaration': 'bD>@W:variant', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.4': {'owner': 'S659', 'declaration': 'bD>@W:vendor', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.5': {'owner': 'S659', 'declaration': 'bD>@W:effort', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.6': {'owner': 'S659', 'declaration': 'bD>@W:settings_sha256', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                           'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                           'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                           'comparison; honest final drift a'},
+ 'I18.18': {'owner': 'S659', 'declaration': 'bE>@P:slot', 'result_token': 'd; I22 unique matching capability slot link from configured stable profile/current pair '
+                            'in capability derivation'},
+ 'I18.20': {'owner': 'S659', 'declaration': 'bD>@X:slot', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.21': {'owner': 'S659', 'declaration': 'bD>@X:model', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.22': {'owner': 'S659', 'declaration': 'bD>@X:variant', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.23': {'owner': 'S659', 'declaration': 'bD>@X:vendor', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.24': {'owner': 'S659', 'declaration': 'bD>@X:effort', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.25': {'owner': 'S659', 'declaration': 'bD>@X:settings_sha256', 'result_token': 'U:config-invalid for cfg lexical/schema; typed accepted-profile/qualification identity '
+                            'retains R:capability-profile-mismatch and R:qualification-unavailable; launch '
+                            'correspondence deferred-701:C-L; vendor comparison F, no selected_profile vendor '
+                            'comparison; honest final drift a'},
+ 'I18.37': {'owner': 'S659', 'declaration': 'bE>@Q:slot', 'result_token': 'd; I22 unique matching capability slot link from configured stable profile/current pair '
+                            'in capability derivation'},
  'I19.1': {'owner': 'S659', 'declaration': 'bF>@bb:table.source', 'result_token': 'S'},
  'I19.2': {'owner': 'S659', 'declaration': 'bF>@bb:table.date', 'result_token': 'S'},
  'I19.3': {'owner': 'S659', 'declaration': 'bF>@bb:table.sha256', 'result_token': 'S'},
@@ -4266,8 +4390,12 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I19.16': {'owner': 'S659', 'declaration': 'bH>@D:mapping.source', 'result_token': 'S'},
  'I19.17': {'owner': 'S659', 'declaration': 'bH>@D:mapping.sha256', 'result_token': 'S'},
  'I19.18': {'owner': 'S659', 'declaration': 'bH>derived.pin', 'result_token': 'S'},
- 'I20.57': {'owner': 'S659', 'declaration': 'bI>comparison.missing', 'result_token': 'T'},
- 'I20.58': {'owner': 'S659', 'declaration': 'bI>comparison.duplicate', 'result_token': 'T'},
+ 'I20.57': {'owner': 'S659', 'declaration': 'bI>comparison.missing', 'result_token': 'a; derived exact (slot,author-marker) set versus selected typed m.comparisons '
+                            'key-set/count/uniqueness/equality; actual missing input row U token, below-author T '
+                            'distinct'},
+ 'I20.58': {'owner': 'S659', 'declaration': 'bI>comparison.duplicate', 'result_token': 'a; derived exact (slot,author-marker) set versus selected typed m.comparisons '
+                            'key-set/count/uniqueness/equality; actual missing input row U token, below-author T '
+                            'distinct'},
  'I20.59': {'owner': 'S659', 'declaration': 'bI>comparison.average', 'result_token': 'T'},
  'I20.60': {'owner': 'S659', 'declaration': 'bI>lower-than-author', 'result_token': 'T'},
  'I20.61': {'owner': 'S659', 'declaration': 'bJ>row.absent', 'result_token': 'U'},
@@ -4286,8 +4414,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I22.12': {'owner': 'S659', 'declaration': 'bM>@N:marker.sha256', 'result_token': 'e'},
  'I22.13': {'owner': 'S659', 'declaration': 'bM>@N:session_id', 'result_token': 'e'},
  'I22.14': {'owner': 'S659', 'declaration': 'bM>@N:dispatch_id', 'result_token': 'e'},
- 'I22.17': {'owner': 'S659', 'declaration': 'bM>@N:model', 'result_token': 'e'},
- 'I22.18': {'owner': 'S659', 'declaration': 'bM>@N:variant', 'result_token': 'e'},
+ 'I22.17': {'owner': 'S659', 'declaration': 'bM>actual participant marker/map resolved model observation (not EFFORT.model)', 'result_token': '{actual marker/map model observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.model member'},
+ 'I22.18': {'owner': 'S659', 'declaration': 'bM>actual participant marker/map variant observation (not EFFORT.variant)', 'result_token': '{actual marker/map variant observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.variant member'},
  'I22.19': {'owner': 'S659', 'declaration': 'bM>@N:effort', 'result_token': 'e'},
  'I22.20': {'owner': 'S659', 'declaration': 'bM>@N:settings_sha256', 'result_token': 'e'},
  'I22.21': {'owner': 'S659', 'declaration': 'bM>@N:receipt_sha256', 'result_token': 'e'},
@@ -4297,8 +4427,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I22.23': {'owner': 'S659', 'declaration': 'bN>@O:marker.sha256', 'result_token': 'e'},
  'I22.24': {'owner': 'S659', 'declaration': 'bN>@O:session_id', 'result_token': 'e'},
  'I22.25': {'owner': 'S659', 'declaration': 'bN>@O:dispatch_id', 'result_token': 'e'},
- 'I22.28': {'owner': 'S659', 'declaration': 'bN>@O:model', 'result_token': 'e'},
- 'I22.29': {'owner': 'S659', 'declaration': 'bN>@O:variant', 'result_token': 'e'},
+ 'I22.28': {'owner': 'S659', 'declaration': 'bN>actual participant marker/map resolved model observation (not EFFORT.model)', 'result_token': '{actual marker/map model observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.model member'},
+ 'I22.29': {'owner': 'S659', 'declaration': 'bN>actual participant marker/map variant observation (not EFFORT.variant)', 'result_token': '{actual marker/map variant observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.variant member'},
  'I22.30': {'owner': 'S659', 'declaration': 'bN>@O:effort', 'result_token': 'e'},
  'I22.31': {'owner': 'S659', 'declaration': 'bN>@O:settings_sha256', 'result_token': 'e'},
  'I22.32': {'owner': 'S659', 'declaration': 'bN>@O:receipt_sha256', 'result_token': 'e'},
@@ -4308,8 +4440,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I22.34': {'owner': 'S659', 'declaration': 'be>@Y:marker.sha256', 'result_token': 'e'},
  'I22.35': {'owner': 'S659', 'declaration': 'be>@Y:session_id', 'result_token': 'e'},
  'I22.36': {'owner': 'S659', 'declaration': 'be>@Y:dispatch_id', 'result_token': 'e'},
- 'I22.39': {'owner': 'S659', 'declaration': 'be>@Y:model', 'result_token': 'e'},
- 'I22.40': {'owner': 'S659', 'declaration': 'be>@Y:variant', 'result_token': 'e'},
+ 'I22.39': {'owner': 'S659', 'declaration': 'be>actual participant marker/map resolved model observation (not EFFORT.model)', 'result_token': '{actual marker/map model observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.model member'},
+ 'I22.40': {'owner': 'S659', 'declaration': 'be>actual participant marker/map variant observation (not EFFORT.variant)', 'result_token': '{actual marker/map variant observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.variant member'},
  'I22.41': {'owner': 'S659', 'declaration': 'be>@Y:effort', 'result_token': 'e'},
  'I22.42': {'owner': 'S659', 'declaration': 'be>@Y:settings_sha256', 'result_token': 'e'},
  'I22.43': {'owner': 'S659', 'declaration': 'be>@Y:receipt_sha256', 'result_token': 'e'},
@@ -4319,8 +4453,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I22.45': {'owner': 'S659', 'declaration': 'bf>@Z:marker.sha256', 'result_token': 'e'},
  'I22.46': {'owner': 'S659', 'declaration': 'bf>@Z:session_id', 'result_token': 'e'},
  'I22.47': {'owner': 'S659', 'declaration': 'bf>@Z:dispatch_id', 'result_token': 'e'},
- 'I22.50': {'owner': 'S659', 'declaration': 'bf>@Z:model', 'result_token': 'e'},
- 'I22.51': {'owner': 'S659', 'declaration': 'bf>@Z:variant', 'result_token': 'e'},
+ 'I22.50': {'owner': 'S659', 'declaration': 'bf>actual participant marker/map resolved model observation (not EFFORT.model)', 'result_token': '{actual marker/map model observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.model member'},
+ 'I22.51': {'owner': 'S659', 'declaration': 'bf>actual participant marker/map variant observation (not EFFORT.variant)', 'result_token': '{actual marker/map variant observation:d; independent launch-source '
+                            'expansion:deferred-701:C-L, planned e}; no EFFORT.variant member'},
  'I22.52': {'owner': 'S659', 'declaration': 'bf>@Z:effort', 'result_token': 'e'},
  'I22.53': {'owner': 'S659', 'declaration': 'bf>@Z:settings_sha256', 'result_token': 'e'},
  'I22.54': {'owner': 'S659', 'declaration': 'bf>@Z:receipt_sha256', 'result_token': 'e'},
@@ -4330,7 +4466,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I22.60': {'owner': 'S659', 'declaration': 'bO>default-only', 'result_token': 'e'},
  'I22.61': {'owner': 'S659', 'declaration': 'bO>inferred-only', 'result_token': 'e'},
  'I22.62': {'owner': 'S659', 'declaration': 'bO>peer-receipt', 'result_token': 'e'},
- 'I22.63': {'owner': 'S659', 'declaration': 'bO>unsupported-setting', 'result_token': 'e'},
+ 'I22.63': {'owner': 'S659', 'declaration': 'bO>unsupported-setting', 'result_token': 'R:capability-profile-mismatch for typed applied/profile setting inequality; '
+                            'R:capability-entry-missing for absent mapped row; missing/requested/unbound effort e; '
+                            'low-setting exact R/3 '
+                            '[identity-binding,capability-entry-missing,capability-profile-mismatch]'},
  'I23.1': {'owner': 'S659', 'declaration': 'bg>@A:number', 'result_token': 'Q'},
  'I23.2': {'owner': 'S659', 'declaration': 'bg>@A:repository', 'result_token': 'Q'},
  'I23.3': {'owner': 'S659', 'declaration': 'bg>@A:issue', 'result_token': 'Q'},
@@ -4369,20 +4508,27 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I23.25': {'owner': 'S659', 'declaration': 'bg>@A:source.source', 'result_token': 'Q'},
  'I23.26': {'owner': 'S659', 'declaration': 'bg>@A:source.sha256', 'result_token': 'Q'},
  'I04.18': {'owner': 'S666', 'declaration': 'bP>verifier.detached_head', 'result_token': 'W'},
- 'I27.1': {'owner': 'S666', 'declaration': 'bQ>verifier.toplevel', 'result_token': 'X'},
- 'I27.2': {'owner': 'S666', 'declaration': 'bQ>runtime.preflight_cwd', 'result_token': 'X'},
+ 'I27.1': {'owner': 'S666', 'declaration': 'bQ>verifier.toplevel', 'result_token': 'W; canonical I04 actual b.preflight_cwd == verifier.toplevel and verifier integrity'},
+ 'I27.2': {'owner': 'S666', 'declaration': 'bQ>b.preflight_cwd', 'result_token': 'W; canonical I04 physical cwd observation, not a RUNTIME_PROFILE member'},
  'I27.3': {'owner': 'S666', 'declaration': 'bQ>runtime.project_dir', 'result_token': 'X'},
- 'I27.4': {'owner': 'S666', 'declaration': 'bQ>@L:preflight_cwd', 'result_token': 'X'},
+ 'I27.4': {'owner': 'S666', 'declaration': 'bQ>@L:preflight_cwd', 'result_token': 'deferred-701:C-S; planned U:runtime-invalid, original preflight-cwd copy equality; typed '
+                           '/other/B earns no current schema/runtime kill'},
  'I27.9': {'owner': 'S666', 'declaration': 'bR>runtime_profile.source', 'result_token': 'a'},
  'I27.10': {'owner': 'S666', 'declaration': 'bR>current.runtime_sha256', 'result_token': 'a'},
  'I27.11': {'owner': 'S666', 'declaration': 'bR>@br:runtime_sha256', 'result_token': 'a'},
  'I27.12': {'owner': 'S666', 'declaration': 'bR>@L:runtime_sha256', 'result_token': 'a'},
- 'I27.13': {'owner': 'S666', 'declaration': 'bS>@T:runtime_sha256', 'result_token': 'X'},
- 'I27.14': {'owner': 'S666', 'declaration': 'bS>@T:settings_sha256', 'result_token': 'X'},
- 'I27.15': {'owner': 'S666', 'declaration': 'bS>@T:launcher_sha256', 'result_token': 'X'},
- 'I27.16': {'owner': 'S666', 'declaration': 'bS>@U:runtime_sha256', 'result_token': 'X'},
- 'I27.17': {'owner': 'S666', 'declaration': 'bS>@U:settings_sha256', 'result_token': 'X'},
- 'I27.18': {'owner': 'S666', 'declaration': 'bS>@U:launcher_sha256', 'result_token': 'X'},
+ 'I27.13': {'owner': 'S666', 'declaration': 'bS>@T:runtime_sha256', 'result_token': 'F; I27 receipt.runtime_sha256 capture_copy_matches current runtime/Rule-G captured '
+                            'record, conforming pair'},
+ 'I27.14': {'owner': 'S666', 'declaration': 'bS>@T:settings_sha256', 'result_token': 'F; I18 settings/profile equality with profiles-drift guard; independent capability '
+                            'effort/profile codes and honest final drift a retained'},
+ 'I27.15': {'owner': 'S666', 'declaration': 'bS>@T:launcher_sha256', 'result_token': 'deferred-701:C-L; planned U:runtime-invalid, accepted-launcher equality has no current '
+                            'emitted cause'},
+ 'I27.16': {'owner': 'S666', 'declaration': 'bS>@U:runtime_sha256', 'result_token': 'F; I27 receipt.runtime_sha256 capture_copy_matches current runtime/Rule-G captured '
+                            'record, conforming pair'},
+ 'I27.17': {'owner': 'S666', 'declaration': 'bS>@U:settings_sha256', 'result_token': 'F; I18 settings/profile equality with profiles-drift guard; independent capability '
+                            'effort/profile codes and honest final drift a retained'},
+ 'I27.18': {'owner': 'S666', 'declaration': 'bS>@U:launcher_sha256', 'result_token': 'deferred-701:C-L; planned U:runtime-invalid, accepted-launcher equality has no current '
+                            'emitted cause'},
  'I27.19': {'owner': 'S666', 'declaration': 'bT>runtime.profile', 'result_token': 'X'},
  'I27.20': {'owner': 'S666', 'declaration': 'bT>runtime.tools', 'result_token': 'X'},
  'I27.21': {'owner': 'S666', 'declaration': 'bT>runtime.hooks', 'result_token': 'X'},
@@ -4413,7 +4559,8 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I30.27': {'owner': 'S668', 'declaration': 'S>@bC:state', 'result_token': 'Y'},
  'I30.37': {'owner': 'S668', 'declaration': 'bU>checks.complete', 'result_token': 'Y'},
  'I30.38': {'owner': 'S668', 'declaration': 'bU>checks.nonempty', 'result_token': 'Y'},
- 'I30.39': {'owner': 'S668', 'declaration': 'bU>checks.uniqueIDs', 'result_token': 'Y'},
+ 'I30.39': {'owner': 'S668', 'declaration': 'bU>checks.runs unique IDs; checks.contexts ID/source-set expansion distinct', 'result_token': 'Y for unique RUN IDs; CONTEXT-ID uniqueness/independent API set equality deferred-701:—, '
+                            'planned U:gate-check'},
  'I30.40': {'owner': 'S668', 'declaration': 'bU>checks.expectedNames', 'result_token': 'Y'},
  'I30.41': {'owner': 'S668', 'declaration': 'bU>checks.requiredContexts', 'result_token': 'Y'},
  'I30.42': {'owner': 'S668', 'declaration': 'bU>checks.no-green-replacement', 'result_token': 'Y'},
@@ -4428,7 +4575,8 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I12.10': {'owner': 'S669', 'declaration': 'bX>history[0].decision_id', 'result_token': 'g'},
  'I12.11': {'owner': 'S669', 'declaration': 'bX>history[1].decision_id', 'result_token': 'g'},
  'I12.12': {'owner': 'S669', 'declaration': 'bX>disposition.previous', 'result_token': 'g'},
- 'I12.13': {'owner': 'S669', 'declaration': 'bX>queue.decision', 'result_token': 'g'},
+ 'I12.13': {'owner': 'S669', 'declaration': 'bX>queue.decision', 'result_token': 'a; selected typed manifest m.decision_id == m.queue_key == m.execution.queue_key; actual '
+                            'queue reader no-repeat owns r; source copies deferred-701:—'},
  'I13.1': {'owner': 'S669', 'declaration': 'bY>@l:attempt_id', 'result_token': 'g'},
  'I13.2': {'owner': 'S669', 'declaration': 'bY>@l:decision_id', 'result_token': 'g'},
  'I13.3': {'owner': 'S669', 'declaration': 'bY>@l:ordinal', 'result_token': 'g'},
@@ -4492,7 +4640,8 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I14.24': {'owner': 'S669', 'declaration': '8>@w:transport_attested', 'result_token': 'g'},
  'I14.29': {'owner': 'S669', 'declaration': 'b1>p0.raw_sha256', 'result_token': 'g'},
  'I14.30': {'owner': 'S669', 'declaration': 'b1>p0.byte_length', 'result_token': 'g'},
- 'I14.31': {'owner': 'S669', 'declaration': 'b1>@T:output_source', 'result_token': 'g'},
+ 'I14.31': {'owner': 'S669', 'declaration': 'b1>@T:output_source', 'result_token': 'deferred-701:C-L; planned R:risk-attempt-invalid, actual output-source bytes/REF; raw '
+                            'integrity f, ledger hash/length g, source distinctness F retain distinct sources/domains'},
  'I14.32': {'owner': 'S669', 'declaration': 'b1>@T:started_at', 'result_token': 'g'},
  'I14.33': {'owner': 'S669', 'declaration': '8>@x:slot', 'result_token': 'g'},
  'I14.34': {'owner': 'S669', 'declaration': '8>@x:session_id', 'result_token': 'g'},
@@ -4520,7 +4669,8 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I14.56': {'owner': 'S669', 'declaration': '8>@y:transport_attested', 'result_token': 'g'},
  'I14.61': {'owner': 'S669', 'declaration': 'b1>p1.raw_sha256', 'result_token': 'g'},
  'I14.62': {'owner': 'S669', 'declaration': 'b1>p1.byte_length', 'result_token': 'g'},
- 'I14.63': {'owner': 'S669', 'declaration': 'b1>@U:output_source', 'result_token': 'g'},
+ 'I14.63': {'owner': 'S669', 'declaration': 'b1>@U:output_source', 'result_token': 'deferred-701:C-L; planned R:risk-attempt-invalid, actual output-source bytes/REF; raw '
+                            'integrity f, ledger hash/length g, source distinctness F retain distinct sources/domains'},
  'I14.64': {'owner': 'S669', 'declaration': 'b1>@U:started_at', 'result_token': 'g'},
  'I14.65': {'owner': 'S669', 'declaration': 'b2>extra.launch', 'result_token': 'g'},
  'I14.66': {'owner': 'S669', 'declaration': 'b2>unaccounted.output', 'result_token': 'g'},
@@ -4529,21 +4679,32 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I14.69': {'owner': 'S669', 'declaration': 'b2>redispatch.slot-changed', 'result_token': 'g'},
  'I14.70': {'owner': 'S669', 'declaration': 'b2>redispatch.original-clock-reset', 'result_token': 'g'},
  'I14.71': {'owner': 'S669', 'declaration': 'b2>redispatch.peer-replaced', 'result_token': 'g'},
- 'I33.5': {'owner': 'S669', 'declaration': '2>@v:started_at', 'result_token': 'g'},
- 'I33.6': {'owner': 'S669', 'declaration': '2>@v:original_start', 'result_token': 'g'},
- 'I33.7': {'owner': 'S669', 'declaration': '2>@w:started_at', 'result_token': 'g'},
- 'I33.8': {'owner': 'S669', 'declaration': '2>@w:original_start', 'result_token': 'g'},
- 'I33.13': {'owner': 'S669', 'declaration': '2>@x:started_at', 'result_token': 'g'},
- 'I33.14': {'owner': 'S669', 'declaration': '2>@x:original_start', 'result_token': 'g'},
- 'I33.15': {'owner': 'S669', 'declaration': '2>@y:started_at', 'result_token': 'g'},
- 'I33.16': {'owner': 'S669', 'declaration': '2>@y:original_start', 'result_token': 'g'},
- 'I33.17': {'owner': 'S669', 'declaration': '2>@l:created_at', 'result_token': 'g'},
- 'I33.18': {'owner': 'S669', 'declaration': '2>@k:created_at', 'result_token': 'g'},
- 'I33.19': {'owner': 'S669', 'declaration': '2>@I:created_at', 'result_token': 'g'},
+ 'I33.5': {'owner': 'S669', 'declaration': '2>@v:started_at', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                           'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.6': {'owner': 'S669', 'declaration': '2>@v:original_start', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                           'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.7': {'owner': 'S669', 'declaration': '2>@w:started_at', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                           'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.8': {'owner': 'S669', 'declaration': '2>@w:original_start', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                           'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.13': {'owner': 'S669', 'declaration': '2>@x:started_at', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                            'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.14': {'owner': 'S669', 'declaration': '2>@x:original_start', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                            'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.15': {'owner': 'S669', 'declaration': '2>@y:started_at', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                            'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.16': {'owner': 'S669', 'declaration': '2>@y:original_start', 'result_token': '{retained ledger chronology:g, local S[t,s]; selected m.attempt copy:a; original '
+                            'launch/attempt event equality:deferred-701:C-L, planned g}; distinct exact keys'},
+ 'I33.17': {'owner': 'S669', 'declaration': '2>@l:created_at', 'result_token': '{retained attempt-created/launch chronology:g; selected m.attempt copy:a; original '
+                            'attempt event equality:deferred-701:—, planned g}; distinct exact keys'},
+ 'I33.18': {'owner': 'S669', 'declaration': '2>@k:created_at', 'result_token': '{retained attempt-created/launch chronology:g; selected m.attempt copy:a; original '
+                            'attempt event equality:deferred-701:—, planned g}; distinct exact keys'},
+ 'I33.19': {'owner': 'S669', 'declaration': '2>@I:created_at', 'result_token': '{retained successor disposition-before-created:g; original disposition source/time '
+                            'equality:deferred-701:—, planned g}; no first-attempt disposition'},
  'I07.14': {'owner': 'S675', 'declaration': 'b3>@a:operational_sha256', 'result_token': 'i'},
  'I07.15': {'owner': 'S675', 'declaration': 'b3>@a:operational_projection', 'result_token': 'i'},
- 'I18.19': {'owner': 'S675', 'declaration': 'b4>@B:models[0]', 'result_token': 'i'},
- 'I18.38': {'owner': 'S675', 'declaration': 'b4>@B:models[1]', 'result_token': 'i'},
+ 'I18.19': {'owner': 'S675', 'declaration': 'b4>@B:models (single H64 digest of complete profiles/efforts/settings/slots)', 'result_token': 'i; same models-digest observation alias; no per-slot digest element'},
+ 'I18.38': {'owner': 'S675', 'declaration': 'b4>@B:models (single H64 digest of complete profiles/efforts/settings/slots)', 'result_token': 'i; same models-digest observation alias; no per-slot digest element'},
  'I19.23': {'owner': 'S675', 'declaration': 'b5>@B:floor', 'result_token': 'i'},
  'I27.29': {'owner': 'S675', 'declaration': 'bT>@B:runtime', 'result_token': 'i'},
  'I34.1': {'owner': 'S675', 'declaration': 'b6>@a:source.source', 'result_token': 'i'},
@@ -4554,7 +4715,8 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I34.6': {'owner': 'S675', 'declaration': 'b6>@a:sample_count', 'result_token': 'i'},
  'I34.7': {'owner': 'S675', 'declaration': 'b6>@a:status', 'result_token': 'i'},
  'I34.14': {'owner': 'S675', 'declaration': 'b7>@B:models', 'result_token': 'i'},
- 'I34.15': {'owner': 'S675', 'declaration': 'b7>@B:profiles', 'result_token': 'i'},
+ 'I34.15': {'owner': 'S675', 'declaration': 'b7>@B:models (profile contribution to single H64; no QINPUT.profiles)', 'result_token': 'i; same models-digest observation alias; independent profile-source expansion '
+                            'deferred-701:—'},
  'I34.16': {'owner': 'S675', 'declaration': 'b7>@B:instructions', 'result_token': 'i'},
  'I34.17': {'owner': 'S675', 'declaration': 'b7>@B:runtime', 'result_token': 'i'},
  'I34.18': {'owner': 'S675', 'declaration': 'b7>@B:floor', 'result_token': 'i'},
@@ -4575,8 +4737,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I34.33': {'owner': 'S675', 'declaration': 'b9>@f:outcomes[0]', 'result_token': 'i'},
  'I34.34': {'owner': 'S675', 'declaration': 'b9>@f:outcomes[1]', 'result_token': 'i'},
  'I34.35': {'owner': 'S675', 'declaration': 'b9>@f:detections', 'result_token': 'i'},
- 'I34.36': {'owner': 'S675', 'declaration': 'b9>@f:reviewer_ids[0]', 'result_token': 'i'},
- 'I34.37': {'owner': 'S675', 'declaration': 'b9>@f:reviewer_ids[1]', 'result_token': 'i'},
+ 'I34.36': {'owner': 'S675', 'declaration': 'b9>@f:detections[0].reviewer', 'result_token': 'i for actual declared detection observation; independent sample-source provenance '
+                            'deferred-701:—'},
+ 'I34.37': {'owner': 'S675', 'declaration': 'b9>@f:detections[1].reviewer', 'result_token': 'i for actual declared detection observation; independent sample-source provenance '
+                            'deferred-701:—'},
  'I34.38': {'owner': 'S675', 'declaration': 'b9>@f:valid_outputs', 'result_token': 'i'},
  'I34.39': {'owner': 'S675', 'declaration': 'b9>@f:forbidden_attempts', 'result_token': 'i'},
  'I34.40': {'owner': 'S675', 'declaration': 'b9>@f:unauthorized_attempts', 'result_token': 'i'},
@@ -4585,8 +4749,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I34.43': {'owner': 'S675', 'declaration': 'b9>@f:head_match', 'result_token': 'i'},
  'I34.44': {'owner': 'S675', 'declaration': 'b9>@f:sealed_at', 'result_token': 'i'},
  'I34.45': {'owner': 'S675', 'declaration': 'b9>@f:graded_at', 'result_token': 'i'},
- 'I34.46': {'owner': 'S675', 'declaration': 'b9>@f:grade.source', 'result_token': 'i'},
- 'I34.47': {'owner': 'S675', 'declaration': 'b9>@f:grade.sha256', 'result_token': 'i'},
+ 'I34.46': {'owner': 'S675', 'declaration': 'b9>@f:detections[k].grade.source', 'result_token': 'i for actual declared grade REF observation; independent grade-source provenance '
+                            'deferred-701:—'},
+ 'I34.47': {'owner': 'S675', 'declaration': 'b9>@f:detections[k].grade.sha256', 'result_token': 'i for actual declared grade REF observation; independent grade-source provenance '
+                            'deferred-701:—'},
  'I34.48': {'owner': 'S675', 'declaration': 'b9>@f:transcripts[0].source', 'result_token': 'i'},
  'I34.49': {'owner': 'S675', 'declaration': 'b9>@f:transcripts[0].sha256', 'result_token': 'i'},
  'I34.50': {'owner': 'S675', 'declaration': 'b9>@f:transcripts[1].source', 'result_token': 'i'},
@@ -4595,8 +4761,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I34.53': {'owner': 'S675', 'declaration': 'b9>@f:raw_results[0].sha256', 'result_token': 'i'},
  'I34.54': {'owner': 'S675', 'declaration': 'b9>@f:raw_results[1].source', 'result_token': 'i'},
  'I34.55': {'owner': 'S675', 'declaration': 'b9>@f:raw_results[1].sha256', 'result_token': 'i'},
- 'I34.56': {'owner': 'S675', 'declaration': 'b9>@f:action.source', 'result_token': 'i'},
- 'I34.57': {'owner': 'S675', 'declaration': 'b9>@f:action.sha256', 'result_token': 'i'},
+ 'I34.56': {'owner': 'S675', 'declaration': 'b9>@f:actions.source', 'result_token': 'i for actual declared actions REF observation; independent action-source provenance '
+                            'deferred-701:—'},
+ 'I34.57': {'owner': 'S675', 'declaration': 'b9>@f:actions.sha256', 'result_token': 'i for actual declared actions REF observation; independent action-source provenance '
+                            'deferred-701:—'},
  'I34.58': {'owner': 'S675', 'declaration': 'b8>@a:suite[1].id', 'result_token': 'i'},
  'I34.59': {'owner': 'S675', 'declaration': 'b8>@a:suite[1].kind', 'result_token': 'i'},
  'I34.60': {'owner': 'S675', 'declaration': 'b8>@a:suite[1].variants', 'result_token': 'i'},
@@ -4640,10 +4808,10 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I34.98': {'owner': 'S675', 'declaration': 'ca>sample.grader-identity', 'result_token': 'i'},
  'I34.99': {'owner': 'S675', 'declaration': 'ca>sample.input-identity', 'result_token': 'i'},
  'I34.100': {'owner': 'S675', 'declaration': 'ca>sample.expiry', 'result_token': 'i'},
- 'I01.1': {'owner': 'S676', 'declaration': '6>b.repository', 'result_token': '0'},
- 'I01.2': {'owner': 'S676', 'declaration': '6>@bF:repository', 'result_token': '0'},
+ 'I01.1': {'owner': 'S676', 'declaration': '6>b.repository', 'result_token': 'U:config-repository; readable cfg.repository == b.repository'},
+ 'I01.2': {'owner': 'S676', 'declaration': '6>@bF:repository', 'result_token': 'R:project-unconfigured; configured-project cfg.repository == cfg.project.repository'},
  'I01.3': {'owner': 'S676', 'declaration': '6>b.identity.repository', 'result_token': '0'},
- 'I01.4': {'owner': 'S676', 'declaration': '6>m.repository', 'result_token': '0'},
+ 'I01.4': {'owner': 'S676', 'declaration': '6>m.repository', 'result_token': 'a; selected typed manifest b.repository == m.repository'},
  'I01.9': {'owner': 'S676', 'declaration': 'cb>b.identity.host', 'result_token': '0'},
  'I01.10': {'owner': 'S676', 'declaration': 'cb>b.identity.remote', 'result_token': '0'},
  'I01.11': {'owner': 'S676', 'declaration': 'cb>b.identity.redirects', 'result_token': '0'},
@@ -4654,10 +4822,12 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I02.16': {'owner': 'S676', 'declaration': 'cd>acceptance.URL.issue', 'result_token': '1'},
  'I02.17': {'owner': 'S676', 'declaration': 'cd>acceptance.URL.repository', 'result_token': '1'},
  'I04.14': {'owner': 'S676', 'declaration': 'ce>b.pr.base', 'result_token': '2'},
- 'I07.1': {'owner': 'S676', 'declaration': 'cf>cfg.schema', 'result_token': '3'},
- 'I07.2': {'owner': 'S676', 'declaration': 'cf>cfg.policy_path', 'result_token': '3'},
- 'I07.3': {'owner': 'S676', 'declaration': 'cf>@bF:policy_path', 'result_token': '3'},
- 'I07.4': {'owner': 'S676', 'declaration': 'cf>b.config_text', 'result_token': '3'},
+ 'I07.1': {'owner': 'S676', 'declaration': 'cf>cfg.schema', 'result_token': '3; parsed cfg closure/type/enum'},
+ 'I07.2': {'owner': 'S676', 'declaration': 'cf>cfg.policy_path', 'result_token': '3; parsed policy_path lexical/type; external original path equality deferred-701:—'},
+ 'I07.3': {'owner': 'S676', 'declaration': 'cf>@bF:policy_path', 'result_token': 'R:project-unconfigured; typed configured-project cfg.policy_path == '
+                           'cfg.project.policy_path'},
+ 'I07.4': {'owner': 'S676', 'declaration': 'cf>b.config_text', 'result_token': 'U:config-malformed for embedded duplicate/nonfinite/malformed JSON; U:config-absent for '
+                           'absent/nonstring config; parsed shape U:config-invalid'},
  'I08.1': {'owner': 'S676', 'declaration': 't>cfg.requirements.source', 'result_token': '4'},
  'I08.2': {'owner': 'S676', 'declaration': 't>cfg.requirements.sha256', 'result_token': '4'},
  'I08.11': {'owner': 'S676', 'declaration': 'cg>acceptance.requirements_sha256', 'result_token': '1'},
@@ -4669,7 +4839,7 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I08.27': {'owner': 'S676', 'declaration': 'ci>reviewed.brief.source', 'result_token': '4'},
  'I08.28': {'owner': 'S676', 'declaration': 'ci>exported.brief.source', 'result_token': '4'},
  'I08.29': {'owner': 'S676', 'declaration': 'ci>accepted.project.brief', 'result_token': '4'},
- 'I08.30': {'owner': 'S676', 'declaration': 'cj>@br:acceptance', 'result_token': '1'},
+ 'I08.30': {'owner': 'S676', 'declaration': 'cj>@br:acceptance', 'result_token': 'a; selected typed manifest cfg.acceptance == m.authority.acceptance'},
  'I08.31': {'owner': 'S676', 'declaration': 'cj>retained.acceptance.URL', 'result_token': '1'},
  'I08.32': {'owner': 'S676', 'declaration': 'cj>project.acceptance.source', 'result_token': '1'},
  'I08.33': {'owner': 'S676', 'declaration': 'cj>project.acceptance.sha256', 'result_token': '1'},
@@ -4686,7 +4856,9 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I28.9': {'owner': 'S677', 'declaration': 'cl>@C:types', 'result_token': '5'},
  'I28.10': {'owner': 'S677', 'declaration': 'cl>@C:modes', 'result_token': '5'},
  'I28.11': {'owner': 'S677', 'declaration': 'cl>@C:link_text', 'result_token': '5'},
- 'I28.12': {'owner': 'S677', 'declaration': 'cl>@C:resolved_root', 'result_token': '5'},
+ 'I28.12': {'owner': 'S677', 'declaration': 'guard_state.toplevel>guard_state.toplevel (absolute lexical observation; no resolved_root '
+                           'JSON member)', 'result_token': 'X; canonical I27 typed root is_absolute; actual collector G source/root validation '
+                            'separate; expanded installed-root correspondence deferred-701:—'},
  'I28.13': {'owner': 'S677', 'declaration': 'cl>@C:wiring_sha256', 'result_token': '5'},
  'I28.4': {'owner': 'S677', 'declaration': 'cl>@C:source.source', 'result_token': '5'},
  'I28.5': {'owner': 'S677', 'declaration': 'cl>@C:source.sha256', 'result_token': '5'},
@@ -4699,7 +4871,9 @@ C6_NUMERIC_DECLARATIONS = {'I03.1': {'owner': 'S606', 'declaration': 'a>b.pr.hea
  'I28.22': {'owner': 'S677', 'declaration': 'cl>@J:types', 'result_token': '5'},
  'I28.23': {'owner': 'S677', 'declaration': 'cl>@J:modes', 'result_token': '5'},
  'I28.24': {'owner': 'S677', 'declaration': 'cl>@J:link_text', 'result_token': '5'},
- 'I28.25': {'owner': 'S677', 'declaration': 'cl>@J:resolved_root', 'result_token': '5'},
+ 'I28.25': {'owner': 'S677', 'declaration': 'guard_state.toplevel>guard_state.toplevel (absolute lexical observation; no resolved_root '
+                           'JSON member)', 'result_token': 'X; canonical I27 typed root is_absolute; actual collector G source/root validation '
+                            'separate; expanded installed-root correspondence deferred-701:—'},
  'I28.26': {'owner': 'S677', 'declaration': 'cl>@J:wiring_sha256', 'result_token': '5'},
  'I28.17': {'owner': 'S677', 'declaration': 'cl>@J:source.source', 'result_token': '5'},
  'I28.18': {'owner': 'S677', 'declaration': 'cl>@J:source.sha256', 'result_token': '5'},
@@ -4717,8 +4891,8 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'execution.identity versus captured identity; exception/source-URL repository sweep',
          'carrier_owner': '— / #701'},
  'I02': {'class': 'PART',
-         'now': 'Sole closing issue versus issue.number and selected URL target (U:record-selection); binding.issue versus sole closing '
-                'issue (R:risk-binding); owning unreadability guards',
+         'now': 'Sole closing issue versus issue.number and selected URL target (U:record-selection); binding.issue '
+                'versus sole closing issue (R:risk-binding); owning unreadability guards',
          'deferred': 'Control-number, exception issue/PR and acceptance-target copies',
          'carrier_owner': '— / #701'},
  'I03': {'class': 'PART',
@@ -4729,7 +4903,10 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'now': 'Capture B versus binding.base (R:risk-binding) and final main_tip (U:identity-binding)',
          'deferred': 'Base inventory sweep',
          'carrier_owner': '— / #701'},
- 'I05': {'class': 'DEFER', 'now': 'None', 'deferred': 'Every object path/mode/OID/content correspondence', 'carrier_owner': '— / #701'},
+ 'I05': {'class': 'DEFER',
+         'now': 'None',
+         'deferred': 'Every object path/mode/OID/content correspondence',
+         'carrier_owner': '— / #701'},
  'I06': {'class': 'PART',
          'now': 'binding.diff_sha256 Rule G echo, record copy m.diff_sha256',
          'deferred': 'Capture diff from exported diff artifact; assessment counts',
@@ -4747,18 +4924,19 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'Every not-already-resolved REF: launch/effort; quality/finding; prior attempt/disposition/others',
          'carrier_owner': 'C-L; C-Q; — respectively / #701'},
  'I10': {'class': 'NOW',
-         'now': 'Actual narrative versus current and manifest digests (U:identity-binding); malformed/duplicate trailer '
-                '(R:narrative-invalid); trailer URL versus active_record_url (U:record-selection); unreadable closing-issue guard',
+         'now': 'Actual narrative versus current and manifest digests (U:identity-binding); malformed/duplicate '
+                'trailer (R:narrative-invalid); trailer URL versus active_record_url (U:record-selection); unreadable '
+                'closing-issue guard',
          'deferred': 'None',
          'carrier_owner': '— / #701'},
  'I11': {'class': 'NOW',
-         'now': 'Own outcome eligible and six noneligible values; incoming valid supersession (U:record-selection); active eligible count '
-                '(U:record-duplicate)',
+         'now': 'Own outcome eligible and six noneligible values; incoming valid supersession (U:record-selection); '
+                'active eligible count (U:record-duplicate)',
          'deferred': 'Linked-history disposition sweep (I13)',
          'carrier_owner': '— / #701'},
  'I12': {'class': 'NOW',
-         'now': 'Every attempt decision PR/capture-H/ordinal (R:risk-attempt-invalid); manifest decision and both queue keys '
-                '(U:identity-binding); binding decision (R:risk-binding)',
+         'now': 'Every attempt decision PR/capture-H/ordinal (R:risk-attempt-invalid); manifest decision and both '
+                'queue keys (U:identity-binding); binding decision (R:risk-binding)',
          'deferred': 'None',
          'carrier_owner': '— / #701'},
  'I13': {'class': 'PART',
@@ -4766,10 +4944,10 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'prior_attempts resolution; disposition source/words/time versus human source',
          'carrier_owner': '— / #701'},
  'I14': {'class': 'PART',
-         'now': 'Last launch of last attempt returned with S <= started_at <= R; launch after attempt creation; first launch equals '
-                'original_start (R:risk-attempt-invalid); existing session/raw/bytes/start links',
-         'deferred': 'Per-launch dispatch/nonce/run/runtime/applied args/settings/output source, unaccounted launches/outputs, transport '
-                     'attestation source',
+         'now': 'Last launch of last attempt returned with S <= started_at <= R; launch after attempt creation; first '
+                'launch equals original_start (R:risk-attempt-invalid); existing session/raw/bytes/start links',
+         'deferred': 'Per-launch dispatch/nonce/run/runtime/applied args/settings/output source, unaccounted '
+                     'launches/outputs, transport attestation source',
          'carrier_owner': 'C-L / #701'},
  'I15': {'class': 'PART',
          'now': 'authors[].session_id included in author set',
@@ -4777,11 +4955,13 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'carrier_owner': 'C-Q / #701'},
  'I16': {'class': 'PART',
          'now': 'quality.session_id included in quality set; existing approval/head/marker/findings checks',
-         'deferred': 'quality.source resolution/equality, marker-source model, lens participants, finding provenance, approval time',
+         'deferred': 'quality.source resolution/equality, marker-source model, lens participants, finding provenance, '
+                     'approval time',
          'carrier_owner': 'C-Q / #701'},
  'I17': {'class': 'NOW',
-         'now': 'Q={quality.session_id} union quality_sessions; A={authors[].session_id} union author_sessions; Q intersect A empty '
-                '(R:risk-independence); existing risk separation/uniqueness/freshness also after expiry',
+         'now': 'Q={quality.session_id} union quality_sessions; A={authors[].session_id} union author_sessions; Q '
+                'intersect A empty (R:risk-independence); existing risk separation/uniqueness/freshness also after '
+                'expiry',
          'deferred': 'Lens participants',
          'carrier_owner': 'C-Q / #701'},
  'I18': {'class': 'PART',
@@ -4809,8 +4989,8 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'Exception lifecycle/scope expansion',
          'carrier_owner': '— / #701'},
  'I24': {'class': 'PART',
-         'now': 'Every raw binding/reviewer leaf versus envelope, envelope versus S4 referents, unknown slot unless capability already '
-                'refused (R:risk-binding); existing manifest risk_pair equality',
+         'now': 'Every raw binding/reviewer leaf versus envelope, envelope versus S4 referents, unknown slot unless '
+                'capability already refused (R:risk-binding); existing manifest risk_pair equality',
          'deferred': 'Nonce/dispatch-ID/runtime-ID referents and output-sink identity',
          'carrier_owner': 'C-L / #701'},
  'I25': {'class': 'PART',
@@ -4822,9 +5002,10 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'Launcher hash/loaded-args binding',
          'carrier_owner': 'C-L / #701'},
  'I27': {'class': 'PART',
-         'now': 'Existing physical product cwd B; checker/preflight at accepted G root (U:runtime-invalid); validate G before collector '
-                'invocation; receipt runtime Rule G echo',
-         'deferred': 'Profile leaves versus observed tools/hooks/settings/wiring at collection AND final; execution copies',
+         'now': 'Existing physical product cwd B; checker/preflight at accepted G root (U:runtime-invalid); validate G '
+                'before collector invocation; receipt runtime Rule G echo',
+         'deferred': 'Profile leaves versus observed tools/hooks/settings/wiring at collection AND final; execution '
+                     'copies',
          'carrier_owner': 'C-S / #701'},
  'I28': {'class': 'PART',
          'now': 'Absolute guard_state.toplevel G root; G=B and external G both valid',
@@ -4843,27 +5024,19 @@ C6_SCOPE_DECLARATIONS = {'I01': {'class': 'PART',
          'deferred': 'Hard stops/counts/open findings/reasons/uncertainties disclosure',
          'carrier_owner': '— / #701'},
  'I32': {'class': 'PART',
-         'now': 'Release source before T (H:hold-release-stale); stop/void/off/release rules on any selected schema-valid record, even '
-                'expired',
+         'now': 'Release source before T (H:hold-release-stale); stop/void/off/release rules on any selected '
+                'schema-valid record, even expired',
          'deferred': 'Manifest labels/control/timeline_sha256 capture copies',
          'carrier_owner': '— / #701'},
  'I33': {'class': 'NOW',
-         'now': 'Pair complete < T <= now (R:risk-independence); earliest=T+hold and last_check<T (U:identity-binding); '
-                'max(now,T+hold)<min(S1,S2)+max_age (R:risk-expired); I14 chronology',
+         'now': 'Pair complete < T <= now (R:risk-independence); earliest=T+hold and last_check<T '
+                '(U:identity-binding); max(now,T+hold)<min(S1,S2)+max_age (R:risk-expired); I14 chronology',
          'deferred': 'Quality approval before T; check completion before T',
          'carrier_owner': 'C-Q for approval; — for RUN time / #701'},
  'I34': {'class': 'DEFER',
          'now': 'Existing qualification checks unchanged',
          'deferred': 'Whole addendum-4 row',
-         'carrier_owner': '— / #701'},
- 'C1': {'class': 'PART',
-        'now': 'Capture B/H and Rule G classification',
-        'deferred': 'A/all-copies classification without independent capture referent',
-        'carrier_owner': 'C-S / #701'},
- 'C2 / Ixx.SCH': {'class': 'PART',
-                  'now': 'Type/enum/omission of fields read by a now relation, including all seven outcome values',
-                  'deferred': 'Remaining whole-object/schema expansions',
-                  'carrier_owner': '— / #701'}}
+         'carrier_owner': '— / #701'}}
 
 C6_SCHEMA_DECLARATIONS = {'REF': 'source:T; sha256:H64',
  'BIND': 'decision_id,attempt_id,nonce:T; repository:repository; pr,issue:P; head,base:H40; '
@@ -4953,9 +5126,11 @@ C6_SUPPLEMENT_DECLARATIONS = [['I02.targets[t]',
   'U:identity-binding'],
  ['I09.refs[p,f]',
   'owning original immutable source',
-  'EVERY REF location in literal schema/location dictionary below, f={source,sha256}; actual retained bytes, unique resolution and allowed '
-  'origin; repeat in every manifest mirror',
-  'owning source code; mirror U:identity-binding'],
+  'EVERY REF location, f={source,sha256}; actual retained_json/body consumer where implemented; no universal resolver; '
+  'unresolved quality/finding C-Q, launch/output C-L, prior/disposition/qualification-run and other declared — source '
+  'complements',
+  'exact owning consumer code/domain from addendum-11 numeric register; mirror U:identity-binding is separate; print '
+  'each deferred key/carrier/planned owner'],
  ['I13.full[t,f]',
   'actual complete immutable ledger[t]',
   'm.attempt (selected t): ALL ATTEMPT, DISPOSITION and LAUNCH leaves from literal dictionary, including each launch/retry; '
@@ -4967,9 +5142,11 @@ C6_SUPPLEMENT_DECLARATIONS = [['I02.targets[t]',
   'R:capability-identity-missing; manifest U:identity-binding'],
  ['I16.full[k,f]',
   'actual quality artifact, finding and lens provenance',
-  'm.quality.findings[k].{id,severity,status,source.source,source.sha256}; b.quality.findings[k] status/disposition bytes; every '
-  "quality/lens participant's retained session/model/marker/source",
-  'U:finding-provenance, U:gate-quality/ gate-review-marker for participant/marker; mirror U:identity-binding'],
+  'm.quality.findings[k].{id,severity,status,source.source,source.sha256}; b.quality.findings[k] status/source shape; '
+  'participant/model/source and original finding truth distinct',
+  'current closed status/source shape U:finding-provenance; actual approved/head U:gate-quality and expected marker '
+  'U:gate-review-marker; arbitrary typed participant/finding source equality deferred-701:C-Q with planned owners; '
+  'mirror U:identity-binding'],
  ['I20.full[s,a,f]',
   'independent finite lookup and complete source set',
   'm.capability.comparisons keyed by EACH (slot,author-marker); all COMP leaves below; exact 2 x author-count keys, no '
@@ -4988,9 +5165,11 @@ C6_SUPPLEMENT_DECLARATIONS = [['I02.targets[t]',
   'U:identity-binding; actual executor/lock defect U:executor-invalid'],
  ['I30.full[k,f]',
   'all independently fetched runs/contexts/protection',
-  'm.assessment.checks: ALL CHECKS/RUN/CONTEXT leaves; m.assessment.protection_sha256; exact run/context ID sets, no dropped red or '
-  'duplicate ID',
-  'U:identity-binding; actual run fault U:gate-check; protection R:protection-invalid'],
+  'm.assessment.checks: ALL CHECKS/RUN/CONTEXT leaves; m.assessment.protection_sha256; unique RUN IDs current; exact '
+  'external ID-set/CONTEXT-ID uniqueness expansion distinct',
+  'current all-run/context success/head and expected/required membership U:gate-check; protection '
+  'R:protection-invalid; expanded source/set/context-ID disclosure deferred-701:— with planned '
+  'U:identity-binding/U:gate-check subkeys'],
  ['I31.full[k,f]',
   'capture gate/risk computation before hold-only wait',
   'm.assessment.{hard_stops[k],open_findings[k],reasons[k],uncertainties[k],risk_outcome,outcome,lines,paths}; m.reasons[k]; preserve '
@@ -5007,15 +5186,23 @@ C6_SCHEMA_LOCATIONS = [('S650/I24',
   'R:risk-result-invalid'),
  ('S615/I11-I14/I24/I29-I33',
   'selected m:MANIFEST; each nested pair/attempt/disposition/launch/ref/check/finding/comparison; original m raw bytes separately retained',
-  'U:manifest-schema'),
+  'parsed selected shape U:manifest-schema; embedded manifest duplicate/nonfinite/malformed wire U:record-selection in '
+  'evaluate (record-reader Interface separate); semantic copy U:identity-binding; outer-bundle duplicate/nonfinite '
+  'U:duplicate-json-key/U:nonfinite-json before source consumers'),
  ('S676/I01-I09/I18-I19/I26-I28',
-  'B cfg:CFG; retained accepted brief:BRIEF',
-  'U:config-invalid for cfg; R:project-unconfigured for unavailable accepted brief/project'),
+  'B cfg:CFG, including PROFILE; retained accepted brief:BRIEF',
+  'parsed cfg/profile closure/type/enum U:config-invalid; embedded cfg duplicate/nonfinite/malformed '
+  'U:config-malformed; absent/nonstring cfg U:config-absent; readable repository mismatch U:config-repository; typed '
+  'project policy/repository equality or unavailable accepted brief/project R:project-unconfigured; outer-wire faults '
+  'use parser owners'),
  ('S659/I18-I23',
-  'retained mapping:MAP, decision:DECISION, b.capability:CAPEVID, each accepted profile:PROFILE; each author/slot EFFORT; each numbered '
-  'original decision:EXCEPTION',
-  'R:capability-table-invalid for mapping/decision; R:capability-identity-missing for slots/markers; R:capability-effort-unavailable for '
-  'effort; R:capability-profile-mismatch for profiles'),
+  'retained mapping:MAP, decision:DECISION, b.capability:CAPEVID with SLOT/EFFORT/LEDGER_COMMENT; PROFILE inside CFG; '
+  'each CLAIMED original EXCEPTION',
+  'mapping/decision source R:capability-table-invalid; malformed CAPEVID/children fallback '
+  'R:capability-identity-missing plus independently established R:capability-effort-unavailable; well-typed requested '
+  'EFFORT R:capability-effort-unavailable; cfg PROFILE U:config-invalid; malformed CLAIMED EXCEPTION '
+  'R:capability-exception-invalid retaining below-author/no-gain; unclaimed history is no claimed-exception negative; '
+  'outer-wire parser owners remain separate'),
  ('S669/I12-I14', 'b.attempts[t]:ATTEMPT and retained launch/disposition observations', 'R:risk-attempt-invalid'),
  ('S666/I27', 'accepted actual runtime-profile:RUNTIME_PROFILE', 'U:runtime-invalid'),
  ('S675/I34',
@@ -5024,48 +5211,72 @@ C6_SCHEMA_LOCATIONS = [('S650/I24',
 
 C6_TEMPORAL_DECLARATIONS = [('I33.created[t,j] / S669', 'attempts[t].created_at < launch[t,j].started_at', 'R:risk-attempt-invalid; DEL-created-before-launch[t,j]'),
  ('I33.first[s,t] / S669',
-  'S_s equals actual FIRST launch.started_at; every retry.original_start == S_s; repeated attempt uses its own actual original events '
-  'without resetting retained evidence identity clocks',
-  'R:risk-attempt-invalid; FIRST/LAST-entry and RESET-clock selectors'),
- ('I33.chain1[s] / S654', 'S_s <= returning L_s.started_at', 'R:risk-independence; DEL-chain1[s]'),
- ('I33.chain2[s] / S654', 'L_s.started_at <= R_s', 'R:risk-independence; DEL-chain2[s]'),
+  'FIRST same-slot launch.started_at == S[t,s]; each retry.original_start == S[t,s], typed applicable attempt; only '
+  'last attempt original_start == current receipt S_s',
+  'canonical K14(attempt[t].launches,first.started_at and retry.original_start,equality to S[t,s],typed applicable '
+  'attempt,R/risk-attempt-invalid); FIRST/LAST-entry and RESET-clock selectors; valid old S=T-300/current S=T-100 '
+  'history eligible/0'),
+ ('I33.chain1[s] / S654', 'occurrence pointer to Klower(s)=(I14,(Aledger[-1].launches filtered by '
+  'p_s.envelope.reviewer.slot,p_s.receipt),J_s[-1].started_at,S_s <= L_s.started_at,Dret(s),R/risk-attempt-invalid)', 'S669 owner; domain-limited original-deadline/same-original-start/last-original-start-to-receipt implication only; '
+  'both lower boundary rows retained, no exclusive DEL-chain1 kill'),
+ ('I33.chain2[s] / S654', 'occurrence pointer to Kupper(s)=(I14,(Aledger[-1].launches filtered by '
+  'p_s.envelope.reviewer.slot,p_s.receipt),J_s[-1].started_at,L_s.started_at <= R_s,Dret(s),R/risk-attempt-invalid)', 'S669 owner; DEL-returning-launch upper AND distinct Koutcome(s)=(I14,same '
+  'source,J_s[-1].outcome,outcome==returned,Dret(s),R/risk-attempt-invalid) targets in BOTH slots; no DEL-chain2 '
+  'independence diagnostic'),
  ('I33.chain3[s] / S654', 'R_s <= Z_s', 'R:risk-independence; DEL-chain3[s]'),
- ('I33.chain4[s] / S654', 'Z_s <= P_s', 'R:risk-independence; DEL-chain4[s]'),
+ ('I33.chain4[s] / S654', 'Z_s <= P_s; same-slot seal bound overlaps peer-sealed', 'R:risk-independence; retain implication/overlap audit and boundary behavior, no exclusive DEL-chain4 kill'),
  ('I33.cross[s,j!=s] / S658', 'Z_s <= P_j (both cross-slot directions)', 'R:risk-independence; DEL-cross[s,j]'),
  ('I33.complete / S654',
   'PC < T',
   'R:risk-independence; DEL-pair-before-T; retain exact reviewed T+100 start/T+170 compare witness and each slot late separately'),
  ('I33.final / S654', 'T <= trusted final now', 'R:risk-independence; DEL-T-before-now'),
  ('I33.deadline[s] / S654',
-  'R_s-S_s <= cfg.deadline_seconds (1800)',
-  '1799/1800 pass dimension; 1801 R:risk-deadline; inclusive-to-exclusive and DEL-deadline[s]'),
+  'K33((receipt,cfg.deadline_seconds),receipt received/start,0 <= R_s-S_s <= cfg.deadline_seconds,typed pair plus '
+  'valid raw parsing,R/risk-deadline)',
+  '1799/1800 pass dimension; 1801 and negative elapsed R:risk-deadline; inclusive-to-exclusive and DEL-deadline[s]; '
+  'returning-chain implication never waives invalid-input cause'),
  ('I33.survive / S654',
   'max(now,E) < A+M (86400)',
   'bound-1 passes dimension; equality/+1 R:risk-expired; DEL-full-hold-survival, earlier-start-to-later, `<` to `<=`'),
  ('I33.age[s] / S654',
-  'now-A < M and E < A+M separately restated',
-  '86399/86400/86401 retain exclusive-age cases, R:risk-expired at equality/+1; implication below'),
+  'two exact keys: K33((min(current starts),now,cfg),now-A,now-A<M,typed age inputs,R/risk-expired); K33((min(current '
+  'starts),T,cfg),E,E<A+M,typed full-hold inputs,R/risk-expired); s is occurrence only',
+  '86399/86400/86401 retain exclusive-age cases, equality/+1 R:risk-expired; survival implication below; retained '
+  '0<=now-A R:risk-expired invalid-input cause and age-negative/no-selection rows stand'),
  ('I33.no-reset[x] / S654',
-  'x={redispatch,receipt,seal,comparison,reannouncement,later-peer,same-vendor}; none replaces original S/A',
-  'R:risk-deadline or risk-expired with exact isolated deadline/age setup; RESET-x mutant'),
+  'x={redispatch,receipt,seal,comparison,reannouncement,later-peer,same-vendor}; split exact receipt received/start '
+  'versus cfg.deadline_seconds, ledger launch/original-start versus local S[t,s], and min(current starts)/now/T/cfg '
+  'pair-age/full-hold keys',
+  'receipt deadline R:risk-deadline in typed-pair/raw-parse domain; ledger original-start/deadline '
+  'R:risk-attempt-invalid in running-ledger domain; age/full-hold R:risk-expired in typed age domain; RESET-x per '
+  'exact key; late redispatch retains independently applicable deadline AND attempt-invalid causes'),
  ('I33.prereq[x] / S617',
   'last_check < T now; release < T now (S619); quality approval deferred-701:C-Q; check completion deferred-701:—; disposition-source/time '
   'expansion deferred-701:—',
   'last_check U:identity-binding; release H:hold-release-stale; deferred keys DECLARED in S615, no row/mutant'),
  ('I33.disposition[t] / S669',
-  'actual disposition.created_at < next attempt.created_at',
-  'R:risk-attempt-invalid; DEL-disposition-before-next[t]'),
+  'K13((successor.disposition,successor.created_at),disposition.created_at,< successor.created_at,actual typed '
+  'successor transition with prior attempt,R/risk-attempt-invalid)',
+  'DEL-disposition-before-next[t]; no first-attempt disposition; external human source/words/time equality '
+  'deferred-701:—, planned R:risk-attempt-invalid'),
  ('I33.unordered[t,j] / S669',
-  'every launch/event not already ordered through T <= final now',
-  'R:risk-attempt-invalid; DEL-unordered-now[t,j]'),
+  'otherwise unordered old launch/event <= final now, distinct from current returning chain',
+  'existing I13/I14 complement deferred-701:—, planned R:risk-attempt-invalid; no current DEL-unordered-now credit; '
+  'history first.created=T+400/old starts=T+401 exposes absent comparison, not an eligible replacement oracle; '
+  'promotion requires owner scope/implementation'),
  ('I33.copy[p] / S615',
-  'each attempt/disposition/launch/original-start/receipt/seal/compare/last_check/config date/release/stop/exception '
-  'creation/qualification seal-grade-expiry copy equals ITS original event',
-  'owning inventory code; manifest U:identity-binding; DEL-event-copy[p], never a time-parser-only kill'),
+  'original-event equality for each attempt/disposition/launch/original-start/receipt/seal/compare/last_check/config '
+  'date/release/stop/exception/qualification event retains original source and planned owner in existing C-L/—/C-Q '
+  'complement; numeric I33.1-19,23-26 are occurrences, not invented sources',
+  'retained ledger chronology I14 R:risk-attempt-invalid; receipt chronology I33 R:risk-independence; '
+  'm.attempt/m.risk_pair copies U:identity-binding; last_check<T/earliest U:identity-binding distinct; config date '
+  'availability U:config-date-unreadable, release freshness H:hold-release-stale, stop-at-T U:void-after-announcement, '
+  'off-since-config R:off-since-config distinct; no parser/chronology/copy proves missing original-event equality'),
  ('I33.now / S654',
-  'successful trusted final server request; Date parseable, zoned, actual final observation',
-  'U:now-unreadable for absent/failed/malformed/zone-less, no clock-derived derivative causes; '
-  'DEL-server-time/LOCAL-fallback/ignore-request-status')]
+  'collector successful-response/Date parse validation separate from evaluator ts(b.now) availability; I33.27-30 point '
+  'to actual collector source, not invented evaluator request-status/equality fields',
+  'missing/failed/malformed/zone-less Date -> None, selected-record final evaluator U:now-unreadable; no clock-derived '
+  'derivative causes; collector DEL-server-time/LOCAL-fallback/ignore-request-status')]
 
 C6_BEHAVIOR_DECLARATIONS = [('I24.coverage-set', 'omit/duplicate/add category versus exact eleven independent IDs'),
  ('I24.concern-finding', 'concern without matching finding, finding without concern; valid matching category'),
