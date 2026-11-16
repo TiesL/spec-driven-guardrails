@@ -584,13 +584,13 @@ def config_edit(fn):
 
 def announcement(b):
     c=json.loads(b['config_text']); issue=b['pr']['closing_issues'][0] if len(b['pr'].get('closing_issues') or [])==1 else 701
-    cur=b['current']
-    return {'decision_id':'MR-700-1a2b3c4-1','repository':REPO,'issue':issue,'pr':700,'head':H,'base':B,
+    cur=b['current']; decision=b['attempts'][-1]['decision_id']
+    return {'decision_id':decision,'repository':REPO,'issue':issue,'pr':700,'head':H,'base':B,
             'diff_sha256':sha(b['diff_text']),'config_sha256':sha(b['config_text']),'config_commit':B,
             'ac':c['requirements'],'design':c['design'],'authors':copy.deepcopy(b['authors']),
             'capability':disclosure(b,c) if c.get('capability') else None,'reasons':[],
             'hold_release':None,'outcome':'eligible','earliest_merge':stamp(c['hold_seconds']),
-            'labels':[],'executor_host':'lab-host','queue_key':'MR-700-1a2b3c4-1','revert':'pending',
+            'labels':[],'executor_host':'lab-host','queue_key':decision,'revert':'pending',
             'authority':{'acceptance':c['acceptance'],'floor_sha256':floor_digest(b),**{k:cur[k] for k in ('requirements_sha256','design_sha256','brief_sha256','instructions_sha256','profiles_sha256','qualification_sha256','runtime_sha256','policy_sha256')}},
             'attempt':copy.deepcopy(b['attempts'][-1]),
             'evidence':{'manifest_sha256':cur['evidence_sha256'],'narrative_sha256':cur['narrative_sha256'],
@@ -600,7 +600,7 @@ def announcement(b):
                           'checks':copy.deepcopy(b['checks']),'protection_sha256':b['protection']['sha256'],
                           'open_findings':[],'risk_outcome':'clear','reasons':[],'uncertainties':[],'outcome':'eligible'},
             'execution':{'host':'lab-host','run_id':'executor-1','runtime_sha256':cur['runtime_sha256'],
-                         'preflight':copy.deepcopy(b['preflight']),'preflight_cwd':'/lab/B','queue_key':'MR-700-1a2b3c4-1',
+                         'preflight':copy.deepcopy(b['preflight']),'preflight_cwd':'/lab/B','queue_key':decision,
                          'control':copy.deepcopy(b['control']),'timeline_sha256':sha(raw(b['timeline'])),
                          'last_check':stamp(-1),'identity':copy.deepcopy(b['identity'])},
             'supersedes':None,'prior_attempts':[]}
@@ -1880,9 +1880,14 @@ CLAIMS = ('Closes #701\n\nReviewer Z at medium effort scores 99 on the new table
           '| Provider | Model | Effort | Score |\n| --- | --- | --- | --- |\n| V2 | Z | medium | 99 |\n')
 
 
+def fixture_narrative(pr):
+    lines=pr['body'].splitlines(keepends=True)
+    return sha(pr['title']+'\n'+''.join(line for line in lines if not line.startswith('Merge-risk decision:')))
+
+
 def narrate(body):
     def edit(b):
-        b['pr']['body']=body; b['current']['narrative_sha256']=sha(b['pr']['title']+'\n'+body)
+        b['pr']['body']=body; b['current']['narrative_sha256']=fixture_narrative(b['pr'])
     return edit
 
 
@@ -2319,6 +2324,14 @@ def run_row(root,entry):
     check(p.returncode==expected and first.startswith(prefix),
           f'{name}: want {want}/{expected}; actual exit={p.returncode} {p.stdout[-600:]!r}')
     if code: check((code if command=='queue' else 'reason: '+code) in p.stdout, name+': missing '+code+' '+p.stdout[-600:])
+    if name in SEG2_CODES:
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        check(actual==SEG2_CODES[name],name+': ordered codes '+repr(actual)+' != '+repr(SEG2_CODES[name]))
+    if name in ('closing-unreadable','issue-unreadable'):
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        check(actual==(code,),name+': expected only owning refusal, got '+repr(actual))
+        for forbidden in ('risk-binding','record-selection','narrative-invalid'):
+            check('reason: '+forbidden not in p.stdout,name+': derivative '+forbidden)
     if name=='same-code-both-slots':
         check(p.stdout.splitlines().count('reason: risk-binding')==1, name+': risk-binding must display once '+repr(p.stdout))
     check('SENTINEL' not in p.stdout and 'SENTINEL' not in p.stderr,name+': leaked candidate text')
@@ -2383,6 +2396,157 @@ for slot in range(2):
                                                         'referred','risk-independence')
 for name,(scenario,edit,want,code) in SEGMENT1_WITNESSES.items():
     row(scenario,'add4-'+name,edit,want,code)
+
+
+# A60 addendum 6 Segment 2: public CLI source/copy and selection relations.
+SEG2_CODES={}
+def seg2(s,name,edit=None,want='eligible',codes=()):
+    name='a6s2-'+name
+    row(s,name,edit,want,codes[0] if codes else None)
+    SEG2_CODES[name]=tuple(codes)
+    return name
+
+
+def second_attempt(b):
+    first=copy.deepcopy(b['attempts'][0]); first['terminal']=True
+    first['created_at']=stamp(-301)
+    for launch in first['launches']:
+        launch.update(session_id='old-'+launch['session_id'],started_at=stamp(-300),original_start=stamp(-300))
+    current=b['attempts'][0]
+    current.update(attempt_id='attempt-2',decision_id='MR-700-1a2b3c4-2',ordinal=2,
+                   previous=first['decision_id'],reason='human disposition',
+                   disposition={'source':ref('disposition'),'words':'Retry this decision',
+                                'verbatim':True,'pr':700,'previous':first['decision_id'],'created_at':stamp(-200)})
+    b['attempts']=[first,current]
+    matching_wrong_binding('attempt_id','attempt-2')(b)
+    matching_wrong_binding('decision_id',current['decision_id'])(b)
+
+
+def history(kind):
+    def edit(b):
+        selected=b['issue_comments'][0]; m=json.loads(selected['body'].split('```json\n')[1].split('\n```')[0])
+        other=copy.deepcopy(m); url=b['active_record_url']+'1'
+        if kind in ('superseded','superseded-noneligible'):
+            other['supersedes']={'source':b['active_record_url'],'sha256':sha(selected['body'])}
+            if kind=='superseded-noneligible': other['outcome']='held'
+        elif kind=='outgoing':
+            other['supersedes']={'source':b['active_record_url']+'9','sha256':sha('older')}
+        elif kind=='invalid': other.pop('authority')
+        elif kind=='old-superseded':
+            m['supersedes']={'source':url,'sha256':sha(record_body(other))}; selected['body']=record_body(m)
+        b['issue_comments'].append(dict(selected,url=url,created_at=stamp(1),updated_at=stamp(1),body=record_body(other)))
+    return freeze_edit(edit)
+
+
+seg2(606,'trailer-control',narrate('Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n'))
+seg2(606,'trailer-other-comment',narrate('Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-999\n'),'unresolved',('record-selection',))
+mutate(606,'trailer-selection','a6s2-trailer-other-comment',control='a6s2-trailer-control')
+for kind,codes in [('superseded',('record-selection',)),('superseded-noneligible',('record-selection',)),
+                   ('outgoing',('record-duplicate',)),('invalid',()),('old-superseded',())]:
+    seg2(615,'history-'+kind,history(kind),'unresolved' if codes else 'eligible',codes)
+mutate(615,'record-not-superseded','a6s2-history-superseded')
+mutate(615,'single-active','a6s2-history-outgoing')
+mutate(615,'record-own-outcome',tuple('add4-selected-'+x for x in ('held','vetoed','unresolved','referred','failed','merged')))
+for path,name in [(['queue_key'],'queue'),(['execution','queue_key'],'execution-queue'),(['decision_id'],'manifest-decision')]:
+    seg2(615,name,record_change(path,'MR-700-1a2b3c4-2'),'unresolved',('identity-binding',))
+mutate(615,'record-queue-key',('a6s2-queue','a6s2-execution-queue'))
+seg2(615,'decision-together',edit_record(lambda m:m.update(decision_id='MR-700-1a2b3c4-2',queue_key='MR-700-1a2b3c4-2',execution=dict(m['execution'],queue_key='MR-700-1a2b3c4-2'))),'unresolved',('identity-binding',))
+mutate(615,'record-decision-ledger','a6s2-decision-together')
+# Source/copy edits: destination alone, all lower copies together, final source drift.
+for slot in range(2):
+    def slot_binding(key,value,i=slot,raw_only=False):
+        def edit(b):
+            pair=b['risk_pair'][i]; d=json.loads(base64.b64decode(pair['raw_b64']))
+            d['binding'][key]=value
+            if not raw_only: pair['envelope']['binding'][key]=value
+            seal(pair,d)
+        return edit
+    for key,value in [('issue',999),('decision_id','MR-700-1a2b3c4-2')]:
+        for form in ('D','A'):
+            name=seg2(654,key+'-'+str(slot)+'-'+form,slot_binding(key,value,raw_only=form=='D'),'referred',('risk-binding',))
+            if form=='A':
+                mutate(654,'envelope-'+key,name)
+                no_record=seg2(654,key+'-'+str(slot)+'-no-selection',both(slot_binding(key,value),record_change(['authority'],remove=True)),
+                               'referred',('manifest-schema','risk-binding'))
+                mutate(654,'envelope-'+key,no_record)
+# Closing issue versus independently retained issue, and selected URL target.
+seg2(611,'issue-target',change(['issue','number'],702),'referred',('record-selection','risk-binding'))
+mutate(611,'issue-target','a6s2-issue-target')
+def wrong_url(b):
+    url='https://github.com/'+REPO+'/issues/702#issuecomment-800'
+    b['active_record_url']=url
+    narrate('Closes #701\nMerge-risk decision: '+url+'\n')(b)
+seg2(615,'url-control',narrate('Closes #701\nMerge-risk decision: https://github.com/'+REPO+'/issues/701#issuecomment-800\n'))
+seg2(615,'url-other-issue',wrong_url,'referred',('record-selection','narrative-invalid'))
+mutate(615,'selected-url-target','a6s2-url-other-issue',control='a6s2-url-control')
+for key in ('title','body'):
+    value='Updated title' if key=='title' else 'Closes #701\nUpdated description\n'
+    seg2(606,'narrative-source-'+key,freeze_edit(change(['pr',key],value)),'unresolved',('identity-binding',))
+seg2(606,'narrative-current',freeze_edit(change(['current','narrative_sha256'],sha('wrong'))),'unresolved',('identity-binding',))
+seg2(606,'narrative-record',record_change(['evidence','narrative_sha256'],sha('wrong')),'unresolved',('identity-binding',))
+seg2(606,'narrative-all-copies',both(change(['current','narrative_sha256'],sha('wrong')),
+     record_change(['evidence','narrative_sha256'],sha('wrong'))),'unresolved',('identity-binding',))
+# N1.4 exclusive domains for the retained narrative basis.
+seg2(615,'narrative-control')
+def unavailable_narrative(b):
+    record_change(['evidence','narrative_sha256'],sha('wrong'))(b)
+    b['pr']['body']+=('Merge-risk decision: '+b['active_record_url']+'\n')*2
+seg2(615,'narrative-leaf',unavailable_narrative,'referred',('identity-binding','narrative-invalid'))
+seg2(615,'narrative-current-exclusive',both(record_change(['authority'],remove=True),
+     change(['current','narrative_sha256'],sha('wrong'))),'unresolved',('manifest-schema','identity-binding'))
+mutate(615,'record-binding-narrative','a6s2-narrative-leaf',("families['narrative']=", "families['narrative']=True or "),control='a6s2-narrative-control')
+mutate(615,'narrative-current','a6s2-narrative-current-exclusive',control='a6s2-narrative-control')
+# narrative-record is implied by the two retained premises (QA A1); no mutant.
+mutate(606,'narrative-valid',('add4-malformed-trailer','add4-duplicate-trailer'))
+seg2(669,'second-control',second_attempt)
+# A prior attempt carrying the final ID remains a non-exclusive behavior row.
+seg2(669,'prior-final',both(second_attempt,change(['attempts',0,'decision_id'],'MR-700-1a2b3c4-2')),
+     'referred',('risk-attempt-invalid',))
+for name,value in [('wrong-pr','MR-999-1a2b3c4-1'),('wrong-head','MR-700-deadbee-1'),
+                   ('wrong-ordinal','MR-700-1a2b3c4-2')]:
+    codes=('record-id','risk-attempt-invalid','risk-binding') if name!='wrong-ordinal' else ('risk-attempt-invalid','risk-binding')
+    seg2(669,name,change(['attempts',0,'decision_id'],value),'referred',codes)
+mutate(669,'ledger-decision-id',('a6s2-wrong-pr','a6s2-wrong-head'))
+
+
+# Remaining D/A/F places and now-read closed-schema leaves. These exercise the
+# same public bundle seam; frozen F edits never repair the captured record/pair.
+seg2(611,'closing-final',freeze_edit(change(['pr','closing_issues'],[702])),
+     'unresolved',('identity-binding','record-selection'))
+seg2(615,'manifest-issue',record_change(['issue'],702),'unresolved',('identity-binding',))
+seg2(615,'active-url-alone',freeze_edit(change(['active_record_url'],
+     'https://github.com/'+REPO+'/issues/701#issuecomment-999')),'unresolved',('record-selection',))
+seg2(669,'ledger-final',freeze_edit(change(['attempts',0,'decision_id'],'MR-999-1a2b3c4-1')),
+     'referred',('identity-binding','risk-attempt-invalid'))
+for slot in range(2):
+    for key,value in [('issue',999),('decision_id','MR-700-1a2b3c4-2')]:
+        seg2(654,key+'-'+str(slot)+'-envelope-alone',change(['risk_pair',slot,'envelope','binding',key],value),
+             'referred',('risk-binding',))
+for value in (None,17):
+    seg2(606,'current-narrative-type-'+str(value),freeze_edit(change(['current','narrative_sha256'],value)),
+         'unresolved',('identity-binding',))
+seg2(606,'current-narrative-missing',freeze_edit(lambda b:b['current'].pop('narrative_sha256')),
+     'unresolved',('identity-binding',))
+def schema_record_change(path,value,remove=False):
+    def edit(b):
+        comment=b['issue_comments'][0]
+        prefix,rest=comment['body'].split('```json\n',1)
+        text,suffix=rest.split('\n```',1); manifest=json.loads(text); obj=manifest
+        for key in path[:-1]: obj=obj[key]
+        if remove: obj.pop(path[-1])
+        else: obj[path[-1]]=value
+        comment['body']=prefix+'```json\n'+raw(manifest).decode()+'\n```'+suffix
+    return freeze_edit(edit)
+
+
+for path in (['outcome'],['decision_id'],['queue_key'],['execution','queue_key'],
+             ['evidence','narrative_sha256'],['supersedes']):
+    stem='-'.join(path)
+    for form,value in [('type',17),('omission',None)]:
+        seg2(615,'schema-'+stem+'-'+form,schema_record_change(path,value,remove=form=='omission'),
+             'unresolved',('manifest-schema',))
+seg2(615,'schema-outcome-enum',record_change(['outcome'],'invented'),
+     'unresolved',('manifest-schema',))
 
 
 def main():

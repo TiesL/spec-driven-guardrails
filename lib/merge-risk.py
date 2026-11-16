@@ -506,15 +506,43 @@ def capture_revisions(b):
 
 
 def consistency_checks(b,cfg,r,sel,cap,capture):
-    pass
+    pr=b.get('pr') or {}; closing=pr.get('closing_issues'); issue=b.get('issue')
+    closing_ok=isinstance(closing,list) and len(closing)==1
+    if closing_ok and isinstance(issue,dict):
+        issue_ok=closing[0]==issue.get('number')
+        r.need(issue_ok, 'record-selection')  # rule:issue-target
+        if sel is not None:
+            target_ok=valid_comment(sel.comment.get('url'),b.get('repository'),closing[0])
+            r.need(target_ok, 'record-selection')  # rule:selected-url-target
+    if closing_ok:
+        try: digest=narrative(pr,b.get('repository'),closing[0])
+        except Invalid: digest=None
+        narrative_ok=digest is not None
+        r.need(narrative_ok, 'narrative-invalid','referred')  # rule:narrative-valid
+        if narrative_ok:
+            current_ok=(b.get('current') or {}).get('narrative_sha256')==digest
+            r.need(current_ok, 'identity-binding')  # rule:narrative-current
+            if sel is not None:
+                record_ok=sel.manifest['evidence']['narrative_sha256']==digest
+                r.need(record_ok, 'identity-binding')  # rule:narrative-record
+            trailers=[line for line in pr['body'].splitlines() if line.startswith('Merge-risk decision:')]
+            if trailers:
+                trailer_ok=trailers[0][len('Merge-risk decision: '):]==b.get('active_record_url')
+                r.need(trailer_ok, 'record-selection')  # rule:trailer-selection
+    attempts=b.get('attempts')
+    if isinstance(attempts,list) and attempts and all(conforms(a,ATTEMPT) for a in attempts):
+        H=capture['head']
+        decision_ok=all(a['decision_id']=='MR-%s-%s-%s'%(b.get('pr_number'),str(H)[:7],a['ordinal']) for a in attempts)
+        r.need(decision_ok, 'risk-attempt-invalid','referred')  # rule:ledger-decision-id
 
 
 def record_checks(b,cfg,r,cap):
     cs=b.get('issue_comments'); selected=b.get('active_record_url')
     if not isinstance(cs,list): r.add('unresolved','records-unreadable'); return None
     records=[(c,*parse_manifest(c.get('body'))) for c in cs if isinstance(c,dict)]
-    active=[(c,m) for c,m,e in records if not e and isinstance(m,dict) and m.get('outcome')=='eligible'
-            and m.get('supersedes') is None]
+    valid=[(c,m) for c,m,e in records if not e and not manifest_errors(m)]
+    superseded={m['supersedes']['source'] for c,m in valid if m['supersedes'] is not None}
+    active=[(c,m) for c,m in valid if m['outcome']=='eligible' and c.get('url') not in superseded]
     r.need(len(active)<=1, 'record-duplicate')  # rule:single-active
     found=[(c,m) for c,m,e in records if c.get('url')==selected and not e]
     r.need(len(found)==1, 'record-selection')  # rule:record-selection
@@ -523,6 +551,10 @@ def record_checks(b,cfg,r,cap):
     schema_ok=not manifest_errors(m)
     r.need(schema_ok, 'manifest-schema')  # rule:manifest-schema
     if not schema_ok: return None
+    own_eligible=m['outcome']=='eligible'
+    r.need(own_eligible, 'record-selection')  # rule:record-own-outcome
+    not_superseded=c.get('url') not in superseded
+    r.need(not_superseded, 'record-selection')  # rule:record-not-superseded
     r.need(c.get('updated_at')==c.get('created_at'), 'record-edited')  # rule:record-edited
     r.need(RECORD_LABEL in c.get('body',''), 'record-label')  # rule:record-label
     correct_id=bool(re.fullmatch(r'MR-%s-%s-[1-9][0-9]*'%(b.get('pr_number'),str(b.get('pr',{}).get('head'))[:7]),m['decision_id']))
@@ -532,11 +564,14 @@ def record_checks(b,cfg,r,cap):
     want={'repository':b.get('repository'),'pr':b.get('pr_number'),'issue':issue,'head':pr.get('head'),
           'base':b.get('main_tip'),'diff_sha256':sha(b.get('diff_text','')),'config_sha256':sha(b['config_text']),
           'config_commit':b.get('main_tip')}
+    # Unavailable closing identity already has its source refusal; omit that
+    # comparison rather than treating an invented None as a final issue.
+    if not isinstance(closing,list) or len(closing)!=1: want.pop('issue')
     families={k:m[k]==v for k,v in want.items()}
     for key in CURRENT_KEYS:
         families[key.removesuffix('_sha256')]=m['authority'].get(key)==cur.get(key)
     families['evidence']=m['evidence']['manifest_sha256']==cur.get('evidence_sha256')
-    families['narrative']=m['evidence']['narrative_sha256']==cur.get('narrative_sha256')
+    families['narrative']=m['evidence']['narrative_sha256']==cur.get('narrative_sha256')  # rule:record-binding-narrative
     families['requirements']=families['requirements'] and m['ac']==cfg['requirements']
     families['design']=families['design'] and m['design']==cfg['design']
     families['acceptance']=m['authority']['acceptance']==cfg['acceptance']
@@ -555,6 +590,11 @@ def record_checks(b,cfg,r,cap):
     attempts=b.get('attempts')
     attempt_bound=isinstance(attempts,list) and bool(attempts) and m['attempt']==attempts[-1]
     r.need(attempt_bound, 'identity-binding')  # rule:record-attempt
+    if isinstance(attempts,list) and attempts and all(conforms(a,ATTEMPT) for a in attempts):
+        decision_bound=m['decision_id']==attempts[-1]['decision_id']
+        r.need(decision_bound, 'identity-binding')  # rule:record-decision-ledger
+    queue_bound=m['queue_key']==m['execution']['queue_key']==m['decision_id']
+    r.need(queue_bound, 'identity-binding')  # rule:record-queue-key
     # A60 addendum 2: the announcement discloses the lookup it relied on. The
     # disclosure is recomputed here from retained evidence, never trusted.
     floor_bound=cap['floor'] is not None and m['authority']['floor_sha256']==cap['floor']
@@ -652,14 +692,13 @@ def envelope_checks(b,cfg,r,cap,record):
                      and all(expected[k]==current.get(k) for k in ('evidence_sha256','requirements_sha256','design_sha256',
                                                                  'policy_sha256','instructions_sha256','profiles_sha256','qualification_sha256')))
         r.need(identity_ok, 'risk-binding','referred')  # rule:risk-binding
-        # Invalid/unselected records already fail closed in record_checks.
-        if record is not None:
-            manifest=record[1]
-            issue_ok=(expected['issue']==manifest['issue']
-                      and pr.get('closing_issues')==[expected['issue']]
-                      and (not isinstance(b.get('issue'),dict) or expected['issue']==b['issue'].get('number')))
+        closing=pr.get('closing_issues'); issue=b.get('issue'); attempts=b.get('attempts')
+        closing_ok=isinstance(closing,list) and len(closing)==1
+        if closing_ok and isinstance(issue,dict):
+            issue_ok=expected['issue']==closing[0] and expected['issue']==issue.get('number')
             r.need(issue_ok, 'risk-binding','referred')  # rule:envelope-issue
-            decision_ok=expected['decision_id']==manifest['decision_id']
+        if isinstance(attempts,list) and attempts and all(conforms(a,ATTEMPT) for a in attempts):
+            decision_ok=expected['decision_id']==attempts[-1]['decision_id']
             r.need(decision_ok, 'risk-binding','referred')  # rule:envelope-decision_id
         # Capability identities retained with the envelope, compared one by one
         # with what this Module derives from the accepted sources.
