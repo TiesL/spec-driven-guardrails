@@ -758,13 +758,13 @@ mutate(617,'hold-window','hold-one-1',("elapsed >= cfg['hold_seconds']","elapsed
 
 def event(label,delta,typ='labeled'): return {'event':typ,'label':label,'created_at':stamp(delta)}
 
-def stops(where,delta,label='hold',removed=False,release=None):
+def stops(where,delta,label='hold',removed=False,release=None,release_target='pr'):
     def edit(b):
         b['timeline'][where].append(event(label,delta))
         if removed: b['timeline'][where].append(event(label,delta+1,'unlabeled'))
         else: (b['pr'] if where=='pr' else b[where])['labels'].append(label)
         if release is not None:
-            link='https://github.com/'+REPO+'/pull/700#issuecomment-900'
+            link='https://github.com/'+REPO+('/pull/700' if release_target=='pr' else '/issues/701')+'#issuecomment-900'
             b['sources'][link]={'body':'release this exact hold on #700','created_at':stamp(release)}
             b['_record_edit']=lambda m:m.update(hold_release={'link':link,'words':'release this exact hold on #700'})
     return edit
@@ -773,7 +773,8 @@ for where,label in [('pr','hold'),('issue','risk:low'),('issue','risk:high'),('c
 for where in ('pr','issue'):
     for delta in (-100,-7200,-1,-86401,-400*86400):
         row(618,where+'-old-'+str(delta),stops(where,delta,removed=True),'held','hold-release-missing')
-        row(618,where+'-released-'+str(delta),stops(where,delta,removed=True,release=delta+1))
+        # A60 addendum 8 / QA: stop < release < T, preserving row IDs/oracles.
+        row(618,where+'-released-'+str(delta),stops(where,-2 if delta==-1 else delta,removed=True,release=-1 if delta==-1 else delta+1))
     row(618,where+'-at-T',stops(where,0,removed=True),'unresolved','void-after-announcement')
 row(618,'removed-after',stops('pr',10,removed=True),'unresolved','void-after-announcement')
 row(618,'unreadable',change(['timeline'],None),'unresolved','timeline-unreadable')
@@ -2324,6 +2325,10 @@ def run_row(root,entry):
     check(p.returncode==expected and first.startswith(prefix),
           f'{name}: want {want}/{expected}; actual exit={p.returncode} {p.stdout[-600:]!r}')
     if code: check((code if command=='queue' else 'reason: '+code) in p.stdout, name+': missing '+code+' '+p.stdout[-600:])
+    if name.startswith(('a6s3-release-','a6s3-issue-release-')):
+        actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
+        expected=() if want=='eligible' else ('hold-release-stale',)
+        check(actual==expected,name+': exact release codes '+repr(actual)+' != '+repr(expected))
     if name in SEG2_CODES:
         actual=tuple(line[8:] for line in p.stdout.splitlines() if line.startswith('reason: '))
         check(actual==SEG2_CODES[name],name+': ordered codes '+repr(actual)+' != '+repr(SEG2_CODES[name]))
@@ -2609,7 +2614,10 @@ mutate(617,'last-check-before-announcement','a6s3-last-check-0')
 for d in (-1,0,1):
     seg3(619,'release-'+str(d),stops('pr',-100,removed=True,release=d),
          'eligible' if d<0 else 'held',None if d<0 else 'hold-release-stale')
-mutate(619,'release-before-announcement','a6s3-release-0')
+for d in (-1,0,1):
+    seg3(619,'issue-release-'+str(d),stops('issue',-100,removed=True,release=d,release_target='issue'),
+         'eligible' if d<0 else 'held',None if d<0 else 'hold-release-stale')
+mutate(619,'release-before-announcement',['a6s3-release-0','a6s3-issue-release-0'])
 # E dominates now: this isolates full-hold-age from the preexisting age rule.
 for h in (86299,86300,86301):
     seg3(654,'full-hold-'+str(h),config_edit(lambda c,h=h:c.update(hold_seconds=h)),

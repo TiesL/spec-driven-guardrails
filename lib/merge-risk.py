@@ -535,6 +535,61 @@ def consistency_checks(b,cfg,r,sel,cap,capture):
         decision_ok=all(a['decision_id']=='MR-%s-%s-%s'%(b.get('pr_number'),str(H)[:7],a['ordinal']) for a in attempts)
         r.need(decision_ok, 'risk-attempt-invalid','referred')  # rule:ledger-decision-id
 
+    # Summaries supplement the actual participants; neither can erase a role.
+    quality={x for x in b.get('quality_sessions',[]) if isinstance(x,str)}
+    authors={x for x in b.get('author_sessions',[]) if isinstance(x,str)}
+    quality_session=(b.get('quality') or {}).get('session_id')
+    if isinstance(quality_session,str): quality.add(quality_session)
+    authors.update(a['session_id'] for a in b.get('authors',[])
+                   if isinstance(a,dict) and isinstance(a.get('session_id'),str))
+    separated=quality.isdisjoint(authors)
+    r.need(separated, 'risk-independence','referred')  # rule:quality-author-separation
+
+    if isinstance(attempts,list) and attempts and all(conforms(a,ATTEMPT) for a in attempts):
+        for attempt in attempts:
+            created=ts(attempt['created_at'])
+            launches=attempt['launches']
+            after=all(created < ts(x['started_at']) for x in launches)
+            r.need(after, 'risk-attempt-invalid','referred')  # rule:launch-after-attempt
+            for slot in {x['slot'] for x in launches}:
+                first=next(x for x in launches if x['slot']==slot)
+                original=ts(first['original_start']); started=ts(first['started_at'])
+                same_start=started==original
+                r.need(same_start, 'risk-attempt-invalid','referred')  # rule:first-launch-start
+        for p in b.get('risk_pair') or []:
+            if not conforms(p,PAIR): continue
+            slot=p['envelope']['reviewer']['slot']; receipt=p['receipt']
+            launches=[x for x in attempts[-1]['launches'] if x['slot']==slot]
+            if launches:
+                last=launches[-1]; started=ts(last['started_at'])
+                returned=last['outcome']=='returned' and ts(receipt['started_at'])<=started<=ts(receipt['received_at'])
+                r.need(returned, 'risk-attempt-invalid','referred')  # rule:returning-launch
+
+    if sel is None: return
+    T=ts(sel.comment.get('created_at')); now=ts(b.get('now'))
+    if T is None: return
+    pair=b.get('risk_pair')
+    if isinstance(pair,list) and len(pair)==2:
+        completions=[ts((p.get('receipt') or {}).get('compared_at')) for p in pair if isinstance(p,dict)]
+        if len(completions)==2 and all(completions):
+            before=max(completions)<T
+            r.need(before, 'risk-independence','referred')  # rule:pair-before-announcement
+        starts=[ts((p.get('receipt') or {}).get('started_at')) for p in pair if isinstance(p,dict)]
+        if len(starts)==2 and all(starts) and now is not None:
+            survives=max(now,T+timedelta(seconds=cfg['hold_seconds'])) < min(starts)+timedelta(seconds=cfg['max_age_seconds'])
+            r.need(survives, 'risk-expired','referred')  # rule:full-hold-age
+    if now is not None:
+        not_future=T<=now
+        r.need(not_future, 'risk-independence','referred')  # rule:announcement-not-future
+    earliest=ts(sel.manifest['earliest_merge'])
+    if earliest is not None:
+        honest=earliest==T+timedelta(seconds=cfg['hold_seconds'])
+        r.need(honest, 'identity-binding')  # rule:earliest-copy
+    last_check=ts(sel.manifest['execution']['last_check'])
+    if last_check is not None:
+        checked_before=last_check<T
+        r.need(checked_before, 'identity-binding')  # rule:last-check-before-announcement
+
 
 def record_checks(b,cfg,r,cap):
     cs=b.get('issue_comments'); selected=b.get('active_record_url')
@@ -664,6 +719,9 @@ def hold_checks(b,cfg,r,record):
         src=(b.get('sources') or {}).get(hr['link'],{}); words=src.get('body'); released=ts(src.get('created_at'))
         r.need(isinstance(words,str) and hr['words'] in words, 'hold-release-words','held')  # rule:hold-release-words
         r.need(released is not None and released>max(holds), 'hold-release-stale','held')  # rule:hold-release-stale
+        if released is not None:
+            before=released<T
+            r.need(before, 'hold-release-stale','held')  # rule:release-before-announcement
         r.note('hold release account/hash consistency does not authenticate human authorship')
     cd=ts(b.get('config_commit_date'))
     r.need(cd is not None, 'config-date-unreadable')  # rule:config-date
