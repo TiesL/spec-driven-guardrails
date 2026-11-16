@@ -2,6 +2,14 @@
 
 Dit bestand wordt gesymlinkt als `~/.claude/CLAUDE.md` (userbreed, laadt in elke sessie/project). Het bevat alleen de trigger-instructie voor het aanbieden van de gedeelde workflow uit `spec-driven-guardrails` — de workflow-inhoud zelf staat in `WORKFLOW.md`.
 
+## Taal (alleen Claude Code)
+
+In Claude Code chat je met TiesL in het Engels. Alles wat wordt bewaard of
+naar buiten gaat is ook Engels: code, commentaar, commits, PR's, issues,
+bestanden, memory, prompts voor andere agents en logs. Dit bestand wordt alleen
+door Claude Code gelezen; Claude Cowork en gewone chat blijven Nederlands en
+vallen buiten deze regel.
+
 ## Instructie
 
 Check bij het starten van een sessie in een directory die een git-repository is
