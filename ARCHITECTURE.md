@@ -7622,3 +7622,90 @@ Doubts (one line each):
 - B2's kill row assumes QA's oracle gives no `record-selection` from `trailer-selection` on a rejected trailer; otherwise B2 needs another row.
 - B3 rests on reading `rule:prior-disposition`, not on an executed row.
 - No row or mutant was run; every kill claim here is algebraic until the Developer shows red, green and KILLED output.
+
+
+### A60 addendum 8 — strict release ordering and Segment-3 fixture correction, #646
+
+**Ruling (Architect / Planning, 2026-11-16).** [A] Option (1) holds:
+`latest_stop < release_time < T`; equality at either end is
+H/`hold-release-stale`, with no derivative `risk-independence` solely for a
+release-time fault. I32, addendum 6 S2/Segment 3 and S619 keep this predicate.
+A timestamp tie cannot establish that the release preceded the immutable
+announcement; allowing it would accept an unproved prerequisite. Option (2)
+would be a **maintainer security trade-off**, not an Architect decision, and is
+not selected. This resolves the Developer stop in
+`.handoff/dev-report-646-a6-seg3-stop.md` / `conflict.log`; no Product AC is
+contradicted or narrowed (AC5/AC6 and F73 keep release/new-record/full-hold rules).
+QA must specify corrections to exactly S618 `pr-released--1` and
+`issue-released--1`: retain those historical row IDs and eligible/0 oracles, but
+construct `stops(where,-2,removed=True,release=-1)`, relative to the unchanged
+selected T. Thus labeled stop=T-2, removal=T-1, actual release source=T-1<T;
+latest_stop denotes the labeled stop, not removal. Merely setting release=T-1
+on the old stop=T-1 would still be stale. Both controls still prove that a
+removed stop with a valid subsequent release/new announcement/full hold is
+eligible; `pr-old--1` / `issue-old--1` retain their T-1 missing-release intent.
+This narrowly supersedes addendum 6 S1/S5's unchanged-fixture wording for those
+two input constructions only; no existing expected result or code changes.
+
+**Complete equality inventory.** [A] Reading the current fixture definitions and
+materializing its selected bundles found exactly those TWO conflicting passing
+rows; no other existing passing release/stop/pair/T equality needs correction.
+All other ties under the strict Segment-3 relations already require refusal:
+S618 `pr-at-T`, `issue-at-T` (stop=T, U/`void-after-announcement`);
+S619 `release--100` (release=latest_stop, H/`hold-release-stale`) and
+`a6s3-release-0` (release=T, same H);
+S654 `add4-announcement-tie-0`, `add4-announcement-tie-1`,
+`a6s3-complete-0-0`, `a6s3-complete-1-0` (pair completion=T,
+R/`risk-independence`);
+S617 `a6s3-last-check-0` (last_check=T, U/`identity-binding`);
+S669 `a6s3-created-0--100`, `a6s3-created-1--100`,
+`a6s3-first-0--101`, `a6s3-first-1--101` (attempt creation=launch,
+R/`risk-attempt-invalid`; the first-launch attacks also break original_start).
+These negatives stay unchanged. T=now, returning-launch S/L/R endpoints,
+receipt/seal/comparison and cross-seal equalities, the inclusive 1800-second
+deadline, now=T+hold and exact earliest-copy equality remain permitted by their
+OWN predicates; Segment 3's strict sentence never converts `<=` or `==` to `<`.
+Age/full-hold expiry equality already refuses. No other scenario sentence
+explicitly grants a forbidden tie; the ambiguous passing-control and blanket
+preservation sentences requiring QA clarification are enumerated below.
+
+**QA text changes (existing scenario IDs only).** [A] S618 Given (g2) and its
+Then passing-control clause must explicitly require
+`latest_stop < release_time < T`; the A60 amendment's "For each" passing
+companion must distinguish the unreleased stop at T-1 from its corrected
+stop=T-2/release=T-1 companion, retain ancient-stop controls, and replace
+"latest event" with "latest labeled stop". S618's addendum-2 sentence saying
+all timeline rows are unchanged and its addendum-6 "existing label/history rows
+keep their outcomes" sentence must cite this two-input correction while
+preserving outcomes. S619 Given/Then (b) and (f) must state release before the
+NEW selected T2 (or T for the first-record case), as well as after latest_stop;
+(g)/(h), addendum-6 T-1/T/T+1 oracles, the strict release-expansion sentence and
+both implication lines stay unchanged. S615's matrix-protocol sentence
+"Existing checks and their rows keep their behavior" must cite the same narrow
+fixture correction, with unchanged results/codes. S617's strict last-check and
+exclusive survival sentences, S654's strict PC<T/inclusive T<=now table and
+corrected deadline controls, S658's cross-seal controls and S669's strict
+attempt/inclusive returning-launch sentence need NO change. Neither I32 nor
+S619 is amended to permit release=T.
+
+**Segment 3 text changes and completion.** [A] Add the two QA-owned input
+corrections above to its explicit row list BEFORE library work; the Developer
+implements that fixture prescription only after QA's handoff. Retain its four
+`add4-*` witnesses and all 56 current `a6s3-*` rows, including B5's exclusive
+age domains from addendum 7. Add S619 issue-target siblings
+`a6s3-issue-release--1`, `a6s3-issue-release-0`,
+`a6s3-issue-release-1`, with stop=T-100, removed, and release=T-1/T/T+1:
+respectively eligible/0, H/`hold-release-stale`, H/`hold-release-stale`.
+Red tests: preserve the stop report's 60-row red evidence; rerun that set plus
+these three siblings after QA correction and BEFORE library edits, showing both
+corrected S618 controls eligible independently and both target equality attacks
+red against the current implementation. Do not obtain red by changing an
+existing oracle. Done means all 63 focused rows and both corrected controls
+green, every Segment-3 new tag KILLED on its named exclusive row (release-before-
+announcement on BOTH PR/issue equality attacks), B5's retained age-tag targets
+KILLED, all preserved S617/S618/S619/S654/S658/S669 controls retaining their
+results/codes, and addendum 6 S5's 53-case allowance, compile, diff and stamp
+checks satisfied. Unlisted input/oracle changes or a surviving mutant still
+STOP through the owning-role route. This is the existing Module/Interface and
+public CLI Seam; no new carrier, rule, code, exception, decomposition or
+authority is introduced. No security trade-off is taken by this clarification.
